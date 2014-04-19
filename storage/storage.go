@@ -27,6 +27,7 @@ type Repository interface {
 	PutFile(path string) (ID, error)
 	Get(ID) (io.Reader, error)
 	Test(ID) (bool, error)
+	Remove(ID) error
 	Link(name string, id ID) error
 	Unlink(name string) error
 	Resolve(name string) (ID, error)
@@ -184,6 +185,11 @@ func (r *Dir) Get(id ID) (io.Reader, error) {
 	return file, nil
 }
 
+// Remove removes the content stored at ID.
+func (r *Dir) Remove(id ID) error {
+	return os.Remove(path.Join(r.path, objectPath, id.String()))
+}
+
 // Unlink removes a named ID.
 func (r *Dir) Unlink(name string) error {
 	return os.Remove(path.Join(r.path, refPath, Name(name).Encode()))
@@ -208,7 +214,7 @@ func (r *Dir) Link(name string, id ID) error {
 		return err
 	}
 
-	f.Write(id)
+	f.Write([]byte(hex.EncodeToString(id)))
 	return nil
 }
 
@@ -220,9 +226,17 @@ func (r *Dir) Resolve(name string) (ID, error) {
 		return nil, err
 	}
 
-	id := make([]byte, r.hash().Size())
-	_, err = io.ReadFull(f, id)
+	// read hex string
+	l := r.hash().Size()
+	buf := make([]byte, l*2)
+	_, err = io.ReadFull(f, buf)
 
+	if err != nil {
+		return nil, err
+	}
+
+	id := make([]byte, l)
+	_, err = hex.Decode(id, buf)
 	if err != nil {
 		return nil, err
 	}

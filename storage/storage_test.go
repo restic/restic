@@ -91,6 +91,9 @@ var _ = Describe("Storage", func() {
 
 					// remove link
 					Expect(repo.Unlink(test.data)).NotTo(HaveOccurred())
+
+					// remove string
+					Expect(repo.Remove(id))
 				}
 			})
 		})

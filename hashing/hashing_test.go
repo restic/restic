@@ -24,7 +24,7 @@ var _ = Describe("Hashing", func() {
 		{sha1.New, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "84983e441c3bd26ebaae4aa1f95129e5e54670f1"},
 	}
 
-	var _ = Describe("Reader", func() {
+	Describe("Reader", func() {
 		Context("Static Strings", func() {
 			It("Should compute digest", func() {
 				for _, t := range static_tests {
@@ -47,9 +47,13 @@ var _ = Describe("Hashing", func() {
 				}
 			})
 		})
+
+		Context("Random Strings", func() {
+
+		})
 	})
 
-	var _ = Describe("Writer", func() {
+	Describe("Writer", func() {
 		Context("Static Strings", func() {
 			It("Should compute digest", func() {
 				for _, t := range static_tests {
@@ -59,7 +63,7 @@ var _ = Describe("Hashing", func() {
 					n, err := w.Write([]byte(t.text))
 
 					if n != len(t.text) {
-						Fail("not enough bytes read")
+						Fail("not enough bytes written")
 					}
 
 					if err != nil {
