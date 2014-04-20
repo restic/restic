@@ -66,14 +66,14 @@ func (n Name) Encode() string {
 	return url.QueryEscape(string(n))
 }
 
-type Dir struct {
+type DirRepository struct {
 	path string
 	hash func() hash.Hash
 }
 
-// NewDir creates a new dir-baked repository at the given path.
-func NewDir(path string) (*Dir, error) {
-	d := &Dir{
+// NewDirRepository creates a new dir-baked repository at the given path.
+func NewDirRepository(path string) (*DirRepository, error) {
+	d := &DirRepository{
 		path: path,
 		hash: sha256.New,
 	}
@@ -87,7 +87,7 @@ func NewDir(path string) (*Dir, error) {
 	return d, nil
 }
 
-func (r *Dir) create() error {
+func (r *DirRepository) create() error {
 	dirs := []string{
 		r.path,
 		path.Join(r.path, objectPath),
@@ -106,17 +106,17 @@ func (r *Dir) create() error {
 }
 
 // SetHash changes the hash function used for deriving IDs. Default is SHA256.
-func (r *Dir) SetHash(h func() hash.Hash) {
+func (r *DirRepository) SetHash(h func() hash.Hash) {
 	r.hash = h
 }
 
 // Path returns the directory used for this repository.
-func (r *Dir) Path() string {
+func (r *DirRepository) Path() string {
 	return r.path
 }
 
 // Put saves content and returns the ID.
-func (r *Dir) Put(reader io.Reader) (ID, error) {
+func (r *DirRepository) Put(reader io.Reader) (ID, error) {
 	// save contents to tempfile, hash while writing
 	file, err := ioutil.TempFile(path.Join(r.path, tempPath), "temp-")
 	if err != nil {
@@ -146,7 +146,7 @@ func (r *Dir) Put(reader io.Reader) (ID, error) {
 }
 
 // PutFile saves a file's content to the repository and returns the ID.
-func (r *Dir) PutFile(path string) (ID, error) {
+func (r *DirRepository) PutFile(path string) (ID, error) {
 	f, err := os.Open(path)
 	defer f.Close()
 	if err != nil {
@@ -157,7 +157,7 @@ func (r *Dir) PutFile(path string) (ID, error) {
 }
 
 // Test returns true if the given ID exists in the repository.
-func (r *Dir) Test(id ID) (bool, error) {
+func (r *DirRepository) Test(id ID) (bool, error) {
 	// try to open file
 	file, err := os.Open(path.Join(r.path, objectPath, id.String()))
 	defer func() {
@@ -175,7 +175,7 @@ func (r *Dir) Test(id ID) (bool, error) {
 }
 
 // Get returns a reader for the content stored under the given ID.
-func (r *Dir) Get(id ID) (io.Reader, error) {
+func (r *DirRepository) Get(id ID) (io.Reader, error) {
 	// try to open file
 	file, err := os.Open(path.Join(r.path, objectPath, id.String()))
 	if err != nil {
@@ -186,17 +186,17 @@ func (r *Dir) Get(id ID) (io.Reader, error) {
 }
 
 // Remove removes the content stored at ID.
-func (r *Dir) Remove(id ID) error {
+func (r *DirRepository) Remove(id ID) error {
 	return os.Remove(path.Join(r.path, objectPath, id.String()))
 }
 
 // Unlink removes a named ID.
-func (r *Dir) Unlink(name string) error {
+func (r *DirRepository) Unlink(name string) error {
 	return os.Remove(path.Join(r.path, refPath, Name(name).Encode()))
 }
 
 // Link assigns a name to an ID. Name must be unique in this repository and ID must exist.
-func (r *Dir) Link(name string, id ID) error {
+func (r *DirRepository) Link(name string, id ID) error {
 	exist, err := r.Test(id)
 	if err != nil {
 		return err
@@ -219,7 +219,7 @@ func (r *Dir) Link(name string, id ID) error {
 }
 
 // Resolve returns the ID associated with the given name.
-func (r *Dir) Resolve(name string) (ID, error) {
+func (r *DirRepository) Resolve(name string) (ID, error) {
 	f, err := os.Open(path.Join(r.path, refPath, Name(name).Encode()))
 	defer f.Close()
 	if err != nil {

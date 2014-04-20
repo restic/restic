@@ -36,7 +36,7 @@ var _ = Describe("Storage", func() {
 		if err != nil {
 			panic(err)
 		}
-		repo, err = storage.NewDir(tempdir)
+		repo, err = storage.NewDirRepository(tempdir)
 		if err != nil {
 			panic(err)
 		}

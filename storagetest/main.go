@@ -20,6 +20,22 @@ func hash(filename string) (storage.ID, error) {
 	return h.Sum([]byte{}), nil
 }
 
+func archive_dir(repo storage.Repository, path string) {
+	log.Printf("archiving dir %q", path)
+	// items := make()
+	// filepath.Walk(path, func(item string, info os.FileInfo, err error) error {
+	// 	log.Printf("  archiving %q", item)
+
+	// 	if item != path && info.IsDir() {
+	// 		archive_dir(repo, item)
+	// 	} else {
+
+	// 	}
+
+	// 	return nil
+	// })
+}
+
 func main() {
 	repo, err := storage.NewDir("repo")
 	if err != nil {
@@ -67,6 +83,10 @@ func main() {
 		err = repo.Link(name, id)
 		if err != nil {
 			log.Fatalf("error linking name %q to id %v", name, id)
+		}
+	case "putdir":
+		for _, dir := range os.Args[2:] {
+			archive_dir(repo, dir)
 		}
 	default:
 		log.Fatalf("unknown command: %q", os.Args[1])
