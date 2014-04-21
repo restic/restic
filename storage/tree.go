@@ -18,7 +18,7 @@ type Node struct {
 	ModTime time.Time   `json:"mtime"`
 	User    uint32      `json:"user"`
 	Group   uint32      `json:"group"`
-	Content ID          `json:"content"`
+	Content ID          `json:"content,omitempty"`
 }
 
 func NewTree() *Tree {

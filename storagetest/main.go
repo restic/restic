@@ -36,6 +36,11 @@ func archive_dir(repo storage.Repository, path string) (storage.ID, error) {
 		return nil, err
 	}
 
+	// use nil ID for empty directories
+	if len(entries) == 0 {
+		return nil, nil
+	}
+
 	t := storage.NewTree()
 	for _, e := range entries {
 		node := storage.NodeFromFileInfo(e)
