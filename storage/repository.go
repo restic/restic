@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -25,6 +24,7 @@ const (
 type Repository interface {
 	Put(reader io.Reader) (ID, error)
 	PutFile(path string) (ID, error)
+	PutRaw([]byte) (ID, error)
 	Get(ID) (io.Reader, error)
 	Test(ID) (bool, error)
 	Remove(ID) error
@@ -36,28 +36,6 @@ type Repository interface {
 var (
 	ErrIDDoesNotExist = errors.New("ID does not exist")
 )
-
-// References content within a repository.
-type ID []byte
-
-func (id ID) String() string {
-	return hex.EncodeToString(id)
-}
-
-// Equal compares an ID to another other.
-func (id ID) Equal(other ID) bool {
-	return bytes.Equal(id, other)
-}
-
-// EqualString compares this ID to another one, given as a string.
-func (id ID) EqualString(other string) (bool, error) {
-	s, err := hex.DecodeString(other)
-	if err != nil {
-		return false, err
-	}
-
-	return id.Equal(ID(s)), nil
-}
 
 // Name stands for the alias given to an ID.
 type Name string
@@ -154,6 +132,40 @@ func (r *DirRepository) PutFile(path string) (ID, error) {
 	}
 
 	return r.Put(f)
+}
+
+// PutRaw saves a []byte's content to the repository and returns the ID.
+func (r *DirRepository) PutRaw(buf []byte) (ID, error) {
+	// save contents to tempfile, hash while writing
+	file, err := ioutil.TempFile(path.Join(r.path, tempPath), "temp-")
+	if err != nil {
+		return nil, err
+	}
+
+	wr := hashing.NewWriter(file, r.hash)
+	n, err := wr.Write(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	if n != len(buf) {
+		return nil, errors.New("not all bytes written")
+	}
+
+	err = file.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// move file to final name using hash of contents
+	id := ID(wr.Hash())
+	filename := path.Join(r.path, objectPath, id.String())
+	err = os.Rename(file.Name(), filename)
+	if err != nil {
+		return nil, err
+	}
+
+	return id, nil
 }
 
 // Test returns true if the given ID exists in the repository.

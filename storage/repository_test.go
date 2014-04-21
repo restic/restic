@@ -2,7 +2,6 @@ package storage_test
 
 import (
 	"bytes"
-	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"os"
@@ -55,7 +54,7 @@ var _ = Describe("Storage", func() {
 		Context("File Operations", func() {
 			It("Should detect non-existing file", func() {
 				for _, test := range TestStrings {
-					id, err := hex.DecodeString(test.id)
+					id, err := storage.ParseID(test.id)
 					Expect(err).NotTo(HaveOccurred())
 
 					// try to get string out, should fail
@@ -94,6 +93,15 @@ var _ = Describe("Storage", func() {
 
 					// remove string
 					Expect(repo.Remove(id))
+				}
+			})
+
+			It("Should Add Buffer", func() {
+				for _, test := range TestStrings {
+					// store buf in repository
+					id, err := repo.PutRaw([]byte(test.data))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(id.String()).To(Equal(test.id))
 				}
 			})
 		})
