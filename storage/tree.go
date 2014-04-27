@@ -13,12 +13,13 @@ type Tree struct {
 }
 
 type Node struct {
-	Name    string      `json:"name"`
-	Mode    os.FileMode `json:"mode"`
-	ModTime time.Time   `json:"mtime"`
-	User    uint32      `json:"user"`
-	Group   uint32      `json:"group"`
-	Content ID          `json:"content,omitempty"`
+	Name       string      `json:"name"`
+	Mode       os.FileMode `json:"mode"`
+	ModTime    time.Time   `json:"mtime"`
+	AccessTime time.Time   `json:"atime"`
+	User       uint32      `json:"user"`
+	Group      uint32      `json:"group"`
+	Content    ID          `json:"content,omitempty"`
 }
 
 func NewTree() *Tree {
@@ -47,6 +48,7 @@ func NodeFromFileInfo(fi os.FileInfo) Node {
 	if stat, ok := fi.Sys().(*syscall.Stat_t); ok {
 		node.User = stat.Uid
 		node.Group = stat.Gid
+		node.AccessTime = time.Unix(stat.Atim.Unix())
 	}
 
 	return node
