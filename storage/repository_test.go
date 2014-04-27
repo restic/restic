@@ -25,7 +25,7 @@ var TestStrings = []struct {
 var _ = Describe("Storage", func() {
 	var (
 		tempdir string
-		repo    storage.Repository
+		repo    *storage.DirRepository
 		err     error
 		id      storage.ID
 	)

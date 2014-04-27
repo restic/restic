@@ -21,18 +21,6 @@ const (
 	tempPath   = "tmp"
 )
 
-type Repository interface {
-	Put(reader io.Reader) (ID, error)
-	PutFile(path string) (ID, error)
-	PutRaw([]byte) (ID, error)
-	Get(ID) (io.Reader, error)
-	Test(ID) (bool, error)
-	Remove(ID) error
-	Link(name string, id ID) error
-	Unlink(name string) error
-	Resolve(name string) (ID, error)
-}
-
 var (
 	ErrIDDoesNotExist = errors.New("ID does not exist")
 )
