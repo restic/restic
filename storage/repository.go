@@ -131,15 +131,10 @@ func (r *DirRepository) PutRaw(buf []byte) (ID, error) {
 	}
 
 	wr := hashing.NewWriter(file, r.hash)
-	n, err := wr.Write(buf)
+	_, err = wr.Write(buf)
 	if err != nil {
 		return nil, err
 	}
-
-	if n != len(buf) {
-		return nil, errors.New("not all bytes written")
-	}
-
 	err = file.Close()
 	if err != nil {
 		return nil, err
