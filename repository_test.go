@@ -1,4 +1,4 @@
-package storage_test
+package khepri_test
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fd0/khepri/storage"
+	"github.com/fd0/khepri"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -25,9 +25,9 @@ var TestStrings = []struct {
 var _ = Describe("Storage", func() {
 	var (
 		tempdir string
-		repo    *storage.DirRepository
+		repo    *khepri.DirRepository
 		err     error
-		id      storage.ID
+		id      khepri.ID
 	)
 
 	BeforeEach(func() {
@@ -35,7 +35,7 @@ var _ = Describe("Storage", func() {
 		if err != nil {
 			panic(err)
 		}
-		repo, err = storage.NewDirRepository(tempdir)
+		repo, err = khepri.NewDirRepository(tempdir)
 		if err != nil {
 			panic(err)
 		}
@@ -54,7 +54,7 @@ var _ = Describe("Storage", func() {
 		Context("File Operations", func() {
 			It("Should detect non-existing file", func() {
 				for _, test := range TestStrings {
-					id, err := storage.ParseID(test.id)
+					id, err := khepri.ParseID(test.id)
 					Expect(err).NotTo(HaveOccurred())
 
 					// try to get string out, should fail

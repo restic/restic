@@ -1,4 +1,4 @@
-package storage
+package khepri
 
 import (
 	"bytes"
@@ -19,6 +19,7 @@ func ParseID(s string) (ID, error) {
 
 	return ID(b), nil
 }
+
 func (id ID) String() string {
 	return hex.EncodeToString(id)
 }

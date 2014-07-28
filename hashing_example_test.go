@@ -1,4 +1,4 @@
-package hashing_test
+package khepri_test
 
 import (
 	"bytes"
@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fd0/khepri/hashing"
+	"github.com/fd0/khepri"
 )
 
 func ExampleReader() {
 	str := "foobar"
-	reader := hashing.NewReader(strings.NewReader(str), md5.New)
+	reader := khepri.NewHashingReader(strings.NewReader(str), md5.New)
 	buf := make([]byte, len(str))
 
 	reader.Read(buf)
@@ -25,7 +25,7 @@ func ExampleWriter() {
 	str := "foobar"
 	var buf bytes.Buffer
 
-	writer := hashing.NewWriter(&buf, sha1.New)
+	writer := khepri.NewHashingWriter(&buf, sha1.New)
 	writer.Write([]byte(str))
 
 	fmt.Printf("hash for %q is %02x", str, writer.Hash())

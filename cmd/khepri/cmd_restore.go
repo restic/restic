@@ -7,10 +7,10 @@ import (
 	"os"
 	"path"
 
-	"github.com/fd0/khepri/storage"
+	"github.com/fd0/khepri"
 )
 
-func restore_file(repo *storage.DirRepository, node storage.Node, target string) error {
+func restore_file(repo *khepri.DirRepository, node khepri.Node, target string) error {
 	fmt.Printf("  restore file %q\n", target)
 
 	rd, err := repo.Get(node.Content)
@@ -47,14 +47,14 @@ func restore_file(repo *storage.DirRepository, node storage.Node, target string)
 	return nil
 }
 
-func restore_dir(repo *storage.DirRepository, id storage.ID, target string) error {
+func restore_dir(repo *khepri.DirRepository, id khepri.ID, target string) error {
 	fmt.Printf("  restore dir %q\n", target)
 	rd, err := repo.Get(id)
 	if err != nil {
 		return err
 	}
 
-	t := storage.NewTree()
+	t := khepri.NewTree()
 	err = t.Restore(rd)
 	if err != nil {
 		return err
@@ -104,12 +104,12 @@ func restore_dir(repo *storage.DirRepository, id storage.ID, target string) erro
 	return nil
 }
 
-func commandRestore(repo *storage.DirRepository, args []string) error {
+func commandRestore(repo *khepri.DirRepository, args []string) error {
 	if len(args) != 2 {
 		return errors.New("usage: restore ID dir")
 	}
 
-	id, err := storage.ParseID(args[0])
+	id, err := khepri.ParseID(args[0])
 	if err != nil {
 		errmsg(1, "invalid id %q: %v", args[0], err)
 	}

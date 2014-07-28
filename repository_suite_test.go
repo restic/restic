@@ -1,12 +1,13 @@
-package hashing_test
+package khepri_test
 
 import (
-	"testing"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"testing"
 )
 
-func TestHashing(t *testing.T) {
+func TestStorage(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Hashing Suite")
+	RunSpecs(t, "Storage Suite")
 }

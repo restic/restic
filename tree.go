@@ -1,4 +1,4 @@
-package storage
+package khepri
 
 import (
 	"encoding/json"

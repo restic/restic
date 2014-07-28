@@ -1,13 +1,13 @@
-package storage_test
+package khepri_test
 
 import (
 	"bytes"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"strings"
 	"time"
 
-	"github.com/fd0/khepri/storage"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/fd0/khepri"
 )
 
 func parseTime(str string) time.Time {
@@ -20,13 +20,13 @@ func parseTime(str string) time.Time {
 }
 
 var _ = Describe("Tree", func() {
-	var t *storage.Tree
+	var t *khepri.Tree
 	var raw string
 
 	BeforeEach(func() {
-		t = new(storage.Tree)
-		t.Nodes = []storage.Node{
-			storage.Node{
+		t = new(khepri.Tree)
+		t.Nodes = []khepri.Node{
+			khepri.Node{
 				Name:       "foobar",
 				Mode:       0755,
 				ModTime:    parseTime("2014-04-20T22:16:54.161401+02:00"),
@@ -35,7 +35,7 @@ var _ = Describe("Tree", func() {
 				Group:      1001,
 				Content:    []byte{0x41, 0x42, 0x43},
 			},
-			storage.Node{
+			khepri.Node{
 				Name:       "baz",
 				Mode:       0755,
 				User:       1000,
@@ -54,7 +54,7 @@ var _ = Describe("Tree", func() {
 		t.Save(&buf)
 		Expect(strings.TrimRight(buf.String(), "\n")).To(Equal(raw))
 
-		t2 := new(storage.Tree)
+		t2 := new(khepri.Tree)
 		err := t2.Restore(&buf)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -69,7 +69,7 @@ var _ = Describe("Tree", func() {
 
 	It("Should restore", func() {
 		buf := bytes.NewBufferString(raw)
-		t2 := new(storage.Tree)
+		t2 := new(khepri.Tree)
 		err := t2.Restore(buf)
 		Expect(err).NotTo(HaveOccurred())
 
