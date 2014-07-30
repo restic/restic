@@ -2,21 +2,22 @@ package khepri
 
 import (
 	"crypto/sha256"
-	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 )
 
 const (
-	dirMode    = 0700
-	objectPath = "objects"
-	refPath    = "refs"
-	tempPath   = "tmp"
+	dirMode  = 0700
+	blobPath = "blobs"
+	refPath  = "refs"
+	tempPath = "tmp"
 )
 
 var (
@@ -33,6 +34,36 @@ func (n Name) Encode() string {
 type DirRepository struct {
 	path string
 	hash func() hash.Hash
+}
+
+type Type int
+
+const (
+	TypeUnknown = iota
+	TypeBlob
+	TypeRef
+)
+
+func NewTypeFromString(s string) Type {
+	switch s {
+	case "blob":
+		return TypeBlob
+	case "ref":
+		return TypeRef
+	}
+
+	panic(fmt.Sprintf("unknown type %q", s))
+}
+
+func (t Type) String() string {
+	switch t {
+	case TypeBlob:
+		return "blob"
+	case TypeRef:
+		return "ref"
+	}
+
+	panic(fmt.Sprintf("unknown type %d", t))
 }
 
 // NewDirRepository creates a new dir-baked repository at the given path.
@@ -54,7 +85,7 @@ func NewDirRepository(path string) (*DirRepository, error) {
 func (r *DirRepository) create() error {
 	dirs := []string{
 		r.path,
-		path.Join(r.path, objectPath),
+		path.Join(r.path, blobPath),
 		path.Join(r.path, refPath),
 		path.Join(r.path, tempPath),
 	}
@@ -79,10 +110,21 @@ func (r *DirRepository) Path() string {
 	return r.path
 }
 
+// Return temp directory in correct directory for this repository.
+func (r *DirRepository) tempFile() (*os.File, error) {
+	return ioutil.TempFile(path.Join(r.path, tempPath), "temp-")
+}
+
+// Rename temp file to final name according to type and ID.
+func (r *DirRepository) renameFile(file *os.File, t Type, id ID) error {
+	filename := path.Join(r.dir(t), id.String())
+	return os.Rename(file.Name(), filename)
+}
+
 // Put saves content and returns the ID.
-func (r *DirRepository) Put(reader io.Reader) (ID, error) {
+func (r *DirRepository) Put(t Type, reader io.Reader) (ID, error) {
 	// save contents to tempfile, hash while writing
-	file, err := ioutil.TempFile(path.Join(r.path, tempPath), "temp-")
+	file, err := r.tempFile()
 	if err != nil {
 		return nil, err
 	}
@@ -100,13 +142,29 @@ func (r *DirRepository) Put(reader io.Reader) (ID, error) {
 
 	// move file to final name using hash of contents
 	id := ID(rd.Hash())
-	filename := path.Join(r.path, objectPath, id.String())
-	err = os.Rename(file.Name(), filename)
+	err = r.renameFile(file, t, id)
 	if err != nil {
 		return nil, err
 	}
 
 	return id, nil
+}
+
+// Construct directory for given Type.
+func (r *DirRepository) dir(t Type) string {
+	switch t {
+	case TypeBlob:
+		return path.Join(r.path, blobPath)
+	case TypeRef:
+		return path.Join(r.path, refPath)
+	}
+
+	panic(fmt.Sprintf("unknown type %d", t))
+}
+
+// Construct path for given Type and ID.
+func (r *DirRepository) filename(t Type, id ID) string {
+	return path.Join(r.dir(t), id.String())
 }
 
 // PutFile saves a file's content to the repository and returns the ID.
@@ -117,13 +175,13 @@ func (r *DirRepository) PutFile(path string) (ID, error) {
 		return nil, err
 	}
 
-	return r.Put(f)
+	return r.Put(TypeBlob, f)
 }
 
 // PutRaw saves a []byte's content to the repository and returns the ID.
-func (r *DirRepository) PutRaw(buf []byte) (ID, error) {
+func (r *DirRepository) PutRaw(t Type, buf []byte) (ID, error) {
 	// save contents to tempfile, hash while writing
-	file, err := ioutil.TempFile(path.Join(r.path, tempPath), "temp-")
+	file, err := r.tempFile()
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +198,7 @@ func (r *DirRepository) PutRaw(buf []byte) (ID, error) {
 
 	// move file to final name using hash of contents
 	id := ID(wr.Hash())
-	filename := path.Join(r.path, objectPath, id.String())
-	err = os.Rename(file.Name(), filename)
+	err = r.renameFile(file, t, id)
 	if err != nil {
 		return nil, err
 	}
@@ -150,9 +207,9 @@ func (r *DirRepository) PutRaw(buf []byte) (ID, error) {
 }
 
 // Test returns true if the given ID exists in the repository.
-func (r *DirRepository) Test(id ID) (bool, error) {
+func (r *DirRepository) Test(t Type, id ID) (bool, error) {
 	// try to open file
-	file, err := os.Open(path.Join(r.path, objectPath, id.String()))
+	file, err := os.Open(r.filename(t, id))
 	defer func() {
 		file.Close()
 	}()
@@ -168,9 +225,9 @@ func (r *DirRepository) Test(id ID) (bool, error) {
 }
 
 // Get returns a reader for the content stored under the given ID.
-func (r *DirRepository) Get(id ID) (io.Reader, error) {
+func (r *DirRepository) Get(t Type, id ID) (io.Reader, error) {
 	// try to open file
-	file, err := os.Open(path.Join(r.path, objectPath, id.String()))
+	file, err := os.Open(r.filename(t, id))
 	if err != nil {
 		return nil, err
 	}
@@ -179,60 +236,66 @@ func (r *DirRepository) Get(id ID) (io.Reader, error) {
 }
 
 // Remove removes the content stored at ID.
-func (r *DirRepository) Remove(id ID) error {
-	return os.Remove(path.Join(r.path, objectPath, id.String()))
+func (r *DirRepository) Remove(t Type, id ID) error {
+	return os.Remove(r.filename(t, id))
 }
 
-// Unlink removes a named ID.
-func (r *DirRepository) Unlink(name string) error {
-	return os.Remove(path.Join(r.path, refPath, Name(name).Encode()))
-}
+type IDs []ID
 
-// Link assigns a name to an ID. Name must be unique in this repository and ID must exist.
-func (r *DirRepository) Link(name string, id ID) error {
-	exist, err := r.Test(id)
-	if err != nil {
-		return err
-	}
+// Lists all objects of a given type.
+func (r *DirRepository) ListIDs(t Type) (IDs, error) {
+	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
+	pattern := path.Join(r.dir(t), "*")
 
-	if !exist {
-		return ErrIDDoesNotExist
-	}
-
-	// create file, write id
-	f, err := os.Create(path.Join(r.path, refPath, Name(name).Encode()))
-	defer f.Close()
-
-	if err != nil {
-		return err
-	}
-
-	f.Write([]byte(hex.EncodeToString(id)))
-	return nil
-}
-
-// Resolve returns the ID associated with the given name.
-func (r *DirRepository) Resolve(name string) (ID, error) {
-	f, err := os.Open(path.Join(r.path, refPath, Name(name).Encode()))
-	defer f.Close()
+	matches, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err
 	}
 
-	// read hex string
-	l := r.hash().Size()
-	buf := make([]byte, l*2)
-	_, err = io.ReadFull(f, buf)
+	ids := make(IDs, 0, len(matches))
 
-	if err != nil {
-		return nil, err
+	for _, m := range matches {
+		base := filepath.Base(m)
+
+		if base == "" {
+			continue
+		}
+		id, err := ParseID(base)
+
+		if err != nil {
+			continue
+		}
+
+		ids = append(ids, id)
 	}
 
-	id := make([]byte, l)
-	_, err = hex.Decode(id, buf)
-	if err != nil {
-		return nil, err
+	return ids, nil
+}
+
+func (ids IDs) Len() int {
+	return len(ids)
+}
+
+func (ids IDs) Less(i, j int) bool {
+	if len(ids[i]) < len(ids[j]) {
+		return true
 	}
 
-	return ID(id), nil
+	for k, b := range ids[i] {
+		if b == ids[j][k] {
+			continue
+		}
+
+		if b < ids[j][k] {
+			return true
+		} else {
+			return false
+		}
+	}
+
+	return false
+}
+
+func (ids IDs) Swap(i, j int) {
+	ids[i], ids[j] = ids[j], ids[i]
 }
