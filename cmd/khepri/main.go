@@ -30,6 +30,7 @@ func init() {
 	commands = make(map[string]commandFunc)
 	commands["backup"] = commandBackup
 	commands["restore"] = commandRestore
+	commands["list"] = commandList
 }
 
 func main() {
