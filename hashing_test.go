@@ -5,77 +5,74 @@ import (
 	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
 	"hash"
+	"io/ioutil"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"testing"
 
 	"github.com/fd0/khepri"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Hashing", func() {
-	var static_tests = []struct {
-		hash   func() hash.Hash
-		text   string
-		digest string
-	}{
-		{md5.New, "foobar\n", "14758f1afd44c09b7992073ccf00b43d"},
-		// test data from http://www.nsrl.nist.gov/testdata/
-		{sha1.New, "abc", "a9993e364706816aba3e25717850c26c9cd0d89d"},
-		{sha1.New, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "84983e441c3bd26ebaae4aa1f95129e5e54670f1"},
+// assert fails the test if the condition is false.
+func assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
+	if !condition {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
+		tb.FailNow()
 	}
+}
 
-	Describe("Reader", func() {
-		Context("Static Strings", func() {
-			It("Should compute digest", func() {
-				for _, t := range static_tests {
-					r := khepri.NewHashingReader(bytes.NewBuffer([]byte(t.text)), t.hash)
+// ok fails the test if an err is not nil.
+func ok(tb testing.TB, err error) {
+	if err != nil {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("\033[31m%s:%d: unexpected error: %s\033[39m\n\n", filepath.Base(file), line, err.Error())
+		tb.FailNow()
+	}
+}
 
-					n, err := r.Read(make([]byte, len(t.text)+1))
+// equals fails the test if exp is not equal to act.
+func equals(tb testing.TB, exp, act interface{}) {
+	if !reflect.DeepEqual(exp, act) {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
+		tb.FailNow()
+	}
+}
 
-					if n != len(t.text) {
-						Fail("not enough bytes read")
-					}
+var static_tests = []struct {
+	hash   func() hash.Hash
+	text   string
+	digest string
+}{
+	{md5.New, "foobar\n", "14758f1afd44c09b7992073ccf00b43d"},
+	// test data from http://www.nsrl.nist.gov/testdata/
+	{sha1.New, "abc", "a9993e364706816aba3e25717850c26c9cd0d89d"},
+	{sha1.New, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq", "84983e441c3bd26ebaae4aa1f95129e5e54670f1"},
+}
 
-					if err != nil {
-						panic(err)
-					}
+func TestReader(t *testing.T) {
+	for _, test := range static_tests {
+		r := khepri.NewHashingReader(bytes.NewBuffer([]byte(test.text)), test.hash)
+		buf, err := ioutil.ReadAll(r)
+		ok(t, err)
+		equals(t, test.text, string(buf))
 
-					digest := r.Hash()
+		equals(t, hex.EncodeToString(r.Hash()), test.digest)
+	}
+}
 
-					h := hex.EncodeToString(digest)
-					Expect(h).Should(Equal(t.digest))
-				}
-			})
-		})
+func TestWriter(t *testing.T) {
+	for _, test := range static_tests {
+		var buf bytes.Buffer
+		w := khepri.NewHashingWriter(&buf, test.hash)
 
-		Context("Random Strings", func() {
+		_, err := w.Write([]byte(test.text))
+		ok(t, err)
 
-		})
-	})
-
-	Describe("Writer", func() {
-		Context("Static Strings", func() {
-			It("Should compute digest", func() {
-				for _, t := range static_tests {
-					var buf bytes.Buffer
-					w := khepri.NewHashingWriter(&buf, t.hash)
-
-					n, err := w.Write([]byte(t.text))
-
-					if n != len(t.text) {
-						Fail("not enough bytes written")
-					}
-
-					if err != nil {
-						panic(err)
-					}
-
-					digest := w.Hash()
-
-					h := hex.EncodeToString(digest)
-					Expect(h).Should(Equal(t.digest))
-				}
-			})
-		})
-	})
-})
+		equals(t, hex.EncodeToString(w.Hash()), test.digest)
+	}
+}

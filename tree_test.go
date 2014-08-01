@@ -2,9 +2,8 @@ package khepri_test
 
 import (
 	"bytes"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/fd0/khepri"
@@ -19,13 +18,9 @@ func parseTime(str string) time.Time {
 	return t
 }
 
-var _ = Describe("Tree", func() {
-	var t *khepri.Tree
-	var raw string
-
-	BeforeEach(func() {
-		t = new(khepri.Tree)
-		t.Nodes = []khepri.Node{
+func TestTree(t *testing.T) {
+	var tree = &khepri.Tree{
+		Nodes: []khepri.Node{
 			khepri.Node{
 				Name:       "foobar",
 				Mode:       0755,
@@ -44,36 +39,34 @@ var _ = Describe("Tree", func() {
 				Group:      1001,
 				Content:    []byte("\xde\xad\xbe\xef\xba\xdc\x0d\xe0"),
 			},
-		}
+		},
+	}
 
-		raw = `{"nodes":[{"name":"foobar","mode":493,"mtime":"2014-04-20T22:16:54.161401+02:00","atime":"2014-04-21T22:16:54.161401+02:00","user":1000,"group":1001,"content":"414243"},{"name":"baz","mode":493,"mtime":"2014-04-20T22:16:54.161401+02:00","atime":"2014-04-21T22:16:54.161401+02:00","user":1000,"group":1001,"content":"deadbeefbadc0de0"}]}`
-	})
+	const raw = `{"nodes":[{"name":"foobar","mode":493,"mtime":"2014-04-20T22:16:54.161401+02:00","atime":"2014-04-21T22:16:54.161401+02:00","user":1000,"group":1001,"content":"414243"},{"name":"baz","mode":493,"mtime":"2014-04-20T22:16:54.161401+02:00","atime":"2014-04-21T22:16:54.161401+02:00","user":1000,"group":1001,"content":"deadbeefbadc0de0"}]}`
 
-	It("Should save", func() {
-		var buf bytes.Buffer
-		t.Save(&buf)
-		Expect(strings.TrimRight(buf.String(), "\n")).To(Equal(raw))
+	// test save
+	buf := &bytes.Buffer{}
 
-		t2 := new(khepri.Tree)
-		err := t2.Restore(&buf)
-		Expect(err).NotTo(HaveOccurred())
+	tree.Save(buf)
+	equals(t, raw, strings.TrimRight(buf.String(), "\n"))
 
-		// test tree for equality
-		Expect(t2).To(Equal(t))
+	tree2 := new(khepri.Tree)
+	err := tree2.Restore(buf)
+	ok(t, err)
+	equals(t, tree, tree2)
 
-		// test nodes for equality
-		for i, n := range t.Nodes {
-			Expect(n.Content).To(Equal(t2.Nodes[i].Content))
-		}
-	})
+	// test nodes for equality
+	for i, n := range tree.Nodes {
+		equals(t, n.Content, tree2.Nodes[i].Content)
+	}
 
-	It("Should restore", func() {
-		buf := bytes.NewBufferString(raw)
-		t2 := new(khepri.Tree)
-		err := t2.Restore(buf)
-		Expect(err).NotTo(HaveOccurred())
+	// test restore
+	buf = bytes.NewBufferString(raw)
 
-		// test if tree has correctly been restored
-		Expect(t2).To(Equal(t))
-	})
-})
+	tree2 = new(khepri.Tree)
+	err = tree2.Restore(buf)
+	ok(t, err)
+
+	// test if tree has correctly been restored
+	equals(t, tree, tree2)
+}

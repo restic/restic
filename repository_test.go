@@ -1,17 +1,18 @@
 package khepri_test
 
 import (
-	"bytes"
-	"io"
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
+	"testing"
 
 	"github.com/fd0/khepri"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
+
+var testCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove repository directory with all content)")
 
 var TestStrings = []struct {
 	id   string
@@ -24,106 +25,114 @@ var TestStrings = []struct {
 	{"4e54d2c721cbdb730f01b10b62dec622962b36966ec685880effa63d71c808f2", khepri.TypeBlob, "foo/../../baz"},
 }
 
-var _ = Describe("Storage", func() {
-	var (
-		tempdir string
-		repo    *khepri.DirRepository
-		err     error
-		id      khepri.ID
-	)
+func setupRepo() (*khepri.DirRepository, error) {
+	tempdir, err := ioutil.TempDir("", "khepri-test-")
+	if err != nil {
+		return nil, err
+	}
 
-	var _ = BeforeSuite(func() {
-		tempdir, err = ioutil.TempDir("", "khepri-test-")
-		if err != nil {
-			panic(err)
+	repo, err := khepri.NewDirRepository(tempdir)
+	if err != nil {
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+func teardownRepo(repo *khepri.DirRepository) error {
+	if !*testCleanup {
+		fmt.Fprintf(os.Stderr, "leaving repository at %s\n", repo.Path())
+		return nil
+	}
+
+	err := os.RemoveAll(repo.Path())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TestRepository(t *testing.T) {
+	repo, err := setupRepo()
+	ok(t, err)
+
+	defer func() {
+		err = teardownRepo(repo)
+		ok(t, err)
+	}()
+
+	// detect non-existing files
+	for _, test := range TestStrings {
+		id, err := khepri.ParseID(test.id)
+		ok(t, err)
+
+		// try to get string out, should fail
+		ret, err := repo.Test(test.t, id)
+		ok(t, err)
+		assert(t, !ret, fmt.Sprintf("id %q was found (but should not have)", test.id))
+	}
+
+	// add files
+	for _, test := range TestStrings {
+		// store string in repository
+		id, err := repo.Put(test.t, strings.NewReader(test.data))
+		ok(t, err)
+		equals(t, test.id, id.String())
+
+		// try to get it out again
+		rd, err := repo.Get(test.t, id)
+		ok(t, err)
+		assert(t, rd != nil, "Get() returned nil reader")
+
+		// compare content
+		buf, err := ioutil.ReadAll(rd)
+		equals(t, test.data, string(buf))
+	}
+
+	// add buffer
+	for _, test := range TestStrings {
+		// store buf in repository
+		id, err := repo.PutRaw(test.t, []byte(test.data))
+		ok(t, err)
+		equals(t, test.id, id.String())
+	}
+
+	// list ids
+	for _, tpe := range []khepri.Type{khepri.TypeBlob, khepri.TypeRef} {
+		IDs := khepri.IDs{}
+		for _, test := range TestStrings {
+			if test.t == tpe {
+				id, err := khepri.ParseID(test.id)
+				ok(t, err)
+				IDs = append(IDs, id)
+			}
 		}
-		repo, err = khepri.NewDirRepository(tempdir)
-		if err != nil {
-			panic(err)
+
+		ids, err := repo.ListIDs(tpe)
+		ok(t, err)
+
+		sort.Sort(ids)
+		sort.Sort(IDs)
+		equals(t, IDs, ids)
+	}
+
+	// remove content if requested
+	if *testCleanup {
+		for _, test := range TestStrings {
+			id, err := khepri.ParseID(test.id)
+			ok(t, err)
+
+			found, err := repo.Test(test.t, id)
+			ok(t, err)
+			assert(t, found, fmt.Sprintf("id %q was not found before removal"))
+
+			err = repo.Remove(test.t, id)
+			ok(t, err)
+
+			found, err = repo.Test(test.t, id)
+			ok(t, err)
+			assert(t, !found, fmt.Sprintf("id %q was not found before removal"))
 		}
-	})
-
-	AfterSuite(func() {
-		err = os.RemoveAll(tempdir)
-		if err != nil {
-			panic(err)
-		}
-		// fmt.Fprintf(os.Stderr, "leaving tempdir %s", tempdir)
-		tempdir = ""
-	})
-
-	Describe("Repository", func() {
-		Context("File Operations", func() {
-			It("Should detect non-existing file", func() {
-				for _, test := range TestStrings {
-					id, err := khepri.ParseID(test.id)
-					Expect(err).NotTo(HaveOccurred())
-
-					// try to get string out, should fail
-					ret, err := repo.Test(test.t, id)
-					Expect(ret).Should(Equal(false))
-				}
-			})
-
-			It("Should Add File", func() {
-				for _, test := range TestStrings {
-					// store string in repository
-					id, err = repo.Put(test.t, strings.NewReader(test.data))
-
-					Expect(err).NotTo(HaveOccurred())
-					Expect(id.String()).Should(Equal(test.id))
-
-					// try to get it out again
-					var buf bytes.Buffer
-					rd, err := repo.Get(test.t, id)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(rd).ShouldNot(BeNil())
-
-					// compare content
-					Expect(io.Copy(&buf, rd)).Should(Equal(int64(len(test.data))))
-					Expect(buf.Bytes()).Should(Equal([]byte(test.data)))
-				}
-			})
-
-			It("Should Add Buffer", func() {
-				for _, test := range TestStrings {
-					// store buf in repository
-					id, err := repo.PutRaw(test.t, []byte(test.data))
-					Expect(err).NotTo(HaveOccurred())
-					Expect(id.String()).To(Equal(test.id))
-				}
-			})
-
-			It("Should List IDs", func() {
-				for _, t := range []khepri.Type{khepri.TypeBlob, khepri.TypeRef} {
-					IDs := khepri.IDs{}
-					for _, test := range TestStrings {
-						if test.t == t {
-							id, err := khepri.ParseID(test.id)
-							Expect(err).NotTo(HaveOccurred())
-							IDs = append(IDs, id)
-						}
-					}
-
-					ids, err := repo.ListIDs(t)
-
-					sort.Sort(ids)
-					sort.Sort(IDs)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(ids).Should(Equal(IDs))
-				}
-			})
-
-			It("Should Remove Content", func() {
-				for _, test := range TestStrings {
-					id, err := khepri.ParseID(test.id)
-					Expect(err).ShouldNot(HaveOccurred())
-					Expect(repo.Test(test.t, id)).To(Equal(true))
-					Expect(repo.Remove(test.t, id))
-					Expect(repo.Test(test.t, id)).To(Equal(false))
-				}
-			})
-		})
-	})
-
-})
+	}
+}
