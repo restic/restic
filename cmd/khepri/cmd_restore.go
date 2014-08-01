@@ -13,7 +13,7 @@ import (
 func restore_file(repo *khepri.DirRepository, node khepri.Node, target string) error {
 	fmt.Printf("  restore file %q\n", target)
 
-	rd, err := repo.Get(node.Content)
+	rd, err := repo.Get(khepri.TypeBlob, node.Content)
 	if err != nil {
 		return err
 	}
@@ -49,7 +49,7 @@ func restore_file(repo *khepri.DirRepository, node khepri.Node, target string) e
 
 func restore_dir(repo *khepri.DirRepository, id khepri.ID, target string) error {
 	fmt.Printf("  restore dir %q\n", target)
-	rd, err := repo.Get(id)
+	rd, err := repo.Get(khepri.TypeRef, id)
 	if err != nil {
 		return err
 	}
