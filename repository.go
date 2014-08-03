@@ -39,17 +39,16 @@ type DirRepository struct {
 type Type int
 
 const (
-	TypeUnknown = iota
-	TypeBlob
-	TypeRef
+	TYPE_BLOB = iota
+	TYPE_REF
 )
 
 func NewTypeFromString(s string) Type {
 	switch s {
 	case "blob":
-		return TypeBlob
+		return TYPE_BLOB
 	case "ref":
-		return TypeRef
+		return TYPE_REF
 	}
 
 	panic(fmt.Sprintf("unknown type %q", s))
@@ -57,9 +56,9 @@ func NewTypeFromString(s string) Type {
 
 func (t Type) String() string {
 	switch t {
-	case TypeBlob:
+	case TYPE_BLOB:
 		return "blob"
-	case TypeRef:
+	case TYPE_REF:
 		return "ref"
 	}
 
@@ -153,9 +152,9 @@ func (r *DirRepository) Put(t Type, reader io.Reader) (ID, error) {
 // Construct directory for given Type.
 func (r *DirRepository) dir(t Type) string {
 	switch t {
-	case TypeBlob:
+	case TYPE_BLOB:
 		return path.Join(r.path, blobPath)
-	case TypeRef:
+	case TYPE_REF:
 		return path.Join(r.path, refPath)
 	}
 
@@ -175,7 +174,7 @@ func (r *DirRepository) PutFile(path string) (ID, error) {
 		return nil, err
 	}
 
-	return r.Put(TypeBlob, f)
+	return r.Put(TYPE_BLOB, f)
 }
 
 // PutRaw saves a []byte's content to the repository and returns the ID.

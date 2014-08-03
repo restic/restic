@@ -14,7 +14,7 @@ var Opts struct {
 	Repo string `short:"r" long:"repo"    description:"Repository directory to backup to/restor from"`
 }
 
-func errmsg(code int, format string, data ...interface{}) {
+func errx(code int, format string, data ...interface{}) {
 	if len(format) > 0 && format[len(format)-1] != '\n' {
 		format += "\n"
 	}
@@ -58,17 +58,17 @@ func main() {
 
 	f, ok := commands[cmd]
 	if !ok {
-		errmsg(1, "unknown command: %q\n", cmd)
+		errx(1, "unknown command: %q\n", cmd)
 	}
 
 	repo, err := khepri.NewDirRepository(Opts.Repo)
 
 	if err != nil {
-		errmsg(1, "unable to create/open repo: %v", err)
+		errx(1, "unable to create/open repo: %v", err)
 	}
 
 	err = f(repo, args[1:])
 	if err != nil {
-		errmsg(1, "error executing command %q: %v", cmd, err)
+		errx(1, "error executing command %q: %v", cmd, err)
 	}
 }

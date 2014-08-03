@@ -70,7 +70,7 @@ func archive_dir(repo *khepri.DirRepository, path string) (khepri.ID, error) {
 
 	var buf bytes.Buffer
 	t.Save(&buf)
-	id, err := repo.PutRaw(khepri.TypeRef, buf.Bytes())
+	id, err := repo.PutRaw(khepri.TYPE_BLOB, buf.Bytes())
 
 	if err != nil {
 		log.Printf("error saving tree to repo: %v", err)

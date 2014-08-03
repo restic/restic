@@ -19,10 +19,10 @@ var TestStrings = []struct {
 	t    khepri.Type
 	data string
 }{
-	{"c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2", khepri.TypeBlob, "foobar"},
-	{"248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1", khepri.TypeBlob, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"},
-	{"cc5d46bdb4991c6eae3eb739c9c8a7a46fe9654fab79c47b4fe48383b5b25e1c", khepri.TypeRef, "foo/bar"},
-	{"4e54d2c721cbdb730f01b10b62dec622962b36966ec685880effa63d71c808f2", khepri.TypeBlob, "foo/../../baz"},
+	{"c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2", khepri.TYPE_BLOB, "foobar"},
+	{"248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1", khepri.TYPE_BLOB, "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"},
+	{"cc5d46bdb4991c6eae3eb739c9c8a7a46fe9654fab79c47b4fe48383b5b25e1c", khepri.TYPE_REF, "foo/bar"},
+	{"4e54d2c721cbdb730f01b10b62dec622962b36966ec685880effa63d71c808f2", khepri.TYPE_BLOB, "foo/../../baz"},
 }
 
 func setupRepo() (*khepri.DirRepository, error) {
@@ -99,7 +99,7 @@ func TestRepository(t *testing.T) {
 	}
 
 	// list ids
-	for _, tpe := range []khepri.Type{khepri.TypeBlob, khepri.TypeRef} {
+	for _, tpe := range []khepri.Type{khepri.TYPE_BLOB, khepri.TYPE_REF} {
 		IDs := khepri.IDs{}
 		for _, test := range TestStrings {
 			if test.t == tpe {
