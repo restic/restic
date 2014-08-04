@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -22,6 +21,30 @@ func hash(filename string) (khepri.ID, error) {
 
 	io.Copy(h, f)
 	return h.Sum([]byte{}), nil
+}
+
+func store_file(repo *khepri.Repository, path string) (khepri.ID, error) {
+	obj, err := repo.NewObject(khepri.TYPE_BLOB)
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := os.Open(path)
+	defer func() {
+		file.Close()
+	}()
+
+	_, err = io.Copy(obj, file)
+	if err != nil {
+		return nil, err
+	}
+
+	err = obj.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return obj.ID(), nil
 }
 
 func archive_dir(repo *khepri.Repository, path string) (khepri.ID, error) {
@@ -54,7 +77,7 @@ func archive_dir(repo *khepri.Repository, path string) (khepri.ID, error) {
 		if e.IsDir() {
 			id, err = archive_dir(repo, filepath.Join(path, e.Name()))
 		} else {
-			id, err = repo.PutFile(filepath.Join(path, e.Name()))
+			id, err = store_file(repo, filepath.Join(path, e.Name()))
 		}
 
 		node.Content = id
@@ -69,14 +92,21 @@ func archive_dir(repo *khepri.Repository, path string) (khepri.ID, error) {
 
 	log.Printf("  dir %q: %v entries", path, len(t.Nodes))
 
-	var buf bytes.Buffer
-	t.Save(&buf)
-	id, err := repo.PutRaw(khepri.TYPE_BLOB, buf.Bytes())
+	obj, err := repo.NewObject(khepri.TYPE_BLOB)
 
+	if err != nil {
+		log.Printf("error creating object for tree: %v", err)
+		return nil, err
+	}
+
+	err = t.Save(obj)
 	if err != nil {
 		log.Printf("error saving tree to repo: %v", err)
 	}
 
+	obj.Close()
+
+	id := obj.ID()
 	log.Printf("tree for %q saved at %s", path, id)
 
 	return id, nil
