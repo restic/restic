@@ -31,6 +31,7 @@ func init() {
 	commands["backup"] = commandBackup
 	commands["restore"] = commandRestore
 	commands["list"] = commandList
+	commands["snapshots"] = commandSnapshots
 }
 
 func main() {
