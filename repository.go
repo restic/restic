@@ -31,7 +31,7 @@ func (n Name) Encode() string {
 	return url.QueryEscape(string(n))
 }
 
-type DirRepository struct {
+type Repository struct {
 	path string
 	hash func() hash.Hash
 }
@@ -66,8 +66,8 @@ func (t Type) String() string {
 }
 
 // NewDirRepository creates a new dir-baked repository at the given path.
-func NewDirRepository(path string) (*DirRepository, error) {
-	d := &DirRepository{
+func NewRepository(path string) (*Repository, error) {
+	d := &Repository{
 		path: path,
 		hash: sha256.New,
 	}
@@ -81,7 +81,7 @@ func NewDirRepository(path string) (*DirRepository, error) {
 	return d, nil
 }
 
-func (r *DirRepository) create() error {
+func (r *Repository) create() error {
 	dirs := []string{
 		r.path,
 		path.Join(r.path, blobPath),
@@ -100,28 +100,28 @@ func (r *DirRepository) create() error {
 }
 
 // SetHash changes the hash function used for deriving IDs. Default is SHA256.
-func (r *DirRepository) SetHash(h func() hash.Hash) {
+func (r *Repository) SetHash(h func() hash.Hash) {
 	r.hash = h
 }
 
 // Path returns the directory used for this repository.
-func (r *DirRepository) Path() string {
+func (r *Repository) Path() string {
 	return r.path
 }
 
 // Return temp directory in correct directory for this repository.
-func (r *DirRepository) tempFile() (*os.File, error) {
+func (r *Repository) tempFile() (*os.File, error) {
 	return ioutil.TempFile(path.Join(r.path, tempPath), "temp-")
 }
 
 // Rename temp file to final name according to type and ID.
-func (r *DirRepository) renameFile(file *os.File, t Type, id ID) error {
+func (r *Repository) renameFile(file *os.File, t Type, id ID) error {
 	filename := path.Join(r.dir(t), id.String())
 	return os.Rename(file.Name(), filename)
 }
 
 // Put saves content and returns the ID.
-func (r *DirRepository) Put(t Type, reader io.Reader) (ID, error) {
+func (r *Repository) Put(t Type, reader io.Reader) (ID, error) {
 	// save contents to tempfile, hash while writing
 	file, err := r.tempFile()
 	if err != nil {
@@ -150,7 +150,7 @@ func (r *DirRepository) Put(t Type, reader io.Reader) (ID, error) {
 }
 
 // Construct directory for given Type.
-func (r *DirRepository) dir(t Type) string {
+func (r *Repository) dir(t Type) string {
 	switch t {
 	case TYPE_BLOB:
 		return path.Join(r.path, blobPath)
@@ -162,12 +162,12 @@ func (r *DirRepository) dir(t Type) string {
 }
 
 // Construct path for given Type and ID.
-func (r *DirRepository) filename(t Type, id ID) string {
+func (r *Repository) filename(t Type, id ID) string {
 	return path.Join(r.dir(t), id.String())
 }
 
 // PutFile saves a file's content to the repository and returns the ID.
-func (r *DirRepository) PutFile(path string) (ID, error) {
+func (r *Repository) PutFile(path string) (ID, error) {
 	f, err := os.Open(path)
 	defer f.Close()
 	if err != nil {
@@ -178,7 +178,7 @@ func (r *DirRepository) PutFile(path string) (ID, error) {
 }
 
 // PutRaw saves a []byte's content to the repository and returns the ID.
-func (r *DirRepository) PutRaw(t Type, buf []byte) (ID, error) {
+func (r *Repository) PutRaw(t Type, buf []byte) (ID, error) {
 	// save contents to tempfile, hash while writing
 	file, err := r.tempFile()
 	if err != nil {
@@ -206,7 +206,7 @@ func (r *DirRepository) PutRaw(t Type, buf []byte) (ID, error) {
 }
 
 // Test returns true if the given ID exists in the repository.
-func (r *DirRepository) Test(t Type, id ID) (bool, error) {
+func (r *Repository) Test(t Type, id ID) (bool, error) {
 	// try to open file
 	file, err := os.Open(r.filename(t, id))
 	defer func() {
@@ -224,7 +224,7 @@ func (r *DirRepository) Test(t Type, id ID) (bool, error) {
 }
 
 // Get returns a reader for the content stored under the given ID.
-func (r *DirRepository) Get(t Type, id ID) (io.Reader, error) {
+func (r *Repository) Get(t Type, id ID) (io.Reader, error) {
 	// try to open file
 	file, err := os.Open(r.filename(t, id))
 	if err != nil {
@@ -235,14 +235,14 @@ func (r *DirRepository) Get(t Type, id ID) (io.Reader, error) {
 }
 
 // Remove removes the content stored at ID.
-func (r *DirRepository) Remove(t Type, id ID) error {
+func (r *Repository) Remove(t Type, id ID) error {
 	return os.Remove(r.filename(t, id))
 }
 
 type IDs []ID
 
 // Lists all objects of a given type.
-func (r *DirRepository) ListIDs(t Type) (IDs, error) {
+func (r *Repository) ListIDs(t Type) (IDs, error) {
 	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
 	pattern := path.Join(r.dir(t), "*")
 

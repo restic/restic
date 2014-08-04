@@ -25,13 +25,13 @@ var TestStrings = []struct {
 	{"4e54d2c721cbdb730f01b10b62dec622962b36966ec685880effa63d71c808f2", khepri.TYPE_BLOB, "foo/../../baz"},
 }
 
-func setupRepo() (*khepri.DirRepository, error) {
+func setupRepo() (*khepri.Repository, error) {
 	tempdir, err := ioutil.TempDir("", "khepri-test-")
 	if err != nil {
 		return nil, err
 	}
 
-	repo, err := khepri.NewDirRepository(tempdir)
+	repo, err := khepri.NewRepository(tempdir)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func setupRepo() (*khepri.DirRepository, error) {
 	return repo, nil
 }
 
-func teardownRepo(repo *khepri.DirRepository) error {
+func teardownRepo(repo *khepri.Repository) error {
 	if !*testCleanup {
 		fmt.Fprintf(os.Stderr, "leaving repository at %s\n", repo.Path())
 		return nil

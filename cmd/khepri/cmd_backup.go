@@ -24,8 +24,9 @@ func hash(filename string) (khepri.ID, error) {
 	return h.Sum([]byte{}), nil
 }
 
-func archive_dir(repo *khepri.DirRepository, path string) (khepri.ID, error) {
+func archive_dir(repo *khepri.Repository, path string) (khepri.ID, error) {
 	log.Printf("archiving dir %q", path)
+
 	dir, err := os.Open(path)
 	if err != nil {
 		log.Printf("open(%q): %v\n", path, err)
@@ -81,7 +82,7 @@ func archive_dir(repo *khepri.DirRepository, path string) (khepri.ID, error) {
 	return id, nil
 }
 
-func commandBackup(repo *khepri.DirRepository, args []string) error {
+func commandBackup(repo *khepri.Repository, args []string) error {
 	if len(args) != 1 {
 		return errors.New("usage: backup dir")
 	}
@@ -93,7 +94,11 @@ func commandBackup(repo *khepri.DirRepository, args []string) error {
 		return err
 	}
 
-	fmt.Printf("%q archived as %v\n", target, id)
+	sn := repo.NewSnapshot(target)
+	sn.Tree = id
+	sn.Save()
+
+	fmt.Printf("%q archived as %v\n", target, sn.ID())
 
 	return nil
 }

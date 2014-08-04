@@ -8,7 +8,7 @@ import (
 	"github.com/fd0/khepri"
 )
 
-func commandList(repo *khepri.DirRepository, args []string) error {
+func commandList(repo *khepri.Repository, args []string) error {
 	if len(args) != 1 {
 		return errors.New("usage: list [blob|ref]")
 	}

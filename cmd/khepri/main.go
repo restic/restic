@@ -22,7 +22,7 @@ func errx(code int, format string, data ...interface{}) {
 	os.Exit(code)
 }
 
-type commandFunc func(*khepri.DirRepository, []string) error
+type commandFunc func(*khepri.Repository, []string) error
 
 var commands map[string]commandFunc
 
@@ -61,7 +61,7 @@ func main() {
 		errx(1, "unknown command: %q\n", cmd)
 	}
 
-	repo, err := khepri.NewDirRepository(Opts.Repo)
+	repo, err := khepri.NewRepository(Opts.Repo)
 
 	if err != nil {
 		errx(1, "unable to create/open repo: %v", err)

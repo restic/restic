@@ -10,7 +10,7 @@ import (
 	"github.com/fd0/khepri"
 )
 
-func restore_file(repo *khepri.DirRepository, node khepri.Node, target string) error {
+func restore_file(repo *khepri.Repository, node khepri.Node, target string) error {
 	fmt.Printf("  restore file %q\n", target)
 
 	rd, err := repo.Get(khepri.TYPE_BLOB, node.Content)
@@ -47,7 +47,7 @@ func restore_file(repo *khepri.DirRepository, node khepri.Node, target string) e
 	return nil
 }
 
-func restore_dir(repo *khepri.DirRepository, id khepri.ID, target string) error {
+func restore_dir(repo *khepri.Repository, id khepri.ID, target string) error {
 	fmt.Printf("  restore dir %q\n", target)
 	rd, err := repo.Get(khepri.TYPE_REF, id)
 	if err != nil {
@@ -104,7 +104,7 @@ func restore_dir(repo *khepri.DirRepository, id khepri.ID, target string) error 
 	return nil
 }
 
-func commandRestore(repo *khepri.DirRepository, args []string) error {
+func commandRestore(repo *khepri.Repository, args []string) error {
 	if len(args) != 2 {
 		return errors.New("usage: restore ID dir")
 	}
