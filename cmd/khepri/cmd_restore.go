@@ -127,7 +127,7 @@ func commandRestore(repo *khepri.Repository, args []string) error {
 		log.Fatalf("error loading snapshot %s", id)
 	}
 
-	err = restore_dir(repo, sn.Tree, target)
+	err = restore_dir(repo, sn.TreeID, target)
 	if err != nil {
 		return err
 	}

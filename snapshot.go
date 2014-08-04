@@ -9,7 +9,7 @@ import (
 
 type Snapshot struct {
 	Time     time.Time `json:"time"`
-	Tree     ID        `json:"tree"`
+	TreeID   ID        `json:"tree"`
 	Dir      string    `json:"dir"`
 	Hostname string    `json:"hostname,omitempty"`
 	Username string    `json:"username,omitempty"`
@@ -39,7 +39,7 @@ func NewSnapshot(dir string) *Snapshot {
 }
 
 func (sn *Snapshot) Save(repo *Repository) (ID, error) {
-	if sn.Tree == nil {
+	if sn.TreeID == nil {
 		panic("Snapshot.Save() called with nil tree id")
 	}
 

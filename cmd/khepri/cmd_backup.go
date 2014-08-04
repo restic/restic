@@ -125,7 +125,7 @@ func commandBackup(repo *khepri.Repository, args []string) error {
 	}
 
 	sn := khepri.NewSnapshot(target)
-	sn.Tree = id
+	sn.TreeID = id
 	snid, err := sn.Save(repo)
 
 	if err != nil {
