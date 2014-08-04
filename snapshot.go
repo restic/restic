@@ -15,14 +15,11 @@ type Snapshot struct {
 	Username string    `json:"username,omitempty"`
 	UID      string    `json:"uid,omitempty"`
 	GID      string    `json:"gid,omitempty"`
-	id       ID
-	repo     *Repository
 }
 
-func (repo *Repository) NewSnapshot(dir string) *Snapshot {
+func NewSnapshot(dir string) *Snapshot {
 	sn := &Snapshot{
 		Dir:  dir,
-		repo: repo,
 		Time: time.Now(),
 	}
 
@@ -41,31 +38,43 @@ func (repo *Repository) NewSnapshot(dir string) *Snapshot {
 	return sn
 }
 
-func (sn *Snapshot) Save() error {
+func (sn *Snapshot) Save(repo *Repository) (ID, error) {
 	if sn.Tree == nil {
 		panic("Snapshot.Save() called with nil tree id")
 	}
 
-	obj, err := sn.repo.NewObject(TYPE_REF)
+	obj, id_ch, err := repo.Create(TYPE_REF)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	enc := json.NewEncoder(obj)
 	err = enc.Encode(sn)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = obj.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	sn.id = obj.ID()
-	return nil
+	return <-id_ch, nil
 }
 
-func (sn *Snapshot) ID() ID {
-	return sn.id
+func LoadSnapshot(repo *Repository, id ID) (*Snapshot, error) {
+	rd, err := repo.Get(TYPE_REF, id)
+	if err != nil {
+		return nil, err
+	}
+
+	dec := json.NewDecoder(rd)
+	sn := &Snapshot{}
+	err = dec.Decode(sn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return sn, nil
 }

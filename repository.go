@@ -151,7 +151,7 @@ func (r *Repository) Test(t Type, id ID) (bool, error) {
 }
 
 // Get returns a reader for the content stored under the given ID.
-func (r *Repository) Get(t Type, id ID) (io.Reader, error) {
+func (r *Repository) Get(t Type, id ID) (io.ReadCloser, error) {
 	// try to open file
 	file, err := os.Open(r.filename(t, id))
 	if err != nil {

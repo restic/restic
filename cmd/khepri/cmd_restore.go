@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 
@@ -49,7 +50,7 @@ func restore_file(repo *khepri.Repository, node khepri.Node, target string) erro
 
 func restore_dir(repo *khepri.Repository, id khepri.ID, target string) error {
 	fmt.Printf("  restore dir %q\n", target)
-	rd, err := repo.Get(khepri.TYPE_REF, id)
+	rd, err := repo.Get(khepri.TYPE_BLOB, id)
 	if err != nil {
 		return err
 	}
@@ -121,7 +122,12 @@ func commandRestore(repo *khepri.Repository, args []string) error {
 		return err
 	}
 
-	err = restore_dir(repo, id, target)
+	sn, err := khepri.LoadSnapshot(repo, id)
+	if err != nil {
+		log.Fatalf("error loading snapshot %s", id)
+	}
+
+	err = restore_dir(repo, sn.Tree, target)
 	if err != nil {
 		return err
 	}

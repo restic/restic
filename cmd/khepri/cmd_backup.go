@@ -24,7 +24,7 @@ func hash(filename string) (khepri.ID, error) {
 }
 
 func store_file(repo *khepri.Repository, path string) (khepri.ID, error) {
-	obj, err := repo.NewObject(khepri.TYPE_BLOB)
+	obj, idch, err := repo.Create(khepri.TYPE_BLOB)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func store_file(repo *khepri.Repository, path string) (khepri.ID, error) {
 		return nil, err
 	}
 
-	return obj.ID(), nil
+	return <-idch, nil
 }
 
 func archive_dir(repo *khepri.Repository, path string) (khepri.ID, error) {
@@ -92,7 +92,7 @@ func archive_dir(repo *khepri.Repository, path string) (khepri.ID, error) {
 
 	log.Printf("  dir %q: %v entries", path, len(t.Nodes))
 
-	obj, err := repo.NewObject(khepri.TYPE_BLOB)
+	obj, idch, err := repo.Create(khepri.TYPE_BLOB)
 
 	if err != nil {
 		log.Printf("error creating object for tree: %v", err)
@@ -106,7 +106,7 @@ func archive_dir(repo *khepri.Repository, path string) (khepri.ID, error) {
 
 	obj.Close()
 
-	id := obj.ID()
+	id := <-idch
 	log.Printf("tree for %q saved at %s", path, id)
 
 	return id, nil
@@ -124,11 +124,15 @@ func commandBackup(repo *khepri.Repository, args []string) error {
 		return err
 	}
 
-	sn := repo.NewSnapshot(target)
+	sn := khepri.NewSnapshot(target)
 	sn.Tree = id
-	sn.Save()
+	snid, err := sn.Save(repo)
 
-	fmt.Printf("%q archived as %v\n", target, sn.ID())
+	if err != nil {
+		log.Printf("error saving snapshopt: %v", err)
+	}
+
+	fmt.Printf("%q archived as %v\n", target, snid)
 
 	return nil
 }
