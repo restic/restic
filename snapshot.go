@@ -68,6 +68,8 @@ func LoadSnapshot(repo *Repository, id ID) (*Snapshot, error) {
 		return nil, err
 	}
 
+	// TODO: maybe inject a hashing reader here and test if the given id is correct
+
 	dec := json.NewDecoder(rd)
 	sn := &Snapshot{}
 	err = dec.Decode(sn)
