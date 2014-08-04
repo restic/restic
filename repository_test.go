@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
-	"strings"
 	"testing"
 
 	"github.com/fd0/khepri"
@@ -76,8 +75,16 @@ func TestRepository(t *testing.T) {
 	// add files
 	for _, test := range TestStrings {
 		// store string in repository
-		id, err := repo.Put(test.t, strings.NewReader(test.data))
+		obj, err := repo.NewObject(test.t)
 		ok(t, err)
+
+		_, err = obj.Write([]byte(test.data))
+		ok(t, err)
+
+		err = obj.Close()
+		ok(t, err)
+
+		id := obj.ID()
 		equals(t, test.id, id.String())
 
 		// try to get it out again
@@ -88,14 +95,6 @@ func TestRepository(t *testing.T) {
 		// compare content
 		buf, err := ioutil.ReadAll(rd)
 		equals(t, test.data, string(buf))
-	}
-
-	// add buffer
-	for _, test := range TestStrings {
-		// store buf in repository
-		id, err := repo.PutRaw(test.t, []byte(test.data))
-		ok(t, err)
-		equals(t, test.id, id.String())
 	}
 
 	// list ids

@@ -120,35 +120,6 @@ func (r *Repository) renameFile(file *os.File, t Type, id ID) error {
 	return os.Rename(file.Name(), filename)
 }
 
-// Put saves content and returns the ID.
-func (r *Repository) Put(t Type, reader io.Reader) (ID, error) {
-	// save contents to tempfile, hash while writing
-	file, err := r.tempFile()
-	if err != nil {
-		return nil, err
-	}
-
-	rd := NewHashingReader(reader, r.hash)
-	_, err = io.Copy(file, rd)
-	if err != nil {
-		return nil, err
-	}
-
-	err = file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// move file to final name using hash of contents
-	id := ID(rd.Hash())
-	err = r.renameFile(file, t, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return id, nil
-}
-
 // Construct directory for given Type.
 func (r *Repository) dir(t Type) string {
 	switch t {
@@ -164,45 +135,6 @@ func (r *Repository) dir(t Type) string {
 // Construct path for given Type and ID.
 func (r *Repository) filename(t Type, id ID) string {
 	return path.Join(r.dir(t), id.String())
-}
-
-// PutFile saves a file's content to the repository and returns the ID.
-func (r *Repository) PutFile(path string) (ID, error) {
-	f, err := os.Open(path)
-	defer f.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return r.Put(TYPE_BLOB, f)
-}
-
-// PutRaw saves a []byte's content to the repository and returns the ID.
-func (r *Repository) PutRaw(t Type, buf []byte) (ID, error) {
-	// save contents to tempfile, hash while writing
-	file, err := r.tempFile()
-	if err != nil {
-		return nil, err
-	}
-
-	wr := NewHashingWriter(file, r.hash)
-	_, err = wr.Write(buf)
-	if err != nil {
-		return nil, err
-	}
-	err = file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// move file to final name using hash of contents
-	id := ID(wr.Hash())
-	err = r.renameFile(file, t, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return id, nil
 }
 
 // Test returns true if the given ID exists in the repository.
