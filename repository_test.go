@@ -108,7 +108,7 @@ func TestRepository(t *testing.T) {
 			}
 		}
 
-		ids, err := repo.ListIDs(tpe)
+		ids, err := repo.List(tpe)
 		ok(t, err)
 
 		sort.Sort(ids)

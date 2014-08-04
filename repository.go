@@ -169,7 +169,7 @@ func (r *Repository) Remove(t Type, id ID) error {
 type IDs []ID
 
 // Lists all objects of a given type.
-func (r *Repository) ListIDs(t Type) (IDs, error) {
+func (r *Repository) List(t Type) (IDs, error) {
 	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
 	pattern := path.Join(r.dir(t), "*")
 

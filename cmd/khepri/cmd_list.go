@@ -15,7 +15,7 @@ func commandList(repo *khepri.Repository, args []string) error {
 
 	tpe := khepri.NewTypeFromString(args[0])
 
-	ids, err := repo.ListIDs(tpe)
+	ids, err := repo.List(tpe)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return nil
