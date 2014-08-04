@@ -99,11 +99,6 @@ func (r *Repository) create() error {
 	return nil
 }
 
-// SetHash changes the hash function used for deriving IDs. Default is SHA256.
-func (r *Repository) SetHash(h func() hash.Hash) {
-	r.hash = h
-}
-
 // Path returns the directory used for this repository.
 func (r *Repository) Path() string {
 	return r.path
