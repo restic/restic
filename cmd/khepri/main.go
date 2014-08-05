@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -36,6 +37,8 @@ func init() {
 }
 
 func main() {
+	log.SetOutput(os.Stdout)
+
 	Opts.Repo = os.Getenv("KHEPRI_REPOSITORY")
 	if Opts.Repo == "" {
 		Opts.Repo = "khepri-backup"

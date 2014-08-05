@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -12,7 +11,7 @@ import (
 )
 
 func restore_file(repo *khepri.Repository, node khepri.Node, target string) error {
-	fmt.Printf("  restore file %q\n", target)
+	log.Printf("  restore file %q\n", target)
 
 	rd, err := repo.Get(khepri.TYPE_BLOB, node.Content)
 	if err != nil {
@@ -49,7 +48,7 @@ func restore_file(repo *khepri.Repository, node khepri.Node, target string) erro
 }
 
 func restore_dir(repo *khepri.Repository, id khepri.ID, target string) error {
-	fmt.Printf("  restore dir %q\n", target)
+	log.Printf("  restore dir %q\n", target)
 	rd, err := repo.Get(khepri.TYPE_BLOB, id)
 	if err != nil {
 		return err
@@ -132,7 +131,7 @@ func commandRestore(repo *khepri.Repository, args []string) error {
 		return err
 	}
 
-	fmt.Printf("%q restored to %q\n", id, target)
+	log.Printf("%q restored to %q\n", id, target)
 
 	return nil
 }
