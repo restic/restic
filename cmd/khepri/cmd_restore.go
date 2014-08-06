@@ -68,7 +68,7 @@ func restore_dir(repo *khepri.Repository, id khepri.ID, target string) error {
 
 		nodepath := path.Join(target, name)
 		if node.Mode.IsDir() {
-			err = os.MkdirAll(nodepath, 0700)
+			err = os.Mkdir(nodepath, 0700)
 			if err != nil {
 				return err
 			}
@@ -83,16 +83,16 @@ func restore_dir(repo *khepri.Repository, id khepri.ID, target string) error {
 				return err
 			}
 
+			err = restore_dir(repo, node.Content, nodepath)
+			if err != nil {
+				return err
+			}
+
 			err = os.Chtimes(nodepath, node.AccessTime, node.ModTime)
 			if err != nil {
 				return err
 			}
 
-			err = restore_dir(repo, node.Content, nodepath)
-
-			if err != nil {
-				return err
-			}
 		} else {
 			err = restore_file(repo, node, nodepath)
 			if err != nil {

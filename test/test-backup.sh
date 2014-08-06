@@ -1,5 +1,7 @@
+set -e
+
 prepare
-run k backup "${BASE}/fake-data"
-run k restore "$(k list ref)" "${BASE}/fake-data-restore"
-diff -aur "${BASE}/fake-data" "${BASE}/fake-data-restore"
+run khepri backup "${BASE}/fake-data"
+run khepri restore "$(khepri list ref)" "${BASE}/fake-data-restore"
+dirdiff "${BASE}/fake-data" "${BASE}/fake-data-restore"
 cleanup

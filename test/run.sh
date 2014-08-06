@@ -3,12 +3,9 @@
 set -e
 
 export khepri="${1:-khepri}"; shift
+export dirdiff="${1:-dirdiff}"; shift
 export dir=$(dirname "$0")
 export fake_data_file="${dir}/fake-data.tar.gz"
-
-k() {
-    "${khepri}" "$@"
-}
 
 prepare() {
     export BASE="$(mktemp --tmpdir --directory khepri-testsuite-XXXXXX)"
@@ -31,6 +28,14 @@ cleanup() {
     debug "removed dir ${BASE}"
     unset BASE
     unset KHEPRI_REPOSITORY
+}
+
+khepri() {
+    "${khepri}" "$@"
+}
+
+dirdiff() {
+    "${dirdiff}" "$@"
 }
 
 msg() {
@@ -64,7 +69,7 @@ run() {
     fi
 }
 
-export -f k prepare cleanup msg debug pass err fail run
+export -f khepri dirdiff prepare cleanup msg debug pass err fail run
 
 if [ ! -x "$khepri" ]; then
     fail khepri binary not found!
@@ -81,10 +86,5 @@ echo "testfiles: $testfiles"
 for testfile in "$testfiles"; do
     current=$(basename "${testfile}" .sh)
 
-    bash "${testfile}"
-    if [ "$?" != "0" ]; then
-        err "${current} failed!"
-    else
-        pass "${current} pass"
-    fi
+    bash "${testfile}" && pass "${current} pass" || err "${current} failed!"
 done
