@@ -2,9 +2,13 @@
 
 test:
 	go test
-	$(MAKE) -C cmd/khepri
-	test/run.sh cmd/khepri/khepri
+	for dir in cmd/* ; do \
+		(cd "$$dir"; go build) \
+	done
+	test/run.sh cmd/khepri/khepri cmd/dirdiff/dirdiff
 
 clean:
 	go clean
-	$(MAKE) -C cmd/khepri test
+	for dir in cmd/* ; do \
+		(cd "$$dir"; go clean) \
+	done
