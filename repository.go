@@ -31,9 +31,11 @@ func (n Name) Encode() string {
 	return url.QueryEscape(string(n))
 }
 
+type HashFunc func() hash.Hash
+
 type Repository struct {
 	path string
-	hash func() hash.Hash
+	hash HashFunc
 }
 
 type Type int
@@ -97,6 +99,11 @@ func (r *Repository) create() error {
 	}
 
 	return nil
+}
+
+// SetHash changes the hash function used for deriving IDs. Default is SHA256.
+func (r *Repository) SetHash(h HashFunc) {
+	r.hash = h
 }
 
 // Path returns the directory used for this repository.

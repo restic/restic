@@ -2,44 +2,95 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
+	"syscall"
 
 	"github.com/fd0/khepri"
 )
 
-func restore_file(repo *khepri.Repository, node khepri.Node, target string) error {
-	log.Printf("  restore file %q\n", target)
+func restore_file(repo *khepri.Repository, node *khepri.Node, path string) (err error) {
+	switch node.Type {
+	case "file":
+		// TODO: handle hard links
+		rd, err := repo.Get(khepri.TYPE_BLOB, node.Content)
+		if err != nil {
+			return err
+		}
 
-	rd, err := repo.Get(khepri.TYPE_BLOB, node.Content)
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
+		defer f.Close()
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(f, rd)
+		if err != nil {
+			return err
+		}
+
+	case "symlink":
+		err = os.Symlink(node.LinkTarget, path)
+		if err != nil {
+			return err
+		}
+
+		err = os.Lchown(path, int(node.UID), int(node.GID))
+		if err != nil {
+			return err
+		}
+
+		f, err := os.OpenFile(path, khepri.O_PATH|syscall.O_NOFOLLOW, 0600)
+		defer f.Close()
+		if err != nil {
+			return err
+		}
+
+		var utimes = []syscall.Timeval{
+			syscall.NsecToTimeval(node.AccessTime.UnixNano()),
+			syscall.NsecToTimeval(node.ModTime.UnixNano()),
+		}
+		err = syscall.Futimes(int(f.Fd()), utimes)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	case "dev":
+		err = syscall.Mknod(path, syscall.S_IFBLK|0600, int(node.Device))
+		if err != nil {
+			return err
+		}
+	case "chardev":
+		err = syscall.Mknod(path, syscall.S_IFCHR|0600, int(node.Device))
+		if err != nil {
+			return err
+		}
+	case "fifo":
+		err = syscall.Mkfifo(path, 0600)
+		if err != nil {
+			return err
+		}
+	case "socket":
+		// nothing to do, we do not restore sockets
+	default:
+		return fmt.Errorf("filetype %q not implemented!\n", node.Type)
+	}
+
+	err = os.Chmod(path, node.Mode)
 	if err != nil {
 		return err
 	}
 
-	f, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY, 0600)
-	defer f.Close()
+	err = os.Chown(path, int(node.UID), int(node.GID))
 	if err != nil {
 		return err
 	}
 
-	_, err = io.Copy(f, rd)
-	if err != nil {
-		return err
-	}
-
-	err = f.Chmod(node.Mode)
-	if err != nil {
-		return err
-	}
-
-	err = f.Chown(int(node.User), int(node.Group))
-	if err != nil {
-		return err
-	}
-
-	err = os.Chtimes(target, node.AccessTime, node.ModTime)
+	err = os.Chtimes(path, node.AccessTime, node.ModTime)
 	if err != nil {
 		return err
 	}
@@ -47,61 +98,48 @@ func restore_file(repo *khepri.Repository, node khepri.Node, target string) erro
 	return nil
 }
 
-func restore_dir(repo *khepri.Repository, id khepri.ID, target string) error {
-	log.Printf("  restore dir %q\n", target)
-	rd, err := repo.Get(khepri.TYPE_BLOB, id)
-	if err != nil {
-		return err
-	}
+func restore_subtree(repo *khepri.Repository, tree *khepri.Tree, path string) {
+	fmt.Printf("restore_subtree(%s)\n", path)
 
-	t := khepri.NewTree()
-	err = t.Restore(rd)
-	if err != nil {
-		return err
-	}
+	for _, node := range tree.Nodes {
+		nodepath := filepath.Join(path, node.Name)
+		// fmt.Printf("%s:%s\n", node.Type, nodepath)
 
-	for _, node := range t.Nodes {
-		name := path.Base(node.Name)
-		if name == "." || name == ".." {
-			return errors.New("invalid path")
-		}
-
-		nodepath := path.Join(target, name)
-		if node.Mode.IsDir() {
-			err = os.Mkdir(nodepath, 0700)
+		if node.Type == "dir" {
+			err := os.Mkdir(nodepath, 0700)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
 			}
 
 			err = os.Chmod(nodepath, node.Mode)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
 			}
 
-			err = os.Chown(nodepath, int(node.User), int(node.Group))
+			err = os.Chown(nodepath, int(node.UID), int(node.GID))
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
 			}
 
-			err = restore_dir(repo, node.Content, nodepath)
-			if err != nil {
-				return err
-			}
+			restore_subtree(repo, node.Tree, filepath.Join(path, node.Name))
 
 			err = os.Chtimes(nodepath, node.AccessTime, node.ModTime)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
 			}
 
 		} else {
-			err = restore_file(repo, node, nodepath)
+			err := restore_file(repo, node, nodepath)
 			if err != nil {
-				return err
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
 			}
 		}
 	}
-
-	return nil
 }
 
 func commandRestore(repo *khepri.Repository, args []string) error {
@@ -126,10 +164,12 @@ func commandRestore(repo *khepri.Repository, args []string) error {
 		log.Fatalf("error loading snapshot %s", id)
 	}
 
-	err = restore_dir(repo, sn.TreeID, target)
+	tree, err := khepri.NewTreeFromRepo(repo, sn.Content)
 	if err != nil {
-		return err
+		log.Fatalf("error loading tree %s", sn.Content)
 	}
+
+	restore_subtree(repo, tree, target)
 
 	log.Printf("%q restored to %q\n", id, target)
 

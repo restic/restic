@@ -41,7 +41,7 @@ func fsck_snapshot(repo *khepri.Repository, id khepri.ID) (bool, error) {
 		return false, err
 	}
 
-	return fsck_tree(repo, sn.TreeID)
+	return fsck_tree(repo, sn.Content)
 }
 
 func commandFsck(repo *khepri.Repository, args []string) error {

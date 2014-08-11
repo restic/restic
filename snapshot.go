@@ -2,6 +2,7 @@ package khepri
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/user"
 	"time"
@@ -9,12 +10,14 @@ import (
 
 type Snapshot struct {
 	Time     time.Time `json:"time"`
-	TreeID   ID        `json:"tree"`
+	Content  ID        `json:"content"`
+	Tree     *Tree     `json:"-"`
 	Dir      string    `json:"dir"`
 	Hostname string    `json:"hostname,omitempty"`
 	Username string    `json:"username,omitempty"`
 	UID      string    `json:"uid,omitempty"`
 	GID      string    `json:"gid,omitempty"`
+	id       ID        `json:omit`
 }
 
 func NewSnapshot(dir string) *Snapshot {
@@ -39,7 +42,7 @@ func NewSnapshot(dir string) *Snapshot {
 }
 
 func (sn *Snapshot) Save(repo *Repository) (ID, error) {
-	if sn.TreeID == nil {
+	if sn.Content == nil {
 		panic("Snapshot.Save() called with nil tree id")
 	}
 
@@ -59,7 +62,9 @@ func (sn *Snapshot) Save(repo *Repository) (ID, error) {
 		return nil, err
 	}
 
-	return <-id_ch, nil
+	sn.id = <-id_ch
+
+	return sn.id, nil
 }
 
 func LoadSnapshot(repo *Repository, id ID) (*Snapshot, error) {
@@ -78,5 +83,15 @@ func LoadSnapshot(repo *Repository, id ID) (*Snapshot, error) {
 		return nil, err
 	}
 
+	sn.id = id
+
 	return sn, nil
+}
+
+func (sn *Snapshot) ID() ID {
+	return sn.id
+}
+
+func (sn *Snapshot) String() string {
+	return fmt.Sprintf("<Snapshot of %q at %s>", sn.Dir, sn.Time.Format(time.RFC822Z))
 }
