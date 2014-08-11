@@ -35,6 +35,7 @@ type Node struct {
 	Content    ID          `json:"content,omitempty"`
 	Subtree    ID          `json:"subtree,omitempty"`
 	Tree       *Tree       `json:"-"`
+	repo       *Repository
 }
 
 func NewTree() *Tree {
@@ -65,6 +66,7 @@ func NewTreeFromPath(repo *Repository, dir string) (*Tree, error) {
 		if err != nil {
 			return nil, err
 		}
+		node.repo = repo
 
 		tree.Nodes = append(tree.Nodes, node)
 
@@ -152,6 +154,8 @@ func NewTreeFromRepo(repo *Repository, id ID) (*Tree, error) {
 	}
 
 	for _, node := range tree.Nodes {
+		node.repo = repo
+
 		if node.Subtree != nil {
 			node.Tree, err = NewTreeFromRepo(repo, node.Subtree)
 			if err != nil {
@@ -161,6 +165,53 @@ func NewTreeFromRepo(repo *Repository, id ID) (*Tree, error) {
 	}
 
 	return tree, nil
+}
+
+func (tree *Tree) CreateAt(path string) error {
+	for _, node := range tree.Nodes {
+		nodepath := filepath.Join(path, node.Name)
+		// fmt.Printf("%s:%s\n", node.Type, nodepath)
+
+		if node.Type == "dir" {
+			err := os.Mkdir(nodepath, 0700)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
+			}
+
+			err = os.Chmod(nodepath, node.Mode)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
+			}
+
+			err = os.Chown(nodepath, int(node.UID), int(node.GID))
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
+			}
+
+			err = node.Tree.CreateAt(filepath.Join(path, node.Name))
+			if err != nil {
+				return err
+			}
+
+			err = os.Chtimes(nodepath, node.AccessTime, node.ModTime)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
+			}
+
+		} else {
+			err := node.CreateAt(nodepath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%s\n", err)
+				continue
+			}
+		}
+	}
+
+	return nil
 }
 
 // TODO: make sure that node.Type is valid
@@ -236,4 +287,95 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 
 	err := node.fill_extra(path, fi)
 	return node, err
+}
+
+func (node *Node) CreateAt(path string) error {
+	if node.repo == nil {
+		return fmt.Errorf("repository is nil!")
+	}
+
+	switch node.Type {
+	case "file":
+		// TODO: handle hard links
+		rd, err := node.repo.Get(TYPE_BLOB, node.Content)
+		if err != nil {
+			return err
+		}
+
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
+		defer f.Close()
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(f, rd)
+		if err != nil {
+			return err
+		}
+
+		f.Close()
+	case "symlink":
+		err := os.Symlink(node.LinkTarget, path)
+		if err != nil {
+			return err
+		}
+
+		err = os.Lchown(path, int(node.UID), int(node.GID))
+		if err != nil {
+			return err
+		}
+
+		f, err := os.OpenFile(path, O_PATH|syscall.O_NOFOLLOW, 0600)
+		defer f.Close()
+		if err != nil {
+			return err
+		}
+
+		var utimes = []syscall.Timeval{
+			syscall.NsecToTimeval(node.AccessTime.UnixNano()),
+			syscall.NsecToTimeval(node.ModTime.UnixNano()),
+		}
+		err = syscall.Futimes(int(f.Fd()), utimes)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	case "dev":
+		err := syscall.Mknod(path, syscall.S_IFBLK|0600, int(node.Device))
+		if err != nil {
+			return err
+		}
+	case "chardev":
+		err := syscall.Mknod(path, syscall.S_IFCHR|0600, int(node.Device))
+		if err != nil {
+			return err
+		}
+	case "fifo":
+		err := syscall.Mkfifo(path, 0600)
+		if err != nil {
+			return err
+		}
+	case "socket":
+		// nothing to do, we do not restore sockets
+	default:
+		return fmt.Errorf("filetype %q not implemented!\n", node.Type)
+	}
+
+	err := os.Chmod(path, node.Mode)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chown(path, int(node.UID), int(node.GID))
+	if err != nil {
+		return err
+	}
+
+	err = os.Chtimes(path, node.AccessTime, node.ModTime)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

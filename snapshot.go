@@ -18,6 +18,7 @@ type Snapshot struct {
 	UID      string    `json:"uid,omitempty"`
 	GID      string    `json:"gid,omitempty"`
 	id       ID        `json:omit`
+	repo     *Repository
 }
 
 func NewSnapshot(dir string) *Snapshot {
@@ -84,8 +85,25 @@ func LoadSnapshot(repo *Repository, id ID) (*Snapshot, error) {
 	}
 
 	sn.id = id
+	sn.repo = repo
 
 	return sn, nil
+}
+
+func (sn *Snapshot) RestoreAt(path string) error {
+	err := os.MkdirAll(path, 0700)
+	if err != nil {
+		return err
+	}
+
+	if sn.Tree == nil {
+		sn.Tree, err = NewTreeFromRepo(sn.repo, sn.Content)
+		if err != nil {
+			return err
+		}
+	}
+
+	return sn.Tree.CreateAt(path)
 }
 
 func (sn *Snapshot) ID() ID {
