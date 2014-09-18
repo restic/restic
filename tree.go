@@ -1,6 +1,7 @@
 package khepri
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/fd0/khepri/chunker"
 )
 
 type Tree struct {
@@ -32,7 +35,7 @@ type Node struct {
 	Links      uint64      `json:"links,omitempty"`
 	LinkTarget string      `json:"linktarget,omitempty"`
 	Device     uint64      `json:"device,omitempty"`
-	Content    ID          `json:"content,omitempty"`
+	Content    []ID        `json:"content,omitempty"`
 	Subtree    ID          `json:"subtree,omitempty"`
 	Tree       *Tree       `json:"-"`
 	repo       *Repository
@@ -42,6 +45,21 @@ func NewTree() *Tree {
 	return &Tree{
 		Nodes: []*Node{},
 	}
+}
+
+func store_chunk(repo *Repository, rd io.Reader) (ID, error) {
+	wr, idch, err := repo.Create(TYPE_BLOB)
+	if err != nil {
+		return nil, err
+	}
+
+	io.Copy(wr, rd)
+	err = wr.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return <-idch, nil
 }
 
 func NewTreeFromPath(repo *Repository, dir string) (*Tree, error) {
@@ -85,18 +103,38 @@ func NewTreeFromPath(repo *Repository, dir string) (*Tree, error) {
 				return nil, err
 			}
 
-			wr, idch, err := repo.Create(TYPE_BLOB)
-			if err != nil {
-				return nil, err
-			}
+			if node.Size < chunker.MinSize {
+				// if the file is small enough, store it directly
+				id, err := store_chunk(repo, file)
 
-			io.Copy(wr, file)
-			err = wr.Close()
-			if err != nil {
-				return nil, err
-			}
+				if err != nil {
+					return nil, err
+				}
 
-			node.Content = <-idch
+				node.Content = []ID{id}
+
+			} else {
+				// else store chunks
+				node.Content = []ID{}
+				ch := chunker.New(file)
+
+				for {
+					chunk, err := ch.Next()
+
+					if err == io.EOF {
+						break
+					}
+
+					if err != nil {
+						return nil, err
+					}
+
+					id, err := store_chunk(repo, bytes.NewBuffer(chunk.Data))
+
+					node.Content = append(node.Content, id)
+				}
+
+			}
 		}
 	}
 
@@ -297,20 +335,22 @@ func (node *Node) CreateAt(path string) error {
 	switch node.Type {
 	case "file":
 		// TODO: handle hard links
-		rd, err := node.repo.Get(TYPE_BLOB, node.Content)
-		if err != nil {
-			return err
-		}
-
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 		defer f.Close()
 		if err != nil {
 			return err
 		}
 
-		_, err = io.Copy(f, rd)
-		if err != nil {
-			return err
+		for _, blobid := range node.Content {
+			rd, err := node.repo.Get(TYPE_BLOB, blobid)
+			if err != nil {
+				return err
+			}
+
+			_, err = io.Copy(f, rd)
+			if err != nil {
+				return err
+			}
 		}
 
 		f.Close()
