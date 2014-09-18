@@ -43,12 +43,17 @@ type Chunk struct {
 
 // A chunker takes a stream of bytes and emits average size chunks.
 type Chunker interface {
+	// Next returns the next chunk of data. If an error occurs while reading,
+	// the error is returned. The state of the current chunk is undefined. When
+	// the last chunk has been returned, all subsequent calls yield a nil chunk
+	// and an io.EOF error.
 	Next() (*Chunk, error)
 }
 
 // A chunker internally holds everything needed to split content.
 type chunker struct {
-	rd io.Reader
+	rd     io.Reader
+	closed bool
 
 	window []byte
 	wpos   int
@@ -141,13 +146,25 @@ func (c *chunker) Next() (*Chunk, error) {
 				err = nil
 			}
 
-			if err != nil {
+			// io.ReadFull only returns io.EOF when no bytes could be read. If
+			// this is the case and we're in this branch, there are no more
+			// bytes to buffer, so this was the last chunk. If a different
+			// error has occurred, return that error and abandon the current
+			// chunk.
+			if err == io.EOF && !c.closed {
+				c.closed = true
+
+				// return current chunk
 				return &Chunk{
 					Start:  c.start,
 					Length: c.count,
 					Cut:    c.digest,
 					Data:   c.data,
-				}, err
+				}, nil
+			}
+
+			if err != nil {
+				return nil, err
 			}
 
 			c.bpos = 0

@@ -50,14 +50,8 @@ func test_with_data(t *testing.T, chunker chunker.Chunker, chunks []chunk) {
 	for i, chunk := range chunks {
 		c, err := chunker.Next()
 
-		if i < len(chunks)-1 {
-			if err != nil {
-				t.Fatalf("Error returned with chunk %d: %v", i, err)
-			}
-		} else {
-			if err != io.EOF {
-				t.Fatalf("EOF not returned with chunk %d", i)
-			}
+		if err != nil {
+			t.Fatalf("Error returned with chunk %d: %v", i, err)
 		}
 
 		if c == nil {
@@ -75,6 +69,16 @@ func test_with_data(t *testing.T, chunker chunker.Chunker, chunks []chunk) {
 					i, chunk.CutFP, c.Cut)
 			}
 		}
+	}
+
+	c, err := chunker.Next()
+
+	if c != nil {
+		t.Fatal("additional non-nil chunk returned")
+	}
+
+	if err != io.EOF {
+		t.Fatal("wrong error returned after last chunk")
 	}
 }
 
@@ -117,15 +121,15 @@ func BenchmarkChunker(b *testing.B) {
 		for {
 			_, err := ch.Next()
 
-			chunks++
-
-			if err != nil && err != io.EOF {
-				b.Fatalf("Unexpected error occurred: %v", err)
-			}
-
 			if err == io.EOF {
 				break
 			}
+
+			if err != nil {
+				b.Fatalf("Unexpected error occurred: %v", err)
+			}
+
+			chunks++
 		}
 	}
 
