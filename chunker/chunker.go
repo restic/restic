@@ -44,9 +44,9 @@ type Chunk struct {
 // A chunker takes a stream of bytes and emits average size chunks.
 type Chunker interface {
 	// Next returns the next chunk of data. If an error occurs while reading,
-	// the error is returned. The state of the current chunk is undefined. When
-	// the last chunk has been returned, all subsequent calls yield a nil chunk
-	// and an io.EOF error.
+	// the error is returned with a nil chunk. The state of the current chunk
+	// is undefined. When the last chunk has been returned, all subsequent
+	// calls yield a nil chunk and an io.EOF error.
 	Next() (*Chunk, error)
 }
 
