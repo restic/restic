@@ -186,7 +186,7 @@ func (c *chunker) Next() (*Chunk, error) {
 			c.digest ^= mod_table[index]
 
 			if (c.count+i+1 >= MinSize && (c.digest&splitmask) == 0) || c.count+i+1 >= MaxSize {
-				c.data = append(c.data, c.buf[c.bpos:c.bpos+i]...)
+				c.data = append(c.data, c.buf[c.bpos:c.bpos+i+1]...)
 				c.count += i + 1
 				c.pos += i + 1
 				c.bpos += i + 1

@@ -64,6 +64,11 @@ func test_with_data(t *testing.T, chunker chunker.Chunker, chunks []chunk) {
 					i, chunk.Length, c.Length)
 			}
 
+			if len(c.Data) != chunk.Length {
+				t.Fatalf("Data length for chunk %d does not match: expected %d, got %d",
+					i, chunk.Length, len(c.Data))
+			}
+
 			if c.Cut != chunk.CutFP {
 				t.Fatalf("Cut fingerprint for chunk %d does not match: expected %016x, got %016x",
 					i, chunk.CutFP, c.Cut)
