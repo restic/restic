@@ -21,12 +21,12 @@ func commandRestore(repo *khepri.Repository, args []string) error {
 
 	sn, err := khepri.LoadSnapshot(repo, id)
 	if err != nil {
-		log.Fatalf("error loading snapshot %s", id)
+		log.Fatalf("error loading snapshot %s: %v", id, err)
 	}
 
 	err = sn.RestoreAt(target)
 	if err != nil {
-		log.Fatalf("error restoring snapshot %s", id)
+		log.Fatalf("error restoring snapshot %s: %v", id, err)
 	}
 
 	log.Printf("%q restored to %q\n", id, target)
