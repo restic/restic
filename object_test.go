@@ -16,18 +16,12 @@ func TestObjects(t *testing.T) {
 	}()
 
 	for _, test := range TestStrings {
-		obj, ch, err := repo.Create(khepri.TYPE_BLOB)
+		id, err := repo.Create(khepri.TYPE_BLOB, []byte(test.data))
 		ok(t, err)
 
-		_, err = obj.Write([]byte(test.data))
+		id2, err := khepri.ParseID(test.id)
 		ok(t, err)
 
-		err = obj.Close()
-		ok(t, err)
-
-		id, err := khepri.ParseID(test.id)
-		ok(t, err)
-
-		equals(t, id, <-ch)
+		equals(t, id2, id)
 	}
 }

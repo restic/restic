@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -48,18 +49,17 @@ func NewTree() *Tree {
 }
 
 func store_chunk(repo *Repository, rd io.Reader) (ID, error) {
-	wr, idch, err := repo.Create(TYPE_BLOB)
+	data, err := ioutil.ReadAll(rd)
 	if err != nil {
 		return nil, err
 	}
 
-	io.Copy(wr, rd)
-	err = wr.Close()
+	id, err := repo.Create(TYPE_BLOB, data)
 	if err != nil {
 		return nil, err
 	}
 
-	return <-idch, nil
+	return id, nil
 }
 
 func NewTreeFromPath(repo *Repository, dir string) (*Tree, error) {
@@ -152,27 +152,17 @@ func (tree *Tree) Save(repo *Repository) (ID, error) {
 		}
 	}
 
-	buf, err := json.Marshal(tree)
+	data, err := json.Marshal(tree)
 	if err != nil {
 		return nil, err
 	}
 
-	wr, idch, err := repo.Create(TYPE_BLOB)
+	id, err := repo.Create(TYPE_BLOB, data)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = wr.Write(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	err = wr.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	return <-idch, nil
+	return id, nil
 }
 
 func NewTreeFromRepo(repo *Repository, id ID) (*Tree, error) {
@@ -208,7 +198,6 @@ func NewTreeFromRepo(repo *Repository, id ID) (*Tree, error) {
 func (tree *Tree) CreateAt(path string) error {
 	for _, node := range tree.Nodes {
 		nodepath := filepath.Join(path, node.Name)
-		// fmt.Printf("%s:%s\n", node.Type, nodepath)
 
 		if node.Type == "dir" {
 			err := os.Mkdir(nodepath, 0700)

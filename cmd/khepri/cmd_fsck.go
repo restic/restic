@@ -1,8 +1,8 @@
 package main
 
 import (
-	"crypto/sha256"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 
 	"github.com/fd0/khepri"
@@ -16,17 +16,15 @@ func fsck_tree(repo *khepri.Repository, id khepri.ID) (bool, error) {
 		return false, err
 	}
 
-	hr := khepri.NewHashingReader(rd, sha256.New)
-	dec := json.NewDecoder(hr)
+	buf, err := ioutil.ReadAll(rd)
 
 	tree := &khepri.Tree{}
-	err = dec.Decode(tree)
-
+	err = json.Unmarshal(buf, tree)
 	if err != nil {
 		return false, err
 	}
 
-	if !id.Equal(hr.Hash()) {
+	if !id.Equal(khepri.IDFromData(buf)) {
 		return false, nil
 	}
 

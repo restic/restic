@@ -75,16 +75,9 @@ func TestRepository(t *testing.T) {
 	// add files
 	for _, test := range TestStrings {
 		// store string in repository
-		obj, id_ch, err := repo.Create(test.t)
+		id, err := repo.Create(test.t, []byte(test.data))
 		ok(t, err)
 
-		_, err = obj.Write([]byte(test.data))
-		ok(t, err)
-
-		err = obj.Close()
-		ok(t, err)
-
-		id := <-id_ch
 		equals(t, test.id, id.String())
 
 		// try to get it out again

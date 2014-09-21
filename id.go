@@ -2,6 +2,7 @@ package khepri
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 )
@@ -57,4 +58,11 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
+}
+
+func IDFromData(d []byte) ID {
+	hash := sha256.Sum256(d)
+	id := make([]byte, 32)
+	copy(id, hash[:])
+	return id
 }

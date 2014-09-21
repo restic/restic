@@ -47,25 +47,17 @@ func (sn *Snapshot) Save(repo *Repository) (ID, error) {
 		panic("Snapshot.Save() called with nil tree id")
 	}
 
-	obj, id_ch, err := repo.Create(TYPE_REF)
+	data, err := json.Marshal(sn)
 	if err != nil {
 		return nil, err
 	}
 
-	enc := json.NewEncoder(obj)
-	err = enc.Encode(sn)
+	id, err := repo.Create(TYPE_REF, data)
 	if err != nil {
 		return nil, err
 	}
 
-	err = obj.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	sn.id = <-id_ch
-
-	return sn.id, nil
+	return id, nil
 }
 
 func LoadSnapshot(repo *Repository, id ID) (*Snapshot, error) {
