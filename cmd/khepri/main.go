@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
-	"strings"
 
 	"github.com/fd0/khepri"
 	"github.com/jessevdk/go-flags"
 )
 
 var Opts struct {
-	Repo string `short:"r" long:"repo"    description:"Repository directory to backup to/restor from"`
+	Repo string `short:"r" long:"repo"    description:"Repository directory to backup to/restore from"`
 }
 
 func errx(code int, format string, data ...interface{}) {
@@ -50,17 +48,16 @@ func main() {
 		os.Exit(0)
 	}
 
-	if len(args) == 0 {
-		cmds := []string{}
-		for k := range commands {
-			cmds = append(cmds, k)
-		}
-		sort.Strings(cmds)
-		fmt.Printf("nothing to do, available commands: [%v]\n", strings.Join(cmds, "|"))
-		os.Exit(0)
-	}
-
 	cmd := args[0]
+
+	if cmd == "init" {
+		err = commandInit(Opts.Repo)
+		if err != nil {
+			errx(1, "error executing command %q: %v", cmd, err)
+		}
+
+		return
+	}
 
 	f, ok := commands[cmd]
 	if !ok {
@@ -70,7 +67,7 @@ func main() {
 	repo, err := khepri.NewRepository(Opts.Repo)
 
 	if err != nil {
-		errx(1, "unable to create/open repo: %v", err)
+		errx(1, "unable to open repo: %v", err)
 	}
 
 	err = f(repo, args[1:])

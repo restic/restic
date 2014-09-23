@@ -30,7 +30,7 @@ func setupRepo() (*khepri.Repository, error) {
 		return nil, err
 	}
 
-	repo, err := khepri.NewRepository(tempdir)
+	repo, err := khepri.CreateRepository(tempdir)
 	if err != nil {
 		return nil, err
 	}

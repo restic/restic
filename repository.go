@@ -1,7 +1,10 @@
 package khepri
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"hash"
@@ -14,10 +17,11 @@ import (
 )
 
 const (
-	dirMode  = 0700
-	blobPath = "blobs"
-	refPath  = "refs"
-	tempPath = "tmp"
+	dirMode        = 0700
+	blobPath       = "blobs"
+	refPath        = "refs"
+	tempPath       = "tmp"
+	configFileName = "config.json"
 )
 
 var (
@@ -34,9 +38,26 @@ func (n Name) Encode() string {
 type HashFunc func() hash.Hash
 
 type Repository struct {
-	path string
-	hash HashFunc
+	path   string
+	hash   HashFunc
+	config *Config
 }
+
+type Config struct {
+	Salt string
+	N    uint
+	R    uint `json:"r"`
+	P    uint `json:"p"`
+}
+
+// TODO: figure out scrypt values on the fly depending on the current
+// hardware.
+const (
+	scrypt_N        = 65536
+	scrypt_r        = 8
+	scrypt_p        = 1
+	scrypt_saltsize = 64
+)
 
 type Type int
 
@@ -67,15 +88,16 @@ func (t Type) String() string {
 	panic(fmt.Sprintf("unknown type %d", t))
 }
 
-// NewDirRepository creates a new dir-baked repository at the given path.
+// NewRepository opens a dir-baked repository at the given path.
 func NewRepository(path string) (*Repository, error) {
+	var err error
+
 	d := &Repository{
 		path: path,
 		hash: sha256.New,
 	}
 
-	err := d.create()
-
+	d.config, err = d.read_config()
 	if err != nil {
 		return nil, err
 	}
@@ -83,22 +105,92 @@ func NewRepository(path string) (*Repository, error) {
 	return d, nil
 }
 
-func (r *Repository) create() error {
-	dirs := []string{
-		r.path,
-		path.Join(r.path, blobPath),
-		path.Join(r.path, refPath),
-		path.Join(r.path, tempPath),
+func (r *Repository) read_config() (*Config, error) {
+	// try to open config file
+	f, err := os.Open(path.Join(r.path, configFileName))
+	if err != nil {
+		return nil, err
 	}
 
-	for _, dir := range dirs {
-		err := os.MkdirAll(dir, dirMode)
-		if err != nil {
-			return err
+	cfg := new(Config)
+	buf, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(buf, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
+// CreateRepository creates all the necessary files and directories for the
+// Repository.
+func CreateRepository(p string) (*Repository, error) {
+	dirs := []string{
+		p,
+		path.Join(p, blobPath),
+		path.Join(p, refPath),
+		path.Join(p, tempPath),
+	}
+
+	var configfile = path.Join(p, configFileName)
+
+	// test if repository directories or config file already exist
+	if _, err := os.Stat(configfile); err == nil {
+		return nil, fmt.Errorf("config file %s already exists", configfile)
+	}
+
+	for _, d := range dirs[1:] {
+		if _, err := os.Stat(d); err == nil {
+			return nil, fmt.Errorf("dir %s already exists", d)
 		}
 	}
 
-	return nil
+	// create initial json configuration
+	cfg := &Config{
+		N: scrypt_N,
+		R: scrypt_r,
+		P: scrypt_p,
+	}
+
+	// generate salt
+	buf := make([]byte, scrypt_saltsize)
+	n, err := rand.Read(buf)
+	if n != scrypt_saltsize || err != nil {
+		panic("unable to read enough random bytes for salt")
+	}
+	cfg.Salt = hex.EncodeToString(buf)
+
+	// create ps for blobs, refs and temp
+	for _, dir := range dirs {
+		err := os.MkdirAll(dir, dirMode)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// write config file
+	f, err := os.Create(configfile)
+	defer f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := json.Marshal(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = f.Write(s)
+	if err != nil {
+		return nil, err
+	}
+
+	// open repository
+	return NewRepository(p)
 }
 
 // SetHash changes the hash function used for deriving IDs. Default is SHA256.
