@@ -1,247 +1,70 @@
 package khepri
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"os/user"
-	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
-	"github.com/fd0/khepri/chunker"
+	"github.com/fd0/khepri/backend"
 )
 
-type Tree struct {
-	Nodes []*Node `json:"nodes,omitempty"`
-}
+type Tree []*Node
 
 type Node struct {
-	Name       string      `json:"name"`
-	Type       string      `json:"type"`
-	Mode       os.FileMode `json:"mode,omitempty"`
-	ModTime    time.Time   `json:"mtime,omitempty"`
-	AccessTime time.Time   `json:"atime,omitempty"`
-	ChangeTime time.Time   `json:"ctime,omitempty"`
-	UID        uint32      `json:"uid"`
-	GID        uint32      `json:"gid"`
-	User       string      `json:"user,omitempty"`
-	Group      string      `json:"group,omitempty"`
-	Inode      uint64      `json:"inode,omitempty"`
-	Size       uint64      `json:"size,omitempty"`
-	Links      uint64      `json:"links,omitempty"`
-	LinkTarget string      `json:"linktarget,omitempty"`
-	Device     uint64      `json:"device,omitempty"`
-	Content    []ID        `json:"content,omitempty"`
-	Subtree    ID          `json:"subtree,omitempty"`
-	Tree       *Tree       `json:"-"`
-	repo       *Repository
+	Name       string       `json:"name"`
+	Type       string       `json:"type"`
+	Mode       os.FileMode  `json:"mode,omitempty"`
+	ModTime    time.Time    `json:"mtime,omitempty"`
+	AccessTime time.Time    `json:"atime,omitempty"`
+	ChangeTime time.Time    `json:"ctime,omitempty"`
+	UID        uint32       `json:"uid"`
+	GID        uint32       `json:"gid"`
+	User       string       `json:"user,omitempty"`
+	Group      string       `json:"group,omitempty"`
+	Inode      uint64       `json:"inode,omitempty"`
+	Size       uint64       `json:"size,omitempty"`
+	Links      uint64       `json:"links,omitempty"`
+	LinkTarget string       `json:"linktarget,omitempty"`
+	Device     uint64       `json:"device,omitempty"`
+	Content    []backend.ID `json:"content,omitempty"`
+	Subtree    backend.ID   `json:"subtree,omitempty"`
+
+	path string
 }
 
-func NewTree() *Tree {
-	return &Tree{
-		Nodes: []*Node{},
-	}
+type Blob struct {
+	ID          backend.ID `json:"id,omitempty"`
+	Size        uint64     `json:"size,omitempty"`
+	Storage     backend.ID `json:"sid,omitempty"`   // encrypted ID
+	StorageSize uint64     `json:"ssize,omitempty"` // encrypted Size
 }
 
-func store_chunk(repo *Repository, rd io.Reader) (ID, error) {
-	data, err := ioutil.ReadAll(rd)
-	if err != nil {
-		return nil, err
+type Blobs []*Blob
+
+func (n Node) String() string {
+	switch n.Type {
+	case "file":
+		return fmt.Sprintf("%s %5d %5d %6d %s %s",
+			n.Mode, n.UID, n.GID, n.Size, n.ModTime, n.Name)
+	case "dir":
+		return fmt.Sprintf("%s %5d %5d %6d %s %s",
+			n.Mode|os.ModeDir, n.UID, n.GID, n.Size, n.ModTime, n.Name)
 	}
 
-	id, err := repo.Create(TYPE_BLOB, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return id, nil
+	return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
 }
 
-func NewTreeFromPath(repo *Repository, dir string) (*Tree, error) {
-	fd, err := os.Open(dir)
-	defer fd.Close()
-	if err != nil {
-		return nil, err
+func (t Tree) String() string {
+	s := []string{}
+	for _, n := range t {
+		s = append(s, n.String())
 	}
-
-	entries, err := fd.Readdir(-1)
-	if err != nil {
-		return nil, err
-	}
-
-	tree := &Tree{
-		Nodes: make([]*Node, 0, len(entries)),
-	}
-
-	for _, entry := range entries {
-		path := filepath.Join(dir, entry.Name())
-		node, err := NodeFromFileInfo(path, entry)
-		if err != nil {
-			return nil, err
-		}
-		node.repo = repo
-
-		tree.Nodes = append(tree.Nodes, node)
-
-		if entry.IsDir() {
-			node.Tree, err = NewTreeFromPath(repo, path)
-			if err != nil {
-				return nil, err
-			}
-			continue
-		}
-
-		if node.Type == "file" {
-			file, err := os.Open(path)
-			defer file.Close()
-			if err != nil {
-				return nil, err
-			}
-
-			if node.Size < chunker.MinSize {
-				// if the file is small enough, store it directly
-				id, err := store_chunk(repo, file)
-
-				if err != nil {
-					return nil, err
-				}
-
-				node.Content = []ID{id}
-
-			} else {
-				// else store chunks
-				node.Content = []ID{}
-				ch := chunker.New(file)
-
-				for {
-					chunk, err := ch.Next()
-
-					if err == io.EOF {
-						break
-					}
-
-					if err != nil {
-						return nil, err
-					}
-
-					id, err := store_chunk(repo, bytes.NewBuffer(chunk.Data))
-
-					node.Content = append(node.Content, id)
-				}
-
-			}
-		}
-	}
-
-	return tree, nil
+	return strings.Join(s, "\n")
 }
-
-func (tree *Tree) Save(repo *Repository) (ID, error) {
-	for _, node := range tree.Nodes {
-		if node.Tree != nil {
-			var err error
-			node.Subtree, err = node.Tree.Save(repo)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	data, err := json.Marshal(tree)
-	if err != nil {
-		return nil, err
-	}
-
-	id, err := repo.Create(TYPE_BLOB, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return id, nil
-}
-
-func NewTreeFromRepo(repo *Repository, id ID) (*Tree, error) {
-	tree := NewTree()
-
-	rd, err := repo.Get(TYPE_BLOB, id)
-	defer rd.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	decoder := json.NewDecoder(rd)
-
-	err = decoder.Decode(tree)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, node := range tree.Nodes {
-		node.repo = repo
-
-		if node.Subtree != nil {
-			node.Tree, err = NewTreeFromRepo(repo, node.Subtree)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return tree, nil
-}
-
-func (tree *Tree) CreateAt(path string) error {
-	for _, node := range tree.Nodes {
-		nodepath := filepath.Join(path, node.Name)
-
-		if node.Type == "dir" {
-			err := os.Mkdir(nodepath, 0700)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-				continue
-			}
-
-			err = os.Chmod(nodepath, node.Mode)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-				continue
-			}
-
-			err = os.Chown(nodepath, int(node.UID), int(node.GID))
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-				continue
-			}
-
-			err = node.Tree.CreateAt(filepath.Join(path, node.Name))
-			if err != nil {
-				return err
-			}
-
-			err = os.Chtimes(nodepath, node.AccessTime, node.ModTime)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-				continue
-			}
-
-		} else {
-			err := node.CreateAt(nodepath)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "%s\n", err)
-				continue
-			}
-		}
-	}
-
-	return nil
-}
-
-// TODO: make sure that node.Type is valid
 
 func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	stat, ok := fi.Sys().(*syscall.Stat_t)
@@ -290,6 +113,7 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 
 func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	node := &Node{
+		path:    path,
 		Name:    fi.Name(),
 		Mode:    fi.Mode() & os.ModePerm,
 		ModTime: fi.ModTime(),
@@ -316,12 +140,27 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	return node, err
 }
 
-func (node *Node) CreateAt(path string) error {
-	if node.repo == nil {
-		return fmt.Errorf("repository is nil!")
-	}
-
+func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 	switch node.Type {
+	case "dir":
+		err := os.Mkdir(path, node.Mode)
+		if err != nil {
+			return err
+		}
+
+		err = os.Lchown(path, int(node.UID), int(node.GID))
+		if err != nil {
+			return err
+		}
+
+		var utimes = []syscall.Timespec{
+			syscall.NsecToTimespec(node.AccessTime.UnixNano()),
+			syscall.NsecToTimespec(node.ModTime.UnixNano()),
+		}
+		err = syscall.UtimesNano(path, utimes)
+		if err != nil {
+			return err
+		}
 	case "file":
 		// TODO: handle hard links
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
@@ -331,18 +170,32 @@ func (node *Node) CreateAt(path string) error {
 		}
 
 		for _, blobid := range node.Content {
-			rd, err := node.repo.Get(TYPE_BLOB, blobid)
+			buf, err := ch.Load(backend.Blob, blobid)
 			if err != nil {
 				return err
 			}
 
-			_, err = io.Copy(f, rd)
+			_, err = f.Write(buf)
 			if err != nil {
 				return err
 			}
 		}
 
 		f.Close()
+
+		err = os.Lchown(path, int(node.UID), int(node.GID))
+		if err != nil {
+			return err
+		}
+
+		var utimes = []syscall.Timespec{
+			syscall.NsecToTimespec(node.AccessTime.UnixNano()),
+			syscall.NsecToTimespec(node.ModTime.UnixNano()),
+		}
+		err = syscall.UtimesNano(path, utimes)
+		if err != nil {
+			return err
+		}
 	case "symlink":
 		err := os.Symlink(node.LinkTarget, path)
 		if err != nil {

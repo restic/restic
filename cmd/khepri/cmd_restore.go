@@ -2,34 +2,54 @@ package main
 
 import (
 	"errors"
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/fd0/khepri"
+	"github.com/fd0/khepri/backend"
 )
 
-func commandRestore(repo *khepri.Repository, args []string) error {
+func commandRestore(be backend.Server, key *khepri.Key, args []string) error {
 	if len(args) != 2 {
 		return errors.New("usage: restore ID dir")
 	}
 
-	id, err := khepri.ParseID(args[0])
+	id, err := backend.ParseID(args[0])
 	if err != nil {
 		errx(1, "invalid id %q: %v", args[0], err)
 	}
 
 	target := args[1]
 
-	sn, err := khepri.LoadSnapshot(repo, id)
+	// create restorer
+	res, err := khepri.NewRestorer(be, key, id)
 	if err != nil {
-		log.Fatalf("error loading snapshot %s: %v", id, err)
+		fmt.Fprintf(os.Stderr, "creating restorer failed: %v\n", err)
+		os.Exit(2)
 	}
 
-	err = sn.RestoreAt(target)
-	if err != nil {
-		log.Fatalf("error restoring snapshot %s: %v", id, err)
+	res.Error = func(dir string, node *khepri.Node, err error) error {
+		fmt.Fprintf(os.Stderr, "error for %s: %+v\n", dir, err)
+
+		// if node.Type == "dir" {
+		// 	if e, ok := err.(*os.PathError); ok {
+		// 		if errn, ok := e.Err.(syscall.Errno); ok {
+		// 			if errn == syscall.EEXIST {
+		// 				fmt.Printf("ignoring already existing directory %s\n", dir)
+		// 				return nil
+		// 			}
+		// 		}
+		// 	}
+		// }
+		return err
 	}
 
-	log.Printf("%q restored to %q\n", id, target)
+	fmt.Printf("restoring %s to %s\n", res.Snapshot(), target)
+
+	err = res.RestoreTo(target)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

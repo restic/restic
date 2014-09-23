@@ -1,84 +1,76 @@
 package main
 
-import (
-	"encoding/json"
-	"io/ioutil"
-	"log"
+import "github.com/fd0/khepri/backend"
 
-	"github.com/fd0/khepri"
-)
+// func fsck_tree(be backend.Server, id backend.ID) (bool, error) {
+// 	log.Printf("  checking dir %s", id)
 
-func fsck_tree(repo *khepri.Repository, id khepri.ID) (bool, error) {
-	log.Printf("  checking dir %s", id)
+// 	buf, err := be.GetBlob(id)
+// 	if err != nil {
+// 		return false, err
+// 	}
 
-	rd, err := repo.Get(khepri.TYPE_BLOB, id)
-	if err != nil {
-		return false, err
-	}
+// 	tree := &khepri.Tree{}
+// 	err = json.Unmarshal(buf, tree)
+// 	if err != nil {
+// 		return false, err
+// 	}
 
-	buf, err := ioutil.ReadAll(rd)
+// 	if !id.Equal(backend.IDFromData(buf)) {
+// 		return false, nil
+// 	}
 
-	tree := &khepri.Tree{}
-	err = json.Unmarshal(buf, tree)
-	if err != nil {
-		return false, err
-	}
+// 	return true, nil
+// }
 
-	if !id.Equal(khepri.IDFromData(buf)) {
-		return false, nil
-	}
+// func fsck_snapshot(be backend.Server, id backend.ID) (bool, error) {
+// 	log.Printf("checking snapshot %s", id)
 
-	return true, nil
-}
+// 	sn, err := khepri.LoadSnapshot(be, id)
+// 	if err != nil {
+// 		return false, err
+// 	}
 
-func fsck_snapshot(repo *khepri.Repository, id khepri.ID) (bool, error) {
-	log.Printf("checking snapshot %s", id)
+// 	return fsck_tree(be, sn.Content)
+// }
 
-	sn, err := khepri.LoadSnapshot(repo, id)
-	if err != nil {
-		return false, err
-	}
+func commandFsck(be backend.Server, args []string) error {
+	// var snapshots backend.IDs
+	// var err error
 
-	return fsck_tree(repo, sn.Content)
-}
+	// if len(args) != 0 {
+	// 	snapshots = make(backend.IDs, 0, len(args))
 
-func commandFsck(repo *khepri.Repository, args []string) error {
-	var snapshots khepri.IDs
-	var err error
+	// 	for _, arg := range args {
+	// 		id, err := backend.ParseID(arg)
+	// 		if err != nil {
+	// 			log.Fatal(err)
+	// 		}
 
-	if len(args) != 0 {
-		snapshots = make(khepri.IDs, 0, len(args))
+	// 		snapshots = append(snapshots, id)
+	// 	}
+	// } else {
+	// 	snapshots, err = be.ListRefs()
 
-		for _, arg := range args {
-			id, err := khepri.ParseID(arg)
-			if err != nil {
-				log.Fatal(err)
-			}
+	// 	if err != nil {
+	// 		log.Fatalf("error reading list of snapshot IDs: %v", err)
+	// 	}
+	// }
 
-			snapshots = append(snapshots, id)
-		}
-	} else {
-		snapshots, err = repo.List(khepri.TYPE_REF)
+	// log.Printf("checking %d snapshots", len(snapshots))
 
-		if err != nil {
-			log.Fatalf("error reading list of snapshot IDs: %v", err)
-		}
-	}
+	// for _, id := range snapshots {
+	// 	ok, err := fsck_snapshot(be, id)
 
-	log.Printf("checking %d snapshots", len(snapshots))
+	// 	if err != nil {
+	// 		log.Printf("error checking snapshot %s: %v", id, err)
+	// 		continue
+	// 	}
 
-	for _, id := range snapshots {
-		ok, err := fsck_snapshot(repo, id)
-
-		if err != nil {
-			log.Printf("error checking snapshot %s: %v", id, err)
-			continue
-		}
-
-		if !ok {
-			log.Printf("snapshot %s failed", id)
-		}
-	}
+	// 	if !ok {
+	// 		log.Printf("snapshot %s failed", id)
+	// 	}
+	// }
 
 	return nil
 }

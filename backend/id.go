@@ -1,11 +1,14 @@
-package khepri
+package backend
 
 import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 )
+
+const sha256_length = 32 // in bytes
 
 // References content within a repository.
 type ID []byte
@@ -16,6 +19,10 @@ func ParseID(s string) (ID, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if len(b) != sha256_length {
+		return nil, errors.New("invalid length for sha256 hash")
 	}
 
 	return ID(b), nil
@@ -62,7 +69,37 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 
 func IDFromData(d []byte) ID {
 	hash := sha256.Sum256(d)
-	id := make([]byte, 32)
+	id := make([]byte, sha256_length)
 	copy(id, hash[:])
 	return id
+}
+
+type IDs []ID
+
+func (ids IDs) Len() int {
+	return len(ids)
+}
+
+func (ids IDs) Less(i, j int) bool {
+	if len(ids[i]) < len(ids[j]) {
+		return true
+	}
+
+	for k, b := range ids[i] {
+		if b == ids[j][k] {
+			continue
+		}
+
+		if b < ids[j][k] {
+			return true
+		} else {
+			return false
+		}
+	}
+
+	return false
+}
+
+func (ids IDs) Swap(i, j int) {
+	ids[i], ids[j] = ids[j], ids[i]
 }

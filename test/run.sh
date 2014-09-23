@@ -11,6 +11,7 @@ prepare() {
     export BASE="$(mktemp --tmpdir --directory khepri-testsuite-XXXXXX)"
     export KHEPRI_REPOSITORY="${BASE}/khepri-backup"
     export DATADIR="${BASE}/fake-data"
+    export KHEPRI_PASSWORD="foobar"
     debug "repository is at ${KHEPRI_REPOSITORY}"
 
     mkdir -p "$DATADIR"

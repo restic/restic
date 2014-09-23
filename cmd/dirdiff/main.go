@@ -53,14 +53,17 @@ func walk(dir string) <-chan *entry {
 
 func (e *entry) equals(other *entry) bool {
 	if e.path != other.path {
+		fmt.Printf("path does not match\n")
 		return false
 	}
 
 	if e.fi.Mode() != other.fi.Mode() {
+		fmt.Printf("mode does not match\n")
 		return false
 	}
 
 	if e.fi.ModTime() != other.fi.ModTime() {
+		fmt.Printf("ModTime does not match\n")
 		return false
 	}
 

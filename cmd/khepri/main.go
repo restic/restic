@@ -4,8 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
+	"strings"
+
+	"code.google.com/p/go.crypto/ssh/terminal"
 
 	"github.com/fd0/khepri"
+	"github.com/fd0/khepri/backend"
 	"github.com/jessevdk/go-flags"
 )
 
@@ -21,9 +26,25 @@ func errx(code int, format string, data ...interface{}) {
 	os.Exit(code)
 }
 
-type commandFunc func(*khepri.Repository, []string) error
+type commandFunc func(backend.Server, *khepri.Key, []string) error
 
 var commands map[string]commandFunc
+
+func read_password(prompt string) string {
+	p := os.Getenv("KHEPRI_PASSWORD")
+	if p != "" {
+		return p
+	}
+
+	fmt.Print(prompt)
+	pw, err := terminal.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		errx(2, "unable to read password: %v", err)
+	}
+	fmt.Println()
+
+	return string(pw)
+}
 
 func init() {
 	commands = make(map[string]commandFunc)
@@ -31,8 +52,6 @@ func init() {
 	commands["restore"] = commandRestore
 	commands["list"] = commandList
 	commands["snapshots"] = commandSnapshots
-	commands["fsck"] = commandFsck
-	commands["dump"] = commandDump
 }
 
 func main() {
@@ -42,9 +61,19 @@ func main() {
 	if Opts.Repo == "" {
 		Opts.Repo = "khepri-backup"
 	}
-	args, err := flags.Parse(&Opts)
 
+	args, err := flags.Parse(&Opts)
 	if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
+		os.Exit(0)
+	}
+
+	if len(args) == 0 {
+		cmds := []string{"init"}
+		for k := range commands {
+			cmds = append(cmds, k)
+		}
+		sort.Strings(cmds)
+		fmt.Printf("nothing to do, available commands: [%v]\n", strings.Join(cmds, "|"))
 		os.Exit(0)
 	}
 
@@ -64,13 +93,18 @@ func main() {
 		errx(1, "unknown command: %q\n", cmd)
 	}
 
-	repo, err := khepri.NewRepository(Opts.Repo)
-
+	// read_password("enter password: ")
+	repo, err := backend.OpenLocal(Opts.Repo)
 	if err != nil {
 		errx(1, "unable to open repo: %v", err)
 	}
 
-	err = f(repo, args[1:])
+	key, err := khepri.SearchKey(repo, read_password("Enter Password for Repository: "))
+	if err != nil {
+		errx(2, "unable to open repo: %v", err)
+	}
+
+	err = f(repo, key, args[1:])
 	if err != nil {
 		errx(1, "error executing command %q: %v", cmd, err)
 	}

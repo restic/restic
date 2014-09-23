@@ -1,29 +1,36 @@
 package khepri
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
+	"path/filepath"
 	"time"
+
+	"github.com/fd0/khepri/backend"
 )
 
 type Snapshot struct {
-	Time     time.Time `json:"time"`
-	Content  ID        `json:"content"`
-	Tree     *Tree     `json:"-"`
-	Dir      string    `json:"dir"`
-	Hostname string    `json:"hostname,omitempty"`
-	Username string    `json:"username,omitempty"`
-	UID      string    `json:"uid,omitempty"`
-	GID      string    `json:"gid,omitempty"`
-	id       ID        `json:omit`
-	repo     *Repository
+	Time       time.Time   `json:"time"`
+	Content    backend.ID  `json:"content"`
+	StorageMap *StorageMap `json:"map"`
+	Dir        string      `json:"dir"`
+	Hostname   string      `json:"hostname,omitempty"`
+	Username   string      `json:"username,omitempty"`
+	UID        string      `json:"uid,omitempty"`
+	GID        string      `json:"gid,omitempty"`
+
+	id backend.ID // plaintext ID, used during restore
 }
 
 func NewSnapshot(dir string) *Snapshot {
+	d, err := filepath.Abs(dir)
+	if err != nil {
+		d = dir
+	}
+
 	sn := &Snapshot{
-		Dir:  dir,
+		Dir:  d,
 		Time: time.Now(),
 	}
 
@@ -42,66 +49,16 @@ func NewSnapshot(dir string) *Snapshot {
 	return sn
 }
 
-func (sn *Snapshot) Save(repo *Repository) (ID, error) {
-	if sn.Content == nil {
-		panic("Snapshot.Save() called with nil tree id")
-	}
-
-	data, err := json.Marshal(sn)
-	if err != nil {
-		return nil, err
-	}
-
-	id, err := repo.Create(TYPE_REF, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return id, nil
-}
-
-func LoadSnapshot(repo *Repository, id ID) (*Snapshot, error) {
-	rd, err := repo.Get(TYPE_REF, id)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: maybe inject a hashing reader here and test if the given id is correct
-
-	dec := json.NewDecoder(rd)
+func LoadSnapshot(ch *ContentHandler, id backend.ID) (*Snapshot, error) {
 	sn := &Snapshot{}
-	err = dec.Decode(sn)
-
+	err := ch.LoadJSON(backend.Snapshot, id, sn)
 	if err != nil {
 		return nil, err
 	}
-
-	sn.id = id
-	sn.repo = repo
 
 	return sn, nil
 }
 
-func (sn *Snapshot) RestoreAt(path string) error {
-	err := os.MkdirAll(path, 0700)
-	if err != nil {
-		return err
-	}
-
-	if sn.Tree == nil {
-		sn.Tree, err = NewTreeFromRepo(sn.repo, sn.Content)
-		if err != nil {
-			return err
-		}
-	}
-
-	return sn.Tree.CreateAt(path)
-}
-
-func (sn *Snapshot) ID() ID {
-	return sn.id
-}
-
 func (sn *Snapshot) String() string {
-	return fmt.Sprintf("<Snapshot of %q at %s>", sn.Dir, sn.Time.Format(time.RFC822Z))
+	return fmt.Sprintf("<Snapshot %q at %s>", sn.Dir, sn.Time)
 }

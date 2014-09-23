@@ -3,39 +3,34 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/fd0/khepri"
+	"github.com/fd0/khepri/backend"
 )
 
 const TimeFormat = "02.01.2006 15:04:05 -0700"
 
-func commandSnapshots(repo *khepri.Repository, args []string) error {
+func commandSnapshots(be backend.Server, key *khepri.Key, args []string) error {
 	if len(args) != 0 {
 		return errors.New("usage: snapshots")
 	}
 
-	snapshot_ids, err := repo.List(khepri.TYPE_REF)
-	if err != nil {
-		log.Fatalf("error loading list of snapshot ids: %v", err)
-	}
+	// ch, err := khepri.NewContentHandler(be, key)
+	// if err != nil {
+	// 	return err
+	// }
 
-	fmt.Printf("found snapshots:\n")
-	for _, id := range snapshot_ids {
-		snapshot, err := khepri.LoadSnapshot(repo, id)
+	backend.EachID(be, backend.Snapshot, func(id backend.ID) {
+		// sn, err := ch.LoadSnapshot(id)
+		// if err != nil {
+		// 	fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
+		// 	return
+		// }
 
-		if err != nil {
-			log.Printf("error loading snapshot %s: %v", id, err)
-			continue
-		}
-
-		fmt.Printf("%s %s@%s %s %s\n",
-			snapshot.Time.Format(TimeFormat),
-			snapshot.Username,
-			snapshot.Hostname,
-			snapshot.Dir,
-			id)
-	}
+		// fmt.Printf("snapshot %s\n    %s at %s by %s\n",
+		// 	id, sn.Dir, sn.Time, sn.Username)
+		fmt.Println(id)
+	})
 
 	return nil
 }

@@ -1,29 +1,21 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"os"
-
 	"github.com/fd0/khepri"
+	"github.com/fd0/khepri/backend"
 )
 
-func commandList(repo *khepri.Repository, args []string) error {
-	if len(args) != 1 {
-		return errors.New("usage: list [blob|ref]")
-	}
+func commandList(be backend.Server, key *khepri.Key, args []string) error {
 
-	tpe := khepri.NewTypeFromString(args[0])
+	// ids, err := be.ListRefs()
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	// 	return nil
+	// }
 
-	ids, err := repo.List(tpe)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return nil
-	}
-
-	for _, id := range ids {
-		fmt.Printf("%v\n", id)
-	}
+	// for _, id := range ids {
+	// 	fmt.Printf("%v\n", id)
+	// }
 
 	return nil
 }
