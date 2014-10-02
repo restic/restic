@@ -29,6 +29,17 @@ Khepri is a program that does backups right. The design goals are:
    administrators are able to access your backups). Khepri is built to secure
    your data against such attackers.
 
+Building
+========
+
+Install Go (at least 1.2), then run:
+
+```
+export GOPATH=~/src/go
+go get github.com/fd0/khepri/cmd/khepri
+$GOPATH/bin/khepri --help
+```
+
 License
 =======
 
