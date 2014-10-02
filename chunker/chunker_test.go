@@ -46,6 +46,14 @@ var chunks1 = []chunk{
 	chunk{237392, 0x00184c5825e18636},
 }
 
+// test if nullbytes are correctly split, even if length is a multiple of MinSize.
+var chunks2 = []chunk{
+	chunk{chunker.MinSize, 0},
+	chunk{chunker.MinSize, 0},
+	chunk{chunker.MinSize, 0},
+	chunk{chunker.MinSize, 0},
+}
+
 func test_with_data(t *testing.T, chunker chunker.Chunker, chunks []chunk) {
 	for i, chunk := range chunks {
 		c, err := chunker.Next()
@@ -105,10 +113,14 @@ func get_random(seed, count int) []byte {
 func TestChunker(t *testing.T) {
 	// setup data source
 	buf := get_random(23, 32*1024*1024)
-
 	ch := chunker.New(bytes.NewReader(buf))
-
 	test_with_data(t, ch, chunks1)
+
+	// setup nullbyte data source
+	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
+	ch = chunker.New(bytes.NewReader(buf))
+
+	test_with_data(t, ch, chunks2)
 }
 
 func BenchmarkChunker(b *testing.B) {

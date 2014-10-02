@@ -154,13 +154,15 @@ func (c *chunker) Next() (*Chunk, error) {
 			if err == io.EOF && !c.closed {
 				c.closed = true
 
-				// return current chunk
-				return &Chunk{
-					Start:  c.start,
-					Length: c.count,
-					Cut:    c.digest,
-					Data:   c.data,
-				}, nil
+				// return current chunk, if any bytes have been processed
+				if c.count > 0 {
+					return &Chunk{
+						Start:  c.start,
+						Length: c.count,
+						Cut:    c.digest,
+						Data:   c.data,
+					}, nil
+				}
 			}
 
 			if err != nil {
