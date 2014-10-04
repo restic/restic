@@ -15,7 +15,7 @@ var test_values = []struct {
 	{
 		ekey:       decode_hex("303e8687b1d7db18421bdc6bb8588ccadac4d59ee87b8ff70c44e635790cafef"),
 		skey:       decode_hex("cc8d4b948ee0ebfe1d415de921d10353ef4d8824cb80b2bcc5fbff8a9b12a42c"),
-		ciphertext: decode_hex("154f582d77e6430409da392c3a09aa38e00a78bcc8919557fe18dd17f83e7b0b3053def59f4215b6e1c6b72ceb5acdddd8511ce3a853e054218de1e9f34637470d68f1f93ba8228e4d9817d7c9acfcd2"),
+		ciphertext: decode_hex("fe85b32b108308f6f8834a96e463b66e0eae6a0f1e9809da0773a2db12a24528bce3220e6a5700b40bd45ef2a2ce96a7fc0a895a019d4a77eef5fc9579297059c6d0"),
 		plaintext:  []byte("Dies ist ein Test!"),
 	},
 }

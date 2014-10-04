@@ -1,7 +1,6 @@
 package khepri
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
@@ -231,40 +230,6 @@ func (k *Key) newIV() ([]byte, error) {
 	return buf, nil
 }
 
-func (k *Key) pad(plaintext []byte) []byte {
-	l := aes.BlockSize - (len(plaintext) % aes.BlockSize)
-	if l == 0 {
-		l = aes.BlockSize
-	}
-
-	if l <= 0 || l > aes.BlockSize {
-		panic("invalid padding size")
-	}
-
-	return append(plaintext, bytes.Repeat([]byte{byte(l)}, l)...)
-}
-
-func (k *Key) unpad(plaintext []byte) []byte {
-	l := len(plaintext)
-	pad := plaintext[l-1]
-
-	if pad > aes.BlockSize {
-		panic(errors.New("padding > BlockSize"))
-	}
-
-	if pad == 0 {
-		panic(errors.New("invalid padding 0"))
-	}
-
-	for i := l - int(pad); i < l; i++ {
-		if plaintext[i] != pad {
-			panic(errors.New("invalid padding!"))
-		}
-	}
-
-	return plaintext[:l-int(pad)]
-}
-
 // Encrypt encrypts and signs data. Returned is IV || Ciphertext || HMAC. For
 // the hash function, SHA256 is used, so the overhead is 16+32=48 byte.
 func (k *Key) encrypt(ks *keys, plaintext []byte) ([]byte, error) {
@@ -278,12 +243,11 @@ func (k *Key) encrypt(ks *keys, plaintext []byte) ([]byte, error) {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
 
-	e := cipher.NewCBCEncrypter(c, iv)
-	p := k.pad(plaintext)
-	ciphertext := make([]byte, len(p))
-	e.CryptBlocks(ciphertext, p)
-
-	ciphertext = append(iv, ciphertext...)
+	e := cipher.NewCTR(c, iv)
+	l := len(iv)
+	ciphertext := make([]byte, l+len(plaintext))
+	copy(ciphertext[:l], iv)
+	e.XORKeyStream(ciphertext[l:], plaintext)
 
 	hm := hmac.New(sha256.New, ks.Sign)
 
@@ -341,12 +305,11 @@ func (k *Key) decrypt(ks *keys, ciphertext []byte) ([]byte, error) {
 	}
 
 	// decrypt
-	e := cipher.NewCBCDecrypter(c, iv)
+	e := cipher.NewCTR(c, iv)
 	plaintext := make([]byte, len(ciphertext))
-	e.CryptBlocks(plaintext, ciphertext)
+	e.XORKeyStream(plaintext, ciphertext)
 
-	// remove padding and return
-	return k.unpad(plaintext), nil
+	return plaintext, nil
 }
 
 // Decrypt verifes and decrypts the ciphertext with the master key. Ciphertext
