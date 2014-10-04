@@ -1,24 +1,29 @@
 package backend
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 const (
-	dirMode      = 0700
-	blobPath     = "blobs"
-	snapshotPath = "snapshots"
-	treePath     = "trees"
-	lockPath     = "locks"
-	keyPath      = "keys"
-	tempPath     = "tmp"
+	dirMode         = 0700
+	blobPath        = "blobs"
+	snapshotPath    = "snapshots"
+	treePath        = "trees"
+	lockPath        = "locks"
+	keyPath         = "keys"
+	tempPath        = "tmp"
+	versionFileName = "version"
 )
 
 type Local struct {
-	p string
+	p   string
+	ver uint
 }
 
 // OpenLocal opens the local backend at dir.
@@ -40,12 +45,45 @@ func OpenLocal(dir string) (*Local, error) {
 		}
 	}
 
-	return &Local{p: dir}, nil
+	// read version file
+	f, err := os.Open(filepath.Join(dir, versionFileName))
+	if err != nil {
+		return nil, fmt.Errorf("unable to read version file: %v\n", err)
+	}
+
+	buf := make([]byte, 100)
+	n, err := f.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	version, err := strconv.Atoi(strings.TrimSpace(string(buf[:n])))
+	if err != nil {
+		return nil, fmt.Errorf("unable to convert version to integer: %v\n", err)
+	}
+
+	if version != BackendVersion {
+		return nil, fmt.Errorf("wrong version %d", version)
+	}
+
+	// check version
+	if version != BackendVersion {
+		return nil, fmt.Errorf("wrong version %d", version)
+	}
+
+	return &Local{p: dir, ver: uint(version)}, nil
+
 }
 
 // CreateLocal creates all the necessary files and directories for a new local
 // backend at dir.
 func CreateLocal(dir string) (*Local, error) {
+	versionFile := filepath.Join(dir, versionFileName)
 	dirs := []string{
 		dir,
 		filepath.Join(dir, blobPath),
@@ -54,6 +92,12 @@ func CreateLocal(dir string) (*Local, error) {
 		filepath.Join(dir, lockPath),
 		filepath.Join(dir, keyPath),
 		filepath.Join(dir, tempPath),
+	}
+
+	// test if version file already exists
+	_, err := os.Lstat(versionFile)
+	if err == nil {
+		return nil, errors.New("version file already exists")
 	}
 
 	// test if directories already exist
@@ -69,6 +113,22 @@ func CreateLocal(dir string) (*Local, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// create version file
+	f, err := os.Create(versionFile)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = f.Write([]byte(strconv.Itoa(BackendVersion)))
+	if err != nil {
+		return nil, err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
 	}
 
 	// open repository
@@ -210,4 +270,9 @@ func (b *Local) List(t Type) (IDs, error) {
 	}
 
 	return ids, nil
+}
+
+// Version returns the version of this local backend.
+func (b *Local) Version() uint {
+	return b.ver
 }

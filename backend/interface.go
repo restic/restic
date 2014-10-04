@@ -10,12 +10,17 @@ const (
 	Tree          = "tree"
 )
 
+const (
+	BackendVersion = 1
+)
+
 type Server interface {
 	Create(Type, []byte) (ID, error)
 	Get(Type, ID) ([]byte, error)
 	List(Type) (IDs, error)
 	Test(Type, ID) (bool, error)
 	Remove(Type, ID) error
+	Version() uint
 
 	Location() string
 }
