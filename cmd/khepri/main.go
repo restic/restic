@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -44,6 +45,77 @@ func read_password(prompt string) string {
 	fmt.Println()
 
 	return string(pw)
+}
+
+func commandInit(repo string) error {
+	pw := read_password("enter password for new backend: ")
+	pw2 := read_password("enter password again: ")
+
+	if pw != pw2 {
+		errx(1, "passwords do not match")
+	}
+
+	be, err := create(repo)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "creating backend at %s failed: %v\n", repo, err)
+		os.Exit(1)
+	}
+
+	_, err = khepri.CreateKey(be, pw)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", repo, err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("created khepri backend at %s\n", be.Location())
+
+	return nil
+}
+
+// Open the backend specified by URI.
+// Valid formats are:
+// * /foo/bar -> local repository at /foo/bar
+// * sftp://user@host/foo/bar -> remote sftp repository on host for user at path foo/bar
+// * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
+func open(u string) (backend.Server, error) {
+	url, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	if url.Scheme == "" {
+		return backend.OpenLocal(url.Path)
+	} else {
+		args := []string{url.Host}
+		if url.User != nil && url.User.Username() != "" {
+			args = append(args, "-l")
+			args = append(args, url.User.Username())
+		}
+		args = append(args, "-s")
+		args = append(args, "sftp")
+		return backend.OpenSFTP(url.Path[1:], "ssh", args...)
+	}
+}
+
+// Create the backend specified by URI.
+func create(u string) (backend.Server, error) {
+	url, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	if url.Scheme == "" {
+		return backend.CreateLocal(url.Path)
+	} else {
+		args := []string{url.Host}
+		if url.User != nil && url.User.Username() != "" {
+			args = append(args, "-l")
+			args = append(args, url.User.Username())
+		}
+		args = append(args, "-s")
+		args = append(args, "sftp")
+		return backend.CreateSFTP(url.Path[1:], "ssh", args...)
+	}
 }
 
 func init() {
@@ -94,7 +166,7 @@ func main() {
 	}
 
 	// read_password("enter password: ")
-	repo, err := backend.OpenLocal(Opts.Repo)
+	repo, err := open(Opts.Repo)
 	if err != nil {
 		errx(1, "unable to open repo: %v", err)
 	}

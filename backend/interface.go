@@ -22,5 +22,7 @@ type Server interface {
 	Remove(Type, ID) error
 	Version() uint
 
+	Close() error
+
 	Location() string
 }

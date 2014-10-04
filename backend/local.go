@@ -186,7 +186,12 @@ func (b *Local) Create(t Type, data []byte) (ID, error) {
 		return nil, err
 	}
 
-	// close tempfile, return id
+	err = file.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// return id
 	id := IDFromData(data)
 	err = b.renameFile(file, t, id)
 	if err != nil {
@@ -275,4 +280,9 @@ func (b *Local) List(t Type) (IDs, error) {
 // Version returns the version of this local backend.
 func (b *Local) Version() uint {
 	return b.ver
+}
+
+// Close closes the repository
+func (b *Local) Close() error {
+	return nil
 }

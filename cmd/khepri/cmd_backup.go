@@ -21,7 +21,7 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 		fmt.Fprintf(os.Stderr, "err: %v\n", err)
 	}
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
-		fmt.Fprintf(os.Stderr, "error for %s: %v\n%s\n", dir, err, fi)
+		fmt.Fprintf(os.Stderr, "error for %s: %v\n%v\n", dir, err, fi)
 		return err
 	}
 
