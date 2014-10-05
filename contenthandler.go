@@ -29,7 +29,7 @@ func NewContentHandler(be backend.Server, key *Key) (*ContentHandler, error) {
 	return ch, nil
 }
 
-// LoadSnapshotadds all blobs from a snapshot into the content handler and returns the snapshot.
+// LoadSnapshot adds all blobs from a snapshot into the content handler and returns the snapshot.
 func (ch *ContentHandler) LoadSnapshot(id backend.ID) (*Snapshot, error) {
 	sn, err := LoadSnapshot(ch, id)
 	if err != nil {

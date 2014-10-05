@@ -124,6 +124,8 @@ func init() {
 	commands["restore"] = commandRestore
 	commands["list"] = commandList
 	commands["snapshots"] = commandSnapshots
+	commands["cat"] = commandCat
+	commands["ls"] = commandLs
 }
 
 func main() {
