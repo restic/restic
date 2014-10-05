@@ -81,7 +81,7 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 		node.User = u.Username
 	}
 
-	// TODO: implement getgrnam()
+	// TODO: implement getgrnam() or use https://github.com/kless/osutil
 	// if g, nil := user.LookupId(strconv.Itoa(int(stat.Uid))); err == nil {
 	// 	node.User = u.Username
 	// }
