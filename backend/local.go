@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/juju/arrar"
 )
 
 const (
@@ -131,7 +133,7 @@ func CreateLocal(dir string) (*Local, error) {
 		return nil, err
 	}
 
-	// open repository
+	// open backend
 	return OpenLocal(dir)
 }
 
@@ -169,12 +171,23 @@ func (b *Local) dir(t Type) string {
 	return filepath.Join(b.p, n)
 }
 
-// Create stores new content of type t and data and returns the ID.
+// Create stores new content of type t and data and returns the ID. If the blob
+// is already present, returns ErrAlreadyPresent and the blob's ID.
 func (b *Local) Create(t Type, data []byte) (ID, error) {
 	// TODO: make sure that tempfile is removed upon error
 
-	// create tempfile in repository
-	var err error
+	// check if blob is already present in backend
+	id := IDFromData(data)
+	res, err := b.Test(t, id)
+	if err != nil {
+		return nil, arrar.Annotate(err, "test for presence")
+	}
+
+	if res {
+		return id, ErrAlreadyPresent
+	}
+
+	// create tempfile in backend
 	file, err := b.tempFile()
 	if err != nil {
 		return nil, err
@@ -192,7 +205,6 @@ func (b *Local) Create(t Type, data []byte) (ID, error) {
 	}
 
 	// return id
-	id := IDFromData(data)
 	err = b.renameFile(file, t, id)
 	if err != nil {
 		return nil, err
@@ -282,7 +294,7 @@ func (b *Local) Version() uint {
 	return b.ver
 }
 
-// Close closes the repository
+// Close closes the backend
 func (b *Local) Close() error {
 	return nil
 }

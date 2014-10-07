@@ -1,5 +1,7 @@
 package backend
 
+import "errors"
+
 type Type string
 
 const (
@@ -12,6 +14,10 @@ const (
 
 const (
 	BackendVersion = 1
+)
+
+var (
+	ErrAlreadyPresent = errors.New("blob is already present in backend")
 )
 
 type Server interface {

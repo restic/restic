@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/juju/arrar"
 	"github.com/pkg/sftp"
 )
 
@@ -71,7 +72,7 @@ func start_client(program string, args ...string) (*SFTP, error) {
 }
 
 // OpenSFTP opens an sftp backend. When the command is started via
-// exec.Command, it is expected to speak sftp on stdin/stdout. The repository
+// exec.Command, it is expected to speak sftp on stdin/stdout. The backend
 // is expected at the given path.
 func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	sftp, err := start_client(program, args...)
@@ -115,10 +116,6 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	version, err := strconv.Atoi(strings.TrimSpace(string(buf[:n])))
 	if err != nil {
 		return nil, fmt.Errorf("unable to convert version to integer: %v\n", err)
-	}
-
-	if version != BackendVersion {
-		return nil, fmt.Errorf("wrong version %d", version)
 	}
 
 	// check version
@@ -201,7 +198,7 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		return nil, err
 	}
 
-	// open repository
+	// open backend
 	return OpenSFTP(dir, program, args...)
 }
 
@@ -258,33 +255,38 @@ func (r *SFTP) dir(t Type) string {
 	return filepath.Join(r.p, n)
 }
 
-// Create stores new content of type t and data and returns the ID.
+// Create stores new content of type t and data and returns the ID. If the blob
+// is already present, returns ErrAlreadyPresent and the blob's ID.
 func (r *SFTP) Create(t Type, data []byte) (ID, error) {
 	// TODO: make sure that tempfile is removed upon error
 
-	// create tempfile in repository
-	var err error
+	// check if blob is already present in backend
+	id := IDFromData(data)
+	if ok, _ := r.Test(t, id); ok {
+		return id, ErrAlreadyPresent
+	}
+
+	// create tempfile in backend
 	filename, file, err := r.tempFile()
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotate(err, "create tempfile")
 	}
 
 	// write data to tempfile
 	_, err = file.Write(data)
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotate(err, "writing data to tempfile")
 	}
 
 	err = file.Close()
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotate(err, "close tempfile")
 	}
 
 	// return id
-	id := IDFromData(data)
 	err = r.renameFile(filename, t, id)
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotate(err, "rename file")
 	}
 
 	return id, nil
@@ -315,20 +317,17 @@ func (r *SFTP) Get(t Type, id ID) ([]byte, error) {
 
 // Test returns true if a blob of the given type and ID exists in the backend.
 func (r *SFTP) Test(t Type, id ID) (bool, error) {
-	// try to open file
 	file, err := r.c.Open(r.filename(t, id))
 	defer func() {
-		file.Close()
+		if file != nil {
+			file.Close()
+		}
 	}()
 
-	if err != nil {
-		if os.IsNotExist(err) {
-			return false, nil
-		}
-		return false, err
+	if err == nil {
+		return true, nil
 	}
-
-	return true, nil
+	return false, err
 }
 
 // Remove removes the content stored at ID.
