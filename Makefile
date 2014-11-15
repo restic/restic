@@ -1,7 +1,7 @@
 .PHONY: clean all test
 
 test:
-	go test -race
+	go test -race ./...
 	for dir in cmd/* ; do \
 		(cd "$$dir"; go build -race) \
 	done
