@@ -16,7 +16,7 @@ import (
 
 	"github.com/fd0/khepri/backend"
 
-	"code.google.com/p/go.crypto/scrypt"
+	"golang.org/x/crypto/scrypt"
 )
 
 var (
