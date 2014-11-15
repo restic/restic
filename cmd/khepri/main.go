@@ -15,7 +15,9 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-var Opts struct {
+var version = "compiled manually"
+
+var opts struct {
 	Repo string `short:"r" long:"repo"    description:"Repository directory to backup to/restore from"`
 }
 
@@ -31,7 +33,7 @@ type commandFunc func(backend.Server, *khepri.Key, []string) error
 
 var commands map[string]commandFunc
 
-func read_password(prompt string) string {
+func readPassword(prompt string) string {
 	p := os.Getenv("KHEPRI_PASSWORD")
 	if p != "" {
 		return p
@@ -48,8 +50,8 @@ func read_password(prompt string) string {
 }
 
 func commandInit(repo string) error {
-	pw := read_password("enter password for new backend: ")
-	pw2 := read_password("enter password again: ")
+	pw := readPassword("enter password for new backend: ")
+	pw2 := readPassword("enter password again: ")
 
 	if pw != pw2 {
 		errx(1, "passwords do not match")
@@ -85,16 +87,16 @@ func open(u string) (backend.Server, error) {
 
 	if url.Scheme == "" {
 		return backend.OpenLocal(url.Path)
-	} else {
-		args := []string{url.Host}
-		if url.User != nil && url.User.Username() != "" {
-			args = append(args, "-l")
-			args = append(args, url.User.Username())
-		}
-		args = append(args, "-s")
-		args = append(args, "sftp")
-		return backend.OpenSFTP(url.Path[1:], "ssh", args...)
 	}
+
+	args := []string{url.Host}
+	if url.User != nil && url.User.Username() != "" {
+		args = append(args, "-l")
+		args = append(args, url.User.Username())
+	}
+	args = append(args, "-s")
+	args = append(args, "sftp")
+	return backend.OpenSFTP(url.Path[1:], "ssh", args...)
 }
 
 // Create the backend specified by URI.
@@ -106,16 +108,16 @@ func create(u string) (backend.Server, error) {
 
 	if url.Scheme == "" {
 		return backend.CreateLocal(url.Path)
-	} else {
-		args := []string{url.Host}
-		if url.User != nil && url.User.Username() != "" {
-			args = append(args, "-l")
-			args = append(args, url.User.Username())
-		}
-		args = append(args, "-s")
-		args = append(args, "sftp")
-		return backend.CreateSFTP(url.Path[1:], "ssh", args...)
 	}
+
+	args := []string{url.Host}
+	if url.User != nil && url.User.Username() != "" {
+		args = append(args, "-l")
+		args = append(args, url.User.Username())
+	}
+	args = append(args, "-s")
+	args = append(args, "sftp")
+	return backend.CreateSFTP(url.Path[1:], "ssh", args...)
 }
 
 func init() {
@@ -131,12 +133,12 @@ func init() {
 func main() {
 	log.SetOutput(os.Stdout)
 
-	Opts.Repo = os.Getenv("KHEPRI_REPOSITORY")
-	if Opts.Repo == "" {
-		Opts.Repo = "khepri-backup"
+	opts.Repo = os.Getenv("KHEPRI_REPOSITORY")
+	if opts.Repo == "" {
+		opts.Repo = "khepri-backup"
 	}
 
-	args, err := flags.Parse(&Opts)
+	args, err := flags.Parse(&opts)
 	if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
 		os.Exit(0)
 	}
@@ -153,12 +155,16 @@ func main() {
 
 	cmd := args[0]
 
-	if cmd == "init" {
-		err = commandInit(Opts.Repo)
+	switch cmd {
+	case "init":
+		err = commandInit(opts.Repo)
 		if err != nil {
 			errx(1, "error executing command %q: %v", cmd, err)
 		}
+		return
 
+	case "version":
+		fmt.Printf("%v\n", version)
 		return
 	}
 
@@ -168,12 +174,12 @@ func main() {
 	}
 
 	// read_password("enter password: ")
-	repo, err := open(Opts.Repo)
+	repo, err := open(opts.Repo)
 	if err != nil {
 		errx(1, "unable to open repo: %v", err)
 	}
 
-	key, err := khepri.SearchKey(repo, read_password("Enter Password for Repository: "))
+	key, err := khepri.SearchKey(repo, readPassword("Enter Password for Repository: "))
 	if err != nil {
 		errx(2, "unable to open repo: %v", err)
 	}

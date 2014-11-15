@@ -128,6 +128,4 @@ func commandCat(be backend.Server, key *khepri.Key, args []string) error {
 	default:
 		return errors.New("invalid type")
 	}
-
-	return nil
 }
