@@ -69,17 +69,12 @@ func OpenLocal(dir string) (*Local, error) {
 		return nil, fmt.Errorf("unable to convert version to integer: %v\n", err)
 	}
 
-	if version != BackendVersion {
-		return nil, fmt.Errorf("wrong version %d", version)
-	}
-
 	// check version
 	if version != BackendVersion {
 		return nil, fmt.Errorf("wrong version %d", version)
 	}
 
 	return &Local{p: dir, ver: uint(version)}, nil
-
 }
 
 // CreateLocal creates all the necessary files and directories for a new local
