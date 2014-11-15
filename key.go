@@ -20,21 +20,24 @@ import (
 )
 
 var (
-	ErrUnauthenticated = errors.New("Ciphertext verification failed")
-	ErrNoKeyFound      = errors.New("No key could be found")
+	// ErrUnauthenticated is returned when ciphertext verification has failed.
+	ErrUnauthenticated = errors.New("ciphertext verification failed")
+	// ErrNoKeyFound is returned when no key for the repository could be decrypted.
+	ErrNoKeyFound = errors.New("no key could be found")
 )
 
 // TODO: figure out scrypt values on the fly depending on the current
 // hardware.
 const (
-	scrypt_N        = 65536
-	scrypt_r        = 8
-	scrypt_p        = 1
-	scrypt_saltsize = 64
-	aesKeysize      = 32 // for AES256
-	hmacKeysize     = 32 // for HMAC with SHA256
+	scryptN        = 65536
+	scryptR        = 8
+	scryptP        = 1
+	scryptSaltsize = 64
+	aesKeysize     = 32 // for AES256
+	hmacKeysize    = 32 // for HMAC with SHA256
 )
 
+// Key represents an encrypted master key for a repository.
 type Key struct {
 	Created  time.Time `json:"created"`
 	Username string    `json:"username"`
@@ -52,19 +55,22 @@ type Key struct {
 	master *keys
 }
 
+// keys is a JSON structure that holds signing and encryption keys.
 type keys struct {
 	Sign    []byte
 	Encrypt []byte
 }
 
+// CreateKey initializes a master key in the given backend and encrypts it with
+// the password.
 func CreateKey(be backend.Server, password string) (*Key, error) {
 	// fill meta data about key
 	k := &Key{
 		Created: time.Now(),
 		KDF:     "scrypt",
-		N:       scrypt_N,
-		R:       scrypt_r,
-		P:       scrypt_p,
+		N:       scryptN,
+		R:       scryptR,
+		P:       scryptP,
 	}
 
 	hn, err := os.Hostname()
@@ -78,9 +84,9 @@ func CreateKey(be backend.Server, password string) (*Key, error) {
 	}
 
 	// generate random salt
-	k.Salt = make([]byte, scrypt_saltsize)
+	k.Salt = make([]byte, scryptSaltsize)
 	n, err := rand.Read(k.Salt)
-	if n != scrypt_saltsize || err != nil {
+	if n != scryptSaltsize || err != nil {
 		panic("unable to read enough random bytes for salt")
 	}
 
@@ -119,6 +125,7 @@ func CreateKey(be backend.Server, password string) (*Key, error) {
 	return k, nil
 }
 
+// OpenKey tries do decrypt the key specified by id with the given password.
 func OpenKey(be backend.Server, id backend.ID, password string) (*Key, error) {
 	// extract data from repo
 	data, err := be.Get(backend.Key, id)
@@ -160,6 +167,8 @@ func OpenKey(be backend.Server, id backend.ID, password string) (*Key, error) {
 	return k, nil
 }
 
+// SearchKey tries to decrypt all keys in the backend with the given password.
+// If none could be found, ErrNoKeyFound is returned.
 func SearchKey(be backend.Server, password string) (*Key, error) {
 	// list all keys
 	ids, err := be.List(backend.Key)
@@ -187,18 +196,18 @@ func (k *Key) scrypt(password string) (*keys, error) {
 	}
 
 	keybytes := hmacKeysize + aesKeysize
-	scrypt_keys, err := scrypt.Key([]byte(password), k.Salt, k.N, k.R, k.P, keybytes)
+	scryptKeys, err := scrypt.Key([]byte(password), k.Salt, k.N, k.R, k.P, keybytes)
 	if err != nil {
 		return nil, fmt.Errorf("error deriving keys from password: %v", err)
 	}
 
-	if len(scrypt_keys) != keybytes {
-		return nil, fmt.Errorf("invalid numbers of bytes expanded from scrypt(): %d", len(scrypt_keys))
+	if len(scryptKeys) != keybytes {
+		return nil, fmt.Errorf("invalid numbers of bytes expanded from scrypt(): %d", len(scryptKeys))
 	}
 
 	ks := &keys{
-		Encrypt: scrypt_keys[:aesKeysize],
-		Sign:    scrypt_keys[aesKeysize:],
+		Encrypt: scryptKeys[:aesKeysize],
+		Sign:    scryptKeys[aesKeysize:],
 	}
 	return ks, nil
 }
