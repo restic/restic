@@ -53,7 +53,7 @@ func commandCat(be backend.Server, key *khepri.Key, args []string) error {
 			return err
 		}
 
-		_, err = os.Stdout.Write(data)
+		_, err = os.Stdout.Write(buf)
 		return err
 
 	case "tree":
