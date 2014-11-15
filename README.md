@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/fd0/khepri.png?label=ready&title=Ready)](https://waffle.io/fd0/khepri)
 WARNING
 =======
 
