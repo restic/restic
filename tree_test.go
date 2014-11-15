@@ -16,8 +16,8 @@ var testFiles = []struct {
 	{"bar/bla/blubb", []byte("This is just a test!\n")},
 }
 
-// prepare directory and return temporary path
-func prepare_dir(t *testing.T) string {
+// prepareDir creates a temporary directory and returns it.
+func prepareDir(t *testing.T) string {
 	tempdir, err := ioutil.TempDir("", "khepri-test-")
 	ok(t, err)
 
@@ -39,13 +39,11 @@ func prepare_dir(t *testing.T) string {
 		ok(t, err)
 	}
 
-	t.Logf("tempdir prepared at %s", tempdir)
-
 	return tempdir
 }
 
 func TestTree(t *testing.T) {
-	dir := prepare_dir(t)
+	dir := prepareDir(t)
 	defer func() {
 		if *testCleanup {
 			ok(t, os.RemoveAll(dir))
