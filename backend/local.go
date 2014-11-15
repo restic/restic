@@ -118,7 +118,7 @@ func CreateLocal(dir string) (*Local, error) {
 		return nil, err
 	}
 
-	_, err = f.Write([]byte(strconv.Itoa(BackendVersion)))
+	_, err = f.Write([]byte(fmt.Sprintf("%d\n", BackendVersion)))
 	if err != nil {
 		return nil, err
 	}
