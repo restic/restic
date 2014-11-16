@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sync"
 
 	"github.com/fd0/khepri/backend"
 	"github.com/fd0/khepri/chunker"
@@ -15,6 +16,7 @@ type ContentHandler struct {
 	be  backend.Server
 	key *Key
 
+	m       sync.Mutex
 	content *StorageMap
 }
 
@@ -36,6 +38,8 @@ func (ch *ContentHandler) LoadSnapshot(id backend.ID) (*Snapshot, error) {
 		return nil, err
 	}
 
+	ch.m.Lock()
+	defer ch.m.Unlock()
 	ch.content.Merge(sn.StorageMap)
 	return sn, nil
 }
@@ -49,6 +53,9 @@ func (ch *ContentHandler) LoadAllSnapshots() error {
 		if err != nil {
 			return
 		}
+
+		ch.m.Lock()
+		defer ch.m.Unlock()
 		ch.content.Merge(sn.StorageMap)
 	})
 	if err != nil {
@@ -65,6 +72,8 @@ func (ch *ContentHandler) Save(t backend.Type, data []byte) (*Blob, error) {
 	id := backend.Hash(data)
 
 	// test if the hash is already in the backend
+	ch.m.Lock()
+	defer ch.m.Unlock()
 	blob := ch.content.Find(id)
 	if blob != nil {
 		return blob, nil
@@ -177,6 +186,8 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	}
 
 	// lookup storage hash
+	ch.m.Lock()
+	defer ch.m.Unlock()
 	blob := ch.content.Find(id)
 	if blob == nil {
 		return nil, errors.New("Storage ID not found")

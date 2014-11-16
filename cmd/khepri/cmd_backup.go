@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fd0/khepri"
 	"github.com/fd0/khepri/backend"
@@ -92,12 +93,15 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 		}
 	}
 
+	start := time.Now()
 	sn, id, err := arch.Snapshot(target, t)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}
 
 	fmt.Printf("\nsnapshot %s saved: %v\n", id, sn)
+	duration := time.Now().Sub(start)
+	fmt.Printf("duration: %s, %.2fMiB/s\n", duration, float64(arch.Stats.Bytes)/float64(duration/time.Second)/(1<<20))
 
 	return nil
 }

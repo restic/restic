@@ -3,15 +3,24 @@ package khepri
 import (
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/fd0/khepri/backend"
 )
 
+const (
+	maxConcurrentFiles = 32
+)
+
 type Archiver struct {
-	be   backend.Server
-	key  *Key
-	ch   *ContentHandler
+	be  backend.Server
+	key *Key
+	ch  *ContentHandler
+
+	m    sync.Mutex
 	smap *StorageMap // blobs used for the current snapshot
+
+	fileToken chan struct{}
 
 	Stats Stats
 
@@ -20,6 +29,8 @@ type Archiver struct {
 
 	ScannerUpdate func(stats Stats)
 	SaveUpdate    func(stats Stats)
+
+	sum sync.Mutex // for SaveUpdate
 }
 
 type Stats struct {
@@ -31,7 +42,16 @@ type Stats struct {
 
 func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	var err error
-	arch := &Archiver{be: be, key: key}
+	arch := &Archiver{
+		be:        be,
+		key:       key,
+		fileToken: make(chan struct{}, maxConcurrentFiles),
+	}
+
+	// fill file token
+	for i := 0; i < maxConcurrentFiles; i++ {
+		arch.fileToken <- struct{}{}
+	}
 
 	// abort on all errors
 	arch.Error = func(string, os.FileInfo, error) error { return err }
@@ -39,7 +59,6 @@ func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	arch.Filter = func(string, os.FileInfo) bool { return true }
 	// do nothing
 	arch.ScannerUpdate = func(Stats) {}
-	arch.SaveUpdate = func(Stats) {}
 
 	arch.smap = NewStorageMap()
 	arch.ch, err = NewContentHandler(be, key)
@@ -56,6 +75,14 @@ func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	return arch, nil
 }
 
+func (arch *Archiver) saveUpdate(stats Stats) {
+	if arch.SaveUpdate != nil {
+		arch.sum.Lock()
+		defer arch.sum.Unlock()
+		arch.SaveUpdate(stats)
+	}
+}
+
 func (arch *Archiver) Save(t backend.Type, data []byte) (*Blob, error) {
 	blob, err := arch.ch.Save(t, data)
 	if err != nil {
@@ -63,6 +90,8 @@ func (arch *Archiver) Save(t backend.Type, data []byte) (*Blob, error) {
 	}
 
 	// store blob in storage map for current snapshot
+	arch.m.Lock()
+	defer arch.m.Unlock()
 	arch.smap.Insert(blob)
 
 	return blob, nil
@@ -75,6 +104,8 @@ func (arch *Archiver) SaveJSON(t backend.Type, item interface{}) (*Blob, error) 
 	}
 
 	// store blob in storage map for current snapshot
+	arch.m.Lock()
+	defer arch.m.Unlock()
 	arch.smap.Insert(blob)
 
 	return blob, nil
@@ -89,7 +120,9 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	node.Content = make([]backend.ID, len(blobs))
 	for i, blob := range blobs {
 		node.Content[i] = blob.ID
+		arch.m.Lock()
 		arch.smap.Insert(blob)
+		arch.m.Unlock()
 	}
 
 	return err
@@ -178,6 +211,8 @@ func (arch *Archiver) LoadTree(path string) (*Tree, error) {
 }
 
 func (arch *Archiver) saveTree(t *Tree) (*Blob, error) {
+	var wg sync.WaitGroup
+
 	for _, node := range *t {
 		if node.Tree != nil && node.Subtree == nil {
 			b, err := arch.saveTree(node.Tree)
@@ -185,18 +220,33 @@ func (arch *Archiver) saveTree(t *Tree) (*Blob, error) {
 				return nil, err
 			}
 			node.Subtree = b.ID
-			arch.SaveUpdate(Stats{Directories: 1})
+			arch.saveUpdate(Stats{Directories: 1})
 		} else if node.Type == "file" && len(node.Content) == 0 {
-			err := arch.SaveFile(node)
-			if err != nil {
-				return nil, err
-			}
+			// start goroutine
+			wg.Add(1)
+			go func(n *Node) {
+				defer wg.Done()
 
-			arch.SaveUpdate(Stats{Files: 1, Bytes: node.Size})
+				// get token
+				token := <-arch.fileToken
+				defer func() {
+					arch.fileToken <- token
+				}()
+
+				// debug("start: %s", n.path)
+
+				// TODO: handle error
+				arch.SaveFile(n)
+				arch.saveUpdate(Stats{Files: 1, Bytes: n.Size})
+
+				// debug("done:  %s", n.path)
+			}(node)
 		} else {
-			arch.SaveUpdate(Stats{Other: 1})
+			arch.saveUpdate(Stats{Other: 1})
 		}
 	}
+
+	wg.Wait()
 
 	blob, err := arch.SaveJSON(backend.Tree, t)
 	if err != nil {

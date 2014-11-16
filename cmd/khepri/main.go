@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -128,6 +129,9 @@ func init() {
 	commands["snapshots"] = commandSnapshots
 	commands["cat"] = commandCat
 	commands["ls"] = commandLs
+
+	// set GOMAXPROCS to number of CPUs
+	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
 func main() {
