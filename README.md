@@ -30,6 +30,12 @@ Khepri is a program that does backups right. The design goals are:
    administrators are able to access your backups). Khepri is built to secure
    your data against such attackers.
 
+ * Efficient: With the growth of data, additional snapshots should only take
+   the storage of the actual increment. Even more, duplicate data should be
+   de-duplicated before it is actually written to the storage backend to save
+   precious backup space.
+
+
 Building
 ========
 
