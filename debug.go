@@ -1,6 +1,6 @@
 // +build debug
 
-package main
+package khepri
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+var version = "compiled manually"
 var debugLogger = initDebugLogger()
 
 func initDebugLogger() *log.Logger {
