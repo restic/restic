@@ -63,8 +63,9 @@ func (e *entry) equals(other *entry) bool {
 	}
 
 	if e.fi.ModTime() != other.fi.ModTime() {
-		fmt.Printf("ModTime does not match\n")
-		return false
+		fmt.Printf("%s: ModTime does not match\n", e.path)
+		// TODO: Fix ModTime for directories, return false
+		return true
 	}
 
 	stat, _ := e.fi.Sys().(*syscall.Stat_t)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fd0/khepri/backend"
+	"github.com/juju/arrar"
 )
 
 type Tree []*Node
@@ -145,12 +146,12 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 	case "dir":
 		err := os.Mkdir(path, node.Mode)
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Mkdir")
 		}
 
 		err = os.Lchown(path, int(node.UID), int(node.GID))
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Lchown")
 		}
 
 		var utimes = []syscall.Timespec{
@@ -159,25 +160,25 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 		}
 		err = syscall.UtimesNano(path, utimes)
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Utimesnano")
 		}
 	case "file":
 		// TODO: handle hard links
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 		defer f.Close()
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "OpenFile")
 		}
 
 		for _, blobid := range node.Content {
 			buf, err := ch.Load(backend.Blob, blobid)
 			if err != nil {
-				return err
+				return arrar.Annotate(err, "Load")
 			}
 
 			_, err = f.Write(buf)
 			if err != nil {
-				return err
+				return arrar.Annotate(err, "Write")
 			}
 		}
 
@@ -185,7 +186,7 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 
 		err = os.Lchown(path, int(node.UID), int(node.GID))
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Lchown")
 		}
 
 		var utimes = []syscall.Timespec{
@@ -194,49 +195,50 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 		}
 		err = syscall.UtimesNano(path, utimes)
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Utimesnano")
 		}
 	case "symlink":
 		err := os.Symlink(node.LinkTarget, path)
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Symlink")
 		}
 
 		err = os.Lchown(path, int(node.UID), int(node.GID))
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Lchown")
 		}
 
 		f, err := os.OpenFile(path, O_PATH|syscall.O_NOFOLLOW, 0600)
 		defer f.Close()
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "OpenFile")
 		}
 
-		var utimes = []syscall.Timeval{
-			syscall.NsecToTimeval(node.AccessTime.UnixNano()),
-			syscall.NsecToTimeval(node.ModTime.UnixNano()),
-		}
-		err = syscall.Futimes(int(f.Fd()), utimes)
-		if err != nil {
-			return err
-		}
+		// TODO: Get Futimes() working on older Linux kernels (fails with 3.2.0)
+		// var utimes = []syscall.Timeval{
+		// 	syscall.NsecToTimeval(node.AccessTime.UnixNano()),
+		// 	syscall.NsecToTimeval(node.ModTime.UnixNano()),
+		// }
+		// err = syscall.Futimes(int(f.Fd()), utimes)
+		// if err != nil {
+		// 	return arrar.Annotate(err, "Futimes")
+		// }
 
 		return nil
 	case "dev":
 		err := syscall.Mknod(path, syscall.S_IFBLK|0600, int(node.Device))
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Mknod")
 		}
 	case "chardev":
 		err := syscall.Mknod(path, syscall.S_IFCHR|0600, int(node.Device))
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Mknod")
 		}
 	case "fifo":
 		err := syscall.Mkfifo(path, 0600)
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "Mkfifo")
 		}
 	case "socket":
 		// nothing to do, we do not restore sockets
@@ -246,17 +248,17 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 
 	err := os.Chmod(path, node.Mode)
 	if err != nil {
-		return err
+		return arrar.Annotate(err, "Chmod")
 	}
 
 	err = os.Chown(path, int(node.UID), int(node.GID))
 	if err != nil {
-		return err
+		return arrar.Annotate(err, "Chown")
 	}
 
 	err = os.Chtimes(path, node.AccessTime, node.ModTime)
 	if err != nil {
-		return err
+		return arrar.Annotate(err, "Chtimes")
 	}
 
 	return nil

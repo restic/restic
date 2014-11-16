@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/fd0/khepri/backend"
+	"github.com/juju/arrar"
 )
 
 type Restorer struct {
@@ -49,7 +50,7 @@ func (res *Restorer) to(dir string, tree_id backend.ID) error {
 	tree := Tree{}
 	err := res.ch.LoadJSON(backend.Tree, tree_id, &tree)
 	if err != nil {
-		return res.Error(dir, nil, err)
+		return res.Error(dir, nil, arrar.Annotate(err, "LoadJSON"))
 	}
 
 	for _, node := range tree {
@@ -60,7 +61,7 @@ func (res *Restorer) to(dir string, tree_id backend.ID) error {
 
 		err := node.CreateAt(res.ch, p)
 		if err != nil {
-			err = res.Error(p, node, err)
+			err = res.Error(p, node, arrar.Annotate(err, "create node"))
 			if err != nil {
 				return err
 			}
@@ -73,7 +74,7 @@ func (res *Restorer) to(dir string, tree_id backend.ID) error {
 
 			err = res.to(p, node.Subtree)
 			if err != nil {
-				err = res.Error(p, node, err)
+				err = res.Error(p, node, arrar.Annotate(err, "restore subtree"))
 				if err != nil {
 					return err
 				}
