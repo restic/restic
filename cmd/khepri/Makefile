@@ -8,7 +8,7 @@ TAGS =
 
 all: khepri
 
-khepri: *.go
+khepri: *.go $(wildcard ../../*.go) $(wildcard ../../*/*.go)
 	go build $(TAGS) -ldflags "$(LDFLAGS)"
 
 debug: TAGS=-tags debug
