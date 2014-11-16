@@ -84,8 +84,19 @@ fi
 
 echo "testfiles: $testfiles"
 
+failed=""
 for testfile in "$testfiles"; do
     current=$(basename "${testfile}" .sh)
 
-    bash "${testfile}" && pass "${current} pass" || err "${current} failed!"
+    if bash "${testfile}"; then
+        pass "${current} pass"
+    else
+        err "${current} failed!"
+        failed+=" ${current}"
+    fi
 done
+
+if [ -n "$failed" ]; then
+    err "failed tests: ${failed}"
+    exit 1
+fi
