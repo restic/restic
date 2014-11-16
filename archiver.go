@@ -13,8 +13,20 @@ type Archiver struct {
 	ch   *ContentHandler
 	smap *StorageMap // blobs used for the current snapshot
 
+	Stats Stats
+
 	Error  func(dir string, fi os.FileInfo, err error) error
 	Filter func(item string, fi os.FileInfo) bool
+
+	ScannerUpdate func(stats Stats)
+	SaveUpdate    func(stats Stats)
+}
+
+type Stats struct {
+	Files       int
+	Directories int
+	Other       int
+	Bytes       uint64
 }
 
 func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
@@ -25,6 +37,9 @@ func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	arch.Error = func(string, os.FileInfo, error) error { return err }
 	// allow all files
 	arch.Filter = func(string, os.FileInfo) bool { return true }
+	// do nothing
+	arch.ScannerUpdate = func(Stats) {}
+	arch.SaveUpdate = func(Stats) {}
 
 	arch.smap = NewStorageMap()
 	arch.ch, err = NewContentHandler(be, key)
@@ -65,10 +80,10 @@ func (arch *Archiver) SaveJSON(t backend.Type, item interface{}) (*Blob, error) 
 	return blob, nil
 }
 
-func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
+func (arch *Archiver) SaveFile(node *Node) error {
 	blobs, err := arch.ch.SaveFile(node.path, uint(node.Size))
 	if err != nil {
-		return nil, arch.Error(node.path, nil, err)
+		return arch.Error(node.path, nil, err)
 	}
 
 	node.Content = make([]backend.ID, len(blobs))
@@ -77,23 +92,20 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 		arch.smap.Insert(blob)
 	}
 
-	return blobs, err
+	return err
 }
 
-func (arch *Archiver) ImportDir(dir string) (Tree, error) {
+func (arch *Archiver) loadTree(dir string) (*Tree, error) {
+	// open and list path
 	fd, err := os.Open(dir)
 	defer fd.Close()
 	if err != nil {
-		return nil, arch.Error(dir, nil, err)
+		return nil, err
 	}
 
 	entries, err := fd.Readdir(-1)
 	if err != nil {
-		return nil, arch.Error(dir, nil, err)
-	}
-
-	if len(entries) == 0 {
-		return nil, nil
+		return nil, err
 	}
 
 	tree := Tree{}
@@ -107,71 +119,97 @@ func (arch *Archiver) ImportDir(dir string) (Tree, error) {
 
 		node, err := NodeFromFileInfo(path, entry)
 		if err != nil {
-			return nil, arch.Error(dir, entry, err)
+			// TODO: error processing
+			return nil, err
 		}
 
 		tree = append(tree, node)
 
 		if entry.IsDir() {
-			subtree, err := arch.ImportDir(path)
+			node.Tree, err = arch.loadTree(path)
 			if err != nil {
 				return nil, err
 			}
-
-			blob, err := arch.SaveJSON(backend.Tree, subtree)
-			if err != nil {
-				return nil, err
-			}
-
-			node.Subtree = blob.ID
-
-			continue
 		}
 
-		if node.Type == "file" {
-			_, err := arch.SaveFile(node)
-			if err != nil {
-				return nil, arch.Error(path, entry, err)
-			}
+		switch node.Type {
+		case "file":
+			arch.Stats.Files++
+			arch.Stats.Bytes += node.Size
+		case "dir":
+			arch.Stats.Directories++
+		default:
+			arch.Stats.Other++
 		}
 	}
 
-	return tree, nil
+	arch.ScannerUpdate(arch.Stats)
+
+	return &tree, nil
 }
 
-func (arch *Archiver) Import(dir string) (*Snapshot, *Blob, error) {
+func (arch *Archiver) LoadTree(path string) (*Tree, error) {
+	fi, err := os.Lstat(path)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := NodeFromFileInfo(path, fi)
+	if err != nil {
+		return nil, err
+	}
+
+	if node.Type != "dir" {
+		arch.Stats.Files = 1
+		arch.Stats.Bytes = node.Size
+		arch.ScannerUpdate(arch.Stats)
+		return &Tree{node}, nil
+	}
+
+	arch.Stats.Directories = 1
+	node.Tree, err = arch.loadTree(path)
+	if err != nil {
+		return nil, err
+	}
+
+	arch.ScannerUpdate(arch.Stats)
+
+	return &Tree{node}, nil
+}
+
+func (arch *Archiver) saveTree(t *Tree) (*Blob, error) {
+	for _, node := range *t {
+		if node.Tree != nil && node.Subtree == nil {
+			b, err := arch.saveTree(node.Tree)
+			if err != nil {
+				return nil, err
+			}
+			node.Subtree = b.ID
+			arch.SaveUpdate(Stats{Directories: 1})
+		} else if node.Type == "file" && len(node.Content) == 0 {
+			err := arch.SaveFile(node)
+			if err != nil {
+				return nil, err
+			}
+
+			arch.SaveUpdate(Stats{Files: 1, Bytes: node.Size})
+		} else {
+			arch.SaveUpdate(Stats{Other: 1})
+		}
+	}
+
+	blob, err := arch.SaveJSON(backend.Tree, t)
+	if err != nil {
+		return nil, err
+	}
+
+	return blob, nil
+}
+
+func (arch *Archiver) Snapshot(dir string, t *Tree) (*Snapshot, backend.ID, error) {
 	sn := NewSnapshot(dir)
 
-	fi, err := os.Lstat(dir)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	node, err := NodeFromFileInfo(dir, fi)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if node.Type == "dir" {
-		tree, err := arch.ImportDir(dir)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		blob, err := arch.SaveJSON(backend.Tree, tree)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		node.Subtree = blob.ID
-	} else if node.Type == "file" {
-		_, err := arch.SaveFile(node)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
-	blob, err := arch.SaveJSON(backend.Tree, &Tree{node})
+	blob, err := arch.saveTree(t)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -185,5 +223,5 @@ func (arch *Archiver) Import(dir string) (*Snapshot, *Blob, error) {
 		return nil, nil, err
 	}
 
-	return sn, blob, nil
+	return sn, blob.Storage, nil
 }

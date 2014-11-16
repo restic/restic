@@ -34,6 +34,8 @@ type Node struct {
 	Content    []backend.ID `json:"content,omitempty"`
 	Subtree    backend.ID   `json:"subtree,omitempty"`
 
+	Tree *Tree `json:"-"`
+
 	path string
 }
 
