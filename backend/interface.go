@@ -5,7 +5,7 @@ import "errors"
 type Type string
 
 const (
-	Blob     Type = "blob"
+	Data     Type = "data"
 	Key           = "key"
 	Lock          = "lock"
 	Snapshot      = "snapshot"

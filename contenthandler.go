@@ -125,7 +125,7 @@ func (ch *ContentHandler) SaveFile(filename string, size uint) (Blobs, error) {
 			return nil, err
 		}
 
-		blob, err := ch.Save(backend.Blob, buf)
+		blob, err := ch.Save(backend.Data, buf)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +147,7 @@ func (ch *ContentHandler) SaveFile(filename string, size uint) (Blobs, error) {
 			return nil, err
 		}
 
-		blob, err := ch.Save(backend.Blob, chunk.Data)
+		blob, err := ch.Save(backend.Data, chunk.Data)
 		if err != nil {
 			return nil, err
 		}

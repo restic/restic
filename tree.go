@@ -171,7 +171,7 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 		}
 
 		for _, blobid := range node.Content {
-			buf, err := ch.Load(backend.Blob, blobid)
+			buf, err := ch.Load(backend.Data, blobid)
 			if err != nil {
 				return arrar.Annotate(err, "Load")
 			}

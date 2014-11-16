@@ -14,7 +14,7 @@ import (
 
 const (
 	dirMode         = 0700
-	blobPath        = "blobs"
+	dataPath        = "data"
 	snapshotPath    = "snapshots"
 	treePath        = "trees"
 	lockPath        = "locks"
@@ -32,7 +32,7 @@ type Local struct {
 func OpenLocal(dir string) (*Local, error) {
 	items := []string{
 		dir,
-		filepath.Join(dir, blobPath),
+		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
 		filepath.Join(dir, lockPath),
@@ -83,7 +83,7 @@ func CreateLocal(dir string) (*Local, error) {
 	versionFile := filepath.Join(dir, versionFileName)
 	dirs := []string{
 		dir,
-		filepath.Join(dir, blobPath),
+		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
 		filepath.Join(dir, lockPath),
@@ -104,7 +104,7 @@ func CreateLocal(dir string) (*Local, error) {
 		}
 	}
 
-	// create paths for blobs, refs and temp
+	// create paths for data, refs and temp
 	for _, d := range dirs {
 		err := os.MkdirAll(d, dirMode)
 		if err != nil {
@@ -152,8 +152,8 @@ func (b *Local) renameFile(file *os.File, t Type, id ID) error {
 func (b *Local) dir(t Type) string {
 	var n string
 	switch t {
-	case Blob:
-		n = blobPath
+	case Data:
+		n = dataPath
 	case Snapshot:
 		n = snapshotPath
 	case Tree:

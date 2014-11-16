@@ -35,14 +35,14 @@ func commandCat(be backend.Server, key *khepri.Key, args []string) error {
 	switch tpe {
 	case "blob":
 		// try id
-		data, err := ch.Load(backend.Blob, id)
+		data, err := ch.Load(backend.Data, id)
 		if err == nil {
 			_, err = os.Stdout.Write(data)
 			return err
 		}
 
 		// try storage id
-		buf, err := be.Get(backend.Blob, id)
+		buf, err := be.Get(backend.Data, id)
 		if err != nil {
 			return err
 		}

@@ -10,7 +10,7 @@ import (
 
 func commandList(be backend.Server, key *khepri.Key, args []string) error {
 	if len(args) != 1 {
-		return errors.New("usage: list [blobs|trees|snapshots|keys|locks]")
+		return errors.New("usage: list [data|trees|snapshots|keys|locks]")
 	}
 
 	var (
@@ -18,8 +18,8 @@ func commandList(be backend.Server, key *khepri.Key, args []string) error {
 		each func(backend.Server, backend.Type, func(backend.ID, []byte, error)) error = backend.Each
 	)
 	switch args[0] {
-	case "blobs":
-		t = backend.Blob
+	case "data":
+		t = backend.Data
 		each = key.Each
 	case "trees":
 		t = backend.Tree
@@ -35,7 +35,7 @@ func commandList(be backend.Server, key *khepri.Key, args []string) error {
 	}
 
 	return each(be, t, func(id backend.ID, data []byte, err error) {
-		if t == backend.Blob || t == backend.Tree {
+		if t == backend.Data || t == backend.Tree {
 			fmt.Printf("%s %s\n", id, backend.Hash(data))
 		} else {
 			fmt.Printf("%s\n", id)

@@ -19,15 +19,6 @@ import (
 )
 
 const (
-	// dirMode         = 0700
-	// blobPath        = "blobs"
-	// snapshotPath    = "snapshots"
-	// treePath        = "trees"
-	// lockPath        = "locks"
-	// keyPath         = "keys"
-	// tempPath        = "tmp"
-	// versionFileName = "version"
-
 	tempfileRandomSuffixLength = 10
 )
 
@@ -83,7 +74,7 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	// test if all necessary dirs and files are there
 	items := []string{
 		dir,
-		filepath.Join(dir, blobPath),
+		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
 		filepath.Join(dir, lockPath),
@@ -139,7 +130,7 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	versionFile := filepath.Join(dir, versionFileName)
 	dirs := []string{
 		dir,
-		filepath.Join(dir, blobPath),
+		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
 		filepath.Join(dir, lockPath),
@@ -160,7 +151,7 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		}
 	}
 
-	// create paths for blobs, refs and temp
+	// create paths for data, refs and temp blobs
 	for _, d := range dirs {
 		// TODO: implement client.MkdirAll() and set mode to dirMode
 		_, err = sftp.c.Lstat(d)
@@ -241,8 +232,8 @@ func (r *SFTP) renameFile(filename string, t Type, id ID) error {
 func (r *SFTP) dir(t Type) string {
 	var n string
 	switch t {
-	case Blob:
-		n = blobPath
+	case Data:
+		n = dataPath
 	case Snapshot:
 		n = snapshotPath
 	case Tree:
