@@ -142,10 +142,10 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		blobs = Blobs{blob}
 	} else {
 		// else store all chunks
-		chunker := chunker.New(file)
+		chnker := chunker.New(file)
 
 		for {
-			chunk, err := chunker.Next()
+			chunk, err := chnker.Next()
 			if err == io.EOF {
 				break
 			}
