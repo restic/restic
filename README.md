@@ -1,5 +1,6 @@
 [![Stories in Ready](https://badge.waffle.io/fd0/khepri.png?label=ready&title=Ready)](https://waffle.io/fd0/khepri)
 [![wercker status](https://app.wercker.com/status/5182477ec286ab5b428b40c1d8da6dea/s/master "wercker status")](https://app.wercker.com/project/bykey/5182477ec286ab5b428b40c1d8da6dea)
+[![sourcegraph status](https://sourcegraph.com/api/repos/github.com/fd0/khepri/.badges/status.png)](https://sourcegraph.com/github.com/fd0/khepri)
 
 WARNING
 =======
