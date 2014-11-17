@@ -3,13 +3,9 @@ package khepri
 import (
 	"encoding/json"
 	"errors"
-	"io"
-	"io/ioutil"
-	"os"
 	"sync"
 
 	"github.com/fd0/khepri/backend"
-	"github.com/fd0/khepri/chunker"
 )
 
 type ContentHandler struct {
@@ -116,55 +112,6 @@ func (ch *ContentHandler) SaveJSON(t backend.Type, item interface{}) (*Blob, err
 
 	// compress and save data
 	return ch.Save(t, backend.Compress(data))
-}
-
-// SaveFile stores the content of the file on the backend as a Blob by calling
-// Save for each chunk.
-func (ch *ContentHandler) SaveFile(filename string, size uint) (Blobs, error) {
-	file, err := os.Open(filename)
-	defer file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// if the file is small enough, store it directly
-	if size < chunker.MinSize {
-		buf, err := ioutil.ReadAll(file)
-		if err != nil {
-			return nil, err
-		}
-
-		blob, err := ch.Save(backend.Data, buf)
-		if err != nil {
-			return nil, err
-		}
-
-		return Blobs{blob}, nil
-	}
-
-	// else store all chunks
-	blobs := Blobs{}
-	chunker := chunker.New(file)
-
-	for {
-		chunk, err := chunker.Next()
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		blob, err := ch.Save(backend.Data, chunk.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		blobs = append(blobs, blob)
-	}
-
-	return blobs, nil
 }
 
 // Load tries to load and decrypt content identified by t and id from the backend.

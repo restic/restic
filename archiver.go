@@ -1,11 +1,14 @@
 package khepri
 
 import (
+	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/fd0/khepri/backend"
+	"github.com/fd0/khepri/chunker"
 )
 
 const (
@@ -111,10 +114,55 @@ func (arch *Archiver) SaveJSON(t backend.Type, item interface{}) (*Blob, error) 
 	return blob, nil
 }
 
+// SaveFile stores the content of the file on the backend as a Blob by calling
+// Save for each chunk.
 func (arch *Archiver) SaveFile(node *Node) error {
-	blobs, err := arch.ch.SaveFile(node.path, uint(node.Size))
+	file, err := os.Open(node.path)
+	defer file.Close()
 	if err != nil {
-		return arch.Error(node.path, nil, err)
+		return err
+	}
+
+	var blobs Blobs
+
+	// if the file is small enough, store it directly
+	if node.Size < chunker.MinSize {
+		buf, err := ioutil.ReadAll(file)
+		if err != nil {
+			return err
+		}
+
+		blob, err := arch.ch.Save(backend.Data, buf)
+		if err != nil {
+			return err
+		}
+
+		arch.saveUpdate(Stats{Bytes: blob.Size})
+
+		blobs = Blobs{blob}
+	} else {
+		// else store all chunks
+		chunker := chunker.New(file)
+
+		for {
+			chunk, err := chunker.Next()
+			if err == io.EOF {
+				break
+			}
+
+			if err != nil {
+				return err
+			}
+
+			blob, err := arch.ch.Save(backend.Data, chunk.Data)
+			if err != nil {
+				return err
+			}
+
+			arch.saveUpdate(Stats{Bytes: blob.Size})
+
+			blobs = append(blobs, blob)
+		}
 	}
 
 	node.Content = make([]backend.ID, len(blobs))
@@ -233,13 +281,9 @@ func (arch *Archiver) saveTree(t *Tree) (*Blob, error) {
 					arch.fileToken <- token
 				}()
 
-				// debug("start: %s", n.path)
-
 				// TODO: handle error
 				arch.SaveFile(n)
-				arch.saveUpdate(Stats{Files: 1, Bytes: n.Size})
-
-				// debug("done:  %s", n.path)
+				arch.saveUpdate(Stats{Files: 1})
 			}(node)
 		} else {
 			arch.saveUpdate(Stats{Other: 1})
