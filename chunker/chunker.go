@@ -218,8 +218,6 @@ func (c *chunker) Next() (*Chunk, error) {
 		c.pos += steps
 		c.bpos = c.bmax
 	}
-
-	return nil, nil
 }
 
 func (c *chunker) append(b byte) {
