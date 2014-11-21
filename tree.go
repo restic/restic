@@ -46,7 +46,7 @@ type Blob struct {
 	StorageSize uint64     `json:"ssize,omitempty"` // encrypted Size
 }
 
-type Blobs []*Blob
+type Blobs []Blob
 
 func (n Node) String() string {
 	switch n.Type {

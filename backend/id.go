@@ -47,6 +47,11 @@ func (id ID) EqualString(other string) (bool, error) {
 	return id.Equal(ID(s)), nil
 }
 
+// Compare compares this ID to another one, returning -1, 0, or 1.
+func (id ID) Compare(other ID) int {
+	return bytes.Compare(other, id)
+}
+
 func (id ID) MarshalJSON() ([]byte, error) {
 	return json.Marshal(id.String())
 }

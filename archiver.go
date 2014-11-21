@@ -20,8 +20,7 @@ type Archiver struct {
 	key *Key
 	ch  *ContentHandler
 
-	m    sync.Mutex
-	smap *StorageMap // blobs used for the current snapshot
+	bl *BlobList // blobs used for the current snapshot
 
 	fileToken chan struct{}
 
@@ -63,7 +62,7 @@ func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	// do nothing
 	arch.ScannerUpdate = func(Stats) {}
 
-	arch.smap = NewStorageMap()
+	arch.bl = NewBlobList()
 	arch.ch, err = NewContentHandler(be, key)
 	if err != nil {
 		return nil, err
@@ -86,30 +85,26 @@ func (arch *Archiver) saveUpdate(stats Stats) {
 	}
 }
 
-func (arch *Archiver) Save(t backend.Type, data []byte) (*Blob, error) {
+func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
 	blob, err := arch.ch.Save(t, data)
 	if err != nil {
-		return nil, err
+		return Blob{}, err
 	}
 
 	// store blob in storage map for current snapshot
-	arch.m.Lock()
-	defer arch.m.Unlock()
-	arch.smap.Insert(blob)
+	arch.bl.Insert(blob)
 
 	return blob, nil
 }
 
-func (arch *Archiver) SaveJSON(t backend.Type, item interface{}) (*Blob, error) {
+func (arch *Archiver) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
 	blob, err := arch.ch.SaveJSON(t, item)
 	if err != nil {
-		return nil, err
+		return Blob{}, err
 	}
 
 	// store blob in storage map for current snapshot
-	arch.m.Lock()
-	defer arch.m.Unlock()
-	arch.smap.Insert(blob)
+	arch.bl.Insert(blob)
 
 	return blob, nil
 }
@@ -168,9 +163,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	node.Content = make([]backend.ID, len(blobs))
 	for i, blob := range blobs {
 		node.Content[i] = blob.ID
-		arch.m.Lock()
-		arch.smap.Insert(blob)
-		arch.m.Unlock()
+		arch.bl.Insert(blob)
 	}
 
 	return err
@@ -258,14 +251,14 @@ func (arch *Archiver) LoadTree(path string) (*Tree, error) {
 	return &Tree{node}, nil
 }
 
-func (arch *Archiver) saveTree(t *Tree) (*Blob, error) {
+func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 	var wg sync.WaitGroup
 
 	for _, node := range *t {
 		if node.Tree != nil && node.Subtree == nil {
 			b, err := arch.saveTree(node.Tree)
 			if err != nil {
-				return nil, err
+				return Blob{}, err
 			}
 			node.Subtree = b.ID
 			arch.saveUpdate(Stats{Directories: 1})
@@ -294,7 +287,7 @@ func (arch *Archiver) saveTree(t *Tree) (*Blob, error) {
 
 	blob, err := arch.SaveJSON(backend.Tree, t)
 	if err != nil {
-		return nil, err
+		return Blob{}, err
 	}
 
 	return blob, nil
@@ -311,7 +304,7 @@ func (arch *Archiver) Snapshot(dir string, t *Tree) (*Snapshot, backend.ID, erro
 	sn.Content = blob.ID
 
 	// save snapshot
-	sn.StorageMap = arch.smap
+	sn.BlobList = arch.bl
 	blob, err = arch.SaveJSON(backend.Snapshot, sn)
 	if err != nil {
 		return nil, nil, err

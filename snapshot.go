@@ -11,14 +11,14 @@ import (
 )
 
 type Snapshot struct {
-	Time       time.Time   `json:"time"`
-	Content    backend.ID  `json:"content"`
-	StorageMap *StorageMap `json:"map"`
-	Dir        string      `json:"dir"`
-	Hostname   string      `json:"hostname,omitempty"`
-	Username   string      `json:"username,omitempty"`
-	UID        string      `json:"uid,omitempty"`
-	GID        string      `json:"gid,omitempty"`
+	Time     time.Time  `json:"time"`
+	Content  backend.ID `json:"content"`
+	BlobList *BlobList  `json:"blobs"`
+	Dir      string     `json:"dir"`
+	Hostname string     `json:"hostname,omitempty"`
+	Username string     `json:"username,omitempty"`
+	UID      string     `json:"uid,omitempty"`
+	GID      string     `json:"gid,omitempty"`
 
 	id backend.ID // plaintext ID, used during restore
 }
