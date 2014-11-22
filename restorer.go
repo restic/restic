@@ -30,12 +30,12 @@ func NewRestorer(be backend.Server, key *Key, snid backend.ID) (*Restorer, error
 	var err error
 	r.ch, err = NewContentHandler(be, key)
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotate(err, "create contenthandler for restorer")
 	}
 
 	r.sn, err = r.ch.LoadSnapshot(snid)
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotate(err, "load snapshot for restorer")
 	}
 
 	// abort on all errors

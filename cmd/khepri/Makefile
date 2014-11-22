@@ -6,12 +6,15 @@ TAGS =
 
 .PHONY: all clean debug
 
+# include config file if it exists
+-include $(CURDIR)/config.mk
+
 all: khepri
 
-khepri: *.go
+khepri: *.go $(wildcard ../../*.go) $(wildcard ../../*/*.go)
 	go build $(TAGS) -ldflags "$(LDFLAGS)"
 
-debug: TAGS=-tags debug
+debug: TAGS=-tags debug_cmd
 debug: khepri
 
 clean:

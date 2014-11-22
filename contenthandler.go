@@ -3,27 +3,24 @@ package khepri
 import (
 	"encoding/json"
 	"errors"
-	"io"
-	"io/ioutil"
-	"os"
+	"fmt"
 
 	"github.com/fd0/khepri/backend"
-	"github.com/fd0/khepri/chunker"
 )
 
 type ContentHandler struct {
 	be  backend.Server
 	key *Key
 
-	content *StorageMap
+	bl *BlobList
 }
 
 // NewContentHandler creates a new content handler.
 func NewContentHandler(be backend.Server, key *Key) (*ContentHandler, error) {
 	ch := &ContentHandler{
-		be:      be,
-		key:     key,
-		content: NewStorageMap(),
+		be:  be,
+		key: key,
+		bl:  NewBlobList(),
 	}
 
 	return ch, nil
@@ -36,7 +33,8 @@ func (ch *ContentHandler) LoadSnapshot(id backend.ID) (*Snapshot, error) {
 		return nil, err
 	}
 
-	ch.content.Merge(sn.StorageMap)
+	ch.bl.Merge(sn.BlobList)
+
 	return sn, nil
 }
 
@@ -49,7 +47,8 @@ func (ch *ContentHandler) LoadAllSnapshots() error {
 		if err != nil {
 			return
 		}
-		ch.content.Merge(sn.StorageMap)
+
+		ch.bl.Merge(sn.BlobList)
 	})
 	if err != nil {
 		return err
@@ -60,18 +59,18 @@ func (ch *ContentHandler) LoadAllSnapshots() error {
 
 // Save encrypts data and stores it to the backend as type t. If the data was
 // already saved before, the blob is returned.
-func (ch *ContentHandler) Save(t backend.Type, data []byte) (*Blob, error) {
+func (ch *ContentHandler) Save(t backend.Type, data []byte) (Blob, error) {
 	// compute plaintext hash
 	id := backend.Hash(data)
 
 	// test if the hash is already in the backend
-	blob := ch.content.Find(id)
-	if blob != nil {
+	blob, err := ch.bl.Find(Blob{ID: id})
+	if err == nil {
 		return blob, nil
 	}
 
 	// else create a new blob
-	blob = &Blob{
+	blob = Blob{
 		ID:   id,
 		Size: uint64(len(data)),
 	}
@@ -79,83 +78,34 @@ func (ch *ContentHandler) Save(t backend.Type, data []byte) (*Blob, error) {
 	// encrypt blob
 	ciphertext, err := ch.key.Encrypt(data)
 	if err != nil {
-		return nil, err
+		return Blob{}, err
 	}
 
 	// save blob
 	sid, err := ch.be.Create(t, ciphertext)
 	if err != nil {
-		return nil, err
+		return Blob{}, err
 	}
 
 	blob.Storage = sid
 	blob.StorageSize = uint64(len(ciphertext))
 
 	// insert blob into the storage map
-	ch.content.Insert(blob)
+	ch.bl.Insert(blob)
 
 	return blob, nil
 }
 
 // SaveJSON serialises item as JSON and uses Save() to store it to the backend as type t.
-func (ch *ContentHandler) SaveJSON(t backend.Type, item interface{}) (*Blob, error) {
+func (ch *ContentHandler) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
 	// convert to json
 	data, err := json.Marshal(item)
 	if err != nil {
-		return nil, err
+		return Blob{}, err
 	}
 
 	// compress and save data
 	return ch.Save(t, backend.Compress(data))
-}
-
-// SaveFile stores the content of the file on the backend as a Blob by calling
-// Save for each chunk.
-func (ch *ContentHandler) SaveFile(filename string, size uint) (Blobs, error) {
-	file, err := os.Open(filename)
-	defer file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// if the file is small enough, store it directly
-	if size < chunker.MinSize {
-		buf, err := ioutil.ReadAll(file)
-		if err != nil {
-			return nil, err
-		}
-
-		blob, err := ch.Save(backend.Data, buf)
-		if err != nil {
-			return nil, err
-		}
-
-		return Blobs{blob}, nil
-	}
-
-	// else store all chunks
-	blobs := Blobs{}
-	chunker := chunker.New(file)
-
-	for {
-		chunk, err := chunker.Next()
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		blob, err := ch.Save(backend.Data, chunk.Data)
-		if err != nil {
-			return nil, err
-		}
-
-		blobs = append(blobs, blob)
-	}
-
-	return blobs, nil
 }
 
 // Load tries to load and decrypt content identified by t and id from the backend.
@@ -177,9 +127,9 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	}
 
 	// lookup storage hash
-	blob := ch.content.Find(id)
-	if blob == nil {
-		return nil, errors.New("Storage ID not found")
+	blob, err := ch.bl.Find(Blob{ID: id})
+	if err != nil {
+		return nil, fmt.Errorf("Storage ID %s not found", id)
 	}
 
 	// load data

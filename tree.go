@@ -34,6 +34,8 @@ type Node struct {
 	Content    []backend.ID `json:"content,omitempty"`
 	Subtree    backend.ID   `json:"subtree,omitempty"`
 
+	Tree *Tree `json:"-"`
+
 	path string
 }
 
@@ -44,7 +46,7 @@ type Blob struct {
 	StorageSize uint64     `json:"ssize,omitempty"` // encrypted Size
 }
 
-type Blobs []*Blob
+type Blobs []Blob
 
 func (n Node) String() string {
 	switch n.Type {

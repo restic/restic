@@ -1,5 +1,5 @@
-// +build !debug_cmd
+// +build !debug
 
-package main
+package khepri
 
 func debug(fmt string, args ...interface{}) {}
