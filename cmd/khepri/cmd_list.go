@@ -26,6 +26,8 @@ func commandList(be backend.Server, key *khepri.Key, args []string) error {
 		each = key.Each
 	case "snapshots":
 		t = backend.Snapshot
+	case "maps":
+		t = backend.Map
 	case "keys":
 		t = backend.Key
 	case "locks":
