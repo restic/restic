@@ -2,7 +2,6 @@ package khepri
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -14,8 +13,8 @@ import (
 )
 
 const (
-	maxConcurrentFiles = 32
-	maxConcurrentBlobs = 32
+	maxConcurrentFiles = 8
+	maxConcurrentBlobs = 8
 
 	statTimeout = 20 * time.Millisecond
 )
@@ -159,12 +158,20 @@ func (arch *Archiver) SaveFile(node *Node) error {
 
 	// if the file is small enough, store it directly
 	if node.Size < chunker.MinSize {
-		buf, err := ioutil.ReadAll(file)
+		// acquire token
+		token := <-arch.blobToken
+		defer func() {
+			arch.blobToken <- token
+		}()
+
+		buf := GetChunkBuf("blob single file")
+		defer FreeChunkBuf("blob single file", buf)
+		n, err := io.ReadFull(file, buf)
 		if err != nil {
 			return err
 		}
 
-		blob, err := arch.ch.Save(backend.Data, buf)
+		blob, err := arch.ch.Save(backend.Data, buf[:n])
 		if err != nil {
 			return err
 		}
@@ -176,14 +183,18 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		// else store all chunks
 		chnker := chunker.New(file)
 		chans := [](<-chan Blob){}
+		defer chnker.Free()
 
 		for {
-			chunk, err := chnker.Next()
+			buf := GetChunkBuf("blob chunker")
+			chunk, err := chnker.Next(buf)
 			if err == io.EOF {
+				FreeChunkBuf("blob chunker", buf)
 				break
 			}
 
 			if err != nil {
+				FreeChunkBuf("blob chunker", buf)
 				return err
 			}
 
@@ -197,6 +208,8 @@ func (arch *Archiver) SaveFile(node *Node) error {
 				if err != nil {
 					panic(err)
 				}
+
+				FreeChunkBuf("blob chunker", buf)
 
 				arch.update(arch.SaveStats, Stats{Bytes: blob.Size})
 				arch.blobToken <- token
@@ -318,13 +331,13 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 			node.Subtree = b.ID
 			arch.update(arch.SaveStats, Stats{Directories: 1})
 		} else if node.Type == "file" && len(node.Content) == 0 {
+			// get token
+			token := <-arch.fileToken
+
 			// start goroutine
 			wg.Add(1)
 			go func(n *Node) {
 				defer wg.Done()
-
-				// get token
-				token := <-arch.fileToken
 				defer func() {
 					arch.fileToken <- token
 				}()

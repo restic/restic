@@ -51,7 +51,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	defer teardownBackend(t, be)
 	k := setupKey(t, be, testPassword)
 
-	for _, size := range []int{5, 23, 1 << 20, 10<<20 + 123} {
+	for _, size := range []int{5, 23, 1 << 20, 7<<20 + 123} {
 		data := make([]byte, size)
 		f, err := os.Open("/dev/urandom")
 		ok(t, err)
@@ -59,18 +59,21 @@ func TestEncryptDecrypt(t *testing.T) {
 		_, err = io.ReadFull(f, data)
 		ok(t, err)
 
-		ciphertext, err := k.Encrypt(data)
+		ciphertext := khepri.GetChunkBuf("TestEncryptDecrypt")
+		n, err := k.Encrypt(ciphertext, data)
 		ok(t, err)
 
-		plaintext, err := k.Decrypt(ciphertext)
+		plaintext, err := k.Decrypt(ciphertext[:n])
 		ok(t, err)
+
+		khepri.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
 
 		equals(t, plaintext, data)
 	}
 }
 
 func BenchmarkEncrypt(b *testing.B) {
-	size := 16 << 20 // 16MiB
+	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
 
 	be := setupBackend(b)
@@ -80,28 +83,32 @@ func BenchmarkEncrypt(b *testing.B) {
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
+	buf := khepri.GetChunkBuf("BenchmarkEncrypt")
 	for i := 0; i < b.N; i++ {
-		_, err := k.Encrypt(data)
+		_, err := k.Encrypt(buf, data)
 		ok(b, err)
 	}
+	khepri.FreeChunkBuf("BenchmarkEncrypt", buf)
 }
 
 func BenchmarkDecrypt(b *testing.B) {
-	size := 16 << 20 // 16MiB
+	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
 
 	be := setupBackend(b)
 	defer teardownBackend(b, be)
 	k := setupKey(b, be, testPassword)
 
-	ciphertext, err := k.Encrypt(data)
+	ciphertext := khepri.GetChunkBuf("BenchmarkDecrypt")
+	n, err := k.Encrypt(ciphertext, data)
 	ok(b, err)
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
-		_, err := k.Decrypt(ciphertext)
+		_, err := k.Decrypt(ciphertext[:n])
 		ok(b, err)
 	}
+	khepri.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
 }

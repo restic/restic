@@ -115,12 +115,11 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 }
 
 func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
-	node := &Node{
-		path:    path,
-		Name:    fi.Name(),
-		Mode:    fi.Mode() & os.ModePerm,
-		ModTime: fi.ModTime(),
-	}
+	node := GetNode()
+	node.path = path
+	node.Name = fi.Name()
+	node.Mode = fi.Mode() & os.ModePerm
+	node.ModTime = fi.ModTime()
 
 	switch fi.Mode() & (os.ModeType | os.ModeCharDevice) {
 	case 0:
@@ -264,4 +263,14 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 	}
 
 	return nil
+}
+
+func (b Blob) Free() {
+	if b.ID != nil {
+		b.ID.Free()
+	}
+
+	if b.Storage != nil {
+		b.Storage.Free()
+	}
 }

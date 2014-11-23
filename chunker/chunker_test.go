@@ -54,9 +54,10 @@ var chunks2 = []chunk{
 	chunk{chunker.MinSize, 0},
 }
 
-func test_with_data(t *testing.T, chunker chunker.Chunker, chunks []chunk) {
+func test_with_data(t *testing.T, chnker *chunker.Chunker, chunks []chunk) {
+	buf := make([]byte, chunker.MaxSize)
 	for i, chunk := range chunks {
-		c, err := chunker.Next()
+		c, err := chnker.Next(buf)
 
 		if err != nil {
 			t.Fatalf("Error returned with chunk %d: %v", i, err)
@@ -84,7 +85,7 @@ func test_with_data(t *testing.T, chunker chunker.Chunker, chunks []chunk) {
 		}
 	}
 
-	c, err := chunker.Next()
+	c, err := chnker.Next(buf)
 
 	if c != nil {
 		t.Fatal("additional non-nil chunk returned")
@@ -115,20 +116,24 @@ func TestChunker(t *testing.T) {
 	buf := get_random(23, 32*1024*1024)
 	ch := chunker.New(bytes.NewReader(buf))
 	test_with_data(t, ch, chunks1)
+	ch.Free()
 
 	// setup nullbyte data source
 	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
 	ch = chunker.New(bytes.NewReader(buf))
 
 	test_with_data(t, ch, chunks2)
+	ch.Free()
 }
 
 func BenchmarkChunker(b *testing.B) {
 	size := 10 * 1024 * 1024
 	buf := get_random(23, size)
+	dst := make([]byte, chunker.MaxSize)
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
+
 	var chunks int
 	for i := 0; i < b.N; i++ {
 		chunks = 0
@@ -136,7 +141,7 @@ func BenchmarkChunker(b *testing.B) {
 		ch := chunker.New(bytes.NewReader(buf))
 
 		for {
-			_, err := ch.Next()
+			_, err := ch.Next(dst)
 
 			if err == io.EOF {
 				break
