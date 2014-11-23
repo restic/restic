@@ -140,13 +140,15 @@ func main() {
 	log.SetOutput(os.Stdout)
 
 	opts.Repo = os.Getenv("KHEPRI_REPOSITORY")
-	if opts.Repo == "" {
-		opts.Repo = "khepri-backup"
-	}
 
 	args, err := flags.Parse(&opts)
 	if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
 		os.Exit(0)
+	}
+
+	if opts.Repo == "" {
+		fmt.Fprintf(os.Stderr, "no repository specified, use -r or KHEPRI_REPOSITORY variable\n")
+		os.Exit(1)
 	}
 
 	if len(args) == 0 {
