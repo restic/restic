@@ -36,6 +36,7 @@ func OpenLocal(dir string) (*Local, error) {
 		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
+		filepath.Join(dir, mapPath),
 		filepath.Join(dir, lockPath),
 		filepath.Join(dir, keyPath),
 		filepath.Join(dir, tempPath),
