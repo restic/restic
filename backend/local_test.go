@@ -45,7 +45,7 @@ func teardownBackend(t *testing.T, b *backend.Local) {
 }
 
 func testBackend(b backend.Server, t *testing.T) {
-	for _, tpe := range []backend.Type{backend.Data, backend.Key, backend.Lock, backend.Snapshot, backend.Tree} {
+	for _, tpe := range []backend.Type{backend.Data, backend.Key, backend.Lock, backend.Snapshot, backend.Tree, backend.Map} {
 		// detect non-existing files
 		for _, test := range TestStrings {
 			id, err := backend.ParseID(test.id)

@@ -33,22 +33,27 @@ func (ch *ContentHandler) LoadSnapshot(id backend.ID) (*Snapshot, error) {
 		return nil, err
 	}
 
-	ch.bl.Merge(sn.BlobList)
+	sn.bl, err = LoadBlobList(ch, sn.Map)
+	if err != nil {
+		return nil, err
+	}
+
+	ch.bl.Merge(sn.bl)
 
 	return sn, nil
 }
 
-// LoadAllSnapshots adds all blobs from all snapshots that can be decrypted
+// LoadAllMaps adds all blobs from all snapshots that can be decrypted
 // into the content handler.
-func (ch *ContentHandler) LoadAllSnapshots() error {
+func (ch *ContentHandler) LoadAllMaps() error {
 	// add all maps from all snapshots that can be decrypted to the storage map
-	err := backend.EachID(ch.be, backend.Snapshot, func(id backend.ID) {
-		sn, err := LoadSnapshot(ch, id)
+	err := backend.EachID(ch.be, backend.Map, func(id backend.ID) {
+		bl, err := LoadBlobList(ch, id)
 		if err != nil {
 			return
 		}
 
-		ch.bl.Merge(sn.BlobList)
+		ch.bl.Merge(bl)
 	})
 	if err != nil {
 		return err

@@ -85,7 +85,7 @@ func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	}
 
 	// load all blobs from all snapshots
-	err = arch.ch.LoadAllSnapshots()
+	err = arch.ch.LoadAllMaps()
 	if err != nil {
 		return nil, err
 	}
@@ -371,11 +371,16 @@ func (arch *Archiver) Snapshot(dir string, t *Tree) (*Snapshot, backend.ID, erro
 	if err != nil {
 		return nil, nil, err
 	}
-
 	sn.Content = blob.ID
 
+	// save bloblist
+	blob, err = arch.SaveJSON(backend.Map, arch.bl)
+	if err != nil {
+		return nil, nil, err
+	}
+	sn.Map = blob.Storage
+
 	// save snapshot
-	sn.BlobList = arch.bl
 	blob, err = arch.SaveJSON(backend.Snapshot, sn)
 	if err != nil {
 		return nil, nil, err
