@@ -48,7 +48,7 @@ func TestCrypto(t *testing.T) {
 			Sign:    tv.skey,
 		}
 
-		msg := make([]byte, MaxCiphertextSize)
+		msg := make([]byte, maxCiphertextSize)
 		n, err := r.encrypt(r.master, msg, tv.plaintext)
 		if err != nil {
 			t.Fatal(err)

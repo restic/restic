@@ -9,6 +9,7 @@ import (
 
 	"github.com/fd0/khepri"
 	"github.com/fd0/khepri/backend"
+	"github.com/fd0/khepri/chunker"
 )
 
 var testPassword = "foobar"
@@ -67,6 +68,30 @@ func TestEncryptDecrypt(t *testing.T) {
 		ok(t, err)
 
 		khepri.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
+
+		equals(t, plaintext, data)
+	}
+}
+
+func TestLargeEncrypt(t *testing.T) {
+	be := setupBackend(t)
+	defer teardownBackend(t, be)
+	k := setupKey(t, be, testPassword)
+
+	for _, size := range []int{chunker.MaxSize, chunker.MaxSize + 1} {
+		data := make([]byte, size)
+		f, err := os.Open("/dev/urandom")
+		ok(t, err)
+
+		_, err = io.ReadFull(f, data)
+		ok(t, err)
+
+		ciphertext := make([]byte, size+khepri.CiphertextExtension)
+		n, err := k.Encrypt(ciphertext, data)
+		ok(t, err)
+
+		plaintext, err := k.Decrypt(ciphertext[:n])
+		ok(t, err)
 
 		equals(t, plaintext, data)
 	}

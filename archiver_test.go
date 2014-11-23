@@ -48,7 +48,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 
 			ok(b, err)
 
-			buf := make([]byte, khepri.MaxCiphertextSize)
+			buf := make([]byte, khepri.CiphertextExtension+chunker.MaxSize)
 			_, err = key.Encrypt(buf, chunk_data.Data)
 			ok(b, err)
 		}

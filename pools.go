@@ -34,7 +34,7 @@ func newChunkBuf() interface{} {
 	chunk_stats.m.Unlock()
 
 	// create buffer for iv, data and hmac
-	return make([]byte, MaxCiphertextSize)
+	return make([]byte, maxCiphertextSize)
 }
 
 func newNode() interface{} {

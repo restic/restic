@@ -81,13 +81,23 @@ func (ch *ContentHandler) Save(t backend.Type, data []byte) (Blob, error) {
 		Size: uint64(len(data)),
 	}
 
+	var ciphertext []byte
+
+	// for a bloblist/map, use a larger buffer
+	if t == backend.Map {
+		ciphertext = make([]byte, len(data)+CiphertextExtension)
+	} else {
+		// otherwise use buffer from pool
+		ciphertext = GetChunkBuf("ch.Save()")
+		defer FreeChunkBuf("ch.Save()", ciphertext)
+	}
+
 	// encrypt blob
-	ciphertext := GetChunkBuf("ch.Save()")
-	defer FreeChunkBuf("ch.Save()", ciphertext)
 	n, err := ch.key.Encrypt(ciphertext, data)
 	if err != nil {
 		return Blob{}, err
 	}
+
 	ciphertext = ciphertext[:n]
 
 	// save blob

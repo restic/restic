@@ -21,16 +21,19 @@ import (
 )
 
 // max size is 8MiB, defined in chunker
-const maxDataSize = chunker.MaxSize
 const ivSize = aes.BlockSize
 const hmacSize = sha256.Size
-const MaxCiphertextSize = ivSize + maxDataSize + hmacSize
+const maxCiphertextSize = ivSize + chunker.MaxSize + hmacSize
+const CiphertextExtension = ivSize + hmacSize
 
 var (
 	// ErrUnauthenticated is returned when ciphertext verification has failed.
 	ErrUnauthenticated = errors.New("ciphertext verification failed")
 	// ErrNoKeyFound is returned when no key for the repository could be decrypted.
 	ErrNoKeyFound = errors.New("no key could be found")
+	// ErrBufferTooSmall is returned when the destination slice is too small
+	// for the ciphertext.
+	ErrBufferTooSmall = errors.New("destination buffer too small")
 )
 
 // TODO: figure out scrypt values on the fly depending on the current
@@ -254,12 +257,12 @@ func (k *Key) newIV(buf []byte) error {
 // HMAC. Encrypt returns the ciphertext's length. For the hash function, SHA256
 // is used, so the overhead is 16+32=48 byte.
 func (k *Key) encrypt(ks *keys, ciphertext, plaintext []byte) (int, error) {
-	if cap(ciphertext) < MaxCiphertextSize {
+	if cap(ciphertext) < maxCiphertextSize {
 		panic("encryption buffer is too small")
 	}
 
-	if len(plaintext) > maxDataSize {
-		panic("plaintext is too large")
+	if cap(ciphertext) < len(plaintext)+ivSize+hmacSize {
+		return 0, ErrBufferTooSmall
 	}
 
 	_, err := io.ReadFull(rand.Reader, ciphertext[:ivSize])
