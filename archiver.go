@@ -9,6 +9,7 @@ import (
 
 	"github.com/fd0/khepri/backend"
 	"github.com/fd0/khepri/chunker"
+	"github.com/juju/arrar"
 )
 
 const (
@@ -122,7 +123,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	file, err := os.Open(node.path)
 	defer file.Close()
 	if err != nil {
-		return err
+		return arrar.Annotate(err, "SaveFile()")
 	}
 
 	var blobs Blobs
@@ -196,7 +197,7 @@ func (arch *Archiver) loadTree(dir string) (*Tree, error) {
 	fd, err := os.Open(dir)
 	defer fd.Close()
 	if err != nil {
-		return nil, err
+		return nil, arch.Error(dir, nil, err)
 	}
 
 	entries, err := fd.Readdir(-1)
@@ -247,12 +248,12 @@ func (arch *Archiver) loadTree(dir string) (*Tree, error) {
 func (arch *Archiver) LoadTree(path string) (*Tree, error) {
 	fi, err := os.Lstat(path)
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotatef(err, "Lstat(%q)", path)
 	}
 
 	node, err := NodeFromFileInfo(path, fi)
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotate(err, "NodeFromFileInfo()")
 	}
 
 	if node.Type != "dir" {
@@ -265,7 +266,7 @@ func (arch *Archiver) LoadTree(path string) (*Tree, error) {
 	arch.Stats.Directories = 1
 	node.Tree, err = arch.loadTree(path)
 	if err != nil {
-		return nil, err
+		return nil, arrar.Annotate(err, "loadTree()")
 	}
 
 	arch.ScannerUpdate(arch.Stats)
