@@ -238,6 +238,8 @@ func (r *SFTP) dir(t Type) string {
 		n = snapshotPath
 	case Tree:
 		n = treePath
+	case Map:
+		n = mapPath
 	case Lock:
 		n = lockPath
 	case Key:

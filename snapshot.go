@@ -13,7 +13,7 @@ import (
 type Snapshot struct {
 	Time     time.Time  `json:"time"`
 	Content  backend.ID `json:"content"`
-	BlobList *BlobList  `json:"blobs"`
+	Map      backend.ID `json:"map"`
 	Dir      string     `json:"dir"`
 	Hostname string     `json:"hostname,omitempty"`
 	Username string     `json:"username,omitempty"`
@@ -21,6 +21,7 @@ type Snapshot struct {
 	GID      string     `json:"gid,omitempty"`
 
 	id backend.ID // plaintext ID, used during restore
+	bl *BlobList
 }
 
 func NewSnapshot(dir string) *Snapshot {

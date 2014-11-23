@@ -6,6 +6,8 @@ import (
 	"errors"
 	"sort"
 	"sync"
+
+	"github.com/fd0/khepri/backend"
 )
 
 type BlobList struct {
@@ -19,6 +21,16 @@ func NewBlobList() *BlobList {
 	return &BlobList{
 		list: []Blob{},
 	}
+}
+
+func LoadBlobList(ch *ContentHandler, id backend.ID) (*BlobList, error) {
+	bl := &BlobList{}
+	err := ch.LoadJSONRaw(backend.Map, id, bl)
+	if err != nil {
+		return nil, err
+	}
+
+	return bl, nil
 }
 
 func (bl *BlobList) find(blob Blob) (int, Blob, error) {

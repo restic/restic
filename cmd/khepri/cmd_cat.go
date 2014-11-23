@@ -27,7 +27,7 @@ func commandCat(be backend.Server, key *khepri.Key, args []string) error {
 		return err
 	}
 
-	err = ch.LoadAllSnapshots()
+	err = ch.LoadAllMaps()
 	if err != nil {
 		return err
 	}
@@ -81,6 +81,21 @@ func commandCat(be backend.Server, key *khepri.Key, args []string) error {
 		}
 
 		buf, err := json.MarshalIndent(&tree, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(string(buf))
+
+		return nil
+	case "map":
+		var bl khepri.BlobList
+		err := ch.LoadJSONRaw(backend.Map, id, &bl)
+		if err != nil {
+			return err
+		}
+
+		buf, err := json.MarshalIndent(&bl, "", "  ")
 		if err != nil {
 			return err
 		}
