@@ -167,7 +167,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		buf := GetChunkBuf("blob single file")
 		defer FreeChunkBuf("blob single file", buf)
 		n, err := io.ReadFull(file, buf)
-		if err != nil {
+		if err != nil && err != io.ErrUnexpectedEOF {
 			return err
 		}
 
