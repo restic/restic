@@ -257,10 +257,6 @@ func (k *Key) newIV(buf []byte) error {
 // HMAC. Encrypt returns the ciphertext's length. For the hash function, SHA256
 // is used, so the overhead is 16+32=48 byte.
 func (k *Key) encrypt(ks *keys, ciphertext, plaintext []byte) (int, error) {
-	if cap(ciphertext) < maxCiphertextSize {
-		panic("encryption buffer is too small")
-	}
-
 	if cap(ciphertext) < len(plaintext)+ivSize+hmacSize {
 		return 0, ErrBufferTooSmall
 	}
