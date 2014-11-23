@@ -5,7 +5,10 @@ import (
 	"compress/zlib"
 	"crypto/sha256"
 	"io/ioutil"
+	"sync"
 )
+
+var idPool = sync.Pool{New: func() interface{} { return ID(make([]byte, IDSize)) }}
 
 // Each lists all entries of type t in the backend and calls function f() with
 // the id and data.
@@ -78,7 +81,7 @@ func Uncompress(data []byte) []byte {
 // Hash returns the ID for data.
 func Hash(data []byte) ID {
 	h := sha256.Sum256(data)
-	id := make(ID, 32)
+	id := idPool.Get().(ID)
 	copy(id, h[:])
 	return id
 }

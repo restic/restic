@@ -15,9 +15,16 @@ import (
 	"time"
 
 	"github.com/fd0/khepri/backend"
+	"github.com/fd0/khepri/chunker"
 
 	"golang.org/x/crypto/scrypt"
 )
+
+// max size is 8MiB, defined in chunker
+const maxDataSize = chunker.MaxSize
+const ivSize = aes.BlockSize
+const hmacSize = sha256.Size
+const MaxCiphertextSize = ivSize + maxDataSize + hmacSize
 
 var (
 	// ErrUnauthenticated is returned when ciphertext verification has failed.
@@ -108,7 +115,9 @@ func CreateKey(be backend.Server, password string) (*Key, error) {
 		return nil, err
 	}
 
-	k.Data, err = k.EncryptUser(buf)
+	k.Data = GetChunkBuf("key")
+	n, err = k.EncryptUser(k.Data, buf)
+	k.Data = k.Data[:n]
 
 	// dump as json
 	buf, err = json.Marshal(k)
@@ -121,6 +130,8 @@ func CreateKey(be backend.Server, password string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	FreeChunkBuf("key", k.Data)
 
 	return k, nil
 }
@@ -229,20 +240,29 @@ func (k *Key) newKeys() (*keys, error) {
 	return ks, nil
 }
 
-func (k *Key) newIV() ([]byte, error) {
-	buf := make([]byte, aes.BlockSize)
-	_, err := io.ReadFull(rand.Reader, buf)
+func (k *Key) newIV(buf []byte) error {
+	_, err := io.ReadFull(rand.Reader, buf[:ivSize])
+	buf = buf[:ivSize]
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return buf, nil
+	return nil
 }
 
-// Encrypt encrypts and signs data. Returned is IV || Ciphertext || HMAC. For
-// the hash function, SHA256 is used, so the overhead is 16+32=48 byte.
-func (k *Key) encrypt(ks *keys, plaintext []byte) ([]byte, error) {
-	iv, err := k.newIV()
+// Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||
+// HMAC. Encrypt returns the ciphertext's length. For the hash function, SHA256
+// is used, so the overhead is 16+32=48 byte.
+func (k *Key) encrypt(ks *keys, ciphertext, plaintext []byte) (int, error) {
+	if cap(ciphertext) < MaxCiphertextSize {
+		panic("encryption buffer is too small")
+	}
+
+	if len(plaintext) > maxDataSize {
+		panic("plaintext is too large")
+	}
+
+	_, err := io.ReadFull(rand.Reader, ciphertext[:ivSize])
 	if err != nil {
 		panic(fmt.Sprintf("unable to generate new random iv: %v", err))
 	}
@@ -252,11 +272,9 @@ func (k *Key) encrypt(ks *keys, plaintext []byte) ([]byte, error) {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
 
-	e := cipher.NewCTR(c, iv)
-	l := len(iv)
-	ciphertext := make([]byte, l+len(plaintext))
-	copy(ciphertext[:l], iv)
-	e.XORKeyStream(ciphertext[l:], plaintext)
+	e := cipher.NewCTR(c, ciphertext[:ivSize])
+	e.XORKeyStream(ciphertext[ivSize:cap(ciphertext)], plaintext)
+	ciphertext = ciphertext[:ivSize+len(plaintext)]
 
 	hm := hmac.New(sha256.New, ks.Sign)
 
@@ -265,21 +283,23 @@ func (k *Key) encrypt(ks *keys, plaintext []byte) ([]byte, error) {
 		panic(fmt.Sprintf("unable to calculate hmac of ciphertext: %v", err))
 	}
 
-	return hm.Sum(ciphertext), nil
+	ciphertext = hm.Sum(ciphertext)
+
+	return len(ciphertext), nil
 }
 
-// EncryptUser encrypts and signs data with the user key. Returned is IV ||
-// Ciphertext || HMAC. For the hash function, SHA256 is used, so the overhead
-// is 16+32=48 byte.
-func (k *Key) EncryptUser(plaintext []byte) ([]byte, error) {
-	return k.encrypt(k.user, plaintext)
+// EncryptUser encrypts and signs data with the user key. Stored in ciphertext
+// is IV || Ciphertext || HMAC. Returns the ciphertext length. For the hash
+// function, SHA256 is used, so the overhead is 16+32=48 byte.
+func (k *Key) EncryptUser(ciphertext, plaintext []byte) (int, error) {
+	return k.encrypt(k.user, ciphertext, plaintext)
 }
 
-// Encrypt encrypts and signs data with the master key. Returned is IV ||
-// Ciphertext || HMAC. For the hash function, SHA256 is used, so the overhead
-// is 16+32=48 byte.
-func (k *Key) Encrypt(plaintext []byte) ([]byte, error) {
-	return k.encrypt(k.master, plaintext)
+// Encrypt encrypts and signs data with the master key. Stored in ciphertext is
+// IV || Ciphertext || HMAC. Returns the ciphertext length. For the hash
+// function, SHA256 is used, so the overhead is 16+32=48 byte.
+func (k *Key) Encrypt(ciphertext, plaintext []byte) (int, error) {
+	return k.encrypt(k.master, ciphertext, plaintext)
 }
 
 // Decrypt verifes and decrypts the ciphertext. Ciphertext must be in the form

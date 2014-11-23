@@ -48,10 +48,12 @@ func TestCrypto(t *testing.T) {
 			Sign:    tv.skey,
 		}
 
-		msg, err := r.encrypt(r.master, tv.plaintext)
+		msg := make([]byte, MaxCiphertextSize)
+		n, err := r.encrypt(r.master, msg, tv.plaintext)
 		if err != nil {
 			t.Fatal(err)
 		}
+		msg = msg[:n]
 
 		// decrypt message
 		_, err = r.decrypt(r.master, msg)

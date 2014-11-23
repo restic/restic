@@ -30,6 +30,15 @@ var (
 	once      sync.Once
 	mod_table [256]uint64
 	out_table [256]uint64
+
+	chunkerPool = sync.Pool{
+		New: func() interface{} {
+			return &Chunker{
+				window: make([]byte, WindowSize),
+				buf:    make([]byte, MaxSize),
+			}
+		},
+	}
 )
 
 // A chunk is one content-dependent chunk of bytes whose end was cut when the
@@ -41,17 +50,8 @@ type Chunk struct {
 	Data   []byte
 }
 
-// A chunker takes a stream of bytes and emits average size chunks.
-type Chunker interface {
-	// Next returns the next chunk of data. If an error occurs while reading,
-	// the error is returned with a nil chunk. The state of the current chunk
-	// is undefined. When the last chunk has been returned, all subsequent
-	// calls yield a nil chunk and an io.EOF error.
-	Next() (*Chunk, error)
-}
-
 // A chunker internally holds everything needed to split content.
-type chunker struct {
+type Chunker struct {
 	rd     io.Reader
 	closed bool
 
@@ -62,7 +62,6 @@ type chunker struct {
 	bpos int
 	bmax int
 
-	data  []byte
 	start int
 	count int
 	pos   int
@@ -71,16 +70,9 @@ type chunker struct {
 }
 
 // New returns a new Chunker that reads from data from rd.
-func New(rd io.Reader) Chunker {
-	c := &chunker{
-		rd: rd,
-
-		window: make([]byte, WindowSize),
-
-		buf: make([]byte, MaxSize),
-
-		data: make([]byte, 0, MaxSize),
-	}
+func New(rd io.Reader) *Chunker {
+	c := chunkerPool.Get().(*Chunker)
+	c.rd = rd
 
 	once.Do(c.fill_tables)
 	c.reset()
@@ -88,7 +80,13 @@ func New(rd io.Reader) Chunker {
 	return c
 }
 
-func (c *chunker) reset() {
+// Free returns this chunker to the allocation pool
+func (c *Chunker) Free() {
+	c.rd = nil
+	chunkerPool.Put(c)
+}
+
+func (c *Chunker) reset() {
 	for i := 0; i < WindowSize; i++ {
 		c.window[i] = 0
 	}
@@ -97,11 +95,10 @@ func (c *chunker) reset() {
 	c.pos = 0
 	c.count = 0
 	c.slide(1)
-	c.data = make([]byte, 0, MaxSize)
 }
 
 // Calculate out_table and mod_table for optimization. Must be called only once.
-func (c *chunker) fill_tables() {
+func (c *Chunker) fill_tables() {
 	// calculate table for sliding out bytes. The byte to slide out is used as
 	// the index for the table, the value contains the following:
 	// out_table[b] = Hash(b || 0 ||        ...        || 0)
@@ -137,7 +134,12 @@ func (c *chunker) fill_tables() {
 	}
 }
 
-func (c *chunker) Next() (*Chunk, error) {
+// Next returns the next chunk of data. If an error occurs while reading,
+// the error is returned with a nil chunk. The state of the current chunk
+// is undefined. When the last chunk has been returned, all subsequent
+// calls yield a nil chunk and an io.EOF error.
+func (c *Chunker) Next(dst []byte) (*Chunk, error) {
+	dst = dst[:0]
 	for {
 		if c.bpos >= c.bmax {
 			n, err := io.ReadFull(c.rd, c.buf)
@@ -160,7 +162,7 @@ func (c *chunker) Next() (*Chunk, error) {
 						Start:  c.start,
 						Length: c.count,
 						Cut:    c.digest,
-						Data:   c.data,
+						Data:   dst,
 					}, nil
 				}
 			}
@@ -188,7 +190,7 @@ func (c *chunker) Next() (*Chunk, error) {
 			c.digest ^= mod_table[index]
 
 			if (c.count+i+1 >= MinSize && (c.digest&splitmask) == 0) || c.count+i+1 >= MaxSize {
-				c.data = append(c.data, c.buf[c.bpos:c.bpos+i+1]...)
+				dst = append(dst, c.buf[c.bpos:c.bpos+i+1]...)
 				c.count += i + 1
 				c.pos += i + 1
 				c.bpos += i + 1
@@ -197,7 +199,7 @@ func (c *chunker) Next() (*Chunk, error) {
 					Start:  c.start,
 					Length: c.count,
 					Cut:    c.digest,
-					Data:   c.data,
+					Data:   dst,
 				}
 
 				// keep position
@@ -212,7 +214,7 @@ func (c *chunker) Next() (*Chunk, error) {
 
 		steps := c.bmax - c.bpos
 		if steps > 0 {
-			c.data = append(c.data, c.buf[c.bpos:c.bpos+steps]...)
+			dst = append(dst, c.buf[c.bpos:c.bpos+steps]...)
 		}
 		c.count += steps
 		c.pos += steps
@@ -220,7 +222,7 @@ func (c *chunker) Next() (*Chunk, error) {
 	}
 }
 
-func (c *chunker) append(b byte) {
+func (c *Chunker) append(b byte) {
 	index := c.digest >> uint(pol_shift)
 	c.digest <<= 8
 	c.digest |= uint64(b)
@@ -228,7 +230,7 @@ func (c *chunker) append(b byte) {
 	c.digest ^= mod_table[index]
 }
 
-func (c *chunker) slide(b byte) {
+func (c *Chunker) slide(b byte) {
 	out := c.window[c.wpos]
 	c.window[c.wpos] = b
 	c.digest ^= out_table[out]

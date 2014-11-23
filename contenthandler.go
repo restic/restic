@@ -66,6 +66,7 @@ func (ch *ContentHandler) Save(t backend.Type, data []byte) (Blob, error) {
 	// test if the hash is already in the backend
 	blob, err := ch.bl.Find(Blob{ID: id})
 	if err == nil {
+		id.Free()
 		return blob, nil
 	}
 
@@ -76,10 +77,13 @@ func (ch *ContentHandler) Save(t backend.Type, data []byte) (Blob, error) {
 	}
 
 	// encrypt blob
-	ciphertext, err := ch.key.Encrypt(data)
+	ciphertext := GetChunkBuf("ch.Save()")
+	defer FreeChunkBuf("ch.Save()", ciphertext)
+	n, err := ch.key.Encrypt(ciphertext, data)
 	if err != nil {
 		return Blob{}, err
 	}
+	ciphertext = ciphertext[:n]
 
 	// save blob
 	sid, err := ch.be.Create(t, ciphertext)

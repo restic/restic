@@ -11,14 +11,13 @@ import (
 	"time"
 
 	"github.com/fd0/khepri"
+	"github.com/fd0/khepri/backend"
 )
-
-const backendIDSize = 8
 
 var maxWorkers = flag.Uint("workers", 100, "number of workers to test BlobList concurrent access against")
 
 func randomID() []byte {
-	buf := make([]byte, backendIDSize)
+	buf := make([]byte, backend.IDSize)
 	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {
 		panic(err)
@@ -69,7 +68,7 @@ func TestBlobList(t *testing.T) {
 // Test JSON encode/decode
 func TestBlobListJSON(t *testing.T) {
 	bl := khepri.NewBlobList()
-	b := khepri.Blob{ID: []byte{1, 2, 3, 4}}
+	b := khepri.Blob{ID: randomID()}
 	bl.Insert(b)
 
 	b2, err := bl.Find(b)

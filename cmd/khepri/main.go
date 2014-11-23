@@ -135,6 +135,8 @@ func init() {
 }
 
 func main() {
+	// defer profile.Start(profile.MemProfileRate(100000), profile.ProfilePath(".")).Stop()
+
 	log.SetOutput(os.Stdout)
 
 	opts.Repo = os.Getenv("KHEPRI_REPOSITORY")
@@ -192,4 +194,6 @@ func main() {
 	if err != nil {
 		errx(1, "error executing command %q: %v", cmd, err)
 	}
+
+	khepri.PoolAlloc()
 }

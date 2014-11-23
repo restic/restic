@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/fd0/khepri"
 	"github.com/fd0/khepri/chunker"
 )
 
@@ -30,6 +31,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	be := setupBackend(b)
 	defer teardownBackend(b, be)
 	key := setupKey(b, be, "geheim")
+	chunkBuf := make([]byte, chunker.MaxSize)
 
 	b.ResetTimer()
 	b.SetBytes(int64(len(data)))
@@ -38,7 +40,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 		ch := chunker.New(bytes.NewReader(data))
 
 		for {
-			chunk_data, err := ch.Next()
+			chunk_data, err := ch.Next(chunkBuf)
 
 			if err == io.EOF {
 				break
@@ -46,7 +48,8 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 
 			ok(b, err)
 
-			_, err = key.Encrypt(chunk_data.Data)
+			buf := make([]byte, khepri.MaxCiphertextSize)
+			_, err = key.Encrypt(buf, chunk_data.Data)
 			ok(b, err)
 		}
 	}

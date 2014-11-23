@@ -8,7 +8,8 @@ import (
 	"errors"
 )
 
-const sha256_length = 32 // in bytes
+// IDSize contains the size of an ID, in bytes.
+const IDSize = sha256.Size
 
 // References content within a repository.
 type ID []byte
@@ -21,7 +22,7 @@ func ParseID(s string) (ID, error) {
 		return nil, err
 	}
 
-	if len(b) != sha256_length {
+	if len(b) != IDSize {
 		return nil, errors.New("invalid length for sha256 hash")
 	}
 
@@ -63,7 +64,7 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*id = make([]byte, len(s)/2)
+	*id = idPool.Get().(ID)
 	_, err = hex.Decode(*id, []byte(s))
 	if err != nil {
 		return err
@@ -74,9 +75,14 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 
 func IDFromData(d []byte) ID {
 	hash := sha256.Sum256(d)
-	id := make([]byte, sha256_length)
+	id := idPool.Get().(ID)
 	copy(id, hash[:])
 	return id
+}
+
+// Free returns the ID byte slice back to the allocation pool.
+func (id ID) Free() {
+	idPool.Put(id)
 }
 
 type IDs []ID
