@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/fd0/khepri/backend"
 	"github.com/fd0/khepri/chunker"
@@ -15,6 +16,8 @@ import (
 const (
 	maxConcurrentFiles = 32
 	maxConcurrentBlobs = 32
+
+	statTimeout = 20 * time.Millisecond
 )
 
 type Archiver struct {
@@ -32,10 +35,11 @@ type Archiver struct {
 	Error  func(dir string, fi os.FileInfo, err error) error
 	Filter func(item string, fi os.FileInfo) bool
 
-	ScannerUpdate func(stats Stats)
-	SaveUpdate    func(stats Stats)
+	ScannerStats chan Stats
+	SaveStats    chan Stats
 
-	sum sync.Mutex // for SaveUpdate
+	statsMutex  sync.Mutex
+	updateStats Stats
 }
 
 type Stats struct {
@@ -43,6 +47,13 @@ type Stats struct {
 	Directories int
 	Other       int
 	Bytes       uint64
+}
+
+func (s *Stats) Add(other Stats) {
+	s.Bytes += other.Bytes
+	s.Directories += other.Directories
+	s.Files += other.Files
+	s.Other += other.Other
 }
 
 func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
@@ -67,8 +78,6 @@ func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	arch.Error = func(string, os.FileInfo, error) error { return err }
 	// allow all files
 	arch.Filter = func(string, os.FileInfo) bool { return true }
-	// do nothing
-	arch.ScannerUpdate = func(Stats) {}
 
 	arch.bl = NewBlobList()
 	arch.ch, err = NewContentHandler(be, key)
@@ -85,11 +94,31 @@ func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	return arch, nil
 }
 
-func (arch *Archiver) saveUpdate(stats Stats) {
-	if arch.SaveUpdate != nil {
-		arch.sum.Lock()
-		defer arch.sum.Unlock()
-		arch.SaveUpdate(stats)
+func (arch *Archiver) update(ch chan Stats, stats Stats) {
+	if ch == nil {
+		return
+	}
+
+	// load old stats from global state
+	arch.statsMutex.Lock()
+	stats.Add(arch.updateStats)
+	arch.updateStats = Stats{}
+	arch.statsMutex.Unlock()
+
+	// try to send stats through the channel, with a timeout
+	timeout := time.After(statTimeout)
+
+	select {
+	case ch <- stats:
+		break
+	case _ = <-timeout:
+
+		// save cumulated stats to global state
+		arch.statsMutex.Lock()
+		arch.updateStats.Add(stats)
+		arch.statsMutex.Unlock()
+
+		break
 	}
 }
 
@@ -140,7 +169,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 			return err
 		}
 
-		arch.saveUpdate(Stats{Bytes: blob.Size})
+		arch.update(arch.SaveStats, Stats{Bytes: blob.Size})
 
 		blobs = Blobs{blob}
 	} else {
@@ -169,7 +198,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 					panic(err)
 				}
 
-				arch.saveUpdate(Stats{Bytes: blob.Size})
+				arch.update(arch.SaveStats, Stats{Bytes: blob.Size})
 				arch.blobToken <- token
 				ch <- blob
 			}(resCh)
@@ -240,12 +269,15 @@ func (arch *Archiver) loadTree(dir string) (*Tree, error) {
 		}
 	}
 
-	arch.ScannerUpdate(arch.Stats)
+	arch.update(arch.ScannerStats, arch.Stats)
 
 	return &tree, nil
 }
 
 func (arch *Archiver) LoadTree(path string) (*Tree, error) {
+	// reset global stats
+	arch.updateStats = Stats{}
+
 	fi, err := os.Lstat(path)
 	if err != nil {
 		return nil, arrar.Annotatef(err, "Lstat(%q)", path)
@@ -259,7 +291,7 @@ func (arch *Archiver) LoadTree(path string) (*Tree, error) {
 	if node.Type != "dir" {
 		arch.Stats.Files = 1
 		arch.Stats.Bytes = node.Size
-		arch.ScannerUpdate(arch.Stats)
+		arch.update(arch.ScannerStats, arch.Stats)
 		return &Tree{node}, nil
 	}
 
@@ -269,7 +301,7 @@ func (arch *Archiver) LoadTree(path string) (*Tree, error) {
 		return nil, arrar.Annotate(err, "loadTree()")
 	}
 
-	arch.ScannerUpdate(arch.Stats)
+	arch.update(arch.ScannerStats, arch.Stats)
 
 	return &Tree{node}, nil
 }
@@ -284,7 +316,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 				return Blob{}, err
 			}
 			node.Subtree = b.ID
-			arch.saveUpdate(Stats{Directories: 1})
+			arch.update(arch.SaveStats, Stats{Directories: 1})
 		} else if node.Type == "file" && len(node.Content) == 0 {
 			// start goroutine
 			wg.Add(1)
@@ -299,10 +331,10 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 
 				// TODO: handle error
 				arch.SaveFile(n)
-				arch.saveUpdate(Stats{Files: 1})
+				arch.update(arch.SaveStats, Stats{Files: 1})
 			}(node)
 		} else {
-			arch.saveUpdate(Stats{Other: 1})
+			arch.update(arch.SaveStats, Stats{Other: 1})
 		}
 	}
 
@@ -317,6 +349,9 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 }
 
 func (arch *Archiver) Snapshot(dir string, t *Tree) (*Snapshot, backend.ID, error) {
+	// reset global stats
+	arch.updateStats = Stats{}
+
 	sn := NewSnapshot(dir)
 
 	blob, err := arch.saveTree(t)

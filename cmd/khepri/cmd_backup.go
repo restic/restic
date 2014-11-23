@@ -60,10 +60,17 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 	fmt.Printf("scanning %s\n", target)
 
 	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		arch.ScannerUpdate = func(stats khepri.Stats) {
-			fmt.Printf("\r%6d directories, %6d files, %14s", stats.Directories, stats.Files, format_bytes(stats.Bytes))
-		}
+		ch := make(chan khepri.Stats, 5)
+		arch.ScannerStats = ch
+
+		go func(ch <-chan khepri.Stats) {
+			for stats := range ch {
+				fmt.Printf("\r%6d directories, %6d files, %14s", stats.Directories, stats.Files, format_bytes(stats.Bytes))
+			}
+		}(ch)
 	}
+
+	fmt.Printf("done\n")
 
 	// TODO: add filter
 	// arch.Filter = func(dir string, fi os.FileInfo) bool {
@@ -80,24 +87,35 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 
 	stats := khepri.Stats{}
 	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		arch.SaveUpdate = func(s khepri.Stats) {
-			stats.Files += s.Files
-			stats.Directories += s.Directories
-			stats.Other += s.Other
-			stats.Bytes += s.Bytes
+		ch := make(chan khepri.Stats, 5)
+		arch.SaveStats = ch
 
-			fmt.Printf("\r%3.2f%% %d/%d directories, %d/%d files, %s/%s",
-				float64(stats.Bytes)/float64(arch.Stats.Bytes)*100,
-				stats.Directories, arch.Stats.Directories,
-				stats.Files, arch.Stats.Files,
-				format_bytes(stats.Bytes), format_bytes(arch.Stats.Bytes))
-		}
+		go func(ch <-chan khepri.Stats) {
+			for s := range ch {
+				stats.Files += s.Files
+				stats.Directories += s.Directories
+				stats.Other += s.Other
+				stats.Bytes += s.Bytes
+
+				fmt.Printf("\r%3.2f%% %d/%d directories, %d/%d files, %s/%s",
+					float64(stats.Bytes)/float64(arch.Stats.Bytes)*100,
+					stats.Directories, arch.Stats.Directories,
+					stats.Files, arch.Stats.Files,
+					format_bytes(stats.Bytes), format_bytes(arch.Stats.Bytes))
+			}
+		}(ch)
 	}
 
 	start := time.Now()
 	sn, id, err := arch.Snapshot(target, t)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
+
+	if terminal.IsTerminal(int(os.Stdout.Fd())) {
+		// close channels so that the goroutines terminate
+		close(arch.SaveStats)
+		close(arch.ScannerStats)
 	}
 
 	fmt.Printf("\nsnapshot %s saved: %v\n", id, sn)
