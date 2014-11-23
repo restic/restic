@@ -109,7 +109,7 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 		go func(ch <-chan khepri.Stats) {
 
 			status := func(d time.Duration) {
-				fmt.Printf("\r[%s] %3.2f%%  %s/s  %s / %s  ETA %s",
+				fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  ETA %s",
 					format_duration(uint64(d/time.Second)),
 					float64(stats.Bytes)/float64(arch.Stats.Bytes)*100,
 					format_bytes(bps),
