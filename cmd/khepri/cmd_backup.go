@@ -17,13 +17,13 @@ func format_bytes(c uint64) string {
 
 	switch {
 	case c > 1<<40:
-		return fmt.Sprintf("%.3fTiB", b/(1<<40))
+		return fmt.Sprintf("%.3f TiB", b/(1<<40))
 	case c > 1<<30:
-		return fmt.Sprintf("%.3fGiB", b/(1<<30))
+		return fmt.Sprintf("%.3f GiB", b/(1<<30))
 	case c > 1<<20:
-		return fmt.Sprintf("%.3fMiB", b/(1<<20))
+		return fmt.Sprintf("%.3f MiB", b/(1<<20))
 	case c > 1<<10:
-		return fmt.Sprintf("%.3fKiB", b/(1<<10))
+		return fmt.Sprintf("%.3f KiB", b/(1<<10))
 	default:
 		return fmt.Sprintf("%dB", c)
 	}
@@ -108,9 +108,9 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 
 		go func(ch <-chan khepri.Stats) {
 
-			status := func(d time.Duration) {
+			status := func(sec uint64) {
 				fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  ETA %s",
-					format_duration(uint64(d/time.Second)),
+					format_duration(sec),
 					float64(stats.Bytes)/float64(arch.Stats.Bytes)*100,
 					format_bytes(bps),
 					format_bytes(stats.Bytes), format_bytes(arch.Stats.Bytes),
@@ -129,16 +129,16 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 					stats.Other += s.Other
 					stats.Bytes += s.Bytes
 
-					status(time.Since(start))
+					status(uint64(time.Since(start) / time.Second))
 				case <-ticker.C:
-					d := time.Since(start)
-					bps = stats.Bytes * uint64(time.Second) / uint64(d)
+					sec := uint64(time.Since(start) / time.Second)
+					bps = stats.Bytes / sec
 
 					if bps > 0 {
 						eta = (arch.Stats.Bytes - stats.Bytes) / bps
 					}
 
-					status(d)
+					status(sec)
 				}
 			}
 		}(ch)
