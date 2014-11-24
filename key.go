@@ -304,6 +304,11 @@ func (k *Key) Encrypt(ciphertext, plaintext []byte) (int, error) {
 // Decrypt verifes and decrypts the ciphertext. Ciphertext must be in the form
 // IV || Ciphertext || HMAC.
 func (k *Key) decrypt(ks *keys, ciphertext []byte) ([]byte, error) {
+	// check for plausible length
+	if len(ciphertext) <= ivSize+hmacSize {
+		panic("trying to decryipt invalid data: ciphertext too small")
+	}
+
 	hm := hmac.New(sha256.New, ks.Sign)
 
 	// extract hmac

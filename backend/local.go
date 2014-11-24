@@ -24,6 +24,8 @@ const (
 	versionFileName = "version"
 )
 
+var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
+
 type Local struct {
 	p   string
 	ver uint
@@ -218,7 +220,8 @@ func (b *Local) filename(t Type, id ID) string {
 	return filepath.Join(b.dir(t), id.String())
 }
 
-// Get returns the content stored under the given ID.
+// Get returns the content stored under the given ID. If the data doesn't match
+// the requested ID, ErrWrongData is returned.
 func (b *Local) Get(t Type, id ID) ([]byte, error) {
 	// try to open file
 	file, err := os.Open(b.filename(t, id))
@@ -231,6 +234,11 @@ func (b *Local) Get(t Type, id ID) ([]byte, error) {
 	buf, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, err
+	}
+
+	// check id
+	if !Hash(buf).Equal(id) {
+		return nil, ErrWrongData
 	}
 
 	return buf, nil

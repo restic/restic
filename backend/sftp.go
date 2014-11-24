@@ -292,7 +292,8 @@ func (r *SFTP) filename(t Type, id ID) string {
 	return filepath.Join(r.dir(t), id.String())
 }
 
-// Get returns the content stored under the given ID.
+// Get returns the content stored under the given ID. If the data doesn't match
+// the requested ID, ErrWrongData is returned.
 func (r *SFTP) Get(t Type, id ID) ([]byte, error) {
 	// try to open file
 	file, err := r.c.Open(r.filename(t, id))
@@ -305,6 +306,11 @@ func (r *SFTP) Get(t Type, id ID) ([]byte, error) {
 	buf, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, err
+	}
+
+	// check id
+	if !Hash(buf).Equal(id) {
+		return nil, ErrWrongData
 	}
 
 	return buf, nil
