@@ -51,7 +51,7 @@ func NewSnapshot(dir string) *Snapshot {
 }
 
 func LoadSnapshot(ch *ContentHandler, id backend.ID) (*Snapshot, error) {
-	sn := &Snapshot{}
+	sn := &Snapshot{id: id}
 	err := ch.LoadJSON(backend.Snapshot, id, sn)
 	if err != nil {
 		return nil, err
@@ -60,6 +60,10 @@ func LoadSnapshot(ch *ContentHandler, id backend.ID) (*Snapshot, error) {
 	return sn, nil
 }
 
-func (sn *Snapshot) String() string {
+func (sn Snapshot) String() string {
 	return fmt.Sprintf("<Snapshot %q at %s>", sn.Dir, sn.Time)
+}
+
+func (sn Snapshot) ID() backend.ID {
+	return sn.id
 }

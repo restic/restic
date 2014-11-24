@@ -14,7 +14,7 @@ func commandRestore(be backend.Server, key *khepri.Key, args []string) error {
 		return errors.New("usage: restore ID dir")
 	}
 
-	id, err := backend.ParseID(args[0])
+	id, err := backend.FindSnapshot(be, args[0])
 	if err != nil {
 		errx(1, "invalid id %q: %v", args[0], err)
 	}

@@ -53,7 +53,7 @@ func commandLs(be backend.Server, key *khepri.Key, args []string) error {
 		return errors.New("usage: ls SNAPSHOT_ID [dir]")
 	}
 
-	id, err := backend.ParseID(args[0])
+	id, err := backend.FindSnapshot(be, args[0])
 	if err != nil {
 		return err
 	}

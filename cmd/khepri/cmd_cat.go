@@ -19,7 +19,17 @@ func commandCat(be backend.Server, key *khepri.Key, args []string) error {
 
 	id, err := backend.ParseID(args[1])
 	if err != nil {
-		return err
+		id = nil
+
+		if tpe != "snapshot" {
+			return err
+		}
+
+		// find snapshot id with prefix
+		id, err = backend.Find(be, backend.Snapshot, args[1])
+		if err != nil {
+			return err
+		}
 	}
 
 	ch, err := khepri.NewContentHandler(be, key)
@@ -105,7 +115,8 @@ func commandCat(be backend.Server, key *khepri.Key, args []string) error {
 		return nil
 	case "snapshot":
 		var sn khepri.Snapshot
-		err := ch.LoadJSONRaw(backend.Snapshot, id, &sn)
+
+		err = ch.LoadJSONRaw(backend.Snapshot, id, &sn)
 		if err != nil {
 			return err
 		}
