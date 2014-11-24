@@ -1,8 +1,11 @@
 .PHONY: clean all test
 
+FLAGS=
+#FLAGS+=-race
+
 test:
 	for dir in cmd/* ; do \
-		(cd "$$dir"; go build -race) \
+		(cd "$$dir"; go build $(FLAGS)) \
 	done
 	test/run.sh cmd/khepri/khepri cmd/dirdiff/dirdiff
 
