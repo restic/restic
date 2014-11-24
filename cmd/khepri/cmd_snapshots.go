@@ -52,6 +52,10 @@ func commandSnapshots(be backend.Server, key *khepri.Key, args []string) error {
 	fmt.Printf("%s\n", strings.Repeat("-", 80))
 
 	list := []*khepri.Snapshot{}
+	plen, err := backend.PrefixLength(be, backend.Snapshot)
+	if err != nil {
+		return err
+	}
 
 	backend.EachID(be, backend.Snapshot, func(id backend.ID) {
 		sn, err := ch.LoadSnapshot(id)
@@ -74,7 +78,7 @@ func commandSnapshots(be backend.Server, key *khepri.Key, args []string) error {
 	})
 
 	for _, sn := range list {
-		fmt.Printf("%-8s  %-19s  %-10s  %s\n", sn.ID().String()[:8], sn.Time.Format(TimeFormat), sn.Hostname, sn.Dir)
+		fmt.Printf("%-8s  %-19s  %-10s  %s\n", sn.ID()[:plen], sn.Time.Format(TimeFormat), sn.Hostname, sn.Dir)
 	}
 
 	return nil

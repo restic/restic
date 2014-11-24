@@ -7,7 +7,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"io/ioutil"
+	"sort"
 	"sync"
+)
+
+const (
+	MinPrefixLength = 4
 )
 
 var idPool = sync.Pool{New: func() interface{} { return ID(make([]byte, IDSize)) }}
@@ -142,4 +147,33 @@ func FindSnapshot(be Server, s string) (ID, error) {
 	}
 
 	return id, nil
+}
+
+// PrefixLength returns the number of bytes required so that all prefixes of
+// all IDs of type t are unique.
+func PrefixLength(be Lister, t Type) (int, error) {
+	// load all IDs of the given type
+	list, err := be.List(t)
+	if err != nil {
+		return 0, err
+	}
+
+	sort.Sort(list)
+
+	// select prefixes of length l, test if the last one is the same as the current one
+outer:
+	for l := MinPrefixLength; l < IDSize; l++ {
+		var last ID
+
+		for _, id := range list {
+			if bytes.Equal(last, id[:l]) {
+				continue outer
+			}
+			last = id[:l]
+		}
+
+		return l, nil
+	}
+
+	return IDSize, nil
 }
