@@ -129,6 +129,7 @@ func init() {
 	commands["snapshots"] = commandSnapshots
 	commands["cat"] = commandCat
 	commands["ls"] = commandLs
+	commands["key"] = commandKey
 
 	// set GOMAXPROCS to number of CPUs
 	runtime.GOMAXPROCS(runtime.NumCPU())
