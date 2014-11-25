@@ -41,7 +41,7 @@ func add_key(be backend.Server, key *khepri.Key) error {
 	pw2 := readPassword("KHEPRI_NEWPASSWORD", "enter password again: ")
 
 	if pw != pw2 {
-		errx(1, "passwords do not match")
+		return errors.New("passwords do not match")
 	}
 
 	id, err := key.AddKey(be, pw)
@@ -68,9 +68,34 @@ func delete_key(be backend.Server, key *khepri.Key, id backend.ID) error {
 	return nil
 }
 
+func change_password(be backend.Server, key *khepri.Key) error {
+	pw := readPassword("KHEPRI_NEWPASSWORD", "enter password for new key: ")
+	pw2 := readPassword("KHEPRI_NEWPASSWORD", "enter password again: ")
+
+	if pw != pw2 {
+		return errors.New("passwords do not match")
+	}
+
+	// add new key
+	id, err := key.AddKey(be, pw)
+	if err != nil {
+		return fmt.Errorf("creating new key failed: %v\n", err)
+	}
+
+	// remove old key
+	err = be.Remove(backend.Key, key.ID())
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("saved new key as %s\n", id)
+
+	return nil
+}
+
 func commandKey(be backend.Server, key *khepri.Key, args []string) error {
 	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) {
-		return errors.New("usage: key [list|add|rm] [ID]")
+		return errors.New("usage: key [list|add|rm|change] [ID]")
 	}
 
 	switch args[0] {
@@ -85,6 +110,8 @@ func commandKey(be backend.Server, key *khepri.Key, args []string) error {
 		}
 
 		return delete_key(be, key, id)
+	case "change":
+		return change_password(be, key)
 	}
 
 	return nil
