@@ -63,6 +63,8 @@ type Key struct {
 
 	user   *keys
 	master *keys
+
+	id backend.ID
 }
 
 // keys is a JSON structure that holds signing and encryption keys.
@@ -129,10 +131,11 @@ func CreateKey(be backend.Server, password string) (*Key, error) {
 	}
 
 	// store in repository and return
-	_, err = be.Create(backend.Key, buf)
+	id, err := be.Create(backend.Key, buf)
 	if err != nil {
 		return nil, err
 	}
+	k.id = id
 
 	FreeChunkBuf("key", k.Data)
 
@@ -177,6 +180,7 @@ func OpenKey(be backend.Server, id backend.ID, password string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
+	k.id = id
 
 	return k, nil
 }
@@ -262,6 +266,7 @@ func (oldkey *Key) AddKey(be backend.Server, password string) (backend.ID, error
 	if err != nil {
 		return nil, err
 	}
+	newkey.id = id
 
 	FreeChunkBuf("key", newkey.Data)
 
@@ -445,4 +450,8 @@ func (k *Key) String() string {
 		return "<Key nil>"
 	}
 	return fmt.Sprintf("<Key of %s@%s, created on %s>", k.Username, k.Hostname, k.Created)
+}
+
+func (k Key) ID() backend.ID {
+	return k.id
 }
