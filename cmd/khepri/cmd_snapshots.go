@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -18,6 +19,39 @@ const (
 	day    = 24 * hour
 	week   = 7 * day
 )
+
+type Table struct {
+	Header string
+	Rows   [][]interface{}
+
+	RowFormat string
+}
+
+func NewTable() Table {
+	return Table{
+		Rows: [][]interface{}{},
+	}
+}
+
+func (t Table) Print(w io.Writer) error {
+	_, err := fmt.Fprintln(w, t.Header)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(w, strings.Repeat("-", 70))
+	if err != nil {
+		return err
+	}
+
+	for _, row := range t.Rows {
+		_, err = fmt.Fprintf(w, t.RowFormat+"\n", row...)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 const TimeFormat = "2006-01-02 15:04:05"
 
@@ -48,15 +82,11 @@ func commandSnapshots(be backend.Server, key *khepri.Key, args []string) error {
 		return err
 	}
 
-	fmt.Printf("%-8s  %-19s  %-10s  %s\n", "ID", "Date", "Source", "Directory")
-	fmt.Printf("%s\n", strings.Repeat("-", 80))
+	tab := NewTable()
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s\n", "ID", "Date", "Source", "Directory")
+	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
 
 	list := []*khepri.Snapshot{}
-	plen, err := backend.PrefixLength(be, backend.Snapshot)
-	if err != nil {
-		return err
-	}
-
 	backend.EachID(be, backend.Snapshot, func(id backend.ID) {
 		sn, err := ch.LoadSnapshot(id)
 		if err != nil {
@@ -77,9 +107,16 @@ func commandSnapshots(be backend.Server, key *khepri.Key, args []string) error {
 		}
 	})
 
-	for _, sn := range list {
-		fmt.Printf("%-8s  %-19s  %-10s  %s\n", sn.ID()[:plen], sn.Time.Format(TimeFormat), sn.Hostname, sn.Dir)
+	plen, err := backend.PrefixLength(be, backend.Snapshot)
+	if err != nil {
+		return err
 	}
+
+	for _, sn := range list {
+		tab.Rows = append(tab.Rows, []interface{}{sn.ID()[:plen], sn.Time.Format(TimeFormat), sn.Hostname, sn.Dir})
+	}
+
+	tab.Print(os.Stdout)
 
 	return nil
 }
