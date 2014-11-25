@@ -204,6 +204,70 @@ func SearchKey(be backend.Server, password string) (*Key, error) {
 	return nil, ErrNoKeyFound
 }
 
+// AddKey adds a new key to an already existing repository.
+func (oldkey *Key) AddKey(be backend.Server, password string) (backend.ID, error) {
+	// fill meta data about key
+	newkey := &Key{
+		Created: time.Now(),
+		KDF:     "scrypt",
+		N:       scryptN,
+		R:       scryptR,
+		P:       scryptP,
+	}
+
+	hn, err := os.Hostname()
+	if err == nil {
+		newkey.Hostname = hn
+	}
+
+	usr, err := user.Current()
+	if err == nil {
+		newkey.Username = usr.Username
+	}
+
+	// generate random salt
+	newkey.Salt = make([]byte, scryptSaltsize)
+	n, err := rand.Read(newkey.Salt)
+	if n != scryptSaltsize || err != nil {
+		panic("unable to read enough random bytes for salt")
+	}
+
+	// call scrypt() to derive user key
+	newkey.user, err = newkey.scrypt(password)
+	if err != nil {
+		return nil, err
+	}
+
+	// copy master keys from oldkey
+	newkey.master = oldkey.master
+
+	// encrypt master keys (as json) with user key
+	buf, err := json.Marshal(newkey.master)
+	if err != nil {
+		return nil, err
+	}
+
+	newkey.Data = GetChunkBuf("key")
+	n, err = newkey.EncryptUser(newkey.Data, buf)
+	newkey.Data = newkey.Data[:n]
+
+	// dump as json
+	buf, err = json.Marshal(newkey)
+	if err != nil {
+		return nil, err
+	}
+
+	// store in repository and return
+	id, err := be.Create(backend.Key, buf)
+	if err != nil {
+		return nil, err
+	}
+
+	FreeChunkBuf("key", newkey.Data)
+
+	return id, nil
+}
+
 func (k *Key) scrypt(password string) (*keys, error) {
 	if len(k.Salt) == 0 {
 		return nil, fmt.Errorf("scrypt() called with empty salt")

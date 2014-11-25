@@ -34,10 +34,14 @@ type commandFunc func(backend.Server, *khepri.Key, []string) error
 
 var commands map[string]commandFunc
 
-func readPassword(prompt string) string {
-	p := os.Getenv("KHEPRI_PASSWORD")
-	if p != "" {
-		return p
+func readPassword(env string, prompt string) string {
+
+	if env != "" {
+		p := os.Getenv(env)
+
+		if p != "" {
+			return p
+		}
 	}
 
 	fmt.Print(prompt)
@@ -51,8 +55,8 @@ func readPassword(prompt string) string {
 }
 
 func commandInit(repo string) error {
-	pw := readPassword("enter password for new backend: ")
-	pw2 := readPassword("enter password again: ")
+	pw := readPassword("KHEPRI_PASSWORD", "enter password for new backend: ")
+	pw2 := readPassword("KHEPRI_PASSWORD", "enter password again: ")
 
 	if pw != pw2 {
 		errx(1, "passwords do not match")
@@ -188,7 +192,7 @@ func main() {
 		errx(1, "unable to open repo: %v", err)
 	}
 
-	key, err := khepri.SearchKey(repo, readPassword("Enter Password for Repository: "))
+	key, err := khepri.SearchKey(repo, readPassword("KHEPRI_PASSWORD", "Enter Password for Repository: "))
 	if err != nil {
 		errx(2, "unable to open repo: %v", err)
 	}
