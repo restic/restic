@@ -12,8 +12,8 @@ import (
 
 func list_keys(be backend.Server, key *khepri.Key) error {
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
-	tab.RowFormat = "%-10s  %-10s  %-10s  %s"
+	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
+	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
 	plen, err := backend.PrefixLength(be, backend.Key)
 	if err != nil {
@@ -27,7 +27,13 @@ func list_keys(be backend.Server, key *khepri.Key) error {
 			return
 		}
 
-		tab.Rows = append(tab.Rows, []interface{}{id[:plen],
+		var current string
+		if id.Equal(key.ID()) {
+			current = "*"
+		} else {
+			current = " "
+		}
+		tab.Rows = append(tab.Rows, []interface{}{current, id[:plen],
 			k.Username, k.Hostname, k.Created.Format(TimeFormat)})
 	})
 
