@@ -83,7 +83,7 @@ func commandSnapshots(be backend.Server, key *khepri.Key, args []string) error {
 	}
 
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s\n", "ID", "Date", "Source", "Directory")
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Source", "Directory")
 	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
 
 	list := []*khepri.Snapshot{}
