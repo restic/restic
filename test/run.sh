@@ -82,10 +82,10 @@ else
     testfiles=(${dir}/test-*.sh)
 fi
 
-echo "testfiles: $testfiles"
+echo "testfiles: ${testfiles[@]}"
 
 failed=""
-for testfile in "$testfiles"; do
+for testfile in "${testfiles[@]}"; do
     current=$(basename "${testfile}" .sh)
 
     if bash "${testfile}"; then
