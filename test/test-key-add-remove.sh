@@ -14,6 +14,11 @@ prepare
 unset KHEPRI_PASSWORD
 KHEPRI_PASSWORD=foo run khepri init
 KHEPRI_PASSWORD=foo run khepri key list
+
+KHEPRI_PASSWORD=foo KHEPRI_NEWPASSWORD=foobar run khepri key change
+KHEPRI_PASSWORD=foobar run khepri key list
+KHEPRI_PASSWORD=foobar KHEPRI_NEWPASSWORD=foo run khepri key change
+
 OLD_PWD=foo
 for i in {1..3}; do
     NEW_PWD=bar$i
