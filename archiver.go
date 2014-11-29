@@ -343,7 +343,10 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 				}()
 
 				// TODO: handle error
-				arch.SaveFile(n)
+				err := arch.SaveFile(n)
+				if err != nil {
+					panic(err)
+				}
 				arch.update(arch.SaveStats, Stats{Files: 1})
 			}(node)
 		} else {
