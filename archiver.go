@@ -2,6 +2,7 @@ package khepri
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -191,6 +192,8 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		chans := [](<-chan Blob){}
 		defer chnker.Free()
 
+		chunks := 0
+
 		for {
 			buf := GetChunkBuf("blob chunker")
 			chunk, err := chnker.Next(buf)
@@ -203,6 +206,8 @@ func (arch *Archiver) SaveFile(node *Node) error {
 				FreeChunkBuf("blob chunker", buf)
 				return arrar.Annotate(err, "SaveFile() chunker.Next()")
 			}
+
+			chunks++
 
 			// acquire token, start goroutine to save chunk
 			token := <-arch.blobToken
@@ -228,6 +233,10 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		blobs = []Blob{}
 		for _, ch := range chans {
 			blobs = append(blobs, <-ch)
+		}
+
+		if len(blobs) != chunks {
+			return fmt.Errorf("chunker returned %v chunks, but only %v blobs saved", chunks, len(blobs))
 		}
 	}
 
