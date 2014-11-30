@@ -167,14 +167,14 @@ func (b *Local) dirname(t Type, id ID) string {
 	case Data:
 		n = dataPath
 		if id != nil {
-			n = filepath.Join(dataPath, fmt.Sprintf("%02x", id[0]), fmt.Sprintf("%02x", id[1]))
+			n = filepath.Join(dataPath, fmt.Sprintf("%02x", id[0]))
 		}
 	case Snapshot:
 		n = snapshotPath
 	case Tree:
 		n = treePath
 		if id != nil {
-			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]), fmt.Sprintf("%02x", id[1]))
+			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]))
 		}
 	case Map:
 		n = mapPath
@@ -289,7 +289,7 @@ func (b *Local) List(t Type) (IDs, error) {
 	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
 	var pattern string
 	if t == Data || t == Tree {
-		pattern = filepath.Join(b.dirname(t, nil), "*", "*", "*")
+		pattern = filepath.Join(b.dirname(t, nil), "*", "*")
 	} else {
 		pattern = filepath.Join(b.dirname(t, nil), "*")
 	}

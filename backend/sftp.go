@@ -275,14 +275,14 @@ func (r *SFTP) dirname(t Type, id ID) string {
 	case Data:
 		n = dataPath
 		if id != nil {
-			n = filepath.Join(dataPath, fmt.Sprintf("%02x", id[0]), fmt.Sprintf("%02x", id[1]))
+			n = filepath.Join(dataPath, fmt.Sprintf("%02x", id[0]))
 		}
 	case Snapshot:
 		n = snapshotPath
 	case Tree:
 		n = treePath
 		if id != nil {
-			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]), fmt.Sprintf("%02x", id[1]))
+			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]))
 		}
 	case Map:
 		n = mapPath
@@ -408,23 +408,15 @@ func (r *SFTP) List(t Type) (IDs, error) {
 			return nil, err
 		}
 
-		for _, dir1 := range list1 {
-			// read second level
-			list2, err := r.c.ReadDir(filepath.Join(basedir, dir1.Name()))
+		// read files
+		for _, dir := range list1 {
+			entries, err := r.c.ReadDir(filepath.Join(basedir, dir.Name()))
 			if err != nil {
 				return nil, err
 			}
 
-			// read files
-			for _, dir2 := range list2 {
-				entries, err := r.c.ReadDir(filepath.Join(basedir, dir1.Name(), dir2.Name()))
-				if err != nil {
-					return nil, err
-				}
-
-				for _, entry := range entries {
-					list = append(list, entry)
-				}
+			for _, entry := range entries {
+				list = append(list, entry)
 			}
 		}
 	} else {
