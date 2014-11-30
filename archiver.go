@@ -171,14 +171,19 @@ func (arch *Archiver) SaveFile(node *Node) error {
 			return arrar.Annotate(err, "SaveFile() read small file")
 		}
 
-		blob, err := arch.ch.Save(backend.Data, buf[:n])
-		if err != nil {
-			return arrar.Annotate(err, "SaveFile() save chunk")
+		if err == io.EOF {
+			// use empty blob list for empty files
+			blobs = Blobs{}
+		} else {
+			blob, err := arch.ch.Save(backend.Data, buf[:n])
+			if err != nil {
+				return arrar.Annotate(err, "SaveFile() save chunk")
+			}
+
+			arch.update(arch.SaveStats, Stats{Bytes: blob.Size})
+
+			blobs = Blobs{blob}
 		}
-
-		arch.update(arch.SaveStats, Stats{Bytes: blob.Size})
-
-		blobs = Blobs{blob}
 	} else {
 		// else store all chunks
 		chnker := chunker.New(file)
