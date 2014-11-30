@@ -26,7 +26,8 @@ type Archiver struct {
 	key *Key
 	ch  *ContentHandler
 
-	bl *BlobList // blobs used for the current snapshot
+	bl       *BlobList // blobs used for the current snapshot
+	parentBl *BlobList // blobs from the parent snapshot
 
 	fileToken chan struct{}
 	blobToken chan struct{}
@@ -249,6 +250,30 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	return nil
 }
 
+func (arch *Archiver) populateFromOldTree(tree, oldTree Tree) error {
+	// update content from old tree
+	err := tree.PopulateFrom(oldTree)
+	if err != nil {
+		return err
+	}
+
+	// add blobs to bloblist
+	for _, node := range tree {
+		if node.Content != nil {
+			for _, blobID := range node.Content {
+				blob, err := arch.parentBl.Find(Blob{ID: blobID})
+				if err != nil {
+					return err
+				}
+
+				arch.bl.Insert(blob)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (arch *Archiver) loadTree(dir string, oldTreeID backend.ID) (*Tree, error) {
 	var (
 		oldTree Tree
@@ -316,7 +341,7 @@ func (arch *Archiver) loadTree(dir string, oldTreeID backend.ID) (*Tree, error) 
 	}
 
 	// populate with content from oldTree
-	err = tree.PopulateFrom(oldTree)
+	err = arch.populateFromOldTree(tree, oldTree)
 	if err != nil {
 		return nil, err
 	}
@@ -342,18 +367,24 @@ func (arch *Archiver) loadTree(dir string, oldTreeID backend.ID) (*Tree, error) 
 	return &tree, nil
 }
 
-func (arch *Archiver) LoadTree(path string, baseSnapshot backend.ID) (*Tree, error) {
+func (arch *Archiver) LoadTree(path string, parentSnapshot backend.ID) (*Tree, error) {
 	var oldTree Tree
 
-	if baseSnapshot != nil {
+	if parentSnapshot != nil {
 		// load old tree from snapshot
-		snapshot, err := arch.ch.LoadSnapshot(baseSnapshot)
+		snapshot, err := LoadSnapshot(arch.ch, parentSnapshot)
 		if err != nil {
 			return nil, arrar.Annotate(err, "load old snapshot")
 		}
 
 		if snapshot.Content == nil {
 			return nil, errors.New("snapshot without tree!")
+		}
+
+		// load old bloblist from snapshot
+		arch.parentBl, err = LoadBlobList(arch.ch, snapshot.Map)
+		if err != nil {
+			return nil, err
 		}
 
 		oldTree, err = LoadTree(arch.ch, snapshot.Content)
@@ -380,8 +411,11 @@ func (arch *Archiver) LoadTree(path string, baseSnapshot backend.ID) (*Tree, err
 	if node.Type != "dir" {
 		t := &Tree{node}
 
-		// compare with old tree
-		t.PopulateFrom(oldTree)
+		// populate with content from oldTree
+		err = arch.populateFromOldTree(*t, oldTree)
+		if err != nil {
+			return nil, err
+		}
 
 		// if no old node has been found, update stats
 		if node.Content == nil && node.Subtree == nil {
