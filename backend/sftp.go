@@ -155,13 +155,9 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 
 	// create paths for data, refs and temp blobs
 	for _, d := range dirs {
-		// TODO: implement client.MkdirAll() and set mode to dirMode
-		_, err = sftp.c.Lstat(d)
+		err = sftp.mkdirAll(d, dirMode)
 		if err != nil {
-			err = sftp.c.Mkdir(d)
-			if err != nil {
-				return nil, err
-			}
+			return nil, err
 		}
 	}
 
@@ -225,21 +221,69 @@ func (r *SFTP) tempFile() (string, *sftp.File, error) {
 	return name, f, nil
 }
 
+func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
+	// check if directory already exists
+	fi, err := r.c.Lstat(dir)
+	if err == nil {
+		if fi.IsDir() {
+			return nil
+		}
+
+		return fmt.Errorf("mkdirAll(%s): entry exists but is not a directory", dir)
+	}
+
+	// create parent directories
+	errMkdirAll := r.mkdirAll(filepath.Dir(dir), dirMode)
+
+	// create directory
+	errMkdir := r.c.Mkdir(dir)
+
+	// test if directory was created successfully
+	fi, err = r.c.Lstat(dir)
+	if err != nil {
+		// return previous errors
+		return fmt.Errorf("mkdirAll(%s): unable to create directories: %v, %v", errMkdirAll, errMkdir)
+	}
+
+	if !fi.IsDir() {
+		return fmt.Errorf("mkdirAll(%s): entry exists but is not a directory", dir)
+	}
+
+	// set mode
+	return r.c.Chmod(dir, mode)
+}
+
 // Rename temp file to final name according to type and ID.
-func (r *SFTP) renameFile(filename string, t Type, id ID) error {
-	return r.c.Rename(filename, filepath.Join(r.dir(t), id.String()))
+func (r *SFTP) renameFile(oldname string, t Type, id ID) error {
+	newname := r.filename(t, id)
+
+	// create directories if necessary
+	if t == Data || t == Tree {
+		err := r.mkdirAll(filepath.Dir(newname), dirMode)
+		if err != nil {
+			return err
+		}
+	}
+
+	return r.c.Rename(oldname, newname)
 }
 
 // Construct directory for given Type.
-func (r *SFTP) dir(t Type) string {
+func (r *SFTP) dirname(t Type, id ID) string {
 	var n string
 	switch t {
 	case Data:
 		n = dataPath
+		if id != nil {
+			n = filepath.Join(dataPath, fmt.Sprintf("%02x", id[0]), fmt.Sprintf("%02x", id[1]))
+		}
 	case Snapshot:
 		n = snapshotPath
 	case Tree:
 		n = treePath
+		if id != nil {
+			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]), fmt.Sprintf("%02x", id[1]))
+		}
 	case Map:
 		n = mapPath
 	case Lock:
@@ -257,7 +301,12 @@ func (r *SFTP) Create(t Type, data []byte) (ID, error) {
 
 	// check if blob is already present in backend
 	id := IDFromData(data)
-	if ok, _ := r.Test(t, id); ok {
+	res, err := r.Test(t, id)
+	if err != nil {
+		return nil, arrar.Annotate(err, "test for presence")
+	}
+
+	if res {
 		return id, ErrAlreadyPresent
 	}
 
@@ -289,7 +338,7 @@ func (r *SFTP) Create(t Type, data []byte) (ID, error) {
 
 // Construct path for given Type and ID.
 func (r *SFTP) filename(t Type, id ID) string {
-	return filepath.Join(r.dir(t), id.String())
+	return filepath.Join(r.dirname(t, id), id.String())
 }
 
 // Get returns the content stored under the given ID. If the data doesn't match
@@ -325,10 +374,15 @@ func (r *SFTP) Test(t Type, id ID) (bool, error) {
 		}
 	}()
 
-	if err == nil {
-		return true, nil
+	if err != nil {
+		if _, ok := err.(*sftp.StatusError); ok {
+			return false, nil
+		}
+
+		return false, err
 	}
-	return false, err
+
+	return true, nil
 }
 
 // Remove removes the content stored at ID.
@@ -338,9 +392,42 @@ func (r *SFTP) Remove(t Type, id ID) error {
 
 // List lists all objects of a given type.
 func (r *SFTP) List(t Type) (IDs, error) {
-	list, err := r.c.ReadDir(r.dir(t))
-	if err != nil {
-		return nil, err
+	list := []os.FileInfo{}
+	var err error
+
+	if t == Data || t == Tree {
+		// read first level
+		basedir := r.dirname(t, nil)
+
+		list1, err := r.c.ReadDir(basedir)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, dir1 := range list1 {
+			// read second level
+			list2, err := r.c.ReadDir(filepath.Join(basedir, dir1.Name()))
+			if err != nil {
+				return nil, err
+			}
+
+			// read files
+			for _, dir2 := range list2 {
+				entries, err := r.c.ReadDir(filepath.Join(basedir, dir1.Name(), dir2.Name()))
+				if err != nil {
+					return nil, err
+				}
+
+				for _, entry := range entries {
+					list = append(list, entry)
+				}
+			}
+		}
+	} else {
+		list, err = r.c.ReadDir(r.dirname(t, nil))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	ids := make(IDs, 0, len(list))

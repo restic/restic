@@ -149,20 +149,33 @@ func (b *Local) tempFile() (*os.File, error) {
 
 // Rename temp file to final name according to type and ID.
 func (b *Local) renameFile(file *os.File, t Type, id ID) error {
-	filename := filepath.Join(b.dir(t), id.String())
-	return os.Rename(file.Name(), filename)
+	newname := b.filename(t, id)
+	oldname := file.Name()
+
+	if t == Data || t == Tree {
+		// create directories if necessary, ignore errors
+		os.MkdirAll(filepath.Dir(newname), dirMode)
+	}
+
+	return os.Rename(oldname, newname)
 }
 
 // Construct directory for given Type.
-func (b *Local) dir(t Type) string {
+func (b *Local) dirname(t Type, id ID) string {
 	var n string
 	switch t {
 	case Data:
 		n = dataPath
+		if id != nil {
+			n = filepath.Join(dataPath, fmt.Sprintf("%02x", id[0]), fmt.Sprintf("%02x", id[1]))
+		}
 	case Snapshot:
 		n = snapshotPath
 	case Tree:
 		n = treePath
+		if id != nil {
+			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]), fmt.Sprintf("%02x", id[1]))
+		}
 	case Map:
 		n = mapPath
 	case Lock:
@@ -217,7 +230,7 @@ func (b *Local) Create(t Type, data []byte) (ID, error) {
 
 // Construct path for given Type and ID.
 func (b *Local) filename(t Type, id ID) string {
-	return filepath.Join(b.dir(t), id.String())
+	return filepath.Join(b.dirname(t, id), id.String())
 }
 
 // Get returns the content stored under the given ID. If the data doesn't match
@@ -270,7 +283,12 @@ func (b *Local) Remove(t Type, id ID) error {
 // List lists all objects of a given type.
 func (b *Local) List(t Type) (IDs, error) {
 	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
-	pattern := filepath.Join(b.dir(t), "*")
+	var pattern string
+	if t == Data || t == Tree {
+		pattern = filepath.Join(b.dirname(t, nil), "*", "*", "*")
+	} else {
+		pattern = filepath.Join(b.dirname(t, nil), "*")
+	}
 
 	matches, err := filepath.Glob(pattern)
 	if err != nil {
