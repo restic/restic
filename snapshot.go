@@ -12,6 +12,7 @@ import (
 
 type Snapshot struct {
 	Time     time.Time  `json:"time"`
+	Parent   backend.ID `json:"parent,omitempty"`
 	Content  backend.ID `json:"content"`
 	Map      backend.ID `json:"map"`
 	Dir      string     `json:"dir"`

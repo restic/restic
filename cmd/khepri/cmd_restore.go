@@ -9,6 +9,10 @@ import (
 	"github.com/fd0/khepri/backend"
 )
 
+func init() {
+	commands["restore"] = commandRestore
+}
+
 func commandRestore(be backend.Server, key *khepri.Key, args []string) error {
 	if len(args) != 2 {
 		return errors.New("usage: restore ID dir")

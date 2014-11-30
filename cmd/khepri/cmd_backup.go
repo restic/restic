@@ -12,6 +12,10 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+func init() {
+	commands["backup"] = commandBackup
+}
+
 func format_bytes(c uint64) string {
 	b := float64(c)
 
@@ -53,11 +57,22 @@ func print_tree2(indent int, t *khepri.Tree) {
 }
 
 func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
-	if len(args) != 1 {
-		return errors.New("usage: backup [dir|file]")
+	if len(args) < 1 || len(args) > 2 {
+		return errors.New("usage: backup [dir|file] [snapshot-id]")
 	}
 
+	var parentSnapshotID backend.ID
+	var err error
+
 	target := args[0]
+	if len(args) > 1 {
+		parentSnapshotID, err = backend.FindSnapshot(be, args[1])
+		if err != nil {
+			return fmt.Errorf("invalid id %q: %v", args[1], err)
+		}
+
+		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
+	}
 
 	arch, err := khepri.NewArchiver(be, key)
 	if err != nil {
@@ -89,7 +104,7 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 	// 	return true
 	// }
 
-	t, err := arch.LoadTree(target)
+	t, err := arch.LoadTree(target, parentSnapshotID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
@@ -144,7 +159,7 @@ func commandBackup(be backend.Server, key *khepri.Key, args []string) error {
 		}(ch)
 	}
 
-	sn, id, err := arch.Snapshot(target, t)
+	sn, id, err := arch.Snapshot(target, t, parentSnapshotID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}

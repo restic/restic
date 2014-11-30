@@ -10,6 +10,10 @@ import (
 	"github.com/fd0/khepri/backend"
 )
 
+func init() {
+	commands["key"] = commandKey
+}
+
 func list_keys(be backend.Server, key *khepri.Key) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")

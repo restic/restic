@@ -344,6 +344,10 @@ func (r *SFTP) filename(t Type, id ID) string {
 // Get returns the content stored under the given ID. If the data doesn't match
 // the requested ID, ErrWrongData is returned.
 func (r *SFTP) Get(t Type, id ID) ([]byte, error) {
+	if id == nil {
+		return nil, errors.New("unable to load nil ID")
+	}
+
 	// try to open file
 	file, err := r.c.Open(r.filename(t, id))
 	defer file.Close()

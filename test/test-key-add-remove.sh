@@ -35,6 +35,8 @@ for i in {1..3}; do
     OLD_PWD=bar$i
 done
 
+KHEPRI_PASSWORD=$OLD_PWD run khepri fsck all
+
 cleanup
 
 FAILED=0

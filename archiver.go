@@ -1,6 +1,8 @@
 package khepri
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -24,7 +26,8 @@ type Archiver struct {
 	key *Key
 	ch  *ContentHandler
 
-	bl *BlobList // blobs used for the current snapshot
+	bl       *BlobList // blobs used for the current snapshot
+	parentBl *BlobList // blobs from the parent snapshot
 
 	fileToken chan struct{}
 	blobToken chan struct{}
@@ -171,19 +174,26 @@ func (arch *Archiver) SaveFile(node *Node) error {
 			return arrar.Annotate(err, "SaveFile() read small file")
 		}
 
-		blob, err := arch.ch.Save(backend.Data, buf[:n])
-		if err != nil {
-			return arrar.Annotate(err, "SaveFile() save chunk")
+		if err == io.EOF {
+			// use empty blob list for empty files
+			blobs = Blobs{}
+		} else {
+			blob, err := arch.ch.Save(backend.Data, buf[:n])
+			if err != nil {
+				return arrar.Annotate(err, "SaveFile() save chunk")
+			}
+
+			arch.update(arch.SaveStats, Stats{Bytes: blob.Size})
+
+			blobs = Blobs{blob}
 		}
-
-		arch.update(arch.SaveStats, Stats{Bytes: blob.Size})
-
-		blobs = Blobs{blob}
 	} else {
 		// else store all chunks
 		chnker := chunker.New(file)
 		chans := [](<-chan Blob){}
 		defer chnker.Free()
+
+		chunks := 0
 
 		for {
 			buf := GetChunkBuf("blob chunker")
@@ -197,6 +207,8 @@ func (arch *Archiver) SaveFile(node *Node) error {
 				FreeChunkBuf("blob chunker", buf)
 				return arrar.Annotate(err, "SaveFile() chunker.Next()")
 			}
+
+			chunks++
 
 			// acquire token, start goroutine to save chunk
 			token := <-arch.blobToken
@@ -223,6 +235,10 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		for _, ch := range chans {
 			blobs = append(blobs, <-ch)
 		}
+
+		if len(blobs) != chunks {
+			return fmt.Errorf("chunker returned %v chunks, but only %v blobs saved", chunks, len(blobs))
+		}
 	}
 
 	node.Content = make([]backend.ID, len(blobs))
@@ -234,7 +250,46 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	return nil
 }
 
-func (arch *Archiver) loadTree(dir string) (*Tree, error) {
+func (arch *Archiver) populateFromOldTree(tree, oldTree Tree) error {
+	// update content from old tree
+	err := tree.PopulateFrom(oldTree)
+	if err != nil {
+		return err
+	}
+
+	// add blobs to bloblist
+	for _, node := range tree {
+		if node.Content != nil {
+			for _, blobID := range node.Content {
+				blob, err := arch.parentBl.Find(Blob{ID: blobID})
+				if err != nil {
+					return err
+				}
+
+				arch.bl.Insert(blob)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (arch *Archiver) loadTree(dir string, oldTreeID backend.ID) (*Tree, error) {
+	var (
+		oldTree Tree
+		err     error
+	)
+
+	if oldTreeID != nil {
+		// load old tree
+		oldTree, err = LoadTree(arch.ch, oldTreeID)
+		if err != nil {
+			return nil, arrar.Annotate(err, "load old tree")
+		}
+
+		debug("old tree: %v\n", oldTree)
+	}
+
 	// open and list path
 	fd, err := os.Open(dir)
 	defer fd.Close()
@@ -247,8 +302,8 @@ func (arch *Archiver) loadTree(dir string) (*Tree, error) {
 		return nil, err
 	}
 
+	// build new tree
 	tree := Tree{}
-
 	for _, entry := range entries {
 		path := filepath.Join(dir, entry.Name())
 
@@ -262,13 +317,38 @@ func (arch *Archiver) loadTree(dir string) (*Tree, error) {
 			return nil, err
 		}
 
-		tree = append(tree, node)
+		err = tree.Insert(node)
+		if err != nil {
+			return nil, err
+		}
 
 		if entry.IsDir() {
-			node.Tree, err = arch.loadTree(path)
+			oldSubtree, err := oldTree.Find(node.Name)
+			if err != nil && err != ErrNodeNotFound {
+				return nil, err
+			}
+
+			var oldSubtreeID backend.ID
+			if err == nil {
+				oldSubtreeID = oldSubtree.Subtree
+			}
+
+			node.Tree, err = arch.loadTree(path, oldSubtreeID)
 			if err != nil {
 				return nil, err
 			}
+		}
+	}
+
+	// populate with content from oldTree
+	err = arch.populateFromOldTree(tree, oldTree)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, node := range tree {
+		if node.Type == "file" && node.Content != nil {
+			continue
 		}
 
 		switch node.Type {
@@ -287,7 +367,34 @@ func (arch *Archiver) loadTree(dir string) (*Tree, error) {
 	return &tree, nil
 }
 
-func (arch *Archiver) LoadTree(path string) (*Tree, error) {
+func (arch *Archiver) LoadTree(path string, parentSnapshot backend.ID) (*Tree, error) {
+	var oldTree Tree
+
+	if parentSnapshot != nil {
+		// load old tree from snapshot
+		snapshot, err := LoadSnapshot(arch.ch, parentSnapshot)
+		if err != nil {
+			return nil, arrar.Annotate(err, "load old snapshot")
+		}
+
+		if snapshot.Content == nil {
+			return nil, errors.New("snapshot without tree!")
+		}
+
+		// load old bloblist from snapshot
+		arch.parentBl, err = LoadBlobList(arch.ch, snapshot.Map)
+		if err != nil {
+			return nil, err
+		}
+
+		oldTree, err = LoadTree(arch.ch, snapshot.Content)
+		if err != nil {
+			return nil, arrar.Annotate(err, "load old tree")
+		}
+
+		debug("old tree: %v\n", oldTree)
+	}
+
 	// reset global stats
 	arch.updateStats = Stats{}
 
@@ -302,14 +409,38 @@ func (arch *Archiver) LoadTree(path string) (*Tree, error) {
 	}
 
 	if node.Type != "dir" {
-		arch.Stats.Files = 1
-		arch.Stats.Bytes = node.Size
+		t := &Tree{node}
+
+		// populate with content from oldTree
+		err = arch.populateFromOldTree(*t, oldTree)
+		if err != nil {
+			return nil, err
+		}
+
+		// if no old node has been found, update stats
+		if node.Content == nil && node.Subtree == nil {
+			arch.Stats.Files = 1
+			arch.Stats.Bytes = node.Size
+		}
+
 		arch.update(arch.ScannerStats, arch.Stats)
-		return &Tree{node}, nil
+
+		return t, nil
 	}
 
 	arch.Stats.Directories = 1
-	node.Tree, err = arch.loadTree(path)
+
+	var oldSubtreeID backend.ID
+	oldSubtree, err := oldTree.Find(node.Name)
+	if err != nil && err != ErrNodeNotFound {
+		return nil, arrar.Annotate(err, "search node in old tree")
+	}
+
+	if err == nil {
+		oldSubtreeID = oldSubtree.Subtree
+	}
+
+	node.Tree, err = arch.loadTree(path, oldSubtreeID)
 	if err != nil {
 		return nil, arrar.Annotate(err, "loadTree()")
 	}
@@ -356,6 +487,13 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 
 	wg.Wait()
 
+	// check for invalid file nodes
+	for _, node := range *t {
+		if node.Type == "file" && node.Content == nil {
+			return Blob{}, fmt.Errorf("node %v has empty content", node.Name)
+		}
+	}
+
 	blob, err := arch.SaveJSON(backend.Tree, t)
 	if err != nil {
 		return Blob{}, err
@@ -364,11 +502,12 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 	return blob, nil
 }
 
-func (arch *Archiver) Snapshot(dir string, t *Tree) (*Snapshot, backend.ID, error) {
+func (arch *Archiver) Snapshot(dir string, t *Tree, parentSnapshot backend.ID) (*Snapshot, backend.ID, error) {
 	// reset global stats
 	arch.updateStats = Stats{}
 
 	sn := NewSnapshot(dir)
+	sn.Parent = parentSnapshot
 
 	blob, err := arch.saveTree(t)
 	if err != nil {

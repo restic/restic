@@ -10,6 +10,10 @@ import (
 	"github.com/fd0/khepri/backend"
 )
 
+func init() {
+	commands["ls"] = commandLs
+}
+
 func print_node(prefix string, n *khepri.Node) string {
 	switch n.Type {
 	case "file":

@@ -72,6 +72,10 @@ func reltime(t time.Time) string {
 	}
 }
 
+func init() {
+	commands["snapshots"] = commandSnapshots
+}
+
 func commandSnapshots(be backend.Server, key *khepri.Key, args []string) error {
 	if len(args) != 0 {
 		return errors.New("usage: snapshots")

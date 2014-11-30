@@ -8,6 +8,8 @@ import (
 	"github.com/fd0/khepri/backend"
 )
 
+var ErrWrongData = errors.New("wrong data decrypt, checksum does not match")
+
 type ContentHandler struct {
 	be  backend.Server
 	key *Key
@@ -171,6 +173,11 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	// check length
 	if len(buf) != int(blob.Size) {
 		return nil, errors.New("Invalid length")
+	}
+
+	// check SHA256 sum
+	if !id.Equal(backend.Hash(buf)) {
+		return nil, ErrWrongData
 	}
 
 	return buf, nil
