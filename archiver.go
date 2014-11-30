@@ -487,6 +487,13 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 
 	wg.Wait()
 
+	// check for invalid file nodes
+	for _, node := range *t {
+		if node.Type == "file" && node.Content == nil {
+			return Blob{}, fmt.Errorf("node %v has empty content", node.Name)
+		}
+	}
+
 	blob, err := arch.SaveJSON(backend.Tree, t)
 	if err != nil {
 		return Blob{}, err
