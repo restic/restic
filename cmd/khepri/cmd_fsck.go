@@ -1,76 +1,123 @@
 package main
 
-import "github.com/fd0/khepri/backend"
+import (
+	"errors"
+	"fmt"
 
-// func fsck_tree(be backend.Server, id backend.ID) (bool, error) {
-// 	log.Printf("  checking dir %s", id)
+	"github.com/fd0/khepri"
+	"github.com/fd0/khepri/backend"
+)
 
-// 	buf, err := be.GetBlob(id)
-// 	if err != nil {
-// 		return false, err
-// 	}
+func init() {
+	commands["fsck"] = commandFsck
+}
 
-// 	tree := &khepri.Tree{}
-// 	err = json.Unmarshal(buf, tree)
-// 	if err != nil {
-// 		return false, err
-// 	}
+func fsckFile(ch *khepri.ContentHandler, IDs []backend.ID) error {
+	for _, id := range IDs {
+		debug("checking data blob %v\n", id)
 
-// 	if !id.Equal(backend.IDFromData(buf)) {
-// 		return false, nil
-// 	}
+		// load content
+		_, err := ch.Load(backend.Data, id)
+		if err != nil {
+			return err
+		}
+	}
 
-// 	return true, nil
-// }
+	return nil
+}
 
-// func fsck_snapshot(be backend.Server, id backend.ID) (bool, error) {
-// 	log.Printf("checking snapshot %s", id)
+func fsckTree(ch *khepri.ContentHandler, id backend.ID) error {
+	debug("checking tree %v\n", id)
 
-// 	sn, err := khepri.LoadSnapshot(be, id)
-// 	if err != nil {
-// 		return false, err
-// 	}
+	tree, err := khepri.LoadTree(ch, id)
+	if err != nil {
+		return err
+	}
 
-// 	return fsck_tree(be, sn.Content)
-// }
+	for i, node := range tree {
+		if node.Name == "" {
+			return fmt.Errorf("node %v of tree %v has no name", i, id)
+		}
 
-func commandFsck(be backend.Server, args []string) error {
-	// var snapshots backend.IDs
-	// var err error
+		if node.Type == "" {
+			return fmt.Errorf("node %q of tree %v has no type", node.Name, id)
+		}
 
-	// if len(args) != 0 {
-	// 	snapshots = make(backend.IDs, 0, len(args))
+		switch node.Type {
+		case "file":
+			if node.Content == nil {
+				return fmt.Errorf("file node %q of tree %v has no content", node.Name, id)
+			}
 
-	// 	for _, arg := range args {
-	// 		id, err := backend.ParseID(arg)
-	// 		if err != nil {
-	// 			log.Fatal(err)
-	// 		}
+			err := fsckFile(ch, node.Content)
+			if err != nil {
+				return err
+			}
+		case "dir":
+			if node.Subtree == nil {
+				return fmt.Errorf("dir node %q of tree %v has no subtree", node.Name, id)
+			}
 
-	// 		snapshots = append(snapshots, id)
-	// 	}
-	// } else {
-	// 	snapshots, err = be.ListRefs()
+			err := fsckTree(ch, node.Subtree)
+			if err != nil {
+				return err
+			}
+		}
+	}
 
-	// 	if err != nil {
-	// 		log.Fatalf("error reading list of snapshot IDs: %v", err)
-	// 	}
-	// }
+	return nil
+}
 
-	// log.Printf("checking %d snapshots", len(snapshots))
+func fsck_snapshot(be backend.Server, key *khepri.Key, id backend.ID) error {
+	debug("checking snapshot %v\n", id)
 
-	// for _, id := range snapshots {
-	// 	ok, err := fsck_snapshot(be, id)
+	ch, err := khepri.NewContentHandler(be, key)
+	if err != nil {
+		return err
+	}
 
-	// 	if err != nil {
-	// 		log.Printf("error checking snapshot %s: %v", id, err)
-	// 		continue
-	// 	}
+	sn, err := ch.LoadSnapshot(id)
+	if err != nil {
+		return err
+	}
 
-	// 	if !ok {
-	// 		log.Printf("snapshot %s failed", id)
-	// 	}
-	// }
+	if sn.Content == nil {
+		return fmt.Errorf("snapshot %v has no content", sn.ID)
+	}
+
+	if sn.Map == nil {
+		return fmt.Errorf("snapshot %v has no map", sn.ID)
+	}
+
+	return fsckTree(ch, sn.Content)
+}
+
+func commandFsck(be backend.Server, key *khepri.Key, args []string) error {
+	if len(args) == 0 {
+		return errors.New("usage: fsck [all|snapshot-id]")
+	}
+
+	if len(args) == 1 && args[0] != "all" {
+		snapshotID, err := backend.FindSnapshot(be, args[0])
+		if err != nil {
+			return fmt.Errorf("invalid id %q: %v", args[1], err)
+		}
+
+		return fsck_snapshot(be, key, snapshotID)
+	}
+
+	list, err := be.List(backend.Snapshot)
+	if err != nil {
+		return err
+	}
+
+	for _, snapshotID := range list {
+		err := fsck_snapshot(be, key, snapshotID)
+
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
