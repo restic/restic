@@ -32,7 +32,7 @@ func errx(code int, format string, data ...interface{}) {
 
 type commandFunc func(backend.Server, *khepri.Key, []string) error
 
-var commands map[string]commandFunc
+var commands = make(map[string]commandFunc)
 
 func readPassword(env string, prompt string) string {
 
@@ -126,7 +126,6 @@ func create(u string) (backend.Server, error) {
 }
 
 func init() {
-	commands = make(map[string]commandFunc)
 	commands["backup"] = commandBackup
 	commands["restore"] = commandRestore
 	commands["list"] = commandList

@@ -236,6 +236,10 @@ func (b *Local) filename(t Type, id ID) string {
 // Get returns the content stored under the given ID. If the data doesn't match
 // the requested ID, ErrWrongData is returned.
 func (b *Local) Get(t Type, id ID) ([]byte, error) {
+	if id == nil {
+		return nil, errors.New("unable to load nil ID")
+	}
+
 	// try to open file
 	file, err := os.Open(b.filename(t, id))
 	defer file.Close()

@@ -1,9 +1,11 @@
 package khepri
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -31,13 +33,18 @@ type Node struct {
 	Links      uint64       `json:"links,omitempty"`
 	LinkTarget string       `json:"linktarget,omitempty"`
 	Device     uint64       `json:"device,omitempty"`
-	Content    []backend.ID `json:"content,omitempty"`
+	Content    []backend.ID `json:"content"`
 	Subtree    backend.ID   `json:"subtree,omitempty"`
 
 	Tree *Tree `json:"-"`
 
 	path string
 }
+
+var (
+	ErrNodeNotFound      = errors.New("named node not found")
+	ErrNodeAlreadyInTree = errors.New("node already present")
+)
 
 type Blob struct {
 	ID          backend.ID `json:"id,omitempty"`
@@ -67,6 +74,79 @@ func (t Tree) String() string {
 		s = append(s, n.String())
 	}
 	return strings.Join(s, "\n")
+}
+
+func LoadTree(ch *ContentHandler, id backend.ID) (Tree, error) {
+	if id == nil {
+		return nil, nil
+	}
+
+	tree := Tree{}
+	err := ch.LoadJSON(backend.Tree, id, &tree)
+	if err != nil {
+		return nil, err
+	}
+
+	return tree, nil
+}
+
+// PopulateFrom copies subtrees and content from other when it hasn't changed.
+func (t Tree) PopulateFrom(other Tree) error {
+	for _, node := range t {
+		// only copy entries for files
+		if node.Type != "file" {
+			continue
+		}
+
+		// find entry in other tree
+		oldNode, err := other.Find(node.Name)
+
+		// if the node could not be found, proceed to the next
+		if err == ErrNodeNotFound {
+			continue
+		}
+
+		// compare content
+		if node.SameContent(oldNode) {
+			// copy Content
+			node.Content = oldNode.Content
+		}
+	}
+
+	return nil
+}
+
+func (t *Tree) Insert(node *Node) error {
+	pos, _, err := t.find(node.Name)
+	if err == nil {
+		// already present
+		return ErrNodeAlreadyInTree
+	}
+
+	// insert blob
+	// https://code.google.com/p/go-wiki/wiki/bliceTricks
+	*t = append(*t, &Node{})
+	copy((*t)[pos+1:], (*t)[pos:])
+	(*t)[pos] = node
+
+	return nil
+}
+
+func (t Tree) find(name string) (int, *Node, error) {
+	pos := sort.Search(len(t), func(i int) bool {
+		return t[i].Name >= name
+	})
+
+	if pos < len(t) && t[pos].Name == name {
+		return pos, t[pos], nil
+	}
+
+	return pos, nil, ErrNodeNotFound
+}
+
+func (t Tree) Find(name string) (*Node, error) {
+	_, node, err := t.find(name)
+	return node, err
 }
 
 func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
@@ -263,6 +343,28 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 	}
 
 	return nil
+}
+
+func (node Node) SameContent(olderNode *Node) bool {
+	// if this node has a type other than "file", treat as if content has changed
+	if node.Type != "file" {
+		return false
+	}
+
+	// if the name or type has changed, this is surely something different
+	if node.Name != olderNode.Name || node.Type != olderNode.Type {
+		return false
+	}
+
+	// if timestamps or inodes differ, content has changed
+	if node.ModTime != olderNode.ModTime ||
+		node.ChangeTime != olderNode.ChangeTime ||
+		node.Inode != olderNode.Inode {
+		return false
+	}
+
+	// otherwise the node is assumed to have the same content
+	return true
 }
 
 func (b Blob) Free() {
