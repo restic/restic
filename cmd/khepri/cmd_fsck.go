@@ -100,7 +100,7 @@ func commandFsck(be backend.Server, key *khepri.Key, args []string) error {
 	if len(args) == 1 && args[0] != "all" {
 		snapshotID, err := backend.FindSnapshot(be, args[0])
 		if err != nil {
-			return fmt.Errorf("invalid id %q: %v", args[1], err)
+			return fmt.Errorf("invalid id %q: %v", args[0], err)
 		}
 
 		return fsck_snapshot(be, key, snapshotID)
