@@ -374,7 +374,7 @@ func (k *Key) Encrypt(ciphertext, plaintext []byte) (int, error) {
 // IV || Ciphertext || HMAC.
 func (k *Key) decrypt(ks *keys, ciphertext []byte) ([]byte, error) {
 	// check for plausible length
-	if len(ciphertext) <= ivSize+hmacSize {
+	if len(ciphertext) < ivSize+hmacSize {
 		panic("trying to decryipt invalid data: ciphertext too small")
 	}
 

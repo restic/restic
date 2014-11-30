@@ -167,13 +167,13 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		buf := GetChunkBuf("blob single file")
 		defer FreeChunkBuf("blob single file", buf)
 		n, err := io.ReadFull(file, buf)
-		if err != nil && err != io.ErrUnexpectedEOF {
-			return err
+		if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
+			return arrar.Annotate(err, "SaveFile() read small file")
 		}
 
 		blob, err := arch.ch.Save(backend.Data, buf[:n])
 		if err != nil {
-			return err
+			return arrar.Annotate(err, "SaveFile() save chunk")
 		}
 
 		arch.update(arch.SaveStats, Stats{Bytes: blob.Size})
@@ -195,7 +195,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 
 			if err != nil {
 				FreeChunkBuf("blob chunker", buf)
-				return err
+				return arrar.Annotate(err, "SaveFile() chunker.Next()")
 			}
 
 			// acquire token, start goroutine to save chunk
@@ -231,7 +231,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		arch.bl.Insert(blob)
 	}
 
-	return err
+	return nil
 }
 
 func (arch *Archiver) loadTree(dir string) (*Tree, error) {
