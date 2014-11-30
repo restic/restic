@@ -126,14 +126,6 @@ func create(u string) (backend.Server, error) {
 }
 
 func init() {
-	commands["backup"] = commandBackup
-	commands["restore"] = commandRestore
-	commands["list"] = commandList
-	commands["snapshots"] = commandSnapshots
-	commands["cat"] = commandCat
-	commands["ls"] = commandLs
-	commands["key"] = commandKey
-
 	// set GOMAXPROCS to number of CPUs
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }

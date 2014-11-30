@@ -8,6 +8,10 @@ import (
 	"github.com/fd0/khepri/backend"
 )
 
+func init() {
+	commands["list"] = commandList
+}
+
 func commandList(be backend.Server, key *khepri.Key, args []string) error {
 	if len(args) != 1 {
 		return errors.New("usage: list [data|trees|snapshots|keys|locks]")

@@ -12,6 +12,10 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+func init() {
+	commands["backup"] = commandBackup
+}
+
 func format_bytes(c uint64) string {
 	b := float64(c)
 
