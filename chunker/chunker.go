@@ -90,6 +90,7 @@ func (c *Chunker) reset() {
 	for i := 0; i < WindowSize; i++ {
 		c.window[i] = 0
 	}
+	c.closed = false
 	c.digest = 0
 	c.wpos = 0
 	c.pos = 0

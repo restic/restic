@@ -126,6 +126,16 @@ func TestChunker(t *testing.T) {
 	ch.Free()
 }
 
+func TestChunkerReuse(t *testing.T) {
+	// test multiple uses of the same chunker
+	for i := 0; i < 4; i++ {
+		buf := get_random(23, 32*1024*1024)
+		ch := chunker.New(bytes.NewReader(buf))
+		test_with_data(t, ch, chunks1)
+		ch.Free()
+	}
+}
+
 func BenchmarkChunker(b *testing.B) {
 	size := 10 * 1024 * 1024
 	buf := get_random(23, size)
