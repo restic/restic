@@ -1,4 +1,4 @@
-package khepri
+package restic
 
 import (
 	"errors"
@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/fd0/khepri/backend"
 	"github.com/juju/arrar"
+	"github.com/restic/restic/backend"
 )
 
 type Restorer struct {

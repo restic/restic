@@ -1,15 +1,15 @@
 set -e
 
 prepare
-run khepri init
-run khepri backup "${BASE}/fake-data"
-run khepri restore "$(basename "$KHEPRI_REPOSITORY"/snapshots/*)" "${BASE}/fake-data-restore"
+run restic init
+run restic backup "${BASE}/fake-data"
+run restic restore "$(basename "$RESTIC_REPOSITORY"/snapshots/*)" "${BASE}/fake-data-restore"
 dirdiff "${BASE}/fake-data" "${BASE}/fake-data-restore/fake-data"
 
-SNAPSHOT=$(run khepri list snapshots)
-run khepri backup "${BASE}/fake-data" $SNAPSHOT
-run khepri restore "$(basename "$KHEPRI_REPOSITORY"/snapshots/*)" "${BASE}/fake-data-restore-incremental"
+SNAPSHOT=$(run restic list snapshots)
+run restic backup "${BASE}/fake-data" $SNAPSHOT
+run restic restore "$(basename "$RESTIC_REPOSITORY"/snapshots/*)" "${BASE}/fake-data-restore-incremental"
 dirdiff "${BASE}/fake-data" "${BASE}/fake-data-restore-incremental/fake-data"
 
-run khepri fsck all
+run restic fsck all
 cleanup

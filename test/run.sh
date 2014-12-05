@@ -2,17 +2,17 @@
 
 set -e
 
-export khepri="${1:-khepri}"; shift
+export restic="${1:-restic}"; shift
 export dirdiff="${1:-dirdiff}"; shift
 export dir=$(dirname "$0")
 export fake_data_file="${dir}/fake-data.tar.gz"
 
 prepare() {
-    export BASE="$(mktemp --tmpdir --directory khepri-testsuite-XXXXXX)"
-    export KHEPRI_REPOSITORY="${BASE}/khepri-backup"
+    export BASE="$(mktemp --tmpdir --directory restic-testsuite-XXXXXX)"
+    export RESTIC_REPOSITORY="${BASE}/restic-backup"
     export DATADIR="${BASE}/fake-data"
-    export KHEPRI_PASSWORD="foobar"
-    debug "repository is at ${KHEPRI_REPOSITORY}"
+    export RESTIC_PASSWORD="foobar"
+    debug "repository is at ${RESTIC_REPOSITORY}"
 
     mkdir -p "$DATADIR"
     (cd "$DATADIR"; tar xz) < "$fake_data_file"
@@ -28,11 +28,11 @@ cleanup() {
     rm -rf "${BASE}"
     debug "removed dir ${BASE}"
     unset BASE
-    unset KHEPRI_REPOSITORY
+    unset RESTIC_REPOSITORY
 }
 
-khepri() {
-    "${khepri}" "$@"
+restic() {
+    "${restic}" "$@"
 }
 
 dirdiff() {
@@ -70,10 +70,10 @@ run() {
     fi
 }
 
-export -f khepri dirdiff prepare cleanup msg debug pass err fail run
+export -f restic dirdiff prepare cleanup msg debug pass err fail run
 
-if [ ! -x "$khepri" ]; then
-    fail khepri binary not found!
+if [ ! -x "$restic" ]; then
+    fail restic binary not found!
 fi
 
 if [ "$#" -gt 0 ]; then

@@ -1,4 +1,4 @@
-package khepri
+package restic
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/fd0/khepri/backend"
+	"github.com/restic/restic/backend"
 )
 
 type BlobList struct {

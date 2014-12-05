@@ -1,5 +1,5 @@
 // +build !debug
 
-package khepri
+package restic
 
 func debug(fmt string, args ...interface{}) {}

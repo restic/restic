@@ -1,4 +1,4 @@
-package khepri
+package restic
 
 import (
 	"errors"
@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fd0/khepri/backend"
-	"github.com/fd0/khepri/chunker"
 	"github.com/juju/arrar"
+	"github.com/restic/restic/backend"
+	"github.com/restic/restic/chunker"
 )
 
 const (

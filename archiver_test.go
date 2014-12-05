@@ -1,4 +1,4 @@
-package khepri_test
+package restic_test
 
 import (
 	"bytes"
@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/fd0/khepri"
-	"github.com/fd0/khepri/chunker"
+	"github.com/restic/restic"
+	"github.com/restic/restic/chunker"
 )
 
 func get_random(seed, count int) []byte {
@@ -48,7 +48,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 
 			ok(b, err)
 
-			buf := make([]byte, khepri.CiphertextExtension+chunker.MaxSize)
+			buf := make([]byte, restic.CiphertextExtension+chunker.MaxSize)
 			_, err = key.Encrypt(buf, chunk_data.Data)
 			ok(b, err)
 		}

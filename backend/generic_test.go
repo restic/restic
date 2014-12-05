@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/fd0/khepri/backend"
+	"github.com/restic/restic/backend"
 )
 
 // assert fails the test if the condition is false.

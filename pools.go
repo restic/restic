@@ -1,4 +1,4 @@
-package khepri
+package restic
 
 import "sync"
 

@@ -1,11 +1,11 @@
-package khepri
+package restic
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/fd0/khepri/backend"
+	"github.com/restic/restic/backend"
 )
 
 var ErrWrongData = errors.New("wrong data decrypt, checksum does not match")

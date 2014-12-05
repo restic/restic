@@ -1,4 +1,4 @@
-package khepri
+package restic
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/fd0/khepri/backend"
+	"github.com/restic/restic/backend"
 )
 
 type Snapshot struct {

@@ -7,7 +7,7 @@ test:
 	for dir in cmd/* ; do \
 		(cd "$$dir"; go build $(FLAGS)) \
 	done
-	test/run.sh cmd/khepri/khepri cmd/dirdiff/dirdiff
+	test/run.sh cmd/restic/restic cmd/dirdiff/dirdiff
 
 clean:
 	go clean

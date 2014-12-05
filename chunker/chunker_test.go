@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/fd0/khepri/chunker"
+	"github.com/restic/restic/chunker"
 )
 
 type chunk struct {

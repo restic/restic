@@ -1,4 +1,4 @@
-package khepri_test
+package restic_test
 
 import (
 	"crypto/rand"
@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fd0/khepri"
-	"github.com/fd0/khepri/backend"
+	"github.com/restic/restic"
+	"github.com/restic/restic/backend"
 )
 
 var maxWorkers = flag.Uint("workers", 100, "number of workers to test BlobList concurrent access against")
@@ -25,13 +25,13 @@ func randomID() []byte {
 	return buf
 }
 
-func newBlob() khepri.Blob {
-	return khepri.Blob{ID: randomID(), Size: uint64(mrand.Uint32())}
+func newBlob() restic.Blob {
+	return restic.Blob{ID: randomID(), Size: uint64(mrand.Uint32())}
 }
 
 // Test basic functionality
 func TestBlobList(t *testing.T) {
-	bl := khepri.NewBlobList()
+	bl := restic.NewBlobList()
 
 	b := newBlob()
 	bl.Insert(b)
@@ -40,17 +40,17 @@ func TestBlobList(t *testing.T) {
 		bl.Insert(newBlob())
 	}
 
-	b2, err := bl.Find(khepri.Blob{ID: b.ID})
+	b2, err := bl.Find(restic.Blob{ID: b.ID})
 	ok(t, err)
 	assert(t, b2.Compare(b) == 0, "items are not equal: want %v, got %v", b, b2)
 
-	bl2 := khepri.NewBlobList()
+	bl2 := restic.NewBlobList()
 	for i := 0; i < 1000; i++ {
 		bl.Insert(newBlob())
 	}
 
 	b2, err = bl2.Find(b)
-	assert(t, err != nil, "found ID in khepri that was never inserted: %v", b2)
+	assert(t, err != nil, "found ID in restic that was never inserted: %v", b2)
 
 	bl2.Merge(bl)
 
@@ -67,8 +67,8 @@ func TestBlobList(t *testing.T) {
 
 // Test JSON encode/decode
 func TestBlobListJSON(t *testing.T) {
-	bl := khepri.NewBlobList()
-	b := khepri.Blob{ID: randomID()}
+	bl := restic.NewBlobList()
+	b := restic.Blob{ID: randomID()}
 	bl.Insert(b)
 
 	b2, err := bl.Find(b)
@@ -78,7 +78,7 @@ func TestBlobListJSON(t *testing.T) {
 	buf, err := json.Marshal(bl)
 	ok(t, err)
 
-	bl2 := khepri.BlobList{}
+	bl2 := restic.BlobList{}
 	json.Unmarshal(buf, &bl2)
 
 	b2, err = bl2.Find(b)
@@ -93,7 +93,7 @@ func TestBlobListJSON(t *testing.T) {
 func TestBlobListRandom(t *testing.T) {
 	var wg sync.WaitGroup
 
-	worker := func(bl *khepri.BlobList) {
+	worker := func(bl *restic.BlobList) {
 		defer wg.Done()
 
 		b := newBlob()
@@ -117,7 +117,7 @@ func TestBlobListRandom(t *testing.T) {
 			}
 		}
 
-		bl2 := khepri.NewBlobList()
+		bl2 := restic.NewBlobList()
 		for i := 0; i < 200; i++ {
 			bl2.Insert(newBlob())
 		}
@@ -125,7 +125,7 @@ func TestBlobListRandom(t *testing.T) {
 		bl2.Merge(bl)
 	}
 
-	bl := khepri.NewBlobList()
+	bl := restic.NewBlobList()
 
 	for i := 0; uint(i) < *maxWorkers; i++ {
 		wg.Add(1)

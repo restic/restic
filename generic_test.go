@@ -1,4 +1,4 @@
-package khepri_test
+package restic_test
 
 import (
 	"fmt"

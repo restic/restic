@@ -1,6 +1,6 @@
 // +build debug
 
-package khepri
+package restic
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ var debugLogger = initDebugLogger()
 
 func initDebugLogger() *log.Logger {
 	// create new log file
-	filename := fmt.Sprintf("khepri-lib-debug-%d-%s",
+	filename := fmt.Sprintf("restic-lib-debug-%d-%s",
 		os.Getpid(), time.Now().Format("20060201-150405"))
 	path := filepath.Join(os.TempDir(), filename)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0600)
@@ -26,7 +26,7 @@ func initDebugLogger() *log.Logger {
 
 	// open logger
 	l := log.New(io.MultiWriter(os.Stderr, f), "DEBUG: ", log.LstdFlags)
-	fmt.Fprintf(os.Stderr, "debug log for khepri library activated, writing log file %s\n", path)
+	fmt.Fprintf(os.Stderr, "debug log for restic library activated, writing log file %s\n", path)
 
 	return l
 }

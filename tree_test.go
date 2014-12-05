@@ -1,4 +1,4 @@
-package khepri_test
+package restic_test
 
 import (
 	"io/ioutil"
@@ -18,7 +18,7 @@ var testFiles = []struct {
 
 // prepareDir creates a temporary directory and returns it.
 func prepareDir(t *testing.T) string {
-	tempdir, err := ioutil.TempDir("", "khepri-test-")
+	tempdir, err := ioutil.TempDir("", "restic-test-")
 	ok(t, err)
 
 	for _, test := range testFiles {

@@ -8,7 +8,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/fd0/khepri/backend"
+	"github.com/restic/restic/backend"
 )
 
 var testCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
@@ -24,7 +24,7 @@ var TestStrings = []struct {
 }
 
 func setupBackend(t *testing.T) *backend.Local {
-	tempdir, err := ioutil.TempDir("", "khepri-test-")
+	tempdir, err := ioutil.TempDir("", "restic-test-")
 	ok(t, err)
 
 	b, err := backend.CreateLocal(tempdir)
@@ -122,9 +122,9 @@ func testBackend(b backend.Server, t *testing.T) {
 
 func TestBackend(t *testing.T) {
 	// test for non-existing backend
-	b, err := backend.OpenLocal("/invalid-khepri-test")
-	assert(t, err != nil, "opening invalid repository at /invalid-khepri-test should have failed, but err is nil")
-	assert(t, b == nil, fmt.Sprintf("opening invalid repository at /invalid-khepri-test should have failed, but b is not nil: %v", b))
+	b, err := backend.OpenLocal("/invalid-restic-test")
+	assert(t, err != nil, "opening invalid repository at /invalid-restic-test should have failed, but err is nil")
+	assert(t, b == nil, fmt.Sprintf("opening invalid repository at /invalid-restic-test should have failed, but b is not nil: %v", b))
 
 	b = setupBackend(t)
 	defer teardownBackend(t, b)

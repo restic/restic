@@ -1,4 +1,4 @@
-package khepri_test
+package restic_test
 
 import (
 	"flag"
@@ -7,16 +7,16 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fd0/khepri"
-	"github.com/fd0/khepri/backend"
-	"github.com/fd0/khepri/chunker"
+	"github.com/restic/restic"
+	"github.com/restic/restic/backend"
+	"github.com/restic/restic/chunker"
 )
 
 var testPassword = "foobar"
 var testCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
 
 func setupBackend(t testing.TB) *backend.Local {
-	tempdir, err := ioutil.TempDir("", "khepri-test-")
+	tempdir, err := ioutil.TempDir("", "restic-test-")
 	ok(t, err)
 
 	b, err := backend.CreateLocal(tempdir)
@@ -34,8 +34,8 @@ func teardownBackend(t testing.TB, b *backend.Local) {
 	ok(t, os.RemoveAll(b.Location()))
 }
 
-func setupKey(t testing.TB, be backend.Server, password string) *khepri.Key {
-	k, err := khepri.CreateKey(be, password)
+func setupKey(t testing.TB, be backend.Server, password string) *restic.Key {
+	k, err := restic.CreateKey(be, password)
 	ok(t, err)
 
 	return k
@@ -60,14 +60,14 @@ func TestEncryptDecrypt(t *testing.T) {
 		_, err = io.ReadFull(f, data)
 		ok(t, err)
 
-		ciphertext := khepri.GetChunkBuf("TestEncryptDecrypt")
+		ciphertext := restic.GetChunkBuf("TestEncryptDecrypt")
 		n, err := k.Encrypt(ciphertext, data)
 		ok(t, err)
 
 		plaintext, err := k.Decrypt(ciphertext[:n])
 		ok(t, err)
 
-		khepri.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
+		restic.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
 
 		equals(t, plaintext, data)
 	}
@@ -86,7 +86,7 @@ func TestLargeEncrypt(t *testing.T) {
 		_, err = io.ReadFull(f, data)
 		ok(t, err)
 
-		ciphertext := make([]byte, size+khepri.CiphertextExtension)
+		ciphertext := make([]byte, size+restic.CiphertextExtension)
 		n, err := k.Encrypt(ciphertext, data)
 		ok(t, err)
 
@@ -108,12 +108,12 @@ func BenchmarkEncrypt(b *testing.B) {
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
-	buf := khepri.GetChunkBuf("BenchmarkEncrypt")
+	buf := restic.GetChunkBuf("BenchmarkEncrypt")
 	for i := 0; i < b.N; i++ {
 		_, err := k.Encrypt(buf, data)
 		ok(b, err)
 	}
-	khepri.FreeChunkBuf("BenchmarkEncrypt", buf)
+	restic.FreeChunkBuf("BenchmarkEncrypt", buf)
 }
 
 func BenchmarkDecrypt(b *testing.B) {
@@ -124,7 +124,7 @@ func BenchmarkDecrypt(b *testing.B) {
 	defer teardownBackend(b, be)
 	k := setupKey(b, be, testPassword)
 
-	ciphertext := khepri.GetChunkBuf("BenchmarkDecrypt")
+	ciphertext := restic.GetChunkBuf("BenchmarkDecrypt")
 	n, err := k.Encrypt(ciphertext, data)
 	ok(b, err)
 
@@ -135,5 +135,5 @@ func BenchmarkDecrypt(b *testing.B) {
 		_, err := k.Decrypt(ciphertext[:n])
 		ok(b, err)
 	}
-	khepri.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
+	restic.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
 }

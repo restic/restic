@@ -1,4 +1,4 @@
-package khepri
+package restic
 
 import (
 	"errors"
@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fd0/khepri/backend"
 	"github.com/juju/arrar"
+	"github.com/restic/restic/backend"
 )
 
 type Tree []*Node
