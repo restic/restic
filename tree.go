@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -365,6 +366,28 @@ func (node Node) SameContent(olderNode *Node) bool {
 
 	// otherwise the node is assumed to have the same content
 	return true
+}
+
+func (node Node) MarshalJSON() ([]byte, error) {
+	type nodeJSON Node
+	nj := nodeJSON(node)
+	name := strconv.Quote(node.Name)
+	nj.Name = name[1 : len(name)-1]
+
+	return json.Marshal(nj)
+}
+
+func (node *Node) UnmarshalJSON(data []byte) error {
+	type nodeJSON Node
+	var nj *nodeJSON = (*nodeJSON)(node)
+
+	err := json.Unmarshal(data, nj)
+	if err != nil {
+		return err
+	}
+
+	nj.Name, err = strconv.Unquote(`"` + nj.Name + `"`)
+	return err
 }
 
 func (b Blob) Free() {
