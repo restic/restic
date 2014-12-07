@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,8 +9,16 @@ import (
 	"github.com/restic/restic/backend"
 )
 
+type CmdLs struct{}
+
 func init() {
-	commands["ls"] = commandLs
+	_, err := parser.AddCommand("ls",
+		"list files",
+		"The ls command lists all files and directories in a snapshot",
+		&CmdLs{})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func print_node(prefix string, n *restic.Node) string {
@@ -52,9 +59,18 @@ func print_tree(prefix string, ch *restic.ContentHandler, id backend.ID) error {
 	return nil
 }
 
-func commandLs(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdLs) Usage() string {
+	return "ls snapshot-ID [DIR]"
+}
+
+func (cmd CmdLs) Execute(be backend.Server, key *restic.Key, args []string) error {
 	if len(args) < 1 || len(args) > 2 {
-		return errors.New("usage: ls SNAPSHOT_ID [dir]")
+		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	id, err := backend.FindSnapshot(be, args[0])
@@ -74,5 +90,5 @@ func commandLs(be backend.Server, key *restic.Key, args []string) error {
 
 	fmt.Printf("snapshot of %s at %s:\n", sn.Dir, sn.Time)
 
-	return print_tree("", ch, sn.Content)
+	return print_tree("", ch, sn.Tree)
 }

@@ -10,8 +10,16 @@ import (
 	"github.com/restic/restic/backend"
 )
 
+type CmdKey struct{}
+
 func init() {
-	commands["key"] = commandKey
+	_, err := parser.AddCommand("key",
+		"manage keys",
+		"The key command manages keys (passwords) of a repository",
+		&CmdKey{})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func list_keys(be backend.Server, key *restic.Key) error {
@@ -103,9 +111,18 @@ func change_password(be backend.Server, key *restic.Key) error {
 	return nil
 }
 
-func commandKey(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdKey) Usage() string {
+	return "[list|add|rm|change] [ID]"
+}
+
+func (cmd CmdKey) Execute(args []string) error {
 	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) {
-		return errors.New("usage: key [list|add|rm|change] [ID]")
+		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	switch args[0] {

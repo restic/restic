@@ -93,7 +93,7 @@ func (res *Restorer) RestoreTo(dir string) error {
 		return err
 	}
 
-	return res.to(dir, res.sn.Content)
+	return res.to(dir, res.sn.Tree)
 }
 
 func (res *Restorer) Snapshot() *Snapshot {

@@ -14,7 +14,7 @@ import (
 	"github.com/restic/restic/backend"
 )
 
-var maxWorkers = flag.Uint("workers", 100, "number of workers to test BlobList concurrent access against")
+var maxWorkers = flag.Uint("workers", 20, "number of workers to test BlobList concurrent access against")
 
 func randomID() []byte {
 	buf := make([]byte, backend.IDSize)

@@ -1,13 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"runtime"
-	"sort"
-	"strings"
 
 	"golang.org/x/crypto/ssh/terminal"
 
@@ -22,6 +20,8 @@ var opts struct {
 	Repo string `short:"r" long:"repo"    description:"Repository directory to backup to/restore from"`
 }
 
+var parser = flags.NewParser(&opts, flags.Default)
+
 func errx(code int, format string, data ...interface{}) {
 	if len(format) > 0 && format[len(format)-1] != '\n' {
 		format += "\n"
@@ -29,10 +29,6 @@ func errx(code int, format string, data ...interface{}) {
 	fmt.Fprintf(os.Stderr, format, data...)
 	os.Exit(code)
 }
-
-type commandFunc func(backend.Server, *restic.Key, []string) error
-
-var commands = make(map[string]commandFunc)
 
 func readPassword(env string, prompt string) string {
 
@@ -54,7 +50,13 @@ func readPassword(env string, prompt string) string {
 	return string(pw)
 }
 
-func commandInit(repo string) error {
+type CmdInit struct{}
+
+func (cmd CmdInit) Execute(args []string) error {
+	if opts.Repo == "" {
+		return errors.New("Please specify repository location (-r)")
+	}
+
 	pw := readPassword("RESTIC_PASSWORD", "enter password for new backend: ")
 	pw2 := readPassword("RESTIC_PASSWORD", "enter password again: ")
 
@@ -62,15 +64,15 @@ func commandInit(repo string) error {
 		errx(1, "passwords do not match")
 	}
 
-	be, err := create(repo)
+	be, err := create(opts.Repo)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "creating backend at %s failed: %v\n", repo, err)
+		fmt.Fprintf(os.Stderr, "creating backend at %s failed: %v\n", opts.Repo, err)
 		os.Exit(1)
 	}
 
 	_, err = restic.CreateKey(be, pw)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", repo, err)
+		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", opts.Repo, err)
 		os.Exit(1)
 	}
 
@@ -125,73 +127,99 @@ func create(u string) (backend.Server, error) {
 	return backend.CreateSFTP(url.Path[1:], "ssh", args...)
 }
 
+func OpenRepo() (backend.Server, *restic.Key, error) {
+	be, err := open(opts.Repo)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	key, err := restic.SearchKey(be, readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to open repo: %v", err)
+	}
+
+	return be, key, nil
+}
+
 func init() {
 	// set GOMAXPROCS to number of CPUs
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	_, err := parser.AddCommand("init",
+		"create repository",
+		"The init command creates a new repository",
+		&CmdInit{})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
 	// defer profile.Start(profile.MemProfileRate(100000), profile.ProfilePath(".")).Stop()
-
-	log.SetOutput(os.Stdout)
-
 	opts.Repo = os.Getenv("RESTIC_REPOSITORY")
 
-	args, err := flags.Parse(&opts)
+	_, err := parser.Parse()
 	if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
 		os.Exit(0)
 	}
 
-	if opts.Repo == "" {
-		fmt.Fprintf(os.Stderr, "no repository specified, use -r or RESTIC_REPOSITORY variable\n")
+	if err != nil {
 		os.Exit(1)
 	}
 
-	if len(args) == 0 {
-		cmds := []string{"init"}
-		for k := range commands {
-			cmds = append(cmds, k)
-		}
-		sort.Strings(cmds)
-		fmt.Printf("nothing to do, available commands: [%v]\n", strings.Join(cmds, "|"))
-		os.Exit(0)
-	}
+	// fmt.Printf("parser: %#v\n", parser)
+	// fmt.Printf("%#v\n", parser.Active.Name)
 
-	cmd := args[0]
+	// if opts.Repo == "" {
+	// 	fmt.Fprintf(os.Stderr, "no repository specified, use -r or RESTIC_REPOSITORY variable\n")
+	// 	os.Exit(1)
+	// }
 
-	switch cmd {
-	case "init":
-		err = commandInit(opts.Repo)
-		if err != nil {
-			errx(1, "error executing command %q: %v", cmd, err)
-		}
-		return
+	// if len(args) == 0 {
+	// 	cmds := []string{"init"}
+	// 	for k := range commands {
+	// 		cmds = append(cmds, k)
+	// 	}
+	// 	sort.Strings(cmds)
+	// 	fmt.Printf("nothing to do, available commands: [%v]\n", strings.Join(cmds, "|"))
+	// 	os.Exit(0)
+	// }
 
-	case "version":
-		fmt.Printf("%v\n", version)
-		return
-	}
+	// cmd := args[0]
 
-	f, ok := commands[cmd]
-	if !ok {
-		errx(1, "unknown command: %q\n", cmd)
-	}
+	// switch cmd {
+	// case "init":
+	// 	err = commandInit(opts.Repo)
+	// 	if err != nil {
+	// 		errx(1, "error executing command %q: %v", cmd, err)
+	// 	}
+	// 	return
 
-	// read_password("enter password: ")
-	repo, err := open(opts.Repo)
-	if err != nil {
-		errx(1, "unable to open repo: %v", err)
-	}
+	// case "version":
+	// 	fmt.Printf("%v\n", version)
+	// 	return
+	// }
 
-	key, err := restic.SearchKey(repo, readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
-	if err != nil {
-		errx(2, "unable to open repo: %v", err)
-	}
+	// f, ok := commands[cmd]
+	// if !ok {
+	// 	errx(1, "unknown command: %q\n", cmd)
+	// }
 
-	err = f(repo, key, args[1:])
-	if err != nil {
-		errx(1, "error executing command %q: %v", cmd, err)
-	}
+	// // read_password("enter password: ")
+	// repo, err := open(opts.Repo)
+	// if err != nil {
+	// 	errx(1, "unable to open repo: %v", err)
+	// }
 
-	restic.PoolAlloc()
+	// key, err := restic.SearchKey(repo, readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
+	// if err != nil {
+	// 	errx(2, "unable to open repo: %v", err)
+	// }
+
+	// err = f(repo, key, args[1:])
+	// if err != nil {
+	// 	errx(1, "error executing command %q: %v", cmd, err)
+	// }
+
+	// restic.PoolAlloc()
 }

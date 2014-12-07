@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -9,13 +8,30 @@ import (
 	"github.com/restic/restic/backend"
 )
 
+type CmdRestore struct{}
+
 func init() {
-	commands["restore"] = commandRestore
+	_, err := parser.AddCommand("restore",
+		"restore a snapshot",
+		"The restore command restores a snapshot to a directory",
+		&CmdRestore{})
+	if err != nil {
+		panic(err)
+	}
 }
 
-func commandRestore(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdRestore) Usage() string {
+	return "snapshot-ID TARGETDIR"
+}
+
+func (cmd CmdRestore) Execute(args []string) error {
 	if len(args) != 2 {
-		return errors.New("usage: restore ID dir")
+		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	id, err := backend.FindSnapshot(be, args[0])

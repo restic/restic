@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,8 +11,16 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+type CmdBackup struct{}
+
 func init() {
-	commands["backup"] = commandBackup
+	_, err := parser.AddCommand("backup",
+		"save file/directory",
+		"The backup command creates a snapshot of a file or directory",
+		&CmdBackup{})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func format_bytes(c uint64) string {
@@ -56,13 +63,21 @@ func print_tree2(indent int, t *restic.Tree) {
 	}
 }
 
-func commandBackup(be backend.Server, key *restic.Key, args []string) error {
-	if len(args) < 1 || len(args) > 2 {
-		return errors.New("usage: backup [dir|file] [snapshot-id]")
+func (cmd CmdBackup) Usage() string {
+	return "DIR/FILE [snapshot-ID]"
+}
+
+func (cmd CmdBackup) Execute(args []string) error {
+	if len(args) == 0 || len(args) > 2 {
+		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	var parentSnapshotID backend.ID
-	var err error
 
 	target := args[0]
 	if len(args) > 1 {
@@ -96,8 +111,6 @@ func commandBackup(be backend.Server, key *restic.Key, args []string) error {
 			}
 		}(ch)
 	}
-
-	fmt.Printf("done\n")
 
 	// TODO: add filter
 	// arch.Filter = func(dir string, fi os.FileInfo) bool {
@@ -159,7 +172,7 @@ func commandBackup(be backend.Server, key *restic.Key, args []string) error {
 		}(ch)
 	}
 
-	sn, id, err := arch.Snapshot(target, t, parentSnapshotID)
+	_, id, err := arch.Snapshot(target, t, parentSnapshotID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}
@@ -170,9 +183,17 @@ func commandBackup(be backend.Server, key *restic.Key, args []string) error {
 		close(arch.ScannerStats)
 	}
 
-	fmt.Printf("\nsnapshot %s saved: %v\n", id, sn)
-	duration := time.Now().Sub(start)
-	fmt.Printf("duration: %s, %.2fMiB/s\n", duration, float64(arch.Stats.Bytes)/float64(duration/time.Second)/(1<<20))
+	plen, err := backend.PrefixLength(be, backend.Snapshot)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\nsnapshot %s saved\n", id[:plen])
+
+	sec := uint64(time.Since(start) / time.Second)
+	fmt.Printf("duration: %s, %.2fMiB/s\n",
+		format_duration(sec),
+		float64(arch.Stats.Bytes)/float64(sec)/(1<<20))
 
 	return nil
 }
