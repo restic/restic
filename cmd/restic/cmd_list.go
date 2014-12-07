@@ -3,18 +3,33 @@ package main
 import (
 	"errors"
 	"fmt"
-
-	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 )
 
+type CmdList struct{}
+
 func init() {
-	commands["list"] = commandList
+	_, err := parser.AddCommand("list",
+		"lists data",
+		"The list command lists structures or data of a repository",
+		&CmdList{})
+	if err != nil {
+		panic(err)
+	}
 }
 
-func commandList(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdList) Usage() string {
+	return "[data|trees|snapshots|keys|locks]"
+}
+
+func (cmd CmdList) Execute(args []string) error {
 	if len(args) != 1 {
-		return errors.New("usage: list [data|trees|snapshots|keys|locks]")
+		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	var (

@@ -1,21 +1,38 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 )
 
-func init() {
-	commands["find"] = commandFind
+type findQuery struct {
+	name       string
+	minModTime time.Time
+	maxModTime time.Time
 }
 
 type findResult struct {
 	node *restic.Node
 	path string
+}
+
+type CmdFind struct {
+	Oldest time.Time `short:"o" long:"oldest" description:"Oldest modification date/time"`
+	Newest time.Time `short:"n" long:"newest" description:"Newest modification date/time"`
+}
+
+func init() {
+	_, err := parser.AddCommand("find",
+		"find a file/directory",
+		"The find command searches for files or directories in snapshots",
+		&CmdFind{})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func findInTree(ch *restic.ContentHandler, id backend.ID, path, pattern string) ([]findResult, error) {
@@ -83,9 +100,18 @@ func findInSnapshot(be backend.Server, key *restic.Key, id backend.ID, pattern s
 	return nil
 }
 
-func commandFind(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdFind) Usage() string {
+	return "[find-OPTIONS] PATTERN [snapshot-ID]"
+}
+
+func (cmd CmdFind) Execute(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: find PATTERN [snapshot-id]")
+		return fmt.Errorf("no pattern given, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	pattern := args[0]

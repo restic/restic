@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,8 +11,16 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+type CmdBackup struct{}
+
 func init() {
-	commands["backup"] = commandBackup
+	_, err := parser.AddCommand("backup",
+		"save file/directory",
+		"The backup command creates a snapshot of a file or directory",
+		&CmdBackup{})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func format_bytes(c uint64) string {
@@ -56,13 +63,21 @@ func print_tree2(indent int, t *restic.Tree) {
 	}
 }
 
-func commandBackup(be backend.Server, key *restic.Key, args []string) error {
-	if len(args) < 1 || len(args) > 2 {
-		return errors.New("usage: backup [dir|file] [snapshot-id]")
+func (cmd CmdBackup) Usage() string {
+	return "DIR/FILE [snapshot-ID]"
+}
+
+func (cmd CmdBackup) Execute(args []string) error {
+	if len(args) == 0 || len(args) > 2 {
+		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	var parentSnapshotID backend.ID
-	var err error
 
 	target := args[0]
 	if len(args) > 1 {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -72,13 +71,30 @@ func reltime(t time.Time) string {
 	}
 }
 
+type CmdSnapshots struct{}
+
 func init() {
-	commands["snapshots"] = commandSnapshots
+	_, err := parser.AddCommand("snapshots",
+		"show snapshots",
+		"The snapshots command lists all snapshots stored in a repository",
+		&CmdSnapshots{})
+	if err != nil {
+		panic(err)
+	}
 }
 
-func commandSnapshots(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdSnapshots) Usage() string {
+	return ""
+}
+
+func (cmd CmdSnapshots) Execute(args []string) error {
 	if len(args) != 0 {
-		return errors.New("usage: snapshots")
+		return fmt.Errorf("wrong number of arguments, usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	ch, err := restic.NewContentHandler(be, key)

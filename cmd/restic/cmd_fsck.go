@@ -1,15 +1,22 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 )
 
+type CmdFsck struct{}
+
 func init() {
-	commands["fsck"] = commandFsck
+	_, err := parser.AddCommand("fsck",
+		"check the repository",
+		"The fsck command check the integrity and consistency of the repository",
+		&CmdFsck{})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func fsckFile(ch *restic.ContentHandler, IDs []backend.ID) error {
@@ -92,9 +99,18 @@ func fsck_snapshot(be backend.Server, key *restic.Key, id backend.ID) error {
 	return fsckTree(ch, sn.Tree)
 }
 
-func commandFsck(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdFsck) Usage() string {
+	return "fsck [all|snapshot-ID]"
+}
+
+func (cmd CmdFsck) Execute(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: fsck [all|snapshot-id]")
+		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	if len(args) == 1 && args[0] != "all" {

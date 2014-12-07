@@ -10,13 +10,30 @@ import (
 	"github.com/restic/restic/backend"
 )
 
+type CmdCat struct{}
+
 func init() {
-	commands["cat"] = commandCat
+	_, err := parser.AddCommand("cat",
+		"dump something",
+		"The cat command dumps data structures or data from a repository",
+		&CmdCat{})
+	if err != nil {
+		panic(err)
+	}
 }
 
-func commandCat(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdCat) Usage() string {
+	return "[blob|tree|snapshot|key|lock] ID"
+}
+
+func (cmd CmdCat) Execute(args []string) error {
 	if len(args) != 2 {
-		return errors.New("usage: cat [blob|tree|snapshot|key|lock] ID")
+		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
+	}
+
+	be, key, err := OpenRepo()
+	if err != nil {
+		return err
 	}
 
 	tpe := args[0]
