@@ -384,7 +384,7 @@ func (arch *Archiver) LoadTree(path string, parentSnapshot backend.ID) (*Tree, e
 			return nil, arrar.Annotate(err, "load old snapshot")
 		}
 
-		if snapshot.Content == nil {
+		if snapshot.Tree == nil {
 			return nil, errors.New("snapshot without tree!")
 		}
 
@@ -394,7 +394,7 @@ func (arch *Archiver) LoadTree(path string, parentSnapshot backend.ID) (*Tree, e
 			return nil, err
 		}
 
-		oldTree, err = LoadTree(arch.ch, snapshot.Content)
+		oldTree, err = LoadTree(arch.ch, snapshot.Tree)
 		if err != nil {
 			return nil, arrar.Annotate(err, "load old tree")
 		}
@@ -520,7 +520,7 @@ func (arch *Archiver) Snapshot(dir string, t *Tree, parentSnapshot backend.ID) (
 	if err != nil {
 		return nil, nil, err
 	}
-	sn.Content = blob.ID
+	sn.Tree = blob.ID
 
 	// save bloblist
 	blob, err = arch.SaveJSON(backend.Map, arch.bl)

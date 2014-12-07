@@ -74,5 +74,5 @@ func commandLs(be backend.Server, key *restic.Key, args []string) error {
 
 	fmt.Printf("snapshot of %s at %s:\n", sn.Dir, sn.Time)
 
-	return print_tree("", ch, sn.Content)
+	return print_tree("", ch, sn.Tree)
 }

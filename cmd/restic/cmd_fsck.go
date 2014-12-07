@@ -81,7 +81,7 @@ func fsck_snapshot(be backend.Server, key *restic.Key, id backend.ID) error {
 		return err
 	}
 
-	if sn.Content == nil {
+	if sn.Tree == nil {
 		return fmt.Errorf("snapshot %v has no content", sn.ID)
 	}
 
@@ -89,7 +89,7 @@ func fsck_snapshot(be backend.Server, key *restic.Key, id backend.ID) error {
 		return fmt.Errorf("snapshot %v has no map", sn.ID)
 	}
 
-	return fsckTree(ch, sn.Content)
+	return fsckTree(ch, sn.Tree)
 }
 
 func commandFsck(be backend.Server, key *restic.Key, args []string) error {
