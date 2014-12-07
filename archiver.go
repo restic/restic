@@ -241,10 +241,17 @@ func (arch *Archiver) SaveFile(node *Node) error {
 		}
 	}
 
+	var bytes uint64
+
 	node.Content = make([]backend.ID, len(blobs))
 	for i, blob := range blobs {
 		node.Content[i] = blob.ID
 		arch.bl.Insert(blob)
+		bytes += blob.Size
+	}
+
+	if bytes != node.Size {
+		return fmt.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
 	}
 
 	return nil
