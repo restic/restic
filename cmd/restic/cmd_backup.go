@@ -97,8 +97,6 @@ func commandBackup(be backend.Server, key *restic.Key, args []string) error {
 		}(ch)
 	}
 
-	fmt.Printf("done\n")
-
 	// TODO: add filter
 	// arch.Filter = func(dir string, fi os.FileInfo) bool {
 	// 	return true
@@ -159,7 +157,7 @@ func commandBackup(be backend.Server, key *restic.Key, args []string) error {
 		}(ch)
 	}
 
-	sn, id, err := arch.Snapshot(target, t, parentSnapshotID)
+	_, id, err := arch.Snapshot(target, t, parentSnapshotID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}
@@ -170,9 +168,17 @@ func commandBackup(be backend.Server, key *restic.Key, args []string) error {
 		close(arch.ScannerStats)
 	}
 
-	fmt.Printf("\nsnapshot %s saved: %v\n", id, sn)
-	duration := time.Now().Sub(start)
-	fmt.Printf("duration: %s, %.2fMiB/s\n", duration, float64(arch.Stats.Bytes)/float64(duration/time.Second)/(1<<20))
+	plen, err := backend.PrefixLength(be, backend.Snapshot)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("\nsnapshot %s saved\n", id[:plen])
+
+	sec := uint64(time.Since(start) / time.Second)
+	fmt.Printf("duration: %s, %.2fMiB/s\n",
+		format_duration(sec),
+		float64(arch.Stats.Bytes)/float64(sec)/(1<<20))
 
 	return nil
 }
