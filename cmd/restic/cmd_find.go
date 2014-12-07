@@ -21,8 +21,26 @@ type findResult struct {
 }
 
 type CmdFind struct {
-	Oldest time.Time `short:"o" long:"oldest" description:"Oldest modification date/time"`
-	Newest time.Time `short:"n" long:"newest" description:"Newest modification date/time"`
+	Oldest   string `short:"o" long:"oldest" description:"Oldest modification date/time"`
+	Newest   string `short:"n" long:"newest" description:"Newest modification date/time"`
+	Snapshot string `short:"s" long:"snapshot" description:"Snapshot ID to search in"`
+
+	oldest, newest time.Time
+	pattern        string
+}
+
+var timeFormats = []string{
+	"2006-01-02",
+	"2006-01-02 15:04",
+	"2006-01-02 15:04:05",
+	"2006-01-02 15:04:05 -0700",
+	"2006-01-02 15:04:05 MST",
+	"02.01.2006",
+	"02.01.2006 15:04",
+	"02.01.2006 15:04:05",
+	"02.01.2006 15:04:05 -0700",
+	"02.01.2006 15:04:05 MST",
+	"Mon Jan 2 15:04:05 -0700 MST 2006",
 }
 
 func init() {
@@ -35,7 +53,17 @@ func init() {
 	}
 }
 
-func findInTree(ch *restic.ContentHandler, id backend.ID, path, pattern string) ([]findResult, error) {
+func parseTime(str string) (time.Time, error) {
+	for _, fmt := range timeFormats {
+		if t, err := time.ParseInLocation(fmt, str, time.Local); err == nil {
+			return t, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("unable to parse time: %q", str)
+}
+
+func (c CmdFind) findInTree(ch *restic.ContentHandler, id backend.ID, path string) ([]findResult, error) {
 	debug("checking tree %v\n", id)
 
 	tree, err := restic.LoadTree(ch, id)
@@ -45,19 +73,32 @@ func findInTree(ch *restic.ContentHandler, id backend.ID, path, pattern string) 
 
 	results := []findResult{}
 	for _, node := range tree {
-		m, err := filepath.Match(pattern, node.Name)
+		debug("  testing entry %q\n", node.Name)
+
+		m, err := filepath.Match(c.pattern, node.Name)
 		if err != nil {
 			return nil, err
 		}
 
-		debug("  testing entry %q: %v\n", node.Name, m)
-
 		if m {
+			debug("    pattern matches\n")
+			if !c.oldest.IsZero() && node.ModTime.Before(c.oldest) {
+				debug("    ModTime is older than %s\n", c.oldest)
+				continue
+			}
+
+			if !c.newest.IsZero() && node.ModTime.After(c.newest) {
+				debug("    ModTime is newer than %s\n", c.newest)
+				continue
+			}
+
 			results = append(results, findResult{node: node, path: path})
+		} else {
+			debug("    pattern does not match\n")
 		}
 
 		if node.Type == "dir" {
-			subdirResults, err := findInTree(ch, node.Subtree, filepath.Join(path, node.Name), pattern)
+			subdirResults, err := c.findInTree(ch, node.Subtree, filepath.Join(path, node.Name))
 			if err != nil {
 				return nil, err
 			}
@@ -69,8 +110,8 @@ func findInTree(ch *restic.ContentHandler, id backend.ID, path, pattern string) 
 	return results, nil
 }
 
-func findInSnapshot(be backend.Server, key *restic.Key, id backend.ID, pattern string) error {
-	debug("searching in snapshot %v\n", id)
+func (c CmdFind) findInSnapshot(be backend.Server, key *restic.Key, id backend.ID) error {
+	debug("searching in snapshot %s\n  for entries within [%s %s]", id, c.oldest, c.newest)
 
 	ch, err := restic.NewContentHandler(be, key)
 	if err != nil {
@@ -82,7 +123,7 @@ func findInSnapshot(be backend.Server, key *restic.Key, id backend.ID, pattern s
 		return err
 	}
 
-	results, err := findInTree(ch, sn.Tree, "", pattern)
+	results, err := c.findInTree(ch, sn.Tree, "")
 	if err != nil {
 		return err
 	}
@@ -100,13 +141,29 @@ func findInSnapshot(be backend.Server, key *restic.Key, id backend.ID, pattern s
 	return nil
 }
 
-func (cmd CmdFind) Usage() string {
-	return "[find-OPTIONS] PATTERN [snapshot-ID]"
+func (CmdFind) Usage() string {
+	return "[find-OPTIONS] PATTERN"
 }
 
-func (cmd CmdFind) Execute(args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("no pattern given, Usage: %s", cmd.Usage())
+func (c CmdFind) Execute(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("invalid number of arguments, Usage: %s", c.Usage())
+	}
+
+	var err error
+
+	if c.Oldest != "" {
+		c.oldest, err = parseTime(c.Oldest)
+		if err != nil {
+			return err
+		}
+	}
+
+	if c.Newest != "" {
+		c.newest, err = parseTime(c.Newest)
+		if err != nil {
+			return err
+		}
 	}
 
 	be, key, err := OpenRepo()
@@ -114,14 +171,15 @@ func (cmd CmdFind) Execute(args []string) error {
 		return err
 	}
 
-	pattern := args[0]
-	if len(args) == 2 {
-		snapshotID, err := backend.FindSnapshot(be, args[1])
+	c.pattern = args[0]
+
+	if c.Snapshot != "" {
+		snapshotID, err := backend.FindSnapshot(be, c.Snapshot)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", args[1], err)
 		}
 
-		return findInSnapshot(be, key, snapshotID, pattern)
+		return c.findInSnapshot(be, key, snapshotID)
 	}
 
 	list, err := be.List(backend.Snapshot)
@@ -130,7 +188,7 @@ func (cmd CmdFind) Execute(args []string) error {
 	}
 
 	for _, snapshotID := range list {
-		err := findInSnapshot(be, key, snapshotID, pattern)
+		err := c.findInSnapshot(be, key, snapshotID)
 
 		if err != nil {
 			return err
