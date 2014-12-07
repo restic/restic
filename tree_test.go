@@ -1,10 +1,13 @@
 package restic_test
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/restic/restic"
 )
 
 var testFiles = []struct {
@@ -49,4 +52,27 @@ func TestTree(t *testing.T) {
 			ok(t, os.RemoveAll(dir))
 		}
 	}()
+}
+
+var testNodes = []restic.Node{
+	restic.Node{Name: "normal"},
+	restic.Node{Name: "with backslashes \\zzz"},
+	restic.Node{Name: "test utf-8 föbärß"},
+	restic.Node{Name: "test invalid \x00\x01\x02\x03\x04"},
+	restic.Node{Name: "test latin1 \x75\x6d\x6c\xe4\xfc\x74\xf6\x6e\xdf\x6e\x6c\x6c"},
+}
+
+func TestNodeMarshal(t *testing.T) {
+	for i, n := range testNodes {
+		data, err := json.Marshal(&n)
+		ok(t, err)
+
+		var node restic.Node
+		err = json.Unmarshal(data, &node)
+		ok(t, err)
+
+		if n.Name != node.Name {
+			t.Fatalf("Node %d: Names are not equal, want: %q got: %q", i, n.Name, node.Name)
+		}
+	}
 }

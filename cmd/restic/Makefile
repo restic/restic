@@ -14,7 +14,7 @@ all: restic
 restic: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
 	go build $(TAGS) -ldflags "$(LDFLAGS)"
 
-debug: TAGS=-tags debug_cmd
+debug: TAGS=-tags "debug debug_cmd"
 debug: restic
 
 clean:
