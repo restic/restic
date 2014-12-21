@@ -46,9 +46,40 @@ func str2id(s string) backend.ID {
 	return id
 }
 
-type IDList backend.IDs
+type mockBackend struct {
+	list   func(backend.Type) (backend.IDs, error)
+	get    func(backend.Type, backend.ID) ([]byte, error)
+	create func(backend.Type, []byte) (backend.ID, error)
+	test   func(backend.Type, backend.ID) (bool, error)
+	remove func(backend.Type, backend.ID) error
+	close  func() error
+}
 
-var samples = IDList{
+func (m mockBackend) List(t backend.Type) (backend.IDs, error) {
+	return m.list(t)
+}
+
+func (m mockBackend) Get(t backend.Type, id backend.ID) ([]byte, error) {
+	return m.get(t, id)
+}
+
+func (m mockBackend) Create(t backend.Type, data []byte) (backend.ID, error) {
+	return m.create(t, data)
+}
+
+func (m mockBackend) Test(t backend.Type, id backend.ID) (bool, error) {
+	return m.test(t, id)
+}
+
+func (m mockBackend) Remove(t backend.Type, id backend.ID) error {
+	return m.remove(t, id)
+}
+
+func (m mockBackend) Close() error {
+	return m.close()
+}
+
+var samples = backend.IDs{
 	str2id("20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff"),
 	str2id("20bdc1402a6fc9b633ccd578c4a92d0f4ef1a457fa2e16c596bc73fb409d6cc0"),
 	str2id("20bdc1402a6fc9b633ffffffffffffffffffffffffffffffffffffffffffffff"),
@@ -59,20 +90,25 @@ var samples = IDList{
 	str2id("fa31d65b87affcd167b119e9d3d2a27b8236ca4836cb077ed3e96fcbe209b792"),
 }
 
-func (l IDList) List(backend.Type) (backend.IDs, error) {
-	return backend.IDs(l), nil
-}
-
 func TestPrefixLength(t *testing.T) {
-	l, err := backend.PrefixLength(samples, backend.Snapshot)
+	list := samples
+
+	m := mockBackend{}
+	m.list = func(t backend.Type) (backend.IDs, error) {
+		return list, nil
+	}
+
+	l, err := backend.PrefixLength(m, backend.Snapshot)
 	ok(t, err)
 	equals(t, 10, l)
 
-	l, err = backend.PrefixLength(samples[:3], backend.Snapshot)
+	list = samples[:3]
+	l, err = backend.PrefixLength(m, backend.Snapshot)
 	ok(t, err)
 	equals(t, 10, l)
 
-	l, err = backend.PrefixLength(samples[3:], backend.Snapshot)
+	list = samples[3:]
+	l, err = backend.PrefixLength(m, backend.Snapshot)
 	ok(t, err)
 	equals(t, 4, l)
 }
