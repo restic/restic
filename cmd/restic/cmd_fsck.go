@@ -75,7 +75,7 @@ func fsckTree(ch *restic.ContentHandler, id backend.ID) error {
 	return nil
 }
 
-func fsck_snapshot(be backend.Server, key *restic.Key, id backend.ID) error {
+func fsck_snapshot(be restic.Server, key *restic.Key, id backend.ID) error {
 	debug("checking snapshot %v\n", id)
 
 	ch, err := restic.NewContentHandler(be, key)

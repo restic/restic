@@ -110,7 +110,7 @@ func (c CmdFind) findInTree(ch *restic.ContentHandler, id backend.ID, path strin
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(be backend.Server, key *restic.Key, id backend.ID) error {
+func (c CmdFind) findInSnapshot(be restic.Server, key *restic.Key, id backend.ID) error {
 	debug("searching in snapshot %s\n  for entries within [%s %s]", id, c.oldest, c.newest)
 
 	ch, err := restic.NewContentHandler(be, key)

@@ -63,7 +63,7 @@ func (cmd CmdLs) Usage() string {
 	return "ls snapshot-ID [DIR]"
 }
 
-func (cmd CmdLs) Execute(be backend.Server, key *restic.Key, args []string) error {
+func (cmd CmdLs) Execute(be restic.Server, key *restic.Key, args []string) error {
 	if len(args) < 1 || len(args) > 2 {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}

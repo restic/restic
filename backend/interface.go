@@ -21,43 +21,43 @@ var (
 	ErrAlreadyPresent = errors.New("blob is already present in backend")
 )
 
-type lister interface {
+type Lister interface {
 	List(Type) (IDs, error)
 }
 
-type getter interface {
+type Getter interface {
 	Get(Type, ID) ([]byte, error)
 }
 
-type creater interface {
+type Creater interface {
 	Create(Type, []byte) (ID, error)
 }
 
-type tester interface {
+type Tester interface {
 	Test(Type, ID) (bool, error)
 }
 
-type remover interface {
+type Remover interface {
 	Remove(Type, ID) error
 }
 
-type closer interface {
+type Closer interface {
 	Close() error
 }
 
-type deleter interface {
+type Deleter interface {
 	Delete() error
 }
 
-type locationer interface {
+type Locationer interface {
 	Location() string
 }
 
-type backend interface {
-	lister
-	getter
-	creater
-	tester
-	remover
-	closer
+type Backend interface {
+	Lister
+	Getter
+	Creater
+	Tester
+	Remover
+	Closer
 }

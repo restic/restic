@@ -11,7 +11,7 @@ import (
 )
 
 type Restorer struct {
-	be  backend.Server
+	s   Server
 	key *Key
 	ch  *ContentHandler
 	sn  *Snapshot
@@ -21,14 +21,14 @@ type Restorer struct {
 }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot snid.
-func NewRestorer(be backend.Server, key *Key, snid backend.ID) (*Restorer, error) {
+func NewRestorer(s Server, key *Key, snid backend.ID) (*Restorer, error) {
 	r := &Restorer{
-		be:  be,
+		s:   s,
 		key: key,
 	}
 
 	var err error
-	r.ch, err = NewContentHandler(be, key)
+	r.ch, err = NewContentHandler(s, key)
 	if err != nil {
 		return nil, arrar.Annotate(err, "create contenthandler for restorer")
 	}

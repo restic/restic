@@ -75,7 +75,7 @@ type keys struct {
 
 // CreateKey initializes a master key in the given backend and encrypts it with
 // the password.
-func CreateKey(be backend.Server, password string) (*Key, error) {
+func CreateKey(s Server, password string) (*Key, error) {
 	// fill meta data about key
 	k := &Key{
 		Created: time.Now(),
@@ -131,7 +131,7 @@ func CreateKey(be backend.Server, password string) (*Key, error) {
 	}
 
 	// store in repository and return
-	id, err := be.Create(backend.Key, buf)
+	id, err := s.Create(backend.Key, buf)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +143,9 @@ func CreateKey(be backend.Server, password string) (*Key, error) {
 }
 
 // OpenKey tries do decrypt the key specified by id with the given password.
-func OpenKey(be backend.Server, id backend.ID, password string) (*Key, error) {
+func OpenKey(s Server, id backend.ID, password string) (*Key, error) {
 	// extract data from repo
-	data, err := be.Get(backend.Key, id)
+	data, err := s.Get(backend.Key, id)
 	if err != nil {
 		return nil, err
 	}
@@ -187,9 +187,9 @@ func OpenKey(be backend.Server, id backend.ID, password string) (*Key, error) {
 
 // SearchKey tries to decrypt all keys in the backend with the given password.
 // If none could be found, ErrNoKeyFound is returned.
-func SearchKey(be backend.Server, password string) (*Key, error) {
+func SearchKey(s Server, password string) (*Key, error) {
 	// list all keys
-	ids, err := be.List(backend.Key)
+	ids, err := s.List(backend.Key)
 	if err != nil {
 		panic(err)
 	}
@@ -197,7 +197,7 @@ func SearchKey(be backend.Server, password string) (*Key, error) {
 	// try all keys in repo
 	var key *Key
 	for _, id := range ids {
-		key, err = OpenKey(be, id, password)
+		key, err = OpenKey(s, id, password)
 		if err != nil {
 			continue
 		}
@@ -209,7 +209,7 @@ func SearchKey(be backend.Server, password string) (*Key, error) {
 }
 
 // AddKey adds a new key to an already existing repository.
-func (oldkey *Key) AddKey(be backend.Server, password string) (backend.ID, error) {
+func (oldkey *Key) AddKey(s Server, password string) (backend.ID, error) {
 	// fill meta data about key
 	newkey := &Key{
 		Created: time.Now(),
@@ -262,7 +262,7 @@ func (oldkey *Key) AddKey(be backend.Server, password string) (backend.ID, error
 	}
 
 	// store in repository and return
-	id, err := be.Create(backend.Key, buf)
+	id, err := s.Create(backend.Key, buf)
 	if err != nil {
 		return nil, err
 	}
@@ -424,25 +424,6 @@ func (k *Key) Decrypt(ciphertext []byte) ([]byte, error) {
 // must be in the form IV || Ciphertext || HMAC.
 func (k *Key) DecryptUser(ciphertext []byte) ([]byte, error) {
 	return k.decrypt(k.user, ciphertext)
-}
-
-// Each calls backend.Each() with the given parameters, Decrypt() on the
-// ciphertext and, on successful decryption, f with the plaintext.
-func (k *Key) Each(be backend.Server, t backend.Type, f func(backend.ID, []byte, error)) error {
-	return backend.Each(be, t, func(id backend.ID, data []byte, e error) {
-		if e != nil {
-			f(id, nil, e)
-			return
-		}
-
-		buf, err := k.Decrypt(data)
-		if err != nil {
-			f(id, nil, err)
-			return
-		}
-
-		f(id, buf, nil)
-	})
 }
 
 func (k *Key) String() string {
