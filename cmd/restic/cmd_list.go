@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+
 	"github.com/restic/restic/backend"
 )
 
@@ -27,22 +28,22 @@ func (cmd CmdList) Execute(args []string) error {
 		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
 
 	var (
 		t    backend.Type
-		each func(backend.Server, backend.Type, func(backend.ID, []byte, error)) error = backend.Each
+		each func(backend.Type, func(backend.ID, []byte, error)) error = s.Each
 	)
 	switch args[0] {
 	case "data":
 		t = backend.Data
-		each = key.Each
+		each = s.EachDecrypted
 	case "trees":
 		t = backend.Tree
-		each = key.Each
+		each = s.EachDecrypted
 	case "snapshots":
 		t = backend.Snapshot
 	case "maps":
@@ -55,7 +56,7 @@ func (cmd CmdList) Execute(args []string) error {
 		return errors.New("invalid type")
 	}
 
-	return each(be, t, func(id backend.ID, data []byte, err error) {
+	return each(t, func(id backend.ID, data []byte, err error) {
 		if t == backend.Data || t == backend.Tree {
 			fmt.Printf("%s %s\n", id, backend.Hash(data))
 		} else {

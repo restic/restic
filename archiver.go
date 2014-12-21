@@ -22,9 +22,8 @@ const (
 )
 
 type Archiver struct {
-	be  backend.Server
-	key *Key
-	ch  *ContentHandler
+	s  Server
+	ch *ContentHandler
 
 	bl       *BlobList // blobs used for the current snapshot
 	parentBl *BlobList // blobs from the parent snapshot
@@ -58,11 +57,10 @@ func (s *Stats) Add(other Stats) {
 	s.Other += other.Other
 }
 
-func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
+func NewArchiver(s Server) (*Archiver, error) {
 	var err error
 	arch := &Archiver{
-		be:        be,
-		key:       key,
+		s:         s,
 		fileToken: make(chan struct{}, maxConcurrentFiles),
 		blobToken: make(chan struct{}, maxConcurrentBlobs),
 	}
@@ -82,7 +80,7 @@ func NewArchiver(be backend.Server, key *Key) (*Archiver, error) {
 	arch.Filter = func(string, os.FileInfo) bool { return true }
 
 	arch.bl = NewBlobList()
-	arch.ch, err = NewContentHandler(be, key)
+	arch.ch, err = NewContentHandler(s)
 	if err != nil {
 		return nil, err
 	}

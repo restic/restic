@@ -15,42 +15,43 @@ import (
 var testPassword = "foobar"
 var testCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
 
-func setupBackend(t testing.TB) *backend.Local {
+func setupBackend(t testing.TB) restic.Server {
 	tempdir, err := ioutil.TempDir("", "restic-test-")
 	ok(t, err)
 
 	b, err := backend.CreateLocal(tempdir)
 	ok(t, err)
 
-	return b
+	return restic.NewServer(b)
 }
 
-func teardownBackend(t testing.TB, b *backend.Local) {
+func teardownBackend(t testing.TB, s restic.Server) {
 	if !*testCleanup {
-		t.Logf("leaving local backend at %s\n", b.Location())
+		l := s.Backend().(*backend.Local)
+		t.Logf("leaving local backend at %s\n", l.Location())
 		return
 	}
 
-	ok(t, os.RemoveAll(b.Location()))
+	ok(t, s.Delete())
 }
 
-func setupKey(t testing.TB, be backend.Server, password string) *restic.Key {
-	k, err := restic.CreateKey(be, password)
+func setupKey(t testing.TB, s restic.Server, password string) *restic.Key {
+	k, err := restic.CreateKey(s, password)
 	ok(t, err)
 
 	return k
 }
 
 func TestRepo(t *testing.T) {
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	_ = setupKey(t, be, testPassword)
+	s := setupBackend(t)
+	defer teardownBackend(t, s)
+	_ = setupKey(t, s, testPassword)
 }
 
 func TestEncryptDecrypt(t *testing.T) {
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	k := setupKey(t, be, testPassword)
+	s := setupBackend(t)
+	defer teardownBackend(t, s)
+	k := setupKey(t, s, testPassword)
 
 	for _, size := range []int{5, 23, 1 << 20, 7<<20 + 123} {
 		data := make([]byte, size)
@@ -74,9 +75,9 @@ func TestEncryptDecrypt(t *testing.T) {
 }
 
 func TestLargeEncrypt(t *testing.T) {
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	k := setupKey(t, be, testPassword)
+	s := setupBackend(t)
+	defer teardownBackend(t, s)
+	k := setupKey(t, s, testPassword)
 
 	for _, size := range []int{chunker.MaxSize, chunker.MaxSize + 1} {
 		data := make([]byte, size)
@@ -120,9 +121,9 @@ func BenchmarkDecrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
 
-	be := setupBackend(b)
-	defer teardownBackend(b, be)
-	k := setupKey(b, be, testPassword)
+	s := setupBackend(b)
+	defer teardownBackend(b, s)
+	k := setupKey(b, s, testPassword)
 
 	ciphertext := restic.GetChunkBuf("BenchmarkDecrypt")
 	n, err := k.Encrypt(ciphertext, data)

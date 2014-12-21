@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"sync"
 )
 
 // IDSize contains the size of an ID, in bytes.
@@ -13,6 +14,8 @@ const IDSize = sha256.Size
 
 // References content within a repository.
 type ID []byte
+
+var idPool = sync.Pool{New: func() interface{} { return ID(make([]byte, IDSize)) }}
 
 // ParseID converts the given string to an ID.
 func ParseID(s string) (ID, error) {

@@ -11,18 +11,16 @@ import (
 var ErrWrongData = errors.New("wrong data decrypt, checksum does not match")
 
 type ContentHandler struct {
-	be  backend.Server
-	key *Key
+	s Server
 
 	bl *BlobList
 }
 
 // NewContentHandler creates a new content handler.
-func NewContentHandler(be backend.Server, key *Key) (*ContentHandler, error) {
+func NewContentHandler(s Server) (*ContentHandler, error) {
 	ch := &ContentHandler{
-		be:  be,
-		key: key,
-		bl:  NewBlobList(),
+		s:  s,
+		bl: NewBlobList(),
 	}
 
 	return ch, nil
@@ -49,7 +47,7 @@ func (ch *ContentHandler) LoadSnapshot(id backend.ID) (*Snapshot, error) {
 // into the content handler.
 func (ch *ContentHandler) LoadAllMaps() error {
 	// add all maps from all snapshots that can be decrypted to the storage map
-	err := backend.EachID(ch.be, backend.Map, func(id backend.ID) {
+	err := backend.EachID(ch.s, backend.Map, func(id backend.ID) {
 		bl, err := LoadBlobList(ch, id)
 		if err != nil {
 			return
@@ -95,7 +93,7 @@ func (ch *ContentHandler) Save(t backend.Type, data []byte) (Blob, error) {
 	}
 
 	// encrypt blob
-	n, err := ch.key.Encrypt(ciphertext, data)
+	n, err := ch.s.Encrypt(ciphertext, data)
 	if err != nil {
 		return Blob{}, err
 	}
@@ -103,7 +101,7 @@ func (ch *ContentHandler) Save(t backend.Type, data []byte) (Blob, error) {
 	ciphertext = ciphertext[:n]
 
 	// save blob
-	sid, err := ch.be.Create(t, ciphertext)
+	sid, err := ch.s.Create(t, ciphertext)
 	if err != nil {
 		return Blob{}, err
 	}
@@ -133,13 +131,13 @@ func (ch *ContentHandler) SaveJSON(t backend.Type, item interface{}) (Blob, erro
 func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	if t == backend.Snapshot {
 		// load data
-		buf, err := ch.be.Get(t, id)
+		buf, err := ch.s.Get(t, id)
 		if err != nil {
 			return nil, err
 		}
 
 		// decrypt
-		buf, err = ch.key.Decrypt(buf)
+		buf, err = ch.s.Decrypt(buf)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +152,7 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	}
 
 	// load data
-	buf, err := ch.be.Get(t, blob.Storage)
+	buf, err := ch.s.Get(t, blob.Storage)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +163,7 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	}
 
 	// decrypt
-	buf, err = ch.key.Decrypt(buf)
+	buf, err = ch.s.Decrypt(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -201,13 +199,13 @@ func (ch *ContentHandler) LoadJSON(t backend.Type, id backend.ID, item interface
 // decrypts it and calls json.Unmarshal on the item.
 func (ch *ContentHandler) LoadJSONRaw(t backend.Type, id backend.ID, item interface{}) error {
 	// load data
-	buf, err := ch.be.Get(t, id)
+	buf, err := ch.s.Get(t, id)
 	if err != nil {
 		return err
 	}
 
 	// decrypt
-	buf, err = ch.key.Decrypt(buf)
+	buf, err = ch.s.Decrypt(buf)
 	if err != nil {
 		return err
 	}

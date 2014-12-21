@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"sort"
 	"testing"
 
@@ -41,10 +40,10 @@ func teardownBackend(t *testing.T, b *backend.Local) {
 		return
 	}
 
-	ok(t, os.RemoveAll(b.Location()))
+	ok(t, b.Delete())
 }
 
-func testBackend(b backend.Server, t *testing.T) {
+func testBackend(b *backend.Local, t *testing.T) {
 	for _, tpe := range []backend.Type{backend.Data, backend.Key, backend.Lock, backend.Snapshot, backend.Tree, backend.Map} {
 		// detect non-existing files
 		for _, test := range TestStrings {
@@ -126,10 +125,10 @@ func TestBackend(t *testing.T) {
 	assert(t, err != nil, "opening invalid repository at /invalid-restic-test should have failed, but err is nil")
 	assert(t, b == nil, fmt.Sprintf("opening invalid repository at /invalid-restic-test should have failed, but b is not nil: %v", b))
 
-	b = setupBackend(t)
-	defer teardownBackend(t, b)
+	s := setupBackend(t)
+	defer teardownBackend(t, s)
 
-	testBackend(b, t)
+	testBackend(s, t)
 }
 
 func TestLocalBackendCreationFailures(t *testing.T) {

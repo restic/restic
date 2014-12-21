@@ -25,15 +25,39 @@ type Lister interface {
 	List(Type) (IDs, error)
 }
 
-type Server interface {
-	Create(Type, []byte) (ID, error)
+type Getter interface {
 	Get(Type, ID) ([]byte, error)
-	Lister
+}
+
+type Creater interface {
+	Create(Type, []byte) (ID, error)
+}
+
+type Tester interface {
 	Test(Type, ID) (bool, error)
+}
+
+type Remover interface {
 	Remove(Type, ID) error
-	Version() uint
+}
 
+type Closer interface {
 	Close() error
+}
 
+type Deleter interface {
+	Delete() error
+}
+
+type Locationer interface {
 	Location() string
+}
+
+type Backend interface {
+	Lister
+	Getter
+	Creater
+	Tester
+	Remover
+	Closer
 }

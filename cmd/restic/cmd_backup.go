@@ -72,7 +72,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	target := args[0]
 	if len(args) > 1 {
-		parentSnapshotID, err = backend.FindSnapshot(be, args[1])
+		parentSnapshotID, err = s.FindSnapshot(args[1])
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", args[1], err)
 		}
@@ -89,7 +89,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
 	}
 
-	arch, err := restic.NewArchiver(be, key)
+	arch, err := restic.NewArchiver(s)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "err: %v\n", err)
 	}
@@ -183,7 +183,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		close(arch.ScannerStats)
 	}
 
-	plen, err := backend.PrefixLength(be, backend.Snapshot)
+	plen, err := s.PrefixLength(backend.Snapshot)
 	if err != nil {
 		return err
 	}

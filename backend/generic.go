@@ -8,14 +8,11 @@ import (
 	"errors"
 	"io/ioutil"
 	"sort"
-	"sync"
 )
 
 const (
 	MinPrefixLength = 4
 )
-
-var idPool = sync.Pool{New: func() interface{} { return ID(make([]byte, IDSize)) }}
 
 var (
 	ErrNoIDPrefixFound   = errors.New("no ID found")
@@ -24,7 +21,10 @@ var (
 
 // Each lists all entries of type t in the backend and calls function f() with
 // the id and data.
-func Each(be Server, t Type, f func(id ID, data []byte, err error)) error {
+func Each(be interface {
+	Lister
+	Getter
+}, t Type, f func(id ID, data []byte, err error)) error {
 	ids, err := be.List(t)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func Each(be Server, t Type, f func(id ID, data []byte, err error)) error {
 
 // Each lists all entries of type t in the backend and calls function f() with
 // the id.
-func EachID(be Server, t Type, f func(ID)) error {
+func EachID(be Lister, t Type, f func(ID)) error {
 	ids, err := be.List(t)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func Hash(data []byte) ID {
 // Find loads the list of all blobs of type t and searches for IDs which start
 // with prefix. If none is found, nil and ErrNoIDPrefixFound is returned. If
 // more than one is found, nil and ErrMultipleIDMatches is returned.
-func Find(be Server, t Type, prefix string) (ID, error) {
+func Find(be Lister, t Type, prefix string) (ID, error) {
 	p, err := hex.DecodeString(prefix)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func Find(be Server, t Type, prefix string) (ID, error) {
 
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches
 // the string as closely as possible.
-func FindSnapshot(be Server, s string) (ID, error) {
+func FindSnapshot(be Lister, s string) (ID, error) {
 	// parse ID directly
 	if id, err := ParseID(s); err == nil {
 		return id, nil

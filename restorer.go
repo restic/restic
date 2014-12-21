@@ -11,24 +11,20 @@ import (
 )
 
 type Restorer struct {
-	be  backend.Server
-	key *Key
-	ch  *ContentHandler
-	sn  *Snapshot
+	s  Server
+	ch *ContentHandler
+	sn *Snapshot
 
 	Error  func(dir string, node *Node, err error) error
 	Filter func(item string, node *Node) bool
 }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot snid.
-func NewRestorer(be backend.Server, key *Key, snid backend.ID) (*Restorer, error) {
-	r := &Restorer{
-		be:  be,
-		key: key,
-	}
+func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
+	r := &Restorer{s: s}
 
 	var err error
-	r.ch, err = NewContentHandler(be, key)
+	r.ch, err = NewContentHandler(s)
 	if err != nil {
 		return nil, arrar.Annotate(err, "create contenthandler for restorer")
 	}

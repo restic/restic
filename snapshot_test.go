@@ -8,7 +8,7 @@ import (
 	"github.com/restic/restic/backend"
 )
 
-func testSnapshot(t *testing.T, be backend.Server) {
+func testSnapshot(t *testing.T, s restic.Server) {
 	var err error
 	sn, err := restic.NewSnapshot("/home/foobar")
 	ok(t, err)

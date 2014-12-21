@@ -328,3 +328,8 @@ func (b *Local) Version() uint {
 func (b *Local) Close() error {
 	return nil
 }
+
+// Delete removes the repository and all files.
+func (b *Local) Delete() error {
+	return os.RemoveAll(b.p)
+}

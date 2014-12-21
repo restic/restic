@@ -70,13 +70,15 @@ func (cmd CmdInit) Execute(args []string) error {
 		os.Exit(1)
 	}
 
-	_, err = restic.CreateKey(be, pw)
+	s := restic.NewServer(be)
+
+	_, err = restic.CreateKey(s, pw)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", opts.Repo, err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("created restic backend at %s\n", be.Location())
+	fmt.Printf("created restic backend at %s\n", opts.Repo)
 
 	return nil
 }
@@ -86,7 +88,7 @@ func (cmd CmdInit) Execute(args []string) error {
 // * /foo/bar -> local repository at /foo/bar
 // * sftp://user@host/foo/bar -> remote sftp repository on host for user at path foo/bar
 // * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
-func open(u string) (backend.Server, error) {
+func open(u string) (backend.Backend, error) {
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -107,7 +109,7 @@ func open(u string) (backend.Server, error) {
 }
 
 // Create the backend specified by URI.
-func create(u string) (backend.Server, error) {
+func create(u string) (backend.Backend, error) {
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -127,18 +129,20 @@ func create(u string) (backend.Server, error) {
 	return backend.CreateSFTP(url.Path[1:], "ssh", args...)
 }
 
-func OpenRepo() (backend.Server, *restic.Key, error) {
+func OpenRepo() (restic.Server, error) {
 	be, err := open(opts.Repo)
 	if err != nil {
-		return nil, nil, err
+		return restic.Server{}, err
 	}
 
-	key, err := restic.SearchKey(be, readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
+	s := restic.NewServer(be)
+
+	err = s.SearchKey(readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
 	if err != nil {
-		return nil, nil, fmt.Errorf("unable to open repo: %v", err)
+		return restic.Server{}, fmt.Errorf("unable to open repo: %v", err)
 	}
 
-	return be, key, nil
+	return s, nil
 }
 
 func init() {
@@ -166,60 +170,6 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-
-	// fmt.Printf("parser: %#v\n", parser)
-	// fmt.Printf("%#v\n", parser.Active.Name)
-
-	// if opts.Repo == "" {
-	// 	fmt.Fprintf(os.Stderr, "no repository specified, use -r or RESTIC_REPOSITORY variable\n")
-	// 	os.Exit(1)
-	// }
-
-	// if len(args) == 0 {
-	// 	cmds := []string{"init"}
-	// 	for k := range commands {
-	// 		cmds = append(cmds, k)
-	// 	}
-	// 	sort.Strings(cmds)
-	// 	fmt.Printf("nothing to do, available commands: [%v]\n", strings.Join(cmds, "|"))
-	// 	os.Exit(0)
-	// }
-
-	// cmd := args[0]
-
-	// switch cmd {
-	// case "init":
-	// 	err = commandInit(opts.Repo)
-	// 	if err != nil {
-	// 		errx(1, "error executing command %q: %v", cmd, err)
-	// 	}
-	// 	return
-
-	// case "version":
-	// 	fmt.Printf("%v\n", version)
-	// 	return
-	// }
-
-	// f, ok := commands[cmd]
-	// if !ok {
-	// 	errx(1, "unknown command: %q\n", cmd)
-	// }
-
-	// // read_password("enter password: ")
-	// repo, err := open(opts.Repo)
-	// if err != nil {
-	// 	errx(1, "unable to open repo: %v", err)
-	// }
-
-	// key, err := restic.SearchKey(repo, readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
-	// if err != nil {
-	// 	errx(2, "unable to open repo: %v", err)
-	// }
-
-	// err = f(repo, key, args[1:])
-	// if err != nil {
-	// 	errx(1, "error executing command %q: %v", cmd, err)
-	// }
 
 	// restic.PoolAlloc()
 }
