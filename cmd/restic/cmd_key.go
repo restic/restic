@@ -62,7 +62,7 @@ func add_key(s restic.Server) error {
 		return errors.New("passwords do not match")
 	}
 
-	id, err := s.Key().AddKey(s, pw)
+	id, err := restic.AddKey(s, pw, s.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
@@ -95,7 +95,7 @@ func change_password(s restic.Server) error {
 	}
 
 	// add new key
-	id, err := s.Key().AddKey(s, pw)
+	id, err := restic.AddKey(s, pw, s.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}

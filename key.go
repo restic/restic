@@ -76,70 +76,7 @@ type keys struct {
 // CreateKey initializes a master key in the given backend and encrypts it with
 // the password.
 func CreateKey(s Server, password string) (*Key, error) {
-	// fill meta data about key
-	k := &Key{
-		Created: time.Now(),
-		KDF:     "scrypt",
-		N:       scryptN,
-		R:       scryptR,
-		P:       scryptP,
-	}
-
-	hn, err := os.Hostname()
-	if err == nil {
-		k.Hostname = hn
-	}
-
-	usr, err := user.Current()
-	if err == nil {
-		k.Username = usr.Username
-	}
-
-	// generate random salt
-	k.Salt = make([]byte, scryptSaltsize)
-	n, err := rand.Read(k.Salt)
-	if n != scryptSaltsize || err != nil {
-		panic("unable to read enough random bytes for salt")
-	}
-
-	// call scrypt() to derive user key
-	k.user, err = k.scrypt(password)
-	if err != nil {
-		return nil, err
-	}
-
-	// generate new random master keys
-	k.master, err = k.newKeys()
-	if err != nil {
-		return nil, err
-	}
-
-	// encrypt master keys (as json) with user key
-	buf, err := json.Marshal(k.master)
-	if err != nil {
-		return nil, err
-	}
-
-	k.Data = GetChunkBuf("key")
-	n, err = k.EncryptUser(k.Data, buf)
-	k.Data = k.Data[:n]
-
-	// dump as json
-	buf, err = json.Marshal(k)
-	if err != nil {
-		return nil, err
-	}
-
-	// store in repository and return
-	id, err := s.Create(backend.Key, buf)
-	if err != nil {
-		return nil, err
-	}
-	k.id = id
-
-	FreeChunkBuf("key", k.Data)
-
-	return k, nil
+	return AddKey(s, password, nil)
 }
 
 // OpenKey tries do decrypt the key specified by id with the given password.
@@ -209,7 +146,7 @@ func SearchKey(s Server, password string) (*Key, error) {
 }
 
 // AddKey adds a new key to an already existing repository.
-func (oldkey *Key) AddKey(s Server, password string) (backend.ID, error) {
+func AddKey(s Server, password string, template *Key) (*Key, error) {
 	// fill meta data about key
 	newkey := &Key{
 		Created: time.Now(),
@@ -242,8 +179,16 @@ func (oldkey *Key) AddKey(s Server, password string) (backend.ID, error) {
 		return nil, err
 	}
 
-	// copy master keys from oldkey
-	newkey.master = oldkey.master
+	if template == nil {
+		// generate new random master keys
+		newkey.master, err = newkey.newKeys()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// copy master keys from old key
+		newkey.master = template.master
+	}
 
 	// encrypt master keys (as json) with user key
 	buf, err := json.Marshal(newkey.master)
@@ -270,7 +215,7 @@ func (oldkey *Key) AddKey(s Server, password string) (backend.ID, error) {
 
 	FreeChunkBuf("key", newkey.Data)
 
-	return id, nil
+	return newkey, nil
 }
 
 func (k *Key) scrypt(password string) (*keys, error) {
