@@ -513,7 +513,11 @@ func (arch *Archiver) Snapshot(dir string, t *Tree, parentSnapshot backend.ID) (
 	// reset global stats
 	arch.updateStats = Stats{}
 
-	sn := NewSnapshot(dir)
+	sn, err := NewSnapshot(dir)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	sn.Parent = parentSnapshot
 
 	blob, err := arch.saveTree(t)

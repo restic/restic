@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/restic/restic/backend"
@@ -18,14 +19,14 @@ type Snapshot struct {
 	Dir      string     `json:"dir"`
 	Hostname string     `json:"hostname,omitempty"`
 	Username string     `json:"username,omitempty"`
-	UID      string     `json:"uid,omitempty"`
-	GID      string     `json:"gid,omitempty"`
+	UID      uint32     `json:"uid,omitempty"`
+	GID      uint32     `json:"gid,omitempty"`
 
 	id backend.ID // plaintext ID, used during restore
 	bl *BlobList
 }
 
-func NewSnapshot(dir string) *Snapshot {
+func NewSnapshot(dir string) (*Snapshot, error) {
 	d, err := filepath.Abs(dir)
 	if err != nil {
 		d = dir
@@ -44,11 +45,20 @@ func NewSnapshot(dir string) *Snapshot {
 	usr, err := user.Current()
 	if err == nil {
 		sn.Username = usr.Username
-		sn.UID = usr.Uid
-		sn.GID = usr.Gid
+		uid, err := strconv.ParseInt(usr.Uid, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		sn.UID = uint32(uid)
+
+		gid, err := strconv.ParseInt(usr.Gid, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		sn.GID = uint32(gid)
 	}
 
-	return sn
+	return sn, nil
 }
 
 func LoadSnapshot(ch *ContentHandler, id backend.ID) (*Snapshot, error) {
