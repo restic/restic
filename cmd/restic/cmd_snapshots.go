@@ -108,7 +108,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 
 	list := []*restic.Snapshot{}
 	backend.EachID(be, backend.Snapshot, func(id backend.ID) {
-		sn, err := ch.LoadSnapshot(id)
+		sn, err := restic.LoadSnapshot(ch, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
 			return

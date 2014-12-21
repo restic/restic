@@ -58,13 +58,13 @@ func (cmd CmdCat) Execute(args []string) error {
 		return err
 	}
 
-	err = ch.LoadAllMaps()
-	if err != nil {
-		return err
-	}
-
 	switch tpe {
 	case "blob":
+		err = ch.LoadAllMaps()
+		if err != nil {
+			return err
+		}
+
 		// try id
 		data, err := ch.Load(backend.Data, id)
 		if err == nil {
@@ -88,6 +88,11 @@ func (cmd CmdCat) Execute(args []string) error {
 		return err
 
 	case "tree":
+		err = ch.LoadAllMaps()
+		if err != nil {
+			return err
+		}
+
 		var tree restic.Tree
 		// try id
 		err := ch.LoadJSON(backend.Tree, id, &tree)
