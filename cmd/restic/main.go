@@ -129,20 +129,20 @@ func create(u string) (backend.Backend, error) {
 	return backend.CreateSFTP(url.Path[1:], "ssh", args...)
 }
 
-func OpenRepo() (restic.Server, *restic.Key, error) {
+func OpenRepo() (restic.Server, error) {
 	be, err := open(opts.Repo)
 	if err != nil {
-		return restic.Server{}, nil, err
+		return restic.Server{}, err
 	}
 
 	s := restic.NewServer(be)
 
-	key, err := restic.SearchKey(s, readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
+	err = s.SearchKey(readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
 	if err != nil {
-		return restic.Server{}, nil, fmt.Errorf("unable to open repo: %v", err)
+		return restic.Server{}, fmt.Errorf("unable to open repo: %v", err)
 	}
 
-	return s, key, nil
+	return s, nil
 }
 
 func init() {
@@ -170,60 +170,6 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-
-	// fmt.Printf("parser: %#v\n", parser)
-	// fmt.Printf("%#v\n", parser.Active.Name)
-
-	// if opts.Repo == "" {
-	// 	fmt.Fprintf(os.Stderr, "no repository specified, use -r or RESTIC_REPOSITORY variable\n")
-	// 	os.Exit(1)
-	// }
-
-	// if len(args) == 0 {
-	// 	cmds := []string{"init"}
-	// 	for k := range commands {
-	// 		cmds = append(cmds, k)
-	// 	}
-	// 	sort.Strings(cmds)
-	// 	fmt.Printf("nothing to do, available commands: [%v]\n", strings.Join(cmds, "|"))
-	// 	os.Exit(0)
-	// }
-
-	// cmd := args[0]
-
-	// switch cmd {
-	// case "init":
-	// 	err = commandInit(opts.Repo)
-	// 	if err != nil {
-	// 		errx(1, "error executing command %q: %v", cmd, err)
-	// 	}
-	// 	return
-
-	// case "version":
-	// 	fmt.Printf("%v\n", version)
-	// 	return
-	// }
-
-	// f, ok := commands[cmd]
-	// if !ok {
-	// 	errx(1, "unknown command: %q\n", cmd)
-	// }
-
-	// // read_password("enter password: ")
-	// repo, err := open(opts.Repo)
-	// if err != nil {
-	// 	errx(1, "unable to open repo: %v", err)
-	// }
-
-	// key, err := restic.SearchKey(repo, readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
-	// if err != nil {
-	// 	errx(2, "unable to open repo: %v", err)
-	// }
-
-	// err = f(repo, key, args[1:])
-	// if err != nil {
-	// 	errx(1, "error executing command %q: %v", cmd, err)
-	// }
 
 	// restic.PoolAlloc()
 }

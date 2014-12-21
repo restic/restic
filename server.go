@@ -55,6 +55,37 @@ func (s Server) Backend() backend.Backend {
 	return s.be
 }
 
+func (s *Server) SearchKey(password string) error {
+	key, err := SearchKey(*s, password)
+	if err != nil {
+		return err
+	}
+
+	s.key = key
+
+	return nil
+}
+
+func (s Server) Decrypt(ciphertext []byte) ([]byte, error) {
+	if s.key == nil {
+		return nil, errors.New("key for server not set")
+	}
+
+	return s.key.Decrypt(ciphertext)
+}
+
+func (s Server) Encrypt(ciphertext, plaintext []byte) (int, error) {
+	if s.key == nil {
+		return 0, errors.New("key for server not set")
+	}
+
+	return s.key.Encrypt(ciphertext, plaintext)
+}
+
+func (s Server) Key() *Key {
+	return s.key
+}
+
 // Each calls Each() with the given parameters, Decrypt() on the ciphertext
 // and, on successful decryption, f with the plaintext.
 func (s Server) EachDecrypted(t backend.Type, f func(backend.ID, []byte, error)) error {

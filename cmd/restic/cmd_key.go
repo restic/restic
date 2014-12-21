@@ -22,17 +22,17 @@ func init() {
 	}
 }
 
-func list_keys(be restic.Server, key *restic.Key) error {
+func list_keys(s restic.Server) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
-	plen, err := backend.PrefixLength(be, backend.Key)
+	plen, err := s.PrefixLength(backend.Key)
 	if err != nil {
 		return err
 	}
 
-	backend.Each(be, backend.Key, func(id backend.ID, data []byte, err error) {
+	s.Each(backend.Key, func(id backend.ID, data []byte, err error) {
 		k := restic.Key{}
 		err = json.Unmarshal(data, &k)
 		if err != nil {
@@ -40,7 +40,7 @@ func list_keys(be restic.Server, key *restic.Key) error {
 		}
 
 		var current string
-		if id.Equal(key.ID()) {
+		if id.Equal(s.Key().ID()) {
 			current = "*"
 		} else {
 			current = " "
@@ -54,7 +54,7 @@ func list_keys(be restic.Server, key *restic.Key) error {
 	return nil
 }
 
-func add_key(be restic.Server, key *restic.Key) error {
+func add_key(s restic.Server) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -62,7 +62,7 @@ func add_key(be restic.Server, key *restic.Key) error {
 		return errors.New("passwords do not match")
 	}
 
-	id, err := key.AddKey(be, pw)
+	id, err := s.Key().AddKey(s, pw)
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
@@ -72,12 +72,12 @@ func add_key(be restic.Server, key *restic.Key) error {
 	return nil
 }
 
-func delete_key(be restic.Server, key *restic.Key, id backend.ID) error {
-	if id.Equal(key.ID()) {
+func delete_key(s restic.Server, id backend.ID) error {
+	if id.Equal(s.Key().ID()) {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
-	err := be.Remove(backend.Key, id)
+	err := s.Remove(backend.Key, id)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func delete_key(be restic.Server, key *restic.Key, id backend.ID) error {
 	return nil
 }
 
-func change_password(be restic.Server, key *restic.Key) error {
+func change_password(s restic.Server) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -95,13 +95,13 @@ func change_password(be restic.Server, key *restic.Key) error {
 	}
 
 	// add new key
-	id, err := key.AddKey(be, pw)
+	id, err := s.Key().AddKey(s, pw)
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
 
 	// remove old key
-	err = be.Remove(backend.Key, key.ID())
+	err = s.Remove(backend.Key, s.Key().ID())
 	if err != nil {
 		return err
 	}
@@ -120,25 +120,25 @@ func (cmd CmdKey) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
 
 	switch args[0] {
 	case "list":
-		return list_keys(be, key)
+		return list_keys(s)
 	case "add":
-		return add_key(be, key)
+		return add_key(s)
 	case "rm":
-		id, err := backend.Find(be, backend.Key, args[1])
+		id, err := backend.Find(s, backend.Key, args[1])
 		if err != nil {
 			return err
 		}
 
-		return delete_key(be, key, id)
+		return delete_key(s, id)
 	case "change":
-		return change_password(be, key)
+		return change_password(s)
 	}
 
 	return nil

@@ -75,10 +75,10 @@ func fsckTree(ch *restic.ContentHandler, id backend.ID) error {
 	return nil
 }
 
-func fsck_snapshot(be restic.Server, key *restic.Key, id backend.ID) error {
+func fsck_snapshot(s restic.Server, id backend.ID) error {
 	debug("checking snapshot %v\n", id)
 
-	ch, err := restic.NewContentHandler(be, key)
+	ch, err := restic.NewContentHandler(s)
 	if err != nil {
 		return err
 	}
@@ -108,27 +108,27 @@ func (cmd CmdFsck) Execute(args []string) error {
 		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
 
 	if len(args) == 1 && args[0] != "all" {
-		snapshotID, err := backend.FindSnapshot(be, args[0])
+		snapshotID, err := s.FindSnapshot(args[0])
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", args[0], err)
 		}
 
-		return fsck_snapshot(be, key, snapshotID)
+		return fsck_snapshot(s, snapshotID)
 	}
 
-	list, err := be.List(backend.Snapshot)
+	list, err := s.List(backend.Snapshot)
 	if err != nil {
 		return err
 	}
 
 	for _, snapshotID := range list {
-		err := fsck_snapshot(be, key, snapshotID)
+		err := fsck_snapshot(s, snapshotID)
 
 		if err != nil {
 			return err

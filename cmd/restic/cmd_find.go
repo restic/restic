@@ -110,10 +110,10 @@ func (c CmdFind) findInTree(ch *restic.ContentHandler, id backend.ID, path strin
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(be restic.Server, key *restic.Key, id backend.ID) error {
+func (c CmdFind) findInSnapshot(s restic.Server, id backend.ID) error {
 	debug("searching in snapshot %s\n  for entries within [%s %s]", id, c.oldest, c.newest)
 
-	ch, err := restic.NewContentHandler(be, key)
+	ch, err := restic.NewContentHandler(s)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (c CmdFind) Execute(args []string) error {
 		}
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
@@ -174,21 +174,21 @@ func (c CmdFind) Execute(args []string) error {
 	c.pattern = args[0]
 
 	if c.Snapshot != "" {
-		snapshotID, err := backend.FindSnapshot(be, c.Snapshot)
+		snapshotID, err := backend.FindSnapshot(s, c.Snapshot)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", args[1], err)
 		}
 
-		return c.findInSnapshot(be, key, snapshotID)
+		return c.findInSnapshot(s, snapshotID)
 	}
 
-	list, err := be.List(backend.Snapshot)
+	list, err := s.List(backend.Snapshot)
 	if err != nil {
 		return err
 	}
 
 	for _, snapshotID := range list {
-		err := c.findInSnapshot(be, key, snapshotID)
+		err := c.findInSnapshot(s, snapshotID)
 
 		if err != nil {
 			return err

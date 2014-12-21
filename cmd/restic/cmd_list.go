@@ -28,22 +28,22 @@ func (cmd CmdList) Execute(args []string) error {
 		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
 
-	be, _, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
 
 	var (
 		t    backend.Type
-		each func(backend.Type, func(backend.ID, []byte, error)) error = be.Each
+		each func(backend.Type, func(backend.ID, []byte, error)) error = s.Each
 	)
 	switch args[0] {
 	case "data":
 		t = backend.Data
-		each = be.EachDecrypted
+		each = s.EachDecrypted
 	case "trees":
 		t = backend.Tree
-		each = be.EachDecrypted
+		each = s.EachDecrypted
 	case "snapshots":
 		t = backend.Snapshot
 	case "maps":

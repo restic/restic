@@ -31,7 +31,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
@@ -47,13 +47,13 @@ func (cmd CmdCat) Execute(args []string) error {
 		}
 
 		// find snapshot id with prefix
-		id, err = backend.Find(be, backend.Snapshot, args[1])
+		id, err = s.FindSnapshot(args[1])
 		if err != nil {
 			return err
 		}
 	}
 
-	ch, err := restic.NewContentHandler(be, key)
+	ch, err := restic.NewContentHandler(s)
 	if err != nil {
 		return err
 	}
@@ -73,13 +73,13 @@ func (cmd CmdCat) Execute(args []string) error {
 		}
 
 		// try storage id
-		buf, err := be.Get(backend.Data, id)
+		buf, err := s.Get(backend.Data, id)
 		if err != nil {
 			return err
 		}
 
 		// decrypt
-		buf, err = key.Decrypt(buf)
+		buf, err = s.Decrypt(buf)
 		if err != nil {
 			return err
 		}
@@ -98,13 +98,13 @@ func (cmd CmdCat) Execute(args []string) error {
 		err := ch.LoadJSON(backend.Tree, id, &tree)
 		if err != nil {
 			// try storage id
-			buf, err := be.Get(backend.Tree, id)
+			buf, err := s.Get(backend.Tree, id)
 			if err != nil {
 				return err
 			}
 
 			// decrypt
-			buf, err = key.Decrypt(buf)
+			buf, err = s.Decrypt(buf)
 			if err != nil {
 				return err
 			}
@@ -156,7 +156,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		return nil
 	case "key":
-		data, err := be.Get(backend.Key, id)
+		data, err := s.Get(backend.Key, id)
 		if err != nil {
 			return err
 		}

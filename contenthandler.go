@@ -11,18 +11,16 @@ import (
 var ErrWrongData = errors.New("wrong data decrypt, checksum does not match")
 
 type ContentHandler struct {
-	s   Server
-	key *Key
+	s Server
 
 	bl *BlobList
 }
 
 // NewContentHandler creates a new content handler.
-func NewContentHandler(s Server, key *Key) (*ContentHandler, error) {
+func NewContentHandler(s Server) (*ContentHandler, error) {
 	ch := &ContentHandler{
-		s:   s,
-		key: key,
-		bl:  NewBlobList(),
+		s:  s,
+		bl: NewBlobList(),
 	}
 
 	return ch, nil
@@ -95,7 +93,7 @@ func (ch *ContentHandler) Save(t backend.Type, data []byte) (Blob, error) {
 	}
 
 	// encrypt blob
-	n, err := ch.key.Encrypt(ciphertext, data)
+	n, err := ch.s.Encrypt(ciphertext, data)
 	if err != nil {
 		return Blob{}, err
 	}
@@ -139,7 +137,7 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 		}
 
 		// decrypt
-		buf, err = ch.key.Decrypt(buf)
+		buf, err = ch.s.Decrypt(buf)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +163,7 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	}
 
 	// decrypt
-	buf, err = ch.key.Decrypt(buf)
+	buf, err = ch.s.Decrypt(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +205,7 @@ func (ch *ContentHandler) LoadJSONRaw(t backend.Type, id backend.ID, item interf
 	}
 
 	// decrypt
-	buf, err = ch.key.Decrypt(buf)
+	buf, err = ch.s.Decrypt(buf)
 	if err != nil {
 		return err
 	}

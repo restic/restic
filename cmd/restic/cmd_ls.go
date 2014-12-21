@@ -63,22 +63,22 @@ func (cmd CmdLs) Usage() string {
 	return "ls snapshot-ID [DIR]"
 }
 
-func (cmd CmdLs) Execute(be restic.Server, key *restic.Key, args []string) error {
+func (cmd CmdLs) Execute(s restic.Server, key *restic.Key, args []string) error {
 	if len(args) < 1 || len(args) > 2 {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
 
-	id, err := backend.FindSnapshot(be, args[0])
+	id, err := backend.FindSnapshot(s, args[0])
 	if err != nil {
 		return err
 	}
 
-	ch, err := restic.NewContentHandler(be, key)
+	ch, err := restic.NewContentHandler(s)
 	if err != nil {
 		return err
 	}

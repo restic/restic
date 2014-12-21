@@ -92,12 +92,12 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, usage: %s", cmd.Usage())
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
 
-	ch, err := restic.NewContentHandler(be, key)
+	ch, err := restic.NewContentHandler(s)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
 
 	list := []*restic.Snapshot{}
-	backend.EachID(be, backend.Snapshot, func(id backend.ID) {
+	s.EachID(backend.Snapshot, func(id backend.ID) {
 		sn, err := restic.LoadSnapshot(ch, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
@@ -127,7 +127,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		}
 	})
 
-	plen, err := backend.PrefixLength(be, backend.Snapshot)
+	plen, err := s.PrefixLength(backend.Snapshot)
 	if err != nil {
 		return err
 	}

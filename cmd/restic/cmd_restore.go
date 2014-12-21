@@ -29,12 +29,12 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	be, key, err := OpenRepo()
+	s, err := OpenRepo()
 	if err != nil {
 		return err
 	}
 
-	id, err := backend.FindSnapshot(be, args[0])
+	id, err := backend.FindSnapshot(s, args[0])
 	if err != nil {
 		errx(1, "invalid id %q: %v", args[0], err)
 	}
@@ -42,7 +42,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 	target := args[1]
 
 	// create restorer
-	res, err := restic.NewRestorer(be, key, id)
+	res, err := restic.NewRestorer(s, id)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "creating restorer failed: %v\n", err)
 		os.Exit(2)
