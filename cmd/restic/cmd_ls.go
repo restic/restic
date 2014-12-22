@@ -60,7 +60,7 @@ func print_tree(prefix string, ch *restic.ContentHandler, id backend.ID) error {
 }
 
 func (cmd CmdLs) Usage() string {
-	return "ls snapshot-ID [DIR]"
+	return "snapshot-ID [DIR]"
 }
 
 func (cmd CmdLs) Execute(s restic.Server, key *restic.Key, args []string) error {

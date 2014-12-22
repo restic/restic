@@ -49,7 +49,7 @@ func list_keys(s restic.Server) error {
 			k.Username, k.Hostname, k.Created.Format(TimeFormat)})
 	})
 
-	tab.Print(os.Stdout)
+	tab.Write(os.Stdout)
 
 	return nil
 }
