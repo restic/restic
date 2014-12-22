@@ -32,7 +32,7 @@ func NewTable() Table {
 	}
 }
 
-func (t Table) Print(w io.Writer) error {
+func (t Table) Write(w io.Writer) error {
 	_, err := fmt.Fprintln(w, t.Header)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		tab.Rows = append(tab.Rows, []interface{}{sn.ID()[:plen], sn.Time.Format(TimeFormat), sn.Hostname, sn.Dir})
 	}
 
-	tab.Print(os.Stdout)
+	tab.Write(os.Stdout)
 
 	return nil
 }
