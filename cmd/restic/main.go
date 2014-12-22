@@ -130,6 +130,10 @@ func create(u string) (backend.Backend, error) {
 }
 
 func OpenRepo() (restic.Server, error) {
+	if opts.Repo == "" {
+		return restic.Server{}, errors.New("Please specify repository location (-r)")
+	}
+
 	be, err := open(opts.Repo)
 	if err != nil {
 		return restic.Server{}, err

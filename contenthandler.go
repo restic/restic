@@ -181,6 +181,17 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	return buf, nil
 }
 
+// Lookup returns the storage ID for the given blob
+func (ch *ContentHandler) Lookup(id backend.ID) (backend.ID, error) {
+	// lookup storage hash
+	blob, err := ch.bl.Find(Blob{ID: id})
+	if err != nil {
+		return nil, err
+	}
+
+	return blob.Storage, nil
+}
+
 // LoadJSON calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
 func (ch *ContentHandler) LoadJSON(t backend.Type, id backend.ID, item interface{}) error {
@@ -213,4 +224,22 @@ func (ch *ContentHandler) LoadJSONRaw(t backend.Type, id backend.ID, item interf
 	// inflate and unmarshal
 	err = json.Unmarshal(backend.Uncompress(buf), item)
 	return err
+}
+
+// Test checks if a blob is in the repository. For Data and Tree blobs, the
+// storage ID is looked up.
+func (ch *ContentHandler) Test(t backend.Type, id backend.ID) (bool, error) {
+	if t == backend.Data || t == backend.Tree {
+		// lookup storage id
+
+		// lookup storage hash
+		blob, err := ch.bl.Find(Blob{ID: id})
+		if err != nil {
+			return false, fmt.Errorf("Storage ID %s not found", id)
+		}
+
+		id = blob.Storage
+	}
+
+	return ch.s.Test(t, id)
 }
