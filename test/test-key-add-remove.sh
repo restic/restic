@@ -35,7 +35,7 @@ for i in {1..3}; do
     OLD_PWD=bar$i
 done
 
-RESTIC_PASSWORD=$OLD_PWD run restic fsck all
+RESTIC_PASSWORD=$OLD_PWD run restic fsck -o --check-data
 
 cleanup
 

@@ -11,5 +11,5 @@ run restic backup "${BASE}/fake-data" $SNAPSHOT
 run restic restore "$(basename "$RESTIC_REPOSITORY"/snapshots/*)" "${BASE}/fake-data-restore-incremental"
 dirdiff "${BASE}/fake-data" "${BASE}/fake-data-restore-incremental/fake-data"
 
-run restic fsck all
+run restic fsck -o --check-data
 cleanup
