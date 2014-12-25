@@ -161,6 +161,7 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	node.UID = stat.Uid
 	node.GID = stat.Gid
 
+	// TODO: cache uid lookup
 	if u, nil := user.LookupId(strconv.Itoa(int(stat.Uid))); err == nil {
 		node.User = u.Username
 	}
