@@ -365,7 +365,7 @@ func (k *Key) Decrypt(ciphertext []byte) ([]byte, error) {
 	return k.decrypt(k.master, ciphertext)
 }
 
-// DecryptUser verifes and decrypts the ciphertext with the master key. Ciphertext
+// DecryptUser verifes and decrypts the ciphertext with the user key. Ciphertext
 // must be in the form IV || Ciphertext || HMAC.
 func (k *Key) DecryptUser(ciphertext []byte) ([]byte, error) {
 	return k.decrypt(k.user, ciphertext)
