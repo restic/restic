@@ -16,7 +16,7 @@ type Restorer struct {
 	sn *Snapshot
 
 	Error  func(dir string, node *Node, err error) error
-	Filter func(item string, node *Node) bool
+	Filter func(item string, dstpath string, node *Node) bool
 }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot snid.
@@ -37,12 +37,12 @@ func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
 	// abort on all errors
 	r.Error = func(string, *Node, error) error { return err }
 	// allow all files
-	r.Filter = func(string, *Node) bool { return true }
+	r.Filter = func(string, string, *Node) bool { return true }
 
 	return r, nil
 }
 
-func (res *Restorer) to(dir string, tree_id backend.ID) error {
+func (res *Restorer) to(dst string, dir string, tree_id backend.ID) error {
 	tree := Tree{}
 	err := res.ch.LoadJSON(backend.Tree, tree_id, &tree)
 	if err != nil {
@@ -50,12 +50,12 @@ func (res *Restorer) to(dir string, tree_id backend.ID) error {
 	}
 
 	for _, node := range tree {
-		p := filepath.Join(dir, node.Name)
+		dstpath := filepath.Join(dst, dir, node.Name)
 
-		if res.Filter(p, node) {
-			err := node.CreateAt(res.ch, p)
+		if res.Filter(filepath.Join(res.sn.Dir, dir, node.Name), dstpath, node) {
+			err := node.CreateAt(res.ch, dstpath)
 			if err != nil {
-				err = res.Error(p, node, arrar.Annotate(err, "create node"))
+				err = res.Error(dstpath, node, arrar.Annotate(err, "create node"))
 				if err != nil {
 					return err
 				}
@@ -67,9 +67,10 @@ func (res *Restorer) to(dir string, tree_id backend.ID) error {
 				return errors.New(fmt.Sprintf("Dir without subtree in tree %s", tree_id))
 			}
 
-			err = res.to(p, node.Subtree)
+			subp := filepath.Join(dir, node.Name)
+			err = res.to(dst, subp, node.Subtree)
 			if err != nil {
-				err = res.Error(p, node, arrar.Annotate(err, "restore subtree"))
+				err = res.Error(subp, node, arrar.Annotate(err, "restore subtree"))
 				if err != nil {
 					return err
 				}
@@ -88,7 +89,7 @@ func (res *Restorer) RestoreTo(dir string) error {
 		return err
 	}
 
-	return res.to(dir, res.sn.Tree)
+	return res.to(dir, "", res.sn.Tree)
 }
 
 func (res *Restorer) Snapshot() *Snapshot {
