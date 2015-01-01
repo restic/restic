@@ -36,8 +36,6 @@ func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
 
 	// abort on all errors
 	r.Error = func(string, *Node, error) error { return err }
-	// allow all files
-	r.Filter = func(string, string, *Node) bool { return true }
 
 	return r, nil
 }
@@ -52,7 +50,8 @@ func (res *Restorer) to(dst string, dir string, tree_id backend.ID) error {
 	for _, node := range tree {
 		dstpath := filepath.Join(dst, dir, node.Name)
 
-		if res.Filter(filepath.Join(res.sn.Dir, dir, node.Name), dstpath, node) {
+		if res.Filter == nil ||
+			res.Filter(filepath.Join(res.sn.Dir, dir, node.Name), dstpath, node) {
 			err := node.CreateAt(res.ch, dstpath)
 			if err != nil {
 				err = res.Error(dstpath, node, arrar.Annotate(err, "create node"))
