@@ -51,15 +51,14 @@ func (res *Restorer) to(dir string, tree_id backend.ID) error {
 
 	for _, node := range tree {
 		p := filepath.Join(dir, node.Name)
-		if !res.Filter(p, node) {
-			continue
-		}
 
-		err := node.CreateAt(res.ch, p)
-		if err != nil {
-			err = res.Error(p, node, arrar.Annotate(err, "create node"))
+		if res.Filter(p, node) {
+			err := node.CreateAt(res.ch, p)
 			if err != nil {
-				return err
+				err = res.Error(p, node, arrar.Annotate(err, "create node"))
+				if err != nil {
+					return err
+				}
 			}
 		}
 
