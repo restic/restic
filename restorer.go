@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/juju/arrar"
 	"github.com/restic/restic/backend"
@@ -53,6 +54,22 @@ func (res *Restorer) to(dst string, dir string, tree_id backend.ID) error {
 		if res.Filter == nil ||
 			res.Filter(filepath.Join(res.sn.Dir, dir, node.Name), dstpath, node) {
 			err := node.CreateAt(res.ch, dstpath)
+
+			// Did it fail because of ENOENT?
+			if arrar.Check(err, func(err error) bool {
+				if pe, ok := err.(*os.PathError); ok {
+					errn, ok := pe.Err.(syscall.Errno)
+					return ok && errn == syscall.ENOENT
+				}
+				return false
+			}) {
+				// Create parent directories and retry
+				err = os.MkdirAll(filepath.Dir(dstpath), 0700)
+				if err == nil || err == os.ErrExist {
+					err = node.CreateAt(res.ch, dstpath)
+				}
+			}
+
 			if err != nil {
 				err = res.Error(dstpath, node, arrar.Annotate(err, "create node"))
 				if err != nil {
@@ -83,11 +100,6 @@ func (res *Restorer) to(dst string, dir string, tree_id backend.ID) error {
 // RestoreTo creates the directories and files in the snapshot below dir.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(dir string) error {
-	err := os.MkdirAll(dir, 0700)
-	if err != nil && err != os.ErrExist {
-		return err
-	}
-
 	return res.to(dir, "", res.sn.Tree)
 }
 
