@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
@@ -21,11 +22,11 @@ func init() {
 }
 
 func (cmd CmdRestore) Usage() string {
-	return "snapshot-ID TARGETDIR"
+	return "snapshot-ID TARGETDIR [PATTERN]"
 }
 
 func (cmd CmdRestore) Execute(args []string) error {
-	if len(args) != 2 {
+	if len(args) < 2 || len(args) > 3 {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
@@ -62,6 +63,18 @@ func (cmd CmdRestore) Execute(args []string) error {
 		// 	}
 		// }
 		return err
+	}
+
+    // TODO: a filter against the full path sucks as filepath.Match doesn't match
+    // directory separators on '*'. still, it's better than nothing.
+	if len(args) > 2 {
+		res.Filter = func(item string, dstpath string, node *restic.Node) bool {
+			matched, err := filepath.Match(item, args[2])
+			if err != nil {
+				panic(err)
+			}
+			return matched
+		}
 	}
 
 	fmt.Printf("restoring %s to %s\n", res.Snapshot(), target)
