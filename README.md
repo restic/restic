@@ -54,10 +54,14 @@ Contribute
 
 Contributions are welcome! Please make sure that all code submitted in
 pull-requests is properly formatted with `gofmt`. Installing the script
-`check-fmt` from https://github.com/edsrzf/gofmt-git-hook locally helps not to
-forget formatting:
+`fmt-check` from https://github.com/edsrzf/gofmt-git-hook locally as a
+pre-commit hook helps not to forget formatting:
 
-    cp gofmt-git-hook/check-fmt restic/.git/hooks/pre-commit
+    cp gofmt-git-hook/fmt-check restic/.git/hooks/pre-commit
+
+If you are unsure what to do, please have a look at the github issues,
+especially those tagged
+[https://github.com/restic/restic/labels/minor%20complexity](minor complexity).
 
 License
 =======
