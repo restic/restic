@@ -44,11 +44,20 @@ Building
 
 Install Go (at least 1.2), then run:
 
-```
-export GOPATH=~/src/go
-go get github.com/restic/restic/cmd/restic
-$GOPATH/bin/restic --help
-```
+    export GOPATH=~/src/go
+    go get github.com/restic/restic/cmd/restic
+    $GOPATH/bin/restic --help
+
+
+Contribute
+==========
+
+Contributions are welcome! Please make sure that all code submitted in
+pull-requests is properly formatted with `gofmt`. Installing the script
+`check-fmt` from https://github.com/edsrzf/gofmt-git-hook locally helps not to
+forget formatting:
+
+    cp gofmt-git-hook/check-fmt restic/.git/hooks/pre-commit
 
 License
 =======
