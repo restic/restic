@@ -40,12 +40,12 @@ func readPassword(env string, prompt string) string {
 		}
 	}
 
-	fmt.Print(prompt)
+	fmt.Fprint(os.Stderr, prompt)
 	pw, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		errx(2, "unable to read password: %v", err)
 	}
-	fmt.Println()
+	fmt.Fprintln(os.Stderr)
 
 	return string(pw)
 }
