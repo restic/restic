@@ -3,24 +3,35 @@ This document gives a high-level overview of the design and repository layout of
 Repository Format
 =================
 
-All data is stored in a restic repository. A repository consists of several directories and a file called `version`.
-This file contains the version number of the repository.
-At the moment, the file `version` is expected to hold the string `1`, with an optional newline character.
+All data is stored in a restic repository. A repository is able to store chunks
+of data called blobs of several different types, which can later be requested
+based on an ID. The ID is the hash (SHA-256) of the content of a blob.
 
-Repositories can be accessed locally on the same system or via the integrated SFTP client.
-The directory layout is the same for both access methods.
+At the time of writing, the only implemented repository type is based on
+directories and files. Such repositories can be accessed locally on the same
+system or via the integrated SFTP client. The directory layout is the same for
+both access methods. This repository type is described in the following.
 
-For all other files stored in the repository, the name for a file is the lower case hexadecimal representation of the SHA-256 hash of the file's contents.
-This allows easily checking all files for accidental modifications like disk read errors by simply running the program `sha256sum` and comparing its output to the file name.
-If the prefix of a filename is unique amongst all the other files in the same directory, the prefix may be used instead of the complete filename.
+Repositories consists of several directories and a file called `version`. This
+file contains the version number of the repository. At the moment, this file
+is expected to hold the string `1`, with an optional newline character.
 
-Apart from the `version` file and the files stored below the `keys` directory, all files are encrypted with AES-256 in counter mode (CTR).
-The integrity of the encrypted data is secured by an HMAC-SHA-256 signature.
+For all other blobs stored in the repository, the name for the file is the
+lower case hexadecimal representation of the SHA-256 hash of the file's
+contents. This allows easily checking all files for accidental modifications
+like disk read errors by simply running the program `sha256sum` and comparing
+its output to the file name. If the prefix of a filename is unique amongst all
+the other files in the same directory, the prefix may be used instead of the
+complete filename.
 
-In the first 16 bytes of each encrypted file the initialisation vector (IV) is stored.
-It is followed by the encrypted data and completed by the 32 byte HMAC signature.
-The format is: `IV || CIPHERTEXT || HMAC`.
-The complete encryption overhead is 48 byte. For each file, a new random IV is selected.
+Apart from the `version` file and the files stored below the `keys` directory,
+all files are encrypted with AES-256 in counter mode (CTR). The integrity of
+the encrypted data is secured by an HMAC-SHA-256 signature.
+
+In the first 16 bytes of each encrypted file the initialisation vector (IV) is
+stored. It is followed by the encrypted data and completed by the 32 byte HMAC
+signature. The format is: `IV || CIPHERTEXT || HMAC`. The complete encryption
+overhead is 48 byte. For each file, a new random IV is selected.
 
 The basic layout of a sample restic repository is shown below:
 
@@ -57,9 +68,11 @@ A repository can be initialized with the `restic init` command, e.g.:
 Keys and Encryption
 -------------------
 
-The directory `keys` contains key files.
-These are simple JSON documents which contain all data that is needed to derive the repository's master signing and encryption keys from a user's password.
-The JSON document from the repository can be pretty-printed for example by using the Python module `json` (shortened to increase readability):
+The directory `keys` contains key files. These are simple JSON documents which
+contain all data that is needed to derive the repository's master signing and
+encryption keys from a user's password. The JSON document from the repository
+can be pretty-printed for example by using the Python module `json` (shortened
+to increase readability):
 
     $ python -mjson.tool /tmp/restic-repo/keys/b02de82*
     {
@@ -74,14 +87,19 @@ The JSON document from the repository can be pretty-printed for example by using
         "salt": "uW4fEI1+IOzj7ED9mVor+yTSJFd68DGlGOeLgJELYsTU5ikhG/83/+jGd4KKAaQdSrsfzrdOhAMftTSih5Ux6w==",
     }
 
-When the repository is opened by restic, the user is prompted for the repository password.
-This is then used with `scrypt`, a key derivation function (KDF), and the supplied parameters (`N`, `r`, `p` and `salt`) to derive 64 key bytes.
-The first 32 bytes are used as the encryption key (for AES-256) and the last 32 bytes are used as the signing key (for HMAC-SHA-256).
+When the repository is opened by restic, the user is prompted for the
+repository password. This is then used with `scrypt`, a key derivation function
+(KDF), and the supplied parameters (`N`, `r`, `p` and `salt`) to derive 64 key
+bytes. The first 32 bytes are used as the encryption key (for AES-256) and the
+last 32 bytes are used as the signing key (for HMAC-SHA-256).
 
-This signing key is used to compute an HMAC over the bytes contained in the JSON field `data` (after removing the Base64 encoding and not including the last 32 byte).
-If the password is incorrect or the key file has been tampered with, the computed HMAC will not match the last 32 bytes of the data, and restic exits with an error.
-Otherwise, the data is decrypted with the encryption key derived from `scrypt`.
-This yields a JSON document which contains the master signing and encryption keys for this repository.
+This signing key is used to compute an HMAC over the bytes contained in the
+JSON field `data` (after removing the Base64 encoding and not including the
+last 32 byte). If the password is incorrect or the key file has been tampered
+with, the computed HMAC will not match the last 32 bytes of the data, and
+restic exits with an error. Otherwise, the data is decrypted with the
+encryption key derived from `scrypt`. This yields a JSON document which
+contains the master signing and encryption keys for this repository.
 
 A repository can have several different passwords, with a key file for each.
 This way, the password can be changed without having to re-encrypt all data.
@@ -89,13 +107,15 @@ This way, the password can be changed without having to re-encrypt all data.
 Snapshots
 ---------
 
-A snapshots represents a directory with all files and sub-directories at a given point in time.
-For each backup that is made, a new snapshot is created.
-A snapshot is a zlib-compressed JSON document that is stored in an encrypted file below the directory `snapshots` in the repository.
-The filename is the SHA-256 hash of the (encrypted) contents.
-This string is unique and used within restic to uniquely identify a snapshot.
+A snapshots represents a directory with all files and sub-directories at a
+given point in time. For each backup that is made, a new snapshot is created. A
+snapshot is a zlib-compressed JSON document that is stored in an encrypted file
+below the directory `snapshots` in the repository. The filename is the SHA-256
+hash of the (encrypted) contents. This string is unique and used within restic
+to uniquely identify a snapshot.
 
-The command `restic cat snapshot` can be used as follows to decrypt and pretty-print the contents of a snapshot file:
+The command `restic cat snapshot` can be used as follows to decrypt and
+pretty-print the contents of a snapshot file:
 
     $ restic -r /tmp/restic-repo cat snapshot 22a5af1b
     Enter Password for Repository:
@@ -110,22 +130,27 @@ The command `restic cat snapshot` can be used as follows to decrypt and pretty-p
       "gid": 100
     }
 
-Here it can be seen that this snapshot represents the contents of the directory `/tmp/testdata`.
+Here it can be seen that this snapshot represents the contents of the directory
+`/tmp/testdata`.
 
 The two most important fields are `map` and `tree`.
 
 Maps
 ----
 
-All content within a restic repository is referenced according to its SHA-256 hash.
-Before saving, each file is split into variable sized chunks of data.
-The SHA-256 hashes of all chunks are saved in an ordered list which then represents the content of the file.
-In order to relate these plain text hashes to the actual encrypted storage hashes (which vary due to random IVs), each snapshot references a map.
+All content within a restic repository is referenced according to its SHA-256
+hash. Before saving, each file is split into variable sized chunks of data. The
+SHA-256 hashes of all chunks are saved in an ordered list which then represents
+the content of the file. In order to relate these plain text hashes to the
+actual encrypted storage hashes (which vary due to random IVs), each snapshot
+references a map.
 
-A map is an encrypted and compressed JSON document which contains a large list of plain text hashes and associated storage hashes.
-This list is sorted by the plain text hash in order to speed up lookups.
+A map is an encrypted and compressed JSON document which contains a large list
+of plain text hashes and associated storage hashes. This list is sorted by the
+plain text hash in order to speed up lookups.
 
-Maps are referenced by their storage ID, which is the SHA-256 hash of the encrypted file stored in the `maps` directory.
+Maps are referenced by their storage ID, which is the SHA-256 hash of the
+encrypted file stored in the `maps` directory.
 
 The command `restic cat map` can be used to inspect the content of a map:
 
@@ -150,9 +175,10 @@ The command `restic cat map` can be used to inspect the content of a map:
 Trees and Data
 --------------
 
-The second thing a snapshot references is a tree.
-Trees are referenced by the SHA-256 hash of the JSON string representation of its contents and are saved in a subdirectory of the directory `trees`.
-The sub directory's name is the first two characters of the filename the tree object is stored in.
+The second thing a snapshot references is a tree. Trees are referenced by the
+SHA-256 hash of the JSON string representation of its contents and are saved in
+a subdirectory of the directory `trees`. The sub directory's name is the first
+two characters of the filename the tree object is stored in.
 
 The command `restic cat tree` can be used to inspect the tree referenced above:
 
@@ -176,13 +202,15 @@ The command `restic cat tree` can be used to inspect the tree referenced above:
     ]
 
 A tree is a list of entries which contain meta data like a name and timestamps.
-When the entry references a directory, the field `subtree` contains the plain text ID of another tree object.
-The associated storage ID can be found in the map object.
+When the entry references a directory, the field `subtree` contains the plain
+text ID of another tree object. The associated storage ID can be found in the
+map object.
 
-This can also be inspected by using `restic cat tree`, which automatically searches all available maps for the storage ID:
+This can also be inspected by using `restic cat tree`, which automatically
+searches all available maps for the storage ID:
 
     $ restic -r /tmp/restic-repo cat tree a8838fdbf2902095fb1b9de8b0e30d2e4e2a91bbc82fb15f98f6f1535b9ccbe6
-    Enter Password for Repository: 
+    Enter Password for Repository:
     [
       {
         "name": "testfile",
@@ -204,25 +232,37 @@ This can also be inspected by using `restic cat tree`, which automatically searc
       [...]
     ]
 
-This tree contains a file entry.
-In contrast to the entry above, the `subtree` field is not present and the `content` field contains a list with one plain text SHA-256 hash.
-The storage ID for this ID can in turn be looked up in the map.
-Data chunks stored as encrypted files in a sub directory of the directory `data`, similar to tree objects.
+This tree contains a file entry. In contrast to the entry above, the `subtree`
+field is not present and the `content` field contains a list with one plain
+text SHA-256 hash. The storage ID for this ID can in turn be looked up in the
+map. Data chunks stored as encrypted files in a sub directory of the directory
+`data`, similar to tree objects.
 
-The command `restic cat data` can be used to lookup, extract and decrypt data, e.g. for the data mentioned above:
+The command `restic cat data` can be used to lookup, extract and decrypt data,
+e.g. for the data mentioned above:
 
     $ restic -r /tmp/restic-repo cat blob 50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d | sha256sum
-    Enter Password for Repository: 
+    Enter Password for Repository:
     50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
 
-As can be seen from the output of the program `sha256sum`, the hash is the same, so the correct data has been returned.
+As can be seen from the output of the program `sha256sum`, the hash is the
+same, so the correct data has been returned.
 
 Backups and Deduplication
 =========================
 
-For creating a backup, restic scans the target directory for all files, sub-directories and other entries.
-The data from each file is split into variable length chunks cut at offsets defined by a sliding window of 64 byte.
-The implementation uses Rabin Fingerprints for implementing this Content Defined Chunking (CDC).
+For creating a backup, restic scans the target directory for all files,
+sub-directories and other entries. The data from each file is split into
+variable length chunks cut at offsets defined by a sliding window of 64 byte.
+The implementation uses Rabin Fingerprints for implementing this Content
+Defined Chunking (CDC).
+
+Files smaller than 512 KiB are not split, chunks are of 512 KiB to 8 MiB in
+size. The implementation aims for 1 MiB chunk size on average.
+
+For modified files, only modified chunks have to be saved in a subsequent
+backup. This even works if bytes are inserted or removed at arbitrary positions
+within the file.
 
 Files smaller than 512KiB are not split, chunks are of 512KiB to 8MiB in size.
 The implementation aims for 1MiB chunk size on average.
