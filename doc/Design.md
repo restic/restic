@@ -288,10 +288,10 @@ General assumptions:
 
 The restic backup program guarantees the following:
 
- * Accessing content of backup-up files and meta data should not be possible
-   without a password for the repository. Everything except the `version` file
-   and the meta data included for informational purposes in the key files is
-   encrypted and then signed.
+ * Accessing the unencrypted content of stored files and meta data should not
+   be possible without a password for the repository. Everything except the
+   `version` file and the meta data included for informational purposes in the
+   key files is encrypted and then signed.
 
  * Modifications (intentional or unintentional) can be detected automatically
    on several layers:
