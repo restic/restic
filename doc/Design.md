@@ -5,7 +5,10 @@ Repository Format
 
 All data is stored in a restic repository. A repository is able to store chunks
 of data called blobs of several different types, which can later be requested
-based on an ID. The ID is the hash (SHA-256) of the content of a blob.
+based on an ID. The ID is the hash (SHA-256) of the content of a blob. All
+blobs in a repository are only written once and never modified afterwards. This
+allows accessing and even writing to the repository with multiple clients in
+parallel. Only the delete operation changes data in the repository.
 
 At the time of writing, the only implemented repository type is based on
 directories and files. Such repositories can be accessed locally on the same
