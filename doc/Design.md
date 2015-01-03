@@ -269,3 +269,46 @@ The implementation aims for 1MiB chunk size on average.
 
 For modified files, only modified chunks have to be saved in a subsequent backup.
 This even works if bytes are inserted or removed at arbitrary positions within the file.
+
+Threat Model
+============
+
+The design goals for restic include being able to securely store backups in a
+location that is not completely trusted, e.g. a shared system where others can
+potentially access the files or (in the case of the system administrator) even
+modify or delete them.
+
+General assumptions:
+
+ * The host system a backup is created on is trusted. This is the most basic
+   requirement, and essential for creating trustworthy backups.
+
+The restic backup program guarantees the following:
+
+ * Accessing content of backup-up files and meta data should not be possible
+   without a password for the repository. Everything except the `version` file
+   and the meta data included for informational purposes in the key files is
+   encrypted and then signed.
+
+ * Modifications (intentional or unintentional) can be detected automatically
+   on several layers:
+
+     1. For all accesses of data stored in the repository it is checked whether
+        the cryptographic hash of the contents matches the storage ID (the
+        file's name). This way, modifications (bad RAM, broken harddisk) can be
+        detected easily.
+
+     2. Before decrypting any data, the HMAC signature on the encrypted data is
+        checked. If there has been a modification, the signature check will
+        fail. This step happens even before the data is decrypted, so data that
+        has been tampered with is not decrypted at all.
+
+However, the restic backup program is not designed to protect against attackers
+deleting files at the storage location. There is nothing that can be done about
+this. If this needs to be guaranteed, get a secure location without any access
+from third parties. If you assume that attackers have write access to your
+files at the storage location, attackers are able to figure out (e.g. based on
+the timestamps of the stored files) which files belong to what snapshot. When
+only these files are deleted, the particular snapshot vanished and all
+snapshots depending on data that has been added in the snapshot cannot be
+restored completely. Restic is not designed to detect this attack.
