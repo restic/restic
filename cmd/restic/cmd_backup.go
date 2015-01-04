@@ -40,7 +40,7 @@ func format_bytes(c uint64) string {
 	}
 }
 
-func format_duration(sec uint64) string {
+func format_seconds(sec uint64) string {
 	hours := sec / 3600
 	sec -= hours * 3600
 	min := sec / 60
@@ -50,6 +50,11 @@ func format_duration(sec uint64) string {
 	}
 
 	return fmt.Sprintf("%d:%02d", min, sec)
+}
+
+func format_duration(d time.Duration) string {
+	sec := uint64(d / time.Second)
+	return format_seconds(sec)
 }
 
 func print_tree2(indent int, t *restic.Tree) {
@@ -89,27 +94,16 @@ func (cmd CmdBackup) Execute(args []string) error {
 		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
 	}
 
-	arch, err := restic.NewArchiver(s)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "err: %v\n", err)
-	}
-	arch.Error = func(dir string, fi os.FileInfo, err error) error {
-		// TODO: make ignoring errors configurable
-		fmt.Fprintf(os.Stderr, "\nerror for %s: %v\n%v\n", dir, err, fi)
-		return nil
-	}
-
 	fmt.Printf("scanning %s\n", target)
 
+	scanProgress := restic.NewProgress(time.Second)
 	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		ch := make(chan restic.Stats, 20)
-		arch.ScannerStats = ch
-
-		go func(ch <-chan restic.Stats) {
-			for stats := range ch {
-				fmt.Printf("\r%6d directories, %6d files, %14s", stats.Directories, stats.Files, format_bytes(stats.Bytes))
-			}
-		}(ch)
+		scanProgress.F = func(s restic.Stat, d time.Duration, ticker bool) {
+			fmt.Printf("\x1b[2K\r[%s] %d directories, %d files, %s", format_duration(d), s.Dirs, s.Files, format_bytes(s.Bytes))
+		}
+		scanProgress.D = func(s restic.Stat, d time.Duration, ticker bool) {
+			fmt.Printf("\nDone in %s\n", format_duration(d))
+		}
 	}
 
 	// TODO: add filter
@@ -117,59 +111,51 @@ func (cmd CmdBackup) Execute(args []string) error {
 	// 	return true
 	// }
 
-	t, err := arch.Scan(target)
+	sc := restic.NewScanner(scanProgress)
+
+	t, err := sc.Scan(target)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
 	}
 
-	fmt.Printf("\r%6d directories, %6d files, %14s\n", arch.Stats.Directories, arch.Stats.Files, format_bytes(arch.Stats.Bytes))
+	archiveProgress := restic.NewProgress(time.Second)
+	targetStat := scanProgress.Current()
 
-	stats := restic.Stats{}
-	start := time.Now()
 	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		ch := make(chan restic.Stats, 20)
-		arch.SaveStats = ch
-
-		ticker := time.NewTicker(time.Second)
-		var eta, bps uint64
-
-		go func(ch <-chan restic.Stats) {
-
-			status := func(sec uint64) {
-				fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  ETA %s",
-					format_duration(sec),
-					float64(stats.Bytes)/float64(arch.Stats.Bytes)*100,
-					format_bytes(bps),
-					format_bytes(stats.Bytes), format_bytes(arch.Stats.Bytes),
-					format_duration(eta))
+		var bps, eta uint64
+		archiveProgress.F = func(s restic.Stat, d time.Duration, ticker bool) {
+			sec := uint64(d / time.Second)
+			if sec > 0 && ticker {
+				bps = s.Bytes / sec
+				eta = (targetStat.Bytes - s.Bytes) / bps
 			}
 
-			defer ticker.Stop()
-			for {
-				select {
-				case s, ok := <-ch:
-					if !ok {
-						return
-					}
-					stats.Files += s.Files
-					stats.Directories += s.Directories
-					stats.Other += s.Other
-					stats.Bytes += s.Bytes
+			fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  ETA %s",
+				format_duration(d),
+				float64(s.Bytes)/float64(targetStat.Bytes)*100,
+				format_bytes(bps),
+				format_bytes(s.Bytes), format_bytes(targetStat.Bytes),
+				format_seconds(eta))
+		}
 
-					status(uint64(time.Since(start) / time.Second))
-				case <-ticker.C:
-					sec := uint64(time.Since(start) / time.Second)
-					bps = stats.Bytes / sec
+		archiveProgress.D = func(s restic.Stat, d time.Duration, ticker bool) {
+			sec := uint64(d / time.Second)
+			fmt.Printf("\nduration: %s, %.2fMiB/s\n",
+				format_duration(d),
+				float64(targetStat.Bytes)/float64(sec)/(1<<20))
+		}
+	}
 
-					if bps > 0 {
-						eta = (arch.Stats.Bytes - stats.Bytes) / bps
-					}
+	arch, err := restic.NewArchiver(s, archiveProgress)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "err: %v\n", err)
+	}
 
-					status(sec)
-				}
-			}
-		}(ch)
+	arch.Error = func(dir string, fi os.FileInfo, err error) error {
+		// TODO: make ignoring errors configurable
+		fmt.Fprintf(os.Stderr, "\nerror for %s: %v\n%v\n", dir, err, fi)
+		return nil
 	}
 
 	_, id, err := arch.Snapshot(target, t, parentSnapshotID)
@@ -177,23 +163,12 @@ func (cmd CmdBackup) Execute(args []string) error {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}
 
-	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		// close channels so that the goroutines terminate
-		close(arch.SaveStats)
-		close(arch.ScannerStats)
-	}
-
 	plen, err := s.PrefixLength(backend.Snapshot)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("\nsnapshot %s saved\n", id[:plen])
-
-	sec := uint64(time.Since(start) / time.Second)
-	fmt.Printf("duration: %s, %.2fMiB/s\n",
-		format_duration(sec),
-		float64(arch.Stats.Bytes)/float64(sec)/(1<<20))
+	fmt.Printf("snapshot %s saved\n", id[:plen])
 
 	return nil
 }

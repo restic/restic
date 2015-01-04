@@ -40,6 +40,7 @@ type Node struct {
 	Tree *Tree `json:"-"`
 
 	path string
+	err  error
 }
 
 var (
