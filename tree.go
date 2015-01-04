@@ -151,6 +151,24 @@ func (t Tree) Find(name string) (*Node, error) {
 	return node, err
 }
 
+func (t Tree) Stat() Stat {
+	s := Stat{}
+	for _, n := range t {
+		switch n.Type {
+		case "file":
+			s.Files++
+			s.Bytes += n.Size
+		case "dir":
+			s.Dirs++
+			s.Add(n.Tree.Stat())
+		default:
+			s.Other++
+		}
+	}
+
+	return s
+}
+
 func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	stat, ok := fi.Sys().(*syscall.Stat_t)
 	if !ok {

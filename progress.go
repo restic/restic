@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -162,4 +163,25 @@ func (s *Stat) Add(other Stat) {
 	s.Dirs += other.Dirs
 	s.Files += other.Files
 	s.Other += other.Other
+}
+
+func (s Stat) String() string {
+	b := float64(s.Bytes)
+	var str string
+
+	switch {
+	case s.Bytes > 1<<40:
+		str = fmt.Sprintf("%.3f TiB", b/(1<<40))
+	case s.Bytes > 1<<30:
+		str = fmt.Sprintf("%.3f GiB", b/(1<<30))
+	case s.Bytes > 1<<20:
+		str = fmt.Sprintf("%.3f MiB", b/(1<<20))
+	case s.Bytes > 1<<10:
+		str = fmt.Sprintf("%.3f KiB", b/(1<<10))
+	default:
+		str = fmt.Sprintf("%dB", s.Bytes)
+	}
+
+	return fmt.Sprintf("Stat(%d files, %d dirs, %d other, %v)",
+		s.Files, s.Dirs, s.Other, str)
 }
