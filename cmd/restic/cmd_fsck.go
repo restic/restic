@@ -99,7 +99,7 @@ func fsckTree(opts CmdFsck, ch *restic.ContentHandler, id backend.ID) error {
 
 		switch node.Type {
 		case "file":
-			if node.Content == nil {
+			if node.Content == nil && node.Error == "" {
 				return fmt.Errorf("file node %q of tree %v has no content", node.Name, id)
 			}
 
@@ -125,10 +125,7 @@ func fsckTree(opts CmdFsck, ch *restic.ContentHandler, id backend.ID) error {
 func fsck_snapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
 	debug("checking snapshot %v\n", id)
 
-	ch, err := restic.NewContentHandler(s)
-	if err != nil {
-		return err
-	}
+	ch := restic.NewContentHandler(s)
 
 	sn, err := ch.LoadSnapshot(id)
 	if err != nil {

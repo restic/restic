@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -37,9 +39,12 @@ type Node struct {
 	Content    []backend.ID `json:"content"`
 	Subtree    backend.ID   `json:"subtree,omitempty"`
 
-	Tree *Tree `json:"-"`
+	Error string `json:"error,omitempty"`
+
+	tree *Tree
 
 	path string
+	err  error
 }
 
 var (
@@ -91,11 +96,34 @@ func LoadTree(ch *ContentHandler, id backend.ID) (Tree, error) {
 	return tree, nil
 }
 
-// PopulateFrom copies subtrees and content from other when it hasn't changed.
-func (t Tree) PopulateFrom(other Tree) error {
+// LoadTreeRecursive loads the tree and all subtrees via ch.
+func LoadTreeRecursive(path string, ch *ContentHandler, id backend.ID) (Tree, error) {
+	// TODO: load subtrees in parallel
+	tree, err := LoadTree(ch, id)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, n := range tree {
+		n.path = filepath.Join(path, n.Name)
+		if n.Type == "dir" && n.Subtree != nil {
+			t, err := LoadTreeRecursive(n.path, ch, n.Subtree)
+			if err != nil {
+				return nil, err
+			}
+
+			n.tree = &t
+		}
+	}
+
+	return tree, nil
+}
+
+// CopyFrom recursively copies all content from other to t.
+func (t Tree) CopyFrom(other Tree) {
 	for _, node := range t {
-		// only copy entries for files
-		if node.Type != "file" {
+		// only process files and dirs
+		if node.Type != "file" && node.Type != "dir" {
 			continue
 		}
 
@@ -107,14 +135,32 @@ func (t Tree) PopulateFrom(other Tree) error {
 			continue
 		}
 
-		// compare content
-		if node.SameContent(oldNode) {
-			// copy Content
-			node.Content = oldNode.Content
+		if node.Type == "file" {
+			// compare content
+			if node.SameContent(oldNode) {
+				// copy Content
+				node.Content = oldNode.Content
+			}
+		} else {
+			// fill in all subtrees from old subtree
+			node.tree.CopyFrom(*oldNode.tree)
+
+			// check if tree has changed
+			if node.tree.Equals(*oldNode.tree) {
+				// if nothing has changed, copy subtree ID
+				node.Subtree = oldNode.Subtree
+			}
 		}
 	}
+}
 
-	return nil
+// Equals returns true if t and other have exactly the same nodes.
+func (t Tree) Equals(other Tree) bool {
+	if len(t) != len(other) {
+		return false
+	}
+
+	return reflect.DeepEqual(t, other)
 }
 
 func (t *Tree) Insert(node *Node) error {
@@ -148,6 +194,50 @@ func (t Tree) find(name string) (int, *Node, error) {
 func (t Tree) Find(name string) (*Node, error) {
 	_, node, err := t.find(name)
 	return node, err
+}
+
+func (t Tree) Stat() Stat {
+	s := Stat{}
+	for _, n := range t {
+		switch n.Type {
+		case "file":
+			s.Files++
+			s.Bytes += n.Size
+		case "dir":
+			s.Dirs++
+			if n.tree != nil {
+				s.Add(n.tree.Stat())
+			}
+		}
+	}
+
+	return s
+}
+
+func (t Tree) StatTodo() Stat {
+	s := Stat{}
+	for _, n := range t {
+		switch n.Type {
+		case "file":
+			if n.Content == nil {
+				s.Files++
+				s.Bytes += n.Size
+			}
+		case "dir":
+			if n.Subtree == nil {
+				s.Dirs++
+				if n.tree != nil {
+					s.Add(n.tree.StatTodo())
+				}
+			}
+		}
+	}
+
+	return s
+}
+
+func (node Node) Tree() *Tree {
+	return node.tree
 }
 
 func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {

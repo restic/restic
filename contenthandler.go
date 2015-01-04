@@ -17,13 +17,13 @@ type ContentHandler struct {
 }
 
 // NewContentHandler creates a new content handler.
-func NewContentHandler(s Server) (*ContentHandler, error) {
+func NewContentHandler(s Server) *ContentHandler {
 	ch := &ContentHandler{
 		s:  s,
 		bl: NewBlobList(),
 	}
 
-	return ch, nil
+	return ch
 }
 
 // LoadSnapshot adds all blobs from a snapshot into the content handler and returns the snapshot.
@@ -242,4 +242,9 @@ func (ch *ContentHandler) Test(t backend.Type, id backend.ID) (bool, error) {
 	}
 
 	return ch.s.Test(t, id)
+}
+
+// BlobList returns the current BlobList.
+func (ch *ContentHandler) BlobList() *BlobList {
+	return ch.bl
 }

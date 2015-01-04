@@ -78,7 +78,7 @@ func (cmd CmdLs) Execute(args []string) error {
 		return err
 	}
 
-	ch, err := restic.NewContentHandler(s)
+	ch := restic.NewContentHandler(s)
 	if err != nil {
 		return err
 	}
