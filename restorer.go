@@ -25,10 +25,7 @@ func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
 	r := &Restorer{s: s}
 
 	var err error
-	r.ch, err = NewContentHandler(s)
-	if err != nil {
-		return nil, arrar.Annotate(err, "create contenthandler for restorer")
-	}
+	r.ch = NewContentHandler(s)
 
 	r.sn, err = r.ch.LoadSnapshot(snid)
 	if err != nil {

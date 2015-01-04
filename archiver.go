@@ -55,10 +55,7 @@ func NewArchiver(s Server, p *Progress) (*Archiver, error) {
 	arch.Filter = func(string, os.FileInfo) bool { return true }
 
 	arch.bl = NewBlobList()
-	arch.ch, err = NewContentHandler(s)
-	if err != nil {
-		return nil, err
-	}
+	arch.ch = NewContentHandler(s)
 
 	// load all blobs from all snapshots
 	err = arch.ch.LoadAllMaps()

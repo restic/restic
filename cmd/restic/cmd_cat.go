@@ -53,10 +53,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		}
 	}
 
-	ch, err := restic.NewContentHandler(s)
-	if err != nil {
-		return err
-	}
+	ch := restic.NewContentHandler(s)
 
 	switch tpe {
 	case "blob":

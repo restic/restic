@@ -97,10 +97,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		return err
 	}
 
-	ch, err := restic.NewContentHandler(s)
-	if err != nil {
-		return err
-	}
+	ch := restic.NewContentHandler(s)
 
 	tab := NewTable()
 	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Source", "Directory")

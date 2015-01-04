@@ -125,10 +125,7 @@ func fsckTree(opts CmdFsck, ch *restic.ContentHandler, id backend.ID) error {
 func fsck_snapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
 	debug("checking snapshot %v\n", id)
 
-	ch, err := restic.NewContentHandler(s)
-	if err != nil {
-		return err
-	}
+	ch := restic.NewContentHandler(s)
 
 	sn, err := ch.LoadSnapshot(id)
 	if err != nil {
