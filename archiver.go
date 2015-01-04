@@ -98,7 +98,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	file, err := os.Open(node.path)
 	defer file.Close()
 	if err != nil {
-		return arrar.Annotatef(err, "SaveFile(%v)", node.path)
+		return err
 	}
 
 	// check file again
@@ -245,11 +245,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 					arch.fileToken <- token
 				}()
 
-				// TODO: handle error
-				err := arch.SaveFile(n)
-				if err != nil {
-					panic(err)
-				}
+				node.err = arch.SaveFile(n)
 				arch.p.Report(Stat{Files: 1})
 			}(node)
 		}
@@ -259,8 +255,18 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 
 	// check for invalid file nodes
 	for _, node := range *t {
-		if node.Type == "file" && node.Content == nil {
+		if node.Type == "file" && node.Content == nil && node.err == nil {
 			return Blob{}, fmt.Errorf("node %v has empty content", node.Name)
+		}
+
+		if node.err != nil {
+			err := arch.Error(node.path, nil, node.err)
+			if err != nil {
+				return Blob{}, err
+			}
+
+			// save error message in node
+			node.Error = node.err.Error()
 		}
 	}
 

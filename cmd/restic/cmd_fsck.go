@@ -99,7 +99,7 @@ func fsckTree(opts CmdFsck, ch *restic.ContentHandler, id backend.ID) error {
 
 		switch node.Type {
 		case "file":
-			if node.Content == nil {
+			if node.Content == nil && node.Error == "" {
 				return fmt.Errorf("file node %q of tree %v has no content", node.Name, id)
 			}
 

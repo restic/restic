@@ -39,6 +39,8 @@ type Node struct {
 	Content    []backend.ID `json:"content"`
 	Subtree    backend.ID   `json:"subtree,omitempty"`
 
+	Error string `json:"error,omitempty"`
+
 	tree *Tree
 
 	path string
@@ -96,6 +98,7 @@ func LoadTree(ch *ContentHandler, id backend.ID) (Tree, error) {
 
 // LoadTreeRecursive loads the tree and all subtrees via ch.
 func LoadTreeRecursive(path string, ch *ContentHandler, id backend.ID) (Tree, error) {
+	// TODO: load subtrees in parallel
 	tree, err := LoadTree(ch, id)
 	if err != nil {
 		return nil, err
