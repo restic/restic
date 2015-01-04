@@ -117,7 +117,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 	// 	return true
 	// }
 
-	t, err := arch.LoadTree(target, parentSnapshotID)
+	t, err := arch.Scan(target)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err

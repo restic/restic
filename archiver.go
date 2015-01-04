@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -25,8 +24,7 @@ type Archiver struct {
 	s  Server
 	ch *ContentHandler
 
-	bl       *BlobList // blobs used for the current snapshot
-	parentBl *BlobList // blobs from the parent snapshot
+	bl *BlobList // blobs used for the current snapshot
 
 	fileToken chan struct{}
 	blobToken chan struct{}
@@ -255,45 +253,8 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	return nil
 }
 
-func (arch *Archiver) populateFromOldTree(tree, oldTree Tree) error {
-	// update content from old tree
-	err := tree.PopulateFrom(oldTree)
-	if err != nil {
-		return err
-	}
-
-	// add blobs to bloblist
-	for _, node := range tree {
-		if node.Content != nil {
-			for _, blobID := range node.Content {
-				blob, err := arch.parentBl.Find(Blob{ID: blobID})
-				if err != nil {
-					return err
-				}
-
-				arch.bl.Insert(blob)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (arch *Archiver) loadTree(dir string, oldTreeID backend.ID) (*Tree, error) {
-	var (
-		oldTree Tree
-		err     error
-	)
-
-	if oldTreeID != nil {
-		// load old tree
-		oldTree, err = LoadTree(arch.ch, oldTreeID)
-		if err != nil {
-			return nil, arrar.Annotate(err, "load old tree")
-		}
-
-		debug("old tree: %v\n", oldTree)
-	}
+func (arch *Archiver) scan(dir string) (*Tree, error) {
+	var err error
 
 	// open and list path
 	fd, err := os.Open(dir)
@@ -328,27 +289,11 @@ func (arch *Archiver) loadTree(dir string, oldTreeID backend.ID) (*Tree, error) 
 		}
 
 		if entry.IsDir() {
-			oldSubtree, err := oldTree.Find(node.Name)
-			if err != nil && err != ErrNodeNotFound {
-				return nil, err
-			}
-
-			var oldSubtreeID backend.ID
-			if err == nil {
-				oldSubtreeID = oldSubtree.Subtree
-			}
-
-			node.Tree, err = arch.loadTree(path, oldSubtreeID)
+			node.Tree, err = arch.scan(path)
 			if err != nil {
 				return nil, err
 			}
 		}
-	}
-
-	// populate with content from oldTree
-	err = arch.populateFromOldTree(tree, oldTree)
-	if err != nil {
-		return nil, err
 	}
 
 	for _, node := range tree {
@@ -372,34 +317,7 @@ func (arch *Archiver) loadTree(dir string, oldTreeID backend.ID) (*Tree, error) 
 	return &tree, nil
 }
 
-func (arch *Archiver) LoadTree(path string, parentSnapshot backend.ID) (*Tree, error) {
-	var oldTree Tree
-
-	if parentSnapshot != nil {
-		// load old tree from snapshot
-		snapshot, err := LoadSnapshot(arch.ch, parentSnapshot)
-		if err != nil {
-			return nil, arrar.Annotate(err, "load old snapshot")
-		}
-
-		if snapshot.Tree == nil {
-			return nil, errors.New("snapshot without tree!")
-		}
-
-		// load old bloblist from snapshot
-		arch.parentBl, err = LoadBlobList(arch.ch, snapshot.Map)
-		if err != nil {
-			return nil, err
-		}
-
-		oldTree, err = LoadTree(arch.ch, snapshot.Tree)
-		if err != nil {
-			return nil, arrar.Annotate(err, "load old tree")
-		}
-
-		debug("old tree: %v\n", oldTree)
-	}
-
+func (arch *Archiver) Scan(path string) (*Tree, error) {
 	// reset global stats
 	arch.updateStats = Stats{}
 
@@ -416,13 +334,7 @@ func (arch *Archiver) LoadTree(path string, parentSnapshot backend.ID) (*Tree, e
 	if node.Type != "dir" {
 		t := &Tree{node}
 
-		// populate with content from oldTree
-		err = arch.populateFromOldTree(*t, oldTree)
-		if err != nil {
-			return nil, err
-		}
-
-		// if no old node has been found, update stats
+		// update stats
 		if node.Content == nil && node.Subtree == nil {
 			arch.Stats.Files = 1
 			arch.Stats.Bytes = node.Size
@@ -435,17 +347,7 @@ func (arch *Archiver) LoadTree(path string, parentSnapshot backend.ID) (*Tree, e
 
 	arch.Stats.Directories = 1
 
-	var oldSubtreeID backend.ID
-	oldSubtree, err := oldTree.Find(node.Name)
-	if err != nil && err != ErrNodeNotFound {
-		return nil, arrar.Annotate(err, "search node in old tree")
-	}
-
-	if err == nil {
-		oldSubtreeID = oldSubtree.Subtree
-	}
-
-	node.Tree, err = arch.loadTree(path, oldSubtreeID)
+	node.Tree, err = arch.scan(path)
 	if err != nil {
 		return nil, arrar.Annotate(err, "loadTree()")
 	}
