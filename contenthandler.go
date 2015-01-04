@@ -243,3 +243,8 @@ func (ch *ContentHandler) Test(t backend.Type, id backend.ID) (bool, error) {
 
 	return ch.s.Test(t, id)
 }
+
+// BlobList returns the current BlobList.
+func (ch *ContentHandler) BlobList() *BlobList {
+	return ch.bl
+}

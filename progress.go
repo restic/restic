@@ -25,7 +25,6 @@ type Progress struct {
 type Stat struct {
 	Files uint64
 	Dirs  uint64
-	Other uint64
 	Bytes uint64
 }
 
@@ -162,7 +161,6 @@ func (s *Stat) Add(other Stat) {
 	s.Bytes += other.Bytes
 	s.Dirs += other.Dirs
 	s.Files += other.Files
-	s.Other += other.Other
 }
 
 func (s Stat) String() string {
@@ -182,6 +180,6 @@ func (s Stat) String() string {
 		str = fmt.Sprintf("%dB", s.Bytes)
 	}
 
-	return fmt.Sprintf("Stat(%d files, %d dirs, %d other, %v)",
-		s.Files, s.Dirs, s.Other, str)
+	return fmt.Sprintf("Stat(%d files, %d dirs, %v)",
+		s.Files, s.Dirs, str)
 }

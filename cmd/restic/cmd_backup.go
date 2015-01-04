@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -59,9 +60,9 @@ func format_duration(d time.Duration) string {
 
 func print_tree2(indent int, t *restic.Tree) {
 	for _, node := range *t {
-		if node.Tree != nil {
+		if node.Tree() != nil {
 			fmt.Printf("%s%s/\n", strings.Repeat("  ", indent), node.Name)
-			print_tree2(indent+1, node.Tree)
+			print_tree2(indent+1, node.Tree())
 		} else {
 			fmt.Printf("%s%s\n", strings.Repeat("  ", indent), node.Name)
 		}
@@ -94,7 +95,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
 	}
 
-	fmt.Printf("scanning %s\n", target)
+	fmt.Printf("scan %s\n", target)
 
 	scanProgress := restic.NewProgress(time.Second)
 	if terminal.IsTerminal(int(os.Stdout.Fd())) {
@@ -113,29 +114,51 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	sc := restic.NewScanner(scanProgress)
 
-	t, err := sc.Scan(target)
+	newTree, err := sc.Scan(target)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
 	}
 
+	if parentSnapshotID != nil {
+		fmt.Printf("load old snapshot\n")
+		ch := restic.NewContentHandler(s)
+		sn, err := ch.LoadSnapshot(parentSnapshotID)
+		if err != nil {
+			return err
+		}
+
+		oldTree, err := restic.LoadTreeRecursive(filepath.Dir(sn.Dir), ch, sn.Tree)
+		if err != nil {
+			return err
+		}
+
+		newTree.CopyFrom(oldTree)
+	}
+
 	archiveProgress := restic.NewProgress(time.Second)
-	targetStat := scanProgress.Current()
+	targetStat := newTree.StatTodo()
 
 	if terminal.IsTerminal(int(os.Stdout.Fd())) {
 		var bps, eta uint64
+		itemsTodo := targetStat.Files + targetStat.Dirs
+
 		archiveProgress.F = func(s restic.Stat, d time.Duration, ticker bool) {
 			sec := uint64(d / time.Second)
-			if sec > 0 && ticker {
+			if targetStat.Bytes > 0 && sec > 0 && ticker {
 				bps = s.Bytes / sec
-				eta = (targetStat.Bytes - s.Bytes) / bps
+				if bps > 0 {
+					eta = (targetStat.Bytes - s.Bytes) / bps
+				}
 			}
 
-			fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  ETA %s",
+			itemsDone := s.Files + s.Dirs
+			fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ETA %s",
 				format_duration(d),
 				float64(s.Bytes)/float64(targetStat.Bytes)*100,
 				format_bytes(bps),
 				format_bytes(s.Bytes), format_bytes(targetStat.Bytes),
+				itemsDone, itemsTodo,
 				format_seconds(eta))
 		}
 
@@ -154,11 +177,11 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
 		// TODO: make ignoring errors configurable
-		fmt.Fprintf(os.Stderr, "\nerror for %s: %v\n%v\n", dir, err, fi)
+		fmt.Fprintf(os.Stderr, "\nerror for %s: %v\n", dir, err)
 		return nil
 	}
 
-	_, id, err := arch.Snapshot(target, t, parentSnapshotID)
+	_, id, err := arch.Snapshot(target, newTree, parentSnapshotID)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}

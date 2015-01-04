@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -58,6 +59,7 @@ func NewArchiver(s Server, p *Progress) (*Archiver, error) {
 	arch.ch = NewContentHandler(s)
 
 	// load all blobs from all snapshots
+	// TODO: only use bloblist from old snapshot if available
 	err = arch.ch.LoadAllMaps()
 	if err != nil {
 		return nil, err
@@ -96,7 +98,28 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	file, err := os.Open(node.path)
 	defer file.Close()
 	if err != nil {
-		return arrar.Annotate(err, "SaveFile()")
+		return arrar.Annotatef(err, "SaveFile(%v)", node.path)
+	}
+
+	// check file again
+	fi, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	if fi.ModTime() != node.ModTime {
+		e2 := arch.Error(node.path, fi, errors.New("file changed as we read it\n"))
+
+		if e2 == nil {
+			// create new node
+			n, err := NodeFromFileInfo(node.path, fi)
+			if err != nil {
+				return err
+			}
+
+			// copy node
+			*node = *n
+		}
 	}
 
 	var blobs Blobs
@@ -203,8 +226,8 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 	var wg sync.WaitGroup
 
 	for _, node := range *t {
-		if node.Tree != nil && node.Subtree == nil {
-			b, err := arch.saveTree(node.Tree)
+		if node.tree != nil && node.Subtree == nil {
+			b, err := arch.saveTree(node.tree)
 			if err != nil {
 				return Blob{}, err
 			}
@@ -229,8 +252,6 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 				}
 				arch.p.Report(Stat{Files: 1})
 			}(node)
-		} else {
-			arch.p.Report(Stat{Other: 1})
 		}
 	}
 

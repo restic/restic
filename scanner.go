@@ -66,7 +66,7 @@ func scan(filterFn FilterFunc, progress *Progress, dir string) (*Tree, error) {
 
 		if entry.IsDir() {
 			// save all errors in node.err, sort out later
-			node.Tree, node.err = scan(filterFn, progress, path)
+			node.tree, node.err = scan(filterFn, progress, path)
 		}
 	}
 
@@ -80,8 +80,6 @@ func scan(filterFn FilterFunc, progress *Progress, dir string) (*Tree, error) {
 			progress.Report(Stat{Files: 1, Bytes: node.Size})
 		case "dir":
 			progress.Report(Stat{Dirs: 1})
-		default:
-			progress.Report(Stat{Other: 1})
 		}
 	}
 
@@ -112,7 +110,7 @@ func (sc *Scanner) Scan(path string) (*Tree, error) {
 
 	sc.p.Report(Stat{Dirs: 1})
 
-	node.Tree, err = scan(sc.Filter, sc.p, path)
+	node.tree, err = scan(sc.Filter, sc.p, path)
 	if err != nil {
 		return nil, arrar.Annotate(err, "loadTree()")
 	}
