@@ -148,7 +148,7 @@ func (ch *ContentHandler) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	// lookup storage hash
 	blob, err := ch.bl.Find(Blob{ID: id})
 	if err != nil {
-		return nil, fmt.Errorf("Storage ID %s not found", id)
+		return nil, fmt.Errorf("Storage ID for ID %s not found", id)
 	}
 
 	// load data
@@ -235,7 +235,7 @@ func (ch *ContentHandler) Test(t backend.Type, id backend.ID) (bool, error) {
 		// lookup storage hash
 		blob, err := ch.bl.Find(Blob{ID: id})
 		if err != nil {
-			return false, fmt.Errorf("Storage ID %s not found", id)
+			return false, fmt.Errorf("Storage ID for ID %s not found", id)
 		}
 
 		id = blob.Storage
