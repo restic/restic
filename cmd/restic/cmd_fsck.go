@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
@@ -12,7 +13,7 @@ type CmdFsck struct {
 	CheckData      bool   `          long:"check-data"      description:"Read data blobs" default:"false"`
 	Snapshot       string `short:"s" long:"snapshot"        description:"Only check this snapshot"`
 	Orphaned       bool   `short:"o" long:"orphaned"        description:"Check for orphaned blobs"`
-	RemoveOrphaned bool   `short:"x" long:"remove-orphaned" description:"Remove orphaned blobs (implies -o)"`
+	RemoveOrphaned bool   `short:"r" long:"remove-orphaned" description:"Remove orphaned blobs (implies -o)"`
 
 	// lists checking for orphaned blobs
 	o_data  *restic.BlobList
@@ -88,6 +89,8 @@ func fsckTree(opts CmdFsck, ch *restic.ContentHandler, id backend.ID) error {
 		opts.o_trees.Insert(restic.Blob{ID: sid})
 	}
 
+	var firstErr error
+
 	for i, node := range tree {
 		if node.Name == "" {
 			return fmt.Errorf("node %v of tree %v has no name", i, id)
@@ -114,12 +117,13 @@ func fsckTree(opts CmdFsck, ch *restic.ContentHandler, id backend.ID) error {
 
 			err := fsckTree(opts, ch, node.Subtree)
 			if err != nil {
-				return err
+				firstErr = err
+				fmt.Fprintf(os.Stderr, "%v\n", err)
 			}
 		}
 	}
 
-	return nil
+	return firstErr
 }
 
 func fsck_snapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
@@ -172,7 +176,12 @@ func (cmd CmdFsck) Execute(args []string) error {
 			return fmt.Errorf("invalid id %q: %v", cmd.Snapshot, err)
 		}
 
-		return fsck_snapshot(cmd, s, snapshotID)
+		err = fsck_snapshot(cmd, s, snapshotID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", snapshotID)
+		}
+
+		return err
 	}
 
 	if cmd.Orphaned {
@@ -187,16 +196,17 @@ func (cmd CmdFsck) Execute(args []string) error {
 		return err
 	}
 
+	var firstErr error
 	for _, snapshotID := range list {
 		err := fsck_snapshot(cmd, s, snapshotID)
-
 		if err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", snapshotID)
+			firstErr = err
 		}
 	}
 
 	if !cmd.Orphaned {
-		return nil
+		return firstErr
 	}
 
 	debug("starting orphaned check\n")
@@ -236,5 +246,5 @@ func (cmd CmdFsck) Execute(args []string) error {
 		}
 	}
 
-	return nil
+	return firstErr
 }
