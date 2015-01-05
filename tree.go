@@ -120,7 +120,7 @@ func LoadTreeRecursive(path string, ch *ContentHandler, id backend.ID) (Tree, er
 }
 
 // CopyFrom recursively copies all content from other to t.
-func (t Tree) CopyFrom(other Tree) {
+func (t Tree) CopyFrom(bl *BlobList, other Tree, otherBl *BlobList) error {
 	for _, node := range t {
 		// only process files and dirs
 		if node.Type != "file" && node.Type != "dir" {
@@ -140,18 +140,41 @@ func (t Tree) CopyFrom(other Tree) {
 			if node.SameContent(oldNode) {
 				// copy Content
 				node.Content = oldNode.Content
+
+				// copy storage IDs
+				for _, id := range node.Content {
+					blob, err := otherBl.Find(Blob{ID: id})
+					if err != nil {
+						return err
+					}
+
+					bl.Insert(blob)
+				}
 			}
 		} else {
 			// fill in all subtrees from old subtree
-			node.tree.CopyFrom(*oldNode.tree)
+			err := node.tree.CopyFrom(bl, *oldNode.tree, otherBl)
+			if err != nil {
+				return err
+			}
 
 			// check if tree has changed
 			if node.tree.Equals(*oldNode.tree) {
 				// if nothing has changed, copy subtree ID
 				node.Subtree = oldNode.Subtree
+
+				// and store blob in bloblist
+				blob, err := otherBl.Find(Blob{ID: oldNode.Subtree})
+				if err != nil {
+					return err
+				}
+
+				bl.Insert(blob)
 			}
 		}
 	}
+
+	return nil
 }
 
 // Equals returns true if t and other have exactly the same nodes.

@@ -120,6 +120,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
+	var bl *restic.BlobList
 	if parentSnapshotID != nil {
 		fmt.Printf("load old snapshot\n")
 		ch := restic.NewContentHandler(s)
@@ -133,7 +134,11 @@ func (cmd CmdBackup) Execute(args []string) error {
 			return err
 		}
 
-		newTree.CopyFrom(oldTree)
+		bl = restic.NewBlobList()
+		err = newTree.CopyFrom(bl, oldTree, ch.BlobList())
+		if err != nil {
+			return err
+		}
 	}
 
 	archiveProgress := restic.NewProgress(time.Second)
@@ -170,7 +175,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		}
 	}
 
-	arch, err := restic.NewArchiver(s, archiveProgress)
+	arch, err := restic.NewArchiver(s, bl, archiveProgress)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "err: %v\n", err)
 	}

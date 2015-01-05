@@ -32,7 +32,7 @@ type Archiver struct {
 	p *Progress
 }
 
-func NewArchiver(s Server, p *Progress) (*Archiver, error) {
+func NewArchiver(s Server, bl *BlobList, p *Progress) (*Archiver, error) {
 	var err error
 	arch := &Archiver{
 		s:         s,
@@ -56,6 +56,9 @@ func NewArchiver(s Server, p *Progress) (*Archiver, error) {
 	arch.Filter = func(string, os.FileInfo) bool { return true }
 
 	arch.bl = NewBlobList()
+	if bl != nil {
+		arch.bl.Merge(bl)
+	}
 	arch.ch = NewContentHandler(s)
 
 	// load all blobs from all snapshots
