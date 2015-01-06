@@ -130,12 +130,12 @@ func (t Tree) CopyFrom(bl *BlobList, other Tree, otherBl *BlobList) error {
 		// find entry in other tree
 		oldNode, err := other.Find(node.Name)
 
-		// if the node could not be found, proceed to the next
-		if err == ErrNodeNotFound {
+		// if the node could not be found or the type has changed, proceed to the next
+		if err == ErrNodeNotFound || node.Type != oldNode.Type {
 			continue
 		}
 
-		if node.Type == "file" && oldNode.Type == "file" {
+		if node.Type == "file" {
 			// compare content
 			if node.SameContent(oldNode) {
 				// copy Content
@@ -151,7 +151,7 @@ func (t Tree) CopyFrom(bl *BlobList, other Tree, otherBl *BlobList) error {
 					bl.Insert(blob)
 				}
 			}
-		} else if node.Type == "dir" && oldNode.Type == "dir" {
+		} else if node.Type == "dir" {
 			// fill in all subtrees from old subtree
 			err := node.tree.CopyFrom(bl, *oldNode.tree, otherBl)
 			if err != nil {
