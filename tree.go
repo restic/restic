@@ -135,7 +135,7 @@ func (t Tree) CopyFrom(bl *BlobList, other Tree, otherBl *BlobList) error {
 			continue
 		}
 
-		if node.Type == "file" {
+		if node.Type == "file" && oldNode.Type == "file" {
 			// compare content
 			if node.SameContent(oldNode) {
 				// copy Content
@@ -151,7 +151,7 @@ func (t Tree) CopyFrom(bl *BlobList, other Tree, otherBl *BlobList) error {
 					bl.Insert(blob)
 				}
 			}
-		} else {
+		} else if node.Type == "dir" && oldNode.Type == "dir" {
 			// fill in all subtrees from old subtree
 			err := node.tree.CopyFrom(bl, *oldNode.tree, otherBl)
 			if err != nil {
