@@ -111,7 +111,7 @@ func (arch *Archiver) SaveFile(node *Node) error {
 	}
 
 	if fi.ModTime() != node.ModTime {
-		e2 := arch.Error(node.path, fi, errors.New("file changed as we read it\n"))
+		e2 := arch.Error(node.path, fi, errors.New("file was updated, using new version\n"))
 
 		if e2 == nil {
 			// create new node
