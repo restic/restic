@@ -63,16 +63,15 @@ func parseTime(str string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("unable to parse time: %q", str)
 }
 
-func (c CmdFind) findInTree(ch *restic.ContentHandler, id backend.ID, path string) ([]findResult, error) {
-	debug("checking tree %v\n", id)
-
-	tree, err := restic.LoadTree(ch, id)
+func (c CmdFind) findInTree(s restic.Server, blob restic.Blob, path string) ([]findResult, error) {
+	debug("checking tree %v\n", blob)
+	tree, err := restic.LoadTree(s, blob)
 	if err != nil {
 		return nil, err
 	}
 
 	results := []findResult{}
-	for _, node := range tree {
+	for _, node := range tree.Nodes {
 		debug("  testing entry %q\n", node.Name)
 
 		m, err := filepath.Match(c.pattern, node.Name)
@@ -98,7 +97,12 @@ func (c CmdFind) findInTree(ch *restic.ContentHandler, id backend.ID, path strin
 		}
 
 		if node.Type == "dir" {
-			subdirResults, err := c.findInTree(ch, node.Subtree, filepath.Join(path, node.Name))
+			b, err := tree.Map.FindID(node.Subtree)
+			if err != nil {
+				return nil, err
+			}
+
+			subdirResults, err := c.findInTree(s, b, filepath.Join(path, node.Name))
 			if err != nil {
 				return nil, err
 			}
@@ -113,13 +117,12 @@ func (c CmdFind) findInTree(ch *restic.ContentHandler, id backend.ID, path strin
 func (c CmdFind) findInSnapshot(s restic.Server, id backend.ID) error {
 	debug("searching in snapshot %s\n  for entries within [%s %s]", id, c.oldest, c.newest)
 
-	ch := restic.NewContentHandler(s)
-	sn, err := ch.LoadSnapshot(id)
+	sn, err := restic.LoadSnapshot(s, id)
 	if err != nil {
 		return err
 	}
 
-	results, err := c.findInTree(ch, sn.Tree, "")
+	results, err := c.findInTree(s, sn.Tree, "")
 	if err != nil {
 		return err
 	}

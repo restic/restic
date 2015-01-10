@@ -13,7 +13,6 @@ import (
 
 type Restorer struct {
 	s  Server
-	ch *ContentHandler
 	sn *Snapshot
 
 	Error  func(dir string, node *Node, err error) error
@@ -25,9 +24,8 @@ func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
 	r := &Restorer{s: s}
 
 	var err error
-	r.ch = NewContentHandler(s)
 
-	r.sn, err = r.ch.LoadSnapshot(snid)
+	r.sn, err = LoadSnapshot(s, snid)
 	if err != nil {
 		return nil, arrar.Annotate(err, "load snapshot for restorer")
 	}
@@ -38,19 +36,18 @@ func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
 	return r, nil
 }
 
-func (res *Restorer) to(dst string, dir string, tree_id backend.ID) error {
-	tree := Tree{}
-	err := res.ch.LoadJSON(backend.Tree, tree_id, &tree)
+func (res *Restorer) to(dst string, dir string, treeBlob Blob) error {
+	tree, err := LoadTree(res.s, treeBlob)
 	if err != nil {
-		return res.Error(dir, nil, arrar.Annotate(err, "LoadJSON"))
+		return res.Error(dir, nil, arrar.Annotate(err, "LoadTree"))
 	}
 
-	for _, node := range tree {
+	for _, node := range tree.Nodes {
 		dstpath := filepath.Join(dst, dir, node.Name)
 
 		if res.Filter == nil ||
 			res.Filter(filepath.Join(res.sn.Dir, dir, node.Name), dstpath, node) {
-			err := node.CreateAt(res.ch, dstpath)
+			err := tree.CreateNodeAt(node, res.s, dstpath)
 
 			// Did it fail because of ENOENT?
 			if arrar.Check(err, func(err error) bool {
@@ -63,7 +60,7 @@ func (res *Restorer) to(dst string, dir string, tree_id backend.ID) error {
 				// Create parent directories and retry
 				err = os.MkdirAll(filepath.Dir(dstpath), 0700)
 				if err == nil || err == os.ErrExist {
-					err = node.CreateAt(res.ch, dstpath)
+					err = tree.CreateNodeAt(node, res.s, dstpath)
 				}
 			}
 
@@ -77,11 +74,20 @@ func (res *Restorer) to(dst string, dir string, tree_id backend.ID) error {
 
 		if node.Type == "dir" {
 			if node.Subtree == nil {
-				return errors.New(fmt.Sprintf("Dir without subtree in tree %s", tree_id))
+				return errors.New(fmt.Sprintf("Dir without subtree in tree %s", treeBlob))
 			}
 
 			subp := filepath.Join(dir, node.Name)
-			err = res.to(dst, subp, node.Subtree)
+
+			subtreeBlob, err := tree.Map.FindID(node.Subtree)
+			if err != nil {
+				err = res.Error(subp, node, arrar.Annotate(err, "lookup subtree"))
+				if err != nil {
+					return err
+				}
+			}
+
+			err = res.to(dst, subp, subtreeBlob)
 			if err != nil {
 				err = res.Error(subp, node, arrar.Annotate(err, "restore subtree"))
 				if err != nil {

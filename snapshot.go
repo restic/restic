@@ -14,8 +14,7 @@ import (
 type Snapshot struct {
 	Time     time.Time  `json:"time"`
 	Parent   backend.ID `json:"parent,omitempty"`
-	Tree     backend.ID `json:"tree"`
-	Map      backend.ID `json:"map"`
+	Tree     Blob       `json:"tree"`
 	Dir      string     `json:"dir"`
 	Hostname string     `json:"hostname,omitempty"`
 	Username string     `json:"username,omitempty"`
@@ -23,7 +22,6 @@ type Snapshot struct {
 	GID      uint32     `json:"gid,omitempty"`
 
 	id backend.ID // plaintext ID, used during restore
-	bl *BlobList
 }
 
 func NewSnapshot(dir string) (*Snapshot, error) {
@@ -61,9 +59,9 @@ func NewSnapshot(dir string) (*Snapshot, error) {
 	return sn, nil
 }
 
-func LoadSnapshot(ch *ContentHandler, id backend.ID) (*Snapshot, error) {
+func LoadSnapshot(s Server, id backend.ID) (*Snapshot, error) {
 	sn := &Snapshot{id: id}
-	err := ch.LoadJSON(backend.Snapshot, id, sn)
+	err := s.LoadJSONID(backend.Snapshot, id, sn)
 	if err != nil {
 		return nil, err
 	}

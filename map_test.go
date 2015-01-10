@@ -14,7 +14,7 @@ import (
 	"github.com/restic/restic/backend"
 )
 
-var maxWorkers = flag.Uint("workers", 20, "number of workers to test BlobList concurrent access against")
+var maxWorkers = flag.Uint("workers", 20, "number of workers to test Map concurrent access against")
 
 func randomID() []byte {
 	buf := make([]byte, backend.IDSize)
@@ -26,12 +26,17 @@ func randomID() []byte {
 }
 
 func newBlob() restic.Blob {
-	return restic.Blob{ID: randomID(), Size: uint64(mrand.Uint32())}
+	return restic.Blob{
+		ID:          randomID(),
+		Size:        uint64(mrand.Uint32()),
+		Storage:     randomID(),
+		StorageSize: uint64(mrand.Uint32()),
+	}
 }
 
 // Test basic functionality
-func TestBlobList(t *testing.T) {
-	bl := restic.NewBlobList()
+func TestMap(t *testing.T) {
+	bl := restic.NewMap()
 
 	b := newBlob()
 	bl.Insert(b)
@@ -40,11 +45,15 @@ func TestBlobList(t *testing.T) {
 		bl.Insert(newBlob())
 	}
 
-	b2, err := bl.Find(restic.Blob{ID: b.ID})
+	b2, err := bl.Find(restic.Blob{ID: b.ID, Size: b.Size})
 	ok(t, err)
 	assert(t, b2.Compare(b) == 0, "items are not equal: want %v, got %v", b, b2)
 
-	bl2 := restic.NewBlobList()
+	b2, err = bl.FindID(b.ID)
+	ok(t, err)
+	assert(t, b2.Compare(b) == 0, "items are not equal: want %v, got %v", b, b2)
+
+	bl2 := restic.NewMap()
 	for i := 0; i < 1000; i++ {
 		bl.Insert(newBlob())
 	}
@@ -66,8 +75,8 @@ func TestBlobList(t *testing.T) {
 }
 
 // Test JSON encode/decode
-func TestBlobListJSON(t *testing.T) {
-	bl := restic.NewBlobList()
+func TestMapJSON(t *testing.T) {
+	bl := restic.NewMap()
 	b := restic.Blob{ID: randomID()}
 	bl.Insert(b)
 
@@ -78,7 +87,7 @@ func TestBlobListJSON(t *testing.T) {
 	buf, err := json.Marshal(bl)
 	ok(t, err)
 
-	bl2 := restic.BlobList{}
+	bl2 := restic.Map{}
 	json.Unmarshal(buf, &bl2)
 
 	b2, err = bl2.Find(b)
@@ -90,10 +99,10 @@ func TestBlobListJSON(t *testing.T) {
 }
 
 // random insert/find access by several goroutines
-func TestBlobListRandom(t *testing.T) {
+func TestMapRandom(t *testing.T) {
 	var wg sync.WaitGroup
 
-	worker := func(bl *restic.BlobList) {
+	worker := func(bl *restic.Map) {
 		defer wg.Done()
 
 		b := newBlob()
@@ -117,7 +126,7 @@ func TestBlobListRandom(t *testing.T) {
 			}
 		}
 
-		bl2 := restic.NewBlobList()
+		bl2 := restic.NewMap()
 		for i := 0; i < 200; i++ {
 			bl2.Insert(newBlob())
 		}
@@ -125,7 +134,7 @@ func TestBlobListRandom(t *testing.T) {
 		bl2.Merge(bl)
 	}
 
-	bl := restic.NewBlobList()
+	bl := restic.NewMap()
 
 	for i := 0; uint(i) < *maxWorkers; i++ {
 		wg.Add(1)

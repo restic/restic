@@ -17,7 +17,6 @@ const (
 	dataPath        = "data"
 	snapshotPath    = "snapshots"
 	treePath        = "trees"
-	mapPath         = "maps"
 	lockPath        = "locks"
 	keyPath         = "keys"
 	tempPath        = "tmp"
@@ -38,7 +37,6 @@ func OpenLocal(dir string) (*Local, error) {
 		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
-		filepath.Join(dir, mapPath),
 		filepath.Join(dir, lockPath),
 		filepath.Join(dir, keyPath),
 		filepath.Join(dir, tempPath),
@@ -90,7 +88,6 @@ func CreateLocal(dir string) (*Local, error) {
 		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
-		filepath.Join(dir, mapPath),
 		filepath.Join(dir, lockPath),
 		filepath.Join(dir, keyPath),
 		filepath.Join(dir, tempPath),
@@ -176,8 +173,6 @@ func (b *Local) dirname(t Type, id ID) string {
 		if id != nil {
 			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]))
 		}
-	case Map:
-		n = mapPath
 	case Lock:
 		n = lockPath
 	case Key:

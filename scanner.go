@@ -45,7 +45,7 @@ func scan(filterFn FilterFunc, progress *Progress, dir string) (*Tree, error) {
 	}
 
 	// build new tree
-	tree := Tree{}
+	tree := NewTree()
 	for _, entry := range entries {
 		path := filepath.Join(dir, entry.Name())
 
@@ -70,7 +70,7 @@ func scan(filterFn FilterFunc, progress *Progress, dir string) (*Tree, error) {
 		}
 	}
 
-	for _, node := range tree {
+	for _, node := range tree.Nodes {
 		if node.Type == "file" && node.Content != nil {
 			continue
 		}
@@ -83,7 +83,7 @@ func scan(filterFn FilterFunc, progress *Progress, dir string) (*Tree, error) {
 		}
 	}
 
-	return &tree, nil
+	return tree, nil
 }
 
 func (sc *Scanner) Scan(path string) (*Tree, error) {
@@ -100,12 +100,12 @@ func (sc *Scanner) Scan(path string) (*Tree, error) {
 		return nil, arrar.Annotate(err, "NodeFromFileInfo()")
 	}
 
+	tree := NewTree()
+	tree.Insert(node)
 	if node.Type != "dir" {
-		t := &Tree{node}
-
 		sc.p.Report(Stat{Files: 1, Bytes: node.Size})
 
-		return t, nil
+		return tree, nil
 	}
 
 	sc.p.Report(Stat{Dirs: 1})
@@ -115,5 +115,5 @@ func (sc *Scanner) Scan(path string) (*Tree, error) {
 		return nil, arrar.Annotate(err, "loadTree()")
 	}
 
-	return &Tree{node}, nil
+	return tree, nil
 }
