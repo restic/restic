@@ -127,7 +127,7 @@ func LoadTreeRecursive(path string, s Server, blob Blob) (*Tree, error) {
 
 // CopyFrom recursively copies all content from other to t.
 func (t Tree) CopyFrom(other *Tree, s *Server) error {
-	debug("CopyFrom(%v)\n", other)
+	debug("Tree.CopyFrom", "CopyFrom(%v)\n", other)
 	for _, node := range t.Nodes {
 		// only process files and dirs
 		if node.Type != "file" && node.Type != "dir" {
@@ -139,14 +139,14 @@ func (t Tree) CopyFrom(other *Tree, s *Server) error {
 
 		// if the node could not be found or the type has changed, proceed to the next
 		if err == ErrNodeNotFound || node.Type != oldNode.Type {
-			debug("  node %v is new\n", node)
+			debug("Tree.CopyFrom", "  node %v is new\n", node)
 			continue
 		}
 
 		if node.Type == "file" {
 			// compare content
 			if node.SameContent(oldNode) {
-				debug("  file node %v has same content\n", node)
+				debug("Tree.CopyFrom", "  file node %v has same content\n", node)
 
 				// check if all content is still available in the repository
 				for _, id := range oldNode.Content {
@@ -170,7 +170,7 @@ func (t Tree) CopyFrom(other *Tree, s *Server) error {
 						return err
 					}
 
-					debug("    insert blob %v\n", blob)
+					debug("Tree.CopyFrom", "    insert blob %v\n", blob)
 					t.Map.Insert(blob)
 				}
 			}
@@ -183,7 +183,7 @@ func (t Tree) CopyFrom(other *Tree, s *Server) error {
 
 			// check if tree has changed
 			if node.tree.Equals(*oldNode.tree) {
-				debug("  tree node %v has same content\n", node)
+				debug("Tree.CopyFrom", "  tree node %v has same content\n", node)
 
 				// if nothing has changed, copy subtree ID
 				node.Subtree = oldNode.Subtree
@@ -194,12 +194,12 @@ func (t Tree) CopyFrom(other *Tree, s *Server) error {
 					return err
 				}
 
-				debug("    insert blob %v\n", blob)
+				debug("Tree.CopyFrom", "    insert blob %v\n", blob)
 				t.Map.Insert(blob)
 			} else {
-				debug("  trees are not equal: %v\n", node)
-				debug("    %#v\n", node.tree)
-				debug("    %#v\n", oldNode.tree)
+				debug("Tree.CopyFrom", "  trees are not equal: %v\n", node)
+				debug("Tree.CopyFrom", "    %#v\n", node.tree)
+				debug("Tree.CopyFrom", "    %#v\n", oldNode.tree)
 			}
 		}
 	}
@@ -210,20 +210,20 @@ func (t Tree) CopyFrom(other *Tree, s *Server) error {
 // Equals returns true if t and other have exactly the same nodes and map.
 func (t Tree) Equals(other Tree) bool {
 	if len(t.Nodes) != len(other.Nodes) {
-		debug("tree.Equals(): trees have different number of nodes")
+		debug("Tree.Equals", "tree.Equals(): trees have different number of nodes")
 		return false
 	}
 
 	if !t.Map.Equals(other.Map) {
-		debug("tree.Equals(): maps aren't equal")
+		debug("Tree.Equals", "tree.Equals(): maps aren't equal")
 		return false
 	}
 
 	for i := 0; i < len(t.Nodes); i++ {
 		if !t.Nodes[i].Equals(*other.Nodes[i]) {
-			debug("tree.Equals(): node %d is different:", i)
-			debug("  %#v", t.Nodes[i])
-			debug("  %#v", other.Nodes[i])
+			debug("Tree.Equals", "tree.Equals(): node %d is different:", i)
+			debug("Tree.Equals", "  %#v", t.Nodes[i])
+			debug("Tree.Equals", "  %#v", other.Nodes[i])
 			return false
 		}
 	}

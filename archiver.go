@@ -64,12 +64,12 @@ func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
 	// compute plaintext hash
 	id := backend.Hash(data)
 
-	debug("Save(%v, %v)\n", t, id.Str())
+	debug("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
 	// test if this blob is already known
 	blob, err := arch.m.FindID(id)
 	if err == nil {
-		debug("Save(%v, %v): reusing %v\n", t, id.Str(), blob.Storage.Str())
+		debug("Archiver.Save", "Save(%v, %v): reusing %v\n", t, id.Str(), blob.Storage.Str())
 		id.Free()
 		return blob, nil
 	}
@@ -84,7 +84,7 @@ func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
 	// one and remove the other. This happens if the same plaintext blob was
 	// stored concurrently and finished earlier than this blob.
 	if blob.Storage.Compare(smapblob.Storage) != 0 {
-		debug("using other block, removing %v\n", blob.Storage.Str())
+		debug("Archiver.Save", "using other block, removing %v\n", blob.Storage.Str())
 
 		// remove the blob again
 		// TODO: implement a list of blobs in transport, so this doesn't happen so often
@@ -94,7 +94,7 @@ func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
 		}
 	}
 
-	debug(": Save(%v, %v): new blob %v\n", t, id.Str(), blob)
+	debug("Archiver.Save", "Save(%v, %v): new blob %v\n", t, id.Str(), blob)
 
 	return smapblob, nil
 }
@@ -262,7 +262,7 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 }
 
 func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
-	debug("saveTree(%v)\n", t)
+	debug("Archiver.saveTree", "saveTree(%v)\n", t)
 	var wg sync.WaitGroup
 
 	// add all blobs to global map
@@ -286,7 +286,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 				for _, id := range node.Content {
 					blob, err := t.Map.FindID(id)
 					if err != nil {
-						debug("unable to find storage id for data blob %v", id.Str())
+						debug("Archiver.saveTree", "unable to find storage id for data blob %v", id.Str())
 						arch.Error(node.path, nil, fmt.Errorf("unable to find storage id for data blob %v", id.Str()))
 						removeContent = true
 						t.Map.DeleteID(id)
@@ -295,7 +295,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 					}
 
 					if ok, err := arch.s.Test(backend.Data, blob.Storage); !ok || err != nil {
-						debug("blob %v not in repository (error is %v)", blob, err)
+						debug("Archiver.saveTree", "blob %v not in repository (error is %v)", blob, err)
 						arch.Error(node.path, nil, fmt.Errorf("blob %v not in repository (error is %v)", blob.Storage.Str(), err))
 						removeContent = true
 						t.Map.DeleteID(id)
@@ -304,7 +304,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 				}
 
 				if removeContent {
-					debug("removing content for %s", node.path)
+					debug("Archiver.saveTree", "removing content for %s", node.path)
 					node.Content = node.Content[:0]
 				}
 			}
@@ -370,7 +370,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 	after := len(t.Map.IDs())
 
 	if before != after {
-		debug("pruned %d ids from map for tree %v\n", before-after, t)
+		debug("Archiver.saveTree", "pruned %d ids from map for tree %v\n", before-after, t)
 	}
 
 	blob, err := arch.SaveTreeJSON(t)
@@ -382,6 +382,8 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 }
 
 func (arch *Archiver) Snapshot(dir string, t *Tree, parentSnapshot backend.ID) (*Snapshot, backend.ID, error) {
+	debug_break("Archiver.Snapshot")
+
 	arch.p.Start()
 	defer arch.p.Done()
 

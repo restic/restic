@@ -85,7 +85,7 @@ func (bl *Map) Insert(blob Blob) Blob {
 	bl.m.Lock()
 	defer bl.m.Unlock()
 
-	debug("  Map<%p> insert %v", bl, blob)
+	debug("Map.Insert", "  Map<%p> insert %v", bl, blob)
 
 	return bl.insert(blob)
 }
