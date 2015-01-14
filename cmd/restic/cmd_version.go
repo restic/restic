@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"runtime"
-
-	"github.com/restic/restic"
 )
 
 type CmdVersion struct{}
@@ -20,13 +18,7 @@ func init() {
 }
 
 func (cmd CmdVersion) Execute(args []string) error {
-	fmt.Printf("restic version %s, lib %v on %v\n", version, restic.Version, runtime.Version())
-	for _, s := range features {
-		fmt.Printf("  %s\n", s)
-	}
-	for _, s := range restic.Features {
-		fmt.Printf("  %s\n", s)
-	}
+	fmt.Printf("restic %s on %v\n", version, runtime.Version())
 
 	return nil
 }

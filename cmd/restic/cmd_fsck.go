@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
 
 type CmdFsck struct {
@@ -34,7 +35,7 @@ func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (u
 	var bytes uint64
 
 	for _, id := range IDs {
-		debug("checking data blob %v\n", id)
+		debug.Log("restic.fsck", "checking data blob %v\n", id)
 
 		// test if blob is in map
 		blob, err := m.FindID(id)
@@ -72,7 +73,7 @@ func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (u
 }
 
 func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
-	debug("checking tree %v\n", blob.ID)
+	debug.Log("restic.fsck", "checking tree %v\n", blob.ID)
 
 	tree, err := restic.LoadTree(s, blob)
 	if err != nil {
@@ -138,7 +139,7 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 }
 
 func fsck_snapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
-	debug("checking snapshot %v\n", id)
+	debug.Log("restic.fsck", "checking snapshot %v\n", id)
 
 	sn, err := restic.LoadSnapshot(s, id)
 	if err != nil {
@@ -151,7 +152,7 @@ func fsck_snapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
 
 	err = fsckTree(opts, s, sn.Tree)
 	if err != nil {
-		debug("  checking tree %v for snapshot %v\n", sn.Tree, id)
+		debug.Log("restic.fsck", "  checking tree %v for snapshot %v\n", sn.Tree, id)
 		fmt.Fprintf(os.Stderr, "snapshot %v:\n  error for tree %v:\n    %v\n", id, sn.Tree, err)
 	}
 
@@ -196,7 +197,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 	}
 
 	list, err := s.List(backend.Snapshot)
-	debug("checking %d snapshots\n", len(list))
+	debug.Log("restic.fsck", "checking %d snapshots\n", len(list))
 	if err != nil {
 		return err
 	}
@@ -214,7 +215,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 		return firstErr
 	}
 
-	debug("starting orphaned check\n")
+	debug.Log("restic.fsck", "starting orphaned check\n")
 
 	l := []struct {
 		desc string
@@ -226,7 +227,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 	}
 
 	for _, d := range l {
-		debug("checking for orphaned %v\n", d.desc)
+		debug.Log("restic.fsck", "checking for orphaned %v\n", d.desc)
 
 		blobs, err := s.List(d.tpe)
 		if err != nil {

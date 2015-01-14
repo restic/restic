@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
 
 type findQuery struct {
@@ -64,7 +65,7 @@ func parseTime(str string) (time.Time, error) {
 }
 
 func (c CmdFind) findInTree(s restic.Server, blob restic.Blob, path string) ([]findResult, error) {
-	debug("checking tree %v\n", blob)
+	debug.Log("restic.find", "checking tree %v\n", blob)
 	tree, err := restic.LoadTree(s, blob)
 	if err != nil {
 		return nil, err
@@ -72,7 +73,7 @@ func (c CmdFind) findInTree(s restic.Server, blob restic.Blob, path string) ([]f
 
 	results := []findResult{}
 	for _, node := range tree.Nodes {
-		debug("  testing entry %q\n", node.Name)
+		debug.Log("restic.find", "  testing entry %q\n", node.Name)
 
 		m, err := filepath.Match(c.pattern, node.Name)
 		if err != nil {
@@ -80,20 +81,20 @@ func (c CmdFind) findInTree(s restic.Server, blob restic.Blob, path string) ([]f
 		}
 
 		if m {
-			debug("    pattern matches\n")
+			debug.Log("restic.find", "    pattern matches\n")
 			if !c.oldest.IsZero() && node.ModTime.Before(c.oldest) {
-				debug("    ModTime is older than %s\n", c.oldest)
+				debug.Log("restic.find", "    ModTime is older than %s\n", c.oldest)
 				continue
 			}
 
 			if !c.newest.IsZero() && node.ModTime.After(c.newest) {
-				debug("    ModTime is newer than %s\n", c.newest)
+				debug.Log("restic.find", "    ModTime is newer than %s\n", c.newest)
 				continue
 			}
 
 			results = append(results, findResult{node: node, path: path})
 		} else {
-			debug("    pattern does not match\n")
+			debug.Log("restic.find", "    pattern does not match\n")
 		}
 
 		if node.Type == "dir" {
@@ -115,7 +116,7 @@ func (c CmdFind) findInTree(s restic.Server, blob restic.Blob, path string) ([]f
 }
 
 func (c CmdFind) findInSnapshot(s restic.Server, id backend.ID) error {
-	debug("searching in snapshot %s\n  for entries within [%s %s]", id, c.oldest, c.newest)
+	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", id, c.oldest, c.newest)
 
 	sn, err := restic.LoadSnapshot(s, id)
 	if err != nil {

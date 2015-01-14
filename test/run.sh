@@ -97,6 +97,8 @@ done
 
 if [ -n "$failed" ]; then
     err "failed tests: ${failed}"
-    msg "bash version: $(bash --version)"
+    msg "restic versions:"
+    run restic version
+    run restic.debug version
     exit 1
 fi

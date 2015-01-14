@@ -12,6 +12,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
 
 var version = "compiled manually"
@@ -165,6 +166,8 @@ func init() {
 func main() {
 	// defer profile.Start(profile.MemProfileRate(100000), profile.ProfilePath(".")).Stop()
 	opts.Repo = os.Getenv("RESTIC_REPOSITORY")
+
+	debug.Log("restic", "main %#v", os.Args)
 
 	_, err := parser.Parse()
 	if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {

@@ -2,6 +2,7 @@
 VERSION = $(shell ./version.sh)
 VERSION ?= "unknown version"
 LDFLAGS = -X main.version $(VERSION)
+LDFLAGS += -X github.com/restic/restic.Version $(VERSION)
 TAGS =
 
 .PHONY: all both clean debug
@@ -19,7 +20,7 @@ restic: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
 	go build -tags "$(TAGS)" $(GOFLAGS) -ldflags "$(LDFLAGS)"
 
 restic.debug: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
-	go build -o restic.debug -tags "debug" $(GOFLAGS) -ldflags "$(LDFLAGS)"
+	go build -o restic.debug -tags "debug debug_cmd" $(GOFLAGS) -ldflags "$(LDFLAGS)"
 
 clean:
 	go clean

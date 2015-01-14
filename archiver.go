@@ -11,6 +11,7 @@ import (
 	"github.com/juju/arrar"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/debug"
 )
 
 const (
@@ -64,12 +65,12 @@ func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
 	// compute plaintext hash
 	id := backend.Hash(data)
 
-	debug("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
+	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
 	// test if this blob is already known
 	blob, err := arch.m.FindID(id)
 	if err == nil {
-		debug("Archiver.Save", "Save(%v, %v): reusing %v\n", t, id.Str(), blob.Storage.Str())
+		debug.Log("Archiver.Save", "Save(%v, %v): reusing %v\n", t, id.Str(), blob.Storage.Str())
 		id.Free()
 		return blob, nil
 	}
@@ -84,7 +85,7 @@ func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
 	// one and remove the other. This happens if the same plaintext blob was
 	// stored concurrently and finished earlier than this blob.
 	if blob.Storage.Compare(smapblob.Storage) != 0 {
-		debug("Archiver.Save", "using other block, removing %v\n", blob.Storage.Str())
+		debug.Log("Archiver.Save", "using other block, removing %v\n", blob.Storage.Str())
 
 		// remove the blob again
 		// TODO: implement a list of blobs in transport, so this doesn't happen so often
@@ -94,7 +95,7 @@ func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
 		}
 	}
 
-	debug("Archiver.Save", "Save(%v, %v): new blob %v\n", t, id.Str(), blob)
+	debug.Log("Archiver.Save", "Save(%v, %v): new blob %v\n", t, id.Str(), blob)
 
 	return smapblob, nil
 }
@@ -254,13 +255,13 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 		return nil, fmt.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
 	}
 
-	debug("Archiver.SaveFile", "SaveFile(%q): %v\n", node.path, blobs)
+	debug.Log("Archiver.SaveFile", "SaveFile(%q): %v\n", node.path, blobs)
 
 	return blobs, nil
 }
 
 func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
-	debug("Archiver.saveTree", "saveTree(%v)\n", t)
+	debug.Log("Archiver.saveTree", "saveTree(%v)\n", t)
 	var wg sync.WaitGroup
 
 	// add all blobs to global map
@@ -284,7 +285,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 				for _, id := range node.Content {
 					blob, err := t.Map.FindID(id)
 					if err != nil {
-						debug("Archiver.saveTree", "unable to find storage id for data blob %v", id.Str())
+						debug.Log("Archiver.saveTree", "unable to find storage id for data blob %v", id.Str())
 						arch.Error(node.path, nil, fmt.Errorf("unable to find storage id for data blob %v", id.Str()))
 						removeContent = true
 						t.Map.DeleteID(id)
@@ -293,7 +294,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 					}
 
 					if ok, err := arch.s.Test(backend.Data, blob.Storage); !ok || err != nil {
-						debug("Archiver.saveTree", "blob %v not in repository (error is %v)", blob, err)
+						debug.Log("Archiver.saveTree", "blob %v not in repository (error is %v)", blob, err)
 						arch.Error(node.path, nil, fmt.Errorf("blob %v not in repository (error is %v)", blob.Storage.Str(), err))
 						removeContent = true
 						t.Map.DeleteID(id)
@@ -302,7 +303,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 				}
 
 				if removeContent {
-					debug("Archiver.saveTree", "removing content for %s", node.path)
+					debug.Log("Archiver.saveTree", "removing content for %s", node.path)
 					node.Content = node.Content[:0]
 				}
 			}
@@ -368,7 +369,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 	after := len(t.Map.IDs())
 
 	if before != after {
-		debug("Archiver.saveTree", "pruned %d ids from map for tree %v\n", before-after, t)
+		debug.Log("Archiver.saveTree", "pruned %d ids from map for tree %v\n", before-after, t)
 	}
 
 	blob, err := arch.SaveTreeJSON(t)
@@ -380,7 +381,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 }
 
 func (arch *Archiver) Snapshot(dir string, t *Tree, parentSnapshot backend.ID) (*Snapshot, backend.ID, error) {
-	debug_break("Archiver.Snapshot")
+	debug.Break("Archiver.Snapshot")
 
 	arch.p.Start()
 	defer arch.p.Done()
