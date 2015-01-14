@@ -21,7 +21,7 @@ test: release debug
 	go test -v ./...
 	test/run.sh cmd/restic:cmd/dirdiff
 
-test-%: test/test-%.sh
+test-%: test/test-%.sh release debug
 	echo $*
 	test/run.sh cmd/restic:cmd/dirdiff "test/$@.sh"
 
