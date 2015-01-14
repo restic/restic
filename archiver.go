@@ -131,8 +131,6 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (Blob, error) {
 // SaveFile stores the content of the file on the backend as a Blob by calling
 // Save for each chunk.
 func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
-	debug("SaveFile(%q)\n", node.path)
-
 	file, err := os.Open(node.path)
 	defer file.Close()
 	if err != nil {
@@ -256,7 +254,7 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 		return nil, fmt.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
 	}
 
-	debug("SaveFile(%q): %v\n", node.path, blobs)
+	debug("Archiver.SaveFile", "SaveFile(%q): %v\n", node.path, blobs)
 
 	return blobs, nil
 }
