@@ -44,7 +44,7 @@ func teardownBackend(t *testing.T, b *backend.Local) {
 }
 
 func testBackend(b *backend.Local, t *testing.T) {
-	for _, tpe := range []backend.Type{backend.Data, backend.Key, backend.Lock, backend.Snapshot, backend.Tree, backend.Map} {
+	for _, tpe := range []backend.Type{backend.Data, backend.Key, backend.Lock, backend.Snapshot, backend.Tree} {
 		// detect non-existing files
 		for _, test := range TestStrings {
 			id, err := backend.ParseID(test.id)
@@ -106,13 +106,13 @@ func testBackend(b *backend.Local, t *testing.T) {
 
 				found, err := b.Test(tpe, id)
 				ok(t, err)
-				assert(t, found, fmt.Sprintf("id %q was not found before removal"))
+				assert(t, found, fmt.Sprintf("id %q was not found before removal", id))
 
 				ok(t, b.Remove(tpe, id))
 
 				found, err = b.Test(tpe, id)
 				ok(t, err)
-				assert(t, !found, fmt.Sprintf("id %q was not found before removal"))
+				assert(t, !found, fmt.Sprintf("id %q not found after removal", id))
 			}
 		}
 

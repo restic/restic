@@ -46,8 +46,6 @@ func (cmd CmdList) Execute(args []string) error {
 		each = s.EachDecrypted
 	case "snapshots":
 		t = backend.Snapshot
-	case "maps":
-		t = backend.Map
 	case "keys":
 		t = backend.Key
 	case "locks":

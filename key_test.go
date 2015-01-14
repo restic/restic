@@ -14,6 +14,7 @@ import (
 
 var testPassword = "foobar"
 var testCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
+var testLargeCrypto = flag.Bool("test.largecrypto", false, "also test crypto functions with large payloads")
 
 func setupBackend(t testing.TB) restic.Server {
 	tempdir, err := ioutil.TempDir("", "restic-test-")
@@ -53,7 +54,12 @@ func TestEncryptDecrypt(t *testing.T) {
 	defer teardownBackend(t, s)
 	k := setupKey(t, s, testPassword)
 
-	for _, size := range []int{5, 23, 1 << 20, 7<<20 + 123} {
+	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
+	if *testLargeCrypto {
+		tests = append(tests, 7<<20+123)
+	}
+
+	for _, size := range tests {
 		data := make([]byte, size)
 		f, err := os.Open("/dev/urandom")
 		ok(t, err)
@@ -75,11 +81,15 @@ func TestEncryptDecrypt(t *testing.T) {
 }
 
 func TestLargeEncrypt(t *testing.T) {
+	if !*testLargeCrypto {
+		t.SkipNow()
+	}
+
 	s := setupBackend(t)
 	defer teardownBackend(t, s)
 	k := setupKey(t, s, testPassword)
 
-	for _, size := range []int{chunker.MaxSize, chunker.MaxSize + 1} {
+	for _, size := range []int{chunker.MaxSize, chunker.MaxSize + 1, chunker.MaxSize + 1<<20} {
 		data := make([]byte, size)
 		f, err := os.Open("/dev/urandom")
 		ok(t, err)

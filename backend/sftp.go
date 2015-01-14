@@ -77,7 +77,6 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
-		filepath.Join(dir, mapPath),
 		filepath.Join(dir, lockPath),
 		filepath.Join(dir, keyPath),
 		filepath.Join(dir, tempPath),
@@ -134,7 +133,6 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		filepath.Join(dir, dataPath),
 		filepath.Join(dir, snapshotPath),
 		filepath.Join(dir, treePath),
-		filepath.Join(dir, mapPath),
 		filepath.Join(dir, lockPath),
 		filepath.Join(dir, keyPath),
 		filepath.Join(dir, tempPath),
@@ -242,7 +240,7 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 	fi, err = r.c.Lstat(dir)
 	if err != nil {
 		// return previous errors
-		return fmt.Errorf("mkdirAll(%s): unable to create directories: %v, %v", errMkdirAll, errMkdir)
+		return fmt.Errorf("mkdirAll(%s): unable to create directories: %v, %v", dir, errMkdirAll, errMkdir)
 	}
 
 	if !fi.IsDir() {
@@ -284,8 +282,6 @@ func (r *SFTP) dirname(t Type, id ID) string {
 		if id != nil {
 			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]))
 		}
-	case Map:
-		n = mapPath
 	case Lock:
 		n = lockPath
 	case Key:

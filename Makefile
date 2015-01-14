@@ -1,16 +1,33 @@
-.PHONY: clean all test
+.PHONY: clean all test release debug
 
-FLAGS=
-#FLAGS+=-race
+GOFLAGS=
+#GOFLAGS+=-race
 
-test:
+all: release
+
+release:
 	for dir in cmd/* ; do \
-		(cd "$$dir"; go build $(FLAGS)) \
+		test -f "$$dir/Makefile" && \
+		(GOFLAGS="$(GOFLAGS)" make -C "$$dir") \
 	done
-	test/run.sh cmd/restic/restic cmd/dirdiff/dirdiff
+
+debug:
+	for dir in cmd/* ; do \
+		test -f "$$dir/Makefile" && \
+		(GOFLAGS="$(GOFLAGS)" make -C "$$dir" debug) \
+	done
+
+test: release debug
+	go test -v ./...
+	test/run.sh cmd/restic:cmd/dirdiff
+
+test-%: test/test-%.sh release debug
+	echo $*
+	test/run.sh cmd/restic:cmd/dirdiff "test/$@.sh"
 
 clean:
 	go clean
 	for dir in cmd/* ; do \
-		(cd "$$dir"; go clean) \
+		test -f "$$dir/Makefile" && \
+		(make -C "$$dir" clean) \
 	done

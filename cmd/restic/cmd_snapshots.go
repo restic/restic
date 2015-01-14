@@ -97,15 +97,13 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		return err
 	}
 
-	ch := restic.NewContentHandler(s)
-
 	tab := NewTable()
 	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Source", "Directory")
 	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
 
 	list := []*restic.Snapshot{}
 	s.EachID(backend.Snapshot, func(id backend.ID) {
-		sn, err := restic.LoadSnapshot(ch, id)
+		sn, err := restic.LoadSnapshot(s, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
 			return

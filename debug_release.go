@@ -2,4 +2,6 @@
 
 package restic
 
-func debug(fmt string, args ...interface{}) {}
+func debug(tag string, fmt string, args ...interface{}) {}
+
+func debug_break(string) {}

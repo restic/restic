@@ -16,9 +16,8 @@ type CmdFsck struct {
 	RemoveOrphaned bool   `short:"r" long:"remove-orphaned" description:"Remove orphaned blobs (implies -o)"`
 
 	// lists checking for orphaned blobs
-	o_data  *restic.BlobList
-	o_trees *restic.BlobList
-	o_maps  *restic.BlobList
+	o_data  *backend.IDSet
+	o_trees *backend.IDSet
 }
 
 func init() {
@@ -31,91 +30,103 @@ func init() {
 	}
 }
 
-func fsckFile(opts CmdFsck, ch *restic.ContentHandler, IDs []backend.ID) error {
+func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (uint64, error) {
+	var bytes uint64
+
 	for _, id := range IDs {
 		debug("checking data blob %v\n", id)
 
+		// test if blob is in map
+		blob, err := m.FindID(id)
+		if err != nil {
+			return 0, fmt.Errorf("storage ID for data blob %v not found", id)
+		}
+
+		bytes += blob.Size
+
 		if opts.CheckData {
 			// load content
-			_, err := ch.Load(backend.Data, id)
+			_, err := s.Load(backend.Data, blob)
 			if err != nil {
-				return err
+				return 0, err
 			}
 		} else {
 			// test if data blob is there
-			ok, err := ch.Test(backend.Data, id)
+			ok, err := s.Test(backend.Data, blob.Storage)
 			if err != nil {
-				return err
+				return 0, err
 			}
 
 			if !ok {
-				return fmt.Errorf("data blob %v not found", id)
+				return 0, fmt.Errorf("data blob %v not found", id)
 			}
 		}
 
 		// if orphan check is active, record storage id
 		if opts.o_data != nil {
-			// lookup storage ID
-			sid, err := ch.Lookup(id)
-			if err != nil {
-				return err
-			}
-
-			// add ID to list
-			opts.o_data.Insert(restic.Blob{ID: sid})
+			opts.o_data.Insert(blob.Storage)
 		}
 	}
 
-	return nil
+	return bytes, nil
 }
 
-func fsckTree(opts CmdFsck, ch *restic.ContentHandler, id backend.ID) error {
-	debug("checking tree %v\n", id)
+func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
+	debug("checking tree %v\n", blob.ID)
 
-	tree, err := restic.LoadTree(ch, id)
+	tree, err := restic.LoadTree(s, blob)
 	if err != nil {
 		return err
 	}
 
 	// if orphan check is active, record storage id
 	if opts.o_trees != nil {
-		// lookup storage ID
-		sid, err := ch.Lookup(id)
-		if err != nil {
-			return err
-		}
-
 		// add ID to list
-		opts.o_trees.Insert(restic.Blob{ID: sid})
+		opts.o_trees.Insert(blob.Storage)
 	}
 
 	var firstErr error
 
-	for i, node := range tree {
+	for i, node := range tree.Nodes {
 		if node.Name == "" {
-			return fmt.Errorf("node %v of tree %v has no name", i, id)
+			return fmt.Errorf("node %v of tree %v has no name", i, blob.ID)
 		}
 
 		if node.Type == "" {
-			return fmt.Errorf("node %q of tree %v has no type", node.Name, id)
+			return fmt.Errorf("node %q of tree %v has no type", node.Name, blob.ID)
 		}
 
 		switch node.Type {
 		case "file":
-			if node.Content == nil && node.Error == "" {
-				return fmt.Errorf("file node %q of tree %v has no content", node.Name, id)
+			if node.Content == nil {
+				return fmt.Errorf("file node %q of tree %v has no content: %v", node.Name, blob.ID, node)
 			}
 
-			err := fsckFile(opts, ch, node.Content)
+			if node.Content == nil && node.Error == "" {
+				return fmt.Errorf("file node %q of tree %v has no content", node.Name, blob.ID)
+			}
+
+			bytes, err := fsckFile(opts, s, tree.Map, node.Content)
 			if err != nil {
 				return err
 			}
+
+			if bytes != node.Size {
+				return fmt.Errorf("file node %q of tree %v has size %d, but only %d bytes could be found", node.Name, blob, node.Size, bytes)
+			}
 		case "dir":
 			if node.Subtree == nil {
-				return fmt.Errorf("dir node %q of tree %v has no subtree", node.Name, id)
+				return fmt.Errorf("dir node %q of tree %v has no subtree", node.Name, blob.ID)
 			}
 
-			err := fsckTree(opts, ch, node.Subtree)
+			// lookup blob
+			subtreeBlob, err := tree.Map.FindID(node.Subtree)
+			if err != nil {
+				firstErr = err
+				fmt.Fprintf(os.Stderr, "%v\n", err)
+			}
+
+			err = fsckTree(opts, s, subtreeBlob)
 			if err != nil {
 				firstErr = err
 				fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -129,27 +140,22 @@ func fsckTree(opts CmdFsck, ch *restic.ContentHandler, id backend.ID) error {
 func fsck_snapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
 	debug("checking snapshot %v\n", id)
 
-	ch := restic.NewContentHandler(s)
-
-	sn, err := ch.LoadSnapshot(id)
+	sn, err := restic.LoadSnapshot(s, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("loading snapshot %v failed: %v", id, err)
 	}
 
-	if sn.Tree == nil {
-		return fmt.Errorf("snapshot %v has no content", sn.ID)
+	if !sn.Tree.Valid() {
+		return fmt.Errorf("snapshot %v has invalid tree %v", sn.ID, sn.Tree)
 	}
 
-	if sn.Map == nil {
-		return fmt.Errorf("snapshot %v has no map", sn.ID)
+	err = fsckTree(opts, s, sn.Tree)
+	if err != nil {
+		debug("  checking tree %v for snapshot %v\n", sn.Tree, id)
+		fmt.Fprintf(os.Stderr, "snapshot %v:\n  error for tree %v:\n    %v\n", id, sn.Tree, err)
 	}
 
-	// if orphan check is active, record storage id for map
-	if opts.o_maps != nil {
-		opts.o_maps.Insert(restic.Blob{ID: sn.Map})
-	}
-
-	return fsckTree(opts, ch, sn.Tree)
+	return err
 }
 
 func (cmd CmdFsck) Usage() string {
@@ -185,9 +191,8 @@ func (cmd CmdFsck) Execute(args []string) error {
 	}
 
 	if cmd.Orphaned {
-		cmd.o_data = restic.NewBlobList()
-		cmd.o_trees = restic.NewBlobList()
-		cmd.o_maps = restic.NewBlobList()
+		cmd.o_data = backend.NewIDSet()
+		cmd.o_trees = backend.NewIDSet()
 	}
 
 	list, err := s.List(backend.Snapshot)
@@ -214,11 +219,10 @@ func (cmd CmdFsck) Execute(args []string) error {
 	l := []struct {
 		desc string
 		tpe  backend.Type
-		list *restic.BlobList
+		set  *backend.IDSet
 	}{
 		{"data blob", backend.Data, cmd.o_data},
 		{"tree", backend.Tree, cmd.o_trees},
-		{"maps", backend.Map, cmd.o_maps},
 	}
 
 	for _, d := range l {
@@ -230,8 +234,8 @@ func (cmd CmdFsck) Execute(args []string) error {
 		}
 
 		for _, id := range blobs {
-			_, err := d.list.Find(restic.Blob{ID: id})
-			if err == restic.ErrBlobNotFound {
+			err := d.set.Find(id)
+			if err != nil {
 				if !cmd.RemoveOrphaned {
 					fmt.Printf("orphaned %v %v\n", d.desc, id)
 					continue

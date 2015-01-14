@@ -59,7 +59,7 @@ func format_duration(d time.Duration) string {
 }
 
 func print_tree2(indent int, t *restic.Tree) {
-	for _, node := range *t {
+	for _, node := range t.Nodes {
 		if node.Tree() != nil {
 			fmt.Printf("%s%s/\n", strings.Repeat("  ", indent), node.Name)
 			print_tree2(indent+1, node.Tree())
@@ -120,22 +120,19 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	var bl *restic.BlobList
 	if parentSnapshotID != nil {
 		fmt.Printf("load old snapshot\n")
-		ch := restic.NewContentHandler(s)
-		sn, err := ch.LoadSnapshot(parentSnapshotID)
+		sn, err := restic.LoadSnapshot(s, parentSnapshotID)
 		if err != nil {
 			return err
 		}
 
-		oldTree, err := restic.LoadTreeRecursive(filepath.Dir(sn.Dir), ch, sn.Tree)
+		oldTree, err := restic.LoadTreeRecursive(filepath.Dir(sn.Dir), s, sn.Tree)
 		if err != nil {
 			return err
 		}
 
-		bl = restic.NewBlobList()
-		err = newTree.CopyFrom(bl, oldTree, ch.BlobList())
+		err = newTree.CopyFrom(oldTree, &s)
 		if err != nil {
 			return err
 		}
@@ -175,14 +172,14 @@ func (cmd CmdBackup) Execute(args []string) error {
 		}
 	}
 
-	arch, err := restic.NewArchiver(s, bl, archiveProgress)
+	arch, err := restic.NewArchiver(s, archiveProgress)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "err: %v\n", err)
 	}
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
 		// TODO: make ignoring errors configurable
-		fmt.Fprintf(os.Stderr, "\nerror for %s: %v\n", dir, err)
+		fmt.Fprintf(os.Stderr, "\x1b[2K\rerror for %s: %v\n", dir, err)
 		return nil
 	}
 

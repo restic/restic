@@ -76,3 +76,17 @@ func TestNodeMarshal(t *testing.T) {
 		}
 	}
 }
+
+func TestNodeComparison(t *testing.T) {
+	fi, err := os.Lstat("tree_test.go")
+	ok(t, err)
+
+	node, err := restic.NodeFromFileInfo("foo", fi)
+	ok(t, err)
+
+	n2 := *node
+	assert(t, node.Equals(n2), "nodes aren't equal")
+
+	n2.Size -= 1
+	assert(t, !node.Equals(n2), "nodes are equal")
+}

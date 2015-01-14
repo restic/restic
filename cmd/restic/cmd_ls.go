@@ -37,19 +37,22 @@ func print_node(prefix string, n *restic.Node) string {
 	}
 }
 
-func print_tree(prefix string, ch *restic.ContentHandler, id backend.ID) error {
-	tree := &restic.Tree{}
-
-	err := ch.LoadJSON(backend.Tree, id, tree)
+func print_tree(prefix string, s restic.Server, blob restic.Blob) error {
+	tree, err := restic.LoadTree(s, blob)
 	if err != nil {
 		return err
 	}
 
-	for _, entry := range *tree {
+	for _, entry := range tree.Nodes {
 		fmt.Println(print_node(prefix, entry))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			err = print_tree(filepath.Join(prefix, entry.Name), ch, entry.Subtree)
+			b, err := tree.Map.FindID(entry.Subtree)
+			if err != nil {
+				return err
+			}
+
+			err = print_tree(filepath.Join(prefix, entry.Name), s, b)
 			if err != nil {
 				return err
 			}
@@ -78,17 +81,12 @@ func (cmd CmdLs) Execute(args []string) error {
 		return err
 	}
 
-	ch := restic.NewContentHandler(s)
-	if err != nil {
-		return err
-	}
-
-	sn, err := ch.LoadSnapshot(id)
+	sn, err := restic.LoadSnapshot(s, id)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("snapshot of %s at %s:\n", sn.Dir, sn.Time)
 
-	return print_tree("", ch, sn.Tree)
+	return print_tree("", s, sn.Tree)
 }

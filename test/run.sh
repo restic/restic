@@ -2,16 +2,14 @@
 
 set -e
 
-export restic="${1:-restic}"; shift
-export dirdiff="${1:-dirdiff}"; shift
 export dir=$(dirname "$0")
 export fake_data_file="${dir}/fake-data.tar.gz"
 
 prepare() {
     export BASE="$(mktemp --tmpdir --directory restic-testsuite-XXXXXX)"
     export RESTIC_REPOSITORY="${BASE}/restic-backup"
-    export DATADIR="${BASE}/fake-data"
     export RESTIC_PASSWORD="foobar"
+    export DATADIR="${BASE}/fake-data"
     debug "repository is at ${RESTIC_REPOSITORY}"
 
     mkdir -p "$DATADIR"
@@ -29,14 +27,6 @@ cleanup() {
     debug "removed dir ${BASE}"
     unset BASE
     unset RESTIC_REPOSITORY
-}
-
-restic() {
-    "${restic}" "$@"
-}
-
-dirdiff() {
-    "${dirdiff}" "$@"
 }
 
 msg() {
@@ -70,11 +60,16 @@ run() {
     fi
 }
 
-export -f restic dirdiff prepare cleanup msg debug pass err fail run
+export -f prepare cleanup msg debug pass err fail run
 
-if [ ! -x "$restic" ]; then
-    fail restic binary not found!
-fi
+# first argument is restic path
+export PATH="$1:$PATH"; shift
+
+which restic || fail "restic binary not found!"
+which dirdiff || fail "dirdiff binary not found!"
+
+debug "restic path: $(which restic)"
+debug "dirdiff path: $(which dirdiff)"
 
 if [ "$#" -gt 0 ]; then
     testfiles="$1"
@@ -88,7 +83,11 @@ failed=""
 for testfile in "${testfiles[@]}"; do
     current=$(basename "${testfile}" .sh)
 
-    if bash "${testfile}"; then
+    if [ "$DEBUG" = "1" ]; then
+        OPTS="-v"
+    fi
+
+    if bash $OPTS "${testfile}"; then
         pass "${current} pass"
     else
         err "${current} failed!"

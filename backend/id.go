@@ -36,6 +36,12 @@ func (id ID) String() string {
 	return hex.EncodeToString(id)
 }
 
+const shortStr = 4
+
+func (id ID) Str() string {
+	return hex.EncodeToString(id[:shortStr])
+}
+
 // Equal compares an ID to another other.
 func (id ID) Equal(other ID) bool {
 	return bytes.Equal(id, other)

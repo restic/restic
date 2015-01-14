@@ -53,64 +53,24 @@ func (cmd CmdCat) Execute(args []string) error {
 		}
 	}
 
-	ch := restic.NewContentHandler(s)
-
 	switch tpe {
 	case "blob":
-		err = ch.LoadAllMaps()
-		if err != nil {
-			return err
-		}
-
-		// try id
-		data, err := ch.Load(backend.Data, id)
+		// try storage id
+		data, err := s.LoadID(backend.Data, id)
 		if err == nil {
 			_, err = os.Stdout.Write(data)
 			return err
 		}
 
-		// try storage id
-		buf, err := s.Get(backend.Data, id)
-		if err != nil {
-			return err
-		}
-
-		// decrypt
-		buf, err = s.Decrypt(buf)
-		if err != nil {
-			return err
-		}
-
-		_, err = os.Stdout.Write(buf)
+		_, err = os.Stdout.Write(data)
 		return err
 
 	case "tree":
-		err = ch.LoadAllMaps()
+		// try storage id
+		tree := &restic.Tree{}
+		err := s.LoadJSONID(backend.Tree, id, tree)
 		if err != nil {
 			return err
-		}
-
-		var tree restic.Tree
-		// try id
-		err := ch.LoadJSON(backend.Tree, id, &tree)
-		if err != nil {
-			// try storage id
-			buf, err := s.Get(backend.Tree, id)
-			if err != nil {
-				return err
-			}
-
-			// decrypt
-			buf, err = s.Decrypt(buf)
-			if err != nil {
-				return err
-			}
-
-			// unmarshal
-			err = json.Unmarshal(backend.Uncompress(buf), &tree)
-			if err != nil {
-				return err
-			}
 		}
 
 		buf, err := json.MarshalIndent(&tree, "", "  ")
@@ -121,25 +81,9 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 
 		return nil
-	case "map":
-		var bl restic.BlobList
-		err := ch.LoadJSONRaw(backend.Map, id, &bl)
-		if err != nil {
-			return err
-		}
-
-		buf, err := json.MarshalIndent(&bl, "", "  ")
-		if err != nil {
-			return err
-		}
-
-		fmt.Println(string(buf))
-
-		return nil
 	case "snapshot":
-		var sn restic.Snapshot
-
-		err = ch.LoadJSONRaw(backend.Snapshot, id, &sn)
+		sn := &restic.Snapshot{}
+		err = s.LoadJSONID(backend.Snapshot, id, sn)
 		if err != nil {
 			return err
 		}

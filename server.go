@@ -1,7 +1,9 @@
 package restic
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/restic/restic/backend"
 )
@@ -48,6 +50,132 @@ func (s Server) FindSnapshot(id string) (backend.ID, error) {
 // all IDs of type t are unique.
 func (s Server) PrefixLength(t backend.Type) (int, error) {
 	return backend.PrefixLength(s.be, t)
+}
+
+// Load tries to load and decrypt content identified by t and blob from the backend.
+func (s Server) Load(t backend.Type, blob Blob) ([]byte, error) {
+	// load data
+	buf, err := s.Get(t, blob.Storage)
+	if err != nil {
+		return nil, err
+	}
+
+	// check length
+	if len(buf) != int(blob.StorageSize) {
+		return nil, errors.New("Invalid storage length")
+	}
+
+	// decrypt
+	buf, err = s.Decrypt(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// check length
+	if len(buf) != int(blob.Size) {
+		return nil, errors.New("Invalid length")
+	}
+
+	// check SHA256 sum
+	id := backend.Hash(buf)
+	if !blob.ID.Equal(id) {
+		return nil, fmt.Errorf("load %v: expected plaintext hash %v, got %v", blob.Storage, blob.ID, id)
+	}
+
+	return buf, nil
+}
+
+// Load tries to load and decrypt content identified by t and id from the backend.
+func (s Server) LoadID(t backend.Type, storageID backend.ID) ([]byte, error) {
+	// load data
+	buf, err := s.Get(t, storageID)
+	if err != nil {
+		return nil, err
+	}
+
+	// decrypt
+	buf, err = s.Decrypt(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
+}
+
+// LoadJSON calls Load() to get content from the backend and afterwards calls
+// json.Unmarshal on the item.
+func (s Server) LoadJSON(t backend.Type, blob Blob, item interface{}) error {
+	// load from backend
+	buf, err := s.Load(t, blob)
+	if err != nil {
+		return err
+	}
+
+	// inflate and unmarshal
+	err = json.Unmarshal(backend.Uncompress(buf), item)
+	return err
+}
+
+// LoadJSONID calls Load() to get content from the backend and afterwards calls
+// json.Unmarshal on the item.
+func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{}) error {
+	// load from backend
+	buf, err := s.LoadID(t, storageID)
+	if err != nil {
+		return err
+	}
+
+	// inflate and unmarshal
+	err = json.Unmarshal(backend.Uncompress(buf), item)
+	return err
+}
+
+// Save encrypts data and stores it to the backend as type t.
+func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
+	if id == nil {
+		// compute plaintext hash
+		id = backend.Hash(data)
+	}
+
+	// create a new blob
+	blob := Blob{
+		ID:   id,
+		Size: uint64(len(data)),
+	}
+
+	ciphertext := GetChunkBuf("ch.Save()")
+	defer FreeChunkBuf("ch.Save()", ciphertext)
+
+	// encrypt blob
+	n, err := s.Encrypt(ciphertext, data)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	ciphertext = ciphertext[:n]
+
+	// save blob
+	sid, err := s.Create(t, ciphertext)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	blob.Storage = sid
+	blob.StorageSize = uint64(len(ciphertext))
+
+	return blob, nil
+}
+
+// SaveJSON serialises item as JSON and uses Save() to store it to the backend as type t.
+func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
+	// convert to json
+	data, err := json.Marshal(item)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	// compress and save data
+	return s.Save(t, backend.Compress(data), nil)
 }
 
 // Returns the backend used for this server.

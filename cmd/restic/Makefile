@@ -4,18 +4,23 @@ VERSION ?= "unknown version"
 LDFLAGS = -X main.version $(VERSION)
 TAGS =
 
-.PHONY: all clean debug
+.PHONY: all both clean debug
 
 # include config file if it exists
 -include $(CURDIR)/config.mk
 
 all: restic
 
-restic: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
-	go build $(TAGS) -ldflags "$(LDFLAGS)"
+both: restic restic.debug
 
-debug: TAGS=-tags "debug debug_cmd"
-debug: restic
+debug:  restic.debug
+
+restic: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
+	go build -tags "$(TAGS)" $(GOFLAGS) -ldflags "$(LDFLAGS)"
+
+restic.debug: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
+	go build -o restic.debug -tags "debug" $(GOFLAGS) -ldflags "$(LDFLAGS)"
 
 clean:
 	go clean
+	rm -f restic restic.debug

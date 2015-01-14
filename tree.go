@@ -7,10 +7,8 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -18,7 +16,10 @@ import (
 	"github.com/restic/restic/backend"
 )
 
-type Tree []*Node
+type Tree struct {
+	Nodes []*Node `json:"nodes"`
+	Map   *Map    `json:"map"`
+}
 
 type Node struct {
 	Name       string       `json:"name"`
@@ -54,6 +55,7 @@ var (
 
 type Blob struct {
 	ID          backend.ID `json:"id,omitempty"`
+	Offset      uint64     `json:"offset,omitempty"`
 	Size        uint64     `json:"size,omitempty"`
 	Storage     backend.ID `json:"sid,omitempty"`   // encrypted ID
 	StorageSize uint64     `json:"ssize,omitempty"` // encrypted Size
@@ -74,21 +76,20 @@ func (n Node) String() string {
 	return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
 }
 
-func (t Tree) String() string {
-	s := []string{}
-	for _, n := range t {
-		s = append(s, n.String())
+func NewTree() *Tree {
+	return &Tree{
+		Nodes: []*Node{},
+		Map:   NewMap(),
 	}
-	return strings.Join(s, "\n")
 }
 
-func LoadTree(ch *ContentHandler, id backend.ID) (Tree, error) {
-	if id == nil {
-		return nil, nil
-	}
+func (t Tree) String() string {
+	return fmt.Sprintf("Tree<%d nodes, %d blobs>", len(t.Nodes), len(t.Map.list))
+}
 
-	tree := Tree{}
-	err := ch.LoadJSON(backend.Tree, id, &tree)
+func LoadTree(s Server, blob Blob) (*Tree, error) {
+	tree := &Tree{}
+	err := s.LoadJSON(backend.Tree, blob, tree)
 	if err != nil {
 		return nil, err
 	}
@@ -96,23 +97,28 @@ func LoadTree(ch *ContentHandler, id backend.ID) (Tree, error) {
 	return tree, nil
 }
 
-// LoadTreeRecursive loads the tree and all subtrees via ch.
-func LoadTreeRecursive(path string, ch *ContentHandler, id backend.ID) (Tree, error) {
+// LoadTreeRecursive loads the tree and all subtrees via s.
+func LoadTreeRecursive(path string, s Server, blob Blob) (*Tree, error) {
 	// TODO: load subtrees in parallel
-	tree, err := LoadTree(ch, id)
+	tree, err := LoadTree(s, blob)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, n := range tree {
+	for _, n := range tree.Nodes {
 		n.path = filepath.Join(path, n.Name)
 		if n.Type == "dir" && n.Subtree != nil {
-			t, err := LoadTreeRecursive(n.path, ch, n.Subtree)
+			subtreeBlob, err := tree.Map.FindID(n.Subtree)
 			if err != nil {
 				return nil, err
 			}
 
-			n.tree = &t
+			t, err := LoadTreeRecursive(n.path, s, subtreeBlob)
+			if err != nil {
+				return nil, err
+			}
+
+			n.tree = t
 		}
 	}
 
@@ -120,8 +126,9 @@ func LoadTreeRecursive(path string, ch *ContentHandler, id backend.ID) (Tree, er
 }
 
 // CopyFrom recursively copies all content from other to t.
-func (t Tree) CopyFrom(bl *BlobList, other Tree, otherBl *BlobList) error {
-	for _, node := range t {
+func (t Tree) CopyFrom(other *Tree, s *Server) error {
+	debug("Tree.CopyFrom", "CopyFrom(%v)\n", other)
+	for _, node := range t.Nodes {
 		// only process files and dirs
 		if node.Type != "file" && node.Type != "dir" {
 			continue
@@ -132,44 +139,67 @@ func (t Tree) CopyFrom(bl *BlobList, other Tree, otherBl *BlobList) error {
 
 		// if the node could not be found or the type has changed, proceed to the next
 		if err == ErrNodeNotFound || node.Type != oldNode.Type {
+			debug("Tree.CopyFrom", "  node %v is new\n", node)
 			continue
 		}
 
 		if node.Type == "file" {
 			// compare content
 			if node.SameContent(oldNode) {
+				debug("Tree.CopyFrom", "  file node %v has same content\n", node)
+
+				// check if all content is still available in the repository
+				for _, id := range oldNode.Content {
+					blob, err := other.Map.FindID(id)
+					if err != nil {
+						continue
+					}
+
+					if ok, err := s.Test(backend.Data, blob.Storage); !ok || err != nil {
+						continue
+					}
+				}
+
 				// copy Content
 				node.Content = oldNode.Content
 
 				// copy storage IDs
 				for _, id := range node.Content {
-					blob, err := otherBl.Find(Blob{ID: id})
+					blob, err := other.Map.FindID(id)
 					if err != nil {
 						return err
 					}
 
-					bl.Insert(blob)
+					debug("Tree.CopyFrom", "    insert blob %v\n", blob)
+					t.Map.Insert(blob)
 				}
 			}
 		} else if node.Type == "dir" {
 			// fill in all subtrees from old subtree
-			err := node.tree.CopyFrom(bl, *oldNode.tree, otherBl)
+			err := node.tree.CopyFrom(oldNode.tree, s)
 			if err != nil {
 				return err
 			}
 
 			// check if tree has changed
 			if node.tree.Equals(*oldNode.tree) {
+				debug("Tree.CopyFrom", "  tree node %v has same content\n", node)
+
 				// if nothing has changed, copy subtree ID
 				node.Subtree = oldNode.Subtree
 
 				// and store blob in bloblist
-				blob, err := otherBl.Find(Blob{ID: oldNode.Subtree})
+				blob, err := other.Map.FindID(oldNode.Subtree)
 				if err != nil {
 					return err
 				}
 
-				bl.Insert(blob)
+				debug("Tree.CopyFrom", "    insert blob %v\n", blob)
+				t.Map.Insert(blob)
+			} else {
+				debug("Tree.CopyFrom", "  trees are not equal: %v\n", node)
+				debug("Tree.CopyFrom", "    %#v\n", node.tree)
+				debug("Tree.CopyFrom", "    %#v\n", oldNode.tree)
 			}
 		}
 	}
@@ -177,13 +207,28 @@ func (t Tree) CopyFrom(bl *BlobList, other Tree, otherBl *BlobList) error {
 	return nil
 }
 
-// Equals returns true if t and other have exactly the same nodes.
+// Equals returns true if t and other have exactly the same nodes and map.
 func (t Tree) Equals(other Tree) bool {
-	if len(t) != len(other) {
+	if len(t.Nodes) != len(other.Nodes) {
+		debug("Tree.Equals", "tree.Equals(): trees have different number of nodes")
 		return false
 	}
 
-	return reflect.DeepEqual(t, other)
+	if !t.Map.Equals(other.Map) {
+		debug("Tree.Equals", "tree.Equals(): maps aren't equal")
+		return false
+	}
+
+	for i := 0; i < len(t.Nodes); i++ {
+		if !t.Nodes[i].Equals(*other.Nodes[i]) {
+			debug("Tree.Equals", "tree.Equals(): node %d is different:", i)
+			debug("Tree.Equals", "  %#v", t.Nodes[i])
+			debug("Tree.Equals", "  %#v", other.Nodes[i])
+			return false
+		}
+	}
+
+	return true
 }
 
 func (t *Tree) Insert(node *Node) error {
@@ -195,20 +240,20 @@ func (t *Tree) Insert(node *Node) error {
 
 	// insert blob
 	// https://code.google.com/p/go-wiki/wiki/bliceTricks
-	*t = append(*t, &Node{})
-	copy((*t)[pos+1:], (*t)[pos:])
-	(*t)[pos] = node
+	t.Nodes = append(t.Nodes, &Node{})
+	copy(t.Nodes[pos+1:], t.Nodes[pos:])
+	t.Nodes[pos] = node
 
 	return nil
 }
 
 func (t Tree) find(name string) (int, *Node, error) {
-	pos := sort.Search(len(t), func(i int) bool {
-		return t[i].Name >= name
+	pos := sort.Search(len(t.Nodes), func(i int) bool {
+		return t.Nodes[i].Name >= name
 	})
 
-	if pos < len(t) && t[pos].Name == name {
-		return pos, t[pos], nil
+	if pos < len(t.Nodes) && t.Nodes[pos].Name == name {
+		return pos, t.Nodes[pos], nil
 	}
 
 	return pos, nil, ErrNodeNotFound
@@ -221,7 +266,7 @@ func (t Tree) Find(name string) (*Node, error) {
 
 func (t Tree) Stat() Stat {
 	s := Stat{}
-	for _, n := range t {
+	for _, n := range t.Nodes {
 		switch n.Type {
 		case "file":
 			s.Files++
@@ -239,7 +284,7 @@ func (t Tree) Stat() Stat {
 
 func (t Tree) StatTodo() Stat {
 	s := Stat{}
-	for _, n := range t {
+	for _, n := range t.Nodes {
 		switch n.Type {
 		case "file":
 			if n.Content == nil {
@@ -337,7 +382,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	return node, err
 }
 
-func (node *Node) CreateAt(ch *ContentHandler, path string) error {
+func (t Tree) CreateNodeAt(node *Node, s Server, path string) error {
 	switch node.Type {
 	case "dir":
 		err := os.Mkdir(path, node.Mode)
@@ -367,7 +412,12 @@ func (node *Node) CreateAt(ch *ContentHandler, path string) error {
 		}
 
 		for _, blobid := range node.Content {
-			buf, err := ch.Load(backend.Data, blobid)
+			blob, err := t.Map.FindID(blobid)
+			if err != nil {
+				return arrar.Annotate(err, "Find Blob")
+			}
+
+			buf, err := s.Load(backend.Data, blob)
 			if err != nil {
 				return arrar.Annotate(err, "Load")
 			}
@@ -504,6 +554,80 @@ func (node *Node) UnmarshalJSON(data []byte) error {
 	return err
 }
 
+func (node Node) Equals(other Node) bool {
+	// TODO: add generatored code for this
+	if node.Name != other.Name {
+		return false
+	}
+	if node.Type != other.Type {
+		return false
+	}
+	if node.Mode != other.Mode {
+		return false
+	}
+	if node.ModTime != other.ModTime {
+		return false
+	}
+	if node.AccessTime != other.AccessTime {
+		return false
+	}
+	if node.ChangeTime != other.ChangeTime {
+		return false
+	}
+	if node.UID != other.UID {
+		return false
+	}
+	if node.GID != other.GID {
+		return false
+	}
+	if node.User != other.User {
+		return false
+	}
+	if node.Group != other.Group {
+		return false
+	}
+	if node.Inode != other.Inode {
+		return false
+	}
+	if node.Size != other.Size {
+		return false
+	}
+	if node.Links != other.Links {
+		return false
+	}
+	if node.LinkTarget != other.LinkTarget {
+		return false
+	}
+	if node.Device != other.Device {
+		return false
+	}
+	if node.Content != nil && other.Content == nil {
+		return false
+	} else if node.Content == nil && other.Content != nil {
+		return false
+	} else if node.Content != nil && other.Content != nil {
+		if len(node.Content) != len(other.Content) {
+			return false
+		}
+
+		for i := 0; i < len(node.Content); i++ {
+			if !node.Content[i].Equal(other.Content[i]) {
+				return false
+			}
+		}
+	}
+
+	if !node.Subtree.Equal(other.Subtree) {
+		return false
+	}
+
+	if node.Error != other.Error {
+		return false
+	}
+
+	return true
+}
+
 func (b Blob) Free() {
 	if b.ID != nil {
 		b.ID.Free()
@@ -512,4 +636,18 @@ func (b Blob) Free() {
 	if b.Storage != nil {
 		b.Storage.Free()
 	}
+}
+
+func (b Blob) Valid() bool {
+	if b.ID == nil || b.Storage == nil || b.StorageSize == 0 {
+		return false
+	}
+
+	return true
+}
+
+func (b Blob) String() string {
+	return fmt.Sprintf("Blob<%s -> %s>",
+		b.ID.Str(),
+		b.Storage.Str())
 }

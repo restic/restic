@@ -79,3 +79,7 @@ func TestCrypto(t *testing.T) {
 		}
 	}
 }
+
+func TestHmac(t *testing.T) {
+
+}
