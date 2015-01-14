@@ -320,7 +320,7 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 					}()
 
 					var blobs Blobs
-					blobs, node.err = arch.SaveFile(n)
+					blobs, n.err = arch.SaveFile(n)
 					for _, b := range blobs {
 						t.Map.Insert(b)
 					}
