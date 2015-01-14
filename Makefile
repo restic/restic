@@ -3,7 +3,7 @@
 GOFLAGS=
 #GOFLAGS+=-race
 
-all: release test
+all: release
 
 release:
 	for dir in cmd/* ; do \
