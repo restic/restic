@@ -30,20 +30,20 @@ cleanup() {
 }
 
 msg() {
-    printf "%s: %s\n" "$(basename "$0" .sh)" "$*"
+    printf "%s\n" "$*"
 }
 
 pass() {
-    printf "\e[32m%s: %s\e[39m\n" "$(basename "$0" .sh)" "$*"
+    printf "\e[32m%s\e[39m\n" "$*"
 }
 
 err() {
-    printf "\e[31m%s: %s\e[39m\n" "$(basename "$0" .sh)" "$*"
+    printf "\e[31m%s\e[39m\n" "$*"
 }
 
 debug() {
     if [ "$DEBUG" = "1" ]; then
-        printf "\e[33m%s: %s\e[39m\n" "$(basename "$0" .sh)" "$*"
+        printf "\e[33m%s\e[39m\n" "$*"
     fi
 }
 
@@ -62,14 +62,23 @@ run() {
 
 export -f prepare cleanup msg debug pass err fail run
 
-# first argument is restic path
-export PATH="$1:$PATH"; shift
+if [ -z "$BASEDIR" ]; then
+    echo "BASEDIR not set" >&2
+    exit 2
+fi
 
-which restic || fail "restic binary not found!"
-which dirdiff || fail "dirdiff binary not found!"
+which restic > /dev/null || fail "restic binary not found!"
+which restic.debug > /dev/null || fail "restic.debug binary not found!"
+which dirdiff > /dev/null || fail "dirdiff binary not found!"
 
 debug "restic path: $(which restic)"
+debug "restic.debug path: $(which restic.debug)"
 debug "dirdiff path: $(which dirdiff)"
+debug "path: $PATH"
+
+debug "restic versions:"
+run restic version
+run restic.debug version
 
 if [ "$#" -gt 0 ]; then
     testfiles="$1"
@@ -81,6 +90,10 @@ echo "testfiles: ${testfiles[@]}"
 
 failed=""
 for testfile in "${testfiles[@]}"; do
+    msg "================================================================================"
+    msg "run test $testfile"
+    msg ""
+
     current=$(basename "${testfile}" .sh)
 
     if [ "$DEBUG" = "1" ]; then

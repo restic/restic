@@ -13,7 +13,7 @@ build:
         code: |
           cd $WERCKER_SOURCE_DIR
           go version
-          go get -t ./...
+          go get -v -t ./...
 
     # Build the project
     - script:
@@ -31,4 +31,4 @@ build:
     - script:
         name: integration test
         code: |
-          make test
+          ./testsuite.sh

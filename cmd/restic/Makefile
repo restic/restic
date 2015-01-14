@@ -1,26 +1,17 @@
-# try to get version from git
-VERSION = $(shell ./version.sh)
-VERSION ?= "unknown version"
-LDFLAGS = -X main.version $(VERSION)
-LDFLAGS += -X github.com/restic/restic.Version $(VERSION)
-TAGS =
-
-.PHONY: all both clean debug
+.PHONY: all clean debug
 
 # include config file if it exists
 -include $(CURDIR)/config.mk
 
 all: restic
 
-both: restic restic.debug
-
-debug:  restic.debug
+debug: restic.debug
 
 restic: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
-	go build -tags "$(TAGS)" $(GOFLAGS) -ldflags "$(LDFLAGS)"
+	go build -a
 
 restic.debug: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
-	go build -o restic.debug -tags "debug debug_cmd" $(GOFLAGS) -ldflags "$(LDFLAGS)"
+	go build -a -tags debug -o restic.debug
 
 clean:
 	go clean
