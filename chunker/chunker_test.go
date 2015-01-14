@@ -43,7 +43,7 @@ var chunks1 = []chunk{
 	chunk{800374, 0x000968473f900000},
 	chunk{2453512, 0x001e197c92600000},
 	chunk{2651975, 0x000ae6c868000000},
-	chunk{237392, 0x00184c5825e18636},
+	chunk{237392, 0x0000000000000001},
 }
 
 // test if nullbytes are correctly split, even if length is a multiple of MinSize.
@@ -79,8 +79,8 @@ func test_with_data(t *testing.T, chnker *chunker.Chunker, chunks []chunk) {
 			}
 
 			if c.Cut != chunk.CutFP {
-				t.Fatalf("Cut fingerprint for chunk %d does not match: expected %016x, got %016x",
-					i, chunk.CutFP, c.Cut)
+				t.Fatalf("Cut fingerprint for chunk %d/%d does not match: expected %016x, got %016x",
+					i, len(chunks)-1, chunk.CutFP, c.Cut)
 			}
 		}
 	}

@@ -66,6 +66,8 @@ type Chunker struct {
 	count int
 	pos   int
 
+	pre int // wait for this many bytes before start calculating an new chunk
+
 	digest uint64
 }
 
@@ -96,6 +98,8 @@ func (c *Chunker) reset() {
 	c.pos = 0
 	c.count = 0
 	c.slide(1)
+	// do not start a new chunk unless at least MinSize bytes have been read
+	c.pre = MinSize - WindowSize
 }
 
 // Calculate out_table and mod_table for optimization. Must be called only once.
@@ -141,6 +145,7 @@ func (c *Chunker) fill_tables() {
 // calls yield a nil chunk and an io.EOF error.
 func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 	dst = dst[:0]
+
 	for {
 		if c.bpos >= c.bmax {
 			n, err := io.ReadFull(c.rd, c.buf)
@@ -176,6 +181,26 @@ func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 			c.bmax = n
 		}
 
+		// check if bytes have to be dismissed before starting a new chunk
+		if c.pre > 0 {
+			n := c.bmax - c.bpos
+			if c.pre > n {
+				c.pre -= n
+				dst = append(dst, c.buf[c.bpos:c.bmax]...)
+
+				c.count += n
+				c.pos += n
+				c.bpos = c.bmax
+				continue
+			}
+
+			dst = append(dst, c.buf[c.bpos:c.bpos+c.pre]...)
+			c.bpos += c.pre
+			c.count += c.pre
+			c.pos += c.pre
+			c.pre = 0
+		}
+
 		for i, b := range c.buf[c.bpos:c.bmax] {
 			// inline c.slide(b) and append(b) to increase performance
 			out := c.window[c.wpos]
@@ -208,6 +233,7 @@ func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 				c.reset()
 				c.pos = pos
 				c.start = pos
+				c.pre = MinSize - WindowSize
 
 				return chunk, nil
 			}
