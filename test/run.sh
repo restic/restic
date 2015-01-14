@@ -97,5 +97,6 @@ done
 
 if [ -n "$failed" ]; then
     err "failed tests: ${failed}"
+    msg "bash version: $(bash --version)"
     exit 1
 fi
