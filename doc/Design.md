@@ -67,7 +67,7 @@ The basic layout of a sample restic repository is shown below:
 
 A repository can be initialized with the `restic init` command, e.g.:
 
-    $ restic init -r /tmp/restic-repo
+    $ restic -r /tmp/restic-repo init
 
 Keys and Encryption
 -------------------
