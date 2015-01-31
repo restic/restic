@@ -80,6 +80,26 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 }
 
+func TestSmallBuffer(t *testing.T) {
+	s := setupBackend(t)
+	defer teardownBackend(t, s)
+	k := setupKey(t, s, testPassword)
+
+	size := 600
+	data := make([]byte, size)
+	f, err := os.Open("/dev/urandom")
+	ok(t, err)
+
+	_, err = io.ReadFull(f, data)
+	ok(t, err)
+
+	ciphertext := make([]byte, size/2)
+	_, err = k.Encrypt(ciphertext, data)
+	// this must throw an error, since the target slice is too small
+	assert(t, err != nil && err == restic.ErrBufferTooSmall,
+		"expected restic.ErrBufferTooSmall, got %#v", err)
+}
+
 func TestLargeEncrypt(t *testing.T) {
 	if !*testLargeCrypto {
 		t.SkipNow()

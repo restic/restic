@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
 
 type Server struct {
@@ -143,8 +144,20 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 		Size: uint64(len(data)),
 	}
 
-	ciphertext := GetChunkBuf("ch.Save()")
-	defer FreeChunkBuf("ch.Save()", ciphertext)
+	var ciphertext []byte
+
+	// if the data is small enough, use a slice from the pool
+	if len(data) <= maxCiphertextSize-ivSize-hmacSize {
+		ciphertext = GetChunkBuf("ch.Save()")
+		defer FreeChunkBuf("ch.Save()", ciphertext)
+	} else {
+		l := len(data) + ivSize + hmacSize
+
+		debug.Log("Server.Save", "create large slice of %d bytes for ciphertext", l)
+
+		// use a new slice
+		ciphertext = make([]byte, l)
+	}
 
 	// encrypt blob
 	n, err := s.Encrypt(ciphertext, data)
