@@ -489,6 +489,7 @@ func (t Tree) CreateNodeAt(node *Node, s Server, path string) error {
 		}
 	case "socket":
 		// nothing to do, we do not restore sockets
+		return nil
 	default:
 		return fmt.Errorf("filetype %q not implemented!\n", node.Type)
 	}
