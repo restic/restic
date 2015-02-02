@@ -269,12 +269,6 @@ For modified files, only modified chunks have to be saved in a subsequent
 backup. This even works if bytes are inserted or removed at arbitrary positions
 within the file.
 
-Files smaller than 512KiB are not split, chunks are of 512KiB to 8MiB in size.
-The implementation aims for 1MiB chunk size on average.
-
-For modified files, only modified chunks have to be saved in a subsequent backup.
-This even works if bytes are inserted or removed at arbitrary positions within the file.
-
 Threat Model
 ============
 
