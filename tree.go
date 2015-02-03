@@ -383,7 +383,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	return node, err
 }
 
-func (t Tree) CreateNodeAt(node *Node, s Server, path string) error {
+func CreateNodeAt(node *Node, m *Map, s Server, path string) error {
 	switch node.Type {
 	case "dir":
 		err := os.Mkdir(path, node.Mode)
@@ -413,7 +413,7 @@ func (t Tree) CreateNodeAt(node *Node, s Server, path string) error {
 		}
 
 		for _, blobid := range node.Content {
-			blob, err := t.Map.FindID(blobid)
+			blob, err := m.FindID(blobid)
 			if err != nil {
 				return arrar.Annotate(err, "Find Blob")
 			}

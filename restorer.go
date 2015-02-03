@@ -47,7 +47,7 @@ func (res *Restorer) to(dst string, dir string, treeBlob Blob) error {
 
 		if res.Filter == nil ||
 			res.Filter(filepath.Join(res.sn.Dir, dir, node.Name), dstpath, node) {
-			err := tree.CreateNodeAt(node, res.s, dstpath)
+			err := CreateNodeAt(node, tree.Map, res.s, dstpath)
 
 			// Did it fail because of ENOENT?
 			if arrar.Check(err, func(err error) bool {
@@ -60,7 +60,7 @@ func (res *Restorer) to(dst string, dir string, treeBlob Blob) error {
 				// Create parent directories and retry
 				err = os.MkdirAll(filepath.Dir(dstpath), 0700)
 				if err == nil || err == os.ErrExist {
-					err = tree.CreateNodeAt(node, res.s, dstpath)
+					err = CreateNodeAt(node, tree.Map, res.s, dstpath)
 				}
 			}
 
