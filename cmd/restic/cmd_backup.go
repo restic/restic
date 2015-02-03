@@ -185,7 +185,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	_, id, err := arch.Snapshot(target, newTree, parentSnapshotID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return err
 	}
 
 	plen, err := s.PrefixLength(backend.Snapshot)
