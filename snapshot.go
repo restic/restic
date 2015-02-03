@@ -3,9 +3,7 @@ package restic
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/restic/restic/backend"
@@ -20,6 +18,8 @@ type Snapshot struct {
 	Username string     `json:"username,omitempty"`
 	UID      uint32     `json:"uid,omitempty"`
 	GID      uint32     `json:"gid,omitempty"`
+	UserID   string     `json:"userid,omitempty"`
+	GroupID  string     `json:"groupid,omitempty"`
 
 	id backend.ID // plaintext ID, used during restore
 }
@@ -40,20 +40,9 @@ func NewSnapshot(dir string) (*Snapshot, error) {
 		sn.Hostname = hn
 	}
 
-	usr, err := user.Current()
-	if err == nil {
-		sn.Username = usr.Username
-		uid, err := strconv.ParseInt(usr.Uid, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-		sn.UID = uint32(uid)
-
-		gid, err := strconv.ParseInt(usr.Gid, 10, 32)
-		if err != nil {
-			return nil, err
-		}
-		sn.GID = uint32(gid)
+	err = sn.fillUserInfo()
+	if err != nil {
+		return nil, err
 	}
 
 	return sn, nil
