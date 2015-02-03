@@ -35,7 +35,7 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	switch node.Type {
 	case "file":
 		node.Size = uint64(stat.Size)
-		node.Links = stat.Nlink
+		node.Links = uint64(stat.Nlink)
 	case "dir":
 		// nothing to do
 	case "symlink":
