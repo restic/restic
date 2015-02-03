@@ -66,6 +66,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	switch fi.Mode() & (os.ModeType | os.ModeCharDevice) {
 	case 0:
 		node.Type = "file"
+		node.Size = uint64(fi.Size())
 	case os.ModeDir:
 		node.Type = "dir"
 	case os.ModeSymlink:
