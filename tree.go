@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"sync"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -246,4 +247,81 @@ func (t Tree) StatTodo() Stat {
 	}
 
 	return s
+}
+
+// EachNode calls fn recursively for each node in t and all subtrees
+// (depth-first). This in done concurrently in p goroutines.
+func (t *Tree) EachNode(p int, fn func(*Node)) {
+	processNodeWorker := func(wg *sync.WaitGroup, ch <-chan *Node, f func(*Node)) {
+		for node := range ch {
+			f(node)
+		}
+		wg.Done()
+	}
+
+	// start workers
+	var wg sync.WaitGroup
+	ch := make(chan *Node)
+
+	for i := 0; i < p; i++ {
+		wg.Add(1)
+		go processNodeWorker(&wg, ch, fn)
+	}
+
+	var processTree func(t *Tree, ch chan<- *Node)
+	processTree = func(t *Tree, ch chan<- *Node) {
+		for _, n := range t.Nodes {
+			if n.Type == "dir" && n.Tree() != nil {
+				processTree(n.Tree(), ch)
+			}
+
+			ch <- n
+		}
+	}
+
+	// run on root
+	processTree(t, ch)
+	close(ch)
+
+	// wait for all goroutines to terminate
+	wg.Wait()
+}
+
+// EachSubtree calls fn recursively for t and all subtrees (depth-first). This
+// is done concurrently in p goroutines.
+func (t *Tree) EachSubtree(p int, fn func(*Tree)) {
+	processTreeWorker := func(wg *sync.WaitGroup, ch <-chan *Tree, f func(*Tree)) {
+		for tree := range ch {
+			f(tree)
+		}
+		wg.Done()
+	}
+
+	// start workers
+	var wg sync.WaitGroup
+	ch := make(chan *Tree)
+
+	for i := 0; i < p; i++ {
+		wg.Add(1)
+		go processTreeWorker(&wg, ch, fn)
+	}
+
+	// extra variable needed for recursion
+	var processTree func(t *Tree, ch chan<- *Tree)
+	processTree = func(t *Tree, ch chan<- *Tree) {
+		for _, n := range t.Nodes {
+			if n.Type == "dir" && n.Tree() != nil {
+				processTree(n.Tree(), ch)
+			}
+		}
+
+		ch <- t
+	}
+
+	// run on root
+	processTree(t, ch)
+	close(ch)
+
+	// wait for all goroutines to terminate
+	wg.Wait()
 }
