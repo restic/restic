@@ -88,6 +88,8 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 
 	var firstErr error
 
+	seenIDs := backend.NewIDSet()
+
 	for i, node := range tree.Nodes {
 		if node.Name == "" {
 			return fmt.Errorf("node %v of tree %v has no name", i, blob.ID)
@@ -107,6 +109,11 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 				return fmt.Errorf("file node %q of tree %v has no content", node.Name, blob.ID)
 			}
 
+			// record ids
+			for _, id := range node.Content {
+				seenIDs.Insert(id)
+			}
+
 			bytes, err := fsckFile(opts, s, tree.Map, node.Content)
 			if err != nil {
 				return err
@@ -117,7 +124,7 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 			}
 		case "dir":
 			if node.Subtree == nil {
-				return fmt.Errorf("dir node %q of tree %v has no subtree", node.Name, blob.ID)
+				return fmt.Errorf("dir node %q of tree %v (storage id %v) has no subtree", node.Name, blob.ID, blob.Storage)
 			}
 
 			// lookup blob
@@ -127,11 +134,21 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 				fmt.Fprintf(os.Stderr, "%v\n", err)
 			}
 
+			// record id
+			seenIDs.Insert(node.Subtree)
+
 			err = fsckTree(opts, s, subtreeBlob)
 			if err != nil {
 				firstErr = err
 				fmt.Fprintf(os.Stderr, "%v\n", err)
 			}
+		}
+	}
+
+	// check map for unused ids
+	for _, id := range tree.Map.IDs() {
+		if seenIDs.Find(id) != nil {
+			return fmt.Errorf("tree %v: map contains unused ID %v", blob.ID, id)
 		}
 	}
 
@@ -147,7 +164,7 @@ func fsck_snapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
 	}
 
 	if !sn.Tree.Valid() {
-		return fmt.Errorf("snapshot %v has invalid tree %v", sn.ID, sn.Tree)
+		return fmt.Errorf("snapshot %s has invalid tree %v", sn.ID(), sn.Tree)
 	}
 
 	err = fsckTree(opts, s, sn.Tree)
