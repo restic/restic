@@ -7,9 +7,9 @@ import (
 )
 
 type Progress struct {
-	F   ProgressFunc
-	D   ProgressFunc
-	fnM sync.Mutex
+	OnUpdate ProgressFunc
+	OnDone   ProgressFunc
+	fnM      sync.Mutex
 
 	cur    Stat
 	curM   sync.Mutex
@@ -31,9 +31,9 @@ type Stat struct {
 type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 
 // NewProgress returns a new progress reporter. After Start() has been called,
-// the function fn is called when new data arrives or at least every d
-// interval. The function doneFn is called when Done() is called. Both
-// functions F and D are called synchronously and can use shared state.
+// the function OnUpdate is called when new data arrives or at least every d
+// interval. The function OnDone is called when Done() is called. Both
+// functions are called synchronously and can use shared state.
 func NewProgress(d time.Duration) *Progress {
 	return &Progress{d: d}
 }
@@ -75,9 +75,9 @@ func (p *Progress) Report(s Stat) {
 	p.curM.Unlock()
 
 	// update progress
-	if p.F != nil {
+	if p.OnUpdate != nil {
 		p.fnM.Lock()
-		p.F(cur, time.Since(p.start), false)
+		p.OnUpdate(cur, time.Since(p.start), false)
 		p.fnM.Unlock()
 	}
 }
@@ -94,9 +94,9 @@ func (p *Progress) reporter() {
 			cur := p.cur
 			p.curM.Unlock()
 
-			if p.F != nil {
+			if p.OnUpdate != nil {
 				p.fnM.Lock()
-				p.F(cur, time.Since(p.start), true)
+				p.OnUpdate(cur, time.Since(p.start), true)
 				p.fnM.Unlock()
 			}
 		case <-p.cancel:
@@ -139,9 +139,9 @@ func (p *Progress) Done() {
 
 		cur := p.cur
 
-		if p.D != nil {
+		if p.OnDone != nil {
 			p.fnM.Lock()
-			p.D(cur, time.Since(p.start), false)
+			p.OnDone(cur, time.Since(p.start), false)
 			p.fnM.Unlock()
 		}
 	}
