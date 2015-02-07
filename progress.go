@@ -82,6 +82,16 @@ func (p *Progress) Report(s Stat) {
 	}
 }
 
+// Report a file with the given size.
+func (p *Progress) ReportFile(size uint64) {
+	p.Report(Stat{Files: 1, Bytes: size})
+}
+
+// Report a directory.
+func (p *Progress) ReportDir() {
+	p.Report(Stat{Dirs: 1})
+}
+
 func (p *Progress) reporter() {
 	if p == nil {
 		return
