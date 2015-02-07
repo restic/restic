@@ -110,6 +110,10 @@ func Log(tag string, f string, args ...interface{}) {
 	opts.m.Lock()
 	defer opts.m.Unlock()
 
+	if f[len(f)-1] != '\n' {
+		f += "\n"
+	}
+
 	dbgprint := func() {
 		fmt.Fprintf(os.Stderr, "DEBUG["+tag+"]: "+f, args...)
 	}
