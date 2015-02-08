@@ -34,6 +34,15 @@ func initDebugLogger() (lgr *log.Logger) {
 		// open logfile
 		f, err := os.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
 
+		if err == nil {
+			// seek to the end
+			_, err = f.Seek(2, 0)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "unable to seek to the end of %v: %v\n", debugfile, err)
+				os.Exit(3)
+			}
+		}
+
 		if err != nil && os.IsNotExist(err) {
 			// create logfile
 			f, err = os.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE, 0600)
@@ -42,13 +51,6 @@ func initDebugLogger() (lgr *log.Logger) {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to open debug log file: %v\n", err)
 			os.Exit(2)
-		}
-
-		// seek to the end
-		_, err = f.Seek(2, 0)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to seek to the end of %v: %v\n", debugfile, err)
-			os.Exit(3)
 		}
 
 		// open logger
