@@ -2,12 +2,17 @@ package chunker_test
 
 import (
 	"bytes"
+	"flag"
 	"io"
 	"math/rand"
+	"os"
 	"testing"
 
 	"github.com/restic/restic/chunker"
 )
+
+var benchmarkFile = flag.String("bench.file", "", "read from this file for benchmark")
+var testBufSize = flag.Int("test.bufsize", 256*1024, "use this buffer size for benchmark")
 
 type chunk struct {
 	Length int
@@ -55,9 +60,8 @@ var chunks2 = []chunk{
 }
 
 func test_with_data(t *testing.T, chnker *chunker.Chunker, chunks []chunk) {
-	buf := make([]byte, chunker.MaxSize)
 	for i, chunk := range chunks {
-		c, err := chnker.Next(buf)
+		c, err := chnker.Next()
 
 		if err != nil {
 			t.Fatalf("Error returned with chunk %d: %v", i, err)
@@ -73,11 +77,6 @@ func test_with_data(t *testing.T, chnker *chunker.Chunker, chunks []chunk) {
 					i, chunk.Length, c.Length)
 			}
 
-			if len(c.Data) != chunk.Length {
-				t.Fatalf("Data length for chunk %d does not match: expected %d, got %d",
-					i, chunk.Length, len(c.Data))
-			}
-
 			if c.Cut != chunk.CutFP {
 				t.Fatalf("Cut fingerprint for chunk %d/%d does not match: expected %016x, got %016x",
 					i, len(chunks)-1, chunk.CutFP, c.Cut)
@@ -85,7 +84,7 @@ func test_with_data(t *testing.T, chnker *chunker.Chunker, chunks []chunk) {
 		}
 	}
 
-	c, err := chnker.Next(buf)
+	c, err := chnker.Next()
 
 	if c != nil {
 		t.Fatal("additional non-nil chunk returned")
@@ -114,32 +113,51 @@ func get_random(seed, count int) []byte {
 func TestChunker(t *testing.T) {
 	// setup data source
 	buf := get_random(23, 32*1024*1024)
-	ch := chunker.New(bytes.NewReader(buf))
+	ch := chunker.New(bytes.NewReader(buf), *testBufSize)
 	test_with_data(t, ch, chunks1)
-	ch.Free()
 
 	// setup nullbyte data source
 	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
-	ch = chunker.New(bytes.NewReader(buf))
+	ch = chunker.New(bytes.NewReader(buf), *testBufSize)
 
 	test_with_data(t, ch, chunks2)
-	ch.Free()
 }
 
 func TestChunkerReuse(t *testing.T) {
 	// test multiple uses of the same chunker
 	for i := 0; i < 4; i++ {
 		buf := get_random(23, 32*1024*1024)
-		ch := chunker.New(bytes.NewReader(buf))
+		ch := chunker.New(bytes.NewReader(buf), *testBufSize)
 		test_with_data(t, ch, chunks1)
-		ch.Free()
 	}
 }
 
 func BenchmarkChunker(b *testing.B) {
-	size := 10 * 1024 * 1024
-	buf := get_random(23, size)
-	dst := make([]byte, chunker.MaxSize)
+	var (
+		rd   io.ReadSeeker
+		size int
+	)
+
+	b.Logf("using bufsize %v", *testBufSize)
+
+	if *benchmarkFile != "" {
+		b.Logf("using file %q for benchmark", *benchmarkFile)
+		f, err := os.Open(*benchmarkFile)
+		if err != nil {
+			b.Fatalf("open(%q): %v", *benchmarkFile, err)
+		}
+
+		fi, err := f.Stat()
+		if err != nil {
+			b.Fatalf("lstat(%q): %v", *benchmarkFile, err)
+		}
+
+		size = int(fi.Size())
+		rd = f
+	} else {
+		size = 10 * 1024 * 1024
+		rd = bytes.NewReader(get_random(23, size))
+	}
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
@@ -148,10 +166,11 @@ func BenchmarkChunker(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		chunks = 0
 
-		ch := chunker.New(bytes.NewReader(buf))
+		rd.Seek(0, 0)
+		ch := chunker.New(rd, *testBufSize)
 
 		for {
-			_, err := ch.Next(dst)
+			_, err := ch.Next()
 
 			if err == io.EOF {
 				break

@@ -9,10 +9,11 @@ const (
 	KiB = 1024
 	MiB = 1024 * KiB
 
-	// randomly generated irreducible polynomial of degree 53 in Z_2[X]
+	// Polynomial is a randomly generated irreducible polynomial of degree 53
+	// in Z_2[X]. All rabin fingerprints are calculated with this polynomial.
 	Polynomial = 0x3DA3358B4DC173
 
-	// use a sliding window of 64 byte.
+	// WindowSize is the size of the sliding window.
 	WindowSize = 64
 
 	// aim to create chunks of 20 bits or about 1MiB on average.
@@ -30,15 +31,6 @@ var (
 	once      sync.Once
 	mod_table [256]uint64
 	out_table [256]uint64
-
-	chunkerPool = sync.Pool{
-		New: func() interface{} {
-			return &Chunker{
-				window: make([]byte, WindowSize),
-				buf:    make([]byte, MaxSize),
-			}
-		},
-	}
 )
 
 // A chunk is one content-dependent chunk of bytes whose end was cut when the
@@ -72,20 +64,17 @@ type Chunker struct {
 }
 
 // New returns a new Chunker that reads from data from rd.
-func New(rd io.Reader) *Chunker {
-	c := chunkerPool.Get().(*Chunker)
-	c.rd = rd
+func New(rd io.Reader, bufsize int) *Chunker {
+	once.Do(fill_tables)
 
-	once.Do(c.fill_tables)
+	c := &Chunker{
+		window: make([]byte, WindowSize),
+		buf:    make([]byte, bufsize),
+		rd:     rd,
+	}
 	c.reset()
 
 	return c
-}
-
-// Free returns this chunker to the allocation pool
-func (c *Chunker) Free() {
-	c.rd = nil
-	chunkerPool.Put(c)
 }
 
 func (c *Chunker) reset() {
@@ -103,7 +92,7 @@ func (c *Chunker) reset() {
 }
 
 // Calculate out_table and mod_table for optimization. Must be called only once.
-func (c *Chunker) fill_tables() {
+func fill_tables() {
 	// calculate table for sliding out bytes. The byte to slide out is used as
 	// the index for the table, the value contains the following:
 	// out_table[b] = Hash(b || 0 ||        ...        || 0)
@@ -139,13 +128,11 @@ func (c *Chunker) fill_tables() {
 	}
 }
 
-// Next returns the next chunk of data. If an error occurs while reading,
-// the error is returned with a nil chunk. The state of the current chunk
-// is undefined. When the last chunk has been returned, all subsequent
-// calls yield a nil chunk and an io.EOF error.
-func (c *Chunker) Next(dst []byte) (*Chunk, error) {
-	dst = dst[:0]
-
+// Next returns the position and length of the next chunk of data. If an error
+// occurs while reading, the error is returned with a nil chunk. The state of
+// the current chunk is undefined. When the last chunk has been returned, all
+// subsequent calls yield a nil chunk and an io.EOF error.
+func (c *Chunker) Next() (*Chunk, error) {
 	for {
 		if c.bpos >= c.bmax {
 			n, err := io.ReadFull(c.rd, c.buf)
@@ -168,7 +155,6 @@ func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 						Start:  c.start,
 						Length: c.count,
 						Cut:    c.digest,
-						Data:   dst,
 					}, nil
 				}
 			}
@@ -186,7 +172,6 @@ func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 			n := c.bmax - c.bpos
 			if c.pre > n {
 				c.pre -= n
-				dst = append(dst, c.buf[c.bpos:c.bmax]...)
 
 				c.count += n
 				c.pos += n
@@ -194,7 +179,6 @@ func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 				continue
 			}
 
-			dst = append(dst, c.buf[c.bpos:c.bpos+c.pre]...)
 			c.bpos += c.pre
 			c.count += c.pre
 			c.pos += c.pre
@@ -216,7 +200,6 @@ func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 			c.digest ^= mod_table[index]
 
 			if (c.count+i+1 >= MinSize && (c.digest&splitmask) == 0) || c.count+i+1 >= MaxSize {
-				dst = append(dst, c.buf[c.bpos:c.bpos+i+1]...)
 				c.count += i + 1
 				c.pos += i + 1
 				c.bpos += i + 1
@@ -225,7 +208,6 @@ func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 					Start:  c.start,
 					Length: c.count,
 					Cut:    c.digest,
-					Data:   dst,
 				}
 
 				// keep position
@@ -240,9 +222,6 @@ func (c *Chunker) Next(dst []byte) (*Chunk, error) {
 		}
 
 		steps := c.bmax - c.bpos
-		if steps > 0 {
-			dst = append(dst, c.buf[c.bpos:c.bpos+steps]...)
-		}
 		c.count += steps
 		c.pos += steps
 		c.bpos = c.bmax
