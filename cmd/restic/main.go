@@ -178,5 +178,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// restic.PoolAlloc()
+	// this prints some statistics for memory management using the debug package
+	restic.PoolAlloc()
 }
