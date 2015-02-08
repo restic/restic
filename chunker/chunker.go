@@ -1,6 +1,7 @@
 package chunker
 
 import (
+	"hash"
 	"io"
 	"sync"
 )
@@ -36,10 +37,14 @@ var (
 // A chunk is one content-dependent chunk of bytes whose end was cut when the
 // Rabin Fingerprint had the value stored in Cut.
 type Chunk struct {
-	Start  int
-	Length int
+	Start  uint
+	Length uint
 	Cut    uint64
-	Data   []byte
+	Digest []byte
+}
+
+func (c Chunk) Reader(r io.ReaderAt) io.Reader {
+	return io.NewSectionReader(r, int64(c.Start), int64(c.Length))
 }
 
 // A chunker internally holds everything needed to split content.
@@ -47,30 +52,32 @@ type Chunker struct {
 	rd     io.Reader
 	closed bool
 
-	window []byte
+	window [WindowSize]byte
 	wpos   int
 
 	buf  []byte
-	bpos int
-	bmax int
+	bpos uint
+	bmax uint
 
-	start int
-	count int
-	pos   int
+	start uint
+	count uint
+	pos   uint
 
-	pre int // wait for this many bytes before start calculating an new chunk
+	pre uint // wait for this many bytes before start calculating an new chunk
 
 	digest uint64
+	h      hash.Hash
+	hfn    func() hash.Hash
 }
 
 // New returns a new Chunker that reads from data from rd.
-func New(rd io.Reader, bufsize int) *Chunker {
+func New(rd io.Reader, bufsize int, hashfn func() hash.Hash) *Chunker {
 	once.Do(fill_tables)
 
 	c := &Chunker{
-		window: make([]byte, WindowSize),
-		buf:    make([]byte, bufsize),
-		rd:     rd,
+		buf: make([]byte, bufsize),
+		hfn: hashfn,
+		rd:  rd,
 	}
 	c.reset()
 
@@ -87,6 +94,9 @@ func (c *Chunker) reset() {
 	c.pos = 0
 	c.count = 0
 	c.slide(1)
+
+	c.resetHash()
+
 	// do not start a new chunk unless at least MinSize bytes have been read
 	c.pre = MinSize - WindowSize
 }
@@ -135,7 +145,7 @@ func fill_tables() {
 func (c *Chunker) Next() (*Chunk, error) {
 	for {
 		if c.bpos >= c.bmax {
-			n, err := io.ReadFull(c.rd, c.buf)
+			n, err := io.ReadFull(c.rd, c.buf[:])
 
 			if err == io.ErrUnexpectedEOF {
 				err = nil
@@ -155,6 +165,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 						Start:  c.start,
 						Length: c.count,
 						Cut:    c.digest,
+						Digest: c.hashDigest(),
 					}, nil
 				}
 			}
@@ -164,20 +175,24 @@ func (c *Chunker) Next() (*Chunk, error) {
 			}
 
 			c.bpos = 0
-			c.bmax = n
+			c.bmax = uint(n)
 		}
 
 		// check if bytes have to be dismissed before starting a new chunk
 		if c.pre > 0 {
 			n := c.bmax - c.bpos
-			if c.pre > n {
-				c.pre -= n
+			if c.pre > uint(n) {
+				c.pre -= uint(n)
+				c.updateHash(c.buf[c.bpos:c.bmax])
 
-				c.count += n
-				c.pos += n
+				c.count += uint(n)
+				c.pos += uint(n)
 				c.bpos = c.bmax
+
 				continue
 			}
+
+			c.updateHash(c.buf[c.bpos : c.bpos+c.pre])
 
 			c.bpos += c.pre
 			c.count += c.pre
@@ -198,17 +213,22 @@ func (c *Chunker) Next() (*Chunk, error) {
 			c.digest |= uint64(b)
 
 			c.digest ^= mod_table[index]
+			// end inline
 
-			if (c.count+i+1 >= MinSize && (c.digest&splitmask) == 0) || c.count+i+1 >= MaxSize {
-				c.count += i + 1
-				c.pos += i + 1
-				c.bpos += i + 1
+			if (c.count+uint(i)+1 >= MinSize && (c.digest&splitmask) == 0) || c.count+uint(i)+1 >= MaxSize {
+				c.updateHash(c.buf[c.bpos : c.bpos+uint(i)+1])
+				c.count += uint(i) + 1
+				c.pos += uint(i) + 1
+				c.bpos += uint(i) + 1
 
 				chunk := &Chunk{
 					Start:  c.start,
 					Length: c.count,
 					Cut:    c.digest,
+					Digest: c.hashDigest(),
 				}
+
+				c.resetHash()
 
 				// keep position
 				pos := c.pos
@@ -222,10 +242,37 @@ func (c *Chunker) Next() (*Chunk, error) {
 		}
 
 		steps := c.bmax - c.bpos
+		if steps > 0 {
+			c.updateHash(c.buf[c.bpos : c.bpos+steps])
+		}
 		c.count += steps
 		c.pos += steps
 		c.bpos = c.bmax
 	}
+}
+
+func (c *Chunker) resetHash() {
+	if c.hfn != nil {
+		c.h = c.hfn()
+	}
+}
+
+func (c *Chunker) updateHash(data []byte) {
+	if c.h != nil {
+		// the hashes from crypto/sha* do not return an error
+		_, err := c.h.Write(data)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (c *Chunker) hashDigest() []byte {
+	if c.h == nil {
+		return nil
+	}
+
+	return c.h.Sum(nil)
 }
 
 func (c *Chunker) append(b byte) {

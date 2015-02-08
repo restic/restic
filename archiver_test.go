@@ -2,6 +2,7 @@ package restic_test
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"io"
 	"math/rand"
 	"testing"
@@ -25,22 +26,26 @@ func get_random(seed, count int) []byte {
 	return buf
 }
 
+const bufSize = chunker.MiB
+
 func BenchmarkChunkEncrypt(b *testing.B) {
 	data := get_random(23, 10<<20) // 10MiB
+	rd := bytes.NewReader(data)
 
 	be := setupBackend(b)
 	defer teardownBackend(b, be)
 	key := setupKey(b, be, "geheim")
-	chunkBuf := make([]byte, chunker.MaxSize)
+	chunkBuf := make([]byte, restic.CiphertextExtension+chunker.MaxSize)
 
 	b.ResetTimer()
 	b.SetBytes(int64(len(data)))
 
 	for i := 0; i < b.N; i++ {
-		ch := chunker.New(bytes.NewReader(data))
+		rd.Seek(0, 0)
+		ch := chunker.New(rd, bufSize, sha256.New)
 
 		for {
-			chunk_data, err := ch.Next(chunkBuf)
+			chunk, err := ch.Next()
 
 			if err == io.EOF {
 				break
@@ -48,8 +53,13 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 
 			ok(b, err)
 
-			buf := make([]byte, restic.CiphertextExtension+chunker.MaxSize)
-			_, err = key.Encrypt(buf, chunk_data.Data)
+			// reduce length of chunkBuf
+			chunkBuf = chunkBuf[:chunk.Length]
+			n, err := io.ReadFull(chunk.Reader(rd), chunkBuf)
+			ok(b, err)
+			assert(b, uint(n) == chunk.Length, "invalid length: got %d, expected %d", n, chunk.Length)
+
+			_, err = key.Encrypt(chunkBuf, chunkBuf)
 			ok(b, err)
 		}
 	}

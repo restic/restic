@@ -35,7 +35,7 @@ func (b Blob) Valid() bool {
 }
 
 func (b Blob) String() string {
-	return fmt.Sprintf("Blob<%s -> %s>",
-		b.ID.Str(),
-		b.Storage.Str())
+	return fmt.Sprintf("Blob<%s (%d) -> %s (%d)>",
+		b.ID.Str(), b.Size,
+		b.Storage.Str(), b.StorageSize)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -161,6 +162,63 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 
 	// encrypt blob
 	n, err := s.Encrypt(ciphertext, data)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	ciphertext = ciphertext[:n]
+
+	// save blob
+	sid, err := s.Create(t, ciphertext)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	blob.Storage = sid
+	blob.StorageSize = uint64(len(ciphertext))
+
+	return blob, nil
+}
+
+// SaveFrom encrypts data read from rd and stores it to the backend as type t.
+func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reader) (Blob, error) {
+	if id == nil {
+		return Blob{}, errors.New("id is nil")
+	}
+
+	// create a new blob
+	blob := Blob{
+		ID:   id,
+		Size: uint64(length),
+	}
+
+	var ciphertext []byte
+
+	// allocate slice for plaintext
+	plaintext := GetChunkBuf("ch.Save()")
+	defer FreeChunkBuf("ch.Save()", plaintext)
+
+	// if the data is small enough, use a slice from the pool for the ciphertext
+	if length <= maxCiphertextSize-ivSize-hmacSize {
+		ciphertext = GetChunkBuf("ch.Save()")
+		defer FreeChunkBuf("ch.Save()", ciphertext)
+	} else {
+		l := length + ivSize + hmacSize
+
+		debug.Log("Server.Save", "create large slice of %d bytes for ciphertext", l)
+
+		// use a new slice
+		ciphertext = make([]byte, l)
+	}
+
+	plaintext = plaintext[:length]
+	_, err := io.ReadFull(rd, plaintext)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	// encrypt blob
+	n, err := s.Encrypt(ciphertext, plaintext)
 	if err != nil {
 		return Blob{}, err
 	}

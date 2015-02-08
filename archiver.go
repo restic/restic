@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,8 +16,9 @@ import (
 )
 
 const (
-	maxConcurrentFiles = 8
-	maxConcurrentBlobs = 8
+	maxConcurrentFiles = 16
+	maxConcurrentBlobs = 16
+	chunkerBufSize     = 512 * chunker.KiB
 )
 
 type Archiver struct {
@@ -61,10 +63,7 @@ func NewArchiver(s Server, p *Progress) (*Archiver, error) {
 	return arch, nil
 }
 
-func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
-	// compute plaintext hash
-	id := backend.Hash(data)
-
+func (arch *Archiver) Save(t backend.Type, id backend.ID, length uint, rd io.Reader) (Blob, error) {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
 	// test if this blob is already known
@@ -76,7 +75,7 @@ func (arch *Archiver) Save(t backend.Type, data []byte) (Blob, error) {
 	}
 
 	// else encrypt and save data
-	blob, err = arch.s.Save(t, data, id)
+	blob, err = arch.s.SaveFrom(t, id, length, rd)
 
 	// store blob in storage map
 	smapblob := arch.m.Insert(blob)
@@ -161,94 +160,67 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 
 	var blobs Blobs
 
-	// if the file is small enough, store it directly
-	if node.Size < chunker.MinSize {
-		// acquire token
-		token := <-arch.blobToken
-		defer func() {
-			arch.blobToken <- token
-		}()
+	// store all chunks
+	chnker := chunker.New(file, chunkerBufSize, sha256.New)
+	chans := [](<-chan Blob){}
+	//defer chnker.Free()
 
-		buf := GetChunkBuf("blob single file")
-		defer FreeChunkBuf("blob single file", buf)
-		n, err := io.ReadFull(file, buf)
-		if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
-			return nil, arrar.Annotate(err, "SaveFile() read small file")
+	chunks := 0
+
+	for {
+		buf := GetChunkBuf("blob chunker")
+		chunk, err := chnker.Next()
+		if err == io.EOF {
+			FreeChunkBuf("blob chunker", buf)
+			break
 		}
 
-		if err == io.EOF {
-			// use empty blob list for empty files
-			blobs = Blobs{}
-		} else {
-			blob, err := arch.Save(backend.Data, buf[:n])
+		if err != nil {
+			FreeChunkBuf("blob chunker", buf)
+			return nil, arrar.Annotate(err, "SaveFile() chunker.Next()")
+		}
+
+		chunks++
+
+		// acquire token, start goroutine to save chunk
+		token := <-arch.blobToken
+		resCh := make(chan Blob, 1)
+
+		go func(ch chan<- Blob) {
+			blob, err := arch.Save(backend.Data, chunk.Digest, chunk.Length, chunk.Reader(file))
+			// TODO handle error
 			if err != nil {
-				return nil, arrar.Annotate(err, "SaveFile() save chunk")
+				panic(err)
 			}
+
+			FreeChunkBuf("blob chunker", buf)
 
 			arch.p.Report(Stat{Bytes: blob.Size})
+			arch.blobToken <- token
+			ch <- blob
+		}(resCh)
 
-			blobs = Blobs{blob}
-		}
-	} else {
-		// else store all chunks
-		chnker := chunker.New(file)
-		chans := [](<-chan Blob){}
-		defer chnker.Free()
+		chans = append(chans, resCh)
+	}
 
-		chunks := 0
+	blobs = []Blob{}
+	for _, ch := range chans {
+		blobs = append(blobs, <-ch)
+	}
 
-		for {
-			buf := GetChunkBuf("blob chunker")
-			chunk, err := chnker.Next(buf)
-			if err == io.EOF {
-				FreeChunkBuf("blob chunker", buf)
-				break
-			}
-
-			if err != nil {
-				FreeChunkBuf("blob chunker", buf)
-				return nil, arrar.Annotate(err, "SaveFile() chunker.Next()")
-			}
-
-			chunks++
-
-			// acquire token, start goroutine to save chunk
-			token := <-arch.blobToken
-			resCh := make(chan Blob, 1)
-
-			go func(ch chan<- Blob) {
-				blob, err := arch.Save(backend.Data, chunk.Data)
-				// TODO handle error
-				if err != nil {
-					panic(err)
-				}
-
-				FreeChunkBuf("blob chunker", buf)
-
-				arch.p.Report(Stat{Bytes: blob.Size})
-				arch.blobToken <- token
-				ch <- blob
-			}(resCh)
-
-			chans = append(chans, resCh)
-		}
-
-		blobs = []Blob{}
-		for _, ch := range chans {
-			blobs = append(blobs, <-ch)
-		}
-
-		if len(blobs) != chunks {
-			return nil, fmt.Errorf("chunker returned %v chunks, but only %v blobs saved", chunks, len(blobs))
-		}
+	if len(blobs) != chunks {
+		return nil, fmt.Errorf("chunker returned %v chunks, but only %v blobs saved", chunks, len(blobs))
 	}
 
 	var bytes uint64
 
 	node.Content = make([]backend.ID, len(blobs))
+	debug.Log("Archiver.Save", "checking size for file %s", node.path)
 	for i, blob := range blobs {
 		node.Content[i] = blob.ID
 		bytes += blob.Size
+
+		debug.Log("Archiver.Save", "  adding blob %s", blob)
 	}
 
 	if bytes != node.Size {
