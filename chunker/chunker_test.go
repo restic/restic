@@ -91,22 +91,22 @@ func test_with_data(t *testing.T, chnker *chunker.Chunker, testChunks []chunk) [
 		if c != nil {
 			if c.Start != pos {
 				t.Fatalf("Start for chunk %d does not match: expected %d, got %d",
-					i, c.Start, pos)
+					i, pos, c.Start)
 			}
 
 			if c.Length != chunk.Length {
 				t.Fatalf("Length for chunk %d does not match: expected %d, got %d",
-					i, c.Length, chunk.Length)
+					i, chunk.Length, c.Length)
 			}
 
 			if c.Cut != chunk.CutFP {
 				t.Fatalf("Cut fingerprint for chunk %d/%d does not match: expected %016x, got %016x",
-					i, len(chunks)-1, c.Cut, chunk.CutFP)
+					i, len(chunks)-1, chunk.CutFP, c.Cut)
 			}
 
 			if !bytes.Equal(c.Digest, chunk.Digest) {
-				t.Fatalf("Digest fingerprint for chunk %d/%d does not match: expected %q, got %q",
-					i, len(chunks)-1, hex.EncodeToString(c.Digest), hex.EncodeToString(chunk.Digest))
+				t.Fatalf("Digest fingerprint for chunk %d/%d does not match: expected %02x, got %02x",
+					i, len(chunks)-1, chunk.Digest, c.Digest)
 			}
 
 			pos += c.Length
@@ -179,9 +179,11 @@ func TestChunker(t *testing.T) {
 
 func TestChunkerReuse(t *testing.T) {
 	// test multiple uses of the same chunker
+	ch := chunker.New(nil, *testBufSize, sha256.New)
+	buf := get_random(23, 32*1024*1024)
+
 	for i := 0; i < 4; i++ {
-		buf := get_random(23, 32*1024*1024)
-		ch := chunker.New(bytes.NewReader(buf), *testBufSize, sha256.New)
+		ch.Reset(bytes.NewReader(buf))
 		test_with_data(t, ch, chunks1)
 	}
 }

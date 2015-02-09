@@ -77,14 +77,17 @@ func New(rd io.Reader, bufsize int, hashfn func() hash.Hash) *Chunker {
 	c := &Chunker{
 		buf: make([]byte, bufsize),
 		hfn: hashfn,
-		rd:  rd,
 	}
-	c.reset()
+	c.Reset(rd)
 
 	return c
 }
 
-func (c *Chunker) reset() {
+// Reset restarts a chunker so that it can be reused with a different reader as
+// the source.
+func (c *Chunker) Reset(rd io.Reader) {
+	c.rd = rd
+
 	for i := 0; i < WindowSize; i++ {
 		c.window[i] = 0
 	}
@@ -92,6 +95,7 @@ func (c *Chunker) reset() {
 	c.digest = 0
 	c.wpos = 0
 	c.pos = 0
+	c.start = 0
 	c.count = 0
 	c.slide(1)
 
@@ -230,9 +234,9 @@ func (c *Chunker) Next() (*Chunk, error) {
 
 				c.resetHash()
 
-				// keep position
+				// reset chunker, but keep position
 				pos := c.pos
-				c.reset()
+				c.Reset(c.rd)
 				c.pos = pos
 				c.start = pos
 				c.pre = MinSize - WindowSize
