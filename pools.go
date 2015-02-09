@@ -1,8 +1,10 @@
 package restic
 
 import (
+	"crypto/sha256"
 	"sync"
 
+	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/debug"
 )
 
@@ -12,6 +14,7 @@ type poolStats struct {
 	mput map[string]int
 	mmax map[string]int
 
+	new int
 	get int
 	put int
 	max int
@@ -63,21 +66,40 @@ func newPoolStats() *poolStats {
 }
 
 var (
-	chunkPool = sync.Pool{New: newChunkBuf}
-	nodePool  = sync.Pool{New: newNode}
+	chunkPool   = sync.Pool{New: newChunkBuf}
+	nodePool    = sync.Pool{New: newNode}
+	chunkerPool = sync.Pool{New: newChunker}
 
-	chunkStats = newPoolStats()
-	nodeStats  = newPoolStats()
+	chunkStats   = newPoolStats()
+	nodeStats    = newPoolStats()
+	chunkerStats = newPoolStats()
 )
 
 func newChunkBuf() interface{} {
+	chunkStats.m.Lock()
+	defer chunkStats.m.Unlock()
+	chunkStats.new++
+
 	// create buffer for iv, data and hmac
 	return make([]byte, maxCiphertextSize)
 }
 
 func newNode() interface{} {
+	nodeStats.m.Lock()
+	defer nodeStats.m.Unlock()
+	nodeStats.new++
+
 	// create buffer for iv, data and hmac
 	return new(Node)
+}
+
+func newChunker() interface{} {
+	chunkStats.m.Lock()
+	defer chunkStats.m.Unlock()
+	chunkStats.new++
+
+	// create a new chunker with a nil reader
+	return chunker.New(nil, chunkerBufSize, sha256.New)
 }
 
 func GetChunkBuf(s string) []byte {
@@ -100,14 +122,33 @@ func FreeNode(n *Node) {
 	nodePool.Put(n)
 }
 
+func GetChunker(s string) *chunker.Chunker {
+	chunkerStats.Get(s)
+	return chunkerPool.Get().(*chunker.Chunker)
+}
+
+func FreeChunker(s string, ch *chunker.Chunker) {
+	chunkerStats.Put(s)
+	chunkerPool.Put(ch)
+}
+
 func PoolAlloc() {
-	debug.Log("pools.PoolAlloc", "pool stats for chunk: get %d, put %d, diff %d, max %d\n", chunkStats.get, chunkStats.put, chunkStats.get-chunkStats.put, chunkStats.max)
+	debug.Log("pools.PoolAlloc", "pool stats for chunk: new %d, get %d, put %d, diff %d, max %d\n",
+		chunkStats.new, chunkStats.get, chunkStats.put, chunkStats.get-chunkStats.put, chunkStats.max)
 	for k, v := range chunkStats.mget {
-		debug.Log("pools.PoolAlloc", "pool stats for chunk[%s]: get %d, put %d, diff %d, max %d\n", k, v, chunkStats.mput[k], v-chunkStats.mput[k], chunkStats.mmax[k])
+		debug.Log("pools.PoolAlloc", "pool stats for chunk[%s]: get %d, put %d, diff %d, max %d\n",
+			k, v, chunkStats.mput[k], v-chunkStats.mput[k], chunkStats.mmax[k])
 	}
 
-	debug.Log("pools.PoolAlloc", "pool stats for node: get %d, put %d, diff %d, max %d\n", nodeStats.get, nodeStats.put, nodeStats.get-nodeStats.put, nodeStats.max)
+	debug.Log("pools.PoolAlloc", "pool stats for node: new %d, get %d, put %d, diff %d, max %d\n",
+		nodeStats.new, nodeStats.get, nodeStats.put, nodeStats.get-nodeStats.put, nodeStats.max)
 	for k, v := range nodeStats.mget {
 		debug.Log("pools.PoolAlloc", "pool stats for node[%s]: get %d, put %d, diff %d, max %d\n", k, v, nodeStats.mput[k], v-nodeStats.mput[k], nodeStats.mmax[k])
+	}
+
+	debug.Log("pools.PoolAlloc", "pool stats for chunker: new %d, get %d, put %d, diff %d, max %d\n",
+		chunkerStats.new, chunkerStats.get, chunkerStats.put, chunkerStats.get-chunkerStats.put, chunkerStats.max)
+	for k, v := range chunkerStats.mget {
+		debug.Log("pools.PoolAlloc", "pool stats for chunker[%s]: get %d, put %d, diff %d, max %d\n", k, v, chunkerStats.mput[k], v-chunkerStats.mput[k], chunkerStats.mmax[k])
 	}
 }

@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,7 +17,9 @@ import (
 const (
 	maxConcurrentFiles = 16
 	maxConcurrentBlobs = 16
-	chunkerBufSize     = 512 * chunker.KiB
+
+	// chunkerBufSize is used in pool.go
+	chunkerBufSize = 512 * chunker.KiB
 )
 
 type Archiver struct {
@@ -161,9 +162,10 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 	var blobs Blobs
 
 	// store all chunks
-	chnker := chunker.New(file, chunkerBufSize, sha256.New)
+	chnker := GetChunker("archiver.SaveFile")
+	chnker.Reset(file)
 	chans := [](<-chan Blob){}
-	//defer chnker.Free()
+	defer FreeChunker("archiver.SaveFile", chnker)
 
 	chunks := 0
 
