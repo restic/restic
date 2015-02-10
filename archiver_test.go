@@ -2,6 +2,7 @@ package restic_test
 
 import (
 	"bytes"
+	"flag"
 	"io"
 	"math/rand"
 	"testing"
@@ -9,6 +10,8 @@ import (
 	"github.com/restic/restic"
 	"github.com/restic/restic/chunker"
 )
+
+var benchArchiveDirectory = flag.String("test.benchdir", "", "benchmark archiving a real directory")
 
 func get_random(seed, count int) []byte {
 	buf := make([]byte, count)
@@ -116,4 +119,34 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 			benchmarkChunkEncryptP(pb, rd, key)
 		}
 	})
+}
+
+func BenchmarkScanner(b *testing.B) {
+	if *benchArchiveDirectory == "" {
+		b.Skip("benchdir not set, skipping BenchmarkScanner")
+	}
+
+	_, err := restic.NewScanner(nil).Scan(*benchArchiveDirectory)
+	ok(b, err)
+}
+
+func BenchmarkArchiveDirectory(b *testing.B) {
+	if *benchArchiveDirectory == "" {
+		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
+	}
+
+	be := setupBackend(b)
+	defer teardownBackend(b, be)
+	key := setupKey(b, be, "geheim")
+	server := restic.NewServerWithKey(be, key)
+
+	tree, err := restic.NewScanner(nil).Scan(*benchArchiveDirectory)
+	ok(b, err)
+
+	arch, err := restic.NewArchiver(server, nil)
+	ok(b, err)
+
+	_, id, err := arch.Snapshot(*benchArchiveDirectory, tree, nil)
+
+	b.Logf("snapshot archived as %v", id)
 }
