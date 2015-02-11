@@ -332,6 +332,54 @@ func (r *SFTP) Create(t Type, data []byte) (ID, error) {
 	return id, nil
 }
 
+// CreateFrom reads content from rd and stores it as type t. Returned is the
+// storage ID. If the blob is already present, returns ErrAlreadyPresent and
+// the blob's ID.
+func (r *SFTP) CreateFrom(t Type, rd io.Reader) (ID, error) {
+	// TODO: make sure that tempfile is removed upon error
+
+	// check hash while writing
+	hr := NewHashingReader(rd, newHash())
+
+	// create tempfile in backend
+	filename, file, err := r.tempFile()
+	if err != nil {
+		return nil, err
+	}
+
+	// write data to tempfile
+	_, err = io.Copy(file, hr)
+	if err != nil {
+		return nil, err
+	}
+
+	err = file.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// get ID
+	id := ID(hr.Sum(nil))
+
+	// check for duplicate ID
+	res, err := r.Test(t, id)
+	if err != nil {
+		return nil, arrar.Annotate(err, "test for presence")
+	}
+
+	if res {
+		return id, ErrAlreadyPresent
+	}
+
+	// rename file
+	err = r.renameFile(filename, t, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return id, nil
+}
+
 // Construct path for given Type and ID.
 func (r *SFTP) filename(t Type, id ID) string {
 	return filepath.Join(r.dirname(t, id), id.String())
@@ -363,6 +411,23 @@ func (r *SFTP) Get(t Type, id ID) ([]byte, error) {
 	}
 
 	return buf, nil
+}
+
+// GetReader returns a reader that yields the content stored under the given
+// ID. The content is not verified. The reader should be closed after draining
+// it.
+func (r *SFTP) GetReader(t Type, id ID) (io.ReadCloser, error) {
+	if id == nil {
+		return nil, errors.New("unable to load nil ID")
+	}
+
+	// try to open file
+	file, err := r.c.Open(r.filename(t, id))
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
 }
 
 // Test returns true if a blob of the given type and ID exists in the backend.
