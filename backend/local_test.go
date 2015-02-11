@@ -1,6 +1,7 @@
 package backend_test
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -80,7 +81,33 @@ func testBackend(b *backend.Local, t *testing.T) {
 
 			// compare content
 			equals(t, test.data, string(buf))
+
+			// compare content again via stream function
+			rd, err := b.GetReader(tpe, id)
+			ok(t, err)
+			buf, err = ioutil.ReadAll(rd)
+			ok(t, err)
+			equals(t, test.data, string(buf))
 		}
+
+		// test stream functions with first file
+		test := TestStrings[0]
+		id, err := backend.ParseID(test.id)
+		ok(t, err)
+
+		// create with reader, should return error
+		_, err = b.CreateFrom(tpe, bytes.NewReader([]byte(test.data)))
+		assert(t, err == backend.ErrAlreadyPresent,
+			"expected ErrAlreadyPresent, got %v", err)
+
+		// remove and recreate
+		err = b.Remove(tpe, id)
+		ok(t, err)
+
+		id2, err := b.CreateFrom(tpe, bytes.NewReader([]byte(test.data)))
+		ok(t, err)
+		assert(t, id.Equal(id2),
+			"expected id %v, got %v", id, id2)
 
 		// list items
 		IDs := backend.IDs{}
