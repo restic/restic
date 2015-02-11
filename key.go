@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/user"
 	"time"
@@ -460,6 +461,79 @@ func (k *Key) Decrypt(ciphertext []byte) ([]byte, error) {
 // must be in the form IV || Ciphertext || HMAC.
 func (k *Key) DecryptUser(ciphertext []byte) ([]byte, error) {
 	return k.decrypt(k.user, ciphertext)
+}
+
+// decryptFrom verifies and decrypts the ciphertext read from rd with ks and
+// makes it available on the returned Reader. Ciphertext must be in the form IV
+// || Ciphertext || HMAC. In order to correctly verify the ciphertext, rd is
+// drained, locally buffered and made available on the returned Reader
+// afterwards. If an HMAC verification failure is observed, it is returned
+// immediately.
+func (k *Key) decryptFrom(ks *keys, rd io.Reader) (io.Reader, error) {
+	ciphertext, err := ioutil.ReadAll(rd)
+	if err != nil {
+		return nil, err
+	}
+
+	// check for plausible length
+	if len(ciphertext) < ivSize+hmacSize {
+		panic("trying to decryipt invalid data: ciphertext too small")
+	}
+
+	hm := hmac.New(sha256.New, ks.Sign)
+
+	// extract hmac
+	l := len(ciphertext) - hm.Size()
+	ciphertext, mac := ciphertext[:l], ciphertext[l:]
+
+	// calculate new hmac
+	n, err := hm.Write(ciphertext)
+	if err != nil || n != len(ciphertext) {
+		panic(fmt.Sprintf("unable to calculate hmac of ciphertext, err %v", err))
+	}
+
+	// verify hmac
+	mac2 := hm.Sum(nil)
+
+	if !hmac.Equal(mac, mac2) {
+		return nil, ErrUnauthenticated
+	}
+
+	// extract iv
+	iv, ciphertext := ciphertext[:aes.BlockSize], ciphertext[aes.BlockSize:]
+
+	// decrypt data
+	c, err := aes.NewCipher(ks.Encrypt)
+	if err != nil {
+		panic(fmt.Sprintf("unable to create cipher: %v", err))
+	}
+
+	r := cipher.StreamReader{
+		S: cipher.NewCTR(c, iv),
+		R: bytes.NewReader(ciphertext),
+	}
+
+	return r, nil
+}
+
+// DecryptFrom verifies and decrypts the ciphertext read from rd and makes it
+// available on the returned Reader. Ciphertext must be in the form IV ||
+// Ciphertext || HMAC. In order to correctly verify the ciphertext, rd is
+// drained, locally buffered and made available on the returned Reader
+// afterwards. If an HMAC verification failure is observed, it is returned
+// immediately.
+func (k *Key) DecryptFrom(rd io.Reader) (io.Reader, error) {
+	return k.decryptFrom(k.master, rd)
+}
+
+// DecryptFrom verifies and decrypts the ciphertext read from rd with the user
+// key and makes it available on the returned Reader. Ciphertext must be in the
+// form IV || Ciphertext || HMAC. In order to correctly verify the ciphertext,
+// rd is drained, locally buffered and made available on the returned Reader
+// afterwards. If an HMAC verification failure is observed, it is returned
+// immediately.
+func (k *Key) DecryptUserFrom(rd io.Reader) (io.Reader, error) {
+	return k.decryptFrom(k.user, rd)
 }
 
 func (k *Key) String() string {

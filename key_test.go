@@ -164,6 +164,54 @@ func BenchmarkEncrypt(b *testing.B) {
 	restic.FreeChunkBuf("BenchmarkEncrypt", buf)
 }
 
+func BenchmarkDecryptReader(b *testing.B) {
+	be := setupBackend(b)
+	defer teardownBackend(b, be)
+	k := setupKey(b, be, testPassword)
+
+	size := 8 << 20 // 8MiB
+	buf := get_random(23, size)
+
+	ciphertext := make([]byte, len(buf)+restic.CiphertextExtension)
+	_, err := k.Encrypt(ciphertext, buf)
+	ok(b, err)
+
+	rd := bytes.NewReader(ciphertext)
+
+	b.ResetTimer()
+	b.SetBytes(int64(size))
+
+	for i := 0; i < b.N; i++ {
+		rd.Seek(0, 0)
+		decRd, err := k.DecryptFrom(rd)
+		ok(b, err)
+
+		_, err = io.Copy(ioutil.Discard, decRd)
+		ok(b, err)
+	}
+}
+
+func BenchmarkEncryptDecryptReader(b *testing.B) {
+	be := setupBackend(b)
+	defer teardownBackend(b, be)
+	k := setupKey(b, be, testPassword)
+
+	size := 8 << 20 // 8MiB
+	rd := randomReader(23, size)
+
+	b.ResetTimer()
+	b.SetBytes(int64(size))
+
+	for i := 0; i < b.N; i++ {
+		rd.Seek(0, 0)
+		decRd, err := k.DecryptFrom(k.EncryptFrom(rd))
+		ok(b, err)
+
+		_, err = io.Copy(ioutil.Discard, decRd)
+		ok(b, err)
+	}
+}
+
 func BenchmarkDecrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
@@ -250,6 +298,42 @@ func TestEncryptStreamReader(t *testing.T) {
 		// decrypt with default function
 		plaintext, err := k.Decrypt(ciphertext)
 		ok(t, err)
+		assert(t, bytes.Equal(data, plaintext),
+			"wrong plaintext after decryption: expected %02x, got %02x",
+			data, plaintext)
+	}
+}
+
+func TestDecryptStreamReader(t *testing.T) {
+	s := setupBackend(t)
+	defer teardownBackend(t, s)
+	k := setupKey(t, s, testPassword)
+
+	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
+	if *testLargeCrypto {
+		tests = append(tests, 7<<20+123)
+	}
+
+	for _, size := range tests {
+		data := make([]byte, size)
+		_, err := io.ReadFull(randomReader(42, size), data)
+		ok(t, err)
+
+		ciphertext := make([]byte, size+restic.CiphertextExtension)
+
+		// encrypt with default function
+		n, err := k.Encrypt(ciphertext, data)
+		ok(t, err)
+		assert(t, n == len(data)+restic.CiphertextExtension,
+			"wrong number of bytes returned after encryption: expected %d, got %d",
+			len(data)+restic.CiphertextExtension, n)
+
+		rd, err := k.DecryptFrom(bytes.NewReader(ciphertext))
+		ok(t, err)
+
+		plaintext, err := ioutil.ReadAll(rd)
+		ok(t, err)
+
 		assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",
 			data, plaintext)
