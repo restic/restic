@@ -318,8 +318,16 @@ func (s Server) Get(t backend.Type, id backend.ID) ([]byte, error) {
 	return s.be.Get(t, id)
 }
 
+func (s Server) GetReader(t backend.Type, id backend.ID) (io.ReadCloser, error) {
+	return s.be.GetReader(t, id)
+}
+
 func (s Server) Create(t backend.Type, data []byte) (backend.ID, error) {
 	return s.be.Create(t, data)
+}
+
+func (s Server) CreateFrom(t backend.Type, r io.Reader) (backend.ID, error) {
+	return s.be.CreateFrom(t, r)
 }
 
 func (s Server) Test(t backend.Type, id backend.ID) (bool, error) {
