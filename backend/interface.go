@@ -1,6 +1,9 @@
 package backend
 
-import "errors"
+import (
+	"errors"
+	"io"
+)
 
 type Type string
 
@@ -26,10 +29,12 @@ type Lister interface {
 
 type Getter interface {
 	Get(Type, ID) ([]byte, error)
+	GetReader(Type, ID) (io.ReadCloser, error)
 }
 
 type Creater interface {
 	Create(Type, []byte) (ID, error)
+	CreateFrom(Type, rd io.Reader) (ID, error)
 }
 
 type Tester interface {
