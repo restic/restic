@@ -34,7 +34,7 @@ type Getter interface {
 
 type Creater interface {
 	Create(Type, []byte) (ID, error)
-	CreateFrom(Type, rd io.Reader) (ID, error)
+	CreateFrom(Type, io.Reader) (ID, error)
 }
 
 type Tester interface {

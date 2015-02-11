@@ -394,7 +394,12 @@ func (r *SFTP) Get(t Type, id ID) ([]byte, error) {
 
 	// try to open file
 	file, err := r.c.Open(r.filename(t, id))
-	defer file.Close()
+	defer func() {
+		// TODO: report bug against sftp client, ignore Close() for nil file
+		if file != nil {
+			file.Close()
+		}
+	}()
 	if err != nil {
 		return nil, err
 	}

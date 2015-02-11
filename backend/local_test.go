@@ -23,7 +23,7 @@ var TestStrings = []struct {
 	{"4e54d2c721cbdb730f01b10b62dec622962b36966ec685880effa63d71c808f2", "foo/../../baz"},
 }
 
-func setupBackend(t *testing.T) *backend.Local {
+func setupLocalBackend(t *testing.T) *backend.Local {
 	tempdir, err := ioutil.TempDir("", "restic-test-")
 	ok(t, err)
 
@@ -35,7 +35,7 @@ func setupBackend(t *testing.T) *backend.Local {
 	return b
 }
 
-func teardownBackend(t *testing.T, b *backend.Local) {
+func teardownLocalBackend(t *testing.T, b *backend.Local) {
 	if !*testCleanup {
 		t.Logf("leaving local backend at %s\n", b.Location())
 		return
@@ -44,7 +44,7 @@ func teardownBackend(t *testing.T, b *backend.Local) {
 	ok(t, b.Delete())
 }
 
-func testBackend(b *backend.Local, t *testing.T) {
+func testBackend(b backend.Backend, t *testing.T) {
 	for _, tpe := range []backend.Type{backend.Data, backend.Key, backend.Lock, backend.Snapshot, backend.Tree} {
 		// detect non-existing files
 		for _, test := range TestStrings {
@@ -152,15 +152,15 @@ func TestBackend(t *testing.T) {
 	assert(t, err != nil, "opening invalid repository at /invalid-restic-test should have failed, but err is nil")
 	assert(t, b == nil, fmt.Sprintf("opening invalid repository at /invalid-restic-test should have failed, but b is not nil: %v", b))
 
-	s := setupBackend(t)
-	defer teardownBackend(t, s)
+	s := setupLocalBackend(t)
+	defer teardownLocalBackend(t, s)
 
 	testBackend(s, t)
 }
 
 func TestLocalBackendCreationFailures(t *testing.T) {
-	b := setupBackend(t)
-	defer teardownBackend(t, b)
+	b := setupLocalBackend(t)
+	defer teardownLocalBackend(t, b)
 
 	// test failure to create a new repository at the same location
 	b2, err := backend.CreateLocal(b.Location())
@@ -169,29 +169,4 @@ func TestLocalBackendCreationFailures(t *testing.T) {
 	// test failure to create a new repository at the same location without a config file
 	b2, err = backend.CreateLocal(b.Location())
 	assert(t, err != nil && b2 == nil, fmt.Sprintf("creating a repository at %s for the second time should have failed", b.Location()))
-}
-
-func TestID(t *testing.T) {
-	for _, test := range TestStrings {
-		id, err := backend.ParseID(test.id)
-		ok(t, err)
-
-		id2, err := backend.ParseID(test.id)
-		ok(t, err)
-		assert(t, id.Equal(id2), "ID.Equal() does not work as expected")
-
-		ret, err := id.EqualString(test.id)
-		ok(t, err)
-		assert(t, ret, "ID.EqualString() returned wrong value")
-
-		// test json marshalling
-		buf, err := id.MarshalJSON()
-		ok(t, err)
-		equals(t, "\""+test.id+"\"", string(buf))
-
-		var id3 backend.ID
-		err = id3.UnmarshalJSON(buf)
-		ok(t, err)
-		equals(t, id, id3)
-	}
 }
