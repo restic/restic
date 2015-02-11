@@ -341,7 +341,7 @@ func (k *Key) encryptFrom(ks *keys, rd io.Reader) io.Reader {
 		S: cipher.NewCTR(c, iv),
 	}
 
-	return backend.NewHashReader(io.MultiReader(ivReader, encryptReader),
+	return backend.NewHashAppendReader(io.MultiReader(ivReader, encryptReader),
 		hmac.New(sha256.New, ks.Sign))
 }
 

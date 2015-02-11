@@ -5,22 +5,22 @@ import (
 	"io"
 )
 
-type HashReader struct {
+type HashAppendReader struct {
 	r      io.Reader
 	h      hash.Hash
 	sum    []byte
 	closed bool
 }
 
-func NewHashReader(r io.Reader, h hash.Hash) *HashReader {
-	return &HashReader{
+func NewHashAppendReader(r io.Reader, h hash.Hash) *HashAppendReader {
+	return &HashAppendReader{
 		h:   h,
 		r:   io.TeeReader(r, h),
 		sum: make([]byte, 0, h.Size()),
 	}
 }
 
-func (h *HashReader) Read(p []byte) (n int, err error) {
+func (h *HashAppendReader) Read(p []byte) (n int, err error) {
 	if !h.closed {
 		n, err = h.r.Read(p)
 
@@ -50,4 +50,24 @@ func (h *HashReader) Read(p []byte) (n int, err error) {
 	}
 
 	return
+}
+
+type HashingReader struct {
+	r io.Reader
+	h hash.Hash
+}
+
+func NewHashingReader(r io.Reader, h hash.Hash) *HashingReader {
+	return &HashingReader{
+		h: h,
+		r: io.TeeReader(r, h),
+	}
+}
+
+func (h *HashingReader) Read(p []byte) (int, error) {
+	return h.r.Read(p)
+}
+
+func (h *HashingReader) Sum(d []byte) []byte {
+	return h.h.Sum(d)
 }
