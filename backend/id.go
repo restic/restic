@@ -2,7 +2,6 @@ package backend
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -10,7 +9,7 @@ import (
 )
 
 // IDSize contains the size of an ID, in bytes.
-const IDSize = sha256.Size
+const IDSize = hashSize
 
 // References content within a repository.
 type ID []byte
@@ -26,7 +25,7 @@ func ParseID(s string) (ID, error) {
 	}
 
 	if len(b) != IDSize {
-		return nil, errors.New("invalid length for sha256 hash")
+		return nil, errors.New("invalid length for hash")
 	}
 
 	return ID(b), nil
@@ -83,7 +82,7 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 }
 
 func IDFromData(d []byte) ID {
-	hash := sha256.Sum256(d)
+	hash := hashData(d)
 	id := idPool.Get().(ID)
 	copy(id, hash[:])
 	return id

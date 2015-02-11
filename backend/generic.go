@@ -19,6 +19,13 @@ var (
 	ErrMultipleIDMatches = errors.New("multiple IDs with prefix found")
 )
 
+var (
+	newHash  = sha256.New
+	hashData = sha256.Sum256
+)
+
+const hashSize = sha256.Size
+
 // Each lists all entries of type t in the backend and calls function f() with
 // the id and data.
 func Each(be interface {
@@ -92,7 +99,7 @@ func Uncompress(data []byte) []byte {
 
 // Hash returns the ID for data.
 func Hash(data []byte) ID {
-	h := sha256.Sum256(data)
+	h := hashData(data)
 	id := idPool.Get().(ID)
 	copy(id, h[:])
 	return id
