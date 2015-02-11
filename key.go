@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash"
 	"io"
 	"io/ioutil"
 	"os"
@@ -318,53 +317,6 @@ func (k *Key) Encrypt(ciphertext, plaintext []byte) (int, error) {
 	return k.encrypt(k.master, ciphertext, plaintext)
 }
 
-type HashReader struct {
-	r      io.Reader
-	h      hash.Hash
-	sum    []byte
-	closed bool
-}
-
-func NewHashReader(r io.Reader, h hash.Hash) *HashReader {
-	return &HashReader{
-		h:   h,
-		r:   io.TeeReader(r, h),
-		sum: make([]byte, 0, h.Size()),
-	}
-}
-
-func (h *HashReader) Read(p []byte) (n int, err error) {
-	if !h.closed {
-		n, err = h.r.Read(p)
-
-		if err == io.EOF {
-			h.closed = true
-			h.sum = h.h.Sum(h.sum)
-		} else if err != nil {
-			return
-		}
-	}
-
-	if h.closed {
-		// output hash
-		r := len(p) - n
-
-		if r > 0 {
-			c := copy(p[n:], h.sum)
-			h.sum = h.sum[c:]
-
-			n += c
-			err = nil
-		}
-
-		if len(h.sum) == 0 {
-			err = io.EOF
-		}
-	}
-
-	return
-}
-
 // encryptFrom encrypts and signs data read from rd with ks. The returned
 // io.Reader reads IV || Ciphertext || HMAC. For the hash function, SHA256 is
 // used.
@@ -389,7 +341,7 @@ func (k *Key) encryptFrom(ks *keys, rd io.Reader) io.Reader {
 		S: cipher.NewCTR(c, iv),
 	}
 
-	return NewHashReader(io.MultiReader(ivReader, encryptReader),
+	return backend.NewHashReader(io.MultiReader(ivReader, encryptReader),
 		hmac.New(sha256.New, ks.Sign))
 }
 
