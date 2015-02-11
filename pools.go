@@ -99,7 +99,7 @@ func newChunker() interface{} {
 	chunkStats.new++
 
 	// create a new chunker with a nil reader
-	return chunker.New(nil, chunkerBufSize, sha256.New)
+	return chunker.New(nil, chunkerBufSize, sha256.New())
 }
 
 func GetChunkBuf(s string) []byte {

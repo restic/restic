@@ -67,16 +67,16 @@ type Chunker struct {
 
 	digest uint64
 	h      hash.Hash
-	hfn    func() hash.Hash
 }
 
-// New returns a new Chunker that reads from data from rd.
-func New(rd io.Reader, bufsize int, hashfn func() hash.Hash) *Chunker {
+// New returns a new Chunker that reads from data from rd with bufsize and pass
+// all data to hash along the way.
+func New(rd io.Reader, bufsize int, hash hash.Hash) *Chunker {
 	once.Do(fill_tables)
 
 	c := &Chunker{
 		buf: make([]byte, bufsize),
-		hfn: hashfn,
+		h:   hash,
 	}
 	c.Reset(rd)
 
@@ -99,7 +99,9 @@ func (c *Chunker) Reset(rd io.Reader) {
 	c.count = 0
 	c.slide(1)
 
-	c.resetHash()
+	if c.h != nil {
+		c.h.Reset()
+	}
 
 	// do not start a new chunk unless at least MinSize bytes have been read
 	c.pre = MinSize - WindowSize
@@ -232,7 +234,9 @@ func (c *Chunker) Next() (*Chunk, error) {
 					Digest: c.hashDigest(),
 				}
 
-				c.resetHash()
+				if c.h != nil {
+					c.h.Reset()
+				}
 
 				// reset chunker, but keep position
 				pos := c.pos
@@ -252,12 +256,6 @@ func (c *Chunker) Next() (*Chunk, error) {
 		c.count += steps
 		c.pos += steps
 		c.bpos = c.bmax
-	}
-}
-
-func (c *Chunker) resetHash() {
-	if c.hfn != nil {
-		c.h = c.hfn()
 	}
 }
 
