@@ -2,6 +2,7 @@ package backend_test
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -47,12 +48,14 @@ func str2id(s string) backend.ID {
 }
 
 type mockBackend struct {
-	list   func(backend.Type) (backend.IDs, error)
-	get    func(backend.Type, backend.ID) ([]byte, error)
-	create func(backend.Type, []byte) (backend.ID, error)
-	test   func(backend.Type, backend.ID) (bool, error)
-	remove func(backend.Type, backend.ID) error
-	close  func() error
+	list       func(backend.Type) (backend.IDs, error)
+	get        func(backend.Type, backend.ID) ([]byte, error)
+	getReader  func(backend.Type, backend.ID) (io.ReadCloser, error)
+	create     func(backend.Type, []byte) (backend.ID, error)
+	createFrom func(backend.Type, io.Reader) (backend.ID, error)
+	test       func(backend.Type, backend.ID) (bool, error)
+	remove     func(backend.Type, backend.ID) error
+	close      func() error
 }
 
 func (m mockBackend) List(t backend.Type) (backend.IDs, error) {
@@ -63,8 +66,16 @@ func (m mockBackend) Get(t backend.Type, id backend.ID) ([]byte, error) {
 	return m.get(t, id)
 }
 
+func (m mockBackend) GetReader(t backend.Type, id backend.ID) (io.ReadCloser, error) {
+	return m.getReader(t, id)
+}
+
 func (m mockBackend) Create(t backend.Type, data []byte) (backend.ID, error) {
 	return m.create(t, data)
+}
+
+func (m mockBackend) CreateFrom(t backend.Type, r io.Reader) (backend.ID, error) {
+	return m.createFrom(t, r)
 }
 
 func (m mockBackend) Test(t backend.Type, id backend.ID) (bool, error) {
