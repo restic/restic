@@ -16,16 +16,16 @@ var benchArchiveDirectory = flag.String("test.benchdir", "", "benchmark archivin
 func get_random(seed, count int) []byte {
 	buf := make([]byte, count)
 
-	rnd := rand.New(rand.NewSource(23))
-	for i := 0; i < count; i += 4 {
-		r := rnd.Uint32()
-		buf[i] = byte(r)
-		buf[i+1] = byte(r >> 8)
-		buf[i+2] = byte(r >> 16)
-		buf[i+3] = byte(r >> 24)
+	rnd := rand.New(rand.NewSource(int64(seed)))
+	for i := 0; i < count; i++ {
+		buf[i] = byte(rnd.Uint32())
 	}
 
 	return buf
+}
+
+func randomReader(seed, size int) *bytes.Reader {
+	return bytes.NewReader(get_random(seed, size))
 }
 
 const bufSize = chunker.MiB
