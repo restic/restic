@@ -1,6 +1,8 @@
 package restic_test
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"flag"
 	"io"
 	"io/ioutil"
@@ -61,10 +63,7 @@ func TestEncryptDecrypt(t *testing.T) {
 
 	for _, size := range tests {
 		data := make([]byte, size)
-		f, err := os.Open("/dev/urandom")
-		ok(t, err)
-
-		_, err = io.ReadFull(f, data)
+		_, err := io.ReadFull(randomReader(42, size), data)
 		ok(t, err)
 
 		ciphertext := restic.GetChunkBuf("TestEncryptDecrypt")
@@ -128,6 +127,24 @@ func TestLargeEncrypt(t *testing.T) {
 	}
 }
 
+func BenchmarkEncryptReader(b *testing.B) {
+	size := 8 << 20 // 8MiB
+	rd := randomReader(23, size)
+
+	be := setupBackend(b)
+	defer teardownBackend(b, be)
+	k := setupKey(b, be, testPassword)
+
+	b.ResetTimer()
+	b.SetBytes(int64(size))
+
+	for i := 0; i < b.N; i++ {
+		rd.Seek(0, 0)
+		_, err := io.Copy(ioutil.Discard, k.EncryptFrom(rd))
+		ok(b, err)
+	}
+}
+
 func BenchmarkEncrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
@@ -167,4 +184,74 @@ func BenchmarkDecrypt(b *testing.B) {
 		ok(b, err)
 	}
 	restic.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
+}
+
+func TestHashReader(t *testing.T) {
+	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
+	if *testLargeCrypto {
+		tests = append(tests, 7<<20+123)
+	}
+
+	for _, size := range tests {
+		data := make([]byte, size)
+		_, err := io.ReadFull(randomReader(42, size), data)
+		ok(t, err)
+
+		expectedHash := sha256.Sum256(data)
+
+		rd := restic.NewHashReader(bytes.NewReader(data), sha256.New())
+
+		target := bytes.NewBuffer(nil)
+		n, err := io.Copy(target, rd)
+		ok(t, err)
+
+		assert(t, n == int64(size)+int64(len(expectedHash)),
+			"HashReader: invalid number of bytes read: got %d, expected %d",
+			n, size+len(expectedHash))
+
+		r := target.Bytes()
+		resultingHash := r[len(r)-len(expectedHash):]
+		assert(t, bytes.Equal(expectedHash[:], resultingHash),
+			"HashReader: hashes do not match: expected %02x, got %02x",
+			expectedHash, resultingHash)
+
+		// try to read again, must return io.EOF
+		n2, err := rd.Read(make([]byte, 100))
+		assert(t, n2 == 0, "HashReader returned %d additional bytes", n)
+		assert(t, err == io.EOF, "HashReader returned %v instead of EOF", err)
+	}
+}
+
+func TestEncryptStreamReader(t *testing.T) {
+	s := setupBackend(t)
+	defer teardownBackend(t, s)
+	k := setupKey(t, s, testPassword)
+
+	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
+	if *testLargeCrypto {
+		tests = append(tests, 7<<20+123)
+	}
+
+	for _, size := range tests {
+		data := make([]byte, size)
+		_, err := io.ReadFull(randomReader(42, size), data)
+		ok(t, err)
+
+		erd := k.EncryptFrom(bytes.NewReader(data))
+
+		ciphertext, err := ioutil.ReadAll(erd)
+		ok(t, err)
+
+		l := len(data) + restic.CiphertextExtension
+		assert(t, len(ciphertext) == l,
+			"wrong ciphertext length: expected %d, got %d",
+			l, len(ciphertext))
+
+		// decrypt with default function
+		plaintext, err := k.Decrypt(ciphertext)
+		ok(t, err)
+		assert(t, bytes.Equal(data, plaintext),
+			"wrong plaintext after decryption: expected %02x, got %02x",
+			data, plaintext)
+	}
 }
