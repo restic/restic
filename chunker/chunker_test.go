@@ -256,13 +256,14 @@ func benchmarkChunker(b *testing.B, hash hash.Hash) {
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
+	ch := chunker.New(rd, *testBufSize, hash)
 
 	var chunks int
 	for i := 0; i < b.N; i++ {
 		chunks = 0
 
 		rd.Seek(0, 0)
-		ch := chunker.New(rd, *testBufSize, hash)
+		ch.Reset(rd)
 
 		for {
 			_, err := ch.Next()

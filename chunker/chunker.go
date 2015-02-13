@@ -206,7 +206,8 @@ func (c *Chunker) Next() (*Chunk, error) {
 			c.pre = 0
 		}
 
-		for i, b := range c.buf[c.bpos:c.bmax] {
+		add := c.count
+		for _, b := range c.buf[c.bpos:c.bmax] {
 			// inline c.slide(b) and append(b) to increase performance
 			out := c.window[c.wpos]
 			c.window[c.wpos] = b
@@ -221,9 +222,15 @@ func (c *Chunker) Next() (*Chunk, error) {
 			c.digest ^= mod_table[index]
 			// end inline
 
-			if (c.count+uint(i)+1 >= MinSize && (c.digest&splitmask) == 0) || c.count+uint(i)+1 >= MaxSize {
+			add++
+			if add < MinSize {
+				continue
+			}
+
+			if (c.digest&splitmask) == 0 || add >= MaxSize {
+				i := add - c.count - 1
 				c.updateHash(c.buf[c.bpos : c.bpos+uint(i)+1])
-				c.count += uint(i) + 1
+				c.count = add
 				c.pos += uint(i) + 1
 				c.bpos += uint(i) + 1
 
