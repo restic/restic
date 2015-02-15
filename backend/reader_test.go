@@ -65,7 +65,7 @@ func TestHashingReader(t *testing.T) {
 
 		assert(t, n == int64(size),
 			"HashAppendReader: invalid number of bytes read: got %d, expected %d",
-			n, size+len(expectedHash))
+			n, size)
 
 		resultingHash := rd.Sum(nil)
 		assert(t, bytes.Equal(expectedHash[:], resultingHash),
