@@ -35,8 +35,9 @@ type Node struct {
 
 	tree *Tree
 
-	path string
-	err  error
+	path  string
+	err   error
+	blobs Blobs
 }
 
 func (n Node) String() string {

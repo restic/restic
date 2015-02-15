@@ -183,8 +183,7 @@ func (t *Tree) Insert(node *Node) error {
 		return ErrNodeAlreadyInTree
 	}
 
-	// insert blob
-	// https://code.google.com/p/go-wiki/wiki/bliceTricks
+	// https://code.google.com/p/go-wiki/wiki/SliceTricks
 	t.Nodes = append(t.Nodes, &Node{})
 	copy(t.Nodes[pos+1:], t.Nodes[pos:])
 	t.Nodes[pos] = node

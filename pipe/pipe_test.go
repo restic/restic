@@ -33,7 +33,7 @@ func statPath(path string) (stats, error) {
 
 		if fi.IsDir() {
 			s.dirs++
-		} else if isFile(fi) {
+		} else {
 			s.files++
 		}
 
@@ -57,8 +57,7 @@ func TestPipelineWalker(t *testing.T) {
 	after := stats{}
 	m := sync.Mutex{}
 
-	var wg sync.WaitGroup
-	worker := func(done <-chan struct{}, entCh <-chan pipe.Entry, dirCh <-chan pipe.Dir) {
+	worker := func(wg *sync.WaitGroup, done <-chan struct{}, entCh <-chan pipe.Entry, dirCh <-chan pipe.Dir) {
 		defer wg.Done()
 		for {
 			select {
@@ -97,13 +96,14 @@ func TestPipelineWalker(t *testing.T) {
 		}
 	}
 
+	var wg sync.WaitGroup
 	done := make(chan struct{})
 	entCh := make(chan pipe.Entry)
 	dirCh := make(chan pipe.Dir)
 
 	for i := 0; i < *maxWorkers; i++ {
 		wg.Add(1)
-		go worker(done, entCh, dirCh)
+		go worker(&wg, done, entCh, dirCh)
 	}
 
 	resCh, err := pipe.Walk(*testWalkerPath, done, entCh, dirCh)
@@ -129,24 +129,32 @@ func BenchmarkPipelineWalker(b *testing.B) {
 	var max time.Duration
 	m := sync.Mutex{}
 
-	worker := func(wg *sync.WaitGroup, done <-chan struct{}, entCh <-chan pipe.Entry, dirCh <-chan pipe.Dir) {
+	fileWorker := func(wg *sync.WaitGroup, done <-chan struct{}, ch <-chan pipe.Entry) {
 		defer wg.Done()
 		for {
 			select {
-			case e, ok := <-entCh:
+			case e, ok := <-ch:
 				if !ok {
 					// channel is closed
 					return
 				}
 
-				// fmt.Printf("file: %v\n", j.Path)
-
 				// simulate backup
-				time.Sleep(10 * time.Millisecond)
+				//time.Sleep(10 * time.Millisecond)
 
 				e.Result <- true
+			case <-done:
+				// pipeline was cancelled
+				return
+			}
+		}
+	}
 
-			case dir, ok := <-dirCh:
+	dirWorker := func(wg *sync.WaitGroup, done <-chan struct{}, ch <-chan pipe.Dir) {
+		defer wg.Done()
+		for {
+			select {
+			case dir, ok := <-ch:
 				if !ok {
 					// channel is closed
 					return
@@ -164,8 +172,6 @@ func BenchmarkPipelineWalker(b *testing.B) {
 				if d > max {
 					max = d
 				}
-
-				// fmt.Printf("dir %v: %v\n", d, j.Path)
 				m.Unlock()
 
 				dir.Result <- true
@@ -177,15 +183,17 @@ func BenchmarkPipelineWalker(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
+		max = 0
 		done := make(chan struct{})
-		entCh := make(chan pipe.Entry, 100)
-		dirCh := make(chan pipe.Dir, 100)
+		entCh := make(chan pipe.Entry, 200)
+		dirCh := make(chan pipe.Dir, 200)
 
 		var wg sync.WaitGroup
 		b.Logf("starting %d workers", *maxWorkers)
 		for i := 0; i < *maxWorkers; i++ {
-			wg.Add(1)
-			go worker(&wg, done, entCh, dirCh)
+			wg.Add(2)
+			go dirWorker(&wg, done, dirCh)
+			go fileWorker(&wg, done, entCh)
 		}
 
 		resCh, err := pipe.Walk(*testWalkerPath, done, entCh, dirCh)
@@ -196,7 +204,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 
 		// wait for final result
 		<-resCh
-	}
 
-	b.Logf("max duration for a dir: %v", max)
+		b.Logf("max duration for a dir: %v", max)
+	}
 }

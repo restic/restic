@@ -12,11 +12,12 @@ import (
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/pipe"
 )
 
 const (
-	maxConcurrentFiles = 16
-	maxConcurrentBlobs = 16
+	maxConcurrentBlobs = 32
+	maxConcurrency     = 10
 
 	// chunkerBufSize is used in pool.go
 	chunkerBufSize = 512 * chunker.KiB
@@ -26,7 +27,6 @@ type Archiver struct {
 	s Server
 	m *Map
 
-	fileToken chan struct{}
 	blobToken chan struct{}
 
 	Error  func(dir string, fi os.FileInfo, err error) error
@@ -40,15 +40,10 @@ func NewArchiver(s Server, p *Progress) (*Archiver, error) {
 	arch := &Archiver{
 		s:         s,
 		p:         p,
-		fileToken: make(chan struct{}, maxConcurrentFiles),
 		blobToken: make(chan struct{}, maxConcurrentBlobs),
 	}
 
-	// fill file and blob token
-	for i := 0; i < maxConcurrentFiles; i++ {
-		arch.fileToken <- struct{}{}
-	}
-
+	// fill blob token
 	for i := 0; i < maxConcurrentBlobs; i++ {
 		arch.blobToken <- struct{}{}
 	}
@@ -283,16 +278,10 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 			}
 
 			if len(node.Content) == 0 {
-				// get token
-				token := <-arch.fileToken
-
 				// start goroutine
 				wg.Add(1)
 				go func(n *Node) {
 					defer wg.Done()
-					defer func() {
-						arch.fileToken <- token
-					}()
 
 					var blobs Blobs
 					blobs, n.err = arch.SaveFile(n)
@@ -354,27 +343,143 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 	return blob, nil
 }
 
-func (arch *Archiver) Snapshot(dir string, t *Tree, parentSnapshot backend.ID) (*Snapshot, backend.ID, error) {
+func (arch *Archiver) Snapshot(path string, parentSnapshot backend.ID) (*Snapshot, backend.ID, error) {
 	debug.Break("Archiver.Snapshot")
 
 	arch.p.Start()
 	defer arch.p.Done()
 
-	sn, err := NewSnapshot(dir)
+	sn, err := NewSnapshot(path)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	sn.Parent = parentSnapshot
 
-	blob, err := arch.saveTree(t)
+	done := make(chan struct{})
+	entCh := make(chan pipe.Entry)
+	dirCh := make(chan pipe.Dir)
+
+	fileWorker := func(wg *sync.WaitGroup, done <-chan struct{}, entCh <-chan pipe.Entry) {
+		defer wg.Done()
+		for {
+			select {
+			case e, ok := <-entCh:
+				if !ok {
+					// channel is closed
+					return
+				}
+
+				node, err := NodeFromFileInfo(e.Path, e.Info)
+				if err != nil {
+					panic(err)
+				}
+
+				if node.Type == "file" {
+					node.blobs, err = arch.SaveFile(node)
+					if err != nil {
+						panic(err)
+					}
+				}
+
+				e.Result <- node
+			case <-done:
+				// pipeline was cancelled
+				return
+			}
+		}
+	}
+
+	dirWorker := func(wg *sync.WaitGroup, done <-chan struct{}, dirCh <-chan pipe.Dir) {
+		defer wg.Done()
+		for {
+			select {
+			case dir, ok := <-dirCh:
+				if !ok {
+					// channel is closed
+					return
+				}
+
+				tree := NewTree()
+
+				// wait for all content
+				for _, ch := range dir.Entries {
+					node := (<-ch).(*Node)
+					tree.Insert(node)
+
+					if node.Type == "dir" {
+						debug.Log("Archiver.DirWorker", "got tree node for %s: %v", node.path, node.blobs)
+					}
+
+					for _, blob := range node.blobs {
+						tree.Map.Insert(blob)
+						arch.m.Insert(blob)
+					}
+				}
+
+				node, err := NodeFromFileInfo(dir.Path, dir.Info)
+				if err != nil {
+					node.Error = err.Error()
+					dir.Result <- node
+					continue
+				}
+
+				blob, err := arch.SaveTreeJSON(tree)
+				if err != nil {
+					panic(err)
+				}
+				debug.Log("Archiver.DirWorker", "save tree for %s: %v", dir.Path, blob)
+
+				node.Subtree = blob.ID
+				node.blobs = Blobs{blob}
+
+				dir.Result <- node
+			case <-done:
+				// pipeline was cancelled
+				return
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < maxConcurrency; i++ {
+		wg.Add(2)
+		go fileWorker(&wg, done, entCh)
+		go dirWorker(&wg, done, dirCh)
+	}
+
+	resCh, err := pipe.Walk(path, done, entCh, dirCh)
+	if err != nil {
+		close(done)
+	}
+
+	// wait for all workers to terminate
+	wg.Wait()
+
 	if err != nil {
 		return nil, nil, err
 	}
-	sn.Tree = blob
+
+	// wait for top-level node
+	node := (<-resCh).(*Node)
+
+	// add tree for top-level directory
+	tree := NewTree()
+	tree.Insert(node)
+	for _, blob := range node.blobs {
+		blob = arch.m.Insert(blob)
+		tree.Map.Insert(blob)
+	}
+
+	tb, err := arch.SaveTreeJSON(tree)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	sn.Tree = tb
 
 	// save snapshot
-	blob, err = arch.s.SaveJSON(backend.Snapshot, sn)
+	blob, err := arch.s.SaveJSON(backend.Snapshot, sn)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -183,7 +183,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
-	_, id, err := arch.Snapshot(target, newTree, parentSnapshotID)
+	_, id, err := arch.Snapshot(target, parentSnapshotID)
 	if err != nil {
 		return err
 	}

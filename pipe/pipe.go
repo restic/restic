@@ -17,6 +17,7 @@ type Entry struct {
 type Dir struct {
 	Path  string
 	Error error
+	Info  os.FileInfo
 
 	Entries [](<-chan interface{})
 	Result  chan<- interface{}
@@ -59,7 +60,6 @@ func walk(path string, done chan struct{}, entCh chan<- Entry, dirCh chan<- Dir,
 
 	names, err := readDirNames(path)
 	if err != nil {
-		dirCh <- Dir{Path: path, Error: err}
 		return err
 	}
 
@@ -67,26 +67,28 @@ func walk(path string, done chan struct{}, entCh chan<- Entry, dirCh chan<- Dir,
 
 	for _, name := range names {
 		subpath := filepath.Join(path, name)
+
 		ch := make(chan interface{}, 1)
+		entries = append(entries, ch)
 
 		fi, err := os.Lstat(subpath)
 		if err != nil {
-			entries = append(entries, ch)
-			entCh <- Entry{Info: fi, Error: err, Result: ch}
-			continue
+			// entCh <- Entry{Info: fi, Error: err, Result: ch}
+			return err
 		}
 
-		if isFile(fi) {
-			ch := make(chan interface{}, 1)
+		if isDir(fi) {
+			err = walk(subpath, done, entCh, dirCh, ch)
+			if err != nil {
+				return err
+			}
+
+		} else {
 			entCh <- Entry{Info: fi, Path: subpath, Result: ch}
-		} else if isDir(fi) {
-			ch := make(chan interface{}, 1)
-			entries = append(entries, ch)
-			walk(subpath, done, entCh, dirCh, ch)
 		}
 	}
 
-	dirCh <- Dir{Path: path, Entries: entries, Result: res}
+	dirCh <- Dir{Path: path, Info: info, Entries: entries, Result: res}
 	return nil
 }
 

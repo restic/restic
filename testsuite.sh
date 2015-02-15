@@ -14,4 +14,4 @@ go build -a -tags debug -o "${BINDIR}/restic.debug" ./cmd/restic
 go build -a -o "${BINDIR}/dirdiff" ./cmd/dirdiff
 
 # run tests
-testsuite/run.sh
+testsuite/run.sh "$@"

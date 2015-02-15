@@ -140,13 +140,10 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	key := setupKey(b, be, "geheim")
 	server := restic.NewServerWithKey(be, key)
 
-	tree, err := restic.NewScanner(nil).Scan(*benchArchiveDirectory)
-	ok(b, err)
-
 	arch, err := restic.NewArchiver(server, nil)
 	ok(b, err)
 
-	_, id, err := arch.Snapshot(*benchArchiveDirectory, tree, nil)
+	_, id, err := arch.Snapshot(*benchArchiveDirectory, nil)
 
 	b.Logf("snapshot archived as %v", id)
 }
