@@ -43,8 +43,9 @@ func (h *HashAppendWriter) Write(p []byte) (n int, err error) {
 }
 
 type HashingWriter struct {
-	w io.Writer
-	h hash.Hash
+	w    io.Writer
+	h    hash.Hash
+	size int
 }
 
 func NewHashingWriter(w io.Writer, h hash.Hash) *HashingWriter {
@@ -55,9 +56,15 @@ func NewHashingWriter(w io.Writer, h hash.Hash) *HashingWriter {
 }
 
 func (h *HashingWriter) Write(p []byte) (int, error) {
-	return h.w.Write(p)
+	n, err := h.w.Write(p)
+	h.size += n
+	return n, err
 }
 
 func (h *HashingWriter) Sum(d []byte) []byte {
 	return h.h.Sum(d)
+}
+
+func (h *HashingWriter) Size() int {
+	return h.size
 }

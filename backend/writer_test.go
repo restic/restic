@@ -68,6 +68,10 @@ func TestHashingWriter(t *testing.T) {
 			"HashAppendWriter: invalid number of bytes written: got %d, expected %d",
 			n, size)
 
+		assert(t, wr.Size() == size,
+			"HashAppendWriter: invalid number of bytes returned: got %d, expected %d",
+			wr.Size, size)
+
 		resultingHash := wr.Sum(nil)
 		assert(t, bytes.Equal(expectedHash[:], resultingHash),
 			"HashAppendWriter: hashes do not match: expected %02x, got %02x",
