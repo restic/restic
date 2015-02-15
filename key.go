@@ -334,48 +334,6 @@ func (k *Key) Encrypt(ciphertext, plaintext []byte) (int, error) {
 	return k.encrypt(k.master, ciphertext, plaintext)
 }
 
-// encryptFrom encrypts and signs data read from rd with ks. The returned
-// io.Reader reads IV || Ciphertext || HMAC. For the hash function, SHA256 is
-// used.
-func (k *Key) encryptFrom(ks *keys, rd io.Reader) io.Reader {
-	// create IV
-	iv := make([]byte, ivSize)
-
-	_, err := io.ReadFull(rand.Reader, iv)
-	if err != nil {
-		panic(fmt.Sprintf("unable to generate new random iv: %v", err))
-	}
-
-	c, err := aes.NewCipher(ks.Encrypt)
-	if err != nil {
-		panic(fmt.Sprintf("unable to create cipher: %v", err))
-	}
-
-	ivReader := bytes.NewReader(iv)
-
-	encryptReader := cipher.StreamReader{
-		R: rd,
-		S: cipher.NewCTR(c, iv),
-	}
-
-	return backend.NewHashAppendReader(io.MultiReader(ivReader, encryptReader),
-		hmac.New(sha256.New, ks.Sign))
-}
-
-// EncryptFrom encrypts and signs data read from rd with the master key. The
-// returned io.Reader reads IV || Ciphertext || HMAC. For the hash function,
-// SHA256 is used.
-func (k *Key) EncryptFrom(rd io.Reader) io.Reader {
-	return k.encryptFrom(k.master, rd)
-}
-
-// EncryptFrom encrypts and signs data read from rd with the user key. The
-// returned io.Reader reads IV || Ciphertext || HMAC. For the hash function,
-// SHA256 is used.
-func (k *Key) EncryptUserFrom(rd io.Reader) io.Reader {
-	return k.encryptFrom(k.user, rd)
-}
-
 type encryptWriter struct {
 	iv      []byte
 	wroteIV bool

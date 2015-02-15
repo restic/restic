@@ -126,7 +126,7 @@ func TestLargeEncrypt(t *testing.T) {
 	}
 }
 
-func BenchmarkEncryptReader(b *testing.B) {
+func BenchmarkEncryptWriter(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	rd := randomReader(23, size)
 
@@ -139,7 +139,8 @@ func BenchmarkEncryptReader(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		rd.Seek(0, 0)
-		_, err := io.Copy(ioutil.Discard, k.EncryptFrom(rd))
+		wr := k.EncryptTo(ioutil.Discard)
+		_, err := io.Copy(wr, rd)
 		ok(b, err)
 	}
 }
@@ -203,10 +204,16 @@ func BenchmarkEncryptDecryptReader(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		rd.Seek(0, 0)
-		decRd, err := k.DecryptFrom(k.EncryptFrom(rd))
+		buf := bytes.NewBuffer(nil)
+		wr := k.EncryptTo(buf)
+		_, err := io.Copy(wr, rd)
+		ok(b, err)
+		ok(b, wr.Close())
+
+		r, err := k.DecryptFrom(buf)
 		ok(b, err)
 
-		_, err = io.Copy(ioutil.Discard, decRd)
+		_, err = io.Copy(ioutil.Discard, r)
 		ok(b, err)
 	}
 }
@@ -233,7 +240,7 @@ func BenchmarkDecrypt(b *testing.B) {
 	restic.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
 }
 
-func TestEncryptStreamReader(t *testing.T) {
+func TestEncryptStreamWriter(t *testing.T) {
 	s := setupBackend(t)
 	defer teardownBackend(t, s)
 	k := setupKey(t, s, testPassword)
@@ -248,18 +255,20 @@ func TestEncryptStreamReader(t *testing.T) {
 		_, err := io.ReadFull(randomReader(42, size), data)
 		ok(t, err)
 
-		erd := k.EncryptFrom(bytes.NewReader(data))
+		ciphertext := bytes.NewBuffer(nil)
+		wr := k.EncryptTo(ciphertext)
 
-		ciphertext, err := ioutil.ReadAll(erd)
+		_, err = io.Copy(wr, bytes.NewReader(data))
 		ok(t, err)
+		ok(t, wr.Close())
 
 		l := len(data) + restic.CiphertextExtension
-		assert(t, len(ciphertext) == l,
+		assert(t, len(ciphertext.Bytes()) == l,
 			"wrong ciphertext length: expected %d, got %d",
-			l, len(ciphertext))
+			l, len(ciphertext.Bytes()))
 
 		// decrypt with default function
-		plaintext, err := k.Decrypt(ciphertext)
+		plaintext, err := k.Decrypt(ciphertext.Bytes())
 		ok(t, err)
 		assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",
