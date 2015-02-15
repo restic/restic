@@ -3,6 +3,7 @@ package backend
 import (
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"os"
@@ -270,6 +271,79 @@ func (b *Local) CreateFrom(t Type, rd io.Reader) (ID, error) {
 	}
 
 	return id, nil
+}
+
+type localBlob struct {
+	f       *os.File
+	h       hash.Hash
+	tw      io.Writer
+	backend *Local
+	tpe     Type
+	id      ID
+}
+
+func (lb *localBlob) Close() error {
+	err := lb.f.Close()
+	if err != nil {
+		return err
+	}
+
+	// get ID
+	lb.id = ID(lb.h.Sum(nil))
+
+	// check for duplicate ID
+	res, err := lb.backend.Test(lb.tpe, lb.id)
+	if err != nil {
+		return fmt.Errorf("testing presence of ID %v failed: %v", lb.id, err)
+	}
+
+	if res {
+		return ErrAlreadyPresent
+	}
+
+	// rename file
+	err = lb.backend.renameFile(lb.f, lb.tpe, lb.id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (lb *localBlob) Write(p []byte) (int, error) {
+	return lb.tw.Write(p)
+}
+
+func (lb *localBlob) ID() (ID, error) {
+	if lb.id == nil {
+		return nil, errors.New("blob is not closed, ID unavailable")
+	}
+
+	return lb.id, nil
+}
+
+// Create creates a new blob of type t. Blob implements io.WriteCloser. Once
+// Close() has been called, ID() can be used to retrieve the ID. If the blob is
+// already present, Close() returns ErrAlreadyPresent.
+func (b *Local) CreateBlob(t Type) (Blob, error) {
+	// TODO: make sure that tempfile is removed upon error
+
+	// create tempfile in backend
+	file, err := b.tempFile()
+	if err != nil {
+		return nil, err
+	}
+
+	h := newHash()
+	blob := localBlob{
+		h:       h,
+		tw:      io.MultiWriter(h, file),
+		f:       file,
+		backend: b,
+		tpe:     t,
+	}
+
+	return &blob, nil
 }
 
 // Construct path for given Type and ID.

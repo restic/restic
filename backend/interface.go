@@ -23,6 +23,11 @@ var (
 	ErrAlreadyPresent = errors.New("blob is already present in backend")
 )
 
+type Blob interface {
+	io.WriteCloser
+	ID() (ID, error)
+}
+
 type Lister interface {
 	List(Type) (IDs, error)
 }
@@ -35,6 +40,7 @@ type Getter interface {
 type Creater interface {
 	Create(Type, []byte) (ID, error)
 	CreateFrom(Type, io.Reader) (ID, error)
+	CreateBlob(Type) (Blob, error)
 }
 
 type Tester interface {

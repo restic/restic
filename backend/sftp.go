@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"log"
@@ -378,6 +379,81 @@ func (r *SFTP) CreateFrom(t Type, rd io.Reader) (ID, error) {
 	}
 
 	return id, nil
+}
+
+type sftpBlob struct {
+	f       *sftp.File
+	name    string
+	h       hash.Hash
+	tw      io.Writer
+	backend *SFTP
+	tpe     Type
+	id      ID
+}
+
+func (sb *sftpBlob) Close() error {
+	err := sb.f.Close()
+	if err != nil {
+		return err
+	}
+
+	// get ID
+	sb.id = ID(sb.h.Sum(nil))
+
+	// check for duplicate ID
+	res, err := sb.backend.Test(sb.tpe, sb.id)
+	if err != nil {
+		return fmt.Errorf("testing presence of ID %v failed: %v", sb.id, err)
+	}
+
+	if res {
+		return ErrAlreadyPresent
+	}
+
+	// rename file
+	err = sb.backend.renameFile(sb.name, sb.tpe, sb.id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (sb *sftpBlob) Write(p []byte) (int, error) {
+	return sb.tw.Write(p)
+}
+
+func (sb *sftpBlob) ID() (ID, error) {
+	if sb.id == nil {
+		return nil, errors.New("blob is not closed, ID unavailable")
+	}
+
+	return sb.id, nil
+}
+
+// Create creates a new blob of type t. Blob implements io.WriteCloser. Once
+// Close() has been called, ID() can be used to retrieve the ID. If the blob is
+// already present, Close() returns ErrAlreadyPresent.
+func (r *SFTP) CreateBlob(t Type) (Blob, error) {
+	// TODO: make sure that tempfile is removed upon error
+
+	// create tempfile in backend
+	filename, file, err := r.tempFile()
+	if err != nil {
+		return nil, err
+	}
+
+	h := newHash()
+	blob := sftpBlob{
+		h:       h,
+		tw:      io.MultiWriter(h, file),
+		f:       file,
+		name:    filename,
+		backend: r,
+		tpe:     t,
+	}
+
+	return &blob, nil
 }
 
 // Construct path for given Type and ID.

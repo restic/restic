@@ -330,6 +330,10 @@ func (s Server) CreateFrom(t backend.Type, r io.Reader) (backend.ID, error) {
 	return s.be.CreateFrom(t, r)
 }
 
+func (s Server) CreateBlob(t backend.Type) (backend.Blob, error) {
+	return s.be.CreateBlob(t)
+}
+
 func (s Server) Test(t backend.Type, id backend.ID) (bool, error) {
 	return s.be.Test(t, id)
 }

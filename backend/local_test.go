@@ -69,7 +69,14 @@ func testBackend(b backend.Backend, t *testing.T) {
 		// add files
 		for _, test := range TestStrings {
 			// store string in backend
-			id, err := b.Create(tpe, []byte(test.data))
+			blob, err := b.CreateBlob(tpe)
+			ok(t, err)
+
+			_, err = blob.Write([]byte(test.data))
+			ok(t, err)
+			ok(t, blob.Close())
+
+			id, err := blob.ID()
 			ok(t, err)
 
 			equals(t, test.id, id.String())
