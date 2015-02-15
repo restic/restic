@@ -26,6 +26,7 @@ var (
 type Blob interface {
 	io.WriteCloser
 	ID() (ID, error)
+	Size() uint
 }
 
 type Lister interface {

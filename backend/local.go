@@ -3,7 +3,6 @@ package backend
 import (
 	"errors"
 	"fmt"
-	"hash"
 	"io"
 	"io/ioutil"
 	"os"
@@ -183,11 +182,11 @@ func (b *Local) dirname(t Type, id ID) string {
 
 type localBlob struct {
 	f       *os.File
-	h       hash.Hash
-	tw      io.Writer
+	hw      *HashingWriter
 	backend *Local
 	tpe     Type
 	id      ID
+	size    uint
 }
 
 func (lb *localBlob) Close() error {
@@ -197,7 +196,7 @@ func (lb *localBlob) Close() error {
 	}
 
 	// get ID
-	lb.id = ID(lb.h.Sum(nil))
+	lb.id = ID(lb.hw.Sum(nil))
 
 	// check for duplicate ID
 	res, err := lb.backend.Test(lb.tpe, lb.id)
@@ -219,7 +218,9 @@ func (lb *localBlob) Close() error {
 }
 
 func (lb *localBlob) Write(p []byte) (int, error) {
-	return lb.tw.Write(p)
+	n, err := lb.hw.Write(p)
+	lb.size += uint(n)
+	return n, err
 }
 
 func (lb *localBlob) ID() (ID, error) {
@@ -228,6 +229,10 @@ func (lb *localBlob) ID() (ID, error) {
 	}
 
 	return lb.id, nil
+}
+
+func (lb *localBlob) Size() uint {
+	return lb.size
 }
 
 // Create creates a new blob of type t. Blob implements io.WriteCloser. Once
@@ -242,10 +247,9 @@ func (b *Local) Create(t Type) (Blob, error) {
 		return nil, err
 	}
 
-	h := newHash()
+	hw := NewHashingWriter(file, newHash())
 	blob := localBlob{
-		h:       h,
-		tw:      io.MultiWriter(h, file),
+		hw:      hw,
 		f:       file,
 		backend: b,
 		tpe:     t,

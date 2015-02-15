@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"hash"
 	"io"
 	"io/ioutil"
 	"log"
@@ -293,11 +292,11 @@ func (r *SFTP) dirname(t Type, id ID) string {
 type sftpBlob struct {
 	f       *sftp.File
 	name    string
-	h       hash.Hash
-	tw      io.Writer
+	hw      *HashingWriter
 	backend *SFTP
 	tpe     Type
 	id      ID
+	size    uint
 }
 
 func (sb *sftpBlob) Close() error {
@@ -307,7 +306,7 @@ func (sb *sftpBlob) Close() error {
 	}
 
 	// get ID
-	sb.id = ID(sb.h.Sum(nil))
+	sb.id = ID(sb.hw.Sum(nil))
 
 	// check for duplicate ID
 	res, err := sb.backend.Test(sb.tpe, sb.id)
@@ -329,7 +328,13 @@ func (sb *sftpBlob) Close() error {
 }
 
 func (sb *sftpBlob) Write(p []byte) (int, error) {
-	return sb.tw.Write(p)
+	n, err := sb.hw.Write(p)
+	sb.size += uint(n)
+	return n, err
+}
+
+func (sb *sftpBlob) Size() uint {
+	return sb.size
 }
 
 func (sb *sftpBlob) ID() (ID, error) {
@@ -352,10 +357,8 @@ func (r *SFTP) Create(t Type) (Blob, error) {
 		return nil, err
 	}
 
-	h := newHash()
 	blob := sftpBlob{
-		h:       h,
-		tw:      io.MultiWriter(h, file),
+		hw:      NewHashingWriter(file, newHash()),
 		f:       file,
 		name:    filename,
 		backend: r,
