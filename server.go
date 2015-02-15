@@ -2,6 +2,7 @@ package restic
 
 import (
 	"compress/zlib"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -276,16 +277,58 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 	return blob, nil
 }
 
-// SaveJSON serialises item as JSON and uses Save() to store it to the backend as type t.
+// SaveJSON serialises item as JSON and encrypts and saves it in the backend as
+// type t.
 func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
-	// convert to json
-	data, err := json.Marshal(item)
+	backendBlob, err := s.Create(t)
 	if err != nil {
-		return Blob{}, err
+		return Blob{}, fmt.Errorf("Create: %v", err)
 	}
 
-	// compress and save data
-	return s.Save(t, backend.Compress(data), nil)
+	encWr := s.key.EncryptTo(backendBlob)
+	wr := zlib.NewWriter(encWr)
+	if err != nil {
+		return Blob{}, fmt.Errorf("zlib.NewWriter: %v", err)
+	}
+
+	hw := backend.NewHashingWriter(wr, sha256.New())
+
+	enc := json.NewEncoder(hw)
+	err = enc.Encode(item)
+	if err != nil {
+		return Blob{}, fmt.Errorf("json.NewEncoder: %v", err)
+	}
+
+	// flush zlib writer
+	err = wr.Close()
+	if err != nil {
+		return Blob{}, fmt.Errorf("zlib.Writer.Close(): %v", err)
+	}
+
+	// finish encryption
+	err = encWr.Close()
+	if err != nil {
+		return Blob{}, fmt.Errorf("EncryptedWriter.Close(): %v", err)
+	}
+
+	// finish backend blob
+	err = backendBlob.Close()
+	if err != nil {
+		return Blob{}, fmt.Errorf("backend.Blob.Close(): %v", err)
+	}
+
+	id := hw.Sum(nil)
+	storageID, err := backendBlob.ID()
+	if err != nil {
+		return Blob{}, fmt.Errorf("backend.Blob.ID(): %v", err)
+	}
+
+	return Blob{
+		ID:          id,
+		Size:        uint64(hw.Size()),
+		Storage:     storageID,
+		StorageSize: uint64(backendBlob.Size()),
+	}, nil
 }
 
 // Returns the backend used for this server.
