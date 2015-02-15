@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/juju/arrar"
 )
 
 const (
@@ -183,96 +181,6 @@ func (b *Local) dirname(t Type, id ID) string {
 	return filepath.Join(b.p, n)
 }
 
-// Create stores new content of type t and data and returns the ID. If the blob
-// is already present, returns ErrAlreadyPresent and the blob's ID.
-func (b *Local) Create(t Type, data []byte) (ID, error) {
-	// TODO: make sure that tempfile is removed upon error
-
-	// check if blob is already present in backend
-	id := IDFromData(data)
-	res, err := b.Test(t, id)
-	if err != nil {
-		return nil, arrar.Annotate(err, "test for presence")
-	}
-
-	if res {
-		return id, ErrAlreadyPresent
-	}
-
-	// create tempfile in backend
-	file, err := b.tempFile()
-	if err != nil {
-		return nil, err
-	}
-
-	// write data to tempfile
-	_, err = file.Write(data)
-	if err != nil {
-		return nil, err
-	}
-
-	err = file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// return id
-	err = b.renameFile(file, t, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return id, nil
-}
-
-// CreateFrom reads content from rd and stores it as type t. Returned is the
-// storage ID. If the blob is already present, returns ErrAlreadyPresent and
-// the blob's ID.
-func (b *Local) CreateFrom(t Type, rd io.Reader) (ID, error) {
-	// TODO: make sure that tempfile is removed upon error
-
-	// check hash while writing
-	hr := NewHashingReader(rd, newHash())
-
-	// create tempfile in backend
-	file, err := b.tempFile()
-	if err != nil {
-		return nil, err
-	}
-
-	// write data to tempfile
-	_, err = io.Copy(file, hr)
-	if err != nil {
-		return nil, err
-	}
-
-	err = file.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// get ID
-	id := ID(hr.Sum(nil))
-
-	// check for duplicate ID
-	res, err := b.Test(t, id)
-	if err != nil {
-		return nil, arrar.Annotate(err, "test for presence")
-	}
-
-	if res {
-		return id, ErrAlreadyPresent
-	}
-
-	// rename file
-	err = b.renameFile(file, t, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return id, nil
-}
-
 type localBlob struct {
 	f       *os.File
 	h       hash.Hash
@@ -325,7 +233,7 @@ func (lb *localBlob) ID() (ID, error) {
 // Create creates a new blob of type t. Blob implements io.WriteCloser. Once
 // Close() has been called, ID() can be used to retrieve the ID. If the blob is
 // already present, Close() returns ErrAlreadyPresent.
-func (b *Local) CreateBlob(t Type) (Blob, error) {
+func (b *Local) Create(t Type) (Blob, error) {
 	// TODO: make sure that tempfile is removed upon error
 
 	// create tempfile in backend

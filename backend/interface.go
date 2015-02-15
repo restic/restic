@@ -38,9 +38,7 @@ type Getter interface {
 }
 
 type Creater interface {
-	Create(Type, []byte) (ID, error)
-	CreateFrom(Type, io.Reader) (ID, error)
-	CreateBlob(Type) (Blob, error)
+	Create(Type) (Blob, error)
 }
 
 type Tester interface {

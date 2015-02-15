@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"sort"
 	"testing"
@@ -69,7 +70,7 @@ func testBackend(b backend.Backend, t *testing.T) {
 		// add files
 		for _, test := range TestStrings {
 			// store string in backend
-			blob, err := b.CreateBlob(tpe)
+			blob, err := b.Create(tpe)
 			ok(t, err)
 
 			_, err = blob.Write([]byte(test.data))
@@ -97,24 +98,43 @@ func testBackend(b backend.Backend, t *testing.T) {
 			equals(t, test.data, string(buf))
 		}
 
-		// test stream functions with first file
+		// test adding the first file again
 		test := TestStrings[0]
 		id, err := backend.ParseID(test.id)
 		ok(t, err)
 
-		// create with reader, should return error
-		_, err = b.CreateFrom(tpe, bytes.NewReader([]byte(test.data)))
+		// create blob
+		blob, err := b.Create(tpe)
+		ok(t, err)
+
+		_, err = io.Copy(blob, bytes.NewReader([]byte(test.data)))
+		ok(t, err)
+		err = blob.Close()
 		assert(t, err == backend.ErrAlreadyPresent,
-			"expected ErrAlreadyPresent, got %v", err)
+			"wrong error returned: expected %v, got %v",
+			backend.ErrAlreadyPresent, err)
+
+		id2, err := blob.ID()
+		ok(t, err)
+
+		assert(t, id.Equal(id2), "IDs do not match: expected %v, got %v", id, id2)
 
 		// remove and recreate
 		err = b.Remove(tpe, id)
 		ok(t, err)
 
-		id2, err := b.CreateFrom(tpe, bytes.NewReader([]byte(test.data)))
+		// create blob
+		blob, err = b.Create(tpe)
 		ok(t, err)
-		assert(t, id.Equal(id2),
-			"expected id %v, got %v", id, id2)
+
+		_, err = io.Copy(blob, bytes.NewReader([]byte(test.data)))
+		ok(t, err)
+		err = blob.Close()
+		ok(t, err)
+
+		id2, err = blob.ID()
+		ok(t, err)
+		assert(t, id.Equal(id2), "IDs do not match: expected %v, got %v", id, id2)
 
 		// list items
 		IDs := backend.IDs{}

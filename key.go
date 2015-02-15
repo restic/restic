@@ -209,10 +209,26 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	}
 
 	// store in repository and return
-	id, err := s.Create(backend.Key, buf)
+	blob, err := s.Create(backend.Key)
 	if err != nil {
 		return nil, err
 	}
+
+	_, err = blob.Write(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	err = blob.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := blob.ID()
+	if err != nil {
+		return nil, err
+	}
+
 	newkey.id = id
 
 	FreeChunkBuf("key", newkey.Data)

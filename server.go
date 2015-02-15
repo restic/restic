@@ -169,7 +169,22 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 	ciphertext = ciphertext[:n]
 
 	// save blob
-	sid, err := s.Create(t, ciphertext)
+	backendBlob, err := s.Create(t)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	_, err = backendBlob.Write(ciphertext)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	err = backendBlob.Close()
+	if err != nil {
+		return Blob{}, err
+	}
+
+	sid, err := backendBlob.ID()
 	if err != nil {
 		return Blob{}, err
 	}
@@ -225,8 +240,22 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 
 	ciphertext = ciphertext[:n]
 
-	// save blob
-	sid, err := s.Create(t, ciphertext)
+	backendBlob, err := s.Create(t)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	_, err = backendBlob.Write(ciphertext)
+	if err != nil {
+		return Blob{}, err
+	}
+
+	err = backendBlob.Close()
+	if err != nil {
+		return Blob{}, err
+	}
+
+	sid, err := backendBlob.ID()
 	if err != nil {
 		return Blob{}, err
 	}
@@ -322,16 +351,8 @@ func (s Server) GetReader(t backend.Type, id backend.ID) (io.ReadCloser, error) 
 	return s.be.GetReader(t, id)
 }
 
-func (s Server) Create(t backend.Type, data []byte) (backend.ID, error) {
-	return s.be.Create(t, data)
-}
-
-func (s Server) CreateFrom(t backend.Type, r io.Reader) (backend.ID, error) {
-	return s.be.CreateFrom(t, r)
-}
-
-func (s Server) CreateBlob(t backend.Type) (backend.Blob, error) {
-	return s.be.CreateBlob(t)
+func (s Server) Create(t backend.Type) (backend.Blob, error) {
+	return s.be.Create(t)
 }
 
 func (s Server) Test(t backend.Type, id backend.ID) (bool, error) {
