@@ -2,11 +2,9 @@ package backend
 
 import (
 	"bytes"
-	"compress/zlib"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"io/ioutil"
 	"sort"
 )
 
@@ -63,38 +61,6 @@ func EachID(be Lister, t Type, f func(ID)) error {
 	}
 
 	return nil
-}
-
-// Compress applies zlib compression to data.
-func Compress(data []byte) []byte {
-	// apply zlib compression
-	var b bytes.Buffer
-	w := zlib.NewWriter(&b)
-	_, err := w.Write(data)
-	if err != nil {
-		panic(err)
-	}
-	w.Close()
-
-	return b.Bytes()
-}
-
-// Uncompress reverses zlib compression on data.
-func Uncompress(data []byte) []byte {
-	b := bytes.NewBuffer(data)
-	r, err := zlib.NewReader(b)
-	if err != nil {
-		panic(err)
-	}
-
-	buf, err := ioutil.ReadAll(r)
-	if err != nil {
-		panic(err)
-	}
-
-	r.Close()
-
-	return buf
 }
 
 // Hash returns the ID for data.

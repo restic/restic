@@ -98,13 +98,14 @@ func (arch *Archiver) Save(t backend.Type, id backend.ID, length uint, rd io.Rea
 func (arch *Archiver) SaveTreeJSON(item interface{}) (Blob, error) {
 	// convert to json
 	data, err := json.Marshal(item)
+	// append newline
+	data = append(data, '\n')
 	if err != nil {
 		return Blob{}, err
 	}
 
 	// check if tree has been saved before
-	buf := backend.Compress(data)
-	id := backend.Hash(buf)
+	id := backend.Hash(data)
 	blob, err := arch.m.FindID(id)
 
 	// return the blob if we found it
@@ -113,7 +114,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (Blob, error) {
 	}
 
 	// otherwise save the data
-	blob, err = arch.s.Save(backend.Tree, buf, id)
+	blob, err = arch.s.SaveJSON(backend.Tree, item)
 	if err != nil {
 		return Blob{}, err
 	}
