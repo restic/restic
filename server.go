@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"compress/zlib"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -107,29 +108,38 @@ func (s Server) LoadID(t backend.Type, storageID backend.ID) ([]byte, error) {
 // LoadJSON calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
 func (s Server) LoadJSON(t backend.Type, blob Blob, item interface{}) error {
-	// load from backend
-	buf, err := s.Load(t, blob)
-	if err != nil {
-		return err
-	}
-
-	// inflate and unmarshal
-	err = json.Unmarshal(backend.Uncompress(buf), item)
-	return err
+	return s.LoadJSONID(t, blob.Storage, item)
 }
 
 // LoadJSONID calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
 func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{}) error {
-	// load from backend
-	buf, err := s.LoadID(t, storageID)
+	// read
+	rd, err := s.GetReader(t, storageID)
 	if err != nil {
 		return err
 	}
 
-	// inflate and unmarshal
-	err = json.Unmarshal(backend.Uncompress(buf), item)
-	return err
+	// decrypt
+	decryptRd, err := s.key.DecryptFrom(rd)
+	if err != nil {
+		return err
+	}
+
+	// unzip
+	unzipRd, err := zlib.NewReader(decryptRd)
+	if err != nil {
+		return err
+	}
+
+	// decode
+	decoder := json.NewDecoder(unzipRd)
+	err = decoder.Decode(item)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Save encrypts data and stores it to the backend as type t.
