@@ -7,6 +7,13 @@ build:
     # at the right place in the workspace tree
     - setup-go-workspace
 
+    # Test go formatting
+    - script:
+        name: gofmt
+        code: |
+          gofmt -l *.go */*.go */*/*.go
+          test -z "$(gofmt -l *.go */*.go */*/*.go)"
+
     # Gets the dependencies
     - script:
         name: go get
