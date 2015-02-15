@@ -350,13 +350,6 @@ func (e *encryptWriter) Close() error {
 		return err
 	}
 
-	if w, ok := e.origWr.(io.Closer); ok {
-		err := w.Close()
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
