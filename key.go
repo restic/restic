@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"os"
@@ -373,6 +374,97 @@ func (k *Key) EncryptFrom(rd io.Reader) io.Reader {
 // SHA256 is used.
 func (k *Key) EncryptUserFrom(rd io.Reader) io.Reader {
 	return k.encryptFrom(k.user, rd)
+}
+
+type encryptWriter struct {
+	iv      []byte
+	wroteIV bool
+	h       hash.Hash
+	w       io.Writer
+	origWr  io.Writer
+	err     error // remember error writing iv
+}
+
+func (e *encryptWriter) Close() error {
+	// write hmac
+	_, err := e.origWr.Write(e.h.Sum(nil))
+	if err != nil {
+		return err
+	}
+
+	if w, ok := e.origWr.(io.Closer); ok {
+		err := w.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (e *encryptWriter) Write(p []byte) (int, error) {
+	// write iv first
+	if !e.wroteIV {
+		_, e.err = e.origWr.Write(e.iv)
+		e.wroteIV = true
+	}
+
+	if e.err != nil {
+		return 0, e.err
+	}
+
+	n, err := e.w.Write(p)
+	if err != nil {
+		e.err = err
+		return n, err
+	}
+
+	return n, nil
+}
+
+func (k *Key) encryptTo(ks *keys, wr io.Writer) io.WriteCloser {
+	ew := &encryptWriter{
+		iv:     make([]byte, ivSize),
+		h:      hmac.New(sha256.New, ks.Sign),
+		origWr: wr,
+	}
+
+	_, err := io.ReadFull(rand.Reader, ew.iv)
+	if err != nil {
+		panic(fmt.Sprintf("unable to generate new random iv: %v", err))
+	}
+
+	// write iv to hmac
+	_, err = ew.h.Write(ew.iv)
+	if err != nil {
+		panic(err)
+	}
+
+	c, err := aes.NewCipher(ks.Encrypt)
+	if err != nil {
+		panic(fmt.Sprintf("unable to create cipher: %v", err))
+	}
+
+	ew.w = cipher.StreamWriter{
+		S: cipher.NewCTR(c, ew.iv),
+		W: io.MultiWriter(ew.h, wr),
+	}
+
+	return ew
+}
+
+// EncryptTo encrypts and signs data with the master key. The returned
+// io.Writer writes IV || Ciphertext || HMAC. For the hash function, SHA256 is
+// used.
+func (k *Key) EncryptTo(wr io.Writer) io.WriteCloser {
+	return k.encryptTo(k.master, wr)
+}
+
+// EncryptUserTo encrypts and signs data with the user key. The returned
+// io.Writer writes IV || Ciphertext || HMAC. For the hash function, SHA256 is
+// used.
+func (k *Key) EncryptUserTo(wr io.Writer) io.WriteCloser {
+	return k.encryptTo(k.user, wr)
 }
 
 // Decrypt verifes and decrypts the ciphertext. Ciphertext must be in the form

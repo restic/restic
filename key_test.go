@@ -302,3 +302,41 @@ func TestDecryptStreamReader(t *testing.T) {
 			data, plaintext)
 	}
 }
+
+func TestEncryptWriter(t *testing.T) {
+	s := setupBackend(t)
+	defer teardownBackend(t, s)
+	k := setupKey(t, s, testPassword)
+
+	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
+	if *testLargeCrypto {
+		tests = append(tests, 7<<20+123)
+	}
+
+	for _, size := range tests {
+		data := make([]byte, size)
+		_, err := io.ReadFull(randomReader(42, size), data)
+		ok(t, err)
+
+		buf := bytes.NewBuffer(nil)
+		wr := k.EncryptTo(buf)
+
+		_, err = io.Copy(wr, bytes.NewReader(data))
+		ok(t, err)
+		ok(t, wr.Close())
+
+		ciphertext := buf.Bytes()
+
+		l := len(data) + restic.CiphertextExtension
+		assert(t, len(ciphertext) == l,
+			"wrong ciphertext length: expected %d, got %d",
+			l, len(ciphertext))
+
+		// decrypt with default function
+		plaintext, err := k.Decrypt(ciphertext)
+		ok(t, err)
+		assert(t, bytes.Equal(data, plaintext),
+			"wrong plaintext after decryption: expected %02x, got %02x",
+			data, plaintext)
+	}
+}
