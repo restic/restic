@@ -297,12 +297,18 @@ type sftpBlob struct {
 	tpe     Type
 	id      ID
 	size    uint
+	closed  bool
 }
 
 func (sb *sftpBlob) Close() error {
+	if sb.closed {
+		return errors.New("Close() called on closed file")
+	}
+	sb.closed = true
+
 	err := sb.f.Close()
 	if err != nil {
-		return err
+		return fmt.Errorf("sftp: file.Close: %v", err)
 	}
 
 	// get ID

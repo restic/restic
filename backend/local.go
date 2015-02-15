@@ -187,12 +187,19 @@ type localBlob struct {
 	tpe     Type
 	id      ID
 	size    uint
+	closed  bool
 }
 
 func (lb *localBlob) Close() error {
+	if lb.closed {
+		return errors.New("Close() called on closed file")
+
+	}
+	lb.closed = true
+
 	err := lb.f.Close()
 	if err != nil {
-		return err
+		return fmt.Errorf("local: file.Close: %v", err)
 	}
 
 	// get ID
