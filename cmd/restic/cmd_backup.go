@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -73,6 +74,10 @@ func (cmd CmdBackup) Usage() string {
 	return "DIR/FILE [snapshot-ID]"
 }
 
+func isFile(fi os.FileInfo) bool {
+	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
+}
+
 func (cmd CmdBackup) Execute(args []string) error {
 	if len(args) == 0 || len(args) > 2 {
 		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
@@ -112,54 +117,59 @@ func (cmd CmdBackup) Execute(args []string) error {
 	// 	return true
 	// }
 
-	sc := restic.NewScanner(scanProgress)
+	stat := restic.Stat{}
 
-	newTree, err := sc.Scan(target)
+	term := terminal.IsTerminal(int(os.Stdout.Fd()))
+
+	start := time.Now()
+	err = filepath.Walk(target, func(p string, fi os.FileInfo, err error) error {
+		if isFile(fi) {
+			stat.Files++
+			stat.Bytes += uint64(fi.Size())
+		} else if fi.IsDir() {
+			stat.Dirs++
+		}
+
+		if term {
+			fmt.Printf("\x1b[2K\r[%s] %d directories, %d files, %s",
+				format_duration(time.Since(start)), stat.Dirs, stat.Files, format_bytes(stat.Bytes))
+		}
+
+		// TODO: handle error?
+		return nil
+	})
+
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return err
 	}
 
+	fmt.Printf("\nDone in %s\n", format_duration(time.Since(start)))
+
 	if parentSnapshotID != nil {
-		fmt.Printf("load old snapshot\n")
-		sn, err := restic.LoadSnapshot(s, parentSnapshotID)
-		if err != nil {
-			return err
-		}
-
-		oldTree, err := restic.LoadTreeRecursive(filepath.Dir(sn.Dir), s, sn.Tree)
-		if err != nil {
-			return err
-		}
-
-		err = newTree.CopyFrom(oldTree, &s)
-		if err != nil {
-			return err
-		}
+		return errors.New("not implemented")
 	}
 
 	archiveProgress := restic.NewProgress(time.Second)
-	targetStat := newTree.StatTodo()
 
 	if terminal.IsTerminal(int(os.Stdout.Fd())) {
 		var bps, eta uint64
-		itemsTodo := targetStat.Files + targetStat.Dirs
+		itemsTodo := stat.Files + stat.Dirs
 
 		archiveProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 			sec := uint64(d / time.Second)
-			if targetStat.Bytes > 0 && sec > 0 && ticker {
+			if stat.Bytes > 0 && sec > 0 && ticker {
 				bps = s.Bytes / sec
 				if bps > 0 {
-					eta = (targetStat.Bytes - s.Bytes) / bps
+					eta = (stat.Bytes - s.Bytes) / bps
 				}
 			}
 
 			itemsDone := s.Files + s.Dirs
 			fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ETA %s",
 				format_duration(d),
-				float64(s.Bytes)/float64(targetStat.Bytes)*100,
+				float64(s.Bytes)/float64(stat.Bytes)*100,
 				format_bytes(bps),
-				format_bytes(s.Bytes), format_bytes(targetStat.Bytes),
+				format_bytes(s.Bytes), format_bytes(stat.Bytes),
 				itemsDone, itemsTodo,
 				format_seconds(eta))
 		}
@@ -168,7 +178,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 			sec := uint64(d / time.Second)
 			fmt.Printf("\nduration: %s, %.2fMiB/s\n",
 				format_duration(d),
-				float64(targetStat.Bytes)/float64(sec)/(1<<20))
+				float64(stat.Bytes)/float64(sec)/(1<<20))
 		}
 	}
 
