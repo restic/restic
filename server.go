@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -277,6 +278,12 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 	return blob, nil
 }
 
+var zWriterPool = sync.Pool{
+	New: func() interface{} {
+		return zlib.NewWriter(nil)
+	},
+}
+
 // SaveJSON serialises item as JSON and encrypts and saves it in the backend as
 // type t.
 func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
@@ -286,7 +293,9 @@ func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
 	}
 
 	encWr := s.key.EncryptTo(backendBlob)
-	wr := zlib.NewWriter(encWr)
+	wr := zWriterPool.Get().(*zlib.Writer)
+	defer zWriterPool.Put(wr)
+	wr.Reset(encWr)
 	if err != nil {
 		return Blob{}, fmt.Errorf("zlib.NewWriter: %v", err)
 	}
