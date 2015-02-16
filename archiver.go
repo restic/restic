@@ -166,15 +166,12 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 	chunks := 0
 
 	for {
-		buf := GetChunkBuf("blob chunker")
 		chunk, err := chnker.Next()
 		if err == io.EOF {
-			FreeChunkBuf("blob chunker", buf)
 			break
 		}
 
 		if err != nil {
-			FreeChunkBuf("blob chunker", buf)
 			return nil, arrar.Annotate(err, "SaveFile() chunker.Next()")
 		}
 
@@ -190,8 +187,6 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 			if err != nil {
 				panic(err)
 			}
-
-			FreeChunkBuf("blob chunker", buf)
 
 			arch.p.Report(Stat{Bytes: blob.Size})
 			arch.blobToken <- token
