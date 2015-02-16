@@ -121,15 +121,6 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 	})
 }
 
-func BenchmarkScanner(b *testing.B) {
-	if *benchArchiveDirectory == "" {
-		b.Skip("benchdir not set, skipping BenchmarkScanner")
-	}
-
-	_, err := restic.NewScanner(nil).Scan(*benchArchiveDirectory)
-	ok(b, err)
-}
-
 func BenchmarkArchiveDirectory(b *testing.B) {
 	if *benchArchiveDirectory == "" {
 		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
