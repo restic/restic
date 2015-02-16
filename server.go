@@ -213,69 +213,41 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 		return Blob{}, errors.New("id is nil")
 	}
 
-	// create a new blob
-	blob := Blob{
-		ID:   id,
-		Size: uint64(length),
-	}
-
-	var ciphertext []byte
-
-	// allocate slice for plaintext
-	plaintext := GetChunkBuf("ch.Save()")
-	defer FreeChunkBuf("ch.Save()", plaintext)
-
-	// if the data is small enough, use a slice from the pool for the ciphertext
-	if length <= maxCiphertextSize-ivSize-hmacSize {
-		ciphertext = GetChunkBuf("ch.Save()")
-		defer FreeChunkBuf("ch.Save()", ciphertext)
-	} else {
-		l := length + ivSize + hmacSize
-
-		debug.Log("Server.Save", "create large slice of %d bytes for ciphertext", l)
-
-		// use a new slice
-		ciphertext = make([]byte, l)
-	}
-
-	plaintext = plaintext[:length]
-	_, err := io.ReadFull(rd, plaintext)
-	if err != nil {
-		return Blob{}, err
-	}
-
-	// encrypt blob
-	n, err := s.Encrypt(ciphertext, plaintext)
-	if err != nil {
-		return Blob{}, err
-	}
-
-	ciphertext = ciphertext[:n]
-
 	backendBlob, err := s.Create(t)
 	if err != nil {
 		return Blob{}, err
 	}
 
-	_, err = backendBlob.Write(ciphertext)
+	encWr := s.key.EncryptTo(backendBlob)
+
+	_, err = io.Copy(encWr, rd)
 	if err != nil {
 		return Blob{}, err
 	}
 
+	// finish encryption
+	err = encWr.Close()
+	if err != nil {
+		return Blob{}, fmt.Errorf("EncryptedWriter.Close(): %v", err)
+	}
+
+	// finish backend blob
 	err = backendBlob.Close()
 	if err != nil {
-		return Blob{}, err
+		return Blob{}, fmt.Errorf("backend.Blob.Close(): %v", err)
 	}
 
-	sid, err := backendBlob.ID()
+	storageID, err := backendBlob.ID()
 	if err != nil {
-		return Blob{}, err
+		return Blob{}, fmt.Errorf("backend.Blob.ID(): %v", err)
 	}
 
-	blob.Storage = sid
-	blob.StorageSize = uint64(len(ciphertext))
-
-	return blob, nil
+	return Blob{
+		ID:          id,
+		Size:        uint64(length),
+		Storage:     storageID,
+		StorageSize: uint64(backendBlob.Size()),
+	}, nil
 }
 
 var zWriterPool = sync.Pool{
