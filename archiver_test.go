@@ -30,12 +30,12 @@ func randomReader(seed, size int) *bytes.Reader {
 
 const bufSize = chunker.MiB
 
-func benchmarkChunkEncrypt(b testing.TB, rd interface {
+type Rdr interface {
 	io.ReadSeeker
 	io.ReaderAt
-}, key *restic.Key) {
-	chunkBuf := make([]byte, restic.CiphertextExtension+chunker.MaxSize)
+}
 
+func benchmarkChunkEncrypt(b testing.TB, buf []byte, rd Rdr, key *restic.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncrypt")
 	rd.Seek(0, 0)
 	ch.Reset(rd)
@@ -49,13 +49,13 @@ func benchmarkChunkEncrypt(b testing.TB, rd interface {
 
 		ok(b, err)
 
-		// reduce length of chunkBuf
-		chunkBuf = chunkBuf[:chunk.Length]
-		n, err := io.ReadFull(chunk.Reader(rd), chunkBuf)
+		// reduce length of buf
+		buf = buf[:chunk.Length]
+		n, err := io.ReadFull(chunk.Reader(rd), buf)
 		ok(b, err)
 		assert(b, uint(n) == chunk.Length, "invalid length: got %d, expected %d", n, chunk.Length)
 
-		_, err = key.Encrypt(chunkBuf, chunkBuf)
+		_, err = key.Encrypt(buf, buf)
 		ok(b, err)
 	}
 
@@ -70,20 +70,19 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	defer teardownBackend(b, be)
 	key := setupKey(b, be, "geheim")
 
+	buf := restic.GetChunkBuf("BenchmarkChunkEncrypt")
+
 	b.ResetTimer()
 	b.SetBytes(int64(len(data)))
 
 	for i := 0; i < b.N; i++ {
-		benchmarkChunkEncrypt(b, rd, key)
+		benchmarkChunkEncrypt(b, buf, rd, key)
 	}
+
+	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf)
 }
 
-func benchmarkChunkEncryptP(b *testing.PB, rd interface {
-	io.ReadSeeker
-	io.ReaderAt
-}, key *restic.Key) {
-	chunkBuf := make([]byte, restic.CiphertextExtension+chunker.MaxSize)
-
+func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *restic.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncryptP")
 	rd.Seek(0, 0)
 	ch.Reset(rd)
@@ -95,9 +94,9 @@ func benchmarkChunkEncryptP(b *testing.PB, rd interface {
 		}
 
 		// reduce length of chunkBuf
-		chunkBuf = chunkBuf[:chunk.Length]
-		io.ReadFull(chunk.Reader(rd), chunkBuf)
-		key.Encrypt(chunkBuf, chunkBuf)
+		buf = buf[:chunk.Length]
+		io.ReadFull(chunk.Reader(rd), buf)
+		key.Encrypt(buf, buf)
 	}
 
 	restic.FreeChunker("BenchmarkChunkEncryptP", ch)
@@ -110,15 +109,19 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 
 	data := get_random(23, 10<<20) // 10MiB
 
+	buf := restic.GetChunkBuf("BenchmarkChunkEncryptParallel")
+
 	b.ResetTimer()
 	b.SetBytes(int64(len(data)))
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			rd := bytes.NewReader(data)
-			benchmarkChunkEncryptP(pb, rd, key)
+			benchmarkChunkEncryptP(pb, buf, rd, key)
 		}
 	})
+
+	restic.FreeChunkBuf("BenchmarkChunkEncryptParallel", buf)
 }
 
 func BenchmarkArchiveDirectory(b *testing.B) {
