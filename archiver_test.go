@@ -12,7 +12,7 @@ import (
 	"github.com/restic/restic/chunker"
 )
 
-var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
+var benchArchiveDirectory = flag.String("test.benchdir", "", "benchmark archiving a real directory")
 
 func get_random(seed, count int) []byte {
 	buf := make([]byte, count)
