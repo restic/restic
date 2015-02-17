@@ -38,7 +38,7 @@ func print_node(prefix string, n *restic.Node) string {
 }
 
 func print_tree(prefix string, s restic.Server, blob restic.Blob) error {
-	tree, err := restic.LoadTree(s, blob)
+	tree, err := restic.LoadTree(s, blob.Storage)
 	if err != nil {
 		return err
 	}

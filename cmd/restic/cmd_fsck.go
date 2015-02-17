@@ -75,7 +75,7 @@ func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (u
 func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 	debug.Log("restic.fsck", "checking tree %v\n", blob.ID)
 
-	tree, err := restic.LoadTree(s, blob)
+	tree, err := restic.LoadTree(s, blob.Storage)
 	if err != nil {
 		return err
 	}

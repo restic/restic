@@ -37,7 +37,7 @@ func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
 }
 
 func (res *Restorer) to(dst string, dir string, treeBlob Blob) error {
-	tree, err := LoadTree(res.s, treeBlob)
+	tree, err := LoadTree(res.s, treeBlob.Storage)
 	if err != nil {
 		return res.Error(dir, nil, arrar.Annotate(err, "LoadTree"))
 	}

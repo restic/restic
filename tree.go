@@ -32,9 +32,9 @@ func (t Tree) String() string {
 	return fmt.Sprintf("Tree<%d nodes, %d blobs>", len(t.Nodes), len(t.Map.list))
 }
 
-func LoadTree(s Server, blob Blob) (*Tree, error) {
+func LoadTree(s Server, id backend.ID) (*Tree, error) {
 	tree := &Tree{}
-	err := s.LoadJSON(backend.Tree, blob, tree)
+	err := s.LoadJSONID(backend.Tree, id, tree)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func LoadTree(s Server, blob Blob) (*Tree, error) {
 // LoadTreeRecursive loads the tree and all subtrees via s.
 func LoadTreeRecursive(path string, s Server, blob Blob) (*Tree, error) {
 	// TODO: load subtrees in parallel
-	tree, err := LoadTree(s, blob)
+	tree, err := LoadTree(s, blob.Storage)
 	if err != nil {
 		return nil, err
 	}
