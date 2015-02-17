@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -32,10 +31,10 @@ func list_keys(s restic.Server) error {
 		return err
 	}
 
-	s.Each(backend.Key, func(id backend.ID, data []byte, err error) {
-		k := restic.Key{}
-		err = json.Unmarshal(data, &k)
+	s.EachID(backend.Key, func(id backend.ID) {
+		k, err := restic.LoadKey(s, id)
 		if err != nil {
+			fmt.Fprintf(os.Stderr, "LoadKey() failed: %v\n", err)
 			return
 		}
 

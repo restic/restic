@@ -123,3 +123,18 @@ func BenchmarkSaveFrom(t *testing.B) {
 		ok(t, err)
 	}
 }
+
+func TestServerStats(t *testing.T) {
+	be := setupBackend(t)
+	defer teardownBackend(t, be)
+	key := setupKey(t, be, "geheim")
+	server := restic.NewServerWithKey(be, key)
+
+	// archive a few files
+	sn := snapshot(t, server, *benchArchiveDirectory)
+	t.Logf("archived snapshot %v", sn.ID)
+
+	stats, err := server.Stats()
+	ok(t, err)
+	t.Logf("stats: %v", stats)
+}

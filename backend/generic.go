@@ -25,30 +25,6 @@ var (
 const hashSize = sha256.Size
 
 // Each lists all entries of type t in the backend and calls function f() with
-// the id and data.
-func Each(be interface {
-	Lister
-	Getter
-}, t Type, f func(id ID, data []byte, err error)) error {
-	ids, err := be.List(t)
-	if err != nil {
-		return err
-	}
-
-	for _, id := range ids {
-		data, err := be.Get(t, id)
-		if err != nil {
-			f(id, nil, err)
-			continue
-		}
-
-		f(id, data, nil)
-	}
-
-	return nil
-}
-
-// Each lists all entries of type t in the backend and calls function f() with
 // the id.
 func EachID(be Lister, t Type, f func(ID)) error {
 	ids, err := be.List(t)

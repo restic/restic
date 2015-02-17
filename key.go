@@ -84,15 +84,7 @@ func CreateKey(s Server, password string) (*Key, error) {
 
 // OpenKey tries do decrypt the key specified by id with the given password.
 func OpenKey(s Server, id backend.ID, password string) (*Key, error) {
-	// extract data from repo
-	data, err := s.Get(backend.Key, id)
-	if err != nil {
-		return nil, err
-	}
-
-	// restore json
-	k := &Key{}
-	err = json.Unmarshal(data, k)
+	k, err := LoadKey(s, id)
 	if err != nil {
 		return nil, err
 	}
@@ -146,6 +138,24 @@ func SearchKey(s Server, password string) (*Key, error) {
 	}
 
 	return nil, ErrNoKeyFound
+}
+
+// LoadKey loads a key from the backend.
+func LoadKey(s Server, id backend.ID) (*Key, error) {
+	// extract data from repo
+	data, err := s.Get(backend.Key, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// restore json
+	k := &Key{}
+	err = json.Unmarshal(data, k)
+	if err != nil {
+		return nil, err
+	}
+
+	return k, err
 }
 
 // AddKey adds a new key to an already existing repository.

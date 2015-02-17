@@ -33,17 +33,12 @@ func (cmd CmdList) Execute(args []string) error {
 		return err
 	}
 
-	var (
-		t    backend.Type
-		each func(backend.Type, func(backend.ID, []byte, error)) error = s.Each
-	)
+	var t backend.Type
 	switch args[0] {
 	case "data":
 		t = backend.Data
-		each = s.EachDecrypted
 	case "trees":
 		t = backend.Tree
-		each = s.EachDecrypted
 	case "snapshots":
 		t = backend.Snapshot
 	case "keys":
@@ -54,11 +49,7 @@ func (cmd CmdList) Execute(args []string) error {
 		return errors.New("invalid type")
 	}
 
-	return each(t, func(id backend.ID, data []byte, err error) {
-		if t == backend.Data || t == backend.Tree {
-			fmt.Printf("%s %s\n", id, backend.Hash(data))
-		} else {
-			fmt.Printf("%s\n", id)
-		}
+	return s.EachID(t, func(id backend.ID) {
+		fmt.Printf("%s\n", id)
 	})
 }

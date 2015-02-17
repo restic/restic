@@ -27,12 +27,6 @@ func NewServerWithKey(be backend.Backend, key *Key) Server {
 }
 
 // Each lists all entries of type t in the backend and calls function f() with
-// the id and data.
-func (s Server) Each(t backend.Type, f func(id backend.ID, data []byte, err error)) error {
-	return backend.Each(s.be, t, f)
-}
-
-// Each lists all entries of type t in the backend and calls function f() with
 // the id.
 func (s Server) EachID(t backend.Type, f func(backend.ID)) error {
 	return backend.EachID(s.be, t, f)
@@ -348,27 +342,53 @@ func (s Server) Key() *Key {
 	return s.key
 }
 
-// Each calls Each() with the given parameters, Decrypt() on the ciphertext
-// and, on successful decryption, f with the plaintext.
-func (s Server) EachDecrypted(t backend.Type, f func(backend.ID, []byte, error)) error {
-	if s.key == nil {
-		return errors.New("key for server not set")
+type ServerStats struct {
+	Blobs, Trees uint
+	Bytes        uint64
+}
+
+// Stats returns statistics for this backend and the server.
+func (s Server) Stats() (ServerStats, error) {
+	blobs := backend.NewIDSet()
+
+	// load all trees, in parallel
+	worker := func(wg *sync.WaitGroup, c <-chan backend.ID) {
+		for id := range c {
+			tree, err := LoadTree(s, id)
+			// ignore error and advance to next tree
+			if err != nil {
+				return
+			}
+
+			for _, id := range tree.Map.StorageIDs() {
+				blobs.Insert(id)
+			}
+		}
+		wg.Done()
 	}
 
-	return s.Each(t, func(id backend.ID, data []byte, e error) {
-		if e != nil {
-			f(id, nil, e)
-			return
-		}
+	idCh := make(chan backend.ID)
 
-		buf, err := s.key.Decrypt([]byte{}, data)
-		if err != nil {
-			f(id, nil, err)
-			return
-		}
+	// start workers
+	var wg sync.WaitGroup
+	for i := 0; i < maxConcurrency; i++ {
+		wg.Add(1)
+		go worker(&wg, idCh)
+	}
 
-		f(id, buf, nil)
+	// list ids
+	trees := 0
+	err := s.EachID(backend.Tree, func(id backend.ID) {
+		trees++
+		idCh <- id
 	})
+
+	close(idCh)
+
+	// wait for workers
+	wg.Wait()
+
+	return ServerStats{Blobs: uint(blobs.Len()), Trees: uint(trees)}, err
 }
 
 // Proxy methods to backend
