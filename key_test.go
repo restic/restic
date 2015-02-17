@@ -156,12 +156,11 @@ func BenchmarkEncrypt(b *testing.B) {
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
-	buf := restic.GetChunkBuf("BenchmarkEncrypt")
+	buf := make([]byte, len(data)+restic.CiphertextExtension)
 	for i := 0; i < b.N; i++ {
 		_, err := k.Encrypt(buf, data)
 		ok(b, err)
 	}
-	restic.FreeChunkBuf("BenchmarkEncrypt", buf)
 }
 
 func BenchmarkDecryptReader(b *testing.B) {
