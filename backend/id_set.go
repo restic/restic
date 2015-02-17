@@ -66,3 +66,10 @@ func (s *IDSet) Find(id ID) error {
 
 	return nil
 }
+
+func (s *IDSet) Len() int {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	return len(s.list)
+}

@@ -140,6 +140,14 @@ func (bl *Map) Equals(other *Map) bool {
 	return true
 }
 
+// Len returns the number of blobs in the map.
+func (bl *Map) Len() int {
+	bl.m.Lock()
+	defer bl.m.Unlock()
+
+	return len(bl.list)
+}
+
 // Prune deletes all IDs from the map except the ones listed in ids.
 func (m *Map) Prune(ids *backend.IDSet) {
 	m.m.Lock()
