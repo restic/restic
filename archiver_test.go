@@ -8,10 +8,11 @@ import (
 	"testing"
 
 	"github.com/restic/restic"
+	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
 )
 
-var benchArchiveDirectory = flag.String("test.benchdir", "", "benchmark archiving a real directory")
+var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
 
 func get_random(seed, count int) []byte {
 	buf := make([]byte, count)
@@ -140,4 +141,55 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	_, id, err := arch.Snapshot(*benchArchiveDirectory, nil)
 
 	b.Logf("snapshot archived as %v", id)
+}
+
+func snapshot(t *testing.T, server restic.Server, path string) *restic.Snapshot {
+	arch, err := restic.NewArchiver(server, nil)
+	ok(t, err)
+	ok(t, arch.Preload())
+	sn, _, err := arch.Snapshot(path, nil)
+	ok(t, err)
+	return sn
+}
+
+func countBlobs(t *testing.T, server restic.Server) int {
+	blobs := 0
+	err := server.EachID(backend.Tree, func(id backend.ID) {
+		tree, err := restic.LoadTree(server, id)
+		ok(t, err)
+
+		blobs += tree.Map.Len()
+	})
+	ok(t, err)
+
+	return blobs
+}
+
+func TestArchiverPreload(t *testing.T) {
+	be := setupBackend(t)
+	defer teardownBackend(t, be)
+	key := setupKey(t, be, "geheim")
+	server := restic.NewServerWithKey(be, key)
+
+	// archive a few files
+	sn := snapshot(t, server, *benchArchiveDirectory)
+	t.Logf("archived snapshot %v", sn.ID)
+
+	// get archive stats
+	blobsBefore := countBlobs(t, server)
+	t.Logf("found %v blobs", blobsBefore)
+
+	// archive the same files again
+	sn2 := snapshot(t, server, *benchArchiveDirectory)
+	t.Logf("archived snapshot %v", sn2.ID)
+
+	// get archive stats
+	blobsAfter := countBlobs(t, server)
+	t.Logf("found %v blobs", blobsAfter)
+
+	// if there are more than 10% more blobs, something is wrong
+	if blobsAfter > (blobsBefore + blobsBefore/10) {
+		t.Fatalf("TestArchiverPreload: too many blobs in repository: before %d, after %d, threshhold %d",
+			blobsBefore, blobsAfter, (blobsBefore + blobsBefore/10))
+	}
 }

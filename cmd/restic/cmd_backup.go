@@ -193,6 +193,12 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
+	fmt.Printf("loading blobs\n")
+	err = arch.Preload()
+	if err != nil {
+		return err
+	}
+
 	_, id, err := arch.Snapshot(target, parentSnapshotID)
 	if err != nil {
 		return err
