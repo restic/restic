@@ -125,6 +125,10 @@ func BenchmarkSaveFrom(t *testing.B) {
 }
 
 func TestServerStats(t *testing.T) {
+	if *benchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping TestServerStats")
+	}
+
 	be := setupBackend(t)
 	defer teardownBackend(t, be)
 	key := setupKey(t, be, "geheim")

@@ -166,6 +166,10 @@ func countBlobs(t *testing.T, server restic.Server) int {
 }
 
 func TestArchiverPreload(t *testing.T) {
+	if *benchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping TestArchiverPreload")
+	}
+
 	be := setupBackend(t)
 	defer teardownBackend(t, be)
 	key := setupKey(t, be, "geheim")
