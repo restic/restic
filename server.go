@@ -112,18 +112,21 @@ func (s Server) LoadJSON(t backend.Type, blob Blob, item interface{}) error {
 func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{}) error {
 	// read
 	rd, err := s.GetReader(t, storageID)
+	defer rd.Close()
 	if err != nil {
 		return err
 	}
 
 	// decrypt
 	decryptRd, err := s.key.DecryptFrom(rd)
+	defer decryptRd.Close()
 	if err != nil {
 		return err
 	}
 
 	// unzip
 	unzipRd, err := zlib.NewReader(decryptRd)
+	defer unzipRd.Close()
 	if err != nil {
 		return err
 	}
