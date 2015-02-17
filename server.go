@@ -333,7 +333,7 @@ func (s Server) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, errors.New("key for server not set")
 	}
 
-	return s.key.Decrypt(ciphertext)
+	return s.key.Decrypt([]byte{}, ciphertext)
 }
 
 func (s Server) Encrypt(ciphertext, plaintext []byte) (int, error) {
@@ -361,7 +361,7 @@ func (s Server) EachDecrypted(t backend.Type, f func(backend.ID, []byte, error))
 			return
 		}
 
-		buf, err := s.key.Decrypt(data)
+		buf, err := s.key.Decrypt([]byte{}, data)
 		if err != nil {
 			f(id, nil, err)
 			return

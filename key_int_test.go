@@ -56,7 +56,7 @@ func TestCrypto(t *testing.T) {
 		msg = msg[:n]
 
 		// decrypt message
-		_, err = r.decrypt(r.master, msg)
+		_, err = r.decrypt(r.master, []byte{}, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -64,12 +64,12 @@ func TestCrypto(t *testing.T) {
 		// change hmac, this must fail
 		msg[len(msg)-8] ^= 0x23
 
-		if _, err = r.decrypt(r.master, msg); err != ErrUnauthenticated {
+		if _, err = r.decrypt(r.master, []byte{}, msg); err != ErrUnauthenticated {
 			t.Fatal("wrong HMAC value not detected")
 		}
 
 		// test decryption
-		p, err := r.decrypt(r.master, tv.ciphertext)
+		p, err := r.decrypt(r.master, []byte{}, tv.ciphertext)
 		if err != nil {
 			t.Fatal(err)
 		}

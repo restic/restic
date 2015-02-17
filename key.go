@@ -109,7 +109,7 @@ func OpenKey(s Server, id backend.ID, password string) (*Key, error) {
 	}
 
 	// decrypt master keys
-	buf, err := k.DecryptUser(k.Data)
+	buf, err := k.DecryptUser([]byte{}, k.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -447,10 +447,15 @@ func (k *Key) EncryptUserTo(wr io.Writer) io.WriteCloser {
 
 // Decrypt verifes and decrypts the ciphertext. Ciphertext must be in the form
 // IV || Ciphertext || HMAC.
-func (k *Key) decrypt(ks *keys, ciphertext []byte) ([]byte, error) {
+func (k *Key) decrypt(ks *keys, plaintext, ciphertext []byte) ([]byte, error) {
 	// check for plausible length
 	if len(ciphertext) < ivSize+hmacSize {
-		panic("trying to decryipt invalid data: ciphertext too small")
+		panic("trying to decrypt invalid data: ciphertext too small")
+	}
+
+	if cap(plaintext) < len(ciphertext) {
+		// extend plaintext
+		plaintext = append(plaintext, make([]byte, len(ciphertext)-cap(plaintext))...)
 	}
 
 	hm := hmac.New(sha256.New, ks.Sign)
@@ -483,22 +488,22 @@ func (k *Key) decrypt(ks *keys, ciphertext []byte) ([]byte, error) {
 
 	// decrypt
 	e := cipher.NewCTR(c, iv)
-	plaintext := make([]byte, len(ciphertext))
 	e.XORKeyStream(plaintext, ciphertext)
+	plaintext = plaintext[:len(ciphertext)]
 
 	return plaintext, nil
 }
 
 // Decrypt verifes and decrypts the ciphertext with the master key. Ciphertext
 // must be in the form IV || Ciphertext || HMAC.
-func (k *Key) Decrypt(ciphertext []byte) ([]byte, error) {
-	return k.decrypt(k.master, ciphertext)
+func (k *Key) Decrypt(plaintext, ciphertext []byte) ([]byte, error) {
+	return k.decrypt(k.master, plaintext, ciphertext)
 }
 
 // DecryptUser verifes and decrypts the ciphertext with the user key. Ciphertext
 // must be in the form IV || Ciphertext || HMAC.
-func (k *Key) DecryptUser(ciphertext []byte) ([]byte, error) {
-	return k.decrypt(k.user, ciphertext)
+func (k *Key) DecryptUser(plaintext, ciphertext []byte) ([]byte, error) {
+	return k.decrypt(k.user, plaintext, ciphertext)
 }
 
 type decryptReader struct {
@@ -518,8 +523,7 @@ func (d *decryptReader) Read(dst []byte) (int, error) {
 	remaining := len(d.buf) - d.pos
 	if len(dst) >= remaining {
 		n := copy(dst, d.buf[d.pos:])
-		FreeChunkBuf("decryptReader", d.buf)
-		d.buf = nil
+		d.Close()
 		return n, io.EOF
 	}
 

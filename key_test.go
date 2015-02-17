@@ -69,7 +69,7 @@ func TestEncryptDecrypt(t *testing.T) {
 		n, err := k.Encrypt(ciphertext, data)
 		ok(t, err)
 
-		plaintext, err := k.Decrypt(ciphertext[:n])
+		plaintext, err := k.Decrypt(nil, ciphertext[:n])
 		ok(t, err)
 
 		restic.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
@@ -119,7 +119,7 @@ func TestLargeEncrypt(t *testing.T) {
 		n, err := k.Encrypt(ciphertext, data)
 		ok(t, err)
 
-		plaintext, err := k.Decrypt(ciphertext[:n])
+		plaintext, err := k.Decrypt([]byte{}, ciphertext[:n])
 		ok(t, err)
 
 		equals(t, plaintext, data)
@@ -153,10 +153,11 @@ func BenchmarkEncrypt(b *testing.B) {
 	defer teardownBackend(b, be)
 	k := setupKey(b, be, testPassword)
 
+	buf := make([]byte, len(data)+restic.CiphertextExtension)
+
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
-	buf := make([]byte, len(data)+restic.CiphertextExtension)
 	for i := 0; i < b.N; i++ {
 		_, err := k.Encrypt(buf, data)
 		ok(b, err)
@@ -216,6 +217,8 @@ func BenchmarkEncryptDecryptReader(b *testing.B) {
 		_, err = io.Copy(ioutil.Discard, r)
 		ok(b, err)
 	}
+
+	restic.PoolAlloc()
 }
 
 func BenchmarkDecrypt(b *testing.B) {
@@ -227,6 +230,10 @@ func BenchmarkDecrypt(b *testing.B) {
 	k := setupKey(b, s, testPassword)
 
 	ciphertext := restic.GetChunkBuf("BenchmarkDecrypt")
+	defer restic.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
+	plaintext := restic.GetChunkBuf("BenchmarkDecrypt")
+	defer restic.FreeChunkBuf("BenchmarkDecrypt", plaintext)
+
 	n, err := k.Encrypt(ciphertext, data)
 	ok(b, err)
 
@@ -234,10 +241,9 @@ func BenchmarkDecrypt(b *testing.B) {
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
-		_, err := k.Decrypt(ciphertext[:n])
+		plaintext, err = k.Decrypt(plaintext, ciphertext[:n])
 		ok(b, err)
 	}
-	restic.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
 }
 
 func TestEncryptStreamWriter(t *testing.T) {
@@ -268,7 +274,7 @@ func TestEncryptStreamWriter(t *testing.T) {
 			l, len(ciphertext.Bytes()))
 
 		// decrypt with default function
-		plaintext, err := k.Decrypt(ciphertext.Bytes())
+		plaintext, err := k.Decrypt([]byte{}, ciphertext.Bytes())
 		ok(t, err)
 		assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",
@@ -342,7 +348,7 @@ func TestEncryptWriter(t *testing.T) {
 			l, len(ciphertext))
 
 		// decrypt with default function
-		plaintext, err := k.Decrypt(ciphertext)
+		plaintext, err := k.Decrypt([]byte{}, ciphertext)
 		ok(t, err)
 		assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",
