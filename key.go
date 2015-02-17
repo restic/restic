@@ -529,13 +529,23 @@ func (d *decryptReader) Read(dst []byte) (int, error) {
 	return n, nil
 }
 
+func (d *decryptReader) Close() error {
+	if d.buf == nil {
+		return nil
+	}
+
+	FreeChunkBuf("decryptReader", d.buf)
+	d.buf = nil
+	return nil
+}
+
 // decryptFrom verifies and decrypts the ciphertext read from rd with ks and
 // makes it available on the returned Reader. Ciphertext must be in the form IV
 // || Ciphertext || HMAC. In order to correctly verify the ciphertext, rd is
 // drained, locally buffered and made available on the returned Reader
 // afterwards. If an HMAC verification failure is observed, it is returned
 // immediately.
-func (k *Key) decryptFrom(ks *keys, rd io.Reader) (io.Reader, error) {
+func (k *Key) decryptFrom(ks *keys, rd io.Reader) (io.ReadCloser, error) {
 	ciphertext := GetChunkBuf("decryptReader")
 	ciphertext = ciphertext[0:cap(ciphertext)]
 	n, err := io.ReadFull(rd, ciphertext)
@@ -600,7 +610,7 @@ func (k *Key) decryptFrom(ks *keys, rd io.Reader) (io.Reader, error) {
 // drained, locally buffered and made available on the returned Reader
 // afterwards. If an HMAC verification failure is observed, it is returned
 // immediately.
-func (k *Key) DecryptFrom(rd io.Reader) (io.Reader, error) {
+func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
 	return k.decryptFrom(k.master, rd)
 }
 
@@ -610,7 +620,7 @@ func (k *Key) DecryptFrom(rd io.Reader) (io.Reader, error) {
 // rd is drained, locally buffered and made available on the returned Reader
 // afterwards. If an HMAC verification failure is observed, it is returned
 // immediately.
-func (k *Key) DecryptUserFrom(rd io.Reader) (io.Reader, error) {
+func (k *Key) DecryptUserFrom(rd io.Reader) (io.ReadCloser, error) {
 	return k.decryptFrom(k.user, rd)
 }
 

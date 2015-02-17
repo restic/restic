@@ -201,9 +201,10 @@ func BenchmarkEncryptDecryptReader(b *testing.B) {
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
+	buf := bytes.NewBuffer(nil)
 	for i := 0; i < b.N; i++ {
 		rd.Seek(0, 0)
-		buf := bytes.NewBuffer(nil)
+		buf.Reset()
 		wr := k.EncryptTo(buf)
 		_, err := io.Copy(wr, rd)
 		ok(b, err)
