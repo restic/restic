@@ -63,6 +63,8 @@ func NewArchiver(s Server, p *Progress) (*Archiver, error) {
 // Preload loads all tree objects from repository and adds all blobs that are
 // still available to the map for deduplication.
 func (arch *Archiver) Preload() error {
+	debug.Log("Archiver.Preload", "Start loading known blobs")
+
 	// load all trees, in parallel
 	worker := func(wg *sync.WaitGroup, c <-chan backend.ID) {
 		for id := range c {
@@ -71,6 +73,8 @@ func (arch *Archiver) Preload() error {
 			if err != nil {
 				return
 			}
+
+			debug.Log("Archiver.Preload", "load tree %v with %d blobs", id, tree.Map.Len())
 
 			arch.m.Merge(tree.Map)
 		}
@@ -87,7 +91,13 @@ func (arch *Archiver) Preload() error {
 	}
 
 	// list ids
+	trees := 0
 	err := arch.s.EachID(backend.Tree, func(id backend.ID) {
+		trees++
+
+		if trees%1000 == 0 {
+			debug.Log("Archiver.Preload", "Loaded %v trees", trees)
+		}
 		idCh <- id
 	})
 
@@ -95,6 +105,8 @@ func (arch *Archiver) Preload() error {
 
 	// wait for workers
 	wg.Wait()
+
+	debug.Log("Archiver.Preload", "Loaded %v blobs from %v trees", arch.m.Len(), trees)
 
 	return err
 }
