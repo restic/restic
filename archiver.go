@@ -16,8 +16,9 @@ import (
 )
 
 const (
-	maxConcurrentBlobs = 32
-	maxConcurrency     = 10
+	maxConcurrentBlobs    = 32
+	maxConcurrency        = 10
+	maxConcurrencyPreload = 100
 
 	// chunkerBufSize is used in pool.go
 	chunkerBufSize = 512 * chunker.KiB
@@ -80,7 +81,7 @@ func (arch *Archiver) Preload() error {
 
 	// start workers
 	var wg sync.WaitGroup
-	for i := 0; i < maxConcurrency; i++ {
+	for i := 0; i < maxConcurrencyPreload; i++ {
 		wg.Add(1)
 		go worker(&wg, idCh)
 	}
