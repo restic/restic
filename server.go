@@ -2,6 +2,7 @@ package restic
 
 import (
 	"bytes"
+	"compress/flate"
 	"compress/zlib"
 	"crypto/sha256"
 	"encoding/json"
@@ -146,8 +147,10 @@ func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{
 	}
 
 	// unzip
+	br := decryptRd.(flate.Reader)
+
 	unzipRd := zReaderPool.Get().(zReader)
-	err = unzipRd.Reset(decryptRd, nil)
+	err = unzipRd.Reset(br, nil)
 	defer func() {
 		unzipRd.Close()
 		zReaderPool.Put(unzipRd)

@@ -543,6 +543,24 @@ func (d *decryptReader) Read(dst []byte) (int, error) {
 	return n, nil
 }
 
+func (d *decryptReader) ReadByte() (c byte, err error) {
+	if d.buf == nil {
+		return 0, io.EOF
+	}
+
+	remaining := len(d.buf) - d.pos
+	if remaining == 1 {
+		c = d.buf[d.pos]
+		d.Close()
+		return c, io.EOF
+	}
+
+	c = d.buf[d.pos]
+	d.pos++
+
+	return
+}
+
 func (d *decryptReader) Close() error {
 	if d.buf == nil {
 		return nil
