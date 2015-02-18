@@ -136,9 +136,67 @@ func TestServerStats(t *testing.T) {
 
 	// archive a few files
 	sn := snapshot(t, server, *benchArchiveDirectory)
-	t.Logf("archived snapshot %v", sn.ID)
+	t.Logf("archived snapshot %v", sn.ID())
 
 	stats, err := server.Stats()
 	ok(t, err)
 	t.Logf("stats: %v", stats)
+}
+
+func TestLoadJSONID(t *testing.T) {
+	if *benchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping TestServerStats")
+	}
+
+	be := setupBackend(t)
+	defer teardownBackend(t, be)
+	key := setupKey(t, be, "geheim")
+	server := restic.NewServerWithKey(be, key)
+
+	// archive a few files
+	sn := snapshot(t, server, *benchArchiveDirectory)
+	t.Logf("archived snapshot %v", sn.ID())
+
+	// benchmark loading first tree
+	list, err := server.List(backend.Tree)
+	ok(t, err)
+	assert(t, len(list) > 0,
+		"no Trees in repository found")
+
+	treeID := list[0]
+
+	tree := restic.NewTree()
+	err = server.LoadJSONID(backend.Tree, treeID, &tree)
+	ok(t, err)
+}
+
+func BenchmarkLoadJSONID(t *testing.B) {
+	if *benchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping TestServerStats")
+	}
+
+	be := setupBackend(t)
+	defer teardownBackend(t, be)
+	key := setupKey(t, be, "geheim")
+	server := restic.NewServerWithKey(be, key)
+
+	// archive a few files
+	sn := snapshot(t, server, *benchArchiveDirectory)
+	t.Logf("archived snapshot %v", sn.ID())
+
+	// benchmark loading first tree
+	list, err := server.List(backend.Tree)
+	ok(t, err)
+	assert(t, len(list) > 0,
+		"no Trees in repository found")
+
+	t.ResetTimer()
+
+	tree := restic.NewTree()
+	for i := 0; i < t.N; i++ {
+		for _, treeID := range list {
+			err = server.LoadJSONID(backend.Tree, treeID, &tree)
+			ok(t, err)
+		}
+	}
 }

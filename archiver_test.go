@@ -143,7 +143,7 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	b.Logf("snapshot archived as %v", id)
 }
 
-func snapshot(t *testing.T, server restic.Server, path string) *restic.Snapshot {
+func snapshot(t testing.TB, server restic.Server, path string) *restic.Snapshot {
 	arch, err := restic.NewArchiver(server, nil)
 	ok(t, err)
 	ok(t, arch.Preload())
@@ -152,7 +152,7 @@ func snapshot(t *testing.T, server restic.Server, path string) *restic.Snapshot 
 	return sn
 }
 
-func countBlobs(t *testing.T, server restic.Server) int {
+func countBlobs(t testing.TB, server restic.Server) int {
 	blobs := 0
 	err := server.EachID(backend.Tree, func(id backend.ID) {
 		tree, err := restic.LoadTree(server, id)
@@ -165,7 +165,7 @@ func countBlobs(t *testing.T, server restic.Server) int {
 	return blobs
 }
 
-func TestArchiverPreload(t *testing.T) {
+func archiveWithPreload(t testing.TB) {
 	if *benchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiverPreload")
 	}
@@ -177,7 +177,7 @@ func TestArchiverPreload(t *testing.T) {
 
 	// archive a few files
 	sn := snapshot(t, server, *benchArchiveDirectory)
-	t.Logf("archived snapshot %v", sn.ID)
+	t.Logf("archived snapshot %v", sn.ID())
 
 	// get archive stats
 	blobsBefore := countBlobs(t, server)
@@ -185,15 +185,51 @@ func TestArchiverPreload(t *testing.T) {
 
 	// archive the same files again
 	sn2 := snapshot(t, server, *benchArchiveDirectory)
-	t.Logf("archived snapshot %v", sn2.ID)
+	t.Logf("archived snapshot %v", sn2.ID())
 
 	// get archive stats
 	blobsAfter := countBlobs(t, server)
 	t.Logf("found %v blobs", blobsAfter)
 
-	// if there are more than 10% more blobs, something is wrong
-	if blobsAfter > (blobsBefore + blobsBefore/10) {
+	// if there are more than 50% more blobs, something is wrong
+	if blobsAfter > (blobsBefore + blobsBefore/2) {
 		t.Fatalf("TestArchiverPreload: too many blobs in repository: before %d, after %d, threshhold %d",
-			blobsBefore, blobsAfter, (blobsBefore + blobsBefore/10))
+			blobsBefore, blobsAfter, (blobsBefore + blobsBefore/2))
+	}
+}
+
+func TestArchivePreload(t *testing.T) {
+	archiveWithPreload(t)
+}
+
+func BenchmarkArchivePreload(b *testing.B) {
+	archiveWithPreload(b)
+}
+
+func BenchmarkPreload(t *testing.B) {
+	if *benchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping TestArchiverPreload")
+	}
+
+	be := setupBackend(t)
+	defer teardownBackend(t, be)
+	key := setupKey(t, be, "geheim")
+	server := restic.NewServerWithKey(be, key)
+
+	// archive a few files
+	arch, err := restic.NewArchiver(server, nil)
+	ok(t, err)
+	sn, _, err := arch.Snapshot(*benchArchiveDirectory, nil)
+	ok(t, err)
+	t.Logf("archived snapshot %v", sn.ID())
+
+	// start benchmark
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		// create new archiver and preload
+		arch2, err := restic.NewArchiver(server, nil)
+		ok(t, err)
+		ok(t, arch2.Preload())
 	}
 }

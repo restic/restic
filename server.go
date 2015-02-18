@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"bytes"
 	"compress/zlib"
 	"crypto/sha256"
 	"encoding/json"
@@ -107,6 +108,28 @@ func (s Server) LoadJSON(t backend.Type, blob Blob, item interface{}) error {
 	return s.LoadJSONID(t, blob.Storage, item)
 }
 
+var (
+	zEmptyString       = []byte("x\x9C\x03\x00\x00\x00\x00\x01")
+	zEmptyStringReader = bytes.NewReader(zEmptyString)
+)
+
+var zReaderPool = sync.Pool{
+	New: func() interface{} {
+		zEmptyStringReader.Seek(0, 0)
+		rd, err := zlib.NewReader(zEmptyStringReader)
+		if err != nil {
+			// shouldn't happen
+			panic(err)
+		}
+		return rd
+	},
+}
+
+type zReader interface {
+	io.ReadCloser
+	zlib.Resetter
+}
+
 // LoadJSONID calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
 func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{}) error {
@@ -125,8 +148,12 @@ func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{
 	}
 
 	// unzip
-	unzipRd, err := zlib.NewReader(decryptRd)
-	defer unzipRd.Close()
+	unzipRd := zReaderPool.Get().(zReader)
+	err = unzipRd.Reset(decryptRd, nil)
+	defer func() {
+		unzipRd.Close()
+		zReaderPool.Put(unzipRd)
+	}()
 	if err != nil {
 		return err
 	}
