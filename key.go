@@ -498,8 +498,8 @@ func (k *Key) decrypt(ks *keys, plaintext, ciphertext []byte) ([]byte, error) {
 
 	// decrypt
 	e := cipher.NewCTR(c, iv)
-	e.XORKeyStream(plaintext, ciphertext)
 	plaintext = plaintext[:len(ciphertext)]
+	e.XORKeyStream(plaintext, ciphertext)
 
 	return plaintext, nil
 }
