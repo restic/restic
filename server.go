@@ -109,14 +109,12 @@ func (s Server) LoadJSON(t backend.Type, blob Blob, item interface{}) error {
 }
 
 var (
-	zEmptyString       = []byte("x\x9C\x03\x00\x00\x00\x00\x01")
-	zEmptyStringReader = bytes.NewReader(zEmptyString)
+	zEmptyString = []byte("x\x9C\x03\x00\x00\x00\x00\x01")
 )
 
 var zReaderPool = sync.Pool{
 	New: func() interface{} {
-		zEmptyStringReader.Seek(0, 0)
-		rd, err := zlib.NewReader(zEmptyStringReader)
+		rd, err := zlib.NewReader(bytes.NewReader(zEmptyString))
 		if err != nil {
 			// shouldn't happen
 			panic(err)

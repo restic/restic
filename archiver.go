@@ -18,7 +18,7 @@ import (
 const (
 	maxConcurrentBlobs    = 32
 	maxConcurrency        = 10
-	maxConcurrencyPreload = 100
+	maxConcurrencyPreload = 20
 
 	// chunkerBufSize is used in pool.go
 	chunkerBufSize = 512 * chunker.KiB
