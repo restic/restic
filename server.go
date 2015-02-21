@@ -134,10 +134,10 @@ type zReader interface {
 func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{}) error {
 	// read
 	rd, err := s.GetReader(t, storageID)
-	defer rd.Close()
 	if err != nil {
 		return err
 	}
+	defer rd.Close()
 
 	// decrypt
 	decryptRd, err := s.key.DecryptFrom(rd)
