@@ -16,9 +16,10 @@ import (
 var testPassword = "foobar"
 var testCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
 var testLargeCrypto = flag.Bool("test.largecrypto", false, "also test crypto functions with large payloads")
+var testTempDir = flag.String("test.tempdir", "", "use this directory for temporary storage (default: system temp dir)")
 
 func setupBackend(t testing.TB) restic.Server {
-	tempdir, err := ioutil.TempDir("", "restic-test-")
+	tempdir, err := ioutil.TempDir(*testTempDir, "restic-test-")
 	ok(t, err)
 
 	b, err := backend.CreateLocal(tempdir)

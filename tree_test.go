@@ -21,7 +21,7 @@ var testFiles = []struct {
 
 // prepareDir creates a temporary directory and returns it.
 func prepareDir(t *testing.T) string {
-	tempdir, err := ioutil.TempDir("", "restic-test-")
+	tempdir, err := ioutil.TempDir(*testTempDir, "restic-test-")
 	ok(t, err)
 
 	for _, test := range testFiles {
