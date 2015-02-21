@@ -135,19 +135,19 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	key := setupKey(b, be, "geheim")
 	server := restic.NewServerWithKey(be, key)
 
-	arch, err := restic.NewArchiver(server, nil)
+	arch, err := restic.NewArchiver(server)
 	ok(b, err)
 
-	_, id, err := arch.Snapshot(*benchArchiveDirectory, nil)
+	_, id, err := arch.Snapshot(nil, *benchArchiveDirectory, nil)
 
 	b.Logf("snapshot archived as %v", id)
 }
 
 func snapshot(t testing.TB, server restic.Server, path string) *restic.Snapshot {
-	arch, err := restic.NewArchiver(server, nil)
+	arch, err := restic.NewArchiver(server)
 	ok(t, err)
 	ok(t, arch.Preload())
-	sn, _, err := arch.Snapshot(path, nil)
+	sn, _, err := arch.Snapshot(nil, path, nil)
 	ok(t, err)
 	return sn
 }
@@ -217,9 +217,9 @@ func BenchmarkPreload(t *testing.B) {
 	server := restic.NewServerWithKey(be, key)
 
 	// archive a few files
-	arch, err := restic.NewArchiver(server, nil)
+	arch, err := restic.NewArchiver(server)
 	ok(t, err)
-	sn, _, err := arch.Snapshot(*benchArchiveDirectory, nil)
+	sn, _, err := arch.Snapshot(nil, *benchArchiveDirectory, nil)
 	ok(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
 
@@ -228,7 +228,7 @@ func BenchmarkPreload(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		// create new archiver and preload
-		arch2, err := restic.NewArchiver(server, nil)
+		arch2, err := restic.NewArchiver(server)
 		ok(t, err)
 		ok(t, arch2.Preload())
 	}

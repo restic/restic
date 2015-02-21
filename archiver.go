@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/juju/arrar"
@@ -32,15 +33,12 @@ type Archiver struct {
 
 	Error  func(dir string, fi os.FileInfo, err error) error
 	Filter func(item string, fi os.FileInfo) bool
-
-	p *Progress
 }
 
-func NewArchiver(s Server, p *Progress) (*Archiver, error) {
+func NewArchiver(s Server) (*Archiver, error) {
 	var err error
 	arch := &Archiver{
 		s:         s,
-		p:         p,
 		blobToken: make(chan struct{}, maxConcurrentBlobs),
 	}
 
@@ -179,7 +177,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (Blob, error) {
 
 // SaveFile stores the content of the file on the backend as a Blob by calling
 // Save for each chunk.
-func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
+func (arch *Archiver) SaveFile(p *Progress, node *Node) (Blobs, error) {
 	file, err := os.Open(node.path)
 	defer file.Close()
 	if err != nil {
@@ -240,7 +238,7 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 				panic(err)
 			}
 
-			arch.p.Report(Stat{Bytes: blob.Size})
+			p.Report(Stat{Bytes: blob.Size})
 			arch.blobToken <- token
 			ch <- blob
 		}(resCh)
@@ -277,7 +275,7 @@ func (arch *Archiver) SaveFile(node *Node) (Blobs, error) {
 	return blobs, nil
 }
 
-func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
+func (arch *Archiver) saveTree(p *Progress, t *Tree) (Blob, error) {
 	debug.Log("Archiver.saveTree", "saveTree(%v)\n", t)
 	var wg sync.WaitGroup
 
@@ -287,13 +285,13 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 	// TODO: do all this in parallel
 	for _, node := range t.Nodes {
 		if node.tree != nil {
-			b, err := arch.saveTree(node.tree)
+			b, err := arch.saveTree(p, node.tree)
 			if err != nil {
 				return Blob{}, err
 			}
 			node.Subtree = b.ID
 			t.Map.Insert(b)
-			arch.p.Report(Stat{Dirs: 1})
+			p.Report(Stat{Dirs: 1})
 		} else if node.Type == "file" {
 			if len(node.Content) > 0 {
 				removeContent := false
@@ -332,12 +330,12 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 					defer wg.Done()
 
 					var blobs Blobs
-					blobs, n.err = arch.SaveFile(n)
+					blobs, n.err = arch.SaveFile(p, n)
 					for _, b := range blobs {
 						t.Map.Insert(b)
 					}
 
-					arch.p.Report(Stat{Files: 1})
+					p.Report(Stat{Files: 1})
 				}(node)
 			}
 		}
@@ -391,11 +389,11 @@ func (arch *Archiver) saveTree(t *Tree) (Blob, error) {
 	return blob, nil
 }
 
-func (arch *Archiver) Snapshot(path string, parentSnapshot backend.ID) (*Snapshot, backend.ID, error) {
+func (arch *Archiver) Snapshot(p *Progress, path string, parentSnapshot backend.ID) (*Snapshot, backend.ID, error) {
 	debug.Break("Archiver.Snapshot")
 
-	arch.p.Start()
-	defer arch.p.Done()
+	p.Start()
+	defer p.Done()
 
 	sn, err := NewSnapshot(path)
 	if err != nil {
@@ -424,14 +422,14 @@ func (arch *Archiver) Snapshot(path string, parentSnapshot backend.ID) (*Snapsho
 				}
 
 				if node.Type == "file" {
-					node.blobs, err = arch.SaveFile(node)
+					node.blobs, err = arch.SaveFile(p, node)
 					if err != nil {
 						panic(err)
 					}
 				}
 
 				e.Result <- node
-				arch.p.Report(Stat{Files: 1})
+				p.Report(Stat{Files: 1})
 			case <-done:
 				// pipeline was cancelled
 				return
@@ -483,7 +481,7 @@ func (arch *Archiver) Snapshot(path string, parentSnapshot backend.ID) (*Snapsho
 				node.blobs = Blobs{blob}
 
 				dir.Result <- node
-				arch.p.Report(Stat{Dirs: 1})
+				p.Report(Stat{Dirs: 1})
 			case <-done:
 				// pipeline was cancelled
 				return
@@ -535,4 +533,33 @@ func (arch *Archiver) Snapshot(path string, parentSnapshot backend.ID) (*Snapsho
 	}
 
 	return sn, blob.Storage, nil
+}
+
+func isFile(fi os.FileInfo) bool {
+	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
+}
+
+func Scan(dir string, p *Progress) (Stat, error) {
+	p.Start()
+	defer p.Done()
+
+	var stat Stat
+
+	err := filepath.Walk(dir, func(str string, fi os.FileInfo, err error) error {
+		s := Stat{}
+		if isFile(fi) {
+			s.Files++
+			s.Bytes += uint64(fi.Size())
+		} else if fi.IsDir() {
+			s.Dirs++
+		}
+
+		p.Report(s)
+		stat.Add(s)
+
+		// TODO: handle error?
+		return nil
+	})
+
+	return stat, err
 }

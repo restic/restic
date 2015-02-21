@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -74,8 +73,61 @@ func (cmd CmdBackup) Usage() string {
 	return "DIR/FILE [snapshot-ID]"
 }
 
-func isFile(fi os.FileInfo) bool {
-	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
+func newScanProgress() *restic.Progress {
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		return nil
+	}
+
+	scanProgress := restic.NewProgress(time.Second)
+	if terminal.IsTerminal(int(os.Stdout.Fd())) {
+		scanProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+			fmt.Printf("\x1b[2K\r[%s] %d directories, %d files, %s", format_duration(d), s.Dirs, s.Files, format_bytes(s.Bytes))
+		}
+		scanProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
+			fmt.Printf("\nDone in %s\n", format_duration(d))
+		}
+	}
+
+	return scanProgress
+}
+
+func newArchiveProgress(todo restic.Stat) *restic.Progress {
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		return nil
+	}
+
+	archiveProgress := restic.NewProgress(time.Second)
+
+	var bps, eta uint64
+	itemsTodo := todo.Files + todo.Dirs
+
+	archiveProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		sec := uint64(d / time.Second)
+		if todo.Bytes > 0 && sec > 0 && ticker {
+			bps = s.Bytes / sec
+			if bps > 0 {
+				eta = (todo.Bytes - s.Bytes) / bps
+			}
+		}
+
+		itemsDone := s.Files + s.Dirs
+		fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ETA %s",
+			format_duration(d),
+			float64(s.Bytes)/float64(todo.Bytes)*100,
+			format_bytes(bps),
+			format_bytes(s.Bytes), format_bytes(todo.Bytes),
+			itemsDone, itemsTodo,
+			format_seconds(eta))
+	}
+
+	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
+		sec := uint64(d / time.Second)
+		fmt.Printf("\nduration: %s, %.2fMiB/s\n",
+			format_duration(d),
+			float64(todo.Bytes)/float64(sec)/(1<<20))
+	}
+
+	return archiveProgress
 }
 
 func (cmd CmdBackup) Execute(args []string) error {
@@ -102,87 +154,19 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	fmt.Printf("scan %s\n", target)
 
-	scanProgress := restic.NewProgress(time.Second)
-	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		scanProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-			fmt.Printf("\x1b[2K\r[%s] %d directories, %d files, %s", format_duration(d), s.Dirs, s.Files, format_bytes(s.Bytes))
-		}
-		scanProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-			fmt.Printf("\nDone in %s\n", format_duration(d))
-		}
-	}
+	sp := newScanProgress()
+	stat, err := restic.Scan(target, sp)
 
 	// TODO: add filter
 	// arch.Filter = func(dir string, fi os.FileInfo) bool {
 	// 	return true
 	// }
 
-	stat := restic.Stat{}
-
-	term := terminal.IsTerminal(int(os.Stdout.Fd()))
-
-	start := time.Now()
-	err = filepath.Walk(target, func(p string, fi os.FileInfo, err error) error {
-		if isFile(fi) {
-			stat.Files++
-			stat.Bytes += uint64(fi.Size())
-		} else if fi.IsDir() {
-			stat.Dirs++
-		}
-
-		if term {
-			fmt.Printf("\x1b[2K\r[%s] %d directories, %d files, %s",
-				format_duration(time.Since(start)), stat.Dirs, stat.Files, format_bytes(stat.Bytes))
-		}
-
-		// TODO: handle error?
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("\nDone in %s\n", format_duration(time.Since(start)))
-
 	if parentSnapshotID != nil {
 		return errors.New("not implemented")
 	}
 
-	archiveProgress := restic.NewProgress(time.Second)
-
-	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		var bps, eta uint64
-		itemsTodo := stat.Files + stat.Dirs
-
-		archiveProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-			sec := uint64(d / time.Second)
-			if stat.Bytes > 0 && sec > 0 && ticker {
-				bps = s.Bytes / sec
-				if bps > 0 {
-					eta = (stat.Bytes - s.Bytes) / bps
-				}
-			}
-
-			itemsDone := s.Files + s.Dirs
-			fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ETA %s",
-				format_duration(d),
-				float64(s.Bytes)/float64(stat.Bytes)*100,
-				format_bytes(bps),
-				format_bytes(s.Bytes), format_bytes(stat.Bytes),
-				itemsDone, itemsTodo,
-				format_seconds(eta))
-		}
-
-		archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-			sec := uint64(d / time.Second)
-			fmt.Printf("\nduration: %s, %.2fMiB/s\n",
-				format_duration(d),
-				float64(stat.Bytes)/float64(sec)/(1<<20))
-		}
-	}
-
-	arch, err := restic.NewArchiver(s, archiveProgress)
+	arch, err := restic.NewArchiver(s)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "err: %v\n", err)
 	}
@@ -199,7 +183,8 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	_, id, err := arch.Snapshot(target, parentSnapshotID)
+	ap := newArchiveProgress(stat)
+	_, id, err := arch.Snapshot(ap, target, parentSnapshotID)
 	if err != nil {
 		return err
 	}

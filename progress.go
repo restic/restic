@@ -26,6 +26,8 @@ type Stat struct {
 	Files uint64
 	Dirs  uint64
 	Bytes uint64
+	Trees uint64
+	Blobs uint64
 }
 
 type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
