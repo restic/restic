@@ -431,6 +431,7 @@ func (arch *Archiver) Snapshot(path string, parentSnapshot backend.ID) (*Snapsho
 				}
 
 				e.Result <- node
+				arch.p.Report(Stat{Files: 1})
 			case <-done:
 				// pipeline was cancelled
 				return
@@ -482,6 +483,7 @@ func (arch *Archiver) Snapshot(path string, parentSnapshot backend.ID) (*Snapsho
 				node.blobs = Blobs{blob}
 
 				dir.Result <- node
+				arch.p.Report(Stat{Dirs: 1})
 			case <-done:
 				// pipeline was cancelled
 				return
