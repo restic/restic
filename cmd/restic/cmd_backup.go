@@ -112,8 +112,6 @@ func newLoadBlobsProgress(s restic.Server) (*restic.Progress, error) {
 			}
 		}
 
-		// fmt.Printf("sec: %v, trees: %v / %v\n", sec, s.Trees, trees)
-
 		fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %d trees/s  %d / %d trees, %d blobs  ETA %s",
 			format_duration(d),
 			float64(s.Trees)/float64(trees)*100,

@@ -165,6 +165,7 @@ func init() {
 
 func main() {
 	// defer profile.Start(profile.MemProfileRate(100000), profile.ProfilePath(".")).Stop()
+	// defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
 	opts.Repo = os.Getenv("RESTIC_REPOSITORY")
 
 	debug.Log("restic", "main %#v", os.Args)

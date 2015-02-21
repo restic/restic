@@ -202,10 +202,6 @@ func TestArchivePreload(t *testing.T) {
 	archiveWithPreload(t)
 }
 
-func BenchmarkArchivePreload(b *testing.B) {
-	archiveWithPreload(b)
-}
-
 func BenchmarkPreload(t *testing.B) {
 	if *benchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiverPreload")
@@ -231,5 +227,35 @@ func BenchmarkPreload(t *testing.B) {
 		arch2, err := restic.NewArchiver(server)
 		ok(t, err)
 		ok(t, arch2.Preload(nil))
+	}
+}
+
+func BenchmarkLoadTree(t *testing.B) {
+	if *benchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping TestArchiverPreload")
+	}
+
+	be := setupBackend(t)
+	defer teardownBackend(t, be)
+	key := setupKey(t, be, "geheim")
+	server := restic.NewServerWithKey(be, key)
+
+	// archive a few files
+	arch, err := restic.NewArchiver(server)
+	ok(t, err)
+	sn, _, err := arch.Snapshot(nil, *benchArchiveDirectory, nil)
+	ok(t, err)
+	t.Logf("archived snapshot %v", sn.ID())
+
+	// start benchmark
+	t.ResetTimer()
+
+	list, err := server.List(backend.Tree)
+	ok(t, err)
+	list = list[:10]
+
+	for i := 0; i < t.N; i++ {
+		_, err := restic.LoadTree(server, list[0])
+		ok(t, err)
 	}
 }
