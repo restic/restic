@@ -78,17 +78,55 @@ func newScanProgress() *restic.Progress {
 		return nil
 	}
 
-	scanProgress := restic.NewProgress(time.Second)
-	if terminal.IsTerminal(int(os.Stdout.Fd())) {
-		scanProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-			fmt.Printf("\x1b[2K\r[%s] %d directories, %d files, %s", format_duration(d), s.Dirs, s.Files, format_bytes(s.Bytes))
-		}
-		scanProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-			fmt.Printf("\nDone in %s\n", format_duration(d))
-		}
+	p := restic.NewProgress(time.Second)
+	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		fmt.Printf("\x1b[2K\r[%s] %d directories, %d files, %s", format_duration(d), s.Dirs, s.Files, format_bytes(s.Bytes))
+	}
+	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
+		fmt.Printf("\nDone in %s\n", format_duration(d))
 	}
 
-	return scanProgress
+	return p
+}
+
+func newLoadBlobsProgress(s restic.Server) (*restic.Progress, error) {
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		return nil, nil
+	}
+
+	trees, err := s.Count(backend.Tree)
+	if err != nil {
+		return nil, err
+	}
+
+	eta := uint64(0)
+	tps := uint64(0) // trees per second
+
+	p := restic.NewProgress(time.Second)
+	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		sec := uint64(d / time.Second)
+		if trees > 0 && sec > 0 && ticker {
+			tps = uint64(s.Trees) / sec
+			if tps > 0 {
+				eta = (uint64(trees) - s.Trees) / tps
+			}
+		}
+
+		// fmt.Printf("sec: %v, trees: %v / %v\n", sec, s.Trees, trees)
+
+		fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %d trees/s  %d / %d trees, %d blobs  ETA %s",
+			format_duration(d),
+			float64(s.Trees)/float64(trees)*100,
+			tps,
+			s.Trees, trees,
+			s.Blobs,
+			format_seconds(eta))
+	}
+	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
+		fmt.Printf("\nDone in %s\n", format_duration(d))
+	}
+
+	return p, nil
 }
 
 func newArchiveProgress(todo restic.Stat) *restic.Progress {
@@ -154,8 +192,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	fmt.Printf("scan %s\n", target)
 
-	sp := newScanProgress()
-	stat, err := restic.Scan(target, sp)
+	stat, err := restic.Scan(target, newScanProgress())
 
 	// TODO: add filter
 	// arch.Filter = func(dir string, fi os.FileInfo) bool {
@@ -178,13 +215,17 @@ func (cmd CmdBackup) Execute(args []string) error {
 	}
 
 	fmt.Printf("loading blobs\n")
-	err = arch.Preload()
+	pb, err := newLoadBlobsProgress(s)
 	if err != nil {
 		return err
 	}
 
-	ap := newArchiveProgress(stat)
-	_, id, err := arch.Snapshot(ap, target, parentSnapshotID)
+	err = arch.Preload(pb)
+	if err != nil {
+		return err
+	}
+
+	_, id, err := arch.Snapshot(newArchiveProgress(stat), target, parentSnapshotID)
 	if err != nil {
 		return err
 	}

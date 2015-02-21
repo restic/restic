@@ -173,6 +173,8 @@ func (s *Stat) Add(other Stat) {
 	s.Bytes += other.Bytes
 	s.Dirs += other.Dirs
 	s.Files += other.Files
+	s.Trees += other.Trees
+	s.Blobs += other.Blobs
 }
 
 func (s Stat) String() string {
@@ -192,6 +194,6 @@ func (s Stat) String() string {
 		str = fmt.Sprintf("%dB", s.Bytes)
 	}
 
-	return fmt.Sprintf("Stat(%d files, %d dirs, %v)",
-		s.Files, s.Dirs, str)
+	return fmt.Sprintf("Stat(%d files, %d dirs, %v trees, %v blobs, %v)",
+		s.Files, s.Dirs, s.Trees, s.Blobs, str)
 }

@@ -422,6 +422,16 @@ func (s Server) Stats() (ServerStats, error) {
 	return ServerStats{Blobs: uint(blobs.Len()), Trees: uint(trees)}, err
 }
 
+// Count counts the number of objects of type t in the backend.
+func (s Server) Count(t backend.Type) (int, error) {
+	l, err := s.be.List(t)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(l), nil
+}
+
 // Proxy methods to backend
 
 func (s Server) List(t backend.Type) (backend.IDs, error) {
