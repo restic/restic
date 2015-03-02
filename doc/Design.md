@@ -113,10 +113,10 @@ Snapshots
 
 A snapshots represents a directory with all files and sub-directories at a
 given point in time. For each backup that is made, a new snapshot is created. A
-snapshot is a zlib-compressed JSON document that is stored in an encrypted file
-below the directory `snapshots` in the repository. The filename is the SHA-256
-hash of the (encrypted) contents. This string is unique and used within restic
-to uniquely identify a snapshot.
+snapshot is a JSON document that is stored in an encrypted file below the
+directory `snapshots` in the repository. The filename is the SHA-256 hash of
+the (encrypted) contents. This string is unique and used within restic to
+uniquely identify a snapshot.
 
 The command `restic cat snapshot` can be used as follows to decrypt and
 pretty-print the contents of a snapshot file:

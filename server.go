@@ -1,9 +1,6 @@
 package restic
 
 import (
-	"bytes"
-	"compress/flate"
-	"compress/zlib"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -109,26 +106,6 @@ func (s Server) LoadJSON(t backend.Type, blob Blob, item interface{}) error {
 	return s.LoadJSONID(t, blob.Storage, item)
 }
 
-var (
-	zEmptyString = []byte("x\x9C\x03\x00\x00\x00\x00\x01")
-)
-
-var zReaderPool = sync.Pool{
-	New: func() interface{} {
-		rd, err := zlib.NewReader(bytes.NewReader(zEmptyString))
-		if err != nil {
-			// shouldn't happen
-			panic(err)
-		}
-		return rd
-	},
-}
-
-type zReader interface {
-	io.ReadCloser
-	zlib.Resetter
-}
-
 // LoadJSONID calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
 func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{}) error {
@@ -146,21 +123,8 @@ func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{
 		return err
 	}
 
-	// unzip
-	br := decryptRd.(flate.Reader)
-
-	unzipRd := zReaderPool.Get().(zReader)
-	err = unzipRd.Reset(br, nil)
-	defer func() {
-		unzipRd.Close()
-		zReaderPool.Put(unzipRd)
-	}()
-	if err != nil {
-		return err
-	}
-
 	// decode
-	decoder := json.NewDecoder(unzipRd)
+	decoder := json.NewDecoder(decryptRd)
 	err = decoder.Decode(item)
 	if err != nil {
 		return err
@@ -275,12 +239,6 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 	}, nil
 }
 
-var zWriterPool = sync.Pool{
-	New: func() interface{} {
-		return zlib.NewWriter(nil)
-	},
-}
-
 // SaveJSON serialises item as JSON and encrypts and saves it in the backend as
 // type t.
 func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
@@ -290,25 +248,12 @@ func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
 	}
 
 	encWr := s.key.EncryptTo(backendBlob)
-	wr := zWriterPool.Get().(*zlib.Writer)
-	defer zWriterPool.Put(wr)
-	wr.Reset(encWr)
-	if err != nil {
-		return Blob{}, fmt.Errorf("zlib.NewWriter: %v", err)
-	}
-
-	hw := backend.NewHashingWriter(wr, sha256.New())
+	hw := backend.NewHashingWriter(encWr, sha256.New())
 
 	enc := json.NewEncoder(hw)
 	err = enc.Encode(item)
 	if err != nil {
 		return Blob{}, fmt.Errorf("json.NewEncoder: %v", err)
-	}
-
-	// flush zlib writer
-	err = wr.Close()
-	if err != nil {
-		return Blob{}, fmt.Errorf("zlib.Writer.Close(): %v", err)
 	}
 
 	// finish encryption
