@@ -46,7 +46,7 @@ func (res *Restorer) to(dst string, dir string, treeBlob Blob) error {
 		dstpath := filepath.Join(dst, dir, node.Name)
 
 		if res.Filter == nil ||
-			res.Filter(filepath.Join(res.sn.Dir, dir, node.Name), dstpath, node) {
+			res.Filter(filepath.Join(dir, node.Name), dstpath, node) {
 			err := CreateNodeAt(node, tree.Map, res.s, dstpath)
 
 			// Did it fail because of ENOENT?

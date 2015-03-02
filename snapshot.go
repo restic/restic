@@ -13,7 +13,7 @@ type Snapshot struct {
 	Time     time.Time  `json:"time"`
 	Parent   backend.ID `json:"parent,omitempty"`
 	Tree     Blob       `json:"tree"`
-	Dir      string     `json:"dir"`
+	Paths    []string   `json:"paths"`
 	Hostname string     `json:"hostname,omitempty"`
 	Username string     `json:"username,omitempty"`
 	UID      uint32     `json:"uid,omitempty"`
@@ -24,15 +24,16 @@ type Snapshot struct {
 	id backend.ID // plaintext ID, used during restore
 }
 
-func NewSnapshot(dir string) (*Snapshot, error) {
-	d, err := filepath.Abs(dir)
-	if err != nil {
-		d = dir
+func NewSnapshot(paths []string) (*Snapshot, error) {
+	for i, path := range paths {
+		if p, err := filepath.Abs(path); err != nil {
+			paths[i] = p
+		}
 	}
 
 	sn := &Snapshot{
-		Dir:  d,
-		Time: time.Now(),
+		Paths: paths,
+		Time:  time.Now(),
 	}
 
 	hn, err := os.Hostname()
@@ -59,7 +60,7 @@ func LoadSnapshot(s Server, id backend.ID) (*Snapshot, error) {
 }
 
 func (sn Snapshot) String() string {
-	return fmt.Sprintf("<Snapshot %q at %s>", sn.Dir, sn.Time)
+	return fmt.Sprintf("<Snapshot of %v at %s>", sn.Paths, sn.Time)
 }
 
 func (sn Snapshot) ID() backend.ID {

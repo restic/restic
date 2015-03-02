@@ -1,9 +1,9 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,7 +12,9 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-type CmdBackup struct{}
+type CmdBackup struct {
+	Parent string `short:"p" long:"parent"    description:"use this parent snapshot (default: not set)"`
+}
 
 func init() {
 	_, err := parser.AddCommand("backup",
@@ -167,8 +169,16 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 }
 
 func (cmd CmdBackup) Execute(args []string) error {
-	if len(args) == 0 || len(args) > 2 {
+	if len(args) == 0 {
 		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
+	}
+
+	target := make([]string, 0, len(args))
+	for _, d := range args {
+		if a, err := filepath.Abs(d); err == nil {
+			d = a
+		}
+		target = append(target, d)
 	}
 
 	s, err := OpenRepo()
@@ -178,17 +188,16 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	var parentSnapshotID backend.ID
 
-	target := args[0]
-	if len(args) > 1 {
-		parentSnapshotID, err = s.FindSnapshot(args[1])
+	if cmd.Parent != "" {
+		parentSnapshotID, err = s.FindSnapshot(cmd.Parent)
 		if err != nil {
-			return fmt.Errorf("invalid id %q: %v", args[1], err)
+			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
 		}
 
 		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
 	}
 
-	fmt.Printf("scan %s\n", target)
+	fmt.Printf("scan %v\n", target)
 
 	stat, err := restic.Scan(target, newScanProgress())
 
@@ -196,10 +205,6 @@ func (cmd CmdBackup) Execute(args []string) error {
 	// arch.Filter = func(dir string, fi os.FileInfo) bool {
 	// 	return true
 	// }
-
-	if parentSnapshotID != nil {
-		return errors.New("not implemented")
-	}
 
 	arch, err := restic.NewArchiver(s)
 	if err != nil {
@@ -212,16 +217,16 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
-	fmt.Printf("loading blobs\n")
-	pb, err := newLoadBlobsProgress(s)
-	if err != nil {
-		return err
-	}
+	// fmt.Printf("loading blobs\n")
+	// pb, err := newLoadBlobsProgress(s)
+	// if err != nil {
+	// 	return err
+	// }
 
-	err = arch.Preload(pb)
-	if err != nil {
-		return err
-	}
+	// err = arch.Preload(pb)
+	// if err != nil {
+	// 	return err
+	// }
 
 	_, id, err := arch.Snapshot(newArchiveProgress(stat), target, parentSnapshotID)
 	if err != nil {

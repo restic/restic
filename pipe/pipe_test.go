@@ -43,9 +43,9 @@ func statPath(path string) (stats, error) {
 	return s, err
 }
 
-func TestPipelineWalker(t *testing.T) {
+func TestPipelineWalkerWithSplit(t *testing.T) {
 	if *testWalkerPath == "" {
-		t.Skipf("walkerpah not set, skipping TestPipelineWalker")
+		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
 	before, err := statPath(*testWalkerPath)
@@ -106,7 +106,92 @@ func TestPipelineWalker(t *testing.T) {
 		go worker(&wg, done, entCh, dirCh)
 	}
 
-	resCh, err := pipe.Walk(*testWalkerPath, done, entCh, dirCh)
+	jobs := make(chan interface{}, 200)
+	wg.Add(1)
+	go func() {
+		pipe.Split(jobs, dirCh, entCh)
+		close(entCh)
+		close(dirCh)
+		wg.Done()
+	}()
+
+	resCh, err := pipe.Walk([]string{*testWalkerPath}, done, jobs)
+	ok(t, err)
+
+	// wait for all workers to terminate
+	wg.Wait()
+
+	// wait for top-level blob
+	<-resCh
+
+	t.Logf("walked path %s with %d dirs, %d files", *testWalkerPath,
+		after.dirs, after.files)
+
+	assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+}
+
+func TestPipelineWalker(t *testing.T) {
+	if *testWalkerPath == "" {
+		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
+	}
+
+	before, err := statPath(*testWalkerPath)
+	ok(t, err)
+
+	t.Logf("walking path %s with %d dirs, %d files", *testWalkerPath,
+		before.dirs, before.files)
+
+	after := stats{}
+	m := sync.Mutex{}
+
+	worker := func(wg *sync.WaitGroup, done <-chan struct{}, jobs <-chan interface{}) {
+		defer wg.Done()
+		for {
+			select {
+			case job, ok := <-jobs:
+				if !ok {
+					// channel is closed
+					return
+				}
+				assert(t, job != nil, "job is nil")
+
+				switch j := job.(type) {
+				case pipe.Dir:
+					// wait for all content
+					for _, ch := range j.Entries {
+						<-ch
+					}
+
+					m.Lock()
+					after.dirs++
+					m.Unlock()
+
+					j.Result <- true
+				case pipe.Entry:
+					m.Lock()
+					after.files++
+					m.Unlock()
+
+					j.Result <- true
+				}
+
+			case <-done:
+				// pipeline was cancelled
+				return
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	jobs := make(chan interface{})
+
+	for i := 0; i < *maxWorkers; i++ {
+		wg.Add(1)
+		go worker(&wg, done, jobs)
+	}
+
+	resCh, err := pipe.Walk([]string{*testWalkerPath}, done, jobs)
 	ok(t, err)
 
 	// wait for all workers to terminate
@@ -123,7 +208,7 @@ func TestPipelineWalker(t *testing.T) {
 
 func BenchmarkPipelineWalker(b *testing.B) {
 	if *testWalkerPath == "" {
-		b.Skipf("walkerpah not set, skipping BenchPipelineWalker")
+		b.Skipf("walkerpath not set, skipping BenchPipelineWalker")
 	}
 
 	var max time.Duration
@@ -196,7 +281,16 @@ func BenchmarkPipelineWalker(b *testing.B) {
 			go fileWorker(&wg, done, entCh)
 		}
 
-		resCh, err := pipe.Walk(*testWalkerPath, done, entCh, dirCh)
+		jobs := make(chan interface{}, 200)
+		wg.Add(1)
+		go func() {
+			pipe.Split(jobs, dirCh, entCh)
+			close(entCh)
+			close(dirCh)
+			wg.Done()
+		}()
+
+		resCh, err := pipe.Walk([]string{*testWalkerPath}, done, jobs)
 		ok(b, err)
 
 		// wait for all workers to terminate

@@ -138,7 +138,7 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	arch, err := restic.NewArchiver(server)
 	ok(b, err)
 
-	_, id, err := arch.Snapshot(nil, *benchArchiveDirectory, nil)
+	_, id, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
 
 	b.Logf("snapshot archived as %v", id)
 }
@@ -147,7 +147,7 @@ func snapshot(t testing.TB, server restic.Server, path string) *restic.Snapshot 
 	arch, err := restic.NewArchiver(server)
 	ok(t, err)
 	ok(t, arch.Preload(nil))
-	sn, _, err := arch.Snapshot(nil, path, nil)
+	sn, _, err := arch.Snapshot(nil, []string{path}, nil)
 	ok(t, err)
 	return sn
 }
@@ -215,7 +215,7 @@ func BenchmarkPreload(t *testing.B) {
 	// archive a few files
 	arch, err := restic.NewArchiver(server)
 	ok(t, err)
-	sn, _, err := arch.Snapshot(nil, *benchArchiveDirectory, nil)
+	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
 	ok(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
 
@@ -243,7 +243,7 @@ func BenchmarkLoadTree(t *testing.B) {
 	// archive a few files
 	arch, err := restic.NewArchiver(server)
 	ok(t, err)
-	sn, _, err := arch.Snapshot(nil, *benchArchiveDirectory, nil)
+	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
 	ok(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
 

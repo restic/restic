@@ -86,7 +86,7 @@ func (cmd CmdLs) Execute(args []string) error {
 		return err
 	}
 
-	fmt.Printf("snapshot of %s at %s:\n", sn.Dir, sn.Time)
+	fmt.Printf("snapshot of %v at %s:\n", sn.Paths, sn.Time)
 
 	return print_tree("", s, sn.Tree)
 }
