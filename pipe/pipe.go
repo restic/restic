@@ -1,6 +1,7 @@
 package pipe
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,6 +51,8 @@ func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 
+var errCancelled = errors.New("walk cancelled")
+
 func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- interface{}) error {
 	info, err := os.Lstat(path)
 	if err != nil {
@@ -57,7 +60,11 @@ func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- i
 	}
 
 	if !info.IsDir() {
-		jobs <- Entry{Info: info, Path: path, Result: res}
+		select {
+		case jobs <- Entry{Info: info, Path: path, Result: res}:
+		case <-done:
+			return errCancelled
+		}
 		return nil
 	}
 
@@ -76,8 +83,12 @@ func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- i
 
 		fi, err := os.Lstat(subpath)
 		if err != nil {
-			// entCh <- Entry{Info: fi, Error: err, Result: ch}
-			return err
+			select {
+			case jobs <- Entry{Info: fi, Error: err, Result: ch}:
+			case <-done:
+				return errCancelled
+			}
+			continue
 		}
 
 		if isDir(fi) {
@@ -87,11 +98,19 @@ func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- i
 			}
 
 		} else {
-			jobs <- Entry{Info: fi, Path: subpath, Result: ch}
+			select {
+			case jobs <- Entry{Info: fi, Path: subpath, Result: ch}:
+			case <-done:
+				return errCancelled
+			}
 		}
 	}
 
-	jobs <- Dir{Path: path, Info: info, Entries: entries, Result: res}
+	select {
+	case jobs <- Dir{Path: path, Info: info, Entries: entries, Result: res}:
+	case <-done:
+		return errCancelled
+	}
 	return nil
 }
 
