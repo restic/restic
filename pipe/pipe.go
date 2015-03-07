@@ -10,21 +10,50 @@ import (
 	"github.com/restic/restic/debug"
 )
 
-type Entry struct {
-	Path   string
-	Info   os.FileInfo
-	Error  error
-	Result chan<- interface{}
+type Result interface{}
+
+type Job interface {
+	Path() string
+	Fullpath() string
+	Error() error
+	Info() os.FileInfo
+
+	Result() chan<- Result
 }
+
+type Entry struct {
+	basedir string
+	path    string
+	info    os.FileInfo
+	error   error
+	result  chan<- Result
+
+	// points to the old node if available, interface{} is used to prevent
+	// circular import
+	Node interface{}
+}
+
+func (e Entry) Path() string          { return e.path }
+func (e Entry) Fullpath() string      { return filepath.Join(e.basedir, e.path) }
+func (e Entry) Error() error          { return e.error }
+func (e Entry) Info() os.FileInfo     { return e.info }
+func (e Entry) Result() chan<- Result { return e.result }
 
 type Dir struct {
-	Path  string
-	Error error
-	Info  os.FileInfo
+	basedir string
+	path    string
+	error   error
+	info    os.FileInfo
 
-	Entries [](<-chan interface{})
-	Result  chan<- interface{}
+	Entries [](<-chan Result)
+	result  chan<- Result
 }
+
+func (e Dir) Path() string          { return e.path }
+func (e Dir) Fullpath() string      { return filepath.Join(e.basedir, e.path) }
+func (e Dir) Error() error          { return e.error }
+func (e Dir) Info() os.FileInfo     { return e.info }
+func (e Dir) Result() chan<- Result { return e.result }
 
 // readDirNames reads the directory named by dirname and returns
 // a sorted list of directory entries.
@@ -53,15 +82,17 @@ func isFile(fi os.FileInfo) bool {
 
 var errCancelled = errors.New("walk cancelled")
 
-func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- interface{}) error {
+func walk(basedir, path string, done chan struct{}, jobs chan<- Job, res chan<- Result) error {
 	info, err := os.Lstat(path)
 	if err != nil {
 		return err
 	}
 
+	relpath, _ := filepath.Rel(basedir, path)
+
 	if !info.IsDir() {
 		select {
-		case jobs <- Entry{Info: info, Path: path, Result: res}:
+		case jobs <- Entry{info: info, basedir: basedir, path: relpath, result: res}:
 		case <-done:
 			return errCancelled
 		}
@@ -73,18 +104,18 @@ func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- i
 		return err
 	}
 
-	entries := make([]<-chan interface{}, 0, len(names))
+	entries := make([]<-chan Result, 0, len(names))
 
 	for _, name := range names {
 		subpath := filepath.Join(path, name)
 
-		ch := make(chan interface{}, 1)
+		ch := make(chan Result, 1)
 		entries = append(entries, ch)
 
 		fi, err := os.Lstat(subpath)
 		if err != nil {
 			select {
-			case jobs <- Entry{Info: fi, Error: err, Result: ch}:
+			case jobs <- Entry{info: fi, error: err, result: ch}:
 			case <-done:
 				return errCancelled
 			}
@@ -92,14 +123,14 @@ func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- i
 		}
 
 		if isDir(fi) {
-			err = walk(subpath, done, jobs, ch)
+			err = walk(basedir, subpath, done, jobs, ch)
 			if err != nil {
 				return err
 			}
 
 		} else {
 			select {
-			case jobs <- Entry{Info: fi, Path: subpath, Result: ch}:
+			case jobs <- Entry{info: fi, basedir: basedir, path: filepath.Join(relpath, name), result: ch}:
 			case <-done:
 				return errCancelled
 			}
@@ -107,7 +138,7 @@ func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- i
 	}
 
 	select {
-	case jobs <- Dir{Path: path, Info: info, Entries: entries, Result: res}:
+	case jobs <- Dir{basedir: basedir, path: relpath, info: info, Entries: entries, result: res}:
 	case <-done:
 		return errCancelled
 	}
@@ -116,31 +147,30 @@ func walk(path string, done chan struct{}, jobs chan<- interface{}, res chan<- i
 
 // Walk sends a Job for each file and directory it finds below the paths. When
 // the channel done is closed, processing stops.
-func Walk(paths []string, done chan struct{}, jobs chan<- interface{}) (<-chan interface{}, error) {
-	resCh := make(chan interface{}, 1)
+func Walk(paths []string, done chan struct{}, jobs chan<- Job, res chan<- Result) error {
 	defer func() {
-		close(resCh)
-		close(jobs)
 		debug.Log("pipe.Walk", "output channel closed")
+		close(res)
+		close(jobs)
 	}()
 
-	entries := make([]<-chan interface{}, 0, len(paths))
+	entries := make([]<-chan Result, 0, len(paths))
 	for _, path := range paths {
 		debug.Log("pipe.Walk", "start walker for %v", path)
-		ch := make(chan interface{}, 1)
+		ch := make(chan Result, 1)
 		entries = append(entries, ch)
-		err := walk(path, done, jobs, ch)
+		err := walk(filepath.Dir(path), path, done, jobs, ch)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		debug.Log("pipe.Walk", "walker for %v done", path)
 	}
-	resCh <- Dir{Entries: entries}
-	return resCh, nil
+	res <- Dir{Entries: entries}
+	return nil
 }
 
 // Split feeds all elements read from inChan to dirChan and entChan.
-func Split(inChan <-chan interface{}, dirChan chan<- Dir, entChan chan<- Entry) {
+func Split(inChan <-chan Job, dirChan chan<- Dir, entChan chan<- Entry) {
 	debug.Log("pipe.Split", "start")
 	defer debug.Log("pipe.Split", "done")
 

@@ -417,7 +417,10 @@ func (arch *Archiver) saveTree(p *Progress, t *Tree) (Blob, error) {
 }
 
 func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan struct{}, entCh <-chan pipe.Entry) {
-	defer wg.Done()
+	defer func() {
+		debug.Log("Archiver.fileWorker", "done")
+		wg.Done()
+	}()
 	for {
 		select {
 		case e, ok := <-entCh:
@@ -426,19 +429,51 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 				return
 			}
 
-			node, err := NodeFromFileInfo(e.Path, e.Info)
+			debug.Log("Archiver.fileWorker", "got job %v", e)
+
+			node, err := NodeFromFileInfo(e.Fullpath(), e.Info())
 			if err != nil {
 				panic(err)
 			}
 
-			if node.Type == "file" {
+			// try to use old node, if present
+			if e.Node != nil {
+				debug.Log("Archiver.fileWorker", "   %v use old data", e.Path())
+
+				oldNode := e.Node.(*Node)
+				// check if all content is still available in the repository
+				contentMissing := false
+				for _, blob := range oldNode.blobs {
+					if ok, err := arch.s.Test(backend.Data, blob.Storage); !ok || err != nil {
+						debug.Log("Archiver.fileWorker", "   %v not using old data, %v (%v) is missing", e.Path(), blob.ID.Str(), blob.Storage.Str())
+						contentMissing = true
+						break
+					}
+				}
+
+				if !contentMissing {
+					node.Content = oldNode.Content
+					node.blobs = oldNode.blobs
+					debug.Log("Archiver.fileWorker", "   %v content is complete", e.Path())
+				}
+			} else {
+				debug.Log("Archiver.fileWorker", "   %v no old data", e.Path())
+			}
+
+			// otherwise read file normally
+			if node.Type == "file" && len(node.Content) == 0 {
+				debug.Log("Archiver.fileWorker", "   read and save %v, content: %v", e.Path(), node.Content)
 				node.blobs, err = arch.SaveFile(p, node)
 				if err != nil {
 					panic(err)
 				}
+			} else {
+				// report old data size
+				p.Report(Stat{Bytes: node.Size})
 			}
 
-			e.Result <- node
+			debug.Log("Archiver.fileWorker", "   processed %v, %d/%d blobs", e.Path(), len(node.Content), len(node.blobs))
+			e.Result() <- node
 			p.Report(Stat{Files: 1})
 		case <-done:
 			// pipeline was cancelled
@@ -448,7 +483,10 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 }
 
 func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan struct{}, dirCh <-chan pipe.Dir) {
-	defer wg.Done()
+	defer func() {
+		debug.Log("Archiver.dirWorker", "done")
+		wg.Done()
+	}()
 	for {
 		select {
 		case dir, ok := <-dirCh:
@@ -456,7 +494,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				// channel is closed
 				return
 			}
-			debug.Log("Archiver.DirWorker", "save dir %v\n", dir.Path)
+			debug.Log("Archiver.dirWorker", "save dir %v\n", dir.Path())
 
 			tree := NewTree()
 
@@ -466,7 +504,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				tree.Insert(node)
 
 				if node.Type == "dir" {
-					debug.Log("Archiver.DirWorker", "got tree node for %s: %v", node.path, node.blobs)
+					debug.Log("Archiver.dirWorker", "got tree node for %s: %v", node.path, node.blobs)
 				}
 
 				for _, blob := range node.blobs {
@@ -475,10 +513,10 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				}
 			}
 
-			node, err := NodeFromFileInfo(dir.Path, dir.Info)
+			node, err := NodeFromFileInfo(dir.Path(), dir.Info())
 			if err != nil {
 				node.Error = err.Error()
-				dir.Result <- node
+				dir.Result() <- node
 				continue
 			}
 
@@ -486,12 +524,12 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 			if err != nil {
 				panic(err)
 			}
-			debug.Log("Archiver.DirWorker", "save tree for %s: %v", dir.Path, blob)
+			debug.Log("Archiver.dirWorker", "save tree for %s: %v", dir.Path(), blob)
 
 			node.Subtree = blob.ID
 			node.blobs = Blobs{blob}
 
-			dir.Result <- node
+			dir.Result() <- node
 			p.Report(Stat{Dirs: 1})
 		case <-done:
 			// pipeline was cancelled
@@ -526,51 +564,225 @@ func compareWithOldTree(newCh <-chan interface{}, oldCh <-chan WalkTreeJob, outC
 	}
 }
 
-func (arch *Archiver) Snapshot(p *Progress, paths []string, parentSnapshot backend.ID) (*Snapshot, backend.ID, error) {
+type ArchivePipe struct {
+	Old <-chan WalkTreeJob
+	New <-chan pipe.Job
+}
+
+func copyJobs(done <-chan struct{}, in <-chan pipe.Job, out chan<- pipe.Job) {
+	i := in
+	o := out
+
+	o = nil
+
+	var (
+		j  pipe.Job
+		ok bool
+	)
+	for {
+		select {
+		case <-done:
+			return
+		case j, ok = <-i:
+			if !ok {
+				// in ch closed, we're done
+				debug.Log("copyJobs", "in channel closed, we're done")
+				return
+			}
+			i = nil
+			o = out
+		case o <- j:
+			o = nil
+			i = in
+		}
+	}
+}
+
+type archiveJob struct {
+	hasOld bool
+	old    WalkTreeJob
+	new    pipe.Job
+}
+
+func (a *ArchivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
+	defer func() {
+		close(out)
+		debug.Log("ArchivePipe.compare", "done")
+	}()
+
+	debug.Log("ArchivePipe.compare", "start")
+	var (
+		loadOld, loadNew bool = true, true
+		ok               bool
+		oldJob           WalkTreeJob
+		newJob           pipe.Job
+	)
+
+	for {
+		if loadOld {
+			oldJob, ok = <-a.Old
+			// if the old channel is closed, just pass through the new jobs
+			if !ok {
+				debug.Log("ArchivePipe.compare", "old channel is closed, copy from new channel")
+
+				// handle remaining newJob
+				if !loadNew {
+					out <- archiveJob{new: newJob}.Copy()
+				}
+
+				copyJobs(done, a.New, out)
+				return
+			}
+
+			loadOld = false
+		}
+
+		if loadNew {
+			newJob, ok = <-a.New
+			// if the new channel is closed, there are no more files in the current snapshot, return
+			if !ok {
+				debug.Log("ArchivePipe.compare", "new channel is closed, we're done")
+				return
+			}
+
+			loadNew = false
+		}
+
+		debug.Log("ArchivePipe.compare", "old job: %v", oldJob.Path)
+		debug.Log("ArchivePipe.compare", "new job: %v", newJob.Path())
+
+		// at this point we have received an old job as well as a new job, compare paths
+		file1 := oldJob.Path
+		file2 := newJob.Path()
+
+		dir1 := filepath.Dir(file1)
+		dir2 := filepath.Dir(file2)
+
+		if file1 == file2 {
+			debug.Log("ArchivePipe.compare", "    same filename %q", file1)
+
+			// send job
+			out <- archiveJob{hasOld: true, old: oldJob, new: newJob}.Copy()
+			loadOld = true
+			loadNew = true
+			continue
+		} else if dir1 < dir2 {
+			debug.Log("ArchivePipe.compare", "    %q < %q, file %q added", dir1, dir2, file2)
+			// file is new, send new job and load new
+			loadNew = true
+			out <- archiveJob{new: newJob}.Copy()
+			continue
+		} else if dir1 == dir2 && file1 < file2 {
+			debug.Log("ArchivePipe.compare", "    %q < %q, file %q removed", file1, file2, file1)
+			// file has been removed, load new old
+			loadOld = true
+			continue
+		}
+
+		debug.Log("ArchivePipe.compare", "    %q > %q, file %q removed", file1, file2, file1)
+		// file has been removed, throw away old job and load new
+		loadOld = true
+	}
+}
+
+func (j archiveJob) Copy() pipe.Job {
+	if !j.hasOld {
+		return j.new
+	}
+
+	// handle files
+	if isFile(j.new.Info()) {
+		debug.Log("archiveJob.Copy", "   job %v is file", j.new.Path())
+
+		// if type has changed, return new job directly
+		if j.old.Node == nil {
+			return j.new
+		}
+
+		// if file is newer, return the new job
+		if j.old.Node.isNewer(j.new.Fullpath(), j.new.Info()) {
+			debug.Log("archiveJob.Copy", "   job %v is newer", j.new.Path())
+			return j.new
+		}
+
+		debug.Log("archiveJob.Copy", "   job %v add old data", j.new.Path())
+		// otherwise annotate job with old data
+		e := j.new.(pipe.Entry)
+		e.Node = j.old.Node
+		return e
+	}
+
+	// dirs and other types are just returned
+	return j.new
+}
+
+func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Snapshot, backend.ID, error) {
 	debug.Log("Archiver.Snapshot", "start for %v", paths)
 
 	debug.Break("Archiver.Snapshot")
 	sort.Strings(paths)
 
+	// signal the whole pipeline to stop
+	done := make(chan struct{})
+	var err error
+
 	p.Start()
 	defer p.Done()
 
+	// create new snapshot
 	sn, err := NewSnapshot(paths)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// load parent snapshot
-	// var oldRoot backend.ID
-	// if parentSnapshot != nil {
-	// 	sn.Parent = parentSnapshot
-	// 	parentSn, err := LoadSnapshot(arch.s, parentSnapshot)
-	// 	if err != nil {
-	// 		return nil, nil, err
-	// 	}
-	// 	oldRoot = parentSn.Tree.Storage
-	// }
+	jobs := ArchivePipe{}
 
-	// signal the whole pipeline to stop
-	done := make(chan struct{})
+	// use parent snapshot (if some was given)
+	if pid != nil {
+		sn.Parent = pid
 
-	// if we have an old root, start walker and comparer
-	// oldTreeCh := make(chan WalkTreeJob)
-	// if oldRoot != nil {
-	// 	// start walking the old tree
-	// 	debug.Log("Archiver.Snapshot", "start comparer for old root %v", oldRoot.Str())
-	// 	go WalkTree(arch.s, oldRoot, done, oldTreeCh)
-	// }
+		// load parent snapshot
+		parent, err := LoadSnapshot(arch.s, pid)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// start walker on old tree
+		ch := make(chan WalkTreeJob)
+		go WalkTree(arch.s, parent.Tree.Storage, done, ch)
+		jobs.Old = ch
+	} else {
+		// use closed channel
+		ch := make(chan WalkTreeJob)
+		close(ch)
+		jobs.Old = ch
+	}
+
+	// start walker
+	pipeCh := make(chan pipe.Job)
+	resCh := make(chan pipe.Result, 1)
+	go func() {
+		err := pipe.Walk(paths, done, pipeCh, resCh)
+		if err != nil {
+			debug.Log("Archiver.Snapshot", "pipe.Walk returned error %v", err)
+			return
+		}
+		debug.Log("Archiver.Snapshot", "pipe.Walk done")
+	}()
+	jobs.New = pipeCh
+
+	ch := make(chan pipe.Job)
+	go jobs.compare(done, ch)
 
 	var wg sync.WaitGroup
 	entCh := make(chan pipe.Entry)
 	dirCh := make(chan pipe.Dir)
-	jobsCh := make(chan interface{})
 
 	// split
 	wg.Add(1)
 	go func() {
-		pipe.Split(jobsCh, dirCh, entCh)
+		pipe.Split(ch, dirCh, entCh)
+		debug.Log("Archiver.Snapshot", "split done")
 		close(dirCh)
 		close(entCh)
 		wg.Done()
@@ -581,15 +793,6 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentSnapshot backe
 		wg.Add(2)
 		go arch.fileWorker(&wg, p, done, entCh)
 		go arch.dirWorker(&wg, p, done, dirCh)
-	}
-
-	// start walker
-	resCh, err := pipe.Walk(paths, done, jobsCh)
-	if err != nil {
-		close(done)
-
-		debug.Log("Archiver.Snapshot", "pipe.Walke returned error %v", err)
-		return nil, nil, err
 	}
 
 	// wait for all workers to terminate
@@ -604,10 +807,11 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentSnapshot backe
 	for i := 0; i < len(paths); i++ {
 		node := (<-root.Entries[i]).(*Node)
 
-		debug.Log("Archiver.Snapshot", "got toplevel node %v", node)
+		debug.Log("Archiver.Snapshot", "got toplevel node %v, %d/%d blobs", node, len(node.Content), len(node.blobs))
 
 		tree.Insert(node)
 		for _, blob := range node.blobs {
+			debug.Log("Archiver.Snapshot", "  add toplevel blob %v", blob)
 			blob = arch.m.Insert(blob)
 			tree.Map.Insert(blob)
 		}
@@ -630,6 +834,10 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentSnapshot backe
 }
 
 func isFile(fi os.FileInfo) bool {
+	if fi == nil {
+		return false
+	}
+
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 

@@ -38,8 +38,9 @@ func TestWalkTree(t *testing.T) {
 	go restic.WalkTree(server, sn.Tree.Storage, done, treeJobs)
 
 	// start filesystem walker
-	fsJobs := make(chan interface{})
-	go pipe.Walk(dirs, done, fsJobs)
+	fsJobs := make(chan pipe.Job)
+	resCh := make(chan pipe.Result, 1)
+	go pipe.Walk(dirs, done, fsJobs, resCh)
 
 	for {
 		// receive fs job
@@ -51,10 +52,10 @@ func TestWalkTree(t *testing.T) {
 		fsEntries := 1
 		switch j := fsJob.(type) {
 		case pipe.Dir:
-			path = j.Path
+			path = j.Path()
 			fsEntries = len(j.Entries)
 		case pipe.Entry:
-			path = j.Path
+			path = j.Path()
 		}
 
 		// receive tree job

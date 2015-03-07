@@ -140,6 +140,24 @@ func (bl *Map) Equals(other *Map) bool {
 	return true
 }
 
+// Select returns a list of of blobs from the plaintext IDs given in list.
+func (bl *Map) Select(list backend.IDs) (Blobs, error) {
+	bl.m.Lock()
+	defer bl.m.Unlock()
+
+	blobs := make(Blobs, 0, len(list))
+	for _, id := range list {
+		_, blob, err := bl.find(Blob{ID: id}, false)
+		if err != nil {
+			return nil, err
+		}
+
+		blobs = append(blobs, blob)
+	}
+
+	return blobs, nil
+}
+
 // Len returns the number of blobs in the map.
 func (bl *Map) Len() int {
 	bl.m.Lock()

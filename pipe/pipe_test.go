@@ -71,7 +71,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 				after.files++
 				m.Unlock()
 
-				e.Result <- true
+				e.Result() <- true
 
 			case dir, ok := <-dirCh:
 				if !ok {
@@ -88,7 +88,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 				after.dirs++
 				m.Unlock()
 
-				dir.Result <- true
+				dir.Result() <- true
 			case <-done:
 				// pipeline was cancelled
 				return
@@ -106,7 +106,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 		go worker(&wg, done, entCh, dirCh)
 	}
 
-	jobs := make(chan interface{}, 200)
+	jobs := make(chan pipe.Job, 200)
 	wg.Add(1)
 	go func() {
 		pipe.Split(jobs, dirCh, entCh)
@@ -115,7 +115,8 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 		wg.Done()
 	}()
 
-	resCh, err := pipe.Walk([]string{*testWalkerPath}, done, jobs)
+	resCh := make(chan pipe.Result, 1)
+	err = pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
 	ok(t, err)
 
 	// wait for all workers to terminate
@@ -144,7 +145,7 @@ func TestPipelineWalker(t *testing.T) {
 	after := stats{}
 	m := sync.Mutex{}
 
-	worker := func(wg *sync.WaitGroup, done <-chan struct{}, jobs <-chan interface{}) {
+	worker := func(wg *sync.WaitGroup, done <-chan struct{}, jobs <-chan pipe.Job) {
 		defer wg.Done()
 		for {
 			select {
@@ -166,13 +167,13 @@ func TestPipelineWalker(t *testing.T) {
 					after.dirs++
 					m.Unlock()
 
-					j.Result <- true
+					j.Result() <- true
 				case pipe.Entry:
 					m.Lock()
 					after.files++
 					m.Unlock()
 
-					j.Result <- true
+					j.Result() <- true
 				}
 
 			case <-done:
@@ -184,14 +185,15 @@ func TestPipelineWalker(t *testing.T) {
 
 	var wg sync.WaitGroup
 	done := make(chan struct{})
-	jobs := make(chan interface{})
+	jobs := make(chan pipe.Job)
 
 	for i := 0; i < *maxWorkers; i++ {
 		wg.Add(1)
 		go worker(&wg, done, jobs)
 	}
 
-	resCh, err := pipe.Walk([]string{*testWalkerPath}, done, jobs)
+	resCh := make(chan pipe.Result, 1)
+	err = pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
 	ok(t, err)
 
 	// wait for all workers to terminate
@@ -227,7 +229,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 				// simulate backup
 				//time.Sleep(10 * time.Millisecond)
 
-				e.Result <- true
+				e.Result() <- true
 			case <-done:
 				// pipeline was cancelled
 				return
@@ -259,7 +261,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 				}
 				m.Unlock()
 
-				dir.Result <- true
+				dir.Result() <- true
 			case <-done:
 				// pipeline was cancelled
 				return
@@ -281,7 +283,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 			go fileWorker(&wg, done, entCh)
 		}
 
-		jobs := make(chan interface{}, 200)
+		jobs := make(chan pipe.Job, 200)
 		wg.Add(1)
 		go func() {
 			pipe.Split(jobs, dirCh, entCh)
@@ -290,7 +292,8 @@ func BenchmarkPipelineWalker(b *testing.B) {
 			wg.Done()
 		}()
 
-		resCh, err := pipe.Walk([]string{*testWalkerPath}, done, jobs)
+		resCh := make(chan pipe.Result, 1)
+		err := pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
 		ok(b, err)
 
 		// wait for all workers to terminate

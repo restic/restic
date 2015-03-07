@@ -64,26 +64,34 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	node.Mode = fi.Mode() & os.ModePerm
 	node.ModTime = fi.ModTime()
 
-	switch fi.Mode() & (os.ModeType | os.ModeCharDevice) {
-	case 0:
-		node.Type = "file"
+	node.Type = nodeTypeFromFileInfo(path, fi)
+	if node.Type == "file" {
 		node.Size = uint64(fi.Size())
-	case os.ModeDir:
-		node.Type = "dir"
-	case os.ModeSymlink:
-		node.Type = "symlink"
-	case os.ModeDevice | os.ModeCharDevice:
-		node.Type = "chardev"
-	case os.ModeDevice:
-		node.Type = "dev"
-	case os.ModeNamedPipe:
-		node.Type = "fifo"
-	case os.ModeSocket:
-		node.Type = "socket"
 	}
 
 	err := node.fill_extra(path, fi)
 	return node, err
+}
+
+func nodeTypeFromFileInfo(path string, fi os.FileInfo) string {
+	switch fi.Mode() & (os.ModeType | os.ModeCharDevice) {
+	case 0:
+		return "file"
+	case os.ModeDir:
+		return "dir"
+	case os.ModeSymlink:
+		return "symlink"
+	case os.ModeDevice | os.ModeCharDevice:
+		return "chardev"
+	case os.ModeDevice:
+		return "dev"
+	case os.ModeNamedPipe:
+		return "fifo"
+	case os.ModeSocket:
+		return "socket"
+	}
+
+	return ""
 }
 
 func CreateNodeAt(node *Node, m *Map, s Server, path string) error {

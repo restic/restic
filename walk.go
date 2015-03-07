@@ -34,7 +34,12 @@ func walkTree(s Server, path string, id backend.ID, done chan struct{}, jobCh ch
 			}
 			walkTree(s, p, blob.Storage, done, jobCh)
 		} else {
-			jobCh <- WalkTreeJob{Path: p, Node: node}
+			// load old blobs
+			node.blobs, err = t.Map.Select(node.Content)
+			if err != nil {
+				debug.Log("walkTree", "unable to load bobs for %q (%v): %v", path, id.Str(), err)
+			}
+			jobCh <- WalkTreeJob{Path: p, Node: node, Error: err}
 		}
 	}
 
