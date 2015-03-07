@@ -217,16 +217,16 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
-	// fmt.Printf("loading blobs\n")
-	// pb, err := newLoadBlobsProgress(s)
-	// if err != nil {
-	// 	return err
-	// }
+	fmt.Printf("loading blobs\n")
+	pb, err := newLoadBlobsProgress(s)
+	if err != nil {
+		return err
+	}
 
-	// err = arch.Preload(pb)
-	// if err != nil {
-	// 	return err
-	// }
+	err = arch.Preload(pb)
+	if err != nil {
+		return err
+	}
 
 	_, id, err := arch.Snapshot(newArchiveProgress(stat), target, parentSnapshotID)
 	if err != nil {
