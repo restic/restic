@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/restic/restic/debug"
 )
 
 func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
@@ -65,4 +67,39 @@ func (node *Node) createCharDevAt(path string) error {
 
 func (node *Node) createFifoAt(path string) error {
 	return syscall.Mkfifo(path, 0600)
+}
+
+func (node *Node) isNewer(path string, fi os.FileInfo) bool {
+	// if this node has a type other than "file", treat as if content has changed
+	if node.Type != "file" {
+		debug.Log("node.isNewer", "node %v is newer: not file", path)
+		return true
+	}
+
+	// if the name or type has changed, this is surely something different
+	tpe := nodeTypeFromFileInfo(path, fi)
+	if node.Name != fi.Name() || node.Type != tpe {
+		debug.Log("node.isNewer", "node %v is newer: name or type changed", path)
+		return false
+	}
+
+	// collect extended stat
+	stat := fi.Sys().(*syscall.Stat_t)
+
+	changeTime := time.Unix(stat.Ctimespec.Unix())
+	inode := stat.Ino
+	size := uint64(stat.Size)
+
+	// if timestamps or inodes differ, content has changed
+	if node.ModTime != fi.ModTime() ||
+		node.ChangeTime != changeTime ||
+		node.Inode != inode ||
+		node.Size != size {
+		debug.Log("node.isNewer", "node %v is newer: timestamp or inode changed", path)
+		return false
+	}
+
+	// otherwise the node is assumed to have the same content
+	debug.Log("node.isNewer", "node %v is not newer", path)
+	return false
 }
