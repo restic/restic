@@ -150,7 +150,6 @@ func walk(basedir, path string, done chan struct{}, jobs chan<- Job, res chan<- 
 func Walk(paths []string, done chan struct{}, jobs chan<- Job, res chan<- Result) error {
 	defer func() {
 		debug.Log("pipe.Walk", "output channel closed")
-		close(res)
 		close(jobs)
 	}()
 
@@ -165,7 +164,16 @@ func Walk(paths []string, done chan struct{}, jobs chan<- Job, res chan<- Result
 		}
 		debug.Log("pipe.Walk", "walker for %v done", path)
 	}
-	res <- Dir{Entries: entries}
+
+	debug.Log("pipe.Walk", "sending root node")
+	select {
+	case <-done:
+		return errCancelled
+	case jobs <- Dir{Entries: entries, result: res}:
+	}
+
+	debug.Log("pipe.Walk", "walker done")
+
 	return nil
 }
 

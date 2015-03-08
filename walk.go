@@ -43,9 +43,7 @@ func walkTree(s Server, path string, id backend.ID, done chan struct{}, jobCh ch
 		}
 	}
 
-	if path != "" {
-		jobCh <- WalkTreeJob{Path: filepath.Join(path), Tree: t}
-	}
+	jobCh <- WalkTreeJob{Path: filepath.Join(path), Tree: t}
 	debug.Log("walkTree", "done for %q (%v)", path, id.Str())
 }
 

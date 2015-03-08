@@ -54,6 +54,9 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	t.Logf("walking path %s with %d dirs, %d files", *testWalkerPath,
 		before.dirs, before.files)
 
+	// account for top level dir
+	before.dirs++
+
 	after := stats{}
 	m := sync.Mutex{}
 
@@ -141,6 +144,9 @@ func TestPipelineWalker(t *testing.T) {
 
 	t.Logf("walking path %s with %d dirs, %d files", *testWalkerPath,
 		before.dirs, before.files)
+
+	// account for top level dir
+	before.dirs++
 
 	after := stats{}
 	m := sync.Mutex{}
@@ -304,4 +310,82 @@ func BenchmarkPipelineWalker(b *testing.B) {
 
 		b.Logf("max duration for a dir: %v", max)
 	}
+}
+
+func TestPipelineWalkerMultiple(t *testing.T) {
+	if *testWalkerPath == "" {
+		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
+	}
+
+	paths, err := filepath.Glob(filepath.Join(*testWalkerPath, "*"))
+
+	before, err := statPath(*testWalkerPath)
+	ok(t, err)
+
+	t.Logf("walking paths %v with %d dirs, %d files", paths,
+		before.dirs, before.files)
+
+	after := stats{}
+	m := sync.Mutex{}
+
+	worker := func(wg *sync.WaitGroup, done <-chan struct{}, jobs <-chan pipe.Job) {
+		defer wg.Done()
+		for {
+			select {
+			case job, ok := <-jobs:
+				if !ok {
+					// channel is closed
+					return
+				}
+				assert(t, job != nil, "job is nil")
+
+				switch j := job.(type) {
+				case pipe.Dir:
+					// wait for all content
+					for _, ch := range j.Entries {
+						<-ch
+					}
+
+					m.Lock()
+					after.dirs++
+					m.Unlock()
+
+					j.Result() <- true
+				case pipe.Entry:
+					m.Lock()
+					after.files++
+					m.Unlock()
+
+					j.Result() <- true
+				}
+
+			case <-done:
+				// pipeline was cancelled
+				return
+			}
+		}
+	}
+
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	jobs := make(chan pipe.Job)
+
+	for i := 0; i < *maxWorkers; i++ {
+		wg.Add(1)
+		go worker(&wg, done, jobs)
+	}
+
+	resCh := make(chan pipe.Result, 1)
+	err = pipe.Walk(paths, done, jobs, resCh)
+	ok(t, err)
+
+	// wait for all workers to terminate
+	wg.Wait()
+
+	// wait for top-level blob
+	<-resCh
+
+	t.Logf("walked %d paths with %d dirs, %d files", len(paths), after.dirs, after.files)
+
+	assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }

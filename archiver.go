@@ -513,11 +513,21 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				}
 			}
 
-			node, err := NodeFromFileInfo(dir.Path(), dir.Info())
-			if err != nil {
-				node.Error = err.Error()
-				dir.Result() <- node
-				continue
+			var (
+				node *Node
+				err  error
+			)
+			if dir.Path() == "" {
+				// if this is the top-level dir, only create a stub node
+				node = &Node{}
+			} else {
+				// else create note from path and fi
+				node, err = NodeFromFileInfo(dir.Path(), dir.Info())
+				if err != nil {
+					node.Error = err.Error()
+					dir.Result() <- node
+					continue
+				}
 			}
 
 			blob, err := arch.SaveTreeJSON(tree)
@@ -775,28 +785,10 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 
 	debug.Log("Archiver.Snapshot", "workers terminated")
 
-	// add the top-level tree
-	tree := NewTree()
-	root := (<-resCh).(pipe.Dir)
-	for i := 0; i < len(paths); i++ {
-		node := (<-root.Entries[i]).(*Node)
-
-		debug.Log("Archiver.Snapshot", "got toplevel node %v, %d/%d blobs", node, len(node.Content), len(node.blobs))
-
-		tree.Insert(node)
-		for _, blob := range node.blobs {
-			debug.Log("Archiver.Snapshot", "  add toplevel blob %v", blob)
-			blob = arch.m.Insert(blob)
-			tree.Map.Insert(blob)
-		}
-	}
-
-	tb, err := arch.SaveTreeJSON(tree)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	sn.Tree = tb
+	// receive the top-level tree
+	root := (<-resCh).(*Node)
+	debug.Log("Archiver.Snapshot", "root node received: %#v", root.blobs[0])
+	sn.Tree = root.blobs[0]
 
 	// save snapshot
 	blob, err := arch.s.SaveJSON(backend.Snapshot, sn)
