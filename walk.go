@@ -54,5 +54,5 @@ func WalkTree(server Server, id backend.ID, done chan struct{}, jobCh chan<- Wal
 	debug.Log("WalkTree", "start on %v", id.Str())
 	walkTree(server, "", id, done, jobCh)
 	close(jobCh)
-	debug.Log("WalkTree", "done", id.Str())
+	debug.Log("WalkTree", "done")
 }
