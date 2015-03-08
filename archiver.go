@@ -538,32 +538,6 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 	}
 }
 
-func compareWithOldTree(newCh <-chan interface{}, oldCh <-chan WalkTreeJob, outCh chan<- interface{}) {
-	debug.Log("Archiver.compareWithOldTree", "start")
-	defer func() {
-		debug.Log("Archiver.compareWithOldTree", "done")
-	}()
-	for {
-		debug.Log("Archiver.compareWithOldTree", "waiting for new job")
-		newJob, ok := <-newCh
-		if !ok {
-			// channel is closed
-			return
-		}
-
-		debug.Log("Archiver.compareWithOldTree", "received new job %v", newJob)
-		oldJob, ok := <-oldCh
-		if !ok {
-			// channel is closed
-			return
-		}
-
-		debug.Log("Archiver.compareWithOldTree", "received old job %v", oldJob)
-
-		outCh <- newJob
-	}
-}
-
 type ArchivePipe struct {
 	Old <-chan WalkTreeJob
 	New <-chan pipe.Job
