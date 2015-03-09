@@ -770,6 +770,9 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 		return nil, nil, err
 	}
 
+	// store ID in snapshot struct
+	sn.id = blob.Storage
+
 	debug.Log("Archiver.Snapshot", "saved snapshot %v", blob.Storage.Str())
 
 	// cache blobs
