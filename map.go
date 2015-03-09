@@ -140,6 +140,17 @@ func (bl *Map) Equals(other *Map) bool {
 	return true
 }
 
+// Each calls f for each blob in the Map. While Each is running, no other
+// operation is possible, since a mutex is held for the whole time.
+func (bl *Map) Each(f func(blob Blob)) {
+	bl.m.Lock()
+	defer bl.m.Unlock()
+
+	for _, blob := range bl.list {
+		f(blob)
+	}
+}
+
 // Select returns a list of of blobs from the plaintext IDs given in list.
 func (bl *Map) Select(list backend.IDs) (Blobs, error) {
 	bl.m.Lock()

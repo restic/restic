@@ -29,6 +29,7 @@ const (
 type Archiver struct {
 	s Server
 	m *Map
+	c *Cache
 
 	blobToken chan struct{}
 
@@ -51,6 +52,12 @@ func NewArchiver(s Server) (*Archiver, error) {
 	// create new map to store all blobs in
 	arch.m = NewMap()
 
+	// init cache
+	arch.c, err = NewCache()
+	if err != nil {
+		return nil, err
+	}
+
 	// abort on all errors
 	arch.Error = func(string, os.FileInfo, error) error { return err }
 	// allow all files
@@ -59,81 +66,40 @@ func NewArchiver(s Server) (*Archiver, error) {
 	return arch, nil
 }
 
-// Preload loads all tree objects from repository and adds all blobs that are
-// still available to the map for deduplication.
-func (arch *Archiver) Preload(p *Progress) error {
-	cache, err := NewCache()
+// Preload loads all blobs for all cached snapshots.
+func (arch *Archiver) Preload() error {
+	// list snapshots first
+	snapshots, err := arch.s.List(backend.Snapshot)
 	if err != nil {
 		return err
 	}
 
-	p.Start()
-	defer p.Done()
-
-	debug.Log("Archiver.Preload", "Start loading known blobs")
-
-	// load all trees, in parallel
-	worker := func(wg *sync.WaitGroup, c <-chan backend.ID) {
-		for id := range c {
-			var tree *Tree
-
-			// load from cache
-			var t Tree
-			rd, err := cache.Load(backend.Tree, id)
-			if err == nil {
-				debug.Log("Archiver.Preload", "tree %v cached", id.Str())
-				tree = &t
-				dec := json.NewDecoder(rd)
-				err = dec.Decode(&t)
-
-				if err != nil {
-					continue
-				}
-			} else {
-				debug.Log("Archiver.Preload", "tree %v not cached: %v", id.Str(), err)
-
-				tree, err = LoadTree(arch.s, id)
-				// ignore error and advance to next tree
-				if err != nil {
-					continue
-				}
-			}
-
-			debug.Log("Archiver.Preload", "load tree %v with %d blobs", id, tree.Map.Len())
-			arch.m.Merge(tree.Map)
-			p.Report(Stat{Trees: 1, Blobs: uint64(tree.Map.Len())})
+	// TODO: track seen tree ids, load trees that aren't in the set
+	for _, id := range snapshots {
+		// try to load snapshot blobs from cache
+		rd, err := arch.c.Load(backend.Snapshot, "blobs", id)
+		if err != nil {
+			debug.Log("Archiver.Preload", "blobs for snapshot %v not cached: %v", id.Str(), err)
+			return err
 		}
-		wg.Done()
+
+		debug.Log("Archiver.Preload", "load cached blobs for snapshot %v", id.Str())
+		dec := json.NewDecoder(rd)
+
+		m := &Map{}
+		err = dec.Decode(m)
+		if err != nil {
+			debug.Log("Archiver.Preload", "error loading cached blobs for snapshot %v: %v", id.Str(), err)
+			continue
+		}
+
+		arch.m.Merge(m)
+
+		debug.Log("Archiver.Preload", "done loading cached blobs for snapshot %v", id.Str())
 	}
 
-	idCh := make(chan backend.ID)
-
-	// start workers
-	var wg sync.WaitGroup
-	for i := 0; i < maxConcurrencyPreload; i++ {
-		wg.Add(1)
-		go worker(&wg, idCh)
-	}
-
-	// list ids
-	trees := 0
-	err = arch.s.EachID(backend.Tree, func(id backend.ID) {
-		trees++
-
-		if trees%1000 == 0 {
-			debug.Log("Archiver.Preload", "Loaded %v trees", trees)
-		}
-		idCh <- id
-	})
-
-	close(idCh)
-
-	// wait for workers
-	wg.Wait()
-
-	debug.Log("Archiver.Preload", "Loaded %v blobs from %v trees", arch.m.Len(), trees)
-
-	return err
+	debug.Log("Archiver.Preload", "Loaded %v blobs from %v snapshots", arch.m.Len(), len(snapshots))
+	return nil
 }
 
 func (arch *Archiver) Save(t backend.Type, id backend.ID, length uint, rd io.Reader) (Blob, error) {
@@ -787,7 +753,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 
 	// receive the top-level tree
 	root := (<-resCh).(*Node)
-	debug.Log("Archiver.Snapshot", "root node received: %#v", root.blobs[0])
+	debug.Log("Archiver.Snapshot", "root node received: %v", root.blobs[0])
 	sn.Tree = root.blobs[0]
 
 	// save snapshot
@@ -795,6 +761,26 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 	if err != nil {
 		return nil, nil, err
 	}
+
+	debug.Log("Archiver.Snapshot", "saved snapshot %v", blob.Storage.Str())
+
+	// cache blobs
+	wr, err := arch.c.Store(backend.Snapshot, "blobs", blob.Storage)
+	if err != nil {
+		debug.Log("Archiver.Snapshot", "unable to cache blobs for snapshot %v: %v", blob.Storage.Str(), err)
+		fmt.Fprintf(os.Stderr, "unable to cache blobs for snapshot %v: %v\n", blob.Storage.Str(), err)
+		return sn, blob.Storage, nil
+	}
+
+	enc := json.NewEncoder(wr)
+	err = enc.Encode(arch.m)
+	if err != nil {
+		debug.Log("Archiver.Snapshot", "error encoding map for snapshot %v: %v", blob.Storage.Str(), err)
+	} else {
+		debug.Log("Archiver.Snapshot", "cached %d blobs for snapshot %v", arch.m.Len(), blob.Storage.Str())
+	}
+
+	wr.Close()
 
 	return sn, blob.Storage, nil
 }

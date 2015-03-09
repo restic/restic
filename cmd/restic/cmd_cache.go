@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"sync"
 
 	"github.com/restic/restic"
@@ -49,7 +50,7 @@ func (cmd CmdCache) Execute(args []string) error {
 	treeCh := make(chan backend.ID)
 	worker := func(wg *sync.WaitGroup, ch chan backend.ID) {
 		for treeID := range ch {
-			cached, err := cache.Has(backend.Tree, treeID)
+			cached, err := cache.Has(backend.Tree, "", treeID)
 			if err != nil {
 				fmt.Printf("tree %v cache error: %v\n", treeID.Str(), err)
 				continue
@@ -72,9 +73,15 @@ func (cmd CmdCache) Execute(args []string) error {
 				continue
 			}
 
-			err = cache.Store(backend.Tree, treeID, decRd)
+			wr, err := cache.Store(backend.Tree, "", treeID)
 			if err != nil {
 				fmt.Printf("  store error: %v\n", err)
+				continue
+			}
+
+			_, err = io.Copy(wr, decRd)
+			if err != nil {
+				fmt.Printf("  Copy error: %v\n", err)
 				continue
 			}
 

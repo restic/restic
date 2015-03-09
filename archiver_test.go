@@ -146,7 +146,7 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 func snapshot(t testing.TB, server restic.Server, path string) *restic.Snapshot {
 	arch, err := restic.NewArchiver(server)
 	ok(t, err)
-	ok(t, arch.Preload(nil))
+	ok(t, arch.Preload())
 	sn, _, err := arch.Snapshot(nil, []string{path}, nil)
 	ok(t, err)
 	return sn
@@ -226,7 +226,7 @@ func BenchmarkPreload(t *testing.B) {
 		// create new archiver and preload
 		arch2, err := restic.NewArchiver(server)
 		ok(t, err)
-		ok(t, arch2.Preload(nil))
+		ok(t, arch2.Preload())
 	}
 }
 

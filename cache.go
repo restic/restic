@@ -9,12 +9,15 @@ import (
 	"github.com/restic/restic/backend"
 )
 
+// for testing
+var getCacheDir = GetCacheDir
+
 type Cache struct {
 	base string
 }
 
 func NewCache() (*Cache, error) {
-	dir, err := GetCacheDir()
+	dir, err := getCacheDir()
 	if err != nil {
 		return nil, err
 	}
@@ -22,9 +25,9 @@ func NewCache() (*Cache, error) {
 	return &Cache{base: dir}, nil
 }
 
-func (c *Cache) Has(t backend.Type, id backend.ID) (bool, error) {
+func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error) {
 	// try to open file
-	filename, err := c.filename(t, id)
+	filename, err := c.filename(t, subtype, id)
 	if err != nil {
 		return false, err
 	}
@@ -42,31 +45,29 @@ func (c *Cache) Has(t backend.Type, id backend.ID) (bool, error) {
 	return true, nil
 }
 
-func (c *Cache) Store(t backend.Type, id backend.ID, rd io.Reader) error {
-	filename, err := c.filename(t, id)
+func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCloser, error) {
+	filename, err := c.filename(t, subtype, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dirname := filepath.Dir(filename)
 	err = os.MkdirAll(dirname, 0700)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	file, err := os.Create(filename)
-	defer file.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = io.Copy(file, rd)
-	return err
+	return file, nil
 }
 
-func (c *Cache) Load(t backend.Type, id backend.ID) (io.ReadCloser, error) {
+func (c *Cache) Load(t backend.Type, subtype string, id backend.ID) (io.ReadCloser, error) {
 	// try to open file
-	filename, err := c.filename(t, id)
+	filename, err := c.filename(t, subtype, id)
 	if err != nil {
 		return nil, err
 	}
@@ -75,17 +76,17 @@ func (c *Cache) Load(t backend.Type, id backend.ID) (io.ReadCloser, error) {
 }
 
 // Construct file name for given Type.
-func (c *Cache) filename(t backend.Type, id backend.ID) (string, error) {
-	cachedir, err := GetCacheDir()
-	if err != nil {
-		return "", err
+func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string, error) {
+	filename := id.String()
+	if subtype != "" {
+		filename += "." + subtype
 	}
 
 	switch t {
 	case backend.Snapshot:
-		return filepath.Join(cachedir, "snapshots", id.String()), nil
+		return filepath.Join(c.base, "snapshots", filename), nil
 	case backend.Tree:
-		return filepath.Join(cachedir, "trees", id.String()), nil
+		return filepath.Join(c.base, "trees", filename), nil
 	}
 
 	return "", fmt.Errorf("cache not supported for type %v", t)
