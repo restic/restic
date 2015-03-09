@@ -143,11 +143,11 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	b.Logf("snapshot archived as %v", id)
 }
 
-func snapshot(t testing.TB, server restic.Server, path string) *restic.Snapshot {
+func snapshot(t testing.TB, server restic.Server, path string, parent backend.ID) *restic.Snapshot {
 	arch, err := restic.NewArchiver(server)
 	ok(t, err)
 	ok(t, arch.Preload())
-	sn, _, err := arch.Snapshot(nil, []string{path}, nil)
+	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
 	ok(t, err)
 	return sn
 }
@@ -176,25 +176,39 @@ func archiveWithPreload(t testing.TB) {
 	server := restic.NewServerWithKey(be, key)
 
 	// archive a few files
-	sn := snapshot(t, server, *benchArchiveDirectory)
-	t.Logf("archived snapshot %v", sn.ID())
+	sn := snapshot(t, server, *benchArchiveDirectory, nil)
+	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
 	blobsBefore := countBlobs(t, server)
 	t.Logf("found %v blobs", blobsBefore)
 
-	// archive the same files again
-	sn2 := snapshot(t, server, *benchArchiveDirectory)
-	t.Logf("archived snapshot %v", sn2.ID())
+	// archive the same files again, without parent snapshot
+	sn2 := snapshot(t, server, *benchArchiveDirectory, nil)
+	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats
-	blobsAfter := countBlobs(t, server)
-	t.Logf("found %v blobs", blobsAfter)
+	blobsAfter2 := countBlobs(t, server)
+	t.Logf("found %v blobs", blobsAfter2)
 
 	// if there are more than 50% more blobs, something is wrong
-	if blobsAfter > (blobsBefore + blobsBefore/2) {
+	if blobsAfter2 > (blobsBefore + blobsBefore/2) {
 		t.Fatalf("TestArchiverPreload: too many blobs in repository: before %d, after %d, threshhold %d",
-			blobsBefore, blobsAfter, (blobsBefore + blobsBefore/2))
+			blobsBefore, blobsAfter2, (blobsBefore + blobsBefore/2))
+	}
+
+	// archive the same files again, with a parent snapshot
+	sn3 := snapshot(t, server, *benchArchiveDirectory, sn2.ID())
+	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
+
+	// get archive stats
+	blobsAfter3 := countBlobs(t, server)
+	t.Logf("found %v blobs", blobsAfter3)
+
+	// if there are more than 50% more blobs, something is wrong
+	if blobsAfter3 > (blobsBefore + blobsBefore/2) {
+		t.Fatalf("TestArchiverPreload: too many blobs in repository: before %d, after %d, threshhold %d",
+			blobsBefore, blobsAfter3, (blobsBefore + blobsBefore/2))
 	}
 }
 

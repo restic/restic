@@ -135,7 +135,7 @@ func TestServerStats(t *testing.T) {
 	server := restic.NewServerWithKey(be, key)
 
 	// archive a few files
-	sn := snapshot(t, server, *benchArchiveDirectory)
+	sn := snapshot(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID())
 
 	stats, err := server.Stats()
@@ -154,7 +154,7 @@ func TestLoadJSONID(t *testing.T) {
 	server := restic.NewServerWithKey(be, key)
 
 	// archive a few files
-	sn := snapshot(t, server, *benchArchiveDirectory)
+	sn := snapshot(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID())
 
 	// benchmark loading first tree
@@ -181,7 +181,7 @@ func BenchmarkLoadJSONID(t *testing.B) {
 	server := restic.NewServerWithKey(be, key)
 
 	// archive a few files
-	sn := snapshot(t, server, *benchArchiveDirectory)
+	sn := snapshot(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID())
 
 	// benchmark loading first tree
