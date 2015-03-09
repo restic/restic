@@ -9,8 +9,10 @@ import (
 
 var treeJobs = []string{
 	"foo/baz/subdir",
-	"foo/bar",
+	"foo/baz",
 	"foo",
+	"quu/bar/file1",
+	"quu/bar/file2",
 	"quu/foo/file1",
 	"quu/foo/file2",
 	"quu/foo/file3",
@@ -25,8 +27,11 @@ var treeJobs = []string{
 var pipeJobs = []string{
 	"foo/baz/subdir",
 	"foo/baz/subdir2", // subdir2 added
-	"foo/bar",
+	"foo/baz",
 	"foo",
+	"quu/bar/.file1.swp", // file with . added
+	"quu/bar/file1",
+	"quu/bar/file2",
 	"quu/foo/file1", // file2 removed
 	"quu/foo/file3",
 	"quu/foo",
@@ -34,29 +39,34 @@ var pipeJobs = []string{
 	"quv/file1", // files added and removed
 	"quv/file2",
 	"quv",
-	"zz/file1", // new files removed and added at the end
+	"yy",
+	"zz/file1", // files removed and added at the end
 	"zz/file2",
 	"zz",
 }
 
 var resultJobs = []struct {
 	path   string
-	hasOld bool
+	action string
 }{
-	{"foo/baz/subdir", true},
-	{"foo/baz/subdir2", false},
-	{"foo/bar", true},
-	{"foo", true},
-	{"quu/foo/file1", true},
-	{"quu/foo/file3", true},
-	{"quu/foo", true},
-	{"quu", true},
-	{"quv/file1", false},
-	{"quv/file2", false},
-	{"quv", false},
-	{"zz/file1", false},
-	{"zz/file2", false},
-	{"zz", false},
+	{"foo/baz/subdir", "same, not a file"},
+	{"foo/baz/subdir2", "new, no old job"},
+	{"foo/baz", "same, not a file"},
+	{"foo", "same, not a file"},
+	{"quu/bar/.file1.swp", "new, no old job"},
+	{"quu/bar/file1", "same, not a file"},
+	{"quu/bar/file2", "same, not a file"},
+	{"quu/foo/file1", "same, not a file"},
+	{"quu/foo/file3", "same, not a file"},
+	{"quu/foo", "same, not a file"},
+	{"quu", "same, not a file"},
+	{"quv/file1", "new, no old job"},
+	{"quv/file2", "new, no old job"},
+	{"quv", "new, no old job"},
+	{"yy", "same, not a file"},
+	{"zz/file1", "testPipeJob"},
+	{"zz/file2", "testPipeJob"},
+	{"zz", "testPipeJob"},
 }
 
 type testPipeJob struct {
@@ -116,6 +126,18 @@ func TestArchivePipe(t *testing.T) {
 		if job.Path() != resultJobs[i].path {
 			t.Fatalf("wrong job received: wanted %v, got %v", resultJobs[i], job)
 		}
+
+		// switch j := job.(type) {
+		// case archivePipeJob:
+		// 	if j.action != resultJobs[i].action {
+		// 		t.Fatalf("wrong action for %v detected: wanted %q, got %q", job.Path(), resultJobs[i].action, j.action)
+		// 	}
+		// case testPipeJob:
+		// 	if resultJobs[i].action != "testPipeJob" {
+		// 		t.Fatalf("unexpected testPipeJob, expected %q: %v", resultJobs[i].action, j)
+		// 	}
+		// }
+
 		i++
 	}
 }

@@ -622,11 +622,19 @@ func (a *ArchivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 			loadNew = true
 			out <- archiveJob{new: newJob}.Copy()
 			continue
-		} else if dir1 == dir2 && file1 < file2 {
-			debug.Log("ArchivePipe.compare", "    %q < %q, file %q removed", file1, file2, file1)
-			// file has been removed, load new old
-			loadOld = true
-			continue
+		} else if dir1 == dir2 {
+			if file1 < file2 {
+				debug.Log("ArchivePipe.compare", "    %q < %q, file %q removed", file1, file2, file1)
+				// file has been removed, load new old
+				loadOld = true
+				continue
+			} else {
+				debug.Log("ArchivePipe.compare", "    %q > %q, file %q added", file1, file2, file2)
+				// file is new, send new job and load new
+				loadNew = true
+				out <- archiveJob{new: newJob}.Copy()
+				continue
+			}
 		}
 
 		debug.Log("ArchivePipe.compare", "    %q > %q, file %q removed", file1, file2, file1)
