@@ -12,7 +12,7 @@ import (
 	"github.com/restic/restic/chunker"
 )
 
-var benchArchiveDirectory = flag.String("test.benchdir", "", "benchmark archiving a real directory")
+var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
 
 func get_random(seed, count int) []byte {
 	buf := make([]byte, count)
@@ -152,17 +152,18 @@ func snapshot(t testing.TB, server restic.Server, path string, parent backend.ID
 	return sn
 }
 
-func countBlobs(t testing.TB, server restic.Server) int {
-	blobs := 0
-	err := server.EachID(backend.Tree, func(id backend.ID) {
-		tree, err := restic.LoadTree(server, id)
-		ok(t, err)
-
-		blobs += tree.Map.Len()
-	})
+func countBlobs(t testing.TB, server restic.Server) (trees int, data int) {
+	list, err := server.List(backend.Tree)
 	ok(t, err)
 
-	return blobs
+	trees = len(list)
+
+	list, err = server.List(backend.Data)
+	ok(t, err)
+
+	data = len(list)
+
+	return
 }
 
 func archiveWithPreload(t testing.TB) {
@@ -180,21 +181,21 @@ func archiveWithPreload(t testing.TB) {
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
-	blobsBefore := countBlobs(t, server)
-	t.Logf("found %v blobs", blobsBefore)
+	beforeTrees, beforeData := countBlobs(t, server)
+	t.Logf("found %v trees, %v data blobs", beforeTrees, beforeData)
 
 	// archive the same files again, without parent snapshot
 	sn2 := snapshot(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats
-	blobsAfter2 := countBlobs(t, server)
-	t.Logf("found %v blobs", blobsAfter2)
+	afterTrees2, afterData2 := countBlobs(t, server)
+	t.Logf("found %v trees, %v data blobs", afterTrees2, afterData2)
 
-	// if there are more than 50% more blobs, something is wrong
-	if blobsAfter2 > (blobsBefore + blobsBefore/2) {
-		t.Fatalf("TestArchiverPreload: too many blobs in repository: before %d, after %d, threshhold %d",
-			blobsBefore, blobsAfter2, (blobsBefore + blobsBefore/2))
+	// if there are more blobs, something is wrong
+	if afterData2 > beforeData {
+		t.Fatalf("TestArchiverPreload: too many data blobs in repository: before %d, after %d",
+			beforeData, afterData2)
 	}
 
 	// archive the same files again, with a parent snapshot
@@ -202,13 +203,13 @@ func archiveWithPreload(t testing.TB) {
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats
-	blobsAfter3 := countBlobs(t, server)
-	t.Logf("found %v blobs", blobsAfter3)
+	afterTrees3, afterData3 := countBlobs(t, server)
+	t.Logf("found %v trees, %v data blobs", afterTrees3, afterData3)
 
-	// if there are more than 50% more blobs, something is wrong
-	if blobsAfter3 > (blobsBefore + blobsBefore/2) {
-		t.Fatalf("TestArchiverPreload: too many blobs in repository: before %d, after %d, threshhold %d",
-			blobsBefore, blobsAfter3, (blobsBefore + blobsBefore/2))
+	// if there are more blobs, something is wrong
+	if afterData3 > beforeData {
+		t.Fatalf("TestArchiverPreload: too many data blobs in repository: before %d, after %d",
+			beforeData, afterData3)
 	}
 }
 
