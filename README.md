@@ -62,6 +62,14 @@ If you are unsure what to do, please have a look at the github issues,
 especially those tagged
 [minor complexity](https://github.com/restic/restic/labels/minor%20complexity).
 
+Contact
+=======
+
+If you discover a bug or find something surprising, please feel free to [open a
+github issue](https://github.com/restic/restic/issues/new). If you would like
+to chat about restic, there is also the IRC channel #restic on
+irc.freenode.net. Or just write me an email :)
+
 License
 =======
 
