@@ -323,7 +323,7 @@ func (r *SFTP) renameFile(oldname string, t Type, id ID) error {
 		return err
 	}
 
-	return r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0111)))
+	return r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
 }
 
 // Construct directory for given Type.

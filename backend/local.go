@@ -215,7 +215,7 @@ func (b *Local) renameFile(file *os.File, t Type, id ID) error {
 		return err
 	}
 
-	return os.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0111)))
+	return os.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
 }
 
 // Construct directory for given Type.
