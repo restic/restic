@@ -2,6 +2,7 @@ package backend
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/sftp"
@@ -25,6 +25,7 @@ type SFTP struct {
 	c   *sftp.Client
 	p   string
 	ver uint
+	id  ID
 
 	cmd *exec.Cmd
 }
@@ -92,9 +93,34 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		return nil, fmt.Errorf("unable to read version file: %v\n", err)
 	}
 
-	buf := make([]byte, 100)
-	n, err := f.Read(buf)
-	if err != nil && err != io.EOF {
+	var version uint
+	n, err := fmt.Fscanf(f, "%d", &version)
+	if err != nil {
+		return nil, err
+	}
+
+	if n != 1 {
+		return nil, errors.New("could not read version from file")
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// check version
+	if version != BackendVersion {
+		return nil, fmt.Errorf("wrong version %d", version)
+	}
+
+	// read ID
+	f, err = sftp.c.Open(filepath.Join(dir, idFileName))
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := ioutil.ReadAll(f)
+	if err != nil {
 		return nil, err
 	}
 
@@ -103,16 +129,12 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		return nil, err
 	}
 
-	version, err := strconv.Atoi(strings.TrimSpace(string(buf[:n])))
+	id, err := ParseID(strings.TrimSpace(string(buf)))
 	if err != nil {
-		return nil, fmt.Errorf("unable to convert version to integer: %v\n", err)
+		return nil, err
 	}
 
-	// check version
-	if version != BackendVersion {
-		return nil, fmt.Errorf("wrong version %d", version)
-	}
-
+	sftp.id = id
 	sftp.p = dir
 
 	return sftp, nil
@@ -127,6 +149,7 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	versionFile := filepath.Join(dir, versionFileName)
+	idFile := filepath.Join(dir, idFileName)
 	dirs := []string{
 		dir,
 		filepath.Join(dir, dataPath),
@@ -137,10 +160,15 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		filepath.Join(dir, tempPath),
 	}
 
-	// test if version file already exists
+	// test if files already exist
 	_, err = sftp.c.Lstat(versionFile)
 	if err == nil {
 		return nil, errors.New("version file already exists")
+	}
+
+	_, err = sftp.c.Lstat(idFile)
+	if err == nil {
+		return nil, errors.New("id file already exists")
 	}
 
 	// test if directories already exist
@@ -164,7 +192,29 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		return nil, err
 	}
 
-	_, err = f.Write([]byte(strconv.Itoa(BackendVersion)))
+	_, err = fmt.Fprintf(f, "%d\n", BackendVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// create ID file
+	id := make([]byte, sha256.Size)
+	_, err = rand.Read(id)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err = sftp.c.Create(idFile)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = fmt.Fprintf(f, "%s\n", ID(id).String())
 	if err != nil {
 		return nil, err
 	}
@@ -502,6 +552,11 @@ func (r *SFTP) List(t Type) (IDs, error) {
 // Version returns the version of this local backend.
 func (r *SFTP) Version() uint {
 	return r.ver
+}
+
+// ID returns the ID of this local backend.
+func (r *SFTP) ID() ID {
+	return r.id
 }
 
 // Close closes the sftp connection and terminates the underlying command.

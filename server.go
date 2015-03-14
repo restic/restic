@@ -414,3 +414,7 @@ func (s Server) Delete() error {
 
 	return errors.New("Delete() called for backend that does not implement this method")
 }
+
+func (s Server) ID() backend.ID {
+	return s.be.ID()
+}

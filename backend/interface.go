@@ -62,6 +62,10 @@ type Locationer interface {
 	Location() string
 }
 
+type IDer interface {
+	ID() ID
+}
+
 type Backend interface {
 	Lister
 	Getter
@@ -69,4 +73,5 @@ type Backend interface {
 	Tester
 	Remover
 	Closer
+	IDer
 }

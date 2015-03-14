@@ -1,13 +1,14 @@
 package backend
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -20,6 +21,7 @@ const (
 	keyPath         = "keys"
 	tempPath        = "tmp"
 	versionFileName = "version"
+	idFileName      = "id"
 )
 
 var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
@@ -27,6 +29,7 @@ var ErrWrongData = errors.New("wrong data returned by backend, checksum does not
 type Local struct {
 	p   string
 	ver uint
+	id  ID
 }
 
 // OpenLocal opens the local backend at dir.
@@ -54,8 +57,33 @@ func OpenLocal(dir string) (*Local, error) {
 		return nil, fmt.Errorf("unable to read version file: %v\n", err)
 	}
 
-	buf := make([]byte, 100)
-	n, err := f.Read(buf)
+	var version uint
+	n, err := fmt.Fscanf(f, "%d", &version)
+	if err != nil {
+		return nil, err
+	}
+
+	if n != 1 {
+		return nil, errors.New("could not read version from file")
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// check version
+	if version != BackendVersion {
+		return nil, fmt.Errorf("wrong version %d", version)
+	}
+
+	// read ID
+	f, err = os.Open(filepath.Join(dir, idFileName))
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
@@ -65,23 +93,19 @@ func OpenLocal(dir string) (*Local, error) {
 		return nil, err
 	}
 
-	version, err := strconv.Atoi(strings.TrimSpace(string(buf[:n])))
+	id, err := ParseID(strings.TrimSpace(string(buf)))
 	if err != nil {
-		return nil, fmt.Errorf("unable to convert version to integer: %v\n", err)
+		return nil, err
 	}
 
-	// check version
-	if version != BackendVersion {
-		return nil, fmt.Errorf("wrong version %d", version)
-	}
-
-	return &Local{p: dir, ver: uint(version)}, nil
+	return &Local{p: dir, ver: version, id: id}, nil
 }
 
 // CreateLocal creates all the necessary files and directories for a new local
 // backend at dir.
 func CreateLocal(dir string) (*Local, error) {
 	versionFile := filepath.Join(dir, versionFileName)
+	idFile := filepath.Join(dir, idFileName)
 	dirs := []string{
 		dir,
 		filepath.Join(dir, dataPath),
@@ -92,10 +116,15 @@ func CreateLocal(dir string) (*Local, error) {
 		filepath.Join(dir, tempPath),
 	}
 
-	// test if version file already exists
+	// test if files already exist
 	_, err := os.Lstat(versionFile)
 	if err == nil {
 		return nil, errors.New("version file already exists")
+	}
+
+	_, err = os.Lstat(idFile)
+	if err == nil {
+		return nil, errors.New("id file already exists")
 	}
 
 	// test if directories already exist
@@ -119,7 +148,29 @@ func CreateLocal(dir string) (*Local, error) {
 		return nil, err
 	}
 
-	_, err = f.Write([]byte(fmt.Sprintf("%d\n", BackendVersion)))
+	_, err = fmt.Fprintf(f, "%d\n", BackendVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	// create ID file
+	id := make([]byte, sha256.Size)
+	_, err = rand.Read(id)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err = os.Create(idFile)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = fmt.Fprintf(f, "%s\n", ID(id).String())
 	if err != nil {
 		return nil, err
 	}
@@ -376,6 +427,11 @@ func (b *Local) List(t Type) (IDs, error) {
 // Version returns the version of this local backend.
 func (b *Local) Version() uint {
 	return b.ver
+}
+
+// ID returns the ID of this local backend.
+func (b *Local) ID() ID {
+	return b.id
 }
 
 // Close closes the backend
