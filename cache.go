@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -43,12 +44,15 @@ func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error)
 	defer fd.Close()
 	if err != nil {
 		if os.IsNotExist(err) {
+			debug.Log("Cache.Has", "test for file %v: not cached", filename)
 			return false, nil
 		}
 
+		debug.Log("Cache.Has", "test for file %v: error %v", filename, err)
 		return false, err
 	}
 
+	debug.Log("Cache.Has", "test for file %v: is cached", filename)
 	return true, nil
 }
 
@@ -66,9 +70,11 @@ func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCl
 
 	file, err := os.Create(filename)
 	if err != nil {
+		debug.Log("Cache.Store", "error creating file %v: %v", filename, err)
 		return nil, err
 	}
 
+	debug.Log("Cache.Store", "created file %v", filename)
 	return file, nil
 }
 
@@ -80,6 +86,105 @@ func (c *Cache) Load(t backend.Type, subtype string, id backend.ID) (io.ReadClos
 	}
 
 	return os.Open(filename)
+}
+
+func (c *Cache) Purge(t backend.Type, subtype string, id backend.ID) error {
+	filename, err := c.filename(t, subtype, id)
+	if err != nil {
+		return err
+	}
+
+	err = os.Remove(filename)
+	debug.Log("Cache.Purge", "Remove file %v: %v", filename, err)
+
+	if err != nil && os.IsNotExist(err) {
+		return nil
+	}
+
+	return err
+}
+
+func (c *Cache) Clear(s backend.Backend) error {
+	list, err := c.List(backend.Snapshot)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range list {
+		debug.Log("Cache.Clear", "found entry %v", entry)
+
+		if ok, err := s.Test(backend.Snapshot, entry.ID); !ok || err != nil {
+			debug.Log("Cache.Clear", "snapshot %v doesn't exist any more, removing %v", entry.ID, entry)
+
+			err = c.Purge(backend.Snapshot, entry.Subtype, entry.ID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+type CacheEntry struct {
+	ID      backend.ID
+	Subtype string
+}
+
+func (c CacheEntry) String() string {
+	if c.Subtype != "" {
+		return c.ID.Str() + "." + c.Subtype
+	}
+	return c.ID.Str()
+}
+
+func (c *Cache) List(t backend.Type) ([]CacheEntry, error) {
+	var dir string
+
+	switch t {
+	case backend.Snapshot:
+		dir = filepath.Join(c.base, "snapshots")
+	case backend.Tree:
+		dir = filepath.Join(c.base, "trees")
+	default:
+		return nil, fmt.Errorf("cache not supported for type %v", t)
+	}
+
+	fd, err := os.Open(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []CacheEntry{}, nil
+		}
+		return nil, err
+	}
+	defer fd.Close()
+
+	fis, err := fd.Readdir(-1)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := make([]CacheEntry, 0, len(fis))
+
+	for _, fi := range fis {
+		parts := strings.SplitN(fi.Name(), ".", 2)
+
+		id, err := backend.ParseID(parts[0])
+		// ignore invalid cache entries for now
+		if err != nil {
+			continue
+		}
+
+		e := CacheEntry{ID: id}
+
+		if len(parts) == 2 {
+			e.Subtype = parts[1]
+		}
+
+		entries = append(entries, e)
+	}
+
+	return entries, nil
 }
 
 // Construct file name for given Type.
