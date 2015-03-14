@@ -80,7 +80,7 @@ func newChunkBuf() interface{} {
 	defer chunkStats.m.Unlock()
 	chunkStats.new++
 
-	// create buffer for iv, data and hmac
+	// create buffer for iv, data and mac
 	return make([]byte, maxCiphertextSize)
 }
 

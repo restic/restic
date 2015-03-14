@@ -1,33 +1,25 @@
 package restic
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/user"
-	"sync"
 	"time"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
 
-	"golang.org/x/crypto/scrypt"
+	"golang.org/x/crypto/poly1305"
 )
 
 // max size is 8MiB, defined in chunker
-const ivSize = aes.BlockSize
-const hmacSize = sha256.Size
-const maxCiphertextSize = ivSize + chunker.MaxSize + hmacSize
-const CiphertextExtension = ivSize + hmacSize
+const macSize = poly1305.TagSize // Poly1305 size is 16 byte
+const maxCiphertextSize = ivSize + chunker.MaxSize + macSize
+const CiphertextExtension = ivSize + macSize
 
 var (
 	// ErrUnauthenticated is returned when ciphertext verification has failed.
@@ -46,8 +38,6 @@ const (
 	scryptR        = 8
 	scryptP        = 1
 	scryptSaltsize = 64
-	aesKeysize     = 32 // for AES256
-	hmacKeysize    = 32 // for HMAC with SHA256
 )
 
 // Key represents an encrypted master key for a repository.
@@ -72,8 +62,8 @@ type Key struct {
 
 // keys is a JSON structure that holds signing and encryption keys.
 type keys struct {
-	Sign    []byte
-	Encrypt []byte
+	Sign    *MACKey
+	Encrypt *AESKey
 }
 
 // CreateKey initializes a master key in the given backend and encrypts it with
@@ -95,7 +85,7 @@ func OpenKey(s Server, id backend.ID, password string) (*Key, error) {
 	}
 
 	// derive user key
-	k.user, err = k.scrypt(password)
+	k.user, err = kdf(k, password)
 	if err != nil {
 		return nil, err
 	}
@@ -186,18 +176,15 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 		panic("unable to read enough random bytes for salt")
 	}
 
-	// call scrypt() to derive user key
-	newkey.user, err = newkey.scrypt(password)
+	// call KDF to derive user key
+	newkey.user, err = kdf(newkey, password)
 	if err != nil {
 		return nil, err
 	}
 
 	if template == nil {
 		// generate new random master keys
-		newkey.master, err = newkey.newKeys()
-		if err != nil {
-			return nil, err
-		}
+		newkey.master = newkey.newKeys()
 	} else {
 		// copy master keys from old key
 		newkey.master = template.master
@@ -247,43 +234,11 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	return newkey, nil
 }
 
-func (k *Key) scrypt(password string) (*keys, error) {
-	if len(k.Salt) == 0 {
-		return nil, fmt.Errorf("scrypt() called with empty salt")
+func (k *Key) newKeys() *keys {
+	return &keys{
+		Encrypt: generateRandomAESKey(),
+		Sign:    generateRandomMACKey(),
 	}
-
-	keybytes := hmacKeysize + aesKeysize
-	scryptKeys, err := scrypt.Key([]byte(password), k.Salt, k.N, k.R, k.P, keybytes)
-	if err != nil {
-		return nil, fmt.Errorf("error deriving keys from password: %v", err)
-	}
-
-	if len(scryptKeys) != keybytes {
-		return nil, fmt.Errorf("invalid numbers of bytes expanded from scrypt(): %d", len(scryptKeys))
-	}
-
-	ks := &keys{
-		Encrypt: scryptKeys[:aesKeysize],
-		Sign:    scryptKeys[aesKeysize:],
-	}
-	return ks, nil
-}
-
-func (k *Key) newKeys() (*keys, error) {
-	ks := &keys{
-		Encrypt: make([]byte, aesKeysize),
-		Sign:    make([]byte, hmacKeysize),
-	}
-	n, err := rand.Read(ks.Encrypt)
-	if n != aesKeysize || err != nil {
-		panic("unable to read enough random bytes for encryption key")
-	}
-	n, err = rand.Read(ks.Sign)
-	if n != hmacKeysize || err != nil {
-		panic("unable to read enough random bytes for signing key")
-	}
-
-	return ks, nil
 }
 
 func (k *Key) newIV(buf []byte) error {
@@ -296,364 +251,62 @@ func (k *Key) newIV(buf []byte) error {
 	return nil
 }
 
-// Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||
-// HMAC. Encrypt returns the ciphertext's length. For the hash function, SHA256
-// is used, so the overhead is 16+32=48 byte.
-func (k *Key) encrypt(ks *keys, ciphertext, plaintext []byte) (int, error) {
-	if cap(ciphertext) < len(plaintext)+ivSize+hmacSize {
-		return 0, ErrBufferTooSmall
-	}
-
-	_, err := io.ReadFull(rand.Reader, ciphertext[:ivSize])
-	if err != nil {
-		panic(fmt.Sprintf("unable to generate new random iv: %v", err))
-	}
-
-	c, err := aes.NewCipher(ks.Encrypt)
-	if err != nil {
-		panic(fmt.Sprintf("unable to create cipher: %v", err))
-	}
-
-	e := cipher.NewCTR(c, ciphertext[:ivSize])
-	e.XORKeyStream(ciphertext[ivSize:cap(ciphertext)], plaintext)
-	ciphertext = ciphertext[:ivSize+len(plaintext)]
-
-	hm := hmac.New(sha256.New, ks.Sign)
-
-	n, err := hm.Write(ciphertext)
-	if err != nil || n != len(ciphertext) {
-		panic(fmt.Sprintf("unable to calculate hmac of ciphertext: %v", err))
-	}
-
-	ciphertext = hm.Sum(ciphertext)
-
-	return len(ciphertext), nil
-}
-
 // EncryptUser encrypts and signs data with the user key. Stored in ciphertext
-// is IV || Ciphertext || HMAC. Returns the ciphertext length. For the hash
-// function, SHA256 is used, so the overhead is 16+32=48 byte.
+// is IV || Ciphertext || MAC.
 func (k *Key) EncryptUser(ciphertext, plaintext []byte) (int, error) {
-	return k.encrypt(k.user, ciphertext, plaintext)
+	return Encrypt(k.user, ciphertext, plaintext)
 }
 
 // Encrypt encrypts and signs data with the master key. Stored in ciphertext is
-// IV || Ciphertext || HMAC. Returns the ciphertext length. For the hash
-// function, SHA256 is used, so the overhead is 16+32=48 byte.
+// IV || Ciphertext || MAC. Returns the ciphertext length.
 func (k *Key) Encrypt(ciphertext, plaintext []byte) (int, error) {
-	return k.encrypt(k.master, ciphertext, plaintext)
-}
-
-type encryptWriter struct {
-	iv      []byte
-	wroteIV bool
-	h       hash.Hash
-	s       cipher.Stream
-	w       io.Writer
-	origWr  io.Writer
-	err     error // remember error writing iv
-}
-
-func (e *encryptWriter) Close() error {
-	// write hmac
-	_, err := e.origWr.Write(e.h.Sum(nil))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-const encryptWriterChunkSize = 512 * 1024 // 512 KiB
-var encryptWriterBufPool = sync.Pool{
-	New: func() interface{} {
-		return make([]byte, encryptWriterChunkSize)
-	},
-}
-
-func (e *encryptWriter) Write(p []byte) (int, error) {
-	// write iv first
-	if !e.wroteIV {
-		_, e.err = e.origWr.Write(e.iv)
-		e.wroteIV = true
-	}
-
-	if e.err != nil {
-		return 0, e.err
-	}
-
-	buf := encryptWriterBufPool.Get().([]byte)
-	defer encryptWriterBufPool.Put(buf)
-
-	written := 0
-	for len(p) > 0 {
-		max := len(p)
-		if max > encryptWriterChunkSize {
-			max = encryptWriterChunkSize
-		}
-
-		e.s.XORKeyStream(buf, p[:max])
-		n, err := e.w.Write(buf[:max])
-		if n != max {
-			if err == nil { // should never happen
-				err = io.ErrShortWrite
-			}
-		}
-
-		written += n
-		p = p[n:]
-
-		if err != nil {
-			e.err = err
-			return written, err
-		}
-	}
-
-	return written, nil
-}
-
-func (k *Key) encryptTo(ks *keys, wr io.Writer) io.WriteCloser {
-	ew := &encryptWriter{
-		iv:     make([]byte, ivSize),
-		h:      hmac.New(sha256.New, ks.Sign),
-		origWr: wr,
-	}
-
-	_, err := io.ReadFull(rand.Reader, ew.iv)
-	if err != nil {
-		panic(fmt.Sprintf("unable to generate new random iv: %v", err))
-	}
-
-	// write iv to hmac
-	_, err = ew.h.Write(ew.iv)
-	if err != nil {
-		panic(err)
-	}
-
-	c, err := aes.NewCipher(ks.Encrypt)
-	if err != nil {
-		panic(fmt.Sprintf("unable to create cipher: %v", err))
-	}
-
-	ew.s = cipher.NewCTR(c, ew.iv)
-	ew.w = io.MultiWriter(ew.h, wr)
-
-	return ew
+	return Encrypt(k.master, ciphertext, plaintext)
 }
 
 // EncryptTo encrypts and signs data with the master key. The returned
 // io.Writer writes IV || Ciphertext || HMAC. For the hash function, SHA256 is
 // used.
 func (k *Key) EncryptTo(wr io.Writer) io.WriteCloser {
-	return k.encryptTo(k.master, wr)
+	return EncryptTo(k.master, wr)
 }
 
 // EncryptUserTo encrypts and signs data with the user key. The returned
 // io.Writer writes IV || Ciphertext || HMAC. For the hash function, SHA256 is
 // used.
 func (k *Key) EncryptUserTo(wr io.Writer) io.WriteCloser {
-	return k.encryptTo(k.user, wr)
-}
-
-// Decrypt verifes and decrypts the ciphertext. Ciphertext must be in the form
-// IV || Ciphertext || HMAC.
-func (k *Key) decrypt(ks *keys, plaintext, ciphertext []byte) ([]byte, error) {
-	// check for plausible length
-	if len(ciphertext) < ivSize+hmacSize {
-		panic("trying to decrypt invalid data: ciphertext too small")
-	}
-
-	if cap(plaintext) < len(ciphertext) {
-		// extend plaintext
-		plaintext = append(plaintext, make([]byte, len(ciphertext)-cap(plaintext))...)
-	}
-
-	hm := hmac.New(sha256.New, ks.Sign)
-
-	// extract hmac
-	l := len(ciphertext) - hm.Size()
-	ciphertext, mac := ciphertext[:l], ciphertext[l:]
-
-	// calculate new hmac
-	n, err := hm.Write(ciphertext)
-	if err != nil || n != len(ciphertext) {
-		panic(fmt.Sprintf("unable to calculate hmac of ciphertext, err %v", err))
-	}
-
-	// verify hmac
-	mac2 := hm.Sum(nil)
-
-	if !hmac.Equal(mac, mac2) {
-		return nil, ErrUnauthenticated
-	}
-
-	// extract iv
-	iv, ciphertext := ciphertext[:aes.BlockSize], ciphertext[aes.BlockSize:]
-
-	// decrypt data
-	c, err := aes.NewCipher(ks.Encrypt)
-	if err != nil {
-		panic(fmt.Sprintf("unable to create cipher: %v", err))
-	}
-
-	// decrypt
-	e := cipher.NewCTR(c, iv)
-	plaintext = plaintext[:len(ciphertext)]
-	e.XORKeyStream(plaintext, ciphertext)
-
-	return plaintext, nil
+	return EncryptTo(k.user, wr)
 }
 
 // Decrypt verifes and decrypts the ciphertext with the master key. Ciphertext
-// must be in the form IV || Ciphertext || HMAC.
+// must be in the form IV || Ciphertext || MAC.
 func (k *Key) Decrypt(plaintext, ciphertext []byte) ([]byte, error) {
-	return k.decrypt(k.master, plaintext, ciphertext)
+	return Decrypt(k.master, plaintext, ciphertext)
 }
 
 // DecryptUser verifes and decrypts the ciphertext with the user key. Ciphertext
-// must be in the form IV || Ciphertext || HMAC.
+// must be in the form IV || Ciphertext || MAC.
 func (k *Key) DecryptUser(plaintext, ciphertext []byte) ([]byte, error) {
-	return k.decrypt(k.user, plaintext, ciphertext)
-}
-
-type decryptReader struct {
-	buf []byte
-	pos int
-}
-
-func (d *decryptReader) Read(dst []byte) (int, error) {
-	if d.buf == nil {
-		return 0, io.EOF
-	}
-
-	if len(dst) == 0 {
-		return 0, nil
-	}
-
-	remaining := len(d.buf) - d.pos
-	if len(dst) >= remaining {
-		n := copy(dst, d.buf[d.pos:])
-		d.Close()
-		return n, io.EOF
-	}
-
-	n := copy(dst, d.buf[d.pos:d.pos+len(dst)])
-	d.pos += n
-
-	return n, nil
-}
-
-func (d *decryptReader) ReadByte() (c byte, err error) {
-	if d.buf == nil {
-		return 0, io.EOF
-	}
-
-	remaining := len(d.buf) - d.pos
-	if remaining == 1 {
-		c = d.buf[d.pos]
-		d.Close()
-		return c, io.EOF
-	}
-
-	c = d.buf[d.pos]
-	d.pos++
-
-	return
-}
-
-func (d *decryptReader) Close() error {
-	if d.buf == nil {
-		return nil
-	}
-
-	FreeChunkBuf("decryptReader", d.buf)
-	d.buf = nil
-	return nil
-}
-
-// decryptFrom verifies and decrypts the ciphertext read from rd with ks and
-// makes it available on the returned Reader. Ciphertext must be in the form IV
-// || Ciphertext || HMAC. In order to correctly verify the ciphertext, rd is
-// drained, locally buffered and made available on the returned Reader
-// afterwards. If an HMAC verification failure is observed, it is returned
-// immediately.
-func (k *Key) decryptFrom(ks *keys, rd io.Reader) (io.ReadCloser, error) {
-	ciphertext := GetChunkBuf("decryptReader")
-	ciphertext = ciphertext[0:cap(ciphertext)]
-	n, err := io.ReadFull(rd, ciphertext)
-	if err != io.ErrUnexpectedEOF {
-		// read remaining data
-		buf, e := ioutil.ReadAll(rd)
-		ciphertext = append(ciphertext, buf...)
-		n += len(buf)
-		err = e
-	} else {
-		err = nil
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	ciphertext = ciphertext[:n]
-
-	// check for plausible length
-	if len(ciphertext) < ivSize+hmacSize {
-		panic("trying to decrypt invalid data: ciphertext too small")
-	}
-
-	hm := hmac.New(sha256.New, ks.Sign)
-
-	// extract hmac
-	l := len(ciphertext) - hm.Size()
-	ciphertext, mac := ciphertext[:l], ciphertext[l:]
-
-	// calculate new hmac
-	n, err = hm.Write(ciphertext)
-	if err != nil || n != len(ciphertext) {
-		panic(fmt.Sprintf("unable to calculate hmac of ciphertext, err %v", err))
-	}
-
-	// verify hmac
-	mac2 := hm.Sum(nil)
-
-	if !hmac.Equal(mac, mac2) {
-		return nil, ErrUnauthenticated
-	}
-
-	// extract iv
-	iv, ciphertext := ciphertext[:aes.BlockSize], ciphertext[aes.BlockSize:]
-
-	// decrypt data
-	c, err := aes.NewCipher(ks.Encrypt)
-	if err != nil {
-		panic(fmt.Sprintf("unable to create cipher: %v", err))
-	}
-
-	stream := cipher.NewCTR(c, iv)
-	stream.XORKeyStream(ciphertext, ciphertext)
-
-	return &decryptReader{buf: ciphertext}, nil
+	return Decrypt(k.user, plaintext, ciphertext)
 }
 
 // DecryptFrom verifies and decrypts the ciphertext read from rd and makes it
 // available on the returned Reader. Ciphertext must be in the form IV ||
-// Ciphertext || HMAC. In order to correctly verify the ciphertext, rd is
+// Ciphertext || MAC. In order to correctly verify the ciphertext, rd is
 // drained, locally buffered and made available on the returned Reader
-// afterwards. If an HMAC verification failure is observed, it is returned
+// afterwards. If an MAC verification failure is observed, it is returned
 // immediately.
 func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
-	return k.decryptFrom(k.master, rd)
+	return DecryptFrom(k.master, rd)
 }
 
 // DecryptFrom verifies and decrypts the ciphertext read from rd with the user
 // key and makes it available on the returned Reader. Ciphertext must be in the
-// form IV || Ciphertext || HMAC. In order to correctly verify the ciphertext,
+// form IV || Ciphertext || MAC. In order to correctly verify the ciphertext,
 // rd is drained, locally buffered and made available on the returned Reader
-// afterwards. If an HMAC verification failure is observed, it is returned
+// afterwards. If an MAC verification failure is observed, it is returned
 // immediately.
 func (k *Key) DecryptUserFrom(rd io.Reader) (io.ReadCloser, error) {
-	return k.decryptFrom(k.user, rd)
+	return DecryptFrom(k.user, rd)
 }
 
 func (k *Key) String() string {
