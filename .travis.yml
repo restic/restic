@@ -1,5 +1,8 @@
 language: Go
 
+notifications:
+  irc: "chat.freenode.net#restic"
+
 go:
   - 1.3
   - release
