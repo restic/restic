@@ -196,15 +196,26 @@ func (b *Local) tempFile() (*os.File, error) {
 
 // Rename temp file to final name according to type and ID.
 func (b *Local) renameFile(file *os.File, t Type, id ID) error {
-	newname := b.filename(t, id)
+	filename := b.filename(t, id)
 	oldname := file.Name()
 
 	if t == Data || t == Tree {
 		// create directories if necessary, ignore errors
-		os.MkdirAll(filepath.Dir(newname), dirMode)
+		os.MkdirAll(filepath.Dir(filename), dirMode)
 	}
 
-	return os.Rename(oldname, newname)
+	err := os.Rename(oldname, filename)
+	if err != nil {
+		return err
+	}
+
+	// set mode to read-only
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0111)))
 }
 
 // Construct directory for given Type.

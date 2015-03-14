@@ -302,17 +302,28 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 
 // Rename temp file to final name according to type and ID.
 func (r *SFTP) renameFile(oldname string, t Type, id ID) error {
-	newname := r.filename(t, id)
+	filename := r.filename(t, id)
 
 	// create directories if necessary
 	if t == Data || t == Tree {
-		err := r.mkdirAll(filepath.Dir(newname), dirMode)
+		err := r.mkdirAll(filepath.Dir(filename), dirMode)
 		if err != nil {
 			return err
 		}
 	}
 
-	return r.c.Rename(oldname, newname)
+	err := r.c.Rename(oldname, filename)
+	if err != nil {
+		return err
+	}
+
+	// set mode to read-only
+	fi, err := r.c.Lstat(filename)
+	if err != nil {
+		return err
+	}
+
+	return r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0111)))
 }
 
 // Construct directory for given Type.
