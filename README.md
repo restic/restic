@@ -1,5 +1,5 @@
 [![Stories in Ready](https://badge.waffle.io/restic/restic.png?label=ready&title=Ready)](https://waffle.io/restic/restic)
-[![wercker status](https://app.wercker.com/status/e78e51f3e5af7fff50962332615ce9a3/s/master "wercker status")](https://app.wercker.com/project/bykey/e78e51f3e5af7fff50962332615ce9a3)
+[![Build Status](https://travis-ci.org/restic/restic.svg?branch=master)](https://travis-ci.org/restic/restic)
 [![sourcegraph status](https://sourcegraph.com/api/repos/github.com/restic/restic/.badges/status.png)](https://sourcegraph.com/github.com/restic/restic)
 
 WARNING
