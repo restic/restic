@@ -1,11 +1,13 @@
 package restic
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -202,4 +204,81 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 	}
 
 	return "", fmt.Errorf("cache not supported for type %v", t)
+}
+
+// high-level functions
+
+// CacheSnapshotBlobs creates a cache of all the blobs used within the
+// snapshot. It collects all blobs from all trees and saves the resulting map
+// to the cache and returns the map.
+func CacheSnapshotBlobs(s Server, c *Cache, id backend.ID) (*Map, error) {
+	debug.Log("CacheSnapshotBlobs", "create cache for snapshot %v", id.Str())
+
+	sn, err := LoadSnapshot(s, id)
+	if err != nil {
+		debug.Log("CacheSnapshotBlobs", "unable to load snapshot %v: %v", id.Str(), err)
+		return nil, err
+	}
+
+	m := NewMap()
+
+	// add top-level node
+	m.Insert(sn.Tree)
+
+	// start walker
+	var wg sync.WaitGroup
+	ch := make(chan WalkTreeJob)
+
+	wg.Add(1)
+	go func() {
+		WalkTree(s, sn.Tree.Storage, nil, ch)
+		wg.Done()
+	}()
+
+	for i := 0; i < maxConcurrencyPreload; i++ {
+		wg.Add(1)
+		go func() {
+			for job := range ch {
+				if job.Tree == nil {
+					continue
+				}
+				debug.Log("CacheSnapshotBlobs", "got job %v", job)
+				m.Merge(job.Tree.Map)
+			}
+
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	// save blob list for snapshot
+	return m, c.StoreMap(id, m)
+}
+
+func (c *Cache) StoreMap(snid backend.ID, m *Map) error {
+	wr, err := c.Store(backend.Snapshot, "blobs", snid)
+	if err != nil {
+		return nil
+	}
+	defer wr.Close()
+
+	enc := json.NewEncoder(wr)
+	err = enc.Encode(m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Cache) LoadMap(s Server, snid backend.ID) (*Map, error) {
+	rd, err := c.Load(backend.Snapshot, "blobs", snid)
+	if err != nil {
+		return nil, err
+	}
+
+	m := &Map{}
+	err = json.NewDecoder(rd).Decode(m)
+	return m, err
 }

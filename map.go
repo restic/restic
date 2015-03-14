@@ -124,15 +124,25 @@ func (bl *Map) StorageIDs() []backend.ID {
 }
 
 func (bl *Map) Equals(other *Map) bool {
+	if bl == nil && other == nil {
+		return true
+	}
+
+	if bl == nil || other == nil {
+		return false
+	}
+
 	bl.m.Lock()
 	defer bl.m.Unlock()
 
 	if len(bl.list) != len(other.list) {
+		debug.Log("Map.Equals", "length does not match: %d != %d", len(bl.list), len(other.list))
 		return false
 	}
 
 	for i := 0; i < len(bl.list); i++ {
 		if bl.list[i].Compare(other.list[i]) != 0 {
+			debug.Log("Map.Equals", "entry %d does not match: %v != %v", i, bl.list[i], other.list[i])
 			return false
 		}
 	}
