@@ -103,6 +103,7 @@ func BenchmarkEncryptWriter(b *testing.B) {
 		wr := k.EncryptTo(ioutil.Discard)
 		_, err := io.Copy(wr, rd)
 		ok(b, err)
+		ok(b, wr.Close())
 	}
 }
 
