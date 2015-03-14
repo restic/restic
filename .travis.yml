@@ -1,0 +1,15 @@
+language: Go
+
+go:
+  - 1.3
+  - release
+
+install:
+  - go get -v -t ./...
+
+script:
+  - gofmt -l *.go */*.go */*/*.go
+  - test -z "$(gofmt -l *.go */*.go */*/*.go)"
+  - go build ./...
+  - go test ./...
+  - ./testsuite.sh
