@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic"
@@ -22,7 +23,12 @@ func setupBackend(t testing.TB) restic.Server {
 	tempdir, err := ioutil.TempDir(*testTempDir, "restic-test-")
 	ok(t, err)
 
-	b, err := backend.CreateLocal(tempdir)
+	// create repository below temp dir
+	b, err := backend.CreateLocal(filepath.Join(tempdir, "repo"))
+	ok(t, err)
+
+	// set cache dir
+	err = os.Setenv("RESTIC_CACHE", filepath.Join(tempdir, "cache"))
 	ok(t, err)
 
 	return restic.NewServer(b)

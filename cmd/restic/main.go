@@ -79,7 +79,7 @@ func (cmd CmdInit) Execute(args []string) error {
 		os.Exit(1)
 	}
 
-	fmt.Printf("created restic backend at %s\n", opts.Repo)
+	fmt.Printf("created restic backend %v at %s\n", s.ID().Str(), opts.Repo)
 
 	return nil
 }

@@ -42,7 +42,7 @@ func (cmd CmdCache) Execute(args []string) error {
 		return err
 	}
 
-	cache, err := restic.NewCache()
+	cache, err := restic.NewCache(s)
 	if err != nil {
 		return err
 	}

@@ -53,7 +53,7 @@ func NewArchiver(s Server) (*Archiver, error) {
 	arch.m = NewMap()
 
 	// init cache
-	arch.c, err = NewCache()
+	arch.c, err = NewCache(s)
 	if err != nil {
 		return nil, err
 	}

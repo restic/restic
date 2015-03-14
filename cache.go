@@ -7,22 +7,29 @@ import (
 	"path/filepath"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
-
-// for testing
-var getCacheDir = GetCacheDir
 
 type Cache struct {
 	base string
 }
 
-func NewCache() (*Cache, error) {
-	dir, err := getCacheDir()
-	if err != nil {
-		return nil, err
+func NewCache(be backend.IDer) (c *Cache, err error) {
+	// try to get explicit cache dir from environment
+	dir := os.Getenv("RESTIC_CACHE")
+
+	// otherwise try OS specific default
+	if dir == "" {
+		dir, err = GetCacheDir()
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return &Cache{base: dir}, nil
+	basedir := filepath.Join(dir, be.ID().String())
+	debug.Log("Cache.New", "opened cache at %v", basedir)
+
+	return &Cache{base: basedir}, nil
 }
 
 func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error) {
