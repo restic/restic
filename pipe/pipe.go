@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 
@@ -82,13 +83,13 @@ func isFile(fi os.FileInfo) bool {
 
 var errCancelled = errors.New("walk cancelled")
 
-func walk(basedir, path string, done chan struct{}, jobs chan<- Job, res chan<- Result) error {
-	info, err := os.Lstat(path)
+func walk(basedir, dir string, done chan struct{}, jobs chan<- Job, res chan<- Result) error {
+	info, err := os.Lstat(dir)
 	if err != nil {
 		return err
 	}
 
-	relpath, _ := filepath.Rel(basedir, path)
+	relpath, _ := filepath.Rel(basedir, dir)
 
 	if !info.IsDir() {
 		select {
@@ -99,15 +100,29 @@ func walk(basedir, path string, done chan struct{}, jobs chan<- Job, res chan<- 
 		return nil
 	}
 
-	names, err := readDirNames(path)
+	names, err := readDirNames(dir)
 	if err != nil {
 		return err
 	}
 
+	// Insert breakpoint to allow testing behaviour with vanishing files
+	// between Readdir() and lstat()
+	debug.BreakIf("pipe.walk1", func() bool {
+		match, err := path.Match(os.Getenv("DEBUG_BREAK_PIPE"), relpath)
+		if err != nil {
+			panic(err)
+		}
+		if match {
+			debug.Log("break", "break pattern matches for %v\n", relpath)
+		}
+
+		return match
+	})
+
 	entries := make([]<-chan Result, 0, len(names))
 
 	for _, name := range names {
-		subpath := filepath.Join(path, name)
+		subpath := filepath.Join(dir, name)
 
 		ch := make(chan Result, 1)
 		entries = append(entries, ch)
@@ -121,6 +136,22 @@ func walk(basedir, path string, done chan struct{}, jobs chan<- Job, res chan<- 
 			}
 			continue
 		}
+
+		// Insert breakpoint to allow testing behaviour with vanishing files
+		// between walk and open
+		debug.BreakIf("pipe.walk2", func() bool {
+			p := filepath.Join(relpath, name)
+
+			match, err := path.Match(os.Getenv("DEBUG_BREAK_PIPE"), p)
+			if err != nil {
+				panic(err)
+			}
+			if match {
+				debug.Log("break", "break pattern matches for %v\n", p)
+			}
+
+			return match
+		})
 
 		if isDir(fi) {
 			err = walk(basedir, subpath, done, jobs, ch)
