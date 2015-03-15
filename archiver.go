@@ -392,6 +392,12 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 
 			debug.Log("Archiver.fileWorker", "got job %v", e)
 
+			// check for errors
+			if e.Error() != nil {
+				debug.Log("Archiver.fileWorker", "job %v has errors: %v", e.Path(), e.Error())
+				panic(e.Error())
+			}
+
 			node, err := NodeFromFileInfo(e.Fullpath(), e.Info())
 			if err != nil {
 				panic(err)
@@ -797,7 +803,9 @@ func Scan(dirs []string, p *Progress) (Stat, error) {
 	var stat Stat
 
 	for _, dir := range dirs {
+		debug.Log("Scan", "Start for %v", dir)
 		err := filepath.Walk(dir, func(str string, fi os.FileInfo, err error) error {
+			debug.Log("Scan.Walk", "%v, fi: %v, err: %v", str, fi, err)
 			s := Stat{}
 			if isFile(fi) {
 				s.Files++
@@ -813,6 +821,7 @@ func Scan(dirs []string, p *Progress) (Stat, error) {
 			return nil
 		})
 
+		debug.Log("Scan", "Done for %v, err: %v", dir, err)
 		if err != nil {
 			return Stat{}, err
 		}
