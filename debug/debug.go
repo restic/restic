@@ -148,6 +148,8 @@ func Log(tag string, f string, args ...interface{}) {
 	}
 }
 
+// Break stopts the program if the debug tag is active and the string in tag is
+// contained in the DEBUG_BREAK environment variable.
 func Break(tag string) {
 	// check if breaking is enabled
 	if v, ok := opts.breaks[tag]; !ok || !v {
@@ -164,5 +166,14 @@ func Break(tag string) {
 	err = p.Signal(syscall.SIGSTOP)
 	if err != nil {
 		panic(err)
+	}
+}
+
+// BreakIf stopts the program if the debug tag is active and the string in tag
+// is contained in the DEBUG_BREAK environment variable and the return value of
+// fn is true.
+func BreakIf(tag string, fn func() bool) {
+	if fn() {
+		Break(tag)
 	}
 }
