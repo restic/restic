@@ -38,6 +38,9 @@ func (id ID) String() string {
 const shortStr = 4
 
 func (id ID) Str() string {
+	if id == nil {
+		return "[nil]"
+	}
 	return hex.EncodeToString(id[:shortStr])
 }
 
