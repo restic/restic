@@ -173,6 +173,11 @@ func Break(tag string) {
 // is contained in the DEBUG_BREAK environment variable and the return value of
 // fn is true.
 func BreakIf(tag string, fn func() bool) {
+	// check if breaking is enabled
+	if v, ok := opts.breaks[tag]; !ok || !v {
+		return
+	}
+
 	if fn() {
 		Break(tag)
 	}
