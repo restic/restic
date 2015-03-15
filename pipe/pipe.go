@@ -130,7 +130,7 @@ func walk(basedir, dir string, done chan struct{}, jobs chan<- Job, res chan<- R
 		fi, err := os.Lstat(subpath)
 		if err != nil {
 			select {
-			case jobs <- Entry{info: fi, error: err, result: ch}:
+			case jobs <- Entry{info: fi, error: err, basedir: basedir, path: filepath.Join(relpath, name), result: ch}:
 			case <-done:
 				return errCancelled
 			}

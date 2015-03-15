@@ -395,7 +395,12 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 			// check for errors
 			if e.Error() != nil {
 				debug.Log("Archiver.fileWorker", "job %v has errors: %v", e.Path(), e.Error())
-				panic(e.Error())
+				// TODO: integrate error reporting
+				fmt.Fprintf(os.Stderr, "error for %v: %v\n", e.Path(), e.Error())
+				// ignore this file
+				e.Result() <- nil
+				p.Report(Stat{Files: 1})
+				continue
 			}
 
 			node, err := NodeFromFileInfo(e.Fullpath(), e.Info())
@@ -432,7 +437,12 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 				debug.Log("Archiver.fileWorker", "   read and save %v, content: %v", e.Path(), node.Content)
 				node.blobs, err = arch.SaveFile(p, node)
 				if err != nil {
-					panic(err)
+					// TODO: integrate error reporting
+					fmt.Fprintf(os.Stderr, "error for %v: %v\n", node.path, err)
+					// ignore this file
+					e.Result() <- nil
+					p.Report(Stat{Files: 1})
+					continue
 				}
 			} else {
 				// report old data size
@@ -467,7 +477,16 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 
 			// wait for all content
 			for _, ch := range dir.Entries {
-				node := (<-ch).(*Node)
+				res := <-ch
+
+				// if we get a nil pointer here, an error has happened while
+				// processing this entry. Ignore it for now.
+				if res == nil {
+					continue
+				}
+
+				// else insert node
+				node := res.(*Node)
 				tree.Insert(node)
 
 				if node.Type == "dir" {
