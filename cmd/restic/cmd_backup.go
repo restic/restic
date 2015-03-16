@@ -118,13 +118,23 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 			percent = 100
 		}
 
-		fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ETA %s",
+		status1 := fmt.Sprintf("[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ",
 			format_duration(d),
 			percent,
 			format_bytes(bps),
 			format_bytes(s.Bytes), format_bytes(todo.Bytes),
-			itemsDone, itemsTodo,
-			format_seconds(eta))
+			itemsDone, itemsTodo)
+		status2 := fmt.Sprintf("ETA %s ", format_seconds(eta))
+
+		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+		if err == nil {
+			if len(status1)+len(status2) > w {
+				max := w - len(status2) - 4
+				status1 = status1[:max] + "... "
+			}
+		}
+
+		fmt.Printf("\x1b[2K\r%s%s", status1, status2)
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
