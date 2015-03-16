@@ -105,15 +105,22 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 		sec := uint64(d / time.Second)
 		if todo.Bytes > 0 && sec > 0 && ticker {
 			bps = s.Bytes / sec
-			if bps > 0 {
+			if s.Bytes >= todo.Bytes {
+				eta = 0
+			} else if bps > 0 {
 				eta = (todo.Bytes - s.Bytes) / bps
 			}
 		}
 
 		itemsDone := s.Files + s.Dirs
+		percent := float64(s.Bytes) / float64(todo.Bytes) * 100
+		if percent > 100 {
+			percent = 100
+		}
+
 		fmt.Printf("\x1b[2K\r[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ETA %s",
 			format_duration(d),
-			float64(s.Bytes)/float64(todo.Bytes)*100,
+			percent,
 			format_bytes(bps),
 			format_bytes(s.Bytes), format_bytes(todo.Bytes),
 			itemsDone, itemsTodo,
