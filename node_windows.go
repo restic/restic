@@ -17,3 +17,7 @@ func (node *Node) createCharDevAt(path string) error {
 func (node *Node) createFifoAt(path string) error {
 	return nil
 }
+
+func (node *Node) isNewer(path string, fi os.FileInfo) bool {
+	return false
+}
