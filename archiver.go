@@ -185,6 +185,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) (Blobs, error) {
 			// create new node
 			n, err := NodeFromFileInfo(node.path, fi)
 			if err != nil {
+				debug.Log("Archiver.SaveFile", "NodeFromFileInfo returned error for %v: %v", node.path, err)
 				return nil, err
 			}
 
@@ -405,7 +406,11 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 
 			node, err := NodeFromFileInfo(e.Fullpath(), e.Info())
 			if err != nil {
-				panic(err)
+				// TODO: integrate error reporting
+				debug.Log("Archiver.fileWorker", "NodeFromFileInfo returned error for %v: %v", node.path, err)
+				e.Result() <- nil
+				p.Report(Stat{Files: 1})
+				continue
 			}
 
 			// try to use old node, if present
@@ -825,6 +830,15 @@ func Scan(dirs []string, p *Progress) (Stat, error) {
 		debug.Log("Scan", "Start for %v", dir)
 		err := filepath.Walk(dir, func(str string, fi os.FileInfo, err error) error {
 			debug.Log("Scan.Walk", "%v, fi: %v, err: %v", str, fi, err)
+			// TODO: integrate error reporting
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error for %v: %v\n", str, err)
+				return nil
+			}
+			if fi == nil {
+				fmt.Fprintf(os.Stderr, "error for %v: FileInfo is nil\n", str)
+				return nil
+			}
 			s := Stat{}
 			if isFile(fi) {
 				s.Files++

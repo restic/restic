@@ -11,10 +11,10 @@ import (
 	"github.com/restic/restic/debug"
 )
 
-func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
+func (node *Node) fill_extra(path string, fi os.FileInfo) error {
 	stat, ok := fi.Sys().(*syscall.Stat_t)
 	if !ok {
-		return
+		return nil
 	}
 
 	node.ChangeTime = time.Unix(stat.Ctim.Unix())
@@ -23,7 +23,7 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	node.GID = stat.Gid
 
 	// TODO: cache uid lookup
-	if u, nil := user.LookupId(strconv.Itoa(int(stat.Uid))); err == nil {
+	if u, err := user.LookupId(strconv.Itoa(int(stat.Uid))); err == nil {
 		node.User = u.Username
 	}
 
@@ -33,6 +33,8 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	// }
 
 	node.Inode = stat.Ino
+
+	var err error
 
 	switch node.Type {
 	case "file":
