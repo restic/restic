@@ -72,6 +72,16 @@ A repository can be initialized with the `restic init` command, e.g.:
 Keys, Encryption and MAC
 ------------------------
 
+All data stored by restic in the repository is encrypted with AES-256 in
+counter mode and signed with Poly1305-AES. For encrypting new data first 16
+bytes are read from a cryptographically secure pseudorandom number generator as
+a random nonce. This is used both as the IV for counter mode and the nonce for
+Poly1305. This operation needs three keys: A 32 byte for AES-256 for
+encryption, a 16 byte AES key and a 16 byte key for Poly1305. For details see
+the original paper[The Poly1305-AES message-authentication
+code](http://cr.yp.to/mac/poly1305-20050329.pdf) by Dan Bernstein. The
+ciphertext is stored as IV || CIPHERTEXT || MAC.
+
 The directory `keys` contains key files. These are simple JSON documents which
 contain all data that is needed to derive the repository's master signing and
 encryption keys from a user's password. The JSON document from the repository
@@ -97,9 +107,8 @@ repository password. This is then used with `scrypt`, a key derivation function
 bytes. The first 32 bytes are used as the encryption key (for AES-256) and the
 last 32 bytes are used as the signing key (for Poly1305-AES). These last 32
 bytes are divided into a 16 byte AES key `k` followed by 16 bytes of secret key
-`r`. They key `r` is then masked for use with Poly1305. For details see the
-original paper [The Poly1305-AES message-authentication
-code](http://cr.yp.to/mac/poly1305-20050329.pdf) by Dan Bernstein.
+`r`. They key `r` is then masked for use with Poly1305 (see the paper for
+details).
 
 This signing key is used to compute a MAC over the bytes contained in the
 JSON field `data` (after removing the Base64 encoding and not including the
