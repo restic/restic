@@ -117,8 +117,8 @@ func poly1305_verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
 }
 
 // returns new encryption and mac keys. k.MACKey.R is already masked.
-func generateRandomKeys() (k *keys) {
-	k = &keys{}
+func generateRandomKeys() (k *MasterKeys) {
+	k = &MasterKeys{}
 	n, err := rand.Read(k.Encrypt[:])
 	if n != AESKeySize || err != nil {
 		panic("unable to read enough random bytes for encryption key")
@@ -149,7 +149,7 @@ func generateRandomIV() (iv IV) {
 
 // Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||
 // MAC. Encrypt returns the ciphertext's length.
-func Encrypt(ks *keys, ciphertext, plaintext []byte) (int, error) {
+func Encrypt(ks *MasterKeys, ciphertext, plaintext []byte) (int, error) {
 	if cap(ciphertext) < len(plaintext)+ivSize+macSize {
 		return 0, ErrBufferTooSmall
 	}
@@ -175,7 +175,7 @@ func Encrypt(ks *keys, ciphertext, plaintext []byte) (int, error) {
 
 // Decrypt verifies and decrypts the ciphertext. Ciphertext must be in the form
 // IV || Ciphertext || MAC.
-func Decrypt(ks *keys, plaintext, ciphertext []byte) ([]byte, error) {
+func Decrypt(ks *MasterKeys, plaintext, ciphertext []byte) ([]byte, error) {
 	// check for plausible length
 	if len(ciphertext) < ivSize+macSize {
 		panic("trying to decrypt invalid data: ciphertext too small")
@@ -213,12 +213,12 @@ func Decrypt(ks *keys, plaintext, ciphertext []byte) ([]byte, error) {
 }
 
 // runs scrypt(password)
-func kdf(k *Key, password string) (*keys, error) {
+func kdf(k *Key, password string) (*MasterKeys, error) {
 	if len(k.Salt) == 0 {
 		return nil, fmt.Errorf("scrypt() called with empty salt")
 	}
 
-	derKeys := &keys{}
+	derKeys := &MasterKeys{}
 
 	keybytes := MACKeySize + AESKeySize
 	scryptKeys, err := scrypt.Key([]byte(password), k.Salt, k.N, k.R, k.P, keybytes)
@@ -243,7 +243,7 @@ type encryptWriter struct {
 	iv      IV
 	wroteIV bool
 	data    *bytes.Buffer
-	key     *keys
+	key     *MasterKeys
 	s       cipher.Stream
 	w       io.Writer
 	origWr  io.Writer
@@ -314,7 +314,7 @@ func (e *encryptWriter) Write(p []byte) (int, error) {
 
 // EncryptTo buffers data written to the returned io.WriteCloser. When Close()
 // is called, the data is encrypted an written to the underlying writer.
-func EncryptTo(ks *keys, wr io.Writer) io.WriteCloser {
+func EncryptTo(ks *MasterKeys, wr io.Writer) io.WriteCloser {
 	ew := &encryptWriter{
 		iv:     generateRandomIV(),
 		data:   bytes.NewBuffer(GetChunkBuf("EncryptWriter")[:0]),
@@ -400,7 +400,7 @@ func (d *decryptReader) Close() error {
 // drained, locally buffered and made available on the returned Reader
 // afterwards. If a MAC verification failure is observed, it is returned
 // immediately.
-func DecryptFrom(ks *keys, rd io.Reader) (io.ReadCloser, error) {
+func DecryptFrom(ks *MasterKeys, rd io.Reader) (io.ReadCloser, error) {
 	ciphertext := GetChunkBuf("decryptReader")
 
 	ciphertext = ciphertext[0:cap(ciphertext)]

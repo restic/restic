@@ -54,8 +54,8 @@ type Key struct {
 	Salt []byte `json:"salt"`
 	Data []byte `json:"data"`
 
-	user   *keys
-	master *keys
+	user   *MasterKeys
+	master *MasterKeys
 
 	id backend.ID
 }
@@ -63,7 +63,7 @@ type Key struct {
 // MasterKeys holds signing and encryption keys for a repository. It is stored
 // encrypted and signed as a JSON data structure in the Data field of the Key
 // structure.
-type keys struct {
+type MasterKeys struct {
 	Sign    MACKey
 	Encrypt AESKey
 }
@@ -99,7 +99,7 @@ func OpenKey(s Server, id backend.ID, password string) (*Key, error) {
 	}
 
 	// restore json
-	k.master = &keys{}
+	k.master = &MasterKeys{}
 	err = json.Unmarshal(buf, k.master)
 	if err != nil {
 		return nil, err
