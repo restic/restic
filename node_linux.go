@@ -82,7 +82,7 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 	tpe := nodeTypeFromFileInfo(path, fi)
 	if node.Name != fi.Name() || node.Type != tpe {
 		debug.Log("node.isNewer", "node %v is newer: name or type changed", path)
-		return false
+		return true
 	}
 
 	// collect extended stat
@@ -97,8 +97,8 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 		node.ChangeTime != changeTime ||
 		node.Inode != inode ||
 		node.Size != size {
-		debug.Log("node.isNewer", "node %v is newer: timestamp or inode changed", path)
-		return false
+		debug.Log("node.isNewer", "node %v is newer: timestamp, size or inode changed", path)
+		return true
 	}
 
 	// otherwise the node is assumed to have the same content

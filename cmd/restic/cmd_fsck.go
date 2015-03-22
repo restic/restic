@@ -32,10 +32,11 @@ func init() {
 }
 
 func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (uint64, error) {
+	debug.Log("restic.fsckFile", "checking file %v", IDs)
 	var bytes uint64
 
 	for _, id := range IDs {
-		debug.Log("restic.fsck", "checking data blob %v\n", id)
+		debug.Log("restic.fsck", "  checking data blob %v\n", id)
 
 		// test if blob is in map
 		blob, err := m.FindID(id)
@@ -44,6 +45,7 @@ func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (u
 		}
 
 		bytes += blob.Size
+		debug.Log("restic.fsck", "  data blob found: %v\n", blob)
 
 		if opts.CheckData {
 			// load content
@@ -73,7 +75,7 @@ func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (u
 }
 
 func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
-	debug.Log("restic.fsck", "checking tree %v\n", blob.ID)
+	debug.Log("restic.fsckTree", "checking tree %v", blob)
 
 	tree, err := restic.LoadTree(s, blob.Storage)
 	if err != nil {
@@ -102,10 +104,12 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 		switch node.Type {
 		case "file":
 			if node.Content == nil {
+				debug.Log("restic.fsckTree", "file node %q of tree %v has no content: %v", node.Name, blob.ID, node)
 				return fmt.Errorf("file node %q of tree %v has no content: %v", node.Name, blob.ID, node)
 			}
 
 			if node.Content == nil && node.Error == "" {
+				debug.Log("restic.fsckTree", "file node %q of tree %v has no content", node.Name, blob.ID)
 				return fmt.Errorf("file node %q of tree %v has no content", node.Name, blob.ID)
 			}
 
@@ -114,12 +118,14 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 				seenIDs.Insert(id)
 			}
 
+			debug.Log("restic.fsckTree", "check file %v (%v)", node.Name, blob.ID.Str())
 			bytes, err := fsckFile(opts, s, tree.Map, node.Content)
 			if err != nil {
 				return err
 			}
 
 			if bytes != node.Size {
+				debug.Log("restic.fsckTree", "file node %q of tree %v has size %d, but only %d bytes could be found", node.Name, blob, node.Size, bytes)
 				return fmt.Errorf("file node %q of tree %v has size %d, but only %d bytes could be found", node.Name, blob, node.Size, bytes)
 			}
 		case "dir":
