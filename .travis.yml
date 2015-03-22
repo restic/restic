@@ -15,6 +15,6 @@ script:
   - test -z "$(gofmt -l *.go */*.go */*/*.go)"
   - go build -ldflags "-s" ./...
   - go build -ldflags "-s" -o restic ./cmd/restic
-  - echo "binary size: $(stat --printf='%s' restic)"
+  - stat --printf='binary size: %s' restic
   - go test ./...
   - ./testsuite.sh
