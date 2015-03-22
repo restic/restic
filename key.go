@@ -64,8 +64,8 @@ type Key struct {
 // encrypted and signed as a JSON data structure in the Data field of the Key
 // structure.
 type MasterKeys struct {
-	Sign    MACKey
-	Encrypt AESKey
+	Sign    MACKey `json:"sign"`
+	Encrypt AESKey `json:"encrypt"`
 }
 
 // CreateKey initializes a master key in the given backend and encrypts it with
@@ -302,6 +302,17 @@ func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
 // immediately.
 func (k *Key) DecryptUserFrom(rd io.Reader) (io.ReadCloser, error) {
 	return DecryptFrom(k.user, rd)
+}
+
+// Master() returns the master keys for this repository. Only included for
+// debug purposes.
+func (k *Key) Master() *MasterKeys {
+	return k.master
+}
+
+// User() returns the user keys for this key. Only included for debug purposes.
+func (k *Key) User() *MasterKeys {
+	return k.user
 }
 
 func (k *Key) String() string {

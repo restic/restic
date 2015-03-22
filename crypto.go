@@ -5,6 +5,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -145,6 +146,42 @@ func generateRandomIV() (iv IV) {
 		panic("unable to read enough random bytes for iv")
 	}
 	return
+}
+
+type jsonMACKey struct {
+	K []byte `json:"k"`
+	R []byte `json:"r"`
+}
+
+func (m *MACKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(jsonMACKey{K: m.K[:], R: m.R[:]})
+}
+
+func (m *MACKey) UnmarshalJSON(data []byte) error {
+	j := jsonMACKey{}
+	err := json.Unmarshal(data, &j)
+	if err != nil {
+		return err
+	}
+	copy(m.K[:], j.K)
+	copy(m.R[:], j.R)
+
+	return nil
+}
+
+func (k *AESKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(k[:])
+}
+
+func (k *AESKey) UnmarshalJSON(data []byte) error {
+	d := make([]byte, AESKeySize)
+	err := json.Unmarshal(data, &d)
+	if err != nil {
+		return err
+	}
+	copy(k[:], d)
+
+	return nil
 }
 
 // Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||

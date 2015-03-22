@@ -23,11 +23,11 @@ func init() {
 }
 
 func (cmd CmdCat) Usage() string {
-	return "[data|tree|snapshot|key|lock] ID"
+	return "[data|tree|snapshot|key|masterkey|lock] ID"
 }
 
 func (cmd CmdCat) Execute(args []string) error {
-	if len(args) != 2 {
+	if len(args) < 1 || (args[0] != "masterkey" && len(args) != 2) {
 		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
@@ -38,18 +38,21 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	tpe := args[0]
 
-	id, err := backend.ParseID(args[1])
-	if err != nil {
-		id = nil
-
-		if tpe != "snapshot" {
-			return err
-		}
-
-		// find snapshot id with prefix
-		id, err = s.FindSnapshot(args[1])
+	var id backend.ID
+	if tpe != "masterkey" {
+		id, err = backend.ParseID(args[1])
 		if err != nil {
-			return err
+			id = nil
+
+			if tpe != "snapshot" {
+				return err
+			}
+
+			// find snapshot id with prefix
+			id, err = s.FindSnapshot(args[1])
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -114,7 +117,14 @@ func (cmd CmdCat) Execute(args []string) error {
 		}
 
 		fmt.Println(string(buf))
+		return nil
+	case "masterkey":
+		buf, err := json.MarshalIndent(s.Key().Master(), "", "  ")
+		if err != nil {
+			return err
+		}
 
+		fmt.Println(string(buf))
 		return nil
 	case "lock":
 		return errors.New("not yet implemented")

@@ -107,9 +107,21 @@ last 32 byte). If the password is incorrect or the key file has been tampered
 with, the computed MAC will not match the last 16 bytes of the data, and
 restic exits with an error. Otherwise, the data is decrypted with the
 encryption key derived from `scrypt`. This yields a JSON document which
-contains the master signing and encryption keys for this repository. All data
-in the repository is encrypted and signed with these master keys with AES-256
-in Counter mode and signed with Poly1305-AES as described above.
+contains the master signing and encryption keys for this repository, encoded in
+Base64. The command `restic cat masterkey` can be used as follows to decrypt
+and pretty-print the master key:
+
+    $ restic -r /tmp/restic-repo cat masterkey
+    {
+        "sign": {
+          "k": "evFWd9wWlndL9jc501268g==",
+          "r": "E9eEDnSJZgqwTOkDtOp+Dw=="
+        },
+        "encrypt": "UQCqa0lKZ94PygPxMRqkePTZnHRYh1k1pX2k2lM2v3Q="
+    }
+
+All data in the repository is encrypted and signed with these master keys with
+AES-256 in Counter mode and signed with Poly1305-AES as described above.
 
 A repository can have several different passwords, with a key file for each.
 This way, the password can be changed without having to re-encrypt all data.
