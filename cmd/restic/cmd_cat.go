@@ -23,7 +23,7 @@ func init() {
 }
 
 func (cmd CmdCat) Usage() string {
-	return "[blob|tree|snapshot|key|lock] ID"
+	return "[data|tree|snapshot|key|lock] ID"
 }
 
 func (cmd CmdCat) Execute(args []string) error {
@@ -54,7 +54,7 @@ func (cmd CmdCat) Execute(args []string) error {
 	}
 
 	switch tpe {
-	case "blob":
+	case "data":
 		// try storage id
 		data, err := s.LoadID(backend.Data, id)
 		if err == nil {
