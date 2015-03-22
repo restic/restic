@@ -29,11 +29,11 @@ complete filename.
 
 Apart from the `version` file and the files stored below the `keys` directory,
 all files are encrypted with AES-256 in counter mode (CTR). The integrity of
-the encrypted data is secured by an HMAC-SHA-256 signature.
+the encrypted data is secured by an Poly1305-AES signature.
 
 In the first 16 bytes of each encrypted file the initialisation vector (IV) is
-stored. It is followed by the encrypted data and completed by the 32 byte HMAC
-signature. The format is: `IV || CIPHERTEXT || HMAC`. The complete encryption
+stored. It is followed by the encrypted data and completed by the 16 byte MAC
+signature. The format is: `IV || CIPHERTEXT || MAC`. The complete encryption
 overhead is 48 byte. For each file, a new random IV is selected.
 
 The basic layout of a sample restic repository is shown below:
@@ -69,8 +69,8 @@ A repository can be initialized with the `restic init` command, e.g.:
 
     $ restic -r /tmp/restic-repo init
 
-Keys and Encryption
--------------------
+Keys, Encryption and MAC
+------------------------
 
 The directory `keys` contains key files. These are simple JSON documents which
 contain all data that is needed to derive the repository's master signing and
@@ -95,15 +95,21 @@ When the repository is opened by restic, the user is prompted for the
 repository password. This is then used with `scrypt`, a key derivation function
 (KDF), and the supplied parameters (`N`, `r`, `p` and `salt`) to derive 64 key
 bytes. The first 32 bytes are used as the encryption key (for AES-256) and the
-last 32 bytes are used as the signing key (for HMAC-SHA-256).
+last 32 bytes are used as the signing key (for Poly1305-AES). These last 32
+bytes are divided into a 16 byte AES key `k` followed by 16 bytes of secret key
+`r`. They key `r` is then masked for use with Poly1305. For details see the
+original paper [The Poly1305-AES message-authentication
+code](http://cr.yp.to/mac/poly1305-20050329.pdf) by Dan Bernstein.
 
-This signing key is used to compute an HMAC over the bytes contained in the
+This signing key is used to compute a MAC over the bytes contained in the
 JSON field `data` (after removing the Base64 encoding and not including the
 last 32 byte). If the password is incorrect or the key file has been tampered
-with, the computed HMAC will not match the last 32 bytes of the data, and
+with, the computed MAC will not match the last 16 bytes of the data, and
 restic exits with an error. Otherwise, the data is decrypted with the
 encryption key derived from `scrypt`. This yields a JSON document which
-contains the master signing and encryption keys for this repository.
+contains the master signing and encryption keys for this repository. All data
+in the repository is encrypted and signed with these master keys with AES-256
+in Counter mode and signed with Poly1305-AES as described above.
 
 A repository can have several different passwords, with a key file for each.
 This way, the password can be changed without having to re-encrypt all data.
@@ -196,7 +202,7 @@ A tree contains a list of entries (in the field `nodes`) which contain meta
 data like a name and timestamps. When the entry references a directory, the
 field `subtree` contains the plain text ID of another tree object. The
 associated storage ID can be found in the map object. All referenced plaintext
-hashes are mapped to their corresponding storage hashes in the list containid
+hashes are mapped to their corresponding storage hashes in the list contained
 in the field `map`.
 
 When the command `restic cat tree` is used, the storage hash is needed to print
@@ -239,8 +245,8 @@ a tree. The tree referenced above can be dumped as follows:
 This tree contains a file entry. This time, the `subtree` field is not present
 and the `content` field contains a list with one plain text SHA-256 hash. The
 storage ID for this ID can in turn be looked up in the map. Data chunks stored
-as encrypted files in a sub directory of the directory `data`, similar to tree
-objects.
+as encrypted and signed files in a sub directory of the directory `data`,
+similar to tree objects.
 
 The command `restic cat data` can be used to extract and decrypt data given a
 storage hash, e.g. for the data mentioned above:
@@ -297,7 +303,7 @@ The restic backup program guarantees the following:
         file's name). This way, modifications (bad RAM, broken harddisk) can be
         detected easily.
 
-     2. Before decrypting any data, the HMAC signature on the encrypted data is
+     2. Before decrypting any data, the MAC signature on the encrypted data is
         checked. If there has been a modification, the signature check will
         fail. This step happens even before the data is decrypted, so data that
         has been tampered with is not decrypted at all.
