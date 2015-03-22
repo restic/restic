@@ -23,7 +23,7 @@ const hashSize = sha256.Size
 // Hash returns the ID for data.
 func Hash(data []byte) ID {
 	h := hashData(data)
-	id := idPool.Get().(ID)
+	id := make([]byte, IDSize)
 	copy(id, h[:])
 	return id
 }

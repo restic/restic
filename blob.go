@@ -16,16 +16,6 @@ type Blob struct {
 
 type Blobs []Blob
 
-func (b Blob) Free() {
-	if b.ID != nil {
-		b.ID.Free()
-	}
-
-	if b.Storage != nil {
-		b.Storage.Free()
-	}
-}
-
 func (b Blob) Valid() bool {
 	if b.ID == nil || b.Storage == nil || b.StorageSize == 0 {
 		return false

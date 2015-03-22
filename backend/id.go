@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"sync"
 )
 
 // IDSize contains the size of an ID, in bytes.
@@ -13,8 +12,6 @@ const IDSize = hashSize
 
 // References content within a repository.
 type ID []byte
-
-var idPool = sync.Pool{New: func() interface{} { return ID(make([]byte, IDSize)) }}
 
 // ParseID converts the given string to an ID.
 func ParseID(s string) (ID, error) {
@@ -75,7 +72,7 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	*id = idPool.Get().(ID)
+	*id = make([]byte, IDSize)
 	_, err = hex.Decode(*id, []byte(s))
 	if err != nil {
 		return err
@@ -86,14 +83,9 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 
 func IDFromData(d []byte) ID {
 	hash := hashData(d)
-	id := idPool.Get().(ID)
+	id := make([]byte, IDSize)
 	copy(id, hash[:])
 	return id
-}
-
-// Free returns the ID byte slice back to the allocation pool.
-func (id ID) Free() {
-	idPool.Put(id)
 }
 
 type IDs []ID

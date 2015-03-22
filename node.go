@@ -58,11 +58,12 @@ func (node Node) Tree() *Tree {
 }
 
 func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
-	node := GetNode()
-	node.path = path
-	node.Name = fi.Name()
-	node.Mode = fi.Mode() & os.ModePerm
-	node.ModTime = fi.ModTime()
+	node := &Node{
+		path:    path,
+		Name:    fi.Name(),
+		Mode:    fi.Mode() & os.ModePerm,
+		ModTime: fi.ModTime(),
+	}
 
 	node.Type = nodeTypeFromFileInfo(path, fi)
 	if node.Type == "file" {

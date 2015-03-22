@@ -67,7 +67,6 @@ func newPoolStats() *poolStats {
 
 var (
 	chunkPool   = sync.Pool{New: newChunkBuf}
-	nodePool    = sync.Pool{New: newNode}
 	chunkerPool = sync.Pool{New: newChunker}
 
 	chunkStats   = newPoolStats()
@@ -82,15 +81,6 @@ func newChunkBuf() interface{} {
 
 	// create buffer for iv, data and mac
 	return make([]byte, maxCiphertextSize)
-}
-
-func newNode() interface{} {
-	nodeStats.m.Lock()
-	defer nodeStats.m.Unlock()
-	nodeStats.new++
-
-	// create buffer for iv, data and hmac
-	return new(Node)
 }
 
 func newChunker() interface{} {
@@ -110,16 +100,6 @@ func GetChunkBuf(s string) []byte {
 func FreeChunkBuf(s string, buf []byte) {
 	chunkStats.Put(s)
 	chunkPool.Put(buf)
-}
-
-func GetNode() *Node {
-	nodeStats.Get("")
-	return nodePool.Get().(*Node)
-}
-
-func FreeNode(n *Node) {
-	nodeStats.Put("")
-	nodePool.Put(n)
 }
 
 func GetChunker(s string) *chunker.Chunker {

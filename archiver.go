@@ -108,7 +108,6 @@ func (arch *Archiver) Save(t backend.Type, id backend.ID, length uint, rd io.Rea
 	blob, err := arch.m.FindID(id)
 	if err == nil {
 		debug.Log("Archiver.Save", "Save(%v, %v): reusing %v\n", t, id.Str(), blob.Storage.Str())
-		id.Free()
 		return blob, nil
 	}
 
