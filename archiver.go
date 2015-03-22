@@ -66,6 +66,11 @@ func NewArchiver(s Server) (*Archiver, error) {
 	return arch, nil
 }
 
+// Cache returns the current cache for the Archiver.
+func (arch *Archiver) Cache() *Cache {
+	return arch.c
+}
+
 // Preload loads all blobs for all cached snapshots.
 func (arch *Archiver) Preload() error {
 	// list snapshots first
@@ -79,17 +84,10 @@ func (arch *Archiver) Preload() error {
 		m, err := arch.c.LoadMap(arch.s, id)
 		if err != nil {
 			debug.Log("Archiver.Preload", "blobs for snapshot %v not cached: %v", id.Str(), err)
-
-			// build new cache
-			m, err = CacheSnapshotBlobs(arch.s, arch.c, id)
-			if err != nil {
-				debug.Log("Archiver.Preload", "unable to cache snapshot blobs for %v: %v", id.Str(), err)
-				return err
-			}
+			continue
 		}
 
 		arch.m.Merge(m)
-
 		debug.Log("Archiver.Preload", "done loading cached blobs for snapshot %v", id.Str())
 	}
 

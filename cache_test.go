@@ -36,8 +36,22 @@ func TestCache(t *testing.T) {
 	// remove cached blob list
 	ok(t, cache.Purge(backend.Snapshot, "blobs", id))
 
+	// load map from cache again, this should fail
+	rd, err = cache.Load(backend.Snapshot, "blobs", id)
+	assert(t, err != nil, "Expected failure did not occur")
+
 	// recreate cached blob list
-	m2, err := restic.CacheSnapshotBlobs(server, cache, id)
+	err = cache.RefreshSnapshots(server, nil)
+	ok(t, err)
+
+	// load map from cache again
+	rd, err = cache.Load(backend.Snapshot, "blobs", id)
+	ok(t, err)
+
+	dec = json.NewDecoder(rd)
+
+	m2 := &restic.Map{}
+	err = dec.Decode(m2)
 	ok(t, err)
 
 	// compare maps

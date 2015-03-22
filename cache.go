@@ -208,10 +208,45 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 
 // high-level functions
 
-// CacheSnapshotBlobs creates a cache of all the blobs used within the
+// RefreshSnapshots loads the maps for all snapshots and saves them to the local cache.
+func (c *Cache) RefreshSnapshots(s Server, p *Progress) error {
+	defer p.Done()
+
+	// list snapshots first
+	snapshots, err := s.List(backend.Snapshot)
+	if err != nil {
+		return err
+	}
+
+	// check that snapshot blobs are cached
+	for _, id := range snapshots {
+		has, err := c.Has(backend.Snapshot, "blobs", id)
+		if err != nil {
+			return err
+		}
+
+		if has {
+			continue
+		}
+
+		// else start progress reporting
+		p.Start()
+
+		// build new cache
+		_, err = cacheSnapshotBlobs(p, s, c, id)
+		if err != nil {
+			debug.Log("Cache.RefreshSnapshots", "unable to cache snapshot blobs for %v: %v", id.Str(), err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+// cacheSnapshotBlobs creates a cache of all the blobs used within the
 // snapshot. It collects all blobs from all trees and saves the resulting map
 // to the cache and returns the map.
-func CacheSnapshotBlobs(s Server, c *Cache, id backend.ID) (*Map, error) {
+func cacheSnapshotBlobs(p *Progress, s Server, c *Cache, id backend.ID) (*Map, error) {
 	debug.Log("CacheSnapshotBlobs", "create cache for snapshot %v", id.Str())
 
 	sn, err := LoadSnapshot(s, id)
@@ -224,6 +259,8 @@ func CacheSnapshotBlobs(s Server, c *Cache, id backend.ID) (*Map, error) {
 
 	// add top-level node
 	m.Insert(sn.Tree)
+
+	p.Report(Stat{Trees: 1})
 
 	// start walker
 	var wg sync.WaitGroup
@@ -242,6 +279,7 @@ func CacheSnapshotBlobs(s Server, c *Cache, id backend.ID) (*Map, error) {
 				if job.Tree == nil {
 					continue
 				}
+				p.Report(Stat{Trees: 1})
 				debug.Log("CacheSnapshotBlobs", "got job %v", job)
 				m.Merge(job.Tree.Map)
 			}

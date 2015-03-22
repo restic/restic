@@ -75,6 +75,26 @@ func (cmd CmdBackup) Usage() string {
 	return "DIR/FILE [snapshot-ID]"
 }
 
+func newCacheRefreshProgress() *restic.Progress {
+	p := restic.NewProgress(time.Second)
+	p.OnStart = func() {
+		fmt.Printf("refreshing cache\n")
+	}
+
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		return p
+	}
+
+	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		fmt.Printf("\x1b[2K[%s] %d trees loaded\r", format_duration(d), s.Trees)
+	}
+	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
+		fmt.Printf("\x1b[2Krefreshed cache in %s\n", format_duration(d))
+	}
+
+	return p
+}
+
 func newScanProgress() *restic.Progress {
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
 		return nil
@@ -82,10 +102,10 @@ func newScanProgress() *restic.Progress {
 
 	p := restic.NewProgress(time.Second)
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2K\r[%s] %d directories, %d files, %s", format_duration(d), s.Dirs, s.Files, format_bytes(s.Bytes))
+		fmt.Printf("\x1b[2K[%s] %d directories, %d files, %s\r", format_duration(d), s.Dirs, s.Files, format_bytes(s.Bytes))
 	}
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\nDone in %s\n", format_duration(d))
+		fmt.Printf("\x1b[2Kscanned %d directories, %d files in %s\n", s.Dirs, s.Files, format_duration(d))
 	}
 
 	return p
@@ -134,7 +154,7 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 			}
 		}
 
-		fmt.Printf("\x1b[2K\r%s%s", status1, status2)
+		fmt.Printf("\x1b[2K%s%s\r", status1, status2)
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
@@ -194,6 +214,11 @@ func (cmd CmdBackup) Execute(args []string) error {
 		// TODO: make ignoring errors configurable
 		fmt.Fprintf(os.Stderr, "\x1b[2K\rerror for %s: %v\n", dir, err)
 		return nil
+	}
+
+	err = arch.Cache().RefreshSnapshots(s, newCacheRefreshProgress())
+	if err != nil {
+		return err
 	}
 
 	fmt.Printf("loading blobs\n")
