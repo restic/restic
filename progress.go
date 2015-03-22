@@ -7,6 +7,7 @@ import (
 )
 
 type Progress struct {
+	OnStart  func()
 	OnUpdate ProgressFunc
 	OnDone   ProgressFunc
 	fnM      sync.Mutex
@@ -32,10 +33,11 @@ type Stat struct {
 
 type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 
-// NewProgress returns a new progress reporter. After Start() has been called,
-// the function OnUpdate is called when new data arrives or at least every d
-// interval. The function OnDone is called when Done() is called. Both
-// functions are called synchronously and can use shared state.
+// NewProgress returns a new progress reporter. When Start() called, the
+// function OnStart is executed once. Afterwards the function OnUpdate is
+// called when new data arrives or at least every d interval. The function
+// OnDone is called when Done() is called. Both functions are called
+// synchronously and can use shared state.
 func NewProgress(d time.Duration) *Progress {
 	return &Progress{d: d}
 }
@@ -52,6 +54,10 @@ func (p *Progress) Start() {
 	p.Reset()
 	p.start = time.Now()
 	p.c = time.NewTicker(p.d)
+
+	if p.OnStart != nil {
+		p.OnStart()
+	}
 
 	go p.reporter()
 }
