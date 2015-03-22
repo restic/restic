@@ -60,7 +60,9 @@ type Key struct {
 	id backend.ID
 }
 
-// keys is a JSON structure that holds signing and encryption keys.
+// MasterKeys holds signing and encryption keys for a repository. It is stored
+// encrypted and signed as a JSON data structure in the Data field of the Key
+// structure.
 type keys struct {
 	Sign    *MACKey
 	Encrypt *AESKey

@@ -15,13 +15,18 @@ import (
 )
 
 const (
-	AESKeySize = 32      // for AES256
-	MACKeySize = 16 + 16 // for Poly1305-AES128
-	ivSize     = aes.BlockSize
+	AESKeySize  = 32                        // for AES256
+	MACKeySizeK = 16                        // for AES-128
+	MACKeySizeR = 16                        // for Poly1305
+	MACKeySize  = MACKeySizeK + MACKeySizeR // for Poly1305-AES128
+	ivSize      = aes.BlockSize
 )
 
 type AESKey [32]byte
-type MACKey [32]byte
+type MACKey struct {
+	K [16]byte // for AES128
+	R [16]byte // for Poly1305
+}
 type IV [ivSize]byte
 
 // mask for key, (cf. http://cr.yp.to/mac/poly1305-20050329.pdf)
@@ -53,14 +58,14 @@ func poly1305_sign(msg []byte, nonce []byte, key *MACKey) []byte {
 	maskKey(key)
 
 	// fill in nonce, encrypted with AES and key[:16]
-	cipher, err := aes.NewCipher(key[:16])
+	cipher, err := aes.NewCipher(key.K[:])
 	if err != nil {
 		panic(err)
 	}
 	cipher.Encrypt(k[16:], nonce[:])
 
 	// copy r
-	copy(k[:16], key[16:])
+	copy(k[:16], key.R[:])
 
 	// save mac in out
 	var out [16]byte
@@ -75,8 +80,18 @@ func maskKey(k *MACKey) {
 		return
 	}
 	for i := 0; i < poly1305.TagSize; i++ {
-		k[i+16] = k[i+16] & poly1305KeyMask[i]
+		k.R[i] = k.R[i] & poly1305KeyMask[i]
 	}
+}
+
+// construct mac key from slice (k||r), with masking
+func macKeyFromSlice(data []byte) *MACKey {
+	mk := &MACKey{}
+	copy(mk.K[:], data[:16])
+	copy(mk.R[:], data[16:32])
+	maskKey(mk)
+
+	return mk
 }
 
 // key: k||r
@@ -88,14 +103,14 @@ func poly1305_verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
 	maskKey(key)
 
 	// fill in nonce, encrypted with AES and key[:16]
-	cipher, err := aes.NewCipher(key[:16])
+	cipher, err := aes.NewCipher(key.K[:])
 	if err != nil {
 		panic(err)
 	}
 	cipher.Encrypt(k[16:], nonce[:])
 
 	// copy r
-	copy(k[:16], key[16:])
+	copy(k[:16], key.R[:])
 
 	// copy mac to array
 	var m [16]byte
@@ -113,15 +128,19 @@ func generateRandomAESKey() (k *AESKey) {
 	return
 }
 
-// returns [32]byte == k||r
+// returns a new mac key. k.R is already masked
 func generateRandomMACKey() (k *MACKey) {
 	k = &MACKey{}
-	n, err := rand.Read(k[:])
-	if n != MACKeySize || err != nil {
-		panic("unable to read enough random bytes for mac key")
+	n, err := rand.Read(k.K[:])
+	if n != MACKeySizeK || err != nil {
+		panic("unable to read enough random bytes for mac encryption key")
 	}
 
-	// mask r in second half
+	n, err = rand.Read(k.R[:])
+	if n != MACKeySizeR || err != nil {
+		panic("unable to read enough random bytes for mac signing key")
+	}
+	// mask r
 	maskKey(k)
 
 	return
@@ -161,7 +180,7 @@ func Encrypt(ks *keys, ciphertext, plaintext []byte) (int, error) {
 	return len(ciphertext), nil
 }
 
-// Decrypt verifes and decrypts the ciphertext. Ciphertext must be in the form
+// Decrypt verifies and decrypts the ciphertext. Ciphertext must be in the form
 // IV || Ciphertext || MAC.
 func Decrypt(ks *keys, plaintext, ciphertext []byte) ([]byte, error) {
 	// check for plausible length
@@ -216,17 +235,13 @@ func kdf(k *Key, password string) (*keys, error) {
 		return nil, fmt.Errorf("invalid numbers of bytes expanded from scrypt(): %d", len(scryptKeys))
 	}
 
+	// first 32 byte of scrypt output is the encryption key
 	ek := &AESKey{}
 	copy(ek[:], scryptKeys[:AESKeySize])
 
-	mk := &MACKey{}
-	copy(mk[:], scryptKeys[AESKeySize:])
-
-	ks := &keys{
-		Encrypt: ek,
-		Sign:    mk,
-	}
-	return ks, nil
+	// next 32 byte of scrypt output is the mac key, in the form k||r
+	mk := macKeyFromSlice(scryptKeys[AESKeySize:])
+	return &keys{Encrypt: ek, Sign: mk}, nil
 }
 
 type encryptWriter struct {
