@@ -208,9 +208,16 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 
 // high-level functions
 
-// RefreshSnapshots loads the maps for all snapshots and saves them to the local cache.
+// RefreshSnapshots loads the maps for all snapshots and saves them to the
+// local cache. Old cache entries are purged.
 func (c *Cache) RefreshSnapshots(s Server, p *Progress) error {
 	defer p.Done()
+
+	// list cache entries
+	entries, err := c.List(backend.Snapshot)
+	if err != nil {
+		return err
+	}
 
 	// list snapshots first
 	snapshots, err := s.List(backend.Snapshot)
@@ -220,6 +227,14 @@ func (c *Cache) RefreshSnapshots(s Server, p *Progress) error {
 
 	// check that snapshot blobs are cached
 	for _, id := range snapshots {
+		// remove snapshot from list of entries
+		for i, e := range entries {
+			if e.ID.Equal(id) {
+				entries = append(entries[:i], entries[i+1:]...)
+				break
+			}
+		}
+
 		has, err := c.Has(backend.Snapshot, "blobs", id)
 		if err != nil {
 			return err
@@ -236,6 +251,15 @@ func (c *Cache) RefreshSnapshots(s Server, p *Progress) error {
 		_, err = cacheSnapshotBlobs(p, s, c, id)
 		if err != nil {
 			debug.Log("Cache.RefreshSnapshots", "unable to cache snapshot blobs for %v: %v", id.Str(), err)
+			return err
+		}
+	}
+
+	// remove other entries
+	for _, e := range entries {
+		debug.Log("Cache.RefreshSnapshots", "remove entry %v", e)
+		err = c.Purge(backend.Snapshot, e.Subtype, e.ID)
+		if err != nil {
 			return err
 		}
 	}
