@@ -79,8 +79,9 @@ a random nonce. This is used both as the IV for counter mode and the nonce for
 Poly1305. This operation needs three keys: A 32 byte for AES-256 for
 encryption, a 16 byte AES key and a 16 byte key for Poly1305. For details see
 the original paper[The Poly1305-AES message-authentication
-code](http://cr.yp.to/mac/poly1305-20050329.pdf) by Dan Bernstein. The
-ciphertext is stored as IV || CIPHERTEXT || MAC.
+code](http://cr.yp.to/mac/poly1305-20050329.pdf) by Dan Bernstein.
+The data is then encrypted with AES-256 and afterwards the MAC is computed over
+the ciphertext, everything is then stored as IV || CIPHERTEXT || MAC.
 
 The directory `keys` contains key files. These are simple JSON documents which
 contain all data that is needed to derive the repository's master signing and
