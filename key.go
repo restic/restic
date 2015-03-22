@@ -64,8 +64,8 @@ type Key struct {
 // encrypted and signed as a JSON data structure in the Data field of the Key
 // structure.
 type keys struct {
-	Sign    *MACKey
-	Encrypt *AESKey
+	Sign    MACKey
+	Encrypt AESKey
 }
 
 // CreateKey initializes a master key in the given backend and encrypts it with
@@ -186,7 +186,7 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 
 	if template == nil {
 		// generate new random master keys
-		newkey.master = newkey.newKeys()
+		newkey.master = generateRandomKeys()
 	} else {
 		// copy master keys from old key
 		newkey.master = template.master
@@ -234,13 +234,6 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	FreeChunkBuf("key", newkey.Data)
 
 	return newkey, nil
-}
-
-func (k *Key) newKeys() *keys {
-	return &keys{
-		Encrypt: generateRandomAESKey(),
-		Sign:    generateRandomMACKey(),
-	}
 }
 
 func (k *Key) newIV(buf []byte) error {

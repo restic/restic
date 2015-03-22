@@ -85,13 +85,10 @@ func maskKey(k *MACKey) {
 }
 
 // construct mac key from slice (k||r), with masking
-func macKeyFromSlice(data []byte) *MACKey {
-	mk := &MACKey{}
+func macKeyFromSlice(mk *MACKey, data []byte) {
 	copy(mk.K[:], data[:16])
 	copy(mk.R[:], data[16:32])
 	maskKey(mk)
-
-	return mk
 }
 
 // key: k||r
@@ -119,31 +116,27 @@ func poly1305_verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
 	return poly1305.Verify(&m, msg, &k)
 }
 
-func generateRandomAESKey() (k *AESKey) {
-	k = &AESKey{}
-	n, err := rand.Read(k[:])
+// returns new encryption and mac keys. k.MACKey.R is already masked.
+func generateRandomKeys() (k *keys) {
+	k = &keys{}
+	n, err := rand.Read(k.Encrypt[:])
 	if n != AESKeySize || err != nil {
 		panic("unable to read enough random bytes for encryption key")
 	}
-	return
-}
 
-// returns a new mac key. k.R is already masked
-func generateRandomMACKey() (k *MACKey) {
-	k = &MACKey{}
-	n, err := rand.Read(k.K[:])
+	n, err = rand.Read(k.Sign.K[:])
 	if n != MACKeySizeK || err != nil {
 		panic("unable to read enough random bytes for mac encryption key")
 	}
 
-	n, err = rand.Read(k.R[:])
+	n, err = rand.Read(k.Sign.R[:])
 	if n != MACKeySizeR || err != nil {
 		panic("unable to read enough random bytes for mac signing key")
 	}
 	// mask r
-	maskKey(k)
+	maskKey(&k.Sign)
 
-	return
+	return k
 }
 
 func generateRandomIV() (iv IV) {
@@ -174,7 +167,7 @@ func Encrypt(ks *keys, ciphertext, plaintext []byte) (int, error) {
 	e.XORKeyStream(ciphertext[ivSize:cap(ciphertext)], plaintext)
 	ciphertext = ciphertext[:ivSize+len(plaintext)]
 
-	mac := poly1305_sign(ciphertext[ivSize:], ciphertext[:ivSize], ks.Sign)
+	mac := poly1305_sign(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign)
 	ciphertext = append(ciphertext, mac...)
 
 	return len(ciphertext), nil
@@ -198,7 +191,7 @@ func Decrypt(ks *keys, plaintext, ciphertext []byte) ([]byte, error) {
 	ciphertext, mac := ciphertext[:l], ciphertext[l:]
 
 	// verify mac
-	if !poly1305_verify(ciphertext[ivSize:], ciphertext[:ivSize], ks.Sign, mac) {
+	if !poly1305_verify(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign, mac) {
 		return nil, ErrUnauthenticated
 	}
 
@@ -225,6 +218,8 @@ func kdf(k *Key, password string) (*keys, error) {
 		return nil, fmt.Errorf("scrypt() called with empty salt")
 	}
 
+	derKeys := &keys{}
+
 	keybytes := MACKeySize + AESKeySize
 	scryptKeys, err := scrypt.Key([]byte(password), k.Salt, k.N, k.R, k.P, keybytes)
 	if err != nil {
@@ -236,12 +231,12 @@ func kdf(k *Key, password string) (*keys, error) {
 	}
 
 	// first 32 byte of scrypt output is the encryption key
-	ek := &AESKey{}
-	copy(ek[:], scryptKeys[:AESKeySize])
+	copy(derKeys.Encrypt[:], scryptKeys[:AESKeySize])
 
 	// next 32 byte of scrypt output is the mac key, in the form k||r
-	mk := macKeyFromSlice(scryptKeys[AESKeySize:])
-	return &keys{Encrypt: ek, Sign: mk}, nil
+	macKeyFromSlice(&derKeys.Sign, scryptKeys[AESKeySize:])
+
+	return derKeys, nil
 }
 
 type encryptWriter struct {
@@ -257,7 +252,7 @@ type encryptWriter struct {
 
 func (e *encryptWriter) Close() error {
 	// write mac
-	mac := poly1305_sign(e.data.Bytes()[ivSize:], e.data.Bytes()[:ivSize], e.key.Sign)
+	mac := poly1305_sign(e.data.Bytes()[ivSize:], e.data.Bytes()[:ivSize], &e.key.Sign)
 	_, err := e.origWr.Write(mac)
 	if err != nil {
 		return err

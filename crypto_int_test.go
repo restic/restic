@@ -103,8 +103,8 @@ func TestCrypto(t *testing.T) {
 	for _, tv := range test_values {
 		// test encryption
 		r.master = &keys{
-			Encrypt: &tv.ekey,
-			Sign:    &tv.skey,
+			Encrypt: tv.ekey,
+			Sign:    tv.skey,
 		}
 
 		msg := make([]byte, maxCiphertextSize)
