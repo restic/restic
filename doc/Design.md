@@ -34,7 +34,7 @@ the encrypted data is secured by an Poly1305-AES signature.
 In the first 16 bytes of each encrypted file the initialisation vector (IV) is
 stored. It is followed by the encrypted data and completed by the 16 byte MAC
 signature. The format is: `IV || CIPHERTEXT || MAC`. The complete encryption
-overhead is 48 byte. For each file, a new random IV is selected.
+overhead is 32 byte. For each file, a new random IV is selected.
 
 The basic layout of a sample restic repository is shown below:
 
@@ -78,7 +78,7 @@ bytes are read from a cryptographically secure pseudorandom number generator as
 a random nonce. This is used both as the IV for counter mode and the nonce for
 Poly1305. This operation needs three keys: A 32 byte for AES-256 for
 encryption, a 16 byte AES key and a 16 byte key for Poly1305. For details see
-the original paper[The Poly1305-AES message-authentication
+the original paper [The Poly1305-AES message-authentication
 code](http://cr.yp.to/mac/poly1305-20050329.pdf) by Dan Bernstein.
 The data is then encrypted with AES-256 and afterwards the MAC is computed over
 the ciphertext, everything is then stored as IV || CIPHERTEXT || MAC.
