@@ -42,12 +42,8 @@ func NewProgress(d time.Duration) *Progress {
 
 // Start runs resets and runs the progress reporter.
 func (p *Progress) Start() {
-	if p == nil {
+	if p == nil || p.running {
 		return
-	}
-
-	if p.running {
-		panic("truing to reset a running Progress")
 	}
 
 	p.o = sync.Once{}
@@ -135,12 +131,8 @@ func (p *Progress) Reset() {
 
 // Done closes the progress report.
 func (p *Progress) Done() {
-	if p == nil {
+	if p == nil || !p.running {
 		return
-	}
-
-	if !p.running {
-		panic("Done() called on non-running Progress")
 	}
 
 	if p.running {
