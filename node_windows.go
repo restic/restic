@@ -45,11 +45,53 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	node.ChangeTime = time.Unix(0, stat.LastWriteTime.Nanoseconds())
 	node.AccessTime = time.Unix(0, stat.LastAccessTime.Nanoseconds())
 
-	//Todo GetSecurityInfo
-	//node.UID
-	//node.GID
-	//node.User
-	//node.Inode = uint64(byhandlefi.FileIndexLow) | uint64(byhandlefi.FileIndexHigh)<<32
+
+	/*
+	const (
+		SE_FILE_OBJECT             = 1
+		OWNER_SECURITY_INFORMATION = 0x00000001
+		GROUP_SECURITY_INFORMATION = 0x00000002
+	)
+	modadvapi32 := syscall.NewLazyDLL("advapi32.dll")
+	procGetSecuriyInfo := modadvapi32.NewProc("GetSecurityInfo")
+
+	_owner := make([]byte, 50)
+	_group := make([]byte, 50)
+
+	owner := (*syscall.SID)(unsafe.Pointer(&_owner[0]))
+	group := (*syscall.SID)(unsafe.Pointer(&_group[0]))
+
+	procGetSecuriyInfo.Call(file.Fd(), SE_FILE_OBJECT, syscall.SidTypeUser|syscall.SidTypeGroup, uintptr(unsafe.Pointer(&owner)), uintptr(unsafe.Pointer(&group)), 0, 0, 0)
+	//windows UID/GID POSIX MAPPING https://cygwin.com/cygwin-ug-net/ntsec.html#ntsec-mapping
+	userSID, err := owner.String()
+	if err != nil {
+		return err
+	}
+	groupSID, err := group.String()
+	if err != nil {
+		return err
+	}
+
+	posixUIDStr := strings.Split(userSID, "-")
+	posixUID, err := strconv.Atoi(posixUIDStr[len(posixUIDStr)-1])
+	if err != nil {
+		return err
+	}
+
+	posixGIDStr := strings.Split(groupSID, "-")
+	posixGID, err := strconv.Atoi(posixGIDStr[len(posixGIDStr)-1])
+
+	user, err := user.LookupId(userSID)
+	if err != nil {
+		return err
+	}
+
+	node.UID  = posixUID
+	node.GID = posixGID
+	node.User = user.Name
+	node.Inode = uint64(byhandlefi.FileIndexLow) | uint64(byhandlefi.FileIndexHigh)<<32
+	
+	*/
 
 	switch node.Type {
 	case "file":
