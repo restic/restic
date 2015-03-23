@@ -54,6 +54,7 @@ func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	switch node.Type {
 	case "file":
 		node.Size = uint64(fi.Size())
+		//node.Size = uint64(byhandlefi.FileSizeHigh)<<32 | uint64(byhandlefi.FileSizeLow)
 		//node.Links = uint64(byhandlefi.NumberOfLinks)
 	case "dir":
 		// nothing to do
@@ -120,7 +121,7 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 
 	//we can use latter
 	size := uint64(fi.Size())
-
+	//size = uint64(byhandlefi.FileSizeHigh)<<32 | uint64(byhandlefi.FileSizeLow)
 	// if timestamps or inodes differ, content has changed
 	if node.ModTime != fi.ModTime() ||
 		node.ChangeTime != changeTime ||
