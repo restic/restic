@@ -11,10 +11,10 @@ install:
   - go get -v -t ./...
 
 script:
-  - gofmt -l *.go */*.go */*/*.go
-  - test -z "$(gofmt -l *.go */*.go */*/*.go)"
   - go build -ldflags "-s" ./...
   - go build -ldflags "-s" -o restic ./cmd/restic
   - "stat --printf='binary size: %s' restic"
   - go test ./...
   - ./testsuite.sh
+  - gofmt -l *.go */*.go */*/*.go
+  - test -z "$(gofmt -l *.go */*.go */*/*.go)"
