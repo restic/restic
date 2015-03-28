@@ -1,15 +1,12 @@
 package backend
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"errors"
-	"sort"
 )
 
 const (
-	MinPrefixLength = 4
+	MinPrefixLength = 8
 )
 
 var (
@@ -24,21 +21,6 @@ var (
 
 const hashSize = sha256.Size
 
-// Each lists all entries of type t in the backend and calls function f() with
-// the id.
-func EachID(be Lister, t Type, f func(ID)) error {
-	ids, err := be.List(t)
-	if err != nil {
-		return err
-	}
-
-	for _, id := range ids {
-		f(id)
-	}
-
-	return nil
-}
-
 // Hash returns the ID for data.
 func Hash(data []byte) ID {
 	h := hashData(data)
@@ -47,78 +29,67 @@ func Hash(data []byte) ID {
 	return id
 }
 
-// Find loads the list of all blobs of type t and searches for IDs which start
-// with prefix. If none is found, nil and ErrNoIDPrefixFound is returned. If
-// more than one is found, nil and ErrMultipleIDMatches is returned.
-func Find(be Lister, t Type, prefix string) (ID, error) {
-	p, err := hex.DecodeString(prefix)
-	if err != nil {
-		return nil, err
-	}
+// Find loads the list of all blobs of type t and searches for names which
+// start with prefix. If none is found, nil and ErrNoIDPrefixFound is returned.
+// If more than one is found, nil and ErrMultipleIDMatches is returned.
+func Find(be Lister, t Type, prefix string) (string, error) {
+	done := make(chan struct{})
+	defer close(done)
 
-	list, err := be.List(t)
-	if err != nil {
-		return nil, err
-	}
-
-	match := ID(nil)
+	match := ""
 
 	// TODO: optimize by sorting list etc.
-	for _, id := range list {
-		if bytes.Equal(p, id[:len(p)]) {
-			if match == nil {
-				match = id
+	for name := range be.List(t, done) {
+		if prefix == name[:len(prefix)] {
+			if match == "" {
+				match = name
 			} else {
-				return nil, ErrMultipleIDMatches
+				return "", ErrMultipleIDMatches
 			}
 		}
 	}
 
-	if match != nil {
+	if match != "" {
 		return match, nil
 	}
 
-	return nil, ErrNoIDPrefixFound
+	return "", ErrNoIDPrefixFound
 }
 
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches
 // the string as closely as possible.
-func FindSnapshot(be Lister, s string) (ID, error) {
-	// parse ID directly
-	if id, err := ParseID(s); err == nil {
-		return id, nil
-	}
-
+func FindSnapshot(be Lister, s string) (string, error) {
 	// find snapshot id with prefix
-	id, err := Find(be, Snapshot, s)
+	name, err := Find(be, Snapshot, s)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return id, nil
+	return name, nil
 }
 
 // PrefixLength returns the number of bytes required so that all prefixes of
-// all IDs of type t are unique.
+// all names of type t are unique.
 func PrefixLength(be Lister, t Type) (int, error) {
-	// load all IDs of the given type
-	list, err := be.List(t)
-	if err != nil {
-		return 0, err
-	}
+	done := make(chan struct{})
+	defer close(done)
 
-	sort.Sort(list)
+	// load all IDs of the given type
+	list := make([]string, 0, 100)
+	for name := range be.List(t, done) {
+		list = append(list, name)
+	}
 
 	// select prefixes of length l, test if the last one is the same as the current one
 outer:
 	for l := MinPrefixLength; l < IDSize; l++ {
-		var last ID
+		var last string
 
-		for _, id := range list {
-			if bytes.Equal(last, id[:l]) {
+		for _, name := range list {
+			if last == name[:l] {
 				continue outer
 			}
-			last = id[:l]
+			last = name[:l]
 		}
 
 		return l, nil

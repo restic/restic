@@ -51,7 +51,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 
 func LoadSnapshot(s Server, id backend.ID) (*Snapshot, error) {
 	sn := &Snapshot{id: id}
-	err := s.LoadJSONID(backend.Snapshot, id, sn)
+	err := s.LoadJSONID(backend.Snapshot, id.String(), sn)
 	if err != nil {
 		return nil, err
 	}

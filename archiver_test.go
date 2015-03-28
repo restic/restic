@@ -153,17 +153,7 @@ func snapshot(t testing.TB, server restic.Server, path string, parent backend.ID
 }
 
 func countBlobs(t testing.TB, server restic.Server) (trees int, data int) {
-	list, err := server.List(backend.Tree)
-	ok(t, err)
-
-	trees = len(list)
-
-	list, err = server.List(backend.Data)
-	ok(t, err)
-
-	data = len(list)
-
-	return
+	return server.Count(backend.Tree), server.Count(backend.Data)
 }
 
 func archiveWithPreload(t testing.TB) {
@@ -262,15 +252,30 @@ func BenchmarkLoadTree(t *testing.B) {
 	ok(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
 
+	list := make([]backend.ID, 0, 10)
+	done := make(chan struct{})
+
+	for name := range server.List(backend.Tree, done) {
+		id, err := backend.ParseID(name)
+		if err != nil {
+			t.Logf("invalid id for tree %v", name)
+			continue
+		}
+
+		list = append(list, id)
+		if len(list) == cap(list) {
+			close(done)
+			break
+		}
+	}
+
 	// start benchmark
 	t.ResetTimer()
 
-	list, err := server.List(backend.Tree)
-	ok(t, err)
-	list = list[:10]
-
 	for i := 0; i < t.N; i++ {
-		_, err := restic.LoadTree(server, list[0])
-		ok(t, err)
+		for _, name := range list {
+			_, err := restic.LoadTree(server, name)
+			ok(t, err)
+		}
 	}
 }

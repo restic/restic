@@ -48,7 +48,7 @@ func str2id(s string) backend.ID {
 }
 
 type mockBackend struct {
-	list       func(backend.Type) (backend.IDs, error)
+	list       func(backend.Type, <-chan struct{}) <-chan string
 	get        func(backend.Type, backend.ID) ([]byte, error)
 	getReader  func(backend.Type, backend.ID) (io.ReadCloser, error)
 	create     func(backend.Type, []byte) (backend.ID, error)
@@ -58,8 +58,8 @@ type mockBackend struct {
 	close      func() error
 }
 
-func (m mockBackend) List(t backend.Type) (backend.IDs, error) {
-	return m.list(t)
+func (m mockBackend) List(t backend.Type, done <-chan struct{}) <-chan string {
+	return m.list(t, done)
 }
 
 func (m mockBackend) Get(t backend.Type, id backend.ID) ([]byte, error) {
@@ -105,21 +105,32 @@ func TestPrefixLength(t *testing.T) {
 	list := samples
 
 	m := mockBackend{}
-	m.list = func(t backend.Type) (backend.IDs, error) {
-		return list, nil
+	m.list = func(t backend.Type, done <-chan struct{}) <-chan string {
+		ch := make(chan string)
+		go func() {
+			defer close(ch)
+			for _, id := range list {
+				select {
+				case ch <- id.String():
+				case <-done:
+					return
+				}
+			}
+		}()
+		return ch
 	}
 
 	l, err := backend.PrefixLength(m, backend.Snapshot)
 	ok(t, err)
-	equals(t, 10, l)
+	equals(t, 19, l)
 
 	list = samples[:3]
 	l, err = backend.PrefixLength(m, backend.Snapshot)
 	ok(t, err)
-	equals(t, 10, l)
+	equals(t, 19, l)
 
 	list = samples[3:]
 	l, err = backend.PrefixLength(m, backend.Snapshot)
 	ok(t, err)
-	equals(t, 4, l)
+	equals(t, 8, l)
 }

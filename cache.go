@@ -17,7 +17,7 @@ type Cache struct {
 	base string
 }
 
-func NewCache(be backend.IDer) (c *Cache, err error) {
+func NewCache(be backend.Identifier) (c *Cache, err error) {
 	// try to get explicit cache dir from environment
 	dir := os.Getenv("RESTIC_CACHE")
 
@@ -29,7 +29,7 @@ func NewCache(be backend.IDer) (c *Cache, err error) {
 		}
 	}
 
-	basedir := filepath.Join(dir, be.ID().String())
+	basedir := filepath.Join(dir, be.ID())
 	debug.Log("Cache.New", "opened cache at %v", basedir)
 
 	return &Cache{base: basedir}, nil
@@ -115,7 +115,7 @@ func (c *Cache) Clear(s backend.Backend) error {
 	for _, entry := range list {
 		debug.Log("Cache.Clear", "found entry %v", entry)
 
-		if ok, err := s.Test(backend.Snapshot, entry.ID); !ok || err != nil {
+		if ok, err := s.Test(backend.Snapshot, entry.ID.String()); !ok || err != nil {
 			debug.Log("Cache.Clear", "snapshot %v doesn't exist any more, removing %v", entry.ID, entry)
 
 			err = c.Purge(backend.Snapshot, entry.Subtype, entry.ID)
@@ -174,6 +174,7 @@ func (c *Cache) List(t backend.Type) ([]CacheEntry, error) {
 		id, err := backend.ParseID(parts[0])
 		// ignore invalid cache entries for now
 		if err != nil {
+			debug.Log("Cache.List", "unable to parse name %v as id: %v", parts[0], err)
 			continue
 		}
 
@@ -220,13 +221,16 @@ func (c *Cache) RefreshSnapshots(s Server, p *Progress) error {
 	}
 
 	// list snapshots first
-	snapshots, err := s.List(backend.Snapshot)
-	if err != nil {
-		return err
-	}
+	done := make(chan struct{})
+	defer close(done)
 
 	// check that snapshot blobs are cached
-	for _, id := range snapshots {
+	for name := range s.List(backend.Snapshot, done) {
+		id, err := backend.ParseID(name)
+		if err != nil {
+			continue
+		}
+
 		// remove snapshot from list of entries
 		for i, e := range entries {
 			if e.ID.Equal(id) {

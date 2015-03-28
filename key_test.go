@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic"
-	"github.com/restic/restic/backend"
+	"github.com/restic/restic/backend/local"
 )
 
 var testPassword = "foobar"
@@ -21,7 +21,7 @@ func setupBackend(t testing.TB) restic.Server {
 	ok(t, err)
 
 	// create repository below temp dir
-	b, err := backend.CreateLocal(filepath.Join(tempdir, "repo"))
+	b, err := local.Create(filepath.Join(tempdir, "repo"))
 	ok(t, err)
 
 	// set cache dir
@@ -33,7 +33,7 @@ func setupBackend(t testing.TB) restic.Server {
 
 func teardownBackend(t testing.TB, s restic.Server) {
 	if !*testCleanup {
-		l := s.Backend().(*backend.Local)
+		l := s.Backend().(*local.Local)
 		t.Logf("leaving local backend at %s\n", l.Location())
 		return
 	}

@@ -55,7 +55,7 @@ func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (u
 			}
 		} else {
 			// test if data blob is there
-			ok, err := s.Test(backend.Data, blob.Storage)
+			ok, err := s.Test(backend.Data, blob.Storage.String())
 			if err != nil {
 				return 0, err
 			}
@@ -201,14 +201,19 @@ func (cmd CmdFsck) Execute(args []string) error {
 	}
 
 	if cmd.Snapshot != "" {
-		snapshotID, err := s.FindSnapshot(cmd.Snapshot)
+		name, err := s.FindSnapshot(cmd.Snapshot)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", cmd.Snapshot, err)
 		}
 
-		err = fsck_snapshot(cmd, s, snapshotID)
+		id, err := backend.ParseID(name)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", snapshotID)
+			fmt.Fprintf(os.Stderr, "invalid snapshot id %v\n", name)
+		}
+
+		err = fsck_snapshot(cmd, s, id)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", id)
 		}
 
 		return err
@@ -219,17 +224,20 @@ func (cmd CmdFsck) Execute(args []string) error {
 		cmd.o_trees = backend.NewIDSet()
 	}
 
-	list, err := s.List(backend.Snapshot)
-	debug.Log("restic.fsck", "checking %d snapshots\n", len(list))
-	if err != nil {
-		return err
-	}
+	done := make(chan struct{})
+	defer close(done)
 
 	var firstErr error
-	for _, snapshotID := range list {
-		err := fsck_snapshot(cmd, s, snapshotID)
+	for name := range s.List(backend.Snapshot, done) {
+		id, err := backend.ParseID(name)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", snapshotID)
+			fmt.Fprintf(os.Stderr, "invalid snapshot id %v\n", name)
+			continue
+		}
+
+		err = fsck_snapshot(cmd, s, id)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", id)
 			firstErr = err
 		}
 	}
@@ -252,13 +260,16 @@ func (cmd CmdFsck) Execute(args []string) error {
 	for _, d := range l {
 		debug.Log("restic.fsck", "checking for orphaned %v\n", d.desc)
 
-		blobs, err := s.List(d.tpe)
-		if err != nil {
-			return err
-		}
+		done := make(chan struct{})
 
-		for _, id := range blobs {
-			err := d.set.Find(id)
+		for name := range s.List(d.tpe, done) {
+			id, err := backend.ParseID(name)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "invalid id for %v: %v\n", d.tpe, name)
+				continue
+			}
+
+			err = d.set.Find(id)
 			if err != nil {
 				if !cmd.RemoveOrphaned {
 					fmt.Printf("orphaned %v %v\n", d.desc, id)
@@ -266,7 +277,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 				}
 
 				fmt.Printf("removing orphaned %v %v\n", d.desc, id)
-				err := s.Remove(d.tpe, id)
+				err := s.Remove(d.tpe, name)
 				if err != nil {
 					return err
 				}

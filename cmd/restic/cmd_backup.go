@@ -185,12 +185,20 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	var parentSnapshotID backend.ID
+	var (
+		parentSnapshot   string
+		parentSnapshotID backend.ID
+	)
 
 	if cmd.Parent != "" {
-		parentSnapshotID, err = s.FindSnapshot(cmd.Parent)
+		parentSnapshot, err = s.FindSnapshot(cmd.Parent)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
+		}
+
+		parentSnapshotID, err = backend.ParseID(parentSnapshot)
+		if err != nil {
+			return fmt.Errorf("invalid parent snapshot id %v", parentSnapshot)
 		}
 
 		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)

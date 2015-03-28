@@ -101,12 +101,21 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Source", "Directory")
 	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
 
+	done := make(chan struct{})
+	defer close(done)
+
 	list := []*restic.Snapshot{}
-	s.EachID(backend.Snapshot, func(id backend.ID) {
+	for name := range s.List(backend.Snapshot, done) {
+		id, err := backend.ParseID(name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error parsing id: %v", name)
+			continue
+		}
+
 		sn, err := restic.LoadSnapshot(s, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
-			return
+			continue
 		}
 
 		pos := sort.Search(len(list), func(i int) bool {
@@ -120,7 +129,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		} else {
 			list = append(list, sn)
 		}
-	})
+	}
 
 	plen, err := s.PrefixLength(backend.Snapshot)
 	if err != nil {

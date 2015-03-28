@@ -158,15 +158,13 @@ func TestLoadJSONID(t *testing.T) {
 	t.Logf("archived snapshot %v", sn.ID())
 
 	// benchmark loading first tree
-	list, err := server.List(backend.Tree)
-	ok(t, err)
-	assert(t, len(list) > 0,
-		"no Trees in repository found")
-
-	treeID := list[0]
+	done := make(chan struct{})
+	first, found := <-server.List(backend.Tree, done)
+	assert(t, found, "no Trees in repository found")
+	close(done)
 
 	tree := restic.NewTree()
-	err = server.LoadJSONID(backend.Tree, treeID, &tree)
+	err := server.LoadJSONID(backend.Tree, first, &tree)
 	ok(t, err)
 }
 
@@ -184,19 +182,12 @@ func BenchmarkLoadJSONID(t *testing.B) {
 	sn := snapshot(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID())
 
-	// benchmark loading first tree
-	list, err := server.List(backend.Tree)
-	ok(t, err)
-	assert(t, len(list) > 0,
-		"no Trees in repository found")
-
 	t.ResetTimer()
 
 	tree := restic.NewTree()
 	for i := 0; i < t.N; i++ {
-		for _, treeID := range list {
-			err = server.LoadJSONID(backend.Tree, treeID, &tree)
-			ok(t, err)
+		for treeID := range be.List(backend.Tree, nil) {
+			ok(t, server.LoadJSONID(backend.Tree, treeID, &tree))
 		}
 	}
 }

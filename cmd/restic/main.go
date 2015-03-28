@@ -12,6 +12,8 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/backend/local"
+	"github.com/restic/restic/backend/sftp"
 	"github.com/restic/restic/debug"
 )
 
@@ -79,7 +81,7 @@ func (cmd CmdInit) Execute(args []string) error {
 		os.Exit(1)
 	}
 
-	fmt.Printf("created restic backend %v at %s\n", s.ID().Str(), opts.Repo)
+	fmt.Printf("created restic backend %v at %s\n", s.ID(), opts.Repo)
 
 	return nil
 }
@@ -96,7 +98,7 @@ func open(u string) (backend.Backend, error) {
 	}
 
 	if url.Scheme == "" {
-		return backend.OpenLocal(url.Path)
+		return local.Open(url.Path)
 	}
 
 	args := []string{url.Host}
@@ -106,7 +108,7 @@ func open(u string) (backend.Backend, error) {
 	}
 	args = append(args, "-s")
 	args = append(args, "sftp")
-	return backend.OpenSFTP(url.Path[1:], "ssh", args...)
+	return sftp.Open(url.Path[1:], "ssh", args...)
 }
 
 // Create the backend specified by URI.
@@ -117,7 +119,7 @@ func create(u string) (backend.Backend, error) {
 	}
 
 	if url.Scheme == "" {
-		return backend.CreateLocal(url.Path)
+		return local.Create(url.Path)
 	}
 
 	args := []string{url.Host}
@@ -127,7 +129,7 @@ func create(u string) (backend.Backend, error) {
 	}
 	args = append(args, "-s")
 	args = append(args, "sftp")
-	return backend.CreateSFTP(url.Path[1:], "ssh", args...)
+	return sftp.Create(url.Path[1:], "ssh", args...)
 }
 
 func OpenRepo() (restic.Server, error) {

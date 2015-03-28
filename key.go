@@ -2,6 +2,7 @@ package restic
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,7 +58,7 @@ type Key struct {
 	user   *MasterKeys
 	master *MasterKeys
 
-	id backend.ID
+	name string
 }
 
 // MasterKeys holds signing and encryption keys for a repository. It is stored
@@ -74,9 +75,9 @@ func CreateKey(s Server, password string) (*Key, error) {
 	return AddKey(s, password, nil)
 }
 
-// OpenKey tries do decrypt the key specified by id with the given password.
-func OpenKey(s Server, id backend.ID, password string) (*Key, error) {
-	k, err := LoadKey(s, id)
+// OpenKey tries do decrypt the key specified by name with the given password.
+func OpenKey(s Server, name string, password string) (*Key, error) {
+	k, err := LoadKey(s, name)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +105,7 @@ func OpenKey(s Server, id backend.ID, password string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	k.id = id
+	k.name = name
 
 	return k, nil
 }
@@ -112,16 +113,11 @@ func OpenKey(s Server, id backend.ID, password string) (*Key, error) {
 // SearchKey tries to decrypt all keys in the backend with the given password.
 // If none could be found, ErrNoKeyFound is returned.
 func SearchKey(s Server, password string) (*Key, error) {
-	// list all keys
-	ids, err := s.List(backend.Key)
-	if err != nil {
-		panic(err)
-	}
-
 	// try all keys in repo
-	var key *Key
-	for _, id := range ids {
-		key, err = OpenKey(s, id, password)
+	done := make(chan struct{})
+	defer close(done)
+	for name := range s.List(backend.Key, done) {
+		key, err := OpenKey(s, name, password)
 		if err != nil {
 			continue
 		}
@@ -133,21 +129,23 @@ func SearchKey(s Server, password string) (*Key, error) {
 }
 
 // LoadKey loads a key from the backend.
-func LoadKey(s Server, id backend.ID) (*Key, error) {
+func LoadKey(s Server, name string) (*Key, error) {
 	// extract data from repo
-	data, err := s.Get(backend.Key, id)
+	rd, err := s.Get(backend.Key, name)
 	if err != nil {
 		return nil, err
 	}
+	defer rd.Close()
 
 	// restore json
-	k := &Key{}
-	err = json.Unmarshal(data, k)
+	dec := json.NewDecoder(rd)
+	k := Key{}
+	err = dec.Decode(&k)
 	if err != nil {
 		return nil, err
 	}
 
-	return k, err
+	return &k, nil
 }
 
 // AddKey adds a new key to an already existing repository.
@@ -209,27 +207,26 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	}
 
 	// store in repository and return
-	blob, err := s.Create(backend.Key)
+	blob, err := s.Create()
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = blob.Write(buf)
+	plainhw := backend.NewHashingWriter(blob, sha256.New())
+
+	_, err = plainhw.Write(buf)
 	if err != nil {
 		return nil, err
 	}
 
-	err = blob.Close()
+	name := backend.ID(plainhw.Sum(nil)).String()
+
+	err = blob.Finalize(backend.Key, name)
 	if err != nil {
 		return nil, err
 	}
 
-	id, err := blob.ID()
-	if err != nil {
-		return nil, err
-	}
-
-	newkey.id = id
+	newkey.name = name
 
 	FreeChunkBuf("key", newkey.Data)
 
@@ -322,6 +319,6 @@ func (k *Key) String() string {
 	return fmt.Sprintf("<Key of %s@%s, created on %s>", k.Username, k.Hostname, k.Created)
 }
 
-func (k Key) ID() backend.ID {
-	return k.id
+func (k Key) Name() string {
+	return k.name
 }

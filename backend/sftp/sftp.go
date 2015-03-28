@@ -1,4 +1,4 @@
-package backend
+package sftp
 
 import (
 	"crypto/rand"
@@ -12,9 +12,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/pkg/sftp"
+	"github.com/restic/restic/backend"
 )
 
 const (
@@ -25,7 +27,7 @@ type SFTP struct {
 	c   *sftp.Client
 	p   string
 	ver uint
-	id  ID
+	id  string
 
 	cmd *exec.Cmd
 }
@@ -62,10 +64,10 @@ func start_client(program string, args ...string) (*SFTP, error) {
 	return &SFTP{c: client, cmd: cmd}, nil
 }
 
-// OpenSFTP opens an sftp backend. When the command is started via
+// Open opens an sftp backend. When the command is started via
 // exec.Command, it is expected to speak sftp on stdin/stdout. The backend
 // is expected at the given path.
-func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
+func Open(dir string, program string, args ...string) (*SFTP, error) {
 	sftp, err := start_client(program, args...)
 	if err != nil {
 		return nil, err
@@ -74,12 +76,13 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	// test if all necessary dirs and files are there
 	items := []string{
 		dir,
-		filepath.Join(dir, dataPath),
-		filepath.Join(dir, snapshotPath),
-		filepath.Join(dir, treePath),
-		filepath.Join(dir, lockPath),
-		filepath.Join(dir, keyPath),
-		filepath.Join(dir, tempPath),
+		filepath.Join(dir, backend.Paths.Data),
+		filepath.Join(dir, backend.Paths.Snapshots),
+		filepath.Join(dir, backend.Paths.Trees),
+		filepath.Join(dir, backend.Paths.Locks),
+		filepath.Join(dir, backend.Paths.Keys),
+		filepath.Join(dir, backend.Paths.Version),
+		filepath.Join(dir, backend.Paths.ID),
 	}
 	for _, d := range items {
 		if _, err := sftp.c.Lstat(d); err != nil {
@@ -88,7 +91,7 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// read version file
-	f, err := sftp.c.Open(filepath.Join(dir, versionFileName))
+	f, err := sftp.c.Open(filepath.Join(dir, backend.Paths.Version))
 	if err != nil {
 		return nil, fmt.Errorf("unable to read version file: %v\n", err)
 	}
@@ -109,12 +112,12 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// check version
-	if version != BackendVersion {
+	if version != backend.Version {
 		return nil, fmt.Errorf("wrong version %d", version)
 	}
 
 	// read ID
-	f, err = sftp.c.Open(filepath.Join(dir, idFileName))
+	f, err = sftp.c.Open(filepath.Join(dir, backend.Paths.ID))
 	if err != nil {
 		return nil, err
 	}
@@ -129,35 +132,30 @@ func OpenSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		return nil, err
 	}
 
-	id, err := ParseID(strings.TrimSpace(string(buf)))
-	if err != nil {
-		return nil, err
-	}
-
-	sftp.id = id
+	sftp.id = strings.TrimSpace(string(buf))
 	sftp.p = dir
 
 	return sftp, nil
 }
 
-// CreateSFTP creates all the necessary files and directories for a new sftp
+// Create creates all the necessary files and directories for a new sftp
 // backend at dir.
-func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
+func Create(dir string, program string, args ...string) (*SFTP, error) {
 	sftp, err := start_client(program, args...)
 	if err != nil {
 		return nil, err
 	}
 
-	versionFile := filepath.Join(dir, versionFileName)
-	idFile := filepath.Join(dir, idFileName)
+	versionFile := filepath.Join(dir, backend.Paths.Version)
+	idFile := filepath.Join(dir, backend.Paths.ID)
 	dirs := []string{
 		dir,
-		filepath.Join(dir, dataPath),
-		filepath.Join(dir, snapshotPath),
-		filepath.Join(dir, treePath),
-		filepath.Join(dir, lockPath),
-		filepath.Join(dir, keyPath),
-		filepath.Join(dir, tempPath),
+		filepath.Join(dir, backend.Paths.Data),
+		filepath.Join(dir, backend.Paths.Snapshots),
+		filepath.Join(dir, backend.Paths.Trees),
+		filepath.Join(dir, backend.Paths.Locks),
+		filepath.Join(dir, backend.Paths.Keys),
+		filepath.Join(dir, backend.Paths.Temp),
 	}
 
 	// test if files already exist
@@ -180,7 +178,7 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 
 	// create paths for data, refs and temp blobs
 	for _, d := range dirs {
-		err = sftp.mkdirAll(d, dirMode)
+		err = sftp.mkdirAll(d, backend.Modes.Dir)
 		if err != nil {
 			return nil, err
 		}
@@ -192,7 +190,7 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		return nil, err
 	}
 
-	_, err = fmt.Fprintf(f, "%d\n", BackendVersion)
+	_, err = fmt.Fprintf(f, "%d\n", backend.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +212,7 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 		return nil, err
 	}
 
-	_, err = fmt.Fprintf(f, "%s\n", ID(id).String())
+	_, err = fmt.Fprintln(f, hex.EncodeToString(id))
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +233,7 @@ func CreateSFTP(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// open backend
-	return OpenSFTP(dir, program, args...)
+	return Open(dir, program, args...)
 }
 
 // Location returns this backend's location (the directory name).
@@ -257,7 +255,7 @@ func (r *SFTP) tempFile() (string, *sftp.File, error) {
 	}
 
 	// construct tempfile name
-	name := filepath.Join(r.p, tempPath, fmt.Sprintf("temp-%s", hex.EncodeToString(buf)))
+	name := filepath.Join(r.p, backend.Paths.Temp, "temp-"+hex.EncodeToString(buf))
 
 	// create file in temp dir
 	f, err := r.c.Create(name)
@@ -280,7 +278,7 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 	}
 
 	// create parent directories
-	errMkdirAll := r.mkdirAll(filepath.Dir(dir), dirMode)
+	errMkdirAll := r.mkdirAll(filepath.Dir(dir), backend.Modes.Dir)
 
 	// create directory
 	errMkdir := r.c.Mkdir(dir)
@@ -300,16 +298,21 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 	return r.c.Chmod(dir, mode)
 }
 
-// Rename temp file to final name according to type and ID.
-func (r *SFTP) renameFile(oldname string, t Type, id ID) error {
-	filename := r.filename(t, id)
+// Rename temp file to final name according to type and name.
+func (r *SFTP) renameFile(oldname string, t backend.Type, name string) error {
+	filename := r.filename(t, name)
 
 	// create directories if necessary
-	if t == Data || t == Tree {
-		err := r.mkdirAll(filepath.Dir(filename), dirMode)
+	if t == backend.Data || t == backend.Tree {
+		err := r.mkdirAll(filepath.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return err
 		}
+	}
+
+	// test if new file exists
+	if _, err := r.c.Lstat(filename); err == nil {
+		return fmt.Errorf("Close(): file %v already exists", filename)
 	}
 
 	err := r.c.Rename(oldname, filename)
@@ -326,42 +329,15 @@ func (r *SFTP) renameFile(oldname string, t Type, id ID) error {
 	return r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
 }
 
-// Construct directory for given Type.
-func (r *SFTP) dirname(t Type, id ID) string {
-	var n string
-	switch t {
-	case Data:
-		n = dataPath
-		if id != nil {
-			n = filepath.Join(dataPath, fmt.Sprintf("%02x", id[0]))
-		}
-	case Snapshot:
-		n = snapshotPath
-	case Tree:
-		n = treePath
-		if id != nil {
-			n = filepath.Join(treePath, fmt.Sprintf("%02x", id[0]))
-		}
-	case Lock:
-		n = lockPath
-	case Key:
-		n = keyPath
-	}
-	return filepath.Join(r.p, n)
-}
-
 type sftpBlob struct {
-	f       *sftp.File
-	name    string
-	hw      *HashingWriter
-	backend *SFTP
-	tpe     Type
-	id      ID
-	size    uint
-	closed  bool
+	f        *sftp.File
+	tempname string
+	size     uint
+	closed   bool
+	backend  *SFTP
 }
 
-func (sb *sftpBlob) Close() error {
+func (sb *sftpBlob) Finalize(t backend.Type, name string) error {
 	if sb.closed {
 		return errors.New("Close() called on closed file")
 	}
@@ -372,30 +348,17 @@ func (sb *sftpBlob) Close() error {
 		return fmt.Errorf("sftp: file.Close: %v", err)
 	}
 
-	// get ID
-	sb.id = ID(sb.hw.Sum(nil))
-
-	// check for duplicate ID
-	res, err := sb.backend.Test(sb.tpe, sb.id)
-	if err != nil {
-		return fmt.Errorf("testing presence of ID %v failed: %v", sb.id, err)
-	}
-
-	if res {
-		return ErrAlreadyPresent
-	}
-
 	// rename file
-	err = sb.backend.renameFile(sb.name, sb.tpe, sb.id)
+	err = sb.backend.renameFile(sb.tempname, t, name)
 	if err != nil {
-		return err
+		return fmt.Errorf("sftp: renameFile: %v", err)
 	}
 
 	return nil
 }
 
 func (sb *sftpBlob) Write(p []byte) (int, error) {
-	n, err := sb.hw.Write(p)
+	n, err := sb.f.Write(p)
 	sb.size += uint(n)
 	return n, err
 }
@@ -404,18 +367,9 @@ func (sb *sftpBlob) Size() uint {
 	return sb.size
 }
 
-func (sb *sftpBlob) ID() (ID, error) {
-	if sb.id == nil {
-		return nil, errors.New("blob is not closed, ID unavailable")
-	}
-
-	return sb.id, nil
-}
-
-// Create creates a new blob of type t. Blob implements io.WriteCloser. Once
-// Close() has been called, ID() can be used to retrieve the ID. If the blob is
-// already present, Close() returns ErrAlreadyPresent.
-func (r *SFTP) Create(t Type) (Blob, error) {
+// Create creates a new Blob. The data is available only after Finalize()
+// has been called on the returned Blob.
+func (r *SFTP) Create() (backend.Blob, error) {
 	// TODO: make sure that tempfile is removed upon error
 
 	// create tempfile in backend
@@ -425,64 +379,52 @@ func (r *SFTP) Create(t Type) (Blob, error) {
 	}
 
 	blob := sftpBlob{
-		hw:      NewHashingWriter(file, newHash()),
-		f:       file,
-		name:    filename,
-		backend: r,
-		tpe:     t,
+		f:        file,
+		tempname: filename,
+		backend:  r,
 	}
 
 	return &blob, nil
 }
 
-// Construct path for given Type and ID.
-func (r *SFTP) filename(t Type, id ID) string {
-	return filepath.Join(r.dirname(t, id), id.String())
+// Construct path for given backend.Type and name.
+func (r *SFTP) filename(t backend.Type, name string) string {
+	return filepath.Join(r.dirname(t, name), name)
 }
 
-// Get returns the content stored under the given ID. If the data doesn't match
-// the requested ID, ErrWrongData is returned.
-func (r *SFTP) Get(t Type, id ID) ([]byte, error) {
-	if id == nil {
-		return nil, errors.New("unable to load nil ID")
-	}
-
-	// try to open file
-	file, err := r.c.Open(r.filename(t, id))
-	defer func() {
-		// TODO: report bug against sftp client, ignore Close() for nil file
-		if file != nil {
-			file.Close()
+// Construct directory for given backend.Type.
+func (r *SFTP) dirname(t backend.Type, name string) string {
+	var n string
+	switch t {
+	case backend.Data:
+		n = backend.Paths.Data
+		if len(name) > 2 {
+			n = filepath.Join(n, name[:2])
 		}
-	}()
-	if err != nil {
-		return nil, err
+	case backend.Snapshot:
+		n = backend.Paths.Snapshots
+	case backend.Tree:
+		n = backend.Paths.Trees
+		if len(name) > 2 {
+			n = filepath.Join(n, name[:2])
+		}
+	case backend.Lock:
+		n = backend.Paths.Locks
+	case backend.Key:
+		n = backend.Paths.Keys
 	}
-
-	// read all
-	buf, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	// check id
-	if !Hash(buf).Equal(id) {
-		return nil, ErrWrongData
-	}
-
-	return buf, nil
+	return filepath.Join(r.p, n)
 }
 
-// GetReader returns a reader that yields the content stored under the given
-// ID. The content is not verified. The reader should be closed after draining
-// it.
-func (r *SFTP) GetReader(t Type, id ID) (io.ReadCloser, error) {
-	if id == nil {
-		return nil, errors.New("unable to load nil ID")
+// Get returns a reader that yields the content stored under the given
+// name. The reader should be closed after draining it.
+func (r *SFTP) Get(t backend.Type, name string) (io.ReadCloser, error) {
+	if name == "" {
+		return nil, errors.New("unable to load empty name")
 	}
 
 	// try to open file
-	file, err := r.c.Open(r.filename(t, id))
+	file, err := r.c.Open(r.filename(t, name))
 	if err != nil {
 		return nil, err
 	}
@@ -490,15 +432,9 @@ func (r *SFTP) GetReader(t Type, id ID) (io.ReadCloser, error) {
 	return file, nil
 }
 
-// Test returns true if a blob of the given type and ID exists in the backend.
-func (r *SFTP) Test(t Type, id ID) (bool, error) {
-	file, err := r.c.Open(r.filename(t, id))
-	defer func() {
-		if file != nil {
-			file.Close()
-		}
-	}()
-
+// Test returns true if a blob of the given type and name exists in the backend.
+func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
+	_, err := r.c.Lstat(r.filename(t, name))
 	if err != nil {
 		if _, ok := err.(*sftp.StatusError); ok {
 			return false, nil
@@ -510,54 +446,83 @@ func (r *SFTP) Test(t Type, id ID) (bool, error) {
 	return true, nil
 }
 
-// Remove removes the content stored at ID.
-func (r *SFTP) Remove(t Type, id ID) error {
-	return r.c.Remove(r.filename(t, id))
+// Remove removes the content stored at name.
+func (r *SFTP) Remove(t backend.Type, name string) error {
+	return r.c.Remove(r.filename(t, name))
 }
 
-// List lists all objects of a given type.
-func (r *SFTP) List(t Type) (IDs, error) {
-	list := []os.FileInfo{}
-	var err error
+// List returns a channel that yields all names of blobs of type t. A
+// goroutine ist started for this. If the channel done is closed, sending
+// stops.
+func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
+	ch := make(chan string)
 
-	if t == Data || t == Tree {
-		// read first level
-		basedir := r.dirname(t, nil)
+	go func() {
+		defer close(ch)
 
-		list1, err := r.c.ReadDir(basedir)
-		if err != nil {
-			return nil, err
-		}
+		if t == backend.Data || t == backend.Tree {
+			// read first level
+			basedir := r.dirname(t, "")
 
-		// read files
-		for _, dir := range list1 {
-			entries, err := r.c.ReadDir(filepath.Join(basedir, dir.Name()))
+			list1, err := r.c.ReadDir(basedir)
 			if err != nil {
-				return nil, err
+				return
 			}
 
+			dirs := make([]string, 0, len(list1))
+			for _, d := range list1 {
+				dirs = append(dirs, d.Name())
+			}
+
+			sort.Strings(dirs)
+
+			// read files
+			for _, dir := range dirs {
+				entries, err := r.c.ReadDir(filepath.Join(basedir, dir))
+				if err != nil {
+					continue
+				}
+
+				items := make([]string, 0, len(entries))
+				for _, entry := range entries {
+					items = append(items, entry.Name())
+				}
+
+				sort.Strings(items)
+
+				for _, file := range items {
+					select {
+					case ch <- file:
+					case <-done:
+						return
+					}
+				}
+			}
+		} else {
+			entries, err := r.c.ReadDir(r.dirname(t, ""))
+			if err != nil {
+				return
+			}
+
+			items := make([]string, 0, len(entries))
 			for _, entry := range entries {
-				list = append(list, entry)
+				items = append(items, entry.Name())
+			}
+
+			sort.Strings(items)
+
+			for _, file := range items {
+				select {
+				case ch <- file:
+				case <-done:
+					return
+				}
 			}
 		}
-	} else {
-		list, err = r.c.ReadDir(r.dirname(t, nil))
-		if err != nil {
-			return nil, err
-		}
-	}
+	}()
 
-	ids := make(IDs, 0, len(list))
-	for _, item := range list {
-		id, err := ParseID(item.Name())
-		// ignore everything that does not parse as an ID
-		if err != nil {
-			continue
-		}
-		ids = append(ids, id)
-	}
+	return ch
 
-	return ids, nil
 }
 
 // Version returns the version of this local backend.
@@ -566,7 +531,7 @@ func (r *SFTP) Version() uint {
 }
 
 // ID returns the ID of this local backend.
-func (r *SFTP) ID() ID {
+func (r *SFTP) ID() string {
 	return r.id
 }
 

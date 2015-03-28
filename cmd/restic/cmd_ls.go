@@ -76,7 +76,12 @@ func (cmd CmdLs) Execute(args []string) error {
 		return err
 	}
 
-	id, err := backend.FindSnapshot(s, args[0])
+	name, err := backend.FindSnapshot(s, args[0])
+	if err != nil {
+		return err
+	}
+
+	id, err := backend.ParseID(name)
 	if err != nil {
 		return err
 	}

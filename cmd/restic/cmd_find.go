@@ -115,8 +115,13 @@ func (c CmdFind) findInTree(s restic.Server, blob restic.Blob, path string) ([]f
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(s restic.Server, id backend.ID) error {
-	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", id, c.oldest, c.newest)
+func (c CmdFind) findInSnapshot(s restic.Server, name string) error {
+	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", name, c.oldest, c.newest)
+
+	id, err := backend.ParseID(name)
+	if err != nil {
+		return err
+	}
 
 	sn, err := restic.LoadSnapshot(s, id)
 	if err != nil {
@@ -182,12 +187,9 @@ func (c CmdFind) Execute(args []string) error {
 		return c.findInSnapshot(s, snapshotID)
 	}
 
-	list, err := s.List(backend.Snapshot)
-	if err != nil {
-		return err
-	}
-
-	for _, snapshotID := range list {
+	done := make(chan struct{})
+	defer close(done)
+	for snapshotID := range s.List(backend.Snapshot, done) {
 		err := c.findInSnapshot(s, snapshotID)
 
 		if err != nil {

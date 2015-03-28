@@ -31,22 +31,25 @@ func list_keys(s restic.Server) error {
 		return err
 	}
 
-	s.EachID(backend.Key, func(id backend.ID) {
-		k, err := restic.LoadKey(s, id)
+	done := make(chan struct{})
+	defer close(done)
+
+	for name := range s.List(backend.Key, done) {
+		k, err := restic.LoadKey(s, name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "LoadKey() failed: %v\n", err)
-			return
+			continue
 		}
 
 		var current string
-		if id.Equal(s.Key().ID()) {
+		if name == s.Key().Name() {
 			current = "*"
 		} else {
 			current = " "
 		}
-		tab.Rows = append(tab.Rows, []interface{}{current, id[:plen],
+		tab.Rows = append(tab.Rows, []interface{}{current, name[:plen],
 			k.Username, k.Hostname, k.Created.Format(TimeFormat)})
-	})
+	}
 
 	tab.Write(os.Stdout)
 
@@ -71,17 +74,17 @@ func add_key(s restic.Server) error {
 	return nil
 }
 
-func delete_key(s restic.Server, id backend.ID) error {
-	if id.Equal(s.Key().ID()) {
+func delete_key(s restic.Server, name string) error {
+	if name == s.Key().Name() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
-	err := s.Remove(backend.Key, id)
+	err := s.Remove(backend.Key, name)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("removed key %v\n", id)
+	fmt.Printf("removed key %v\n", name)
 	return nil
 }
 
@@ -100,7 +103,7 @@ func change_password(s restic.Server) error {
 	}
 
 	// remove old key
-	err = s.Remove(backend.Key, s.Key().ID())
+	err = s.Remove(backend.Key, s.Key().Name())
 	if err != nil {
 		return err
 	}

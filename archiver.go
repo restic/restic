@@ -73,14 +73,19 @@ func (arch *Archiver) Cache() *Cache {
 
 // Preload loads all blobs for all cached snapshots.
 func (arch *Archiver) Preload() error {
-	// list snapshots first
-	snapshots, err := arch.s.List(backend.Snapshot)
-	if err != nil {
-		return err
-	}
+	done := make(chan struct{})
+	defer close(done)
 
+	// list snapshots
 	// TODO: track seen tree ids, load trees that aren't in the set
-	for _, id := range snapshots {
+	snapshots := 0
+	for name := range arch.s.List(backend.Snapshot, done) {
+		id, err := backend.ParseID(name)
+		if err != nil {
+			debug.Log("Archiver.Preload", "unable to parse name %v as id: %v", name, err)
+			continue
+		}
+
 		m, err := arch.c.LoadMap(arch.s, id)
 		if err != nil {
 			debug.Log("Archiver.Preload", "blobs for snapshot %v not cached: %v", id.Str(), err)
@@ -89,9 +94,10 @@ func (arch *Archiver) Preload() error {
 
 		arch.m.Merge(m)
 		debug.Log("Archiver.Preload", "done loading cached blobs for snapshot %v", id.Str())
+		snapshots++
 	}
 
-	debug.Log("Archiver.Preload", "Loaded %v blobs from %v snapshots", arch.m.Len(), len(snapshots))
+	debug.Log("Archiver.Preload", "Loaded %v blobs from %v snapshots", arch.m.Len(), snapshots)
 	return nil
 }
 
@@ -120,7 +126,7 @@ func (arch *Archiver) Save(t backend.Type, id backend.ID, length uint, rd io.Rea
 
 		// remove the blob again
 		// TODO: implement a list of blobs in transport, so this doesn't happen so often
-		err = arch.s.Remove(t, blob.Storage)
+		err = arch.s.Remove(t, blob.Storage.String())
 		if err != nil {
 			return Blob{}, err
 		}
@@ -295,7 +301,7 @@ func (arch *Archiver) saveTree(p *Progress, t *Tree) (Blob, error) {
 						continue
 					}
 
-					if ok, err := arch.s.Test(backend.Data, blob.Storage); !ok || err != nil {
+					if ok, err := arch.s.Test(backend.Data, blob.Storage.String()); !ok || err != nil {
 						debug.Log("Archiver.saveTree", "blob %v not in repository (error is %v)", blob, err)
 						arch.Error(node.path, nil, fmt.Errorf("blob %v not in repository (error is %v)", blob.Storage.Str(), err))
 						removeContent = true
@@ -419,7 +425,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 				// check if all content is still available in the repository
 				contentMissing := false
 				for _, blob := range oldNode.blobs {
-					if ok, err := arch.s.Test(backend.Data, blob.Storage); !ok || err != nil {
+					if ok, err := arch.s.Test(backend.Data, blob.Storage.String()); !ok || err != nil {
 						debug.Log("Archiver.fileWorker", "   %v not using old data, %v (%v) is missing", e.Path(), blob.ID.Str(), blob.Storage.Str())
 						contentMissing = true
 						break

@@ -32,7 +32,7 @@ func (t Tree) String() string {
 
 func LoadTree(s Server, id backend.ID) (*Tree, error) {
 	tree := &Tree{}
-	err := s.LoadJSONID(backend.Tree, id, tree)
+	err := s.LoadJSONID(backend.Tree, id.String(), tree)
 	if err != nil {
 		return nil, err
 	}

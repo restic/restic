@@ -49,7 +49,9 @@ func (cmd CmdList) Execute(args []string) error {
 		return errors.New("invalid type")
 	}
 
-	return s.EachID(t, func(id backend.ID) {
+	for id := range s.List(t, nil) {
 		fmt.Printf("%s\n", id)
-	})
+	}
+
+	return nil
 }

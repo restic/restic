@@ -1,10 +1,8 @@
 package backend
 
-import (
-	"errors"
-	"io"
-)
+import "io"
 
+// Type is the type of a Blob.
 type Type string
 
 const (
@@ -16,62 +14,60 @@ const (
 )
 
 const (
-	BackendVersion = 1
+	Version = 1
 )
 
-var (
-	ErrAlreadyPresent = errors.New("blob is already present in backend")
-)
+// A Backend manages blobs of data.
+type Backend interface {
+	// Location returns a string that specifies the location of the repository,
+	// like a URL.
+	Location() string
 
-type Blob interface {
-	io.WriteCloser
-	ID() (ID, error)
-	Size() uint
+	// Create creates a new Blob. The data is available only after Finalize()
+	// has been called on the returned Blob.
+	Create() (Blob, error)
+
+	// Get returns an io.ReadCloser for the Blob with the given name of type t.
+	Get(t Type, name string) (io.ReadCloser, error)
+
+	// Test a boolean value whether a Blob with the name and type exists.
+	Test(t Type, name string) (bool, error)
+
+	// Remove removes a Blob with type t and name.
+	Remove(t Type, name string) error
+
+	// Close the backend
+	Close() error
+
+	Identifier
+	Lister
+}
+
+type Identifier interface {
+	// ID returns a unique ID for a specific repository. This means restic can
+	// recognize repositories accessed via different methods (e.g. local file
+	// access and sftp).
+	ID() string
 }
 
 type Lister interface {
-	List(Type) (IDs, error)
-}
-
-type Getter interface {
-	Get(Type, ID) ([]byte, error)
-	GetReader(Type, ID) (io.ReadCloser, error)
-}
-
-type Creater interface {
-	Create(Type) (Blob, error)
-}
-
-type Tester interface {
-	Test(Type, ID) (bool, error)
-}
-
-type Remover interface {
-	Remove(Type, ID) error
-}
-
-type Closer interface {
-	Close() error
+	// List returns a channel that yields all names of blobs of type t in
+	// lexicographic order. A goroutine is started for this. If the channel
+	// done is closed, sending stops.
+	List(t Type, done <-chan struct{}) <-chan string
 }
 
 type Deleter interface {
+	// Delete the complete repository.
 	Delete() error
 }
 
-type Locationer interface {
-	Location() string
-}
+type Blob interface {
+	io.Writer
 
-type IDer interface {
-	ID() ID
-}
+	// Finalize moves the data blob to the final location for type and name.
+	Finalize(t Type, name string) error
 
-type Backend interface {
-	Lister
-	Getter
-	Creater
-	Tester
-	Remover
-	Closer
-	IDer
+	// Size returns the number of bytes written to the backend so far.
+	Size() uint
 }

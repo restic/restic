@@ -49,7 +49,12 @@ func (cmd CmdCat) Execute(args []string) error {
 			}
 
 			// find snapshot id with prefix
-			id, err = s.FindSnapshot(args[1])
+			name, err := s.FindSnapshot(args[1])
+			if err != nil {
+				return err
+			}
+
+			id, err = backend.ParseID(name)
 			if err != nil {
 				return err
 			}
@@ -71,7 +76,7 @@ func (cmd CmdCat) Execute(args []string) error {
 	case "tree":
 		// try storage id
 		tree := &restic.Tree{}
-		err := s.LoadJSONID(backend.Tree, id, tree)
+		err := s.LoadJSONID(backend.Tree, id.String(), tree)
 		if err != nil {
 			return err
 		}
@@ -86,7 +91,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		return nil
 	case "snapshot":
 		sn := &restic.Snapshot{}
-		err = s.LoadJSONID(backend.Snapshot, id, sn)
+		err = s.LoadJSONID(backend.Snapshot, id.String(), sn)
 		if err != nil {
 			return err
 		}
@@ -100,13 +105,15 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		return nil
 	case "key":
-		data, err := s.Get(backend.Key, id)
+		rd, err := s.Get(backend.Key, id.String())
 		if err != nil {
 			return err
 		}
 
+		dec := json.NewDecoder(rd)
+
 		var key restic.Key
-		err = json.Unmarshal(data, &key)
+		err = dec.Decode(&key)
 		if err != nil {
 			return err
 		}

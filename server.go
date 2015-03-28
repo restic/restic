@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"sync"
 
 	"github.com/restic/restic/backend"
@@ -25,23 +26,17 @@ func NewServerWithKey(be backend.Backend, key *Key) Server {
 	return Server{be: be, key: key}
 }
 
-// Each lists all entries of type t in the backend and calls function f() with
-// the id.
-func (s Server) EachID(t backend.Type, f func(backend.ID)) error {
-	return backend.EachID(s.be, t, f)
-}
-
-// Find loads the list of all blobs of type t and searches for IDs which start
+// Find loads the list of all blobs of type t and searches for names which start
 // with prefix. If none is found, nil and ErrNoIDPrefixFound is returned. If
 // more than one is found, nil and ErrMultipleIDMatches is returned.
-func (s Server) Find(t backend.Type, prefix string) (backend.ID, error) {
+func (s Server) Find(t backend.Type, prefix string) (string, error) {
 	return backend.Find(s.be, t, prefix)
 }
 
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches
 // the string as closely as possible.
-func (s Server) FindSnapshot(id string) (backend.ID, error) {
-	return backend.FindSnapshot(s.be, id)
+func (s Server) FindSnapshot(name string) (string, error) {
+	return backend.FindSnapshot(s.be, name)
 }
 
 // PrefixLength returns the number of bytes required so that all prefixes of
@@ -53,9 +48,19 @@ func (s Server) PrefixLength(t backend.Type) (int, error) {
 // Load tries to load and decrypt content identified by t and blob from the backend.
 func (s Server) Load(t backend.Type, blob Blob) ([]byte, error) {
 	// load data
-	buf, err := s.Get(t, blob.Storage)
+	rd, err := s.Get(t, blob.Storage.String())
 	if err != nil {
 		return nil, err
+	}
+
+	buf, err := ioutil.ReadAll(rd)
+	if err != nil {
+		return nil, err
+	}
+
+	// check hash
+	if !backend.Hash(buf).Equal(blob.Storage) {
+		return nil, errors.New("invalid data returned")
 	}
 
 	// check length
@@ -86,7 +91,12 @@ func (s Server) Load(t backend.Type, blob Blob) ([]byte, error) {
 // Load tries to load and decrypt content identified by t and id from the backend.
 func (s Server) LoadID(t backend.Type, storageID backend.ID) ([]byte, error) {
 	// load data
-	buf, err := s.Get(t, storageID)
+	rd, err := s.Get(t, storageID.String())
+	if err != nil {
+		return nil, err
+	}
+
+	buf, err := ioutil.ReadAll(rd)
 	if err != nil {
 		return nil, err
 	}
@@ -103,14 +113,14 @@ func (s Server) LoadID(t backend.Type, storageID backend.ID) ([]byte, error) {
 // LoadJSON calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
 func (s Server) LoadJSON(t backend.Type, blob Blob, item interface{}) error {
-	return s.LoadJSONID(t, blob.Storage, item)
+	return s.LoadJSONID(t, blob.Storage.String(), item)
 }
 
 // LoadJSONID calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
-func (s Server) LoadJSONID(t backend.Type, storageID backend.ID, item interface{}) error {
+func (s Server) LoadJSONID(t backend.Type, name string, item interface{}) error {
 	// read
-	rd, err := s.GetReader(t, storageID)
+	rd, err := s.Get(t, name)
 	if err != nil {
 		return err
 	}
@@ -169,8 +179,11 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 
 	ciphertext = ciphertext[:n]
 
+	// compute ciphertext hash
+	sid := backend.Hash(ciphertext)
+
 	// save blob
-	backendBlob, err := s.Create(t)
+	backendBlob, err := s.Create()
 	if err != nil {
 		return Blob{}, err
 	}
@@ -180,12 +193,7 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 		return Blob{}, err
 	}
 
-	err = backendBlob.Close()
-	if err != nil {
-		return Blob{}, err
-	}
-
-	sid, err := backendBlob.ID()
+	err = backendBlob.Finalize(t, sid.String())
 	if err != nil {
 		return Blob{}, err
 	}
@@ -202,12 +210,13 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 		return Blob{}, errors.New("id is nil")
 	}
 
-	backendBlob, err := s.Create(t)
+	backendBlob, err := s.Create()
 	if err != nil {
 		return Blob{}, err
 	}
 
-	encWr := s.key.EncryptTo(backendBlob)
+	hw := backend.NewHashingWriter(backendBlob, sha256.New())
+	encWr := s.key.EncryptTo(hw)
 
 	_, err = io.Copy(encWr, rd)
 	if err != nil {
@@ -221,20 +230,16 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 	}
 
 	// finish backend blob
-	err = backendBlob.Close()
+	sid := backend.ID(hw.Sum(nil))
+	err = backendBlob.Finalize(t, sid.String())
 	if err != nil {
 		return Blob{}, fmt.Errorf("backend.Blob.Close(): %v", err)
-	}
-
-	storageID, err := backendBlob.ID()
-	if err != nil {
-		return Blob{}, fmt.Errorf("backend.Blob.ID(): %v", err)
 	}
 
 	return Blob{
 		ID:          id,
 		Size:        uint64(length),
-		Storage:     storageID,
+		Storage:     sid,
 		StorageSize: uint64(backendBlob.Size()),
 	}, nil
 }
@@ -242,15 +247,16 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 // SaveJSON serialises item as JSON and encrypts and saves it in the backend as
 // type t.
 func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
-	backendBlob, err := s.Create(t)
+	backendBlob, err := s.Create()
 	if err != nil {
 		return Blob{}, fmt.Errorf("Create: %v", err)
 	}
 
-	encWr := s.key.EncryptTo(backendBlob)
-	hw := backend.NewHashingWriter(encWr, sha256.New())
+	storagehw := backend.NewHashingWriter(backendBlob, sha256.New())
+	encWr := s.key.EncryptTo(storagehw)
+	plainhw := backend.NewHashingWriter(encWr, sha256.New())
 
-	enc := json.NewEncoder(hw)
+	enc := json.NewEncoder(plainhw)
 	err = enc.Encode(item)
 	if err != nil {
 		return Blob{}, fmt.Errorf("json.NewEncoder: %v", err)
@@ -263,21 +269,18 @@ func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
 	}
 
 	// finish backend blob
-	err = backendBlob.Close()
+	sid := backend.ID(storagehw.Sum(nil))
+	err = backendBlob.Finalize(t, sid.String())
 	if err != nil {
 		return Blob{}, fmt.Errorf("backend.Blob.Close(): %v", err)
 	}
 
-	id := hw.Sum(nil)
-	storageID, err := backendBlob.ID()
-	if err != nil {
-		return Blob{}, fmt.Errorf("backend.Blob.ID(): %v", err)
-	}
+	id := backend.ID(plainhw.Sum(nil))
 
 	return Blob{
 		ID:          id,
-		Size:        uint64(hw.Size()),
-		Storage:     storageID,
+		Size:        uint64(plainhw.Size()),
+		Storage:     sid,
 		StorageSize: uint64(backendBlob.Size()),
 	}, nil
 }
@@ -354,53 +357,55 @@ func (s Server) Stats() (ServerStats, error) {
 
 	// list ids
 	trees := 0
-	err := s.EachID(backend.Tree, func(id backend.ID) {
+	done := make(chan struct{})
+	defer close(done)
+	for name := range s.List(backend.Tree, done) {
 		trees++
+		id, err := backend.ParseID(name)
+		if err != nil {
+			debug.Log("Server.Stats", "unable to parse name %v as id: %v", name, err)
+			continue
+		}
 		idCh <- id
-	})
+	}
 
 	close(idCh)
 
 	// wait for workers
 	wg.Wait()
 
-	return ServerStats{Blobs: uint(blobs.Len()), Trees: uint(trees)}, err
+	return ServerStats{Blobs: uint(blobs.Len()), Trees: uint(trees)}, nil
 }
 
-// Count counts the number of objects of type t in the backend.
-func (s Server) Count(t backend.Type) (int, error) {
-	l, err := s.be.List(t)
-	if err != nil {
-		return 0, err
+// Count returns the number of blobs of a given type in the backend.
+func (s Server) Count(t backend.Type) (n int) {
+	for range s.List(t, nil) {
+		n++
 	}
 
-	return len(l), nil
+	return
 }
 
 // Proxy methods to backend
 
-func (s Server) List(t backend.Type) (backend.IDs, error) {
-	return s.be.List(t)
+func (s Server) List(t backend.Type, done <-chan struct{}) <-chan string {
+	return s.be.List(t, done)
 }
 
-func (s Server) Get(t backend.Type, id backend.ID) ([]byte, error) {
-	return s.be.Get(t, id)
+func (s Server) Get(t backend.Type, name string) (io.ReadCloser, error) {
+	return s.be.Get(t, name)
 }
 
-func (s Server) GetReader(t backend.Type, id backend.ID) (io.ReadCloser, error) {
-	return s.be.GetReader(t, id)
+func (s Server) Create() (backend.Blob, error) {
+	return s.be.Create()
 }
 
-func (s Server) Create(t backend.Type) (backend.Blob, error) {
-	return s.be.Create(t)
+func (s Server) Test(t backend.Type, name string) (bool, error) {
+	return s.be.Test(t, name)
 }
 
-func (s Server) Test(t backend.Type, id backend.ID) (bool, error) {
-	return s.be.Test(t, id)
-}
-
-func (s Server) Remove(t backend.Type, id backend.ID) error {
-	return s.be.Remove(t, id)
+func (s Server) Remove(t backend.Type, name string) error {
+	return s.be.Remove(t, name)
 }
 
 func (s Server) Close() error {
@@ -415,6 +420,10 @@ func (s Server) Delete() error {
 	return errors.New("Delete() called for backend that does not implement this method")
 }
 
-func (s Server) ID() backend.ID {
+func (s Server) ID() string {
 	return s.be.ID()
+}
+
+func (s Server) Location() string {
+	return s.be.Location()
 }
