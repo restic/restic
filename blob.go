@@ -8,7 +8,6 @@ import (
 
 type Blob struct {
 	ID          backend.ID `json:"id,omitempty"`
-	Offset      uint64     `json:"offset,omitempty"`
 	Size        uint64     `json:"size,omitempty"`
 	Storage     backend.ID `json:"sid,omitempty"`   // encrypted ID
 	StorageSize uint64     `json:"ssize,omitempty"` // encrypted Size
