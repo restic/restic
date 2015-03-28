@@ -86,6 +86,7 @@ var errCancelled = errors.New("walk cancelled")
 func walk(basedir, dir string, done chan struct{}, jobs chan<- Job, res chan<- Result) error {
 	info, err := os.Lstat(dir)
 	if err != nil {
+		debug.Log("pipe.walk", "error for %v: %v", dir, err)
 		return err
 	}
 
@@ -188,11 +189,12 @@ func Walk(paths []string, done chan struct{}, jobs chan<- Job, res chan<- Result
 	for _, path := range paths {
 		debug.Log("pipe.Walk", "start walker for %v", path)
 		ch := make(chan Result, 1)
-		entries = append(entries, ch)
 		err := walk(filepath.Dir(path), path, done, jobs, ch)
 		if err != nil {
-			return err
+			debug.Log("pipe.Walk", "error for %v: %v", path, err)
+			continue
 		}
+		entries = append(entries, ch)
 		debug.Log("pipe.Walk", "walker for %v done", path)
 	}
 
