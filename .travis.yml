@@ -15,7 +15,7 @@ script:
   - go build -ldflags "-s" -o restic ./cmd/restic
   - "stat --printf='binary size: %s' restic"
   - go test -v ./...
-  - cd backend && go test -v -test.sftppath /usr/lib/openssh/sftp-server ./...
   - ./testsuite.sh
+  - sh -c "cd backend && go test -v -test.sftppath /usr/lib/openssh/sftp-server ./..."
   - gofmt -l *.go */*.go */*/*.go
   - test -z "$(gofmt -l *.go */*.go */*/*.go)"
