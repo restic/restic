@@ -371,7 +371,7 @@ func (s Server) Stats() (ServerStats, error) {
 
 // Count returns the number of blobs of a given type in the backend.
 func (s Server) Count(t backend.Type) (n int) {
-	for range s.List(t, nil) {
+	for _ = range s.List(t, nil) {
 		n++
 	}
 
