@@ -15,7 +15,6 @@ var (
 )
 
 var (
-	newHash  = sha256.New
 	hashData = sha256.Sum256
 )
 

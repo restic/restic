@@ -7,8 +7,6 @@ import (
 	"syscall"
 )
 
-const backlog = 100
-
 type entry struct {
 	path string
 	fi   os.FileInfo

@@ -19,10 +19,9 @@ import (
 var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
 
 type Local struct {
-	p    string
-	ver  uint
-	name string
-	id   string
+	p   string
+	ver uint
+	id  string
 }
 
 // Open opens the local backend at dir.

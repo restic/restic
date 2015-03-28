@@ -10,12 +10,6 @@ import (
 	"github.com/restic/restic/debug"
 )
 
-type findQuery struct {
-	name       string
-	minModTime time.Time
-	maxModTime time.Time
-}
-
 type findResult struct {
 	node *restic.Node
 	path string

@@ -46,7 +46,6 @@ type Key struct {
 	Created  time.Time `json:"created"`
 	Username string    `json:"username"`
 	Hostname string    `json:"hostname"`
-	Comment  string    `json:"comment,omitempty"`
 
 	KDF  string `json:"kdf"`
 	N    int    `json:"N"`

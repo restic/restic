@@ -316,7 +316,6 @@ func (s Server) Key() *Key {
 
 type ServerStats struct {
 	Blobs, Trees uint
-	Bytes        uint64
 }
 
 // Stats returns statistics for this backend and the server.
