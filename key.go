@@ -131,7 +131,7 @@ func SearchKey(s Server, password string) (*Key, error) {
 // LoadKey loads a key from the backend.
 func LoadKey(s Server, name string) (*Key, error) {
 	// extract data from repo
-	rd, err := s.Get(backend.Key, name)
+	rd, err := s.be.Get(backend.Key, name)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +207,7 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	}
 
 	// store in repository and return
-	blob, err := s.Create()
+	blob, err := s.be.Create()
 	if err != nil {
 		return nil, err
 	}

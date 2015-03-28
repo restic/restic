@@ -736,7 +736,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 
 		// start walker on old tree
 		ch := make(chan WalkTreeJob)
-		go WalkTree(arch.s, parent.Tree.Storage, done, ch)
+		go WalkTree(arch.s, parent.Tree, done, ch)
 		jobs.Old = ch
 	} else {
 		// use closed channel

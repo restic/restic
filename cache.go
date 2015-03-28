@@ -106,7 +106,7 @@ func (c *Cache) Purge(t backend.Type, subtype string, id backend.ID) error {
 	return err
 }
 
-func (c *Cache) Clear(s backend.Backend) error {
+func (c *Cache) Clear(s Server) error {
 	list, err := c.List(backend.Snapshot)
 	if err != nil {
 		return err
@@ -296,7 +296,7 @@ func cacheSnapshotBlobs(p *Progress, s Server, c *Cache, id backend.ID) (*Map, e
 
 	wg.Add(1)
 	go func() {
-		WalkTree(s, sn.Tree.Storage, nil, ch)
+		WalkTree(s, sn.Tree, nil, ch)
 		wg.Done()
 	}()
 

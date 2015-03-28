@@ -22,8 +22,8 @@ func NewServer(be backend.Backend) Server {
 	return Server{be: be}
 }
 
-func NewServerWithKey(be backend.Backend, key *Key) Server {
-	return Server{be: be, key: key}
+func (s *Server) SetKey(k *Key) {
+	s.key = k
 }
 
 // Find loads the list of all blobs of type t and searches for names which start
@@ -45,10 +45,13 @@ func (s Server) PrefixLength(t backend.Type) (int, error) {
 	return backend.PrefixLength(s.be, t)
 }
 
-// Load tries to load and decrypt content identified by t and blob from the backend.
+// Load tries to load and decrypt content identified by t and blob from the
+// backend. If the blob specifies an ID, the decrypted plaintext is checked
+// against this ID. The same goes for blob.Size and blob.StorageSize: If they
+// are set to a value > 0, this value is checked.
 func (s Server) Load(t backend.Type, blob Blob) ([]byte, error) {
 	// load data
-	rd, err := s.Get(t, blob.Storage.String())
+	rd, err := s.be.Get(t, blob.Storage.String())
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +67,7 @@ func (s Server) Load(t backend.Type, blob Blob) ([]byte, error) {
 	}
 
 	// check length
-	if len(buf) != int(blob.StorageSize) {
+	if blob.StorageSize > 0 && len(buf) != int(blob.StorageSize) {
 		return nil, errors.New("Invalid storage length")
 	}
 
@@ -75,14 +78,16 @@ func (s Server) Load(t backend.Type, blob Blob) ([]byte, error) {
 	}
 
 	// check length
-	if len(buf) != int(blob.Size) {
+	if blob.Size > 0 && len(buf) != int(blob.Size) {
 		return nil, errors.New("Invalid length")
 	}
 
 	// check SHA256 sum
-	id := backend.Hash(buf)
-	if !blob.ID.Equal(id) {
-		return nil, fmt.Errorf("load %v: expected plaintext hash %v, got %v", blob.Storage, blob.ID, id)
+	if blob.ID != nil {
+		id := backend.Hash(buf)
+		if !blob.ID.Equal(id) {
+			return nil, fmt.Errorf("load %v: expected plaintext hash %v, got %v", blob.Storage, blob.ID, id)
+		}
 	}
 
 	return buf, nil
@@ -90,37 +95,25 @@ func (s Server) Load(t backend.Type, blob Blob) ([]byte, error) {
 
 // Load tries to load and decrypt content identified by t and id from the backend.
 func (s Server) LoadID(t backend.Type, storageID backend.ID) ([]byte, error) {
-	// load data
-	rd, err := s.Get(t, storageID.String())
-	if err != nil {
-		return nil, err
-	}
-
-	buf, err := ioutil.ReadAll(rd)
-	if err != nil {
-		return nil, err
-	}
-
-	// decrypt
-	buf, err = s.Decrypt(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
+	return s.Load(t, Blob{Storage: storageID})
 }
 
 // LoadJSON calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
 func (s Server) LoadJSON(t backend.Type, blob Blob, item interface{}) error {
-	return s.LoadJSONID(t, blob.Storage.String(), item)
+	buf, err := s.Load(t, blob)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(buf, item)
 }
 
 // LoadJSONID calls Load() to get content from the backend and afterwards calls
 // json.Unmarshal on the item.
-func (s Server) LoadJSONID(t backend.Type, name string, item interface{}) error {
+func (s Server) LoadJSONID(t backend.Type, id backend.ID, item interface{}) error {
 	// read
-	rd, err := s.Get(t, name)
+	rd, err := s.be.Get(t, id.String())
 	if err != nil {
 		return err
 	}
@@ -183,7 +176,7 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 	sid := backend.Hash(ciphertext)
 
 	// save blob
-	backendBlob, err := s.Create()
+	backendBlob, err := s.be.Create()
 	if err != nil {
 		return Blob{}, err
 	}
@@ -210,7 +203,7 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 		return Blob{}, errors.New("id is nil")
 	}
 
-	backendBlob, err := s.Create()
+	backendBlob, err := s.be.Create()
 	if err != nil {
 		return Blob{}, err
 	}
@@ -247,7 +240,7 @@ func (s Server) SaveFrom(t backend.Type, id backend.ID, length uint, rd io.Reade
 // SaveJSON serialises item as JSON and encrypts and saves it in the backend as
 // type t.
 func (s Server) SaveJSON(t backend.Type, item interface{}) (Blob, error) {
-	backendBlob, err := s.Create()
+	backendBlob, err := s.be.Create()
 	if err != nil {
 		return Blob{}, fmt.Errorf("Create: %v", err)
 	}
@@ -331,9 +324,9 @@ func (s Server) Stats() (ServerStats, error) {
 	blobs := backend.NewIDSet()
 
 	// load all trees, in parallel
-	worker := func(wg *sync.WaitGroup, c <-chan backend.ID) {
-		for id := range c {
-			tree, err := LoadTree(s, id)
+	worker := func(wg *sync.WaitGroup, b <-chan Blob) {
+		for blob := range b {
+			tree, err := LoadTree(s, blob)
 			// ignore error and advance to next tree
 			if err != nil {
 				return
@@ -346,13 +339,13 @@ func (s Server) Stats() (ServerStats, error) {
 		wg.Done()
 	}
 
-	idCh := make(chan backend.ID)
+	blobCh := make(chan Blob)
 
 	// start workers
 	var wg sync.WaitGroup
 	for i := 0; i < maxConcurrency; i++ {
 		wg.Add(1)
-		go worker(&wg, idCh)
+		go worker(&wg, blobCh)
 	}
 
 	// list ids
@@ -366,10 +359,10 @@ func (s Server) Stats() (ServerStats, error) {
 			debug.Log("Server.Stats", "unable to parse name %v as id: %v", name, err)
 			continue
 		}
-		idCh <- id
+		blobCh <- Blob{Storage: id}
 	}
 
-	close(idCh)
+	close(blobCh)
 
 	// wait for workers
 	wg.Wait()
@@ -390,14 +383,6 @@ func (s Server) Count(t backend.Type) (n int) {
 
 func (s Server) List(t backend.Type, done <-chan struct{}) <-chan string {
 	return s.be.List(t, done)
-}
-
-func (s Server) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	return s.be.Get(t, name)
-}
-
-func (s Server) Create() (backend.Blob, error) {
-	return s.be.Create()
 }
 
 func (s Server) Test(t backend.Type, name string) (bool, error) {

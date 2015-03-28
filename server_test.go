@@ -23,10 +23,10 @@ var serverTests = []testJSONStruct{
 }
 
 func TestSaveJSON(t *testing.T) {
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	for _, obj := range serverTests {
 		data, err := json.Marshal(obj)
@@ -44,10 +44,10 @@ func TestSaveJSON(t *testing.T) {
 }
 
 func BenchmarkSaveJSON(t *testing.B) {
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	obj := serverTests[0]
 
@@ -71,10 +71,10 @@ func BenchmarkSaveJSON(t *testing.B) {
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
 func TestSaveFrom(t *testing.T) {
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -101,10 +101,10 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveFrom(t *testing.B) {
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	size := 4 << 20 // 4MiB
 
@@ -129,10 +129,10 @@ func TestServerStats(t *testing.T) {
 		t.Skip("benchdir not set, skipping TestServerStats")
 	}
 
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	// archive a few files
 	sn := snapshot(t, server, *benchArchiveDirectory, nil)
@@ -148,10 +148,10 @@ func TestLoadJSONID(t *testing.T) {
 		t.Skip("benchdir not set, skipping TestServerStats")
 	}
 
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	// archive a few files
 	sn := snapshot(t, server, *benchArchiveDirectory, nil)
@@ -163,8 +163,11 @@ func TestLoadJSONID(t *testing.T) {
 	assert(t, found, "no Trees in repository found")
 	close(done)
 
+	id, err := backend.ParseID(first)
+	ok(t, err)
+
 	tree := restic.NewTree()
-	err := server.LoadJSONID(backend.Tree, first, &tree)
+	err = server.LoadJSONID(backend.Tree, id, &tree)
 	ok(t, err)
 }
 
@@ -173,10 +176,10 @@ func BenchmarkLoadJSONID(t *testing.B) {
 		t.Skip("benchdir not set, skipping TestServerStats")
 	}
 
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	// archive a few files
 	sn := snapshot(t, server, *benchArchiveDirectory, nil)
@@ -186,8 +189,10 @@ func BenchmarkLoadJSONID(t *testing.B) {
 
 	tree := restic.NewTree()
 	for i := 0; i < t.N; i++ {
-		for treeID := range be.List(backend.Tree, nil) {
-			ok(t, server.LoadJSONID(backend.Tree, treeID, &tree))
+		for name := range server.List(backend.Tree, nil) {
+			id, err := backend.ParseID(name)
+			ok(t, err)
+			ok(t, server.LoadJSONID(backend.Tree, id, &tree))
 		}
 	}
 }

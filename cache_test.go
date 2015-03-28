@@ -9,10 +9,10 @@ import (
 )
 
 func TestCache(t *testing.T) {
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	cache, err := restic.NewCache(server)
 	ok(t, err)

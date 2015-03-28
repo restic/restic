@@ -15,10 +15,10 @@ func TestWalkTree(t *testing.T) {
 	dirs, err := filepath.Glob(*testWalkDirectory)
 	ok(t, err)
 
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	// archive a few files
 	arch, err := restic.NewArchiver(server)
@@ -35,7 +35,7 @@ func TestWalkTree(t *testing.T) {
 
 	// start tree walker
 	treeJobs := make(chan restic.WalkTreeJob)
-	go restic.WalkTree(server, sn.Tree.Storage, done, treeJobs)
+	go restic.WalkTree(server, sn.Tree, done, treeJobs)
 
 	// start filesystem walker
 	fsJobs := make(chan pipe.Job)

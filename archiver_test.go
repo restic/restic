@@ -130,10 +130,10 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
 	}
 
-	be := setupBackend(b)
-	defer teardownBackend(b, be)
-	key := setupKey(b, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(b)
+	defer teardownBackend(b, server)
+	key := setupKey(b, server, "geheim")
+	server.SetKey(key)
 
 	arch, err := restic.NewArchiver(server)
 	ok(b, err)
@@ -161,10 +161,10 @@ func archiveWithPreload(t testing.TB) {
 		t.Skip("benchdir not set, skipping TestArchiverPreload")
 	}
 
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	// archive a few files
 	sn := snapshot(t, server, *benchArchiveDirectory, nil)
@@ -212,10 +212,10 @@ func BenchmarkPreload(t *testing.B) {
 		t.Skip("benchdir not set, skipping TestArchiverPreload")
 	}
 
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	// archive a few files
 	arch, err := restic.NewArchiver(server)
@@ -240,10 +240,10 @@ func BenchmarkLoadTree(t *testing.B) {
 		t.Skip("benchdir not set, skipping TestArchiverPreload")
 	}
 
-	be := setupBackend(t)
-	defer teardownBackend(t, be)
-	key := setupKey(t, be, "geheim")
-	server := restic.NewServerWithKey(be, key)
+	server := setupBackend(t)
+	defer teardownBackend(t, server)
+	key := setupKey(t, server, "geheim")
+	server.SetKey(key)
 
 	// archive a few files
 	arch, err := restic.NewArchiver(server)
@@ -273,8 +273,8 @@ func BenchmarkLoadTree(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		for _, name := range list {
-			_, err := restic.LoadTree(server, name)
+		for _, id := range list {
+			_, err := restic.LoadTree(server, restic.Blob{Storage: id})
 			ok(t, err)
 		}
 	}

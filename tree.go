@@ -30,9 +30,9 @@ func (t Tree) String() string {
 	return fmt.Sprintf("Tree<%d nodes, %d blobs>", len(t.Nodes), len(t.Map.list))
 }
 
-func LoadTree(s Server, id backend.ID) (*Tree, error) {
+func LoadTree(s Server, blob Blob) (*Tree, error) {
 	tree := &Tree{}
-	err := s.LoadJSONID(backend.Tree, id.String(), tree)
+	err := s.LoadJSON(backend.Tree, blob, tree)
 	if err != nil {
 		return nil, err
 	}

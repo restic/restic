@@ -76,7 +76,7 @@ func (cmd CmdCat) Execute(args []string) error {
 	case "tree":
 		// try storage id
 		tree := &restic.Tree{}
-		err := s.LoadJSONID(backend.Tree, id.String(), tree)
+		err := s.LoadJSONID(backend.Tree, id, tree)
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		return nil
 	case "snapshot":
 		sn := &restic.Snapshot{}
-		err = s.LoadJSONID(backend.Snapshot, id.String(), sn)
+		err = s.LoadJSONID(backend.Snapshot, id, sn)
 		if err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		return nil
 	case "key":
-		rd, err := s.Get(backend.Key, id.String())
+		rd, err := s.Backend().Get(backend.Key, id.String())
 		if err != nil {
 			return err
 		}
