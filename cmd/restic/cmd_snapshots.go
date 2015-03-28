@@ -140,7 +140,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		if len(sn.Paths) == 0 {
 			continue
 		}
-		tab.Rows = append(tab.Rows, []interface{}{sn.ID()[:plen], sn.Time.Format(TimeFormat), sn.Hostname, sn.Paths[0]})
+		tab.Rows = append(tab.Rows, []interface{}{sn.ID()[:plen/2], sn.Time.Format(TimeFormat), sn.Hostname, sn.Paths[0]})
 
 		if len(sn.Paths) > 1 {
 			for _, path := range sn.Paths {

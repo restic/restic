@@ -245,7 +245,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	fmt.Printf("snapshot %s saved\n", id[:plen])
+	fmt.Printf("snapshot %s saved\n", id[:plen/2])
 
 	return nil
 }
