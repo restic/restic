@@ -1,9 +1,9 @@
 package chunker
 
 import (
+	"errors"
 	"hash"
 	"io"
-	"sync"
 )
 
 const (
@@ -23,20 +23,6 @@ const (
 	splitmask = (1 << AverageBits) - 1
 )
 
-var (
-	// pol is a randomly generated irreducible polynomial of degree 53
-	// in Z_2[X]. All rabin fingerprints are calculated with this polynomial.
-	pol = uint64(0x3DA3358B4DC173)
-
-	pol_shift = deg(pol) - 8
-	once      sync.Once
-	mod_table [256]uint64
-	out_table [256]uint64
-
-	// tables have been filled, do not allow changing the polynom afterwards
-	filled bool
-)
-
 // A chunk is one content-dependent chunk of bytes whose end was cut when the
 // Rabin Fingerprint had the value stored in Cut.
 type Chunk struct {
@@ -52,6 +38,11 @@ func (c Chunk) Reader(r io.ReaderAt) io.Reader {
 
 // A chunker internally holds everything needed to split content.
 type Chunker struct {
+	pol       Pol
+	pol_shift uint
+	mod_table [256]uint64
+	out_table [256]uint64
+
 	rd     io.Reader
 	closed bool
 
@@ -72,28 +63,24 @@ type Chunker struct {
 	h      hash.Hash
 }
 
-// Polynomial sets the polynomial that is to be used for calculating the rabin
-// fingerprints. This function must be called before the first chunker is
-// created, otherwise the results are undefined.
-func SetPolynomial(f uint64) {
-	if filled {
-		panic("polynomial changed after chunker has already been used")
+// New returns a new Chunker based on polynomial p that reads from data from rd
+// with bufsize and pass all data to hash along the way.
+func New(rd io.Reader, p Pol, bufsize int, hash hash.Hash) (*Chunker, error) {
+	// test irreducibility of p again
+	if !p.Irreducible() {
+		return nil, errors.New("invalid polynomial")
 	}
-	pol = f
-}
-
-// New returns a new Chunker that reads from data from rd with bufsize and pass
-// all data to hash along the way.
-func New(rd io.Reader, bufsize int, hash hash.Hash) *Chunker {
-	once.Do(fill_tables)
 
 	c := &Chunker{
-		buf: make([]byte, bufsize),
-		h:   hash,
+		pol:       p,
+		pol_shift: uint(p.Deg() - 8),
+		buf:       make([]byte, bufsize),
+		h:         hash,
 	}
+	c.fill_tables()
 	c.Reset(rd)
 
-	return c
+	return c, nil
 }
 
 // Reset restarts a chunker so that it can be reused with a different reader as
@@ -121,9 +108,7 @@ func (c *Chunker) Reset(rd io.Reader) {
 }
 
 // Calculate out_table and mod_table for optimization. Must be called only once.
-func fill_tables() {
-	filled = true
-
+func (c *Chunker) fill_tables() {
 	// calculate table for sliding out bytes. The byte to slide out is used as
 	// the index for the table, the value contains the following:
 	// out_table[b] = Hash(b || 0 ||        ...        || 0)
@@ -138,15 +123,15 @@ func fill_tables() {
 	for b := 0; b < 256; b++ {
 		var hash uint64
 
-		hash = append_byte(hash, byte(b), pol)
+		hash = append_byte(hash, byte(b), uint64(c.pol))
 		for i := 0; i < WindowSize-1; i++ {
-			hash = append_byte(hash, 0, pol)
+			hash = append_byte(hash, 0, uint64(c.pol))
 		}
-		out_table[b] = hash
+		c.out_table[b] = hash
 	}
 
 	// calculate table for reduction mod Polynomial
-	k := deg(pol)
+	k := c.pol.Deg()
 	for b := 0; b < 256; b++ {
 		// mod_table[b] = A | B, where A = (b(x) * x^k mod pol) and  B = b(x) * x^k
 		//
@@ -155,7 +140,7 @@ func fill_tables() {
 		// two parts: Part A contains the result of the modulus operation, part
 		// B is used to cancel out the 8 top bits so that one XOR operation is
 		// enough to reduce modulo Polynomial
-		mod_table[b] = mod(uint64(b)<<uint(k), pol) | (uint64(b) << uint(k))
+		c.mod_table[b] = mod(uint64(b)<<uint(k), uint64(c.pol)) | (uint64(b) << uint(k))
 	}
 }
 
@@ -226,15 +211,15 @@ func (c *Chunker) Next() (*Chunk, error) {
 			// inline c.slide(b) and append(b) to increase performance
 			out := c.window[c.wpos]
 			c.window[c.wpos] = b
-			c.digest ^= out_table[out]
+			c.digest ^= c.out_table[out]
 			c.wpos = (c.wpos + 1) % WindowSize
 
 			// c.append(b)
-			index := c.digest >> uint(pol_shift)
+			index := c.digest >> c.pol_shift
 			c.digest <<= 8
 			c.digest |= uint64(b)
 
-			c.digest ^= mod_table[index]
+			c.digest ^= c.mod_table[index]
 			// end inline
 
 			add++
@@ -300,17 +285,17 @@ func (c *Chunker) hashDigest() []byte {
 }
 
 func (c *Chunker) append(b byte) {
-	index := c.digest >> uint(pol_shift)
+	index := c.digest >> c.pol_shift
 	c.digest <<= 8
 	c.digest |= uint64(b)
 
-	c.digest ^= mod_table[index]
+	c.digest ^= c.mod_table[index]
 }
 
 func (c *Chunker) slide(b byte) {
 	out := c.window[c.wpos]
 	c.window[c.wpos] = b
-	c.digest ^= out_table[out]
+	c.digest ^= c.out_table[out]
 	c.wpos = (c.wpos + 1) % WindowSize
 
 	c.append(b)

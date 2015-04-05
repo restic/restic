@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/chunker"
 )
@@ -33,6 +34,9 @@ type chunk struct {
 	CutFP  uint64
 	Digest []byte
 }
+
+// polynomial used for all the tests below
+const testPol = chunker.Pol(0x3DA3358B4DC173)
 
 // created for 32MB of random data out of math/rand's Uint32() seeded by
 // constant 23
@@ -146,7 +150,8 @@ func get_random(seed, count int) []byte {
 func TestChunker(t *testing.T) {
 	// setup data source
 	buf := get_random(23, 32*1024*1024)
-	ch := chunker.New(bytes.NewReader(buf), *testBufSize, sha256.New())
+	ch, err := chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
+	ok(t, err)
 	chunks := test_with_data(t, ch, chunks1)
 
 	// test reader
@@ -173,15 +178,43 @@ func TestChunker(t *testing.T) {
 
 	// setup nullbyte data source
 	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
-	ch = chunker.New(bytes.NewReader(buf), *testBufSize, sha256.New())
+	ch, err = chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
+	ok(t, err)
 
 	test_with_data(t, ch, chunks2)
+}
+
+func TestChunkerWithRandomPolynomial(t *testing.T) {
+	// setup data source
+	buf := get_random(23, 32*1024*1024)
+
+	// generate a new random polynomial
+	start := time.Now()
+	p, err := chunker.RandomPolynomial()
+	ok(t, err)
+	t.Logf("generating random polynomial took %v", time.Since(start))
+
+	start = time.Now()
+	ch, err := chunker.New(bytes.NewReader(buf), p, *testBufSize, sha256.New())
+	ok(t, err)
+	t.Logf("creating chunker took %v", time.Since(start))
+
+	// make sure that first chunk is different
+	c, err := ch.Next()
+
+	assert(t, c.Cut != chunks1[0].CutFP,
+		"Cut point is the same")
+	assert(t, c.Length != chunks1[0].Length,
+		"Length is the same")
+	assert(t, !bytes.Equal(c.Digest, chunks1[0].Digest),
+		"Digest is the same")
 }
 
 func TestChunkerWithoutHash(t *testing.T) {
 	// setup data source
 	buf := get_random(23, 32*1024*1024)
-	ch := chunker.New(bytes.NewReader(buf), *testBufSize, nil)
+	ch, err := chunker.New(bytes.NewReader(buf), testPol, *testBufSize, nil)
+	ok(t, err)
 	chunks := test_with_data(t, ch, chunks1)
 
 	// test reader
@@ -211,14 +244,16 @@ func TestChunkerWithoutHash(t *testing.T) {
 
 	// setup nullbyte data source
 	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
-	ch = chunker.New(bytes.NewReader(buf), *testBufSize, sha256.New())
+	ch, err = chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
+	ok(t, err)
 
 	test_with_data(t, ch, chunks2)
 }
 
 func TestChunkerReuse(t *testing.T) {
 	// test multiple uses of the same chunker
-	ch := chunker.New(nil, *testBufSize, sha256.New())
+	ch, err := chunker.New(nil, testPol, *testBufSize, sha256.New())
+	ok(t, err)
 	buf := get_random(23, 32*1024*1024)
 
 	for i := 0; i < 4; i++ {
@@ -254,9 +289,13 @@ func benchmarkChunker(b *testing.B, hash hash.Hash) {
 		rd = bytes.NewReader(get_random(23, size))
 	}
 
+	t1 := time.Now()
+	ch, err := chunker.New(rd, testPol, *testBufSize, hash)
+	ok(b, err)
+	b.Logf("generating tables took %v", time.Since(t1))
+
 	b.ResetTimer()
 	b.SetBytes(int64(size))
-	ch := chunker.New(rd, *testBufSize, hash)
 
 	var chunks int
 	for i := 0; i < b.N; i++ {
