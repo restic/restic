@@ -289,10 +289,8 @@ func benchmarkChunker(b *testing.B, hash hash.Hash) {
 		rd = bytes.NewReader(get_random(23, size))
 	}
 
-	t1 := time.Now()
 	ch, err := chunker.New(rd, testPol, *testBufSize, hash)
 	ok(b, err)
-	b.Logf("generating tables took %v", time.Since(t1))
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
@@ -332,4 +330,16 @@ func BenchmarkChunkerWithMD5(b *testing.B) {
 
 func BenchmarkChunker(b *testing.B) {
 	benchmarkChunker(b, nil)
+}
+
+func BenchmarkNewChunker(b *testing.B) {
+	p, err := chunker.RandomPolynomial()
+	ok(b, err)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := chunker.New(bytes.NewBuffer(nil), p, *testBufSize, nil)
+		ok(b, err)
+	}
 }

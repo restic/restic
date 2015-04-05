@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hash"
 	"io"
+	"sync"
 )
 
 const (
@@ -23,6 +24,21 @@ const (
 	splitmask = (1 << AverageBits) - 1
 )
 
+type tables struct {
+	out [256]uint64
+	mod [256]uint64
+}
+
+// cache precomputed tables, these are read-only anyway
+var cache struct {
+	entries map[Pol]*tables
+	sync.Mutex
+}
+
+func init() {
+	cache.entries = make(map[Pol]*tables)
+}
+
 // A chunk is one content-dependent chunk of bytes whose end was cut when the
 // Rabin Fingerprint had the value stored in Cut.
 type Chunk struct {
@@ -40,8 +56,7 @@ func (c Chunk) Reader(r io.ReaderAt) io.Reader {
 type Chunker struct {
 	pol       Pol
 	pol_shift uint
-	mod_table [256]uint64
-	out_table [256]uint64
+	tables    *tables
 
 	rd     io.Reader
 	closed bool
@@ -66,18 +81,15 @@ type Chunker struct {
 // New returns a new Chunker based on polynomial p that reads from data from rd
 // with bufsize and pass all data to hash along the way.
 func New(rd io.Reader, p Pol, bufsize int, hash hash.Hash) (*Chunker, error) {
-	// test irreducibility of p again
-	if !p.Irreducible() {
-		return nil, errors.New("invalid polynomial")
-	}
-
 	c := &Chunker{
 		pol:       p,
 		pol_shift: uint(p.Deg() - 8),
 		buf:       make([]byte, bufsize),
 		h:         hash,
 	}
-	c.fill_tables()
+	if err := c.fill_tables(); err != nil {
+		return nil, err
+	}
 	c.Reset(rd)
 
 	return c, nil
@@ -107,8 +119,26 @@ func (c *Chunker) Reset(rd io.Reader) {
 	c.pre = MinSize - WindowSize
 }
 
-// Calculate out_table and mod_table for optimization. Must be called only once.
-func (c *Chunker) fill_tables() {
+// Calculate out_table and mod_table for optimization. Must be called only
+// once. This implementation uses a cache in the global variable cache.
+func (c *Chunker) fill_tables() error {
+	// test if the tables are cached for this polynomial
+	cache.Lock()
+	defer cache.Unlock()
+	if t, ok := cache.entries[c.pol]; ok {
+		c.tables = t
+		return nil
+	}
+
+	// else create a new entry
+	c.tables = &tables{}
+	cache.entries[c.pol] = c.tables
+
+	// test irreducibility of p
+	if !c.pol.Irreducible() {
+		return errors.New("invalid polynomial")
+	}
+
 	// calculate table for sliding out bytes. The byte to slide out is used as
 	// the index for the table, the value contains the following:
 	// out_table[b] = Hash(b || 0 ||        ...        || 0)
@@ -127,7 +157,7 @@ func (c *Chunker) fill_tables() {
 		for i := 0; i < WindowSize-1; i++ {
 			hash = append_byte(hash, 0, uint64(c.pol))
 		}
-		c.out_table[b] = hash
+		c.tables.out[b] = hash
 	}
 
 	// calculate table for reduction mod Polynomial
@@ -140,8 +170,10 @@ func (c *Chunker) fill_tables() {
 		// two parts: Part A contains the result of the modulus operation, part
 		// B is used to cancel out the 8 top bits so that one XOR operation is
 		// enough to reduce modulo Polynomial
-		c.mod_table[b] = mod(uint64(b)<<uint(k), uint64(c.pol)) | (uint64(b) << uint(k))
+		c.tables.mod[b] = mod(uint64(b)<<uint(k), uint64(c.pol)) | (uint64(b) << uint(k))
 	}
+
+	return nil
 }
 
 // Next returns the position and length of the next chunk of data. If an error
@@ -211,7 +243,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 			// inline c.slide(b) and append(b) to increase performance
 			out := c.window[c.wpos]
 			c.window[c.wpos] = b
-			c.digest ^= c.out_table[out]
+			c.digest ^= c.tables.out[out]
 			c.wpos = (c.wpos + 1) % WindowSize
 
 			// c.append(b)
@@ -219,7 +251,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 			c.digest <<= 8
 			c.digest |= uint64(b)
 
-			c.digest ^= c.mod_table[index]
+			c.digest ^= c.tables.mod[index]
 			// end inline
 
 			add++
@@ -289,13 +321,13 @@ func (c *Chunker) append(b byte) {
 	c.digest <<= 8
 	c.digest |= uint64(b)
 
-	c.digest ^= c.mod_table[index]
+	c.digest ^= c.tables.mod[index]
 }
 
 func (c *Chunker) slide(b byte) {
 	out := c.window[c.wpos]
 	c.window[c.wpos] = b
-	c.digest ^= c.out_table[out]
+	c.digest ^= c.tables.out[out]
 	c.wpos = (c.wpos + 1) % WindowSize
 
 	c.append(b)
