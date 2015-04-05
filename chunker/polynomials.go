@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // Pol is a polynomial from F_2[X].
@@ -261,7 +259,6 @@ func qp(p uint, g Pol) Pol {
 func (p Pol) MarshalJSON() ([]byte, error) {
 	buf := strconv.AppendUint([]byte{'"'}, uint64(p), 16)
 	buf = append(buf, '"')
-	spew.Dump(buf)
 	return buf, nil
 }
 
