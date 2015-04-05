@@ -82,22 +82,25 @@ type Chunker struct {
 // with bufsize and pass all data to hash along the way.
 func New(rd io.Reader, p Pol, bufsize int, hash hash.Hash) (*Chunker, error) {
 	c := &Chunker{
-		pol:       p,
-		pol_shift: uint(p.Deg() - 8),
-		buf:       make([]byte, bufsize),
-		h:         hash,
+		buf: make([]byte, bufsize),
+		h:   hash,
 	}
-	if err := c.fill_tables(); err != nil {
+	if err := c.Reset(rd, p); err != nil {
 		return nil, err
 	}
-	c.Reset(rd)
 
 	return c, nil
 }
 
-// Reset restarts a chunker so that it can be reused with a different reader as
-// the source.
-func (c *Chunker) Reset(rd io.Reader) {
+// Reset restarts a chunker so that it can be reused with a different
+// polynomial and reader.
+func (c *Chunker) Reset(rd io.Reader, p Pol) error {
+	c.pol = p
+	c.pol_shift = uint(p.Deg() - 8)
+	if err := c.fill_tables(); err != nil {
+		return err
+	}
+
 	c.rd = rd
 
 	for i := 0; i < WindowSize; i++ {
@@ -117,6 +120,8 @@ func (c *Chunker) Reset(rd io.Reader) {
 
 	// do not start a new chunk unless at least MinSize bytes have been read
 	c.pre = MinSize - WindowSize
+
+	return nil
 }
 
 // Calculate out_table and mod_table for optimization. Must be called only
@@ -279,7 +284,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 
 				// reset chunker, but keep position
 				pos := c.pos
-				c.Reset(c.rd)
+				c.Reset(c.rd, c.pol)
 				c.pos = pos
 				c.start = pos
 				c.pre = MinSize - WindowSize

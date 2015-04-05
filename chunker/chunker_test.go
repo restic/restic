@@ -257,7 +257,7 @@ func TestChunkerReuse(t *testing.T) {
 	buf := get_random(23, 32*1024*1024)
 
 	for i := 0; i < 4; i++ {
-		ch.Reset(bytes.NewReader(buf))
+		ch.Reset(bytes.NewReader(buf), testPol)
 		test_with_data(t, ch, chunks1)
 	}
 }
@@ -300,7 +300,7 @@ func benchmarkChunker(b *testing.B, hash hash.Hash) {
 		chunks = 0
 
 		rd.Seek(0, 0)
-		ch.Reset(rd)
+		ch.Reset(rd, testPol)
 
 		for {
 			_, err := ch.Next()
