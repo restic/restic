@@ -80,27 +80,21 @@ type Chunker struct {
 
 // New returns a new Chunker based on polynomial p that reads from data from rd
 // with bufsize and pass all data to hash along the way.
-func New(rd io.Reader, p Pol, bufsize int, hash hash.Hash) (*Chunker, error) {
+func New(rd io.Reader, p Pol, bufsize int, hash hash.Hash) *Chunker {
 	c := &Chunker{
 		buf: make([]byte, bufsize),
 		h:   hash,
 	}
-	if err := c.Reset(rd, p); err != nil {
-		return nil, err
-	}
-
-	return c, nil
+	c.Reset(rd, p)
+	return c
 }
 
 // Reset restarts a chunker so that it can be reused with a different
 // polynomial and reader.
-func (c *Chunker) Reset(rd io.Reader, p Pol) error {
+func (c *Chunker) Reset(rd io.Reader, p Pol) {
 	c.pol = p
 	c.pol_shift = uint(p.Deg() - 8)
-	if err := c.fill_tables(); err != nil {
-		return err
-	}
-
+	c.fill_tables()
 	c.rd = rd
 
 	for i := 0; i < WindowSize; i++ {
@@ -112,7 +106,10 @@ func (c *Chunker) Reset(rd io.Reader, p Pol) error {
 	c.pos = 0
 	c.start = 0
 	c.count = 0
-	c.slide(1)
+
+	if p != 0 {
+		c.slide(1)
+	}
 
 	if c.h != nil {
 		c.h.Reset()
@@ -120,29 +117,27 @@ func (c *Chunker) Reset(rd io.Reader, p Pol) error {
 
 	// do not start a new chunk unless at least MinSize bytes have been read
 	c.pre = MinSize - WindowSize
-
-	return nil
 }
 
 // Calculate out_table and mod_table for optimization. Must be called only
 // once. This implementation uses a cache in the global variable cache.
-func (c *Chunker) fill_tables() error {
+func (c *Chunker) fill_tables() {
+	// if polynomial hasn't been specified, do not compute anything for now
+	if c.pol == 0 {
+		return
+	}
+
 	// test if the tables are cached for this polynomial
 	cache.Lock()
 	defer cache.Unlock()
 	if t, ok := cache.entries[c.pol]; ok {
 		c.tables = t
-		return nil
+		return
 	}
 
 	// else create a new entry
 	c.tables = &tables{}
 	cache.entries[c.pol] = c.tables
-
-	// test irreducibility of p
-	if !c.pol.Irreducible() {
-		return errors.New("invalid polynomial")
-	}
 
 	// calculate table for sliding out bytes. The byte to slide out is used as
 	// the index for the table, the value contains the following:
@@ -177,8 +172,6 @@ func (c *Chunker) fill_tables() error {
 		// enough to reduce modulo Polynomial
 		c.tables.mod[b] = mod(uint64(b)<<uint(k), uint64(c.pol)) | (uint64(b) << uint(k))
 	}
-
-	return nil
 }
 
 // Next returns the position and length of the next chunk of data. If an error
@@ -186,6 +179,10 @@ func (c *Chunker) fill_tables() error {
 // the current chunk is undefined. When the last chunk has been returned, all
 // subsequent calls yield a nil chunk and an io.EOF error.
 func (c *Chunker) Next() (*Chunk, error) {
+	if c.tables == nil {
+		return nil, errors.New("polynomial is not set")
+	}
+
 	for {
 		if c.bpos >= c.bmax {
 			n, err := io.ReadFull(c.rd, c.buf[:])

@@ -201,7 +201,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) (Blobs, error) {
 
 	// store all chunks
 	chnker := GetChunker("archiver.SaveFile")
-	chnker.Reset(file)
+	chnker.Reset(file, arch.s.ChunkerPolynomial())
 	chans := [](<-chan Blob){}
 	defer FreeChunker("archiver.SaveFile", chnker)
 

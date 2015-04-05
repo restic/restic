@@ -88,8 +88,8 @@ func newChunker() interface{} {
 	defer chunkStats.m.Unlock()
 	chunkStats.new++
 
-	// create a new chunker with a nil reader
-	return chunker.New(nil, chunkerBufSize, sha256.New())
+	// create a new chunker with a nil reader and null polynomial
+	return chunker.New(nil, 0, chunkerBufSize, sha256.New())
 }
 
 func GetChunkBuf(s string) []byte {

@@ -13,6 +13,7 @@ import (
 )
 
 var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
+var testPol = chunker.Pol(0x3DA3358B4DC173)
 
 func get_random(seed, count int) []byte {
 	buf := make([]byte, count)
@@ -39,7 +40,7 @@ type Rdr interface {
 func benchmarkChunkEncrypt(b testing.TB, buf []byte, rd Rdr, key *restic.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncrypt")
 	rd.Seek(0, 0)
-	ch.Reset(rd)
+	ch.Reset(rd, testPol)
 
 	for {
 		chunk, err := ch.Next()
@@ -86,7 +87,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *restic.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncryptP")
 	rd.Seek(0, 0)
-	ch.Reset(rd)
+	ch.Reset(rd, testPol)
 
 	for {
 		chunk, err := ch.Next()

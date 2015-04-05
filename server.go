@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/debug"
 )
 
@@ -24,6 +25,11 @@ func NewServer(be backend.Backend) Server {
 
 func (s *Server) SetKey(k *Key) {
 	s.key = k
+}
+
+// ChunkerPolynomial returns the secret polynomial used for content defined chunking.
+func (s *Server) ChunkerPolynomial() chunker.Pol {
+	return chunker.Pol(s.key.Master().ChunkerPolynomial)
 }
 
 // Find loads the list of all blobs of type t and searches for names which start

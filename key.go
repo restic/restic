@@ -13,6 +13,7 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/debug"
 
 	"golang.org/x/crypto/poly1305"
 )
@@ -62,10 +63,12 @@ type Key struct {
 
 // MasterKeys holds signing and encryption keys for a repository. It is stored
 // encrypted and signed as a JSON data structure in the Data field of the Key
-// structure.
+// structure. For the master key, the secret random polynomial used for content
+// defined chunking is included.
 type MasterKeys struct {
-	Sign    MACKey `json:"sign"`
-	Encrypt AESKey `json:"encrypt"`
+	Sign              MACKey      `json:"sign"`
+	Encrypt           AESKey      `json:"encrypt"`
+	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial,omitempty"`
 }
 
 // CreateKey initializes a master key in the given backend and encrypts it with
@@ -105,6 +108,17 @@ func OpenKey(s Server, name string, password string) (*Key, error) {
 		return nil, err
 	}
 	k.name = name
+
+	// test if polynomial is valid and irreducible
+	if k.master.ChunkerPolynomial == 0 {
+		return nil, errors.New("Polynomial for content defined chunking is zero")
+	}
+
+	if !k.master.ChunkerPolynomial.Irreducible() {
+		return nil, errors.New("Polynomial for content defined chunking is invalid")
+	}
+
+	debug.Log("OpenKey", "Master keys loaded, polynomial %v", k.master.ChunkerPolynomial)
 
 	return k, nil
 }
@@ -184,6 +198,14 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	if template == nil {
 		// generate new random master keys
 		newkey.master = generateRandomKeys()
+		// generate random polynomial for cdc
+		p, err := chunker.RandomPolynomial()
+		if err != nil {
+			debug.Log("AddKey", "error generating new polynomial for cdc: %v", err)
+			return nil, err
+		}
+		debug.Log("AddKey", "generated new polynomial for cdc: %v", p)
+		newkey.master.ChunkerPolynomial = p
 	} else {
 		// copy master keys from old key
 		newkey.master = template.master
