@@ -10,10 +10,6 @@ const (
 	KiB = 1024
 	MiB = 1024 * KiB
 
-	// Polynomial is a randomly generated irreducible polynomial of degree 53
-	// in Z_2[X]. All rabin fingerprints are calculated with this polynomial.
-	Polynomial = 0x3DA3358B4DC173
-
 	// WindowSize is the size of the sliding window.
 	WindowSize = 64
 
@@ -28,10 +24,17 @@ const (
 )
 
 var (
-	pol_shift = deg(Polynomial) - 8
+	// pol is a randomly generated irreducible polynomial of degree 53
+	// in Z_2[X]. All rabin fingerprints are calculated with this polynomial.
+	pol = uint64(0x3DA3358B4DC173)
+
+	pol_shift = deg(pol) - 8
 	once      sync.Once
 	mod_table [256]uint64
 	out_table [256]uint64
+
+	// tables have been filled, do not allow changing the polynom afterwards
+	filled bool
 )
 
 // A chunk is one content-dependent chunk of bytes whose end was cut when the
@@ -67,6 +70,16 @@ type Chunker struct {
 
 	digest uint64
 	h      hash.Hash
+}
+
+// Polynomial sets the polynomial that is to be used for calculating the rabin
+// fingerprints. This function must be called before the first chunker is
+// created, otherwise the results are undefined.
+func SetPolynomial(f uint64) {
+	if filled {
+		panic("polynomial changed after chunker has already been used")
+	}
+	pol = f
 }
 
 // New returns a new Chunker that reads from data from rd with bufsize and pass
@@ -109,6 +122,8 @@ func (c *Chunker) Reset(rd io.Reader) {
 
 // Calculate out_table and mod_table for optimization. Must be called only once.
 func fill_tables() {
+	filled = true
+
 	// calculate table for sliding out bytes. The byte to slide out is used as
 	// the index for the table, the value contains the following:
 	// out_table[b] = Hash(b || 0 ||        ...        || 0)
@@ -123,15 +138,15 @@ func fill_tables() {
 	for b := 0; b < 256; b++ {
 		var hash uint64
 
-		hash = append_byte(hash, byte(b), Polynomial)
+		hash = append_byte(hash, byte(b), pol)
 		for i := 0; i < WindowSize-1; i++ {
-			hash = append_byte(hash, 0, Polynomial)
+			hash = append_byte(hash, 0, pol)
 		}
 		out_table[b] = hash
 	}
 
 	// calculate table for reduction mod Polynomial
-	k := deg(Polynomial)
+	k := deg(pol)
 	for b := 0; b < 256; b++ {
 		// mod_table[b] = A | B, where A = (b(x) * x^k mod pol) and  B = b(x) * x^k
 		//
@@ -140,7 +155,7 @@ func fill_tables() {
 		// two parts: Part A contains the result of the modulus operation, part
 		// B is used to cancel out the 8 top bits so that one XOR operation is
 		// enough to reduce modulo Polynomial
-		mod_table[b] = mod(uint64(b)<<uint(k), Polynomial) | (uint64(b) << uint(k))
+		mod_table[b] = mod(uint64(b)<<uint(k), pol) | (uint64(b) << uint(k))
 	}
 }
 
@@ -308,7 +323,7 @@ func append_byte(hash uint64, b byte, pol uint64) uint64 {
 	return mod(hash, pol)
 }
 
-// Mod calculates the remainder of x divided by p.
+// Mod calculates the remainder of x divided by p in F_2[X].
 func mod(x, p uint64) uint64 {
 	for deg(x) >= deg(p) {
 		shift := uint(deg(x) - deg(p))
