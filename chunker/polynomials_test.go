@@ -188,6 +188,24 @@ func BenchmarkPolDivMod(t *testing.B) {
 	}
 }
 
+func BenchmarkPolDiv(t *testing.B) {
+	f := chunker.Pol(0x2482734cacca49)
+	g := chunker.Pol(0x3af4b284899)
+
+	for i := 0; i < t.N; i++ {
+		g.Div(f)
+	}
+}
+
+func BenchmarkPolMod(t *testing.B) {
+	f := chunker.Pol(0x2482734cacca49)
+	g := chunker.Pol(0x3af4b284899)
+
+	for i := 0; i < t.N; i++ {
+		g.Mod(f)
+	}
+}
+
 func BenchmarkPolDeg(t *testing.B) {
 	f := chunker.Pol(0x3af4b284899)
 	d := f.Deg()
