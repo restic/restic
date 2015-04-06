@@ -25,8 +25,8 @@ const (
 )
 
 type tables struct {
-	out [256]uint64
-	mod [256]uint64
+	out [256]Pol
+	mod [256]Pol
 }
 
 // cache precomputed tables, these are read-only anyway
@@ -151,13 +151,13 @@ func (c *Chunker) fill_tables() {
 	//
 	// Afterwards a new byte can be shifted in.
 	for b := 0; b < 256; b++ {
-		var hash uint64
+		var h Pol
 
-		hash = append_byte(hash, byte(b), uint64(c.pol))
+		h = append_byte(h, byte(b), c.pol)
 		for i := 0; i < WindowSize-1; i++ {
-			hash = append_byte(hash, 0, uint64(c.pol))
+			h = append_byte(h, 0, c.pol)
 		}
-		c.tables.out[b] = hash
+		c.tables.out[b] = h
 	}
 
 	// calculate table for reduction mod Polynomial
@@ -170,7 +170,7 @@ func (c *Chunker) fill_tables() {
 		// two parts: Part A contains the result of the modulus operation, part
 		// B is used to cancel out the 8 top bits so that one XOR operation is
 		// enough to reduce modulo Polynomial
-		c.tables.mod[b] = mod(uint64(b)<<uint(k), uint64(c.pol)) | (uint64(b) << uint(k))
+		c.tables.mod[b] = Pol(uint64(b)<<uint(k)).Mod(c.pol) | (Pol(b) << uint(k))
 	}
 }
 
@@ -245,7 +245,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 			// inline c.slide(b) and append(b) to increase performance
 			out := c.window[c.wpos]
 			c.window[c.wpos] = b
-			c.digest ^= c.tables.out[out]
+			c.digest ^= uint64(c.tables.out[out])
 			c.wpos = (c.wpos + 1) % WindowSize
 
 			// c.append(b)
@@ -253,7 +253,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 			c.digest <<= 8
 			c.digest |= uint64(b)
 
-			c.digest ^= c.tables.mod[index]
+			c.digest ^= uint64(c.tables.mod[index])
 			// end inline
 
 			add++
@@ -323,48 +323,21 @@ func (c *Chunker) append(b byte) {
 	c.digest <<= 8
 	c.digest |= uint64(b)
 
-	c.digest ^= c.tables.mod[index]
+	c.digest ^= uint64(c.tables.mod[index])
 }
 
 func (c *Chunker) slide(b byte) {
 	out := c.window[c.wpos]
 	c.window[c.wpos] = b
-	c.digest ^= c.tables.out[out]
+	c.digest ^= uint64(c.tables.out[out])
 	c.wpos = (c.wpos + 1) % WindowSize
 
 	c.append(b)
 }
 
-func append_byte(hash uint64, b byte, pol uint64) uint64 {
+func append_byte(hash Pol, b byte, pol Pol) Pol {
 	hash <<= 8
-	hash |= uint64(b)
+	hash |= Pol(b)
 
-	return mod(hash, pol)
-}
-
-// Mod calculates the remainder of x divided by p in F_2[X].
-func mod(x, p uint64) uint64 {
-	for deg(x) >= deg(p) {
-		shift := uint(deg(x) - deg(p))
-
-		x = x ^ (p << shift)
-	}
-
-	return x
-}
-
-// Deg returns the degree of the polynomial p, this is equivalent to the number
-// of the highest bit set in p.
-func deg(p uint64) int {
-	var mask uint64 = 0x8000000000000000
-
-	for i := 0; i < 64; i++ {
-		if mask&p > 0 {
-			return 63 - i
-		}
-
-		mask >>= 1
-	}
-
-	return -1
+	return hash.Mod(pol)
 }

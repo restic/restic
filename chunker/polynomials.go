@@ -64,12 +64,14 @@ func (x Pol) Deg() int {
 		return -1
 	}
 
+	var mask Pol = (1 << 63)
 	for i := 63; i >= 0; i-- {
 		// test if bit i is set
-		if x&(1<<uint(i)) > 0 {
+		if x&mask > 0 {
 			// this is the degree of x
 			return i
 		}
+		mask >>= 1
 	}
 
 	// fall-through, return -1
