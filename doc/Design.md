@@ -3,12 +3,12 @@ This document gives a high-level overview of the design and repository layout of
 Repository Format
 =================
 
-All data is stored in a restic repository. A repository is able to store chunks
-of data called blobs of several different types, which can later be requested
-based on an ID. The ID is the hash (SHA-256) of the content of a blob. All
-blobs in a repository are only written once and never modified afterwards. This
-allows accessing and even writing to the repository with multiple clients in
-parallel. Only the delete operation changes data in the repository.
+All data is stored in a restic repository. A repository is able to store data
+in blobs of several different types, which can later be requested based on an
+ID. The ID is the hash (SHA-256) of the content of a blob. All blobs in a
+repository are only written once and never modified afterwards. This allows
+accessing and even writing to the repository with multiple clients in parallel.
+Only the delete operation changes data in the repository.
 
 At the time of writing, the only implemented repository type is based on
 directories and files. Such repositories can be accessed locally on the same
@@ -18,6 +18,9 @@ both access methods. This repository type is described in the following.
 Repositories consists of several directories and a file called `version`. This
 file contains the version number of the repository. At the moment, this file
 is expected to hold the string `1`, with an optional newline character.
+Additionally there is a file named `id` which contains 32 random bytes, encoded
+in hexadecimal. This uniquely identifies the repository, regardless if it is
+accessed via SFTP or locally.
 
 For all other blobs stored in the repository, the name for the file is the
 lower case hexadecimal representation of the SHA-256 hash of the file's
@@ -27,9 +30,9 @@ its output to the file name. If the prefix of a filename is unique amongst all
 the other files in the same directory, the prefix may be used instead of the
 complete filename.
 
-Apart from the `version` file and the files stored below the `keys` directory,
-all files are encrypted with AES-256 in counter mode (CTR). The integrity of
-the encrypted data is secured by an Poly1305-AES signature.
+Apart from the files `version`, `id` and the files stored below the `keys`
+directory, all files are encrypted with AES-256 in counter mode (CTR). The
+integrity of the encrypted data is secured by an Poly1305-AES signature.
 
 In the first 16 bytes of each encrypted file the initialisation vector (IV) is
 stored. It is followed by the encrypted data and completed by the 16 byte MAC
@@ -45,6 +48,7 @@ The basic layout of a sample restic repository is shown below:
     │   ├── 73
     │   │   └── 73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c
     │   [...]
+    ├── id
     ├── keys
     │   └── b02de829beeb3c01a63e6b25cbd421a98fef144f03b9a02e46eff9e2ca3f0bd7
     ├── locks
@@ -314,8 +318,8 @@ The restic backup program guarantees the following:
 
  * Accessing the unencrypted content of stored files and meta data should not
    be possible without a password for the repository. Everything except the
-   `version` file and the meta data included for informational purposes in the
-   key files is encrypted and then signed.
+   `version` and `id` files and the meta data included for informational
+   purposes in the key files is encrypted and then signed.
 
  * Modifications (intentional or unintentional) can be detected automatically
    on several layers:
