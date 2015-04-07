@@ -1,4 +1,5 @@
-This document gives a high-level overview of the design and repository layout of the restic backup program.
+This document gives a high-level overview of the design and repository layout
+of the restic backup program.
 
 Repository Format
 =================
@@ -121,9 +122,9 @@ last 32 byte). If the password is incorrect or the key file has been tampered
 with, the computed MAC will not match the last 16 bytes of the data, and
 restic exits with an error. Otherwise, the data is decrypted with the
 encryption key derived from `scrypt`. This yields a JSON document which
-contains the master signing and encryption keys for this repository, encoded in
-Base64. The command `restic cat masterkey` can be used as follows to decrypt
-and pretty-print the master key:
+contains the master signing and encryption keys for this repository (encoded in
+Base64) and the polynomial that is used for CDC. The command `restic cat
+masterkey` can be used as follows to decrypt and pretty-print the master key:
 
     $ restic -r /tmp/restic-repo cat masterkey
     {
@@ -131,7 +132,8 @@ and pretty-print the master key:
           "k": "evFWd9wWlndL9jc501268g==",
           "r": "E9eEDnSJZgqwTOkDtOp+Dw=="
         },
-        "encrypt": "UQCqa0lKZ94PygPxMRqkePTZnHRYh1k1pX2k2lM2v3Q="
+        "encrypt": "UQCqa0lKZ94PygPxMRqkePTZnHRYh1k1pX2k2lM2v3Q=",
+        "chunker_polynomial": "2f0797d9c2363f"
     }
 
 All data in the repository is encrypted and signed with these master keys with
@@ -292,7 +294,8 @@ For creating a backup, restic scans the target directory for all files,
 sub-directories and other entries. The data from each file is split into
 variable length chunks cut at offsets defined by a sliding window of 64 byte.
 The implementation uses Rabin Fingerprints for implementing this Content
-Defined Chunking (CDC).
+Defined Chunking (CDC). An irreducible polynomial is selected at random when a
+repository is initialized.
 
 Files smaller than 512 KiB are not split, chunks are of 512 KiB to 8 MiB in
 size. The implementation aims for 1 MiB chunk size on average.
