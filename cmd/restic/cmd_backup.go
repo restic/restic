@@ -13,7 +13,8 @@ import (
 )
 
 type CmdBackup struct {
-	Parent string `short:"p" long:"parent"    description:"use this parent snapshot (default: not set)"`
+	Parent string `short:"p" long:"parent"    description:"use this parent snapshot (default: last snapshot in repo)"`
+	AsNew  bool   `short:"n" long:"asnew" description:"consider the target as new and re-read it. Overrides the \"parent\" flag"`
 }
 
 func init() {
@@ -190,20 +191,6 @@ func (cmd CmdBackup) Execute(args []string) error {
 		parentSnapshotID backend.ID
 	)
 
-	if cmd.Parent != "" {
-		parentSnapshot, err = s.FindSnapshot(cmd.Parent)
-		if err != nil {
-			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
-		}
-
-		parentSnapshotID, err = backend.ParseID(parentSnapshot)
-		if err != nil {
-			return fmt.Errorf("invalid parent snapshot id %v", parentSnapshot)
-		}
-
-		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
-	}
-
 	fmt.Printf("scan %v\n", target)
 
 	stat, err := restic.Scan(target, newScanProgress())
@@ -227,6 +214,47 @@ func (cmd CmdBackup) Execute(args []string) error {
 	err = arch.Cache().RefreshSnapshots(s, newCacheRefreshProgress())
 	if err != nil {
 		return err
+	}
+
+	// Force using a parent
+	if cmd.Parent != "" {
+		parentSnapshot, err = s.FindSnapshot(cmd.Parent)
+		if err != nil {
+			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
+		}
+
+		parentSnapshotID, err = backend.ParseID(parentSnapshot)
+		if err != nil {
+			return fmt.Errorf("invalid parent snapshot id %v", parentSnapshot)
+		}
+
+		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
+	}
+
+	// Find last snapshot to set it as parent, if not already set
+	if parentSnapshot == "" {
+		var latest time.Time
+		snapshots, err := arch.Cache().List(backend.Snapshot)
+		if err != nil {
+			return err
+		}
+		for _, entry := range snapshots {
+			snapshot, err := restic.LoadSnapshot(s, entry.ID)
+			if err != nil {
+				return err
+			}
+			if snapshot.Time.After(latest) {
+				latest = snapshot.Time
+				parentSnapshotID = snapshot.ID()
+				parentSnapshot = string(parentSnapshotID)
+			}
+		}
+	}
+
+	// Force re-reading by not setting a parent
+	if cmd.AsNew {
+		parentSnapshotID = backend.ID{}
+		parentSnapshot = ""
 	}
 
 	fmt.Printf("loading blobs\n")
