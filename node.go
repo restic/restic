@@ -61,7 +61,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	node := &Node{
 		path:    path,
 		Name:    fi.Name(),
-		Mode:    fi.Mode() & os.ModePerm,
+		Mode:    fi.Mode() & (os.ModePerm | os.ModeType),
 		ModTime: fi.ModTime(),
 	}
 
