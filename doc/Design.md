@@ -50,6 +50,8 @@ The basic layout of a sample restic repository is shown below:
     │   │   └── 73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c
     │   [...]
     ├── id
+    ├── index
+    │   └── c38f5fb68307c6a3e3aa945d556e325dc38f5fb68307c6a3e3aa945d556e325d
     ├── keys
     │   └── b02de829beeb3c01a63e6b25cbd421a98fef144f03b9a02e46eff9e2ca3f0bd7
     ├── locks
@@ -73,6 +75,65 @@ The basic layout of a sample restic repository is shown below:
 A repository can be initialized with the `restic init` command, e.g.:
 
     $ restic -r /tmp/restic-repo init
+
+Blob Format
+-----------
+
+All blobs except key, tree and data blobs just contain raw data, stored as `IV
+|| Ciphertext || MAC`. Tree and Data blobs may contain several chunks of data.
+The format is described in the following.
+
+The blob starts with a nonce and a header, the header describes the content and
+is encrypted and signed. The blob's structure is as follows:
+
+    NONCE || Header_Length ||
+    IV_Header  || Ciphertext_Header  || MAC_Header  ||
+    IV_Chunk_1 || Ciphertext_Chunk_1 || MAC_Chunk_1 ||
+    [...]
+    IV_Chunk_n || Ciphertext_Chunk_n || MAC_Chunk_n ||
+    MAC
+
+`NONCE` consists of 16 bytes and `Header_Length` is a four byte integer in
+little-endian encoding.
+
+All the parts (`Ciphertext_Header`, `Ciphertext_Chunk1` etc.) are signed and
+encrypted independently. In addition, the complete blob is signed again using
+`NONCE`. This enables repository reorganisation without having to touch the
+encrypted chunks. In addition it also allows efficient indexing, for only the
+header needs to be read in order to find out which chunks are contained in the
+blob. Since the header is signed, authenticity of the header can be checked
+without having to read the complete blob.
+
+After decryption, a blob's header consists of the following elements:
+
+    Length(IV_Chunk1+Ciphertext_Chunk1+MAC_Chunk1) || Hash(Plaintext_Chunk1) ||
+    [...]
+    Length(IV_Chunk_n+Ciphertext_Chunk_n+MAC_Chunk_n) || Hash(Plaintext_Chunk_n) ||
+
+This is enough to calculate the offsets for all the chunks in the blob. Length
+is the length of the chunk as a four byte integer in little-endian format.
+
+Indexing
+--------
+
+Index blobs pack together information about data and tree blobs and stores this
+information in the repository. When the local cached index is not accessible
+any more, the index files can be downloaded and used to reconstruct the index.
+The index blobs are encrypted and signed like data and tree blobs, so the outer
+structure is `IV || Ciphertext || MAC` again. The plaintext consists of a JSON
+document like the following:
+
+   {
+      "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c":
+      [
+         "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+         "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+         "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"
+      ]
+   }
+
+This JSON document lists all the blobs with the contents. In this example, the
+blob `73d04e61` contains three chunks, the plaintext hashes are listed afterwards.
 
 Keys, Encryption and MAC
 ------------------------
@@ -159,13 +220,7 @@ pretty-print the contents of a snapshot file:
     Enter Password for Repository:
     {
       "time": "2015-01-02T18:10:50.895208559+01:00",
-      "tree": "",
-      "tree": {
-        "id": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
-        "size": 282,
-        "sid": "b8138ab08a4722596ac89c917827358da4672eac68e3c03a8115b88dbf4bfb59",
-        "ssize": 330
-      },
+      "tree": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
       "dir": "/tmp/testdata",
       "hostname": "kasimir",
       "username": "fd0",
@@ -182,10 +237,8 @@ SHA-256 hashes of all chunks are saved in an ordered list which then represents
 the content of the file.
 
 In order to relate these plain text hashes to the actual encrypted storage
-hashes (which vary due to random IVs), each object contains a list that maps
-all referenced plaintext hashes to storage hashes. In the case of the snapshot
-data structure listed above, the list only consists of one entry for the
-referenced tree, so the field `tree` consists of such a mapping.
+hashes (which vary due to random IVs), an index is used. If the index is not
+available, the header of all data blobs can be read.
 
 Trees and Data
 --------------
@@ -215,23 +268,12 @@ The command `restic cat tree` can be used to inspect the tree referenced above:
           "content": null,
           "subtree": "b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc"
         }
-      ],
-      "map": [
-        {
-          "id": "b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc",
-          "size": 910,
-          "sid": "8b238c8811cc362693e91a857460c78d3acf7d9edb2f111048691976803cf16e",
-          "ssize": 958
-        }
       ]
     }
 
 A tree contains a list of entries (in the field `nodes`) which contain meta
 data like a name and timestamps. When the entry references a directory, the
-field `subtree` contains the plain text ID of another tree object. The
-associated storage ID can be found in the map object. All referenced plaintext
-hashes are mapped to their corresponding storage hashes in the list contained
-in the field `map`.
+field `subtree` contains the plain text ID of another tree object. 
 
 When the command `restic cat tree` is used, the storage hash is needed to print
 a tree. The tree referenced above can be dumped as follows:
@@ -258,23 +300,11 @@ a tree. The tree referenced above can be dumped as follows:
           ]
         },
         [...]
-      ],
-      "map": [
-        {
-          "id": "50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d",
-          "size": 1234,
-          "sid": "00634c46e5f7c055c341acd1201cf8289cabe769f991d6e350f8cd8ce2a52ac3",
-          "ssize": 1282
-        },
-        [...]
       ]
     }
 
 This tree contains a file entry. This time, the `subtree` field is not present
-and the `content` field contains a list with one plain text SHA-256 hash. The
-storage ID for this ID can in turn be looked up in the map. Data chunks stored
-as encrypted and signed files in a sub directory of the directory `data`,
-similar to tree objects.
+and the `content` field contains a list with one plain text SHA-256 hash.
 
 The command `restic cat data` can be used to extract and decrypt data given a
 storage hash, e.g. for the data mentioned above:
