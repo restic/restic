@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend/local"
+	. "github.com/restic/restic/test"
 )
 
 var testPassword = "foobar"
@@ -18,15 +19,15 @@ var testTempDir = flag.String("test.tempdir", "", "use this directory for tempor
 
 func setupBackend(t testing.TB) restic.Server {
 	tempdir, err := ioutil.TempDir(*testTempDir, "restic-test-")
-	ok(t, err)
+	OK(t, err)
 
 	// create repository below temp dir
 	b, err := local.Create(filepath.Join(tempdir, "repo"))
-	ok(t, err)
+	OK(t, err)
 
 	// set cache dir
 	err = os.Setenv("RESTIC_CACHE", filepath.Join(tempdir, "cache"))
-	ok(t, err)
+	OK(t, err)
 
 	return restic.NewServer(b)
 }
@@ -38,12 +39,12 @@ func teardownBackend(t testing.TB, s restic.Server) {
 		return
 	}
 
-	ok(t, s.Delete())
+	OK(t, s.Delete())
 }
 
 func setupKey(t testing.TB, s restic.Server, password string) *restic.Key {
 	k, err := restic.CreateKey(s, password)
-	ok(t, err)
+	OK(t, err)
 
 	return k
 }

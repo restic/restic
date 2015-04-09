@@ -10,6 +10,7 @@ import (
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	. "github.com/restic/restic/test"
 )
 
 var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
@@ -49,16 +50,16 @@ func benchmarkChunkEncrypt(b testing.TB, buf []byte, rd Rdr, key *restic.Key) {
 			break
 		}
 
-		ok(b, err)
+		OK(b, err)
 
 		// reduce length of buf
 		buf = buf[:chunk.Length]
 		n, err := io.ReadFull(chunk.Reader(rd), buf)
-		ok(b, err)
-		assert(b, uint(n) == chunk.Length, "invalid length: got %d, expected %d", n, chunk.Length)
+		OK(b, err)
+		Assert(b, uint(n) == chunk.Length, "invalid length: got %d, expected %d", n, chunk.Length)
 
 		_, err = key.Encrypt(buf, buf)
-		ok(b, err)
+		OK(b, err)
 	}
 
 	restic.FreeChunker("BenchmarkChunkEncrypt", ch)
@@ -137,7 +138,7 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	server.SetKey(key)
 
 	arch, err := restic.NewArchiver(server)
-	ok(b, err)
+	OK(b, err)
 
 	_, id, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
 
@@ -146,10 +147,10 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 
 func snapshot(t testing.TB, server restic.Server, path string, parent backend.ID) *restic.Snapshot {
 	arch, err := restic.NewArchiver(server)
-	ok(t, err)
-	ok(t, arch.Preload())
+	OK(t, err)
+	OK(t, arch.Preload())
 	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
-	ok(t, err)
+	OK(t, err)
 	return sn
 }
 
@@ -220,9 +221,9 @@ func BenchmarkPreload(t *testing.B) {
 
 	// archive a few files
 	arch, err := restic.NewArchiver(server)
-	ok(t, err)
+	OK(t, err)
 	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
-	ok(t, err)
+	OK(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
 
 	// start benchmark
@@ -231,8 +232,8 @@ func BenchmarkPreload(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		// create new archiver and preload
 		arch2, err := restic.NewArchiver(server)
-		ok(t, err)
-		ok(t, arch2.Preload())
+		OK(t, err)
+		OK(t, arch2.Preload())
 	}
 }
 
@@ -248,9 +249,9 @@ func BenchmarkLoadTree(t *testing.B) {
 
 	// archive a few files
 	arch, err := restic.NewArchiver(server)
-	ok(t, err)
+	OK(t, err)
 	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
-	ok(t, err)
+	OK(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
 
 	list := make([]backend.ID, 0, 10)
@@ -276,7 +277,7 @@ func BenchmarkLoadTree(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		for _, id := range list {
 			_, err := restic.LoadTree(server, restic.Blob{Storage: id})
-			ok(t, err)
+			OK(t, err)
 		}
 	}
 }

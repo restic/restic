@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/chunker"
+	. "github.com/restic/restic/test"
 )
 
 var polAddTests = []struct {
@@ -18,8 +19,8 @@ var polAddTests = []struct {
 
 func TestPolAdd(t *testing.T) {
 	for _, test := range polAddTests {
-		equals(t, test.sum, test.x.Add(test.y))
-		equals(t, test.sum, test.y.Add(test.x))
+		Equals(t, test.sum, test.x.Add(test.y))
+		Equals(t, test.sum, test.y.Add(test.x))
 	}
 }
 
@@ -77,11 +78,11 @@ var polMulTests = []struct {
 func TestPolMul(t *testing.T) {
 	for i, test := range polMulTests {
 		m := test.x.Mul(test.y)
-		assert(t, test.res == m,
+		Assert(t, test.res == m,
 			"TestPolMul failed for test %d: %v * %v: want %v, got %v",
 			i, test.x, test.y, test.res, m)
 		m = test.y.Mul(test.x)
-		assert(t, test.res == test.y.Mul(test.x),
+		Assert(t, test.res == test.y.Mul(test.x),
 			"TestPolMul failed for %d: %v * %v: want %v, got %v",
 			i, test.x, test.y, test.res, m)
 	}
@@ -138,7 +139,7 @@ var polDivTests = []struct {
 func TestPolDiv(t *testing.T) {
 	for i, test := range polDivTests {
 		m := test.x.Div(test.y)
-		assert(t, test.res == m,
+		Assert(t, test.res == m,
 			"TestPolDiv failed for test %d: %v * %v: want %v, got %v",
 			i, test.x, test.y, test.res, m)
 	}
@@ -175,7 +176,7 @@ var polModTests = []struct {
 
 func TestPolModt(t *testing.T) {
 	for _, test := range polModTests {
-		equals(t, test.res, test.x.Mod(test.y))
+		Equals(t, test.res, test.x.Mod(test.y))
 	}
 }
 
@@ -221,20 +222,20 @@ func BenchmarkPolDeg(t *testing.B) {
 
 func TestRandomPolynomial(t *testing.T) {
 	_, err := chunker.RandomPolynomial()
-	ok(t, err)
+	OK(t, err)
 }
 
 func BenchmarkRandomPolynomial(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		_, err := chunker.RandomPolynomial()
-		ok(t, err)
+		OK(t, err)
 	}
 }
 
 func TestExpandPolynomial(t *testing.T) {
 	pol := chunker.Pol(0x3DA3358B4DC173)
 	s := pol.Expand()
-	equals(t, "x^53+x^52+x^51+x^50+x^48+x^47+x^45+x^41+x^40+x^37+x^36+x^34+x^32+x^31+x^27+x^25+x^24+x^22+x^19+x^18+x^16+x^15+x^14+x^8+x^6+x^5+x^4+x+1", s)
+	Equals(t, "x^53+x^52+x^51+x^50+x^48+x^47+x^45+x^41+x^40+x^37+x^36+x^34+x^32+x^31+x^27+x^25+x^24+x^22+x^19+x^18+x^16+x^15+x^14+x^8+x^6+x^5+x^4+x+1", s)
 }
 
 var polIrredTests = []struct {
@@ -269,7 +270,7 @@ var polIrredTests = []struct {
 
 func TestPolIrreducible(t *testing.T) {
 	for _, test := range polIrredTests {
-		assert(t, test.f.Irreducible() == test.irred,
+		Assert(t, test.f.Irreducible() == test.irred,
 			"Irreducibility test for Polynomial %v failed: got %v, wanted %v",
 			test.f, test.f.Irreducible(), test.irred)
 	}
@@ -328,11 +329,11 @@ var polGCDTests = []struct {
 func TestPolGCD(t *testing.T) {
 	for i, test := range polGCDTests {
 		gcd := test.f1.GCD(test.f2)
-		assert(t, test.gcd == gcd,
+		Assert(t, test.gcd == gcd,
 			"GCD test %d (%+v) failed: got %v, wanted %v",
 			i, test, gcd, test.gcd)
 		gcd = test.f2.GCD(test.f1)
-		assert(t, test.gcd == gcd,
+		Assert(t, test.gcd == gcd,
 			"GCD test %d (%+v) failed: got %v, wanted %v",
 			i, test, gcd, test.gcd)
 	}
@@ -361,7 +362,7 @@ var polMulModTests = []struct {
 func TestPolMulMod(t *testing.T) {
 	for i, test := range polMulModTests {
 		mod := test.f1.MulMod(test.f2, test.g)
-		assert(t, mod == test.mod,
+		Assert(t, mod == test.mod,
 			"MulMod test %d (%+v) failed: got %v, wanted %v",
 			i, test, mod, test.mod)
 	}

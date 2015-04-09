@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic"
+	. "github.com/restic/restic/test"
 )
 
 var testFiles = []struct {
@@ -22,24 +23,24 @@ var testFiles = []struct {
 // prepareDir creates a temporary directory and returns it.
 func prepareDir(t *testing.T) string {
 	tempdir, err := ioutil.TempDir(*testTempDir, "restic-test-")
-	ok(t, err)
+	OK(t, err)
 
 	for _, test := range testFiles {
 		file := filepath.Join(tempdir, test.name)
 		dir := filepath.Dir(file)
 		if dir != "." {
-			ok(t, os.MkdirAll(dir, 0755))
+			OK(t, os.MkdirAll(dir, 0755))
 		}
 
 		f, err := os.Create(file)
 		defer func() {
-			ok(t, f.Close())
+			OK(t, f.Close())
 		}()
 
-		ok(t, err)
+		OK(t, err)
 
 		_, err = f.Write(test.content)
-		ok(t, err)
+		OK(t, err)
 	}
 
 	return tempdir
@@ -49,7 +50,7 @@ func TestTree(t *testing.T) {
 	dir := prepareDir(t)
 	defer func() {
 		if *testCleanup {
-			ok(t, os.RemoveAll(dir))
+			OK(t, os.RemoveAll(dir))
 		}
 	}()
 }
@@ -65,11 +66,11 @@ var testNodes = []restic.Node{
 func TestNodeMarshal(t *testing.T) {
 	for i, n := range testNodes {
 		data, err := json.Marshal(&n)
-		ok(t, err)
+		OK(t, err)
 
 		var node restic.Node
 		err = json.Unmarshal(data, &node)
-		ok(t, err)
+		OK(t, err)
 
 		if n.Name != node.Name {
 			t.Fatalf("Node %d: Names are not equal, want: %q got: %q", i, n.Name, node.Name)
@@ -79,14 +80,14 @@ func TestNodeMarshal(t *testing.T) {
 
 func TestNodeComparison(t *testing.T) {
 	fi, err := os.Lstat("tree_test.go")
-	ok(t, err)
+	OK(t, err)
 
 	node, err := restic.NodeFromFileInfo("foo", fi)
-	ok(t, err)
+	OK(t, err)
 
 	n2 := *node
-	assert(t, node.Equals(n2), "nodes aren't equal")
+	Assert(t, node.Equals(n2), "nodes aren't equal")
 
 	n2.Size -= 1
-	assert(t, !node.Equals(n2), "nodes are equal")
+	Assert(t, !node.Equals(n2), "nodes are equal")
 }

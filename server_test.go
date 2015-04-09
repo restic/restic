@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	. "github.com/restic/restic/test"
 )
 
 type testJSONStruct struct {
@@ -30,14 +31,14 @@ func TestSaveJSON(t *testing.T) {
 
 	for _, obj := range serverTests {
 		data, err := json.Marshal(obj)
-		ok(t, err)
+		OK(t, err)
 		data = append(data, '\n')
 		h := sha256.Sum256(data)
 
 		blob, err := server.SaveJSON(backend.Tree, obj)
-		ok(t, err)
+		OK(t, err)
 
-		assert(t, bytes.Equal(h[:], blob.ID),
+		Assert(t, bytes.Equal(h[:], blob.ID),
 			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
 			h, blob.ID)
 	}
@@ -52,7 +53,7 @@ func BenchmarkSaveJSON(t *testing.B) {
 	obj := serverTests[0]
 
 	data, err := json.Marshal(obj)
-	ok(t, err)
+	OK(t, err)
 	data = append(data, '\n')
 	h := sha256.Sum256(data)
 
@@ -60,9 +61,9 @@ func BenchmarkSaveJSON(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		blob, err := server.SaveJSON(backend.Tree, obj)
-		ok(t, err)
+		OK(t, err)
 
-		assert(t, bytes.Equal(h[:], blob.ID),
+		Assert(t, bytes.Equal(h[:], blob.ID),
 			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
 			h, blob.ID)
 	}
@@ -79,22 +80,22 @@ func TestSaveFrom(t *testing.T) {
 	for _, size := range testSizes {
 		data := make([]byte, size)
 		_, err := io.ReadFull(rand.Reader, data)
-		ok(t, err)
+		OK(t, err)
 
 		id := sha256.Sum256(data)
 
 		// save
 		blob, err := server.SaveFrom(backend.Data, id[:], uint(size), bytes.NewReader(data))
-		ok(t, err)
+		OK(t, err)
 
 		// read back
 		buf, err := server.Load(backend.Data, blob)
 
-		assert(t, len(buf) == len(data),
+		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
 			len(data), len(buf))
 
-		assert(t, bytes.Equal(buf, data),
+		Assert(t, bytes.Equal(buf, data),
 			"data does not match: expected %02x, got %02x",
 			data, buf)
 	}
@@ -110,7 +111,7 @@ func BenchmarkSaveFrom(t *testing.B) {
 
 	data := make([]byte, size)
 	_, err := io.ReadFull(rand.Reader, data)
-	ok(t, err)
+	OK(t, err)
 
 	id := sha256.Sum256(data)
 
@@ -120,7 +121,7 @@ func BenchmarkSaveFrom(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		// save
 		_, err := server.SaveFrom(backend.Data, id[:], uint(size), bytes.NewReader(data))
-		ok(t, err)
+		OK(t, err)
 	}
 }
 
@@ -139,7 +140,7 @@ func TestServerStats(t *testing.T) {
 	t.Logf("archived snapshot %v", sn.ID())
 
 	stats, err := server.Stats()
-	ok(t, err)
+	OK(t, err)
 	t.Logf("stats: %v", stats)
 }
 
@@ -160,15 +161,15 @@ func TestLoadJSONID(t *testing.T) {
 	// benchmark loading first tree
 	done := make(chan struct{})
 	first, found := <-server.List(backend.Tree, done)
-	assert(t, found, "no Trees in repository found")
+	Assert(t, found, "no Trees in repository found")
 	close(done)
 
 	id, err := backend.ParseID(first)
-	ok(t, err)
+	OK(t, err)
 
 	tree := restic.NewTree()
 	err = server.LoadJSONID(backend.Tree, id, &tree)
-	ok(t, err)
+	OK(t, err)
 }
 
 func BenchmarkLoadJSONID(t *testing.B) {
@@ -191,8 +192,8 @@ func BenchmarkLoadJSONID(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		for name := range server.List(backend.Tree, nil) {
 			id, err := backend.ParseID(name)
-			ok(t, err)
-			ok(t, server.LoadJSONID(backend.Tree, id, &tree))
+			OK(t, err)
+			OK(t, server.LoadJSONID(backend.Tree, id, &tree))
 		}
 	}
 }

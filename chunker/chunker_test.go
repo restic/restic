@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/chunker"
+	. "github.com/restic/restic/test"
 )
 
 var benchmarkFile = flag.String("bench.file", "", "read from this file for benchmark")
@@ -189,7 +190,7 @@ func TestChunkerWithRandomPolynomial(t *testing.T) {
 	// generate a new random polynomial
 	start := time.Now()
 	p, err := chunker.RandomPolynomial()
-	ok(t, err)
+	OK(t, err)
 	t.Logf("generating random polynomial took %v", time.Since(start))
 
 	start = time.Now()
@@ -199,11 +200,11 @@ func TestChunkerWithRandomPolynomial(t *testing.T) {
 	// make sure that first chunk is different
 	c, err := ch.Next()
 
-	assert(t, c.Cut != chunks1[0].CutFP,
+	Assert(t, c.Cut != chunks1[0].CutFP,
 		"Cut point is the same")
-	assert(t, c.Length != chunks1[0].Length,
+	Assert(t, c.Length != chunks1[0].Length,
 		"Length is the same")
-	assert(t, !bytes.Equal(c.Digest, chunks1[0].Digest),
+	Assert(t, !bytes.Equal(c.Digest, chunks1[0].Digest),
 		"Digest is the same")
 }
 
@@ -327,7 +328,7 @@ func BenchmarkChunker(b *testing.B) {
 
 func BenchmarkNewChunker(b *testing.B) {
 	p, err := chunker.RandomPolynomial()
-	ok(b, err)
+	OK(b, err)
 
 	b.ResetTimer()
 

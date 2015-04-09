@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/backend"
+	. "github.com/restic/restic/test"
 )
 
 func TestHashAppendReader(t *testing.T) {
@@ -27,22 +28,22 @@ func TestHashAppendReader(t *testing.T) {
 
 		target := bytes.NewBuffer(nil)
 		n, err := io.Copy(target, rd)
-		ok(t, err)
+		OK(t, err)
 
-		assert(t, n == int64(size)+int64(len(expectedHash)),
+		Assert(t, n == int64(size)+int64(len(expectedHash)),
 			"HashAppendReader: invalid number of bytes read: got %d, expected %d",
 			n, size+len(expectedHash))
 
 		r := target.Bytes()
 		resultingHash := r[len(r)-len(expectedHash):]
-		assert(t, bytes.Equal(expectedHash[:], resultingHash),
+		Assert(t, bytes.Equal(expectedHash[:], resultingHash),
 			"HashAppendReader: hashes do not match: expected %02x, got %02x",
 			expectedHash, resultingHash)
 
 		// try to read again, must return io.EOF
 		n2, err := rd.Read(make([]byte, 100))
-		assert(t, n2 == 0, "HashAppendReader returned %d additional bytes", n)
-		assert(t, err == io.EOF, "HashAppendReader returned %v instead of EOF", err)
+		Assert(t, n2 == 0, "HashAppendReader returned %d additional bytes", n)
+		Assert(t, err == io.EOF, "HashAppendReader returned %v instead of EOF", err)
 	}
 }
 
@@ -61,20 +62,20 @@ func TestHashingReader(t *testing.T) {
 		rd := backend.NewHashingReader(bytes.NewReader(data), sha256.New())
 
 		n, err := io.Copy(ioutil.Discard, rd)
-		ok(t, err)
+		OK(t, err)
 
-		assert(t, n == int64(size),
+		Assert(t, n == int64(size),
 			"HashAppendReader: invalid number of bytes read: got %d, expected %d",
 			n, size)
 
 		resultingHash := rd.Sum(nil)
-		assert(t, bytes.Equal(expectedHash[:], resultingHash),
+		Assert(t, bytes.Equal(expectedHash[:], resultingHash),
 			"HashAppendReader: hashes do not match: expected %02x, got %02x",
 			expectedHash, resultingHash)
 
 		// try to read again, must return io.EOF
 		n2, err := rd.Read(make([]byte, 100))
-		assert(t, n2 == 0, "HashAppendReader returned %d additional bytes", n)
-		assert(t, err == io.EOF, "HashAppendReader returned %v instead of EOF", err)
+		Assert(t, n2 == 0, "HashAppendReader returned %d additional bytes", n)
+		Assert(t, err == io.EOF, "HashAppendReader returned %v instead of EOF", err)
 	}
 }

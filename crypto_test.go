@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/chunker"
+	. "github.com/restic/restic/test"
 )
 
 func TestEncryptDecrypt(t *testing.T) {
@@ -24,18 +25,18 @@ func TestEncryptDecrypt(t *testing.T) {
 	for _, size := range tests {
 		data := make([]byte, size)
 		_, err := io.ReadFull(randomReader(42, size), data)
-		ok(t, err)
+		OK(t, err)
 
 		ciphertext := restic.GetChunkBuf("TestEncryptDecrypt")
 		n, err := k.Encrypt(ciphertext, data)
-		ok(t, err)
+		OK(t, err)
 
 		plaintext, err := k.Decrypt(nil, ciphertext[:n])
-		ok(t, err)
+		OK(t, err)
 
 		restic.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
 
-		equals(t, plaintext, data)
+		Equals(t, plaintext, data)
 	}
 }
 
@@ -47,15 +48,15 @@ func TestSmallBuffer(t *testing.T) {
 	size := 600
 	data := make([]byte, size)
 	f, err := os.Open("/dev/urandom")
-	ok(t, err)
+	OK(t, err)
 
 	_, err = io.ReadFull(f, data)
-	ok(t, err)
+	OK(t, err)
 
 	ciphertext := make([]byte, size/2)
 	_, err = k.Encrypt(ciphertext, data)
 	// this must throw an error, since the target slice is too small
-	assert(t, err != nil && err == restic.ErrBufferTooSmall,
+	Assert(t, err != nil && err == restic.ErrBufferTooSmall,
 		"expected restic.ErrBufferTooSmall, got %#v", err)
 }
 
@@ -71,19 +72,19 @@ func TestLargeEncrypt(t *testing.T) {
 	for _, size := range []int{chunker.MaxSize, chunker.MaxSize + 1, chunker.MaxSize + 1<<20} {
 		data := make([]byte, size)
 		f, err := os.Open("/dev/urandom")
-		ok(t, err)
+		OK(t, err)
 
 		_, err = io.ReadFull(f, data)
-		ok(t, err)
+		OK(t, err)
 
 		ciphertext := make([]byte, size+restic.CiphertextExtension)
 		n, err := k.Encrypt(ciphertext, data)
-		ok(t, err)
+		OK(t, err)
 
 		plaintext, err := k.Decrypt([]byte{}, ciphertext[:n])
-		ok(t, err)
+		OK(t, err)
 
-		equals(t, plaintext, data)
+		Equals(t, plaintext, data)
 	}
 }
 
@@ -102,8 +103,8 @@ func BenchmarkEncryptWriter(b *testing.B) {
 		rd.Seek(0, 0)
 		wr := k.EncryptTo(ioutil.Discard)
 		_, err := io.Copy(wr, rd)
-		ok(b, err)
-		ok(b, wr.Close())
+		OK(b, err)
+		OK(b, wr.Close())
 	}
 }
 
@@ -122,7 +123,7 @@ func BenchmarkEncrypt(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, err := k.Encrypt(buf, data)
-		ok(b, err)
+		OK(b, err)
 	}
 }
 
@@ -136,7 +137,7 @@ func BenchmarkDecryptReader(b *testing.B) {
 
 	ciphertext := make([]byte, len(buf)+restic.CiphertextExtension)
 	_, err := k.Encrypt(ciphertext, buf)
-	ok(b, err)
+	OK(b, err)
 
 	rd := bytes.NewReader(ciphertext)
 
@@ -146,10 +147,10 @@ func BenchmarkDecryptReader(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rd.Seek(0, 0)
 		decRd, err := k.DecryptFrom(rd)
-		ok(b, err)
+		OK(b, err)
 
 		_, err = io.Copy(ioutil.Discard, decRd)
-		ok(b, err)
+		OK(b, err)
 	}
 }
 
@@ -170,14 +171,14 @@ func BenchmarkEncryptDecryptReader(b *testing.B) {
 		buf.Reset()
 		wr := k.EncryptTo(buf)
 		_, err := io.Copy(wr, rd)
-		ok(b, err)
-		ok(b, wr.Close())
+		OK(b, err)
+		OK(b, wr.Close())
 
 		r, err := k.DecryptFrom(buf)
-		ok(b, err)
+		OK(b, err)
 
 		_, err = io.Copy(ioutil.Discard, r)
-		ok(b, err)
+		OK(b, err)
 	}
 
 	restic.PoolAlloc()
@@ -197,14 +198,14 @@ func BenchmarkDecrypt(b *testing.B) {
 	defer restic.FreeChunkBuf("BenchmarkDecrypt", plaintext)
 
 	n, err := k.Encrypt(ciphertext, data)
-	ok(b, err)
+	OK(b, err)
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
 		plaintext, err = k.Decrypt(plaintext, ciphertext[:n])
-		ok(b, err)
+		OK(b, err)
 	}
 }
 
@@ -221,24 +222,24 @@ func TestEncryptStreamWriter(t *testing.T) {
 	for _, size := range tests {
 		data := make([]byte, size)
 		_, err := io.ReadFull(randomReader(42, size), data)
-		ok(t, err)
+		OK(t, err)
 
 		ciphertext := bytes.NewBuffer(nil)
 		wr := k.EncryptTo(ciphertext)
 
 		_, err = io.Copy(wr, bytes.NewReader(data))
-		ok(t, err)
-		ok(t, wr.Close())
+		OK(t, err)
+		OK(t, wr.Close())
 
 		l := len(data) + restic.CiphertextExtension
-		assert(t, len(ciphertext.Bytes()) == l,
+		Assert(t, len(ciphertext.Bytes()) == l,
 			"wrong ciphertext length: expected %d, got %d",
 			l, len(ciphertext.Bytes()))
 
 		// decrypt with default function
 		plaintext, err := k.Decrypt([]byte{}, ciphertext.Bytes())
-		ok(t, err)
-		assert(t, bytes.Equal(data, plaintext),
+		OK(t, err)
+		Assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",
 			data, plaintext)
 	}
@@ -257,24 +258,24 @@ func TestDecryptStreamReader(t *testing.T) {
 	for _, size := range tests {
 		data := make([]byte, size)
 		_, err := io.ReadFull(randomReader(42, size), data)
-		ok(t, err)
+		OK(t, err)
 
 		ciphertext := make([]byte, size+restic.CiphertextExtension)
 
 		// encrypt with default function
 		n, err := k.Encrypt(ciphertext, data)
-		ok(t, err)
-		assert(t, n == len(data)+restic.CiphertextExtension,
+		OK(t, err)
+		Assert(t, n == len(data)+restic.CiphertextExtension,
 			"wrong number of bytes returned after encryption: expected %d, got %d",
 			len(data)+restic.CiphertextExtension, n)
 
 		rd, err := k.DecryptFrom(bytes.NewReader(ciphertext))
-		ok(t, err)
+		OK(t, err)
 
 		plaintext, err := ioutil.ReadAll(rd)
-		ok(t, err)
+		OK(t, err)
 
-		assert(t, bytes.Equal(data, plaintext),
+		Assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",
 			data, plaintext)
 	}
@@ -293,26 +294,26 @@ func TestEncryptWriter(t *testing.T) {
 	for _, size := range tests {
 		data := make([]byte, size)
 		_, err := io.ReadFull(randomReader(42, size), data)
-		ok(t, err)
+		OK(t, err)
 
 		buf := bytes.NewBuffer(nil)
 		wr := k.EncryptTo(buf)
 
 		_, err = io.Copy(wr, bytes.NewReader(data))
-		ok(t, err)
-		ok(t, wr.Close())
+		OK(t, err)
+		OK(t, wr.Close())
 
 		ciphertext := buf.Bytes()
 
 		l := len(data) + restic.CiphertextExtension
-		assert(t, len(ciphertext) == l,
+		Assert(t, len(ciphertext) == l,
 			"wrong ciphertext length: expected %d, got %d",
 			l, len(ciphertext))
 
 		// decrypt with default function
 		plaintext, err := k.Decrypt([]byte{}, ciphertext)
-		ok(t, err)
-		assert(t, bytes.Equal(data, plaintext),
+		OK(t, err)
+		Assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",
 			data, plaintext)
 	}

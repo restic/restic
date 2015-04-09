@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/pipe"
+	. "github.com/restic/restic/test"
 )
 
 var testWalkerPath = flag.String("test.walkerpath", ".", "pipeline walker testpath (default: .)")
@@ -49,7 +50,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	}
 
 	before, err := statPath(*testWalkerPath)
-	ok(t, err)
+	OK(t, err)
 
 	t.Logf("walking path %s with %d dirs, %d files", *testWalkerPath,
 		before.dirs, before.files)
@@ -120,7 +121,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 
 	resCh := make(chan pipe.Result, 1)
 	err = pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
-	ok(t, err)
+	OK(t, err)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -131,7 +132,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	t.Logf("walked path %s with %d dirs, %d files", *testWalkerPath,
 		after.dirs, after.files)
 
-	assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }
 
 func TestPipelineWalker(t *testing.T) {
@@ -140,7 +141,7 @@ func TestPipelineWalker(t *testing.T) {
 	}
 
 	before, err := statPath(*testWalkerPath)
-	ok(t, err)
+	OK(t, err)
 
 	t.Logf("walking path %s with %d dirs, %d files", *testWalkerPath,
 		before.dirs, before.files)
@@ -160,7 +161,7 @@ func TestPipelineWalker(t *testing.T) {
 					// channel is closed
 					return
 				}
-				assert(t, job != nil, "job is nil")
+				Assert(t, job != nil, "job is nil")
 
 				switch j := job.(type) {
 				case pipe.Dir:
@@ -200,7 +201,7 @@ func TestPipelineWalker(t *testing.T) {
 
 	resCh := make(chan pipe.Result, 1)
 	err = pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
-	ok(t, err)
+	OK(t, err)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -211,7 +212,7 @@ func TestPipelineWalker(t *testing.T) {
 	t.Logf("walked path %s with %d dirs, %d files", *testWalkerPath,
 		after.dirs, after.files)
 
-	assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }
 
 func BenchmarkPipelineWalker(b *testing.B) {
@@ -300,7 +301,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 
 		resCh := make(chan pipe.Result, 1)
 		err := pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
-		ok(b, err)
+		OK(b, err)
 
 		// wait for all workers to terminate
 		wg.Wait()
@@ -320,7 +321,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 	paths, err := filepath.Glob(filepath.Join(*testWalkerPath, "*"))
 
 	before, err := statPath(*testWalkerPath)
-	ok(t, err)
+	OK(t, err)
 
 	t.Logf("walking paths %v with %d dirs, %d files", paths,
 		before.dirs, before.files)
@@ -337,7 +338,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 					// channel is closed
 					return
 				}
-				assert(t, job != nil, "job is nil")
+				Assert(t, job != nil, "job is nil")
 
 				switch j := job.(type) {
 				case pipe.Dir:
@@ -377,7 +378,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 
 	resCh := make(chan pipe.Result, 1)
 	err = pipe.Walk(paths, done, jobs, resCh)
-	ok(t, err)
+	OK(t, err)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -387,5 +388,5 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 
 	t.Logf("walked %d paths with %d dirs, %d files", len(paths), after.dirs, after.files)
 
-	assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }

@@ -7,13 +7,14 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/pipe"
+	. "github.com/restic/restic/test"
 )
 
 var testWalkDirectory = flag.String("test.walkdir", ".", "test walking a directory (globbing pattern, default: .)")
 
 func TestWalkTree(t *testing.T) {
 	dirs, err := filepath.Glob(*testWalkDirectory)
-	ok(t, err)
+	OK(t, err)
 
 	server := setupBackend(t)
 	defer teardownBackend(t, server)
@@ -22,9 +23,9 @@ func TestWalkTree(t *testing.T) {
 
 	// archive a few files
 	arch, err := restic.NewArchiver(server)
-	ok(t, err)
+	OK(t, err)
 	sn, _, err := arch.Snapshot(nil, dirs, nil)
-	ok(t, err)
+	OK(t, err)
 
 	// start benchmark
 	// t.ResetTimer()
@@ -45,7 +46,7 @@ func TestWalkTree(t *testing.T) {
 	for {
 		// receive fs job
 		fsJob, fsChOpen := <-fsJobs
-		assert(t, !fsChOpen || fsJob != nil,
+		Assert(t, !fsChOpen || fsJob != nil,
 			"received nil job from filesystem: %v %v", fsJob, fsChOpen)
 
 		var path string
@@ -66,7 +67,7 @@ func TestWalkTree(t *testing.T) {
 			treeEntries = len(treeJob.Tree.Nodes)
 		}
 
-		assert(t, fsChOpen == treeChOpen,
+		Assert(t, fsChOpen == treeChOpen,
 			"one channel closed too early: fsChOpen %v, treeChOpen %v",
 			fsChOpen, treeChOpen)
 
@@ -74,10 +75,10 @@ func TestWalkTree(t *testing.T) {
 			break
 		}
 
-		assert(t, filepath.Base(path) == filepath.Base(treeJob.Path),
+		Assert(t, filepath.Base(path) == filepath.Base(treeJob.Path),
 			"paths do not match: %q != %q", filepath.Base(path), filepath.Base(treeJob.Path))
 
-		assert(t, fsEntries == treeEntries,
+		Assert(t, fsEntries == treeEntries,
 			"wrong number of entries: %v != %v", fsEntries, treeEntries)
 	}
 	// }

@@ -7,16 +7,17 @@ import (
 	"testing"
 
 	"github.com/restic/restic/backend/sftp"
+	. "github.com/restic/restic/test"
 )
 
 var sftpPath = flag.String("test.sftppath", "", "sftp binary path (default: empty)")
 
 func setupSFTPBackend(t *testing.T) *sftp.SFTP {
 	tempdir, err := ioutil.TempDir("", "restic-test-")
-	ok(t, err)
+	OK(t, err)
 
 	b, err := sftp.Create(tempdir, *sftpPath)
-	ok(t, err)
+	OK(t, err)
 
 	t.Logf("created sftp backend locally at %s", tempdir)
 
@@ -30,7 +31,7 @@ func teardownSFTPBackend(t *testing.T, b *sftp.SFTP) {
 	}
 
 	err := os.RemoveAll(b.Location())
-	ok(t, err)
+	OK(t, err)
 }
 
 func TestSFTPBackend(t *testing.T) {
