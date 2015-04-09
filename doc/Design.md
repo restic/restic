@@ -1,15 +1,35 @@
 This document gives a high-level overview of the design and repository layout
 of the restic backup program.
 
+Terminology
+===========
+
+This section introduces terminology used in this document.
+
+*Repository*: All data produced during a backup is sent to and stored at a
+repository in structured form, for example in a file system hierarchy of with
+several subdirectories. A repository implementation must be able to fulfil a
+number of operations, e.g. list the contents.
+
+*Blob*: A Blob combines a number of data bytes with identifying information
+like the SHA256 hash of the data and its length.
+
+*Pack*: A Pack combines one or more Blobs together, e.g. in a single file.
+
+*Snapshot*: A Snapshot stands for the state of a file or directory that has
+been backed up at some point in time. The state here means the content and meta
+data like the name and modification time for the file or the directory and its
+contents.
+
 Repository Format
 =================
 
 All data is stored in a restic repository. A repository is able to store data
-in blobs of several different types, which can later be requested based on an
-ID. The ID is the hash (SHA-256) of the content of a blob. All blobs in a
-repository are only written once and never modified afterwards. This allows
-accessing and even writing to the repository with multiple clients in parallel.
-Only the delete operation changes data in the repository.
+of several different types, which can later be requested based on an ID. The ID
+is the hash (SHA-256) of the content of a file. All files in a repository are
+only written once and never modified afterwards. This allows accessing and even
+writing to the repository with multiple clients in parallel. Only the delete
+operation changes data in the repository.
 
 At the time of writing, the only implemented repository type is based on
 directories and files. Such repositories can be accessed locally on the same
@@ -23,7 +43,7 @@ Additionally there is a file named `id` which contains 32 random bytes, encoded
 in hexadecimal. This uniquely identifies the repository, regardless if it is
 accessed via SFTP or locally.
 
-For all other blobs stored in the repository, the name for the file is the
+For all other files stored in the repository, the name for the file is the
 lower case hexadecimal representation of the SHA-256 hash of the file's
 contents. This allows easily checking all files for accidental modifications
 like disk read errors by simply running the program `sha256sum` and comparing
@@ -76,64 +96,66 @@ A repository can be initialized with the `restic init` command, e.g.:
 
     $ restic -r /tmp/restic-repo init
 
-Blob Format
+Pack Format
 -----------
 
-All blobs except key, tree and data blobs just contain raw data, stored as `IV
-|| Ciphertext || MAC`. Tree and Data blobs may contain several chunks of data.
-The format is described in the following.
+All files in the repository except Key, Tree and Data files just contain raw
+data, stored as `IV || Ciphertext || MAC`. Tree and Data files may contain
+several Blobs of data. The format is described in the following.
 
-The blob starts with a nonce and a header, the header describes the content and
-is encrypted and signed. The blob's structure is as follows:
+A Pack starts with a nonce and a header, the header describes the content and
+is encrypted and signed. The Pack's structure is as follows:
 
     NONCE || Header_Length ||
-    IV_Header  || Ciphertext_Header  || MAC_Header  ||
-    IV_Chunk_1 || Ciphertext_Chunk_1 || MAC_Chunk_1 ||
+    IV_Header || Ciphertext_Header || MAC_Header  ||
+    IV_Blob_1 || Ciphertext_Blob_1 || MAC_Blob_1 ||
     [...]
-    IV_Chunk_n || Ciphertext_Chunk_n || MAC_Chunk_n ||
+    IV_Blob_n || Ciphertext_Blob_n || MAC_Blob_n ||
     MAC
 
 `NONCE` consists of 16 bytes and `Header_Length` is a four byte integer in
 little-endian encoding.
 
-All the parts (`Ciphertext_Header`, `Ciphertext_Chunk1` etc.) are signed and
-encrypted independently. In addition, the complete blob is signed again using
+All the parts (`Ciphertext_Header`, `Ciphertext_Blob1` etc.) are signed and
+encrypted independently. In addition, the complete pack is signed using
 `NONCE`. This enables repository reorganisation without having to touch the
-encrypted chunks. In addition it also allows efficient indexing, for only the
-header needs to be read in order to find out which chunks are contained in the
-blob. Since the header is signed, authenticity of the header can be checked
-without having to read the complete blob.
+encrypted Blobs. In addition it also allows efficient indexing, for only the
+header needs to be read in order to find out which Blobs are contained in the
+Pack. Since the header is signed, authenticity of the header can be checked
+without having to read the complete Pack.
 
-After decryption, a blob's header consists of the following elements:
+After decryption, a Pack's header consists of the following elements:
 
-    Length(IV_Chunk1+Ciphertext_Chunk1+MAC_Chunk1) || Hash(Plaintext_Chunk1) ||
+    Length(IV_Blob_1+Ciphertext_Blob1+MAC_Blob_1)  || Hash(Plaintext_Blob_1) ||
     [...]
-    Length(IV_Chunk_n+Ciphertext_Chunk_n+MAC_Chunk_n) || Hash(Plaintext_Chunk_n) ||
+    Length(IV_Blob_n+Ciphertext_Blob_n+MAC_Blob_n) || Hash(Plaintext_Blob_n) ||
 
-This is enough to calculate the offsets for all the chunks in the blob. Length
-is the length of the chunk as a four byte integer in little-endian format.
+This is enough to calculate the offsets for all the Blobs in the Pack. Length
+is the length of a Blob as a four byte integer in little-endian format.
 
 Indexing
 --------
 
-Index blobs pack together information about data and tree blobs and stores this
-information in the repository. When the local cached index is not accessible
-any more, the index files can be downloaded and used to reconstruct the index.
-The index blobs are encrypted and signed like data and tree blobs, so the outer
-structure is `IV || Ciphertext || MAC` again. The plaintext consists of a JSON
-document like the following:
+Index files contain information about Data and Tree Blobs and the Packs they
+are contained in and store this information in the repository. When the local
+cached index is not accessible any more, the index files can be downloaded and
+used to reconstruct the index. The index Blobs are encrypted and signed like
+Data and Tree Blobs, so the outer structure is `IV || Ciphertext || MAC` again.
+The plaintext consists of a JSON document like the following:
 
-    {
-       "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c":
-       [
-          "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
-          "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
-          "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"
-       ]
-    }
+    [
+      {
+         "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
+         "blobs": [
+            "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+            "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+            "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"
+         ]
+      }
+    ]
 
-This JSON document lists all the blobs with the contents. In this example, the
-blob `73d04e61` contains three chunks, the plaintext hashes are listed afterwards.
+This JSON document lists all the Blobs with contents. In this example, the Pack
+`73d04e61` contains three Blobs, the plaintext hashes are listed afterwards.
 
 Keys, Encryption and MAC
 ------------------------
@@ -232,13 +254,13 @@ Here it can be seen that this snapshot represents the contents of the directory
 `/tmp/testdata`. The most important field is `tree`.
 
 All content within a restic repository is referenced according to its SHA-256
-hash. Before saving, each file is split into variable sized chunks of data. The
-SHA-256 hashes of all chunks are saved in an ordered list which then represents
+hash. Before saving, each file is split into variable sized Blobs of data. The
+SHA-256 hashes of all Blobs are saved in an ordered list which then represents
 the content of the file.
 
 In order to relate these plain text hashes to the actual encrypted storage
 hashes (which vary due to random IVs), an index is used. If the index is not
-available, the header of all data blobs can be read.
+available, the header of all data Blobs can be read.
 
 Trees and Data
 --------------
@@ -322,15 +344,15 @@ Backups and Deduplication
 
 For creating a backup, restic scans the target directory for all files,
 sub-directories and other entries. The data from each file is split into
-variable length chunks cut at offsets defined by a sliding window of 64 byte.
+variable length Blobs cut at offsets defined by a sliding window of 64 byte.
 The implementation uses Rabin Fingerprints for implementing this Content
 Defined Chunking (CDC). An irreducible polynomial is selected at random when a
 repository is initialized.
 
-Files smaller than 512 KiB are not split, chunks are of 512 KiB to 8 MiB in
-size. The implementation aims for 1 MiB chunk size on average.
+Files smaller than 512 KiB are not split, Blobs are of 512 KiB to 8 MiB in
+size. The implementation aims for 1 MiB Blob size on average.
 
-For modified files, only modified chunks have to be saved in a subsequent
+For modified files, only modified Blobs have to be saved in a subsequent
 backup. This even works if bytes are inserted or removed at arbitrary positions
 within the file.
 
