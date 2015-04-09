@@ -123,14 +123,14 @@ The index blobs are encrypted and signed like data and tree blobs, so the outer
 structure is `IV || Ciphertext || MAC` again. The plaintext consists of a JSON
 document like the following:
 
-   {
-      "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c":
-      [
-         "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
-         "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
-         "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"
-      ]
-   }
+    {
+       "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c":
+       [
+          "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+          "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+          "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"
+       ]
+    }
 
 This JSON document lists all the blobs with the contents. In this example, the
 blob `73d04e61` contains three chunks, the plaintext hashes are listed afterwards.
