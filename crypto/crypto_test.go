@@ -126,9 +126,11 @@ func BenchmarkEncryptWriter(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rd.Seek(0, 0)
 		wr := crypto.EncryptTo(k, ioutil.Discard)
-		_, err := io.Copy(wr, rd)
+		n, err := io.Copy(wr, rd)
 		OK(b, err)
 		OK(b, wr.Close())
+		Assert(b, n == int64(size),
+			"not enough bytes writter: want %d, got %d", size, n)
 	}
 }
 
