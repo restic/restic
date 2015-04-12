@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
 )
 
@@ -158,11 +159,11 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 	var ciphertext []byte
 
 	// if the data is small enough, use a slice from the pool
-	if len(data) <= maxCiphertextSize-ivSize-macSize {
+	if len(data) <= maxCiphertextSize-crypto.CiphertextExtension {
 		ciphertext = GetChunkBuf("ch.Save()")
 		defer FreeChunkBuf("ch.Save()", ciphertext)
 	} else {
-		l := len(data) + ivSize + macSize
+		l := len(data) + crypto.CiphertextExtension
 
 		debug.Log("Server.Save", "create large slice of %d bytes for ciphertext", l)
 

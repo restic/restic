@@ -1,4 +1,4 @@
-package restic
+package crypto
 
 import (
 	"bytes"
@@ -6,11 +6,13 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"sync"
 
+	"github.com/restic/restic/chunker"
 	"golang.org/x/crypto/poly1305"
 	"golang.org/x/crypto/scrypt"
 )
@@ -21,7 +23,29 @@ const (
 	MACKeySizeR = 16                        // for Poly1305
 	MACKeySize  = MACKeySizeK + MACKeySizeR // for Poly1305-AES128
 	ivSize      = aes.BlockSize
+
+	macSize             = poly1305.TagSize // Poly1305 size is 16 byte
+	CiphertextExtension = ivSize + macSize
 )
+
+var (
+	// ErrUnauthenticated is returned when ciphertext verification has failed.
+	ErrUnauthenticated = errors.New("ciphertext verification failed")
+
+	// ErrBufferTooSmall is returned when the destination slice is too small
+	// for the ciphertext.
+	ErrBufferTooSmall = errors.New("destination buffer too small")
+)
+
+// MasterKeys holds signing and encryption keys for a repository. It is stored
+// encrypted and signed as a JSON data structure in the Data field of the Key
+// structure. For the master key, the secret random polynomial used for content
+// defined chunking is included.
+type MasterKeys struct {
+	Sign              MACKey      `json:"sign"`
+	Encrypt           AESKey      `json:"encrypt"`
+	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial,omitempty"`
+}
 
 type AESKey [32]byte
 type MACKey struct {
@@ -118,7 +142,7 @@ func poly1305_verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
 }
 
 // returns new encryption and mac keys. k.MACKey.R is already masked.
-func generateRandomKeys() (k *MasterKeys) {
+func GenerateRandomKeys() (k *MasterKeys) {
 	k = &MasterKeys{}
 	n, err := rand.Read(k.Encrypt[:])
 	if n != AESKeySize || err != nil {
@@ -249,16 +273,17 @@ func Decrypt(ks *MasterKeys, plaintext, ciphertext []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-// runs scrypt(password)
-func kdf(k *Key, password string) (*MasterKeys, error) {
-	if len(k.Salt) == 0 {
+// KDF derives encryption and signing keys from the password using the supplied
+// parameters N, R and P and the Salt.
+func KDF(N, R, P int, salt []byte, password string) (*MasterKeys, error) {
+	if len(salt) == 0 {
 		return nil, fmt.Errorf("scrypt() called with empty salt")
 	}
 
 	derKeys := &MasterKeys{}
 
 	keybytes := MACKeySize + AESKeySize
-	scryptKeys, err := scrypt.Key([]byte(password), k.Salt, k.N, k.R, k.P, keybytes)
+	scryptKeys, err := scrypt.Key([]byte(password), salt, N, R, P, keybytes)
 	if err != nil {
 		return nil, fmt.Errorf("error deriving keys from password: %v", err)
 	}
@@ -296,7 +321,7 @@ func (e *encryptWriter) Close() error {
 	}
 
 	// return buffer
-	FreeChunkBuf("EncryptWriter", e.data.Bytes())
+	bufPool.Put(e.data.Bytes())
 
 	return nil
 }
@@ -354,7 +379,7 @@ func (e *encryptWriter) Write(p []byte) (int, error) {
 func EncryptTo(ks *MasterKeys, wr io.Writer) io.WriteCloser {
 	ew := &encryptWriter{
 		iv:     generateRandomIV(),
-		data:   bytes.NewBuffer(GetChunkBuf("EncryptWriter")[:0]),
+		data:   bytes.NewBuffer(getBuffer()[:0]),
 		key:    ks,
 		origWr: wr,
 	}
@@ -426,7 +451,7 @@ func (d *decryptReader) Close() error {
 		return nil
 	}
 
-	FreeChunkBuf("decryptReader", d.buf)
+	freeBuffer(d.buf)
 	d.buf = nil
 	return nil
 }
@@ -438,7 +463,7 @@ func (d *decryptReader) Close() error {
 // afterwards. If a MAC verification failure is observed, it is returned
 // immediately.
 func DecryptFrom(ks *MasterKeys, rd io.Reader) (io.ReadCloser, error) {
-	ciphertext := GetChunkBuf("decryptReader")
+	ciphertext := getBuffer()
 
 	ciphertext = ciphertext[0:cap(ciphertext)]
 	n, err := io.ReadFull(rd, ciphertext)

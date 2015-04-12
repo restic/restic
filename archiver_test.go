@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"io"
-	"math/rand"
 	"testing"
 
 	"github.com/restic/restic"
@@ -15,21 +14,6 @@ import (
 
 var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
 var testPol = chunker.Pol(0x3DA3358B4DC173)
-
-func get_random(seed, count int) []byte {
-	buf := make([]byte, count)
-
-	rnd := rand.New(rand.NewSource(int64(seed)))
-	for i := 0; i < count; i++ {
-		buf[i] = byte(rnd.Uint32())
-	}
-
-	return buf
-}
-
-func randomReader(seed, size int) *bytes.Reader {
-	return bytes.NewReader(get_random(seed, size))
-}
 
 const bufSize = chunker.MiB
 
@@ -66,7 +50,7 @@ func benchmarkChunkEncrypt(b testing.TB, buf []byte, rd Rdr, key *restic.Key) {
 }
 
 func BenchmarkChunkEncrypt(b *testing.B) {
-	data := get_random(23, 10<<20) // 10MiB
+	data := Random(23, 10<<20) // 10MiB
 	rd := bytes.NewReader(data)
 
 	be := setupBackend(b)
@@ -110,7 +94,7 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 	defer teardownBackend(b, be)
 	key := setupKey(b, be, "geheim")
 
-	data := get_random(23, 10<<20) // 10MiB
+	data := Random(23, 10<<20) // 10MiB
 
 	buf := restic.GetChunkBuf("BenchmarkChunkEncryptParallel")
 

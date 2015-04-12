@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
 )
 
@@ -19,6 +20,8 @@ type poolStats struct {
 	put int
 	max int
 }
+
+const maxCiphertextSize = crypto.CiphertextExtension + chunker.MaxSize
 
 func (s *poolStats) Get(k string) {
 	s.m.Lock()

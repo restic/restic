@@ -1,7 +1,8 @@
-package restic_test
+package crypto_test
 
 import (
 	"bytes"
+	"flag"
 	"io"
 	"io/ioutil"
 	"os"
@@ -9,13 +10,14 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/crypto"
 	. "github.com/restic/restic/test"
 )
 
+var testLargeCrypto = flag.Bool("test.largecrypto", false, "also test crypto functions with large payloads")
+
 func TestEncryptDecrypt(t *testing.T) {
-	s := setupBackend(t)
-	defer teardownBackend(t, s)
-	k := setupKey(t, s, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
 	if *testLargeCrypto {
@@ -24,14 +26,14 @@ func TestEncryptDecrypt(t *testing.T) {
 
 	for _, size := range tests {
 		data := make([]byte, size)
-		_, err := io.ReadFull(randomReader(42, size), data)
+		_, err := io.ReadFull(RandomReader(42, size), data)
 		OK(t, err)
 
 		ciphertext := restic.GetChunkBuf("TestEncryptDecrypt")
-		n, err := k.Encrypt(ciphertext, data)
+		n, err := crypto.Encrypt(k, ciphertext, data)
 		OK(t, err)
 
-		plaintext, err := k.Decrypt(nil, ciphertext[:n])
+		plaintext, err := crypto.Decrypt(k, nil, ciphertext[:n])
 		OK(t, err)
 
 		restic.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
@@ -41,9 +43,7 @@ func TestEncryptDecrypt(t *testing.T) {
 }
 
 func TestSmallBuffer(t *testing.T) {
-	s := setupBackend(t)
-	defer teardownBackend(t, s)
-	k := setupKey(t, s, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	size := 600
 	data := make([]byte, size)
@@ -54,9 +54,9 @@ func TestSmallBuffer(t *testing.T) {
 	OK(t, err)
 
 	ciphertext := make([]byte, size/2)
-	_, err = k.Encrypt(ciphertext, data)
+	_, err = crypto.Encrypt(k, ciphertext, data)
 	// this must throw an error, since the target slice is too small
-	Assert(t, err != nil && err == restic.ErrBufferTooSmall,
+	Assert(t, err != nil && err == crypto.ErrBufferTooSmall,
 		"expected restic.ErrBufferTooSmall, got %#v", err)
 }
 
@@ -65,9 +65,7 @@ func TestLargeEncrypt(t *testing.T) {
 		t.SkipNow()
 	}
 
-	s := setupBackend(t)
-	defer teardownBackend(t, s)
-	k := setupKey(t, s, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	for _, size := range []int{chunker.MaxSize, chunker.MaxSize + 1, chunker.MaxSize + 1<<20} {
 		data := make([]byte, size)
@@ -77,11 +75,11 @@ func TestLargeEncrypt(t *testing.T) {
 		_, err = io.ReadFull(f, data)
 		OK(t, err)
 
-		ciphertext := make([]byte, size+restic.CiphertextExtension)
-		n, err := k.Encrypt(ciphertext, data)
+		ciphertext := make([]byte, size+crypto.CiphertextExtension)
+		n, err := crypto.Encrypt(k, ciphertext, data)
 		OK(t, err)
 
-		plaintext, err := k.Decrypt([]byte{}, ciphertext[:n])
+		plaintext, err := crypto.Decrypt(k, []byte{}, ciphertext[:n])
 		OK(t, err)
 
 		Equals(t, plaintext, data)
@@ -90,18 +88,16 @@ func TestLargeEncrypt(t *testing.T) {
 
 func BenchmarkEncryptWriter(b *testing.B) {
 	size := 8 << 20 // 8MiB
-	rd := randomReader(23, size)
+	rd := RandomReader(23, size)
 
-	be := setupBackend(b)
-	defer teardownBackend(b, be)
-	k := setupKey(b, be, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
 		rd.Seek(0, 0)
-		wr := k.EncryptTo(ioutil.Discard)
+		wr := crypto.EncryptTo(k, ioutil.Discard)
 		_, err := io.Copy(wr, rd)
 		OK(b, err)
 		OK(b, wr.Close())
@@ -112,31 +108,25 @@ func BenchmarkEncrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
 
-	be := setupBackend(b)
-	defer teardownBackend(b, be)
-	k := setupKey(b, be, testPassword)
-
-	buf := make([]byte, len(data)+restic.CiphertextExtension)
+	k := crypto.GenerateRandomKeys()
+	buf := make([]byte, len(data)+crypto.CiphertextExtension)
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
-		_, err := k.Encrypt(buf, data)
+		_, err := crypto.Encrypt(k, buf, data)
 		OK(b, err)
 	}
 }
 
 func BenchmarkDecryptReader(b *testing.B) {
-	be := setupBackend(b)
-	defer teardownBackend(b, be)
-	k := setupKey(b, be, testPassword)
-
 	size := 8 << 20 // 8MiB
-	buf := get_random(23, size)
+	buf := Random(23, size)
+	k := crypto.GenerateRandomKeys()
 
-	ciphertext := make([]byte, len(buf)+restic.CiphertextExtension)
-	_, err := k.Encrypt(ciphertext, buf)
+	ciphertext := make([]byte, len(buf)+crypto.CiphertextExtension)
+	_, err := crypto.Encrypt(k, ciphertext, buf)
 	OK(b, err)
 
 	rd := bytes.NewReader(ciphertext)
@@ -146,7 +136,7 @@ func BenchmarkDecryptReader(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		rd.Seek(0, 0)
-		decRd, err := k.DecryptFrom(rd)
+		decRd, err := crypto.DecryptFrom(k, rd)
 		OK(b, err)
 
 		_, err = io.Copy(ioutil.Discard, decRd)
@@ -155,12 +145,10 @@ func BenchmarkDecryptReader(b *testing.B) {
 }
 
 func BenchmarkEncryptDecryptReader(b *testing.B) {
-	be := setupBackend(b)
-	defer teardownBackend(b, be)
-	k := setupKey(b, be, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	size := 8 << 20 // 8MiB
-	rd := randomReader(23, size)
+	rd := RandomReader(23, size)
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
@@ -169,12 +157,12 @@ func BenchmarkEncryptDecryptReader(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rd.Seek(0, 0)
 		buf.Reset()
-		wr := k.EncryptTo(buf)
+		wr := crypto.EncryptTo(k, buf)
 		_, err := io.Copy(wr, rd)
 		OK(b, err)
 		OK(b, wr.Close())
 
-		r, err := k.DecryptFrom(buf)
+		r, err := crypto.DecryptFrom(k, buf)
 		OK(b, err)
 
 		_, err = io.Copy(ioutil.Discard, r)
@@ -188,31 +176,27 @@ func BenchmarkDecrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
 
-	s := setupBackend(b)
-	defer teardownBackend(b, s)
-	k := setupKey(b, s, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	ciphertext := restic.GetChunkBuf("BenchmarkDecrypt")
 	defer restic.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
 	plaintext := restic.GetChunkBuf("BenchmarkDecrypt")
 	defer restic.FreeChunkBuf("BenchmarkDecrypt", plaintext)
 
-	n, err := k.Encrypt(ciphertext, data)
+	n, err := crypto.Encrypt(k, ciphertext, data)
 	OK(b, err)
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
-		plaintext, err = k.Decrypt(plaintext, ciphertext[:n])
+		plaintext, err = crypto.Decrypt(k, plaintext, ciphertext[:n])
 		OK(b, err)
 	}
 }
 
 func TestEncryptStreamWriter(t *testing.T) {
-	s := setupBackend(t)
-	defer teardownBackend(t, s)
-	k := setupKey(t, s, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
 	if *testLargeCrypto {
@@ -221,23 +205,23 @@ func TestEncryptStreamWriter(t *testing.T) {
 
 	for _, size := range tests {
 		data := make([]byte, size)
-		_, err := io.ReadFull(randomReader(42, size), data)
+		_, err := io.ReadFull(RandomReader(42, size), data)
 		OK(t, err)
 
 		ciphertext := bytes.NewBuffer(nil)
-		wr := k.EncryptTo(ciphertext)
+		wr := crypto.EncryptTo(k, ciphertext)
 
 		_, err = io.Copy(wr, bytes.NewReader(data))
 		OK(t, err)
 		OK(t, wr.Close())
 
-		l := len(data) + restic.CiphertextExtension
+		l := len(data) + crypto.CiphertextExtension
 		Assert(t, len(ciphertext.Bytes()) == l,
 			"wrong ciphertext length: expected %d, got %d",
 			l, len(ciphertext.Bytes()))
 
 		// decrypt with default function
-		plaintext, err := k.Decrypt([]byte{}, ciphertext.Bytes())
+		plaintext, err := crypto.Decrypt(k, []byte{}, ciphertext.Bytes())
 		OK(t, err)
 		Assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",
@@ -246,9 +230,7 @@ func TestEncryptStreamWriter(t *testing.T) {
 }
 
 func TestDecryptStreamReader(t *testing.T) {
-	s := setupBackend(t)
-	defer teardownBackend(t, s)
-	k := setupKey(t, s, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
 	if *testLargeCrypto {
@@ -257,19 +239,19 @@ func TestDecryptStreamReader(t *testing.T) {
 
 	for _, size := range tests {
 		data := make([]byte, size)
-		_, err := io.ReadFull(randomReader(42, size), data)
+		_, err := io.ReadFull(RandomReader(42, size), data)
 		OK(t, err)
 
-		ciphertext := make([]byte, size+restic.CiphertextExtension)
+		ciphertext := make([]byte, size+crypto.CiphertextExtension)
 
 		// encrypt with default function
-		n, err := k.Encrypt(ciphertext, data)
+		n, err := crypto.Encrypt(k, ciphertext, data)
 		OK(t, err)
-		Assert(t, n == len(data)+restic.CiphertextExtension,
+		Assert(t, n == len(data)+crypto.CiphertextExtension,
 			"wrong number of bytes returned after encryption: expected %d, got %d",
-			len(data)+restic.CiphertextExtension, n)
+			len(data)+crypto.CiphertextExtension, n)
 
-		rd, err := k.DecryptFrom(bytes.NewReader(ciphertext))
+		rd, err := crypto.DecryptFrom(k, bytes.NewReader(ciphertext))
 		OK(t, err)
 
 		plaintext, err := ioutil.ReadAll(rd)
@@ -282,9 +264,7 @@ func TestDecryptStreamReader(t *testing.T) {
 }
 
 func TestEncryptWriter(t *testing.T) {
-	s := setupBackend(t)
-	defer teardownBackend(t, s)
-	k := setupKey(t, s, testPassword)
+	k := crypto.GenerateRandomKeys()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
 	if *testLargeCrypto {
@@ -293,11 +273,11 @@ func TestEncryptWriter(t *testing.T) {
 
 	for _, size := range tests {
 		data := make([]byte, size)
-		_, err := io.ReadFull(randomReader(42, size), data)
+		_, err := io.ReadFull(RandomReader(42, size), data)
 		OK(t, err)
 
 		buf := bytes.NewBuffer(nil)
-		wr := k.EncryptTo(buf)
+		wr := crypto.EncryptTo(k, buf)
 
 		_, err = io.Copy(wr, bytes.NewReader(data))
 		OK(t, err)
@@ -305,13 +285,13 @@ func TestEncryptWriter(t *testing.T) {
 
 		ciphertext := buf.Bytes()
 
-		l := len(data) + restic.CiphertextExtension
+		l := len(data) + crypto.CiphertextExtension
 		Assert(t, len(ciphertext) == l,
 			"wrong ciphertext length: expected %d, got %d",
 			l, len(ciphertext))
 
 		// decrypt with default function
-		plaintext, err := k.Decrypt([]byte{}, ciphertext)
+		plaintext, err := crypto.Decrypt(k, []byte{}, ciphertext)
 		OK(t, err)
 		Assert(t, bytes.Equal(data, plaintext),
 			"wrong plaintext after decryption: expected %02x, got %02x",

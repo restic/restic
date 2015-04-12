@@ -1,4 +1,4 @@
-package restic
+package crypto
 
 import (
 	"bytes"
@@ -98,24 +98,22 @@ func should_panic(f func()) (did_panic bool) {
 }
 
 func TestCrypto(t *testing.T) {
-	r := &Key{}
-
 	for _, tv := range test_values {
 		// test encryption
-		r.master = &MasterKeys{
+		k := &MasterKeys{
 			Encrypt: tv.ekey,
 			Sign:    tv.skey,
 		}
 
-		msg := make([]byte, maxCiphertextSize)
-		n, err := Encrypt(r.master, msg, tv.plaintext)
+		msg := make([]byte, 0, 8*1024*1024) // use 8MiB for now
+		n, err := Encrypt(k, msg, tv.plaintext)
 		if err != nil {
 			t.Fatal(err)
 		}
 		msg = msg[:n]
 
 		// decrypt message
-		_, err = Decrypt(r.master, []byte{}, msg)
+		_, err = Decrypt(k, []byte{}, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -123,12 +121,22 @@ func TestCrypto(t *testing.T) {
 		// change mac, this must fail
 		msg[len(msg)-8] ^= 0x23
 
-		if _, err = Decrypt(r.master, []byte{}, msg); err != ErrUnauthenticated {
-			t.Fatal("wrong HMAC value not detected")
+		if _, err = Decrypt(k, []byte{}, msg); err != ErrUnauthenticated {
+			t.Fatal("wrong MAC value not detected")
+		}
+
+		// reset mac
+		msg[len(msg)-8] ^= 0x23
+
+		// tamper with message, this must fail
+		msg[16+5] ^= 0x85
+
+		if _, err = Decrypt(k, []byte{}, msg); err != ErrUnauthenticated {
+			t.Fatal("tampered message not detected")
 		}
 
 		// test decryption
-		p, err := Decrypt(r.master, []byte{}, tv.ciphertext)
+		p, err := Decrypt(k, []byte{}, tv.ciphertext)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -1,7 +1,9 @@
 package test_helper
 
 import (
+	"bytes"
 	"fmt"
+	"math/rand"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -44,4 +46,22 @@ func Str2ID(s string) backend.ID {
 	}
 
 	return id
+}
+
+// Random returns size bytes of pseudo-random data derived from the seed.
+func Random(seed, count int) []byte {
+	buf := make([]byte, count)
+
+	rnd := rand.New(rand.NewSource(int64(seed)))
+	for i := 0; i < count; i++ {
+		buf[i] = byte(rnd.Uint32())
+	}
+
+	return buf
+}
+
+// RandomReader returns a reader that returns size bytes of pseudo-random data
+// derived from the seed.
+func RandomReader(seed, size int) *bytes.Reader {
+	return bytes.NewReader(Random(seed, size))
 }

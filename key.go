@@ -13,24 +13,13 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
-
-	"golang.org/x/crypto/poly1305"
 )
 
-// max size is 8MiB, defined in chunker
-const macSize = poly1305.TagSize // Poly1305 size is 16 byte
-const maxCiphertextSize = ivSize + chunker.MaxSize + macSize
-const CiphertextExtension = ivSize + macSize
-
 var (
-	// ErrUnauthenticated is returned when ciphertext verification has failed.
-	ErrUnauthenticated = errors.New("ciphertext verification failed")
 	// ErrNoKeyFound is returned when no key for the repository could be decrypted.
 	ErrNoKeyFound = errors.New("no key could be found")
-	// ErrBufferTooSmall is returned when the destination slice is too small
-	// for the ciphertext.
-	ErrBufferTooSmall = errors.New("destination buffer too small")
 )
 
 // TODO: figure out scrypt values on the fly depending on the current
@@ -55,20 +44,10 @@ type Key struct {
 	Salt []byte `json:"salt"`
 	Data []byte `json:"data"`
 
-	user   *MasterKeys
-	master *MasterKeys
+	user   *crypto.MasterKeys
+	master *crypto.MasterKeys
 
 	name string
-}
-
-// MasterKeys holds signing and encryption keys for a repository. It is stored
-// encrypted and signed as a JSON data structure in the Data field of the Key
-// structure. For the master key, the secret random polynomial used for content
-// defined chunking is included.
-type MasterKeys struct {
-	Sign              MACKey      `json:"sign"`
-	Encrypt           AESKey      `json:"encrypt"`
-	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial,omitempty"`
 }
 
 // CreateKey initializes a master key in the given backend and encrypts it with
@@ -90,19 +69,19 @@ func OpenKey(s Server, name string, password string) (*Key, error) {
 	}
 
 	// derive user key
-	k.user, err = kdf(k, password)
+	k.user, err = crypto.KDF(k.N, k.R, k.P, k.Salt, password)
 	if err != nil {
 		return nil, err
 	}
 
 	// decrypt master keys
-	buf, err := k.DecryptUser([]byte{}, k.Data)
+	buf, err := crypto.Decrypt(k.user, []byte{}, k.Data)
 	if err != nil {
 		return nil, err
 	}
 
 	// restore json
-	k.master = &MasterKeys{}
+	k.master = &crypto.MasterKeys{}
 	err = json.Unmarshal(buf, k.master)
 	if err != nil {
 		return nil, err
@@ -190,14 +169,14 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	}
 
 	// call KDF to derive user key
-	newkey.user, err = kdf(newkey, password)
+	newkey.user, err = crypto.KDF(newkey.N, newkey.R, newkey.P, newkey.Salt, password)
 	if err != nil {
 		return nil, err
 	}
 
 	if template == nil {
 		// generate new random master keys
-		newkey.master = generateRandomKeys()
+		newkey.master = crypto.GenerateRandomKeys()
 		// generate random polynomial for cdc
 		p, err := chunker.RandomPolynomial()
 		if err != nil {
@@ -218,7 +197,7 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	}
 
 	newkey.Data = GetChunkBuf("key")
-	n, err = newkey.EncryptUser(newkey.Data, buf)
+	n, err = crypto.Encrypt(newkey.user, newkey.Data, buf)
 	newkey.Data = newkey.Data[:n]
 
 	// dump as json
@@ -254,52 +233,23 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	return newkey, nil
 }
 
-func (k *Key) newIV(buf []byte) error {
-	_, err := io.ReadFull(rand.Reader, buf[:ivSize])
-	buf = buf[:ivSize]
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// EncryptUser encrypts and signs data with the user key. Stored in ciphertext
-// is IV || Ciphertext || MAC.
-func (k *Key) EncryptUser(ciphertext, plaintext []byte) (int, error) {
-	return Encrypt(k.user, ciphertext, plaintext)
-}
-
 // Encrypt encrypts and signs data with the master key. Stored in ciphertext is
 // IV || Ciphertext || MAC. Returns the ciphertext length.
 func (k *Key) Encrypt(ciphertext, plaintext []byte) (int, error) {
-	return Encrypt(k.master, ciphertext, plaintext)
+	return crypto.Encrypt(k.master, ciphertext, plaintext)
 }
 
 // EncryptTo encrypts and signs data with the master key. The returned
 // io.Writer writes IV || Ciphertext || HMAC. For the hash function, SHA256 is
 // used.
 func (k *Key) EncryptTo(wr io.Writer) io.WriteCloser {
-	return EncryptTo(k.master, wr)
-}
-
-// EncryptUserTo encrypts and signs data with the user key. The returned
-// io.Writer writes IV || Ciphertext || HMAC. For the hash function, SHA256 is
-// used.
-func (k *Key) EncryptUserTo(wr io.Writer) io.WriteCloser {
-	return EncryptTo(k.user, wr)
+	return crypto.EncryptTo(k.master, wr)
 }
 
 // Decrypt verifes and decrypts the ciphertext with the master key. Ciphertext
 // must be in the form IV || Ciphertext || MAC.
 func (k *Key) Decrypt(plaintext, ciphertext []byte) ([]byte, error) {
-	return Decrypt(k.master, plaintext, ciphertext)
-}
-
-// DecryptUser verifes and decrypts the ciphertext with the user key. Ciphertext
-// must be in the form IV || Ciphertext || MAC.
-func (k *Key) DecryptUser(plaintext, ciphertext []byte) ([]byte, error) {
-	return Decrypt(k.user, plaintext, ciphertext)
+	return crypto.Decrypt(k.master, plaintext, ciphertext)
 }
 
 // DecryptFrom verifies and decrypts the ciphertext read from rd and makes it
@@ -309,27 +259,17 @@ func (k *Key) DecryptUser(plaintext, ciphertext []byte) ([]byte, error) {
 // afterwards. If an MAC verification failure is observed, it is returned
 // immediately.
 func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
-	return DecryptFrom(k.master, rd)
-}
-
-// DecryptFrom verifies and decrypts the ciphertext read from rd with the user
-// key and makes it available on the returned Reader. Ciphertext must be in the
-// form IV || Ciphertext || MAC. In order to correctly verify the ciphertext,
-// rd is drained, locally buffered and made available on the returned Reader
-// afterwards. If an MAC verification failure is observed, it is returned
-// immediately.
-func (k *Key) DecryptUserFrom(rd io.Reader) (io.ReadCloser, error) {
-	return DecryptFrom(k.user, rd)
+	return crypto.DecryptFrom(k.master, rd)
 }
 
 // Master() returns the master keys for this repository. Only included for
 // debug purposes.
-func (k *Key) Master() *MasterKeys {
+func (k *Key) Master() *crypto.MasterKeys {
 	return k.master
 }
 
 // User() returns the user keys for this key. Only included for debug purposes.
-func (k *Key) User() *MasterKeys {
+func (k *Key) User() *crypto.MasterKeys {
 	return k.user
 }
 
