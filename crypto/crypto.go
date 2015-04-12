@@ -42,17 +42,17 @@ var (
 // structure. For the master key, the secret random polynomial used for content
 // defined chunking is included.
 type Key struct {
-	Sign              MACKey      `json:"sign"`
-	Encrypt           AESKey      `json:"encrypt"`
-	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial,omitempty"`
+	Sign              SigningKey    `json:"sign"`
+	Encrypt           EncryptionKey `json:"encrypt"`
+	ChunkerPolynomial chunker.Pol   `json:"chunker_polynomial,omitempty"`
 }
 
-type AESKey [32]byte
-type MACKey struct {
-	K [16]byte // for AES128
-	R [16]byte // for Poly1305
+type EncryptionKey [32]byte
+type SigningKey struct {
+	K [16]byte `json:"k"` // for AES128
+	R [16]byte `json:"r"` // for Poly1305
 }
-type IV [ivSize]byte
+type iv [ivSize]byte
 
 // mask for key, (cf. http://cr.yp.to/mac/poly1305-20050329.pdf)
 var poly1305KeyMask = [16]byte{
@@ -75,7 +75,7 @@ var poly1305KeyMask = [16]byte{
 }
 
 // key is a [32]byte, in the form k||r
-func poly1305_sign(msg []byte, nonce []byte, key *MACKey) []byte {
+func poly1305_sign(msg []byte, nonce []byte, key *SigningKey) []byte {
 	// prepare key for low-level poly1305.Sum(): r||n
 	var k [32]byte
 
@@ -100,7 +100,7 @@ func poly1305_sign(msg []byte, nonce []byte, key *MACKey) []byte {
 }
 
 // mask poly1305 key
-func maskKey(k *MACKey) {
+func maskKey(k *SigningKey) {
 	if k == nil {
 		return
 	}
@@ -110,14 +110,14 @@ func maskKey(k *MACKey) {
 }
 
 // construct mac key from slice (k||r), with masking
-func macKeyFromSlice(mk *MACKey, data []byte) {
+func macKeyFromSlice(mk *SigningKey, data []byte) {
 	copy(mk.K[:], data[:16])
 	copy(mk.R[:], data[16:32])
 	maskKey(mk)
 }
 
 // key: k||r
-func poly1305_verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
+func poly1305_verify(msg []byte, nonce []byte, key *SigningKey, mac []byte) bool {
 	// prepare key for low-level poly1305.Sum(): r||n
 	var k [32]byte
 
@@ -141,8 +141,8 @@ func poly1305_verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
 	return poly1305.Verify(&m, msg, &k)
 }
 
-// GenerateKey returns new encryption and signing keys.
-func GenerateKey() (k *Key) {
+// NewKey returns new encryption and signing keys.
+func NewKey() (k *Key) {
 	k = &Key{}
 	n, err := rand.Read(k.Encrypt[:])
 	if n != aesKeySize || err != nil {
@@ -164,7 +164,7 @@ func GenerateKey() (k *Key) {
 	return k
 }
 
-func generateRandomIV() (iv IV) {
+func newIV() (iv iv) {
 	n, err := rand.Read(iv[:])
 	if n != ivSize || err != nil {
 		panic("unable to read enough random bytes for iv")
@@ -177,11 +177,11 @@ type jsonMACKey struct {
 	R []byte `json:"r"`
 }
 
-func (m *MACKey) MarshalJSON() ([]byte, error) {
+func (m *SigningKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonMACKey{K: m.K[:], R: m.R[:]})
 }
 
-func (m *MACKey) UnmarshalJSON(data []byte) error {
+func (m *SigningKey) UnmarshalJSON(data []byte) error {
 	j := jsonMACKey{}
 	err := json.Unmarshal(data, &j)
 	if err != nil {
@@ -193,11 +193,11 @@ func (m *MACKey) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (k *AESKey) MarshalJSON() ([]byte, error) {
+func (k *EncryptionKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(k[:])
 }
 
-func (k *AESKey) UnmarshalJSON(data []byte) error {
+func (k *EncryptionKey) UnmarshalJSON(data []byte) error {
 	d := make([]byte, aesKeySize)
 	err := json.Unmarshal(data, &d)
 	if err != nil {
@@ -215,7 +215,7 @@ func Encrypt(ks *Key, ciphertext, plaintext []byte) (int, error) {
 		return 0, ErrBufferTooSmall
 	}
 
-	iv := generateRandomIV()
+	iv := newIV()
 	copy(ciphertext, iv[:])
 
 	c, err := aes.NewCipher(ks.Encrypt[:])
@@ -302,7 +302,7 @@ func KDF(N, R, P int, salt []byte, password string) (*Key, error) {
 }
 
 type encryptWriter struct {
-	iv      IV
+	iv      iv
 	wroteIV bool
 	data    *bytes.Buffer
 	key     *Key
@@ -378,7 +378,7 @@ func (e *encryptWriter) Write(p []byte) (int, error) {
 // is called, the data is encrypted an written to the underlying writer.
 func EncryptTo(ks *Key, wr io.Writer) io.WriteCloser {
 	ew := &encryptWriter{
-		iv:     generateRandomIV(),
+		iv:     newIV(),
 		data:   bytes.NewBuffer(getBuffer()[:0]),
 		key:    ks,
 		origWr: wr,

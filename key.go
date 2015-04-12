@@ -176,7 +176,7 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 
 	if template == nil {
 		// generate new random master keys
-		newkey.master = crypto.GenerateKey()
+		newkey.master = crypto.NewKey()
 		// generate random polynomial for cdc
 		p, err := chunker.RandomPolynomial()
 		if err != nil {
