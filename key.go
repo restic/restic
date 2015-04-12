@@ -44,8 +44,8 @@ type Key struct {
 	Salt []byte `json:"salt"`
 	Data []byte `json:"data"`
 
-	user   *crypto.MasterKeys
-	master *crypto.MasterKeys
+	user   *crypto.Key
+	master *crypto.Key
 
 	name string
 }
@@ -81,7 +81,7 @@ func OpenKey(s Server, name string, password string) (*Key, error) {
 	}
 
 	// restore json
-	k.master = &crypto.MasterKeys{}
+	k.master = &crypto.Key{}
 	err = json.Unmarshal(buf, k.master)
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 
 	if template == nil {
 		// generate new random master keys
-		newkey.master = crypto.GenerateRandomKeys()
+		newkey.master = crypto.GenerateKey()
 		// generate random polynomial for cdc
 		p, err := chunker.RandomPolynomial()
 		if err != nil {
@@ -264,12 +264,12 @@ func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
 
 // Master() returns the master keys for this repository. Only included for
 // debug purposes.
-func (k *Key) Master() *crypto.MasterKeys {
+func (k *Key) Master() *crypto.Key {
 	return k.master
 }
 
 // User() returns the user keys for this key. Only included for debug purposes.
-func (k *Key) User() *crypto.MasterKeys {
+func (k *Key) User() *crypto.Key {
 	return k.user
 }
 

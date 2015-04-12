@@ -100,7 +100,7 @@ func should_panic(f func()) (did_panic bool) {
 func TestCrypto(t *testing.T) {
 	for _, tv := range test_values {
 		// test encryption
-		k := &MasterKeys{
+		k := &Key{
 			Encrypt: tv.ekey,
 			Sign:    tv.skey,
 		}

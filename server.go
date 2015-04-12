@@ -159,11 +159,11 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 	var ciphertext []byte
 
 	// if the data is small enough, use a slice from the pool
-	if len(data) <= maxCiphertextSize-crypto.CiphertextExtension {
+	if len(data) <= maxCiphertextSize-crypto.Extension {
 		ciphertext = GetChunkBuf("ch.Save()")
 		defer FreeChunkBuf("ch.Save()", ciphertext)
 	} else {
-		l := len(data) + crypto.CiphertextExtension
+		l := len(data) + crypto.Extension
 
 		debug.Log("Server.Save", "create large slice of %d bytes for ciphertext", l)
 

@@ -18,14 +18,14 @@ import (
 )
 
 const (
-	AESKeySize  = 32                        // for AES256
-	MACKeySizeK = 16                        // for AES-128
-	MACKeySizeR = 16                        // for Poly1305
-	MACKeySize  = MACKeySizeK + MACKeySizeR // for Poly1305-AES128
+	aesKeySize  = 32                        // for AES256
+	macKeySizeK = 16                        // for AES-128
+	macKeySizeR = 16                        // for Poly1305
+	macKeySize  = macKeySizeK + macKeySizeR // for Poly1305-AES128
 	ivSize      = aes.BlockSize
 
-	macSize             = poly1305.TagSize // Poly1305 size is 16 byte
-	CiphertextExtension = ivSize + macSize
+	macSize   = poly1305.TagSize // Poly1305 size is 16 byte
+	Extension = ivSize + macSize
 )
 
 var (
@@ -37,11 +37,11 @@ var (
 	ErrBufferTooSmall = errors.New("destination buffer too small")
 )
 
-// MasterKeys holds signing and encryption keys for a repository. It is stored
+// Key holds signing and encryption keys for a repository. It is stored
 // encrypted and signed as a JSON data structure in the Data field of the Key
 // structure. For the master key, the secret random polynomial used for content
 // defined chunking is included.
-type MasterKeys struct {
+type Key struct {
 	Sign              MACKey      `json:"sign"`
 	Encrypt           AESKey      `json:"encrypt"`
 	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial,omitempty"`
@@ -141,21 +141,21 @@ func poly1305_verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
 	return poly1305.Verify(&m, msg, &k)
 }
 
-// returns new encryption and mac keys. k.MACKey.R is already masked.
-func GenerateRandomKeys() (k *MasterKeys) {
-	k = &MasterKeys{}
+// GenerateKey returns new encryption and signing keys.
+func GenerateKey() (k *Key) {
+	k = &Key{}
 	n, err := rand.Read(k.Encrypt[:])
-	if n != AESKeySize || err != nil {
+	if n != aesKeySize || err != nil {
 		panic("unable to read enough random bytes for encryption key")
 	}
 
 	n, err = rand.Read(k.Sign.K[:])
-	if n != MACKeySizeK || err != nil {
+	if n != macKeySizeK || err != nil {
 		panic("unable to read enough random bytes for mac encryption key")
 	}
 
 	n, err = rand.Read(k.Sign.R[:])
-	if n != MACKeySizeR || err != nil {
+	if n != macKeySizeR || err != nil {
 		panic("unable to read enough random bytes for mac signing key")
 	}
 	// mask r
@@ -198,7 +198,7 @@ func (k *AESKey) MarshalJSON() ([]byte, error) {
 }
 
 func (k *AESKey) UnmarshalJSON(data []byte) error {
-	d := make([]byte, AESKeySize)
+	d := make([]byte, aesKeySize)
 	err := json.Unmarshal(data, &d)
 	if err != nil {
 		return err
@@ -210,7 +210,7 @@ func (k *AESKey) UnmarshalJSON(data []byte) error {
 
 // Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||
 // MAC. Encrypt returns the ciphertext's length.
-func Encrypt(ks *MasterKeys, ciphertext, plaintext []byte) (int, error) {
+func Encrypt(ks *Key, ciphertext, plaintext []byte) (int, error) {
 	if cap(ciphertext) < len(plaintext)+ivSize+macSize {
 		return 0, ErrBufferTooSmall
 	}
@@ -236,7 +236,7 @@ func Encrypt(ks *MasterKeys, ciphertext, plaintext []byte) (int, error) {
 
 // Decrypt verifies and decrypts the ciphertext. Ciphertext must be in the form
 // IV || Ciphertext || MAC.
-func Decrypt(ks *MasterKeys, plaintext, ciphertext []byte) ([]byte, error) {
+func Decrypt(ks *Key, plaintext, ciphertext []byte) ([]byte, error) {
 	// check for plausible length
 	if len(ciphertext) < ivSize+macSize {
 		panic("trying to decrypt invalid data: ciphertext too small")
@@ -275,14 +275,14 @@ func Decrypt(ks *MasterKeys, plaintext, ciphertext []byte) ([]byte, error) {
 
 // KDF derives encryption and signing keys from the password using the supplied
 // parameters N, R and P and the Salt.
-func KDF(N, R, P int, salt []byte, password string) (*MasterKeys, error) {
+func KDF(N, R, P int, salt []byte, password string) (*Key, error) {
 	if len(salt) == 0 {
 		return nil, fmt.Errorf("scrypt() called with empty salt")
 	}
 
-	derKeys := &MasterKeys{}
+	derKeys := &Key{}
 
-	keybytes := MACKeySize + AESKeySize
+	keybytes := macKeySize + aesKeySize
 	scryptKeys, err := scrypt.Key([]byte(password), salt, N, R, P, keybytes)
 	if err != nil {
 		return nil, fmt.Errorf("error deriving keys from password: %v", err)
@@ -293,10 +293,10 @@ func KDF(N, R, P int, salt []byte, password string) (*MasterKeys, error) {
 	}
 
 	// first 32 byte of scrypt output is the encryption key
-	copy(derKeys.Encrypt[:], scryptKeys[:AESKeySize])
+	copy(derKeys.Encrypt[:], scryptKeys[:aesKeySize])
 
 	// next 32 byte of scrypt output is the mac key, in the form k||r
-	macKeyFromSlice(&derKeys.Sign, scryptKeys[AESKeySize:])
+	macKeyFromSlice(&derKeys.Sign, scryptKeys[aesKeySize:])
 
 	return derKeys, nil
 }
@@ -305,7 +305,7 @@ type encryptWriter struct {
 	iv      IV
 	wroteIV bool
 	data    *bytes.Buffer
-	key     *MasterKeys
+	key     *Key
 	s       cipher.Stream
 	w       io.Writer
 	origWr  io.Writer
@@ -376,7 +376,7 @@ func (e *encryptWriter) Write(p []byte) (int, error) {
 
 // EncryptTo buffers data written to the returned io.WriteCloser. When Close()
 // is called, the data is encrypted an written to the underlying writer.
-func EncryptTo(ks *MasterKeys, wr io.Writer) io.WriteCloser {
+func EncryptTo(ks *Key, wr io.Writer) io.WriteCloser {
 	ew := &encryptWriter{
 		iv:     generateRandomIV(),
 		data:   bytes.NewBuffer(getBuffer()[:0]),
@@ -462,7 +462,7 @@ func (d *decryptReader) Close() error {
 // drained, locally buffered and made available on the returned Reader
 // afterwards. If a MAC verification failure is observed, it is returned
 // immediately.
-func DecryptFrom(ks *MasterKeys, rd io.Reader) (io.ReadCloser, error) {
+func DecryptFrom(ks *Key, rd io.Reader) (io.ReadCloser, error) {
 	ciphertext := getBuffer()
 
 	ciphertext = ciphertext[0:cap(ciphertext)]
