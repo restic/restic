@@ -196,9 +196,7 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 		return nil, err
 	}
 
-	newkey.Data = GetChunkBuf("key")
-	n, err = crypto.Encrypt(newkey.user, newkey.Data, buf)
-	newkey.Data = newkey.Data[:n]
+	newkey.Data, err = crypto.Encrypt(newkey.user, GetChunkBuf("key"), buf)
 
 	// dump as json
 	buf, err = json.Marshal(newkey)
@@ -234,8 +232,9 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 }
 
 // Encrypt encrypts and signs data with the master key. Stored in ciphertext is
-// IV || Ciphertext || MAC. Returns the ciphertext length.
-func (k *Key) Encrypt(ciphertext, plaintext []byte) (int, error) {
+// IV || Ciphertext || MAC. Returns the ciphertext, which is extended if
+// necessary.
+func (k *Key) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
 	return crypto.Encrypt(k.master, ciphertext, plaintext)
 }
 

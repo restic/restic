@@ -205,29 +205,33 @@ func (k *EncryptionKey) UnmarshalJSON(data []byte) error {
 }
 
 // Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||
-// MAC. Encrypt returns the ciphertext's length.
-func Encrypt(ks *Key, ciphertext, plaintext []byte) (int, error) {
-	if cap(ciphertext) < len(plaintext)+ivSize+macSize {
-		return 0, ErrBufferTooSmall
+// MAC. Encrypt returns the new ciphertext slice, which is extended when
+// necessary. ciphertext and plaintext may point to the same slice.
+func Encrypt(ks *Key, ciphertext, plaintext []byte) ([]byte, error) {
+	// extend ciphertext slice if necessary
+	if cap(ciphertext) < len(plaintext)+Extension {
+		ext := len(plaintext) + Extension - cap(ciphertext)
+		n := len(ciphertext)
+		ciphertext = append(ciphertext, make([]byte, ext)...)
+		ciphertext = ciphertext[:n]
 	}
 
 	iv := newIV()
-	copy(ciphertext, iv[:])
-
 	c, err := aes.NewCipher(ks.Encrypt[:])
 	if err != nil {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
 
-	e := cipher.NewCTR(c, ciphertext[:ivSize])
+	e := cipher.NewCTR(c, iv[:])
 
 	e.XORKeyStream(ciphertext[ivSize:cap(ciphertext)], plaintext)
+	copy(ciphertext, iv[:])
 	ciphertext = ciphertext[:ivSize+len(plaintext)]
 
 	mac := poly1305_sign(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign)
 	ciphertext = append(ciphertext, mac...)
 
-	return len(ciphertext), nil
+	return ciphertext, nil
 }
 
 // Decrypt verifies and decrypts the ciphertext. Ciphertext must be in the form

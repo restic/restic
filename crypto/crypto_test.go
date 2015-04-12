@@ -29,11 +29,10 @@ func TestEncryptDecrypt(t *testing.T) {
 		_, err := io.ReadFull(RandomReader(42, size), data)
 		OK(t, err)
 
-		ciphertext := restic.GetChunkBuf("TestEncryptDecrypt")
-		n, err := crypto.Encrypt(k, ciphertext, data)
+		ciphertext, err := crypto.Encrypt(k, restic.GetChunkBuf("TestEncryptDecrypt"), data)
 		OK(t, err)
 
-		plaintext, err := crypto.Decrypt(k, nil, ciphertext[:n])
+		plaintext, err := crypto.Decrypt(k, nil, ciphertext)
 		OK(t, err)
 
 		restic.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
@@ -54,10 +53,40 @@ func TestSmallBuffer(t *testing.T) {
 	OK(t, err)
 
 	ciphertext := make([]byte, size/2)
-	_, err = crypto.Encrypt(k, ciphertext, data)
+	ciphertext, err = crypto.Encrypt(k, ciphertext, data)
 	// this must throw an error, since the target slice is too small
-	Assert(t, err != nil && err == crypto.ErrBufferTooSmall,
-		"expected restic.ErrBufferTooSmall, got %#v", err)
+	Assert(t, cap(ciphertext) > size/2,
+		"expected extended slice, but capacity is only %d bytes",
+		cap(ciphertext))
+
+	// check for the correct plaintext
+	plaintext, err := crypto.Decrypt(k, nil, ciphertext)
+	OK(t, err)
+	Assert(t, bytes.Equal(plaintext, data),
+		"wrong plaintext returned")
+}
+
+func TestSameBuffer(t *testing.T) {
+	k := crypto.NewKey()
+
+	size := 600
+	data := make([]byte, size)
+	f, err := os.Open("/dev/urandom")
+	OK(t, err)
+
+	_, err = io.ReadFull(f, data)
+	OK(t, err)
+
+	ciphertext := make([]byte, size)
+	copy(ciphertext, data)
+
+	ciphertext, err = crypto.Encrypt(k, ciphertext, ciphertext)
+	OK(t, err)
+
+	ciphertext, err = crypto.Decrypt(k, ciphertext, ciphertext)
+	OK(t, err)
+	Assert(t, bytes.Equal(ciphertext, data),
+		"wrong plaintext returned")
 }
 
 func TestLargeEncrypt(t *testing.T) {
@@ -75,11 +104,10 @@ func TestLargeEncrypt(t *testing.T) {
 		_, err = io.ReadFull(f, data)
 		OK(t, err)
 
-		ciphertext := make([]byte, size+crypto.Extension)
-		n, err := crypto.Encrypt(k, ciphertext, data)
+		ciphertext, err := crypto.Encrypt(k, make([]byte, size+crypto.Extension), data)
 		OK(t, err)
 
-		plaintext, err := crypto.Decrypt(k, []byte{}, ciphertext[:n])
+		plaintext, err := crypto.Decrypt(k, []byte{}, ciphertext)
 		OK(t, err)
 
 		Equals(t, plaintext, data)
@@ -183,14 +211,14 @@ func BenchmarkDecrypt(b *testing.B) {
 	plaintext := restic.GetChunkBuf("BenchmarkDecrypt")
 	defer restic.FreeChunkBuf("BenchmarkDecrypt", plaintext)
 
-	n, err := crypto.Encrypt(k, ciphertext, data)
+	ciphertext, err := crypto.Encrypt(k, ciphertext, data)
 	OK(b, err)
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
-		plaintext, err = crypto.Decrypt(k, plaintext, ciphertext[:n])
+		plaintext, err = crypto.Decrypt(k, plaintext, ciphertext)
 		OK(b, err)
 	}
 }
@@ -245,11 +273,11 @@ func TestDecryptStreamReader(t *testing.T) {
 		ciphertext := make([]byte, size+crypto.Extension)
 
 		// encrypt with default function
-		n, err := crypto.Encrypt(k, ciphertext, data)
+		ciphertext, err = crypto.Encrypt(k, ciphertext, data)
 		OK(t, err)
-		Assert(t, n == len(data)+crypto.Extension,
+		Assert(t, len(ciphertext) == len(data)+crypto.Extension,
 			"wrong number of bytes returned after encryption: expected %d, got %d",
-			len(data)+crypto.Extension, n)
+			len(data)+crypto.Extension, len(ciphertext))
 
 		rd, err := crypto.DecryptFrom(k, bytes.NewReader(ciphertext))
 		OK(t, err)

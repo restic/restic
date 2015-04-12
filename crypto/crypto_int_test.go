@@ -98,6 +98,7 @@ func should_panic(f func()) (did_panic bool) {
 }
 
 func TestCrypto(t *testing.T) {
+	msg := make([]byte, 0, 8*1024*1024) // use 8MiB for now
 	for _, tv := range test_values {
 		// test encryption
 		k := &Key{
@@ -105,12 +106,10 @@ func TestCrypto(t *testing.T) {
 			Sign:    tv.skey,
 		}
 
-		msg := make([]byte, 0, 8*1024*1024) // use 8MiB for now
-		n, err := Encrypt(k, msg, tv.plaintext)
+		msg, err := Encrypt(k, msg, tv.plaintext)
 		if err != nil {
 			t.Fatal(err)
 		}
-		msg = msg[:n]
 
 		// decrypt message
 		_, err = Decrypt(k, []byte{}, msg)

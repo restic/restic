@@ -172,12 +172,10 @@ func (s Server) Save(t backend.Type, data []byte, id backend.ID) (Blob, error) {
 	}
 
 	// encrypt blob
-	n, err := s.Encrypt(ciphertext, data)
+	ciphertext, err := s.Encrypt(ciphertext, data)
 	if err != nil {
 		return Blob{}, err
 	}
-
-	ciphertext = ciphertext[:n]
 
 	// compute ciphertext hash
 	sid := backend.Hash(ciphertext)
@@ -309,9 +307,9 @@ func (s Server) Decrypt(ciphertext []byte) ([]byte, error) {
 	return s.key.Decrypt([]byte{}, ciphertext)
 }
 
-func (s Server) Encrypt(ciphertext, plaintext []byte) (int, error) {
+func (s Server) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
 	if s.key == nil {
-		return 0, errors.New("key for server not set")
+		return nil, errors.New("key for server not set")
 	}
 
 	return s.key.Encrypt(ciphertext, plaintext)
