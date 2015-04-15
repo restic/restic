@@ -10,7 +10,7 @@ import (
 )
 
 type encryptWriter struct {
-	iv      iv
+	iv      []byte
 	wroteIV bool
 	data    *bytes.Buffer
 	key     *Key

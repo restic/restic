@@ -48,7 +48,6 @@ type SigningKey struct {
 	K [16]byte `json:"k"` // for AES128
 	R [16]byte `json:"r"` // for Poly1305
 }
-type iv [ivSize]byte
 
 // mask for key, (cf. http://cr.yp.to/mac/poly1305-20050329.pdf)
 var poly1305KeyMask = [16]byte{
@@ -160,12 +159,13 @@ func NewKey() (k *Key) {
 	return k
 }
 
-func newIV() (iv iv) {
-	n, err := rand.Read(iv[:])
+func newIV() []byte {
+	iv := make([]byte, ivSize)
+	n, err := rand.Read(iv)
 	if n != ivSize || err != nil {
 		panic("unable to read enough random bytes for iv")
 	}
-	return
+	return iv
 }
 
 type jsonMACKey struct {
