@@ -204,13 +204,23 @@ func (k *EncryptionKey) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ErrInvalidCiphertext is returned when trying to encrypt into the slice that
+// holds the plaintext.
+var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for plaintext")
+
 // Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||
 // MAC. Encrypt returns the new ciphertext slice, which is extended when
 // necessary. ciphertext and plaintext may not point to (exactly) the same
 // slice or non-intersecting slices.
 func Encrypt(ks *Key, ciphertext, plaintext []byte) ([]byte, error) {
-	// extend ciphertext slice if necessary
 	ciphertext = ciphertext[:cap(ciphertext)]
+
+	// test for same slice, if possible
+	if len(plaintext) > 0 && len(ciphertext) > 0 && &plaintext[0] == &ciphertext[0] {
+		return nil, ErrInvalidCiphertext
+	}
+
+	// extend ciphertext slice if necessary
 	if len(ciphertext) < len(plaintext)+Extension {
 		ext := len(plaintext) + Extension - cap(ciphertext)
 		ciphertext = append(ciphertext, make([]byte, ext)...)

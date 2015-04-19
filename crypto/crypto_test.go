@@ -95,6 +95,28 @@ func TestSameBuffer(t *testing.T) {
 		"wrong plaintext returned")
 }
 
+func TestCornerCases(t *testing.T) {
+	k := crypto.NewKey()
+
+	// nil plaintext should encrypt to the empty string
+	// nil ciphertext should allocate a new slice for the ciphertext
+	c, err := crypto.Encrypt(k, nil, nil)
+	OK(t, err)
+
+	Assert(t, len(c) == crypto.Extension,
+		"wrong length returned for ciphertext, expected 0, got %d",
+		len(c))
+
+	// this should decrypt to an empty slice
+	p, err := crypto.Decrypt(k, nil, c)
+	OK(t, err)
+	Equals(t, []byte{}, p)
+
+	// test encryption for same slice, this should return an error
+	_, err = crypto.Encrypt(k, c, c)
+	Equals(t, crypto.ErrInvalidCiphertext, err)
+}
+
 func TestLargeEncrypt(t *testing.T) {
 	if !*testLargeCrypto {
 		t.SkipNow()
