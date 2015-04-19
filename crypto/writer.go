@@ -22,7 +22,7 @@ type encryptWriter struct {
 
 func (e *encryptWriter) Close() error {
 	// write mac
-	mac := poly1305_sign(e.data.Bytes()[ivSize:], e.data.Bytes()[:ivSize], &e.key.Sign)
+	mac := poly1305Sign(e.data.Bytes()[ivSize:], e.data.Bytes()[:ivSize], &e.key.Sign)
 	_, err := e.origWr.Write(mac)
 	if err != nil {
 		return err

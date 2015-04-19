@@ -71,7 +71,7 @@ var poly1305KeyMask = [16]byte{
 }
 
 // key is a [32]byte, in the form k||r
-func poly1305_sign(msg []byte, nonce []byte, key *SigningKey) []byte {
+func poly1305Sign(msg []byte, nonce []byte, key *SigningKey) []byte {
 	// prepare key for low-level poly1305.Sum(): r||n
 	var k [32]byte
 
@@ -113,7 +113,7 @@ func macKeyFromSlice(mk *SigningKey, data []byte) {
 }
 
 // key: k||r
-func poly1305_verify(msg []byte, nonce []byte, key *SigningKey, mac []byte) bool {
+func poly1305Verify(msg []byte, nonce []byte, key *SigningKey, mac []byte) bool {
 	// prepare key for low-level poly1305.Sum(): r||n
 	var k [32]byte
 
@@ -228,7 +228,7 @@ func Encrypt(ks *Key, ciphertext, plaintext []byte) ([]byte, error) {
 	copy(ciphertext, iv[:])
 	ciphertext = ciphertext[:ivSize+len(plaintext)]
 
-	mac := poly1305_sign(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign)
+	mac := poly1305Sign(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign)
 	ciphertext = append(ciphertext, mac...)
 
 	return ciphertext, nil
@@ -252,7 +252,7 @@ func Decrypt(ks *Key, plaintext, ciphertext []byte) ([]byte, error) {
 	ciphertext, mac := ciphertext[:l], ciphertext[l:]
 
 	// verify mac
-	if !poly1305_verify(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign, mac) {
+	if !poly1305Verify(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign, mac) {
 		return nil, ErrUnauthenticated
 	}
 

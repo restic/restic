@@ -48,13 +48,13 @@ func TestPoly1305(t *testing.T) {
 		key := &SigningKey{}
 		copy(key.K[:], test.k)
 		copy(key.R[:], test.r)
-		mac := poly1305_sign(test.msg, test.nonce, key)
+		mac := poly1305Sign(test.msg, test.nonce, key)
 
 		if !bytes.Equal(mac, test.mac) {
 			t.Fatalf("wrong mac calculated, want: %02x, got: %02x", test.mac, mac)
 		}
 
-		if !poly1305_verify(test.msg, test.nonce, key, test.mac) {
+		if !poly1305Verify(test.msg, test.nonce, key, test.mac) {
 			t.Fatalf("mac does not verify: mac: %02x", test.mac)
 		}
 	}
