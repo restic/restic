@@ -31,9 +31,15 @@ func TestEncryptDecrypt(t *testing.T) {
 
 		ciphertext, err := crypto.Encrypt(k, restic.GetChunkBuf("TestEncryptDecrypt"), data)
 		OK(t, err)
+		Assert(t, len(ciphertext) == len(data)+crypto.Extension,
+			"ciphertext length does not match: want %d, got %d",
+			len(data)+crypto.Extension, len(ciphertext))
 
 		plaintext, err := crypto.Decrypt(k, nil, ciphertext)
 		OK(t, err)
+		Assert(t, len(plaintext) == len(data),
+			"plaintext length does not match: want %d, got %d",
+			len(data), len(plaintext))
 
 		restic.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
 
@@ -54,7 +60,7 @@ func TestSmallBuffer(t *testing.T) {
 
 	ciphertext := make([]byte, size/2)
 	ciphertext, err = crypto.Encrypt(k, ciphertext, data)
-	// this must throw an error, since the target slice is too small
+	// this must extend the slice
 	Assert(t, cap(ciphertext) > size/2,
 		"expected extended slice, but capacity is only %d bytes",
 		cap(ciphertext))
@@ -77,12 +83,12 @@ func TestSameBuffer(t *testing.T) {
 	_, err = io.ReadFull(f, data)
 	OK(t, err)
 
-	ciphertext := make([]byte, size)
-	copy(ciphertext, data)
+	ciphertext := make([]byte, 0, size+crypto.Extension)
 
-	ciphertext, err = crypto.Encrypt(k, ciphertext, ciphertext)
+	ciphertext, err = crypto.Encrypt(k, ciphertext, data)
 	OK(t, err)
 
+	// use the same buffer for decryption
 	ciphertext, err = crypto.Decrypt(k, ciphertext, ciphertext)
 	OK(t, err)
 	Assert(t, bytes.Equal(ciphertext, data),

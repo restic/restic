@@ -206,14 +206,15 @@ func (k *EncryptionKey) UnmarshalJSON(data []byte) error {
 
 // Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||
 // MAC. Encrypt returns the new ciphertext slice, which is extended when
-// necessary. ciphertext and plaintext may point to the same slice.
+// necessary. ciphertext and plaintext may not point to (exactly) the same
+// slice or non-intersecting slices.
 func Encrypt(ks *Key, ciphertext, plaintext []byte) ([]byte, error) {
 	// extend ciphertext slice if necessary
-	if cap(ciphertext) < len(plaintext)+Extension {
+	ciphertext = ciphertext[:cap(ciphertext)]
+	if len(ciphertext) < len(plaintext)+Extension {
 		ext := len(plaintext) + Extension - cap(ciphertext)
-		n := len(ciphertext)
 		ciphertext = append(ciphertext, make([]byte, ext)...)
-		ciphertext = ciphertext[:n]
+		ciphertext = ciphertext[:cap(ciphertext)]
 	}
 
 	iv := newIV()
@@ -224,18 +225,21 @@ func Encrypt(ks *Key, ciphertext, plaintext []byte) ([]byte, error) {
 
 	e := cipher.NewCTR(c, iv[:])
 
-	e.XORKeyStream(ciphertext[ivSize:cap(ciphertext)], plaintext)
+	e.XORKeyStream(ciphertext[ivSize:], plaintext)
 	copy(ciphertext, iv[:])
+	// truncate to only conver iv and actual ciphertext
 	ciphertext = ciphertext[:ivSize+len(plaintext)]
 
 	mac := poly1305Sign(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign)
+	// append the mac tag
 	ciphertext = append(ciphertext, mac...)
 
 	return ciphertext, nil
 }
 
 // Decrypt verifies and decrypts the ciphertext. Ciphertext must be in the form
-// IV || Ciphertext || MAC.
+// IV || Ciphertext || MAC. plaintext and ciphertext may point to (exactly) the
+// same slice.
 func Decrypt(ks *Key, plaintext, ciphertext []byte) ([]byte, error) {
 	// check for plausible length
 	if len(ciphertext) < ivSize+macSize {
