@@ -8,14 +8,15 @@ notifications:
   irc: "chat.freenode.net#restic"
 
 install:
-  - go get -v -t ./...
+  - go get github.com/tools/godep
+  - godep restore
 
 script:
-  - go build -ldflags "-s" ./...
-  - go build -ldflags "-s" -o restic ./cmd/restic
+  - godep go build -ldflags "-s" ./...
+  - godep go build -ldflags "-s" -o restic ./cmd/restic
   - "stat --printf='binary size: %s' restic"
-  - go test -v ./...
+  - godep go test -v ./...
   - ./testsuite.sh
-  - sh -c "cd backend && go test -v -test.sftppath /usr/lib/openssh/sftp-server ./..."
+  - sh -c "cd backend && godep go test -v -test.sftppath /usr/lib/openssh/sftp-server ./..."
   - gofmt -l *.go */*.go */*/*.go
   - test -z "$(gofmt -l *.go */*.go */*/*.go)"

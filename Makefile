@@ -2,14 +2,14 @@
 
 all:
 	for dir in ./cmd/* ; do \
-		(echo "$$dir"; cd "$$dir"; go build) \
+		(echo "$$dir"; cd "$$dir"; godep go build) \
 	done
 
 debug:
-	(cd cmd/restic; go build -a -tags debug)
+	(cd cmd/restic; godep go build -a -tags debug)
 
 test:
 	./testsuite.sh
 
 clean:
-	go clean ./...
+	godep go clean ./...
