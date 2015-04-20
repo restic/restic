@@ -8,11 +8,11 @@ all: restic
 debug: restic.debug
 
 restic: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
-	go build -a
+	godep go build -a
 
 restic.debug: $(wildcard *.go) $(wildcard ../../*.go) $(wildcard ../../*/*.go)
-	go build -a -tags debug -o restic.debug
+	godep go build -a -tags debug -o restic.debug
 
 clean:
-	go clean
+	godep go clean
 	rm -f restic restic.debug

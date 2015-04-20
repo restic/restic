@@ -33,8 +33,8 @@ prepare() {
 build() {
   export GOPATH="$srcdir/go"
   cd "$GOPATH/src/${importpath}/cmd/restic"
-  go get -ldflags -s -v .
-  go install -ldflags -s -v
+  godep get -ldflags -s -v .
+  godep go install -ldflags -s -v
 }
 
 package() {

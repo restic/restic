@@ -1,0 +1,39 @@
+{
+	"ImportPath": "github.com/restic/restic",
+	"GoVersion": "go1.4.2",
+	"Deps": [
+		{
+			"ImportPath": "github.com/jessevdk/go-flags",
+			"Comment": "v1-293-g5e11878",
+			"Rev": "5e118789801496c93ba210d34ef1f2ce5a9173bd"
+		},
+		{
+			"ImportPath": "github.com/juju/errors",
+			"Rev": "4567a5e69fd3130ca0d89f69478e7ac025b67452"
+		},
+		{
+			"ImportPath": "github.com/kr/fs",
+			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
+		},
+		{
+			"ImportPath": "github.com/pkg/sftp",
+			"Rev": "506297c9013d2893d5c5daaa9155e7333a1c58de"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/pbkdf2",
+			"Rev": "8b27f58b78dbd60e9a26b60b0d908ea642974b6d"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/poly1305",
+			"Rev": "8b27f58b78dbd60e9a26b60b0d908ea642974b6d"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/scrypt",
+			"Rev": "8b27f58b78dbd60e9a26b60b0d908ea642974b6d"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh",
+			"Rev": "8b27f58b78dbd60e9a26b60b0d908ea642974b6d"
+		}
+	]
+}

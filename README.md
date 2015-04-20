@@ -45,7 +45,8 @@ Building
 Install Go/Golang (at least 1.3), then run:
 
     export GOPATH=~/src/go
-    go get github.com/restic/restic/cmd/restic
+    go get github.com/tools/godep
+    $GOPATH/godep get github.com/restic/restic/cmd/restic
     $GOPATH/bin/restic --help
 
 
