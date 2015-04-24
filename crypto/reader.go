@@ -1,53 +1,32 @@
 package crypto
 
 import (
+	"bytes"
+	"errors"
 	"io"
-	"io/ioutil"
 )
 
 type decryptReader struct {
 	buf []byte
-	pos int
+	rd  *bytes.Reader
 }
 
-func (d *decryptReader) Read(dst []byte) (int, error) {
+func (d *decryptReader) Read(dst []byte) (n int, err error) {
 	if d.buf == nil {
 		return 0, io.EOF
 	}
 
-	if len(dst) == 0 {
-		return 0, nil
+	n, err = d.rd.Read(dst)
+	if err == io.EOF {
+		d.free()
 	}
-
-	remaining := len(d.buf) - d.pos
-	if len(dst) >= remaining {
-		n := copy(dst, d.buf[d.pos:])
-		d.Close()
-		return n, io.EOF
-	}
-
-	n := copy(dst, d.buf[d.pos:d.pos+len(dst)])
-	d.pos += n
-
-	return n, nil
-}
-
-func (d *decryptReader) ReadByte() (c byte, err error) {
-	if d.buf == nil {
-		return 0, io.EOF
-	}
-
-	remaining := len(d.buf) - d.pos
-	if remaining == 1 {
-		c = d.buf[d.pos]
-		d.Close()
-		return c, io.EOF
-	}
-
-	c = d.buf[d.pos]
-	d.pos++
 
 	return
+}
+
+func (d *decryptReader) free() {
+	freeBuffer(d.buf)
+	d.buf = nil
 }
 
 func (d *decryptReader) Close() error {
@@ -55,9 +34,32 @@ func (d *decryptReader) Close() error {
 		return nil
 	}
 
-	freeBuffer(d.buf)
-	d.buf = nil
+	d.free()
 	return nil
+}
+
+func (d *decryptReader) ReadByte() (c byte, err error) {
+	if d.buf == nil {
+		return 0, io.EOF
+	}
+
+	c, err = d.rd.ReadByte()
+	if err == io.EOF {
+		d.free()
+	}
+
+	return
+}
+
+func (d *decryptReader) WriteTo(w io.Writer) (n int64, err error) {
+	if d.buf == nil {
+		return 0, errors.New("WriteTo() called on drained reader")
+	}
+
+	n, err = d.rd.WriteTo(w)
+	d.free()
+
+	return
 }
 
 // DecryptFrom verifies and decrypts the ciphertext read from rd with ks and
@@ -67,25 +69,13 @@ func (d *decryptReader) Close() error {
 // afterwards. If a MAC verification failure is observed, it is returned
 // immediately.
 func DecryptFrom(ks *Key, rd io.Reader) (io.ReadCloser, error) {
-	ciphertext := getBuffer()
-
-	ciphertext = ciphertext[0:cap(ciphertext)]
-	n, err := io.ReadFull(rd, ciphertext)
-	if err != io.ErrUnexpectedEOF {
-		// read remaining data
-		buf, e := ioutil.ReadAll(rd)
-		ciphertext = append(ciphertext, buf...)
-		n += len(buf)
-		err = e
-	} else {
-		err = nil
-	}
-
+	buf := bytes.NewBuffer(getBuffer()[:0])
+	_, err := buf.ReadFrom(rd)
 	if err != nil {
 		return nil, err
 	}
 
-	ciphertext = ciphertext[:n]
+	ciphertext := buf.Bytes()
 
 	// decrypt
 	ciphertext, err = Decrypt(ks, ciphertext, ciphertext)
@@ -93,5 +83,5 @@ func DecryptFrom(ks *Key, rd io.Reader) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	return &decryptReader{buf: ciphertext}, nil
+	return &decryptReader{buf: ciphertext, rd: bytes.NewReader(ciphertext)}, nil
 }
