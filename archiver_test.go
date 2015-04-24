@@ -22,7 +22,7 @@ type Rdr interface {
 	io.ReaderAt
 }
 
-func benchmarkChunkEncrypt(b testing.TB, buf []byte, rd Rdr, key *restic.Key) {
+func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *restic.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncrypt")
 	rd.Seek(0, 0)
 	ch.Reset(rd, testPol)
@@ -42,7 +42,7 @@ func benchmarkChunkEncrypt(b testing.TB, buf []byte, rd Rdr, key *restic.Key) {
 		OK(b, err)
 		Assert(b, uint(n) == chunk.Length, "invalid length: got %d, expected %d", n, chunk.Length)
 
-		_, err = key.Encrypt(buf, buf)
+		_, err = key.Encrypt(buf2, buf)
 		OK(b, err)
 	}
 
@@ -58,15 +58,17 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	key := setupKey(b, be, "geheim")
 
 	buf := restic.GetChunkBuf("BenchmarkChunkEncrypt")
+	buf2 := restic.GetChunkBuf("BenchmarkChunkEncrypt")
 
 	b.ResetTimer()
 	b.SetBytes(int64(len(data)))
 
 	for i := 0; i < b.N; i++ {
-		benchmarkChunkEncrypt(b, buf, rd, key)
+		benchmarkChunkEncrypt(b, buf, buf2, rd, key)
 	}
 
 	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf)
+	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf2)
 }
 
 func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *restic.Key) {
