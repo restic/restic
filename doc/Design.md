@@ -239,7 +239,7 @@ The command `restic cat snapshot` can be used as follows to decrypt and
 pretty-print the contents of a snapshot file:
 
     $ restic -r /tmp/restic-repo cat snapshot 22a5af1b
-    Enter Password for Repository:
+    enter password for repository:
     {
       "time": "2015-01-02T18:10:50.895208559+01:00",
       "tree": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
@@ -273,7 +273,7 @@ filename the tree object is stored in.
 The command `restic cat tree` can be used to inspect the tree referenced above:
 
     $ restic -r /tmp/restic-repo cat tree b8138ab08a4722596ac89c917827358da4672eac68e3c03a8115b88dbf4bfb59
-    Enter Password for Repository:
+    enter password for repository:
     {
       "nodes": [
         {
@@ -301,7 +301,7 @@ When the command `restic cat tree` is used, the storage hash is needed to print
 a tree. The tree referenced above can be dumped as follows:
 
     $ restic -r /tmp/restic-repo cat tree 8b238c8811cc362693e91a857460c78d3acf7d9edb2f111048691976803cf16e
-    Enter Password for Repository:
+    enter password for repository:
     {
       "nodes": [
         {
@@ -332,7 +332,7 @@ The command `restic cat data` can be used to extract and decrypt data given a
 storage hash, e.g. for the data mentioned above:
 
     $ restic -r /tmp/restic-repo cat blob 00634c46e5f7c055c341acd1201cf8289cabe769f991d6e350f8cd8ce2a52ac3 | sha256sum
-    Enter Password for Repository:
+    enter password for repository:
     50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
 
 As can be seen from the output of the program `sha256sum`, the hash matches the
