@@ -1,110 +1,84 @@
 package crypto
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"errors"
 	"fmt"
 	"io"
-	"sync"
 )
 
 type encryptWriter struct {
-	iv      []byte
-	wroteIV bool
-	data    *bytes.Buffer
-	key     *Key
-	s       cipher.Stream
-	w       io.Writer
-	origWr  io.Writer
-	err     error // remember error writing iv
+	data   []byte
+	key    *Key
+	s      cipher.Stream
+	w      io.Writer
+	closed bool
 }
 
 func (e *encryptWriter) Close() error {
-	// write mac
-	mac := poly1305Sign(e.data.Bytes()[ivSize:], e.data.Bytes()[:ivSize], &e.key.Sign)
-	_, err := e.origWr.Write(mac)
+	if e.closed {
+		return errors.New("Close() called on already closed writer")
+	}
+	e.closed = true
+
+	// encrypt everything
+	iv, c := e.data[:ivSize], e.data[ivSize:]
+	e.s.XORKeyStream(c, c)
+
+	// compute mac
+	mac := poly1305Sign(c, iv, &e.key.Sign)
+	e.data = append(e.data, mac...)
+
+	// write everything
+	n, err := e.w.Write(e.data)
 	if err != nil {
 		return err
 	}
 
-	// return buffer
-	bufPool.Put(e.data.Bytes())
+	if n != len(e.data) {
+		return errors.New("not all bytes written")
+	}
+
+	// return buffer to pool
+	freeBuffer(e.data)
 
 	return nil
 }
 
-const encryptWriterChunkSize = 512 * 1024 // 512 KiB
-var encryptWriterBufPool = sync.Pool{
-	New: func() interface{} {
-		return make([]byte, encryptWriterChunkSize)
-	},
-}
-
 func (e *encryptWriter) Write(p []byte) (int, error) {
-	// write iv first
-	if !e.wroteIV {
-		_, e.err = e.origWr.Write(e.iv[:])
-		e.wroteIV = true
+	// if e.data is too small, return it to the buffer and create new slice
+	if cap(e.data) < len(e.data)+len(p) {
+		b := make([]byte, len(e.data), len(e.data)*2)
+		copy(b, e.data)
+		freeBuffer(e.data)
+		e.data = b
 	}
 
-	if e.err != nil {
-		return 0, e.err
-	}
-
-	buf := encryptWriterBufPool.Get().([]byte)
-	defer encryptWriterBufPool.Put(buf)
-
-	written := 0
-	for len(p) > 0 {
-		max := len(p)
-		if max > encryptWriterChunkSize {
-			max = encryptWriterChunkSize
-		}
-
-		e.s.XORKeyStream(buf, p[:max])
-		n, err := e.w.Write(buf[:max])
-		if n != max {
-			if err == nil { // should never happen
-				err = io.ErrShortWrite
-			}
-		}
-
-		written += n
-		p = p[n:]
-
-		if err != nil {
-			e.err = err
-			return written, err
-		}
-	}
-
-	return written, nil
+	// copy new data to e.data
+	e.data = append(e.data, p...)
+	return len(p), nil
 }
 
 // EncryptTo buffers data written to the returned io.WriteCloser. When Close()
-// is called, the data is encrypted an written to the underlying writer.
+// is called, the data is encrypted and written to the underlying writer.
 func EncryptTo(ks *Key, wr io.Writer) io.WriteCloser {
 	ew := &encryptWriter{
-		iv:     newIV(),
-		data:   bytes.NewBuffer(getBuffer()[:0]),
-		key:    ks,
-		origWr: wr,
+		data: getBuffer(),
+		key:  ks,
 	}
 
 	// buffer iv for mac
-	_, err := ew.data.Write(ew.iv[:])
-	if err != nil {
-		panic(err)
-	}
+	ew.data = ew.data[:ivSize]
+	copy(ew.data, newIV())
 
 	c, err := aes.NewCipher(ks.Encrypt[:])
 	if err != nil {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
 
-	ew.s = cipher.NewCTR(c, ew.iv[:])
-	ew.w = io.MultiWriter(ew.data, wr)
+	ew.s = cipher.NewCTR(c, ew.data[:ivSize])
+	ew.w = wr
 
 	return ew
 }

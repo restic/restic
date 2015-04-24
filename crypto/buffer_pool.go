@@ -2,7 +2,7 @@ package crypto
 
 import "sync"
 
-const defaultBufSize = 2048
+const defaultBufSize = 32 * 1024 // 32KiB
 
 var bufPool = sync.Pool{
 	New: func() interface{} {
