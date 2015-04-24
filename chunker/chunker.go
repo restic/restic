@@ -54,9 +54,9 @@ func (c Chunk) Reader(r io.ReaderAt) io.Reader {
 
 // A chunker internally holds everything needed to split content.
 type Chunker struct {
-	pol       Pol
-	pol_shift uint
-	tables    *tables
+	pol      Pol
+	polShift uint
+	tables   *tables
 
 	rd     io.Reader
 	closed bool
@@ -93,8 +93,8 @@ func New(rd io.Reader, p Pol, bufsize int, hash hash.Hash) *Chunker {
 // polynomial and reader.
 func (c *Chunker) Reset(rd io.Reader, p Pol) {
 	c.pol = p
-	c.pol_shift = uint(p.Deg() - 8)
-	c.fill_tables()
+	c.polShift = uint(p.Deg() - 8)
+	c.fillTables()
 	c.rd = rd
 
 	for i := 0; i < WindowSize; i++ {
@@ -121,7 +121,7 @@ func (c *Chunker) Reset(rd io.Reader, p Pol) {
 
 // Calculate out_table and mod_table for optimization. Must be called only
 // once. This implementation uses a cache in the global variable cache.
-func (c *Chunker) fill_tables() {
+func (c *Chunker) fillTables() {
 	// if polynomial hasn't been specified, do not compute anything for now
 	if c.pol == 0 {
 		return
@@ -153,9 +153,9 @@ func (c *Chunker) fill_tables() {
 	for b := 0; b < 256; b++ {
 		var h Pol
 
-		h = append_byte(h, byte(b), c.pol)
+		h = appendByte(h, byte(b), c.pol)
 		for i := 0; i < WindowSize-1; i++ {
-			h = append_byte(h, 0, c.pol)
+			h = appendByte(h, 0, c.pol)
 		}
 		c.tables.out[b] = h
 	}
@@ -249,7 +249,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 			c.wpos = (c.wpos + 1) % WindowSize
 
 			// c.append(b)
-			index := c.digest >> c.pol_shift
+			index := c.digest >> c.polShift
 			c.digest <<= 8
 			c.digest |= uint64(b)
 
@@ -319,7 +319,7 @@ func (c *Chunker) hashDigest() []byte {
 }
 
 func (c *Chunker) append(b byte) {
-	index := c.digest >> c.pol_shift
+	index := c.digest >> c.polShift
 	c.digest <<= 8
 	c.digest |= uint64(b)
 
@@ -335,7 +335,7 @@ func (c *Chunker) slide(b byte) {
 	c.append(b)
 }
 
-func append_byte(hash Pol, b byte, pol Pol) Pol {
+func appendByte(hash Pol, b byte, pol Pol) Pol {
 	hash <<= 8
 	hash |= Pol(b)
 

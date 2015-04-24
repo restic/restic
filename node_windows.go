@@ -2,7 +2,7 @@ package restic
 
 import "os"
 
-func (node *Node) fill_extra(path string, fi os.FileInfo) error {
+func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	return nil
 }
 

@@ -21,7 +21,7 @@ func init() {
 	}
 }
 
-func print_node(prefix string, n *restic.Node) string {
+func printNode(prefix string, n *restic.Node) string {
 	switch n.Type {
 	case "file":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
@@ -37,14 +37,14 @@ func print_node(prefix string, n *restic.Node) string {
 	}
 }
 
-func print_tree(prefix string, s restic.Server, blob restic.Blob) error {
+func printTree(prefix string, s restic.Server, blob restic.Blob) error {
 	tree, err := restic.LoadTree(s, blob)
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range tree.Nodes {
-		fmt.Println(print_node(prefix, entry))
+		fmt.Println(printNode(prefix, entry))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
 			b, err := tree.Map.FindID(entry.Subtree)
@@ -52,7 +52,7 @@ func print_tree(prefix string, s restic.Server, blob restic.Blob) error {
 				return err
 			}
 
-			err = print_tree(filepath.Join(prefix, entry.Name), s, b)
+			err = printTree(filepath.Join(prefix, entry.Name), s, b)
 			if err != nil {
 				return err
 			}
@@ -93,5 +93,5 @@ func (cmd CmdLs) Execute(args []string) error {
 
 	fmt.Printf("snapshot of %v at %s:\n", sn.Paths, sn.Time)
 
-	return print_tree("", s, sn.Tree)
+	return printTree("", s, sn.Tree)
 }

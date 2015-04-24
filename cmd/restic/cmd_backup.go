@@ -27,7 +27,7 @@ func init() {
 	}
 }
 
-func format_bytes(c uint64) string {
+func formatBytes(c uint64) string {
 	b := float64(c)
 
 	switch {
@@ -44,7 +44,7 @@ func format_bytes(c uint64) string {
 	}
 }
 
-func format_seconds(sec uint64) string {
+func formatSeconds(sec uint64) string {
 	hours := sec / 3600
 	sec -= hours * 3600
 	min := sec / 60
@@ -56,16 +56,16 @@ func format_seconds(sec uint64) string {
 	return fmt.Sprintf("%d:%02d", min, sec)
 }
 
-func format_duration(d time.Duration) string {
+func formatDuration(d time.Duration) string {
 	sec := uint64(d / time.Second)
-	return format_seconds(sec)
+	return formatSeconds(sec)
 }
 
-func print_tree2(indent int, t *restic.Tree) {
+func printTree2(indent int, t *restic.Tree) {
 	for _, node := range t.Nodes {
 		if node.Tree() != nil {
 			fmt.Printf("%s%s/\n", strings.Repeat("  ", indent), node.Name)
-			print_tree2(indent+1, node.Tree())
+			printTree2(indent+1, node.Tree())
 		} else {
 			fmt.Printf("%s%s\n", strings.Repeat("  ", indent), node.Name)
 		}
@@ -87,10 +87,10 @@ func newCacheRefreshProgress() *restic.Progress {
 	}
 
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2K[%s] %d trees loaded\r", format_duration(d), s.Trees)
+		fmt.Printf("\x1b[2K[%s] %d trees loaded\r", formatDuration(d), s.Trees)
 	}
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2Krefreshed cache in %s\n", format_duration(d))
+		fmt.Printf("\x1b[2Krefreshed cache in %s\n", formatDuration(d))
 	}
 
 	return p
@@ -103,10 +103,10 @@ func newScanProgress() *restic.Progress {
 
 	p := restic.NewProgress(time.Second)
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2K[%s] %d directories, %d files, %s\r", format_duration(d), s.Dirs, s.Files, format_bytes(s.Bytes))
+		fmt.Printf("\x1b[2K[%s] %d directories, %d files, %s\r", formatDuration(d), s.Dirs, s.Files, formatBytes(s.Bytes))
 	}
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2Kscanned %d directories, %d files in %s\n", s.Dirs, s.Files, format_duration(d))
+		fmt.Printf("\x1b[2Kscanned %d directories, %d files in %s\n", s.Dirs, s.Files, formatDuration(d))
 	}
 
 	return p
@@ -140,12 +140,12 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 		}
 
 		status1 := fmt.Sprintf("[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ",
-			format_duration(d),
+			formatDuration(d),
 			percent,
-			format_bytes(bps),
-			format_bytes(s.Bytes), format_bytes(todo.Bytes),
+			formatBytes(bps),
+			formatBytes(s.Bytes), formatBytes(todo.Bytes),
 			itemsDone, itemsTodo)
-		status2 := fmt.Sprintf("ETA %s ", format_seconds(eta))
+		status2 := fmt.Sprintf("ETA %s ", formatSeconds(eta))
 
 		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
 		if err == nil {
@@ -161,7 +161,7 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
 		sec := uint64(d / time.Second)
 		fmt.Printf("\nduration: %s, %.2fMiB/s\n",
-			format_duration(d),
+			formatDuration(d),
 			float64(todo.Bytes)/float64(sec)/(1<<20))
 	}
 
