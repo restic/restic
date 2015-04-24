@@ -34,7 +34,6 @@ func errx(code int, format string, data ...interface{}) {
 }
 
 func readPassword(env string, prompt string) string {
-
 	if env != "" {
 		p := os.Getenv(env)
 
@@ -82,6 +81,9 @@ func (cmd CmdInit) Execute(args []string) error {
 	}
 
 	fmt.Printf("created restic backend %v at %s\n", s.ID(), opts.Repo)
+
+	fmt.Println("Please note that knowledge of your password is required to access the repository.")
+	fmt.Println("Losing your password means that your data is irrecoverably lost.")
 
 	return nil
 }
