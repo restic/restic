@@ -56,6 +56,26 @@ func formatSeconds(sec uint64) string {
 	return fmt.Sprintf("%d:%02d", min, sec)
 }
 
+func formatPercent(numerator uint64, denominator uint64) string {
+	if denominator == 0 {
+		return ""
+	}
+
+	percent := 100.0 * float64(numerator) / float64(denominator)
+
+	if percent > 100 {
+		percent = 100
+	}
+
+	return fmt.Sprintf("%3.2f%%", percent)
+}
+
+func formatRate(bytes uint64, duration time.Duration) string {
+	sec := float64(duration) / float64(time.Second)
+	rate := float64(bytes) / sec / (1 << 20)
+	return fmt.Sprintf("%.2fMiB/s", rate)
+}
+
 func formatDuration(d time.Duration) string {
 	sec := uint64(d / time.Second)
 	return formatSeconds(sec)
@@ -134,14 +154,10 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 		}
 
 		itemsDone := s.Files + s.Dirs
-		percent := float64(s.Bytes) / float64(todo.Bytes) * 100
-		if percent > 100 {
-			percent = 100
-		}
 
-		status1 := fmt.Sprintf("[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ",
+		status1 := fmt.Sprintf("[%s] %s  %s/s  %s / %s  %d / %d items  ",
 			formatDuration(d),
-			percent,
+			formatPercent(s.Bytes, todo.Bytes),
 			formatBytes(bps),
 			formatBytes(s.Bytes), formatBytes(todo.Bytes),
 			itemsDone, itemsTodo)
@@ -159,10 +175,7 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		sec := uint64(d / time.Second)
-		fmt.Printf("\nduration: %s, %.2fMiB/s\n",
-			formatDuration(d),
-			float64(todo.Bytes)/float64(sec)/(1<<20))
+		fmt.Printf("\nduration: %s, %s\n", formatDuration(d), formatRate(todo.Bytes, d))
 	}
 
 	return archiveProgress
