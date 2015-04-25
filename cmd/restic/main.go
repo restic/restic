@@ -80,7 +80,7 @@ func (cmd CmdInit) Execute(args []string) error {
 		os.Exit(1)
 	}
 
-	fmt.Printf("created restic backend %v at %s\n", s.ID(), opts.Repo)
+	fmt.Printf("created restic backend %v at %s\n", s.ID()[:10], opts.Repo)
 
 	fmt.Println("Please note that knowledge of your password is required to access the repository.")
 	fmt.Println("Losing your password means that your data is irrecoverably lost.")
