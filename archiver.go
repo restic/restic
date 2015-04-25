@@ -515,7 +515,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				// if this is the top-level dir, only create a stub node
 				node = &Node{}
 			} else {
-				// else create note from path and fi
+				// else create node from path and fi
 				node, err = NodeFromFileInfo(dir.Path(), dir.Info())
 				if err != nil {
 					node.Error = err.Error()
@@ -534,7 +534,9 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 			node.blobs = Blobs{blob}
 
 			dir.Result() <- node
-			p.Report(Stat{Dirs: 1})
+			if dir.Path() != "" {
+				p.Report(Stat{Dirs: 1})
+			}
 		case <-done:
 			// pipeline was cancelled
 			return
