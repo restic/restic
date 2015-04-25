@@ -11,6 +11,10 @@ import (
 	"github.com/restic/restic/debug"
 )
 
+func (node *Node) OpenForReading() (*os.File, error) {
+	return os.Open(n.path)
+}
+
 func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
 	stat, ok := fi.Sys().(*syscall.Stat_t)
 	if !ok {
