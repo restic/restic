@@ -4,6 +4,10 @@ go:
   - 1.4.2
   - release
 
+os:
+  - linux
+  - osx
+
 notifications:
   irc: "chat.freenode.net#restic"
 
