@@ -15,7 +15,7 @@ func (node *Node) OpenForReading() (*os.File, error) {
 	return os.Open(n.path)
 }
 
-func (node *Node) fill_extra(path string, fi os.FileInfo) (err error) {
+func (node *Node) fillExtra(path string, fi os.FileInfo) (err error) {
 	stat, ok := fi.Sys().(*syscall.Stat_t)
 	if !ok {
 		return

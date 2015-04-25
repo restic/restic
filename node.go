@@ -70,7 +70,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 		node.Size = uint64(fi.Size())
 	}
 
-	err := node.fill_extra(path, fi)
+	err := node.fillExtra(path, fi)
 	return node, err
 }
 

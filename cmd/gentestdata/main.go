@@ -28,8 +28,8 @@ func rndRd(bytes int) io.Reader {
 	return io.LimitReader(urnd, int64(bytes))
 }
 
-func create_dir(target string, depth int) {
-	fmt.Printf("create_dir %s, depth %d\n", target, depth)
+func createDir(target string, depth int) {
+	fmt.Printf("createDir %s, depth %d\n", target, depth)
 	err := os.Mkdir(target, 0755)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
@@ -54,7 +54,7 @@ func create_dir(target string, depth int) {
 				panic(err)
 			}
 		} else {
-			create_dir(filepath.Join(target, fmt.Sprintf("dir%d", i)), depth-1)
+			createDir(filepath.Join(target, fmt.Sprintf("dir%d", i)), depth-1)
 		}
 	}
 }
@@ -65,5 +65,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	create_dir(os.Args[1], MaxDepth)
+	createDir(os.Args[1], MaxDepth)
 }

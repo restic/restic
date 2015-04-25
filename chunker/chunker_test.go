@@ -79,7 +79,7 @@ var chunks2 = []chunk{
 	chunk{chunker.MinSize, 0, parseDigest("07854d2fef297a06ba81685e660c332de36d5d18d546927d30daad6d7fda1541")},
 }
 
-func test_with_data(t *testing.T, chnker *chunker.Chunker, testChunks []chunk) []*chunker.Chunk {
+func testWithData(t *testing.T, chnker *chunker.Chunker, testChunks []chunk) []*chunker.Chunk {
 	chunks := []*chunker.Chunk{}
 
 	pos := uint(0)
@@ -133,7 +133,7 @@ func test_with_data(t *testing.T, chnker *chunker.Chunker, testChunks []chunk) [
 	return chunks
 }
 
-func get_random(seed, count int) []byte {
+func getRandom(seed, count int) []byte {
 	buf := make([]byte, count)
 
 	rnd := rand.New(rand.NewSource(23))
@@ -150,9 +150,9 @@ func get_random(seed, count int) []byte {
 
 func TestChunker(t *testing.T) {
 	// setup data source
-	buf := get_random(23, 32*1024*1024)
+	buf := getRandom(23, 32*1024*1024)
 	ch := chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
-	chunks := test_with_data(t, ch, chunks1)
+	chunks := testWithData(t, ch, chunks1)
 
 	// test reader
 	for i, c := range chunks {
@@ -180,12 +180,12 @@ func TestChunker(t *testing.T) {
 	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
 	ch = chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
 
-	test_with_data(t, ch, chunks2)
+	testWithData(t, ch, chunks2)
 }
 
 func TestChunkerWithRandomPolynomial(t *testing.T) {
 	// setup data source
-	buf := get_random(23, 32*1024*1024)
+	buf := getRandom(23, 32*1024*1024)
 
 	// generate a new random polynomial
 	start := time.Now()
@@ -210,9 +210,9 @@ func TestChunkerWithRandomPolynomial(t *testing.T) {
 
 func TestChunkerWithoutHash(t *testing.T) {
 	// setup data source
-	buf := get_random(23, 32*1024*1024)
+	buf := getRandom(23, 32*1024*1024)
 	ch := chunker.New(bytes.NewReader(buf), testPol, *testBufSize, nil)
-	chunks := test_with_data(t, ch, chunks1)
+	chunks := testWithData(t, ch, chunks1)
 
 	// test reader
 	for i, c := range chunks {
@@ -243,17 +243,17 @@ func TestChunkerWithoutHash(t *testing.T) {
 	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
 	ch = chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
 
-	test_with_data(t, ch, chunks2)
+	testWithData(t, ch, chunks2)
 }
 
 func TestChunkerReuse(t *testing.T) {
 	// test multiple uses of the same chunker
 	ch := chunker.New(nil, testPol, *testBufSize, sha256.New())
-	buf := get_random(23, 32*1024*1024)
+	buf := getRandom(23, 32*1024*1024)
 
 	for i := 0; i < 4; i++ {
 		ch.Reset(bytes.NewReader(buf), testPol)
-		test_with_data(t, ch, chunks1)
+		testWithData(t, ch, chunks1)
 	}
 }
 
@@ -281,7 +281,7 @@ func benchmarkChunker(b *testing.B, hash hash.Hash) {
 		rd = f
 	} else {
 		size = 10 * 1024 * 1024
-		rd = bytes.NewReader(get_random(23, size))
+		rd = bytes.NewReader(getRandom(23, size))
 	}
 
 	ch := chunker.New(rd, testPol, *testBufSize, hash)

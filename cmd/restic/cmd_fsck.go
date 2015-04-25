@@ -161,7 +161,7 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 	return firstErr
 }
 
-func fsck_snapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
+func fsckSnapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
 	debug.Log("restic.fsck", "checking snapshot %v\n", id)
 
 	sn, err := restic.LoadSnapshot(s, id)
@@ -211,7 +211,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 			fmt.Fprintf(os.Stderr, "invalid snapshot id %v\n", name)
 		}
 
-		err = fsck_snapshot(cmd, s, id)
+		err = fsckSnapshot(cmd, s, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", id)
 		}
@@ -235,7 +235,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 			continue
 		}
 
-		err = fsck_snapshot(cmd, s, id)
+		err = fsckSnapshot(cmd, s, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", id)
 			firstErr = err

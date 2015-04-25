@@ -21,7 +21,7 @@ func init() {
 	}
 }
 
-func list_keys(s restic.Server) error {
+func listKeys(s restic.Server) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
@@ -56,7 +56,7 @@ func list_keys(s restic.Server) error {
 	return nil
 }
 
-func add_key(s restic.Server) error {
+func addKey(s restic.Server) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -74,7 +74,7 @@ func add_key(s restic.Server) error {
 	return nil
 }
 
-func delete_key(s restic.Server, name string) error {
+func deleteKey(s restic.Server, name string) error {
 	if name == s.Key().Name() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
@@ -88,7 +88,7 @@ func delete_key(s restic.Server, name string) error {
 	return nil
 }
 
-func change_password(s restic.Server) error {
+func changePassword(s restic.Server) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -129,18 +129,18 @@ func (cmd CmdKey) Execute(args []string) error {
 
 	switch args[0] {
 	case "list":
-		return list_keys(s)
+		return listKeys(s)
 	case "add":
-		return add_key(s)
+		return addKey(s)
 	case "rm":
 		id, err := backend.Find(s, backend.Key, args[1])
 		if err != nil {
 			return err
 		}
 
-		return delete_key(s, id)
+		return deleteKey(s, id)
 	case "change":
-		return change_password(s)
+		return changePassword(s)
 	}
 
 	return nil

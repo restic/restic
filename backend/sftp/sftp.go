@@ -32,7 +32,7 @@ type SFTP struct {
 	cmd *exec.Cmd
 }
 
-func start_client(program string, args ...string) (*SFTP, error) {
+func startClient(program string, args ...string) (*SFTP, error) {
 	// Connect to a remote host and request the sftp subsystem via the 'ssh'
 	// command.  This assumes that passwordless login is correctly configured.
 	cmd := exec.Command(program, args...)
@@ -68,7 +68,7 @@ func start_client(program string, args ...string) (*SFTP, error) {
 // exec.Command, it is expected to speak sftp on stdin/stdout. The backend
 // is expected at the given path.
 func Open(dir string, program string, args ...string) (*SFTP, error) {
-	sftp, err := start_client(program, args...)
+	sftp, err := startClient(program, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 // Create creates all the necessary files and directories for a new sftp
 // backend at dir.
 func Create(dir string, program string, args ...string) (*SFTP, error) {
-	sftp, err := start_client(program, args...)
+	sftp, err := startClient(program, args...)
 	if err != nil {
 		return nil, err
 	}

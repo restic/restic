@@ -60,12 +60,12 @@ func TestPoly1305(t *testing.T) {
 	}
 }
 
-var test_values = []struct {
-	ekey         EncryptionKey
-	skey         SigningKey
-	ciphertext   []byte
-	plaintext    []byte
-	should_panic bool
+var testValues = []struct {
+	ekey        EncryptionKey
+	skey        SigningKey
+	ciphertext  []byte
+	plaintext   []byte
+	shouldPanic bool
 }{
 	{
 		ekey: EncryptionKey([...]byte{0x30, 0x3e, 0x86, 0x87, 0xb1, 0xd7, 0xdb, 0x18, 0x42, 0x1b, 0xdc, 0x6b, 0xb8, 0x58, 0x8c, 0xca,
@@ -74,21 +74,21 @@ var test_values = []struct {
 			K: [...]byte{0xef, 0x4d, 0x88, 0x24, 0xcb, 0x80, 0xb2, 0xbc, 0xc5, 0xfb, 0xff, 0x8a, 0x9b, 0x12, 0xa4, 0x2c},
 			R: [...]byte{0xcc, 0x8d, 0x4b, 0x94, 0x8e, 0xe0, 0xeb, 0xfe, 0x1d, 0x41, 0x5d, 0xe9, 0x21, 0xd1, 0x03, 0x53},
 		},
-		ciphertext: decode_hex("69fb41c62d12def4593bd71757138606338f621aeaeb39da0fe4f99233f8037a54ea63338a813bcf3f75d8c3cc75dddf8750"),
+		ciphertext: decodeHex("69fb41c62d12def4593bd71757138606338f621aeaeb39da0fe4f99233f8037a54ea63338a813bcf3f75d8c3cc75dddf8750"),
 		plaintext:  []byte("Dies ist ein Test!"),
 	},
 }
 
-func decode_hex(s string) []byte {
+func decodeHex(s string) []byte {
 	d, _ := hex.DecodeString(s)
 	return d
 }
 
 // returns true if function called panic
-func should_panic(f func()) (did_panic bool) {
+func shouldPanic(f func()) (didPanic bool) {
 	defer func() {
 		if r := recover(); r != nil {
-			did_panic = true
+			didPanic = true
 		}
 	}()
 
@@ -99,7 +99,7 @@ func should_panic(f func()) (did_panic bool) {
 
 func TestCrypto(t *testing.T) {
 	msg := make([]byte, 0, 8*1024*1024) // use 8MiB for now
-	for _, tv := range test_values {
+	for _, tv := range testValues {
 		// test encryption
 		k := &Key{
 			Encrypt: tv.ekey,
