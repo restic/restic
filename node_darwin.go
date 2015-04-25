@@ -12,7 +12,7 @@ import (
 )
 
 func (node *Node) OpenForReading() (*os.File, error) {
-	return os.Open(n.path)
+	return os.Open(node.path)
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) (err error) {

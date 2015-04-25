@@ -3,7 +3,7 @@ package restic
 import "os"
 
 func (node *Node) OpenForReading() (*os.File, error) {
-	return os.Open(n.path)
+	return os.Open(node.path)
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
