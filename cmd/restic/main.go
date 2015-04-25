@@ -146,7 +146,7 @@ func OpenRepo() (restic.Server, error) {
 
 	s := restic.NewServer(be)
 
-	err = s.SearchKey(readPassword("RESTIC_PASSWORD", "Enter Password for Repository: "))
+	err = s.SearchKey(readPassword("RESTIC_PASSWORD", "enter password for repository: "))
 	if err != nil {
 		return restic.Server{}, fmt.Errorf("unable to open repo: %v", err)
 	}
