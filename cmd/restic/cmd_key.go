@@ -114,7 +114,7 @@ func change_password(s restic.Server) error {
 }
 
 func (cmd CmdKey) Usage() string {
-	return "[list|add|rm|change] [ID]"
+	return "[list|add|rm|passwd] [ID]"
 }
 
 func (cmd CmdKey) Execute(args []string) error {
@@ -139,7 +139,7 @@ func (cmd CmdKey) Execute(args []string) error {
 		}
 
 		return delete_key(s, id)
-	case "change":
+	case "passwd":
 		return change_password(s)
 	}
 

@@ -15,9 +15,9 @@ unset RESTIC_PASSWORD
 RESTIC_PASSWORD=foo run restic init
 RESTIC_PASSWORD=foo run restic key list
 
-RESTIC_PASSWORD=foo RESTIC_NEWPASSWORD=foobar run restic key change
+RESTIC_PASSWORD=foo RESTIC_NEWPASSWORD=foobar run restic key passwd
 RESTIC_PASSWORD=foobar run restic key list
-RESTIC_PASSWORD=foobar RESTIC_NEWPASSWORD=foo run restic key change
+RESTIC_PASSWORD=foobar RESTIC_NEWPASSWORD=foo run restic key passwd
 
 OLD_PWD=foo
 for i in {1..3}; do
