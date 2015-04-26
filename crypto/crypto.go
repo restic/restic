@@ -47,6 +47,8 @@ type EncryptionKey [32]byte
 type SigningKey struct {
 	K [16]byte `json:"k"` // for AES128
 	R [16]byte `json:"r"` // for Poly1305
+
+	masked bool // remember if the signing key has already been masked
 }
 
 // mask for key, (cf. http://cr.yp.to/mac/poly1305-20050329.pdf)
@@ -75,7 +77,9 @@ func poly1305Sign(msg []byte, nonce []byte, key *SigningKey) []byte {
 	var k [32]byte
 
 	// make sure key is masked
-	maskKey(key)
+	if !key.masked {
+		maskKey(key)
+	}
 
 	// fill in nonce, encrypted with AES and key[:16]
 	cipher, err := aes.NewCipher(key.K[:])
@@ -102,6 +106,8 @@ func maskKey(k *SigningKey) {
 	for i := 0; i < poly1305.TagSize; i++ {
 		k.R[i] = k.R[i] & poly1305KeyMask[i]
 	}
+
+	k.masked = true
 }
 
 // construct mac key from slice (k||r), with masking
@@ -117,7 +123,9 @@ func poly1305Verify(msg []byte, nonce []byte, key *SigningKey, mac []byte) bool 
 	var k [32]byte
 
 	// make sure key is masked
-	maskKey(key)
+	if !key.masked {
+		maskKey(key)
+	}
 
 	// fill in nonce, encrypted with AES and key[:16]
 	cipher, err := aes.NewCipher(key.K[:])
