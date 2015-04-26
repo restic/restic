@@ -9,7 +9,11 @@ os:
   - osx
 
 notifications:
-  irc: "chat.freenode.net#restic"
+  irc:
+    channels:
+      - "chat.freenode.net#restic"
+    on_success: change
+    on_failure: change
 
 install:
   - go get github.com/mitchellh/gox
