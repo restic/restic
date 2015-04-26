@@ -1,7 +1,6 @@
 package backend_test
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -9,8 +8,6 @@ import (
 	"github.com/restic/restic/backend/local"
 	. "github.com/restic/restic/test"
 )
-
-var testCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
 
 func setupLocalBackend(t *testing.T) *local.Local {
 	tempdir, err := ioutil.TempDir("", "restic-test-")
@@ -25,7 +22,7 @@ func setupLocalBackend(t *testing.T) *local.Local {
 }
 
 func teardownLocalBackend(t *testing.T, b *local.Local) {
-	if !*testCleanup {
+	if !*TestCleanup {
 		t.Logf("leaving local backend at %s\n", b.Location())
 		return
 	}

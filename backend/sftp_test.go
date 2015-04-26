@@ -25,7 +25,7 @@ func setupSFTPBackend(t *testing.T) *sftp.SFTP {
 }
 
 func teardownSFTPBackend(t *testing.T, b *sftp.SFTP) {
-	if !*testCleanup {
+	if !*TestCleanup {
 		t.Logf("leaving backend at %s\n", b.Location())
 		return
 	}
