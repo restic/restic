@@ -7,7 +7,9 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/server"
 )
 
@@ -32,31 +34,31 @@ func init() {
 	}
 }
 
-func fsckFile(opts CmdFsck, s *server.Server, m *restic.Map, IDs []backend.ID) (uint64, error) {
+func fsckFile(opts CmdFsck, s *server.Server, IDs []backend.ID) (uint64, error) {
 	debug.Log("restic.fsckFile", "checking file %v", IDs)
 	var bytes uint64
 
 	for _, id := range IDs {
 		debug.Log("restic.fsck", "  checking data blob %v\n", id)
 
-		// test if blob is in map
-		blob, err := m.FindID(id)
+		// test if blob is in the index
+		packID, tpe, _, length, err := s.Index().Lookup(id)
 		if err != nil {
-			return 0, fmt.Errorf("storage ID for data blob %v not found", id)
+			return 0, fmt.Errorf("storage for blob %v (%v) not found", id, tpe)
 		}
 
-		bytes += blob.Size
-		debug.Log("restic.fsck", "  data blob found: %v\n", blob)
+		bytes += uint64(length - crypto.Extension)
+		debug.Log("restic.fsck", "  blob found in pack %v\n", packID)
 
 		if opts.CheckData {
 			// load content
-			_, err := s.Load(backend.Data, blob)
+			_, err := s.LoadBlob(pack.Data, id)
 			if err != nil {
 				return 0, err
 			}
 		} else {
 			// test if data blob is there
-			ok, err := s.Test(backend.Data, blob.Storage.String())
+			ok, err := s.Test(backend.Data, packID.String())
 			if err != nil {
 				return 0, err
 			}
@@ -68,17 +70,17 @@ func fsckFile(opts CmdFsck, s *server.Server, m *restic.Map, IDs []backend.ID) (
 
 		// if orphan check is active, record storage id
 		if opts.o_data != nil {
-			opts.o_data.Insert(blob.Storage)
+			opts.o_data.Insert(id)
 		}
 	}
 
 	return bytes, nil
 }
 
-func fsckTree(opts CmdFsck, s *server.Server, blob server.Blob) error {
-	debug.Log("restic.fsckTree", "checking tree %v", blob)
+func fsckTree(opts CmdFsck, s *server.Server, id backend.ID) error {
+	debug.Log("restic.fsckTree", "checking tree %v", id.Str())
 
-	tree, err := restic.LoadTree(s, blob)
+	tree, err := restic.LoadTree(s, id)
 	if err != nil {
 		return err
 	}
@@ -86,7 +88,7 @@ func fsckTree(opts CmdFsck, s *server.Server, blob server.Blob) error {
 	// if orphan check is active, record storage id
 	if opts.o_trees != nil {
 		// add ID to list
-		opts.o_trees.Insert(blob.Storage)
+		opts.o_trees.Insert(id)
 	}
 
 	var firstErr error
@@ -95,23 +97,23 @@ func fsckTree(opts CmdFsck, s *server.Server, blob server.Blob) error {
 
 	for i, node := range tree.Nodes {
 		if node.Name == "" {
-			return fmt.Errorf("node %v of tree %v has no name", i, blob.ID)
+			return fmt.Errorf("node %v of tree %v has no name", i, id.Str())
 		}
 
 		if node.Type == "" {
-			return fmt.Errorf("node %q of tree %v has no type", node.Name, blob.ID)
+			return fmt.Errorf("node %q of tree %v has no type", node.Name, id.Str())
 		}
 
 		switch node.Type {
 		case "file":
 			if node.Content == nil {
-				debug.Log("restic.fsckTree", "file node %q of tree %v has no content: %v", node.Name, blob.ID, node)
-				return fmt.Errorf("file node %q of tree %v has no content: %v", node.Name, blob.ID, node)
+				debug.Log("restic.fsckTree", "file node %q of tree %v has no content: %v", node.Name, id, node)
+				return fmt.Errorf("file node %q of tree %v has no content: %v", node.Name, id, node)
 			}
 
 			if node.Content == nil && node.Error == "" {
-				debug.Log("restic.fsckTree", "file node %q of tree %v has no content", node.Name, blob.ID)
-				return fmt.Errorf("file node %q of tree %v has no content", node.Name, blob.ID)
+				debug.Log("restic.fsckTree", "file node %q of tree %v has no content", node.Name, id)
+				return fmt.Errorf("file node %q of tree %v has no content", node.Name, id)
 			}
 
 			// record ids
@@ -119,32 +121,25 @@ func fsckTree(opts CmdFsck, s *server.Server, blob server.Blob) error {
 				seenIDs.Insert(id)
 			}
 
-			debug.Log("restic.fsckTree", "check file %v (%v)", node.Name, blob.ID.Str())
-			bytes, err := fsckFile(opts, s, tree.Map, node.Content)
+			debug.Log("restic.fsckTree", "check file %v (%v)", node.Name, id.Str())
+			bytes, err := fsckFile(opts, s, node.Content)
 			if err != nil {
 				return err
 			}
 
 			if bytes != node.Size {
-				debug.Log("restic.fsckTree", "file node %q of tree %v has size %d, but only %d bytes could be found", node.Name, blob, node.Size, bytes)
-				return fmt.Errorf("file node %q of tree %v has size %d, but only %d bytes could be found", node.Name, blob, node.Size, bytes)
+				debug.Log("restic.fsckTree", "file node %q of tree %v has size %d, but only %d bytes could be found", node.Name, id, node.Size, bytes)
+				return fmt.Errorf("file node %q of tree %v has size %d, but only %d bytes could be found", node.Name, id, node.Size, bytes)
 			}
 		case "dir":
 			if node.Subtree == nil {
-				return fmt.Errorf("dir node %q of tree %v (storage id %v) has no subtree", node.Name, blob.ID, blob.Storage)
-			}
-
-			// lookup blob
-			subtreeBlob, err := tree.Map.FindID(node.Subtree)
-			if err != nil {
-				firstErr = err
-				fmt.Fprintf(os.Stderr, "%v\n", err)
+				return fmt.Errorf("dir node %q of tree %v has no subtree", node.Name, id)
 			}
 
 			// record id
 			seenIDs.Insert(node.Subtree)
 
-			err = fsckTree(opts, s, subtreeBlob)
+			err = fsckTree(opts, s, node.Subtree)
 			if err != nil {
 				firstErr = err
 				fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -153,11 +148,11 @@ func fsckTree(opts CmdFsck, s *server.Server, blob server.Blob) error {
 	}
 
 	// check map for unused ids
-	for _, id := range tree.Map.IDs() {
-		if seenIDs.Find(id) != nil {
-			return fmt.Errorf("tree %v: map contains unused ID %v", blob.ID, id)
-		}
-	}
+	// for _, id := range tree.Map.IDs() {
+	// 	if seenIDs.Find(id) != nil {
+	// 		return fmt.Errorf("tree %v: map contains unused ID %v", id, id)
+	// 	}
+	// }
 
 	return firstErr
 }
@@ -168,10 +163,6 @@ func fsckSnapshot(opts CmdFsck, s *server.Server, id backend.ID) error {
 	sn, err := restic.LoadSnapshot(s, id)
 	if err != nil {
 		return fmt.Errorf("loading snapshot %v failed: %v", id, err)
-	}
-
-	if !sn.Tree.Valid() {
-		return fmt.Errorf("snapshot %s has invalid tree %v", sn.ID(), sn.Tree)
 	}
 
 	err = fsckTree(opts, s, sn.Tree)
@@ -197,6 +188,11 @@ func (cmd CmdFsck) Execute(args []string) error {
 	}
 
 	s, err := OpenRepo()
+	if err != nil {
+		return err
+	}
+
+	err = s.LoadIndex()
 	if err != nil {
 		return err
 	}

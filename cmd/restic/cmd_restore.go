@@ -35,6 +35,11 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return err
 	}
 
+	err = s.LoadIndex()
+	if err != nil {
+		return err
+	}
+
 	name, err := backend.FindSnapshot(s, args[0])
 	if err != nil {
 		errx(1, "invalid id %q: %v", args[0], err)

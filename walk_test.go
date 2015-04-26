@@ -27,6 +27,9 @@ func TestWalkTree(t *testing.T) {
 	sn, _, err := arch.Snapshot(nil, dirs, nil)
 	OK(t, err)
 
+	// flush server, write all packs
+	OK(t, server.Flush())
+
 	// start benchmark
 	// t.ResetTimer()
 
@@ -48,6 +51,9 @@ func TestWalkTree(t *testing.T) {
 		fsJob, fsChOpen := <-fsJobs
 		Assert(t, !fsChOpen || fsJob != nil,
 			"received nil job from filesystem: %v %v", fsJob, fsChOpen)
+		if fsJob != nil {
+			OK(t, fsJob.Error())
+		}
 
 		var path string
 		fsEntries := 1
@@ -62,6 +68,8 @@ func TestWalkTree(t *testing.T) {
 		// receive tree job
 		treeJob, treeChOpen := <-treeJobs
 		treeEntries := 1
+
+		OK(t, treeJob.Error)
 
 		if treeJob.Tree != nil {
 			treeEntries = len(treeJob.Tree.Nodes)

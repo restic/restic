@@ -19,6 +19,17 @@ const (
 	Tree          = 1
 )
 
+func (t BlobType) String() string {
+	switch t {
+	case Data:
+		return "data"
+	case Tree:
+		return "tree"
+	}
+
+	return fmt.Sprintf("<BlobType %d>", t)
+}
+
 func (t BlobType) MarshalJSON() ([]byte, error) {
 	switch t {
 	case Data:

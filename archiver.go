@@ -14,6 +14,7 @@ import (
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/pipe"
 	"github.com/restic/restic/server"
 )
@@ -29,8 +30,6 @@ const (
 
 type Archiver struct {
 	s *server.Server
-	m *Map
-	c *Cache
 
 	blobToken chan struct{}
 
@@ -50,15 +49,6 @@ func NewArchiver(s *server.Server) (*Archiver, error) {
 		arch.blobToken <- struct{}{}
 	}
 
-	// create new map to store all blobs in
-	arch.m = NewMap()
-
-	// init cache
-	arch.c, err = NewCache(s)
-	if err != nil {
-		return nil, err
-	}
-
 	// abort on all errors
 	arch.Error = func(string, os.FileInfo, error) error { return err }
 	// allow all files
@@ -67,119 +57,59 @@ func NewArchiver(s *server.Server) (*Archiver, error) {
 	return arch, nil
 }
 
-// Cache returns the current cache for the Archiver.
-func (arch *Archiver) Cache() *Cache {
-	return arch.c
-}
-
-// Preload loads all blobs for all cached snapshots.
-func (arch *Archiver) Preload() error {
-	done := make(chan struct{})
-	defer close(done)
-
-	// list snapshots
-	// TODO: track seen tree ids, load trees that aren't in the set
-	snapshots := 0
-	for name := range arch.s.List(backend.Snapshot, done) {
-		id, err := backend.ParseID(name)
-		if err != nil {
-			debug.Log("Archiver.Preload", "unable to parse name %v as id: %v", name, err)
-			continue
-		}
-
-		m, err := arch.c.LoadMap(arch.s, id)
-		if err != nil {
-			debug.Log("Archiver.Preload", "blobs for snapshot %v not cached: %v", id.Str(), err)
-			continue
-		}
-
-		arch.m.Merge(m)
-		debug.Log("Archiver.Preload", "done loading cached blobs for snapshot %v", id.Str())
-		snapshots++
-	}
-
-	debug.Log("Archiver.Preload", "Loaded %v blobs from %v snapshots", arch.m.Len(), snapshots)
-	return nil
-}
-
-func (arch *Archiver) Save(t backend.Type, id backend.ID, length uint, rd io.Reader) (server.Blob, error) {
+func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
 	// test if this blob is already known
-	blob, err := arch.m.FindID(id)
-	if err == nil {
-		debug.Log("Archiver.Save", "Save(%v, %v): reusing %v\n", t, id.Str(), blob.Storage.Str())
-		return blob, nil
+	if arch.s.Index().Has(id) {
+		debug.Log("Archiver.Save", "(%v, %v) already saved\n", t, id.Str())
+		return nil
 	}
 
-	// else encrypt and save data
-	blob, err = arch.s.SaveFrom(t, id, length, rd)
-
-	// store blob in storage map
-	smapblob := arch.m.Insert(blob)
-
-	// if the map has a different storage id for this plaintext blob, use that
-	// one and remove the other. This happens if the same plaintext blob was
-	// stored concurrently and finished earlier than this blob.
-	if blob.Storage.Compare(smapblob.Storage) != 0 {
-		debug.Log("Archiver.Save", "using other block, removing %v\n", blob.Storage.Str())
-
-		// remove the blob again
-		// TODO: implement a list of blobs in transport, so this doesn't happen so often
-		err = arch.s.Remove(t, blob.Storage.String())
-		if err != nil {
-			return server.Blob{}, err
-		}
+	// otherwise save blob
+	err := arch.s.SaveFrom(t, id, length, rd)
+	if err != nil {
+		debug.Log("Archiver.Save", "Save(%v, %v): error %v\n", t, id.Str(), err)
+		return err
 	}
 
-	debug.Log("Archiver.Save", "Save(%v, %v): new blob %v\n", t, id.Str(), blob)
-
-	return smapblob, nil
+	debug.Log("Archiver.Save", "Save(%v, %v): new blob\n", t, id.Str())
+	return nil
 }
 
-func (arch *Archiver) SaveTreeJSON(item interface{}) (server.Blob, error) {
+func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	// convert to json
 	data, err := json.Marshal(item)
 	// append newline
 	data = append(data, '\n')
 	if err != nil {
-		return server.Blob{}, err
+		return nil, err
 	}
 
 	// check if tree has been saved before
 	id := backend.Hash(data)
-	blob, err := arch.m.FindID(id)
 
-	// return the blob if we found it
-	if err == nil {
-		return blob, nil
+	if arch.s.Index().Has(id) {
+		return id, nil
 	}
 
 	// otherwise save the data
-	blob, err = arch.s.SaveJSON(backend.Tree, item)
-	if err != nil {
-		return server.Blob{}, err
-	}
-
-	// store blob in storage map
-	arch.m.Insert(blob)
-
-	return blob, nil
+	return arch.s.SaveJSON(pack.Tree, item)
 }
 
 // SaveFile stores the content of the file on the backend as a Blob by calling
 // Save for each chunk.
-func (arch *Archiver) SaveFile(p *Progress, node *Node) (server.Blobs, error) {
+func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 	file, err := node.OpenForReading()
 	defer file.Close()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// check file again
 	fi, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if fi.ModTime() != node.ModTime {
@@ -190,7 +120,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) (server.Blobs, error) {
 			n, err := NodeFromFileInfo(node.path, fi)
 			if err != nil {
 				debug.Log("Archiver.SaveFile", "NodeFromFileInfo returned error for %v: %v", node.path, err)
-				return nil, err
+				return err
 			}
 
 			// copy node
@@ -198,12 +128,15 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) (server.Blobs, error) {
 		}
 	}
 
-	var blobs server.Blobs
+	type result struct {
+		id    backend.ID
+		bytes uint64
+	}
 
 	// store all chunks
 	chnker := GetChunker("archiver.SaveFile")
 	chnker.Reset(file, arch.s.ChunkerPolynomial())
-	chans := [](<-chan server.Blob){}
+	chans := [](<-chan result){}
 	defer FreeChunker("archiver.SaveFile", chnker)
 
 	chunks := 0
@@ -215,75 +148,71 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) (server.Blobs, error) {
 		}
 
 		if err != nil {
-			return nil, arrar.Annotate(err, "SaveFile() chunker.Next()")
+			return arrar.Annotate(err, "SaveFile() chunker.Next()")
 		}
 
 		chunks++
 
 		// acquire token, start goroutine to save chunk
 		token := <-arch.blobToken
-		resCh := make(chan server.Blob, 1)
+		resCh := make(chan result, 1)
 
-		go func(ch chan<- server.Blob) {
-			blob, err := arch.Save(backend.Data, chunk.Digest, chunk.Length, chunk.Reader(file))
+		go func(ch chan<- result) {
+			err := arch.Save(pack.Data, chunk.Digest, chunk.Length, chunk.Reader(file))
 			// TODO handle error
 			if err != nil {
 				panic(err)
 			}
 
-			p.Report(Stat{Bytes: blob.Size})
+			p.Report(Stat{Bytes: uint64(chunk.Length)})
 			arch.blobToken <- token
-			ch <- blob
+			ch <- result{id: backend.ID(chunk.Digest), bytes: uint64(chunk.Length)}
 		}(resCh)
 
 		chans = append(chans, resCh)
 	}
 
-	blobs = []server.Blob{}
+	results := []result{}
 	for _, ch := range chans {
-		blobs = append(blobs, <-ch)
+		results = append(results, <-ch)
 	}
 
-	if len(blobs) != chunks {
-		return nil, fmt.Errorf("chunker returned %v chunks, but only %v blobs saved", chunks, len(blobs))
+	if len(results) != chunks {
+		return fmt.Errorf("chunker returned %v chunks, but only %v blobs saved", chunks, len(results))
 	}
 
 	var bytes uint64
 
-	node.Content = make([]backend.ID, len(blobs))
+	node.Content = make([]backend.ID, len(results))
 	debug.Log("Archiver.Save", "checking size for file %s", node.path)
-	for i, blob := range blobs {
-		node.Content[i] = blob.ID
-		bytes += blob.Size
+	for i, b := range results {
+		node.Content[i] = b.id
+		bytes += b.bytes
 
-		debug.Log("Archiver.Save", "  adding blob %s", blob)
+		debug.Log("Archiver.Save", "  adding blob %s, %d bytes", b.id.Str(), b.bytes)
 	}
 
 	if bytes != node.Size {
-		return nil, fmt.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
+		return fmt.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
 	}
 
-	debug.Log("Archiver.SaveFile", "SaveFile(%q): %v\n", node.path, blobs)
+	debug.Log("Archiver.SaveFile", "SaveFile(%q): %v blobs\n", node.path, len(results))
 
-	return blobs, nil
+	return nil
 }
 
-func (arch *Archiver) saveTree(p *Progress, t *Tree) (server.Blob, error) {
+func (arch *Archiver) saveTree(p *Progress, t *Tree) (backend.ID, error) {
 	debug.Log("Archiver.saveTree", "saveTree(%v)\n", t)
 	var wg sync.WaitGroup
-
-	// add all blobs to global map
-	arch.m.Merge(t.Map)
 
 	// TODO: do all this in parallel
 	for _, node := range t.Nodes {
 		if node.tree != nil {
-			b, err := arch.saveTree(p, node.tree)
+			id, err := arch.saveTree(p, node.tree)
 			if err != nil {
-				return server.Blob{}, err
+				return nil, err
 			}
-			node.Subtree = b.ID
-			t.Map.Insert(b)
+			node.Subtree = id
 			p.Report(Stat{Dirs: 1})
 		} else if node.Type == "file" {
 			if len(node.Content) > 0 {
@@ -291,22 +220,18 @@ func (arch *Archiver) saveTree(p *Progress, t *Tree) (server.Blob, error) {
 
 				// check content
 				for _, id := range node.Content {
-					blob, err := t.Map.FindID(id)
+					packID, _, _, _, err := arch.s.Index().Lookup(id)
 					if err != nil {
-						debug.Log("Archiver.saveTree", "unable to find storage id for data blob %v", id.Str())
-						arch.Error(node.path, nil, fmt.Errorf("unable to find storage id for data blob %v", id.Str()))
+						debug.Log("Archiver.saveTree", "unable to find storage id for data blob %v: %v", id.Str(), err)
+						arch.Error(node.path, nil, fmt.Errorf("unable to find storage id for data blob %v: %v", id.Str(), err))
 						removeContent = true
-						t.Map.DeleteID(id)
-						arch.m.DeleteID(id)
 						continue
 					}
 
-					if ok, err := arch.s.Test(backend.Data, blob.Storage.String()); !ok || err != nil {
-						debug.Log("Archiver.saveTree", "blob %v not in repository (error is %v)", blob, err)
-						arch.Error(node.path, nil, fmt.Errorf("blob %v not in repository (error is %v)", blob.Storage.Str(), err))
+					if ok, err := arch.s.Test(backend.Data, packID.String()); !ok || err != nil {
+						debug.Log("Archiver.saveTree", "pack %v of blob %v not in repository (error is %v)", packID, id, err)
+						arch.Error(node.path, nil, fmt.Errorf("pack %v of blob %v not in repository (error is %v)", packID, id, err))
 						removeContent = true
-						t.Map.DeleteID(id)
-						arch.m.DeleteID(id)
 					}
 				}
 
@@ -322,12 +247,7 @@ func (arch *Archiver) saveTree(p *Progress, t *Tree) (server.Blob, error) {
 				go func(n *Node) {
 					defer wg.Done()
 
-					var blobs server.Blobs
-					blobs, n.err = arch.SaveFile(p, n)
-					for _, b := range blobs {
-						t.Map.Insert(b)
-					}
-
+					n.err = arch.SaveFile(p, n)
 					p.Report(Stat{Files: 1})
 				}(node)
 			}
@@ -341,7 +261,7 @@ func (arch *Archiver) saveTree(p *Progress, t *Tree) (server.Blob, error) {
 	// check for invalid file nodes
 	for _, node := range t.Nodes {
 		if node.Type == "file" && node.Content == nil && node.err == nil {
-			return server.Blob{}, fmt.Errorf("node %v has empty content", node.Name)
+			return nil, fmt.Errorf("node %v has empty content", node.Name)
 		}
 
 		// remember used hashes
@@ -358,7 +278,7 @@ func (arch *Archiver) saveTree(p *Progress, t *Tree) (server.Blob, error) {
 		if node.err != nil {
 			err := arch.Error(node.path, nil, node.err)
 			if err != nil {
-				return server.Blob{}, err
+				return nil, err
 			}
 
 			// save error message in node
@@ -366,20 +286,12 @@ func (arch *Archiver) saveTree(p *Progress, t *Tree) (server.Blob, error) {
 		}
 	}
 
-	before := len(t.Map.IDs())
-	t.Map.Prune(usedIDs)
-	after := len(t.Map.IDs())
-
-	if before != after {
-		debug.Log("Archiver.saveTree", "pruned %d ids from map for tree %v\n", before-after, t)
-	}
-
-	blob, err := arch.SaveTreeJSON(t)
+	id, err := arch.SaveTreeJSON(t)
 	if err != nil {
-		return server.Blob{}, err
+		return nil, err
 	}
 
-	return blob, nil
+	return id, nil
 }
 
 func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan struct{}, entCh <-chan pipe.Entry) {
@@ -444,7 +356,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 			// otherwise read file normally
 			if node.Type == "file" && len(node.Content) == 0 {
 				debug.Log("Archiver.fileWorker", "   read and save %v, content: %v", e.Path(), node.Content)
-				node.blobs, err = arch.SaveFile(p, node)
+				err = arch.SaveFile(p, node)
 				if err != nil {
 					// TODO: integrate error reporting
 					fmt.Fprintf(os.Stderr, "error for %v: %v\n", node.path, err)
@@ -501,11 +413,6 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				if node.Type == "dir" {
 					debug.Log("Archiver.dirWorker", "got tree node for %s: %v", node.path, node.blobs)
 				}
-
-				// also store blob in tree map
-				for _, blob := range node.blobs {
-					tree.Map.Insert(blob)
-				}
 			}
 
 			var (
@@ -525,14 +432,13 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				}
 			}
 
-			blob, err := arch.SaveTreeJSON(tree)
+			id, err := arch.SaveTreeJSON(tree)
 			if err != nil {
 				panic(err)
 			}
-			debug.Log("Archiver.dirWorker", "save tree for %s: %v", dir.Path(), blob)
+			debug.Log("Archiver.dirWorker", "save tree for %s: %v", dir.Path(), id.Str())
 
-			node.Subtree = blob.ID
-			node.blobs = server.Blobs{blob}
+			node.Subtree = id
 
 			dir.Result() <- node
 			if dir.Path() != "" {
@@ -792,30 +698,35 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 
 	// receive the top-level tree
 	root := (<-resCh).(*Node)
-	blob := root.blobs[0]
-	debug.Log("Archiver.Snapshot", "root node received: %v", blob)
-	sn.Tree = blob
+	debug.Log("Archiver.Snapshot", "root node received: %v", root.Subtree.Str())
+	sn.Tree = root.Subtree
 
 	// save snapshot
-	blob, err = arch.s.SaveJSON(backend.Snapshot, sn)
+	id, err := arch.s.SaveJSONUnpacked(backend.Snapshot, sn)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// store ID in snapshot struct
-	sn.id = blob.Storage
+	sn.id = id
+	debug.Log("Archiver.Snapshot", "saved snapshot %v", id.Str())
 
-	debug.Log("Archiver.Snapshot", "saved snapshot %v", blob.Storage.Str())
-
-	// cache blobs
-	err = arch.c.StoreMap(sn.id, arch.m)
+	// flush server
+	err = arch.s.Flush()
 	if err != nil {
-		debug.Log("Archiver.Snapshot", "unable to cache blobs for snapshot %v: %v", blob.Storage.Str(), err)
-		fmt.Fprintf(os.Stderr, "unable to cache blobs for snapshot %v: %v\n", blob.Storage.Str(), err)
-		return sn, blob.Storage, nil
+		return nil, nil, err
 	}
 
-	return sn, blob.Storage, nil
+	// save index
+	indexID, err := arch.s.SaveIndex()
+	if err != nil {
+		debug.Log("Archiver.Snapshot", "error saving index: %v", err)
+		return nil, nil, err
+	}
+
+	debug.Log("Archiver.Snapshot", "saved index %v", indexID.Str())
+
+	return sn, id, nil
 }
 
 func isFile(fi os.FileInfo) bool {

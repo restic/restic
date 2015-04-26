@@ -96,26 +96,6 @@ func (cmd CmdBackup) Usage() string {
 	return "DIR/FILE [snapshot-ID]"
 }
 
-func newCacheRefreshProgress() *restic.Progress {
-	p := restic.NewProgress(time.Second)
-	p.OnStart = func() {
-		fmt.Printf("refreshing cache\n")
-	}
-
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		return p
-	}
-
-	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2K[%s] %d trees loaded\r", formatDuration(d), s.Trees)
-	}
-	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2Krefreshed cache in %s\n", formatDuration(d))
-	}
-
-	return p
-}
-
 func newScanProgress() *restic.Progress {
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
 		return nil
@@ -200,6 +180,11 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
+	err = s.LoadIndex()
+	if err != nil {
+		return err
+	}
+
 	var (
 		parentSnapshot   string
 		parentSnapshotID backend.ID
@@ -278,16 +263,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
-	err = arch.Cache().RefreshSnapshots(s, newCacheRefreshProgress())
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("loading blobs\n")
-	err = arch.Preload()
-	if err != nil {
-		return err
-	}
+	// TODO: load index
 
 	_, id, err := arch.Snapshot(newArchiveProgress(stat), target, parentSnapshotID)
 	if err != nil {

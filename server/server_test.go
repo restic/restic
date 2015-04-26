@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/pack"
 	. "github.com/restic/restic/test"
 )
 
@@ -38,12 +39,12 @@ func TestSaveJSON(t *testing.T) {
 		data = append(data, '\n')
 		h := sha256.Sum256(data)
 
-		blob, err := server.SaveJSON(backend.Tree, obj)
+		id, err := server.SaveJSON(pack.Tree, obj)
 		OK(t, err)
 
-		Assert(t, bytes.Equal(h[:], blob.ID),
+		Assert(t, bytes.Equal(h[:], id),
 			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
-			h, blob.ID)
+			h, id)
 	}
 }
 
@@ -63,16 +64,50 @@ func BenchmarkSaveJSON(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		blob, err := server.SaveJSON(backend.Tree, obj)
+		id, err := server.SaveJSON(pack.Tree, obj)
 		OK(t, err)
 
-		Assert(t, bytes.Equal(h[:], blob.ID),
+		Assert(t, bytes.Equal(h[:], id),
 			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
-			h, blob.ID)
+			h, id)
 	}
 }
 
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
+
+func TestSave(t *testing.T) {
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
+	server.SetKey(key)
+
+	for _, size := range testSizes {
+		data := make([]byte, size)
+		_, err := io.ReadFull(rand.Reader, data)
+		OK(t, err)
+
+		id := backend.Hash(data)
+
+		// save
+		sid, err := server.Save(pack.Data, data, nil)
+		OK(t, err)
+
+		Equals(t, id, sid)
+
+		OK(t, server.Flush())
+
+		// read back
+		buf, err := server.LoadBlob(pack.Data, id)
+
+		Assert(t, len(buf) == len(data),
+			"number of bytes read back does not match: expected %d, got %d",
+			len(data), len(buf))
+
+		Assert(t, bytes.Equal(buf, data),
+			"data does not match: expected %02x, got %02x",
+			data, buf)
+	}
+}
 
 func TestSaveFrom(t *testing.T) {
 	server := SetupBackend(t)
@@ -85,14 +120,16 @@ func TestSaveFrom(t *testing.T) {
 		_, err := io.ReadFull(rand.Reader, data)
 		OK(t, err)
 
-		id := sha256.Sum256(data)
+		id := backend.Hash(data)
 
 		// save
-		blob, err := server.SaveFrom(backend.Data, id[:], uint(size), bytes.NewReader(data))
+		err = server.SaveFrom(pack.Data, id[:], uint(size), bytes.NewReader(data))
 		OK(t, err)
 
+		OK(t, server.Flush())
+
 		// read back
-		buf, err := server.Load(backend.Data, blob)
+		buf, err := server.LoadBlob(pack.Data, id[:])
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -123,12 +160,12 @@ func BenchmarkSaveFrom(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		// save
-		_, err := server.SaveFrom(backend.Data, id[:], uint(size), bytes.NewReader(data))
+		err = server.SaveFrom(pack.Data, id[:], uint(size), bytes.NewReader(data))
 		OK(t, err)
 	}
 }
 
-func TestLoadJSONID(t *testing.T) {
+func TestLoadJSONPack(t *testing.T) {
 	if *benchTestDir == "" {
 		t.Skip("benchdir not set, skipping TestServerStats")
 	}
@@ -140,23 +177,14 @@ func TestLoadJSONID(t *testing.T) {
 
 	// archive a few files
 	sn := SnapshotDir(t, server, *benchTestDir, nil)
-	t.Logf("archived snapshot %v", sn.ID())
-
-	// benchmark loading first tree
-	done := make(chan struct{})
-	first, found := <-server.List(backend.Tree, done)
-	Assert(t, found, "no Trees in repository found")
-	close(done)
-
-	id, err := backend.ParseID(first)
-	OK(t, err)
+	OK(t, server.Flush())
 
 	tree := restic.NewTree()
-	err = server.LoadJSONID(backend.Tree, id, &tree)
+	err := server.LoadJSONPack(pack.Tree, sn.Tree, &tree)
 	OK(t, err)
 }
 
-func BenchmarkLoadJSONID(t *testing.B) {
+func TestLoadJSONEncrypted(t *testing.T) {
 	if *benchTestDir == "" {
 		t.Skip("benchdir not set, skipping TestServerStats")
 	}
@@ -166,18 +194,20 @@ func BenchmarkLoadJSONID(t *testing.B) {
 	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
-	// archive a few files
-	sn := SnapshotDir(t, server, *benchTestDir, nil)
-	t.Logf("archived snapshot %v", sn.ID())
+	// archive a snapshot
+	sn := restic.Snapshot{}
+	sn.Hostname = "foobar"
+	sn.Username = "test!"
 
-	t.ResetTimer()
+	id, err := server.SaveJSONUnpacked(backend.Snapshot, &sn)
+	OK(t, err)
 
-	tree := restic.NewTree()
-	for i := 0; i < t.N; i++ {
-		for name := range server.List(backend.Tree, nil) {
-			id, err := backend.ParseID(name)
-			OK(t, err)
-			OK(t, server.LoadJSONID(backend.Tree, id, &tree))
-		}
-	}
+	var sn2 restic.Snapshot
+
+	// restore
+	err = server.LoadJSONEncrypted(backend.Snapshot, id, &sn2)
+	OK(t, err)
+
+	Equals(t, sn.Hostname, sn2.Hostname)
+	Equals(t, sn.Username, sn2.Username)
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/juju/arrar"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/server"
 )
 
@@ -98,14 +99,14 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 	return ""
 }
 
-func (node *Node) CreateAt(path string, m *Map, s *server.Server) error {
+func (node *Node) CreateAt(path string, s *server.Server) error {
 	switch node.Type {
 	case "dir":
 		if err := node.createDirAt(path); err != nil {
 			return err
 		}
 	case "file":
-		if err := node.createFileAt(path, m, s); err != nil {
+		if err := node.createFileAt(path, s); err != nil {
 			return err
 		}
 	case "symlink":
@@ -171,7 +172,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(path string, m *Map, s *server.Server) error {
+func (node Node) createFileAt(path string, s *server.Server) error {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 	defer f.Close()
 
@@ -179,13 +180,8 @@ func (node Node) createFileAt(path string, m *Map, s *server.Server) error {
 		return arrar.Annotate(err, "OpenFile")
 	}
 
-	for _, blobid := range node.Content {
-		blob, err := m.FindID(blobid)
-		if err != nil {
-			return arrar.Annotate(err, "Find Blob")
-		}
-
-		buf, err := s.Load(backend.Data, blob)
+	for _, id := range node.Content {
+		buf, err := s.LoadBlob(pack.Data, id)
 		if err != nil {
 			return arrar.Annotate(err, "Load")
 		}

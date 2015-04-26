@@ -1,14 +1,12 @@
 package restic
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -211,146 +209,6 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 
 // high-level functions
 
-// RefreshSnapshots loads the maps for all snapshots and saves them to the
-// local cache. Old cache entries are purged.
-func (c *Cache) RefreshSnapshots(s *server.Server, p *Progress) error {
-	defer p.Done()
-
-	// list cache entries
-	entries, err := c.List(backend.Snapshot)
-	if err != nil {
-		return err
-	}
-
-	// list snapshots first
-	done := make(chan struct{})
-	defer close(done)
-
-	// check that snapshot blobs are cached
-	for name := range s.List(backend.Snapshot, done) {
-		id, err := backend.ParseID(name)
-		if err != nil {
-			continue
-		}
-
-		// remove snapshot from list of entries
-		for i, e := range entries {
-			if e.ID.Equal(id) {
-				entries = append(entries[:i], entries[i+1:]...)
-				break
-			}
-		}
-
-		has, err := c.Has(backend.Snapshot, "blobs", id)
-		if err != nil {
-			return err
-		}
-
-		if has {
-			continue
-		}
-
-		// else start progress reporting
-		p.Start()
-
-		// build new cache
-		_, err = cacheSnapshotBlobs(p, s, c, id)
-		if err != nil {
-			debug.Log("Cache.RefreshSnapshots", "unable to cache snapshot blobs for %v: %v", id.Str(), err)
-			return err
-		}
-	}
-
-	// remove other entries
-	for _, e := range entries {
-		debug.Log("Cache.RefreshSnapshots", "remove entry %v", e)
-		err = c.Purge(backend.Snapshot, e.Subtype, e.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// cacheSnapshotBlobs creates a cache of all the blobs used within the
-// snapshot. It collects all blobs from all trees and saves the resulting map
-// to the cache and returns the map.
-func cacheSnapshotBlobs(p *Progress, s *server.Server, c *Cache, id backend.ID) (*Map, error) {
-	debug.Log("CacheSnapshotBlobs", "create cache for snapshot %v", id.Str())
-
-	sn, err := LoadSnapshot(s, id)
-	if err != nil {
-		debug.Log("CacheSnapshotBlobs", "unable to load snapshot %v: %v", id.Str(), err)
-		return nil, err
-	}
-
-	m := NewMap()
-
-	// add top-level node
-	m.Insert(sn.Tree)
-
-	p.Report(Stat{Trees: 1})
-
-	// start walker
-	var wg sync.WaitGroup
-	ch := make(chan WalkTreeJob)
-
-	wg.Add(1)
-	go func() {
-		WalkTree(s, sn.Tree, nil, ch)
-		wg.Done()
-	}()
-
-	for i := 0; i < maxConcurrencyPreload; i++ {
-		wg.Add(1)
-		go func() {
-			for job := range ch {
-				if job.Tree == nil {
-					continue
-				}
-				p.Report(Stat{Trees: 1})
-				debug.Log("CacheSnapshotBlobs", "got job %v", job)
-				m.Merge(job.Tree.Map)
-			}
-
-			wg.Done()
-		}()
-	}
-
-	wg.Wait()
-
-	// save blob list for snapshot
-	return m, c.StoreMap(id, m)
-}
-
-func (c *Cache) StoreMap(snid backend.ID, m *Map) error {
-	wr, err := c.Store(backend.Snapshot, "blobs", snid)
-	if err != nil {
-		return nil
-	}
-	defer wr.Close()
-
-	enc := json.NewEncoder(wr)
-	err = enc.Encode(m)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Cache) LoadMap(s *server.Server, snid backend.ID) (*Map, error) {
-	rd, err := c.Load(backend.Snapshot, "blobs", snid)
-	if err != nil {
-		return nil, err
-	}
-
-	m := &Map{}
-	err = json.NewDecoder(rd).Decode(m)
-	return m, err
-}
-
 // GetCacheDir returns the cache directory according to XDG basedir spec, see
 // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
 func GetCacheDir() (string, error) {
@@ -389,3 +247,5 @@ func GetCacheDir() (string, error) {
 
 	return cachedir, nil
 }
+
+// TODO: implement RefreshIndex()

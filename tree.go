@@ -7,12 +7,12 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/server"
 )
 
 type Tree struct {
 	Nodes []*Node `json:"nodes"`
-	Map   *Map    `json:"map"`
 }
 
 var (
@@ -23,17 +23,16 @@ var (
 func NewTree() *Tree {
 	return &Tree{
 		Nodes: []*Node{},
-		Map:   NewMap(),
 	}
 }
 
 func (t Tree) String() string {
-	return fmt.Sprintf("Tree<%d nodes, %d blobs>", len(t.Nodes), len(t.Map.list))
+	return fmt.Sprintf("Tree<%d nodes>", len(t.Nodes))
 }
 
-func LoadTree(s *server.Server, blob server.Blob) (*Tree, error) {
+func LoadTree(s *server.Server, id backend.ID) (*Tree, error) {
 	tree := &Tree{}
-	err := s.LoadJSON(backend.Tree, blob, tree)
+	err := s.LoadJSONPack(pack.Tree, id, tree)
 	if err != nil {
 		return nil, err
 	}
@@ -41,15 +40,10 @@ func LoadTree(s *server.Server, blob server.Blob) (*Tree, error) {
 	return tree, nil
 }
 
-// Equals returns true if t and other have exactly the same nodes and map.
-func (t Tree) Equals(other Tree) bool {
+// Equals returns true if t and other have exactly the same nodes.
+func (t Tree) Equals(other *Tree) bool {
 	if len(t.Nodes) != len(other.Nodes) {
 		debug.Log("Tree.Equals", "tree.Equals(): trees have different number of nodes")
-		return false
-	}
-
-	if !t.Map.Equals(other.Map) {
-		debug.Log("Tree.Equals", "tree.Equals(): maps aren't equal")
 		return false
 	}
 

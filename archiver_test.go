@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/server"
 	. "github.com/restic/restic/test"
 )
@@ -114,11 +115,7 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 	restic.FreeChunkBuf("BenchmarkChunkEncryptParallel", buf)
 }
 
-func BenchmarkArchiveDirectory(b *testing.B) {
-	if *benchArchiveDirectory == "" {
-		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
-	}
-
+func archiveDirectory(b testing.TB) {
 	server := SetupBackend(b)
 	defer TeardownBackend(b, server)
 	key := SetupKey(b, server, "geheim")
@@ -132,92 +129,107 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	b.Logf("snapshot archived as %v", id)
 }
 
-func countBlobs(t testing.TB, server *server.Server) (trees int, data int) {
-	return server.Count(backend.Tree), server.Count(backend.Data)
+func TestArchiveDirectory(t *testing.T) {
+	if *benchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping TestArchiveDirectory")
+	}
+
+	archiveDirectory(t)
 }
 
-func archiveWithPreload(t testing.TB) {
+func BenchmarkArchiveDirectory(b *testing.B) {
 	if *benchArchiveDirectory == "" {
-		t.Skip("benchdir not set, skipping TestArchiverPreload")
+		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
+	}
+
+	archiveDirectory(b)
+}
+
+func archiveWithDedup(t testing.TB) {
+	if *benchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
 
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
 	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
+
+	var cnt struct {
+		before, after, after2 struct {
+			packs, dataBlobs, treeBlobs uint
+		}
+	}
 
 	// archive a few files
 	sn := SnapshotDir(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
-	beforeTrees, beforeData := countBlobs(t, server)
-	t.Logf("found %v trees, %v data blobs", beforeTrees, beforeData)
+	cnt.before.packs = server.Count(backend.Data)
+	cnt.before.dataBlobs = server.Index().Count(pack.Data)
+	cnt.before.treeBlobs = server.Index().Count(pack.Tree)
+	t.Logf("packs %v, data blobs %v, tree blobs %v",
+		cnt.before.packs, cnt.before.dataBlobs, cnt.before.treeBlobs)
 
 	// archive the same files again, without parent snapshot
 	sn2 := SnapshotDir(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
-	// get archive stats
-	afterTrees2, afterData2 := countBlobs(t, server)
-	t.Logf("found %v trees, %v data blobs", afterTrees2, afterData2)
+	// get archive stats again
+	cnt.after.packs = server.Count(backend.Data)
+	cnt.after.dataBlobs = server.Index().Count(pack.Data)
+	cnt.after.treeBlobs = server.Index().Count(pack.Tree)
+	t.Logf("packs %v, data blobs %v, tree blobs %v",
+		cnt.after.packs, cnt.after.dataBlobs, cnt.after.treeBlobs)
 
-	// if there are more blobs, something is wrong
-	if afterData2 > beforeData {
-		t.Fatalf("TestArchiverPreload: too many data blobs in repository: before %d, after %d",
-			beforeData, afterData2)
+	// if there are more packs or blobs, something is wrong
+	if cnt.after.packs > cnt.before.packs {
+		t.Fatalf("TestArchiverDedup: too many packs in repository: before %d, after %d",
+			cnt.before.packs, cnt.after.packs)
+	}
+	if cnt.after.dataBlobs > cnt.before.dataBlobs {
+		t.Fatalf("TestArchiverDedup: too many data blobs in repository: before %d, after %d",
+			cnt.before.dataBlobs, cnt.after.dataBlobs)
+	}
+	if cnt.after.treeBlobs > cnt.before.treeBlobs {
+		t.Fatalf("TestArchiverDedup: too many tree blobs in repository: before %d, after %d",
+			cnt.before.treeBlobs, cnt.after.treeBlobs)
 	}
 
 	// archive the same files again, with a parent snapshot
 	sn3 := SnapshotDir(t, server, *benchArchiveDirectory, sn2.ID())
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
-	// get archive stats
-	afterTrees3, afterData3 := countBlobs(t, server)
-	t.Logf("found %v trees, %v data blobs", afterTrees3, afterData3)
+	// get archive stats again
+	cnt.after2.packs = server.Count(backend.Data)
+	cnt.after2.dataBlobs = server.Index().Count(pack.Data)
+	cnt.after2.treeBlobs = server.Index().Count(pack.Tree)
+	t.Logf("packs %v, data blobs %v, tree blobs %v",
+		cnt.after2.packs, cnt.after2.dataBlobs, cnt.after2.treeBlobs)
 
-	// if there are more blobs, something is wrong
-	if afterData3 > beforeData {
-		t.Fatalf("TestArchiverPreload: too many data blobs in repository: before %d, after %d",
-			beforeData, afterData3)
+	// if there are more packs or blobs, something is wrong
+	if cnt.after2.packs > cnt.before.packs {
+		t.Fatalf("TestArchiverDedup: too many packs in repository: before %d, after %d",
+			cnt.before.packs, cnt.after2.packs)
+	}
+	if cnt.after2.dataBlobs > cnt.before.dataBlobs {
+		t.Fatalf("TestArchiverDedup: too many data blobs in repository: before %d, after %d",
+			cnt.before.dataBlobs, cnt.after2.dataBlobs)
+	}
+	if cnt.after2.treeBlobs > cnt.before.treeBlobs {
+		t.Fatalf("TestArchiverDedup: too many tree blobs in repository: before %d, after %d",
+			cnt.before.treeBlobs, cnt.after2.treeBlobs)
 	}
 }
 
-func TestArchivePreload(t *testing.T) {
-	archiveWithPreload(t)
-}
-
-func BenchmarkPreload(t *testing.B) {
-	if *benchArchiveDirectory == "" {
-		t.Skip("benchdir not set, skipping TestArchiverPreload")
-	}
-
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
-
-	// archive a few files
-	arch, err := restic.NewArchiver(server)
-	OK(t, err)
-	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
-	OK(t, err)
-	t.Logf("archived snapshot %v", sn.ID())
-
-	// start benchmark
-	t.ResetTimer()
-
-	for i := 0; i < t.N; i++ {
-		// create new archiver and preload
-		arch2, err := restic.NewArchiver(server)
-		OK(t, err)
-		OK(t, arch2.Preload())
-	}
+func TestArchiveDedup(t *testing.T) {
+	archiveWithDedup(t)
 }
 
 func BenchmarkLoadTree(t *testing.B) {
 	if *benchArchiveDirectory == "" {
-		t.Skip("benchdir not set, skipping TestArchiverPreload")
+		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
 
 	s := SetupBackend(t)
@@ -254,7 +266,7 @@ func BenchmarkLoadTree(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		for _, id := range list {
-			_, err := restic.LoadTree(s, server.Blob{Storage: id})
+			_, err := restic.LoadTree(s, id)
 			OK(t, err)
 		}
 	}

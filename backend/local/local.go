@@ -302,6 +302,26 @@ func (b *Local) Get(t backend.Type, name string) (io.ReadCloser, error) {
 	return os.Open(filename(b.p, t, name))
 }
 
+// GetReader returns an io.ReadCloser for the Blob with the given name of
+// type t at offset and length. If length is 0, the reader reads until EOF.
+func (b *Local) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
+	f, err := os.Open(filename(b.p, t, name))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = f.Seek(int64(offset), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if length == 0 {
+		return f, nil
+	}
+
+	return backend.LimitReader(f, int64(length)), nil
+}
+
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(t backend.Type, name string) (bool, error) {
 	_, err := os.Stat(filename(b.p, t, name))

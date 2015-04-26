@@ -436,6 +436,26 @@ func (r *SFTP) Get(t backend.Type, name string) (io.ReadCloser, error) {
 	return file, nil
 }
 
+// GetReader returns an io.ReadCloser for the Blob with the given name of
+// type t at offset and length. If length is 0, the reader reads until EOF.
+func (r *SFTP) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
+	f, err := r.c.Open(r.filename(t, name))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = f.Seek(int64(offset), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if length == 0 {
+		return f, nil
+	}
+
+	return backend.LimitReader(f, int64(length)), nil
+}
+
 // Test returns true if a blob of the given type and name exists in the backend.
 func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
 	_, err := r.c.Lstat(r.filename(t, name))
