@@ -19,8 +19,7 @@ install:
 script:
   - go build -ldflags "-s" ./...
   - go build -ldflags "-s" -o restic ./cmd/restic
-  - sh -c "cd cmd/restic && gox -verbose -os 'linux darwin'"
-  - "stat --printf='binary size: %s' restic"
+  - sh -c "cd cmd/restic && gox -verbose -os 'linux darwin' && ls -al"
   - go test -v ./...
   - ./testsuite.sh
   - sh -c "cd backend && go test -v -test.sftppath /usr/lib/openssh/sftp-server ./..."
