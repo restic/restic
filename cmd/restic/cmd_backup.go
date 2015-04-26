@@ -139,12 +139,13 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 			percent = 100
 		}
 
-		status1 := fmt.Sprintf("[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  ",
+		status1 := fmt.Sprintf("[%s] %3.2f%%  %s/s  %s / %s  %d / %d items  %d errors  ",
 			formatDuration(d),
 			percent,
 			formatBytes(bps),
 			formatBytes(s.Bytes), formatBytes(todo.Bytes),
-			itemsDone, itemsTodo)
+			itemsDone, itemsTodo,
+			s.Errors)
 		status2 := fmt.Sprintf("ETA %s ", formatSeconds(eta))
 
 		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
