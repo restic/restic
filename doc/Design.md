@@ -53,7 +53,7 @@ complete filename.
 
 Apart from the files `version`, `id` and the files stored below the `keys`
 directory, all files are encrypted with AES-256 in counter mode (CTR). The
-integrity of the encrypted data is secured by an Poly1305-AES signature.
+integrity of the encrypted data is secured by a Poly1305-AES signature.
 
 In the first 16 bytes of each encrypted file the initialisation vector (IV) is
 stored. It is followed by the encrypted data and completed by the 16 byte MAC
@@ -342,7 +342,7 @@ been returned.
 Backups and Deduplication
 =========================
 
-For creating a backup, restic scans the target directory for all files,
+For creating a backup, restic scans the source directory for all files,
 sub-directories and other entries. The data from each file is split into
 variable length Blobs cut at offsets defined by a sliding window of 64 byte.
 The implementation uses Rabin Fingerprints for implementing this Content
