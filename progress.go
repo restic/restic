@@ -24,11 +24,12 @@ type Progress struct {
 }
 
 type Stat struct {
-	Files uint64
-	Dirs  uint64
-	Bytes uint64
-	Trees uint64
-	Blobs uint64
+	Files  uint64
+	Dirs   uint64
+	Bytes  uint64
+	Trees  uint64
+	Blobs  uint64
+	Errors uint64
 }
 
 type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
@@ -154,6 +155,7 @@ func (s *Stat) Add(other Stat) {
 	s.Files += other.Files
 	s.Trees += other.Trees
 	s.Blobs += other.Blobs
+	s.Errors += other.Errors
 }
 
 func (s Stat) String() string {
@@ -173,6 +175,6 @@ func (s Stat) String() string {
 		str = fmt.Sprintf("%dB", s.Bytes)
 	}
 
-	return fmt.Sprintf("Stat(%d files, %d dirs, %v trees, %v blobs, %v)",
-		s.Files, s.Dirs, s.Trees, s.Blobs, str)
+	return fmt.Sprintf("Stat(%d files, %d dirs, %v trees, %v blobs, %d errors, %v)",
+		s.Files, s.Dirs, s.Trees, s.Blobs, s.Errors, str)
 }

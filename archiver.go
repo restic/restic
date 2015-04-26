@@ -403,7 +403,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 				fmt.Fprintf(os.Stderr, "error for %v: %v\n", e.Path(), e.Error())
 				// ignore this file
 				e.Result() <- nil
-				p.Report(Stat{Files: 1})
+				p.Report(Stat{Errors: 1})
 				continue
 			}
 
@@ -412,7 +412,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 				// TODO: integrate error reporting
 				debug.Log("Archiver.fileWorker", "NodeFromFileInfo returned error for %v: %v", node.path, err)
 				e.Result() <- nil
-				p.Report(Stat{Files: 1})
+				p.Report(Stat{Errors: 1})
 				continue
 			}
 
@@ -449,7 +449,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 					fmt.Fprintf(os.Stderr, "error for %v: %v\n", node.path, err)
 					// ignore this file
 					e.Result() <- nil
-					p.Report(Stat{Files: 1})
+					p.Report(Stat{Errors: 1})
 					continue
 				}
 			} else {
