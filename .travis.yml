@@ -12,11 +12,14 @@ notifications:
   irc: "chat.freenode.net#restic"
 
 install:
+  - go get github.com/mitchellh/gox
+  - gox -build-toolchain -os "linux darwin"
   - go get -v -t ./...
 
 script:
   - go build -ldflags "-s" ./...
   - go build -ldflags "-s" -o restic ./cmd/restic
+  - sh -c "cd cmd/restic && gox -verbose -os 'linux darwin'"
   - "stat --printf='binary size: %s' restic"
   - go test -v ./...
   - ./testsuite.sh
