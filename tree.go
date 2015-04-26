@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/server"
 )
 
 type Tree struct {
@@ -30,7 +31,7 @@ func (t Tree) String() string {
 	return fmt.Sprintf("Tree<%d nodes, %d blobs>", len(t.Nodes), len(t.Map.list))
 }
 
-func LoadTree(s Server, blob Blob) (*Tree, error) {
+func LoadTree(s *server.Server, blob server.Blob) (*Tree, error) {
 	tree := &Tree{}
 	err := s.LoadJSON(backend.Tree, blob, tree)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/server"
 )
 
 type CmdCat struct{}
@@ -112,7 +113,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		dec := json.NewDecoder(rd)
 
-		var key restic.Key
+		var key server.Key
 		err = dec.Decode(&key)
 		if err != nil {
 			return err

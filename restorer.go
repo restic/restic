@@ -9,10 +9,11 @@ import (
 
 	"github.com/juju/arrar"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/server"
 )
 
 type Restorer struct {
-	s  Server
+	s  *server.Server
 	sn *Snapshot
 
 	Error  func(dir string, node *Node, err error) error
@@ -20,7 +21,7 @@ type Restorer struct {
 }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot snid.
-func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
+func NewRestorer(s *server.Server, snid backend.ID) (*Restorer, error) {
 	r := &Restorer{s: s}
 
 	var err error
@@ -36,7 +37,7 @@ func NewRestorer(s Server, snid backend.ID) (*Restorer, error) {
 	return r, nil
 }
 
-func (res *Restorer) to(dst string, dir string, treeBlob Blob) error {
+func (res *Restorer) to(dst string, dir string, treeBlob server.Blob) error {
 	tree, err := LoadTree(res.s, treeBlob)
 	if err != nil {
 		return res.Error(dir, nil, arrar.Annotate(err, "LoadTree"))

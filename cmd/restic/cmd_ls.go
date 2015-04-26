@@ -7,6 +7,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/server"
 )
 
 type CmdLs struct{}
@@ -37,7 +38,7 @@ func printNode(prefix string, n *restic.Node) string {
 	}
 }
 
-func printTree(prefix string, s restic.Server, blob restic.Blob) error {
+func printTree(prefix string, s *server.Server, blob server.Blob) error {
 	tree, err := restic.LoadTree(s, blob)
 	if err != nil {
 		return err

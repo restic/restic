@@ -8,6 +8,7 @@ import (
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/server"
 )
 
 type CmdFsck struct {
@@ -31,7 +32,7 @@ func init() {
 	}
 }
 
-func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (uint64, error) {
+func fsckFile(opts CmdFsck, s *server.Server, m *restic.Map, IDs []backend.ID) (uint64, error) {
 	debug.Log("restic.fsckFile", "checking file %v", IDs)
 	var bytes uint64
 
@@ -74,7 +75,7 @@ func fsckFile(opts CmdFsck, s restic.Server, m *restic.Map, IDs []backend.ID) (u
 	return bytes, nil
 }
 
-func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
+func fsckTree(opts CmdFsck, s *server.Server, blob server.Blob) error {
 	debug.Log("restic.fsckTree", "checking tree %v", blob)
 
 	tree, err := restic.LoadTree(s, blob)
@@ -161,7 +162,7 @@ func fsckTree(opts CmdFsck, s restic.Server, blob restic.Blob) error {
 	return firstErr
 }
 
-func fsckSnapshot(opts CmdFsck, s restic.Server, id backend.ID) error {
+func fsckSnapshot(opts CmdFsck, s *server.Server, id backend.ID) error {
 	debug.Log("restic.fsck", "checking snapshot %v\n", id)
 
 	sn, err := restic.LoadSnapshot(s, id)

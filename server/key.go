@@ -1,4 +1,4 @@
-package restic
+package server
 
 import (
 	"crypto/rand"
@@ -52,12 +52,12 @@ type Key struct {
 
 // CreateKey initializes a master key in the given backend and encrypts it with
 // the password.
-func CreateKey(s Server, password string) (*Key, error) {
+func CreateKey(s *Server, password string) (*Key, error) {
 	return AddKey(s, password, nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
-func OpenKey(s Server, name string, password string) (*Key, error) {
+func OpenKey(s *Server, name string, password string) (*Key, error) {
 	k, err := LoadKey(s, name)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func OpenKey(s Server, name string, password string) (*Key, error) {
 
 // SearchKey tries to decrypt all keys in the backend with the given password.
 // If none could be found, ErrNoKeyFound is returned.
-func SearchKey(s Server, password string) (*Key, error) {
+func SearchKey(s *Server, password string) (*Key, error) {
 	// try all keys in repo
 	done := make(chan struct{})
 	defer close(done)
@@ -121,7 +121,7 @@ func SearchKey(s Server, password string) (*Key, error) {
 }
 
 // LoadKey loads a key from the backend.
-func LoadKey(s Server, name string) (*Key, error) {
+func LoadKey(s *Server, name string) (*Key, error) {
 	// extract data from repo
 	rd, err := s.be.Get(backend.Key, name)
 	if err != nil {
@@ -141,7 +141,7 @@ func LoadKey(s Server, name string) (*Key, error) {
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(s Server, password string, template *Key) (*Key, error) {
+func AddKey(s *Server, password string, template *Key) (*Key, error) {
 	// fill meta data about key
 	newkey := &Key{
 		Created: time.Now(),
@@ -196,7 +196,7 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 		return nil, err
 	}
 
-	newkey.Data, err = crypto.Encrypt(newkey.user, GetChunkBuf("key"), buf)
+	newkey.Data, err = crypto.Encrypt(newkey.user, nil, buf)
 
 	// dump as json
 	buf, err = json.Marshal(newkey)
@@ -225,8 +225,6 @@ func AddKey(s Server, password string, template *Key) (*Key, error) {
 	}
 
 	newkey.name = name
-
-	FreeChunkBuf("key", newkey.Data)
 
 	return newkey, nil
 }

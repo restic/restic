@@ -16,9 +16,9 @@ func TestWalkTree(t *testing.T) {
 	dirs, err := filepath.Glob(*testWalkDirectory)
 	OK(t, err)
 
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	// archive a few files

@@ -12,6 +12,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/server"
 	. "github.com/restic/restic/test"
 )
 
@@ -26,8 +27,8 @@ func randomID() []byte {
 	return buf
 }
 
-func newBlob() restic.Blob {
-	return restic.Blob{
+func newBlob() server.Blob {
+	return server.Blob{
 		ID:          randomID(),
 		Size:        uint64(mrand.Uint32()),
 		Storage:     randomID(),
@@ -46,7 +47,7 @@ func TestMap(t *testing.T) {
 		bl.Insert(newBlob())
 	}
 
-	b2, err := bl.Find(restic.Blob{ID: b.ID, Size: b.Size})
+	b2, err := bl.Find(server.Blob{ID: b.ID, Size: b.Size})
 	OK(t, err)
 	Assert(t, b2.Compare(b) == 0, "items are not equal: want %v, got %v", b, b2)
 
@@ -78,7 +79,7 @@ func TestMap(t *testing.T) {
 // Test JSON encode/decode
 func TestMapJSON(t *testing.T) {
 	bl := restic.NewMap()
-	b := restic.Blob{ID: randomID()}
+	b := server.Blob{ID: randomID()}
 	bl.Insert(b)
 
 	b2, err := bl.Find(b)

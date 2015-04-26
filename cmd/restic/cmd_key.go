@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/server"
 )
 
 type CmdKey struct{}
@@ -21,7 +21,7 @@ func init() {
 	}
 }
 
-func listKeys(s restic.Server) error {
+func listKeys(s *server.Server) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
@@ -35,7 +35,7 @@ func listKeys(s restic.Server) error {
 	defer close(done)
 
 	for name := range s.List(backend.Key, done) {
-		k, err := restic.LoadKey(s, name)
+		k, err := server.LoadKey(s, name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "LoadKey() failed: %v\n", err)
 			continue
@@ -56,7 +56,7 @@ func listKeys(s restic.Server) error {
 	return nil
 }
 
-func addKey(s restic.Server) error {
+func addKey(s *server.Server) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -64,7 +64,7 @@ func addKey(s restic.Server) error {
 		return errors.New("passwords do not match")
 	}
 
-	id, err := restic.AddKey(s, pw, s.Key())
+	id, err := server.AddKey(s, pw, s.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
@@ -74,7 +74,7 @@ func addKey(s restic.Server) error {
 	return nil
 }
 
-func deleteKey(s restic.Server, name string) error {
+func deleteKey(s *server.Server, name string) error {
 	if name == s.Key().Name() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
@@ -88,7 +88,7 @@ func deleteKey(s restic.Server, name string) error {
 	return nil
 }
 
-func changePassword(s restic.Server) error {
+func changePassword(s *server.Server) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -97,7 +97,7 @@ func changePassword(s restic.Server) error {
 	}
 
 	// add new key
-	id, err := restic.AddKey(s, pw, s.Key())
+	id, err := server.AddKey(s, pw, s.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}

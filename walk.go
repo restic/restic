@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/server"
 )
 
 type WalkTreeJob struct {
@@ -14,7 +15,7 @@ type WalkTreeJob struct {
 	Tree *Tree
 }
 
-func walkTree(s Server, path string, treeBlob Blob, done chan struct{}, jobCh chan<- WalkTreeJob) {
+func walkTree(s *server.Server, path string, treeBlob server.Blob, done chan struct{}, jobCh chan<- WalkTreeJob) {
 	debug.Log("walkTree", "start on %q (%v)", path, treeBlob)
 	// load tree
 	t, err := LoadTree(s, treeBlob)
@@ -49,7 +50,7 @@ func walkTree(s Server, path string, treeBlob Blob, done chan struct{}, jobCh ch
 // WalkTree walks the tree specified by ID recursively and sends a job for each
 // file and directory it finds. When the channel done is closed, processing
 // stops.
-func WalkTree(server Server, blob Blob, done chan struct{}, jobCh chan<- WalkTreeJob) {
+func WalkTree(server *server.Server, blob server.Blob, done chan struct{}, jobCh chan<- WalkTreeJob) {
 	debug.Log("WalkTree", "start on %v", blob)
 	walkTree(server, "", blob, done, jobCh)
 	close(jobCh)

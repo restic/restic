@@ -5,10 +5,11 @@ import (
 	"time"
 
 	"github.com/restic/restic"
+	"github.com/restic/restic/server"
 	. "github.com/restic/restic/test"
 )
 
-func testSnapshot(t *testing.T, s restic.Server) {
+func testSnapshot(t *testing.T, s *server.Server) {
 	var err error
 	sn, err := restic.NewSnapshot([]string{"/home/foobar"})
 	OK(t, err)
@@ -22,8 +23,8 @@ func testSnapshot(t *testing.T, s restic.Server) {
 }
 
 func TestSnapshot(t *testing.T) {
-	repo := setupBackend(t)
-	defer teardownBackend(t, repo)
+	s := SetupBackend(t)
+	defer TeardownBackend(t, s)
 
-	testSnapshot(t, repo)
+	testSnapshot(t, s)
 }

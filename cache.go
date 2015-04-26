@@ -11,6 +11,7 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/server"
 )
 
 type Cache struct {
@@ -106,7 +107,7 @@ func (c *Cache) Purge(t backend.Type, subtype string, id backend.ID) error {
 	return err
 }
 
-func (c *Cache) Clear(s Server) error {
+func (c *Cache) Clear(s *server.Server) error {
 	list, err := c.List(backend.Snapshot)
 	if err != nil {
 		return err
@@ -211,7 +212,7 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 
 // RefreshSnapshots loads the maps for all snapshots and saves them to the
 // local cache. Old cache entries are purged.
-func (c *Cache) RefreshSnapshots(s Server, p *Progress) error {
+func (c *Cache) RefreshSnapshots(s *server.Server, p *Progress) error {
 	defer p.Done()
 
 	// list cache entries
@@ -274,7 +275,7 @@ func (c *Cache) RefreshSnapshots(s Server, p *Progress) error {
 // cacheSnapshotBlobs creates a cache of all the blobs used within the
 // snapshot. It collects all blobs from all trees and saves the resulting map
 // to the cache and returns the map.
-func cacheSnapshotBlobs(p *Progress, s Server, c *Cache, id backend.ID) (*Map, error) {
+func cacheSnapshotBlobs(p *Progress, s *server.Server, c *Cache, id backend.ID) (*Map, error) {
 	debug.Log("CacheSnapshotBlobs", "create cache for snapshot %v", id.Str())
 
 	sn, err := LoadSnapshot(s, id)
@@ -338,7 +339,7 @@ func (c *Cache) StoreMap(snid backend.ID, m *Map) error {
 	return nil
 }
 
-func (c *Cache) LoadMap(s Server, snid backend.ID) (*Map, error) {
+func (c *Cache) LoadMap(s *server.Server, snid backend.ID) (*Map, error) {
 	rd, err := c.Load(backend.Snapshot, "blobs", snid)
 	if err != nil {
 		return nil, err

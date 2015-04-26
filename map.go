@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"sort"
@@ -9,10 +8,11 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/server"
 )
 
 type Map struct {
-	list []Blob
+	list []server.Blob
 	m    sync.Mutex
 }
 
@@ -20,11 +20,11 @@ var ErrBlobNotFound = errors.New("Blob not found")
 
 func NewMap() *Map {
 	return &Map{
-		list: []Blob{},
+		list: []server.Blob{},
 	}
 }
 
-func (bl *Map) find(blob Blob, checkSize bool) (int, Blob, error) {
+func (bl *Map) find(blob server.Blob, checkSize bool) (int, server.Blob, error) {
 	pos := sort.Search(len(bl.list), func(i int) bool {
 		return blob.ID.Compare(bl.list[i].ID) >= 0
 	})
@@ -36,10 +36,10 @@ func (bl *Map) find(blob Blob, checkSize bool) (int, Blob, error) {
 		}
 	}
 
-	return pos, Blob{}, ErrBlobNotFound
+	return pos, server.Blob{}, ErrBlobNotFound
 }
 
-func (bl *Map) Find(blob Blob) (Blob, error) {
+func (bl *Map) Find(blob server.Blob) (server.Blob, error) {
 	bl.m.Lock()
 	defer bl.m.Unlock()
 
@@ -47,11 +47,11 @@ func (bl *Map) Find(blob Blob) (Blob, error) {
 	return blob, err
 }
 
-func (bl *Map) FindID(id backend.ID) (Blob, error) {
+func (bl *Map) FindID(id backend.ID) (server.Blob, error) {
 	bl.m.Lock()
 	defer bl.m.Unlock()
 
-	_, blob, err := bl.find(Blob{ID: id}, false)
+	_, blob, err := bl.find(server.Blob{ID: id}, false)
 	return blob, err
 }
 
@@ -66,7 +66,7 @@ func (bl *Map) Merge(other *Map) {
 	}
 }
 
-func (bl *Map) insert(blob Blob) Blob {
+func (bl *Map) insert(blob server.Blob) server.Blob {
 	pos, b, err := bl.find(blob, true)
 	if err == nil {
 		// already present
@@ -75,14 +75,14 @@ func (bl *Map) insert(blob Blob) Blob {
 
 	// insert blob
 	// https://code.google.com/p/go-wiki/wiki/SliceTricks
-	bl.list = append(bl.list, Blob{})
+	bl.list = append(bl.list, server.Blob{})
 	copy(bl.list[pos+1:], bl.list[pos:])
 	bl.list[pos] = blob
 
 	return blob
 }
 
-func (bl *Map) Insert(blob Blob) Blob {
+func (bl *Map) Insert(blob server.Blob) server.Blob {
 	bl.m.Lock()
 	defer bl.m.Unlock()
 
@@ -152,7 +152,7 @@ func (bl *Map) Equals(other *Map) bool {
 
 // Each calls f for each blob in the Map. While Each is running, no other
 // operation is possible, since a mutex is held for the whole time.
-func (bl *Map) Each(f func(blob Blob)) {
+func (bl *Map) Each(f func(blob server.Blob)) {
 	bl.m.Lock()
 	defer bl.m.Unlock()
 
@@ -162,13 +162,13 @@ func (bl *Map) Each(f func(blob Blob)) {
 }
 
 // Select returns a list of of blobs from the plaintext IDs given in list.
-func (bl *Map) Select(list backend.IDs) (Blobs, error) {
+func (bl *Map) Select(list backend.IDs) (server.Blobs, error) {
 	bl.m.Lock()
 	defer bl.m.Unlock()
 
-	blobs := make(Blobs, 0, len(list))
+	blobs := make(server.Blobs, 0, len(list))
 	for _, id := range list {
-		_, blob, err := bl.find(Blob{ID: id}, false)
+		_, blob, err := bl.find(server.Blob{ID: id}, false)
 		if err != nil {
 			return nil, err
 		}
@@ -210,27 +210,10 @@ func (m *Map) DeleteID(id backend.ID) {
 	m.m.Lock()
 	defer m.m.Unlock()
 
-	pos, _, err := m.find(Blob{ID: id}, false)
+	pos, _, err := m.find(server.Blob{ID: id}, false)
 	if err != nil {
 		return
 	}
 
 	m.list = append(m.list[:pos], m.list[pos+1:]...)
-}
-
-// Compare compares two blobs by comparing the ID and the size. It returns -1,
-// 0, or 1.
-func (blob Blob) Compare(other Blob) int {
-	if res := bytes.Compare(other.ID, blob.ID); res != 0 {
-		return res
-	}
-
-	if blob.Size < other.Size {
-		return -1
-	}
-	if blob.Size > other.Size {
-		return 1
-	}
-
-	return 0
 }

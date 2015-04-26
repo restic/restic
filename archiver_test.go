@@ -9,6 +9,7 @@ import (
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/server"
 	. "github.com/restic/restic/test"
 )
 
@@ -22,7 +23,7 @@ type Rdr interface {
 	io.ReaderAt
 }
 
-func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *restic.Key) {
+func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *server.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncrypt")
 	rd.Seek(0, 0)
 	ch.Reset(rd, testPol)
@@ -53,9 +54,9 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	data := Random(23, 10<<20) // 10MiB
 	rd := bytes.NewReader(data)
 
-	be := setupBackend(b)
-	defer teardownBackend(b, be)
-	key := setupKey(b, be, "geheim")
+	be := SetupBackend(b)
+	defer TeardownBackend(b, be)
+	key := SetupKey(b, be, "geheim")
 
 	buf := restic.GetChunkBuf("BenchmarkChunkEncrypt")
 	buf2 := restic.GetChunkBuf("BenchmarkChunkEncrypt")
@@ -71,7 +72,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf2)
 }
 
-func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *restic.Key) {
+func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *server.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncryptP")
 	rd.Seek(0, 0)
 	ch.Reset(rd, testPol)
@@ -92,9 +93,9 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *restic.Key) 
 }
 
 func BenchmarkChunkEncryptParallel(b *testing.B) {
-	be := setupBackend(b)
-	defer teardownBackend(b, be)
-	key := setupKey(b, be, "geheim")
+	be := SetupBackend(b)
+	defer TeardownBackend(b, be)
+	key := SetupKey(b, be, "geheim")
 
 	data := Random(23, 10<<20) // 10MiB
 
@@ -118,9 +119,9 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
 	}
 
-	server := setupBackend(b)
-	defer teardownBackend(b, server)
-	key := setupKey(b, server, "geheim")
+	server := SetupBackend(b)
+	defer TeardownBackend(b, server)
+	key := SetupKey(b, server, "geheim")
 	server.SetKey(key)
 
 	arch, err := restic.NewArchiver(server)
@@ -131,16 +132,7 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	b.Logf("snapshot archived as %v", id)
 }
 
-func snapshot(t testing.TB, server restic.Server, path string, parent backend.ID) *restic.Snapshot {
-	arch, err := restic.NewArchiver(server)
-	OK(t, err)
-	OK(t, arch.Preload())
-	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
-	OK(t, err)
-	return sn
-}
-
-func countBlobs(t testing.TB, server restic.Server) (trees int, data int) {
+func countBlobs(t testing.TB, server *server.Server) (trees int, data int) {
 	return server.Count(backend.Tree), server.Count(backend.Data)
 }
 
@@ -149,13 +141,13 @@ func archiveWithPreload(t testing.TB) {
 		t.Skip("benchdir not set, skipping TestArchiverPreload")
 	}
 
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	// archive a few files
-	sn := snapshot(t, server, *benchArchiveDirectory, nil)
+	sn := SnapshotDir(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
@@ -163,7 +155,7 @@ func archiveWithPreload(t testing.TB) {
 	t.Logf("found %v trees, %v data blobs", beforeTrees, beforeData)
 
 	// archive the same files again, without parent snapshot
-	sn2 := snapshot(t, server, *benchArchiveDirectory, nil)
+	sn2 := SnapshotDir(t, server, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats
@@ -177,7 +169,7 @@ func archiveWithPreload(t testing.TB) {
 	}
 
 	// archive the same files again, with a parent snapshot
-	sn3 := snapshot(t, server, *benchArchiveDirectory, sn2.ID())
+	sn3 := SnapshotDir(t, server, *benchArchiveDirectory, sn2.ID())
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats
@@ -200,9 +192,9 @@ func BenchmarkPreload(t *testing.B) {
 		t.Skip("benchdir not set, skipping TestArchiverPreload")
 	}
 
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	// archive a few files
@@ -228,13 +220,13 @@ func BenchmarkLoadTree(t *testing.B) {
 		t.Skip("benchdir not set, skipping TestArchiverPreload")
 	}
 
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
-	server.SetKey(key)
+	s := SetupBackend(t)
+	defer TeardownBackend(t, s)
+	key := SetupKey(t, s, "geheim")
+	s.SetKey(key)
 
 	// archive a few files
-	arch, err := restic.NewArchiver(server)
+	arch, err := restic.NewArchiver(s)
 	OK(t, err)
 	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
 	OK(t, err)
@@ -243,7 +235,7 @@ func BenchmarkLoadTree(t *testing.B) {
 	list := make([]backend.ID, 0, 10)
 	done := make(chan struct{})
 
-	for name := range server.List(backend.Tree, done) {
+	for name := range s.List(backend.Tree, done) {
 		id, err := backend.ParseID(name)
 		if err != nil {
 			t.Logf("invalid id for tree %v", name)
@@ -262,7 +254,7 @@ func BenchmarkLoadTree(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		for _, id := range list {
-			_, err := restic.LoadTree(server, restic.Blob{Storage: id})
+			_, err := restic.LoadTree(s, server.Blob{Storage: id})
 			OK(t, err)
 		}
 	}

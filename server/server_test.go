@@ -1,10 +1,11 @@
-package restic_test
+package server_test
 
 import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
+	"flag"
 	"io"
 	"testing"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/restic/restic/backend"
 	. "github.com/restic/restic/test"
 )
+
+var benchTestDir = flag.String("test.dir", ".", "dir used in benchmarks (default: .)")
 
 type testJSONStruct struct {
 	Foo uint32
@@ -24,9 +27,9 @@ var serverTests = []testJSONStruct{
 }
 
 func TestSaveJSON(t *testing.T) {
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	for _, obj := range serverTests {
@@ -45,9 +48,9 @@ func TestSaveJSON(t *testing.T) {
 }
 
 func BenchmarkSaveJSON(t *testing.B) {
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	obj := serverTests[0]
@@ -72,9 +75,9 @@ func BenchmarkSaveJSON(t *testing.B) {
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
 func TestSaveFrom(t *testing.T) {
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	for _, size := range testSizes {
@@ -102,9 +105,9 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveFrom(t *testing.B) {
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	size := 4 << 20 // 4MiB
@@ -125,37 +128,18 @@ func BenchmarkSaveFrom(t *testing.B) {
 	}
 }
 
-func TestServerStats(t *testing.T) {
-	if *benchArchiveDirectory == "" {
-		t.Skip("benchdir not set, skipping TestServerStats")
-	}
-
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
-	server.SetKey(key)
-
-	// archive a few files
-	sn := snapshot(t, server, *benchArchiveDirectory, nil)
-	t.Logf("archived snapshot %v", sn.ID())
-
-	stats, err := server.Stats()
-	OK(t, err)
-	t.Logf("stats: %v", stats)
-}
-
 func TestLoadJSONID(t *testing.T) {
-	if *benchArchiveDirectory == "" {
+	if *benchTestDir == "" {
 		t.Skip("benchdir not set, skipping TestServerStats")
 	}
 
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	// archive a few files
-	sn := snapshot(t, server, *benchArchiveDirectory, nil)
+	sn := SnapshotDir(t, server, *benchTestDir, nil)
 	t.Logf("archived snapshot %v", sn.ID())
 
 	// benchmark loading first tree
@@ -173,17 +157,17 @@ func TestLoadJSONID(t *testing.T) {
 }
 
 func BenchmarkLoadJSONID(t *testing.B) {
-	if *benchArchiveDirectory == "" {
+	if *benchTestDir == "" {
 		t.Skip("benchdir not set, skipping TestServerStats")
 	}
 
-	server := setupBackend(t)
-	defer teardownBackend(t, server)
-	key := setupKey(t, server, "geheim")
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
 	server.SetKey(key)
 
 	// archive a few files
-	sn := snapshot(t, server, *benchArchiveDirectory, nil)
+	sn := SnapshotDir(t, server, *benchTestDir, nil)
 	t.Logf("archived snapshot %v", sn.ID())
 
 	t.ResetTimer()

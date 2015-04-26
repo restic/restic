@@ -7,19 +7,20 @@ import (
 	"time"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/server"
 )
 
 type Snapshot struct {
-	Time     time.Time  `json:"time"`
-	Parent   backend.ID `json:"parent,omitempty"`
-	Tree     Blob       `json:"tree"`
-	Paths    []string   `json:"paths"`
-	Hostname string     `json:"hostname,omitempty"`
-	Username string     `json:"username,omitempty"`
-	UID      uint32     `json:"uid,omitempty"`
-	GID      uint32     `json:"gid,omitempty"`
-	UserID   string     `json:"userid,omitempty"`
-	GroupID  string     `json:"groupid,omitempty"`
+	Time     time.Time   `json:"time"`
+	Parent   backend.ID  `json:"parent,omitempty"`
+	Tree     server.Blob `json:"tree"`
+	Paths    []string    `json:"paths"`
+	Hostname string      `json:"hostname,omitempty"`
+	Username string      `json:"username,omitempty"`
+	UID      uint32      `json:"uid,omitempty"`
+	GID      uint32      `json:"gid,omitempty"`
+	UserID   string      `json:"userid,omitempty"`
+	GroupID  string      `json:"groupid,omitempty"`
 
 	id backend.ID // plaintext ID, used during restore
 }
@@ -49,7 +50,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 	return sn, nil
 }
 
-func LoadSnapshot(s Server, id backend.ID) (*Snapshot, error) {
+func LoadSnapshot(s *server.Server, id backend.ID) (*Snapshot, error) {
 	sn := &Snapshot{id: id}
 	err := s.LoadJSONID(backend.Snapshot, id, sn)
 	if err != nil {

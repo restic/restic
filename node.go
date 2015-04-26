@@ -10,6 +10,7 @@ import (
 
 	"github.com/juju/arrar"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/server"
 )
 
 type Node struct {
@@ -37,7 +38,7 @@ type Node struct {
 
 	path  string
 	err   error
-	blobs Blobs
+	blobs server.Blobs
 }
 
 func (n Node) String() string {
@@ -95,7 +96,7 @@ func nodeTypeFromFileInfo(path string, fi os.FileInfo) string {
 	return ""
 }
 
-func CreateNodeAt(node *Node, m *Map, s Server, path string) error {
+func CreateNodeAt(node *Node, m *Map, s *server.Server, path string) error {
 	switch node.Type {
 	case "dir":
 		err := os.Mkdir(path, node.Mode)
