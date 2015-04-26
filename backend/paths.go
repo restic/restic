@@ -7,6 +7,7 @@ var Paths = struct {
 	Data      string
 	Snapshots string
 	Trees     string
+	Index     string
 	Locks     string
 	Keys      string
 	Temp      string
@@ -16,6 +17,7 @@ var Paths = struct {
 	"data",
 	"snapshots",
 	"trees",
+	"index",
 	"locks",
 	"keys",
 	"tmp",

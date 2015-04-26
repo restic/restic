@@ -31,6 +31,7 @@ func Open(dir string) (*Local, error) {
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
 		filepath.Join(dir, backend.Paths.Trees),
+		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
 		filepath.Join(dir, backend.Paths.Temp),
@@ -103,6 +104,7 @@ func Create(dir string) (*Local, error) {
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
 		filepath.Join(dir, backend.Paths.Trees),
+		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
 		filepath.Join(dir, backend.Paths.Temp),
@@ -284,6 +286,8 @@ func dirname(base string, t backend.Type, name string) string {
 		if len(name) > 2 {
 			n = filepath.Join(n, name[:2])
 		}
+	case backend.Index:
+		n = backend.Paths.Index
 	case backend.Lock:
 		n = backend.Paths.Locks
 	case backend.Key:

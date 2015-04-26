@@ -11,6 +11,7 @@ const (
 	Lock          = "lock"
 	Snapshot      = "snapshot"
 	Tree          = "tree"
+	Index         = "index"
 )
 
 const (
