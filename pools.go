@@ -27,7 +27,7 @@ func (s *poolStats) Get(k string) {
 	s.m.Lock()
 	defer s.m.Unlock()
 
-	s.get += 1
+	s.get++
 	cur := s.get - s.put
 	if cur > s.max {
 		s.max = cur
@@ -53,7 +53,7 @@ func (s *poolStats) Put(k string) {
 	s.m.Lock()
 	defer s.m.Unlock()
 
-	s.put += 1
+	s.put++
 
 	if k != "" {
 		s.mput[k]++
