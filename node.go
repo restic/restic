@@ -41,17 +41,17 @@ type Node struct {
 	blobs server.Blobs
 }
 
-func (n Node) String() string {
-	switch n.Type {
+func (node Node) String() string {
+	switch node.Type {
 	case "file":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			n.Mode, n.UID, n.GID, n.Size, n.ModTime, n.Name)
+			node.Mode, node.UID, node.GID, node.Size, node.ModTime, node.Name)
 	case "dir":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			n.Mode|os.ModeDir, n.UID, n.GID, n.Size, n.ModTime, n.Name)
+			node.Mode|os.ModeDir, node.UID, node.GID, node.Size, node.ModTime, node.Name)
 	}
 
-	return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
+	return fmt.Sprintf("<Node(%s) %s>", node.Type, node.Name)
 }
 
 func (node Node) Tree() *Tree {
@@ -258,7 +258,7 @@ func (node Node) MarshalJSON() ([]byte, error) {
 
 func (node *Node) UnmarshalJSON(data []byte) error {
 	type nodeJSON Node
-	var nj *nodeJSON = (*nodeJSON)(node)
+	nj := (*nodeJSON)(node)
 
 	err := json.Unmarshal(data, nj)
 	if err != nil {

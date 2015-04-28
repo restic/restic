@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,7 +74,7 @@ func (res *Restorer) to(dst string, dir string, treeBlob server.Blob) error {
 
 		if node.Type == "dir" {
 			if node.Subtree == nil {
-				return errors.New(fmt.Sprintf("Dir without subtree in tree %s", treeBlob))
+				return fmt.Errorf("Dir without subtree in tree %s", treeBlob)
 			}
 
 			subp := filepath.Join(dir, node.Name)

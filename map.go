@@ -188,16 +188,16 @@ func (bl *Map) Len() int {
 }
 
 // Prune deletes all IDs from the map except the ones listed in ids.
-func (m *Map) Prune(ids *backend.IDSet) {
-	m.m.Lock()
-	defer m.m.Unlock()
+func (bl *Map) Prune(ids *backend.IDSet) {
+	bl.m.Lock()
+	defer bl.m.Unlock()
 
 	pos := 0
-	for pos < len(m.list) {
-		blob := m.list[pos]
+	for pos < len(bl.list) {
+		blob := bl.list[pos]
 		if ids.Find(blob.ID) != nil {
 			// remove element
-			m.list = append(m.list[:pos], m.list[pos+1:]...)
+			bl.list = append(bl.list[:pos], bl.list[pos+1:]...)
 			continue
 		}
 
@@ -206,14 +206,14 @@ func (m *Map) Prune(ids *backend.IDSet) {
 }
 
 // DeleteID removes the plaintext ID id from the map.
-func (m *Map) DeleteID(id backend.ID) {
-	m.m.Lock()
-	defer m.m.Unlock()
+func (bl *Map) DeleteID(id backend.ID) {
+	bl.m.Lock()
+	defer bl.m.Unlock()
 
-	pos, _, err := m.find(server.Blob{ID: id}, false)
+	pos, _, err := bl.find(server.Blob{ID: id}, false)
 	if err != nil {
 		return
 	}
 
-	m.list = append(m.list[:pos], m.list[pos+1:]...)
+	bl.list = append(bl.list[:pos], bl.list[pos+1:]...)
 }
