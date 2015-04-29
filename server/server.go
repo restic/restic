@@ -99,25 +99,25 @@ func (s *Server) Load(t backend.Type, id backend.ID) ([]byte, error) {
 // LoadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend.
 func (s *Server) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
-	debug.Log("Server.LoadPack", "load %v with id %v", t, id.Str())
+	debug.Log("Server.LoadBlob", "load %v with id %v", t, id.Str())
 	// lookup pack
 	packID, tpe, offset, length, err := s.idx.Lookup(id)
 	if err != nil {
-		debug.Log("Server.LoadPack", "id %v not found in index: %v", id.Str(), err)
+		debug.Log("Server.LoadBlob", "id %v not found in index: %v", id.Str(), err)
 		return nil, err
 	}
 
 	if tpe != t {
-		debug.Log("Server.LoadPack", "wrong type returned for %v: wanted %v, got %v", id.Str(), t, tpe)
+		debug.Log("Server.LoadBlob", "wrong type returned for %v: wanted %v, got %v", id.Str(), t, tpe)
 		return nil, fmt.Errorf("blob has wrong type %v (wanted: %v)", tpe, t)
 	}
 
-	debug.Log("Server.LoadPack", "id %v found in pack %v at offset %v (length %d)", id.Str(), packID.Str(), offset, length)
+	debug.Log("Server.LoadBlob", "id %v found in pack %v at offset %v (length %d)", id.Str(), packID.Str(), offset, length)
 
 	// load blob from pack
 	rd, err := s.be.GetReader(backend.Data, packID.String(), offset, length)
 	if err != nil {
-		debug.Log("Server.LoadPack", "error loading pack %v for %v: %v", packID.Str(), id.Str(), err)
+		debug.Log("Server.LoadBlob", "error loading pack %v for %v: %v", packID.Str(), id.Str(), err)
 		return nil, err
 	}
 
