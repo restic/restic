@@ -121,12 +121,11 @@ type headerEntry struct {
 // Returned are the complete number of bytes written, including the header.
 // After Finalize() has finished, the ID of this pack can be obtained by
 // calling ID().
-func (p *Packer) Finalize() (int64, error) {
+func (p *Packer) Finalize() (bytesWritten int64, err error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	// n tracks the number of bytes written for the header
-	var n int64 = int64(p.bytes)
+	bytesWritten = int64(p.bytes)
 
 	// create writer to encrypt header
 	wr := crypto.EncryptTo(p.k, p.hw)
@@ -142,31 +141,31 @@ func (p *Packer) Finalize() (int64, error) {
 		err := binary.Write(wr, binary.LittleEndian, entry)
 		if err != nil {
 			wr.Close()
-			return int64(n), err
+			return int64(bytesWritten), err
 		}
 
-		n += int64(entrySize)
+		bytesWritten += int64(entrySize)
 	}
 
 	// finalize encrypted header
-	err := wr.Close()
+	err = wr.Close()
 	if err != nil {
-		return int64(n), err
+		return int64(bytesWritten), err
 	}
 
 	// account for crypto overhead
-	n += crypto.Extension
+	bytesWritten += crypto.Extension
 
 	// write length
 	err = binary.Write(p.hw, binary.LittleEndian, uint32(len(p.blobs)*entrySize+crypto.Extension))
 	if err != nil {
-		return int64(n), err
+		return bytesWritten, err
 	}
-	n += int64(binary.Size(uint32(0)))
+	bytesWritten += int64(binary.Size(uint32(0)))
 
-	p.bytes = uint(n)
+	p.bytes = uint(bytesWritten)
 
-	return n, nil
+	return bytesWritten, nil
 }
 
 // ID returns the ID of all data written so far.
@@ -229,21 +228,20 @@ func NewUnpacker(k *crypto.Key, entries []Blob, rd io.ReadSeeker) (*Unpacker, er
 		return nil, fmt.Errorf("seeking to read header length failed: %v", err)
 	}
 
-	// read length
-	var l uint32
-	err = binary.Read(rd, binary.LittleEndian, &l)
+	var length uint32
+	err = binary.Read(rd, binary.LittleEndian, &length)
 	if err != nil {
 		return nil, fmt.Errorf("reading header length failed: %v", err)
 	}
 
 	// reset to the beginning of the header
-	_, err = rd.Seek(-int64(ls)-int64(l), 2)
+	_, err = rd.Seek(-int64(ls)-int64(length), 2)
 	if err != nil {
 		return nil, fmt.Errorf("seeking to read header length failed: %v", err)
 	}
 
 	// read header
-	hrd, err := crypto.DecryptFrom(k, io.LimitReader(rd, int64(l)))
+	hrd, err := crypto.DecryptFrom(k, io.LimitReader(rd, int64(length)))
 	if err != nil {
 		return nil, err
 	}
