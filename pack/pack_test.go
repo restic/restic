@@ -64,7 +64,7 @@ func TestCreatePack(t *testing.T) {
 	written += crypto.Extension
 
 	// check length
-	Equals(t, int64(written), n)
+	Equals(t, uint(written), n)
 	Equals(t, uint(written), p.Size())
 
 	// read and parse it again

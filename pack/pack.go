@@ -108,7 +108,7 @@ func (p *Packer) Add(t BlobType, id backend.ID, rd io.Reader) (int64, error) {
 	return n, err
 }
 
-var entrySize = binary.Size(BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize
+var entrySize = uint(binary.Size(BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize)
 
 // headerEntry is used with encoding/binary to read and write header entries
 type headerEntry struct {
@@ -121,11 +121,11 @@ type headerEntry struct {
 // Returned are the complete number of bytes written, including the header.
 // After Finalize() has finished, the ID of this pack can be obtained by
 // calling ID().
-func (p *Packer) Finalize() (bytesWritten int64, err error) {
+func (p *Packer) Finalize() (bytesWritten uint, err error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	bytesWritten = int64(p.bytes)
+	bytesWritten = p.bytes
 
 	// create writer to encrypt header
 	wr := crypto.EncryptTo(p.k, p.hw)
@@ -141,27 +141,27 @@ func (p *Packer) Finalize() (bytesWritten int64, err error) {
 		err := binary.Write(wr, binary.LittleEndian, entry)
 		if err != nil {
 			wr.Close()
-			return int64(bytesWritten), err
+			return bytesWritten, err
 		}
 
-		bytesWritten += int64(entrySize)
+		bytesWritten += entrySize
 	}
 
 	// finalize encrypted header
 	err = wr.Close()
 	if err != nil {
-		return int64(bytesWritten), err
+		return bytesWritten, err
 	}
 
 	// account for crypto overhead
 	bytesWritten += crypto.Extension
 
 	// write length
-	err = binary.Write(p.hw, binary.LittleEndian, uint32(len(p.blobs)*entrySize+crypto.Extension))
+	err = binary.Write(p.hw, binary.LittleEndian, uint32(uint(len(p.blobs))*entrySize+crypto.Extension))
 	if err != nil {
 		return bytesWritten, err
 	}
-	bytesWritten += int64(binary.Size(uint32(0)))
+	bytesWritten += uint(binary.Size(uint32(0)))
 
 	p.bytes = uint(bytesWritten)
 
