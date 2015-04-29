@@ -66,7 +66,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 		ModTime: fi.ModTime(),
 	}
 
-	node.Type = nodeTypeFromFileInfo(path, fi)
+	node.Type = nodeTypeFromFileInfo(fi)
 	if node.Type == "file" {
 		node.Size = uint64(fi.Size())
 	}
@@ -75,7 +75,7 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	return node, err
 }
 
-func nodeTypeFromFileInfo(path string, fi os.FileInfo) string {
+func nodeTypeFromFileInfo(fi os.FileInfo) string {
 	switch fi.Mode() & (os.ModeType | os.ModeCharDevice) {
 	case 0:
 		return "file"
@@ -96,155 +96,114 @@ func nodeTypeFromFileInfo(path string, fi os.FileInfo) string {
 	return ""
 }
 
-func CreateNodeAt(node *Node, m *Map, s *server.Server, path string) error {
+func (node *Node) CreateAt(path string, m *Map, s *server.Server) error {
 	switch node.Type {
 	case "dir":
-		err := os.Mkdir(path, node.Mode)
-		if err != nil {
-			return arrar.Annotate(err, "Mkdir")
-		}
-
-		err = os.Lchown(path, int(node.UID), int(node.GID))
-		if err != nil {
-			return arrar.Annotate(err, "Lchown")
-		}
-
-		var utimes = []syscall.Timespec{
-			syscall.NsecToTimespec(node.AccessTime.UnixNano()),
-			syscall.NsecToTimespec(node.ModTime.UnixNano()),
-		}
-		err = syscall.UtimesNano(path, utimes)
-		if err != nil {
-			return arrar.Annotate(err, "Utimesnano")
+		if err := node.createDirAt(path); err != nil {
+			return err
 		}
 	case "file":
-		// TODO: handle hard links
-		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
-		defer f.Close()
-		if err != nil {
-			return arrar.Annotate(err, "OpenFile")
-		}
-
-		for _, blobid := range node.Content {
-			blob, err := m.FindID(blobid)
-			if err != nil {
-				return arrar.Annotate(err, "Find Blob")
-			}
-
-			buf, err := s.Load(backend.Data, blob)
-			if err != nil {
-				return arrar.Annotate(err, "Load")
-			}
-
-			_, err = f.Write(buf)
-			if err != nil {
-				return arrar.Annotate(err, "Write")
-			}
-		}
-
-		f.Close()
-
-		err = os.Lchown(path, int(node.UID), int(node.GID))
-		if err != nil {
-			return arrar.Annotate(err, "Lchown")
-		}
-
-		var utimes = []syscall.Timespec{
-			syscall.NsecToTimespec(node.AccessTime.UnixNano()),
-			syscall.NsecToTimespec(node.ModTime.UnixNano()),
-		}
-		err = syscall.UtimesNano(path, utimes)
-		if err != nil {
-			return arrar.Annotate(err, "Utimesnano")
+		if err := node.createFileAt(path, m, s); err != nil {
+			return err
 		}
 	case "symlink":
-		err := os.Symlink(node.LinkTarget, path)
-		if err != nil {
-			return arrar.Annotate(err, "Symlink")
+		if err := node.createSymlinkAt(path); err != nil {
+			return err
 		}
-
-		err = os.Lchown(path, int(node.UID), int(node.GID))
-		if err != nil {
-			return arrar.Annotate(err, "Lchown")
-		}
-
-		// f, err := os.OpenFile(path, O_PATH|syscall.O_NOFOLLOW, 0600)
-		// defer f.Close()
-		// if err != nil {
-		// 	return arrar.Annotate(err, "OpenFile")
-		// }
-
-		// TODO: Get Futimes() working on older Linux kernels (fails with 3.2.0)
-		// var utimes = []syscall.Timeval{
-		// 	syscall.NsecToTimeval(node.AccessTime.UnixNano()),
-		// 	syscall.NsecToTimeval(node.ModTime.UnixNano()),
-		// }
-		// err = syscall.Futimes(int(f.Fd()), utimes)
-		// if err != nil {
-		// 	return arrar.Annotate(err, "Futimes")
-		// }
-
-		return nil
 	case "dev":
-		err := node.createDevAt(path)
-		if err != nil {
+		if err := node.createDevAt(path); err != nil {
 			return arrar.Annotate(err, "Mknod")
 		}
 	case "chardev":
-		err := node.createCharDevAt(path)
-		if err != nil {
+		if err := node.createCharDevAt(path); err != nil {
 			return arrar.Annotate(err, "Mknod")
 		}
 	case "fifo":
-		err := node.createFifoAt(path)
-		if err != nil {
+		if err := node.createFifoAt(path); err != nil {
 			return arrar.Annotate(err, "Mkfifo")
 		}
 	case "socket":
-		// nothing to do, we do not restore sockets
 		return nil
 	default:
 		return fmt.Errorf("filetype %q not implemented!\n", node.Type)
 	}
 
-	err := os.Chmod(path, node.Mode)
+	return node.restoreMetadata(path)
+}
+
+func (node Node) restoreMetadata(path string) error {
+	var err error
+
+	err = os.Lchown(path, int(node.UID), int(node.GID))
+	if err != nil {
+		return arrar.Annotate(err, "Lchown")
+	}
+
+	if node.Type == "symlink" {
+		return nil
+	}
+
+	err = os.Chmod(path, node.Mode)
 	if err != nil {
 		return arrar.Annotate(err, "Chmod")
 	}
 
-	err = os.Chown(path, int(node.UID), int(node.GID))
-	if err != nil {
-		return arrar.Annotate(err, "Chown")
+	var utimes = []syscall.Timespec{
+		syscall.NsecToTimespec(node.AccessTime.UnixNano()),
+		syscall.NsecToTimespec(node.ModTime.UnixNano()),
 	}
-
-	err = os.Chtimes(path, node.AccessTime, node.ModTime)
+	err = syscall.UtimesNano(path, utimes)
 	if err != nil {
-		return arrar.Annotate(err, "Chtimes")
+		return arrar.Annotate(err, "Utimesnano")
 	}
 
 	return nil
 }
 
-func (node Node) SameContent(olderNode *Node) bool {
-	// if this node has a type other than "file", treat as if content has changed
-	if node.Type != "file" {
-		return false
+func (node Node) createDirAt(path string) error {
+	err := os.Mkdir(path, node.Mode)
+	if err != nil {
+		return arrar.Annotate(err, "Mkdir")
 	}
 
-	// if the name or type has changed, this is surely something different
-	if node.Name != olderNode.Name || node.Type != olderNode.Type {
-		return false
+	return nil
+}
+
+func (node Node) createFileAt(path string, m *Map, s *server.Server) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
+	defer f.Close()
+
+	if err != nil {
+		return arrar.Annotate(err, "OpenFile")
 	}
 
-	// if timestamps or inodes differ, content has changed
-	if node.ModTime != olderNode.ModTime ||
-		node.ChangeTime != olderNode.ChangeTime ||
-		node.Inode != olderNode.Inode {
-		return false
+	for _, blobid := range node.Content {
+		blob, err := m.FindID(blobid)
+		if err != nil {
+			return arrar.Annotate(err, "Find Blob")
+		}
+
+		buf, err := s.Load(backend.Data, blob)
+		if err != nil {
+			return arrar.Annotate(err, "Load")
+		}
+
+		_, err = f.Write(buf)
+		if err != nil {
+			return arrar.Annotate(err, "Write")
+		}
 	}
 
-	// otherwise the node is assumed to have the same content
-	return true
+	return nil
+}
+
+func (node Node) createSymlinkAt(path string) error {
+	err := os.Symlink(node.LinkTarget, path)
+	if err != nil {
+		return arrar.Annotate(err, "Symlink")
+	}
+
+	return nil
 }
 
 func (node Node) MarshalJSON() ([]byte, error) {
@@ -270,7 +229,6 @@ func (node *Node) UnmarshalJSON(data []byte) error {
 }
 
 func (node Node) Equals(other Node) bool {
-	// TODO: add generatored code for this
 	if node.Name != other.Name {
 		return false
 	}
@@ -316,28 +274,36 @@ func (node Node) Equals(other Node) bool {
 	if node.Device != other.Device {
 		return false
 	}
-	if node.Content != nil && other.Content == nil {
+	if !node.sameContent(other) {
 		return false
-	} else if node.Content == nil && other.Content != nil {
-		return false
-	} else if node.Content != nil && other.Content != nil {
-		if len(node.Content) != len(other.Content) {
-			return false
-		}
-
-		for i := 0; i < len(node.Content); i++ {
-			if !node.Content[i].Equal(other.Content[i]) {
-				return false
-			}
-		}
 	}
-
 	if !node.Subtree.Equal(other.Subtree) {
 		return false
 	}
-
 	if node.Error != other.Error {
 		return false
+	}
+
+	return true
+}
+
+func (node Node) sameContent(other Node) bool {
+	if node.Content == nil {
+		return other.Content == nil
+	}
+
+	if other.Content == nil {
+		return false
+	}
+
+	if len(node.Content) != len(other.Content) {
+		return false
+	}
+
+	for i := 0; i < len(node.Content); i++ {
+		if !node.Content[i].Equal(other.Content[i]) {
+			return false
+		}
 	}
 
 	return true
