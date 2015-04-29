@@ -263,8 +263,6 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
-	// TODO: load index
-
 	_, id, err := arch.Snapshot(newArchiveProgress(stat), target, parentSnapshotID)
 	if err != nil {
 		return err
