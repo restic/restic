@@ -136,6 +136,8 @@ func (p *Packer) Finalize() (bytesWritten uint, err error) {
 		return bytesWritten + bytesHeader, err
 	}
 
+	bytesWritten += bytesHeader
+
 	// finalize encrypted header
 	err = wr.Close()
 	if err != nil {
