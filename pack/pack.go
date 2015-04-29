@@ -141,6 +141,7 @@ func (p *Packer) Finalize() (int64, error) {
 
 		err := binary.Write(wr, binary.LittleEndian, entry)
 		if err != nil {
+			wr.Close()
 			return int64(n), err
 		}
 
