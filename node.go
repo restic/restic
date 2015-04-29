@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/user"
 	"strconv"
 	"syscall"
 	"time"
@@ -336,4 +337,50 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 
 	debug.Log("node.isNewer", "node %v is not newer", path)
 	return false
+}
+
+func (node *Node) fillUser(stat *syscall.Stat_t) error {
+	node.UID = stat.Uid
+	node.GID = stat.Gid
+
+	u, err := user.LookupId(strconv.Itoa(int(stat.Uid)))
+	if err != nil {
+		return err
+	}
+
+	node.User = u.Username
+	return nil
+}
+
+func (node *Node) fillExtra(path string, fi os.FileInfo) error {
+	stat, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		return nil
+	}
+
+	node.Inode = stat.Ino
+
+	node.fillUser(stat)
+	node.fillTimes(stat)
+
+	var err error
+
+	switch node.Type {
+	case "file":
+		node.Size = uint64(stat.Size)
+		node.Links = uint64(stat.Nlink)
+	case "dir":
+	case "symlink":
+		node.LinkTarget, err = os.Readlink(path)
+	case "dev":
+		node.fillDevice(stat)
+	case "chardev":
+		node.fillDevice(stat)
+	case "fifo":
+	case "socket":
+	default:
+		err = fmt.Errorf("invalid node type %q", node.Type)
+	}
+
+	return err
 }
