@@ -30,7 +30,7 @@ func Open(dir string) (*Local, error) {
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Trees),
+		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
 		filepath.Join(dir, backend.Paths.Temp),
@@ -102,7 +102,7 @@ func Create(dir string) (*Local, error) {
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Trees),
+		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
 		filepath.Join(dir, backend.Paths.Temp),
@@ -222,7 +222,7 @@ func (lb *localBlob) Finalize(t backend.Type, name string) error {
 	f := filename(lb.basedir, t, name)
 
 	// create directories if necessary, ignore errors
-	if t == backend.Data || t == backend.Tree {
+	if t == backend.Data {
 		os.MkdirAll(filepath.Dir(f), backend.Modes.Dir)
 	}
 
@@ -279,11 +279,8 @@ func dirname(base string, t backend.Type, name string) string {
 		}
 	case backend.Snapshot:
 		n = backend.Paths.Snapshots
-	case backend.Tree:
-		n = backend.Paths.Trees
-		if len(name) > 2 {
-			n = filepath.Join(n, name[:2])
-		}
+	case backend.Index:
+		n = backend.Paths.Index
 	case backend.Lock:
 		n = backend.Paths.Locks
 	case backend.Key:
@@ -296,6 +293,26 @@ func dirname(base string, t backend.Type, name string) string {
 // name. The reader should be closed after draining it.
 func (b *Local) Get(t backend.Type, name string) (io.ReadCloser, error) {
 	return os.Open(filename(b.p, t, name))
+}
+
+// GetReader returns an io.ReadCloser for the Blob with the given name of
+// type t at offset and length. If length is 0, the reader reads until EOF.
+func (b *Local) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
+	f, err := os.Open(filename(b.p, t, name))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = f.Seek(int64(offset), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if length == 0 {
+		return f, nil
+	}
+
+	return backend.LimitReader(f, int64(length)), nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -322,7 +339,7 @@ func (b *Local) Remove(t backend.Type, name string) error {
 func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
 	var pattern string
-	if t == backend.Data || t == backend.Tree {
+	if t == backend.Data {
 		pattern = filepath.Join(dirname(b.p, t, ""), "*", "*")
 	} else {
 		pattern = filepath.Join(dirname(b.p, t, ""), "*")

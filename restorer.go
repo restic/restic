@@ -36,8 +36,8 @@ func NewRestorer(s *server.Server, snid backend.ID) (*Restorer, error) {
 	return r, nil
 }
 
-func (res *Restorer) to(dst string, dir string, treeBlob server.Blob) error {
-	tree, err := LoadTree(res.s, treeBlob)
+func (res *Restorer) to(dst string, dir string, treeID backend.ID) error {
+	tree, err := LoadTree(res.s, treeID)
 	if err != nil {
 		return res.Error(dir, nil, arrar.Annotate(err, "LoadTree"))
 	}
@@ -47,7 +47,7 @@ func (res *Restorer) to(dst string, dir string, treeBlob server.Blob) error {
 
 		if res.Filter == nil ||
 			res.Filter(filepath.Join(dir, node.Name), dstpath, node) {
-			err := node.CreateAt(dstpath, tree.Map, res.s)
+			err := node.CreateAt(dstpath, res.s)
 
 			// Did it fail because of ENOENT?
 			if arrar.Check(err, func(err error) bool {
@@ -60,7 +60,7 @@ func (res *Restorer) to(dst string, dir string, treeBlob server.Blob) error {
 				// Create parent directories and retry
 				err = os.MkdirAll(filepath.Dir(dstpath), 0700)
 				if err == nil || err == os.ErrExist {
-					err = node.CreateAt(dstpath, tree.Map, res.s)
+					err = node.CreateAt(dstpath, res.s)
 				}
 			}
 
@@ -74,20 +74,11 @@ func (res *Restorer) to(dst string, dir string, treeBlob server.Blob) error {
 
 		if node.Type == "dir" {
 			if node.Subtree == nil {
-				return fmt.Errorf("Dir without subtree in tree %s", treeBlob)
+				return fmt.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
 			subp := filepath.Join(dir, node.Name)
-
-			subtreeBlob, err := tree.Map.FindID(node.Subtree)
-			if err != nil {
-				err = res.Error(subp, node, arrar.Annotate(err, "lookup subtree"))
-				if err != nil {
-					return err
-				}
-			}
-
-			err = res.to(dst, subp, subtreeBlob)
+			err = res.to(dst, subp, node.Subtree)
 			if err != nil {
 				err = res.Error(subp, node, arrar.Annotate(err, "restore subtree"))
 				if err != nil {

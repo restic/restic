@@ -10,14 +10,14 @@ const (
 	Key           = "key"
 	Lock          = "lock"
 	Snapshot      = "snapshot"
-	Tree          = "tree"
+	Index         = "index"
 )
 
 const (
 	Version = 1
 )
 
-// A Backend manages blobs of data.
+// A Backend manages data stored somewhere.
 type Backend interface {
 	// Location returns a string that specifies the location of the repository,
 	// like a URL.
@@ -29,6 +29,10 @@ type Backend interface {
 
 	// Get returns an io.ReadCloser for the Blob with the given name of type t.
 	Get(t Type, name string) (io.ReadCloser, error)
+
+	// GetReader returns an io.ReadCloser for the Blob with the given name of
+	// type t at offset and length.
+	GetReader(t Type, name string, offset, length uint) (io.ReadCloser, error)
 
 	// Test a boolean value whether a Blob with the name and type exists.
 	Test(t Type, name string) (bool, error)

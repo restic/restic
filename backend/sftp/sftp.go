@@ -78,7 +78,7 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Trees),
+		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
 		filepath.Join(dir, backend.Paths.Version),
@@ -152,7 +152,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Trees),
+		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
 		filepath.Join(dir, backend.Paths.Temp),
@@ -303,7 +303,7 @@ func (r *SFTP) renameFile(oldname string, t backend.Type, name string) error {
 	filename := r.filename(t, name)
 
 	// create directories if necessary
-	if t == backend.Data || t == backend.Tree {
+	if t == backend.Data {
 		err := r.mkdirAll(filepath.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return err
@@ -403,11 +403,8 @@ func (r *SFTP) dirname(t backend.Type, name string) string {
 		}
 	case backend.Snapshot:
 		n = backend.Paths.Snapshots
-	case backend.Tree:
-		n = backend.Paths.Trees
-		if len(name) > 2 {
-			n = filepath.Join(n, name[:2])
-		}
+	case backend.Index:
+		n = backend.Paths.Index
 	case backend.Lock:
 		n = backend.Paths.Locks
 	case backend.Key:
@@ -430,6 +427,26 @@ func (r *SFTP) Get(t backend.Type, name string) (io.ReadCloser, error) {
 	}
 
 	return file, nil
+}
+
+// GetReader returns an io.ReadCloser for the Blob with the given name of
+// type t at offset and length. If length is 0, the reader reads until EOF.
+func (r *SFTP) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
+	f, err := r.c.Open(r.filename(t, name))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = f.Seek(int64(offset), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if length == 0 {
+		return f, nil
+	}
+
+	return backend.LimitReader(f, int64(length)), nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -460,7 +477,7 @@ func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
 	go func() {
 		defer close(ch)
 
-		if t == backend.Data || t == backend.Tree {
+		if t == backend.Data {
 			// read first level
 			basedir := r.dirname(t, "")
 

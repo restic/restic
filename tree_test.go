@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic"
+	"github.com/restic/restic/pack"
 	. "github.com/restic/restic/test"
 )
 
@@ -90,4 +91,27 @@ func TestNodeComparison(t *testing.T) {
 
 	n2.Size -= 1
 	Assert(t, !node.Equals(n2), "nodes are equal")
+}
+
+func TestLoadTree(t *testing.T) {
+	server := SetupBackend(t)
+	defer TeardownBackend(t, server)
+	key := SetupKey(t, server, "geheim")
+	server.SetKey(key)
+
+	// save tree
+	tree := restic.NewTree()
+	id, err := server.SaveJSON(pack.Tree, tree)
+	OK(t, err)
+
+	// save packs
+	OK(t, server.Flush())
+
+	// load tree again
+	tree2, err := restic.LoadTree(server, id)
+	OK(t, err)
+
+	Assert(t, tree.Equals(tree2),
+		"trees are not equal: want %v, got %v",
+		tree, tree2)
 }

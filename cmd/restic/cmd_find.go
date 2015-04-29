@@ -59,9 +59,9 @@ func parseTime(str string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("unable to parse time: %q", str)
 }
 
-func (c CmdFind) findInTree(s *server.Server, blob server.Blob, path string) ([]findResult, error) {
-	debug.Log("restic.find", "checking tree %v\n", blob)
-	tree, err := restic.LoadTree(s, blob)
+func (c CmdFind) findInTree(s *server.Server, id backend.ID, path string) ([]findResult, error) {
+	debug.Log("restic.find", "checking tree %v\n", id)
+	tree, err := restic.LoadTree(s, id)
 	if err != nil {
 		return nil, err
 	}
@@ -93,12 +93,7 @@ func (c CmdFind) findInTree(s *server.Server, blob server.Blob, path string) ([]
 		}
 
 		if node.Type == "dir" {
-			b, err := tree.Map.FindID(node.Subtree)
-			if err != nil {
-				return nil, err
-			}
-
-			subdirResults, err := c.findInTree(s, b, filepath.Join(path, node.Name))
+			subdirResults, err := c.findInTree(s, id, filepath.Join(path, node.Name))
 			if err != nil {
 				return nil, err
 			}

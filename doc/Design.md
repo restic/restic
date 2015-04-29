@@ -64,6 +64,10 @@ The basic layout of a sample restic repository is shown below:
 
     /tmp/restic-repo
     ├── data
+    │   ├── 21
+    │   │   └── 2159dd48f8a24f33c307b750592773f8b71ff8d11452132a7b2e2a6a01611be1
+    │   ├── 32
+    │   │   └── 32ea976bc30771cebad8285cd99120ac8786f9ffd42141d452458089985043a5
     │   ├── 59
     │   │   └── 59fe4bcde59bd6222eba87795e35a90d82cd2f138a27b6835032b7b58173a426
     │   ├── 73
@@ -71,25 +75,14 @@ The basic layout of a sample restic repository is shown below:
     │   [...]
     ├── id
     ├── index
-    │   └── c38f5fb68307c6a3e3aa945d556e325dc38f5fb68307c6a3e3aa945d556e325d
+    │   ├── c38f5fb68307c6a3e3aa945d556e325dc38f5fb68307c6a3e3aa945d556e325d
+    │   └── ca171b1b7394d90d330b265d90f506f9984043b342525f019788f97e745c71fd
     ├── keys
     │   └── b02de829beeb3c01a63e6b25cbd421a98fef144f03b9a02e46eff9e2ca3f0bd7
     ├── locks
     ├── snapshots
     │   └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
     ├── tmp
-    ├── trees
-    │   ├── 21
-    │   │   └── 2159dd48f8a24f33c307b750592773f8b71ff8d11452132a7b2e2a6a01611be1
-    │   ├── 32
-    │   │   └── 32ea976bc30771cebad8285cd99120ac8786f9ffd42141d452458089985043a5
-    │   ├── 95
-    │   │   └── 95f75feb05a7cc73e328b2efa668b1ea68f65fece55a93bc65aff6cd0bcfeefc
-    │   ├── b8
-    │   │   └── b8138ab08a4722596ac89c917827358da4672eac68e3c03a8115b88dbf4bfb59
-    │   ├── e0
-    │   │   └── e01150928f7ad24befd6ec15b087de1b9e0f92edabd8e5cabb3317f8b20ad044
-    │   [...]
     └── version
 
 A repository can be initialized with the `restic init` command, e.g.:
@@ -99,39 +92,51 @@ A repository can be initialized with the `restic init` command, e.g.:
 Pack Format
 -----------
 
-All files in the repository except Key, Tree and Data files just contain raw
-data, stored as `IV || Ciphertext || MAC`. Tree and Data files may contain
-several Blobs of data. The format is described in the following.
+All files in the repository except Key and Data files just contain raw data,
+stored as `IV || Ciphertext || MAC`. Data files may contain one or more Blobs
+of data. The format is described in the following.
 
-A Pack starts with a nonce and a header, the header describes the content and
-is encrypted and signed. The Pack's structure is as follows:
+The Pack's structure is as follows:
 
-    NONCE || Header_Length ||
-    IV_Header || Ciphertext_Header || MAC_Header  ||
-    IV_Blob_1 || Ciphertext_Blob_1 || MAC_Blob_1 ||
-    [...]
-    IV_Blob_n || Ciphertext_Blob_n || MAC_Blob_n ||
-    MAC
+    EncryptedBlob1 || ... || EncryptedBlobN || EncryptedHeader || Header_Length
 
-`NONCE` consists of 16 bytes and `Header_Length` is a four byte integer in
-little-endian encoding.
+At the end of the Pack is a header, which describes the content and is
+encrypted and signed. `Header_Length` is the length of the encrypted header
+encoded as a four byte integer in little-endian encoding. Placing the header at
+the end of a file allows writing the blobs in a continuous stream as soon as
+they are read during the backup phase. This reduces code complexity and avoids
+having to re-write a file once the pack is complete and the content and length
+of the header is known.
 
-All the parts (`Ciphertext_Header`, `Ciphertext_Blob1` etc.) are signed and
-encrypted independently. In addition, the complete pack is signed using
-`NONCE`. This enables repository reorganisation without having to touch the
-encrypted Blobs. In addition it also allows efficient indexing, for only the
-header needs to be read in order to find out which Blobs are contained in the
-Pack. Since the header is signed, authenticity of the header can be checked
-without having to read the complete Pack.
+All the blobs (`EncryptedBlob1`, `EncryptedBlobN` etc.) are signed and
+encrypted independently. This enables repository reorganisation without having
+to touch the encrypted Blobs. In addition it also allows efficient indexing,
+for only the header needs to be read in order to find out which Blobs are
+contained in the Pack. Since the header is signed, authenticity of the header
+can be checked without having to read the complete Pack.
 
 After decryption, a Pack's header consists of the following elements:
 
-    Length(IV_Blob_1+Ciphertext_Blob1+MAC_Blob_1)  || Hash(Plaintext_Blob_1) ||
+    Type_Blob1 || Length(EncryptedBlob1) || Hash(Plaintext_Blob1) ||
     [...]
-    Length(IV_Blob_n+Ciphertext_Blob_n+MAC_Blob_n) || Hash(Plaintext_Blob_n) ||
+    Type_BlobN || Length(EncryptedBlobN) || Hash(Plaintext_Blobn) ||
 
 This is enough to calculate the offsets for all the Blobs in the Pack. Length
-is the length of a Blob as a four byte integer in little-endian format.
+is the length of a Blob as a four byte integer in little-endian format. The
+type field is a one byte field and labels the content of a blob according to
+the following table:
+
+ Type | Meaning
+ -----|---------
+    0 | data
+    1 | tree
+
+All other types are invalid, more types may be added in the future.
+
+For reconstructing the index or parsing a pack without an index, first the last
+four bytes must be read in order to find the length of the header. Afterwards,
+the header can be read and parsed, which yields all plaintext hashes, types,
+offsets and lengths of all included blobs.
 
 Indexing
 --------
@@ -139,23 +144,40 @@ Indexing
 Index files contain information about Data and Tree Blobs and the Packs they
 are contained in and store this information in the repository. When the local
 cached index is not accessible any more, the index files can be downloaded and
-used to reconstruct the index. The index Blobs are encrypted and signed like
-Data and Tree Blobs, so the outer structure is `IV || Ciphertext || MAC` again.
-The plaintext consists of a JSON document like the following:
+used to reconstruct the index. The files are encrypted and signed like Data and
+Tree Blobs, so the outer structure is `IV || Ciphertext || MAC` again. The
+plaintext consists of a JSON document like the following:
 
-    [
-      {
-         "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
-         "blobs": [
-            "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
-            "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
-            "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"
-         ]
-      }
-    ]
+    [ {
+      "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
+      "blobs": [
+        {
+          "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+          "type": "data",
+          "offset": 0,
+          "length": 25
+        },{
+          "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+          "type": "tree",
+          "offset": 38,
+          "length": 100
+        },
+        {
+          "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
+          "type": "data",
+          "offset": 150,
+          "length": 123
+        }
+      ]
+    } ]
 
-This JSON document lists all the Blobs with contents. In this example, the Pack
-`73d04e61` contains three Blobs, the plaintext hashes are listed afterwards.
+This JSON document lists Blobs with contents. In this example, the Pack
+`73d04e61` contains two data Blobs and one Tree blob, the plaintext hashes are
+listed afterwards.
+
+There may be an arbitrary number of index files, containing information on
+non-disjoint sets of Packs. The number of packs described in a single file is
+chosen so that the file size is kep below 8 MiB.
 
 Keys, Encryption and MAC
 ------------------------

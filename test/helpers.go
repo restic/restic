@@ -39,7 +39,7 @@ func Equals(tb testing.TB, exp, act interface{}) {
 	}
 }
 
-func Str2ID(s string) backend.ID {
+func ParseID(s string) backend.ID {
 	id, err := backend.ParseID(s)
 	if err != nil {
 		panic(err)

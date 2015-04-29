@@ -38,8 +38,8 @@ func printNode(prefix string, n *restic.Node) string {
 	}
 }
 
-func printTree(prefix string, s *server.Server, blob server.Blob) error {
-	tree, err := restic.LoadTree(s, blob)
+func printTree(prefix string, s *server.Server, id backend.ID) error {
+	tree, err := restic.LoadTree(s, id)
 	if err != nil {
 		return err
 	}
@@ -48,12 +48,7 @@ func printTree(prefix string, s *server.Server, blob server.Blob) error {
 		fmt.Println(printNode(prefix, entry))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			b, err := tree.Map.FindID(entry.Subtree)
-			if err != nil {
-				return err
-			}
-
-			err = printTree(filepath.Join(prefix, entry.Name), s, b)
+			err = printTree(filepath.Join(prefix, entry.Name), s, id)
 			if err != nil {
 				return err
 			}

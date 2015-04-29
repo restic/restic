@@ -20,7 +20,7 @@ func init() {
 }
 
 func (cmd CmdList) Usage() string {
-	return "[data|trees|snapshots|keys|locks]"
+	return "[blobs|packs|index|snapshots|keys|locks]"
 }
 
 func (cmd CmdList) Execute(args []string) error {
@@ -35,10 +35,21 @@ func (cmd CmdList) Execute(args []string) error {
 
 	var t backend.Type
 	switch args[0] {
-	case "data":
+	case "blobs":
+		err = s.LoadIndex()
+		if err != nil {
+			return err
+		}
+
+		for blob := range s.Index().Each(nil) {
+			fmt.Println(blob.ID)
+		}
+
+		return nil
+	case "packs":
 		t = backend.Data
-	case "trees":
-		t = backend.Tree
+	case "index":
+		t = backend.Index
 	case "snapshots":
 		t = backend.Snapshot
 	case "keys":

@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/server"
 )
 
@@ -24,7 +27,7 @@ func init() {
 }
 
 func (cmd CmdCat) Usage() string {
-	return "[data|tree|snapshot|key|masterkey|lock] ID"
+	return "[pack|blob|tree|snapshot|key|masterkey|lock] ID"
 }
 
 func (cmd CmdCat) Execute(args []string) error {
@@ -62,37 +65,20 @@ func (cmd CmdCat) Execute(args []string) error {
 		}
 	}
 
+	// handle all types that don't need an index
 	switch tpe {
-	case "data":
-		// try storage id
-		data, err := s.LoadID(backend.Data, id)
-		if err == nil {
-			_, err = os.Stdout.Write(data)
+	case "index":
+		buf, err := s.Load(backend.Index, id)
+		if err != nil {
 			return err
 		}
 
-		_, err = os.Stdout.Write(data)
+		_, err = os.Stdout.Write(append(buf, '\n'))
 		return err
 
-	case "tree":
-		// try storage id
-		tree := &restic.Tree{}
-		err := s.LoadJSONID(backend.Tree, id, tree)
-		if err != nil {
-			return err
-		}
-
-		buf, err := json.MarshalIndent(&tree, "", "  ")
-		if err != nil {
-			return err
-		}
-
-		fmt.Println(string(buf))
-
-		return nil
 	case "snapshot":
 		sn := &restic.Snapshot{}
-		err = s.LoadJSONID(backend.Snapshot, id, sn)
+		err = s.LoadJSONEncrypted(backend.Snapshot, id, sn)
 		if err != nil {
 			return err
 		}
@@ -136,6 +122,52 @@ func (cmd CmdCat) Execute(args []string) error {
 		return nil
 	case "lock":
 		return errors.New("not yet implemented")
+	}
+
+	// load index, handle all the other types
+	err = s.LoadIndex()
+	if err != nil {
+		return err
+	}
+
+	switch tpe {
+	case "pack":
+		rd, err := s.Backend().Get(backend.Data, id.String())
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(os.Stdout, rd)
+		return err
+
+	case "blob":
+		data, err := s.LoadBlob(pack.Data, id)
+		if err == nil {
+			_, err = os.Stdout.Write(data)
+			return err
+		}
+
+		_, err = os.Stdout.Write(data)
+		return err
+
+	case "tree":
+		debug.Log("cat", "cat tree %v", id.Str())
+		tree := restic.NewTree()
+		err = s.LoadJSONPack(pack.Tree, id, tree)
+		if err != nil {
+			debug.Log("cat", "unable to load tree %v: %v", id.Str(), err)
+			return err
+		}
+
+		buf, err := json.MarshalIndent(&tree, "", "  ")
+		if err != nil {
+			debug.Log("cat", "error json.MarshalIndent(): %v", err)
+			return err
+		}
+
+		_, err = os.Stdout.Write(append(buf, '\n'))
+		return nil
+
 	default:
 		return errors.New("invalid type")
 	}
