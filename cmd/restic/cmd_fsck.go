@@ -245,40 +245,26 @@ func (cmd CmdFsck) Execute(args []string) error {
 
 	debug.Log("restic.fsck", "starting orphaned check\n")
 
-	l := []struct {
-		desc string
-		tpe  backend.Type
-		set  *backend.IDSet
-	}{
-		{"data blob", backend.Data, cmd.o_data},
-		{"tree", backend.Tree, cmd.o_trees},
-	}
+	cnt := make(map[pack.BlobType]*backend.IDSet)
+	cnt[pack.Data] = backend.NewIDSet()
+	cnt[pack.Tree] = backend.NewIDSet()
 
-	for _, d := range l {
-		debug.Log("restic.fsck", "checking for orphaned %v\n", d.desc)
+	for blob := range s.Index().Each(done) {
+		fmt.Println(blob.ID)
 
-		done := make(chan struct{})
-
-		for name := range s.List(d.tpe, done) {
-			id, err := backend.ParseID(name)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "invalid id for %v: %v\n", d.tpe, name)
+		err = cnt[blob.Type].Find(blob.ID)
+		if err != nil {
+			if !cmd.RemoveOrphaned {
+				fmt.Printf("orphaned %v blob %v\n", blob.Type, blob.ID)
 				continue
 			}
 
-			err = d.set.Find(id)
-			if err != nil {
-				if !cmd.RemoveOrphaned {
-					fmt.Printf("orphaned %v %v\n", d.desc, id)
-					continue
-				}
-
-				fmt.Printf("removing orphaned %v %v\n", d.desc, id)
-				err := s.Remove(d.tpe, name)
-				if err != nil {
-					return err
-				}
-			}
+			fmt.Printf("removing orphaned %v blob %v\n", blob.Type, blob.ID)
+			// err := s.Remove(d.tpe, name)
+			// if err != nil {
+			// 	return err
+			// }
+			return errors.New("not implemented")
 		}
 	}
 
