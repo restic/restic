@@ -130,21 +130,10 @@ func (p *Packer) Finalize() (bytesWritten uint, err error) {
 	// create writer to encrypt header
 	wr := crypto.EncryptTo(p.k, p.hw)
 
-	// write header
-	for _, b := range p.blobs {
-		entry := headerEntry{
-			Type:   b.Type,
-			Length: b.Length,
-		}
-		copy(entry.ID[:], b.ID)
-
-		err := binary.Write(wr, binary.LittleEndian, entry)
-		if err != nil {
-			wr.Close()
-			return bytesWritten, err
-		}
-
-		bytesWritten += entrySize
+	bytesHeader, err := p.writeHeader(wr)
+	if err != nil {
+		wr.Close()
+		return bytesWritten + bytesHeader, err
 	}
 
 	// finalize encrypted header
@@ -166,6 +155,26 @@ func (p *Packer) Finalize() (bytesWritten uint, err error) {
 	p.bytes = uint(bytesWritten)
 
 	return bytesWritten, nil
+}
+
+// writeHeader constructs and writes the header to wr.
+func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
+	for _, b := range p.blobs {
+		entry := headerEntry{
+			Type:   b.Type,
+			Length: b.Length,
+		}
+		copy(entry.ID[:], b.ID)
+
+		err := binary.Write(wr, binary.LittleEndian, entry)
+		if err != nil {
+			return bytesWritten, err
+		}
+
+		bytesWritten += entrySize
+	}
+
+	return
 }
 
 // ID returns the ID of all data written so far.
