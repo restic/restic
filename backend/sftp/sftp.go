@@ -78,7 +78,6 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Trees),
 		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
@@ -153,7 +152,6 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Trees),
 		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
@@ -305,7 +303,7 @@ func (r *SFTP) renameFile(oldname string, t backend.Type, name string) error {
 	filename := r.filename(t, name)
 
 	// create directories if necessary
-	if t == backend.Data || t == backend.Tree {
+	if t == backend.Data {
 		err := r.mkdirAll(filepath.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return err
@@ -405,11 +403,6 @@ func (r *SFTP) dirname(t backend.Type, name string) string {
 		}
 	case backend.Snapshot:
 		n = backend.Paths.Snapshots
-	case backend.Tree:
-		n = backend.Paths.Trees
-		if len(name) > 2 {
-			n = filepath.Join(n, name[:2])
-		}
 	case backend.Index:
 		n = backend.Paths.Index
 	case backend.Lock:
@@ -484,7 +477,7 @@ func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
 	go func() {
 		defer close(ch)
 
-		if t == backend.Data || t == backend.Tree {
+		if t == backend.Data {
 			// read first level
 			basedir := r.dirname(t, "")
 

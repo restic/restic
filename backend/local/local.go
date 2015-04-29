@@ -30,7 +30,6 @@ func Open(dir string) (*Local, error) {
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Trees),
 		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
@@ -103,7 +102,6 @@ func Create(dir string) (*Local, error) {
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Trees),
 		filepath.Join(dir, backend.Paths.Index),
 		filepath.Join(dir, backend.Paths.Locks),
 		filepath.Join(dir, backend.Paths.Keys),
@@ -224,7 +222,7 @@ func (lb *localBlob) Finalize(t backend.Type, name string) error {
 	f := filename(lb.basedir, t, name)
 
 	// create directories if necessary, ignore errors
-	if t == backend.Data || t == backend.Tree {
+	if t == backend.Data {
 		os.MkdirAll(filepath.Dir(f), backend.Modes.Dir)
 	}
 
@@ -281,11 +279,6 @@ func dirname(base string, t backend.Type, name string) string {
 		}
 	case backend.Snapshot:
 		n = backend.Paths.Snapshots
-	case backend.Tree:
-		n = backend.Paths.Trees
-		if len(name) > 2 {
-			n = filepath.Join(n, name[:2])
-		}
 	case backend.Index:
 		n = backend.Paths.Index
 	case backend.Lock:
@@ -346,7 +339,7 @@ func (b *Local) Remove(t backend.Type, name string) error {
 func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
 	var pattern string
-	if t == backend.Data || t == backend.Tree {
+	if t == backend.Data {
 		pattern = filepath.Join(dirname(b.p, t, ""), "*", "*")
 	} else {
 		pattern = filepath.Join(dirname(b.p, t, ""), "*")

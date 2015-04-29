@@ -15,7 +15,7 @@ import (
 func testBackend(b backend.Backend, t *testing.T) {
 	for _, tpe := range []backend.Type{
 		backend.Data, backend.Key, backend.Lock,
-		backend.Snapshot, backend.Tree, backend.Index,
+		backend.Snapshot, backend.Index,
 	} {
 		// detect non-existing files
 		for _, test := range TestStrings {

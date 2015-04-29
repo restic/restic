@@ -146,8 +146,6 @@ func (c *Cache) List(t backend.Type) ([]CacheEntry, error) {
 	switch t {
 	case backend.Snapshot:
 		dir = filepath.Join(c.base, "snapshots")
-	case backend.Tree:
-		dir = filepath.Join(c.base, "trees")
 	default:
 		return nil, fmt.Errorf("cache not supported for type %v", t)
 	}
@@ -200,8 +198,6 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 	switch t {
 	case backend.Snapshot:
 		return filepath.Join(c.base, "snapshots", filename), nil
-	case backend.Tree:
-		return filepath.Join(c.base, "trees", filename), nil
 	}
 
 	return "", fmt.Errorf("cache not supported for type %v", t)

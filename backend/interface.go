@@ -10,7 +10,6 @@ const (
 	Key           = "key"
 	Lock          = "lock"
 	Snapshot      = "snapshot"
-	Tree          = "tree"
 	Index         = "index"
 )
 
