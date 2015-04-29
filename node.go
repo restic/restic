@@ -373,9 +373,9 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "symlink":
 		node.LinkTarget, err = os.Readlink(path)
 	case "dev":
-		node.fillDevice(stat)
+		node.Device = uint64(stat.Rdev)
 	case "chardev":
-		node.fillDevice(stat)
+		node.Device = uint64(stat.Rdev)
 	case "fifo":
 	case "socket":
 	default:

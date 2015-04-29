@@ -1,27 +1,13 @@
 package restic
 
 import (
-	"fmt"
 	"os"
-	"os/user"
-	"strconv"
 	"syscall"
 	"time"
-
-	"github.com/restic/restic/debug"
 )
 
 func (node *Node) OpenForReading() (*os.File, error) {
 	return os.Open(node.path)
-}
-
-func (node *Node) fillTimes(stat *syscall.Stat_t) {
-	node.ChangeTime = time.Unix(stat.Ctimespec.Unix())
-	node.AccessTime = time.Unix(stat.Atimespec.Unix())
-}
-
-func (node *Node) fillDevice(stat *syscall.Stat_t) {
-	node.Device = uint64(stat.Rdev)
 }
 
 func (node *Node) createDevAt(path string) error {
@@ -36,6 +22,11 @@ func (node *Node) createFifoAt(path string) error {
 	return syscall.Mkfifo(path, 0600)
 }
 
-func changeTime(stat *syscall.Stat_t) time.Unix {
+func changeTime(stat *syscall.Stat_t) time.Time {
 	return time.Unix(stat.Ctimespec.Unix())
+}
+
+func (node *Node) fillTimes(stat *syscall.Stat_t) {
+	node.ChangeTime = time.Unix(stat.Ctimespec.Unix())
+	node.AccessTime = time.Unix(stat.Atimespec.Unix())
 }
