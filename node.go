@@ -10,6 +10,7 @@ import (
 
 	"github.com/juju/arrar"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 	"github.com/restic/restic/server"
 )
 
@@ -307,4 +308,32 @@ func (node Node) sameContent(other Node) bool {
 	}
 
 	return true
+}
+
+func (node *Node) isNewer(path string, fi os.FileInfo) bool {
+	if node.Type != "file" {
+		debug.Log("node.isNewer", "node %v is newer: not file", path)
+		return true
+	}
+
+	tpe := nodeTypeFromFileInfo(fi)
+	if node.Name != fi.Name() || node.Type != tpe {
+		debug.Log("node.isNewer", "node %v is newer: name or type changed", path)
+		return true
+	}
+
+	extendedStat := fi.Sys().(*syscall.Stat_t)
+	inode := extendedStat.Ino
+	size := uint64(extendedStat.Size)
+
+	if node.ModTime != fi.ModTime() ||
+		node.ChangeTime != changeTime(extendedStat) ||
+		node.Inode != inode ||
+		node.Size != size {
+		debug.Log("node.isNewer", "node %v is newer: timestamp, size or inode changed", path)
+		return true
+	}
+
+	debug.Log("node.isNewer", "node %v is not newer", path)
+	return false
 }

@@ -66,31 +66,6 @@ func (node *Node) createFifoAt(path string) error {
 	return syscall.Mkfifo(path, 0600)
 }
 
-func (node *Node) isNewer(path string, fi os.FileInfo) bool {
-	if node.Type != "file" {
-		debug.Log("node.isNewer", "node %v is newer: not file", path)
-		return true
-	}
-
-	tpe := nodeTypeFromFileInfo(fi)
-	if node.Name != fi.Name() || node.Type != tpe {
-		debug.Log("node.isNewer", "node %v is newer: name or type changed", path)
-		return false
-	}
-
-	extendedStat := fi.Sys().(*syscall.Stat_t)
-	changeTime := time.Unix(extendedStat.Ctimespec.Unix())
-	inode := extendedStat.Ino
-	size := uint64(extendedStat.Size)
-
-	if node.ModTime != fi.ModTime() ||
-		node.ChangeTime != changeTime ||
-		node.Inode != inode ||
-		node.Size != size {
-		debug.Log("node.isNewer", "node %v is newer: timestamp or inode changed", path)
-		return false
-	}
-
-	debug.Log("node.isNewer", "node %v is not newer", path)
-	return false
+func changeTime(stat *syscall.Stat_t) time.Unix {
+	return time.Unix(stat.Ctimespec.Unix())
 }
