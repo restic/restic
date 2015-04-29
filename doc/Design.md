@@ -102,7 +102,11 @@ The Pack's structure is as follows:
 
 At the end of the Pack is a header, which describes the content and is
 encrypted and signed. `Header_Length` is the length of the encrypted header
-encoded as a is a four byte integer in little-endian encoding.
+encoded as a four byte integer in little-endian encoding. Placing the header at
+the end of a file allows writing the blobs in a continuous stream as soon as
+they are read during the backup phase. This reduces code complexity and avoids
+having to re-write a file once the pack is complete and the content and length
+of the header is known.
 
 All the blobs (`EncryptedBlob1`, `EncryptedBlobN` etc.) are signed and
 encrypted independently. This enables repository reorganisation without having
