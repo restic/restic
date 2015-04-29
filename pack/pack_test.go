@@ -18,8 +18,6 @@ import (
 
 var lengths = []int{23, 31650, 25860, 10928, 13769, 19862, 5211, 127, 13690, 30231}
 
-// var lengths = []int{200}
-
 func TestCreatePack(t *testing.T) {
 	type Buf struct {
 		data []byte
