@@ -14,101 +14,109 @@ import (
 )
 
 var opts struct {
+	logger *log.Logger
 	tags   map[string]bool
 	breaks map[string]bool
 	m      sync.Mutex
 }
 
-var debugLogger = initDebugLogger()
-
-func initDebugLogger() (lgr *log.Logger) {
-	opts.tags = make(map[string]bool)
-	opts.breaks = make(map[string]bool)
+func init() {
+	initDebugLogger()
+	initDebugTags()
+	initDebugBreaks()
 
 	fmt.Fprintf(os.Stderr, "debug enabled\n")
+}
 
+func initDebugLogger() {
 	debugfile := os.Getenv("DEBUG_LOG")
-	if debugfile != "" {
-		fmt.Fprintf(os.Stderr, "debug log file %v\n", debugfile)
-
-		// open logfile
-		f, err := os.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
-
-		if err == nil {
-			// seek to the end
-			_, err = f.Seek(2, 0)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "unable to seek to the end of %v: %v\n", debugfile, err)
-				os.Exit(3)
-			}
-		}
-
-		if err != nil && os.IsNotExist(err) {
-			// create logfile
-			f, err = os.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE, 0600)
-		}
-
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to open debug log file: %v\n", err)
-			os.Exit(2)
-		}
-
-		// open logger
-		lgr = log.New(f, "", log.LstdFlags)
+	if debugfile == "" {
+		return
 	}
+
+	fmt.Fprintf(os.Stderr, "debug log file %v\n", debugfile)
+
+	f, err := os.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
+
+	if err == nil {
+		_, err = f.Seek(2, 0)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable to seek to the end of %v: %v\n", debugfile, err)
+			os.Exit(3)
+		}
+	}
+
+	if err != nil && os.IsNotExist(err) {
+		f, err = os.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE, 0600)
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to open debug log file: %v\n", err)
+		os.Exit(2)
+	}
+
+	opts.logger = log.New(f, "", log.LstdFlags)
+}
+
+func initDebugTags() {
+	opts.tags = make(map[string]bool)
 
 	// defaults
 	opts.tags["break"] = true
 
 	// initialize tags
 	env := os.Getenv("DEBUG_TAGS")
-	if len(env) > 0 {
-		tags := []string{}
-
-		for _, tag := range strings.Split(env, ",") {
-			t := strings.TrimSpace(tag)
-			val := true
-			if t[0] == '-' {
-				val = false
-				t = t[1:]
-			} else if t[0] == '+' {
-				val = true
-				t = t[1:]
-			}
-
-			// test pattern
-			_, err := path.Match(t, "")
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error: invalid pattern %q: %v\n", t, err)
-				os.Exit(5)
-			}
-
-			opts.tags[t] = val
-			tags = append(tags, tag)
-		}
-
-		fmt.Fprintf(os.Stderr, "debug log enabled for: %v\n", tags)
+	if len(env) == 0 {
+		return
 	}
 
-	// initialize break tags
-	env = os.Getenv("DEBUG_BREAK")
-	if len(env) > 0 {
-		breaks := []string{}
+	tags := []string{}
 
-		for _, tag := range strings.Split(env, ",") {
-			t := strings.TrimSpace(tag)
-			opts.breaks[t] = true
-			breaks = append(breaks, t)
+	for _, tag := range strings.Split(env, ",") {
+		t := strings.TrimSpace(tag)
+		val := true
+		if t[0] == '-' {
+			val = false
+			t = t[1:]
+		} else if t[0] == '+' {
+			val = true
+			t = t[1:]
 		}
 
-		fmt.Fprintf(os.Stderr, "debug breaks enabled for: %v\n", breaks)
+		// test pattern
+		_, err := path.Match(t, "")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: invalid pattern %q: %v\n", t, err)
+			os.Exit(5)
+		}
+
+		opts.tags[t] = val
+		tags = append(tags, tag)
 	}
 
-	return
+	fmt.Fprintf(os.Stderr, "debug log enabled for: %v\n", tags)
+}
+
+func initDebugBreaks() {
+	opts.breaks = make(map[string]bool)
+
+	env := os.Getenv("DEBUG_BREAK")
+	if len(env) == 0 {
+		return
+	}
+
+	breaks := []string{}
+
+	for _, tag := range strings.Split(env, ",") {
+		t := strings.TrimSpace(tag)
+		opts.breaks[t] = true
+		breaks = append(breaks, t)
+	}
+
+	fmt.Fprintf(os.Stderr, "debug breaks enabled for: %v\n", breaks)
 }
 
 func Log(tag string, f string, args ...interface{}) {
-	// synchronize log writes
 	opts.m.Lock()
 	defer opts.m.Unlock()
 
@@ -120,8 +128,8 @@ func Log(tag string, f string, args ...interface{}) {
 		fmt.Fprintf(os.Stderr, "DEBUG["+tag+"]: "+f, args...)
 	}
 
-	if debugLogger != nil {
-		debugLogger.Printf("["+tag+"] "+f, args...)
+	if opts.logger != nil {
+		opts.logger.Printf("["+tag+"] "+f, args...)
 	}
 
 	// check if tag is enabled directly
