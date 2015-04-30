@@ -13,3 +13,6 @@ test:
 
 clean:
 	go clean ./...
+
+fmt:
+	gofmt -w=true **/*.go
