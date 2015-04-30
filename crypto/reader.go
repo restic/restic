@@ -77,7 +77,6 @@ func DecryptFrom(ks *Key, rd io.Reader) (io.ReadCloser, error) {
 
 	ciphertext := buf.Bytes()
 
-	// decrypt
 	ciphertext, err = Decrypt(ks, ciphertext, ciphertext)
 	if err != nil {
 		return nil, err

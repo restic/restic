@@ -14,13 +14,13 @@ import (
 )
 
 const (
-	aesKeySize  = 32                        // for AES256
+	aesKeySize  = 32                        // for AES-256
 	macKeySizeK = 16                        // for AES-128
 	macKeySizeR = 16                        // for Poly1305
 	macKeySize  = macKeySizeK + macKeySizeR // for Poly1305-AES128
 	ivSize      = aes.BlockSize
 
-	macSize   = poly1305.TagSize // Poly1305 size is 16 byte
+	macSize   = poly1305.TagSize
 	Extension = ivSize + macSize
 )
 
@@ -45,8 +45,8 @@ type Key struct {
 
 type EncryptionKey [32]byte
 type SigningKey struct {
-	K [16]byte `json:"k"` // for AES128
-	R [16]byte `json:"r"` // for Poly1305
+	K [16]byte // for AES-128
+	R [16]byte // for Poly1305
 
 	masked bool // remember if the signing key has already been masked
 }
@@ -71,27 +71,9 @@ var poly1305KeyMask = [16]byte{
 	0x0f, // 15: top four bits zero
 }
 
-// key is a [32]byte, in the form k||r
 func poly1305Sign(msg []byte, nonce []byte, key *SigningKey) []byte {
-	// prepare key for low-level poly1305.Sum(): r||n
-	var k [32]byte
+	k := poly1305PrepareKey(nonce, key)
 
-	// make sure key is masked
-	if !key.masked {
-		maskKey(key)
-	}
-
-	// fill in nonce, encrypted with AES and key[:16]
-	cipher, err := aes.NewCipher(key.K[:])
-	if err != nil {
-		panic(err)
-	}
-	cipher.Encrypt(k[16:], nonce[:])
-
-	// copy r
-	copy(k[:16], key.R[:])
-
-	// save mac in out
 	var out [16]byte
 	poly1305.Sum(&out, msg, &k)
 
@@ -100,9 +82,10 @@ func poly1305Sign(msg []byte, nonce []byte, key *SigningKey) []byte {
 
 // mask poly1305 key
 func maskKey(k *SigningKey) {
-	if k == nil {
+	if k == nil || k.masked {
 		return
 	}
+
 	for i := 0; i < poly1305.TagSize; i++ {
 		k.R[i] = k.R[i] & poly1305KeyMask[i]
 	}
@@ -117,36 +100,36 @@ func macKeyFromSlice(mk *SigningKey, data []byte) {
 	maskKey(mk)
 }
 
-// key: k||r
-func poly1305Verify(msg []byte, nonce []byte, key *SigningKey, mac []byte) bool {
-	// prepare key for low-level poly1305.Sum(): r||n
+// prepare key for low-level poly1305.Sum(): r||n
+func poly1305PrepareKey(nonce []byte, key *SigningKey) [32]byte {
 	var k [32]byte
 
-	// make sure key is masked
-	if !key.masked {
-		maskKey(key)
-	}
+	maskKey(key)
 
-	// fill in nonce, encrypted with AES and key[:16]
 	cipher, err := aes.NewCipher(key.K[:])
 	if err != nil {
 		panic(err)
 	}
 	cipher.Encrypt(k[16:], nonce[:])
 
-	// copy r
 	copy(k[:16], key.R[:])
 
-	// copy mac to array
+	return k
+}
+
+func poly1305Verify(msg []byte, nonce []byte, key *SigningKey, mac []byte) bool {
+	k := poly1305PrepareKey(nonce, key)
+
 	var m [16]byte
 	copy(m[:], mac)
 
 	return poly1305.Verify(&m, msg, &k)
 }
 
-// NewKey returns new encryption and signing keys.
-func NewKey() (k *Key) {
-	k = &Key{}
+// NewRandomKey returns new encryption and signing keys.
+func NewRandomKey() *Key {
+	k := &Key{}
+
 	n, err := rand.Read(k.Encrypt[:])
 	if n != aesKeySize || err != nil {
 		panic("unable to read enough random bytes for encryption key")
@@ -161,9 +144,8 @@ func NewKey() (k *Key) {
 	if n != macKeySizeR || err != nil {
 		panic("unable to read enough random bytes for mac signing key")
 	}
-	// mask r
-	maskKey(&k.Sign)
 
+	maskKey(&k.Sign)
 	return k
 }
 
@@ -220,7 +202,7 @@ var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for p
 // MAC. Encrypt returns the new ciphertext slice, which is extended when
 // necessary. ciphertext and plaintext may not point to (exactly) the same
 // slice or non-intersecting slices.
-func Encrypt(ks *Key, ciphertext, plaintext []byte) ([]byte, error) {
+func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
 	ciphertext = ciphertext[:cap(ciphertext)]
 
 	// test for same slice, if possible
@@ -245,11 +227,11 @@ func Encrypt(ks *Key, ciphertext, plaintext []byte) ([]byte, error) {
 
 	e.XORKeyStream(ciphertext[ivSize:], plaintext)
 	copy(ciphertext, iv[:])
-	// truncate to only conver iv and actual ciphertext
+
+	// truncate to only cover iv and actual ciphertext
 	ciphertext = ciphertext[:ivSize+len(plaintext)]
 
 	mac := poly1305Sign(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign)
-	// append the mac tag
 	ciphertext = append(ciphertext, mac...)
 
 	return ciphertext, nil
@@ -258,28 +240,28 @@ func Encrypt(ks *Key, ciphertext, plaintext []byte) ([]byte, error) {
 // Decrypt verifies and decrypts the ciphertext. Ciphertext must be in the form
 // IV || Ciphertext || MAC. plaintext and ciphertext may point to (exactly) the
 // same slice.
-func Decrypt(ks *Key, plaintext, ciphertext []byte) ([]byte, error) {
+func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error) {
 	// check for plausible length
-	if len(ciphertext) < ivSize+macSize {
+	if len(ciphertextWithMac) < ivSize+macSize {
 		panic("trying to decrypt invalid data: ciphertext too small")
 	}
 
-	if cap(plaintext) < len(ciphertext) {
+	if cap(plaintext) < len(ciphertextWithMac) {
 		// extend plaintext
-		plaintext = append(plaintext, make([]byte, len(ciphertext)-cap(plaintext))...)
+		plaintext = append(plaintext, make([]byte, len(ciphertextWithMac)-cap(plaintext))...)
 	}
 
 	// extract mac
-	l := len(ciphertext) - macSize
-	ciphertext, mac := ciphertext[:l], ciphertext[l:]
+	l := len(ciphertextWithMac) - macSize
+	ciphertextWithIV, mac := ciphertextWithMac[:l], ciphertextWithMac[l:]
 
 	// verify mac
-	if !poly1305Verify(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign, mac) {
+	if !poly1305Verify(ciphertextWithIV[ivSize:], ciphertextWithIV[:ivSize], &ks.Sign, mac) {
 		return nil, ErrUnauthenticated
 	}
 
 	// extract iv
-	iv, ciphertext := ciphertext[:ivSize], ciphertext[ivSize:]
+	iv, ciphertext := ciphertextWithIV[:ivSize], ciphertextWithIV[ivSize:]
 
 	// decrypt data
 	c, err := aes.NewCipher(ks.Encrypt[:])

@@ -17,7 +17,7 @@ import (
 var testLargeCrypto = flag.Bool("test.largecrypto", false, "also test crypto functions with large payloads")
 
 func TestEncryptDecrypt(t *testing.T) {
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
 	if *testLargeCrypto {
@@ -48,7 +48,7 @@ func TestEncryptDecrypt(t *testing.T) {
 }
 
 func TestSmallBuffer(t *testing.T) {
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	size := 600
 	data := make([]byte, size)
@@ -73,7 +73,7 @@ func TestSmallBuffer(t *testing.T) {
 }
 
 func TestSameBuffer(t *testing.T) {
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	size := 600
 	data := make([]byte, size)
@@ -96,7 +96,7 @@ func TestSameBuffer(t *testing.T) {
 }
 
 func TestCornerCases(t *testing.T) {
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	// nil plaintext should encrypt to the empty string
 	// nil ciphertext should allocate a new slice for the ciphertext
@@ -122,7 +122,7 @@ func TestLargeEncrypt(t *testing.T) {
 		t.SkipNow()
 	}
 
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	for _, size := range []int{chunker.MaxSize, chunker.MaxSize + 1, chunker.MaxSize + 1<<20} {
 		data := make([]byte, size)
@@ -146,7 +146,7 @@ func BenchmarkEncryptWriter(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	rd := RandomReader(23, size)
 
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
@@ -166,7 +166,7 @@ func BenchmarkEncrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
 
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 	buf := make([]byte, len(data)+crypto.Extension)
 
 	b.ResetTimer()
@@ -181,7 +181,7 @@ func BenchmarkEncrypt(b *testing.B) {
 func BenchmarkDecryptReader(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	buf := Random(23, size)
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	ciphertext := make([]byte, len(buf)+crypto.Extension)
 	_, err := crypto.Encrypt(k, ciphertext, buf)
@@ -203,7 +203,7 @@ func BenchmarkDecryptReader(b *testing.B) {
 }
 
 func BenchmarkEncryptDecryptReader(b *testing.B) {
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	size := 8 << 20 // 8MiB
 	rd := RandomReader(23, size)
@@ -234,7 +234,7 @@ func BenchmarkDecrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
 
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	ciphertext := restic.GetChunkBuf("BenchmarkDecrypt")
 	defer restic.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
@@ -254,7 +254,7 @@ func BenchmarkDecrypt(b *testing.B) {
 }
 
 func TestEncryptStreamWriter(t *testing.T) {
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
 	if *testLargeCrypto {
@@ -288,7 +288,7 @@ func TestEncryptStreamWriter(t *testing.T) {
 }
 
 func TestDecryptStreamReader(t *testing.T) {
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
 	if *testLargeCrypto {
@@ -322,7 +322,7 @@ func TestDecryptStreamReader(t *testing.T) {
 }
 
 func TestEncryptWriter(t *testing.T) {
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
 	if *testLargeCrypto {
