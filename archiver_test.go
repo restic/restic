@@ -121,10 +121,10 @@ func archiveDirectory(b testing.TB) {
 	key := SetupKey(b, server, "geheim")
 	server.SetKey(key)
 
-	arch, err := restic.NewArchiver(server)
-	OK(b, err)
+	arch := restic.NewArchiver(server)
 
 	_, id, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
+	OK(b, err)
 
 	b.Logf("snapshot archived as %v", id)
 }
@@ -238,8 +238,7 @@ func BenchmarkLoadTree(t *testing.B) {
 	s.SetKey(key)
 
 	// archive a few files
-	arch, err := restic.NewArchiver(s)
-	OK(t, err)
+	arch := restic.NewArchiver(s)
 	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
 	OK(t, err)
 	t.Logf("archived snapshot %v", sn.ID())

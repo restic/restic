@@ -19,11 +19,11 @@ type Restorer struct {
 	Filter func(item string, dstpath string, node *Node) bool
 }
 
-var abortOnAllErrors = func(str string, node *Node, err error) error { return err }
+var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(s *server.Server, id backend.ID) (*Restorer, error) {
-	r := &Restorer{s: s, Error: abortOnAllErrors}
+	r := &Restorer{s: s, Error: restorerAbortOnAllErrors}
 
 	var err error
 

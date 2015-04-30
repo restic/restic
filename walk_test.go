@@ -22,8 +22,7 @@ func TestWalkTree(t *testing.T) {
 	server.SetKey(key)
 
 	// archive a few files
-	arch, err := restic.NewArchiver(server)
-	OK(t, err)
+	arch := restic.NewArchiver(server)
 	sn, _, err := arch.Snapshot(nil, dirs, nil)
 	OK(t, err)
 

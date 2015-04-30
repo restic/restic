@@ -252,10 +252,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 	// 	return true
 	// }
 
-	arch, err := restic.NewArchiver(s)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "err: %v\n", err)
-	}
+	arch := restic.NewArchiver(s)
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
 		// TODO: make ignoring errors configurable
