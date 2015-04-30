@@ -60,9 +60,8 @@ func (t Tree) Equals(other *Tree) bool {
 }
 
 func (t *Tree) Insert(node *Node) error {
-	pos, _, err := t.find(node.Name)
+	pos, _, err := t.binarySearch(node.Name)
 	if err == nil {
-		// already present
 		return ErrNodeAlreadyInTree
 	}
 
@@ -74,7 +73,7 @@ func (t *Tree) Insert(node *Node) error {
 	return nil
 }
 
-func (t Tree) find(name string) (int, *Node, error) {
+func (t Tree) binarySearch(name string) (int, *Node, error) {
 	pos := sort.Search(len(t.Nodes), func(i int) bool {
 		return t.Nodes[i].Name >= name
 	})
@@ -87,6 +86,6 @@ func (t Tree) find(name string) (int, *Node, error) {
 }
 
 func (t Tree) Find(name string) (*Node, error) {
-	_, node, err := t.find(name)
+	_, node, err := t.binarySearch(name)
 	return node, err
 }

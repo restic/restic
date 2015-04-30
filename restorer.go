@@ -19,57 +19,31 @@ type Restorer struct {
 	Filter func(item string, dstpath string, node *Node) bool
 }
 
-// NewRestorer creates a restorer preloaded with the content from the snapshot snid.
-func NewRestorer(s *server.Server, snid backend.ID) (*Restorer, error) {
-	r := &Restorer{s: s}
+var abortOnAllErrors = func(str string, node *Node, err error) error { return err }
+
+// NewRestorer creates a restorer preloaded with the content from the snapshot id.
+func NewRestorer(s *server.Server, id backend.ID) (*Restorer, error) {
+	r := &Restorer{s: s, Error: abortOnAllErrors}
 
 	var err error
 
-	r.sn, err = LoadSnapshot(s, snid)
+	r.sn, err = LoadSnapshot(s, id)
 	if err != nil {
 		return nil, arrar.Annotate(err, "load snapshot for restorer")
 	}
 
-	// abort on all errors
-	r.Error = func(string, *Node, error) error { return err }
-
 	return r, nil
 }
 
-func (res *Restorer) to(dst string, dir string, treeID backend.ID) error {
+func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error {
 	tree, err := LoadTree(res.s, treeID)
 	if err != nil {
 		return res.Error(dir, nil, arrar.Annotate(err, "LoadTree"))
 	}
 
 	for _, node := range tree.Nodes {
-		dstpath := filepath.Join(dst, dir, node.Name)
-
-		if res.Filter == nil ||
-			res.Filter(filepath.Join(dir, node.Name), dstpath, node) {
-			err := node.CreateAt(dstpath, res.s)
-
-			// Did it fail because of ENOENT?
-			if arrar.Check(err, func(err error) bool {
-				if pe, ok := err.(*os.PathError); ok {
-					errn, ok := pe.Err.(syscall.Errno)
-					return ok && errn == syscall.ENOENT
-				}
-				return false
-			}) {
-				// Create parent directories and retry
-				err = os.MkdirAll(filepath.Dir(dstpath), 0700)
-				if err == nil || err == os.ErrExist {
-					err = node.CreateAt(dstpath, res.s)
-				}
-			}
-
-			if err != nil {
-				err = res.Error(dstpath, node, arrar.Annotate(err, "create node"))
-				if err != nil {
-					return err
-				}
-			}
+		if err := res.restoreNodeTo(node, dir, dst); err != nil {
+			return err
 		}
 
 		if node.Type == "dir" {
@@ -78,7 +52,7 @@ func (res *Restorer) to(dst string, dir string, treeID backend.ID) error {
 			}
 
 			subp := filepath.Join(dir, node.Name)
-			err = res.to(dst, subp, node.Subtree)
+			err = res.restoreTo(dst, subp, node.Subtree)
 			if err != nil {
 				err = res.Error(subp, node, arrar.Annotate(err, "restore subtree"))
 				if err != nil {
@@ -91,10 +65,44 @@ func (res *Restorer) to(dst string, dir string, treeID backend.ID) error {
 	return nil
 }
 
+func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
+	dstPath := filepath.Join(dst, dir, node.Name)
+
+	if res.Filter != nil && res.Filter(filepath.Join(dir, node.Name), dstPath, node) {
+		return nil
+	}
+
+	err := node.CreateAt(dstPath, res.s)
+
+	// Did it fail because of ENOENT?
+	if arrar.Check(err, func(err error) bool {
+		if pe, ok := err.(*os.PathError); ok {
+			errn, ok := pe.Err.(syscall.Errno)
+			return ok && errn == syscall.ENOENT
+		}
+		return false
+	}) {
+		// Create parent directories and retry
+		err = os.MkdirAll(filepath.Dir(dstPath), 0700)
+		if err == nil || err == os.ErrExist {
+			err = node.CreateAt(dstPath, res.s)
+		}
+	}
+
+	if err != nil {
+		err = res.Error(dstPath, node, arrar.Annotate(err, "create node"))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // RestoreTo creates the directories and files in the snapshot below dir.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(dir string) error {
-	return res.to(dir, "", res.sn.Tree)
+	return res.restoreTo(dir, "", res.sn.Tree)
 }
 
 func (res *Restorer) Snapshot() *Snapshot {

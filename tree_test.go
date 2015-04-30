@@ -21,8 +21,7 @@ var testFiles = []struct {
 	{"bar/bla/blubb", []byte("This is just a test!\n")},
 }
 
-// prepareDir creates a temporary directory and returns it.
-func prepareDir(t *testing.T) string {
+func createTempDir(t *testing.T) string {
 	tempdir, err := ioutil.TempDir(*TestTempDir, "restic-test-")
 	OK(t, err)
 
@@ -48,7 +47,7 @@ func prepareDir(t *testing.T) string {
 }
 
 func TestTree(t *testing.T) {
-	dir := prepareDir(t)
+	dir := createTempDir(t)
 	defer func() {
 		if *TestCleanup {
 			OK(t, os.RemoveAll(dir))
@@ -89,7 +88,7 @@ func TestNodeComparison(t *testing.T) {
 	n2 := *node
 	Assert(t, node.Equals(n2), "nodes aren't equal")
 
-	n2.Size -= 1
+	n2.Size--
 	Assert(t, !node.Equals(n2), "nodes are equal")
 }
 
