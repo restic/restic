@@ -33,22 +33,22 @@ var (
 	ErrBufferTooSmall = errors.New("destination buffer too small")
 )
 
-// Key holds signing and encryption keys for a repository. It is stored
-// encrypted and signed as a JSON data structure in the Data field of the Key
+// Key holds encryption and message authentication keys for a repository. It is stored
+// encrypted and authenticated as a JSON data structure in the Data field of the Key
 // structure. For the master key, the secret random polynomial used for content
 // defined chunking is included.
 type Key struct {
-	Sign              SigningKey    `json:"sign"`
+	MAC               MACKey        `json:"mac"`
 	Encrypt           EncryptionKey `json:"encrypt"`
 	ChunkerPolynomial chunker.Pol   `json:"chunker_polynomial,omitempty"`
 }
 
 type EncryptionKey [32]byte
-type SigningKey struct {
+type MACKey struct {
 	K [16]byte // for AES-128
 	R [16]byte // for Poly1305
 
-	masked bool // remember if the signing key has already been masked
+	masked bool // remember if the MAC key has already been masked
 }
 
 // mask for key, (cf. http://cr.yp.to/mac/poly1305-20050329.pdf)
@@ -71,7 +71,7 @@ var poly1305KeyMask = [16]byte{
 	0x0f, // 15: top four bits zero
 }
 
-func poly1305Sign(msg []byte, nonce []byte, key *SigningKey) []byte {
+func poly1305MAC(msg []byte, nonce []byte, key *MACKey) []byte {
 	k := poly1305PrepareKey(nonce, key)
 
 	var out [16]byte
@@ -81,7 +81,7 @@ func poly1305Sign(msg []byte, nonce []byte, key *SigningKey) []byte {
 }
 
 // mask poly1305 key
-func maskKey(k *SigningKey) {
+func maskKey(k *MACKey) {
 	if k == nil || k.masked {
 		return
 	}
@@ -94,14 +94,14 @@ func maskKey(k *SigningKey) {
 }
 
 // construct mac key from slice (k||r), with masking
-func macKeyFromSlice(mk *SigningKey, data []byte) {
+func macKeyFromSlice(mk *MACKey, data []byte) {
 	copy(mk.K[:], data[:16])
 	copy(mk.R[:], data[16:32])
 	maskKey(mk)
 }
 
 // prepare key for low-level poly1305.Sum(): r||n
-func poly1305PrepareKey(nonce []byte, key *SigningKey) [32]byte {
+func poly1305PrepareKey(nonce []byte, key *MACKey) [32]byte {
 	var k [32]byte
 
 	maskKey(key)
@@ -117,7 +117,7 @@ func poly1305PrepareKey(nonce []byte, key *SigningKey) [32]byte {
 	return k
 }
 
-func poly1305Verify(msg []byte, nonce []byte, key *SigningKey, mac []byte) bool {
+func poly1305Verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
 	k := poly1305PrepareKey(nonce, key)
 
 	var m [16]byte
@@ -126,7 +126,7 @@ func poly1305Verify(msg []byte, nonce []byte, key *SigningKey, mac []byte) bool 
 	return poly1305.Verify(&m, msg, &k)
 }
 
-// NewRandomKey returns new encryption and signing keys.
+// NewRandomKey returns new encryption and message authentication keys.
 func NewRandomKey() *Key {
 	k := &Key{}
 
@@ -135,17 +135,17 @@ func NewRandomKey() *Key {
 		panic("unable to read enough random bytes for encryption key")
 	}
 
-	n, err = rand.Read(k.Sign.K[:])
+	n, err = rand.Read(k.MAC.K[:])
 	if n != macKeySizeK || err != nil {
-		panic("unable to read enough random bytes for mac encryption key")
+		panic("unable to read enough random bytes for MAC encryption key")
 	}
 
-	n, err = rand.Read(k.Sign.R[:])
+	n, err = rand.Read(k.MAC.R[:])
 	if n != macKeySizeR || err != nil {
-		panic("unable to read enough random bytes for mac signing key")
+		panic("unable to read enough random bytes for MAC key")
 	}
 
-	maskKey(&k.Sign)
+	maskKey(&k.MAC)
 	return k
 }
 
@@ -163,11 +163,11 @@ type jsonMACKey struct {
 	R []byte `json:"r"`
 }
 
-func (m *SigningKey) MarshalJSON() ([]byte, error) {
+func (m *MACKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonMACKey{K: m.K[:], R: m.R[:]})
 }
 
-func (m *SigningKey) UnmarshalJSON(data []byte) error {
+func (m *MACKey) UnmarshalJSON(data []byte) error {
 	j := jsonMACKey{}
 	err := json.Unmarshal(data, &j)
 	if err != nil {
@@ -198,7 +198,7 @@ func (k *EncryptionKey) UnmarshalJSON(data []byte) error {
 // holds the plaintext.
 var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for plaintext")
 
-// Encrypt encrypts and signs data. Stored in ciphertext is IV || Ciphertext ||
+// Encrypt encrypts and authenticates data. Stored in ciphertext is IV || Ciphertext ||
 // MAC. Encrypt returns the new ciphertext slice, which is extended when
 // necessary. ciphertext and plaintext may not point to (exactly) the same
 // slice or non-intersecting slices.
@@ -231,7 +231,7 @@ func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
 	// truncate to only cover iv and actual ciphertext
 	ciphertext = ciphertext[:ivSize+len(plaintext)]
 
-	mac := poly1305Sign(ciphertext[ivSize:], ciphertext[:ivSize], &ks.Sign)
+	mac := poly1305MAC(ciphertext[ivSize:], ciphertext[:ivSize], &ks.MAC)
 	ciphertext = append(ciphertext, mac...)
 
 	return ciphertext, nil
@@ -256,7 +256,7 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error
 	ciphertextWithIV, mac := ciphertextWithMac[:l], ciphertextWithMac[l:]
 
 	// verify mac
-	if !poly1305Verify(ciphertextWithIV[ivSize:], ciphertextWithIV[:ivSize], &ks.Sign, mac) {
+	if !poly1305Verify(ciphertextWithIV[ivSize:], ciphertextWithIV[:ivSize], &ks.MAC, mac) {
 		return nil, ErrUnauthenticated
 	}
 
@@ -277,8 +277,8 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error
 	return plaintext, nil
 }
 
-// KDF derives encryption and signing keys from the password using the supplied
-// parameters N, R and P and the Salt.
+// KDF derives encryption and message authentication keys from the password
+// using the supplied parameters N, R and P and the Salt.
 func KDF(N, R, P int, salt []byte, password string) (*Key, error) {
 	if len(salt) == 0 {
 		return nil, fmt.Errorf("scrypt() called with empty salt")
@@ -300,7 +300,7 @@ func KDF(N, R, P int, salt []byte, password string) (*Key, error) {
 	copy(derKeys.Encrypt[:], scryptKeys[:aesKeySize])
 
 	// next 32 byte of scrypt output is the mac key, in the form k||r
-	macKeyFromSlice(&derKeys.Sign, scryptKeys[aesKeySize:])
+	macKeyFromSlice(&derKeys.MAC, scryptKeys[aesKeySize:])
 
 	return derKeys, nil
 }

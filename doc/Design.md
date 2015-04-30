@@ -53,11 +53,12 @@ complete filename.
 
 Apart from the files `version`, `id` and the files stored below the `keys`
 directory, all files are encrypted with AES-256 in counter mode (CTR). The
-integrity of the encrypted data is secured by a Poly1305-AES signature.
+integrity of the encrypted data is secured by a Poly1305-AES message
+authentication code (sometimes also referred to as a "signature").
 
 In the first 16 bytes of each encrypted file the initialisation vector (IV) is
-stored. It is followed by the encrypted data and completed by the 16 byte MAC
-signature. The format is: `IV || CIPHERTEXT || MAC`. The complete encryption
+stored. It is followed by the encrypted data and completed by the 16 byte
+MAC. The format is: `IV || CIPHERTEXT || MAC`. The complete encryption
 overhead is 32 byte. For each file, a new random IV is selected.
 
 The basic layout of a sample restic repository is shown below:
@@ -100,20 +101,20 @@ The Pack's structure is as follows:
 
     EncryptedBlob1 || ... || EncryptedBlobN || EncryptedHeader || Header_Length
 
-At the end of the Pack is a header, which describes the content and is
-encrypted and signed. `Header_Length` is the length of the encrypted header
+At the end of the Pack is a header, which describes the content. The header is
+encrypted and authenticated. `Header_Length` is the length of the encrypted header
 encoded as a four byte integer in little-endian encoding. Placing the header at
 the end of a file allows writing the blobs in a continuous stream as soon as
 they are read during the backup phase. This reduces code complexity and avoids
 having to re-write a file once the pack is complete and the content and length
 of the header is known.
 
-All the blobs (`EncryptedBlob1`, `EncryptedBlobN` etc.) are signed and
+All the blobs (`EncryptedBlob1`, `EncryptedBlobN` etc.) are authenticated and
 encrypted independently. This enables repository reorganisation without having
 to touch the encrypted Blobs. In addition it also allows efficient indexing,
 for only the header needs to be read in order to find out which Blobs are
-contained in the Pack. Since the header is signed, authenticity of the header
-can be checked without having to read the complete Pack.
+contained in the Pack. Since the header is authenticated, authenticity of the
+header can be checked without having to read the complete Pack.
 
 After decryption, a Pack's header consists of the following elements:
 
@@ -144,9 +145,9 @@ Indexing
 Index files contain information about Data and Tree Blobs and the Packs they
 are contained in and store this information in the repository. When the local
 cached index is not accessible any more, the index files can be downloaded and
-used to reconstruct the index. The files are encrypted and signed like Data and
-Tree Blobs, so the outer structure is `IV || Ciphertext || MAC` again. The
-plaintext consists of a JSON document like the following:
+used to reconstruct the index. The files are encrypted and authenticated like
+Data and Tree Blobs, so the outer structure is `IV || Ciphertext || MAC` again.
+The plaintext consists of a JSON document like the following:
 
     [ {
       "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
@@ -183,21 +184,22 @@ Keys, Encryption and MAC
 ------------------------
 
 All data stored by restic in the repository is encrypted with AES-256 in
-counter mode and signed with Poly1305-AES. For encrypting new data first 16
-bytes are read from a cryptographically secure pseudorandom number generator as
-a random nonce. This is used both as the IV for counter mode and the nonce for
-Poly1305. This operation needs three keys: A 32 byte for AES-256 for
+counter mode and authenticated using Poly1305-AES. For encrypting new data first
+16 bytes are read from a cryptographically secure pseudorandom number generator
+as a random nonce. This is used both as the IV for counter mode and the nonce
+for Poly1305. This operation needs three keys: A 32 byte for AES-256 for
 encryption, a 16 byte AES key and a 16 byte key for Poly1305. For details see
 the original paper [The Poly1305-AES message-authentication
 code](http://cr.yp.to/mac/poly1305-20050329.pdf) by Dan Bernstein.
-The data is then encrypted with AES-256 and afterwards the MAC is computed over
-the ciphertext, everything is then stored as IV || CIPHERTEXT || MAC.
+The data is then encrypted with AES-256 and afterwards a message authentication
+code (MAC) is computed over the ciphertext, everything is then stored as
+IV || CIPHERTEXT || MAC.
 
 The directory `keys` contains key files. These are simple JSON documents which
-contain all data that is needed to derive the repository's master signing and
-encryption keys from a user's password. The JSON document from the repository
-can be pretty-printed for example by using the Python module `json` (shortened
-to increase readability):
+contain all data that is needed to derive the repository's master encryption and
+message authentication keys from a user's password. The JSON document from the
+repository can be pretty-printed for example by using the Python module `json`
+(shortened to increase readability):
 
     $ python -mjson.tool /tmp/restic-repo/keys/b02de82*
     {
@@ -216,24 +218,25 @@ When the repository is opened by restic, the user is prompted for the
 repository password. This is then used with `scrypt`, a key derivation function
 (KDF), and the supplied parameters (`N`, `r`, `p` and `salt`) to derive 64 key
 bytes. The first 32 bytes are used as the encryption key (for AES-256) and the
-last 32 bytes are used as the signing key (for Poly1305-AES). These last 32
-bytes are divided into a 16 byte AES key `k` followed by 16 bytes of secret key
-`r`. They key `r` is then masked for use with Poly1305 (see the paper for
-details).
+last 32 bytes are used as the message authentication key (for Poly1305-AES).
+These last 32 bytes are divided into a 16 byte AES key `k` followed by 16 bytes
+of secret key `r`. They key `r` is then masked for use with Poly1305 (see the
+paper for details).
 
-This signing key is used to compute a MAC over the bytes contained in the
-JSON field `data` (after removing the Base64 encoding and not including the
-last 32 byte). If the password is incorrect or the key file has been tampered
-with, the computed MAC will not match the last 16 bytes of the data, and
-restic exits with an error. Otherwise, the data is decrypted with the
+This message authentication key is used to compute a MAC over the bytes contained
+in the JSON field `data` (after removing the Base64 encoding and not including
+the last 32 byte). If the password is incorrect or the key file has been
+tampered with, the computed MAC will not match the last 16 bytes of the data,
+and restic exits with an error. Otherwise, the data is decrypted with the
 encryption key derived from `scrypt`. This yields a JSON document which
-contains the master signing and encryption keys for this repository (encoded in
-Base64) and the polynomial that is used for CDC. The command `restic cat
-masterkey` can be used as follows to decrypt and pretty-print the master key:
+contains the master encryption and message authentication keys for this
+repository (encoded in Base64) and the polynomial that is used for CDC. The
+command `restic cat masterkey` can be used as follows to decrypt and
+pretty-print the master key:
 
     $ restic -r /tmp/restic-repo cat masterkey
     {
-        "sign": {
+        "mac": {
           "k": "evFWd9wWlndL9jc501268g==",
           "r": "E9eEDnSJZgqwTOkDtOp+Dw=="
         },
@@ -241,8 +244,9 @@ masterkey` can be used as follows to decrypt and pretty-print the master key:
         "chunker_polynomial": "2f0797d9c2363f"
     }
 
-All data in the repository is encrypted and signed with these master keys with
-AES-256 in Counter mode and signed with Poly1305-AES as described above.
+All data in the repository is encrypted and authenticated with these master keys.
+For encryption, the AES-256 algorithm in Counter mode is used. For message
+authentication, Poly1305-AES is used as described above.
 
 A repository can have several different passwords, with a key file for each.
 This way, the password can be changed without having to re-encrypt all data.
@@ -396,7 +400,7 @@ The restic backup program guarantees the following:
  * Accessing the unencrypted content of stored files and meta data should not
    be possible without a password for the repository. Everything except the
    `version` and `id` files and the meta data included for informational
-   purposes in the key files is encrypted and then signed.
+   purposes in the key files is encrypted and authenticated.
 
  * Modifications (intentional or unintentional) can be detected automatically
    on several layers:
@@ -406,8 +410,8 @@ The restic backup program guarantees the following:
         file's name). This way, modifications (bad RAM, broken harddisk) can be
         detected easily.
 
-     2. Before decrypting any data, the MAC signature on the encrypted data is
-        checked. If there has been a modification, the signature check will
+     2. Before decrypting any data, the MAC on the encrypted data is
+        checked. If there has been a modification, the MAC check will
         fail. This step happens even before the data is decrypted, so data that
         has been tampered with is not decrypted at all.
 
