@@ -17,33 +17,26 @@ type Cache struct {
 	base string
 }
 
-func NewCache(be backend.Identifier) (c *Cache, err error) {
-	// try to get explicit cache dir from environment
-	dir := os.Getenv("RESTIC_CACHE")
-
-	// otherwise try OS specific default
-	if dir == "" {
-		dir, err = GetCacheDir()
-		if err != nil {
-			return nil, err
-		}
+func NewCache(be backend.Identifier) (*Cache, error) {
+	cacheDir, err := getCacheDir()
+	if err != nil {
+		return nil, err
 	}
 
-	basedir := filepath.Join(dir, be.ID())
+	basedir := filepath.Join(cacheDir, be.ID())
 	debug.Log("Cache.New", "opened cache at %v", basedir)
 
 	return &Cache{base: basedir}, nil
 }
 
 func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error) {
-	// try to open file
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
 		return false, err
 	}
-
 	fd, err := os.Open(filename)
 	defer fd.Close()
+
 	if err != nil {
 		if os.IsNotExist(err) {
 			debug.Log("Cache.Has", "test for file %v: not cached", filename)
@@ -81,7 +74,6 @@ func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCl
 }
 
 func (c *Cache) Load(t backend.Type, subtype string, id backend.ID) (io.ReadCloser, error) {
-	// try to open file
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
 		return nil, err
@@ -90,14 +82,14 @@ func (c *Cache) Load(t backend.Type, subtype string, id backend.ID) (io.ReadClos
 	return os.Open(filename)
 }
 
-func (c *Cache) Purge(t backend.Type, subtype string, id backend.ID) error {
+func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
 		return err
 	}
 
 	err = os.Remove(filename)
-	debug.Log("Cache.Purge", "Remove file %v: %v", filename, err)
+	debug.Log("Cache.purge", "Remove file %v: %v", filename, err)
 
 	if err != nil && os.IsNotExist(err) {
 		return nil
@@ -118,7 +110,7 @@ func (c *Cache) Clear(s *server.Server) error {
 		if ok, err := s.Test(backend.Snapshot, entry.ID.String()); !ok || err != nil {
 			debug.Log("Cache.Clear", "snapshot %v doesn't exist any more, removing %v", entry.ID, entry)
 
-			err = c.Purge(backend.Snapshot, entry.Subtype, entry.ID)
+			err = c.purge(backend.Snapshot, entry.Subtype, entry.ID)
 			if err != nil {
 				return err
 			}
@@ -188,7 +180,6 @@ func (c *Cache) List(t backend.Type) ([]CacheEntry, error) {
 	return entries, nil
 }
 
-// Construct file name for given Type.
 func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string, error) {
 	filename := id.String()
 	if subtype != "" {
@@ -203,11 +194,17 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 	return "", fmt.Errorf("cache not supported for type %v", t)
 }
 
-// high-level functions
+func getCacheDir() (string, error) {
+	if dir := os.Getenv("RESTIC_CACHE"); dir != "" {
+		return dir, nil
+	}
 
-// GetCacheDir returns the cache directory according to XDG basedir spec, see
+	return getXDGCacheDir()
+}
+
+// getXDGCacheDir returns the cache directory according to XDG basedir spec, see
 // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-func GetCacheDir() (string, error) {
+func getXDGCacheDir() (string, error) {
 	xdgcache := os.Getenv("XDG_CACHE_HOME")
 	home := os.Getenv("HOME")
 
@@ -243,5 +240,3 @@ func GetCacheDir() (string, error) {
 
 	return cachedir, nil
 }
-
-// TODO: implement RefreshIndex()
