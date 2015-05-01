@@ -37,7 +37,7 @@ func TestCreatePack(t *testing.T) {
 	file := bytes.NewBuffer(nil)
 
 	// create random keys
-	k := crypto.NewKey()
+	k := crypto.NewRandomKey()
 
 	// pack blobs
 	p := pack.NewPacker(k, file)

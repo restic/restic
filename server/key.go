@@ -176,7 +176,7 @@ func AddKey(s *Server, password string, template *Key) (*Key, error) {
 
 	if template == nil {
 		// generate new random master keys
-		newkey.master = crypto.NewKey()
+		newkey.master = crypto.NewRandomKey()
 		// generate random polynomial for cdc
 		p, err := chunker.RandomPolynomial()
 		if err != nil {
@@ -229,16 +229,15 @@ func AddKey(s *Server, password string, template *Key) (*Key, error) {
 	return newkey, nil
 }
 
-// Encrypt encrypts and signs data with the master key. Stored in ciphertext is
-// IV || Ciphertext || MAC. Returns the ciphertext, which is extended if
-// necessary.
+// Encrypt encrypts and authenticates data with the master key. Stored in
+// ciphertext is IV || Ciphertext || MAC. Returns the ciphertext, which is
+// extended if necessary.
 func (k *Key) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
 	return crypto.Encrypt(k.master, ciphertext, plaintext)
 }
 
-// EncryptTo encrypts and signs data with the master key. The returned
-// io.Writer writes IV || Ciphertext || HMAC. For the hash function, SHA256 is
-// used.
+// EncryptTo encrypts and authenticates data with the master key. The returned
+// io.Writer writes IV || Ciphertext || MAC.
 func (k *Key) EncryptTo(wr io.Writer) io.WriteCloser {
 	return crypto.EncryptTo(k.master, wr)
 }
@@ -253,7 +252,7 @@ func (k *Key) Decrypt(plaintext, ciphertext []byte) ([]byte, error) {
 // available on the returned Reader. Ciphertext must be in the form IV ||
 // Ciphertext || MAC. In order to correctly verify the ciphertext, rd is
 // drained, locally buffered and made available on the returned Reader
-// afterwards. If an MAC verification failure is observed, it is returned
+// afterwards. If a MAC verification failure is observed, it is returned
 // immediately.
 func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
 	return crypto.DecryptFrom(k.master, rd)

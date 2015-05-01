@@ -27,7 +27,7 @@ func (e *encryptWriter) Close() error {
 	e.s.XORKeyStream(c, c)
 
 	// compute mac
-	mac := poly1305Sign(c, iv, &e.key.Sign)
+	mac := poly1305MAC(c, iv, &e.key.MAC)
 	e.data = append(e.data, mac...)
 
 	// write everything
