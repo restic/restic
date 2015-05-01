@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -339,13 +340,39 @@ func (node *Node) fillUser(stat *syscall.Stat_t) error {
 	node.UID = stat.Uid
 	node.GID = stat.Gid
 
-	u, err := user.LookupId(strconv.Itoa(int(stat.Uid)))
+	username, err := lookupUsername(strconv.Itoa(int(stat.Uid)))
 	if err != nil {
 		return err
 	}
 
-	node.User = u.Username
+	node.User = username
 	return nil
+}
+
+var (
+	uidLookupCache      = make(map[string]string)
+	uidLookupCacheMutex = sync.RWMutex{}
+)
+
+func lookupUsername(uid string) (string, error) {
+	uidLookupCacheMutex.RLock()
+	value, ok := uidLookupCache[uid]
+	uidLookupCacheMutex.RUnlock()
+
+	if ok {
+		return value, nil
+	}
+
+	u, err := user.LookupId(uid)
+	if err != nil {
+		return "", err
+	}
+
+	uidLookupCacheMutex.Lock()
+	uidLookupCache[uid] = u.Username
+	uidLookupCacheMutex.Unlock()
+
+	return u.Username, nil
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
