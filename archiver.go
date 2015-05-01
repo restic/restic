@@ -24,9 +24,11 @@ const (
 	maxConcurrency        = 10
 	maxConcurrencyPreload = 20
 
-	// chunkerBufSize is used in pool.go
 	chunkerBufSize = 512 * chunker.KiB
 )
+
+var archiverAbortOnAllErrors = func(str string, fi os.FileInfo, err error) error { return err }
+var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
 type Archiver struct {
 	s *server.Server
@@ -37,24 +39,20 @@ type Archiver struct {
 	Filter func(item string, fi os.FileInfo) bool
 }
 
-func NewArchiver(s *server.Server) (*Archiver, error) {
-	var err error
+func NewArchiver(s *server.Server) *Archiver {
 	arch := &Archiver{
 		s:         s,
 		blobToken: make(chan struct{}, maxConcurrentBlobs),
 	}
 
-	// fill blob token
 	for i := 0; i < maxConcurrentBlobs; i++ {
 		arch.blobToken <- struct{}{}
 	}
 
-	// abort on all errors
-	arch.Error = func(string, os.FileInfo, error) error { return err }
-	// allow all files
-	arch.Filter = func(string, os.FileInfo) bool { return true }
+	arch.Error = archiverAbortOnAllErrors
+	arch.Filter = archiverAllowAllFiles
 
-	return arch, nil
+	return arch
 }
 
 func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
@@ -78,22 +76,18 @@ func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Re
 }
 
 func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
-	// convert to json
 	data, err := json.Marshal(item)
-	// append newline
-	data = append(data, '\n')
 	if err != nil {
 		return nil, err
 	}
+	data = append(data, '\n')
 
 	// check if tree has been saved before
 	id := backend.Hash(data)
-
 	if arch.s.Index().Has(id) {
 		return id, nil
 	}
 
-	// otherwise save the data
 	return arch.s.SaveJSON(pack.Tree, item)
 }
 
@@ -106,7 +100,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		return err
 	}
 
-	// check file again
+	// check file again, since it could have disappeared by now
 	fi, err := file.Stat()
 	if err != nil {
 		return err
@@ -116,14 +110,12 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		e2 := arch.Error(node.path, fi, errors.New("file was updated, using new version"))
 
 		if e2 == nil {
-			// create new node
 			n, err := NodeFromFileInfo(node.path, fi)
 			if err != nil {
 				debug.Log("Archiver.SaveFile", "NodeFromFileInfo returned error for %v: %v", node.path, err)
 				return err
 			}
 
-			// copy node
 			*node = *n
 		}
 	}

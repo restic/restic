@@ -50,8 +50,7 @@ func SetupKey(t testing.TB, s *server.Server, password string) *server.Key {
 }
 
 func SnapshotDir(t testing.TB, server *server.Server, path string, parent backend.ID) *restic.Snapshot {
-	arch, err := restic.NewArchiver(server)
-	OK(t, err)
+	arch := restic.NewArchiver(server)
 	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
 	OK(t, err)
 	return sn

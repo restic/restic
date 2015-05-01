@@ -18,7 +18,7 @@ type WalkTreeJob struct {
 
 func walkTree(s *server.Server, path string, treeID backend.ID, done chan struct{}, jobCh chan<- WalkTreeJob) {
 	debug.Log("walkTree", "start on %q (%v)", path, treeID.Str())
-	// load tree
+
 	t, err := LoadTree(s, treeID)
 	if err != nil {
 		jobCh <- WalkTreeJob{Path: path, Error: err}
@@ -30,15 +30,15 @@ func walkTree(s *server.Server, path string, treeID backend.ID, done chan struct
 		if node.Type == "dir" {
 			walkTree(s, p, node.Subtree, done, jobCh)
 		} else {
-			jobCh <- WalkTreeJob{Path: p, Node: node, Error: err}
+			jobCh <- WalkTreeJob{Path: p, Node: node}
 		}
 	}
 
-	jobCh <- WalkTreeJob{Path: filepath.Join(path), Tree: t}
+	jobCh <- WalkTreeJob{Path: path, Tree: t}
 	debug.Log("walkTree", "done for %q (%v)", path, treeID.Str())
 }
 
-// WalkTree walks the tree specified by ID recursively and sends a job for each
+// WalkTree walks the tree specified by id recursively and sends a job for each
 // file and directory it finds. When the channel done is closed, processing
 // stops.
 func WalkTree(server *server.Server, id backend.ID, done chan struct{}, jobCh chan<- WalkTreeJob) {

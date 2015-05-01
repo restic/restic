@@ -34,7 +34,7 @@ type Stat struct {
 
 type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 
-// NewProgress returns a new progress reporter. When Start() called, the
+// NewProgress returns a new progress reporter. When Start() is called, the
 // function OnStart is executed once. Afterwards the function OnUpdate is
 // called when new data arrives or at least every d interval. The function
 // OnDone is called when Done() is called. Both functions are called
@@ -43,7 +43,7 @@ func NewProgress(d time.Duration) *Progress {
 	return &Progress{d: d}
 }
 
-// Start runs resets and runs the progress reporter.
+// Start resets and runs the progress reporter.
 func (p *Progress) Start() {
 	if p == nil || p.running {
 		return
@@ -63,6 +63,21 @@ func (p *Progress) Start() {
 	go p.reporter()
 }
 
+// Reset resets all statistic counters to zero.
+func (p *Progress) Reset() {
+	if p == nil {
+		return
+	}
+
+	if !p.running {
+		panic("resetting a non-running Progress")
+	}
+
+	p.curM.Lock()
+	p.cur = Stat{}
+	p.curM.Unlock()
+}
+
 // Report adds the statistics from s to the current state and tries to report
 // the accumulated statistics via the feedback channel.
 func (p *Progress) Report(s Stat) {
@@ -79,12 +94,17 @@ func (p *Progress) Report(s Stat) {
 	cur := p.cur
 	p.curM.Unlock()
 
-	// update progress
-	if p.OnUpdate != nil {
-		p.fnM.Lock()
-		p.OnUpdate(cur, time.Since(p.start), false)
-		p.fnM.Unlock()
+	p.updateProgress(cur, false)
+}
+
+func (p *Progress) updateProgress(cur Stat, ticker bool) {
+	if p.OnUpdate == nil {
+		return
 	}
+
+	p.fnM.Lock()
+	p.OnUpdate(cur, time.Since(p.start), ticker)
+	p.fnM.Unlock()
 }
 
 func (p *Progress) reporter() {
@@ -98,32 +118,12 @@ func (p *Progress) reporter() {
 			p.curM.Lock()
 			cur := p.cur
 			p.curM.Unlock()
-
-			if p.OnUpdate != nil {
-				p.fnM.Lock()
-				p.OnUpdate(cur, time.Since(p.start), true)
-				p.fnM.Unlock()
-			}
+			p.updateProgress(cur, true)
 		case <-p.cancel:
 			p.c.Stop()
 			return
 		}
 	}
-}
-
-// Reset resets all statistic counters to zero.
-func (p *Progress) Reset() {
-	if p == nil {
-		return
-	}
-
-	if !p.running {
-		panic("resetting a non-running Progress")
-	}
-
-	p.curM.Lock()
-	p.cur = Stat{}
-	p.curM.Unlock()
 }
 
 // Done closes the progress report.
@@ -132,19 +132,17 @@ func (p *Progress) Done() {
 		return
 	}
 
-	if p.running {
-		p.running = false
-		p.o.Do(func() {
-			close(p.cancel)
-		})
+	p.running = false
+	p.o.Do(func() {
+		close(p.cancel)
+	})
 
-		cur := p.cur
+	cur := p.cur
 
-		if p.OnDone != nil {
-			p.fnM.Lock()
-			p.OnDone(cur, time.Since(p.start), false)
-			p.fnM.Unlock()
-		}
+	if p.OnDone != nil {
+		p.fnM.Lock()
+		p.OnDone(cur, time.Since(p.start), false)
+		p.fnM.Unlock()
 	}
 }
 
