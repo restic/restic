@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -145,6 +146,8 @@ func getPosition() string {
 	return fmt.Sprintf("%3d %s:%3d", goroutine, filepath.Base(file), line)
 }
 
+var maxTagLen = 10
+
 func Log(tag string, f string, args ...interface{}) {
 	opts.m.Lock()
 	defer opts.m.Unlock()
@@ -153,7 +156,12 @@ func Log(tag string, f string, args ...interface{}) {
 		f += "\n"
 	}
 
-	formatString := fmt.Sprintf("[% 25s] %-20s %s", tag, getPosition(), f)
+	if len(tag) > maxTagLen {
+		maxTagLen = len(tag)
+	}
+
+	formatStringTag := "[%" + strconv.FormatInt(int64(maxTagLen), 10) + "s]"
+	formatString := fmt.Sprintf(formatStringTag+" %s %s", tag, getPosition(), f)
 
 	dbgprint := func() {
 		fmt.Fprintf(os.Stderr, formatString, args...)
