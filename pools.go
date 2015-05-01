@@ -21,7 +21,10 @@ type poolStats struct {
 	max int
 }
 
-const maxCiphertextSize = crypto.Extension + chunker.MaxSize
+const (
+	maxCiphertextSize = crypto.Extension + chunker.MaxSize
+	chunkerBufSize    = 512 * chunker.KiB
+)
 
 func (s *poolStats) Get(k string) {
 	s.m.Lock()

@@ -12,7 +12,6 @@ import (
 
 	"github.com/juju/arrar"
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
 	"github.com/restic/restic/pipe"
@@ -23,8 +22,6 @@ const (
 	maxConcurrentBlobs    = 32
 	maxConcurrency        = 10
 	maxConcurrencyPreload = 20
-
-	chunkerBufSize = 512 * chunker.KiB
 )
 
 var archiverAbortOnAllErrors = func(str string, fi os.FileInfo, err error) error { return err }
