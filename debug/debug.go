@@ -20,12 +20,18 @@ var opts struct {
 	m      sync.Mutex
 }
 
-func init() {
+// make sure that all the initialization happens before the init() functions
+// are called, cf https://golang.org/ref/spec#Package_initialization
+var _ = initDebug()
+
+func initDebug() bool {
 	initDebugLogger()
 	initDebugTags()
 	initDebugBreaks()
 
 	fmt.Fprintf(os.Stderr, "debug enabled\n")
+
+	return true
 }
 
 func initDebugLogger() {
