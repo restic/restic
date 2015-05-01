@@ -17,6 +17,10 @@ type encryptWriter struct {
 }
 
 func (e *encryptWriter) Close() error {
+	if e == nil {
+		return nil
+	}
+
 	if e.closed {
 		return errors.New("Close() called on already closed writer")
 	}

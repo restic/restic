@@ -554,6 +554,10 @@ func (r *SFTP) ID() string {
 
 // Close closes the sftp connection and terminates the underlying command.
 func (s *SFTP) Close() error {
+	if s == nil {
+		return nil
+	}
+
 	s.c.Close()
 	// TODO: add timeout after which the process is killed
 	return s.cmd.Wait()

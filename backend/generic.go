@@ -115,6 +115,10 @@ func (l *blobReader) Read(p []byte) (int, error) {
 }
 
 func (l *blobReader) Close() error {
+	if l == nil {
+		return nil
+	}
+
 	if !l.closed {
 		err := l.f.Close()
 		l.closed = true

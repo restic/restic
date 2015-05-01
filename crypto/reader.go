@@ -30,7 +30,7 @@ func (d *decryptReader) free() {
 }
 
 func (d *decryptReader) Close() error {
-	if d.buf == nil {
+	if d == nil || d.buf == nil {
 		return nil
 	}
 
@@ -72,14 +72,15 @@ func DecryptFrom(ks *Key, rd io.Reader) (io.ReadCloser, error) {
 	buf := bytes.NewBuffer(getBuffer()[:0])
 	_, err := buf.ReadFrom(rd)
 	if err != nil {
-		return nil, err
+		return (*decryptReader)(nil), err
 	}
 
 	ciphertext := buf.Bytes()
 
 	ciphertext, err = Decrypt(ks, ciphertext, ciphertext)
 	if err != nil {
-		return nil, err
+		freeBuffer(ciphertext)
+		return (*decryptReader)(nil), err
 	}
 
 	return &decryptReader{buf: ciphertext, rd: bytes.NewReader(ciphertext)}, nil

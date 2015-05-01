@@ -24,6 +24,10 @@ func NewHashAppendWriter(w io.Writer, h hash.Hash) *HashAppendWriter {
 }
 
 func (h *HashAppendWriter) Close() error {
+	if h == nil {
+		return nil
+	}
+
 	if !h.closed {
 		h.closed = true
 
