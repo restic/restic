@@ -383,10 +383,13 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 
 	node.Inode = stat.Ino
 
-	node.fillUser(stat)
 	node.fillTimes(stat)
 
 	var err error
+
+	if err = node.fillUser(stat); err != nil {
+		return err
+	}
 
 	switch node.Type {
 	case "file":
