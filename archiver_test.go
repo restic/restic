@@ -142,7 +142,9 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
 	}
 
-	archiveDirectory(b)
+	for i := 0; i < b.N; i++ {
+		archiveDirectory(b)
+	}
 }
 
 func archiveWithDedup(t testing.TB) {
