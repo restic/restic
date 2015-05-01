@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -122,6 +123,28 @@ func initDebugBreaks() {
 	fmt.Fprintf(os.Stderr, "debug breaks enabled for: %v\n", breaks)
 }
 
+// taken from https://github.com/VividCortex/trace
+func goroutineNum() int {
+	b := make([]byte, 20)
+	runtime.Stack(b, false)
+	var num int
+
+	fmt.Sscanf(string(b), "goroutine %d ", &num)
+	return num
+}
+
+// taken from https://github.com/VividCortex/trace
+func getPosition() string {
+	_, file, line, ok := runtime.Caller(2)
+	if !ok {
+		return ""
+	}
+
+	goroutine := goroutineNum()
+
+	return fmt.Sprintf("%3d %s:%3d", goroutine, filepath.Base(file), line)
+}
+
 func Log(tag string, f string, args ...interface{}) {
 	opts.m.Lock()
 	defer opts.m.Unlock()
@@ -130,12 +153,14 @@ func Log(tag string, f string, args ...interface{}) {
 		f += "\n"
 	}
 
+	formatString := fmt.Sprintf("[% 25s] %-20s %s", tag, getPosition(), f)
+
 	dbgprint := func() {
-		fmt.Fprintf(os.Stderr, "DEBUG["+tag+"]: "+f, args...)
+		fmt.Fprintf(os.Stderr, formatString, args...)
 	}
 
 	if opts.logger != nil {
-		opts.logger.Printf("["+tag+"] "+f, args...)
+		opts.logger.Printf(formatString, args...)
 	}
 
 	// check if tag is enabled directly
