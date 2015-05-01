@@ -88,13 +88,13 @@ func OpenKey(s *Server, name string, password string) (*Key, error) {
 	}
 	k.name = name
 
-	// test if polynomial is valid and irreducible
-	if k.master.ChunkerPolynomial == 0 {
-		return nil, errors.New("Polynomial for content defined chunking is zero")
+	if !k.Valid() {
+		return nil, errors.New("Invalid key for repository")
 	}
 
-	if !k.master.ChunkerPolynomial.Irreducible() {
-		return nil, errors.New("Polynomial for content defined chunking is invalid")
+	// test if the chunker polynomial is present in the master key
+	if k.master.ChunkerPolynomial == 0 {
+		return nil, errors.New("Polynomial for content defined chunking is zero")
 	}
 
 	debug.Log("OpenKey", "Master keys loaded, polynomial %v", k.master.ChunkerPolynomial)
@@ -278,4 +278,9 @@ func (k *Key) String() string {
 
 func (k Key) Name() string {
 	return k.name
+}
+
+// Valid tests whether the mac and encryption keys are valid (i.e. not zero)
+func (k *Key) Valid() bool {
+	return k.user.Valid() && k.master.Valid()
 }

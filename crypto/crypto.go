@@ -179,6 +179,28 @@ func (m *MACKey) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Valid tests whether the key k is valid (i.e. not zero).
+func (k *MACKey) Valid() bool {
+	nonzeroK := false
+	for i := 0; i < len(k.K); i++ {
+		if k.K[i] != 0 {
+			nonzeroK = true
+		}
+	}
+
+	if !nonzeroK {
+		return false
+	}
+
+	for i := 0; i < len(k.R); i++ {
+		if k.R[i] != 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (k *EncryptionKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(k[:])
 }
@@ -192,6 +214,17 @@ func (k *EncryptionKey) UnmarshalJSON(data []byte) error {
 	copy(k[:], d)
 
 	return nil
+}
+
+// Valid tests whether the key k is valid (i.e. not zero).
+func (k *EncryptionKey) Valid() bool {
+	for i := 0; i < len(k); i++ {
+		if k[i] != 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ErrInvalidCiphertext is returned when trying to encrypt into the slice that
@@ -303,4 +336,13 @@ func KDF(N, R, P int, salt []byte, password string) (*Key, error) {
 	macKeyFromSlice(&derKeys.MAC, scryptKeys[aesKeySize:])
 
 	return derKeys, nil
+}
+
+// Valid tests if the key is valid.
+func (k *Key) Valid() bool {
+	if k.ChunkerPolynomial != 0 && !k.ChunkerPolynomial.Irreducible() {
+		return false
+	}
+
+	return k.Encrypt.Valid() && k.MAC.Valid()
 }
