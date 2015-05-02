@@ -312,7 +312,7 @@ func (b *Local) GetReader(t backend.Type, name string, offset, length uint) (io.
 		return f, nil
 	}
 
-	return backend.LimitReader(f, int64(length)), nil
+	return backend.LimitReadCloser(f, int64(length)), nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.

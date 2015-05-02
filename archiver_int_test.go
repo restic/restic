@@ -115,7 +115,7 @@ func TestArchivePipe(t *testing.T) {
 	go testTreeWalker(done, treeCh)
 	go testPipeWalker(done, pipeCh)
 
-	p := ArchivePipe{Old: treeCh, New: pipeCh}
+	p := archivePipe{Old: treeCh, New: pipeCh}
 
 	ch := make(chan pipe.Job)
 

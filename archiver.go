@@ -20,14 +20,14 @@ import (
 )
 
 const (
-	maxConcurrentBlobs    = 32
-	maxConcurrency        = 10
-	maxConcurrencyPreload = 20
+	maxConcurrentBlobs = 32
+	maxConcurrency     = 10
 )
 
 var archiverAbortOnAllErrors = func(str string, fi os.FileInfo, err error) error { return err }
 var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
+// Archiver is used to backup a set of directories.
 type Archiver struct {
 	s *server.Server
 
@@ -37,6 +37,7 @@ type Archiver struct {
 	Filter func(item string, fi os.FileInfo) bool
 }
 
+// NewArchiver returns a new archiver.
 func NewArchiver(s *server.Server) *Archiver {
 	arch := &Archiver{
 		s:         s,
@@ -53,6 +54,7 @@ func NewArchiver(s *server.Server) *Archiver {
 	return arch
 }
 
+// Save stores a blob read from rd in the server.
 func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
@@ -73,6 +75,7 @@ func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Re
 	return nil
 }
 
+// SaveTreeJSON stores a tree in the server.
 func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
@@ -207,99 +210,6 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 
 	err = updateNodeContent(node, results)
 	return err
-}
-
-func (arch *Archiver) saveTree(p *Progress, t *Tree) (backend.ID, error) {
-	debug.Log("Archiver.saveTree", "saveTree(%v)\n", t)
-	var wg sync.WaitGroup
-
-	// TODO: do all this in parallel
-	for _, node := range t.Nodes {
-		if node.tree != nil {
-			id, err := arch.saveTree(p, node.tree)
-			if err != nil {
-				return nil, err
-			}
-			node.Subtree = id
-			p.Report(Stat{Dirs: 1})
-		} else if node.Type == "file" {
-			if len(node.Content) > 0 {
-				removeContent := false
-
-				// check content
-				for _, id := range node.Content {
-					packID, _, _, _, err := arch.s.Index().Lookup(id)
-					if err != nil {
-						debug.Log("Archiver.saveTree", "unable to find storage id for data blob %v: %v", id.Str(), err)
-						arch.Error(node.path, nil, fmt.Errorf("unable to find storage id for data blob %v: %v", id.Str(), err))
-						removeContent = true
-						continue
-					}
-
-					if ok, err := arch.s.Test(backend.Data, packID.String()); !ok || err != nil {
-						debug.Log("Archiver.saveTree", "pack %v of blob %v not in repository (error is %v)", packID, id, err)
-						arch.Error(node.path, nil, fmt.Errorf("pack %v of blob %v not in repository (error is %v)", packID, id, err))
-						removeContent = true
-					}
-				}
-
-				if removeContent {
-					debug.Log("Archiver.saveTree", "removing content for %s", node.path)
-					node.Content = node.Content[:0]
-				}
-			}
-
-			if len(node.Content) == 0 {
-				// start goroutine
-				wg.Add(1)
-				go func(n *Node) {
-					defer wg.Done()
-
-					n.err = arch.SaveFile(p, n)
-					p.Report(Stat{Files: 1})
-				}(node)
-			}
-		}
-	}
-
-	wg.Wait()
-
-	usedIDs := backend.NewIDSet()
-
-	// check for invalid file nodes
-	for _, node := range t.Nodes {
-		if node.Type == "file" && node.Content == nil && node.err == nil {
-			return nil, fmt.Errorf("node %v has empty content", node.Name)
-		}
-
-		// remember used hashes
-		if node.Type == "file" && node.Content != nil {
-			for _, id := range node.Content {
-				usedIDs.Insert(id)
-			}
-		}
-
-		if node.Type == "dir" && node.Subtree != nil {
-			usedIDs.Insert(node.Subtree)
-		}
-
-		if node.err != nil {
-			err := arch.Error(node.path, nil, node.err)
-			if err != nil {
-				return nil, err
-			}
-
-			// save error message in node
-			node.Error = node.err.Error()
-		}
-	}
-
-	id, err := arch.SaveTreeJSON(t)
-	if err != nil {
-		return nil, err
-	}
-
-	return id, nil
 }
 
 func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan struct{}, entCh <-chan pipe.Entry) {
@@ -459,36 +369,36 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 	}
 }
 
-type ArchivePipe struct {
+type archivePipe struct {
 	Old <-chan WalkTreeJob
 	New <-chan pipe.Job
 }
 
 func copyJobs(done <-chan struct{}, in <-chan pipe.Job, out chan<- pipe.Job) {
-	i := in
-	o := out
-
-	o = nil
-
 	var (
-		j  pipe.Job
-		ok bool
+		// disable sending on the outCh until we received a job
+		outCh chan<- pipe.Job
+		// enable receiving from in
+		inCh = in
+		job  pipe.Job
+		ok   bool
 	)
+
 	for {
 		select {
 		case <-done:
 			return
-		case j, ok = <-i:
+		case job, ok = <-inCh:
 			if !ok {
-				// in ch closed, we're done
-				debug.Log("copyJobs", "in channel closed, we're done")
+				// input channel closed, we're done
+				debug.Log("copyJobs", "input channel closed, we're done")
 				return
 			}
-			i = nil
-			o = out
-		case o <- j:
-			o = nil
-			i = in
+			inCh = nil
+			outCh = out
+		case outCh <- job:
+			outCh = nil
+			inCh = in
 		}
 	}
 }
@@ -499,7 +409,7 @@ type archiveJob struct {
 	new    pipe.Job
 }
 
-func (a *ArchivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
+func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 	defer func() {
 		close(out)
 		debug.Log("ArchivePipe.compare", "done")
@@ -619,7 +529,10 @@ func (j archiveJob) Copy() pipe.Job {
 	return j.new
 }
 
-func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Snapshot, backend.ID, error) {
+// Snapshot creates a snapshot of the given paths. If parentID is set, this is
+// used to compare the files to the ones archived at the time this snapshot was
+// taken.
+func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID) (*Snapshot, backend.ID, error) {
 	debug.Log("Archiver.Snapshot", "start for %v", paths)
 
 	debug.Break("Archiver.Snapshot")
@@ -638,14 +551,14 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 		return nil, nil, err
 	}
 
-	jobs := ArchivePipe{}
+	jobs := archivePipe{}
 
 	// use parent snapshot (if some was given)
-	if pid != nil {
-		sn.Parent = pid
+	if parentID != nil {
+		sn.Parent = parentID
 
 		// load parent snapshot
-		parent, err := LoadSnapshot(arch.s, pid)
+		parent, err := LoadSnapshot(arch.s, parentID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -745,6 +658,8 @@ func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 
+// Scan traverses the dirs to collect Stat information while emitting progress
+// information with p.
 func Scan(dirs []string, p *Progress) (Stat, error) {
 	p.Start()
 	defer p.Done()

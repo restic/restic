@@ -12,6 +12,7 @@ import (
 	"github.com/juju/errors"
 )
 
+// Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
 	s  *server.Server
 	sn *Snapshot
@@ -103,6 +104,7 @@ func (res *Restorer) RestoreTo(dir string) error {
 	return res.restoreTo(dir, "", res.sn.Tree)
 }
 
+// Snapshot returns the snapshot this restorer is configured to use.
 func (res *Restorer) Snapshot() *Snapshot {
 	return res.sn
 }

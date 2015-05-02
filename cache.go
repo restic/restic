@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/server"
 )
 
+// Cache is used to locally cache items from a server.
 type Cache struct {
 	base string
 }
@@ -29,6 +30,7 @@ func NewCache(be backend.Identifier) (*Cache, error) {
 	return &Cache{base: basedir}, nil
 }
 
+// Has checks if the local cache has the id.
 func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error) {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
@@ -51,6 +53,9 @@ func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error)
 	return true, nil
 }
 
+// Store returns an io.WriteCloser that is used to save new information to the
+// cache. The returned io.WriteCloser must be closed by the caller after all
+// data has been written.
 func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCloser, error) {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
@@ -73,6 +78,8 @@ func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCl
 	return file, nil
 }
 
+// Load returns information from the cache. The returned io.ReadCloser must be
+// closed by the caller.
 func (c *Cache) Load(t backend.Type, subtype string, id backend.ID) (io.ReadCloser, error) {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
@@ -98,8 +105,9 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 	return err
 }
 
+// Clear removes information from the cache that isn't present in the server any more.
 func (c *Cache) Clear(s *server.Server) error {
-	list, err := c.List(backend.Snapshot)
+	list, err := c.list(backend.Snapshot)
 	if err != nil {
 		return err
 	}
@@ -120,19 +128,19 @@ func (c *Cache) Clear(s *server.Server) error {
 	return nil
 }
 
-type CacheEntry struct {
+type cacheEntry struct {
 	ID      backend.ID
 	Subtype string
 }
 
-func (c CacheEntry) String() string {
+func (c cacheEntry) String() string {
 	if c.Subtype != "" {
 		return c.ID.Str() + "." + c.Subtype
 	}
 	return c.ID.Str()
 }
 
-func (c *Cache) List(t backend.Type) ([]CacheEntry, error) {
+func (c *Cache) list(t backend.Type) ([]cacheEntry, error) {
 	var dir string
 
 	switch t {
@@ -145,7 +153,7 @@ func (c *Cache) List(t backend.Type) ([]CacheEntry, error) {
 	fd, err := os.Open(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return []CacheEntry{}, nil
+			return []cacheEntry{}, nil
 		}
 		return nil, err
 	}
@@ -156,7 +164,7 @@ func (c *Cache) List(t backend.Type) ([]CacheEntry, error) {
 		return nil, err
 	}
 
-	entries := make([]CacheEntry, 0, len(fis))
+	entries := make([]cacheEntry, 0, len(fis))
 
 	for _, fi := range fis {
 		parts := strings.SplitN(fi.Name(), ".", 2)
@@ -168,7 +176,7 @@ func (c *Cache) List(t backend.Type) ([]CacheEntry, error) {
 			continue
 		}
 
-		e := CacheEntry{ID: id}
+		e := cacheEntry{ID: id}
 
 		if len(parts) == 2 {
 			e.Subtype = parts[1]

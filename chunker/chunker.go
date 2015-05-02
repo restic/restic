@@ -12,16 +12,17 @@ const (
 	MiB = 1024 * KiB
 
 	// WindowSize is the size of the sliding window.
-	WindowSize = 64
+	windowSize = 64
 
 	// aim to create chunks of 20 bits or about 1MiB on average.
-	AverageBits = 20
+	averageBits = 20
 
-	// Chunks should be in the range of 512KiB to 8MiB.
+	// MinSize is the minimal size of a chunk.
 	MinSize = 512 * KiB
+	// MaxSize is the maximal size of a chunk.
 	MaxSize = 8 * MiB
 
-	splitmask = (1 << AverageBits) - 1
+	splitmask = (1 << averageBits) - 1
 )
 
 type tables struct {
@@ -39,7 +40,7 @@ func init() {
 	cache.entries = make(map[Pol]*tables)
 }
 
-// A chunk is one content-dependent chunk of bytes whose end was cut when the
+// Chunk is one content-dependent chunk of bytes whose end was cut when the
 // Rabin Fingerprint had the value stored in Cut.
 type Chunk struct {
 	Start  uint
@@ -52,7 +53,7 @@ func (c Chunk) Reader(r io.ReaderAt) io.Reader {
 	return io.NewSectionReader(r, int64(c.Start), int64(c.Length))
 }
 
-// A chunker internally holds everything needed to split content.
+// Chunker splits content with Rabin Fingerprints.
 type Chunker struct {
 	pol      Pol
 	polShift uint
@@ -61,7 +62,7 @@ type Chunker struct {
 	rd     io.Reader
 	closed bool
 
-	window [WindowSize]byte
+	window [windowSize]byte
 	wpos   int
 
 	buf  []byte
@@ -97,7 +98,7 @@ func (c *Chunker) Reset(rd io.Reader, p Pol) {
 	c.fillTables()
 	c.rd = rd
 
-	for i := 0; i < WindowSize; i++ {
+	for i := 0; i < windowSize; i++ {
 		c.window[i] = 0
 	}
 	c.closed = false
@@ -116,7 +117,7 @@ func (c *Chunker) Reset(rd io.Reader, p Pol) {
 	}
 
 	// do not start a new chunk unless at least MinSize bytes have been read
-	c.pre = MinSize - WindowSize
+	c.pre = MinSize - windowSize
 }
 
 // Calculate out_table and mod_table for optimization. Must be called only
@@ -154,7 +155,7 @@ func (c *Chunker) fillTables() {
 		var h Pol
 
 		h = appendByte(h, byte(b), c.pol)
-		for i := 0; i < WindowSize-1; i++ {
+		for i := 0; i < windowSize-1; i++ {
 			h = appendByte(h, 0, c.pol)
 		}
 		c.tables.out[b] = h
@@ -246,7 +247,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 			out := c.window[c.wpos]
 			c.window[c.wpos] = b
 			c.digest ^= uint64(c.tables.out[out])
-			c.wpos = (c.wpos + 1) % WindowSize
+			c.wpos = (c.wpos + 1) % windowSize
 
 			// c.append(b)
 			index := c.digest >> c.polShift
@@ -284,7 +285,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 				c.Reset(c.rd, c.pol)
 				c.pos = pos
 				c.start = pos
-				c.pre = MinSize - WindowSize
+				c.pre = MinSize - windowSize
 
 				return chunk, nil
 			}
@@ -330,7 +331,7 @@ func (c *Chunker) slide(b byte) {
 	out := c.window[c.wpos]
 	c.window[c.wpos] = b
 	c.digest ^= uint64(c.tables.out[out])
-	c.wpos = (c.wpos + 1) % WindowSize
+	c.wpos = (c.wpos + 1) % windowSize
 
 	c.append(b)
 }

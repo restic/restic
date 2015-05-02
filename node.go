@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/server"
 )
 
+// Node is a file, directory or other item in a backup.
 type Node struct {
 	Name       string       `json:"name"`
 	Type       string       `json:"type"`
@@ -62,6 +63,7 @@ func (node Node) Tree() *Tree {
 	return node.tree
 }
 
+// NodeFromFileInfo returns a new node from the given path and FileInfo.
 func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	node := &Node{
 		path:    path,
@@ -100,6 +102,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 	return ""
 }
 
+// CreateAt creates the node at the given path and restores all the meta data.
 func (node *Node) CreateAt(path string, s *server.Server) error {
 	switch node.Type {
 	case "dir":
