@@ -100,7 +100,7 @@ outer:
 
 // wrap around io.LimitedReader that implements io.ReadCloser
 type blobReader struct {
-	f      io.Closer
+	cl     io.Closer
 	rd     io.Reader
 	closed bool
 }
@@ -120,7 +120,7 @@ func (l *blobReader) Close() error {
 	}
 
 	if !l.closed {
-		err := l.f.Close()
+		err := l.cl.Close()
 		l.closed = true
 		return err
 	}
@@ -128,6 +128,8 @@ func (l *blobReader) Close() error {
 	return nil
 }
 
-func LimitReader(f io.ReadCloser, n int64) *blobReader {
-	return &blobReader{f: f, rd: io.LimitReader(f, n)}
+// LimitReadCloser returns a new reader wraps r in an io.LimitReader, but also
+// implements the Close() method.
+func LimitReadCloser(r io.ReadCloser, n int64) *blobReader {
+	return &blobReader{cl: r, rd: io.LimitReader(r, n)}
 }
