@@ -20,9 +20,8 @@ import (
 )
 
 const (
-	maxConcurrentBlobs    = 32
-	maxConcurrency        = 10
-	maxConcurrencyPreload = 20
+	maxConcurrentBlobs = 32
+	maxConcurrency     = 10
 )
 
 var archiverAbortOnAllErrors = func(str string, fi os.FileInfo, err error) error { return err }
