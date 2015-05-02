@@ -21,7 +21,7 @@ func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
 	}
 }
 
-// ok fails the test if an err is not nil.
+// OK fails the test if an err is not nil.
 func OK(tb testing.TB, err error) {
 	if err != nil {
 		_, file, line, _ := runtime.Caller(1)
@@ -30,7 +30,7 @@ func OK(tb testing.TB, err error) {
 	}
 }
 
-// equals fails the test if exp is not equal to act.
+// Equals fails the test if exp is not equal to act.
 func Equals(tb testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {
 		_, file, line, _ := runtime.Caller(1)

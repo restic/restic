@@ -17,8 +17,9 @@ const (
 	// aim to create chunks of 20 bits or about 1MiB on average.
 	averageBits = 20
 
-	// Chunks should be in the range of 512KiB to 8MiB.
+	// MinSize is the minimal size of a chunk.
 	MinSize = 512 * KiB
+	// MaxSize is the maximal size of a chunk.
 	MaxSize = 8 * MiB
 
 	splitmask = (1 << averageBits) - 1
@@ -39,7 +40,7 @@ func init() {
 	cache.entries = make(map[Pol]*tables)
 }
 
-// A chunk is one content-dependent chunk of bytes whose end was cut when the
+// Chunk is one content-dependent chunk of bytes whose end was cut when the
 // Rabin Fingerprint had the value stored in Cut.
 type Chunk struct {
 	Start  uint
@@ -52,7 +53,7 @@ func (c Chunk) Reader(r io.ReaderAt) io.Reader {
 	return io.NewSectionReader(r, int64(c.Start), int64(c.Length))
 }
 
-// A chunker internally holds everything needed to split content.
+// Chunker split content with Rabin Fingerprints.
 type Chunker struct {
 	pol      Pol
 	polShift uint

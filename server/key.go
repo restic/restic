@@ -258,13 +258,13 @@ func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
 	return crypto.DecryptFrom(k.master, rd)
 }
 
-// Master() returns the master keys for this repository. Only included for
+// Master returns the master keys for this repository. Only included for
 // debug purposes.
 func (k *Key) Master() *crypto.Key {
 	return k.master
 }
 
-// User() returns the user keys for this key. Only included for debug purposes.
+// User returns the user keys for this key. Only included for debug purposes.
 func (k *Key) User() *crypto.Key {
 	return k.user
 }

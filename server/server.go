@@ -422,12 +422,10 @@ func (s *Server) Flush() error {
 	return nil
 }
 
-// Returns the backend used for this server.
 func (s *Server) Backend() backend.Backend {
 	return s.be
 }
 
-// Returns the index of this server.
 func (s *Server) Index() *Index {
 	return s.idx
 }

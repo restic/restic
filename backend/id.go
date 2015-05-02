@@ -10,7 +10,7 @@ import (
 // IDSize contains the size of an ID, in bytes.
 const IDSize = hashSize
 
-// References content within a repository.
+// ID references content within a repository.
 type ID []byte
 
 // ParseID converts the given string to an ID.

@@ -102,7 +102,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 	return ""
 }
 
-// CreatAt creates the node at the given path and restores all the meta data.
+// CreateAt creates the node at the given path and restores all the meta data.
 func (node *Node) CreateAt(path string, s *server.Server) error {
 	switch node.Type {
 	case "dir":
