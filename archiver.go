@@ -28,6 +28,7 @@ const (
 var archiverAbortOnAllErrors = func(str string, fi os.FileInfo, err error) error { return err }
 var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
+// Archiver is used to backup a set of directories.
 type Archiver struct {
 	s *server.Server
 
@@ -37,6 +38,7 @@ type Archiver struct {
 	Filter func(item string, fi os.FileInfo) bool
 }
 
+// NewArchiver returns a new archiver.
 func NewArchiver(s *server.Server) *Archiver {
 	arch := &Archiver{
 		s:         s,
@@ -53,6 +55,7 @@ func NewArchiver(s *server.Server) *Archiver {
 	return arch
 }
 
+// Save stores a blob read from rd in the server.
 func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
@@ -73,6 +76,7 @@ func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Re
 	return nil
 }
 
+// SaveTreeJSON stores a tree in the server.
 func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
@@ -619,7 +623,9 @@ func (j archiveJob) Copy() pipe.Job {
 	return j.new
 }
 
-func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Snapshot, backend.ID, error) {
+// Snapshot creates a snapshot of the given paths. If parentID is set, this is
+// used to compare the files with.
+func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID) (*Snapshot, backend.ID, error) {
 	debug.Log("Archiver.Snapshot", "start for %v", paths)
 
 	debug.Break("Archiver.Snapshot")
@@ -641,11 +647,11 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 	jobs := archivePipe{}
 
 	// use parent snapshot (if some was given)
-	if pid != nil {
-		sn.Parent = pid
+	if parentID != nil {
+		sn.Parent = parentID
 
 		// load parent snapshot
-		parent, err := LoadSnapshot(arch.s, pid)
+		parent, err := LoadSnapshot(arch.s, parentID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -745,6 +751,8 @@ func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 
+// Scan traverses the dirs to collect Stat information while emitting progress
+// information with p.
 func Scan(dirs []string, p *Progress) (Stat, error) {
 	p.Start()
 	defer p.Done()

@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/server"
 )
 
+// Cache is used to handle the local cache.
 type Cache struct {
 	base string
 }
@@ -29,6 +30,7 @@ func NewCache(be backend.Identifier) (*Cache, error) {
 	return &Cache{base: basedir}, nil
 }
 
+// Has checks if the local cache has the id.
 func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error) {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
@@ -51,6 +53,7 @@ func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error)
 	return true, nil
 }
 
+// Store returns an io.WriteCloser that is used to save new information to.
 func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCloser, error) {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
@@ -73,6 +76,7 @@ func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCl
 	return file, nil
 }
 
+// Load returns information from the cache.
 func (c *Cache) Load(t backend.Type, subtype string, id backend.ID) (io.ReadCloser, error) {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
@@ -98,6 +102,7 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 	return err
 }
 
+// Clear removes information from the cache that isn't present in the server any more.
 func (c *Cache) Clear(s *server.Server) error {
 	list, err := c.list(backend.Snapshot)
 	if err != nil {
