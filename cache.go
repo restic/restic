@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/server"
 )
 
-// Cache is used to handle the local cache.
+// Cache is used to locally cache items from a server.
 type Cache struct {
 	base string
 }
@@ -53,7 +53,9 @@ func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error)
 	return true, nil
 }
 
-// Store returns an io.WriteCloser that is used to save new information to.
+// Store returns an io.WriteCloser that is used to save new information to the
+// cache. The returned io.WriteCloser must be closed by the caller after all
+// data has been written.
 func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCloser, error) {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {
@@ -76,7 +78,8 @@ func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCl
 	return file, nil
 }
 
-// Load returns information from the cache.
+// Load returns information from the cache. The returned io.ReadCloser must be
+// closed by the caller.
 func (c *Cache) Load(t backend.Type, subtype string, id backend.ID) (io.ReadCloser, error) {
 	filename, err := c.filename(t, subtype, id)
 	if err != nil {

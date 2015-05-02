@@ -530,7 +530,8 @@ func (j archiveJob) Copy() pipe.Job {
 }
 
 // Snapshot creates a snapshot of the given paths. If parentID is set, this is
-// used to compare the files with.
+// used to compare the files to the ones archived at the time this snapshot was
+// taken.
 func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID) (*Snapshot, backend.ID, error) {
 	debug.Log("Archiver.Snapshot", "start for %v", paths)
 

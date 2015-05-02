@@ -53,7 +53,7 @@ func (c Chunk) Reader(r io.ReaderAt) io.Reader {
 	return io.NewSectionReader(r, int64(c.Start), int64(c.Length))
 }
 
-// Chunker split content with Rabin Fingerprints.
+// Chunker splits content with Rabin Fingerprints.
 type Chunker struct {
 	pol      Pol
 	polShift uint
