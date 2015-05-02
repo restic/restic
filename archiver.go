@@ -469,30 +469,30 @@ type archivePipe struct {
 }
 
 func copyJobs(done <-chan struct{}, in <-chan pipe.Job, out chan<- pipe.Job) {
-	i := in
-	o := out
-
-	o = nil
-
 	var (
-		j  pipe.Job
-		ok bool
+		// disable sending on the outCh until we received a job
+		outCh chan<- pipe.Job
+		// enable receiving from in
+		inCh = in
+		job  pipe.Job
+		ok   bool
 	)
+
 	for {
 		select {
 		case <-done:
 			return
-		case j, ok = <-i:
+		case job, ok = <-inCh:
 			if !ok {
-				// in ch closed, we're done
-				debug.Log("copyJobs", "in channel closed, we're done")
+				// input channel closed, we're done
+				debug.Log("copyJobs", "input channel closed, we're done")
 				return
 			}
-			i = nil
-			o = out
-		case o <- j:
-			o = nil
-			i = in
+			inCh = nil
+			outCh = out
+		case outCh <- job:
+			outCh = nil
+			inCh = in
 		}
 	}
 }
