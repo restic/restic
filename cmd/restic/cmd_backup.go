@@ -93,7 +93,7 @@ func printTree2(indent int, t *restic.Tree) {
 }
 
 func (cmd CmdBackup) Usage() string {
-	return "DIR/FILE [snapshot-ID]"
+	return "DIR/FILE [DIR/FILE] [...]"
 }
 
 func newScanProgress() *restic.Progress {
