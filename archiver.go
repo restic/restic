@@ -459,7 +459,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 	}
 }
 
-type ArchivePipe struct {
+type archivePipe struct {
 	Old <-chan WalkTreeJob
 	New <-chan pipe.Job
 }
@@ -499,7 +499,7 @@ type archiveJob struct {
 	new    pipe.Job
 }
 
-func (a *ArchivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
+func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 	defer func() {
 		close(out)
 		debug.Log("ArchivePipe.compare", "done")
@@ -638,7 +638,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, pid backend.ID) (*Sn
 		return nil, nil, err
 	}
 
-	jobs := ArchivePipe{}
+	jobs := archivePipe{}
 
 	// use parent snapshot (if some was given)
 	if pid != nil {
