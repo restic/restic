@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/juju/arrar"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/server"
+
+	"github.com/juju/errors"
 )
 
 type Restorer struct {
@@ -29,7 +30,7 @@ func NewRestorer(s *server.Server, id backend.ID) (*Restorer, error) {
 
 	r.sn, err = LoadSnapshot(s, id)
 	if err != nil {
-		return nil, arrar.Annotate(err, "load snapshot for restorer")
+		return nil, errors.Annotate(err, "load snapshot for restorer")
 	}
 
 	return r, nil
@@ -38,7 +39,7 @@ func NewRestorer(s *server.Server, id backend.ID) (*Restorer, error) {
 func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error {
 	tree, err := LoadTree(res.s, treeID)
 	if err != nil {
-		return res.Error(dir, nil, arrar.Annotate(err, "LoadTree"))
+		return res.Error(dir, nil, errors.Annotate(err, "LoadTree"))
 	}
 
 	for _, node := range tree.Nodes {
@@ -54,7 +55,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 			subp := filepath.Join(dir, node.Name)
 			err = res.restoreTo(dst, subp, node.Subtree)
 			if err != nil {
-				err = res.Error(subp, node, arrar.Annotate(err, "restore subtree"))
+				err = res.Error(subp, node, errors.Annotate(err, "restore subtree"))
 				if err != nil {
 					return err
 				}
@@ -75,22 +76,19 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 	err := node.CreateAt(dstPath, res.s)
 
 	// Did it fail because of ENOENT?
-	if arrar.Check(err, func(err error) bool {
-		if pe, ok := err.(*os.PathError); ok {
-			errn, ok := pe.Err.(syscall.Errno)
-			return ok && errn == syscall.ENOENT
-		}
-		return false
-	}) {
-		// Create parent directories and retry
-		err = os.MkdirAll(filepath.Dir(dstPath), 0700)
-		if err == nil || err == os.ErrExist {
-			err = node.CreateAt(dstPath, res.s)
+	if pe, ok := errors.Cause(err).(*os.PathError); ok {
+		errn, ok := pe.Err.(syscall.Errno)
+		if ok && errn == syscall.ENOENT {
+			// Create parent directories and retry
+			err = os.MkdirAll(filepath.Dir(dstPath), 0700)
+			if err == nil || err == os.ErrExist {
+				err = node.CreateAt(dstPath, res.s)
+			}
 		}
 	}
 
 	if err != nil {
-		err = res.Error(dstPath, node, arrar.Annotate(err, "create node"))
+		err = res.Error(dstPath, node, errors.Annotate(err, "create node"))
 		if err != nil {
 			return err
 		}
