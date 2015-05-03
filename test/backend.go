@@ -30,7 +30,7 @@ func SetupBackend(t testing.TB) *server.Server {
 	OK(t, err)
 
 	s := server.NewServer(b)
-	OK(t, s.CreateKey(*TestPassword))
+	OK(t, s.CreateMasterKey(*TestPassword))
 	return s
 }
 

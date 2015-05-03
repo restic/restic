@@ -50,9 +50,9 @@ type Key struct {
 	name string
 }
 
-// CreateKey initializes a master key in the given backend and encrypts it with
-// the password.
-func CreateKey(s *Server, password string) (*Key, error) {
+// CreateMasterKey creates a new master key in the given backend and encrypts
+// it with the password.
+func CreateMasterKey(s *Server, password string) (*Key, error) {
 	return AddKey(s, password, nil)
 }
 

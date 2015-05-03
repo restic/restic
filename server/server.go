@@ -531,8 +531,10 @@ func (s *Server) SearchKey(password string) error {
 	return nil
 }
 
-func (s *Server) CreateKey(password string) error {
-	key, err := CreateKey(s, password)
+// CreateMasterKey creates a new key with the supplied password, afterwards the
+// repository config is created.
+func (s *Server) CreateMasterKey(password string) error {
+	key, err := CreateMasterKey(s, password)
 	if err != nil {
 		return err
 	}
