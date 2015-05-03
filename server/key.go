@@ -12,9 +12,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/crypto"
-	"github.com/restic/restic/debug"
 )
 
 var (
@@ -91,13 +89,6 @@ func OpenKey(s *Server, name string, password string) (*Key, error) {
 	if !k.Valid() {
 		return nil, errors.New("Invalid key for repository")
 	}
-
-	// test if the chunker polynomial is present in the master key
-	if k.master.ChunkerPolynomial == 0 {
-		return nil, errors.New("Polynomial for content defined chunking is zero")
-	}
-
-	debug.Log("OpenKey", "Master keys loaded, polynomial %v", k.master.ChunkerPolynomial)
 
 	return k, nil
 }
@@ -177,14 +168,6 @@ func AddKey(s *Server, password string, template *Key) (*Key, error) {
 	if template == nil {
 		// generate new random master keys
 		newkey.master = crypto.NewRandomKey()
-		// generate random polynomial for cdc
-		p, err := chunker.RandomPolynomial()
-		if err != nil {
-			debug.Log("AddKey", "error generating new polynomial for cdc: %v", err)
-			return nil, err
-		}
-		debug.Log("AddKey", "generated new polynomial for cdc: %v", p)
-		newkey.master.ChunkerPolynomial = p
 	} else {
 		// copy master keys from old key
 		newkey.master = template.master
