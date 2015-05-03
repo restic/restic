@@ -42,7 +42,7 @@ func listKeys(s *server.Server) error {
 		}
 
 		var current string
-		if name == s.Key().Name() {
+		if name == s.KeyName() {
 			current = "*"
 		} else {
 			current = " "
@@ -75,7 +75,7 @@ func addKey(s *server.Server) error {
 }
 
 func deleteKey(s *server.Server, name string) error {
-	if name == s.Key().Name() {
+	if name == s.KeyName() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
@@ -103,7 +103,7 @@ func changePassword(s *server.Server) error {
 	}
 
 	// remove old key
-	err = s.Remove(backend.Key, s.Key().Name())
+	err = s.Remove(backend.Key, s.KeyName())
 	if err != nil {
 		return err
 	}

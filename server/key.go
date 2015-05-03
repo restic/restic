@@ -132,7 +132,7 @@ func LoadKey(s *Server, name string) (*Key, error) {
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(s *Server, password string, template *Key) (*Key, error) {
+func AddKey(s *Server, password string, template *crypto.Key) (*Key, error) {
 	// fill meta data about key
 	newkey := &Key{
 		Created: time.Now(),
@@ -170,7 +170,7 @@ func AddKey(s *Server, password string, template *Key) (*Key, error) {
 		newkey.master = crypto.NewRandomKey()
 	} else {
 		// copy master keys from old key
-		newkey.master = template.master
+		newkey.master = template
 	}
 
 	// encrypt master keys (as json) with user key

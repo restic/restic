@@ -9,8 +9,8 @@ import (
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/pack"
-	"github.com/restic/restic/server"
 	. "github.com/restic/restic/test"
 )
 
@@ -24,7 +24,7 @@ type Rdr interface {
 	io.ReaderAt
 }
 
-func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *server.Key) {
+func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncrypt")
 	rd.Seek(0, 0)
 	ch.Reset(rd, testPol)
@@ -44,7 +44,7 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *server.K
 		OK(b, err)
 		Assert(b, uint(n) == chunk.Length, "invalid length: got %d, expected %d", n, chunk.Length)
 
-		_, err = key.Encrypt(buf2, buf)
+		_, err = crypto.Encrypt(key, buf2, buf)
 		OK(b, err)
 	}
 
@@ -72,7 +72,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf2)
 }
 
-func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *server.Key) {
+func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) {
 	ch := restic.GetChunker("BenchmarkChunkEncryptP")
 	rd.Seek(0, 0)
 	ch.Reset(rd, testPol)
@@ -86,7 +86,7 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *server.Key) 
 		// reduce length of chunkBuf
 		buf = buf[:chunk.Length]
 		io.ReadFull(chunk.Reader(rd), buf)
-		key.Encrypt(buf, buf)
+		crypto.Encrypt(key, buf, buf)
 	}
 
 	restic.FreeChunker("BenchmarkChunkEncryptP", ch)

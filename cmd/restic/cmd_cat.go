@@ -121,7 +121,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "masterkey":
-		buf, err := json.MarshalIndent(s.Key().Master(), "", "  ")
+		buf, err := json.MarshalIndent(s.Key(), "", "  ")
 		if err != nil {
 			return err
 		}
