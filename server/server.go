@@ -552,7 +552,16 @@ func (s *Server) createConfig() (err error) {
 }
 
 func (s *Server) loadConfig(cfg *Config) error {
-	return s.LoadJSONUnpacked(backend.Config, nil, cfg)
+	err := s.LoadJSONUnpacked(backend.Config, nil, cfg)
+	if err != nil {
+		return err
+	}
+
+	if !cfg.ChunkerPolynomial.Irreducible() {
+		return errors.New("invalid chunker polynomial")
+	}
+
+	return nil
 }
 
 // SearchKey tries to find a key for which the supplied password works,
