@@ -579,6 +579,14 @@ func (s *Server) SearchKey(password string) error {
 // CreateMasterKey creates a new key with the supplied password, afterwards the
 // repository config is created.
 func (s *Server) CreateMasterKey(password string) error {
+	has, err := s.Test(backend.Config, "")
+	if err != nil {
+		return err
+	}
+	if has {
+		return errors.New("repository master key and config already initialized")
+	}
+
 	key, err := createMasterKey(s, password)
 	if err != nil {
 		return err
