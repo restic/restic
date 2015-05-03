@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/user"
 	"time"
@@ -210,46 +209,6 @@ func AddKey(s *Server, password string, template *crypto.Key) (*Key, error) {
 	newkey.name = name
 
 	return newkey, nil
-}
-
-// Encrypt encrypts and authenticates data with the master key. Stored in
-// ciphertext is IV || Ciphertext || MAC. Returns the ciphertext, which is
-// extended if necessary.
-func (k *Key) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
-	return crypto.Encrypt(k.master, ciphertext, plaintext)
-}
-
-// EncryptTo encrypts and authenticates data with the master key. The returned
-// io.Writer writes IV || Ciphertext || MAC.
-func (k *Key) EncryptTo(wr io.Writer) io.WriteCloser {
-	return crypto.EncryptTo(k.master, wr)
-}
-
-// Decrypt verifes and decrypts the ciphertext with the master key. Ciphertext
-// must be in the form IV || Ciphertext || MAC.
-func (k *Key) Decrypt(plaintext, ciphertext []byte) ([]byte, error) {
-	return crypto.Decrypt(k.master, plaintext, ciphertext)
-}
-
-// DecryptFrom verifies and decrypts the ciphertext read from rd and makes it
-// available on the returned Reader. Ciphertext must be in the form IV ||
-// Ciphertext || MAC. In order to correctly verify the ciphertext, rd is
-// drained, locally buffered and made available on the returned Reader
-// afterwards. If a MAC verification failure is observed, it is returned
-// immediately.
-func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
-	return crypto.DecryptFrom(k.master, rd)
-}
-
-// Master returns the master keys for this repository. Only included for
-// debug purposes.
-func (k *Key) Master() *crypto.Key {
-	return k.master
-}
-
-// User returns the user keys for this key. Only included for debug purposes.
-func (k *Key) User() *crypto.Key {
-	return k.user
 }
 
 func (k *Key) String() string {

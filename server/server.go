@@ -574,7 +574,7 @@ func (s *Server) SearchKey(password string) error {
 		return err
 	}
 
-	s.key = key.Master()
+	s.key = key.master
 	s.keyName = key.Name()
 	return s.loadConfig(&s.Config)
 }
@@ -595,7 +595,7 @@ func (s *Server) CreateMasterKey(password string) error {
 		return err
 	}
 
-	s.key = key.Master()
+	s.key = key.master
 	s.keyName = key.Name()
 	return s.createConfig()
 }
