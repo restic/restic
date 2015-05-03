@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +14,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/juju/errors"
 	"github.com/pkg/sftp"
 	"github.com/restic/restic/backend"
 )
@@ -245,13 +245,11 @@ func (r *SFTP) Location() string {
 func (r *SFTP) tempFile() (string, *sftp.File, error) {
 	// choose random suffix
 	buf := make([]byte, tempfileRandomSuffixLength)
-	n, err := io.ReadFull(rand.Reader, buf)
+	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {
-		return "", nil, err
-	}
-
-	if n != len(buf) {
-		return "", nil, errors.New("unable to generate enough random bytes for temp file")
+		return "", nil, errors.Annotatef(err,
+			"unable to read %d random bytes for tempfile name",
+			tempfileRandomSuffixLength)
 	}
 
 	// construct tempfile name
@@ -260,7 +258,7 @@ func (r *SFTP) tempFile() (string, *sftp.File, error) {
 	// create file in temp dir
 	f, err := r.c.Create(name)
 	if err != nil {
-		return "", nil, err
+		return "", nil, errors.Annotatef(err, "creating tempfile %q failed", name)
 	}
 
 	return name, f, nil
@@ -375,7 +373,7 @@ func (r *SFTP) Create() (backend.Blob, error) {
 	// create tempfile in backend
 	filename, file, err := r.tempFile()
 	if err != nil {
-		return nil, err
+		return nil, errors.Annotate(err, "create tempfile")
 	}
 
 	blob := sftpBlob{
