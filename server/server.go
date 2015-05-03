@@ -2,7 +2,9 @@ package server
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,10 +18,19 @@ import (
 	"github.com/restic/restic/pack"
 )
 
+// Config contains the configuration for a repository.
+type Config struct {
+	Version           uint        `json:"version"`
+	ID                string      `json:"id"`
+	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
+}
+
+// Server is used to access a repository in a backend.
 type Server struct {
-	be  backend.Backend
-	key *Key
-	idx *Index
+	be     backend.Backend
+	Config Config
+	key    *Key
+	idx    *Index
 
 	pm    sync.Mutex
 	packs []*pack.Packer
@@ -30,11 +41,6 @@ func NewServer(be backend.Backend) *Server {
 		be:  be,
 		idx: NewIndex(),
 	}
-}
-
-// ChunkerPolynomial returns the secret polynomial used for content defined chunking.
-func (s *Server) ChunkerPolynomial() chunker.Pol {
-	return chunker.Pol(s.key.Master().ChunkerPolynomial)
 }
 
 // Find loads the list of all blobs of type t and searches for names which start
@@ -365,12 +371,12 @@ func (s *Server) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, error)
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
 func (s *Server) SaveJSONUnpacked(t backend.Type, item interface{}) (backend.ID, error) {
-	// create blob
+	// create file
 	blob, err := s.be.Create()
 	if err != nil {
 		return nil, err
 	}
-	debug.Log("Server.SaveJSONUnpacked", "create new pack %p", blob)
+	debug.Log("Server.SaveJSONUnpacked", "create new file %p", blob)
 
 	// hash
 	hw := backend.NewHashingWriter(blob, sha256.New())
@@ -521,6 +527,36 @@ func (s *Server) loadIndex(id string) error {
 	return nil
 }
 
+const repositoryIDSize = sha256.Size
+const RepositoryVersion = 1
+
+func (s *Server) createConfig() (err error) {
+	s.Config.ChunkerPolynomial, err = chunker.RandomPolynomial()
+	if err != nil {
+		return err
+	}
+
+	newID := make([]byte, repositoryIDSize)
+	_, err = io.ReadFull(rand.Reader, newID)
+	if err != nil {
+		return err
+	}
+
+	s.Config.ID = hex.EncodeToString(newID)
+	s.Config.Version = RepositoryVersion
+
+	debug.Log("Server.createConfig", "New config: %#v", s.Config)
+
+	_, err = s.SaveJSONUnpacked(backend.Config, s.Config)
+	return err
+}
+
+func (s *Server) loadConfig(cfg *Config) error {
+	return s.LoadJSONUnpacked(backend.Config, nil, cfg)
+}
+
+// SearchKey tries to find a key for which the supplied password works,
+// afterwards the repository config is read and parsed.
 func (s *Server) SearchKey(password string) error {
 	key, err := SearchKey(s, password)
 	if err != nil {
@@ -528,19 +564,19 @@ func (s *Server) SearchKey(password string) error {
 	}
 
 	s.key = key
-	return nil
+	return s.loadConfig(&s.Config)
 }
 
 // CreateMasterKey creates a new key with the supplied password, afterwards the
 // repository config is created.
 func (s *Server) CreateMasterKey(password string) error {
-	key, err := CreateMasterKey(s, password)
+	key, err := createMasterKey(s, password)
 	if err != nil {
 		return err
 	}
 
 	s.key = key
-	return nil
+	return s.createConfig()
 }
 
 func (s *Server) Decrypt(ciphertext []byte) ([]byte, error) {
@@ -600,10 +636,6 @@ func (s *Server) Delete() error {
 	}
 
 	return errors.New("Delete() called for backend that does not implement this method")
-}
-
-func (s *Server) ID() string {
-	return "empty"
 }
 
 func (s *Server) Location() string {

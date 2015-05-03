@@ -24,7 +24,7 @@ func NewCache(s *server.Server) (*Cache, error) {
 		return nil, err
 	}
 
-	basedir := filepath.Join(cacheDir, s.ID())
+	basedir := filepath.Join(cacheDir, s.Config.ID)
 	debug.Log("Cache.New", "opened cache at %v", basedir)
 
 	return &Cache{base: basedir}, nil

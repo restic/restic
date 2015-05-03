@@ -184,7 +184,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 	}
 
 	chnker := GetChunker("archiver.SaveFile")
-	chnker.Reset(file, arch.s.ChunkerPolynomial())
+	chnker.Reset(file, arch.s.Config.ChunkerPolynomial)
 	resultChannels := [](<-chan saveResult){}
 	defer FreeChunker("archiver.SaveFile", chnker)
 
