@@ -55,9 +55,8 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	data := Random(23, 10<<20) // 10MiB
 	rd := bytes.NewReader(data)
 
-	be := SetupBackend(b)
-	defer TeardownBackend(b, be)
-	key := SetupKey(b, be, "geheim")
+	s := SetupBackend(b)
+	defer TeardownBackend(b, s)
 
 	buf := restic.GetChunkBuf("BenchmarkChunkEncrypt")
 	buf2 := restic.GetChunkBuf("BenchmarkChunkEncrypt")
@@ -66,7 +65,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	b.SetBytes(int64(len(data)))
 
 	for i := 0; i < b.N; i++ {
-		benchmarkChunkEncrypt(b, buf, buf2, rd, key)
+		benchmarkChunkEncrypt(b, buf, buf2, rd, s.Key())
 	}
 
 	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf)
@@ -94,9 +93,8 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *server.Key) 
 }
 
 func BenchmarkChunkEncryptParallel(b *testing.B) {
-	be := SetupBackend(b)
-	defer TeardownBackend(b, be)
-	key := SetupKey(b, be, "geheim")
+	s := SetupBackend(b)
+	defer TeardownBackend(b, s)
 
 	data := Random(23, 10<<20) // 10MiB
 
@@ -108,7 +106,7 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			rd := bytes.NewReader(data)
-			benchmarkChunkEncryptP(pb, buf, rd, key)
+			benchmarkChunkEncryptP(pb, buf, rd, s.Key())
 		}
 	})
 
@@ -118,8 +116,6 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 func archiveDirectory(b testing.TB) {
 	server := SetupBackend(b)
 	defer TeardownBackend(b, server)
-	key := SetupKey(b, server, "geheim")
-	server.SetKey(key)
 
 	arch := restic.NewArchiver(server)
 
@@ -154,8 +150,6 @@ func archiveWithDedup(t testing.TB) {
 
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	var cnt struct {
 		before, after, after2 struct {
@@ -236,8 +230,6 @@ func BenchmarkLoadTree(t *testing.B) {
 
 	s := SetupBackend(t)
 	defer TeardownBackend(t, s)
-	key := SetupKey(t, s, "geheim")
-	s.SetKey(key)
 
 	// archive a few files
 	arch := restic.NewArchiver(s)

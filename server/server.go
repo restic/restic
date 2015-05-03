@@ -32,10 +32,6 @@ func NewServer(be backend.Backend) *Server {
 	}
 }
 
-func (s *Server) SetKey(k *Key) {
-	s.key = k
-}
-
 // ChunkerPolynomial returns the secret polynomial used for content defined chunking.
 func (s *Server) ChunkerPolynomial() chunker.Pol {
 	return chunker.Pol(s.key.Master().ChunkerPolynomial)
@@ -532,7 +528,16 @@ func (s *Server) SearchKey(password string) error {
 	}
 
 	s.key = key
+	return nil
+}
 
+func (s *Server) CreateKey(password string) error {
+	key, err := CreateKey(s, password)
+	if err != nil {
+		return err
+	}
+
+	s.key = key
 	return nil
 }
 

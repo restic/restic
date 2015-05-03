@@ -30,8 +30,6 @@ var serverTests = []testJSONStruct{
 func TestSaveJSON(t *testing.T) {
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	for _, obj := range serverTests {
 		data, err := json.Marshal(obj)
@@ -51,8 +49,6 @@ func TestSaveJSON(t *testing.T) {
 func BenchmarkSaveJSON(t *testing.B) {
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	obj := serverTests[0]
 
@@ -78,8 +74,6 @@ var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 func TestSave(t *testing.T) {
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -112,8 +106,6 @@ func TestSave(t *testing.T) {
 func TestSaveFrom(t *testing.T) {
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -144,8 +136,6 @@ func TestSaveFrom(t *testing.T) {
 func BenchmarkSaveFrom(t *testing.B) {
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	size := 4 << 20 // 4MiB
 
@@ -172,8 +162,6 @@ func TestLoadJSONPack(t *testing.T) {
 
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	// archive a few files
 	sn := SnapshotDir(t, server, *benchTestDir, nil)
@@ -191,8 +179,6 @@ func TestLoadJSONEncrypted(t *testing.T) {
 
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	// archive a snapshot
 	sn := restic.Snapshot{}
