@@ -10,8 +10,7 @@ var Paths = struct {
 	Locks     string
 	Keys      string
 	Temp      string
-	Version   string
-	ID        string
+	Config    string
 }{
 	"data",
 	"snapshots",
@@ -19,8 +18,7 @@ var Paths = struct {
 	"locks",
 	"keys",
 	"tmp",
-	"version",
-	"id",
+	"config",
 }
 
 // Default modes for file-based backends

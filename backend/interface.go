@@ -11,10 +11,7 @@ const (
 	Lock          = "lock"
 	Snapshot      = "snapshot"
 	Index         = "index"
-)
-
-const (
-	Version = 1
+	Config        = "config"
 )
 
 // A Backend manages data stored somewhere.
@@ -43,15 +40,7 @@ type Backend interface {
 	// Close the backend
 	Close() error
 
-	Identifier
 	Lister
-}
-
-type Identifier interface {
-	// ID returns a unique ID for a specific repository. This means restic can
-	// recognize repositories accessed via different methods (e.g. local file
-	// access and sftp).
-	ID() string
 }
 
 type Lister interface {

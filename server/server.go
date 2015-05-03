@@ -601,7 +601,7 @@ func (s *Server) Delete() error {
 }
 
 func (s *Server) ID() string {
-	return s.be.ID()
+	return "empty"
 }
 
 func (s *Server) Location() string {
