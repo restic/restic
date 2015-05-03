@@ -191,7 +191,7 @@ func TestLoadJSONEncrypted(t *testing.T) {
 	var sn2 restic.Snapshot
 
 	// restore
-	err = server.LoadJSONEncrypted(backend.Snapshot, id, &sn2)
+	err = server.LoadJSONUnpacked(backend.Snapshot, id, &sn2)
 	OK(t, err)
 
 	Equals(t, sn.Hostname, sn2.Hostname)

@@ -143,7 +143,7 @@ func (s *Server) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 
 // LoadJSONEncrypted decrypts the data and afterwards calls json.Unmarshal on
 // the item.
-func (s *Server) LoadJSONEncrypted(t backend.Type, id backend.ID, item interface{}) error {
+func (s *Server) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) error {
 	// load blob from backend
 	rd, err := s.be.Get(t, id.String())
 	if err != nil {

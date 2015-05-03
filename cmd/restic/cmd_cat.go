@@ -78,7 +78,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	case "snapshot":
 		sn := &restic.Snapshot{}
-		err = s.LoadJSONEncrypted(backend.Snapshot, id, sn)
+		err = s.LoadJSONUnpacked(backend.Snapshot, id, sn)
 		if err != nil {
 			return err
 		}
