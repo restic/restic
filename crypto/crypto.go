@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/restic/restic/chunker"
 	"golang.org/x/crypto/poly1305"
 	"golang.org/x/crypto/scrypt"
 )
@@ -35,12 +34,10 @@ var (
 
 // Key holds encryption and message authentication keys for a repository. It is stored
 // encrypted and authenticated as a JSON data structure in the Data field of the Key
-// structure. For the master key, the secret random polynomial used for content
-// defined chunking is included.
+// structure.
 type Key struct {
-	MAC               MACKey        `json:"mac"`
-	Encrypt           EncryptionKey `json:"encrypt"`
-	ChunkerPolynomial chunker.Pol   `json:"chunker_polynomial,omitempty"`
+	MAC     MACKey        `json:"mac"`
+	Encrypt EncryptionKey `json:"encrypt"`
 }
 
 type EncryptionKey [32]byte
@@ -340,9 +337,5 @@ func KDF(N, R, P int, salt []byte, password string) (*Key, error) {
 
 // Valid tests if the key is valid.
 func (k *Key) Valid() bool {
-	if k.ChunkerPolynomial != 0 && !k.ChunkerPolynomial.Irreducible() {
-		return false
-	}
-
 	return k.Encrypt.Valid() && k.MAC.Valid()
 }

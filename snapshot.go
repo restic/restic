@@ -52,7 +52,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 
 func LoadSnapshot(s *server.Server, id backend.ID) (*Snapshot, error) {
 	sn := &Snapshot{id: id}
-	err := s.LoadJSONEncrypted(backend.Snapshot, id, sn)
+	err := s.LoadJSONUnpacked(backend.Snapshot, id, sn)
 	if err != nil {
 		return nil, err
 	}

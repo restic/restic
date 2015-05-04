@@ -6,15 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/user"
 	"time"
 
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/crypto"
-	"github.com/restic/restic/debug"
 )
 
 var (
@@ -50,9 +47,9 @@ type Key struct {
 	name string
 }
 
-// CreateKey initializes a master key in the given backend and encrypts it with
-// the password.
-func CreateKey(s *Server, password string) (*Key, error) {
+// createMasterKey creates a new master key in the given backend and encrypts
+// it with the password.
+func createMasterKey(s *Server, password string) (*Key, error) {
 	return AddKey(s, password, nil)
 }
 
@@ -91,13 +88,6 @@ func OpenKey(s *Server, name string, password string) (*Key, error) {
 	if !k.Valid() {
 		return nil, errors.New("Invalid key for repository")
 	}
-
-	// test if the chunker polynomial is present in the master key
-	if k.master.ChunkerPolynomial == 0 {
-		return nil, errors.New("Polynomial for content defined chunking is zero")
-	}
-
-	debug.Log("OpenKey", "Master keys loaded, polynomial %v", k.master.ChunkerPolynomial)
 
 	return k, nil
 }
@@ -141,7 +131,7 @@ func LoadKey(s *Server, name string) (*Key, error) {
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(s *Server, password string, template *Key) (*Key, error) {
+func AddKey(s *Server, password string, template *crypto.Key) (*Key, error) {
 	// fill meta data about key
 	newkey := &Key{
 		Created: time.Now(),
@@ -177,17 +167,9 @@ func AddKey(s *Server, password string, template *Key) (*Key, error) {
 	if template == nil {
 		// generate new random master keys
 		newkey.master = crypto.NewRandomKey()
-		// generate random polynomial for cdc
-		p, err := chunker.RandomPolynomial()
-		if err != nil {
-			debug.Log("AddKey", "error generating new polynomial for cdc: %v", err)
-			return nil, err
-		}
-		debug.Log("AddKey", "generated new polynomial for cdc: %v", p)
-		newkey.master.ChunkerPolynomial = p
 	} else {
 		// copy master keys from old key
-		newkey.master = template.master
+		newkey.master = template
 	}
 
 	// encrypt master keys (as json) with user key
@@ -227,46 +209,6 @@ func AddKey(s *Server, password string, template *Key) (*Key, error) {
 	newkey.name = name
 
 	return newkey, nil
-}
-
-// Encrypt encrypts and authenticates data with the master key. Stored in
-// ciphertext is IV || Ciphertext || MAC. Returns the ciphertext, which is
-// extended if necessary.
-func (k *Key) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
-	return crypto.Encrypt(k.master, ciphertext, plaintext)
-}
-
-// EncryptTo encrypts and authenticates data with the master key. The returned
-// io.Writer writes IV || Ciphertext || MAC.
-func (k *Key) EncryptTo(wr io.Writer) io.WriteCloser {
-	return crypto.EncryptTo(k.master, wr)
-}
-
-// Decrypt verifes and decrypts the ciphertext with the master key. Ciphertext
-// must be in the form IV || Ciphertext || MAC.
-func (k *Key) Decrypt(plaintext, ciphertext []byte) ([]byte, error) {
-	return crypto.Decrypt(k.master, plaintext, ciphertext)
-}
-
-// DecryptFrom verifies and decrypts the ciphertext read from rd and makes it
-// available on the returned Reader. Ciphertext must be in the form IV ||
-// Ciphertext || MAC. In order to correctly verify the ciphertext, rd is
-// drained, locally buffered and made available on the returned Reader
-// afterwards. If a MAC verification failure is observed, it is returned
-// immediately.
-func (k *Key) DecryptFrom(rd io.Reader) (io.ReadCloser, error) {
-	return crypto.DecryptFrom(k.master, rd)
-}
-
-// Master returns the master keys for this repository. Only included for
-// debug purposes.
-func (k *Key) Master() *crypto.Key {
-	return k.master
-}
-
-// User returns the user keys for this key. Only included for debug purposes.
-func (k *Key) User() *crypto.Key {
-	return k.user
 }
 
 func (k *Key) String() string {

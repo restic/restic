@@ -74,14 +74,13 @@ func (cmd CmdInit) Execute(args []string) error {
 	}
 
 	s := server.NewServer(be)
-
-	_, err = server.CreateKey(s, pw)
+	err = s.Init(pw)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", opts.Repo, err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("created restic backend %v at %s\n", s.ID()[:10], opts.Repo)
+	fmt.Printf("created restic backend %v at %s\n", s.Config.ID[:10], opts.Repo)
 
 	fmt.Println("Please note that knowledge of your password is required to access the repository.")
 	fmt.Println("Losing your password means that your data is irrecoverably lost.")

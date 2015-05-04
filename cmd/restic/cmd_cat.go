@@ -27,11 +27,11 @@ func init() {
 }
 
 func (cmd CmdCat) Usage() string {
-	return "[pack|blob|tree|snapshot|key|masterkey|lock] ID"
+	return "[pack|blob|tree|snapshot|key|masterkey|config|lock] ID"
 }
 
 func (cmd CmdCat) Execute(args []string) error {
-	if len(args) < 1 || (args[0] != "masterkey" && len(args) != 2) {
+	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
 		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
@@ -43,7 +43,7 @@ func (cmd CmdCat) Execute(args []string) error {
 	tpe := args[0]
 
 	var id backend.ID
-	if tpe != "masterkey" {
+	if tpe != "masterkey" && tpe != "config" {
 		id, err = backend.ParseID(args[1])
 		if err != nil {
 			id = nil
@@ -67,6 +67,14 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	// handle all types that don't need an index
 	switch tpe {
+	case "config":
+		buf, err := json.MarshalIndent(s.Config, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(string(buf))
+		return nil
 	case "index":
 		buf, err := s.Load(backend.Index, id)
 		if err != nil {
@@ -78,7 +86,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	case "snapshot":
 		sn := &restic.Snapshot{}
-		err = s.LoadJSONEncrypted(backend.Snapshot, id, sn)
+		err = s.LoadJSONUnpacked(backend.Snapshot, id, sn)
 		if err != nil {
 			return err
 		}
@@ -113,7 +121,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "masterkey":
-		buf, err := json.MarshalIndent(s.Key().Master(), "", "  ")
+		buf, err := json.MarshalIndent(s.Key(), "", "  ")
 		if err != nil {
 			return err
 		}

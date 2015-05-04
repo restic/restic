@@ -2,7 +2,9 @@ package server
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,14 +14,25 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/chunker"
+	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
 )
 
+// Config contains the configuration for a repository.
+type Config struct {
+	Version           uint        `json:"version"`
+	ID                string      `json:"id"`
+	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
+}
+
+// Server is used to access a repository in a backend.
 type Server struct {
-	be  backend.Backend
-	key *Key
-	idx *Index
+	be      backend.Backend
+	Config  Config
+	key     *crypto.Key
+	keyName string
+	idx     *Index
 
 	pm    sync.Mutex
 	packs []*pack.Packer
@@ -30,15 +43,6 @@ func NewServer(be backend.Backend) *Server {
 		be:  be,
 		idx: NewIndex(),
 	}
-}
-
-func (s *Server) SetKey(k *Key) {
-	s.key = k
-}
-
-// ChunkerPolynomial returns the secret polynomial used for content defined chunking.
-func (s *Server) ChunkerPolynomial() chunker.Pol {
-	return chunker.Pol(s.key.Master().ChunkerPolynomial)
 }
 
 // Find loads the list of all blobs of type t and searches for names which start
@@ -145,9 +149,9 @@ func (s *Server) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 	return plain, nil
 }
 
-// LoadJSONEncrypted decrypts the data and afterwards calls json.Unmarshal on
+// LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
-func (s *Server) LoadJSONEncrypted(t backend.Type, id backend.ID, item interface{}) error {
+func (s *Server) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) error {
 	// load blob from backend
 	rd, err := s.be.Get(t, id.String())
 	if err != nil {
@@ -156,7 +160,7 @@ func (s *Server) LoadJSONEncrypted(t backend.Type, id backend.ID, item interface
 	defer rd.Close()
 
 	// decrypt
-	decryptRd, err := s.key.DecryptFrom(rd)
+	decryptRd, err := crypto.DecryptFrom(s.key, rd)
 	defer decryptRd.Close()
 	if err != nil {
 		return err
@@ -189,7 +193,7 @@ func (s *Server) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) 
 	defer rd.Close()
 
 	// decrypt
-	decryptRd, err := s.key.DecryptFrom(rd)
+	decryptRd, err := crypto.DecryptFrom(s.key, rd)
 	defer decryptRd.Close()
 	if err != nil {
 		return err
@@ -234,7 +238,7 @@ func (s *Server) findPacker(size uint) (*pack.Packer, error) {
 		return nil, err
 	}
 	debug.Log("Server.findPacker", "create new pack %p", blob)
-	return pack.NewPacker(s.key.Master(), blob), nil
+	return pack.NewPacker(s.key, blob), nil
 }
 
 // insertPacker appends p to s.packs.
@@ -369,18 +373,18 @@ func (s *Server) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, error)
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
 func (s *Server) SaveJSONUnpacked(t backend.Type, item interface{}) (backend.ID, error) {
-	// create blob
+	// create file
 	blob, err := s.be.Create()
 	if err != nil {
 		return nil, err
 	}
-	debug.Log("Server.SaveJSONUnpacked", "create new pack %p", blob)
+	debug.Log("Server.SaveJSONUnpacked", "create new file %p", blob)
 
 	// hash
 	hw := backend.NewHashingWriter(blob, sha256.New())
 
 	// encrypt blob
-	ewr := s.key.EncryptTo(hw)
+	ewr := crypto.EncryptTo(s.key, hw)
 
 	enc := json.NewEncoder(ewr)
 	err = enc.Encode(item)
@@ -452,7 +456,7 @@ func (s *Server) SaveIndex() (backend.ID, error) {
 	hw := backend.NewHashingWriter(blob, sha256.New())
 
 	// encrypt blob
-	ewr := s.key.EncryptTo(hw)
+	ewr := crypto.EncryptTo(s.key, hw)
 
 	err = s.idx.Encode(ewr)
 	if err != nil {
@@ -505,7 +509,7 @@ func (s *Server) loadIndex(id string) error {
 	}
 
 	// decrypt
-	decryptRd, err := s.key.DecryptFrom(rd)
+	decryptRd, err := crypto.DecryptFrom(s.key, rd)
 	defer decryptRd.Close()
 	if err != nil {
 		return err
@@ -525,15 +529,79 @@ func (s *Server) loadIndex(id string) error {
 	return nil
 }
 
+const repositoryIDSize = sha256.Size
+const RepositoryVersion = 1
+
+func createConfig(s *Server) (err error) {
+	s.Config.ChunkerPolynomial, err = chunker.RandomPolynomial()
+	if err != nil {
+		return err
+	}
+
+	newID := make([]byte, repositoryIDSize)
+	_, err = io.ReadFull(rand.Reader, newID)
+	if err != nil {
+		return err
+	}
+
+	s.Config.ID = hex.EncodeToString(newID)
+	s.Config.Version = RepositoryVersion
+
+	debug.Log("Server.createConfig", "New config: %#v", s.Config)
+
+	_, err = s.SaveJSONUnpacked(backend.Config, s.Config)
+	return err
+}
+
+func (s *Server) loadConfig(cfg *Config) error {
+	err := s.LoadJSONUnpacked(backend.Config, nil, cfg)
+	if err != nil {
+		return err
+	}
+
+	if cfg.Version != RepositoryVersion {
+		return errors.New("unsupported repository version")
+	}
+
+	if !cfg.ChunkerPolynomial.Irreducible() {
+		return errors.New("invalid chunker polynomial")
+	}
+
+	return nil
+}
+
+// SearchKey finds a key with the supplied password, afterwards the config is
+// read and parsed.
 func (s *Server) SearchKey(password string) error {
 	key, err := SearchKey(s, password)
 	if err != nil {
 		return err
 	}
 
-	s.key = key
+	s.key = key.master
+	s.keyName = key.Name()
+	return s.loadConfig(&s.Config)
+}
 
-	return nil
+// Init creates a new master key with the supplied password and initializes the
+// repository config.
+func (s *Server) Init(password string) error {
+	has, err := s.Test(backend.Config, "")
+	if err != nil {
+		return err
+	}
+	if has {
+		return errors.New("repository master key and config already initialized")
+	}
+
+	key, err := createMasterKey(s, password)
+	if err != nil {
+		return err
+	}
+
+	s.key = key.master
+	s.keyName = key.Name()
+	return createConfig(s)
 }
 
 func (s *Server) Decrypt(ciphertext []byte) ([]byte, error) {
@@ -541,7 +609,7 @@ func (s *Server) Decrypt(ciphertext []byte) ([]byte, error) {
 		return nil, errors.New("key for server not set")
 	}
 
-	return s.key.Decrypt(nil, ciphertext)
+	return crypto.Decrypt(s.key, nil, ciphertext)
 }
 
 func (s *Server) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
@@ -549,11 +617,15 @@ func (s *Server) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
 		return nil, errors.New("key for server not set")
 	}
 
-	return s.key.Encrypt(ciphertext, plaintext)
+	return crypto.Encrypt(s.key, ciphertext, plaintext)
 }
 
-func (s *Server) Key() *Key {
+func (s *Server) Key() *crypto.Key {
 	return s.key
+}
+
+func (s *Server) KeyName() string {
+	return s.keyName
 }
 
 // Count returns the number of blobs of a given type in the backend.
@@ -593,10 +665,6 @@ func (s *Server) Delete() error {
 	}
 
 	return errors.New("Delete() called for backend that does not implement this method")
-}
-
-func (s *Server) ID() string {
-	return s.be.ID()
 }
 
 func (s *Server) Location() string {

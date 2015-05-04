@@ -21,49 +21,64 @@ been backed up at some point in time. The state here means the content and meta
 data like the name and modification time for the file or the directory and its
 contents.
 
+*Storage ID*: A storage ID is the SHA-256 hash of the content stored in the
+repository. This ID is needed in order to load the file from the repository.
+
 Repository Format
 =================
 
 All data is stored in a restic repository. A repository is able to store data
-of several different types, which can later be requested based on an ID. The ID
-is the hash (SHA-256) of the content of a file. All files in a repository are
-only written once and never modified afterwards. This allows accessing and even
-writing to the repository with multiple clients in parallel. Only the delete
-operation changes data in the repository.
+of several different types, which can later be requested based on an ID. This
+so-called "storage ID" is the SHA-256 hash of the content of a file. All files
+in a repository are only written once and never modified afterwards. This
+allows accessing and even writing to the repository with multiple clients in
+parallel. Only the delete operation removes data from the repository.
 
 At the time of writing, the only implemented repository type is based on
 directories and files. Such repositories can be accessed locally on the same
 system or via the integrated SFTP client. The directory layout is the same for
 both access methods. This repository type is described in the following.
 
-Repositories consists of several directories and a file called `version`. This
-file contains the version number of the repository. At the moment, this file
-is expected to hold the string `1`, with an optional newline character.
-Additionally there is a file named `id` which contains 32 random bytes, encoded
-in hexadecimal. This uniquely identifies the repository, regardless if it is
-accessed via SFTP or locally.
+Repositories consist of several directories and a file called `config`. For
+all other files stored in the repository, the name for the file is the lower
+case hexadecimal representation of the storage ID, which is the SHA-256 hash of
+the file's contents. This allows easily checking all files for accidental
+modifications like disk read errors by simply running the program `sha256sum`
+and comparing its output to the file name. If the prefix of a filename is
+unique amongst all the other files in the same directory, the prefix may be
+used instead of the complete filename.
 
-For all other files stored in the repository, the name for the file is the
-lower case hexadecimal representation of the SHA-256 hash of the file's
-contents. This allows easily checking all files for accidental modifications
-like disk read errors by simply running the program `sha256sum` and comparing
-its output to the file name. If the prefix of a filename is unique amongst all
-the other files in the same directory, the prefix may be used instead of the
-complete filename.
-
-Apart from the files `version`, `id` and the files stored below the `keys`
-directory, all files are encrypted with AES-256 in counter mode (CTR). The
-integrity of the encrypted data is secured by a Poly1305-AES message
-authentication code (sometimes also referred to as a "signature").
+Apart from the files stored below the `keys` directory, all files are encrypted
+with AES-256 in counter mode (CTR). The integrity of the encrypted data is
+secured by a Poly1305-AES message authentication code (sometimes also referred
+to as a "signature").
 
 In the first 16 bytes of each encrypted file the initialisation vector (IV) is
 stored. It is followed by the encrypted data and completed by the 16 byte
 MAC. The format is: `IV || CIPHERTEXT || MAC`. The complete encryption
-overhead is 32 byte. For each file, a new random IV is selected.
+overhead is 32 bytes. For each file, a new random IV is selected.
 
-The basic layout of a sample restic repository is shown below:
+The file `config` is encrypted this way and contains a JSON document like the
+following:
+
+    {
+      "version": 1,
+      "id": "5956a3f67a6230d4a92cefb29529f10196c7d92582ec305fd71ff6d331d6271b",
+      "chunker_polynomial": "25b468838dcb75"
+    }
+
+After decryption, restic first checks that the version field contains a version
+number that it understands, otherwise it aborts. At the moment, the version is
+expected to be 1. The field `id` holds a unique ID which consists of 32
+random bytes, encoded in hexadecimal. This uniquely identifies the repository,
+regardless if it is accessed via SFTP or locally. The field
+`chunker_polynomial` contains a parameter that is used for splitting large
+files into smaller chunks (see below).
+
+The basic layout of a sample restic repository is shown here:
 
     /tmp/restic-repo
+    ├── config
     ├── data
     │   ├── 21
     │   │   └── 2159dd48f8a24f33c307b750592773f8b71ff8d11452132a7b2e2a6a01611be1
@@ -74,7 +89,6 @@ The basic layout of a sample restic repository is shown below:
     │   ├── 73
     │   │   └── 73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c
     │   [...]
-    ├── id
     ├── index
     │   ├── c38f5fb68307c6a3e3aa945d556e325dc38f5fb68307c6a3e3aa945d556e325d
     │   └── ca171b1b7394d90d330b265d90f506f9984043b342525f019788f97e745c71fd
@@ -83,8 +97,7 @@ The basic layout of a sample restic repository is shown below:
     ├── locks
     ├── snapshots
     │   └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
-    ├── tmp
-    └── version
+    └── tmp
 
 A repository can be initialized with the `restic init` command, e.g.:
 
@@ -93,21 +106,21 @@ A repository can be initialized with the `restic init` command, e.g.:
 Pack Format
 -----------
 
-All files in the repository except Key and Data files just contain raw data,
-stored as `IV || Ciphertext || MAC`. Data files may contain one or more Blobs
-of data. The format is described in the following.
+All files in the repository except Key and Pack files just contain raw data,
+stored as `IV || Ciphertext || MAC`. Pack files may contain one or more Blobs
+of data.
 
-The Pack's structure is as follows:
+A Pack's structure is as follows:
 
     EncryptedBlob1 || ... || EncryptedBlobN || EncryptedHeader || Header_Length
 
-At the end of the Pack is a header, which describes the content. The header is
-encrypted and authenticated. `Header_Length` is the length of the encrypted header
-encoded as a four byte integer in little-endian encoding. Placing the header at
-the end of a file allows writing the blobs in a continuous stream as soon as
-they are read during the backup phase. This reduces code complexity and avoids
-having to re-write a file once the pack is complete and the content and length
-of the header is known.
+At the end of the Pack file is a header, which describes the content. The
+header is encrypted and authenticated. `Header_Length` is the length of the
+encrypted header encoded as a four byte integer in little-endian encoding.
+Placing the header at the end of a file allows writing the blobs in a
+continuous stream as soon as they are read during the backup phase. This
+reduces code complexity and avoids having to re-write a file once the pack is
+complete and the content and length of the header is known.
 
 All the blobs (`EncryptedBlob1`, `EncryptedBlobN` etc.) are authenticated and
 encrypted independently. This enables repository reorganisation without having
@@ -178,7 +191,7 @@ listed afterwards.
 
 There may be an arbitrary number of index files, containing information on
 non-disjoint sets of Packs. The number of packs described in a single file is
-chosen so that the file size is kep below 8 MiB.
+chosen so that the file size is kept below 8 MiB.
 
 Keys, Encryption and MAC
 ------------------------
@@ -230,9 +243,8 @@ tampered with, the computed MAC will not match the last 16 bytes of the data,
 and restic exits with an error. Otherwise, the data is decrypted with the
 encryption key derived from `scrypt`. This yields a JSON document which
 contains the master encryption and message authentication keys for this
-repository (encoded in Base64) and the polynomial that is used for CDC. The
-command `restic cat masterkey` can be used as follows to decrypt and
-pretty-print the master key:
+repository (encoded in Base64). The command `restic cat masterkey` can be used
+as follows to decrypt and pretty-print the master key:
 
     $ restic -r /tmp/restic-repo cat masterkey
     {
@@ -241,7 +253,6 @@ pretty-print the master key:
           "r": "E9eEDnSJZgqwTOkDtOp+Dw=="
         },
         "encrypt": "UQCqa0lKZ94PygPxMRqkePTZnHRYh1k1pX2k2lM2v3Q=",
-        "chunker_polynomial": "2f0797d9c2363f"
     }
 
 All data in the repository is encrypted and authenticated with these master keys.
@@ -257,9 +268,8 @@ Snapshots
 A snapshots represents a directory with all files and sub-directories at a
 given point in time. For each backup that is made, a new snapshot is created. A
 snapshot is a JSON document that is stored in an encrypted file below the
-directory `snapshots` in the repository. The filename is the SHA-256 hash of
-the (encrypted) contents. This string is unique and used within restic to
-uniquely identify a snapshot.
+directory `snapshots` in the repository. The filename is the storage ID. This
+string is unique and used within restic to uniquely identify a snapshot.
 
 The command `restic cat snapshot` can be used as follows to decrypt and
 pretty-print the contents of a snapshot file:
@@ -284,9 +294,9 @@ hash. Before saving, each file is split into variable sized Blobs of data. The
 SHA-256 hashes of all Blobs are saved in an ordered list which then represents
 the content of the file.
 
-In order to relate these plain text hashes to the actual encrypted storage
-hashes (which vary due to random IVs), an index is used. If the index is not
-available, the header of all data Blobs can be read.
+In order to relate these plaintext hashes to the actual location within a Pack
+file , an index is used. If the index is not available, the header of all data
+Blobs can be read.
 
 Trees and Data
 --------------
@@ -321,7 +331,7 @@ The command `restic cat tree` can be used to inspect the tree referenced above:
 
 A tree contains a list of entries (in the field `nodes`) which contain meta
 data like a name and timestamps. When the entry references a directory, the
-field `subtree` contains the plain text ID of another tree object. 
+field `subtree` contains the plain text ID of another tree object.
 
 When the command `restic cat tree` is used, the storage hash is needed to print
 a tree. The tree referenced above can be dumped as follows:
@@ -355,9 +365,9 @@ This tree contains a file entry. This time, the `subtree` field is not present
 and the `content` field contains a list with one plain text SHA-256 hash.
 
 The command `restic cat data` can be used to extract and decrypt data given a
-storage hash, e.g. for the data mentioned above:
+plaintext ID, e.g. for the data mentioned above:
 
-    $ restic -r /tmp/restic-repo cat blob 00634c46e5f7c055c341acd1201cf8289cabe769f991d6e350f8cd8ce2a52ac3 | sha256sum
+    $ restic -r /tmp/restic-repo cat blob 50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d | sha256sum
     enter password for repository:
     50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
 
@@ -372,8 +382,9 @@ For creating a backup, restic scans the source directory for all files,
 sub-directories and other entries. The data from each file is split into
 variable length Blobs cut at offsets defined by a sliding window of 64 byte.
 The implementation uses Rabin Fingerprints for implementing this Content
-Defined Chunking (CDC). An irreducible polynomial is selected at random when a
-repository is initialized.
+Defined Chunking (CDC). An irreducible polynomial is selected at random and
+saved in the file `config` when a repository is initialized, so that watermark
+attacks are much harder.
 
 Files smaller than 512 KiB are not split, Blobs are of 512 KiB to 8 MiB in
 size. The implementation aims for 1 MiB Blob size on average.

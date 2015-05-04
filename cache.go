@@ -18,13 +18,13 @@ type Cache struct {
 	base string
 }
 
-func NewCache(be backend.Identifier) (*Cache, error) {
+func NewCache(s *server.Server) (*Cache, error) {
 	cacheDir, err := getCacheDir()
 	if err != nil {
 		return nil, err
 	}
 
-	basedir := filepath.Join(cacheDir, be.ID())
+	basedir := filepath.Join(cacheDir, s.Config.ID)
 	debug.Log("Cache.New", "opened cache at %v", basedir)
 
 	return &Cache{base: basedir}, nil

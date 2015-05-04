@@ -95,8 +95,6 @@ func TestNodeComparison(t *testing.T) {
 func TestLoadTree(t *testing.T) {
 	server := SetupBackend(t)
 	defer TeardownBackend(t, server)
-	key := SetupKey(t, server, "geheim")
-	server.SetKey(key)
 
 	// save tree
 	tree := restic.NewTree()

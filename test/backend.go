@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/server"
 )
 
-var TestPassword = "foobar"
+var TestPassword = flag.String("test.password", "", `use this password for repositories created during tests (default: "geheim")`)
 var TestCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
 var TestTempDir = flag.String("test.tempdir", "", "use this directory for temporary storage (default: system temp dir)")
 
@@ -25,11 +25,13 @@ func SetupBackend(t testing.TB) *server.Server {
 	b, err := local.Create(filepath.Join(tempdir, "repo"))
 	OK(t, err)
 
-	// set cache dir
+	// set cache dir below temp dir
 	err = os.Setenv("RESTIC_CACHE", filepath.Join(tempdir, "cache"))
 	OK(t, err)
 
-	return server.NewServer(b)
+	s := server.NewServer(b)
+	OK(t, s.Init(*TestPassword))
+	return s
 }
 
 func TeardownBackend(t testing.TB, s *server.Server) {
@@ -40,13 +42,6 @@ func TeardownBackend(t testing.TB, s *server.Server) {
 	}
 
 	OK(t, s.Delete())
-}
-
-func SetupKey(t testing.TB, s *server.Server, password string) *server.Key {
-	k, err := server.CreateKey(s, password)
-	OK(t, err)
-
-	return k
 }
 
 func SnapshotDir(t testing.TB, server *server.Server, path string, parent backend.ID) *restic.Snapshot {

@@ -276,6 +276,22 @@ func TestPolIrreducible(t *testing.T) {
 	}
 }
 
+func BenchmarkPolIrreducible(b *testing.B) {
+	// find first irreducible polynomial
+	var pol chunker.Pol
+	for _, test := range polIrredTests {
+		if test.irred {
+			pol = test.f
+			break
+		}
+	}
+
+	for i := 0; i < b.N; i++ {
+		Assert(b, pol.Irreducible(),
+			"Irreducibility test for Polynomial %v failed", pol)
+	}
+}
+
 var polGCDTests = []struct {
 	f1  chunker.Pol
 	f2  chunker.Pol
