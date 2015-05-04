@@ -23,7 +23,13 @@ const (
 	MaxSize = 8 * MiB
 
 	splitmask = (1 << averageBits) - 1
+
+	chunkerBufSize = 512 * KiB
 )
+
+var bufPool = sync.Pool{
+	New: func() interface{} { return make([]byte, chunkerBufSize) },
+}
 
 type tables struct {
 	out [256]Pol
@@ -79,38 +85,35 @@ type Chunker struct {
 	h      hash.Hash
 }
 
-// New returns a new Chunker based on polynomial p that reads from data from rd
+// New returns a new Chunker based on polynomial p that reads from rd
 // with bufsize and pass all data to hash along the way.
-func New(rd io.Reader, p Pol, bufsize int, hash hash.Hash) *Chunker {
+func New(rd io.Reader, pol Pol, h hash.Hash) *Chunker {
 	c := &Chunker{
-		buf: make([]byte, bufsize),
-		h:   hash,
+		buf: bufPool.Get().([]byte),
+		h:   h,
+		pol: pol,
+		rd:  rd,
 	}
-	c.Reset(rd, p)
+
+	c.reset()
+
 	return c
 }
 
-// Reset restarts a chunker so that it can be reused with a different
-// polynomial and reader.
-func (c *Chunker) Reset(rd io.Reader, p Pol) {
-	c.pol = p
-	c.polShift = uint(p.Deg() - 8)
+func (c *Chunker) reset() {
+	c.polShift = uint(c.pol.Deg() - 8)
 	c.fillTables()
-	c.rd = rd
 
 	for i := 0; i < windowSize; i++ {
 		c.window[i] = 0
 	}
+
 	c.closed = false
 	c.digest = 0
 	c.wpos = 0
-	c.pos = 0
-	c.start = 0
 	c.count = 0
-
-	if p != 0 {
-		c.slide(1)
-	}
+	c.slide(1)
+	c.start = c.pos
 
 	if c.h != nil {
 		c.h.Reset()
@@ -200,6 +203,9 @@ func (c *Chunker) Next() (*Chunk, error) {
 			if err == io.EOF && !c.closed {
 				c.closed = true
 
+				// return the buffer to the pool
+				bufPool.Put(c.buf)
+
 				// return current chunk, if any bytes have been processed
 				if c.count > 0 {
 					return &Chunk{
@@ -276,16 +282,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 					Digest: c.hashDigest(),
 				}
 
-				if c.h != nil {
-					c.h.Reset()
-				}
-
-				// reset chunker, but keep position
-				pos := c.pos
-				c.Reset(c.rd, c.pol)
-				c.pos = pos
-				c.start = pos
-				c.pre = MinSize - windowSize
+				c.reset()
 
 				return chunk, nil
 			}
