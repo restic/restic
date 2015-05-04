@@ -276,11 +276,6 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error
 		panic("trying to decrypt invalid data: ciphertext too small")
 	}
 
-	if cap(plaintext) < len(ciphertextWithMac) {
-		// extend plaintext
-		plaintext = append(plaintext, make([]byte, len(ciphertextWithMac)-cap(plaintext))...)
-	}
-
 	// extract mac
 	l := len(ciphertextWithMac) - macSize
 	ciphertextWithIV, mac := ciphertextWithMac[:l], ciphertextWithMac[l:]
@@ -292,6 +287,11 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error
 
 	// extract iv
 	iv, ciphertext := ciphertextWithIV[:ivSize], ciphertextWithIV[ivSize:]
+
+	if cap(plaintext) < len(ciphertext) {
+		// extend plaintext
+		plaintext = append(plaintext, make([]byte, len(ciphertext)-cap(plaintext))...)
+	}
 
 	// decrypt data
 	c, err := aes.NewCipher(ks.Encrypt[:])

@@ -107,10 +107,10 @@ func TestCornerCases(t *testing.T) {
 		"wrong length returned for ciphertext, expected 0, got %d",
 		len(c))
 
-	// this should decrypt to an empty slice
+	// this should decrypt to nil
 	p, err := crypto.Decrypt(k, nil, c)
 	OK(t, err)
-	Equals(t, []byte{}, p)
+	Equals(t, []byte(nil), p)
 
 	// test encryption for same slice, this should return an error
 	_, err = crypto.Encrypt(k, c, c)
