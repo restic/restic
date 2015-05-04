@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -183,10 +184,8 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		return err
 	}
 
-	chnker := GetChunker("archiver.SaveFile")
-	chnker.Reset(file, arch.s.Config.ChunkerPolynomial)
+	chnker := chunker.New(file, arch.s.Config.ChunkerPolynomial, sha256.New())
 	resultChannels := [](<-chan saveResult){}
-	defer FreeChunker("archiver.SaveFile", chnker)
 
 	for {
 		chunk, err := chnker.Next()

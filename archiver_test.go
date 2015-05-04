@@ -2,6 +2,7 @@ package restic_test
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"flag"
 	"io"
 	"testing"
@@ -25,9 +26,8 @@ type Rdr interface {
 }
 
 func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.Key) {
-	ch := restic.GetChunker("BenchmarkChunkEncrypt")
 	rd.Seek(0, 0)
-	ch.Reset(rd, testPol)
+	ch := chunker.New(rd, testPol, sha256.New())
 
 	for {
 		chunk, err := ch.Next()
@@ -47,8 +47,6 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 		_, err = crypto.Encrypt(key, buf2, buf)
 		OK(b, err)
 	}
-
-	restic.FreeChunker("BenchmarkChunkEncrypt", ch)
 }
 
 func BenchmarkChunkEncrypt(b *testing.B) {
@@ -73,9 +71,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 }
 
 func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) {
-	ch := restic.GetChunker("BenchmarkChunkEncryptP")
-	rd.Seek(0, 0)
-	ch.Reset(rd, testPol)
+	ch := chunker.New(rd, testPol, sha256.New())
 
 	for {
 		chunk, err := ch.Next()
@@ -88,8 +84,6 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) 
 		io.ReadFull(chunk.Reader(rd), buf)
 		crypto.Encrypt(key, buf, buf)
 	}
-
-	restic.FreeChunker("BenchmarkChunkEncryptP", ch)
 }
 
 func BenchmarkChunkEncryptParallel(b *testing.B) {

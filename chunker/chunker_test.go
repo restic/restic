@@ -19,7 +19,6 @@ import (
 )
 
 var benchmarkFile = flag.String("bench.file", "", "read from this file for benchmark")
-var testBufSize = flag.Int("test.bufsize", 256*1024, "use this buffer size for benchmark")
 
 func parseDigest(s string) []byte {
 	d, err := hex.DecodeString(s)
@@ -151,7 +150,7 @@ func getRandom(seed, count int) []byte {
 func TestChunker(t *testing.T) {
 	// setup data source
 	buf := getRandom(23, 32*1024*1024)
-	ch := chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
+	ch := chunker.New(bytes.NewReader(buf), testPol, sha256.New())
 	chunks := testWithData(t, ch, chunks1)
 
 	// test reader
@@ -178,7 +177,7 @@ func TestChunker(t *testing.T) {
 
 	// setup nullbyte data source
 	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
-	ch = chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
+	ch = chunker.New(bytes.NewReader(buf), testPol, sha256.New())
 
 	testWithData(t, ch, chunks2)
 }
@@ -194,7 +193,7 @@ func TestChunkerWithRandomPolynomial(t *testing.T) {
 	t.Logf("generating random polynomial took %v", time.Since(start))
 
 	start = time.Now()
-	ch := chunker.New(bytes.NewReader(buf), p, *testBufSize, sha256.New())
+	ch := chunker.New(bytes.NewReader(buf), p, sha256.New())
 	t.Logf("creating chunker took %v", time.Since(start))
 
 	// make sure that first chunk is different
@@ -211,7 +210,7 @@ func TestChunkerWithRandomPolynomial(t *testing.T) {
 func TestChunkerWithoutHash(t *testing.T) {
 	// setup data source
 	buf := getRandom(23, 32*1024*1024)
-	ch := chunker.New(bytes.NewReader(buf), testPol, *testBufSize, nil)
+	ch := chunker.New(bytes.NewReader(buf), testPol, nil)
 	chunks := testWithData(t, ch, chunks1)
 
 	// test reader
@@ -241,20 +240,9 @@ func TestChunkerWithoutHash(t *testing.T) {
 
 	// setup nullbyte data source
 	buf = bytes.Repeat([]byte{0}, len(chunks2)*chunker.MinSize)
-	ch = chunker.New(bytes.NewReader(buf), testPol, *testBufSize, sha256.New())
+	ch = chunker.New(bytes.NewReader(buf), testPol, sha256.New())
 
 	testWithData(t, ch, chunks2)
-}
-
-func TestChunkerReuse(t *testing.T) {
-	// test multiple uses of the same chunker
-	ch := chunker.New(nil, testPol, *testBufSize, sha256.New())
-	buf := getRandom(23, 32*1024*1024)
-
-	for i := 0; i < 4; i++ {
-		ch.Reset(bytes.NewReader(buf), testPol)
-		testWithData(t, ch, chunks1)
-	}
 }
 
 func benchmarkChunker(b *testing.B, hash hash.Hash) {
@@ -262,8 +250,6 @@ func benchmarkChunker(b *testing.B, hash hash.Hash) {
 		rd   io.ReadSeeker
 		size int
 	)
-
-	b.Logf("using bufsize %v", *testBufSize)
 
 	if *benchmarkFile != "" {
 		b.Logf("using file %q for benchmark", *benchmarkFile)
@@ -284,8 +270,6 @@ func benchmarkChunker(b *testing.B, hash hash.Hash) {
 		rd = bytes.NewReader(getRandom(23, size))
 	}
 
-	ch := chunker.New(rd, testPol, *testBufSize, hash)
-
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
@@ -294,7 +278,7 @@ func benchmarkChunker(b *testing.B, hash hash.Hash) {
 		chunks = 0
 
 		rd.Seek(0, 0)
-		ch.Reset(rd, testPol)
+		ch := chunker.New(rd, testPol, hash)
 
 		for {
 			_, err := ch.Next()
@@ -333,6 +317,6 @@ func BenchmarkNewChunker(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		chunker.New(bytes.NewBuffer(nil), p, *testBufSize, nil)
+		chunker.New(bytes.NewBuffer(nil), p, nil)
 	}
 }
