@@ -10,7 +10,6 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/backend/local"
 	"github.com/restic/restic/backend/sftp"
@@ -182,7 +181,4 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-
-	// this prints some statistics for memory management using the debug package
-	restic.PoolAlloc()
 }

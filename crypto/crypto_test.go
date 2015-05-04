@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/restic/restic"
 	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/crypto"
 	. "github.com/restic/restic/test"
@@ -29,7 +28,9 @@ func TestEncryptDecrypt(t *testing.T) {
 		_, err := io.ReadFull(RandomReader(42, size), data)
 		OK(t, err)
 
-		ciphertext, err := crypto.Encrypt(k, restic.GetChunkBuf("TestEncryptDecrypt"), data)
+		buf := make([]byte, size+crypto.Extension)
+
+		ciphertext, err := crypto.Encrypt(k, buf, data)
 		OK(t, err)
 		Assert(t, len(ciphertext) == len(data)+crypto.Extension,
 			"ciphertext length does not match: want %d, got %d",
@@ -40,8 +41,6 @@ func TestEncryptDecrypt(t *testing.T) {
 		Assert(t, len(plaintext) == len(data),
 			"plaintext length does not match: want %d, got %d",
 			len(data), len(plaintext))
-
-		restic.FreeChunkBuf("TestEncryptDecrypt", ciphertext)
 
 		Equals(t, plaintext, data)
 	}
@@ -226,8 +225,6 @@ func BenchmarkEncryptDecryptReader(b *testing.B) {
 		_, err = io.Copy(ioutil.Discard, r)
 		OK(b, err)
 	}
-
-	restic.PoolAlloc()
 }
 
 func BenchmarkDecrypt(b *testing.B) {
@@ -236,10 +233,8 @@ func BenchmarkDecrypt(b *testing.B) {
 
 	k := crypto.NewRandomKey()
 
-	ciphertext := restic.GetChunkBuf("BenchmarkDecrypt")
-	defer restic.FreeChunkBuf("BenchmarkDecrypt", ciphertext)
-	plaintext := restic.GetChunkBuf("BenchmarkDecrypt")
-	defer restic.FreeChunkBuf("BenchmarkDecrypt", plaintext)
+	plaintext := make([]byte, size)
+	ciphertext := make([]byte, size+crypto.Extension)
 
 	ciphertext, err := crypto.Encrypt(k, ciphertext, data)
 	OK(b, err)

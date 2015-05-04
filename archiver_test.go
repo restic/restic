@@ -56,8 +56,8 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	s := SetupBackend(b)
 	defer TeardownBackend(b, s)
 
-	buf := restic.GetChunkBuf("BenchmarkChunkEncrypt")
-	buf2 := restic.GetChunkBuf("BenchmarkChunkEncrypt")
+	buf := make([]byte, chunker.MaxSize)
+	buf2 := make([]byte, chunker.MaxSize)
 	chunkBuf := make([]byte, chunkerBufSize)
 
 	b.ResetTimer()
@@ -66,9 +66,6 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		benchmarkChunkEncrypt(b, buf, buf2, chunkBuf, rd, s.Key())
 	}
-
-	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf)
-	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf2)
 }
 
 func benchmarkChunkEncryptP(b *testing.PB, buf, chunkBuf []byte, rd Rdr, key *crypto.Key) {
@@ -93,7 +90,7 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 
 	data := Random(23, 10<<20) // 10MiB
 
-	buf := restic.GetChunkBuf("BenchmarkChunkEncryptParallel")
+	buf := make([]byte, chunker.MaxSize)
 	chunkBuf := make([]byte, chunkerBufSize)
 
 	b.ResetTimer()
@@ -105,8 +102,6 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 			benchmarkChunkEncryptP(pb, buf, chunkBuf, rd, s.Key())
 		}
 	})
-
-	restic.FreeChunkBuf("BenchmarkChunkEncryptParallel", buf)
 }
 
 func archiveDirectory(b testing.TB) {
