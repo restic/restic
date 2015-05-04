@@ -17,9 +17,6 @@ const (
 	// aim to create chunks of 20 bits or about 1MiB on average.
 	averageBits = 20
 
-	// default buffer size
-	bufSize = 512 * KiB
-
 	// MinSize is the minimal size of a chunk.
 	MinSize = 512 * KiB
 	// MaxSize is the maximal size of a chunk.
