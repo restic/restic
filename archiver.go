@@ -170,6 +170,12 @@ func updateNodeContent(node *Node, results []saveResult) error {
 	return nil
 }
 
+const chunkerBufSize = 512 * chunker.KiB
+
+var chunkerBufPool = sync.Pool{
+	New: func() interface{} { return make([]byte, chunkerBufSize) },
+}
+
 // SaveFile stores the content of the file on the backend as a Blob by calling
 // Save for each chunk.
 func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
@@ -184,7 +190,9 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		return err
 	}
 
-	chnker := chunker.New(file, arch.s.Config.ChunkerPolynomial, sha256.New())
+	buf := chunkerBufPool.Get().([]byte)
+	chnker := chunker.New(file, arch.s.Config.ChunkerPolynomial, buf, sha256.New())
+	defer chunkerBufPool.Put(buf)
 	resultChannels := [](<-chan saveResult){}
 
 	for {

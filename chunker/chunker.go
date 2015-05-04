@@ -82,11 +82,18 @@ type Chunker struct {
 	h      hash.Hash
 }
 
-// New returns a new Chunker based on polynomial p that reads from data from rd
-// with bufsize and pass all data to hash along the way.
-func New(rd io.Reader, pol Pol, h hash.Hash) *Chunker {
+const minBufSize = 32
+
+// New returns a new Chunker based on polynomial p that reads from rd
+// with bufsize and pass all data to hash along the way, using buf for
+// buffering. Buf must at least hold 32 bytes.
+func New(rd io.Reader, pol Pol, buf []byte, h hash.Hash) *Chunker {
+	if len(buf) < minBufSize {
+		buf = make([]byte, minBufSize)
+	}
+
 	c := &Chunker{
-		buf: make([]byte, bufSize),
+		buf: buf,
 		h:   h,
 		pol: pol,
 		rd:  rd,

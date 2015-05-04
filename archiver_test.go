@@ -18,16 +18,16 @@ import (
 var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
 var testPol = chunker.Pol(0x3DA3358B4DC173)
 
-const bufSize = chunker.MiB
+const chunkerBufSize = 512 * chunker.KiB
 
 type Rdr interface {
 	io.ReadSeeker
 	io.ReaderAt
 }
 
-func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.Key) {
+func benchmarkChunkEncrypt(b testing.TB, buf, buf2, chunkBuf []byte, rd Rdr, key *crypto.Key) {
 	rd.Seek(0, 0)
-	ch := chunker.New(rd, testPol, sha256.New())
+	ch := chunker.New(rd, testPol, chunkBuf, sha256.New())
 
 	for {
 		chunk, err := ch.Next()
@@ -58,20 +58,21 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 
 	buf := restic.GetChunkBuf("BenchmarkChunkEncrypt")
 	buf2 := restic.GetChunkBuf("BenchmarkChunkEncrypt")
+	chunkBuf := make([]byte, chunkerBufSize)
 
 	b.ResetTimer()
 	b.SetBytes(int64(len(data)))
 
 	for i := 0; i < b.N; i++ {
-		benchmarkChunkEncrypt(b, buf, buf2, rd, s.Key())
+		benchmarkChunkEncrypt(b, buf, buf2, chunkBuf, rd, s.Key())
 	}
 
 	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf)
 	restic.FreeChunkBuf("BenchmarkChunkEncrypt", buf2)
 }
 
-func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) {
-	ch := chunker.New(rd, testPol, sha256.New())
+func benchmarkChunkEncryptP(b *testing.PB, buf, chunkBuf []byte, rd Rdr, key *crypto.Key) {
+	ch := chunker.New(rd, testPol, chunkBuf, sha256.New())
 
 	for {
 		chunk, err := ch.Next()
@@ -93,6 +94,7 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 	data := Random(23, 10<<20) // 10MiB
 
 	buf := restic.GetChunkBuf("BenchmarkChunkEncryptParallel")
+	chunkBuf := make([]byte, chunkerBufSize)
 
 	b.ResetTimer()
 	b.SetBytes(int64(len(data)))
@@ -100,7 +102,7 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			rd := bytes.NewReader(data)
-			benchmarkChunkEncryptP(pb, buf, rd, s.Key())
+			benchmarkChunkEncryptP(pb, buf, chunkBuf, rd, s.Key())
 		}
 	})
 
