@@ -74,7 +74,7 @@ func (cmd CmdInit) Execute(args []string) error {
 	}
 
 	s := server.NewServer(be)
-	err = s.CreateMasterKey(pw)
+	err = s.Init(pw)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", opts.Repo, err)
 		os.Exit(1)

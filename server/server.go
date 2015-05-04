@@ -532,7 +532,7 @@ func (s *Server) loadIndex(id string) error {
 const repositoryIDSize = sha256.Size
 const RepositoryVersion = 1
 
-func (s *Server) createConfig() (err error) {
+func createConfig(s *Server) (err error) {
 	s.Config.ChunkerPolynomial, err = chunker.RandomPolynomial()
 	if err != nil {
 		return err
@@ -583,9 +583,9 @@ func (s *Server) SearchKey(password string) error {
 	return s.loadConfig(&s.Config)
 }
 
-// CreateMasterKey creates a new key with the supplied password, afterwards the
-// repository config is created.
-func (s *Server) CreateMasterKey(password string) error {
+// Init creates a new master key with the supplied password and initializes the
+// repository config.
+func (s *Server) Init(password string) error {
 	has, err := s.Test(backend.Config, "")
 	if err != nil {
 		return err
@@ -601,7 +601,7 @@ func (s *Server) CreateMasterKey(password string) error {
 
 	s.key = key.master
 	s.keyName = key.Name()
-	return s.createConfig()
+	return createConfig(s)
 }
 
 func (s *Server) Decrypt(ciphertext []byte) ([]byte, error) {

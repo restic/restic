@@ -172,7 +172,7 @@ func TestLoadJSONPack(t *testing.T) {
 	OK(t, err)
 }
 
-func TestLoadJSONEncrypted(t *testing.T) {
+func TestLoadJSONUnpacked(t *testing.T) {
 	if *benchTestDir == "" {
 		t.Skip("benchdir not set, skipping TestServerStats")
 	}
