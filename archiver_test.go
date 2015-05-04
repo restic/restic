@@ -185,18 +185,10 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
 		cnt.after.packs, cnt.after.dataBlobs, cnt.after.treeBlobs)
 
-	// if there are more packs or blobs, something is wrong
-	if cnt.after.packs > cnt.before.packs {
-		t.Fatalf("TestArchiverDedup: too many packs in repository: before %d, after %d",
-			cnt.before.packs, cnt.after.packs)
-	}
+	// if there are more data blobs, something is wrong
 	if cnt.after.dataBlobs > cnt.before.dataBlobs {
 		t.Fatalf("TestArchiverDedup: too many data blobs in repository: before %d, after %d",
 			cnt.before.dataBlobs, cnt.after.dataBlobs)
-	}
-	if cnt.after.treeBlobs > cnt.before.treeBlobs {
-		t.Fatalf("TestArchiverDedup: too many tree blobs in repository: before %d, after %d",
-			cnt.before.treeBlobs, cnt.after.treeBlobs)
 	}
 
 	// archive the same files again, with a parent snapshot
@@ -210,18 +202,10 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
 		cnt.after2.packs, cnt.after2.dataBlobs, cnt.after2.treeBlobs)
 
-	// if there are more packs or blobs, something is wrong
-	if cnt.after2.packs > cnt.before.packs {
-		t.Fatalf("TestArchiverDedup: too many packs in repository: before %d, after %d",
-			cnt.before.packs, cnt.after2.packs)
-	}
+	// if there are more data blobs, something is wrong
 	if cnt.after2.dataBlobs > cnt.before.dataBlobs {
 		t.Fatalf("TestArchiverDedup: too many data blobs in repository: before %d, after %d",
 			cnt.before.dataBlobs, cnt.after2.dataBlobs)
-	}
-	if cnt.after2.treeBlobs > cnt.before.treeBlobs {
-		t.Fatalf("TestArchiverDedup: too many tree blobs in repository: before %d, after %d",
-			cnt.before.treeBlobs, cnt.after2.treeBlobs)
 	}
 }
 
