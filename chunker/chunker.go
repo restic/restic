@@ -23,7 +23,13 @@ const (
 	MaxSize = 8 * MiB
 
 	splitmask = (1 << averageBits) - 1
+
+	chunkerBufSize = 512 * KiB
 )
+
+var bufPool = sync.Pool{
+	New: func() interface{} { return make([]byte, chunkerBufSize) },
+}
 
 type tables struct {
 	out [256]Pol
@@ -79,18 +85,12 @@ type Chunker struct {
 	h      hash.Hash
 }
 
-const minBufSize = 32
-
 // New returns a new Chunker based on polynomial p that reads from rd
 // with bufsize and pass all data to hash along the way, using buf for
-// buffering. Buf must at least hold 32 bytes.
-func New(rd io.Reader, pol Pol, buf []byte, h hash.Hash) *Chunker {
-	if len(buf) < minBufSize {
-		buf = make([]byte, minBufSize)
-	}
-
+// buffering.
+func New(rd io.Reader, pol Pol, h hash.Hash) *Chunker {
 	c := &Chunker{
-		buf: buf,
+		buf: bufPool.Get().([]byte),
 		h:   h,
 		pol: pol,
 		rd:  rd,
@@ -203,6 +203,9 @@ func (c *Chunker) Next() (*Chunk, error) {
 			// chunk.
 			if err == io.EOF && !c.closed {
 				c.closed = true
+
+				// return the buffer to the pool
+				bufPool.Put(c.buf)
 
 				// return current chunk, if any bytes have been processed
 				if c.count > 0 {
