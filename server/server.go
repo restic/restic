@@ -559,6 +559,10 @@ func (s *Server) loadConfig(cfg *Config) error {
 		return err
 	}
 
+	if cfg.Version != RepositoryVersion {
+		return errors.New("unsupported repository version")
+	}
+
 	if !cfg.ChunkerPolynomial.Irreducible() {
 		return errors.New("invalid chunker polynomial")
 	}
