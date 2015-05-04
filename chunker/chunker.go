@@ -86,8 +86,7 @@ type Chunker struct {
 }
 
 // New returns a new Chunker based on polynomial p that reads from rd
-// with bufsize and pass all data to hash along the way, using buf for
-// buffering.
+// with bufsize and pass all data to hash along the way.
 func New(rd io.Reader, pol Pol, h hash.Hash) *Chunker {
 	c := &Chunker{
 		buf: bufPool.Get().([]byte),

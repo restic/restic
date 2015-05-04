@@ -18,8 +18,6 @@ import (
 var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
 var testPol = chunker.Pol(0x3DA3358B4DC173)
 
-const chunkerBufSize = 512 * chunker.KiB
-
 type Rdr interface {
 	io.ReadSeeker
 	io.ReaderAt
