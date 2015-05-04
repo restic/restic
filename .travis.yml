@@ -16,16 +16,17 @@ notifications:
     on_failure: change
 
 install:
+  - go get github.com/tools/godep
+  - godep restore
   - go get github.com/mitchellh/gox
   - gox -build-toolchain -os "linux darwin"
-  - go get -v -t ./...
 
 script:
-  - go build -ldflags "-s" ./...
-  - go build -ldflags "-s" -o restic ./cmd/restic
+  - godep go build -ldflags "-s" ./...
+  - godep go build -ldflags "-s" -o restic ./cmd/restic
   - sh -c "cd cmd/restic && gox -verbose -os 'linux darwin' && ls -al"
-  - go test -v ./...
+  - godep go test -v ./...
   - ./testsuite.sh
-  - sh -c "cd backend && go test -v -test.sftppath /usr/lib/openssh/sftp-server ./..."
+  - sh -c "cd backend && godep go test -v -test.sftppath /usr/lib/openssh/sftp-server ./..."
   - gofmt -l *.go */*.go */*/*.go
   - test -z "$(gofmt -l *.go */*.go */*/*.go)"
