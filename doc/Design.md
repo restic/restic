@@ -21,17 +21,16 @@ been backed up at some point in time. The state here means the content and meta
 data like the name and modification time for the file or the directory and its
 contents.
 
-*Storage ID*: A storage ID is the hash of the content of a file stored in the
+*Storage ID*: A storage ID is the SHA-256 hash of the content stored in the
 repository. This ID is needed in order to load the file from the repository.
-The storage hash is the SHA-256 hash of the content.
 
 Repository Format
 =================
 
 All data is stored in a restic repository. A repository is able to store data
 of several different types, which can later be requested based on an ID. This
-so-called "storage ID" is the hash (SHA-256) of the content of a file. All
-files in a repository are only written once and never modified afterwards. This
+so-called "storage ID" is the SHA-256 hash of the content of a file. All files
+in a repository are only written once and never modified afterwards. This
 allows accessing and even writing to the repository with multiple clients in
 parallel. Only the delete operation removes data from the repository.
 
@@ -40,7 +39,7 @@ directories and files. Such repositories can be accessed locally on the same
 system or via the integrated SFTP client. The directory layout is the same for
 both access methods. This repository type is described in the following.
 
-Repositories consists of several directories and a file called `config`. For
+Repositories consist of several directories and a file called `config`. For
 all other files stored in the repository, the name for the file is the lower
 case hexadecimal representation of the storage ID, which is the SHA-256 hash of
 the file's contents. This allows easily checking all files for accidental
@@ -269,9 +268,8 @@ Snapshots
 A snapshots represents a directory with all files and sub-directories at a
 given point in time. For each backup that is made, a new snapshot is created. A
 snapshot is a JSON document that is stored in an encrypted file below the
-directory `snapshots` in the repository. The filename is the SHA-256 hash of
-the (encrypted) contents. This string is unique and used within restic to
-uniquely identify a snapshot.
+directory `snapshots` in the repository. The filename is the storage ID. This
+string is unique and used within restic to uniquely identify a snapshot.
 
 The command `restic cat snapshot` can be used as follows to decrypt and
 pretty-print the contents of a snapshot file:
@@ -296,7 +294,7 @@ hash. Before saving, each file is split into variable sized Blobs of data. The
 SHA-256 hashes of all Blobs are saved in an ordered list which then represents
 the content of the file.
 
-In order to relate these plain text hashes to the actual location within a Pack
+In order to relate these plaintext hashes to the actual location within a Pack
 file , an index is used. If the index is not available, the header of all data
 Blobs can be read.
 
@@ -367,9 +365,9 @@ This tree contains a file entry. This time, the `subtree` field is not present
 and the `content` field contains a list with one plain text SHA-256 hash.
 
 The command `restic cat data` can be used to extract and decrypt data given a
-storage hash, e.g. for the data mentioned above:
+plaintext ID, e.g. for the data mentioned above:
 
-    $ restic -r /tmp/restic-repo cat blob 00634c46e5f7c055c341acd1201cf8289cabe769f991d6e350f8cd8ce2a52ac3 | sha256sum
+    $ restic -r /tmp/restic-repo cat blob 50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d | sha256sum
     enter password for repository:
     50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
 
