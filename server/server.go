@@ -149,7 +149,7 @@ func (s *Server) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 	return plain, nil
 }
 
-// LoadJSONEncrypted decrypts the data and afterwards calls json.Unmarshal on
+// LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
 func (s *Server) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) error {
 	// load blob from backend
@@ -566,8 +566,8 @@ func (s *Server) loadConfig(cfg *Config) error {
 	return nil
 }
 
-// SearchKey tries to find a key for which the supplied password works,
-// afterwards the repository config is read and parsed.
+// SearchKey finds a key with the supplied password, afterwards the config is
+// read and parsed.
 func (s *Server) SearchKey(password string) error {
 	key, err := SearchKey(s, password)
 	if err != nil {

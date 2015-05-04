@@ -41,7 +41,7 @@ func Open(dir string) (*Local, error) {
 }
 
 // Create creates all the necessary files and directories for a new local
-// backend at dir. Afterwards a new config blob should must created.
+// backend at dir. Afterwards a new config blob should be created.
 func Create(dir string) (*Local, error) {
 	dirs := []string{
 		dir,
@@ -53,7 +53,7 @@ func Create(dir string) (*Local, error) {
 		filepath.Join(dir, backend.Paths.Temp),
 	}
 
-	// test if config file already exist
+	// test if config file already exists
 	_, err := os.Lstat(backend.Paths.Config)
 	if err == nil {
 		return nil, errors.New("config file already exists")

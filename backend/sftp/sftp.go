@@ -89,7 +89,7 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 }
 
 // Create creates all the necessary files and directories for a new sftp
-// backend at dir. Afterwards a new config blob should must created.
+// backend at dir. Afterwards a new config blob should be created.
 func Create(dir string, program string, args ...string) (*SFTP, error) {
 	sftp, err := startClient(program, args...)
 	if err != nil {
@@ -106,7 +106,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 		filepath.Join(dir, backend.Paths.Temp),
 	}
 
-	// test if config file already exist
+	// test if config file already exists
 	_, err = sftp.c.Lstat(backend.Paths.Config)
 	if err == nil {
 		return nil, errors.New("config file already exists")
