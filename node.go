@@ -208,6 +208,18 @@ func (node Node) createSymlinkAt(path string) error {
 	return nil
 }
 
+func (node *Node) createDevAt(path string) error {
+	return syscall.Mknod(path, syscall.S_IFBLK|0600, int(node.Device))
+}
+
+func (node *Node) createCharDevAt(path string) error {
+	return syscall.Mknod(path, syscall.S_IFCHR|0600, int(node.Device))
+}
+
+func (node *Node) createFifoAt(path string) error {
+	return syscall.Mkfifo(path, 0600)
+}
+
 func (node Node) MarshalJSON() ([]byte, error) {
 	type nodeJSON Node
 	nj := nodeJSON(node)
