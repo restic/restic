@@ -49,18 +49,13 @@ Install Go/Golang (at least 1.3), then run:
     $GOPATH/bin/restic --help
 
 
-Contribute
-==========
+Contribute and Documentation
+============================
 
-Contributions are welcome! Please make sure that all code submitted in
-pull-requests is properly formatted with `gofmt`. Installing the script
-`fmt-check` from https://github.com/edsrzf/gofmt-git-hook locally as a
-pre-commit hook checks formatting before commiting, just copy this script to
-`.git/hooks/pre-commit`.
-
-If you are unsure what to do, please have a look at the github issues,
-especially those tagged
-[minor complexity](https://github.com/restic/restic/labels/minor%20complexity).
+Contributions are welcome! More information can be found in
+[`CONTRIBUTING.md`](CONTRIBUTING.md). A document describing the design of
+restic and the data structures stored on disc is contained in
+[`doc/Design.md`](doc/Design.md).
 
 Contact
 =======
