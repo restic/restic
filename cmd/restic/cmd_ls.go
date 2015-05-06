@@ -48,7 +48,7 @@ func printTree(prefix string, s *server.Server, id backend.ID) error {
 		fmt.Println(printNode(prefix, entry))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			err = printTree(filepath.Join(prefix, entry.Name), s, id)
+			err = printTree(filepath.Join(prefix, entry.Name), s, entry.Subtree)
 			if err != nil {
 				return err
 			}
@@ -68,6 +68,11 @@ func (cmd CmdLs) Execute(args []string) error {
 	}
 
 	s, err := OpenRepo()
+	if err != nil {
+		return err
+	}
+
+	err = s.LoadIndex()
 	if err != nil {
 		return err
 	}
