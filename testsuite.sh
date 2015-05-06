@@ -6,6 +6,8 @@ export BINDIR="${BASEDIR}/bin"
 export PATH="${BINDIR}:$PATH"
 export DEBUG_LOG="${BASEDIR}/restic.log"
 
+export TZ=UTC
+
 echo "restic testsuite basedir ${BASEDIR}"
 
 # build binaries
