@@ -12,7 +12,7 @@ run restic restore "$(basename "$RESTIC_REPOSITORY"/snapshots/*)" "${BASE}/fake-
 dirdiff "${BASE}/fake-data" "${BASE}/fake-data-restore-incremental/fake-data"
 
 echo "snapshot id is $SNAPSHOT"
-restic ls "$SNAPSHOT" fake-data/0/0/1
+restic ls "$SNAPSHOT" fake-data/0/0/1 | head -n 10
 
 run restic fsck -o --check-data
 cleanup
