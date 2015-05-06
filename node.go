@@ -341,7 +341,7 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 
 	if node.ModTime != fi.ModTime() ||
 		node.ChangeTime != changeTime(extendedStat) ||
-		node.Inode != inode ||
+		node.Inode != uint64(inode) ||
 		node.Size != size {
 		debug.Log("node.isNewer", "node %v is newer: timestamp, size or inode changed", path)
 		return true
@@ -396,7 +396,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		return nil
 	}
 
-	node.Inode = stat.Ino
+	node.Inode = uint64(stat.Ino)
 
 	node.fillTimes(stat)
 
