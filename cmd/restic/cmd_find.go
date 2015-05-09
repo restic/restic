@@ -59,9 +59,9 @@ func parseTime(str string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("unable to parse time: %q", str)
 }
 
-func (c CmdFind) findInTree(s *repo.Repository, id backend.ID, path string) ([]findResult, error) {
+func (c CmdFind) findInTree(repo *repo.Repository, id backend.ID, path string) ([]findResult, error) {
 	debug.Log("restic.find", "checking tree %v\n", id)
-	tree, err := restic.LoadTree(s, id)
+	tree, err := restic.LoadTree(repo, id)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (c CmdFind) findInTree(s *repo.Repository, id backend.ID, path string) ([]f
 		}
 
 		if node.Type == "dir" {
-			subdirResults, err := c.findInTree(s, id, filepath.Join(path, node.Name))
+			subdirResults, err := c.findInTree(repo, id, filepath.Join(path, node.Name))
 			if err != nil {
 				return nil, err
 			}
@@ -105,7 +105,7 @@ func (c CmdFind) findInTree(s *repo.Repository, id backend.ID, path string) ([]f
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(s *repo.Repository, name string) error {
+func (c CmdFind) findInSnapshot(repo *repo.Repository, name string) error {
 	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", name, c.oldest, c.newest)
 
 	id, err := backend.ParseID(name)
@@ -113,12 +113,12 @@ func (c CmdFind) findInSnapshot(s *repo.Repository, name string) error {
 		return err
 	}
 
-	sn, err := restic.LoadSnapshot(s, id)
+	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {
 		return err
 	}
 
-	results, err := c.findInTree(s, sn.Tree, "")
+	results, err := c.findInTree(repo, sn.Tree, "")
 	if err != nil {
 		return err
 	}

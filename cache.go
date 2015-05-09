@@ -18,13 +18,13 @@ type Cache struct {
 	base string
 }
 
-func NewCache(s *repo.Repository) (*Cache, error) {
+func NewCache(repo *repo.Repository) (*Cache, error) {
 	cacheDir, err := getCacheDir()
 	if err != nil {
 		return nil, err
 	}
 
-	basedir := filepath.Join(cacheDir, s.Config.ID)
+	basedir := filepath.Join(cacheDir, repo.Config.ID)
 	debug.Log("Cache.New", "opened cache at %v", basedir)
 
 	return &Cache{base: basedir}, nil
@@ -106,7 +106,7 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 }
 
 // Clear removes information from the cache that isn't present in the server any more.
-func (c *Cache) Clear(s *repo.Repository) error {
+func (c *Cache) Clear(repo *repo.Repository) error {
 	list, err := c.list(backend.Snapshot)
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (c *Cache) Clear(s *repo.Repository) error {
 	for _, entry := range list {
 		debug.Log("Cache.Clear", "found entry %v", entry)
 
-		if ok, err := s.Test(backend.Snapshot, entry.ID.String()); !ok || err != nil {
+		if ok, err := repo.Test(backend.Snapshot, entry.ID.String()); !ok || err != nil {
 			debug.Log("Cache.Clear", "snapshot %v doesn't exist any more, removing %v", entry.ID, entry)
 
 			err = c.purge(backend.Snapshot, entry.Subtype, entry.ID)

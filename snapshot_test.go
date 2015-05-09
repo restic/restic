@@ -8,8 +8,8 @@ import (
 )
 
 func TestNewSnapshot(t *testing.T) {
-	s := SetupBackend(t)
-	defer TeardownBackend(t, s)
+	s := SetupRepo(t)
+	defer TeardownRepo(t, s)
 
 	paths := []string{"/home/foobar"}
 

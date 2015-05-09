@@ -74,12 +74,12 @@ func addKey(s *repo.Repository) error {
 	return nil
 }
 
-func deleteKey(s *repo.Repository, name string) error {
-	if name == s.KeyName() {
+func deleteKey(repo *repo.Repository, name string) error {
+	if name == repo.KeyName() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
-	err := s.Remove(backend.Key, name)
+	err := repo.Remove(backend.Key, name)
 	if err != nil {
 		return err
 	}

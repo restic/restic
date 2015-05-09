@@ -30,9 +30,9 @@ func (t Tree) String() string {
 	return fmt.Sprintf("Tree<%d nodes>", len(t.Nodes))
 }
 
-func LoadTree(s *repo.Repository, id backend.ID) (*Tree, error) {
+func LoadTree(repo *repo.Repository, id backend.ID) (*Tree, error) {
 	tree := &Tree{}
-	err := s.LoadJSONPack(pack.Tree, id, tree)
+	err := repo.LoadJSONPack(pack.Tree, id, tree)
 	if err != nil {
 		return nil, err
 	}
