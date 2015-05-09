@@ -11,7 +11,7 @@ func TestCache(t *testing.T) {
 	repo := SetupRepo(t)
 	defer TeardownRepo(t, repo)
 
-	_, err := restic.NewCache(repo)
+	_, err := restic.NewCache(repo, "")
 	OK(t, err)
 
 	arch := restic.NewArchiver(repo)

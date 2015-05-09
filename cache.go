@@ -18,10 +18,16 @@ type Cache struct {
 	base string
 }
 
-func NewCache(repo *repository.Repository) (*Cache, error) {
-	cacheDir, err := getCacheDir()
-	if err != nil {
-		return nil, err
+// NewCache returns a new cache at cacheDir. If it is the empty string, the
+// default cache location is chosen.
+func NewCache(repo *repository.Repository, cacheDir string) (*Cache, error) {
+	var err error
+
+	if cacheDir == "" {
+		cacheDir, err = getCacheDir()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	basedir := filepath.Join(cacheDir, repo.Config.ID)
