@@ -14,7 +14,7 @@ import (
 	"github.com/restic/restic/backend/local"
 	"github.com/restic/restic/backend/sftp"
 	"github.com/restic/restic/debug"
-	"github.com/restic/restic/repo"
+	"github.com/restic/restic/repository"
 )
 
 var version = "compiled manually"
@@ -72,7 +72,7 @@ func (cmd CmdInit) Execute(args []string) error {
 		os.Exit(1)
 	}
 
-	s := repo.New(be)
+	s := repository.New(be)
 	err = s.Init(pw)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", opts.Repo, err)
@@ -133,7 +133,7 @@ func create(u string) (backend.Backend, error) {
 	return sftp.Create(url.Path[1:], "ssh", args...)
 }
 
-func OpenRepo() (*repo.Repo, error) {
+func OpenRepo() (*repository.Repo, error) {
 	if opts.Repo == "" {
 		return nil, errors.New("Please specify repository location (-r)")
 	}
@@ -143,7 +143,7 @@ func OpenRepo() (*repo.Repo, error) {
 		return nil, err
 	}
 
-	s := repo.New(be)
+	s := repository.New(be)
 
 	err = s.SearchKey(readPassword("RESTIC_PASSWORD", "enter password for repository: "))
 	if err != nil {

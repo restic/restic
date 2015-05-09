@@ -1,4 +1,4 @@
-package repo_test
+package repository_test
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/pack"
-	"github.com/restic/restic/repo"
+	"github.com/restic/restic/repository"
 	. "github.com/restic/restic/test"
 )
 
@@ -30,7 +30,7 @@ func TestIndexSerialize(t *testing.T) {
 	}
 	tests := []testEntry{}
 
-	idx := repo.NewIndex()
+	idx := repository.NewIndex()
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
@@ -58,7 +58,7 @@ func TestIndexSerialize(t *testing.T) {
 	err := idx.Encode(wr)
 	OK(t, err)
 
-	idx2, err := repo.DecodeIndex(wr)
+	idx2, err := repository.DecodeIndex(wr)
 	OK(t, err)
 	Assert(t, idx2 != nil,
 		"nil returned for decoded index")
@@ -113,7 +113,7 @@ func TestIndexSerialize(t *testing.T) {
 	err = idx2.Encode(wr3)
 	OK(t, err)
 
-	idx3, err := repo.DecodeIndex(wr3)
+	idx3, err := repository.DecodeIndex(wr3)
 	OK(t, err)
 	Assert(t, idx3 != nil,
 		"nil returned for decoded index")
@@ -138,7 +138,7 @@ func TestIndexSerialize(t *testing.T) {
 }
 
 func TestIndexSize(t *testing.T) {
-	idx := repo.NewIndex()
+	idx := repository.NewIndex()
 
 	packs := 200
 	blobs := 100
@@ -210,7 +210,7 @@ var exampleTests = []struct {
 }
 
 func TestIndexUnserialize(t *testing.T) {
-	idx, err := repo.DecodeIndex(bytes.NewReader(docExample))
+	idx, err := repository.DecodeIndex(bytes.NewReader(docExample))
 	OK(t, err)
 
 	for _, test := range exampleTests {

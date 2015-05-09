@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/repo"
+	"github.com/restic/restic/repository"
 )
 
 type Snapshot struct {
@@ -50,7 +50,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 	return sn, nil
 }
 
-func LoadSnapshot(repo *repo.Repo, id backend.ID) (*Snapshot, error) {
+func LoadSnapshot(repo *repository.Repo, id backend.ID) (*Snapshot, error) {
 	sn := &Snapshot{id: id}
 	err := repo.LoadJSONUnpacked(backend.Snapshot, id, sn)
 	if err != nil {

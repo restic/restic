@@ -10,7 +10,7 @@ import (
 	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
-	"github.com/restic/restic/repo"
+	"github.com/restic/restic/repository"
 )
 
 type CmdFsck struct {
@@ -34,7 +34,7 @@ func init() {
 	}
 }
 
-func fsckFile(opts CmdFsck, repo *repo.Repo, IDs []backend.ID) (uint64, error) {
+func fsckFile(opts CmdFsck, repo *repository.Repo, IDs []backend.ID) (uint64, error) {
 	debug.Log("restic.fsckFile", "checking file %v", IDs)
 	var bytes uint64
 
@@ -77,7 +77,7 @@ func fsckFile(opts CmdFsck, repo *repo.Repo, IDs []backend.ID) (uint64, error) {
 	return bytes, nil
 }
 
-func fsckTree(opts CmdFsck, repo *repo.Repo, id backend.ID) error {
+func fsckTree(opts CmdFsck, repo *repository.Repo, id backend.ID) error {
 	debug.Log("restic.fsckTree", "checking tree %v", id.Str())
 
 	tree, err := restic.LoadTree(repo, id)
@@ -157,7 +157,7 @@ func fsckTree(opts CmdFsck, repo *repo.Repo, id backend.ID) error {
 	return firstErr
 }
 
-func fsckSnapshot(opts CmdFsck, repo *repo.Repo, id backend.ID) error {
+func fsckSnapshot(opts CmdFsck, repo *repository.Repo, id backend.ID) error {
 	debug.Log("restic.fsck", "checking snapshot %v\n", id)
 
 	sn, err := restic.LoadSnapshot(repo, id)

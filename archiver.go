@@ -15,7 +15,7 @@ import (
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
 	"github.com/restic/restic/pipe"
-	"github.com/restic/restic/repo"
+	"github.com/restic/restic/repository"
 
 	"github.com/juju/errors"
 )
@@ -30,7 +30,7 @@ var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
 // Archiver is used to backup a set of directories.
 type Archiver struct {
-	repo *repo.Repo
+	repo *repository.Repo
 
 	blobToken chan struct{}
 
@@ -39,7 +39,7 @@ type Archiver struct {
 }
 
 // NewArchiver returns a new archiver.
-func NewArchiver(repo *repo.Repo) *Archiver {
+func NewArchiver(repo *repository.Repo) *Archiver {
 	arch := &Archiver{
 		repo:      repo,
 		blobToken: make(chan struct{}, maxConcurrentBlobs),
