@@ -20,8 +20,9 @@ import (
 var version = "compiled manually"
 
 var opts struct {
-	Repo     string `short:"r" long:"repo"      description:"Repository directory to backup to/restore from"`
-	CacheDir string `          long:"cache-dir" description:"Directory to use as a local cache"`
+	Repo     string `short:"r" long:"repo"                      description:"Repository directory to backup to/restore from"`
+	CacheDir string `          long:"cache-dir"                 description:"Directory to use as a local cache"`
+	Quiet    bool   `short:"q" long:"quiet"     default:"false" description:"Do not output comprehensive progress report"`
 
 	password string
 }
@@ -45,6 +46,34 @@ func readPassword(prompt string) string {
 	fmt.Fprintln(os.Stderr)
 
 	return string(pw)
+}
+
+func disableProgress() bool {
+	if opts.Quiet {
+		return true
+	}
+
+	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+		return true
+	}
+
+	return false
+}
+
+func silenceRequested() bool {
+	if opts.Quiet {
+		return true
+	}
+
+	return false
+}
+
+func verbosePrintf(format string, args ...interface{}) {
+	if silenceRequested() {
+		return
+	}
+
+	fmt.Printf(format, args...)
 }
 
 type CmdInit struct{}
@@ -78,10 +107,11 @@ func (cmd CmdInit) Execute(args []string) error {
 		os.Exit(1)
 	}
 
-	fmt.Printf("created restic backend %v at %s\n", s.Config.ID[:10], opts.Repo)
-
-	fmt.Println("Please note that knowledge of your password is required to access the repository.")
-	fmt.Println("Losing your password means that your data is irrecoverably lost.")
+	verbosePrintf("created restic backend %v at %s\n", s.Config.ID[:10], opts.Repo)
+	verbosePrintf("\n")
+	verbosePrintf("Please note that knowledge of your password is required to access\n")
+	verbosePrintf("the repository. Losing your password means that your data is\n")
+	verbosePrintf("irrecoverably lost.\n")
 
 	return nil
 }

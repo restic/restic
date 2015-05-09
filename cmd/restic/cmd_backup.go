@@ -97,7 +97,7 @@ func (cmd CmdBackup) Usage() string {
 }
 
 func newScanProgress() *restic.Progress {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+	if disableProgress() {
 		return nil
 	}
 
@@ -113,7 +113,7 @@ func newScanProgress() *restic.Progress {
 }
 
 func newArchiveProgress(todo restic.Stat) *restic.Progress {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+	if disableProgress() {
 		return nil
 	}
 
@@ -194,7 +194,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
 		}
 
-		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
+		verbosePrintf("found parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
 	// Find last snapshot to set it as parent, if not already set
@@ -226,11 +226,11 @@ func (cmd CmdBackup) Execute(args []string) error {
 		}
 
 		if parentSnapshotID != nil {
-			fmt.Printf("using parent snapshot %v\n", parentSnapshotID)
+			verbosePrintf("using parent snapshot %v\n", parentSnapshotID)
 		}
 	}
 
-	fmt.Printf("scan %v\n", target)
+	verbosePrintf("scan %v\n", target)
 
 	stat, err := restic.Scan(target, newScanProgress())
 
@@ -252,12 +252,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	plen, err := s.PrefixLength(backend.Snapshot)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("snapshot %s saved\n", id[:plen/2])
+	verbosePrintf("snapshot %s saved\n", id.Str())
 
 	return nil
 }
