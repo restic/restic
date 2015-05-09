@@ -28,9 +28,9 @@ Providing Patches
 =================
 
 You have fixed an annoying bug or have added a new feature? Very cool! Let's
-get it into the project! The workflow we're using is also described at the
+get it into the project! The workflow we're using is also described on the
 [GitHub Flow](https://guides.github.com/introduction/flow/) website, it boils
-down to the following steps :
+down to the following steps:
 
  1. First we would kindly ask you to fork our project on GitHub if you haven't
     done so already.
