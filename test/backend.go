@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/server"
 )
 
-var TestPassword = flag.String("test.password", "", `use this password for repositories created during tests (default: "geheim")`)
+var TestPassword = flag.String("test.password", "geheim", `use this password for repositories created during tests (default: "geheim")`)
 var TestCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
 var TestTempDir = flag.String("test.tempdir", "", "use this directory for temporary storage (default: system temp dir)")
 
