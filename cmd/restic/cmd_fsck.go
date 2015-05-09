@@ -34,7 +34,7 @@ func init() {
 	}
 }
 
-func fsckFile(opts CmdFsck, s *repo.Server, IDs []backend.ID) (uint64, error) {
+func fsckFile(opts CmdFsck, s *repo.Repository, IDs []backend.ID) (uint64, error) {
 	debug.Log("restic.fsckFile", "checking file %v", IDs)
 	var bytes uint64
 
@@ -77,7 +77,7 @@ func fsckFile(opts CmdFsck, s *repo.Server, IDs []backend.ID) (uint64, error) {
 	return bytes, nil
 }
 
-func fsckTree(opts CmdFsck, s *repo.Server, id backend.ID) error {
+func fsckTree(opts CmdFsck, s *repo.Repository, id backend.ID) error {
 	debug.Log("restic.fsckTree", "checking tree %v", id.Str())
 
 	tree, err := restic.LoadTree(s, id)
@@ -157,7 +157,7 @@ func fsckTree(opts CmdFsck, s *repo.Server, id backend.ID) error {
 	return firstErr
 }
 
-func fsckSnapshot(opts CmdFsck, s *repo.Server, id backend.ID) error {
+func fsckSnapshot(opts CmdFsck, s *repo.Repository, id backend.ID) error {
 	debug.Log("restic.fsck", "checking snapshot %v\n", id)
 
 	sn, err := restic.LoadSnapshot(s, id)

@@ -17,7 +17,7 @@ var TestPassword = flag.String("test.password", "", `use this password for repos
 var TestCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
 var TestTempDir = flag.String("test.tempdir", "", "use this directory for temporary storage (default: system temp dir)")
 
-func SetupBackend(t testing.TB) *repo.Server {
+func SetupBackend(t testing.TB) *repo.Repository {
 	tempdir, err := ioutil.TempDir(*TestTempDir, "restic-test-")
 	OK(t, err)
 
@@ -29,12 +29,12 @@ func SetupBackend(t testing.TB) *repo.Server {
 	err = os.Setenv("RESTIC_CACHE", filepath.Join(tempdir, "cache"))
 	OK(t, err)
 
-	s := repo.NewServer(b)
+	s := repo.New(b)
 	OK(t, s.Init(*TestPassword))
 	return s
 }
 
-func TeardownBackend(t testing.TB, s *repo.Server) {
+func TeardownBackend(t testing.TB, s *repo.Repository) {
 	if !*TestCleanup {
 		l := s.Backend().(*local.Local)
 		t.Logf("leaving local backend at %s\n", l.Location())
@@ -44,7 +44,7 @@ func TeardownBackend(t testing.TB, s *repo.Server) {
 	OK(t, s.Delete())
 }
 
-func SnapshotDir(t testing.TB, server *repo.Server, path string, parent backend.ID) *restic.Snapshot {
+func SnapshotDir(t testing.TB, server *repo.Repository, path string, parent backend.ID) *restic.Snapshot {
 	arch := restic.NewArchiver(server)
 	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
 	OK(t, err)

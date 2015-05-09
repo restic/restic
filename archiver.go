@@ -30,7 +30,7 @@ var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
 // Archiver is used to backup a set of directories.
 type Archiver struct {
-	s *repo.Server
+	s *repo.Repository
 
 	blobToken chan struct{}
 
@@ -39,7 +39,7 @@ type Archiver struct {
 }
 
 // NewArchiver returns a new archiver.
-func NewArchiver(s *repo.Server) *Archiver {
+func NewArchiver(s *repo.Repository) *Archiver {
 	arch := &Archiver{
 		s:         s,
 		blobToken: make(chan struct{}, maxConcurrentBlobs),

@@ -16,7 +16,7 @@ type WalkTreeJob struct {
 	Tree *Tree
 }
 
-func walkTree(s *repo.Server, path string, treeID backend.ID, done chan struct{}, jobCh chan<- WalkTreeJob) {
+func walkTree(s *repo.Repository, path string, treeID backend.ID, done chan struct{}, jobCh chan<- WalkTreeJob) {
 	debug.Log("walkTree", "start on %q (%v)", path, treeID.Str())
 
 	t, err := LoadTree(s, treeID)
@@ -41,7 +41,7 @@ func walkTree(s *repo.Server, path string, treeID backend.ID, done chan struct{}
 // WalkTree walks the tree specified by id recursively and sends a job for each
 // file and directory it finds. When the channel done is closed, processing
 // stops.
-func WalkTree(server *repo.Server, id backend.ID, done chan struct{}, jobCh chan<- WalkTreeJob) {
+func WalkTree(server *repo.Repository, id backend.ID, done chan struct{}, jobCh chan<- WalkTreeJob) {
 	debug.Log("WalkTree", "start on %v", id.Str())
 	walkTree(server, "", id, done, jobCh)
 	close(jobCh)

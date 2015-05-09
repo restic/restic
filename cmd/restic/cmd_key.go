@@ -21,7 +21,7 @@ func init() {
 	}
 }
 
-func listKeys(s *repo.Server) error {
+func listKeys(s *repo.Repository) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
@@ -56,7 +56,7 @@ func listKeys(s *repo.Server) error {
 	return nil
 }
 
-func addKey(s *repo.Server) error {
+func addKey(s *repo.Repository) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -74,7 +74,7 @@ func addKey(s *repo.Server) error {
 	return nil
 }
 
-func deleteKey(s *repo.Server, name string) error {
+func deleteKey(s *repo.Repository, name string) error {
 	if name == s.KeyName() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
@@ -88,7 +88,7 @@ func deleteKey(s *repo.Server, name string) error {
 	return nil
 }
 
-func changePassword(s *repo.Server) error {
+func changePassword(s *repo.Repository) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
