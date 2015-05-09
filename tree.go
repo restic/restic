@@ -8,7 +8,7 @@ import (
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
-	"github.com/restic/restic/repo"
+	"github.com/restic/restic/repository"
 )
 
 type Tree struct {
@@ -30,7 +30,7 @@ func (t Tree) String() string {
 	return fmt.Sprintf("Tree<%d nodes>", len(t.Nodes))
 }
 
-func LoadTree(repo *repo.Repo, id backend.ID) (*Tree, error) {
+func LoadTree(repo *repository.Repository, id backend.ID) (*Tree, error) {
 	tree := &Tree{}
 	err := repo.LoadJSONPack(pack.Tree, id, tree)
 	if err != nil {

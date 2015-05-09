@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/repo"
+	"github.com/restic/restic/repository"
 )
 
 type CmdKey struct{}
@@ -21,7 +21,7 @@ func init() {
 	}
 }
 
-func listKeys(s *repo.Repo) error {
+func listKeys(s *repository.Repository) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
@@ -35,7 +35,7 @@ func listKeys(s *repo.Repo) error {
 	defer close(done)
 
 	for name := range s.List(backend.Key, done) {
-		k, err := repo.LoadKey(s, name)
+		k, err := repository.LoadKey(s, name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "LoadKey() failed: %v\n", err)
 			continue
@@ -56,7 +56,7 @@ func listKeys(s *repo.Repo) error {
 	return nil
 }
 
-func addKey(s *repo.Repo) error {
+func addKey(s *repository.Repository) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -64,7 +64,7 @@ func addKey(s *repo.Repo) error {
 		return errors.New("passwords do not match")
 	}
 
-	id, err := repo.AddKey(s, pw, s.Key())
+	id, err := repository.AddKey(s, pw, s.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
@@ -74,7 +74,7 @@ func addKey(s *repo.Repo) error {
 	return nil
 }
 
-func deleteKey(repo *repo.Repo, name string) error {
+func deleteKey(repo *repository.Repository, name string) error {
 	if name == repo.KeyName() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
@@ -88,7 +88,7 @@ func deleteKey(repo *repo.Repo, name string) error {
 	return nil
 }
 
-func changePassword(s *repo.Repo) error {
+func changePassword(s *repository.Repository) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -97,7 +97,7 @@ func changePassword(s *repo.Repo) error {
 	}
 
 	// add new key
-	id, err := repo.AddKey(s, pw, s.Key())
+	id, err := repository.AddKey(s, pw, s.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}

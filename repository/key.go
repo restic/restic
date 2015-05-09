@@ -1,4 +1,4 @@
-package repo
+package repository
 
 import (
 	"crypto/rand"
@@ -49,12 +49,12 @@ type Key struct {
 
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
-func createMasterKey(s *Repo, password string) (*Key, error) {
+func createMasterKey(s *Repository, password string) (*Key, error) {
 	return AddKey(s, password, nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
-func OpenKey(s *Repo, name string, password string) (*Key, error) {
+func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	k, err := LoadKey(s, name)
 	if err != nil {
 		return nil, err
@@ -94,7 +94,7 @@ func OpenKey(s *Repo, name string, password string) (*Key, error) {
 
 // SearchKey tries to decrypt all keys in the backend with the given password.
 // If none could be found, ErrNoKeyFound is returned.
-func SearchKey(s *Repo, password string) (*Key, error) {
+func SearchKey(s *Repository, password string) (*Key, error) {
 	// try all keys in repo
 	done := make(chan struct{})
 	defer close(done)
@@ -111,7 +111,7 @@ func SearchKey(s *Repo, password string) (*Key, error) {
 }
 
 // LoadKey loads a key from the backend.
-func LoadKey(s *Repo, name string) (*Key, error) {
+func LoadKey(s *Repository, name string) (*Key, error) {
 	// extract data from repo
 	rd, err := s.be.Get(backend.Key, name)
 	if err != nil {
@@ -131,7 +131,7 @@ func LoadKey(s *Repo, name string) (*Key, error) {
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(s *Repo, password string, template *crypto.Key) (*Key, error) {
+func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) {
 	// fill meta data about key
 	newkey := &Key{
 		Created: time.Now(),

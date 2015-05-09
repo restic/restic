@@ -7,7 +7,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/repo"
+	"github.com/restic/restic/repository"
 )
 
 type CmdLs struct{}
@@ -38,7 +38,7 @@ func printNode(prefix string, n *restic.Node) string {
 	}
 }
 
-func printTree(prefix string, repo *repo.Repo, id backend.ID) error {
+func printTree(prefix string, repo *repository.Repository, id backend.ID) error {
 	tree, err := restic.LoadTree(repo, id)
 	if err != nil {
 		return err
