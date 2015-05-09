@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/repo"
 )
 
-// Cache is used to locally cache items from a server.
+// Cache is used to locally cache items from a repository.
 type Cache struct {
 	base string
 }
@@ -105,7 +105,7 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 	return err
 }
 
-// Clear removes information from the cache that isn't present in the server any more.
+// Clear removes information from the cache that isn't present in the repository any more.
 func (c *Cache) Clear(repo *repo.Repository) error {
 	list, err := c.list(backend.Snapshot)
 	if err != nil {

@@ -55,7 +55,7 @@ func NewArchiver(repo *repo.Repository) *Archiver {
 	return arch
 }
 
-// Save stores a blob read from rd in the server.
+// Save stores a blob read from rd in the repository.
 func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
@@ -76,7 +76,7 @@ func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Re
 	return nil
 }
 
-// SaveTreeJSON stores a tree in the server.
+// SaveTreeJSON stores a tree in the repository.
 func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
@@ -631,7 +631,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 	sn.id = id
 	debug.Log("Archiver.Snapshot", "saved snapshot %v", id.Str())
 
-	// flush server
+	// flush repository
 	err = arch.repo.Flush()
 	if err != nil {
 		return nil, nil, err
