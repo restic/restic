@@ -28,10 +28,29 @@ Providing Patches
 =================
 
 You have fixed an annoying bug or have added a new feature? Very cool! Let's
-get it into the project! First we would kindly ask you to fork our project on
-GitHub if you haven't done so already.
+get it into the project! The workflow we're using is also described at the
+[GitHub Flow](https://guides.github.com/introduction/flow/) website, it boils
+down to the following steps :
 
-The restic project uses the `gofmt` tool for go source indentation, so please
+ 1. First we would kindly ask you to fork our project on GitHub if you haven't
+    done so already.
+ 2. Clone the repository locally and create a new branch.
+ 3. Then commit your changes as fine grained as possible, as smaller patches,
+    that handle one and only one issue are easier to discuss and merge.
+ 4. Push the new branch with your changes to your fork of the repository.
+ 5. Create a pull request by visiting the GitHub website, it will guide you
+    through the process.
+ 6. You will receive comments on your code and the feature or bug that they
+    address. Maybe you need to rework some minor things, in this case push new
+    commits to the branch you created for the pull request, they will be
+    automatically added to the pull request.
+ 7. Once your code looks good, we'll merge it. Thanks a low for your
+    contribution!
+
+Please provide the patches for each bug or feature in a separate branch and
+open up a pull request for each.
+
+The restic project uses the `gofmt` tool for Go source indentation, so please
 run
 
     gofmt -w **/*.go
@@ -41,17 +60,11 @@ in the project root directory before committing. Installing the script
 pre-commit hook checks formatting before committing automatically, just copy
 this script to `.git/hooks/pre-commit`.
 
-Then commit your changes as fine grained as possible, as smaller patches, that
-handle one and only one issue are easier to discuss and merge.
-
-Please provide the patches for each bug or feature in a separate branch and
-open up a pull request for each.
-
 Code Review
 ===========
 
 The restic project encourages actively reviewing the code, as it will store
-your precious data, so it's not uncommon to receive comments on provided
+your precious data, so it's common practice to receive comments on provided
 patches.
 
 If you are reviewing other contributor's code please consider the following
