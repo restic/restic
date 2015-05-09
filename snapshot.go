@@ -50,7 +50,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 	return sn, nil
 }
 
-func LoadSnapshot(repo *repo.Repository, id backend.ID) (*Snapshot, error) {
+func LoadSnapshot(repo *repo.Repo, id backend.ID) (*Snapshot, error) {
 	sn := &Snapshot{id: id}
 	err := repo.LoadJSONUnpacked(backend.Snapshot, id, sn)
 	if err != nil {

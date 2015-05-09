@@ -59,7 +59,7 @@ func parseTime(str string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("unable to parse time: %q", str)
 }
 
-func (c CmdFind) findInTree(repo *repo.Repository, id backend.ID, path string) ([]findResult, error) {
+func (c CmdFind) findInTree(repo *repo.Repo, id backend.ID, path string) ([]findResult, error) {
 	debug.Log("restic.find", "checking tree %v\n", id)
 	tree, err := restic.LoadTree(repo, id)
 	if err != nil {
@@ -105,7 +105,7 @@ func (c CmdFind) findInTree(repo *repo.Repository, id backend.ID, path string) (
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(repo *repo.Repository, name string) error {
+func (c CmdFind) findInSnapshot(repo *repo.Repo, name string) error {
 	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", name, c.oldest, c.newest)
 
 	id, err := backend.ParseID(name)

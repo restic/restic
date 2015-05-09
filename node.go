@@ -103,7 +103,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 }
 
 // CreateAt creates the node at the given path and restores all the meta data.
-func (node *Node) CreateAt(path string, repo *repo.Repository) error {
+func (node *Node) CreateAt(path string, repo *repo.Repo) error {
 	switch node.Type {
 	case "dir":
 		if err := node.createDirAt(path); err != nil {
@@ -176,7 +176,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(path string, repo *repo.Repository) error {
+func (node Node) createFileAt(path string, repo *repo.Repo) error {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 	defer f.Close()
 

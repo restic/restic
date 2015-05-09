@@ -18,7 +18,7 @@ type Cache struct {
 	base string
 }
 
-func NewCache(repo *repo.Repository) (*Cache, error) {
+func NewCache(repo *repo.Repo) (*Cache, error) {
 	cacheDir, err := getCacheDir()
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 }
 
 // Clear removes information from the cache that isn't present in the repository any more.
-func (c *Cache) Clear(repo *repo.Repository) error {
+func (c *Cache) Clear(repo *repo.Repo) error {
 	list, err := c.list(backend.Snapshot)
 	if err != nil {
 		return err
