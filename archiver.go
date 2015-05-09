@@ -15,7 +15,7 @@ import (
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
 	"github.com/restic/restic/pipe"
-	"github.com/restic/restic/server"
+	"github.com/restic/restic/repo"
 
 	"github.com/juju/errors"
 )
@@ -30,7 +30,7 @@ var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
 // Archiver is used to backup a set of directories.
 type Archiver struct {
-	s *server.Server
+	repo *repo.Repo
 
 	blobToken chan struct{}
 
@@ -39,9 +39,9 @@ type Archiver struct {
 }
 
 // NewArchiver returns a new archiver.
-func NewArchiver(s *server.Server) *Archiver {
+func NewArchiver(repo *repo.Repo) *Archiver {
 	arch := &Archiver{
-		s:         s,
+		repo:      repo,
 		blobToken: make(chan struct{}, maxConcurrentBlobs),
 	}
 
@@ -55,18 +55,18 @@ func NewArchiver(s *server.Server) *Archiver {
 	return arch
 }
 
-// Save stores a blob read from rd in the server.
+// Save stores a blob read from rd in the repository.
 func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
 	// test if this blob is already known
-	if arch.s.Index().Has(id) {
+	if arch.repo.Index().Has(id) {
 		debug.Log("Archiver.Save", "(%v, %v) already saved\n", t, id.Str())
 		return nil
 	}
 
 	// otherwise save blob
-	err := arch.s.SaveFrom(t, id, length, rd)
+	err := arch.repo.SaveFrom(t, id, length, rd)
 	if err != nil {
 		debug.Log("Archiver.Save", "Save(%v, %v): error %v\n", t, id.Str(), err)
 		return err
@@ -76,7 +76,7 @@ func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Re
 	return nil
 }
 
-// SaveTreeJSON stores a tree in the server.
+// SaveTreeJSON stores a tree in the repository.
 func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
@@ -86,11 +86,11 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 
 	// check if tree has been saved before
 	id := backend.Hash(data)
-	if arch.s.Index().Has(id) {
+	if arch.repo.Index().Has(id) {
 		return id, nil
 	}
 
-	return arch.s.SaveJSON(pack.Tree, item)
+	return arch.repo.SaveJSON(pack.Tree, item)
 }
 
 func (arch *Archiver) reloadFileIfChanged(node *Node, file *os.File) (*Node, error) {
@@ -184,7 +184,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		return err
 	}
 
-	chnker := chunker.New(file, arch.s.Config.ChunkerPolynomial, sha256.New())
+	chnker := chunker.New(file, arch.repo.Config.ChunkerPolynomial, sha256.New())
 	resultChannels := [](<-chan saveResult){}
 
 	for {
@@ -254,7 +254,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 				// check if all content is still available in the repository
 				contentMissing := false
 				for _, blob := range oldNode.blobs {
-					if ok, err := arch.s.Test(backend.Data, blob.Storage.String()); !ok || err != nil {
+					if ok, err := arch.repo.Test(backend.Data, blob.Storage.String()); !ok || err != nil {
 						debug.Log("Archiver.fileWorker", "   %v not using old data, %v (%v) is missing", e.Path(), blob.ID.Str(), blob.Storage.Str())
 						contentMissing = true
 						break
@@ -557,14 +557,14 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 		sn.Parent = parentID
 
 		// load parent snapshot
-		parent, err := LoadSnapshot(arch.s, parentID)
+		parent, err := LoadSnapshot(arch.repo, parentID)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		// start walker on old tree
 		ch := make(chan WalkTreeJob)
-		go WalkTree(arch.s, parent.Tree, done, ch)
+		go WalkTree(arch.repo, parent.Tree, done, ch)
 		jobs.Old = ch
 	} else {
 		// use closed channel
@@ -622,7 +622,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 	sn.Tree = root.Subtree
 
 	// save snapshot
-	id, err := arch.s.SaveJSONUnpacked(backend.Snapshot, sn)
+	id, err := arch.repo.SaveJSONUnpacked(backend.Snapshot, sn)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -631,14 +631,14 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 	sn.id = id
 	debug.Log("Archiver.Snapshot", "saved snapshot %v", id.Str())
 
-	// flush server
-	err = arch.s.Flush()
+	// flush repository
+	err = arch.repo.Flush()
 	if err != nil {
 		return nil, nil, err
 	}
 
 	// save index
-	indexID, err := arch.s.SaveIndex()
+	indexID, err := arch.repo.SaveIndex()
 	if err != nil {
 		debug.Log("Archiver.Snapshot", "error saving index: %v", err)
 		return nil, nil, err

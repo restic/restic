@@ -93,19 +93,19 @@ func TestNodeComparison(t *testing.T) {
 }
 
 func TestLoadTree(t *testing.T) {
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
 	// save tree
 	tree := restic.NewTree()
-	id, err := server.SaveJSON(pack.Tree, tree)
+	id, err := repo.SaveJSON(pack.Tree, tree)
 	OK(t, err)
 
 	// save packs
-	OK(t, server.Flush())
+	OK(t, repo.Flush())
 
 	// load tree again
-	tree2, err := restic.LoadTree(server, id)
+	tree2, err := restic.LoadTree(repo, id)
 	OK(t, err)
 
 	Assert(t, tree.Equals(tree2),

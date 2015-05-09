@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/server"
+	"github.com/restic/restic/repo"
 )
 
 type CmdKey struct{}
@@ -21,7 +21,7 @@ func init() {
 	}
 }
 
-func listKeys(s *server.Server) error {
+func listKeys(s *repo.Repo) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
@@ -35,7 +35,7 @@ func listKeys(s *server.Server) error {
 	defer close(done)
 
 	for name := range s.List(backend.Key, done) {
-		k, err := server.LoadKey(s, name)
+		k, err := repo.LoadKey(s, name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "LoadKey() failed: %v\n", err)
 			continue
@@ -56,7 +56,7 @@ func listKeys(s *server.Server) error {
 	return nil
 }
 
-func addKey(s *server.Server) error {
+func addKey(s *repo.Repo) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -64,7 +64,7 @@ func addKey(s *server.Server) error {
 		return errors.New("passwords do not match")
 	}
 
-	id, err := server.AddKey(s, pw, s.Key())
+	id, err := repo.AddKey(s, pw, s.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
@@ -74,12 +74,12 @@ func addKey(s *server.Server) error {
 	return nil
 }
 
-func deleteKey(s *server.Server, name string) error {
-	if name == s.KeyName() {
+func deleteKey(repo *repo.Repo, name string) error {
+	if name == repo.KeyName() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
-	err := s.Remove(backend.Key, name)
+	err := repo.Remove(backend.Key, name)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func deleteKey(s *server.Server, name string) error {
 	return nil
 }
 
-func changePassword(s *server.Server) error {
+func changePassword(s *repo.Repo) error {
 	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
 	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
 
@@ -97,7 +97,7 @@ func changePassword(s *server.Server) error {
 	}
 
 	// add new key
-	id, err := server.AddKey(s, pw, s.Key())
+	id, err := repo.AddKey(s, pw, s.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}

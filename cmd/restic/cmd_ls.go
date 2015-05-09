@@ -7,7 +7,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/server"
+	"github.com/restic/restic/repo"
 )
 
 type CmdLs struct{}
@@ -38,8 +38,8 @@ func printNode(prefix string, n *restic.Node) string {
 	}
 }
 
-func printTree(prefix string, s *server.Server, id backend.ID) error {
-	tree, err := restic.LoadTree(s, id)
+func printTree(prefix string, repo *repo.Repo, id backend.ID) error {
+	tree, err := restic.LoadTree(repo, id)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func printTree(prefix string, s *server.Server, id backend.ID) error {
 		fmt.Println(printNode(prefix, entry))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			err = printTree(filepath.Join(prefix, entry.Name), s, entry.Subtree)
+			err = printTree(filepath.Join(prefix, entry.Name), repo, entry.Subtree)
 			if err != nil {
 				return err
 			}

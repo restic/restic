@@ -1,4 +1,4 @@
-package server_test
+package repo_test
 
 import (
 	"bytes"
@@ -23,21 +23,21 @@ type testJSONStruct struct {
 	Baz []byte
 }
 
-var serverTests = []testJSONStruct{
+var repoTests = []testJSONStruct{
 	testJSONStruct{Foo: 23, Bar: "Teststring", Baz: []byte("xx")},
 }
 
 func TestSaveJSON(t *testing.T) {
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
-	for _, obj := range serverTests {
+	for _, obj := range repoTests {
 		data, err := json.Marshal(obj)
 		OK(t, err)
 		data = append(data, '\n')
 		h := sha256.Sum256(data)
 
-		id, err := server.SaveJSON(pack.Tree, obj)
+		id, err := repo.SaveJSON(pack.Tree, obj)
 		OK(t, err)
 
 		Assert(t, bytes.Equal(h[:], id),
@@ -47,10 +47,10 @@ func TestSaveJSON(t *testing.T) {
 }
 
 func BenchmarkSaveJSON(t *testing.B) {
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
-	obj := serverTests[0]
+	obj := repoTests[0]
 
 	data, err := json.Marshal(obj)
 	OK(t, err)
@@ -60,7 +60,7 @@ func BenchmarkSaveJSON(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		id, err := server.SaveJSON(pack.Tree, obj)
+		id, err := repo.SaveJSON(pack.Tree, obj)
 		OK(t, err)
 
 		Assert(t, bytes.Equal(h[:], id),
@@ -72,8 +72,8 @@ func BenchmarkSaveJSON(t *testing.B) {
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
 func TestSave(t *testing.T) {
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -83,15 +83,15 @@ func TestSave(t *testing.T) {
 		id := backend.Hash(data)
 
 		// save
-		sid, err := server.Save(pack.Data, data, nil)
+		sid, err := repo.Save(pack.Data, data, nil)
 		OK(t, err)
 
 		Equals(t, id, sid)
 
-		OK(t, server.Flush())
+		OK(t, repo.Flush())
 
 		// read back
-		buf, err := server.LoadBlob(pack.Data, id)
+		buf, err := repo.LoadBlob(pack.Data, id)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -104,8 +104,8 @@ func TestSave(t *testing.T) {
 }
 
 func TestSaveFrom(t *testing.T) {
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -115,13 +115,13 @@ func TestSaveFrom(t *testing.T) {
 		id := backend.Hash(data)
 
 		// save
-		err = server.SaveFrom(pack.Data, id[:], uint(size), bytes.NewReader(data))
+		err = repo.SaveFrom(pack.Data, id[:], uint(size), bytes.NewReader(data))
 		OK(t, err)
 
-		OK(t, server.Flush())
+		OK(t, repo.Flush())
 
 		// read back
-		buf, err := server.LoadBlob(pack.Data, id[:])
+		buf, err := repo.LoadBlob(pack.Data, id[:])
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -134,8 +134,8 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveFrom(t *testing.B) {
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
 	size := 4 << 20 // 4MiB
 
@@ -150,48 +150,48 @@ func BenchmarkSaveFrom(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		// save
-		err = server.SaveFrom(pack.Data, id[:], uint(size), bytes.NewReader(data))
+		err = repo.SaveFrom(pack.Data, id[:], uint(size), bytes.NewReader(data))
 		OK(t, err)
 	}
 }
 
 func TestLoadJSONPack(t *testing.T) {
 	if *benchTestDir == "" {
-		t.Skip("benchdir not set, skipping TestServerStats")
+		t.Skip("benchdir not set, skipping")
 	}
 
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
 	// archive a few files
-	sn := SnapshotDir(t, server, *benchTestDir, nil)
-	OK(t, server.Flush())
+	sn := SnapshotDir(t, repo, *benchTestDir, nil)
+	OK(t, repo.Flush())
 
 	tree := restic.NewTree()
-	err := server.LoadJSONPack(pack.Tree, sn.Tree, &tree)
+	err := repo.LoadJSONPack(pack.Tree, sn.Tree, &tree)
 	OK(t, err)
 }
 
 func TestLoadJSONUnpacked(t *testing.T) {
 	if *benchTestDir == "" {
-		t.Skip("benchdir not set, skipping TestServerStats")
+		t.Skip("benchdir not set, skipping")
 	}
 
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
 	// archive a snapshot
 	sn := restic.Snapshot{}
 	sn.Hostname = "foobar"
 	sn.Username = "test!"
 
-	id, err := server.SaveJSONUnpacked(backend.Snapshot, &sn)
+	id, err := repo.SaveJSONUnpacked(backend.Snapshot, &sn)
 	OK(t, err)
 
 	var sn2 restic.Snapshot
 
 	// restore
-	err = server.LoadJSONUnpacked(backend.Snapshot, id, &sn2)
+	err = repo.LoadJSONUnpacked(backend.Snapshot, id, &sn2)
 	OK(t, err)
 
 	Equals(t, sn.Hostname, sn2.Hostname)

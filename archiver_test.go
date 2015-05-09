@@ -51,8 +51,8 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	data := Random(23, 10<<20) // 10MiB
 	rd := bytes.NewReader(data)
 
-	s := SetupBackend(b)
-	defer TeardownBackend(b, s)
+	s := SetupRepo(b)
+	defer TeardownRepo(b, s)
 
 	buf := make([]byte, chunker.MaxSize)
 	buf2 := make([]byte, chunker.MaxSize)
@@ -82,8 +82,8 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) 
 }
 
 func BenchmarkChunkEncryptParallel(b *testing.B) {
-	s := SetupBackend(b)
-	defer TeardownBackend(b, s)
+	s := SetupRepo(b)
+	defer TeardownRepo(b, s)
 
 	data := Random(23, 10<<20) // 10MiB
 
@@ -101,10 +101,10 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 }
 
 func archiveDirectory(b testing.TB) {
-	server := SetupBackend(b)
-	defer TeardownBackend(b, server)
+	repo := SetupRepo(b)
+	defer TeardownRepo(b, repo)
 
-	arch := restic.NewArchiver(server)
+	arch := restic.NewArchiver(repo)
 
 	_, id, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
 	OK(b, err)
@@ -135,8 +135,8 @@ func archiveWithDedup(t testing.TB) {
 		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
 
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
 	var cnt struct {
 		before, after, after2 struct {
@@ -145,24 +145,24 @@ func archiveWithDedup(t testing.TB) {
 	}
 
 	// archive a few files
-	sn := SnapshotDir(t, server, *benchArchiveDirectory, nil)
+	sn := SnapshotDir(t, repo, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
-	cnt.before.packs = server.Count(backend.Data)
-	cnt.before.dataBlobs = server.Index().Count(pack.Data)
-	cnt.before.treeBlobs = server.Index().Count(pack.Tree)
+	cnt.before.packs = repo.Count(backend.Data)
+	cnt.before.dataBlobs = repo.Index().Count(pack.Data)
+	cnt.before.treeBlobs = repo.Index().Count(pack.Tree)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
 		cnt.before.packs, cnt.before.dataBlobs, cnt.before.treeBlobs)
 
 	// archive the same files again, without parent snapshot
-	sn2 := SnapshotDir(t, server, *benchArchiveDirectory, nil)
+	sn2 := SnapshotDir(t, repo, *benchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats again
-	cnt.after.packs = server.Count(backend.Data)
-	cnt.after.dataBlobs = server.Index().Count(pack.Data)
-	cnt.after.treeBlobs = server.Index().Count(pack.Tree)
+	cnt.after.packs = repo.Count(backend.Data)
+	cnt.after.dataBlobs = repo.Index().Count(pack.Data)
+	cnt.after.treeBlobs = repo.Index().Count(pack.Tree)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
 		cnt.after.packs, cnt.after.dataBlobs, cnt.after.treeBlobs)
 
@@ -173,13 +173,13 @@ func archiveWithDedup(t testing.TB) {
 	}
 
 	// archive the same files again, with a parent snapshot
-	sn3 := SnapshotDir(t, server, *benchArchiveDirectory, sn2.ID())
+	sn3 := SnapshotDir(t, repo, *benchArchiveDirectory, sn2.ID())
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats again
-	cnt.after2.packs = server.Count(backend.Data)
-	cnt.after2.dataBlobs = server.Index().Count(pack.Data)
-	cnt.after2.treeBlobs = server.Index().Count(pack.Tree)
+	cnt.after2.packs = repo.Count(backend.Data)
+	cnt.after2.dataBlobs = repo.Index().Count(pack.Data)
+	cnt.after2.treeBlobs = repo.Index().Count(pack.Tree)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
 		cnt.after2.packs, cnt.after2.dataBlobs, cnt.after2.treeBlobs)
 
@@ -199,8 +199,8 @@ func BenchmarkLoadTree(t *testing.B) {
 		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
 
-	s := SetupBackend(t)
-	defer TeardownBackend(t, s)
+	s := SetupRepo(t)
+	defer TeardownRepo(t, s)
 
 	// archive a few files
 	arch := restic.NewArchiver(s)

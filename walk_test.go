@@ -16,22 +16,22 @@ func TestWalkTree(t *testing.T) {
 	dirs, err := filepath.Glob(*testWalkDirectory)
 	OK(t, err)
 
-	server := SetupBackend(t)
-	defer TeardownBackend(t, server)
+	repo := SetupRepo(t)
+	defer TeardownRepo(t, repo)
 
 	// archive a few files
-	arch := restic.NewArchiver(server)
+	arch := restic.NewArchiver(repo)
 	sn, _, err := arch.Snapshot(nil, dirs, nil)
 	OK(t, err)
 
-	// flush server, write all packs
-	OK(t, server.Flush())
+	// flush repo, write all packs
+	OK(t, repo.Flush())
 
 	done := make(chan struct{})
 
 	// start tree walker
 	treeJobs := make(chan restic.WalkTreeJob)
-	go restic.WalkTree(server, sn.Tree, done, treeJobs)
+	go restic.WalkTree(repo, sn.Tree, done, treeJobs)
 
 	// start filesystem walker
 	fsJobs := make(chan pipe.Job)

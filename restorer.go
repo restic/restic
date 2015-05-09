@@ -7,15 +7,15 @@ import (
 	"syscall"
 
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/server"
+	"github.com/restic/restic/repo"
 
 	"github.com/juju/errors"
 )
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	s  *server.Server
-	sn *Snapshot
+	repo *repo.Repo
+	sn   *Snapshot
 
 	Error  func(dir string, node *Node, err error) error
 	Filter func(item string, dstpath string, node *Node) bool
@@ -24,12 +24,12 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(s *server.Server, id backend.ID) (*Restorer, error) {
-	r := &Restorer{s: s, Error: restorerAbortOnAllErrors}
+func NewRestorer(repo *repo.Repo, id backend.ID) (*Restorer, error) {
+	r := &Restorer{repo: repo, Error: restorerAbortOnAllErrors}
 
 	var err error
 
-	r.sn, err = LoadSnapshot(s, id)
+	r.sn, err = LoadSnapshot(repo, id)
 	if err != nil {
 		return nil, errors.Annotate(err, "load snapshot for restorer")
 	}
@@ -38,7 +38,7 @@ func NewRestorer(s *server.Server, id backend.ID) (*Restorer, error) {
 }
 
 func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error {
-	tree, err := LoadTree(res.s, treeID)
+	tree, err := LoadTree(res.repo, treeID)
 	if err != nil {
 		return res.Error(dir, nil, errors.Annotate(err, "LoadTree"))
 	}
@@ -74,7 +74,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 		return nil
 	}
 
-	err := node.CreateAt(dstPath, res.s)
+	err := node.CreateAt(dstPath, res.repo)
 
 	// Did it fail because of ENOENT?
 	if pe, ok := errors.Cause(err).(*os.PathError); ok {
@@ -83,7 +83,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 			// Create parent directories and retry
 			err = os.MkdirAll(filepath.Dir(dstPath), 0700)
 			if err == nil || err == os.ErrExist {
-				err = node.CreateAt(dstPath, res.s)
+				err = node.CreateAt(dstPath, res.repo)
 			}
 		}
 	}
