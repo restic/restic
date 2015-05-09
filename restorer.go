@@ -14,7 +14,7 @@ import (
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo *repository.Repo
+	repo *repository.Repository
 	sn   *Snapshot
 
 	Error  func(dir string, node *Node, err error) error
@@ -24,7 +24,7 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(repo *repository.Repo, id backend.ID) (*Restorer, error) {
+func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) {
 	r := &Restorer{repo: repo, Error: restorerAbortOnAllErrors}
 
 	var err error

@@ -38,7 +38,7 @@ func printNode(prefix string, n *restic.Node) string {
 	}
 }
 
-func printTree(prefix string, repo *repository.Repo, id backend.ID) error {
+func printTree(prefix string, repo *repository.Repository, id backend.ID) error {
 	tree, err := restic.LoadTree(repo, id)
 	if err != nil {
 		return err

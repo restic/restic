@@ -133,7 +133,7 @@ func create(u string) (backend.Backend, error) {
 	return sftp.Create(url.Path[1:], "ssh", args...)
 }
 
-func OpenRepo() (*repository.Repo, error) {
+func OpenRepo() (*repository.Repository, error) {
 	if opts.Repo == "" {
 		return nil, errors.New("Please specify repository location (-r)")
 	}
