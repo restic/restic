@@ -14,7 +14,7 @@ import (
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
-	"github.com/restic/restic/server"
+	"github.com/restic/restic/repo"
 )
 
 // Node is a file, directory or other item in a backup.
@@ -43,7 +43,7 @@ type Node struct {
 
 	path  string
 	err   error
-	blobs server.Blobs
+	blobs repo.Blobs
 }
 
 func (node Node) String() string {
@@ -103,7 +103,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 }
 
 // CreateAt creates the node at the given path and restores all the meta data.
-func (node *Node) CreateAt(path string, s *server.Server) error {
+func (node *Node) CreateAt(path string, s *repo.Server) error {
 	switch node.Type {
 	case "dir":
 		if err := node.createDirAt(path); err != nil {
@@ -176,7 +176,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(path string, s *server.Server) error {
+func (node Node) createFileAt(path string, s *repo.Server) error {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 	defer f.Close()
 

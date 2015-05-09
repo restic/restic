@@ -11,7 +11,7 @@ import (
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
-	"github.com/restic/restic/server"
+	"github.com/restic/restic/repo"
 )
 
 type CmdCat struct{}
@@ -107,7 +107,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		dec := json.NewDecoder(rd)
 
-		var key server.Key
+		var key repo.Key
 		err = dec.Decode(&key)
 		if err != nil {
 			return err

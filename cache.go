@@ -10,7 +10,7 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
-	"github.com/restic/restic/server"
+	"github.com/restic/restic/repo"
 )
 
 // Cache is used to locally cache items from a server.
@@ -18,7 +18,7 @@ type Cache struct {
 	base string
 }
 
-func NewCache(s *server.Server) (*Cache, error) {
+func NewCache(s *repo.Server) (*Cache, error) {
 	cacheDir, err := getCacheDir()
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 }
 
 // Clear removes information from the cache that isn't present in the server any more.
-func (c *Cache) Clear(s *server.Server) error {
+func (c *Cache) Clear(s *repo.Server) error {
 	list, err := c.list(backend.Snapshot)
 	if err != nil {
 		return err

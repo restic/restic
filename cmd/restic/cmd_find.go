@@ -8,7 +8,7 @@ import (
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
-	"github.com/restic/restic/server"
+	"github.com/restic/restic/repo"
 )
 
 type findResult struct {
@@ -59,7 +59,7 @@ func parseTime(str string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("unable to parse time: %q", str)
 }
 
-func (c CmdFind) findInTree(s *server.Server, id backend.ID, path string) ([]findResult, error) {
+func (c CmdFind) findInTree(s *repo.Server, id backend.ID, path string) ([]findResult, error) {
 	debug.Log("restic.find", "checking tree %v\n", id)
 	tree, err := restic.LoadTree(s, id)
 	if err != nil {
@@ -105,7 +105,7 @@ func (c CmdFind) findInTree(s *server.Server, id backend.ID, path string) ([]fin
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(s *server.Server, name string) error {
+func (c CmdFind) findInSnapshot(s *repo.Server, name string) error {
 	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", name, c.oldest, c.newest)
 
 	id, err := backend.ParseID(name)
