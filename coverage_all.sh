@@ -7,4 +7,4 @@ go list ./... | while read pkg; do
 done
 
 echo "mode: count" > $TARGETFILE
-tail -q -n +2 *.cov >> $TARGETFILE
+tail -q -n +2 *.cov */*.cov */*/*.cov >> $TARGETFILE

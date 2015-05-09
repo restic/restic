@@ -48,17 +48,27 @@ gox: .gopath $(SOURCE)
 	cd $(BASEPATH) && \
 		gox -verbose -os "$(GOX_OS)" ./cmd/restic
 
-test-integration: .gopath restic restic.debug dirdiff
-	# run testsuite
-	PATH=.:$(PATH) ./testsuite.sh
+test-integration: .gopath
+	cd $(BASEPATH) && go test $(GOTESTFLAGS) \
+			-tags integration \
+			./backend \
+			-cover -covermode=count -coverprofile=integration-sftp.cov \
+			-test.sftppath=$(SFTP_PATH)
 
-	# run sftp integration tests
-	cd $(BASEPATH)/backend && \
-		go test $(GOTESTFLAGS) -test.sftppath $(SFTP_PATH) ./...
+	cd $(BASEPATH) && go test $(GOTESTFLAGS) \
+			-tags integration \
+			./cmd/restic \
+			-cover -covermode=count -coverprofile=integration.cov \
+			-test.datafile=$(PWD)/testsuite/fake-data.tar.gz
 
-all.cov: .gopath $(SOURCE)
+all.cov: .gopath $(SOURCE) test-integration
 	cd $(BASEPATH) && \
-		./coverage_all.sh all.cov
+		go list ./... | while read pkg; do \
+			go test -covermode=count -coverprofile=$$(echo $$pkg | base64).cov $$pkg; \
+		done
+
+	echo "mode: count" > all.cov
+	tail -q -n +2 *.cov >> all.cov
 
 env:
 	@echo export GOPATH=\"$(GOPATH)\"
