@@ -3,13 +3,16 @@
 package main
 
 import (
+	"bufio"
 	"flag"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 
+	"github.com/restic/restic/backend"
 	. "github.com/restic/restic/test"
 )
 
@@ -54,6 +57,23 @@ func system(command string, args ...string) error {
 	return cmd.Run()
 }
 
+func parseIDsFromReader(t testing.TB, rd io.Reader) backend.IDs {
+	IDs := backend.IDs{}
+	sc := bufio.NewScanner(rd)
+
+	for sc.Scan() {
+		id, err := backend.ParseID(sc.Text())
+		if err != nil {
+			t.Logf("parse id %v: %v", sc.Text(), err)
+			continue
+		}
+
+		IDs = append(IDs, id)
+	}
+
+	return IDs
+}
+
 func cmdInit(t testing.TB) {
 	cmd := &CmdInit{}
 	OK(t, cmd.Execute(nil))
@@ -61,11 +81,41 @@ func cmdInit(t testing.TB) {
 	t.Logf("repository initialized at %v", opts.Repo)
 }
 
-func cmdBackup(t testing.TB, target []string) {
+func cmdBackup(t testing.TB, target []string, parentID backend.ID) {
 	cmd := &CmdBackup{}
+	cmd.Parent = parentID.String()
+
 	t.Logf("backing up %v", target)
 
 	OK(t, cmd.Execute(target))
+}
+
+func cmdList(t testing.TB, tpe string) []backend.ID {
+
+	rd, wr := io.Pipe()
+
+	cmd := &CmdList{w: wr}
+
+	go func() {
+		OK(t, cmd.Execute([]string{tpe}))
+		OK(t, wr.Close())
+	}()
+
+	IDs := parseIDsFromReader(t, rd)
+
+	t.Logf("Listing %v: %v", tpe, IDs)
+
+	return IDs
+}
+
+func cmdRestore(t testing.TB, dir string, snapshotID backend.ID) {
+	cmd := &CmdRestore{}
+	cmd.Execute([]string{snapshotID.String(), dir})
+}
+
+func cmdFsck(t testing.TB) {
+	cmd := &CmdFsck{CheckData: true, Orphaned: true}
+	OK(t, cmd.Execute(nil))
 }
 
 func TestBackup(t *testing.T) {
@@ -84,5 +134,32 @@ func TestBackup(t *testing.T) {
 
 	setupTarTestFixture(t, datadir, *TestDataFile)
 
-	cmdBackup(t, []string{datadir})
+	// first backup
+	cmdBackup(t, []string{datadir}, nil)
+	snapshotIDs := cmdList(t, "snapshots")
+	Assert(t, len(snapshotIDs) == 1,
+		"more than one snapshot ID in repo")
+
+	// second backup, implicit incremental
+	cmdBackup(t, []string{datadir}, nil)
+	snapshotIDs = cmdList(t, "snapshots")
+	Assert(t, len(snapshotIDs) == 2,
+		"more than one snapshot ID in repo")
+
+	// third backup, explicit incremental
+	cmdBackup(t, []string{datadir}, snapshotIDs[0])
+	snapshotIDs = cmdList(t, "snapshots")
+	Assert(t, len(snapshotIDs) == 3,
+		"more than one snapshot ID in repo")
+
+	// restore all backups and compare
+	for _, snapshotID := range snapshotIDs {
+		restoredir := filepath.Join(tempdir, "restore", snapshotID.String())
+		t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
+		cmdRestore(t, restoredir, snapshotIDs[0])
+		Assert(t, directoriesEqualContents(datadir, filepath.Join(restoredir, "testdata")),
+			"directories are not equal")
+	}
+
+	cmdFsck(t)
 }
