@@ -49,11 +49,7 @@ test-integration: .gopath
 
 all.cov: .gopath
 	cd $(BASEPATH) && \
-		go list ./... | \
-			while read pkg; do \
-				go test -covermode=count -coverprofile=$$(base64 <<< $$pkg).cov $$pkg; \
-			done
-	echo "mode: count" > all.cov; tail -q -n +2 *.cov >> all.cov
+		./coverage_all.sh all.cov
 
 env:
 	@echo export GOPATH=\"$(GOPATH)\"
