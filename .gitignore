@@ -1,4 +1,5 @@
 /.gopath
+/restic
 cmd/dirdiff/dirdiff
 cmd/gentestdata/gentestdata
 cmd/restic/restic
