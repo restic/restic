@@ -43,11 +43,11 @@ gox: .gopath
 	cd $(BASEPATH) && \
 		gox -verbose -os "$(GOX_OS)" ./cmd/restic
 
-test-integration:
+test-integration: .gopath
 	cd $(BASEPATH)/backend && \
 		go test $(GOTESTFLAGS) -test.sftppath $(SFTP_PATH) ./...
 
-all.cov:
+all.cov: .gopath
 	cd $(BASEPATH) && \
 		go list ./... | \
 			while read pkg; do \
