@@ -12,6 +12,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/backend/local"
+	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/repository"
@@ -119,6 +120,7 @@ func (cmd CmdInit) Execute(args []string) error {
 // Open the backend specified by URI.
 // Valid formats are:
 // * /foo/bar -> local repository at /foo/bar
+// * s3://region/bucket -> amazon s3 bucket
 // * sftp://user@host/foo/bar -> remote sftp repository on host for user at path foo/bar
 // * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
 func open(u string) (backend.Backend, error) {
@@ -129,6 +131,8 @@ func open(u string) (backend.Backend, error) {
 
 	if url.Scheme == "" {
 		return local.Open(url.Path)
+	} else if url.Scheme == "s3" {
+		return s3.Open(url.Host, url.Path[1:])
 	}
 
 	args := []string{url.Host}
@@ -150,6 +154,8 @@ func create(u string) (backend.Backend, error) {
 
 	if url.Scheme == "" {
 		return local.Create(url.Path)
+	} else if url.Scheme == "s3" {
+		return s3.Open(url.Host, url.Path[1:])
 	}
 
 	args := []string{url.Host}
