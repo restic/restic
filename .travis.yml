@@ -10,6 +10,7 @@ os:
 
 env:
   - SFTP_PATH="/usr/lib/openssh/sftp-server"
+  - GOX_OS="linux darwin openbsd freebsd"
 
 notifications:
   irc:
