@@ -8,9 +8,7 @@ os:
   - linux
   - osx
 
-env:
-  - SFTP_PATH="/usr/lib/openssh/sftp-server"
-  - GOX_OS="linux darwin openbsd freebsd"
+env: SFTP_PATH="/usr/lib/openssh/sftp-server" GOX_OS="linux darwin openbsd freebsd"
 
 notifications:
   irc:
