@@ -11,6 +11,9 @@ GOTESTFLAGS ?= -v
 GOX_OS ?= linux darwin openbsd freebsd
 SFTP_PATH ?= /usr/lib/ssh/sftp-server
 
+CMDS=$(patsubst cmd/%,%,$(wildcard cmd/*))
+CMDS_DEBUG=$(patsubst %,%.debug,$(CMDS))
+
 export GOPATH GOX_OS
 
 all: restic
@@ -19,16 +22,16 @@ all: restic
 	mkdir -p .gopath/src/github.com/restic
 	ln -sf ../../../.. .gopath/src/github.com/restic/restic
 
-restic: .gopath
+%: cmd/% .gopath
 	cd $(BASEPATH) && \
-		go build -a -ldflags "-s" -o restic ./cmd/restic
+		go build -a -ldflags "-s" -o $@ ./$<
 
-restic.debug: .gopath
+%.debug: cmd/% .gopath
 	cd $(BASEPATH) && \
-		go build -a -tags debug -o restic ./cmd/restic
+		go build -a -tags debug -ldflags "-s" -o $@ ./$<
 
 clean:
-	rm -rf .gopath restic *.cov restic_*
+	rm -rf .gopath $(CMDS) $(CMDS_DEBUG) *.cov restic_*
 	go clean ./...
 
 test: .gopath
@@ -43,7 +46,11 @@ gox: .gopath
 	cd $(BASEPATH) && \
 		gox -verbose -os "$(GOX_OS)" ./cmd/restic
 
-test-integration: .gopath
+test-integration: .gopath restic restic.debug dirdiff
+	# run testsuite
+	PATH=.:$(PATH) ./testsuite.sh
+
+	# run sftp integration tests
 	cd $(BASEPATH)/backend && \
 		go test $(GOTESTFLAGS) -test.sftppath $(SFTP_PATH) ./...
 
