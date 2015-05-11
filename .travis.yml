@@ -21,6 +21,11 @@ install:
   - go get github.com/mattn/goveralls
   - go get github.com/mitchellh/gox
   - gox -build-toolchain -os "$GOX_OS"
+  - go version
+  - go env
+  - make env
+  - make goenv
+  - make list
 
 script:
   - make restic

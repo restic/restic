@@ -60,3 +60,10 @@ all.cov: .gopath
 
 env:
 	@echo export GOPATH=\"$(GOPATH)\"
+
+goenv:
+	go env
+
+list: .gopath
+	cd $(BASEPATH) && \
+		go list ./...
