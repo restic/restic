@@ -37,7 +37,7 @@ test: .gopath
 
 bench: .gopath
 	cd $(BASEPATH) && \
-		go test GOTESTFLAGS) bench ./...
+		go test $(GOTESTFLAGS) -bench ./...
 
 gox: .gopath
 	cd $(BASEPATH) && \
