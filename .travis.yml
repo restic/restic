@@ -8,6 +8,8 @@ os:
   - linux
   - osx
 
+env: SFTP_PATH="/usr/lib/openssh/sftp-server" GOX_OS="linux darwin openbsd freebsd"
+
 notifications:
   irc:
     channels:
@@ -15,23 +17,22 @@ notifications:
     on_success: change
     on_failure: change
 
-env: GOX_OS="linux darwin openbsd freebsd"
-
 install:
   - go get github.com/mattn/goveralls
   - go get github.com/mitchellh/gox
   - gox -build-toolchain -os "$GOX_OS"
-  - go get -v -t ./...
+  - go version
+  - go env
+  - make env
+  - make goenv
+  - make list
 
 script:
-  - go build -ldflags "-s" ./...
-  - go build -ldflags "-s" -o restic ./cmd/restic
-  - sh -c 'cd cmd/restic && gox -verbose -os "$GOX_OS" && ls -al'
-  - go test -v ./...
-  - ./testsuite.sh
-  - sh -c "cd backend && go test -v -test.sftppath /usr/lib/openssh/sftp-server ./..."
-  - go list ./... | while read pkg; do go test -covermode=count -coverprofile=$(base64 <<< $pkg).cov $pkg; done
-  - 'echo "mode: count" > all.cov; tail -q -n +2 *.cov >> all.cov'
+  - make restic
+  - make gox
+  - make test
+  - make test-integration
+  - make all.cov
   - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN"
   - gofmt -l *.go */*.go */*/*.go
   - test -z "$(gofmt -l *.go */*.go */*/*.go)"
