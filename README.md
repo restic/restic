@@ -46,32 +46,32 @@ Building
 Install Go/Golang (at least version 1.3), then run `make`, afterwards you'll
 find the binary in the current directory:
 
-   $ make
-   [...]
+    $ make
+    [...]
 
-   $ ./restic --help
-   Usage:
-     restic [OPTIONS] <command>
+    $ ./restic --help
+    Usage:
+      restic [OPTIONS] <command>
 
-   Application Options:
-     -r, --repo= Repository directory to backup to/restore from
+    Application Options:
+      -r, --repo= Repository directory to backup to/restore from
 
-   Help Options:
-     -h, --help  Show this help message
+    Help Options:
+      -h, --help  Show this help message
 
-   Available commands:
-     backup     save file/directory
-     cache      manage cache
-     cat        dump something
-     find       find a file/directory
-     fsck       check the repository
-     init       create repository
-     key        manage keys
-     list       lists data
-     ls         list files
-     restore    restore a snapshot
-     snapshots  show snapshots
-     version    display version
+    Available commands:
+      backup     save file/directory
+      cache      manage cache
+      cat        dump something
+      find       find a file/directory
+      fsck       check the repository
+      init       create repository
+      key        manage keys
+      list       lists data
+      ls         list files
+      restore    restore a snapshot
+      snapshots  show snapshots
+      version    display version
 
 
 Contribute and Documentation
