@@ -8,12 +8,12 @@ import (
 	"sync"
 
 	"github.com/mitchellh/goamz/aws"
-	as3 "github.com/mitchellh/goamz/s3"
+	"github.com/mitchellh/goamz/s3"
 
 	"github.com/restic/restic/backend"
 )
 
-var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
+const maxKeysInList = 1000
 
 func s3path(t backend.Type, name string) string {
 	if t == backend.Config {
@@ -22,31 +22,31 @@ func s3path(t backend.Type, name string) string {
 	return string(t) + "/" + name
 }
 
-type S3DB struct {
-	bucket *as3.Bucket
+type S3 struct {
+	bucket *s3.Bucket
 	mput   sync.Mutex
 	path   string
 }
 
-// Open opens the local backend at bucket and region.
-func Open(regionname, bucketname string) (*S3DB, error) {
+// Open opens the s3 backend at bucket and region.
+func Open(regionname, bucketname string) (*S3, error) {
 	auth, err := aws.EnvAuth()
 	if err != nil {
 		return nil, err
 	}
 
-	client := as3.New(auth, aws.Regions[regionname])
+	client := s3.New(auth, aws.Regions[regionname])
 
-	return &S3DB{bucket: client.Bucket(bucketname), path: bucketname}, nil
+	return &S3{bucket: client.Bucket(bucketname), path: bucketname}, nil
 }
 
-// Location returns this backend's location (the directory name).
-func (b *S3DB) Location() string {
+// Location returns this backend's location (the bucket name).
+func (b *S3) Location() string {
 	return b.path
 }
 
 type s3Blob struct {
-	b     *S3DB
+	b     *S3
 	buf   *bytes.Buffer
 	final bool
 }
@@ -91,7 +91,7 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 
 // Create creates a new Blob. The data is available only after Finalize()
 // has been called on the returned Blob.
-func (b *S3DB) Create() (backend.Blob, error) {
+func (b *S3) Create() (backend.Blob, error) {
 	blob := s3Blob{
 		b:   b,
 		buf: &bytes.Buffer{},
@@ -100,7 +100,7 @@ func (b *S3DB) Create() (backend.Blob, error) {
 	return &blob, nil
 }
 
-func (b *S3DB) get(t backend.Type, name string) (*s3Blob, error) {
+func (b *S3) get(t backend.Type, name string) (*s3Blob, error) {
 	blob := &s3Blob{
 		b: b,
 	}
@@ -113,13 +113,13 @@ func (b *S3DB) get(t backend.Type, name string) (*s3Blob, error) {
 
 // Get returns a reader that yields the content stored under the given
 // name. The reader should be closed after draining it.
-func (b *S3DB) Get(t backend.Type, name string) (io.ReadCloser, error) {
+func (b *S3) Get(t backend.Type, name string) (io.ReadCloser, error) {
 	return b.get(t, name)
 }
 
 // GetReader returns an io.ReadCloser for the Blob with the given name of
 // type t at offset and length. If length is 0, the reader reads until EOF.
-func (b *S3DB) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
+func (b *S3) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
 	blob, err := b.get(t, name)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (b *S3DB) GetReader(t backend.Type, name string, offset, length uint) (io.R
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *S3DB) Test(t backend.Type, name string) (bool, error) {
+func (b *S3) Test(t backend.Type, name string) (bool, error) {
 	found := false
 	path := s3path(t, name)
 	key, err := b.bucket.GetKey(path)
@@ -148,7 +148,7 @@ func (b *S3DB) Test(t backend.Type, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *S3DB) Remove(t backend.Type, name string) error {
+func (b *S3) Remove(t backend.Type, name string) error {
 	path := s3path(t, name)
 	return b.bucket.Del(path)
 }
@@ -156,12 +156,12 @@ func (b *S3DB) Remove(t backend.Type, name string) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (b *S3DB) List(t backend.Type, done <-chan struct{}) <-chan string {
+func (b *S3) List(t backend.Type, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
 	prefix := string(t) + "/"
 
-	listresp, err := b.bucket.List(prefix, "/", "", 10000)
+	listresp, err := b.bucket.List(prefix, "/", "", maxKeysInList)
 
 	if err != nil {
 		close(ch)
@@ -171,6 +171,19 @@ func (b *S3DB) List(t backend.Type, done <-chan struct{}) <-chan string {
 	matches := make([]string, len(listresp.Contents))
 	for idx, key := range listresp.Contents {
 		matches[idx] = strings.TrimPrefix(key.Key, prefix)
+	}
+
+	// Continue making requests to get full list.
+	for listresp.IsTruncated {
+		listresp, err = b.bucket.List(prefix, "/", listresp.NextMarker, maxKeysInList)
+		if err != nil {
+			close(ch)
+			return ch
+		}
+
+		for _, key := range listresp.Contents {
+			matches = append(matches, strings.TrimPrefix(key.Key, prefix))
+		}
 	}
 
 	go func() {
@@ -192,9 +205,9 @@ func (b *S3DB) List(t backend.Type, done <-chan struct{}) <-chan string {
 }
 
 // Delete removes the repository and all files.
-func (b *S3DB) Delete() error {
+func (b *S3) Delete() error {
 	return b.bucket.DelBucket()
 }
 
 // Close does nothing
-func (b *S3DB) Close() error { return nil }
+func (b *S3) Close() error { return nil }
