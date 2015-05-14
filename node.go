@@ -389,16 +389,18 @@ func lookupUsername(uid string) (string, error) {
 		return value, nil
 	}
 
+	username := ""
+
 	u, err := user.LookupId(uid)
-	if err != nil {
-		return "", err
+	if err == nil {
+		username = u.Username
 	}
 
 	uidLookupCacheMutex.Lock()
-	uidLookupCache[uid] = u.Username
+	uidLookupCache[uid] = username
 	uidLookupCacheMutex.Unlock()
 
-	return u.Username, nil
+	return username, nil
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {

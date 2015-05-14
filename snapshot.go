@@ -71,10 +71,10 @@ func (sn Snapshot) ID() backend.ID {
 func (sn *Snapshot) fillUserInfo() error {
 	usr, err := user.Current()
 	if err != nil {
-		return err
+		return nil
 	}
-
 	sn.Username = usr.Username
+
 	uid, err := strconv.ParseInt(usr.Uid, 10, 32)
 	if err != nil {
 		return err
