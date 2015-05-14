@@ -31,7 +31,9 @@ script:
   - make restic
   - make gox
   - make test
+  - GOARCH=386 make test
   - make test-integration
+  - GOARCH=386 make test-integration
   - make all.cov
   - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN"
   - gofmt -l *.go */*.go */*/*.go
