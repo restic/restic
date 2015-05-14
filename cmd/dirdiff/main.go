@@ -62,7 +62,8 @@ func (e *entry) equals(other *entry) bool {
 
 	if e.fi.ModTime() != other.fi.ModTime() {
 		fmt.Printf("%s: ModTime does not match\n", e.path)
-		// TODO: Fix ModTime for directories, return false
+		// TODO: Fix ModTime for symlinks, return false
+		// see http://grokbase.com/t/gg/golang-nuts/154wnph4y8/go-nuts-no-way-to-utimes-a-symlink
 		return true
 	}
 
