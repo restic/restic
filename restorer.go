@@ -64,6 +64,18 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 		}
 	}
 
+	// Restore directory timestamps at the end. If we would do it earlier, restoring files within
+	// those directories would overwrite the timestamp of the directories they are in.
+	for _, node := range tree.Nodes {
+		if node.Type != "dir" {
+			continue
+		}
+
+		if err := node.RestoreTimestamps(filepath.Join(dst, dir, node.Name)); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

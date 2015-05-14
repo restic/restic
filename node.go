@@ -155,12 +155,23 @@ func (node Node) restoreMetadata(path string) error {
 		return errors.Annotate(err, "Chmod")
 	}
 
+	if node.Type != "dir" {
+		err = node.RestoreTimestamps(path)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (node Node) RestoreTimestamps(path string) error {
 	var utimes = []syscall.Timespec{
 		syscall.NsecToTimespec(node.AccessTime.UnixNano()),
 		syscall.NsecToTimespec(node.ModTime.UnixNano()),
 	}
-	err = syscall.UtimesNano(path, utimes)
-	if err != nil {
+
+	if err := syscall.UtimesNano(path, utimes); err != nil {
 		return errors.Annotate(err, "UtimesNano")
 	}
 
