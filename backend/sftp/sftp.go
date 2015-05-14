@@ -323,10 +323,6 @@ func (r *SFTP) dirname(t backend.Type, name string) string {
 // Get returns a reader that yields the content stored under the given
 // name. The reader should be closed after draining it.
 func (r *SFTP) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	if name == "" {
-		return nil, errors.New("unable to load empty name")
-	}
-
 	// try to open file
 	file, err := r.c.Open(r.filename(t, name))
 	if err != nil {
