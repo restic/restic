@@ -14,6 +14,8 @@ SFTP_PATH ?= /usr/lib/ssh/sftp-server
 CMDS=$(patsubst cmd/%,%,$(wildcard cmd/*))
 CMDS_DEBUG=$(patsubst %,%.debug,$(CMDS))
 
+SOURCE=$(wildcard *.go) $(wildcard */*.go) $(wildcard */*/*.go)
+
 export GOPATH GOX_OS
 
 all: restic
@@ -22,11 +24,11 @@ all: restic
 	mkdir -p .gopath/src/github.com/restic
 	ln -snf ../../../.. .gopath/src/github.com/restic/restic
 
-%: cmd/% .gopath
+%: cmd/% .gopath $(SOURCE)
 	cd $(BASEPATH) && \
 		go build -a -ldflags "-s" -o $@ ./$<
 
-%.debug: cmd/% .gopath
+%.debug: cmd/% .gopath $(SOURCE)
 	cd $(BASEPATH) && \
 		go build -a -tags debug -ldflags "-s" -o $@ ./$<
 
@@ -42,7 +44,7 @@ bench: .gopath
 	cd $(BASEPATH) && \
 		go test $(GOTESTFLAGS) -bench ./...
 
-gox: .gopath
+gox: .gopath $(SOURCE)
 	cd $(BASEPATH) && \
 		gox -verbose -os "$(GOX_OS)" ./cmd/restic
 
@@ -54,7 +56,7 @@ test-integration: .gopath restic restic.debug dirdiff
 	cd $(BASEPATH)/backend && \
 		go test $(GOTESTFLAGS) -test.sftppath $(SFTP_PATH) ./...
 
-all.cov: .gopath
+all.cov: .gopath $(SOURCE)
 	cd $(BASEPATH) && \
 		./coverage_all.sh all.cov
 
