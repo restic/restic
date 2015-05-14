@@ -146,13 +146,11 @@ func (node Node) restoreMetadata(path string) error {
 		return errors.Annotate(err, "Lchown")
 	}
 
-	if node.Type == "symlink" {
-		return nil
-	}
-
-	err = os.Chmod(path, node.Mode)
-	if err != nil {
-		return errors.Annotate(err, "Chmod")
+	if node.Type != "symlink" {
+		err = os.Chmod(path, node.Mode)
+		if err != nil {
+			return errors.Annotate(err, "Chmod")
+		}
 	}
 
 	if node.Type != "dir" {
@@ -166,12 +164,20 @@ func (node Node) restoreMetadata(path string) error {
 }
 
 func (node Node) RestoreTimestamps(path string) error {
-	var utimes = []syscall.Timespec{
+	var utimes = [...]syscall.Timespec{
 		syscall.NsecToTimespec(node.AccessTime.UnixNano()),
 		syscall.NsecToTimespec(node.ModTime.UnixNano()),
 	}
 
-	if err := syscall.UtimesNano(path, utimes); err != nil {
+	if node.Type == "symlink" {
+		if err := node.restoreSymlinkTimestamps(path, utimes); err != nil {
+			return errors.Annotate(err, "UtimesNano")
+		}
+
+		return nil
+	}
+
+	if err := syscall.UtimesNano(path, utimes[:]); err != nil {
 		return errors.Annotate(err, "UtimesNano")
 	}
 
