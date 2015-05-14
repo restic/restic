@@ -20,7 +20,7 @@ all: restic
 
 .gopath:
 	mkdir -p .gopath/src/github.com/restic
-	ln -sf ../../../.. .gopath/src/github.com/restic/restic
+	ln -snf ../../../.. .gopath/src/github.com/restic/restic
 
 %: cmd/% .gopath
 	cd $(BASEPATH) && \
