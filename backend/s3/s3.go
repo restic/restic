@@ -28,6 +28,11 @@ type S3 struct {
 	path   string
 }
 
+// Open a backend using an S3 bucket object
+func OpenS3Bucket(bucket *s3.Bucket, bucketname string) *S3 {
+	return &S3{bucket: bucket, path: bucketname}
+}
+
 // Open opens the s3 backend at bucket and region.
 func Open(regionname, bucketname string) (*S3, error) {
 	auth, err := aws.EnvAuth()

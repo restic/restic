@@ -23,7 +23,7 @@ func setupS3Backend(t *testing.T) *bes3.S3 {
 
 	t.Logf("created s3 backend locally at %s", testServer.URL)
 
-	return bes3.S3{bucket: bucket, path: "testbucket"}
+	return bes3.OpenS3Bucket(bucket, "testbucket")
 }
 
 func teardownS3Backend(t *testing.T, b *bes3.S3) {
