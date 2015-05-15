@@ -27,6 +27,14 @@
 			"Rev": "caaaea8b30ee15616494ee68abd5d8ebbbef05cf"
 		},
 		{
+			"ImportPath": "github.com/mitchellh/goamz/testutil",
+			"Rev": "caaaea8b30ee15616494ee68abd5d8ebbbef05cf"
+		},
+		{
+			"ImportPath": "github.com/motain/gocheck",
+			"Rev": "9beb271d26e640863a5bf4a3c5ea40ccdd466b84"
+		},
+		{
 			"ImportPath": "github.com/pkg/sftp",
 			"Rev": "506297c9013d2893d5c5daaa9155e7333a1c58de"
 		},
