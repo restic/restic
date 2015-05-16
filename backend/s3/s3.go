@@ -87,8 +87,15 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	bb.final = true
 
 	path := s3path(t, name)
+
+	// Check key does not already exist
+	key, err := bb.b.bucket.GetKey(path)
+	if err == nil && key.Key == path {
+		return errors.New("key already exists!")
+	}
+
 	bb.b.mput.Lock()
-	err := bb.b.bucket.Put(path, bb.buf.Bytes(), "binary/octet-stream", "private")
+	err = bb.b.bucket.Put(path, bb.buf.Bytes(), "binary/octet-stream", "private")
 	bb.b.mput.Unlock()
 	bb.buf.Reset()
 	return err

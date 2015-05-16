@@ -5,39 +5,49 @@ import (
 
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
-	"github.com/mitchellh/goamz/testutil"
+	"github.com/mitchellh/goamz/s3/s3test"
 
 	bes3 "github.com/restic/restic/backend/s3"
 	. "github.com/restic/restic/test"
 )
 
-var testServer = testutil.NewHTTPServer()
+type LocalServer struct {
+	auth   aws.Auth
+	region aws.Region
+	srv    *s3test.Server
+	config *s3test.Config
+}
+
+var s LocalServer
 
 func setupS3Backend(t *testing.T) *bes3.S3 {
-	testServer.Start()
-	auth := aws.Auth{"abc", "123", ""}
-	service := s3.New(auth, aws.Region{Name: "faux-region-1", S3Endpoint: testServer.URL})
+	s.config = &s3test.Config{
+		Send409Conflict: true,
+	}
+	srv, err := s3test.NewServer(s.config)
+	OK(t, err)
+	s.srv = srv
+
+	s.region = aws.Region{
+		Name:                 "faux-region-1",
+		S3Endpoint:           srv.URL(),
+		S3LocationConstraint: true, // s3test server requires a LocationConstraint
+	}
+
+	s.auth = aws.Auth{"abc", "123", ""}
+
+	service := s3.New(s.auth, s.region)
 	bucket := service.Bucket("testbucket")
-	err := bucket.PutBucket("private")
+	err = bucket.PutBucket("private")
 	OK(t, err)
 
-	t.Logf("created s3 backend locally at %s", testServer.URL)
+	t.Logf("created s3 backend locally")
 
 	return bes3.OpenS3Bucket(bucket, "testbucket")
 }
 
-func teardownS3Backend(t *testing.T, b *bes3.S3) {
-	if !*TestCleanup {
-		t.Logf("leaving backend at %s\n", b.Location())
-		return
-	}
-
-	testServer.Flush()
-}
-
 func TestS3Backend(t *testing.T) {
 	s := setupS3Backend(t)
-	defer teardownS3Backend(t, s)
 
 	testBackend(s, t)
 }
