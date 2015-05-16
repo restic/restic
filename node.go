@@ -171,7 +171,7 @@ func (node Node) RestoreTimestamps(path string) error {
 
 	if node.Type == "symlink" {
 		if err := node.restoreSymlinkTimestamps(path, utimes); err != nil {
-			return errors.Annotate(err, "UtimesNano")
+			return err
 		}
 
 		return nil

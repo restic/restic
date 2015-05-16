@@ -6,6 +6,8 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/juju/errors"
 )
 
 func (node *Node) OpenForReading() (*os.File, error) {
@@ -32,7 +34,13 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 		return err
 	}
 
-	return utimesNanoAt(int(dir.Fd()), filepath.Base(path), utimes, AT_SYMLINK_NOFOLLOW)
+	err = utimesNanoAt(int(dir.Fd()), filepath.Base(path), utimes, AT_SYMLINK_NOFOLLOW)
+
+	if err != nil {
+		return errors.Annotate(err, "UtimesNanoAt")
+	}
+
+	return nil
 }
 
 // very lowlevel below
