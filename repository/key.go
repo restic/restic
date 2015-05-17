@@ -98,7 +98,7 @@ func SearchKey(s *Repository, password string) (*Key, error) {
 	// try all keys in repo
 	done := make(chan struct{})
 	defer close(done)
-	for name := range s.List(backend.Key, done) {
+	for name := range s.Backend().List(backend.Key, done) {
 		key, err := OpenKey(s, name, password)
 		if err != nil {
 			continue

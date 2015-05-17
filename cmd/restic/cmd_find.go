@@ -105,13 +105,8 @@ func (c CmdFind) findInTree(repo *repository.Repository, id backend.ID, path str
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(repo *repository.Repository, name string) error {
-	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", name, c.oldest, c.newest)
-
-	id, err := backend.ParseID(name)
-	if err != nil {
-		return err
-	}
+func (c CmdFind) findInSnapshot(repo *repository.Repository, id backend.ID) error {
+	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", id.Str(), c.oldest, c.newest)
 
 	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {
@@ -169,7 +164,7 @@ func (c CmdFind) Execute(args []string) error {
 	c.pattern = args[0]
 
 	if c.Snapshot != "" {
-		snapshotID, err := backend.FindSnapshot(s, c.Snapshot)
+		snapshotID, err := restic.FindSnapshot(s, c.Snapshot)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", args[1], err)
 		}

@@ -198,14 +198,9 @@ func (cmd CmdFsck) Execute(args []string) error {
 	}
 
 	if cmd.Snapshot != "" {
-		name, err := s.FindSnapshot(cmd.Snapshot)
+		id, err := restic.FindSnapshot(s, cmd.Snapshot)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", cmd.Snapshot, err)
-		}
-
-		id, err := backend.ParseID(name)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "invalid snapshot id %v\n", name)
 		}
 
 		err = fsckSnapshot(cmd, s, id)
@@ -225,13 +220,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 	defer close(done)
 
 	var firstErr error
-	for name := range s.List(backend.Snapshot, done) {
-		id, err := backend.ParseID(name)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "invalid snapshot id %v\n", name)
-			continue
-		}
-
+	for id := range s.List(backend.Snapshot, done) {
 		err = fsckSnapshot(cmd, s, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", id)

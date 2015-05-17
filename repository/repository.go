@@ -52,12 +52,6 @@ func (s *Repository) Find(t backend.Type, prefix string) (string, error) {
 	return backend.Find(s.be, t, prefix)
 }
 
-// FindSnapshot takes a string and tries to find a snapshot whose ID matches
-// the string as closely as possible.
-func (s *Repository) FindSnapshot(name string) (string, error) {
-	return backend.FindSnapshot(s.be, name)
-}
-
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
 func (s *Repository) PrefixLength(t backend.Type) (int, error) {
@@ -637,14 +631,49 @@ func (s *Repository) Count(t backend.Type) (n uint) {
 	return
 }
 
-// Proxy methods to backend
+func (s *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backend.ID) {
+	defer close(out)
+	in := s.be.List(t, done)
 
-func (s *Repository) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	return s.be.Get(t, name)
+	var (
+		// disable sending on the outCh until we received a job
+		outCh chan<- backend.ID
+		// enable receiving from in
+		inCh = in
+		id   backend.ID
+		err  error
+	)
+
+	for {
+		select {
+		case <-done:
+			return
+		case strID, ok := <-inCh:
+			if !ok {
+				// input channel closed, we're done
+				return
+			}
+			id, err = backend.ParseID(strID)
+			if err != nil {
+				// ignore invalid IDs
+				continue
+			}
+
+			inCh = nil
+			outCh = out
+		case outCh <- id:
+			outCh = nil
+			inCh = in
+		}
+	}
 }
 
-func (s *Repository) List(t backend.Type, done <-chan struct{}) <-chan string {
-	return s.be.List(t, done)
+func (s *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.ID {
+	outCh := make(chan backend.ID)
+
+	go s.list(t, done, outCh)
+
+	return outCh
 }
 
 func (s *Repository) Test(t backend.Type, name string) (bool, error) {

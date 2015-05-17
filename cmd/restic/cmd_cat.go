@@ -53,12 +53,7 @@ func (cmd CmdCat) Execute(args []string) error {
 			}
 
 			// find snapshot id with prefix
-			name, err := s.FindSnapshot(args[1])
-			if err != nil {
-				return err
-			}
-
-			id, err = backend.ParseID(name)
+			id, err = restic.FindSnapshot(s, args[1])
 			if err != nil {
 				return err
 			}
