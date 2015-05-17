@@ -115,7 +115,7 @@ func (c *Cache) Clear(repo *repository.Repository) error {
 	for _, entry := range list {
 		debug.Log("Cache.Clear", "found entry %v", entry)
 
-		if ok, err := repo.Test(backend.Snapshot, entry.ID.String()); !ok || err != nil {
+		if ok, err := repo.Backend().Test(backend.Snapshot, entry.ID.String()); !ok || err != nil {
 			debug.Log("Cache.Clear", "snapshot %v doesn't exist any more, removing %v", entry.ID, entry)
 
 			err = c.purge(backend.Snapshot, entry.Subtype, entry.ID)

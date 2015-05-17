@@ -58,7 +58,7 @@ func fsckFile(opts CmdFsck, repo *repository.Repository, IDs []backend.ID) (uint
 			}
 		} else {
 			// test if data blob is there
-			ok, err := repo.Test(backend.Data, packID.String())
+			ok, err := repo.Backend().Test(backend.Data, packID.String())
 			if err != nil {
 				return 0, err
 			}

@@ -580,7 +580,7 @@ func (s *Repository) SearchKey(password string) error {
 // Init creates a new master key with the supplied password and initializes the
 // repository config.
 func (s *Repository) Init(password string) error {
-	has, err := s.Test(backend.Config, "")
+	has, err := s.be.Test(backend.Config, "")
 	if err != nil {
 		return err
 	}
@@ -674,10 +674,6 @@ func (s *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 	go s.list(t, done, outCh)
 
 	return outCh
-}
-
-func (s *Repository) Test(t backend.Type, name string) (bool, error) {
-	return s.be.Test(t, name)
 }
 
 func (s *Repository) Remove(t backend.Type, name string) error {
