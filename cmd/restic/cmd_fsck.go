@@ -57,7 +57,7 @@ func fsckFile(opts CmdFsck, repo *repository.Repository, IDs []backend.ID) (uint
 				return 0, err
 			}
 		} else {
-			// test if data blob is there
+			// test if pack for data blob is there
 			ok, err := repo.Backend().Test(backend.Data, packID.String())
 			if err != nil {
 				return 0, err
@@ -70,6 +70,7 @@ func fsckFile(opts CmdFsck, repo *repository.Repository, IDs []backend.ID) (uint
 
 		// if orphan check is active, record storage id
 		if opts.o_data != nil {
+			debug.Log("restic.fsck", "  recording blob %v as used\n", id)
 			opts.o_data.Insert(id)
 		}
 	}
@@ -235,14 +236,16 @@ func (cmd CmdFsck) Execute(args []string) error {
 	debug.Log("restic.fsck", "starting orphaned check\n")
 
 	cnt := make(map[pack.BlobType]*backend.IDSet)
-	cnt[pack.Data] = backend.NewIDSet()
-	cnt[pack.Tree] = backend.NewIDSet()
+	cnt[pack.Data] = cmd.o_data
+	cnt[pack.Tree] = cmd.o_trees
 
 	for blob := range s.Index().Each(done) {
-		fmt.Println(blob.ID)
+		debug.Log("restic.fsck", "checking %v blob %v\n", blob.Type, blob.ID)
 
 		err = cnt[blob.Type].Find(blob.ID)
 		if err != nil {
+			debug.Log("restic.fsck", "  blob %v is orphaned\n", blob.ID)
+
 			if !cmd.RemoveOrphaned {
 				fmt.Printf("orphaned %v blob %v\n", blob.Type, blob.ID)
 				continue
