@@ -16,6 +16,7 @@ notifications:
       - "chat.freenode.net#restic"
     on_success: change
     on_failure: change
+    skip_join: true
 
 install:
   - go get github.com/mattn/goveralls
