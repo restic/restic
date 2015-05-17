@@ -676,10 +676,6 @@ func (s *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 	return outCh
 }
 
-func (s *Repository) Remove(t backend.Type, name string) error {
-	return s.be.Remove(t, name)
-}
-
 func (s *Repository) Close() error {
 	return s.be.Close()
 }

@@ -79,7 +79,7 @@ func deleteKey(repo *repository.Repository, name string) error {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
-	err := repo.Remove(backend.Key, name)
+	err := repo.Backend().Remove(backend.Key, name)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func changePassword(s *repository.Repository) error {
 	}
 
 	// remove old key
-	err = s.Remove(backend.Key, s.KeyName())
+	err = s.Backend().Remove(backend.Key, s.KeyName())
 	if err != nil {
 		return err
 	}
