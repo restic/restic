@@ -676,10 +676,6 @@ func (s *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 	return outCh
 }
 
-func (s *Repository) Close() error {
-	return s.be.Close()
-}
-
 func (s *Repository) Delete() error {
 	if b, ok := s.be.(backend.Deleter); ok {
 		return b.Delete()
@@ -688,6 +684,6 @@ func (s *Repository) Delete() error {
 	return errors.New("Delete() called for backend that does not implement this method")
 }
 
-func (s *Repository) Location() string {
-	return s.be.Location()
+func (s *Repository) Close() error {
+	return s.be.Close()
 }
