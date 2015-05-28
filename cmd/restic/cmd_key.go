@@ -34,20 +34,20 @@ func listKeys(s *repository.Repository) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	for name := range s.List(backend.Key, done) {
-		k, err := repository.LoadKey(s, name)
+	for id := range s.List(backend.Key, done) {
+		k, err := repository.LoadKey(s, id.String())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "LoadKey() failed: %v\n", err)
 			continue
 		}
 
 		var current string
-		if name == s.KeyName() {
+		if id.String() == s.KeyName() {
 			current = "*"
 		} else {
 			current = " "
 		}
-		tab.Rows = append(tab.Rows, []interface{}{current, name[:plen],
+		tab.Rows = append(tab.Rows, []interface{}{current, id.String()[:plen],
 			k.Username, k.Hostname, k.Created.Format(TimeFormat)})
 	}
 
@@ -79,7 +79,7 @@ func deleteKey(repo *repository.Repository, name string) error {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
 
-	err := repo.Remove(backend.Key, name)
+	err := repo.Backend().Remove(backend.Key, name)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func changePassword(s *repository.Repository) error {
 	}
 
 	// remove old key
-	err = s.Remove(backend.Key, s.KeyName())
+	err = s.Backend().Remove(backend.Key, s.KeyName())
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (cmd CmdKey) Execute(args []string) error {
 	case "add":
 		return addKey(s)
 	case "rm":
-		id, err := backend.Find(s, backend.Key, args[1])
+		id, err := backend.Find(s.Backend(), backend.Key, args[1])
 		if err != nil {
 			return err
 		}

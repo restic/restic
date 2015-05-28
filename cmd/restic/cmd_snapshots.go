@@ -105,13 +105,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 	defer close(done)
 
 	list := []*restic.Snapshot{}
-	for name := range s.List(backend.Snapshot, done) {
-		id, err := backend.ParseID(name)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error parsing id: %v", name)
-			continue
-		}
-
+	for id := range s.List(backend.Snapshot, done) {
 		sn, err := restic.LoadSnapshot(s, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)

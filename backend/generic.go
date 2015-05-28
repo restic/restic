@@ -56,18 +56,6 @@ func Find(be Lister, t Type, prefix string) (string, error) {
 	return "", ErrNoIDPrefixFound
 }
 
-// FindSnapshot takes a string and tries to find a snapshot whose ID matches
-// the string as closely as possible.
-func FindSnapshot(be Lister, s string) (string, error) {
-	// find snapshot id with prefix
-	name, err := Find(be, Snapshot, s)
-	if err != nil {
-		return "", err
-	}
-
-	return name, nil
-}
-
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all names of type t are unique.
 func PrefixLength(be Lister, t Type) (int, error) {

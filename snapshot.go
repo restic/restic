@@ -89,3 +89,15 @@ func (sn *Snapshot) fillUserInfo() error {
 
 	return nil
 }
+
+// FindSnapshot takes a string and tries to find a snapshot whose ID matches
+// the string as closely as possible.
+func FindSnapshot(repo *repository.Repository, s string) (backend.ID, error) {
+	// find snapshot id with prefix
+	name, err := backend.Find(repo.Backend(), backend.Snapshot, s)
+	if err != nil {
+		return nil, err
+	}
+
+	return backend.ParseID(name)
+}

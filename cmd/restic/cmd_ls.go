@@ -77,12 +77,7 @@ func (cmd CmdLs) Execute(args []string) error {
 		return err
 	}
 
-	name, err := backend.FindSnapshot(s, args[0])
-	if err != nil {
-		return err
-	}
-
-	id, err := backend.ParseID(name)
+	id, err := restic.FindSnapshot(s, args[0])
 	if err != nil {
 		return err
 	}

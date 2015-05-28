@@ -173,28 +173,24 @@ type blobJSON struct {
 	Length uint          `json:"length"`
 }
 
-// Encode writes the JSON serialization of the index to the writer w. This
-// serialization only contains new blobs added via idx.Store(), not old ones
-// introduced via DecodeIndex().
-func (idx *Index) Encode(w io.Writer) error {
-	debug.Log("Index.Encode", "encoding index")
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
+// generatePackList returns a list of packs containing only the index entries
+// that selsectFn returned true for. If selectFn is nil, the list contains all
+// blobs in the index.
+func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON, error) {
 	list := []*packJSON{}
 	packs := make(map[string]*packJSON)
 
 	for id, blob := range idx.pack {
-		if blob.old {
+		if selectFn != nil && !selectFn(blob) {
 			continue
 		}
 
-		debug.Log("Index.Encode", "handle blob %q", id[:8])
+		debug.Log("Index.generatePackList", "handle blob %q", id[:8])
 
 		if blob.packID == nil {
-			debug.Log("Index.Encode", "blob %q has no packID! (type %v, offset %v, length %v)",
+			debug.Log("Index.generatePackList", "blob %q has no packID! (type %v, offset %v, length %v)",
 				id[:8], blob.tpe, blob.offset, blob.length)
-			return fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", id)
+			return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", id)
 		}
 
 		// see if pack is already in map
@@ -217,10 +213,61 @@ func (idx *Index) Encode(w io.Writer) error {
 		})
 	}
 
+	debug.Log("Index.generatePackList", "done")
+
+	return list, nil
+}
+
+// encode writes the JSON serialization of the index filtered by selectFn to enc.
+func (idx *Index) encode(w io.Writer, selectFn func(indexEntry) bool) error {
+	list, err := idx.generatePackList(func(entry indexEntry) bool {
+		return !entry.old
+	})
+	if err != nil {
+		return err
+	}
+
 	debug.Log("Index.Encode", "done")
 
 	enc := json.NewEncoder(w)
 	return enc.Encode(list)
+}
+
+// Encode writes the JSON serialization of the index to the writer w. This
+// serialization only contains new blobs added via idx.Store(), not old ones
+// introduced via DecodeIndex().
+func (idx *Index) Encode(w io.Writer) error {
+	debug.Log("Index.Encode", "encoding index")
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	return idx.encode(w, func(e indexEntry) bool { return !e.old })
+}
+
+// Dump writes the pretty-printed JSON representation of the index to w.
+func (idx *Index) Dump(w io.Writer) error {
+	debug.Log("Index.Dump", "dumping index")
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	list, err := idx.generatePackList(nil)
+	if err != nil {
+		return err
+	}
+
+	buf, err := json.MarshalIndent(list, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(append(buf, '\n'))
+	if err != nil {
+		return err
+	}
+
+	debug.Log("Index.Dump", "done")
+
+	return nil
 }
 
 // DecodeIndex loads and unserializes an index from rd.

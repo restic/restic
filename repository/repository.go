@@ -52,12 +52,6 @@ func (s *Repository) Find(t backend.Type, prefix string) (string, error) {
 	return backend.Find(s.be, t, prefix)
 }
 
-// FindSnapshot takes a string and tries to find a snapshot whose ID matches
-// the string as closely as possible.
-func (s *Repository) FindSnapshot(name string) (string, error) {
-	return backend.FindSnapshot(s.be, name)
-}
-
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
 func (s *Repository) PrefixLength(t backend.Type) (int, error) {
@@ -586,7 +580,7 @@ func (s *Repository) SearchKey(password string) error {
 // Init creates a new master key with the supplied password and initializes the
 // repository config.
 func (s *Repository) Init(password string) error {
-	has, err := s.Test(backend.Config, "")
+	has, err := s.be.Test(backend.Config, "")
 	if err != nil {
 		return err
 	}
@@ -637,26 +631,49 @@ func (s *Repository) Count(t backend.Type) (n uint) {
 	return
 }
 
-// Proxy methods to backend
+func (s *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backend.ID) {
+	defer close(out)
+	in := s.be.List(t, done)
 
-func (s *Repository) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	return s.be.Get(t, name)
+	var (
+		// disable sending on the outCh until we received a job
+		outCh chan<- backend.ID
+		// enable receiving from in
+		inCh = in
+		id   backend.ID
+		err  error
+	)
+
+	for {
+		select {
+		case <-done:
+			return
+		case strID, ok := <-inCh:
+			if !ok {
+				// input channel closed, we're done
+				return
+			}
+			id, err = backend.ParseID(strID)
+			if err != nil {
+				// ignore invalid IDs
+				continue
+			}
+
+			inCh = nil
+			outCh = out
+		case outCh <- id:
+			outCh = nil
+			inCh = in
+		}
+	}
 }
 
-func (s *Repository) List(t backend.Type, done <-chan struct{}) <-chan string {
-	return s.be.List(t, done)
-}
+func (s *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.ID {
+	outCh := make(chan backend.ID)
 
-func (s *Repository) Test(t backend.Type, name string) (bool, error) {
-	return s.be.Test(t, name)
-}
+	go s.list(t, done, outCh)
 
-func (s *Repository) Remove(t backend.Type, name string) error {
-	return s.be.Remove(t, name)
-}
-
-func (s *Repository) Close() error {
-	return s.be.Close()
+	return outCh
 }
 
 func (s *Repository) Delete() error {
@@ -667,6 +684,6 @@ func (s *Repository) Delete() error {
 	return errors.New("Delete() called for backend that does not implement this method")
 }
 
-func (s *Repository) Location() string {
-	return s.be.Location()
+func (s *Repository) Close() error {
+	return s.be.Close()
 }

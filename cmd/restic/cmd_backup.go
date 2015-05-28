@@ -185,28 +185,20 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	var (
-		parentSnapshot   string
-		parentSnapshotID backend.ID
-	)
+	var parentSnapshotID backend.ID
 
 	// Force using a parent
 	if !cmd.Force && cmd.Parent != "" {
-		parentSnapshot, err = s.FindSnapshot(cmd.Parent)
+		parentSnapshotID, err = restic.FindSnapshot(s, cmd.Parent)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
-		}
-
-		parentSnapshotID, err = backend.ParseID(parentSnapshot)
-		if err != nil {
-			return fmt.Errorf("invalid parent snapshot id %v", parentSnapshot)
 		}
 
 		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
 	}
 
 	// Find last snapshot to set it as parent, if not already set
-	if !cmd.Force && parentSnapshot == "" {
+	if !cmd.Force && parentSnapshotID == nil {
 		samePaths := func(expected, actual []string) bool {
 			if len(expected) != len(actual) {
 				return false
@@ -221,24 +213,19 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 		var latest time.Time
 
-		for snapshotIDString := range s.List(backend.Snapshot, make(chan struct{})) {
-			snapshotID, err := backend.ParseID(snapshotIDString)
-			if err != nil {
-				return fmt.Errorf("Error with the listing of snapshots inputting invalid backend ids: %v", err)
-			}
-
-			snapshot, err := restic.LoadSnapshot(s, snapshotID)
+		for id := range s.List(backend.Snapshot, make(chan struct{})) {
+			snapshot, err := restic.LoadSnapshot(s, id)
 			if err != nil {
 				return fmt.Errorf("Error listing snapshot: %v", err)
 			}
 			if snapshot.Time.After(latest) && samePaths(snapshot.Paths, target) {
 				latest = snapshot.Time
-				parentSnapshotID = snapshotID
-				parentSnapshot = snapshotIDString
+				parentSnapshotID = id
 			}
 
 		}
-		if parentSnapshot != "" {
+
+		if parentSnapshotID != nil {
 			fmt.Printf("using parent snapshot %v\n", parentSnapshotID)
 		}
 	}

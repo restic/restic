@@ -254,7 +254,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 				// check if all content is still available in the repository
 				contentMissing := false
 				for _, blob := range oldNode.blobs {
-					if ok, err := arch.repo.Test(backend.Data, blob.Storage.String()); !ok || err != nil {
+					if ok, err := arch.repo.Backend().Test(backend.Data, blob.Storage.String()); !ok || err != nil {
 						debug.Log("Archiver.fileWorker", "   %v not using old data, %v (%v) is missing", e.Path(), blob.ID.Str(), blob.Storage.Str())
 						contentMissing = true
 						break
