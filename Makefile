@@ -50,15 +50,15 @@ gox: .gopath $(SOURCE)
 
 test-integration: .gopath
 	cd $(BASEPATH) && go test $(GOTESTFLAGS) \
-			-tags integration \
 			./backend \
 			-cover -covermode=count -coverprofile=integration-sftp.cov \
+			-test.integration \
 			-test.sftppath=$(SFTP_PATH)
 
 	cd $(BASEPATH) && go test $(GOTESTFLAGS) \
-			-tags integration \
 			./cmd/restic \
 			-cover -covermode=count -coverprofile=integration.cov \
+			-test.integration \
 			-test.datafile=$(PWD)/testsuite/fake-data.tar.gz
 
 all.cov: .gopath $(SOURCE) test-integration

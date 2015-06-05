@@ -1,5 +1,3 @@
-// +build integration
-
 package backend_test
 
 import (
@@ -37,6 +35,10 @@ func teardownSFTPBackend(t *testing.T, b *sftp.SFTP) {
 }
 
 func TestSFTPBackend(t *testing.T) {
+	if !*RunIntegrationTest {
+		t.Skip("integration tests disabled, use `-test.integration` to enable")
+	}
+
 	if *sftpPath == "" {
 		t.Skipf("sftppath not set, skipping TestSFTPBackend")
 	}

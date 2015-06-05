@@ -1,5 +1,3 @@
-// +build integration
-
 package main
 
 import (
@@ -119,8 +117,12 @@ func cmdFsck(t testing.TB) {
 }
 
 func TestBackup(t *testing.T) {
+	if !*RunIntegrationTest {
+		t.Skip("integration tests disabled, use `-test.integration` to enable")
+	}
+
 	if *TestDataFile == "" {
-		t.Fatal("no data tar file specified, use flag '-test.datafile'")
+		t.Fatal("no data tar file specified, use flag `-test.datafile`")
 	}
 
 	tempdir := setupTempdir(t)

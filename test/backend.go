@@ -12,9 +12,12 @@ import (
 	"github.com/restic/restic/repository"
 )
 
-var TestPassword = flag.String("test.password", "geheim", `use this password for repositories created during tests (default: "geheim")`)
-var TestCleanup = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
-var TestTempDir = flag.String("test.tempdir", "", "use this directory for temporary storage (default: system temp dir)")
+var (
+	TestPassword       = flag.String("test.password", "geheim", `use this password for repositories created during tests (default: "geheim")`)
+	TestCleanup        = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
+	TestTempDir        = flag.String("test.tempdir", "", "use this directory for temporary storage (default: system temp dir)")
+	RunIntegrationTest = flag.Bool("test.integration", false, "run integration tests (default: false)")
+)
 
 func SetupRepo(t testing.TB) *repository.Repository {
 	tempdir, err := ioutil.TempDir(*TestTempDir, "restic-test-")
