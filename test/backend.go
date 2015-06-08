@@ -3,7 +3,6 @@ package test_helper
 import (
 	"flag"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -23,10 +22,6 @@ func SetupRepo(t testing.TB) *repository.Repository {
 
 	// create repository below temp dir
 	b, err := local.Create(filepath.Join(tempdir, "repo"))
-	OK(t, err)
-
-	// set cache dir below temp dir
-	err = os.Setenv("RESTIC_CACHE", filepath.Join(tempdir, "cache"))
 	OK(t, err)
 
 	repo := repository.New(b)

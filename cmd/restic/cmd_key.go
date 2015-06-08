@@ -56,15 +56,28 @@ func listKeys(s *repository.Repository) error {
 	return nil
 }
 
-func addKey(s *repository.Repository) error {
-	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
-	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
+func getNewPassword() (string, error) {
+	newPassword := os.Getenv("RESTIC_NEWPASSWORD")
 
-	if pw != pw2 {
-		return errors.New("passwords do not match")
+	if newPassword == "" {
+		newPassword = readPassword("enter password for new key: ")
+		newPassword2 := readPassword("enter password again: ")
+
+		if newPassword != newPassword2 {
+			return "", errors.New("passwords do not match")
+		}
 	}
 
-	id, err := repository.AddKey(s, pw, s.Key())
+	return newPassword, nil
+}
+
+func addKey(repo *repository.Repository) error {
+	newPassword, err := getNewPassword()
+	if err != nil {
+		return err
+	}
+
+	id, err := repository.AddKey(repo, newPassword, repo.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
@@ -88,22 +101,18 @@ func deleteKey(repo *repository.Repository, name string) error {
 	return nil
 }
 
-func changePassword(s *repository.Repository) error {
-	pw := readPassword("RESTIC_NEWPASSWORD", "enter password for new key: ")
-	pw2 := readPassword("RESTIC_NEWPASSWORD", "enter password again: ")
-
-	if pw != pw2 {
-		return errors.New("passwords do not match")
+func changePassword(repo *repository.Repository) error {
+	newPassword, err := getNewPassword()
+	if err != nil {
+		return err
 	}
 
-	// add new key
-	id, err := repository.AddKey(s, pw, s.Key())
+	id, err := repository.AddKey(repo, newPassword, repo.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
 
-	// remove old key
-	err = s.Backend().Remove(backend.Key, s.KeyName())
+	err = repo.Backend().Remove(backend.Key, repo.KeyName())
 	if err != nil {
 		return err
 	}

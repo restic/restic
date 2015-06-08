@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/repository"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -97,7 +98,7 @@ func (cmd CmdBackup) Usage() string {
 }
 
 func newScanProgress() *restic.Progress {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+	if disableProgress() {
 		return nil
 	}
 
@@ -113,7 +114,7 @@ func newScanProgress() *restic.Progress {
 }
 
 func newArchiveProgress(todo restic.Stat) *restic.Progress {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
+	if disableProgress() {
 		return nil
 	}
 
@@ -162,6 +163,43 @@ func newArchiveProgress(todo restic.Stat) *restic.Progress {
 	return archiveProgress
 }
 
+func samePaths(expected, actual []string) bool {
+	if expected == nil || actual == nil {
+		return true
+	}
+
+	if len(expected) != len(actual) {
+		return false
+	}
+	for i := range expected {
+		if expected[i] != actual[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func findLatestSnapshot(repo *repository.Repository, targets []string) (backend.ID, error) {
+	var (
+		latest   time.Time
+		latestID backend.ID
+	)
+
+	for snapshotID := range repo.List(backend.Snapshot, make(chan struct{})) {
+		snapshot, err := restic.LoadSnapshot(repo, snapshotID)
+		if err != nil {
+			return nil, fmt.Errorf("Error listing snapshot: %v", err)
+		}
+		if snapshot.Time.After(latest) && samePaths(snapshot.Paths, targets) {
+			latest = snapshot.Time
+			latestID = snapshotID
+		}
+	}
+
+	return latestID, nil
+}
+
 func (cmd CmdBackup) Execute(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
@@ -194,43 +232,22 @@ func (cmd CmdBackup) Execute(args []string) error {
 			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
 		}
 
-		fmt.Printf("found parent snapshot %v\n", parentSnapshotID)
+		verbosePrintf("found parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
 	// Find last snapshot to set it as parent, if not already set
 	if !cmd.Force && parentSnapshotID == nil {
-		samePaths := func(expected, actual []string) bool {
-			if len(expected) != len(actual) {
-				return false
-			}
-			for i := range expected {
-				if expected[i] != actual[i] {
-					return false
-				}
-			}
-			return true
-		}
-
-		var latest time.Time
-
-		for id := range s.List(backend.Snapshot, make(chan struct{})) {
-			snapshot, err := restic.LoadSnapshot(s, id)
-			if err != nil {
-				return fmt.Errorf("Error listing snapshot: %v", err)
-			}
-			if snapshot.Time.After(latest) && samePaths(snapshot.Paths, target) {
-				latest = snapshot.Time
-				parentSnapshotID = id
-			}
-
+		parentSnapshotID, err = findLatestSnapshot(s, target)
+		if err != nil {
+			return err
 		}
 
 		if parentSnapshotID != nil {
-			fmt.Printf("using parent snapshot %v\n", parentSnapshotID)
+			verbosePrintf("using parent snapshot %v\n", parentSnapshotID)
 		}
 	}
 
-	fmt.Printf("scan %v\n", target)
+	verbosePrintf("scan %v\n", target)
 
 	stat, err := restic.Scan(target, newScanProgress())
 
@@ -252,12 +269,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	plen, err := s.PrefixLength(backend.Snapshot)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("snapshot %s saved\n", id[:plen/2])
+	verbosePrintf("snapshot %s saved\n", id.Str())
 
 	return nil
 }
