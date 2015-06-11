@@ -31,7 +31,7 @@ install:
 script:
   - make restic
   - make gox
-  - make test
+  - GOTESTFLAGS="" make test
   - GOARCH=386 make test
   - make test-integration
   - GOARCH=386 make test-integration
