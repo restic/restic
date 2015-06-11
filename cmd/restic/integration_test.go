@@ -24,12 +24,11 @@ func setupTempdir(t testing.TB) (tempdir string) {
 }
 
 func configureRestic(t testing.TB, tempdir string) {
-	// use cache dir within tempdir
-	OK(t, os.Setenv("RESTIC_CACHE", filepath.Join(tempdir, "cache")))
-
-	// configure environment
+	opts.CacheDir = filepath.Join(tempdir, "cache")
 	opts.Repo = filepath.Join(tempdir, "repo")
-	OK(t, os.Setenv("RESTIC_PASSWORD", *TestPassword))
+	opts.Quiet = true
+
+	opts.password = *TestPassword
 }
 
 func cleanupTempdir(t testing.TB, tempdir string) {
