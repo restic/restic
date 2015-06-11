@@ -36,6 +36,6 @@ script:
   - make test-integration
   - GOARCH=386 make test-integration
   - make all.cov
-  - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN"
+  - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN" || true
   - gofmt -l *.go */*.go */*/*.go
   - test -z "$(gofmt -l *.go */*.go */*/*.go)"
