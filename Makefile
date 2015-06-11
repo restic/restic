@@ -61,14 +61,8 @@ test-integration: .gopath
 			-test.integration \
 			-test.datafile=$(PWD)/testsuite/fake-data.tar.gz
 
-all.cov: .gopath $(SOURCE) test-integration
-	cd $(BASEPATH) && \
-		go list ./... | while read pkg; do \
-			go test -covermode=count -coverprofile=$$(echo $$pkg | base64).cov $$pkg; \
-		done
-
-	echo "mode: count" > all.cov
-	tail -q -n +2 *.cov >> all.cov
+all.cov: .gopath $(SOURCE)
+	cd $(BASEPATH) && go run run_tests.go all.cov
 
 env:
 	@echo export GOPATH=\"$(GOPATH)\"
