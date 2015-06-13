@@ -103,11 +103,11 @@ var nodeTests = []restic.Node{
 }
 
 func TestNodeRestoreAt(t *testing.T) {
-	tempdir, err := ioutil.TempDir(*TestTempDir, "restic-test-")
+	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	OK(t, err)
 
 	defer func() {
-		if *TestCleanup {
+		if TestCleanup {
 			OK(t, os.RemoveAll(tempdir))
 		} else {
 			t.Logf("leaving tempdir at %v", tempdir)

@@ -22,7 +22,7 @@ func setupLocalBackend(t *testing.T) *local.Local {
 }
 
 func teardownLocalBackend(t *testing.T, b *local.Local) {
-	if !*TestCleanup {
+	if !TestCleanup {
 		t.Logf("leaving local backend at %s\n", b.Location())
 		return
 	}

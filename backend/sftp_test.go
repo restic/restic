@@ -25,7 +25,7 @@ func setupSFTPBackend(t *testing.T) *sftp.SFTP {
 }
 
 func teardownSFTPBackend(t *testing.T, b *sftp.SFTP) {
-	if !*TestCleanup {
+	if !TestCleanup {
 		t.Logf("leaving backend at %s\n", b.Location())
 		return
 	}
@@ -35,7 +35,7 @@ func teardownSFTPBackend(t *testing.T, b *sftp.SFTP) {
 }
 
 func TestSFTPBackend(t *testing.T) {
-	if !*RunIntegrationTest {
+	if !RunIntegrationTest {
 		t.Skip("integration tests disabled, use `-test.integration` to enable")
 	}
 

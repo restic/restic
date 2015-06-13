@@ -22,7 +22,7 @@ var testFiles = []struct {
 }
 
 func createTempDir(t *testing.T) string {
-	tempdir, err := ioutil.TempDir(*TestTempDir, "restic-test-")
+	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	OK(t, err)
 
 	for _, test := range testFiles {
@@ -49,7 +49,7 @@ func createTempDir(t *testing.T) string {
 func TestTree(t *testing.T) {
 	dir := createTempDir(t)
 	defer func() {
-		if *TestCleanup {
+		if TestCleanup {
 			OK(t, os.RemoveAll(dir))
 		}
 	}()

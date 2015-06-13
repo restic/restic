@@ -1,8 +1,9 @@
 package test_helper
 
 import (
-	"flag"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -13,14 +14,37 @@ import (
 )
 
 var (
-	TestPassword       = flag.String("test.password", "geheim", `use this password for repositories created during tests (default: "geheim")`)
-	TestCleanup        = flag.Bool("test.cleanup", true, "clean up after running tests (remove local backend directory with all content)")
-	TestTempDir        = flag.String("test.tempdir", "", "use this directory for temporary storage (default: system temp dir)")
-	RunIntegrationTest = flag.Bool("test.integration", false, "run integration tests (default: false)")
+	TestPassword       = getStringVar("RESTIC_TEST_PASSWORD", "geheim")
+	TestCleanup        = getBoolVar("RESTIC_TEST_CLEANUP", true)
+	TestTempDir        = getStringVar("RESTIC_TEST_TMPDIR", "")
+	RunIntegrationTest = getBoolVar("RESTIC_TEST_INTEGRATION", true)
 )
 
+func getStringVar(name, defaultValue string) string {
+	if e := os.Getenv(name); e != "" {
+		return e
+	}
+
+	return defaultValue
+}
+
+func getBoolVar(name string, defaultValue bool) bool {
+	if e := os.Getenv(name); e != "" {
+		switch e {
+		case "1":
+			return true
+		case "0":
+			return false
+		default:
+			fmt.Fprintf(os.Stderr, "invalid value for variable %q, using default\n", name)
+		}
+	}
+
+	return defaultValue
+}
+
 func SetupRepo(t testing.TB) *repository.Repository {
-	tempdir, err := ioutil.TempDir(*TestTempDir, "restic-test-")
+	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	OK(t, err)
 
 	// create repository below temp dir
@@ -28,12 +52,12 @@ func SetupRepo(t testing.TB) *repository.Repository {
 	OK(t, err)
 
 	repo := repository.New(b)
-	OK(t, repo.Init(*TestPassword))
+	OK(t, repo.Init(TestPassword))
 	return repo
 }
 
 func TeardownRepo(t testing.TB, repo *repository.Repository) {
-	if !*TestCleanup {
+	if !TestCleanup {
 		l := repo.Backend().(*local.Local)
 		t.Logf("leaving local backend at %s\n", l.Location())
 		return

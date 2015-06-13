@@ -17,7 +17,7 @@ import (
 var TestDataFile = flag.String("test.datafile", "", `specify tar.gz file with test data to backup and restore (required for integration test)`)
 
 func setupTempdir(t testing.TB) (tempdir string) {
-	tempdir, err := ioutil.TempDir(*TestTempDir, "restic-test-")
+	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	OK(t, err)
 
 	return tempdir
@@ -28,11 +28,11 @@ func configureRestic(t testing.TB, tempdir string) {
 	opts.Repo = filepath.Join(tempdir, "repo")
 	opts.Quiet = true
 
-	opts.password = *TestPassword
+	opts.password = TestPassword
 }
 
 func cleanupTempdir(t testing.TB, tempdir string) {
-	if !*TestCleanup {
+	if !TestCleanup {
 		t.Logf("leaving temporary directory %v used for test", tempdir)
 		return
 	}
@@ -116,7 +116,7 @@ func cmdFsck(t testing.TB) {
 }
 
 func TestBackup(t *testing.T) {
-	if !*RunIntegrationTest {
+	if !RunIntegrationTest {
 		t.Skip("integration tests disabled, use `-test.integration` to enable")
 	}
 
