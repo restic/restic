@@ -48,19 +48,6 @@ gox: .gopath $(SOURCE)
 	cd $(BASEPATH) && \
 		gox -verbose -os "$(GOX_OS)" ./cmd/restic
 
-test-integration: .gopath
-	cd $(BASEPATH) && go test $(GOTESTFLAGS) \
-			./backend \
-			-cover -covermode=count -coverprofile=integration-sftp.cov \
-			-test.integration \
-			-test.sftppath=$(SFTP_PATH)
-
-	cd $(BASEPATH) && go test $(GOTESTFLAGS) \
-			./cmd/restic \
-			-cover -covermode=count -coverprofile=integration.cov \
-			-test.integration \
-			-test.datafile=$(PWD)/testsuite/fake-data.tar.gz
-
 all.cov: .gopath $(SOURCE)
 	cd $(BASEPATH) && go run run_tests.go all.cov
 
