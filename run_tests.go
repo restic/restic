@@ -90,7 +90,7 @@ func mergeCoverprofile(file *os.File, out io.Writer) error {
 	return err
 }
 
-func testPackage(pkg string, out io.Writer) error {
+func testPackage(pkg string, params []string, out io.Writer) error {
 	file, err := ioutil.TempFile("", "test-coverage-")
 	defer os.Remove(file.Name())
 	defer file.Close()
@@ -98,9 +98,10 @@ func testPackage(pkg string, out io.Writer) error {
 		return err
 	}
 
-	cmd := exec.Command("go", "test",
-		"-cover", "-covermode", "set", "-coverprofile", file.Name(),
-		pkg, "-test.integration")
+	args := []string{"test", "-cover", "-covermode", "set", "-coverprofile",
+		file.Name(), pkg}
+	args = append(args, params...)
+	cmd := exec.Command("go", args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
@@ -114,12 +115,23 @@ func testPackage(pkg string, out io.Writer) error {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "USAGE: run_tests COVERPROFILE [PATHS]")
+		fmt.Fprintln(os.Stderr, "USAGE: run_tests COVERPROFILE [TESTFLAGS] [-- [PATHS]]")
 		os.Exit(1)
 	}
 
 	target := os.Args[1]
-	dirs := os.Args[2:]
+	args := os.Args[2:]
+
+	paramsForTest := []string{}
+	dirs := []string{}
+	for i, arg := range args {
+		if arg == "--" {
+			dirs = args[i+1:]
+			break
+		}
+
+		paramsForTest = append(paramsForTest, arg)
+	}
 
 	if len(dirs) == 0 {
 		dirs = append(dirs, ".")
@@ -152,7 +164,7 @@ func main() {
 					return nil
 				}
 
-				return testPackage(forceRelativeDirname(p), file)
+				return testPackage(forceRelativeDirname(p), paramsForTest, file)
 			})
 
 		if err != nil {
