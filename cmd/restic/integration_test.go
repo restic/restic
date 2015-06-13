@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"io"
 	"io/ioutil"
 	"os"
@@ -13,8 +12,6 @@ import (
 	"github.com/restic/restic/backend"
 	. "github.com/restic/restic/test"
 )
-
-var TestDataFile = flag.String("test.datafile", "", `specify tar.gz file with test data to backup and restore (required for integration test)`)
 
 func setupTempdir(t testing.TB) (tempdir string) {
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
@@ -120,9 +117,14 @@ func TestBackup(t *testing.T) {
 		t.Skip("integration tests disabled, use `-test.integration` to enable")
 	}
 
-	if *TestDataFile == "" {
-		t.Fatal("no data tar file specified, use flag `-test.datafile`")
+	datafile := filepath.Join("testdata", "backup-data.tar.gz")
+	fd, err := os.Open(datafile)
+	if os.IsNotExist(err) {
+		t.Skipf("unable to find data file %q, skipping TestBackup", datafile)
+		return
 	}
+	OK(t, err)
+	OK(t, fd.Close())
 
 	tempdir := setupTempdir(t)
 	defer cleanupTempdir(t, tempdir)
@@ -133,7 +135,7 @@ func TestBackup(t *testing.T) {
 
 	datadir := filepath.Join(tempdir, "testdata")
 
-	setupTarTestFixture(t, datadir, *TestDataFile)
+	setupTarTestFixture(t, datadir, datafile)
 
 	// first backup
 	cmdBackup(t, []string{datadir}, nil)
