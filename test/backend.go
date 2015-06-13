@@ -18,6 +18,8 @@ var (
 	TestCleanup        = getBoolVar("RESTIC_TEST_CLEANUP", true)
 	TestTempDir        = getStringVar("RESTIC_TEST_TMPDIR", "")
 	RunIntegrationTest = getBoolVar("RESTIC_TEST_INTEGRATION", true)
+	TestSFTPPath       = getStringVar("RESTIC_TEST_SFTPPATH",
+		"/usr/lib/ssh:/usr/lib/openssh")
 )
 
 func getStringVar(name, defaultValue string) string {

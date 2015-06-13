@@ -114,7 +114,7 @@ func cmdFsck(t testing.TB) {
 
 func TestBackup(t *testing.T) {
 	if !RunIntegrationTest {
-		t.Skip("integration tests disabled, use `-test.integration` to enable")
+		t.Skip("integration tests disabled")
 	}
 
 	datafile := filepath.Join("testdata", "backup-data.tar.gz")
