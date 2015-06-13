@@ -144,8 +144,12 @@ func main() {
 					return nil
 				}
 
-				if specialDir(p) || emptyDir(p) {
+				if specialDir(p) {
 					return filepath.SkipDir
+				}
+
+				if emptyDir(p) {
+					return nil
 				}
 
 				return testPackage(forceRelativeDirname(p), file)
