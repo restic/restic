@@ -25,20 +25,20 @@ func s3path(t backend.Type, name string) string {
 	return backendPrefix + "/" + string(t) + "/" + name
 }
 
-type S3 struct {
+type S3Backend struct {
 	bucket   *s3.Bucket
 	connChan chan struct{}
 	path     string
 }
 
 // Open a backend using an S3 bucket object
-func OpenS3Bucket(bucket *s3.Bucket, bucketname string) *S3 {
+func OpenS3Bucket(bucket *s3.Bucket, bucketname string) *S3Backend {
 	connChan := make(chan struct{}, connLimit)
 	for i := 0; i < connLimit; i++ {
 		connChan <- struct{}{}
 	}
 
-	return &S3{bucket: bucket, path: bucketname, connChan: connChan}
+	return &S3Backend{bucket: bucket, path: bucketname, connChan: connChan}
 }
 
 // Open opens the s3 backend at bucket and region.
@@ -54,12 +54,12 @@ func Open(regionname, bucketname string) (backend.Backend, error) {
 }
 
 // Location returns this backend's location (the bucket name).
-func (b *S3) Location() string {
-	return b.path
+func (be *S3Backend) Location() string {
+	return be.path
 }
 
 type s3Blob struct {
-	b     *S3
+	b     *S3Backend
 	buf   *bytes.Buffer
 	final bool
 }
@@ -111,9 +111,9 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 
 // Create creates a new Blob. The data is available only after Finalize()
 // has been called on the returned Blob.
-func (b *S3) Create() (backend.Blob, error) {
+func (be *S3Backend) Create() (backend.Blob, error) {
 	blob := s3Blob{
-		b:   b,
+		b:   be,
 		buf: &bytes.Buffer{},
 	}
 
@@ -122,15 +122,15 @@ func (b *S3) Create() (backend.Blob, error) {
 
 // Get returns a reader that yields the content stored under the given
 // name. The reader should be closed after draining it.
-func (b *S3) Get(t backend.Type, name string) (io.ReadCloser, error) {
+func (be *S3Backend) Get(t backend.Type, name string) (io.ReadCloser, error) {
 	path := s3path(t, name)
-	return b.bucket.GetReader(path)
+	return be.bucket.GetReader(path)
 }
 
 // GetReader returns an io.ReadCloser for the Blob with the given name of
 // type t at offset and length. If length is 0, the reader reads until EOF.
-func (b *S3) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	rc, err := b.Get(t, name)
+func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
+	rc, err := be.Get(t, name)
 	if err != nil {
 		return nil, err
 	}
@@ -150,10 +150,10 @@ func (b *S3) GetReader(t backend.Type, name string, offset, length uint) (io.Rea
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *S3) Test(t backend.Type, name string) (bool, error) {
+func (be *S3Backend) Test(t backend.Type, name string) (bool, error) {
 	found := false
 	path := s3path(t, name)
-	key, err := b.bucket.GetKey(path)
+	key, err := be.bucket.GetKey(path)
 	if err == nil && key.Key == path {
 		found = true
 	}
@@ -163,20 +163,20 @@ func (b *S3) Test(t backend.Type, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *S3) Remove(t backend.Type, name string) error {
+func (be *S3Backend) Remove(t backend.Type, name string) error {
 	path := s3path(t, name)
-	return b.bucket.Del(path)
+	return be.bucket.Del(path)
 }
 
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (b *S3) List(t backend.Type, done <-chan struct{}) <-chan string {
+func (be *S3Backend) List(t backend.Type, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
 	prefix := s3path(t, "")
 
-	listresp, err := b.bucket.List(prefix, "/", "", maxKeysInList)
+	listresp, err := be.bucket.List(prefix, "/", "", maxKeysInList)
 
 	if err != nil {
 		close(ch)
@@ -190,7 +190,7 @@ func (b *S3) List(t backend.Type, done <-chan struct{}) <-chan string {
 
 	// Continue making requests to get full list.
 	for listresp.IsTruncated {
-		listresp, err = b.bucket.List(prefix, "/", listresp.NextMarker, maxKeysInList)
+		listresp, err = be.bucket.List(prefix, "/", listresp.NextMarker, maxKeysInList)
 		if err != nil {
 			close(ch)
 			return ch
@@ -220,24 +220,24 @@ func (b *S3) List(t backend.Type, done <-chan struct{}) <-chan string {
 }
 
 // Remove keys for a specified backend type
-func (b *S3) removeKeys(t backend.Type) {
+func (be *S3Backend) removeKeys(t backend.Type) {
 	doneChan := make(chan struct{})
-	for key := range b.List(backend.Data, doneChan) {
-		b.Remove(backend.Data, key)
+	for key := range be.List(backend.Data, doneChan) {
+		be.Remove(backend.Data, key)
 	}
 	doneChan <- struct{}{}
 }
 
 // Delete removes all restic keys
-func (b *S3) Delete() error {
-	b.removeKeys(backend.Data)
-	b.removeKeys(backend.Key)
-	b.removeKeys(backend.Lock)
-	b.removeKeys(backend.Snapshot)
-	b.removeKeys(backend.Index)
-	b.removeKeys(backend.Config)
+func (be *S3Backend) Delete() error {
+	be.removeKeys(backend.Data)
+	be.removeKeys(backend.Key)
+	be.removeKeys(backend.Lock)
+	be.removeKeys(backend.Snapshot)
+	be.removeKeys(backend.Index)
+	be.removeKeys(backend.Config)
 	return nil
 }
 
 // Close does nothing
-func (b *S3) Close() error { return nil }
+func (be *S3Backend) Close() error { return nil }
