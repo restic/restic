@@ -3,7 +3,9 @@ package s3
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"strings"
 
 	"github.com/mitchellh/goamz/aws"
@@ -117,40 +119,33 @@ func (b *S3) Create() (backend.Blob, error) {
 	return &blob, nil
 }
 
-func (b *S3) get(t backend.Type, name string) (*s3Blob, error) {
-	blob := &s3Blob{
-		b: b,
-	}
-
-	path := s3path(t, name)
-	<-b.connChan
-	data, err := b.bucket.Get(path)
-	b.connChan <- struct{}{}
-	blob.buf = bytes.NewBuffer(data)
-	return blob, err
-}
-
 // Get returns a reader that yields the content stored under the given
 // name. The reader should be closed after draining it.
 func (b *S3) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	return b.get(t, name)
+	path := s3path(t, name)
+	return b.bucket.GetReader(path)
 }
 
 // GetReader returns an io.ReadCloser for the Blob with the given name of
 // type t at offset and length. If length is 0, the reader reads until EOF.
 func (b *S3) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	blob, err := b.get(t, name)
+	rc, err := b.Get(t, name)
 	if err != nil {
 		return nil, err
 	}
 
-	blob.buf.Next(int(offset))
-
-	if length == 0 {
-		return blob, nil
+	n, errc := io.CopyN(ioutil.Discard, rc, int64(offset))
+	if errc != nil {
+		return nil, errc
+	} else if n != int64(offset) {
+		return nil, fmt.Errorf("less bytes read than expected, read: %d, expected: %d", n, offset)
 	}
 
-	return backend.LimitReadCloser(blob, int64(length)), nil
+	if length == 0 {
+		return rc, nil
+	}
+
+	return backend.LimitReadCloser(rc, int64(length)), nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
