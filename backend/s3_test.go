@@ -20,7 +20,7 @@ type LocalServer struct {
 
 var s LocalServer
 
-func setupS3Backend(t *testing.T) *bes3.S3 {
+func setupS3Backend(t *testing.T) *bes3.S3Backend {
 	s.config = &s3test.Config{
 		Send409Conflict: true,
 	}
