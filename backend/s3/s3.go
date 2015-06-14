@@ -16,12 +16,13 @@ import (
 
 const maxKeysInList = 1000
 const connLimit = 10
+const backendPrefix = "restic"
 
 func s3path(t backend.Type, name string) string {
 	if t == backend.Config {
-		return string(t)
+		return backendPrefix + "/" + string(t)
 	}
-	return string(t) + "/" + name
+	return backendPrefix + "/" + string(t) + "/" + name
 }
 
 type S3 struct {
@@ -173,7 +174,7 @@ func (b *S3) Remove(t backend.Type, name string) error {
 func (b *S3) List(t backend.Type, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
-	prefix := string(t) + "/"
+	prefix := s3path(t, "")
 
 	listresp, err := b.bucket.List(prefix, "/", "", maxKeysInList)
 
@@ -218,9 +219,24 @@ func (b *S3) List(t backend.Type, done <-chan struct{}) <-chan string {
 	return ch
 }
 
-// Delete removes the repository and all files.
+// Remove keys for a specified backend type
+func (b *S3) removeKeys(t backend.Type) {
+	doneChan := make(chan struct{})
+	for key := range b.List(backend.Data, doneChan) {
+		b.Remove(backend.Data, key)
+	}
+	doneChan <- struct{}{}
+}
+
+// Delete removes all restic keys
 func (b *S3) Delete() error {
-	return b.bucket.DelBucket()
+	b.removeKeys(backend.Data)
+	b.removeKeys(backend.Key)
+	b.removeKeys(backend.Lock)
+	b.removeKeys(backend.Snapshot)
+	b.removeKeys(backend.Index)
+	b.removeKeys(backend.Config)
+	return nil
 }
 
 // Close does nothing
