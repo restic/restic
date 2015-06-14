@@ -103,7 +103,7 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	}
 
 	<-bb.b.connChan
-	err = bb.b.bucket.Put(path, bb.buf.Bytes(), "binary/octet-stream", "private")
+	err = bb.b.bucket.PutReader(path, bb.buf, int64(bb.buf.Len()), "binary/octet-stream", "private")
 	bb.b.connChan <- struct{}{}
 	bb.buf.Reset()
 	return err
