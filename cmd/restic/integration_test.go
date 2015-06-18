@@ -91,7 +91,7 @@ func TestBackup(t *testing.T) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
-			t.Skipf("unable to find data file %q, skipping TestBackup", datafile)
+			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
 		}
 		OK(t, err)
@@ -182,7 +182,7 @@ func TestIncrementalBackup(t *testing.T) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
-			t.Skipf("unable to find data file %q, skipping TestBackup", datafile)
+			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
 		}
 		OK(t, err)
