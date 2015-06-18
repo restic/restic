@@ -86,6 +86,11 @@ func cmdFsck(t testing.TB) {
 	OK(t, cmd.Execute(nil))
 }
 
+func cmdKey(t testing.TB, args ...string) {
+	cmd := &CmdKey{}
+	OK(t, cmd.Execute(args))
+}
+
 func TestBackup(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
@@ -218,5 +223,21 @@ func TestIncrementalBackup(t *testing.T) {
 			t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
 		}
 		t.Logf("repository grown by %d bytes", stat3.size-stat2.size)
+	})
+}
+
+func TestKeyAddRemove(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(err) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		cmdInit(t)
+		cmdKey(t, "list")
 	})
 }
