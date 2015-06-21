@@ -176,12 +176,15 @@ type testEnvironment struct {
 	base, cache, repo, testdata string
 }
 
-func configureRestic(t testing.TB, cache, repo string) {
-	globalOpts.CacheDir = cache
-	globalOpts.Repo = repo
-	globalOpts.Quiet = true
+func configureRestic(t testing.TB, cache, repo string) GlobalOptions {
+	return GlobalOptions{
+		CacheDir: cache,
+		Repo:     repo,
+		Quiet:    true,
 
-	globalOpts.password = TestPassword
+		password: TestPassword,
+		stdout:   os.Stdout,
+	}
 }
 
 func cleanupTempdir(t testing.TB, tempdir string) {
@@ -195,7 +198,7 @@ func cleanupTempdir(t testing.TB, tempdir string) {
 
 // withTestEnvironment creates a test environment and calls f with it. After f has
 // returned, the temporary directory is removed.
-func withTestEnvironment(t testing.TB, f func(*testEnvironment)) {
+func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) {
 	if !RunIntegrationTest {
 		t.Skip("integration tests disabled")
 	}
@@ -210,10 +213,9 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment)) {
 		testdata: filepath.Join(tempdir, "testdata"),
 	}
 
-	configureRestic(t, env.cache, env.repo)
 	OK(t, os.MkdirAll(env.testdata, 0700))
 
-	f(&env)
+	f(&env, configureRestic(t, env.cache, env.repo))
 
 	if !TestCleanup {
 		t.Logf("leaving temporary directory %v used for test", tempdir)

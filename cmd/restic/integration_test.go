@@ -15,7 +15,7 @@ import (
 )
 
 func setupTarTestFixture(t testing.TB, outputDir, tarFile string) {
-	err := system("sh", "-c", `mkdir "$1" && (cd "$1" && tar xz) < "$2"`,
+	err := system("sh", "-c", `(cd "$1" && tar xz) < "$2"`,
 		"sh", outputDir, tarFile)
 	OK(t, err)
 }
@@ -45,15 +45,15 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) backend.IDs {
 	return IDs
 }
 
-func cmdInit(t testing.TB) {
-	cmd := &CmdInit{}
+func cmdInit(t testing.TB, global GlobalOptions) {
+	cmd := &CmdInit{global: &global}
 	OK(t, cmd.Execute(nil))
 
-	t.Logf("repository initialized at %v", globalOpts.Repo)
+	t.Logf("repository initialized at %v", global.Repo)
 }
 
-func cmdBackup(t testing.TB, target []string, parentID backend.ID) {
-	cmd := &CmdBackup{}
+func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID backend.ID) {
+	cmd := &CmdBackup{global: &global}
 	cmd.Parent = parentID.String()
 
 	t.Logf("backing up %v", target)
@@ -61,10 +61,10 @@ func cmdBackup(t testing.TB, target []string, parentID backend.ID) {
 	OK(t, cmd.Execute(target))
 }
 
-func cmdList(t testing.TB, tpe string) []backend.ID {
+func cmdList(t testing.TB, global GlobalOptions, tpe string) []backend.ID {
 	rd, wr := io.Pipe()
-
-	cmd := &CmdList{w: wr}
+	global.stdout = wr
+	cmd := &CmdList{global: &global}
 
 	go func() {
 		OK(t, cmd.Execute([]string{tpe}))
@@ -76,23 +76,23 @@ func cmdList(t testing.TB, tpe string) []backend.ID {
 	return IDs
 }
 
-func cmdRestore(t testing.TB, dir string, snapshotID backend.ID) {
-	cmd := &CmdRestore{}
+func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID) {
+	cmd := &CmdRestore{global: &global}
 	cmd.Execute([]string{snapshotID.String(), dir})
 }
 
-func cmdFsck(t testing.TB) {
-	cmd := &CmdFsck{CheckData: true, Orphaned: true}
+func cmdFsck(t testing.TB, global GlobalOptions) {
+	cmd := &CmdFsck{global: &global, CheckData: true, Orphaned: true}
 	OK(t, cmd.Execute(nil))
 }
 
-func cmdKey(t testing.TB, args ...string) {
-	cmd := &CmdKey{}
+func cmdKey(t testing.TB, global GlobalOptions, args ...string) {
+	cmd := &CmdKey{global: &global}
 	OK(t, cmd.Execute(args))
 }
 
 func TestBackup(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
@@ -102,25 +102,24 @@ func TestBackup(t *testing.T) {
 		OK(t, err)
 		OK(t, fd.Close())
 
-		cmdInit(t)
+		cmdInit(t, global)
 
-		datadir := filepath.Join(env.base, "testdata")
-		setupTarTestFixture(t, datadir, datafile)
+		setupTarTestFixture(t, env.testdata, datafile)
 
 		// first backup
-		cmdBackup(t, []string{datadir}, nil)
-		snapshotIDs := cmdList(t, "snapshots")
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		snapshotIDs := cmdList(t, global, "snapshots")
 		Assert(t, len(snapshotIDs) == 1,
-			"more than one snapshot ID in repo")
+			"expected one snapshot, got %v", snapshotIDs)
 
-		cmdFsck(t)
+		cmdFsck(t, global)
 		stat1 := dirStats(env.repo)
 
 		// second backup, implicit incremental
-		cmdBackup(t, []string{datadir}, nil)
-		snapshotIDs = cmdList(t, "snapshots")
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		snapshotIDs = cmdList(t, global, "snapshots")
 		Assert(t, len(snapshotIDs) == 2,
-			"more than one snapshot ID in repo")
+			"expected two snapshots, got %v", snapshotIDs)
 
 		stat2 := dirStats(env.repo)
 		if stat2.size > stat1.size+stat1.size/10 {
@@ -128,12 +127,12 @@ func TestBackup(t *testing.T) {
 		}
 		t.Logf("repository grown by %d bytes", stat2.size-stat1.size)
 
-		cmdFsck(t)
+		cmdFsck(t, global)
 		// third backup, explicit incremental
-		cmdBackup(t, []string{datadir}, snapshotIDs[0])
-		snapshotIDs = cmdList(t, "snapshots")
+		cmdBackup(t, global, []string{env.testdata}, snapshotIDs[0])
+		snapshotIDs = cmdList(t, global, "snapshots")
 		Assert(t, len(snapshotIDs) == 3,
-			"more than two snapshot IDs in repo")
+			"expected three snapshots, got %v", snapshotIDs)
 
 		stat3 := dirStats(env.repo)
 		if stat3.size > stat1.size+stat1.size/10 {
@@ -145,12 +144,12 @@ func TestBackup(t *testing.T) {
 		for i, snapshotID := range snapshotIDs {
 			restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 			t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
-			cmdRestore(t, restoredir, snapshotIDs[0])
-			Assert(t, directoriesEqualContents(datadir, filepath.Join(restoredir, "testdata")),
+			cmdRestore(t, global, restoredir, snapshotIDs[0])
+			Assert(t, directoriesEqualContents(env.testdata, filepath.Join(restoredir, "testdata")),
 				"directories are not equal")
 		}
 
-		cmdFsck(t)
+		cmdFsck(t, global)
 	})
 }
 
@@ -182,8 +181,12 @@ func appendRandomData(filename string, bytes uint) error {
 	return f.Close()
 }
 
+func TestInit(t *testing.T) {
+
+}
+
 func TestIncrementalBackup(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
@@ -193,21 +196,21 @@ func TestIncrementalBackup(t *testing.T) {
 		OK(t, err)
 		OK(t, fd.Close())
 
-		cmdInit(t)
+		cmdInit(t, global)
 
 		datadir := filepath.Join(env.base, "testdata")
 		testfile := filepath.Join(datadir, "testfile")
 
 		OK(t, appendRandomData(testfile, incrementalFirstWrite))
 
-		cmdBackup(t, []string{datadir}, nil)
-		cmdFsck(t)
+		cmdBackup(t, global, []string{datadir}, nil)
+		cmdFsck(t, global)
 		stat1 := dirStats(env.repo)
 
 		OK(t, appendRandomData(testfile, incrementalSecondWrite))
 
-		cmdBackup(t, []string{datadir}, nil)
-		cmdFsck(t)
+		cmdBackup(t, global, []string{datadir}, nil)
+		cmdFsck(t, global)
 		stat2 := dirStats(env.repo)
 		if stat2.size-stat1.size > incrementalFirstWrite {
 			t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
@@ -216,8 +219,8 @@ func TestIncrementalBackup(t *testing.T) {
 
 		OK(t, appendRandomData(testfile, incrementalThirdWrite))
 
-		cmdBackup(t, []string{datadir}, nil)
-		cmdFsck(t)
+		cmdBackup(t, global, []string{datadir}, nil)
+		cmdFsck(t, global)
 		stat3 := dirStats(env.repo)
 		if stat3.size-stat2.size > incrementalFirstWrite {
 			t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
@@ -227,7 +230,7 @@ func TestIncrementalBackup(t *testing.T) {
 }
 
 func TestKeyAddRemove(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
@@ -237,7 +240,7 @@ func TestKeyAddRemove(t *testing.T) {
 		OK(t, err)
 		OK(t, fd.Close())
 
-		cmdInit(t)
-		cmdKey(t, "list")
+		cmdInit(t, global)
+		cmdKey(t, global, "list")
 	})
 }

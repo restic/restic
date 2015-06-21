@@ -39,7 +39,7 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	for id := range s.List(backend.Key, done) {
 		k, err := repository.LoadKey(s, id.String())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "LoadKey() failed: %v\n", err)
+			cmd.global.Warnf("LoadKey() failed: %v\n", err)
 			continue
 		}
 
@@ -53,9 +53,7 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 			k.Username, k.Hostname, k.Created.Format(TimeFormat)})
 	}
 
-	tab.Write(os.Stdout)
-
-	return nil
+	return tab.Write(cmd.global.stdout)
 }
 
 func (cmd CmdKey) getNewPassword() (string, error) {
@@ -81,7 +79,7 @@ func (cmd CmdKey) addKey(repo *repository.Repository) error {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
 
-	fmt.Printf("saved new key as %s\n", id)
+	cmd.global.Verbosef("saved new key as %s\n", id)
 
 	return nil
 }
@@ -96,7 +94,7 @@ func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 		return err
 	}
 
-	fmt.Printf("removed key %v\n", name)
+	cmd.global.Verbosef("removed key %v\n", name)
 	return nil
 }
 
@@ -116,7 +114,7 @@ func (cmd CmdKey) changePassword(repo *repository.Repository) error {
 		return err
 	}
 
-	fmt.Printf("saved new key as %s\n", id)
+	cmd.global.Verbosef("saved new key as %s\n", id)
 
 	return nil
 }
