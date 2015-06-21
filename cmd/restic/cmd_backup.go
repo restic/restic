@@ -16,13 +16,15 @@ import (
 type CmdBackup struct {
 	Parent string `short:"p" long:"parent"    description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
 	Force  bool   `short:"f" long:"force" description:"Force re-reading the target. Overrides the \"parent\" flag"`
+
+	global *GlobalOptions
 }
 
 func init() {
 	_, err := parser.AddCommand("backup",
 		"save file/directory",
 		"The backup command creates a snapshot of a file or directory",
-		&CmdBackup{})
+		&CmdBackup{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -97,8 +99,8 @@ func (cmd CmdBackup) Usage() string {
 	return "DIR/FILE [DIR/FILE] [...]"
 }
 
-func newScanProgress() *restic.Progress {
-	if disableProgress() {
+func (cmd CmdBackup) newScanProgress() *restic.Progress {
+	if !cmd.global.ShowProgress() {
 		return nil
 	}
 
@@ -113,8 +115,8 @@ func newScanProgress() *restic.Progress {
 	return p
 }
 
-func newArchiveProgress(todo restic.Stat) *restic.Progress {
-	if disableProgress() {
+func (cmd CmdBackup) newArchiveProgress(todo restic.Stat) *restic.Progress {
+	if !cmd.global.ShowProgress() {
 		return nil
 	}
 
@@ -213,7 +215,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		target = append(target, d)
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
@@ -232,7 +234,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
 		}
 
-		verbosePrintf("found parent snapshot %v\n", parentSnapshotID.Str())
+		cmd.global.Printf("found parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
 	// Find last snapshot to set it as parent, if not already set
@@ -243,13 +245,13 @@ func (cmd CmdBackup) Execute(args []string) error {
 		}
 
 		if parentSnapshotID != nil {
-			verbosePrintf("using parent snapshot %v\n", parentSnapshotID)
+			cmd.global.Printf("using parent snapshot %v\n", parentSnapshotID)
 		}
 	}
 
-	verbosePrintf("scan %v\n", target)
+	cmd.global.Printf("scan %v\n", target)
 
-	stat, err := restic.Scan(target, newScanProgress())
+	stat, err := restic.Scan(target, cmd.newScanProgress())
 
 	// TODO: add filter
 	// arch.Filter = func(dir string, fi os.FileInfo) bool {
@@ -264,12 +266,12 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
-	_, id, err := arch.Snapshot(newArchiveProgress(stat), target, parentSnapshotID)
+	_, id, err := arch.Snapshot(cmd.newArchiveProgress(stat), target, parentSnapshotID)
 	if err != nil {
 		return err
 	}
 
-	verbosePrintf("snapshot %s saved\n", id.Str())
+	cmd.global.Printf("snapshot %s saved\n", id.Str())
 
 	return nil
 }

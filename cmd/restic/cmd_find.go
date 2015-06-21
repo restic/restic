@@ -23,6 +23,7 @@ type CmdFind struct {
 
 	oldest, newest time.Time
 	pattern        string
+	global         *GlobalOptions
 }
 
 var timeFormats = []string{
@@ -43,7 +44,7 @@ func init() {
 	_, err := parser.AddCommand("find",
 		"find a file/directory",
 		"The find command searches for files or directories in snapshots",
-		&CmdFind{})
+		&CmdFind{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -156,7 +157,7 @@ func (c CmdFind) Execute(args []string) error {
 		}
 	}
 
-	s, err := OpenRepo()
+	s, err := c.global.OpenRepository()
 	if err != nil {
 		return err
 	}

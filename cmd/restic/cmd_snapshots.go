@@ -71,13 +71,15 @@ func reltime(t time.Time) string {
 	}
 }
 
-type CmdSnapshots struct{}
+type CmdSnapshots struct {
+	global *GlobalOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("snapshots",
 		"show snapshots",
 		"The snapshots command lists all snapshots stored in a repository",
-		&CmdSnapshots{})
+		&CmdSnapshots{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +94,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, usage: %s", cmd.Usage())
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}

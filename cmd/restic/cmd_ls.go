@@ -10,13 +10,15 @@ import (
 	"github.com/restic/restic/repository"
 )
 
-type CmdLs struct{}
+type CmdLs struct {
+	global *GlobalOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("ls",
 		"list files",
 		"The ls command lists all files and directories in a snapshot",
-		&CmdLs{})
+		&CmdLs{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +69,7 @@ func (cmd CmdLs) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}

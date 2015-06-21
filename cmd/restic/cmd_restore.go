@@ -8,13 +8,15 @@ import (
 	"github.com/restic/restic"
 )
 
-type CmdRestore struct{}
+type CmdRestore struct {
+	global *GlobalOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("restore",
 		"restore a snapshot",
 		"The restore command restores a snapshot to a directory",
-		&CmdRestore{})
+		&CmdRestore{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +31,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
@@ -41,7 +43,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 
 	id, err := restic.FindSnapshot(s, args[0])
 	if err != nil {
-		errx(1, "invalid id %q: %v", args[0], err)
+		cmd.global.Exitf(1, "invalid id %q: %v", args[0], err)
 	}
 
 	target := args[1]
@@ -81,7 +83,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 		}
 	}
 
-	verbosePrintf("restoring %s to %s\n", res.Snapshot(), target)
+	cmd.global.Printf("restoring %s to %s\n", res.Snapshot(), target)
 
 	err = res.RestoreTo(target)
 	if err != nil {

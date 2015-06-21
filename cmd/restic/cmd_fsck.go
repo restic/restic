@@ -19,6 +19,8 @@ type CmdFsck struct {
 	Orphaned       bool   `short:"o" long:"orphaned"        description:"Check for orphaned blobs"`
 	RemoveOrphaned bool   `short:"r" long:"remove-orphaned" description:"Remove orphaned blobs (implies -o)"`
 
+	global *GlobalOptions
+
 	// lists checking for orphaned blobs
 	o_data  *backend.IDSet
 	o_trees *backend.IDSet
@@ -28,13 +30,13 @@ func init() {
 	_, err := parser.AddCommand("fsck",
 		"check the repository",
 		"The fsck command check the integrity and consistency of the repository",
-		&CmdFsck{})
+		&CmdFsck{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func fsckFile(opts CmdFsck, repo *repository.Repository, IDs []backend.ID) (uint64, error) {
+func fsckFile(global CmdFsck, repo *repository.Repository, IDs []backend.ID) (uint64, error) {
 	debug.Log("restic.fsckFile", "checking file %v", IDs)
 	var bytes uint64
 
@@ -50,7 +52,7 @@ func fsckFile(opts CmdFsck, repo *repository.Repository, IDs []backend.ID) (uint
 		bytes += uint64(length - crypto.Extension)
 		debug.Log("restic.fsck", "  blob found in pack %v\n", packID)
 
-		if opts.CheckData {
+		if global.CheckData {
 			// load content
 			_, err := repo.LoadBlob(pack.Data, id)
 			if err != nil {
@@ -69,16 +71,16 @@ func fsckFile(opts CmdFsck, repo *repository.Repository, IDs []backend.ID) (uint
 		}
 
 		// if orphan check is active, record storage id
-		if opts.o_data != nil {
+		if global.o_data != nil {
 			debug.Log("restic.fsck", "  recording blob %v as used\n", id)
-			opts.o_data.Insert(id)
+			global.o_data.Insert(id)
 		}
 	}
 
 	return bytes, nil
 }
 
-func fsckTree(opts CmdFsck, repo *repository.Repository, id backend.ID) error {
+func fsckTree(global CmdFsck, repo *repository.Repository, id backend.ID) error {
 	debug.Log("restic.fsckTree", "checking tree %v", id.Str())
 
 	tree, err := restic.LoadTree(repo, id)
@@ -87,9 +89,9 @@ func fsckTree(opts CmdFsck, repo *repository.Repository, id backend.ID) error {
 	}
 
 	// if orphan check is active, record storage id
-	if opts.o_trees != nil {
+	if global.o_trees != nil {
 		// add ID to list
-		opts.o_trees.Insert(id)
+		global.o_trees.Insert(id)
 	}
 
 	var firstErr error
@@ -123,7 +125,7 @@ func fsckTree(opts CmdFsck, repo *repository.Repository, id backend.ID) error {
 			}
 
 			debug.Log("restic.fsckTree", "check file %v (%v)", node.Name, id.Str())
-			bytes, err := fsckFile(opts, repo, node.Content)
+			bytes, err := fsckFile(global, repo, node.Content)
 			if err != nil {
 				return err
 			}
@@ -140,7 +142,7 @@ func fsckTree(opts CmdFsck, repo *repository.Repository, id backend.ID) error {
 			// record id
 			seenIDs.Insert(node.Subtree)
 
-			err = fsckTree(opts, repo, node.Subtree)
+			err = fsckTree(global, repo, node.Subtree)
 			if err != nil {
 				firstErr = err
 				fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -158,7 +160,7 @@ func fsckTree(opts CmdFsck, repo *repository.Repository, id backend.ID) error {
 	return firstErr
 }
 
-func fsckSnapshot(opts CmdFsck, repo *repository.Repository, id backend.ID) error {
+func fsckSnapshot(global CmdFsck, repo *repository.Repository, id backend.ID) error {
 	debug.Log("restic.fsck", "checking snapshot %v\n", id)
 
 	sn, err := restic.LoadSnapshot(repo, id)
@@ -166,7 +168,7 @@ func fsckSnapshot(opts CmdFsck, repo *repository.Repository, id backend.ID) erro
 		return fmt.Errorf("loading snapshot %v failed: %v", id, err)
 	}
 
-	err = fsckTree(opts, repo, sn.Tree)
+	err = fsckTree(global, repo, sn.Tree)
 	if err != nil {
 		debug.Log("restic.fsck", "  checking tree %v for snapshot %v\n", sn.Tree, id)
 		fmt.Fprintf(os.Stderr, "snapshot %v:\n  error for tree %v:\n    %v\n", id, sn.Tree, err)
@@ -188,7 +190,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 		cmd.Orphaned = true
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}

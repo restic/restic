@@ -10,14 +10,15 @@ import (
 )
 
 type CmdList struct {
-	w io.Writer
+	w      io.Writer
+	global *GlobalOptions
 }
 
 func init() {
 	_, err := parser.AddCommand("list",
 		"lists data",
 		"The list command lists structures or data of a repository",
-		&CmdList{})
+		&CmdList{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +37,7 @@ func (cmd CmdList) Execute(args []string) error {
 		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}

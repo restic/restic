@@ -9,19 +9,21 @@ import (
 	"github.com/restic/restic/repository"
 )
 
-type CmdKey struct{}
+type CmdKey struct {
+	global *GlobalOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("key",
 		"manage keys",
 		"The key command manages keys (passwords) of a repository",
-		&CmdKey{})
+		&CmdKey{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func listKeys(s *repository.Repository) error {
+func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
@@ -56,23 +58,20 @@ func listKeys(s *repository.Repository) error {
 	return nil
 }
 
-func getNewPassword() (string, error) {
+func (cmd CmdKey) getNewPassword() (string, error) {
 	newPassword := os.Getenv("RESTIC_NEWPASSWORD")
 
 	if newPassword == "" {
-		newPassword = readPassword("enter password for new key: ")
-		newPassword2 := readPassword("enter password again: ")
-
-		if newPassword != newPassword2 {
-			return "", errors.New("passwords do not match")
-		}
+		newPassword = cmd.global.ReadPasswordTwice(
+			"enter password for new key: ",
+			"enter password again: ")
 	}
 
 	return newPassword, nil
 }
 
-func addKey(repo *repository.Repository) error {
-	newPassword, err := getNewPassword()
+func (cmd CmdKey) addKey(repo *repository.Repository) error {
+	newPassword, err := cmd.getNewPassword()
 	if err != nil {
 		return err
 	}
@@ -87,7 +86,7 @@ func addKey(repo *repository.Repository) error {
 	return nil
 }
 
-func deleteKey(repo *repository.Repository, name string) error {
+func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 	if name == repo.KeyName() {
 		return errors.New("refusing to remove key currently used to access repository")
 	}
@@ -101,8 +100,8 @@ func deleteKey(repo *repository.Repository, name string) error {
 	return nil
 }
 
-func changePassword(repo *repository.Repository) error {
-	newPassword, err := getNewPassword()
+func (cmd CmdKey) changePassword(repo *repository.Repository) error {
+	newPassword, err := cmd.getNewPassword()
 	if err != nil {
 		return err
 	}
@@ -131,25 +130,25 @@ func (cmd CmdKey) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
 
 	switch args[0] {
 	case "list":
-		return listKeys(s)
+		return cmd.listKeys(s)
 	case "add":
-		return addKey(s)
+		return cmd.addKey(s)
 	case "rm":
 		id, err := backend.Find(s.Backend(), backend.Key, args[1])
 		if err != nil {
 			return err
 		}
 
-		return deleteKey(s, id)
+		return cmd.deleteKey(s, id)
 	case "passwd":
-		return changePassword(s)
+		return cmd.changePassword(s)
 	}
 
 	return nil
