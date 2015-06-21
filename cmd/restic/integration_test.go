@@ -49,7 +49,7 @@ func cmdInit(t testing.TB) {
 	cmd := &CmdInit{}
 	OK(t, cmd.Execute(nil))
 
-	t.Logf("repository initialized at %v", opts.Repo)
+	t.Logf("repository initialized at %v", mainOpts.Repo)
 }
 
 func cmdBackup(t testing.TB, target []string, parentID backend.ID) {

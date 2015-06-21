@@ -19,7 +19,7 @@ import (
 
 var version = "compiled manually"
 
-var opts struct {
+var mainOpts struct {
 	Repo     string `short:"r" long:"repo"                      description:"Repository directory to backup to/restore from"`
 	CacheDir string `          long:"cache-dir"                 description:"Directory to use as a local cache"`
 	Quiet    bool   `short:"q" long:"quiet"     default:"false" description:"Do not output comprehensive progress report"`
@@ -27,7 +27,7 @@ var opts struct {
 	password string
 }
 
-var parser = flags.NewParser(&opts, flags.Default)
+var parser = flags.NewParser(&mainOpts, flags.Default)
 
 func errx(code int, format string, data ...interface{}) {
 	if len(format) > 0 && format[len(format)-1] != '\n' {
@@ -49,7 +49,7 @@ func readPassword(prompt string) string {
 }
 
 func disableProgress() bool {
-	if opts.Quiet {
+	if mainOpts.Quiet {
 		return true
 	}
 
@@ -61,7 +61,7 @@ func disableProgress() bool {
 }
 
 func silenceRequested() bool {
-	if opts.Quiet {
+	if mainOpts.Quiet {
 		return true
 	}
 
@@ -79,11 +79,11 @@ func verbosePrintf(format string, args ...interface{}) {
 type CmdInit struct{}
 
 func (cmd CmdInit) Execute(args []string) error {
-	if opts.Repo == "" {
+	if mainOpts.Repo == "" {
 		return errors.New("Please specify repository location (-r)")
 	}
 
-	if opts.password == "" {
+	if mainOpts.password == "" {
 		pw := readPassword("enter password for new backend: ")
 		pw2 := readPassword("enter password again: ")
 
@@ -91,23 +91,23 @@ func (cmd CmdInit) Execute(args []string) error {
 			errx(1, "passwords do not match")
 		}
 
-		opts.password = pw
+		mainOpts.password = pw
 	}
 
-	be, err := create(opts.Repo)
+	be, err := create(mainOpts.Repo)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "creating backend at %s failed: %v\n", opts.Repo, err)
+		fmt.Fprintf(os.Stderr, "creating backend at %s failed: %v\n", mainOpts.Repo, err)
 		os.Exit(1)
 	}
 
 	s := repository.New(be)
-	err = s.Init(opts.password)
+	err = s.Init(mainOpts.password)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", opts.Repo, err)
+		fmt.Fprintf(os.Stderr, "creating key in backend at %s failed: %v\n", mainOpts.Repo, err)
 		os.Exit(1)
 	}
 
-	verbosePrintf("created restic backend %v at %s\n", s.Config.ID[:10], opts.Repo)
+	verbosePrintf("created restic backend %v at %s\n", s.Config.ID[:10], mainOpts.Repo)
 	verbosePrintf("\n")
 	verbosePrintf("Please note that knowledge of your password is required to access\n")
 	verbosePrintf("the repository. Losing your password means that your data is\n")
@@ -163,22 +163,22 @@ func create(u string) (backend.Backend, error) {
 }
 
 func OpenRepo() (*repository.Repository, error) {
-	if opts.Repo == "" {
+	if mainOpts.Repo == "" {
 		return nil, errors.New("Please specify repository location (-r)")
 	}
 
-	be, err := open(opts.Repo)
+	be, err := open(mainOpts.Repo)
 	if err != nil {
 		return nil, err
 	}
 
 	s := repository.New(be)
 
-	if opts.password == "" {
-		opts.password = readPassword("enter password for repository: ")
+	if mainOpts.password == "" {
+		mainOpts.password = readPassword("enter password for repository: ")
 	}
 
-	err = s.SearchKey(opts.password)
+	err = s.SearchKey(mainOpts.password)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open repo: %v", err)
 	}
@@ -202,8 +202,8 @@ func init() {
 func main() {
 	// defer profile.Start(profile.MemProfileRate(100000), profile.ProfilePath(".")).Stop()
 	// defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
-	opts.Repo = os.Getenv("RESTIC_REPOSITORY")
-	opts.password = os.Getenv("RESTIC_PASSWORD")
+	mainOpts.Repo = os.Getenv("RESTIC_REPOSITORY")
+	mainOpts.password = os.Getenv("RESTIC_PASSWORD")
 
 	debug.Log("restic", "main %#v", os.Args)
 

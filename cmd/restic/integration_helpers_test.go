@@ -177,11 +177,11 @@ type testEnvironment struct {
 }
 
 func configureRestic(t testing.TB, cache, repo string) {
-	opts.CacheDir = cache
-	opts.Repo = repo
-	opts.Quiet = true
+	mainOpts.CacheDir = cache
+	mainOpts.Repo = repo
+	mainOpts.Quiet = true
 
-	opts.password = TestPassword
+	mainOpts.password = TestPassword
 }
 
 func cleanupTempdir(t testing.TB, tempdir string) {
