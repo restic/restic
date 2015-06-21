@@ -26,7 +26,7 @@ all: restic
 
 %: cmd/% .gopath $(SOURCE)
 	cd $(BASEPATH) && \
-		go build -a -ldflags "-s" -o $@ ./$<
+		go build -a -tags release -ldflags "-s" -o $@ ./$<
 
 %.debug: cmd/% .gopath $(SOURCE)
 	cd $(BASEPATH) && \

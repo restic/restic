@@ -29,7 +29,7 @@ install:
   - gox -build-toolchain -os "$GOX_OS"
 
 script:
-  - gox -verbose -os "${GOX_OS}" ./cmd/restic
+  - gox -verbose -os "${GOX_OS}" -tags "release" ./cmd/restic
   - go run run_tests.go all.cov
   - GOARCH=386 go test ./...
   - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN" || true
