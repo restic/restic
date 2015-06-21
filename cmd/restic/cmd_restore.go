@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/restic/restic"
@@ -51,12 +50,11 @@ func (cmd CmdRestore) Execute(args []string) error {
 	// create restorer
 	res, err := restic.NewRestorer(s, id)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "creating restorer failed: %v\n", err)
-		os.Exit(2)
+		cmd.global.Exitf(2, "creating restorer failed: %v\n", err)
 	}
 
 	res.Error = func(dir string, node *restic.Node, err error) error {
-		fmt.Fprintf(os.Stderr, "error for %s: %+v\n", dir, err)
+		cmd.global.Warnf("error for %s: %+v\n", dir, err)
 
 		// if node.Type == "dir" {
 		// 	if e, ok := err.(*os.PathError); ok {

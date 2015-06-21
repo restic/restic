@@ -24,9 +24,10 @@ type GlobalOptions struct {
 
 	password string
 	stdout   io.Writer
+	stderr   io.Writer
 }
 
-var globalOpts = GlobalOptions{stdout: os.Stdout}
+var globalOpts = GlobalOptions{stdout: os.Stdout, stderr: os.Stderr}
 var parser = flags.NewParser(&globalOpts, flags.Default)
 
 func (o GlobalOptions) Printf(format string, args ...interface{}) {
@@ -58,7 +59,7 @@ func (o GlobalOptions) ShowProgress() bool {
 }
 
 func (o GlobalOptions) Warnf(format string, args ...interface{}) {
-	_, err := fmt.Fprintf(os.Stderr, format, args...)
+	_, err := fmt.Fprintf(o.stderr, format, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stderr: %v\n", err)
 		os.Exit(100)

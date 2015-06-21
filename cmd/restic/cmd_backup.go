@@ -262,7 +262,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
 		// TODO: make ignoring errors configurable
-		fmt.Fprintf(os.Stderr, "\x1b[2K\rerror for %s: %v\n", dir, err)
+		cmd.global.Warnf("\x1b[2K\rerror for %s: %v\n", dir, err)
 		return nil
 	}
 
