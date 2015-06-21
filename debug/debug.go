@@ -18,7 +18,6 @@ import (
 var opts struct {
 	logger *log.Logger
 	tags   map[string]bool
-	breaks map[string]bool
 	m      sync.Mutex
 }
 
@@ -29,7 +28,6 @@ var _ = initDebug()
 func initDebug() bool {
 	initDebugLogger()
 	initDebugTags()
-	initDebugBreaks()
 
 	fmt.Fprintf(os.Stderr, "debug enabled\n")
 
@@ -105,25 +103,6 @@ func initDebugTags() {
 	fmt.Fprintf(os.Stderr, "debug log enabled for: %v\n", tags)
 }
 
-func initDebugBreaks() {
-	opts.breaks = make(map[string]bool)
-
-	env := os.Getenv("DEBUG_BREAK")
-	if len(env) == 0 {
-		return
-	}
-
-	breaks := []string{}
-
-	for _, tag := range strings.Split(env, ",") {
-		t := strings.TrimSpace(tag)
-		opts.breaks[t] = true
-		breaks = append(breaks, t)
-	}
-
-	fmt.Fprintf(os.Stderr, "debug breaks enabled for: %v\n", breaks)
-}
-
 // taken from https://github.com/VividCortex/trace
 func goroutineNum() int {
 	b := make([]byte, 20)
@@ -192,40 +171,5 @@ func Log(tag string, f string, args ...interface{}) {
 	// check if tag "all" is enabled
 	if v, ok := opts.tags["all"]; ok && v {
 		dbgprint()
-	}
-}
-
-// Break stops the program if the debug tag is active and the string in tag is
-// contained in the DEBUG_BREAK environment variable.
-func Break(tag string) {
-	// check if breaking is enabled
-	if v, ok := opts.breaks[tag]; !ok || !v {
-		return
-	}
-
-	_, file, line, _ := runtime.Caller(1)
-	Log("break", "stopping process %d at %s (%v:%v)\n", os.Getpid(), tag, file, line)
-	p, err := os.FindProcess(os.Getpid())
-	if err != nil {
-		panic(err)
-	}
-
-	err = p.Signal(syscall.SIGSTOP)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// BreakIf stops the program if the debug tag is active and the string in tag
-// is contained in the DEBUG_BREAK environment variable and the return value of
-// fn is true.
-func BreakIf(tag string, fn func() bool) {
-	// check if breaking is enabled
-	if v, ok := opts.breaks[tag]; !ok || !v {
-		return
-	}
-
-	if fn() {
-		Break(tag)
 	}
 }

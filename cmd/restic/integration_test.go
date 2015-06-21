@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 	. "github.com/restic/restic/test"
 )
 
@@ -175,6 +176,80 @@ func TestBackupNonExistingFile(t *testing.T) {
 	})
 }
 
+func TestBackupMissingFile1(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(err) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		setupTarTestFixture(t, env.testdata, datafile)
+
+		cmdInit(t, global)
+
+		ranHook := false
+		debug.Hook("pipe.walk1", func(context interface{}) {
+			pathname := context.(string)
+
+			if pathname != filepath.Join("testdata", "0", "0", "9") {
+				return
+			}
+
+			t.Logf("in hook, removing test file testdata/0/0/9/37")
+			ranHook = true
+
+			OK(t, os.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
+		})
+
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		cmdFsck(t, global)
+
+		Assert(t, ranHook, "hook did not run")
+		debug.RemoveHook("pipe.walk1")
+	})
+}
+
+func TestBackupMissingFile2(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(err) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		setupTarTestFixture(t, env.testdata, datafile)
+
+		cmdInit(t, global)
+
+		ranHook := false
+		debug.Hook("pipe.walk2", func(context interface{}) {
+			pathname := context.(string)
+
+			if pathname != filepath.Join("testdata", "0", "0", "9", "37") {
+				return
+			}
+
+			t.Logf("in hook, removing test file testdata/0/0/9/37")
+			ranHook = true
+
+			OK(t, os.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
+		})
+
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		cmdFsck(t, global)
+
+		Assert(t, ranHook, "hook did not run")
+		debug.RemoveHook("pipe.walk2")
+	})
+}
+
 const (
 	incrementalFirstWrite  = 20 * 1042 * 1024
 	incrementalSecondWrite = 12 * 1042 * 1024
@@ -205,15 +280,6 @@ func appendRandomData(filename string, bytes uint) error {
 
 func TestIncrementalBackup(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := os.Open(datafile)
-		if os.IsNotExist(err) {
-			t.Skipf("unable to find data file %q, skipping", datafile)
-			return
-		}
-		OK(t, err)
-		OK(t, fd.Close())
-
 		cmdInit(t, global)
 
 		datadir := filepath.Join(env.base, "testdata")
