@@ -234,7 +234,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
 		}
 
-		cmd.global.Printf("found parent snapshot %v\n", parentSnapshotID.Str())
+		cmd.global.Verbosef("found parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
 	// Find last snapshot to set it as parent, if not already set
@@ -245,11 +245,11 @@ func (cmd CmdBackup) Execute(args []string) error {
 		}
 
 		if parentSnapshotID != nil {
-			cmd.global.Printf("using parent snapshot %v\n", parentSnapshotID)
+			cmd.global.Verbosef("using parent snapshot %v\n", parentSnapshotID)
 		}
 	}
 
-	cmd.global.Printf("scan %v\n", target)
+	cmd.global.Verbosef("scan %v\n", target)
 
 	stat, err := restic.Scan(target, cmd.newScanProgress())
 
@@ -271,7 +271,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	cmd.global.Printf("snapshot %s saved\n", id.Str())
+	cmd.global.Verbosef("snapshot %s saved\n", id.Str())
 
 	return nil
 }

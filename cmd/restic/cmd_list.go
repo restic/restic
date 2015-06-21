@@ -3,14 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/restic/restic/backend"
 )
 
 type CmdList struct {
-	w      io.Writer
 	global *GlobalOptions
 }
 
@@ -29,10 +26,6 @@ func (cmd CmdList) Usage() string {
 }
 
 func (cmd CmdList) Execute(args []string) error {
-	if cmd.w == nil {
-		cmd.w = os.Stdout
-	}
-
 	if len(args) != 1 {
 		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
@@ -51,7 +44,7 @@ func (cmd CmdList) Execute(args []string) error {
 		}
 
 		for blob := range s.Index().Each(nil) {
-			fmt.Fprintln(cmd.w, blob.ID)
+			cmd.global.Printf("%s\n", blob.ID)
 		}
 
 		return nil
@@ -70,7 +63,7 @@ func (cmd CmdList) Execute(args []string) error {
 	}
 
 	for id := range s.List(t, nil) {
-		fmt.Fprintf(cmd.w, "%s\n", id)
+		cmd.global.Printf("%s\n", id)
 	}
 
 	return nil

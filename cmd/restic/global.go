@@ -30,15 +30,19 @@ var globalOpts = GlobalOptions{stdout: os.Stdout}
 var parser = flags.NewParser(&globalOpts, flags.Default)
 
 func (o GlobalOptions) Printf(format string, args ...interface{}) {
-	if o.Quiet {
-		return
-	}
-
 	_, err := fmt.Fprintf(o.stdout, format, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
 		os.Exit(100)
 	}
+}
+
+func (o GlobalOptions) Verbosef(format string, args ...interface{}) {
+	if o.Quiet {
+		return
+	}
+
+	o.Printf(format, args...)
 }
 
 func (o GlobalOptions) ShowProgress() bool {

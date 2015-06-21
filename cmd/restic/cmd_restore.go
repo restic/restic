@@ -83,7 +83,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 		}
 	}
 
-	cmd.global.Printf("restoring %s to %s\n", res.Snapshot(), target)
+	cmd.global.Verbosef("restoring %s to %s\n", res.Snapshot(), target)
 
 	err = res.RestoreTo(target)
 	if err != nil {
