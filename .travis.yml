@@ -31,7 +31,7 @@ install:
 script:
   - gox -verbose -os "${GOX_OS}" -tags "release" ./cmd/restic
   - go run run_tests.go all.cov
-  - GOARCH=386 go test ./...
+  - GOARCH=386 RESTIC_TEST_INTEGRATION=0 go test ./...
   - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN" || true
   - gofmt -l *.go */*.go */*/*.go
   - test -z "$(gofmt -l *.go */*.go */*/*.go)"
