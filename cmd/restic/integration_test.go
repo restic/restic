@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -143,6 +144,34 @@ func TestBackup(t *testing.T) {
 		}
 
 		cmdFsck(t, global)
+	})
+}
+
+func TestBackupNonExistingFile(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(err) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		setupTarTestFixture(t, env.testdata, datafile)
+
+		cmdInit(t, global)
+
+		global.stderr = ioutil.Discard
+
+		p := filepath.Join(env.testdata, "0", "0")
+		dirs := []string{
+			filepath.Join(p, "0"),
+			filepath.Join(p, "1"),
+			filepath.Join(p, "nonexisting"),
+			filepath.Join(p, "5"),
+		}
+		cmdBackup(t, global, dirs, nil)
 	})
 }
 
