@@ -534,7 +534,7 @@ func (j archiveJob) Copy() pipe.Job {
 func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID) (*Snapshot, backend.ID, error) {
 	debug.Log("Archiver.Snapshot", "start for %v", paths)
 
-	debug.Break("Archiver.Snapshot")
+	debug.RunHook("Archiver.Snapshot", nil)
 	sort.Strings(paths)
 
 	// signal the whole pipeline to stop

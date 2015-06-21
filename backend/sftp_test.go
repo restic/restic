@@ -1,22 +1,37 @@
 package backend_test
 
 import (
-	"flag"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/backend/sftp"
 	. "github.com/restic/restic/test"
 )
 
-var sftpPath = flag.String("test.sftppath", "", "sftp binary path (default: empty)")
-
 func setupSFTPBackend(t *testing.T) *sftp.SFTP {
+	sftpserver := ""
+
+	for _, dir := range strings.Split(TestSFTPPath, ":") {
+		testpath := filepath.Join(dir, "sftp-server")
+		fd, err := os.Open(testpath)
+		fd.Close()
+		if !os.IsNotExist(err) {
+			sftpserver = testpath
+			break
+		}
+	}
+
+	if sftpserver == "" {
+		return nil
+	}
+
 	tempdir, err := ioutil.TempDir("", "restic-test-")
 	OK(t, err)
 
-	b, err := sftp.Create(tempdir, *sftpPath)
+	b, err := sftp.Create(tempdir, sftpserver)
 	OK(t, err)
 
 	t.Logf("created sftp backend locally at %s", tempdir)
@@ -25,7 +40,7 @@ func setupSFTPBackend(t *testing.T) *sftp.SFTP {
 }
 
 func teardownSFTPBackend(t *testing.T, b *sftp.SFTP) {
-	if !*TestCleanup {
+	if !TestCleanup {
 		t.Logf("leaving backend at %s\n", b.Location())
 		return
 	}
@@ -35,11 +50,15 @@ func teardownSFTPBackend(t *testing.T, b *sftp.SFTP) {
 }
 
 func TestSFTPBackend(t *testing.T) {
-	if *sftpPath == "" {
-		t.Skipf("sftppath not set, skipping TestSFTPBackend")
+	if !RunIntegrationTest {
+		t.Skip("integration tests disabled")
 	}
 
 	s := setupSFTPBackend(t)
+	if s == nil {
+		t.Skip("unable to find sftp-server binary")
+		return
+	}
 	defer teardownSFTPBackend(t, s)
 
 	testBackend(s, t)

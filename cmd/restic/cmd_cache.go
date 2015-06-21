@@ -6,13 +6,15 @@ import (
 	"github.com/restic/restic"
 )
 
-type CmdCache struct{}
+type CmdCache struct {
+	global *GlobalOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("cache",
 		"manage cache",
 		"The cache command creates and manages the local cache",
-		&CmdCache{})
+		&CmdCache{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -27,12 +29,12 @@ func (cmd CmdCache) Execute(args []string) error {
 	// 	return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
 	// }
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
 
-	cache, err := restic.NewCache(s, opts.CacheDir)
+	cache, err := restic.NewCache(s, cmd.global.CacheDir)
 	if err != nil {
 		return err
 	}

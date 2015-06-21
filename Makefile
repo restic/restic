@@ -26,7 +26,7 @@ all: restic
 
 %: cmd/% .gopath $(SOURCE)
 	cd $(BASEPATH) && \
-		go build -a -ldflags "-s" -o $@ ./$<
+		go build -a -tags release -ldflags "-s" -o $@ ./$<
 
 %.debug: cmd/% .gopath $(SOURCE)
 	cd $(BASEPATH) && \
@@ -48,17 +48,8 @@ gox: .gopath $(SOURCE)
 	cd $(BASEPATH) && \
 		gox -verbose -os "$(GOX_OS)" ./cmd/restic
 
-test-integration: .gopath restic restic.debug dirdiff
-	# run testsuite
-	PATH=.:$(PATH) ./testsuite.sh
-
-	# run sftp integration tests
-	cd $(BASEPATH)/backend && \
-		go test $(GOTESTFLAGS) -test.sftppath $(SFTP_PATH) ./...
-
 all.cov: .gopath $(SOURCE)
-	cd $(BASEPATH) && \
-		./coverage_all.sh all.cov
+	cd $(BASEPATH) && go run run_tests.go all.cov
 
 env:
 	@echo export GOPATH=\"$(GOPATH)\"

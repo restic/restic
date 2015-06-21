@@ -14,13 +14,15 @@ import (
 	"github.com/restic/restic/repository"
 )
 
-type CmdCat struct{}
+type CmdCat struct {
+	global *GlobalOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("cat",
 		"dump something",
 		"The cat command dumps data structures or data from a repository",
-		&CmdCat{})
+		&CmdCat{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -35,7 +37,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}

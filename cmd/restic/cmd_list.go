@@ -7,13 +7,15 @@ import (
 	"github.com/restic/restic/backend"
 )
 
-type CmdList struct{}
+type CmdList struct {
+	global *GlobalOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("list",
 		"lists data",
 		"The list command lists structures or data of a repository",
-		&CmdList{})
+		&CmdList{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +30,7 @@ func (cmd CmdList) Execute(args []string) error {
 		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
@@ -42,7 +44,7 @@ func (cmd CmdList) Execute(args []string) error {
 		}
 
 		for blob := range s.Index().Each(nil) {
-			fmt.Println(blob.ID)
+			cmd.global.Printf("%s\n", blob.ID)
 		}
 
 		return nil
@@ -61,7 +63,7 @@ func (cmd CmdList) Execute(args []string) error {
 	}
 
 	for id := range s.List(t, nil) {
-		fmt.Printf("%s\n", id)
+		cmd.global.Printf("%s\n", id)
 	}
 
 	return nil

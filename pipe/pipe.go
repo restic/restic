@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 
@@ -108,17 +107,7 @@ func walk(basedir, dir string, done chan struct{}, jobs chan<- Job, res chan<- R
 
 	// Insert breakpoint to allow testing behaviour with vanishing files
 	// between Readdir() and lstat()
-	debug.BreakIf("pipe.walk1", func() bool {
-		match, err := path.Match(os.Getenv("DEBUG_BREAK_PIPE"), relpath)
-		if err != nil {
-			panic(err)
-		}
-		if match {
-			debug.Log("break", "break pattern matches for %v\n", relpath)
-		}
-
-		return match
-	})
+	debug.RunHook("pipe.walk1", relpath)
 
 	entries := make([]<-chan Result, 0, len(names))
 
@@ -140,19 +129,7 @@ func walk(basedir, dir string, done chan struct{}, jobs chan<- Job, res chan<- R
 
 		// Insert breakpoint to allow testing behaviour with vanishing files
 		// between walk and open
-		debug.BreakIf("pipe.walk2", func() bool {
-			p := filepath.Join(relpath, name)
-
-			match, err := path.Match(os.Getenv("DEBUG_BREAK_PIPE"), p)
-			if err != nil {
-				panic(err)
-			}
-			if match {
-				debug.Log("break", "break pattern matches for %v\n", p)
-			}
-
-			return match
-		})
+		debug.RunHook("pipe.walk2", filepath.Join(relpath, name))
 
 		if isDir(fi) {
 			err = walk(basedir, subpath, done, jobs, ch)

@@ -102,7 +102,7 @@ func testBackend(b backend.Backend, t *testing.T) {
 		}
 
 		// remove content if requested
-		if *TestCleanup {
+		if TestCleanup {
 			for _, test := range TestStrings {
 				id, err := backend.ParseID(test.id)
 				OK(t, err)

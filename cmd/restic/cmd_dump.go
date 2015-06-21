@@ -15,13 +15,15 @@ import (
 	"github.com/restic/restic/repository"
 )
 
-type CmdDump struct{}
+type CmdDump struct {
+	global *MainOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("dump",
 		"dump data structures",
 		"The dump command dumps data structures from a repository as JSON documents",
-		&CmdDump{})
+		&CmdDump{global: &mainOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -102,7 +104,7 @@ func (cmd CmdDump) Execute(args []string) error {
 		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
 
-	repo, err := OpenRepo()
+	repo, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}

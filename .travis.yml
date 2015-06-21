@@ -8,7 +8,7 @@ os:
   - linux
   - osx
 
-env: SFTP_PATH="/usr/lib/openssh/sftp-server" GOX_OS="linux darwin openbsd freebsd"
+env: GOX_OS="linux darwin openbsd freebsd"
 
 notifications:
   irc:
@@ -19,23 +19,19 @@ notifications:
     skip_join: true
 
 install:
+  - go version
+  - export GOBIN="$GOPATH/bin"
+  - export PATH="$PATH:$GOBIN"
+  - export GOPATH="$GOPATH:${TRAVIS_BUILD_DIR}/Godeps/_workspace"
+  - go env
   - go get github.com/mattn/goveralls
   - go get github.com/mitchellh/gox
   - gox -build-toolchain -os "$GOX_OS"
-  - go version
-  - go env
-  - make env
-  - make goenv
-  - make list
 
 script:
-  - make restic
-  - make gox
-  - make test
-  - GOARCH=386 make test
-  - make test-integration
-  - GOARCH=386 make test-integration
-  - make all.cov
-  - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN"
+  - gox -verbose -os "${GOX_OS}" -tags "release" ./cmd/restic
+  - go run run_tests.go all.cov
+  - GOARCH=386 RESTIC_TEST_INTEGRATION=0 go test ./...
+  - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN" || true
   - gofmt -l *.go */*.go */*/*.go
   - test -z "$(gofmt -l *.go */*.go */*/*.go)"

@@ -2,19 +2,20 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/restic/restic"
 )
 
-type CmdRestore struct{}
+type CmdRestore struct {
+	global *GlobalOptions
+}
 
 func init() {
 	_, err := parser.AddCommand("restore",
 		"restore a snapshot",
 		"The restore command restores a snapshot to a directory",
-		&CmdRestore{})
+		&CmdRestore{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
@@ -29,7 +30,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	s, err := OpenRepo()
+	s, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
@@ -41,7 +42,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 
 	id, err := restic.FindSnapshot(s, args[0])
 	if err != nil {
-		errx(1, "invalid id %q: %v", args[0], err)
+		cmd.global.Exitf(1, "invalid id %q: %v", args[0], err)
 	}
 
 	target := args[1]
@@ -49,12 +50,11 @@ func (cmd CmdRestore) Execute(args []string) error {
 	// create restorer
 	res, err := restic.NewRestorer(s, id)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "creating restorer failed: %v\n", err)
-		os.Exit(2)
+		cmd.global.Exitf(2, "creating restorer failed: %v\n", err)
 	}
 
 	res.Error = func(dir string, node *restic.Node, err error) error {
-		fmt.Fprintf(os.Stderr, "error for %s: %+v\n", dir, err)
+		cmd.global.Warnf("error for %s: %+v\n", dir, err)
 
 		// if node.Type == "dir" {
 		// 	if e, ok := err.(*os.PathError); ok {
@@ -81,7 +81,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 		}
 	}
 
-	fmt.Printf("restoring %s to %s\n", res.Snapshot(), target)
+	cmd.global.Verbosef("restoring %s to %s\n", res.Snapshot(), target)
 
 	err = res.RestoreTo(target)
 	if err != nil {
