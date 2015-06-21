@@ -82,6 +82,10 @@ func (o GlobalOptions) ReadPassword(prompt string) string {
 	}
 	fmt.Fprintln(os.Stderr)
 
+	if len(pw) == 0 {
+		o.Exitf(1, "an empty password is not a password")
+	}
+
 	return string(pw)
 }
 

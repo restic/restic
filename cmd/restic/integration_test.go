@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/rand"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/restic/restic/backend"
@@ -62,16 +64,12 @@ func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID bac
 }
 
 func cmdList(t testing.TB, global GlobalOptions, tpe string) []backend.ID {
-	rd, wr := io.Pipe()
-	global.stdout = wr
+	var buf bytes.Buffer
+	global.stdout = &buf
 	cmd := &CmdList{global: &global}
 
-	go func() {
-		OK(t, cmd.Execute([]string{tpe}))
-		OK(t, wr.Close())
-	}()
-
-	IDs := parseIDsFromReader(t, rd)
+	OK(t, cmd.Execute([]string{tpe}))
+	IDs := parseIDsFromReader(t, &buf)
 
 	return IDs
 }
@@ -84,11 +82,6 @@ func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backe
 func cmdFsck(t testing.TB, global GlobalOptions) {
 	cmd := &CmdFsck{global: &global, CheckData: true, Orphaned: true}
 	OK(t, cmd.Execute(nil))
-}
-
-func cmdKey(t testing.TB, global GlobalOptions, args ...string) {
-	cmd := &CmdKey{global: &global}
-	OK(t, cmd.Execute(args))
 }
 
 func TestBackup(t *testing.T) {
@@ -181,10 +174,6 @@ func appendRandomData(filename string, bytes uint) error {
 	return f.Close()
 }
 
-func TestInit(t *testing.T) {
-
-}
-
 func TestIncrementalBackup(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
@@ -229,18 +218,78 @@ func TestIncrementalBackup(t *testing.T) {
 	})
 }
 
-func TestKeyAddRemove(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := os.Open(datafile)
-		if os.IsNotExist(err) {
-			t.Skipf("unable to find data file %q, skipping", datafile)
-			return
-		}
-		OK(t, err)
-		OK(t, fd.Close())
+func cmdKey(t testing.TB, global GlobalOptions, args ...string) string {
+	var buf bytes.Buffer
 
+	global.stdout = &buf
+	cmd := &CmdKey{global: &global}
+	OK(t, cmd.Execute(args))
+
+	return buf.String()
+}
+
+func cmdKeyListOtherIDs(t testing.TB, global GlobalOptions) []string {
+	var buf bytes.Buffer
+
+	global.stdout = &buf
+	cmd := &CmdKey{global: &global}
+	OK(t, cmd.Execute([]string{"list"}))
+
+	scanner := bufio.NewScanner(&buf)
+	exp := regexp.MustCompile(`^ ([a-f0-9]+) `)
+
+	IDs := []string{}
+	for scanner.Scan() {
+		if id := exp.FindStringSubmatch(scanner.Text()); id != nil {
+			IDs = append(IDs, id[1])
+		}
+	}
+
+	return IDs
+}
+
+func cmdKeyAddNewKey(t testing.TB, global GlobalOptions, newPassword string) {
+	cmd := &CmdKey{global: &global, newPassword: newPassword}
+	OK(t, cmd.Execute([]string{"add"}))
+}
+
+func cmdKeyPasswd(t testing.TB, global GlobalOptions, newPassword string) {
+	cmd := &CmdKey{global: &global, newPassword: newPassword}
+	OK(t, cmd.Execute([]string{"passwd"}))
+}
+
+func cmdKeyRemove(t testing.TB, global GlobalOptions, IDs []string) {
+	cmd := &CmdKey{global: &global}
+	t.Logf("remove %d keys: %q\n", len(IDs), IDs)
+	for _, id := range IDs {
+		OK(t, cmd.Execute([]string{"rm", id}))
+	}
+}
+
+func TestKeyAddRemove(t *testing.T) {
+	passwordList := []string{
+		"OnnyiasyatvodsEvVodyawit",
+		"raicneirvOjEfEigonOmLasOd",
+	}
+
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		cmdInit(t, global)
+
+		cmdKeyPasswd(t, global, "geheim2")
+		global.password = "geheim2"
+		t.Logf("changed password to %q", global.password)
+
+		for _, newPassword := range passwordList {
+			cmdKeyAddNewKey(t, global, newPassword)
+			t.Logf("added new password %q", newPassword)
+			global.password = newPassword
+			cmdKeyRemove(t, global, cmdKeyListOtherIDs(t, global))
+		}
+
+		global.password = passwordList[len(passwordList)-1]
+		t.Logf("testing access with last password %q\n", global.password)
 		cmdKey(t, global, "list")
+
+		cmdFsck(t, global)
 	})
 }

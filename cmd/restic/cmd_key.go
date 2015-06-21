@@ -3,14 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/repository"
 )
 
 type CmdKey struct {
-	global *GlobalOptions
+	global      *GlobalOptions
+	newPassword string
 }
 
 func init() {
@@ -56,25 +56,18 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	return tab.Write(cmd.global.stdout)
 }
 
-func (cmd CmdKey) getNewPassword() (string, error) {
-	newPassword := os.Getenv("RESTIC_NEWPASSWORD")
-
-	if newPassword == "" {
-		newPassword = cmd.global.ReadPasswordTwice(
-			"enter password for new key: ",
-			"enter password again: ")
+func (cmd CmdKey) getNewPassword() string {
+	if cmd.newPassword != "" {
+		return cmd.newPassword
 	}
 
-	return newPassword, nil
+	return cmd.global.ReadPasswordTwice(
+		"enter password for new key: ",
+		"enter password again: ")
 }
 
 func (cmd CmdKey) addKey(repo *repository.Repository) error {
-	newPassword, err := cmd.getNewPassword()
-	if err != nil {
-		return err
-	}
-
-	id, err := repository.AddKey(repo, newPassword, repo.Key())
+	id, err := repository.AddKey(repo, cmd.getNewPassword(), repo.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
@@ -99,12 +92,7 @@ func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 }
 
 func (cmd CmdKey) changePassword(repo *repository.Repository) error {
-	newPassword, err := cmd.getNewPassword()
-	if err != nil {
-		return err
-	}
-
-	id, err := repository.AddKey(repo, newPassword, repo.Key())
+	id, err := repository.AddKey(repo, cmd.getNewPassword(), repo.Key())
 	if err != nil {
 		return fmt.Errorf("creating new key failed: %v\n", err)
 	}
