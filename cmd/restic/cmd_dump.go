@@ -16,14 +16,14 @@ import (
 )
 
 type CmdDump struct {
-	global *MainOptions
+	global *GlobalOptions
 }
 
 func init() {
 	_, err := parser.AddCommand("dump",
 		"dump data structures",
 		"The dump command dumps data structures from a repository as JSON documents",
-		&CmdDump{global: &mainOpts})
+		&CmdDump{global: &globalOpts})
 	if err != nil {
 		panic(err)
 	}
