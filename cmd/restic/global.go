@@ -17,6 +17,7 @@ import (
 )
 
 var version = "compiled manually"
+var compiledAt = "unknown time"
 
 type GlobalOptions struct {
 	Repo     string `short:"r" long:"repo"                      description:"Repository directory to backup to/restore from"`
