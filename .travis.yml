@@ -30,7 +30,7 @@ install:
 
 script:
   - gox -verbose -os "${GOX_OS}" -tags "release" ./cmd/restic
-  - gox -verbose -os "${GOX_OS}" -tags "debug" ./cmd/restic.debug
+  - gox -verbose -os "${GOX_OS}" -tags "debug" ./cmd/restic
   - go run run_tests.go all.cov
   - GOARCH=386 RESTIC_TEST_INTEGRATION=0 go test ./...
   - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN" || true
