@@ -198,12 +198,24 @@ func gitVersion() string {
 }
 
 func main() {
-	for _, arg := range os.Args[1:] {
+	buildTags := []string{}
+
+	skipNext := false
+	params := os.Args[1:]
+	for i, arg := range params {
+		if skipNext {
+			skipNext = false
+			continue
+		}
+
 		switch arg {
 		case "-v", "--verbose":
 			verbose = true
 		case "-k", "--keep-gopath":
 			keepGopath = true
+		case "-t", "-tags", "--tags":
+			skipNext = true
+			buildTags = strings.Split(params[i+1], " ")
 		case "-h":
 			showUsage(os.Stdout)
 		default:
@@ -212,6 +224,17 @@ func main() {
 			os.Exit(1)
 		}
 	}
+
+	if len(buildTags) == 0 {
+		verbosePrintf("adding build-tag release\n")
+		buildTags = []string{"release"}
+	}
+
+	for i := range buildTags {
+		buildTags[i] = strings.TrimSpace(buildTags[i])
+	}
+
+	verbosePrintf("build tags: %s\n", buildTags)
 
 	root, err := os.Getwd()
 	if err != nil {
@@ -236,7 +259,7 @@ func main() {
 	version := getVersion()
 	compileTime := time.Now().Format(timeFormat)
 	args := []string{
-		"-tags", "release",
+		"-tags", strings.Join(buildTags, " "),
 		"-ldflags", fmt.Sprintf(`-s -X main.version %q -X main.compiledAt %q`, version, compileTime),
 		"-o", "restic", "github.com/restic/restic/cmd/restic",
 	}
