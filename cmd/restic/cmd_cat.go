@@ -126,7 +126,19 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "lock":
-		return errors.New("not yet implemented")
+		lock, err := restic.LoadLock(s, id)
+		if err != nil {
+			return err
+		}
+
+		buf, err := json.MarshalIndent(&lock, "", "  ")
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(string(buf))
+
+		return nil
 	}
 
 	// load index, handle all the other types
