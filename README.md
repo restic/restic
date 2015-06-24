@@ -72,7 +72,6 @@ afterwards you'll find the binary in the current directory:
       snapshots  show snapshots
       version    display version
 
-
 Contribute and Documentation
 ============================
 
@@ -80,6 +79,13 @@ Contributions are welcome! More information can be found in
 [`CONTRIBUTING.md`](CONTRIBUTING.md). A document describing the design of
 restic and the data structures stored on disc is contained in
 [`doc/Design.md`](doc/Design.md).
+
+Development
+===========
+
+For development, please have a look at [`CONTRIBUTING.md`](CONTRIBUTING.md),
+especially the section "Development Environment". If you have any questions,
+please get in touch!
 
 Contact
 =======

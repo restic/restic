@@ -24,6 +24,42 @@ If you are unsure what to do, please have a look at the issues, especially
 those tagged
 [minor complexity](https://github.com/restic/restic/labels/minor%20complexity).
 
+
+Development Environment
+=======================
+
+For development, it is recommended to check out the restic repository within a
+`GOPATH`, an introductory text is
+["How to Write Go Code"](https://golang.org/doc/code.html). It is recommended
+to have a working directory, we're using `~/work/restic` in the following. This
+directory mainly contains the directory `src`, where the source code is stored.
+
+First, create the necessary directory structure and clone the restic repository
+to the correct location:
+
+    $ mkdir --parents ~/work/restic/src/github.com/restic
+    $ cd ~/work/restic/src/github.com/restic
+    $ git clone https://github.com/restic/restic
+    $ cd restic
+
+Now we're in the main directory of the restic repository. The last step is to
+set the environment variable `$GOPATH` to the correct value:
+
+    $ export GOPATH=~/work/restic:~/work/restic/src/github.com/restic/restic/Godeps/_workspace
+
+The following commands can be used to run all the tests:
+
+    $ go test ./...
+    ok          github.com/restic/restic        8.174s
+    [...]
+
+The restic binary can be built from the directory `cmd/restic` this way:
+
+    $ cd cmd/restic
+    $ go build
+    $ ./restic version
+    restic compiled manually on go1.4.2
+
 Providing Patches
 =================
 
@@ -34,7 +70,10 @@ down to the following steps:
 
  1. First we would kindly ask you to fork our project on GitHub if you haven't
     done so already.
- 2. Clone the repository locally and create a new branch.
+ 2. Clone the repository locally and create a new branch. If you are working on
+    the code itself, please set up the development environment as described in
+    the previous section and instead of cloning add your fork on GitHub as a
+    remote to the clone of the restic repository.
  3. Then commit your changes as fine grained as possible, as smaller patches,
     that handle one and only one issue are easier to discuss and merge.
  4. Push the new branch with your changes to your fork of the repository.
