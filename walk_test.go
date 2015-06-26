@@ -13,11 +13,11 @@ import (
 var testWalkDirectory = flag.String("test.walkdir", ".", "test walking a directory (globbing pattern, default: .)")
 
 func TestWalkTree(t *testing.T) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
 	dirs, err := filepath.Glob(*testWalkDirectory)
 	OK(t, err)
-
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
 
 	// archive a few files
 	arch := restic.NewArchiver(repo)

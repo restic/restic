@@ -48,11 +48,11 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 }
 
 func BenchmarkChunkEncrypt(b *testing.B) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
 	data := Random(23, 10<<20) // 10MiB
 	rd := bytes.NewReader(data)
-
-	s := SetupRepo(b)
-	defer TeardownRepo(b, s)
 
 	buf := make([]byte, chunker.MaxSize)
 	buf2 := make([]byte, chunker.MaxSize)
@@ -61,7 +61,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	b.SetBytes(int64(len(data)))
 
 	for i := 0; i < b.N; i++ {
-		benchmarkChunkEncrypt(b, buf, buf2, rd, s.Key())
+		benchmarkChunkEncrypt(b, buf, buf2, rd, repo.Key())
 	}
 }
 
@@ -82,8 +82,8 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) 
 }
 
 func BenchmarkChunkEncryptParallel(b *testing.B) {
-	s := SetupRepo(b)
-	defer TeardownRepo(b, s)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	data := Random(23, 10<<20) // 10MiB
 
@@ -95,14 +95,14 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			rd := bytes.NewReader(data)
-			benchmarkChunkEncryptP(pb, buf, rd, s.Key())
+			benchmarkChunkEncryptP(pb, buf, rd, repo.Key())
 		}
 	})
 }
 
 func archiveDirectory(b testing.TB) {
-	repo := SetupRepo(b)
-	defer TeardownRepo(b, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	arch := restic.NewArchiver(repo)
 
@@ -131,12 +131,12 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 }
 
 func archiveWithDedup(t testing.TB) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
 	if *benchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
-
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
 
 	var cnt struct {
 		before, after, after2 struct {
@@ -195,15 +195,15 @@ func TestArchiveDedup(t *testing.T) {
 }
 
 func BenchmarkLoadTree(t *testing.B) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
 	if *benchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
 
-	s := SetupRepo(t)
-	defer TeardownRepo(t, s)
-
 	// archive a few files
-	arch := restic.NewArchiver(s)
+	arch := restic.NewArchiver(repo)
 	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
 	OK(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
@@ -211,7 +211,7 @@ func BenchmarkLoadTree(t *testing.B) {
 	list := make([]backend.ID, 0, 10)
 	done := make(chan struct{})
 
-	for blob := range s.Index().Each(done) {
+	for blob := range repo.Index().Each(done) {
 		if blob.Type != pack.Tree {
 			continue
 		}
@@ -228,7 +228,7 @@ func BenchmarkLoadTree(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		for _, id := range list {
-			_, err := restic.LoadTree(s, id)
+			_, err := restic.LoadTree(repo, id)
 			OK(t, err)
 		}
 	}

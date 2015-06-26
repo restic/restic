@@ -28,8 +28,8 @@ var repoTests = []testJSONStruct{
 }
 
 func TestSaveJSON(t *testing.T) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	for _, obj := range repoTests {
 		data, err := json.Marshal(obj)
@@ -47,8 +47,8 @@ func TestSaveJSON(t *testing.T) {
 }
 
 func BenchmarkSaveJSON(t *testing.B) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	obj := repoTests[0]
 
@@ -72,8 +72,8 @@ func BenchmarkSaveJSON(t *testing.B) {
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
 func TestSave(t *testing.T) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -104,8 +104,8 @@ func TestSave(t *testing.T) {
 }
 
 func TestSaveFrom(t *testing.T) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -134,8 +134,8 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveFrom(t *testing.B) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	size := 4 << 20 // 4MiB
 
@@ -156,12 +156,12 @@ func BenchmarkSaveFrom(t *testing.B) {
 }
 
 func TestLoadJSONPack(t *testing.T) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
 	if *benchTestDir == "" {
 		t.Skip("benchdir not set, skipping")
 	}
-
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
 
 	// archive a few files
 	sn := SnapshotDir(t, repo, *benchTestDir, nil)
@@ -173,12 +173,12 @@ func TestLoadJSONPack(t *testing.T) {
 }
 
 func TestLoadJSONUnpacked(t *testing.T) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
 	if *benchTestDir == "" {
 		t.Skip("benchdir not set, skipping")
 	}
-
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
 
 	// archive a snapshot
 	sn := restic.Snapshot{}
