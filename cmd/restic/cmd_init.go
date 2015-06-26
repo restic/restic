@@ -15,15 +15,15 @@ func (cmd CmdInit) Execute(args []string) error {
 		return errors.New("Please specify repository location (-r)")
 	}
 
+	be, err := create(cmd.global.Repo)
+	if err != nil {
+		cmd.global.Exitf(1, "creating backend at %s failed: %v\n", cmd.global.Repo, err)
+	}
+
 	if cmd.global.password == "" {
 		cmd.global.password = cmd.global.ReadPasswordTwice(
 			"enter password for new backend: ",
 			"enter password again: ")
-	}
-
-	be, err := create(cmd.global.Repo)
-	if err != nil {
-		cmd.global.Exitf(1, "creating backend at %s failed: %v\n", cmd.global.Repo, err)
 	}
 
 	s := repository.New(be)
