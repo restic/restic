@@ -121,18 +121,30 @@ func (cmd CmdKey) Execute(args []string) error {
 		return err
 	}
 
-	lock, err := lockRepoExclusive(repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
-	}
-
 	switch args[0] {
 	case "list":
+		lock, err := lockRepo(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+
 		return cmd.listKeys(repo)
 	case "add":
+		lock, err := lockRepo(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+
 		return cmd.addKey(repo)
 	case "rm":
+		lock, err := lockRepoExclusive(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+
 		id, err := backend.Find(repo.Backend(), backend.Key, args[1])
 		if err != nil {
 			return err
@@ -140,6 +152,12 @@ func (cmd CmdKey) Execute(args []string) error {
 
 		return cmd.deleteKey(repo, id)
 	case "passwd":
+		lock, err := lockRepoExclusive(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+
 		return cmd.changePassword(repo)
 	}
 
