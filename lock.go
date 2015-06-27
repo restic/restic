@@ -1,7 +1,7 @@
 package restic
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"os/user"
@@ -33,10 +33,24 @@ type Lock struct {
 	lockID backend.ID
 }
 
-var (
-	ErrAlreadyLocked  = errors.New("already locked")
-	ErrStaleLockFound = errors.New("stale lock found")
-)
+// ErrAlreadyLocked is returned when NewLock or NewExclusiveLock are unable to
+// acquire the desired lock.
+type ErrAlreadyLocked struct {
+	otherLock *Lock
+}
+
+func (e ErrAlreadyLocked) Error() string {
+	return fmt.Sprintf("repository is already locked by %v", e.otherLock)
+}
+
+// IsAlreadyLocked returns true iff err is an instance of ErrAlreadyLocked.
+func IsAlreadyLocked(err error) bool {
+	if _, ok := err.(ErrAlreadyLocked); ok {
+		return true
+	}
+
+	return false
+}
 
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, ErrAlreadyLocked is
@@ -84,7 +98,7 @@ func newLock(repo *repository.Repository, excl bool) (*Lock, error) {
 
 	if err = lock.checkForOtherLocks(); err != nil {
 		lock.Unlock()
-		return nil, ErrAlreadyLocked
+		return nil, err
 	}
 
 	return lock, nil
@@ -130,11 +144,11 @@ func (l *Lock) checkForOtherLocks() error {
 		}
 
 		if l.Exclusive {
-			return ErrAlreadyLocked
+			return ErrAlreadyLocked{otherLock: lock}
 		}
 
 		if !l.Exclusive && lock.Exclusive {
-			return ErrAlreadyLocked
+			return ErrAlreadyLocked{otherLock: lock}
 		}
 
 		return nil
@@ -206,6 +220,19 @@ func (l *Lock) Stale() bool {
 	return false
 }
 
+func (l Lock) String() string {
+	text := fmt.Sprintf("PID %d on %s by %s (UID %d, GID %d)\nlock was created at %s (%s ago)\nstorage ID %v",
+		l.PID, l.Hostname, l.Username, l.UID, l.GID,
+		l.Time.Format("2006-01-02 15:04:05"), time.Since(l.Time),
+		l.lockID.Str())
+
+	if l.Stale() {
+		text += " (stale)"
+	}
+
+	return text
+}
+
 // listen for incoming SIGHUP and ignore
 var ignoreSIGHUP sync.Once
 
@@ -245,5 +272,11 @@ func RemoveStaleLocks(repo *repository.Repository) error {
 		}
 
 		return nil
+	})
+}
+
+func RemoveAllLocks(repo *repository.Repository) error {
+	return eachLock(repo, func(id backend.ID, lock *Lock, err error) error {
+		return repo.Backend().Remove(backend.Lock, id.String())
 	})
 }

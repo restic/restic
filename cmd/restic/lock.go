@@ -14,19 +14,32 @@ import (
 var globalLocks []*restic.Lock
 
 func lockRepo(repo *repository.Repository) (*restic.Lock, error) {
-	lock, err := restic.NewLock(repo)
-	if err != nil {
-		return nil, err
-	}
-
-	globalLocks = append(globalLocks, lock)
-
-	return lock, err
+	return lockRepository(repo, false)
 }
 
 func lockRepoExclusive(repo *repository.Repository) (*restic.Lock, error) {
-	lock, err := restic.NewExclusiveLock(repo)
+	return lockRepository(repo, true)
+}
+
+func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, error) {
+	lockFn := restic.NewLock
+	if exclusive {
+		lockFn = restic.NewExclusiveLock
+	}
+
+	lock, err := lockFn(repo)
 	if err != nil {
+		if restic.IsAlreadyLocked(err) {
+			tpe := ""
+			if exclusive {
+				tpe = " exclusive"
+			}
+			fmt.Fprintf(os.Stderr, "unable to acquire%s lock for operation:\n", tpe)
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintf(os.Stderr, "\nthe `unlock` command can be used to remove stale locks\n")
+			os.Exit(1)
+		}
+
 		return nil, err
 	}
 

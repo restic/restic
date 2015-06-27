@@ -67,8 +67,10 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	OK(t, err)
 
 	lock, err := restic.NewLock(repo)
-	Assert(t, err == restic.ErrAlreadyLocked,
+	Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
+	Assert(t, restic.IsAlreadyLocked(err),
+		"create normal lock with exclusively locked repo didn't return the correct error")
 
 	OK(t, lock.Unlock())
 	OK(t, elock.Unlock())
@@ -82,8 +84,10 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	OK(t, err)
 
 	lock, err := restic.NewExclusiveLock(repo)
-	Assert(t, err == restic.ErrAlreadyLocked,
-		"create exclusive lock with locked repo didn't return an error")
+	Assert(t, err != nil,
+		"create normal lock with exclusively locked repo didn't return an error")
+	Assert(t, restic.IsAlreadyLocked(err),
+		"create normal lock with exclusively locked repo didn't return the correct error")
 
 	OK(t, lock.Unlock())
 	OK(t, elock.Unlock())
@@ -168,6 +172,29 @@ func TestLockWithStaleLock(t *testing.T) {
 		"stale lock still exists after RemoveStaleLocks was called")
 
 	OK(t, removeLock(repo, id2))
+}
+
+func TestRemoveAllLocks(t *testing.T) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
+	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
+	OK(t, err)
+
+	id2, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
+	OK(t, err)
+
+	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500)
+	OK(t, err)
+
+	OK(t, restic.RemoveAllLocks(repo))
+
+	Assert(t, lockExists(repo, t, id1) == false,
+		"lock still exists after RemoveAllLocks was called")
+	Assert(t, lockExists(repo, t, id2) == false,
+		"lock still exists after RemoveAllLocks was called")
+	Assert(t, lockExists(repo, t, id3) == false,
+		"lock still exists after RemoveAllLocks was called")
 }
 
 func TestLockConflictingExclusiveLocks(t *testing.T) {
