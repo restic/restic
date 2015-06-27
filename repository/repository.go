@@ -372,7 +372,7 @@ func (s *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 	if err != nil {
 		return nil, err
 	}
-	debug.Log("Repo.SaveJSONUnpacked", "create new file %p", blob)
+	debug.Log("Repo.SaveJSONUnpacked", "create new blob %v", t)
 
 	// hash
 	hw := backend.NewHashingWriter(blob, sha256.New())
@@ -396,8 +396,11 @@ func (s *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 
 	err = blob.Finalize(t, sid.String())
 	if err != nil {
+		debug.Log("Repo.SaveJSONUnpacked", "error saving blob %v as %v: %v", t, sid, err)
 		return nil, err
 	}
+
+	debug.Log("Repo.SaveJSONUnpacked", "new blob %v saved as %v", t, sid)
 
 	return sid, nil
 }
