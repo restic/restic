@@ -99,6 +99,12 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		return err
 	}
 
+	lock, err := restic.NewLock(repo)
+	defer lock.Unlock()
+	if err != nil {
+		return err
+	}
+
 	tab := NewTable()
 	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Source", "Directory")
 	tab.RowFormat = "%-8s  %-19s  %-10s  %s"

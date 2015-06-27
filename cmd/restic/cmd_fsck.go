@@ -195,6 +195,12 @@ func (cmd CmdFsck) Execute(args []string) error {
 		return err
 	}
 
+	lock, err := restic.NewExclusiveLock(repo)
+	defer lock.Unlock()
+	if err != nil {
+		return err
+	}
+
 	err = repo.LoadIndex()
 	if err != nil {
 		return err

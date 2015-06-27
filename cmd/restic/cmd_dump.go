@@ -109,6 +109,12 @@ func (cmd CmdDump) Execute(args []string) error {
 		return err
 	}
 
+	lock, err := restic.NewLock(repo)
+	defer lock.Unlock()
+	if err != nil {
+		return err
+	}
+
 	err = repo.LoadIndex()
 	if err != nil {
 		return err

@@ -42,6 +42,12 @@ func (cmd CmdCat) Execute(args []string) error {
 		return err
 	}
 
+	lock, err := restic.NewLock(repo)
+	defer lock.Unlock()
+	if err != nil {
+		return err
+	}
+
 	tpe := args[0]
 
 	var id backend.ID

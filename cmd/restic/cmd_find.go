@@ -162,6 +162,12 @@ func (c CmdFind) Execute(args []string) error {
 		return err
 	}
 
+	lock, err := restic.NewLock(repo)
+	defer lock.Unlock()
+	if err != nil {
+		return err
+	}
+
 	c.pattern = args[0]
 
 	if c.Snapshot != "" {
