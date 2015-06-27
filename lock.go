@@ -52,6 +52,8 @@ func NewExclusiveLock(repo *repository.Repository) (*Lock, error) {
 	return newLock(repo, true)
 }
 
+const waitBeforeLockCheck = 200 * time.Millisecond
+
 func newLock(repo *repository.Repository, excl bool) (*Lock, error) {
 	lock := &Lock{
 		Time:      time.Now(),
@@ -76,6 +78,13 @@ func newLock(repo *repository.Repository, excl bool) (*Lock, error) {
 	err = lock.createLock()
 	if err != nil {
 		return nil, err
+	}
+
+	time.Sleep(waitBeforeLockCheck)
+
+	if err = lock.checkForOtherLocks(); err != nil {
+		lock.Unlock()
+		return nil, ErrAlreadyLocked
 	}
 
 	return lock, nil
@@ -111,6 +120,10 @@ func (l *Lock) fillUserInfo() error {
 // exclusive lock is found.
 func (l *Lock) checkForOtherLocks() error {
 	return eachLock(l.repo, func(id backend.ID, lock *Lock, err error) error {
+		if id.Equal(l.lockID) {
+			return nil
+		}
+
 		// ignore locks that cannot be loaded
 		if err != nil {
 			return nil

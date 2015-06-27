@@ -2,6 +2,7 @@ package restic_test
 
 import (
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -167,4 +168,80 @@ func TestLockWithStaleLock(t *testing.T) {
 		"stale lock still exists after RemoveStaleLocks was called")
 
 	OK(t, removeLock(repo, id2))
+}
+
+func TestLockConflictingExclusiveLocks(t *testing.T) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
+	for _, jobs := range []int{5, 23, 200} {
+		var wg sync.WaitGroup
+		errch := make(chan error, jobs)
+
+		f := func() {
+			defer wg.Done()
+
+			lock, err := restic.NewExclusiveLock(repo)
+			errch <- err
+			OK(t, lock.Unlock())
+		}
+
+		for i := 0; i < jobs; i++ {
+			wg.Add(1)
+			go f()
+		}
+
+		errors := 0
+		for i := 0; i < jobs; i++ {
+			err := <-errch
+			if err != nil {
+				errors++
+			}
+		}
+
+		wg.Wait()
+
+		Assert(t, errors == jobs-1,
+			"Expected %d errors, got %d", jobs-1, errors)
+	}
+}
+
+func TestLockConflictingLocks(t *testing.T) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
+	var wg sync.WaitGroup
+
+	errch := make(chan error, 2)
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+
+		lock, err := restic.NewExclusiveLock(repo)
+		errch <- err
+		OK(t, lock.Unlock())
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		lock, err := restic.NewLock(repo)
+		errch <- err
+		OK(t, lock.Unlock())
+	}()
+
+	errors := 0
+	for i := 0; i < 2; i++ {
+		err := <-errch
+		if err != nil {
+			errors++
+		}
+	}
+
+	wg.Wait()
+
+	Assert(t, errors == 1,
+		"Expected exactly one errors, got %d", errors)
 }
