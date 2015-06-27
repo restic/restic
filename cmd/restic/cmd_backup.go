@@ -215,12 +215,12 @@ func (cmd CmdBackup) Execute(args []string) error {
 		target = append(target, d)
 	}
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
 
-	err = s.LoadIndex()
+	err = repo.LoadIndex()
 	if err != nil {
 		return err
 	}
@@ -229,7 +229,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	// Force using a parent
 	if !cmd.Force && cmd.Parent != "" {
-		parentSnapshotID, err = restic.FindSnapshot(s, cmd.Parent)
+		parentSnapshotID, err = restic.FindSnapshot(repo, cmd.Parent)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
 		}
@@ -239,7 +239,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !cmd.Force && parentSnapshotID == nil {
-		parentSnapshotID, err = findLatestSnapshot(s, target)
+		parentSnapshotID, err = findLatestSnapshot(repo, target)
 		if err != nil {
 			return err
 		}
@@ -258,7 +258,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 	// 	return true
 	// }
 
-	arch := restic.NewArchiver(s)
+	arch := restic.NewArchiver(repo)
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
 		// TODO: make ignoring errors configurable

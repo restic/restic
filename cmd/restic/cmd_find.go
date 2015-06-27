@@ -157,7 +157,7 @@ func (c CmdFind) Execute(args []string) error {
 		}
 	}
 
-	s, err := c.global.OpenRepository()
+	repo, err := c.global.OpenRepository()
 	if err != nil {
 		return err
 	}
@@ -165,18 +165,18 @@ func (c CmdFind) Execute(args []string) error {
 	c.pattern = args[0]
 
 	if c.Snapshot != "" {
-		snapshotID, err := restic.FindSnapshot(s, c.Snapshot)
+		snapshotID, err := restic.FindSnapshot(repo, c.Snapshot)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", args[1], err)
 		}
 
-		return c.findInSnapshot(s, snapshotID)
+		return c.findInSnapshot(repo, snapshotID)
 	}
 
 	done := make(chan struct{})
 	defer close(done)
-	for snapshotID := range s.List(backend.Snapshot, done) {
-		err := c.findInSnapshot(s, snapshotID)
+	for snapshotID := range repo.List(backend.Snapshot, done) {
+		err := c.findInSnapshot(repo, snapshotID)
 
 		if err != nil {
 			return err

@@ -29,18 +29,18 @@ func (cmd CmdCache) Execute(args []string) error {
 	// 	return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
 	// }
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
 
-	cache, err := restic.NewCache(s, cmd.global.CacheDir)
+	cache, err := restic.NewCache(repo, cmd.global.CacheDir)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("clear cache for old snapshots\n")
-	err = cache.Clear(s)
+	err = cache.Clear(repo)
 	if err != nil {
 		return err
 	}

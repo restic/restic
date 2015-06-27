@@ -37,7 +37,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (cmd CmdCat) Execute(args []string) error {
 			}
 
 			// find snapshot id with prefix
-			id, err = restic.FindSnapshot(s, args[1])
+			id, err = restic.FindSnapshot(repo, args[1])
 			if err != nil {
 				return err
 			}
@@ -65,7 +65,7 @@ func (cmd CmdCat) Execute(args []string) error {
 	// handle all types that don't need an index
 	switch tpe {
 	case "config":
-		buf, err := json.MarshalIndent(s.Config, "", "  ")
+		buf, err := json.MarshalIndent(repo.Config, "", "  ")
 		if err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "index":
-		buf, err := s.Load(backend.Index, id)
+		buf, err := repo.Load(backend.Index, id)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	case "snapshot":
 		sn := &restic.Snapshot{}
-		err = s.LoadJSONUnpacked(backend.Snapshot, id, sn)
+		err = repo.LoadJSONUnpacked(backend.Snapshot, id, sn)
 		if err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		return nil
 	case "key":
-		rd, err := s.Backend().Get(backend.Key, id.String())
+		rd, err := repo.Backend().Get(backend.Key, id.String())
 		if err != nil {
 			return err
 		}
@@ -118,7 +118,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "masterkey":
-		buf, err := json.MarshalIndent(s.Key(), "", "  ")
+		buf, err := json.MarshalIndent(repo.Key(), "", "  ")
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "lock":
-		lock, err := restic.LoadLock(s, id)
+		lock, err := restic.LoadLock(repo, id)
 		if err != nil {
 			return err
 		}
@@ -142,14 +142,14 @@ func (cmd CmdCat) Execute(args []string) error {
 	}
 
 	// load index, handle all the other types
-	err = s.LoadIndex()
+	err = repo.LoadIndex()
 	if err != nil {
 		return err
 	}
 
 	switch tpe {
 	case "pack":
-		rd, err := s.Backend().Get(backend.Data, id.String())
+		rd, err := repo.Backend().Get(backend.Data, id.String())
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		return err
 
 	case "blob":
-		data, err := s.LoadBlob(pack.Data, id)
+		data, err := repo.LoadBlob(pack.Data, id)
 		if err == nil {
 			_, err = os.Stdout.Write(data)
 			return err
@@ -170,7 +170,7 @@ func (cmd CmdCat) Execute(args []string) error {
 	case "tree":
 		debug.Log("cat", "cat tree %v", id.Str())
 		tree := restic.NewTree()
-		err = s.LoadJSONPack(pack.Tree, id, tree)
+		err = repo.LoadJSONPack(pack.Tree, id, tree)
 		if err != nil {
 			debug.Log("cat", "unable to load tree %v: %v", id.Str(), err)
 			return err
