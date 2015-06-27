@@ -1,9 +1,10 @@
 # Maintainer: Florian Daniel <fd@noxa.de>
 # Contributor: Eldar Tsraev <elts@culab.org>
 # Contributor: Andreas Guth <andreas.guth@rwth-aachen.de>
+# Contributor: Alexander Neumann <alexander@bumpern.de>
 options=(!strip)
 pkgname=restic-git
-pkgver=r360.e1acade
+pkgver=r702.c143f8c
 pkgrel=1
 pkgdesc="restic is a program that does backups right."
 arch=('i686' 'x86_64')
@@ -13,37 +14,25 @@ depends=('glibc')
 makedepends=('git' 'go>=1.3')
 provides=('restic')
 conflicts=('restic')
-source=('restic-git::git+https://github.com/restic/restic')
+source=("${pkgname}::git+https://github.com/restic/restic")
 md5sums=('SKIP')
 
 importpath='github.com/restic/restic'
 
 pkgver() {
-  cd "$srcdir/$pkgname"
+  cd "$pkgname"
   printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)";
 }
 
-prepare() {
-  # git repo is fetched by makepkg, prepare src so it is not re-downloaded during build()
-  export GOPATH="$srcdir/go"
-  mkdir -p "$GOPATH/src/$(dirname ${importpath})"
-  ln -sf "$srcdir/$pkgname" "$GOPATH/src/${importpath}"
-}
-
 build() {
-  export GOPATH="$srcdir/go"
-  cd "$GOPATH/src/${importpath}/cmd/restic"
-  go get -ldflags -s -v .
-  go install -ldflags -s -v
+  cd "$pkgname"
+  go run build.go
 }
 
 package() {
-  export GOPATH="$srcdir/go"
-
-  # Copying file(s)
-  install -Dm755 $GOPATH/bin/restic $pkgdir/usr/bin/restic
-  install -Dm644 $GOPATH/src/${importpath}/LICENSE $pkgdir/usr/share/licenses/$pkgname/LICENSE
-  install -Dm644 $GOPATH/src/${importpath}/README.md $pkgdir/usr/share/doc/$pkgname/README
+  install -Dm755 "$pkgname/restic"    "$pkgdir/usr/bin/restic"
+  install -Dm644 "$pkgname/LICENSE"   "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$pkgname/README.md" "$pkgdir/usr/share/doc/$pkgname/README"
 }
 
 # vim:set ts=2 sw=2 et:
