@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/repository"
 )
@@ -122,8 +121,8 @@ func (cmd CmdKey) Execute(args []string) error {
 		return err
 	}
 
-	lock, err := restic.NewExclusiveLock(repo)
-	defer lock.Unlock()
+	lock, err := lockRepoExclusive(repo)
+	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}

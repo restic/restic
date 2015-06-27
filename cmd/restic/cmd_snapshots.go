@@ -99,8 +99,8 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		return err
 	}
 
-	lock, err := restic.NewLock(repo)
-	defer lock.Unlock()
+	lock, err := lockRepo(repo)
+	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
