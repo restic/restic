@@ -8,7 +8,7 @@ os:
   - linux
   - osx
 
-env: GOX_OS="linux darwin openbsd freebsd"
+env: GOX_OS="linux darwin openbsd freebsd" GOX_ARCH="386 amd64 arm"
 
 notifications:
   irc:
@@ -26,11 +26,13 @@ install:
   - go env
   - go get github.com/mattn/goveralls
   - go get github.com/mitchellh/gox
-  - gox -build-toolchain -os "$GOX_OS"
+  - go version | grep -q "go1\.3" && export GOX_ARCH="386 amd64" || true
+  - echo "cross-compile for \"$GOX_OS\" on \"$GOX_ARCH\""
+  - gox -build-toolchain -os "$GOX_OS" -arch "$GOX_ARCH"
 
 script:
-  - gox -verbose -os "${GOX_OS}" -tags "release" ./cmd/restic
-  - gox -verbose -os "${GOX_OS}" -tags "debug" ./cmd/restic
+  - gox -verbose -os "$GOX_OS" -arch "$GOX_ARCH" -tags "release" ./cmd/restic
+  - gox -verbose -os "$GOX_OS" -arch "$GOX_ARCH" -tags "debug" ./cmd/restic
   - go run build.go
   - go run run_tests.go all.cov
   - GOARCH=386 RESTIC_TEST_INTEGRATION=0 go test ./...
