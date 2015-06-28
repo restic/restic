@@ -3,7 +3,6 @@ package restic_test
 import (
 	"bytes"
 	"crypto/sha256"
-	"flag"
 	"io"
 	"testing"
 
@@ -15,7 +14,6 @@ import (
 	. "github.com/restic/restic/test"
 )
 
-var benchArchiveDirectory = flag.String("test.benchdir", ".", "benchmark archiving a real directory (default: .)")
 var testPol = chunker.Pol(0x3DA3358B4DC173)
 
 type Rdr interface {
@@ -106,14 +104,14 @@ func archiveDirectory(b testing.TB) {
 
 	arch := restic.NewArchiver(repo)
 
-	_, id, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
+	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
 	OK(b, err)
 
 	b.Logf("snapshot archived as %v", id)
 }
 
 func TestArchiveDirectory(t *testing.T) {
-	if *benchArchiveDirectory == "" {
+	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiveDirectory")
 	}
 
@@ -121,7 +119,7 @@ func TestArchiveDirectory(t *testing.T) {
 }
 
 func BenchmarkArchiveDirectory(b *testing.B) {
-	if *benchArchiveDirectory == "" {
+	if BenchArchiveDirectory == "" {
 		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
 	}
 
@@ -134,7 +132,7 @@ func archiveWithDedup(t testing.TB) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
-	if *benchArchiveDirectory == "" {
+	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
 
@@ -145,7 +143,7 @@ func archiveWithDedup(t testing.TB) {
 	}
 
 	// archive a few files
-	sn := SnapshotDir(t, repo, *benchArchiveDirectory, nil)
+	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
@@ -156,7 +154,7 @@ func archiveWithDedup(t testing.TB) {
 		cnt.before.packs, cnt.before.dataBlobs, cnt.before.treeBlobs)
 
 	// archive the same files again, without parent snapshot
-	sn2 := SnapshotDir(t, repo, *benchArchiveDirectory, nil)
+	sn2 := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats again
@@ -173,7 +171,7 @@ func archiveWithDedup(t testing.TB) {
 	}
 
 	// archive the same files again, with a parent snapshot
-	sn3 := SnapshotDir(t, repo, *benchArchiveDirectory, sn2.ID())
+	sn3 := SnapshotDir(t, repo, BenchArchiveDirectory, sn2.ID())
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats again
@@ -198,13 +196,13 @@ func BenchmarkLoadTree(t *testing.B) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
-	if *benchArchiveDirectory == "" {
+	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
 
 	// archive a few files
 	arch := restic.NewArchiver(repo)
-	sn, _, err := arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
+	sn, _, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
 	OK(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
 

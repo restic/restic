@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
-	"flag"
 	"io"
 	"testing"
 
@@ -14,8 +13,6 @@ import (
 	"github.com/restic/restic/pack"
 	. "github.com/restic/restic/test"
 )
-
-var benchTestDir = flag.String("test.dir", ".", "dir used in benchmarks (default: .)")
 
 type testJSONStruct struct {
 	Foo uint32
@@ -159,12 +156,12 @@ func TestLoadJSONPack(t *testing.T) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
-	if *benchTestDir == "" {
+	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
-	sn := SnapshotDir(t, repo, *benchTestDir, nil)
+	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
 	OK(t, repo.Flush())
 
 	tree := restic.NewTree()
@@ -176,7 +173,7 @@ func TestLoadJSONUnpacked(t *testing.T) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
-	if *benchTestDir == "" {
+	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 

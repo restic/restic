@@ -14,12 +14,13 @@ import (
 )
 
 var (
-	TestPassword       = getStringVar("RESTIC_TEST_PASSWORD", "geheim")
-	TestCleanup        = getBoolVar("RESTIC_TEST_CLEANUP", true)
-	TestTempDir        = getStringVar("RESTIC_TEST_TMPDIR", "")
-	RunIntegrationTest = getBoolVar("RESTIC_TEST_INTEGRATION", true)
-	TestSFTPPath       = getStringVar("RESTIC_TEST_SFTPPATH",
-		"/usr/lib/ssh:/usr/lib/openssh")
+	TestPassword          = getStringVar("RESTIC_TEST_PASSWORD", "geheim")
+	TestCleanup           = getBoolVar("RESTIC_TEST_CLEANUP", true)
+	TestTempDir           = getStringVar("RESTIC_TEST_TMPDIR", "")
+	RunIntegrationTest    = getBoolVar("RESTIC_TEST_INTEGRATION", true)
+	TestSFTPPath          = getStringVar("RESTIC_TEST_SFTPPATH", "/usr/lib/ssh:/usr/lib/openssh")
+	TestWalkerPath        = getStringVar("RESTIC_TEST_PATH", ".")
+	BenchArchiveDirectory = getStringVar("RESTIC_BENCH_DIR", ".")
 )
 
 func getStringVar(name, defaultValue string) string {

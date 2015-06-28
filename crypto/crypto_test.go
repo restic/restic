@@ -2,7 +2,6 @@ package crypto_test
 
 import (
 	"bytes"
-	"flag"
 	"io"
 	"io/ioutil"
 	"os"
@@ -13,13 +12,13 @@ import (
 	. "github.com/restic/restic/test"
 )
 
-var testLargeCrypto = flag.Bool("test.largecrypto", false, "also test crypto functions with large payloads")
+const testLargeCrypto = false
 
 func TestEncryptDecrypt(t *testing.T) {
 	k := crypto.NewRandomKey()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
-	if *testLargeCrypto {
+	if testLargeCrypto {
 		tests = append(tests, 7<<20+123)
 	}
 
@@ -117,7 +116,7 @@ func TestCornerCases(t *testing.T) {
 }
 
 func TestLargeEncrypt(t *testing.T) {
-	if !*testLargeCrypto {
+	if !testLargeCrypto {
 		t.SkipNow()
 	}
 
@@ -252,7 +251,7 @@ func TestEncryptStreamWriter(t *testing.T) {
 	k := crypto.NewRandomKey()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
-	if *testLargeCrypto {
+	if testLargeCrypto {
 		tests = append(tests, 7<<20+123)
 	}
 
@@ -286,7 +285,7 @@ func TestDecryptStreamReader(t *testing.T) {
 	k := crypto.NewRandomKey()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
-	if *testLargeCrypto {
+	if testLargeCrypto {
 		tests = append(tests, 7<<20+123)
 	}
 
@@ -320,7 +319,7 @@ func TestEncryptWriter(t *testing.T) {
 	k := crypto.NewRandomKey()
 
 	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
-	if *testLargeCrypto {
+	if testLargeCrypto {
 		tests = append(tests, 7<<20+123)
 	}
 
