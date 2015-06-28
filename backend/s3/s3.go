@@ -41,7 +41,7 @@ func OpenS3Bucket(bucket *s3.Bucket, bucketname string) *S3Backend {
 	return &S3Backend{bucket: bucket, path: bucketname, connChan: connChan}
 }
 
-// Open opens the s3 backend at bucket and region.
+// Open opens the S3 backend at bucket and region.
 func Open(regionname, bucketname string) (backend.Backend, error) {
 	auth, err := aws.EnvAuth()
 	if err != nil {
