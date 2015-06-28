@@ -107,13 +107,19 @@ func (idx *Index) Merge(other *Index) {
 	debug.Log("Index.Merge", "done merging index")
 }
 
+// PackedBlob is a blob already saved within a pack.
+type PackedBlob struct {
+	pack.Blob
+	PackID backend.ID
+}
+
 // Each returns a channel that yields all blobs known to the index. If done is
 // closed, the background goroutine terminates. This blocks any modification of
 // the index.
-func (idx *Index) Each(done chan struct{}) <-chan pack.Blob {
+func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 	idx.m.Lock()
 
-	ch := make(chan pack.Blob)
+	ch := make(chan PackedBlob)
 
 	go func() {
 		defer idx.m.Unlock()
@@ -131,11 +137,14 @@ func (idx *Index) Each(done chan struct{}) <-chan pack.Blob {
 			select {
 			case <-done:
 				return
-			case ch <- pack.Blob{
-				ID:     id,
-				Offset: blob.offset,
-				Type:   blob.tpe,
-				Length: uint32(blob.length),
+			case ch <- PackedBlob{
+				Blob: pack.Blob{
+					ID:     id,
+					Offset: blob.offset,
+					Type:   blob.tpe,
+					Length: uint32(blob.length),
+				},
+				PackID: blob.packID,
 			}:
 			}
 		}
