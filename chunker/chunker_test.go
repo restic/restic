@@ -5,20 +5,16 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
-	"flag"
 	"hash"
 	"io"
 	"io/ioutil"
 	"math/rand"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/restic/restic/chunker"
 	. "github.com/restic/restic/test"
 )
-
-var benchmarkFile = flag.String("bench.file", "", "read from this file for benchmark")
 
 func parseDigest(s string) []byte {
 	d, err := hex.DecodeString(s)
@@ -247,29 +243,8 @@ func TestChunkerWithoutHash(t *testing.T) {
 }
 
 func benchmarkChunker(b *testing.B, hash hash.Hash) {
-	var (
-		rd   io.ReadSeeker
-		size int
-	)
-
-	if *benchmarkFile != "" {
-		b.Logf("using file %q for benchmark", *benchmarkFile)
-		f, err := os.Open(*benchmarkFile)
-		if err != nil {
-			b.Fatalf("open(%q): %v", *benchmarkFile, err)
-		}
-
-		fi, err := f.Stat()
-		if err != nil {
-			b.Fatalf("lstat(%q): %v", *benchmarkFile, err)
-		}
-
-		size = int(fi.Size())
-		rd = f
-	} else {
-		size = 10 * 1024 * 1024
-		rd = bytes.NewReader(getRandom(23, size))
-	}
+	size := 10 * 1024 * 1024
+	rd := bytes.NewReader(getRandom(23, size))
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))

@@ -94,7 +94,13 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, usage: %s", cmd.Usage())
 	}
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
+	if err != nil {
+		return err
+	}
+
+	lock, err := lockRepo(repo)
+	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
@@ -107,8 +113,8 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 	defer close(done)
 
 	list := []*restic.Snapshot{}
-	for id := range s.List(backend.Snapshot, done) {
-		sn, err := restic.LoadSnapshot(s, id)
+	for id := range repo.List(backend.Snapshot, done) {
+		sn, err := restic.LoadSnapshot(repo, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
 			continue
@@ -127,7 +133,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 		}
 	}
 
-	plen, err := s.PrefixLength(backend.Snapshot)
+	plen, err := repo.PrefixLength(backend.Snapshot)
 	if err != nil {
 		return err
 	}

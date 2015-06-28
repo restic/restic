@@ -30,7 +30,13 @@ func (cmd CmdList) Execute(args []string) error {
 		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
+	if err != nil {
+		return err
+	}
+
+	lock, err := lockRepo(repo)
+	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
@@ -38,12 +44,12 @@ func (cmd CmdList) Execute(args []string) error {
 	var t backend.Type
 	switch args[0] {
 	case "blobs":
-		err = s.LoadIndex()
+		err = repo.LoadIndex()
 		if err != nil {
 			return err
 		}
 
-		for blob := range s.Index().Each(nil) {
+		for blob := range repo.Index().Each(nil) {
 			cmd.global.Printf("%s\n", blob.ID)
 		}
 
@@ -62,7 +68,7 @@ func (cmd CmdList) Execute(args []string) error {
 		return errors.New("invalid type")
 	}
 
-	for id := range s.List(t, nil) {
+	for id := range repo.List(t, nil) {
 		cmd.global.Printf("%s\n", id)
 	}
 

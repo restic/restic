@@ -190,23 +190,29 @@ func (cmd CmdFsck) Execute(args []string) error {
 		cmd.Orphaned = true
 	}
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
 
-	err = s.LoadIndex()
+	lock, err := lockRepoExclusive(repo)
+	defer unlockRepo(lock)
+	if err != nil {
+		return err
+	}
+
+	err = repo.LoadIndex()
 	if err != nil {
 		return err
 	}
 
 	if cmd.Snapshot != "" {
-		id, err := restic.FindSnapshot(s, cmd.Snapshot)
+		id, err := restic.FindSnapshot(repo, cmd.Snapshot)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", cmd.Snapshot, err)
 		}
 
-		err = fsckSnapshot(cmd, s, id)
+		err = fsckSnapshot(cmd, repo, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", id)
 		}
@@ -223,8 +229,8 @@ func (cmd CmdFsck) Execute(args []string) error {
 	defer close(done)
 
 	var firstErr error
-	for id := range s.List(backend.Snapshot, done) {
-		err = fsckSnapshot(cmd, s, id)
+	for id := range repo.List(backend.Snapshot, done) {
+		err = fsckSnapshot(cmd, repo, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "check for snapshot %v failed\n", id)
 			firstErr = err
@@ -241,7 +247,7 @@ func (cmd CmdFsck) Execute(args []string) error {
 	cnt[pack.Data] = cmd.o_data
 	cnt[pack.Tree] = cmd.o_trees
 
-	for blob := range s.Index().Each(done) {
+	for blob := range repo.Index().Each(done) {
 		debug.Log("restic.fsck", "checking %v blob %v\n", blob.Type, blob.ID)
 
 		err = cnt[blob.Type].Find(blob.ID)

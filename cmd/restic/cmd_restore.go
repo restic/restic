@@ -30,17 +30,23 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
 
-	err = s.LoadIndex()
+	lock, err := lockRepo(repo)
+	defer unlockRepo(lock)
 	if err != nil {
 		return err
 	}
 
-	id, err := restic.FindSnapshot(s, args[0])
+	err = repo.LoadIndex()
+	if err != nil {
+		return err
+	}
+
+	id, err := restic.FindSnapshot(repo, args[0])
 	if err != nil {
 		cmd.global.Exitf(1, "invalid id %q: %v", args[0], err)
 	}
@@ -48,7 +54,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 	target := args[1]
 
 	// create restorer
-	res, err := restic.NewRestorer(s, id)
+	res, err := restic.NewRestorer(repo, id)
 	if err != nil {
 		cmd.global.Exitf(2, "creating restorer failed: %v\n", err)
 	}

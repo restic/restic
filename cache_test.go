@@ -8,8 +8,8 @@ import (
 )
 
 func TestCache(t *testing.T) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	_, err := restic.NewCache(repo, "")
 	OK(t, err)
@@ -17,7 +17,7 @@ func TestCache(t *testing.T) {
 	arch := restic.NewArchiver(repo)
 
 	// archive some files, this should automatically cache all blobs from the snapshot
-	_, _, err = arch.Snapshot(nil, []string{*benchArchiveDirectory}, nil)
+	_, _, err = arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
 
 	// TODO: test caching index
 }

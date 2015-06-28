@@ -14,12 +14,13 @@ import (
 )
 
 var (
-	TestPassword       = getStringVar("RESTIC_TEST_PASSWORD", "geheim")
-	TestCleanup        = getBoolVar("RESTIC_TEST_CLEANUP", true)
-	TestTempDir        = getStringVar("RESTIC_TEST_TMPDIR", "")
-	RunIntegrationTest = getBoolVar("RESTIC_TEST_INTEGRATION", true)
-	TestSFTPPath       = getStringVar("RESTIC_TEST_SFTPPATH",
-		"/usr/lib/ssh:/usr/lib/openssh")
+	TestPassword          = getStringVar("RESTIC_TEST_PASSWORD", "geheim")
+	TestCleanup           = getBoolVar("RESTIC_TEST_CLEANUP", true)
+	TestTempDir           = getStringVar("RESTIC_TEST_TMPDIR", "")
+	RunIntegrationTest    = getBoolVar("RESTIC_TEST_INTEGRATION", true)
+	TestSFTPPath          = getStringVar("RESTIC_TEST_SFTPPATH", "/usr/lib/ssh:/usr/lib/openssh")
+	TestWalkerPath        = getStringVar("RESTIC_TEST_PATH", ".")
+	BenchArchiveDirectory = getStringVar("RESTIC_BENCH_DIR", ".")
 )
 
 func getStringVar(name, defaultValue string) string {
@@ -45,27 +46,38 @@ func getBoolVar(name string, defaultValue bool) bool {
 	return defaultValue
 }
 
-func SetupRepo(t testing.TB) *repository.Repository {
+func SetupRepo() *repository.Repository {
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
-	OK(t, err)
+	if err != nil {
+		panic(err)
+	}
 
 	// create repository below temp dir
 	b, err := local.Create(filepath.Join(tempdir, "repo"))
-	OK(t, err)
+	if err != nil {
+		panic(err)
+	}
 
 	repo := repository.New(b)
-	OK(t, repo.Init(TestPassword))
+	err = repo.Init(TestPassword)
+	if err != nil {
+		panic(err)
+	}
+
 	return repo
 }
 
-func TeardownRepo(t testing.TB, repo *repository.Repository) {
+func TeardownRepo(repo *repository.Repository) {
 	if !TestCleanup {
 		l := repo.Backend().(*local.Local)
-		t.Logf("leaving local backend at %s\n", l.Location())
+		fmt.Printf("leaving local backend at %s\n", l.Location())
 		return
 	}
 
-	OK(t, repo.Delete())
+	err := repo.Delete()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func SnapshotDir(t testing.TB, repo *repository.Repository, path string, parent backend.ID) *restic.Snapshot {
@@ -73,4 +85,10 @@ func SnapshotDir(t testing.TB, repo *repository.Repository, path string, parent 
 	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
 	OK(t, err)
 	return sn
+}
+
+func WithRepo(t testing.TB, f func(*repository.Repository)) {
+	repo := SetupRepo()
+	f(repo)
+	TeardownRepo(repo)
 }

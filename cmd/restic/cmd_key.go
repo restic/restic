@@ -116,25 +116,49 @@ func (cmd CmdKey) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
 
 	switch args[0] {
 	case "list":
-		return cmd.listKeys(s)
-	case "add":
-		return cmd.addKey(s)
-	case "rm":
-		id, err := backend.Find(s.Backend(), backend.Key, args[1])
+		lock, err := lockRepo(repo)
+		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
 
-		return cmd.deleteKey(s, id)
+		return cmd.listKeys(repo)
+	case "add":
+		lock, err := lockRepo(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+
+		return cmd.addKey(repo)
+	case "rm":
+		lock, err := lockRepoExclusive(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+
+		id, err := backend.Find(repo.Backend(), backend.Key, args[1])
+		if err != nil {
+			return err
+		}
+
+		return cmd.deleteKey(repo, id)
 	case "passwd":
-		return cmd.changePassword(s)
+		lock, err := lockRepoExclusive(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
+
+		return cmd.changePassword(repo)
 	}
 
 	return nil

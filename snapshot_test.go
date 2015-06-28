@@ -8,9 +8,6 @@ import (
 )
 
 func TestNewSnapshot(t *testing.T) {
-	s := SetupRepo(t)
-	defer TeardownRepo(t, s)
-
 	paths := []string{"/home/foobar"}
 
 	_, err := restic.NewSnapshot(paths)

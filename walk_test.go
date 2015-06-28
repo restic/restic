@@ -1,7 +1,6 @@
 package restic_test
 
 import (
-	"flag"
 	"path/filepath"
 	"testing"
 
@@ -10,14 +9,12 @@ import (
 	. "github.com/restic/restic/test"
 )
 
-var testWalkDirectory = flag.String("test.walkdir", ".", "test walking a directory (globbing pattern, default: .)")
-
 func TestWalkTree(t *testing.T) {
-	dirs, err := filepath.Glob(*testWalkDirectory)
-	OK(t, err)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	dirs, err := filepath.Glob(TestWalkerPath)
+	OK(t, err)
 
 	// archive a few files
 	arch := restic.NewArchiver(repo)

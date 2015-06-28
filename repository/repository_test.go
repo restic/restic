@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
-	"flag"
 	"io"
 	"testing"
 
@@ -14,8 +13,6 @@ import (
 	"github.com/restic/restic/pack"
 	. "github.com/restic/restic/test"
 )
-
-var benchTestDir = flag.String("test.dir", ".", "dir used in benchmarks (default: .)")
 
 type testJSONStruct struct {
 	Foo uint32
@@ -28,8 +25,8 @@ var repoTests = []testJSONStruct{
 }
 
 func TestSaveJSON(t *testing.T) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	for _, obj := range repoTests {
 		data, err := json.Marshal(obj)
@@ -47,8 +44,8 @@ func TestSaveJSON(t *testing.T) {
 }
 
 func BenchmarkSaveJSON(t *testing.B) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	obj := repoTests[0]
 
@@ -72,8 +69,8 @@ func BenchmarkSaveJSON(t *testing.B) {
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
 func TestSave(t *testing.T) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -104,8 +101,8 @@ func TestSave(t *testing.T) {
 }
 
 func TestSaveFrom(t *testing.T) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -134,8 +131,8 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveFrom(t *testing.B) {
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
 
 	size := 4 << 20 // 4MiB
 
@@ -156,15 +153,15 @@ func BenchmarkSaveFrom(t *testing.B) {
 }
 
 func TestLoadJSONPack(t *testing.T) {
-	if *benchTestDir == "" {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
+	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
-
 	// archive a few files
-	sn := SnapshotDir(t, repo, *benchTestDir, nil)
+	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
 	OK(t, repo.Flush())
 
 	tree := restic.NewTree()
@@ -173,12 +170,12 @@ func TestLoadJSONPack(t *testing.T) {
 }
 
 func TestLoadJSONUnpacked(t *testing.T) {
-	if *benchTestDir == "" {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
+	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
-
-	repo := SetupRepo(t)
-	defer TeardownRepo(t, repo)
 
 	// archive a snapshot
 	sn := restic.Snapshot{}

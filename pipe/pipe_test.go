@@ -1,7 +1,6 @@
 package pipe_test
 
 import (
-	"flag"
 	"os"
 	"path/filepath"
 	"sync"
@@ -11,9 +10,6 @@ import (
 	"github.com/restic/restic/pipe"
 	. "github.com/restic/restic/test"
 )
-
-var testWalkerPath = flag.String("test.walkerpath", ".", "pipeline walker testpath (default: .)")
-var maxWorkers = flag.Int("test.workers", 100, "max concurrency (default: 100)")
 
 func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
@@ -27,7 +23,7 @@ func statPath(path string) (stats, error) {
 	var s stats
 
 	// count files and directories with filepath.Walk()
-	err := filepath.Walk(*testWalkerPath, func(p string, fi os.FileInfo, err error) error {
+	err := filepath.Walk(TestWalkerPath, func(p string, fi os.FileInfo, err error) error {
 		if fi == nil {
 			return err
 		}
@@ -44,15 +40,17 @@ func statPath(path string) (stats, error) {
 	return s, err
 }
 
+const maxWorkers = 100
+
 func TestPipelineWalkerWithSplit(t *testing.T) {
-	if *testWalkerPath == "" {
+	if TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
-	before, err := statPath(*testWalkerPath)
+	before, err := statPath(TestWalkerPath)
 	OK(t, err)
 
-	t.Logf("walking path %s with %d dirs, %d files", *testWalkerPath,
+	t.Logf("walking path %s with %d dirs, %d files", TestWalkerPath,
 		before.dirs, before.files)
 
 	// account for top level dir
@@ -105,7 +103,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	entCh := make(chan pipe.Entry)
 	dirCh := make(chan pipe.Dir)
 
-	for i := 0; i < *maxWorkers; i++ {
+	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
 		go worker(&wg, done, entCh, dirCh)
 	}
@@ -120,7 +118,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	}()
 
 	resCh := make(chan pipe.Result, 1)
-	err = pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
+	err = pipe.Walk([]string{TestWalkerPath}, done, jobs, resCh)
 	OK(t, err)
 
 	// wait for all workers to terminate
@@ -129,21 +127,21 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	// wait for top-level blob
 	<-resCh
 
-	t.Logf("walked path %s with %d dirs, %d files", *testWalkerPath,
+	t.Logf("walked path %s with %d dirs, %d files", TestWalkerPath,
 		after.dirs, after.files)
 
 	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }
 
 func TestPipelineWalker(t *testing.T) {
-	if *testWalkerPath == "" {
+	if TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
-	before, err := statPath(*testWalkerPath)
+	before, err := statPath(TestWalkerPath)
 	OK(t, err)
 
-	t.Logf("walking path %s with %d dirs, %d files", *testWalkerPath,
+	t.Logf("walking path %s with %d dirs, %d files", TestWalkerPath,
 		before.dirs, before.files)
 
 	// account for top level dir
@@ -194,13 +192,13 @@ func TestPipelineWalker(t *testing.T) {
 	done := make(chan struct{})
 	jobs := make(chan pipe.Job)
 
-	for i := 0; i < *maxWorkers; i++ {
+	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
 		go worker(&wg, done, jobs)
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	err = pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
+	err = pipe.Walk([]string{TestWalkerPath}, done, jobs, resCh)
 	OK(t, err)
 
 	// wait for all workers to terminate
@@ -209,14 +207,14 @@ func TestPipelineWalker(t *testing.T) {
 	// wait for top-level blob
 	<-resCh
 
-	t.Logf("walked path %s with %d dirs, %d files", *testWalkerPath,
+	t.Logf("walked path %s with %d dirs, %d files", TestWalkerPath,
 		after.dirs, after.files)
 
 	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }
 
 func BenchmarkPipelineWalker(b *testing.B) {
-	if *testWalkerPath == "" {
+	if TestWalkerPath == "" {
 		b.Skipf("walkerpath not set, skipping BenchPipelineWalker")
 	}
 
@@ -283,8 +281,8 @@ func BenchmarkPipelineWalker(b *testing.B) {
 		dirCh := make(chan pipe.Dir, 200)
 
 		var wg sync.WaitGroup
-		b.Logf("starting %d workers", *maxWorkers)
-		for i := 0; i < *maxWorkers; i++ {
+		b.Logf("starting %d workers", maxWorkers)
+		for i := 0; i < maxWorkers; i++ {
 			wg.Add(2)
 			go dirWorker(&wg, done, dirCh)
 			go fileWorker(&wg, done, entCh)
@@ -300,7 +298,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 		}()
 
 		resCh := make(chan pipe.Result, 1)
-		err := pipe.Walk([]string{*testWalkerPath}, done, jobs, resCh)
+		err := pipe.Walk([]string{TestWalkerPath}, done, jobs, resCh)
 		OK(b, err)
 
 		// wait for all workers to terminate
@@ -314,13 +312,13 @@ func BenchmarkPipelineWalker(b *testing.B) {
 }
 
 func TestPipelineWalkerMultiple(t *testing.T) {
-	if *testWalkerPath == "" {
+	if TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
-	paths, err := filepath.Glob(filepath.Join(*testWalkerPath, "*"))
+	paths, err := filepath.Glob(filepath.Join(TestWalkerPath, "*"))
 
-	before, err := statPath(*testWalkerPath)
+	before, err := statPath(TestWalkerPath)
 	OK(t, err)
 
 	t.Logf("walking paths %v with %d dirs, %d files", paths,
@@ -371,7 +369,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 	done := make(chan struct{})
 	jobs := make(chan pipe.Job)
 
-	for i := 0; i < *maxWorkers; i++ {
+	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
 		go worker(&wg, done, jobs)
 	}

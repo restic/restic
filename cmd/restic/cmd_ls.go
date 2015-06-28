@@ -69,27 +69,27 @@ func (cmd CmdLs) Execute(args []string) error {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
-	s, err := cmd.global.OpenRepository()
+	repo, err := cmd.global.OpenRepository()
 	if err != nil {
 		return err
 	}
 
-	err = s.LoadIndex()
+	err = repo.LoadIndex()
 	if err != nil {
 		return err
 	}
 
-	id, err := restic.FindSnapshot(s, args[0])
+	id, err := restic.FindSnapshot(repo, args[0])
 	if err != nil {
 		return err
 	}
 
-	sn, err := restic.LoadSnapshot(s, id)
+	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("snapshot of %v at %s:\n", sn.Paths, sn.Time)
 
-	return printTree("", s, sn.Tree)
+	return printTree("", repo, sn.Tree)
 }
