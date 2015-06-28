@@ -240,7 +240,7 @@ func (b *Local) Remove(t backend.Type, name string) error {
 }
 
 // List returns a channel that yields all names of blobs of type t. A
-// goroutine ist started for this. If the channel done is closed, sending
+// goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
