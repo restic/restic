@@ -145,6 +145,7 @@ func main() {
 
 	fmt.Fprintln(file, "mode: set")
 
+	failedTests := false
 	for _, dir := range dirs {
 		err := filepath.Walk(dir,
 			func(p string, fi os.FileInfo, e error) error {
@@ -169,10 +170,15 @@ func main() {
 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "walk(%q): %v\n", dir, err)
+			failedTests = true
 		}
 	}
 
 	err = file.Close()
 
 	fmt.Printf("coverprofile: %v\n", file.Name())
+
+	if failedTests {
+		os.Exit(1)
+	}
 }
