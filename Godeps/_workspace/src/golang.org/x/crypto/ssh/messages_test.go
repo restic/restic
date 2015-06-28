@@ -162,6 +162,16 @@ func TestBareMarshal(t *testing.T) {
 	}
 }
 
+func TestUnmarshalShortKexInitPacket(t *testing.T) {
+	// This used to panic.
+	// Issue 11348
+	packet := []byte{0x14, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0xff, 0xff, 0xff, 0xff}
+	kim := &kexInitMsg{}
+	if err := Unmarshal(packet, kim); err == nil {
+		t.Error("truncated packet unmarshaled without error")
+	}
+}
+
 func randomBytes(out []byte, rand *rand.Rand) {
 	for i := 0; i < len(out); i++ {
 		out[i] = byte(rand.Int31())

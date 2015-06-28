@@ -57,7 +57,7 @@ const exampleSSHCertWithOptions = `ssh-rsa-cert-v01@openssh.com AAAAHHNzaC1yc2Et
 func TestParseCertWithOptions(t *testing.T) {
 	opts := map[string]string{
 		"source-address": "192.168.1.0/24",
-		"force-command": "/bin/sleep",
+		"force-command":  "/bin/sleep",
 	}
 	exts := map[string]string{
 		"permit-X11-forwarding":   "",

@@ -7,8 +7,8 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/jessevdk/go-flags",
-			"Comment": "v1-293-g5e11878",
-			"Rev": "5e118789801496c93ba210d34ef1f2ce5a9173bd"
+			"Comment": "v1-297-g1b89bf7",
+			"Rev": "1b89bf73cd2c3a911d7b2a279ab085c4a18cf539"
 		},
 		{
 			"ImportPath": "github.com/juju/errors",
@@ -27,16 +27,8 @@
 			"Rev": "caaaea8b30ee15616494ee68abd5d8ebbbef05cf"
 		},
 		{
-			"ImportPath": "github.com/mitchellh/goamz/testutil",
-			"Rev": "caaaea8b30ee15616494ee68abd5d8ebbbef05cf"
-		},
-		{
-			"ImportPath": "github.com/motain/gocheck",
-			"Rev": "9beb271d26e640863a5bf4a3c5ea40ccdd466b84"
-		},
-		{
 			"ImportPath": "github.com/pkg/sftp",
-			"Rev": "506297c9013d2893d5c5daaa9155e7333a1c58de"
+			"Rev": "518aed2757a65cfa64d4b1b2baf08410f8b7a6bc"
 		},
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",
@@ -44,19 +36,19 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/pbkdf2",
-			"Rev": "24ffb5feb3312a39054178a4b0a4554fc2201248"
+			"Rev": "cc04154d65fb9296747569b107cfd05380b1ea3e"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/poly1305",
-			"Rev": "24ffb5feb3312a39054178a4b0a4554fc2201248"
+			"Rev": "cc04154d65fb9296747569b107cfd05380b1ea3e"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/scrypt",
-			"Rev": "24ffb5feb3312a39054178a4b0a4554fc2201248"
+			"Rev": "cc04154d65fb9296747569b107cfd05380b1ea3e"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
-			"Rev": "24ffb5feb3312a39054178a4b0a4554fc2201248"
+			"Rev": "cc04154d65fb9296747569b107cfd05380b1ea3e"
 		}
 	]
 }

@@ -35,7 +35,7 @@ type Option struct {
 
 	// If true, specifies that the argument to an option flag is optional.
 	// When no argument to the flag is specified on the command line, the
-	// value of Default will be set in the field this option represents.
+	// value of OptionalValue will be set in the field this option represents.
 	// This is only valid for non-boolean options.
 	OptionalArgument bool
 
@@ -154,4 +154,9 @@ func (option *Option) String() string {
 // Value returns the option value as an interface{}.
 func (option *Option) Value() interface{} {
 	return option.value.Interface()
+}
+
+// IsSet returns true if option has been set
+func (option *Option) IsSet() bool {
+	return option.isSet
 }

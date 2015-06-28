@@ -144,6 +144,25 @@ func (c *Command) makeLookup() lookup {
 		commands:   make(map[string]*Command),
 	}
 
+	parent := c.parent
+
+	for parent != nil {
+		if cmd, ok := parent.(*Command); ok {
+			cmd.fillLookup(&ret, true)
+		}
+
+		if grp, ok := parent.(*Group); ok {
+			parent = grp
+		} else {
+			parent = nil
+		}
+	}
+
+	c.fillLookup(&ret, false)
+	return ret
+}
+
+func (c *Command) fillLookup(ret *lookup, onlyOptions bool) {
 	c.eachGroup(func(g *Group) {
 		for _, option := range g.options {
 			if option.ShortName != 0 {
@@ -156,6 +175,10 @@ func (c *Command) makeLookup() lookup {
 		}
 	})
 
+	if onlyOptions {
+		return
+	}
+
 	for _, subcommand := range c.commands {
 		ret.commands[subcommand.Name] = subcommand
 
@@ -163,8 +186,6 @@ func (c *Command) makeLookup() lookup {
 			ret.commands[a] = subcommand
 		}
 	}
-
-	return ret
 }
 
 func (c *Command) groupByName(name string) *Group {

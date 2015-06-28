@@ -5,7 +5,7 @@
 // Package scrypt implements the scrypt key derivation function as defined in
 // Colin Percival's paper "Stronger Key Derivation via Sequential Memory-Hard
 // Functions" (http://www.tarsnap.com/scrypt/scrypt.pdf).
-package scrypt // import "golang.org/x/crypto/scrypt"
+package scrypt
 
 import (
 	"crypto/sha256"

@@ -183,12 +183,16 @@ the Commander interface, then its Execute method will be run with the
 remaining command line arguments.
 
 Command structs can have options which become valid to parse after the
-command has been specified on the command line. It is currently not valid
-to specify options from the parent level of the command after the command
-name has occurred. Thus, given a top-level option "-v" and a command "add":
+command has been specified on the command line, in addition to the options
+of all the parent commands. I.e. considering a -v flag on the parser and an
+add command, the following are equivalent:
 
-    Valid:   ./app -v add
-    Invalid: ./app add -v
+    ./app -v add
+    ./app add -v
+
+However, if the -v flag is defined on the add command, then the first of
+the two examples above would fail since the -v flag is not defined before
+the add command.
 
 
 Completion

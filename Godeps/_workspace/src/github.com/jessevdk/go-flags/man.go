@@ -3,30 +3,35 @@ package flags
 import (
 	"fmt"
 	"io"
+	"runtime"
 	"strings"
 	"time"
 )
+
+func manQuote(s string) string {
+	return strings.Replace(s, "\\", "\\\\", -1)
+}
 
 func formatForMan(wr io.Writer, s string) {
 	for {
 		idx := strings.IndexRune(s, '`')
 
 		if idx < 0 {
-			fmt.Fprintf(wr, "%s", s)
+			fmt.Fprintf(wr, "%s", manQuote(s))
 			break
 		}
 
-		fmt.Fprintf(wr, "%s", s[:idx])
+		fmt.Fprintf(wr, "%s", manQuote(s[:idx]))
 
 		s = s[idx+1:]
 		idx = strings.IndexRune(s, '\'')
 
 		if idx < 0 {
-			fmt.Fprintf(wr, "%s", s)
+			fmt.Fprintf(wr, "%s", manQuote(s))
 			break
 		}
 
-		fmt.Fprintf(wr, "\\fB%s\\fP", s[:idx])
+		fmt.Fprintf(wr, "\\fB%s\\fP", manQuote(s[:idx]))
 		s = s[idx+1:]
 	}
 }
@@ -42,7 +47,7 @@ func writeManPageOptions(wr io.Writer, grp *Group) {
 			fmt.Fprintf(wr, "\\fB")
 
 			if opt.ShortName != 0 {
-				fmt.Fprintf(wr, "-%c", opt.ShortName)
+				fmt.Fprintf(wr, "\\fB\\-%c\\fR", opt.ShortName)
 			}
 
 			if len(opt.LongName) != 0 {
@@ -50,10 +55,33 @@ func writeManPageOptions(wr io.Writer, grp *Group) {
 					fmt.Fprintf(wr, ", ")
 				}
 
-				fmt.Fprintf(wr, "--%s", opt.LongNameWithNamespace())
+				fmt.Fprintf(wr, "\\fB\\-\\-%s\\fR", manQuote(opt.LongNameWithNamespace()))
+			}
+
+			if len(opt.ValueName) != 0 || opt.OptionalArgument {
+				if opt.OptionalArgument {
+					fmt.Fprintf(wr, " [\\fI%s=%s\\fR]", manQuote(opt.ValueName), manQuote(strings.Join(quoteV(opt.OptionalValue), ", ")))
+				} else {
+					fmt.Fprintf(wr, " \\fI%s\\fR", manQuote(opt.ValueName))
+				}
+			}
+
+			if len(opt.Default) != 0 {
+				fmt.Fprintf(wr, " <default: \\fI%s\\fR>", manQuote(strings.Join(quoteV(opt.Default), ", ")))
+			} else if len(opt.EnvDefaultKey) != 0 {
+				if runtime.GOOS == "windows" {
+					fmt.Fprintf(wr, " <default: \\fI%%%s%%\\fR>", manQuote(opt.EnvDefaultKey))
+				} else {
+					fmt.Fprintf(wr, " <default: \\fI$%s\\fR>", manQuote(opt.EnvDefaultKey))
+				}
+			}
+
+			if opt.Required {
+				fmt.Fprintf(wr, " (\\fIrequired\\fR)")
 			}
 
 			fmt.Fprintln(wr, "\\fP")
+
 			if len(opt.Description) != 0 {
 				formatForMan(wr, opt.Description)
 				fmt.Fprintln(wr, "")
@@ -85,10 +113,10 @@ func writeManPageCommand(wr io.Writer, name string, root *Command, command *Comm
 	if len(command.LongDescription) > 0 {
 		fmt.Fprintln(wr, "")
 
-		cmdstart := fmt.Sprintf("The %s command", command.Name)
+		cmdstart := fmt.Sprintf("The %s command", manQuote(command.Name))
 
 		if strings.HasPrefix(command.LongDescription, cmdstart) {
-			fmt.Fprintf(wr, "The \\fI%s\\fP command", command.Name)
+			fmt.Fprintf(wr, "The \\fI%s\\fP command", manQuote(command.Name))
 
 			formatForMan(wr, command.LongDescription[len(cmdstart):])
 			fmt.Fprintln(wr, "")
@@ -113,11 +141,11 @@ func writeManPageCommand(wr io.Writer, name string, root *Command, command *Comm
 	}
 
 	if len(usage) > 0 {
-		fmt.Fprintf(wr, "\n\\fBUsage\\fP: %s %s\n\n", pre, usage)
+		fmt.Fprintf(wr, "\n\\fBUsage\\fP: %s %s\n\n", manQuote(pre), manQuote(usage))
 	}
 
 	if len(command.Aliases) > 0 {
-		fmt.Fprintf(wr, "\n\\fBAliases\\fP: %s\n\n", strings.Join(command.Aliases, ", "))
+		fmt.Fprintf(wr, "\n\\fBAliases\\fP: %s\n\n", manQuote(strings.Join(command.Aliases, ", ")))
 	}
 
 	writeManPageOptions(wr, command.Group)
@@ -129,9 +157,9 @@ func writeManPageCommand(wr io.Writer, name string, root *Command, command *Comm
 func (p *Parser) WriteManPage(wr io.Writer) {
 	t := time.Now()
 
-	fmt.Fprintf(wr, ".TH %s 1 \"%s\"\n", p.Name, t.Format("2 January 2006"))
+	fmt.Fprintf(wr, ".TH %s 1 \"%s\"\n", manQuote(p.Name), t.Format("2 January 2006"))
 	fmt.Fprintln(wr, ".SH NAME")
-	fmt.Fprintf(wr, "%s \\- %s\n", p.Name, p.ShortDescription)
+	fmt.Fprintf(wr, "%s \\- %s\n", manQuote(p.Name), manQuote(p.ShortDescription))
 	fmt.Fprintln(wr, ".SH SYNOPSIS")
 
 	usage := p.Usage
@@ -140,7 +168,7 @@ func (p *Parser) WriteManPage(wr io.Writer) {
 		usage = "[OPTIONS]"
 	}
 
-	fmt.Fprintf(wr, "\\fB%s\\fP %s\n", p.Name, usage)
+	fmt.Fprintf(wr, "\\fB%s\\fP %s\n", manQuote(p.Name), manQuote(usage))
 	fmt.Fprintln(wr, ".SH DESCRIPTION")
 
 	formatForMan(wr, p.LongDescription)

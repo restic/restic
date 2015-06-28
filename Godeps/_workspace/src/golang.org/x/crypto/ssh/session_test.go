@@ -9,9 +9,11 @@ package ssh
 import (
 	"bytes"
 	crypto_rand "crypto/rand"
+	"errors"
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"testing"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -676,5 +678,43 @@ func TestSessionID(t *testing.T) {
 		t.Errorf("server session ID (%x) != client session ID (%x)", s, c)
 	} else if len(s) == 0 {
 		t.Errorf("client and server SessionID were empty.")
+	}
+}
+
+type noReadConn struct {
+	readSeen bool
+	net.Conn
+}
+
+func (c *noReadConn) Close() error {
+	return nil
+}
+
+func (c *noReadConn) Read(b []byte) (int, error) {
+	c.readSeen = true
+	return 0, errors.New("noReadConn error")
+}
+
+func TestInvalidServerConfiguration(t *testing.T) {
+	c1, c2, err := netPipe()
+	if err != nil {
+		t.Fatalf("netPipe: %v", err)
+	}
+	defer c1.Close()
+	defer c2.Close()
+
+	serveConn := noReadConn{Conn: c1}
+	serverConf := &ServerConfig{}
+
+	NewServerConn(&serveConn, serverConf)
+	if serveConn.readSeen {
+		t.Fatalf("NewServerConn attempted to Read() from Conn while configuration is missing host key")
+	}
+
+	serverConf.AddHostKey(testSigners["ecdsa"])
+
+	NewServerConn(&serveConn, serverConf)
+	if serveConn.readSeen {
+		t.Fatalf("NewServerConn attempted to Read() from Conn while configuration is missing authentication method")
 	}
 }

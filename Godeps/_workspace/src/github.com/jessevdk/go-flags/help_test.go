@@ -173,6 +173,14 @@ func TestMan(t *testing.T) {
 
 	tt := time.Now()
 
+	var envDefaultName string
+
+	if runtime.GOOS == "windows" {
+		envDefaultName = "%ENV_DEFAULT%"
+	} else {
+		envDefaultName = "$ENV_DEFAULT"
+	}
+
 	expected := fmt.Sprintf(`.TH TestMan 1 "%s"
 .SH NAME
 TestMan \- Test manpage generation
@@ -182,45 +190,45 @@ TestMan \- Test manpage generation
 This is a somewhat \fBlonger\fP description of what this does
 .SH OPTIONS
 .TP
-\fB-v, --verbose\fP
+\fB\fB\-v\fR, \fB\-\-verbose\fR\fP
 Show verbose debug information
 .TP
-\fB-c\fP
+\fB\fB\-c\fR\fP
 Call phone number
 .TP
-\fB--ptrslice\fP
+\fB\fB\-\-ptrslice\fR\fP
 A slice of pointers to string
 .TP
-\fB--empty-description\fP
+\fB\fB\-\-empty-description\fR\fP
 .TP
-\fB--default\fP
+\fB\fB\-\-default\fR <default: \fI"Some\\nvalue"\fR>\fP
 Test default value
 .TP
-\fB--default-array\fP
+\fB\fB\-\-default-array\fR <default: \fI"Some value", "Other\\tvalue"\fR>\fP
 Test default array value
 .TP
-\fB--default-map\fP
+\fB\fB\-\-default-map\fR <default: \fI"some:value", "another:value"\fR>\fP
 Testdefault map value
 .TP
-\fB--env-default1\fP
+\fB\fB\-\-env-default1\fR <default: \fI"Some value"\fR>\fP
 Test env-default1 value
 .TP
-\fB--env-default2\fP
+\fB\fB\-\-env-default2\fR <default: \fI%s\fR>\fP
 Test env-default2 value
 .TP
-\fB--opt-with-arg-name\fP
+\fB\fB\-\-opt-with-arg-name\fR \fIsomething\fR\fP
 Option with named argument
 .TP
-\fB-s\fP
+\fB\fB\-s\fR <default: \fI"some", "value"\fR>\fP
 A slice of strings
 .TP
-\fB--intmap\fP
+\fB\fB\-\-intmap\fR <default: \fI"a:1"\fR>\fP
 A map from string to int
 .TP
-\fB--sip.opt\fP
+\fB\fB\-\-sip.opt\fR\fP
 This is a subgroup option
 .TP
-\fB--sip.sap.opt\fP
+\fB\fB\-\-sip.sap.opt\fR\fP
 This is a subsubgroup option
 .SH COMMANDS
 .SS command
@@ -234,9 +242,9 @@ Longer \fBcommand\fP description
 \fBAliases\fP: cm, cmd
 
 .TP
-\fB--extra-verbose\fP
+\fB\fB\-\-extra-verbose\fR\fP
 Use for extra verbosity
-`, tt.Format("2 January 2006"))
+`, tt.Format("2 January 2006"), envDefaultName)
 
 	assertDiff(t, got, expected, "man page")
 }

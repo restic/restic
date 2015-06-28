@@ -22,6 +22,7 @@ var (
 	HOST = flag.String("host", "localhost", "ssh server hostname")
 	PORT = flag.Int("port", 22, "ssh server port")
 	PASS = flag.String("pass", os.Getenv("SOCKSIE_SSH_PASSWORD"), "ssh password")
+	SIZE = flag.Int("s", 1<<15, "set max packet size")
 )
 
 func init() {
@@ -49,7 +50,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	c, err := sftp.NewClient(conn)
+	c, err := sftp.NewClient(conn, sftp.MaxPacket(*SIZE))
 	if err != nil {
 		log.Fatalf("unable to start sftp subsytem: %v", err)
 	}

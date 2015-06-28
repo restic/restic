@@ -168,6 +168,10 @@ func (s *connection) serverHandshake(config *ServerConfig) (*Permissions, error)
 		return nil, errors.New("ssh: server has no host keys")
 	}
 
+	if !config.NoClientAuth && config.PasswordCallback == nil && config.PublicKeyCallback == nil && config.KeyboardInteractiveCallback == nil {
+		return nil, errors.New("ssh: no authentication methods configured but NoClientAuth is also false")
+	}
+
 	if config.ServerVersion != "" {
 		s.serverVersion = []byte(config.ServerVersion)
 	} else {

@@ -95,7 +95,55 @@ func TestCommandFlagOrder2(t *testing.T) {
 		} `command:"cmd"`
 	}{}
 
-	assertParseFail(t, ErrUnknownFlag, "unknown flag `v'", &opts, "cmd", "-v", "-g")
+	assertParseSuccess(t, &opts, "cmd", "-v", "-g")
+
+	if !opts.Value {
+		t.Errorf("Expected Value to be true")
+	}
+
+	if !opts.Command.G {
+		t.Errorf("Expected Command.G to be true")
+	}
+}
+
+func TestCommandFlagOverride1(t *testing.T) {
+	var opts = struct {
+		Value bool `short:"v"`
+
+		Command struct {
+			Value bool `short:"v"`
+		} `command:"cmd"`
+	}{}
+
+	assertParseSuccess(t, &opts, "-v", "cmd")
+
+	if !opts.Value {
+		t.Errorf("Expected Value to be true")
+	}
+
+	if opts.Command.Value {
+		t.Errorf("Expected Command.Value to be false")
+	}
+}
+
+func TestCommandFlagOverride2(t *testing.T) {
+	var opts = struct {
+		Value bool `short:"v"`
+
+		Command struct {
+			Value bool `short:"v"`
+		} `command:"cmd"`
+	}{}
+
+	assertParseSuccess(t, &opts, "cmd", "-v")
+
+	if opts.Value {
+		t.Errorf("Expected Value to be false")
+	}
+
+	if !opts.Command.Value {
+		t.Errorf("Expected Command.Value to be true")
+	}
 }
 
 func TestCommandEstimate(t *testing.T) {
