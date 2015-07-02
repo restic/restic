@@ -2,9 +2,7 @@ package repository
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,13 +16,6 @@ import (
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
 )
-
-// Config contains the configuration for a repository.
-type Config struct {
-	Version           uint        `json:"version"`
-	ID                string      `json:"id"`
-	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
-}
 
 // Repository is used to access a repository in a backend.
 type Repository struct {
@@ -526,47 +517,6 @@ func (r *Repository) loadIndex(id string) error {
 	return nil
 }
 
-const repositoryIDSize = sha256.Size
-const RepoVersion = 1
-
-func createConfig(r *Repository) (err error) {
-	r.Config.ChunkerPolynomial, err = chunker.RandomPolynomial()
-	if err != nil {
-		return err
-	}
-
-	newID := make([]byte, repositoryIDSize)
-	_, err = io.ReadFull(rand.Reader, newID)
-	if err != nil {
-		return err
-	}
-
-	r.Config.ID = hex.EncodeToString(newID)
-	r.Config.Version = RepoVersion
-
-	debug.Log("Repo.createConfig", "New config: %#v", r.Config)
-
-	_, err = r.SaveJSONUnpacked(backend.Config, r.Config)
-	return err
-}
-
-func (r *Repository) loadConfig(cfg *Config) error {
-	err := r.LoadJSONUnpacked(backend.Config, nil, cfg)
-	if err != nil {
-		return err
-	}
-
-	if cfg.Version != RepoVersion {
-		return errors.New("unsupported repository version")
-	}
-
-	if !cfg.ChunkerPolynomial.Irreducible() {
-		return errors.New("invalid chunker polynomial")
-	}
-
-	return nil
-}
-
 // SearchKey finds a key with the supplied password, afterwards the config is
 // read and parsed.
 func (r *Repository) SearchKey(password string) error {
@@ -577,11 +527,12 @@ func (r *Repository) SearchKey(password string) error {
 
 	r.key = key.master
 	r.keyName = key.Name()
-	return r.loadConfig(&r.Config)
+	r.Config, err = LoadConfig(r)
+	return err
 }
 
-// Init creates a new master key with the supplied password and initializes the
-// repository config.
+// Init creates a new master key with the supplied password, initializes and
+// saves the repository config.
 func (r *Repository) Init(password string) error {
 	has, err := r.be.Test(backend.Config, "")
 	if err != nil {
@@ -598,7 +549,8 @@ func (r *Repository) Init(password string) error {
 
 	r.key = key.master
 	r.keyName = key.Name()
-	return createConfig(r)
+	r.Config, err = CreateConfig(r)
+	return err
 }
 
 func (r *Repository) Decrypt(ciphertext []byte) ([]byte, error) {
