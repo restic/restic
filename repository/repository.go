@@ -29,6 +29,7 @@ type Repository struct {
 	packs []*pack.Packer
 }
 
+// New returns a new repository with backend be.
 func New(be backend.Backend) *Repository {
 	return &Repository{
 		be:  be,
@@ -414,10 +415,12 @@ func (r *Repository) Flush() error {
 	return nil
 }
 
+// Backend returns the backend for the repository.
 func (r *Repository) Backend() backend.Backend {
 	return r.be
 }
 
+// Index returns the currently loaded Index.
 func (r *Repository) Index() *Index {
 	return r.idx
 }
@@ -553,6 +556,7 @@ func (r *Repository) Init(password string) error {
 	return err
 }
 
+// Decrypt authenticates and decrypts ciphertext and returns the plaintext.
 func (r *Repository) Decrypt(ciphertext []byte) ([]byte, error) {
 	if r.key == nil {
 		return nil, errors.New("key for repository not set")
@@ -561,6 +565,8 @@ func (r *Repository) Decrypt(ciphertext []byte) ([]byte, error) {
 	return crypto.Decrypt(r.key, nil, ciphertext)
 }
 
+// Encrypt encrypts and authenticates the plaintext and saves the result in
+// ciphertext.
 func (r *Repository) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
 	if r.key == nil {
 		return nil, errors.New("key for repository not set")
@@ -569,10 +575,12 @@ func (r *Repository) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
 	return crypto.Encrypt(r.key, ciphertext, plaintext)
 }
 
+// Key returns the current master key.
 func (r *Repository) Key() *crypto.Key {
 	return r.key
 }
 
+// KeyName returns the name of the current key in the backend.
 func (r *Repository) KeyName() string {
 	return r.keyName
 }
@@ -623,6 +631,7 @@ func (r *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backe
 	}
 }
 
+// List returns a channel that yields all IDs of type t in the backend.
 func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.ID {
 	outCh := make(chan backend.ID)
 
@@ -631,6 +640,8 @@ func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 	return outCh
 }
 
+// Delete calls backend.Delete() if implemented, and returns an error
+// otherwise.
 func (r *Repository) Delete() error {
 	if b, ok := r.be.(backend.Deleter); ok {
 		return b.Delete()
@@ -639,6 +650,7 @@ func (r *Repository) Delete() error {
 	return errors.New("Delete() called for backend that does not implement this method")
 }
 
+// Close closes the repository by closing the backend.
 func (r *Repository) Close() error {
 	return r.be.Close()
 }
