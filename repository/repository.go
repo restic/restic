@@ -49,9 +49,9 @@ func (r *Repository) PrefixLength(t backend.Type) (int, error) {
 	return backend.PrefixLength(r.be, t)
 }
 
-// Load tries to load and decrypt content identified by t and id from the
+// LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
-func (r *Repository) Load(t backend.Type, id backend.ID) ([]byte, error) {
+func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
 	// load blob from pack

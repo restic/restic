@@ -79,7 +79,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "index":
-		buf, err := repo.Load(backend.Index, id)
+		buf, err := repo.LoadAndDecrypt(backend.Index, id)
 		if err != nil {
 			return err
 		}
