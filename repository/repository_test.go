@@ -80,7 +80,7 @@ func TestSave(t *testing.T) {
 		id := backend.Hash(data)
 
 		// save
-		sid, err := repo.Save(pack.Data, data, nil)
+		sid, err := repo.SaveAndEncrypt(pack.Data, data, nil)
 		OK(t, err)
 
 		Equals(t, id, sid)

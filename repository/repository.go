@@ -270,9 +270,9 @@ func (r *Repository) countPacker() int {
 	return len(r.packs)
 }
 
-// Save encrypts data and stores it to the backend as type t. If data is small
+// SaveAndEncrypt encrypts data and stores it to the backend as type t. If data is small
 // enough, it will be packed together with other small blobs.
-func (r *Repository) Save(t pack.BlobType, data []byte, id backend.ID) (backend.ID, error) {
+func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id backend.ID) (backend.ID, error) {
 	if id == nil {
 		// compute plaintext hash
 		id = backend.Hash(data)
@@ -328,7 +328,7 @@ func (r *Repository) SaveFrom(t pack.BlobType, id backend.ID, length uint, rd io
 		return err
 	}
 
-	_, err = r.Save(t, buf, id)
+	_, err = r.SaveAndEncrypt(t, buf, id)
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,7 @@ func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, er
 	}
 
 	buf = wr.Bytes()
-	return r.Save(t, buf, nil)
+	return r.SaveAndEncrypt(t, buf, nil)
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
