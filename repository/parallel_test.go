@@ -93,7 +93,7 @@ func (tests testIDs) List(t backend.Type, done <-chan struct{}) <-chan string {
 }
 
 func TestFilesInParallel(t *testing.T) {
-	f := func(id backend.ID) error {
+	f := func(id string, done <-chan struct{}) error {
 		time.Sleep(1 * time.Millisecond)
 		return nil
 	}
@@ -108,7 +108,7 @@ var errTest = errors.New("test error")
 
 func TestFilesInParallelWithError(t *testing.T) {
 
-	f := func(id backend.ID) error {
+	f := func(id string, done <-chan struct{}) error {
 		time.Sleep(1 * time.Millisecond)
 
 		if rand.Float32() < 0.01 {

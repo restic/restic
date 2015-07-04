@@ -16,10 +16,14 @@ func closeIfOpen(ch chan struct{}) {
 	}
 }
 
+// ParallelWorkFunc gets one file ID to work on. If an error is returned,
+// processing stops. If done is closed, the function should return.
+type ParallelWorkFunc func(id string, done <-chan struct{}) error
+
 // FilesInParallel runs n workers of f in parallel, on the IDs that
 // repo.List(t) yield. If f returns an error, the process is aborted and the
 // first error is returned.
-func FilesInParallel(repo backend.Lister, t backend.Type, n uint, f func(backend.ID) error) error {
+func FilesInParallel(repo backend.Lister, t backend.Type, n uint, f ParallelWorkFunc) error {
 	done := make(chan struct{})
 	defer closeIfOpen(done)
 
@@ -36,17 +40,12 @@ func FilesInParallel(repo backend.Lister, t backend.Type, n uint, f func(backend
 
 			for {
 				select {
-				case item, ok := <-ch:
+				case id, ok := <-ch:
 					if !ok {
 						return
 					}
 
-					id, err := backend.ParseID(item)
-
-					if err == nil {
-						err = f(id)
-					}
-
+					err := f(id, done)
 					if err != nil {
 						closeIfOpen(done)
 						errors <- err
