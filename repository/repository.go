@@ -472,52 +472,70 @@ func (r *Repository) SaveIndex() (backend.ID, error) {
 	return sid, nil
 }
 
-// LoadIndex loads all index files from the backend and merges them with the
-// current index.
+const loadIndexParallelism = 20
+
+// LoadIndex loads all index files from the backend in parallel and merges them
+// with the current index. The first error that occurred is returned.
 func (r *Repository) LoadIndex() error {
 	debug.Log("Repo.LoadIndex", "Loading index")
-	done := make(chan struct{})
-	defer close(done)
 
-	for id := range r.be.List(backend.Index, done) {
-		err := r.loadIndex(id)
+	errCh := make(chan error, 1)
+	indexes := make(chan *Index)
+
+	worker := func(id string, done <-chan struct{}) error {
+		idx, err := LoadIndex(r, id)
 		if err != nil {
 			return err
 		}
+
+		select {
+		case indexes <- idx:
+		case <-done:
+		}
+
+		return nil
 	}
+
+	go func() {
+		defer close(indexes)
+		errCh <- FilesInParallel(r.be, backend.Index, loadIndexParallelism, worker)
+	}()
+
+	for idx := range indexes {
+		r.idx.Merge(idx)
+	}
+
+	if err := <-errCh; err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// loadIndex loads the index id and merges it with the currently used index.
-func (r *Repository) loadIndex(id string) error {
-	debug.Log("Repo.loadIndex", "Loading index %v", id[:8])
-	before := len(r.idx.pack)
+// LoadIndex loads the index id from backend and returns it.
+func LoadIndex(repo *Repository, id string) (*Index, error) {
+	debug.Log("LoadIndex", "Loading index %v", id[:8])
 
-	rd, err := r.be.Get(backend.Index, id)
+	rd, err := repo.be.Get(backend.Index, id)
 	defer rd.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// decrypt
-	decryptRd, err := crypto.DecryptFrom(r.key, rd)
+	decryptRd, err := crypto.DecryptFrom(repo.key, rd)
 	defer decryptRd.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	idx, err := DecodeIndex(decryptRd)
 	if err != nil {
-		debug.Log("Repo.loadIndex", "error while decoding index %v: %v", id, err)
-		return err
+		debug.Log("LoadIndex", "error while decoding index %v: %v", id, err)
+		return nil, err
 	}
 
-	r.idx.Merge(idx)
-
-	after := len(r.idx.pack)
-	debug.Log("Repo.loadIndex", "Loaded index %v, added %v blobs", id[:8], after-before)
-
-	return nil
+	return idx, nil
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is
