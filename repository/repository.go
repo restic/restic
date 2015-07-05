@@ -2,9 +2,7 @@ package repository
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,13 +17,6 @@ import (
 	"github.com/restic/restic/pack"
 )
 
-// Config contains the configuration for a repository.
-type Config struct {
-	Version           uint        `json:"version"`
-	ID                string      `json:"id"`
-	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
-}
-
 // Repository is used to access a repository in a backend.
 type Repository struct {
 	be      backend.Backend
@@ -38,6 +29,7 @@ type Repository struct {
 	packs []*pack.Packer
 }
 
+// New returns a new repository with backend be.
 func New(be backend.Backend) *Repository {
 	return &Repository{
 		be:  be,
@@ -48,23 +40,23 @@ func New(be backend.Backend) *Repository {
 // Find loads the list of all blobs of type t and searches for names which start
 // with prefix. If none is found, nil and ErrNoIDPrefixFound is returned. If
 // more than one is found, nil and ErrMultipleIDMatches is returned.
-func (s *Repository) Find(t backend.Type, prefix string) (string, error) {
-	return backend.Find(s.be, t, prefix)
+func (r *Repository) Find(t backend.Type, prefix string) (string, error) {
+	return backend.Find(r.be, t, prefix)
 }
 
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
-func (s *Repository) PrefixLength(t backend.Type) (int, error) {
-	return backend.PrefixLength(s.be, t)
+func (r *Repository) PrefixLength(t backend.Type) (int, error) {
+	return backend.PrefixLength(r.be, t)
 }
 
-// Load tries to load and decrypt content identified by t and id from the
+// LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
-func (s *Repository) Load(t backend.Type, id backend.ID) ([]byte, error) {
+func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
 	// load blob from pack
-	rd, err := s.be.Get(t, id.String())
+	rd, err := r.be.Get(t, id.String())
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
 		return nil, err
@@ -86,7 +78,7 @@ func (s *Repository) Load(t backend.Type, id backend.ID) ([]byte, error) {
 	}
 
 	// decrypt
-	plain, err := s.Decrypt(buf)
+	plain, err := r.Decrypt(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -96,10 +88,10 @@ func (s *Repository) Load(t backend.Type, id backend.ID) ([]byte, error) {
 
 // LoadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend.
-func (s *Repository) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
+func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
 	// lookup pack
-	packID, tpe, offset, length, err := s.idx.Lookup(id)
+	packID, tpe, offset, length, err := r.idx.Lookup(id)
 	if err != nil {
 		debug.Log("Repo.LoadBlob", "id %v not found in index: %v", id.Str(), err)
 		return nil, err
@@ -113,7 +105,7 @@ func (s *Repository) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 	debug.Log("Repo.LoadBlob", "id %v found in pack %v at offset %v (length %d)", id.Str(), packID.Str(), offset, length)
 
 	// load blob from pack
-	rd, err := s.be.GetReader(backend.Data, packID.String(), offset, length)
+	rd, err := r.be.GetReader(backend.Data, packID.String(), offset, length)
 	if err != nil {
 		debug.Log("Repo.LoadBlob", "error loading pack %v for %v: %v", packID.Str(), id.Str(), err)
 		return nil, err
@@ -130,7 +122,7 @@ func (s *Repository) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 	}
 
 	// decrypt
-	plain, err := s.Decrypt(buf)
+	plain, err := r.Decrypt(buf)
 	if err != nil {
 		return nil, err
 	}
@@ -145,16 +137,16 @@ func (s *Repository) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
-func (s *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) error {
+func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) error {
 	// load blob from backend
-	rd, err := s.be.Get(t, id.String())
+	rd, err := r.be.Get(t, id.String())
 	if err != nil {
 		return err
 	}
 	defer rd.Close()
 
 	// decrypt
-	decryptRd, err := crypto.DecryptFrom(s.key, rd)
+	decryptRd, err := crypto.DecryptFrom(r.key, rd)
 	defer decryptRd.Close()
 	if err != nil {
 		return err
@@ -172,22 +164,22 @@ func (s *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interf
 
 // LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
 // data and afterwards call json.Unmarshal on the item.
-func (s *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) error {
+func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) error {
 	// lookup pack
-	packID, _, offset, length, err := s.idx.Lookup(id)
+	packID, _, offset, length, err := r.idx.Lookup(id)
 	if err != nil {
 		return err
 	}
 
 	// load blob from pack
-	rd, err := s.be.GetReader(backend.Data, packID.String(), offset, length)
+	rd, err := r.be.GetReader(backend.Data, packID.String(), offset, length)
 	if err != nil {
 		return err
 	}
 	defer rd.Close()
 
 	// decrypt
-	decryptRd, err := crypto.DecryptFrom(s.key, rd)
+	decryptRd, err := crypto.DecryptFrom(r.key, rd)
 	defer decryptRd.Close()
 	if err != nil {
 		return err
@@ -209,43 +201,43 @@ const maxPackers = 200
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is
 // created or one is returned that already has some blobs.
-func (s *Repository) findPacker(size uint) (*pack.Packer, error) {
-	s.pm.Lock()
-	defer s.pm.Unlock()
+func (r *Repository) findPacker(size uint) (*pack.Packer, error) {
+	r.pm.Lock()
+	defer r.pm.Unlock()
 
 	// search for a suitable packer
-	if len(s.packs) > 0 {
+	if len(r.packs) > 0 {
 		debug.Log("Repo.findPacker", "searching packer for %d bytes\n", size)
-		for i, p := range s.packs {
+		for i, p := range r.packs {
 			if p.Size()+size < maxPackSize {
 				debug.Log("Repo.findPacker", "found packer %v", p)
 				// remove from list
-				s.packs = append(s.packs[:i], s.packs[i+1:]...)
+				r.packs = append(r.packs[:i], r.packs[i+1:]...)
 				return p, nil
 			}
 		}
 	}
 
 	// no suitable packer found, return new
-	blob, err := s.be.Create()
+	blob, err := r.be.Create()
 	if err != nil {
 		return nil, err
 	}
 	debug.Log("Repo.findPacker", "create new pack %p", blob)
-	return pack.NewPacker(s.key, blob), nil
+	return pack.NewPacker(r.key, blob), nil
 }
 
 // insertPacker appends p to s.packs.
-func (s *Repository) insertPacker(p *pack.Packer) {
-	s.pm.Lock()
-	defer s.pm.Unlock()
+func (r *Repository) insertPacker(p *pack.Packer) {
+	r.pm.Lock()
+	defer r.pm.Unlock()
 
-	s.packs = append(s.packs, p)
-	debug.Log("Repo.insertPacker", "%d packers\n", len(s.packs))
+	r.packs = append(r.packs, p)
+	debug.Log("Repo.insertPacker", "%d packers\n", len(r.packs))
 }
 
 // savePacker stores p in the backend.
-func (s *Repository) savePacker(p *pack.Packer) error {
+func (r *Repository) savePacker(p *pack.Packer) error {
 	debug.Log("Repo.savePacker", "save packer with %d blobs\n", p.Count())
 	_, err := p.Finalize()
 	if err != nil {
@@ -265,23 +257,23 @@ func (s *Repository) savePacker(p *pack.Packer) error {
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), sid.Str())
-		s.idx.Store(b.Type, b.ID, sid, b.Offset, uint(b.Length))
+		r.idx.Store(b.Type, b.ID, sid, b.Offset, uint(b.Length))
 	}
 
 	return nil
 }
 
 // countPacker returns the number of open (unfinished) packers.
-func (s *Repository) countPacker() int {
-	s.pm.Lock()
-	defer s.pm.Unlock()
+func (r *Repository) countPacker() int {
+	r.pm.Lock()
+	defer r.pm.Unlock()
 
-	return len(s.packs)
+	return len(r.packs)
 }
 
-// Save encrypts data and stores it to the backend as type t. If data is small
+// SaveAndEncrypt encrypts data and stores it to the backend as type t. If data is small
 // enough, it will be packed together with other small blobs.
-func (s *Repository) Save(t pack.BlobType, data []byte, id backend.ID) (backend.ID, error) {
+func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id backend.ID) (backend.ID, error) {
 	if id == nil {
 		// compute plaintext hash
 		id = backend.Hash(data)
@@ -294,13 +286,13 @@ func (s *Repository) Save(t pack.BlobType, data []byte, id backend.ID) (backend.
 	defer freeBuf(ciphertext)
 
 	// encrypt blob
-	ciphertext, err := s.Encrypt(ciphertext, data)
+	ciphertext, err := r.Encrypt(ciphertext, data)
 	if err != nil {
 		return nil, err
 	}
 
 	// find suitable packer and add blob
-	packer, err := s.findPacker(uint(len(ciphertext)))
+	packer, err := r.findPacker(uint(len(ciphertext)))
 	if err != nil {
 		return nil, err
 	}
@@ -310,23 +302,23 @@ func (s *Repository) Save(t pack.BlobType, data []byte, id backend.ID) (backend.
 
 	// add this id to the index, although we don't know yet in which pack it
 	// will be saved, the entry will be updated when the pack is written.
-	s.idx.Store(t, id, nil, 0, 0)
+	r.idx.Store(t, id, nil, 0, 0)
 	debug.Log("Repo.Save", "saving stub for %v (%v) in index", id.Str, t)
 
 	// if the pack is not full enough and there are less than maxPackers
 	// packers, put back to the list
-	if packer.Size() < minPackSize && s.countPacker() < maxPackers {
+	if packer.Size() < minPackSize && r.countPacker() < maxPackers {
 		debug.Log("Repo.Save", "pack is not full enough (%d bytes)", packer.Size())
-		s.insertPacker(packer)
+		r.insertPacker(packer)
 		return id, nil
 	}
 
 	// else write the pack to the backend
-	return id, s.savePacker(packer)
+	return id, r.savePacker(packer)
 }
 
 // SaveFrom encrypts data read from rd and stores it in a pack in the backend as type t.
-func (s *Repository) SaveFrom(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
+func (r *Repository) SaveFrom(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
 	debug.Log("Repo.SaveFrom", "save id %v (%v, %d bytes)", id.Str(), t, length)
 	if id == nil {
 		return errors.New("id is nil")
@@ -337,7 +329,7 @@ func (s *Repository) SaveFrom(t pack.BlobType, id backend.ID, length uint, rd io
 		return err
 	}
 
-	_, err = s.Save(t, buf, id)
+	_, err = r.SaveAndEncrypt(t, buf, id)
 	if err != nil {
 		return err
 	}
@@ -347,7 +339,7 @@ func (s *Repository) SaveFrom(t pack.BlobType, id backend.ID, length uint, rd io
 
 // SaveJSON serialises item as JSON and encrypts and saves it in a pack in the
 // backend as type t.
-func (s *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, error) {
+func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, error) {
 	debug.Log("Repo.SaveJSON", "save %v blob", t)
 	buf := getBuf()[:0]
 	defer freeBuf(buf)
@@ -361,14 +353,14 @@ func (s *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, er
 	}
 
 	buf = wr.Bytes()
-	return s.Save(t, buf, nil)
+	return r.SaveAndEncrypt(t, buf, nil)
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
-func (s *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend.ID, error) {
+func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend.ID, error) {
 	// create file
-	blob, err := s.be.Create()
+	blob, err := r.be.Create()
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +370,7 @@ func (s *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 	hw := backend.NewHashingWriter(blob, sha256.New())
 
 	// encrypt blob
-	ewr := crypto.EncryptTo(s.key, hw)
+	ewr := crypto.EncryptTo(r.key, hw)
 
 	enc := json.NewEncoder(ewr)
 	err = enc.Encode(item)
@@ -406,43 +398,45 @@ func (s *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 }
 
 // Flush saves all remaining packs.
-func (s *Repository) Flush() error {
-	s.pm.Lock()
-	defer s.pm.Unlock()
+func (r *Repository) Flush() error {
+	r.pm.Lock()
+	defer r.pm.Unlock()
 
-	debug.Log("Repo.Flush", "manually flushing %d packs", len(s.packs))
+	debug.Log("Repo.Flush", "manually flushing %d packs", len(r.packs))
 
-	for _, p := range s.packs {
-		err := s.savePacker(p)
+	for _, p := range r.packs {
+		err := r.savePacker(p)
 		if err != nil {
 			return err
 		}
 	}
-	s.packs = s.packs[:0]
+	r.packs = r.packs[:0]
 
 	return nil
 }
 
-func (s *Repository) Backend() backend.Backend {
-	return s.be
+// Backend returns the backend for the repository.
+func (r *Repository) Backend() backend.Backend {
+	return r.be
 }
 
-func (s *Repository) Index() *Index {
-	return s.idx
+// Index returns the currently loaded Index.
+func (r *Repository) Index() *Index {
+	return r.idx
 }
 
 // SetIndex instructs the repository to use the given index.
-func (s *Repository) SetIndex(i *Index) {
-	s.idx = i
+func (r *Repository) SetIndex(i *Index) {
+	r.idx = i
 }
 
 // SaveIndex saves all new packs in the index in the backend, returned is the
 // storage ID.
-func (s *Repository) SaveIndex() (backend.ID, error) {
+func (r *Repository) SaveIndex() (backend.ID, error) {
 	debug.Log("Repo.SaveIndex", "Saving index")
 
 	// create blob
-	blob, err := s.be.Create()
+	blob, err := r.be.Create()
 	if err != nil {
 		return nil, err
 	}
@@ -453,9 +447,9 @@ func (s *Repository) SaveIndex() (backend.ID, error) {
 	hw := backend.NewHashingWriter(blob, sha256.New())
 
 	// encrypt blob
-	ewr := crypto.EncryptTo(s.key, hw)
+	ewr := crypto.EncryptTo(r.key, hw)
 
-	err = s.idx.Encode(ewr)
+	err = r.idx.Encode(ewr)
 	if err != nil {
 		return nil, err
 	}
@@ -478,112 +472,90 @@ func (s *Repository) SaveIndex() (backend.ID, error) {
 	return sid, nil
 }
 
-// LoadIndex loads all index files from the backend and merges them with the
-// current index.
-func (s *Repository) LoadIndex() error {
-	debug.Log("Repo.LoadIndex", "Loading index")
-	done := make(chan struct{})
-	defer close(done)
+const loadIndexParallelism = 20
 
-	for id := range s.be.List(backend.Index, done) {
-		err := s.loadIndex(id)
+// LoadIndex loads all index files from the backend in parallel and merges them
+// with the current index. The first error that occurred is returned.
+func (r *Repository) LoadIndex() error {
+	debug.Log("Repo.LoadIndex", "Loading index")
+
+	errCh := make(chan error, 1)
+	indexes := make(chan *Index)
+
+	worker := func(id string, done <-chan struct{}) error {
+		idx, err := LoadIndex(r, id)
 		if err != nil {
 			return err
 		}
+
+		select {
+		case indexes <- idx:
+		case <-done:
+		}
+
+		return nil
 	}
+
+	go func() {
+		defer close(indexes)
+		errCh <- FilesInParallel(r.be, backend.Index, loadIndexParallelism, worker)
+	}()
+
+	for idx := range indexes {
+		r.idx.Merge(idx)
+	}
+
+	if err := <-errCh; err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// loadIndex loads the index id and merges it with the currently used index.
-func (s *Repository) loadIndex(id string) error {
-	debug.Log("Repo.loadIndex", "Loading index %v", id[:8])
-	before := len(s.idx.pack)
+// LoadIndex loads the index id from backend and returns it.
+func LoadIndex(repo *Repository, id string) (*Index, error) {
+	debug.Log("LoadIndex", "Loading index %v", id[:8])
 
-	rd, err := s.be.Get(backend.Index, id)
+	rd, err := repo.be.Get(backend.Index, id)
 	defer rd.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// decrypt
-	decryptRd, err := crypto.DecryptFrom(s.key, rd)
+	decryptRd, err := crypto.DecryptFrom(repo.key, rd)
 	defer decryptRd.Close()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	idx, err := DecodeIndex(decryptRd)
 	if err != nil {
-		debug.Log("Repo.loadIndex", "error while decoding index %v: %v", id, err)
-		return err
+		debug.Log("LoadIndex", "error while decoding index %v: %v", id, err)
+		return nil, err
 	}
 
-	s.idx.Merge(idx)
-
-	after := len(s.idx.pack)
-	debug.Log("Repo.loadIndex", "Loaded index %v, added %v blobs", id[:8], after-before)
-
-	return nil
-}
-
-const repositoryIDSize = sha256.Size
-const RepoVersion = 1
-
-func createConfig(s *Repository) (err error) {
-	s.Config.ChunkerPolynomial, err = chunker.RandomPolynomial()
-	if err != nil {
-		return err
-	}
-
-	newID := make([]byte, repositoryIDSize)
-	_, err = io.ReadFull(rand.Reader, newID)
-	if err != nil {
-		return err
-	}
-
-	s.Config.ID = hex.EncodeToString(newID)
-	s.Config.Version = RepoVersion
-
-	debug.Log("Repo.createConfig", "New config: %#v", s.Config)
-
-	_, err = s.SaveJSONUnpacked(backend.Config, s.Config)
-	return err
-}
-
-func (s *Repository) loadConfig(cfg *Config) error {
-	err := s.LoadJSONUnpacked(backend.Config, nil, cfg)
-	if err != nil {
-		return err
-	}
-
-	if cfg.Version != RepoVersion {
-		return errors.New("unsupported repository version")
-	}
-
-	if !cfg.ChunkerPolynomial.Irreducible() {
-		return errors.New("invalid chunker polynomial")
-	}
-
-	return nil
+	return idx, nil
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is
 // read and parsed.
-func (s *Repository) SearchKey(password string) error {
-	key, err := SearchKey(s, password)
+func (r *Repository) SearchKey(password string) error {
+	key, err := SearchKey(r, password)
 	if err != nil {
 		return err
 	}
 
-	s.key = key.master
-	s.keyName = key.Name()
-	return s.loadConfig(&s.Config)
+	r.key = key.master
+	r.keyName = key.Name()
+	r.Config, err = LoadConfig(r)
+	return err
 }
 
-// Init creates a new master key with the supplied password and initializes the
-// repository config.
-func (s *Repository) Init(password string) error {
-	has, err := s.be.Test(backend.Config, "")
+// Init creates a new master key with the supplied password, initializes and
+// saves the repository config.
+func (r *Repository) Init(password string) error {
+	has, err := r.be.Test(backend.Config, "")
 	if err != nil {
 		return err
 	}
@@ -591,52 +563,58 @@ func (s *Repository) Init(password string) error {
 		return errors.New("repository master key and config already initialized")
 	}
 
-	key, err := createMasterKey(s, password)
+	key, err := createMasterKey(r, password)
 	if err != nil {
 		return err
 	}
 
-	s.key = key.master
-	s.keyName = key.Name()
-	return createConfig(s)
+	r.key = key.master
+	r.keyName = key.Name()
+	r.Config, err = CreateConfig(r)
+	return err
 }
 
-func (s *Repository) Decrypt(ciphertext []byte) ([]byte, error) {
-	if s.key == nil {
+// Decrypt authenticates and decrypts ciphertext and returns the plaintext.
+func (r *Repository) Decrypt(ciphertext []byte) ([]byte, error) {
+	if r.key == nil {
 		return nil, errors.New("key for repository not set")
 	}
 
-	return crypto.Decrypt(s.key, nil, ciphertext)
+	return crypto.Decrypt(r.key, nil, ciphertext)
 }
 
-func (s *Repository) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
-	if s.key == nil {
+// Encrypt encrypts and authenticates the plaintext and saves the result in
+// ciphertext.
+func (r *Repository) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
+	if r.key == nil {
 		return nil, errors.New("key for repository not set")
 	}
 
-	return crypto.Encrypt(s.key, ciphertext, plaintext)
+	return crypto.Encrypt(r.key, ciphertext, plaintext)
 }
 
-func (s *Repository) Key() *crypto.Key {
-	return s.key
+// Key returns the current master key.
+func (r *Repository) Key() *crypto.Key {
+	return r.key
 }
 
-func (s *Repository) KeyName() string {
-	return s.keyName
+// KeyName returns the name of the current key in the backend.
+func (r *Repository) KeyName() string {
+	return r.keyName
 }
 
 // Count returns the number of blobs of a given type in the backend.
-func (s *Repository) Count(t backend.Type) (n uint) {
-	for _ = range s.be.List(t, nil) {
+func (r *Repository) Count(t backend.Type) (n uint) {
+	for _ = range r.be.List(t, nil) {
 		n++
 	}
 
 	return
 }
 
-func (s *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backend.ID) {
+func (r *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backend.ID) {
 	defer close(out)
-	in := s.be.List(t, done)
+	in := r.be.List(t, done)
 
 	var (
 		// disable sending on the outCh until we received a job
@@ -671,22 +649,26 @@ func (s *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backe
 	}
 }
 
-func (s *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.ID {
+// List returns a channel that yields all IDs of type t in the backend.
+func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.ID {
 	outCh := make(chan backend.ID)
 
-	go s.list(t, done, outCh)
+	go r.list(t, done, outCh)
 
 	return outCh
 }
 
-func (s *Repository) Delete() error {
-	if b, ok := s.be.(backend.Deleter); ok {
+// Delete calls backend.Delete() if implemented, and returns an error
+// otherwise.
+func (r *Repository) Delete() error {
+	if b, ok := r.be.(backend.Deleter); ok {
 		return b.Delete()
 	}
 
 	return errors.New("Delete() called for backend that does not implement this method")
 }
 
-func (s *Repository) Close() error {
-	return s.be.Close()
+// Close closes the repository by closing the backend.
+func (r *Repository) Close() error {
+	return r.be.Close()
 }

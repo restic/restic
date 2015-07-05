@@ -162,32 +162,44 @@ used to reconstruct the index. The files are encrypted and authenticated like
 Data and Tree Blobs, so the outer structure is `IV || Ciphertext || MAC` again.
 The plaintext consists of a JSON document like the following:
 
-    [ {
-      "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
-      "blobs": [
+    {
+      "obsolete": [
+        "ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452"
+      ],
+      "packs": [
         {
-          "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
-          "type": "data",
-          "offset": 0,
-          "length": 25
-        },{
-          "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
-          "type": "tree",
-          "offset": 38,
-          "length": 100
-        },
-        {
-          "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
-          "type": "data",
-          "offset": 150,
-          "length": 123
-        }
+          "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
+          "blobs": [
+            {
+              "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+              "type": "data",
+              "offset": 0,
+              "length": 25
+            },{
+              "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+              "type": "tree",
+              "offset": 38,
+              "length": 100
+            },
+            {
+              "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
+              "type": "data",
+              "offset": 150,
+              "length": 123
+            }
+          ]
+        }, [...]
       ]
-    } ]
+    }
 
-This JSON document lists Blobs with contents. In this example, the Pack
-`73d04e61` contains two data Blobs and one Tree blob, the plaintext hashes are
-listed afterwards.
+This JSON document lists Packs and the blobs contained therein. In this
+example, the Pack `73d04e61` contains two data Blobs and one Tree blob, the
+plaintext hashes are listed afterwards.
+
+The field `obsolete` lists the storage IDs of index files that have been
+replaced with the current index file. This happens when index files are
+repacked, this happens for example when old snapshots are removed and Packs are
+recombined.
 
 There may be an arbitrary number of index files, containing information on
 non-disjoint sets of Packs. The number of packs described in a single file is

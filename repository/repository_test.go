@@ -6,11 +6,13 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"io"
+	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/pack"
+	"github.com/restic/restic/repository"
 	. "github.com/restic/restic/test"
 )
 
@@ -80,7 +82,7 @@ func TestSave(t *testing.T) {
 		id := backend.Hash(data)
 
 		// save
-		sid, err := repo.Save(pack.Data, data, nil)
+		sid, err := repo.SaveAndEncrypt(pack.Data, data, nil)
 		OK(t, err)
 
 		Equals(t, id, sid)
@@ -193,4 +195,25 @@ func TestLoadJSONUnpacked(t *testing.T) {
 
 	Equals(t, sn.Hostname, sn2.Hostname)
 	Equals(t, sn.Username, sn2.Username)
+}
+
+var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
+
+func TestLoadIndex(t *testing.T) {
+	WithTestEnvironment(t, repoFixture, func(repodir string) {
+		repo := OpenLocalRepo(t, repodir)
+		OK(t, repo.LoadIndex())
+	})
+}
+
+func BenchmarkLoadIndex(b *testing.B) {
+	WithTestEnvironment(b, repoFixture, func(repodir string) {
+		repo := OpenLocalRepo(b, repodir)
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			repo.SetIndex(repository.NewIndex())
+			OK(b, repo.LoadIndex())
+		}
+	})
 }

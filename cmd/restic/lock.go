@@ -49,7 +49,9 @@ func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, 
 }
 
 func unlockRepo(lock *restic.Lock) error {
+	debug.Log("unlockRepo", "unlocking repository")
 	if err := lock.Unlock(); err != nil {
+		debug.Log("unlockRepo", "error while unlocking: %v", err)
 		return err
 	}
 
@@ -67,8 +69,10 @@ func unlockAll() error {
 	debug.Log("unlockAll", "unlocking %d locks", len(globalLocks))
 	for _, lock := range globalLocks {
 		if err := lock.Unlock(); err != nil {
+			debug.Log("unlockAll", "error while unlocking: %v", err)
 			return err
 		}
+		debug.Log("unlockAll", "successfully removed lock")
 	}
 
 	return nil

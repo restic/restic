@@ -3,13 +3,18 @@ package test_helper
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/backend/local"
+	"github.com/restic/restic/repository"
 )
 
 // Assert fails the test if the condition is false.
@@ -64,4 +69,57 @@ func Random(seed, count int) []byte {
 // derived from the seed.
 func RandomReader(seed, size int) *bytes.Reader {
 	return bytes.NewReader(Random(seed, size))
+}
+
+// SetupTarTestFixture extracts the tarFile to outputDir.
+func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
+	err := System("sh", "-c", `(cd "$1" && tar xz) < "$2"`,
+		"sh", outputDir, tarFile)
+	OK(t, err)
+}
+
+// System runs the command and returns the exit code. Output is passed on to
+// stdout/stderr.
+func System(command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+// WithTestEnvironment creates a test environment, extracts the repository
+// fixture and and calls f with the repository dir.
+func WithTestEnvironment(t testing.TB, repoFixture string, f func(repodir string)) {
+	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
+	OK(t, err)
+
+	fd, err := os.Open(repoFixture)
+	if err != nil {
+		panic(err)
+	}
+	OK(t, fd.Close())
+
+	SetupTarTestFixture(t, tempdir, repoFixture)
+
+	f(filepath.Join(tempdir, "repo"))
+
+	if !TestCleanup {
+		t.Logf("leaving temporary directory %v used for test", tempdir)
+		return
+	}
+
+	OK(t, os.RemoveAll(tempdir))
+}
+
+// OpenLocalRepo opens the local repository located at dir.
+func OpenLocalRepo(t testing.TB, dir string) *repository.Repository {
+	be, err := local.Open(dir)
+	OK(t, err)
+
+	repo := repository.New(be)
+	err = repo.SearchKey(TestPassword)
+	OK(t, err)
+
+	return repo
 }
