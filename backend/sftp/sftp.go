@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"syscall"
 
 	"github.com/juju/errors"
 	"github.com/pkg/sftp"
@@ -34,6 +35,9 @@ func startClient(program string, args ...string) (*SFTP, error) {
 
 	// send errors from ssh to stderr
 	cmd.Stderr = os.Stderr
+
+	// ignore signals sent to the parent (e.g. SIGINT)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 
 	// get stdin and stdout
 	wr, err := cmd.StdinPipe()
@@ -452,6 +456,10 @@ func (s *SFTP) Close() error {
 	}
 
 	s.c.Close()
-	// TODO: add timeout after which the process is killed
+
+	if err := s.cmd.Process.Kill(); err != nil {
+		return err
+	}
+
 	return s.cmd.Wait()
 }
