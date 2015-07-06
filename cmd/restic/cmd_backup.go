@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -202,6 +203,25 @@ func findLatestSnapshot(repo *repository.Repository, targets []string) (backend.
 	return latestID, nil
 }
 
+// filterExisting returns a slice of all existing items, or an error if no
+// items exist at all.
+func filterExisting(items []string) (result []string, err error) {
+	for _, item := range items {
+		_, err := os.Lstat(item)
+		if err != nil && os.IsNotExist(err) {
+			continue
+		}
+
+		result = append(result, item)
+	}
+
+	if len(result) == 0 {
+		return nil, errors.New("all target directories/files do not exist")
+	}
+
+	return
+}
+
 func (cmd CmdBackup) Execute(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
@@ -213,6 +233,11 @@ func (cmd CmdBackup) Execute(args []string) error {
 			d = a
 		}
 		target = append(target, d)
+	}
+
+	target, err := filterExisting(target)
+	if err != nil {
+		return err
 	}
 
 	repo, err := cmd.global.OpenRepository()
