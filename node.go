@@ -104,6 +104,8 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 
 // CreateAt creates the node at the given path and restores all the meta data.
 func (node *Node) CreateAt(path string, repo *repository.Repository) error {
+	debug.Log("Node.CreateAt", "create node %v at %v", node.Name, path)
+
 	switch node.Type {
 	case "dir":
 		if err := node.createDirAt(path); err != nil {
@@ -135,7 +137,12 @@ func (node *Node) CreateAt(path string, repo *repository.Repository) error {
 		return fmt.Errorf("filetype %q not implemented!\n", node.Type)
 	}
 
-	return node.restoreMetadata(path)
+	err := node.restoreMetadata(path)
+	if err != nil {
+		debug.Log("Node.CreateAt", "restoreMetadata(%s) error %v", path, err)
+	}
+
+	return err
 }
 
 func (node Node) restoreMetadata(path string) error {
@@ -156,6 +163,7 @@ func (node Node) restoreMetadata(path string) error {
 	if node.Type != "dir" {
 		err = node.RestoreTimestamps(path)
 		if err != nil {
+			debug.Log("Node.restoreMetadata", "error restoring timestamps for dir %v: %v", path, err)
 			return err
 		}
 	}
