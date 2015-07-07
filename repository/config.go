@@ -7,8 +7,8 @@ import (
 	"errors"
 	"io"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/debug"
 )
 

@@ -31,6 +31,10 @@
 			"Rev": "518aed2757a65cfa64d4b1b2baf08410f8b7a6bc"
 		},
 		{
+			"ImportPath": "github.com/restic/chunker",
+			"Rev": "e795b80f4c927ebcf2687ce18bcf1a39fee740b1"
+		},
+		{
 			"ImportPath": "github.com/vaughan0/go-ini",
 			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
 		},

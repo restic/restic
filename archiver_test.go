@@ -6,9 +6,9 @@ import (
 	"io"
 	"testing"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/pack"
 	. "github.com/restic/restic/test"

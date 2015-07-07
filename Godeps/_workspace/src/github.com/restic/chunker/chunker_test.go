@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/chunker"
+	"github.com/restic/chunker"
 	. "github.com/restic/restic/test"
 )
 
