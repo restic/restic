@@ -3,7 +3,7 @@ package repository
 import (
 	"sync"
 
-	"github.com/restic/restic/chunker"
+	"github.com/restic/chunker"
 )
 
 var bufPool = sync.Pool{

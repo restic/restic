@@ -10,8 +10,8 @@ import (
 	"io/ioutil"
 	"sync"
 
+	"github.com/restic/chunker"
 	"github.com/restic/restic/backend"
-	"github.com/restic/restic/chunker"
 	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
