@@ -95,6 +95,11 @@ github issue](https://github.com/restic/restic/issues/new). If you would like
 to chat about restic, there is also the IRC channel #restic on
 irc.freenode.net. Or just write me an email :)
 
+**Important**: If you discover something that you believe to be a possible critical
+security problem, please do *not* open a GitHub issue but send an email directly to
+alexander@bumpern.de. If possible, please encrypt your email using PGP
+([0xD3F7A907](https://pgp.mit.edu/pks/lookup?op=get&search=0x91A6868BD3F7A907)).
+
 Talks
 =====
 
