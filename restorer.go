@@ -26,7 +26,10 @@ var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { r
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) {
-	r := &Restorer{repo: repo, Error: restorerAbortOnAllErrors}
+	r := &Restorer{
+		repo: repo, Error: restorerAbortOnAllErrors,
+		SelectForRestore: func(string, string, *Node) bool { return true },
+	}
 
 	var err error
 
@@ -45,14 +48,9 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 	}
 
 	for _, node := range tree.Nodes {
-		selectedForRestore := true
-		if res.SelectForRestore != nil {
-			debug.Log("Restorer.restoreTo", "running select filter for %v", node.Name)
-
-			selectedForRestore = res.SelectForRestore(filepath.Join(dir, node.Name),
-				filepath.Join(dst, dir, node.Name), node)
-			debug.Log("Restorer.restoreNodeTo", "SelectForRestore returned %v", selectedForRestore)
-		}
+		selectedForRestore := res.SelectForRestore(filepath.Join(dir, node.Name),
+			filepath.Join(dst, dir, node.Name), node)
+		debug.Log("Restorer.restoreNodeTo", "SelectForRestore returned %v", selectedForRestore)
 
 		if selectedForRestore {
 			err := res.restoreNodeTo(node, dir, dst)
