@@ -129,20 +129,20 @@ func TestNodeRestoreAt(t *testing.T) {
 		OK(t, err)
 
 		Assert(t, test.Name == n2.Name,
-			"%v: name doesn't match", test.Type)
+			"%v: name doesn't match (%v != %v)", test.Type, test.Name, n2.Name)
 		Assert(t, test.Type == n2.Type,
-			"%v: type doesn't match", test.Type)
+			"%v: type doesn't match (%v != %v)", test.Type, test.Type, n2.Type)
 		Assert(t, test.Size == n2.Size,
-			"%v: size doesn't match", test.Size)
+			"%v: size doesn't match (%v != %v)", test.Size, test.Size, n2.Size)
 		Assert(t, test.UID == n2.UID,
-			"%v: UID doesn't match", test.Type)
+			"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
 		Assert(t, test.GID == n2.GID,
-			"%v: GID doesn't match", test.Type)
+			"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
 		Assert(t, test.Mode == n2.Mode,
-			"%v: mode doesn't match", test.Type)
+			"%v: mode doesn't match (%v != %v)", test.Type, test.Mode, n2.Mode)
 		Assert(t, test.ModTime == n2.ModTime,
-			"%v: ModTime dosn't match", test.Type)
+			"%v: ModTime dosn't match (%v != %v)", test.Type, test.ModTime, n2.ModTime)
 		Assert(t, test.AccessTime == n2.AccessTime,
-			"%v: AccessTime doesn't match", test.Type)
+			"%v: AccessTime doesn't match (%v != %v)", test.Type, test.AccessTime, n2.AccessTime)
 	}
 }
