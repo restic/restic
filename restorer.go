@@ -45,9 +45,20 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 	}
 
 	for _, node := range tree.Nodes {
-		excluded, err := res.restoreNodeTo(node, dir, dst)
-		if err != nil {
-			return err
+		selectedForRestore := true
+		if res.SelectForRestore != nil {
+			debug.Log("Restorer.restoreTo", "running select filter for %v", node.Name)
+
+			selectedForRestore = res.SelectForRestore(filepath.Join(dir, node.Name),
+				filepath.Join(dst, dir, node.Name), node)
+			debug.Log("Restorer.restoreNodeTo", "SelectForRestore returned %v", selectedForRestore)
+		}
+
+		if selectedForRestore {
+			err := res.restoreNodeTo(node, dir, dst)
+			if err != nil {
+				return err
+			}
 		}
 
 		if node.Type == "dir" {
@@ -64,7 +75,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 				}
 			}
 
-			if !excluded {
+			if selectedForRestore {
 				// Restore directory timestamp at the end. If we would do it earlier, restoring files within
 				// the directory would overwrite the timestamp of the directory they are in.
 				if err := node.RestoreTimestamps(filepath.Join(dst, dir, node.Name)); err != nil {
@@ -77,20 +88,11 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 	return nil
 }
 
-func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) (excluded bool, err error) {
+func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 	debug.Log("Restorer.restoreNodeTo", "node %v, dir %v, dst %v", node.Name, dir, dst)
 	dstPath := filepath.Join(dst, dir, node.Name)
 
-	if res.SelectForRestore != nil {
-		debug.Log("Restorer.restoreNodeTo", "running select filter for %v", node.Name)
-
-		if !res.SelectForRestore(filepath.Join(dir, node.Name), dstPath, node) {
-			debug.Log("Restorer.restoreNodeTo", "SelectForRestore returned false")
-			return true, nil
-		}
-	}
-
-	err = node.CreateAt(dstPath, res.repo)
+	err := node.CreateAt(dstPath, res.repo)
 	if err != nil {
 		debug.Log("Restorer.restoreNodeTo", "node.CreateAt(%s) error %v", dstPath, err)
 	}
@@ -113,13 +115,13 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) (excluded
 		debug.Log("Restorer.restoreNodeTo", "error %v", err)
 		err = res.Error(dstPath, node, errors.Annotate(err, "create node"))
 		if err != nil {
-			return false, err
+			return err
 		}
 	}
 
 	debug.Log("Restorer.restoreNodeTo", "successfully restored %v", node.Name)
 
-	return false, nil
+	return nil
 }
 
 // RestoreTo creates the directories and files in the snapshot below dir.
