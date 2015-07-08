@@ -11,7 +11,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -76,9 +78,9 @@ func cmdList(t testing.TB, global GlobalOptions, tpe string) []backend.ID {
 	return IDs
 }
 
-func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID) {
+func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, args ...string) {
 	cmd := &CmdRestore{global: &global}
-	cmd.Execute([]string{snapshotID.String(), dir})
+	cmd.Execute(append([]string{snapshotID.String(), dir}, args...))
 }
 
 func cmdFsck(t testing.TB, global GlobalOptions) {
@@ -386,5 +388,113 @@ func TestKeyAddRemove(t *testing.T) {
 		cmdKey(t, global, "list")
 
 		cmdFsck(t, global)
+	})
+}
+
+func testFileSize(filename string, size int64) error {
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+
+	if fi.Size() != size {
+		return fmt.Errorf("wrong file size for %v: expected %v, got %v", filename, size, fi.Size())
+	}
+
+	return nil
+}
+
+func TestRestoreFilter(t *testing.T) {
+	testfiles := []struct {
+		name string
+		size uint
+	}{
+		{"testfile1.c", 100},
+		{"testfile2.exe", 101},
+		{"subdir1/subdir2/testfile3.docx", 102},
+		{"subdir1/subdir2/testfile4.c", 102},
+	}
+
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		cmdInit(t, global)
+
+		for _, test := range testfiles {
+			p := filepath.Join(env.testdata, test.name)
+			OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+			OK(t, appendRandomData(p, test.size))
+		}
+
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		cmdFsck(t, global)
+
+		snapshotID := cmdList(t, global, "snapshots")[0]
+
+		// no restore filter should restore all files
+		cmdRestore(t, global, filepath.Join(env.base, "restore0"), snapshotID)
+		for _, test := range testfiles {
+			OK(t, testFileSize(filepath.Join(env.base, "restore0", "testdata", test.name), int64(test.size)))
+		}
+
+		for i, pat := range []string{"*.c", "*.exe", "*", "*file3*"} {
+			base := filepath.Join(env.base, fmt.Sprintf("restore%d", i+1))
+			cmdRestore(t, global, base, snapshotID, pat)
+			for _, test := range testfiles {
+				err := testFileSize(filepath.Join(base, "testdata", test.name), int64(test.size))
+				if ok, _ := filepath.Match(pat, filepath.Base(test.name)); ok {
+					OK(t, err)
+				} else {
+					Assert(t, os.IsNotExist(err),
+						"expected %v to not exist in restore step %v, but it exists, err %v", test.name, i+1, err)
+				}
+			}
+		}
+
+	})
+}
+
+func setZeroModTime(filename string) error {
+	var utimes = []syscall.Timespec{
+		syscall.NsecToTimespec(0),
+		syscall.NsecToTimespec(0),
+	}
+
+	return syscall.UtimesNano(filename, utimes)
+}
+
+func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		cmdInit(t, global)
+
+		p := filepath.Join(env.testdata, "subdir1", "subdir2", "subdir3", "file.ext")
+		OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+		OK(t, appendRandomData(p, 200))
+		OK(t, setZeroModTime(filepath.Join(env.testdata, "subdir1", "subdir2")))
+
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		cmdFsck(t, global)
+
+		snapshotID := cmdList(t, global, "snapshots")[0]
+
+		// restore with filter "*.ext", this should restore "file.ext", but
+		// since the directories are ignored and only created because of
+		// "file.ext", no meta data should be restored for them.
+		cmdRestore(t, global, filepath.Join(env.base, "restore0"), snapshotID, "*.ext")
+
+		f1 := filepath.Join(env.base, "restore0", "testdata", "subdir1", "subdir2")
+		fi, err := os.Stat(f1)
+		OK(t, err)
+
+		Assert(t, fi.ModTime() != time.Unix(0, 0),
+			"meta data of intermediate directory has been restore although it was ignored")
+
+		// restore with filter "*", this should restore meta data on everything.
+		cmdRestore(t, global, filepath.Join(env.base, "restore1"), snapshotID, "*")
+
+		f2 := filepath.Join(env.base, "restore1", "testdata", "subdir1", "subdir2")
+		fi, err = os.Stat(f2)
+		OK(t, err)
+
+		Assert(t, fi.ModTime() == time.Unix(0, 0),
+			"meta data of intermediate directory hasn't been restore")
 	})
 }
