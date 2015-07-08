@@ -503,7 +503,7 @@ func (j archiveJob) Copy() pipe.Job {
 	}
 
 	// handle files
-	if isFile(j.new.Info()) {
+	if isRegularFile(j.new.Info()) {
 		debug.Log("archiveJob.Copy", "   job %v is file", j.new.Path())
 
 		// if type has changed, return new job directly
@@ -649,7 +649,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 	return sn, id, nil
 }
 
-func isFile(fi os.FileInfo) bool {
+func isRegularFile(fi os.FileInfo) bool {
 	if fi == nil {
 		return false
 	}
@@ -679,11 +679,14 @@ func Scan(dirs []string, p *Progress) (Stat, error) {
 				return nil
 			}
 			s := Stat{}
-			if isFile(fi) {
-				s.Files++
-				s.Bytes += uint64(fi.Size())
-			} else if fi.IsDir() {
+			if fi.IsDir() {
 				s.Dirs++
+			} else {
+				s.Files++
+
+				if isRegularFile(fi) {
+					s.Bytes += uint64(fi.Size())
+				}
 			}
 
 			p.Report(s)
