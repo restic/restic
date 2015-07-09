@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -138,11 +139,33 @@ func TestNodeRestoreAt(t *testing.T) {
 			"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
 		Assert(t, test.GID == n2.GID,
 			"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
-		Assert(t, test.Mode == n2.Mode,
-			"%v: mode doesn't match (%v != %v)", test.Type, test.Mode, n2.Mode)
-		Assert(t, test.ModTime == n2.ModTime,
-			"%v: ModTime dosn't match (%v != %v)", test.Type, test.ModTime, n2.ModTime)
-		Assert(t, test.AccessTime == n2.AccessTime,
-			"%v: AccessTime doesn't match (%v != %v)", test.Type, test.AccessTime, n2.AccessTime)
+
+		if test.Type != "symlink" {
+			Assert(t, test.Mode == n2.Mode,
+				"%v: mode doesn't match (%v != %v)", test.Type, test.Mode, n2.Mode)
+		}
+
+		AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
+		AssertFsTimeEqual(t, "ModTime", test.Type, test.ModTime, n2.ModTime)
 	}
+}
+
+func AssertFsTimeEqual(t *testing.T, label string, nodeType string, t1 time.Time, t2 time.Time) {
+	var equal bool
+
+	if runtime.GOOS == "darwin" {
+		// Go currently doesn't support setting timestamps of symbolic links on darwin
+		if nodeType == "symlink" {
+			return
+		}
+
+		// HFS+ timestamps don't support sub-second precision,
+		// see https://en.wikipedia.org/wiki/Comparison_of_file_systems
+		diff := int(t1.Sub(t2).Seconds())
+		equal = diff == 0
+	} else {
+		equal = t1.Equal(t2)
+	}
+
+	Assert(t, equal, "%s: %s doesn't match (%v != %v)", label, nodeType, t1, t2)
 }
