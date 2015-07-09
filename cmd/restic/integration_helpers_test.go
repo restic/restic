@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"syscall"
 	"testing"
 
@@ -55,25 +56,32 @@ func walkDir(dir string) <-chan *dirEntry {
 
 func (e *dirEntry) equals(other *dirEntry) bool {
 	if e.path != other.path {
-		fmt.Fprintf(os.Stderr, "%v: path does not match\n", e.path)
+		fmt.Fprintf(os.Stderr, "%v: path does not match (%v != %v)\n", e.path, e.path, other.path)
 		return false
 	}
 
 	if e.fi.Mode() != other.fi.Mode() {
-		fmt.Fprintf(os.Stderr, "%v: mode does not match\n", e.path)
+		fmt.Fprintf(os.Stderr, "%v: mode does not match (%v != %v)\n", e.path, e.fi.Mode(), other.fi.Mode())
 		return false
 	}
 
-	if e.fi.ModTime() != other.fi.ModTime() {
-		fmt.Fprintf(os.Stderr, "%v: ModTime does not match\n", e.path)
-		return false
+	if runtime.GOOS != "darwin" {
+		if e.fi.ModTime() != other.fi.ModTime() {
+			fmt.Fprintf(os.Stderr, "%v: ModTime does not match (%v != %v)\n", e.path, e.fi.ModTime(), other.fi.ModTime())
+			return false
+		}
 	}
 
 	stat, _ := e.fi.Sys().(*syscall.Stat_t)
 	stat2, _ := other.fi.Sys().(*syscall.Stat_t)
 
-	if stat.Uid != stat2.Uid || stat2.Gid != stat2.Gid {
-		fmt.Fprintf(os.Stderr, "%v: UID or GID do not match\n", e.path)
+	if stat.Uid != stat2.Uid {
+		fmt.Fprintf(os.Stderr, "%v: UID does not match (%v != %v)\n", e.path, stat.Uid, stat2.Uid)
+		return false
+	}
+
+	if stat.Gid != stat2.Gid {
+		fmt.Fprintf(os.Stderr, "%v: GID does not match (%v != %v)\n", e.path, stat.Gid, stat2.Gid)
 		return false
 	}
 
