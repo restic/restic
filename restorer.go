@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 	"github.com/restic/restic/repository"
 
 	"github.com/juju/errors"
@@ -17,15 +18,18 @@ type Restorer struct {
 	repo *repository.Repository
 	sn   *Snapshot
 
-	Error  func(dir string, node *Node, err error) error
-	Filter func(item string, dstpath string, node *Node) bool
+	Error            func(dir string, node *Node, err error) error
+	SelectForRestore func(item string, dstpath string, node *Node) bool
 }
 
 var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
 func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) {
-	r := &Restorer{repo: repo, Error: restorerAbortOnAllErrors}
+	r := &Restorer{
+		repo: repo, Error: restorerAbortOnAllErrors,
+		SelectForRestore: func(string, string, *Node) bool { return true },
+	}
 
 	var err error
 
@@ -44,8 +48,15 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 	}
 
 	for _, node := range tree.Nodes {
-		if err := res.restoreNodeTo(node, dir, dst); err != nil {
-			return err
+		selectedForRestore := res.SelectForRestore(filepath.Join(dir, node.Name),
+			filepath.Join(dst, dir, node.Name), node)
+		debug.Log("Restorer.restoreNodeTo", "SelectForRestore returned %v", selectedForRestore)
+
+		if selectedForRestore {
+			err := res.restoreNodeTo(node, dir, dst)
+			if err != nil {
+				return err
+			}
 		}
 
 		if node.Type == "dir" {
@@ -62,10 +73,12 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 				}
 			}
 
-			// Restore directory timestamp at the end. If we would do it earlier, restoring files within
-			// the directory would overwrite the timestamp of the directory they are in.
-			if err := node.RestoreTimestamps(filepath.Join(dst, dir, node.Name)); err != nil {
-				return err
+			if selectedForRestore {
+				// Restore directory timestamp at the end. If we would do it earlier, restoring files within
+				// the directory would overwrite the timestamp of the directory they are in.
+				if err := node.RestoreTimestamps(filepath.Join(dst, dir, node.Name)); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -74,18 +87,20 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 }
 
 func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
+	debug.Log("Restorer.restoreNodeTo", "node %v, dir %v, dst %v", node.Name, dir, dst)
 	dstPath := filepath.Join(dst, dir, node.Name)
 
-	if res.Filter != nil && res.Filter(filepath.Join(dir, node.Name), dstPath, node) {
-		return nil
-	}
-
 	err := node.CreateAt(dstPath, res.repo)
+	if err != nil {
+		debug.Log("Restorer.restoreNodeTo", "node.CreateAt(%s) error %v", dstPath, err)
+	}
 
 	// Did it fail because of ENOENT?
 	if pe, ok := errors.Cause(err).(*os.PathError); ok {
 		errn, ok := pe.Err.(syscall.Errno)
 		if ok && errn == syscall.ENOENT {
+			debug.Log("Restorer.restoreNodeTo", "create intermediate paths")
+
 			// Create parent directories and retry
 			err = os.MkdirAll(filepath.Dir(dstPath), 0700)
 			if err == nil || err == os.ErrExist {
@@ -95,11 +110,14 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 	}
 
 	if err != nil {
+		debug.Log("Restorer.restoreNodeTo", "error %v", err)
 		err = res.Error(dstPath, node, errors.Annotate(err, "create node"))
 		if err != nil {
 			return err
 		}
 	}
+
+	debug.Log("Restorer.restoreNodeTo", "successfully restored %v", node.Name)
 
 	return nil
 }

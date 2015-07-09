@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/restic/restic"
+	"github.com/restic/restic/debug"
 )
 
 type CmdRestore struct {
@@ -78,10 +79,16 @@ func (cmd CmdRestore) Execute(args []string) error {
 	// TODO: a filter against the full path sucks as filepath.Match doesn't match
 	// directory separators on '*'. still, it's better than nothing.
 	if len(args) > 2 {
-		res.Filter = func(item string, dstpath string, node *restic.Node) bool {
-			matched, err := filepath.Match(item, args[2])
+		pattern := args[2]
+		cmd.global.Verbosef("filter pattern %q\n", pattern)
+
+		res.SelectForRestore = func(item string, dstpath string, node *restic.Node) bool {
+			matched, err := filepath.Match(pattern, node.Name)
 			if err != nil {
 				panic(err)
+			}
+			if !matched {
+				debug.Log("restic.restore", "item %v doesn't match pattern %q", item, pattern)
 			}
 			return matched
 		}
