@@ -2,7 +2,6 @@ package repository
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -79,7 +78,7 @@ func (idx *Index) Lookup(id backend.ID) (packID backend.ID, tpe pack.BlobType, o
 	}
 
 	debug.Log("Index.Lookup", "id %v not found", id.Str())
-	return nil, pack.Data, 0, 0, errors.New("id not found")
+	return nil, pack.Data, 0, 0, fmt.Errorf("id %v not found in index", id)
 }
 
 // Has returns true iff the id is listed in the index.
