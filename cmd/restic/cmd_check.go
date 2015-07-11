@@ -52,15 +52,25 @@ func (cmd CmdCheck) Execute(args []string) error {
 		return err
 	}
 
+	done := make(chan struct{})
+	defer close(done)
+
 	errorsFound := false
+	errChan := make(chan error)
+
 	cmd.global.Verbosef("Check all packs\n")
-	for _, err := range checker.Packs() {
+	go checker.Packs(errChan, done)
+
+	for err := range errChan {
 		errorsFound = true
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}
 
 	cmd.global.Verbosef("Check snapshots, trees and blobs\n")
-	for _, err := range checker.Structure() {
+	errChan = make(chan error)
+	go checker.Structure(errChan, done)
+
+	for err := range errChan {
 		errorsFound = true
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}

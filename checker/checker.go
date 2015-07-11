@@ -192,27 +192,21 @@ outer:
 }
 
 // Packs checks that all packs referenced in the index are still available and
-// there are no packs that aren't in an index.
-func (c *Checker) Packs() []error {
+// there are no packs that aren't in an index. errChan is closed after all
+// packs have been checked.
+func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
+	defer close(errChan)
+
 	debug.Log("Checker.Packs", "checking for %d packs", len(c.packs))
 	seenPacks := make(map[mapID]struct{})
-
-	done := make(chan struct{})
-	defer close(done)
 
 	var workerWG sync.WaitGroup
 
 	IDChan := make(chan mapID)
-	errChan := make(chan error)
-
 	for i := 0; i < defaultParallelism; i++ {
 		workerWG.Add(1)
 		go packIDTester(c.repo, IDChan, errChan, &workerWG, done)
 	}
-
-	errsChan := make(chan []error, 1)
-
-	go collectErrors(errChan, errsChan, done)
 
 	for id := range c.packs {
 		seenPacks[id] = struct{}{}
@@ -223,19 +217,17 @@ func (c *Checker) Packs() []error {
 	debug.Log("Checker.Packs", "waiting for %d workers to terminate", defaultParallelism)
 	workerWG.Wait()
 	debug.Log("Checker.Packs", "workers terminated")
-	close(errChan)
-
-	errs := <-errsChan
-	debug.Log("Checker.Packs", "error worker terminated")
 
 	for id := range c.repo.List(backend.Data, done) {
 		debug.Log("Checker.Packs", "check data blob %v", id)
 		if _, ok := seenPacks[id2map(id)]; !ok {
-			errs = append(errs, PackError{id, errors.New("not referenced in any index")})
+			select {
+			case <-done:
+				return
+			case errChan <- PackError{id, errors.New("not referenced in any index")}:
+			}
 		}
 	}
-
-	return errs
 }
 
 // Error is an error that occurred while checking a repository.
@@ -276,10 +268,9 @@ func loadTreeFromSnapshot(repo *repository.Repository, id backend.ID) (backend.I
 }
 
 // Structure checks that for all snapshots all referenced blobs are available
-// in the index.
-func (c *Checker) Structure() (errs []error) {
-	done := make(chan struct{})
-	defer close(done)
+// in the index. errChan is closed after all trees have been traversed.
+func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
+	defer close(errChan)
 
 	var todo backend.IDs
 
@@ -288,7 +279,11 @@ func (c *Checker) Structure() (errs []error) {
 
 		treeID, err := loadTreeFromSnapshot(c.repo, id)
 		if err != nil {
-			errs = append(errs, err)
+			select {
+			case <-done:
+				return
+			case errChan <- err:
+			}
 			continue
 		}
 
@@ -296,8 +291,13 @@ func (c *Checker) Structure() (errs []error) {
 		todo = append(todo, treeID)
 	}
 
-	errs = append(errs, c.trees(todo)...)
-	return errs
+	for _, err := range c.trees(todo) {
+		select {
+		case <-done:
+			return
+		case errChan <- err:
+		}
+	}
 }
 
 func (c *Checker) trees(treeIDs backend.IDs) (errs []error) {

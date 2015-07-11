@@ -24,14 +24,44 @@ func list(repo *repository.Repository, t backend.Type) (IDs []string) {
 	return IDs
 }
 
+func checkPacks(chkr *checker.Checker) (errs []error) {
+	done := make(chan struct{})
+	defer close(done)
+
+	errChan := make(chan error)
+
+	go chkr.Packs(errChan, done)
+
+	for err := range errChan {
+		errs = append(errs, err)
+	}
+
+	return errs
+}
+
+func checkStruct(chkr *checker.Checker) (errs []error) {
+	done := make(chan struct{})
+	defer close(done)
+
+	errChan := make(chan error)
+
+	go chkr.Structure(errChan, done)
+
+	for err := range errChan {
+		errs = append(errs, err)
+	}
+
+	return errs
+}
+
 func TestCheckRepo(t *testing.T) {
 	WithTestEnvironment(t, checkerTestData, func(repodir string) {
 		repo := OpenLocalRepo(t, repodir)
 
 		chkr := checker.New(repo)
 		OK(t, chkr.LoadIndex())
-		OKs(t, chkr.Packs())
-		OKs(t, chkr.Structure())
+		OKs(t, checkPacks(chkr))
+		OKs(t, checkStruct(chkr))
 	})
 }
 
@@ -44,7 +74,7 @@ func TestMissingPack(t *testing.T) {
 
 		chkr := checker.New(repo)
 		OK(t, chkr.LoadIndex())
-		errs := chkr.Packs()
+		errs := checkPacks(chkr)
 
 		Assert(t, len(errs) == 1,
 			"expected exactly one error, got %v", len(errs))
@@ -68,7 +98,7 @@ func TestUnreferencedPack(t *testing.T) {
 
 		chkr := checker.New(repo)
 		OK(t, chkr.LoadIndex())
-		errs := chkr.Packs()
+		errs := checkPacks(chkr)
 
 		Assert(t, len(errs) == 1,
 			"expected exactly one error, got %v", len(errs))
@@ -101,8 +131,8 @@ func TestUnreferencedBlobs(t *testing.T) {
 
 		chkr := checker.New(repo)
 		OK(t, chkr.LoadIndex())
-		OKs(t, chkr.Packs())
-		OKs(t, chkr.Structure())
+		OKs(t, checkPacks(chkr))
+		OKs(t, checkStruct(chkr))
 
 		blobs := chkr.UnusedBlobs()
 		sort.Sort(blobs)
