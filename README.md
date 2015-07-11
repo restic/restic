@@ -62,15 +62,17 @@ afterwards you'll find the binary in the current directory:
       backup     save file/directory
       cache      manage cache
       cat        dump something
+      check      check the repository
       find       find a file/directory
-      fsck       check the repository
       init       create repository
       key        manage keys
       list       lists data
       ls         list files
       restore    restore a snapshot
       snapshots  show snapshots
+      unlock     remove locks
       version    display version
+
 
 Contribute and Documentation
 ============================
