@@ -35,6 +35,21 @@ func OK(tb testing.TB, err error) {
 	}
 }
 
+// OKs fails the test if any error from errs is not nil.
+func OKs(tb testing.TB, errs []error) {
+	errFound := false
+	for _, err := range errs {
+		if err != nil {
+			errFound = true
+			_, file, line, _ := runtime.Caller(1)
+			fmt.Printf("\033[31m%s:%d: unexpected error: %s\033[39m\n\n", filepath.Base(file), line, err.Error())
+		}
+	}
+	if errFound {
+		tb.FailNow()
+	}
+}
+
 // Equals fails the test if exp is not equal to act.
 func Equals(tb testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {

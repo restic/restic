@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"os"
 
 	"github.com/restic/restic/checker"
 )
@@ -50,5 +52,21 @@ func (cmd CmdCheck) Execute(args []string) error {
 		return err
 	}
 
+	errorsFound := false
+	cmd.global.Verbosef("Check all packs\n")
+	for _, err := range checker.Packs() {
+		errorsFound = true
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
+
+	cmd.global.Verbosef("Check snapshots, trees and blobs\n")
+	for _, err := range checker.Structure() {
+		errorsFound = true
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
+
+	if errorsFound {
+		return errors.New("repository contains errors")
+	}
 	return nil
 }
