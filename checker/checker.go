@@ -48,7 +48,8 @@ type Checker struct {
 		sync.Mutex
 		M map[mapID]uint
 	}
-	indexes map[mapID]*repository.Index
+	indexes       map[mapID]*repository.Index
+	orphanedPacks backend.IDs
 
 	masterIndex *repository.Index
 
@@ -139,12 +140,13 @@ func (c *Checker) LoadIndex() error {
 
 // PackError describes an error with a specific pack.
 type PackError struct {
-	ID backend.ID
-	error
+	ID       backend.ID
+	Orphaned bool
+	Err      error
 }
 
 func (e PackError) Error() string {
-	return "pack " + e.ID.String() + ": " + e.error.Error()
+	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
 func packIDTester(repo *repository.Repository, inChan <-chan mapID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
@@ -156,10 +158,10 @@ func packIDTester(repo *repository.Repository, inChan <-chan mapID, errChan chan
 	for id := range inChan {
 		ok, err := repo.Backend().Test(backend.Data, map2str(id))
 		if err != nil {
-			err = PackError{map2id(id), err}
+			err = PackError{ID: map2id(id), Err: err}
 		} else {
 			if !ok {
-				err = PackError{map2id(id), errors.New("does not exist")}
+				err = PackError{ID: map2id(id), Err: errors.New("does not exist")}
 			}
 		}
 
@@ -227,10 +229,11 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	for id := range c.repo.List(backend.Data, done) {
 		debug.Log("Checker.Packs", "check data blob %v", id.Str())
 		if _, ok := seenPacks[id2map(id)]; !ok {
+			c.orphanedPacks = append(c.orphanedPacks, id)
 			select {
 			case <-done:
 				return
-			case errChan <- PackError{id, errors.New("not referenced in any index")}:
+			case errChan <- PackError{ID: id, Orphaned: true, Err: errors.New("not referenced in any index")}:
 			}
 		}
 	}
@@ -590,4 +593,9 @@ func (c *Checker) UnusedBlobs() (blobs backend.IDs) {
 	}
 
 	return blobs
+}
+
+// OrphanedPacks returns a slice of unused packs (only available after Packs() was run).
+func (c *Checker) OrphanedPacks() backend.IDs {
+	return c.orphanedPacks
 }
