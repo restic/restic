@@ -89,3 +89,14 @@ func (t Tree) Find(name string) (*Node, error) {
 	_, node, err := t.binarySearch(name)
 	return node, err
 }
+
+// Subtrees returns a slice of all subtree IDs of the tree.
+func (t Tree) Subtrees() (trees backend.IDs) {
+	for _, node := range t.Nodes {
+		if node.Type == "dir" && node.Subtree != nil {
+			trees = append(trees, node.Subtree)
+		}
+	}
+
+	return trees
+}
