@@ -21,7 +21,11 @@ func walkTree(repo *repository.Repository, path string, treeID backend.ID, done 
 
 	t, err := LoadTree(repo, treeID)
 	if err != nil {
-		jobCh <- WalkTreeJob{Path: path, Error: err}
+		select {
+		case jobCh <- WalkTreeJob{Path: path, Error: err}:
+		case <-done:
+			return
+		}
 		return
 	}
 
@@ -30,11 +34,20 @@ func walkTree(repo *repository.Repository, path string, treeID backend.ID, done 
 		if node.Type == "dir" {
 			walkTree(repo, p, node.Subtree, done, jobCh)
 		} else {
-			jobCh <- WalkTreeJob{Path: p, Node: node}
+			select {
+			case jobCh <- WalkTreeJob{Path: p, Node: node}:
+			case <-done:
+				return
+			}
 		}
 	}
 
-	jobCh <- WalkTreeJob{Path: path, Tree: t}
+	select {
+	case jobCh <- WalkTreeJob{Path: path, Tree: t}:
+	case <-done:
+		return
+	}
+
 	debug.Log("walkTree", "done for %q (%v)", path, treeID.Str())
 }
 
