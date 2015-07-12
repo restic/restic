@@ -225,6 +225,7 @@ func (l *Lock) Stale() bool {
 // Refresh refreshes the lock by creating a new file in the backend with a new
 // timestamp. Afterwards the old lock is removed.
 func (l *Lock) Refresh() error {
+	debug.Log("Lock.Refresh", "refreshing lock %v", l.lockID.Str())
 	id, err := l.createLock()
 	if err != nil {
 		return err
@@ -235,6 +236,7 @@ func (l *Lock) Refresh() error {
 		return err
 	}
 
+	debug.Log("Lock.Refresh", "new lock ID %v", id.Str())
 	l.lockID = id
 
 	return nil

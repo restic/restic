@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/restic/restic"
 	"github.com/restic/restic/debug"
 )
 
@@ -24,6 +26,10 @@ func main() {
 	_, err := parser.Parse()
 	if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
 		os.Exit(0)
+	}
+
+	if restic.IsAlreadyLocked(err) {
+		fmt.Fprintf(os.Stderr, "\nthe `unlock` command can be used to remove stale locks\n")
 	}
 
 	if err != nil {
