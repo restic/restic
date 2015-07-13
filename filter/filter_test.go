@@ -69,6 +69,8 @@ var matchTests = []struct {
 	{"foo/**/bar/*.go", "bar/main.go", false},
 	{"foo/**/bar", "/home/user/foo/x/y/bar", true},
 	{"foo/**/bar", "/home/user/foo/x/y/bar/main.go", true},
+	{"user/**/important*", "/home/user/work/x/y/hidden/x", false},
+	{"user/**/hidden*/**/c", "/home/user/work/x/y/hidden/z/a/b/c", true},
 }
 
 func TestMatch(t *testing.T) {
@@ -268,7 +270,7 @@ var filterTests = []struct {
 		[]string{"accounting.*", "*Partner*"},
 		[]string{"*.docx", "*.xlsx"},
 		[]test{
-			// {"/home/user/foo/test.c", true},
+			{"/home/user/foo/test.c", true},
 			{"/home/user/Partner/test.docx", true},
 			{"/home/user/bar/test.docx", false},
 			{"/home/user/test.xlsx", false},
@@ -277,6 +279,24 @@ var filterTests = []struct {
 			{"main.go", true},
 			{"/users/A/accounting.xlsx", true},
 			{"/users/A/Calculation Partner.xlsx", true},
+		},
+	},
+	{
+		[]string{"accounting.*", "*Partner*", "user/**/important*"},
+		[]string{"*.docx", "*.xlsx", "user/**/*hidden*"},
+		[]test{
+			{"/home/user/foo/test.c", true},
+			{"/home/user/Partner/test.docx", true},
+			{"/home/user/bar/test.docx", false},
+			{"/home/user/test.xlsx", false},
+			{"/home/foo/test.doc", true},
+			{"/x", true},
+			{"main.go", true},
+			{"/users/A/accounting.xlsx", true},
+			{"/users/A/Calculation Partner.xlsx", true},
+			{"/home/user/work/shared/test/important Calculations/help.txt", true},
+			{"/home/user/work/shared/test/important.xlsx", true},
+			{"/home/user/work/x/y/hidden/x", false},
 		},
 	},
 }

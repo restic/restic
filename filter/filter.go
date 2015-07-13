@@ -45,7 +45,8 @@ func match(patterns, strs []string) (matched bool, err error) {
 	if ok, pos := hasDoubleWildcard(patterns); ok {
 		// gradually expand '**' into separate wildcards
 		for i := 0; i <= len(strs)-len(patterns)+1; i++ {
-			newPat := patterns[:pos]
+			newPat := make([]string, pos)
+			copy(newPat, patterns[:pos])
 			for k := 0; k < i; k++ {
 				newPat = append(newPat, "*")
 			}
