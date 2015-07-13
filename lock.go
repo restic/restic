@@ -20,6 +20,9 @@ import (
 // There are two types of locks: exclusive and non-exclusive. There may be many
 // different non-exclusive locks, but at most one exclusive lock, which can
 // only be acquired while no non-exclusive lock is held.
+//
+// A lock must be refreshed regularly to not be considered stale, this must be
+// triggered by regularly calling Refresh.
 type Lock struct {
 	Time      time.Time `json:"time"`
 	Exclusive bool      `json:"exclusive"`
@@ -89,7 +92,7 @@ func newLock(repo *repository.Repository, excl bool) (*Lock, error) {
 		return nil, err
 	}
 
-	err = lock.createLock()
+	lock.lockID, err = lock.createLock()
 	if err != nil {
 		return nil, err
 	}
@@ -171,14 +174,13 @@ func eachLock(repo *repository.Repository, f func(backend.ID, *Lock, error) erro
 }
 
 // createLock acquires the lock by creating a file in the repository.
-func (l *Lock) createLock() error {
+func (l *Lock) createLock() (backend.ID, error) {
 	id, err := l.repo.SaveJSONUnpacked(backend.Lock, l)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	l.lockID = id
-	return nil
+	return id, nil
 }
 
 // Unlock removes the lock from the repository.
@@ -218,6 +220,26 @@ func (l *Lock) Stale() bool {
 
 	debug.Log("Lock.Stale", "lock not stale\n")
 	return false
+}
+
+// Refresh refreshes the lock by creating a new file in the backend with a new
+// timestamp. Afterwards the old lock is removed.
+func (l *Lock) Refresh() error {
+	debug.Log("Lock.Refresh", "refreshing lock %v", l.lockID.Str())
+	id, err := l.createLock()
+	if err != nil {
+		return err
+	}
+
+	err = l.repo.Backend().Remove(backend.Lock, l.lockID.String())
+	if err != nil {
+		return err
+	}
+
+	debug.Log("Lock.Refresh", "new lock ID %v", id.Str())
+	l.lockID = id
+
+	return nil
 }
 
 func (l Lock) String() string {
@@ -275,6 +297,7 @@ func RemoveStaleLocks(repo *repository.Repository) error {
 	})
 }
 
+// RemoveAllLocks removes all locks forcefully.
 func RemoveAllLocks(repo *repository.Repository) error {
 	return eachLock(repo, func(id backend.ID, lock *Lock, err error) error {
 		return repo.Backend().Remove(backend.Lock, id.String())
