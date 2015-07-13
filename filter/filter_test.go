@@ -54,7 +54,21 @@ var matchTests = []struct {
 	{"*.c", "bar/baz/test.go", false},
 	{"sdk", "/foo/bar/sdk", true},
 	{"sdk", "/foo/bar/sdk/test/sdk_foo.go", true},
-	{"sdk/*/cpp/*/*vars*.html", "/usr/share/doc/libreoffice/sdk/docs/cpp/ref/a00517.html", false},
+	{
+		"sdk/*/cpp/*/*vars*.html",
+		"/usr/share/doc/libreoffice/sdk/docs/cpp/ref/a00517.html",
+		false,
+	},
+	{"foo/**/bar/*.go", "/home/user/foo/work/special/project/bar/test.go", true},
+	{"foo/**/bar/*.go", "/home/user/foo/bar/test.go", true},
+	{"foo/**/bar/*.go", "x/foo/bar/test.go", true},
+	{"foo/**/bar/*.go", "foo/bar/test.go", true},
+	{"foo/**/bar/*.go", "/home/user/foo/test.c", false},
+	{"foo/**/bar/*.go", "bar/foo/main.go", false},
+	{"foo/**/bar/*.go", "/foo/bar/main.go", true},
+	{"foo/**/bar/*.go", "bar/main.go", false},
+	{"foo/**/bar", "/home/user/foo/x/y/bar", true},
+	{"foo/**/bar", "/home/user/foo/x/y/bar/main.go", true},
 }
 
 func TestMatch(t *testing.T) {
