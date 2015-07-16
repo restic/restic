@@ -73,6 +73,8 @@ afterwards you'll find the binary in the current directory:
       unlock     remove locks
       version    display version
 
+A short demo recording can be found here:
+[![asciicast](https://asciinema.org/a/23554.png)](https://asciinema.org/a/23554)
 
 Contribute and Documentation
 ============================
