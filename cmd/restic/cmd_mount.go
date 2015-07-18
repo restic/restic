@@ -54,6 +54,7 @@ func (cmd CmdMount) Execute(args []string) error {
 	mountpoint := args[0]
 	if _, err := os.Stat(mountpoint); err != nil {
 		if os.IsNotExist(err) {
+			cmd.global.Verbosef("Mountpoint [%s] doesn't exist, creating it\n", mountpoint)
 			err = os.Mkdir(mountpoint, os.ModeDir|0755)
 			if err != nil {
 				return err
@@ -72,8 +73,8 @@ func (cmd CmdMount) Execute(args []string) error {
 	root := fs.Tree{}
 	root.Add("snapshots", &snapshots{repo})
 
-	fmt.Printf("Now serving %s under %s\n", repo.Backend().Location(), mountpoint)
-	fmt.Println("Don't forget to umount after quitting !")
+	cmd.global.Printf("Now serving %s under %s\n", repo.Backend().Location(), mountpoint)
+	cmd.global.Printf("Don't forget to umount after quitting !\n")
 
 	err = fs.Serve(c, &root)
 	if err != nil {
@@ -99,7 +100,7 @@ func (sn *snapshots) Attr(ctx context.Context, a *fuse.Attr) error {
 
 func (sn *snapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	ret := make([]fuse.Dirent, 0)
-	for id := range sn.repo.List(backend.Snapshot, make(chan struct{})) {
+	for id := range sn.repo.List(backend.Snapshot, ctx.Done()) {
 		snapshot, err := restic.LoadSnapshot(sn.repo, id)
 		if err != nil {
 			return nil, err
@@ -117,7 +118,7 @@ func (sn *snapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 func (sn *snapshots) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	// This is kind of lame: we reload each snapshot and check the name
 	// (which is the timestamp)
-	for id := range sn.repo.List(backend.Snapshot, make(chan struct{})) {
+	for id := range sn.repo.List(backend.Snapshot, ctx.Done()) {
 		snapshot, err := restic.LoadSnapshot(sn.repo, id)
 		if err != nil {
 			return nil, err
