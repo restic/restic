@@ -75,7 +75,10 @@ func (cmd CmdMount) Execute(args []string) error {
 	}
 
 	root := fs.Tree{}
-	root.Add("snapshots", &snapshots{repo})
+	root.Add("snapshots", &snapshots{
+		repo:           repo,
+		knownSnapshots: make(map[string]*restic.Snapshot),
+	})
 
 	cmd.global.Printf("Now serving %s under %s\n", repo.Backend().Location(), mountpoint)
 	cmd.global.Printf("Don't forget to umount after quitting !\n")
@@ -96,6 +99,9 @@ var _ = fs.NodeStringLookuper(&snapshots{})
 
 type snapshots struct {
 	repo *repository.Repository
+
+	// snapshot timestamp -> snapshot
+	knownSnapshots map[string]*restic.Snapshot
 }
 
 func (sn *snapshots) Attr(ctx context.Context, a *fuse.Attr) error {
@@ -111,6 +117,7 @@ func (sn *snapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		if err != nil {
 			return nil, err
 		}
+		sn.knownSnapshots[snapshot.Time.Format(time.RFC3339)] = snapshot
 		ret = append(ret, fuse.Dirent{
 			Inode: binary.BigEndian.Uint64(id[:8]),
 			Type:  fuse.DT_Dir,
@@ -122,24 +129,29 @@ func (sn *snapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 }
 
 func (sn *snapshots) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	// This is kind of lame: we reload each snapshot and check the name
-	// (which is the timestamp)
-	for id := range sn.repo.List(backend.Snapshot, ctx.Done()) {
-		snapshot, err := restic.LoadSnapshot(sn.repo, id)
-		if err != nil {
-			return nil, err
-		}
-		if snapshot.Time.Format(time.RFC3339) == name {
-			tree, err := restic.LoadTree(sn.repo, snapshot.Tree)
+	if _, ok := sn.knownSnapshots[name]; !ok {
+		// At least this snapshot is not cached. We use this opportunity to
+		// load all missing snapshots
+		for id := range sn.repo.List(backend.Snapshot, ctx.Done()) {
+			snapshot, err := restic.LoadSnapshot(sn.repo, id)
 			if err != nil {
 				return nil, err
 			}
-			return &dir{
-				repo: sn.repo,
-				tree: tree,
-			}, nil
+			snapshotName := snapshot.Time.Format(time.RFC3339)
+			sn.knownSnapshots[snapshotName] = snapshot
+			break
 		}
 	}
+
+	snapshot := sn.knownSnapshots[name]
+	tree, err := restic.LoadTree(sn.repo, snapshot.Tree)
+	if err != nil {
+		return nil, err
+	}
+	return &dir{
+		repo: sn.repo,
+		tree: tree,
+	}, nil
 	return nil, fuse.ENOENT
 }
 
