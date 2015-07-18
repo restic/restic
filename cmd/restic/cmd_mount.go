@@ -20,13 +20,17 @@ import (
 
 type CmdMount struct {
 	global *GlobalOptions
+	ready  chan struct{}
 }
 
 func init() {
 	_, err := parser.AddCommand("mount",
 		"mount a repository",
 		"The mount command mounts a repository read-only to a given directory",
-		&CmdMount{global: &globalOpts})
+		&CmdMount{
+			global: &globalOpts,
+			ready:  make(chan struct{}, 1),
+		})
 	if err != nil {
 		panic(err)
 	}
@@ -75,6 +79,8 @@ func (cmd CmdMount) Execute(args []string) error {
 
 	cmd.global.Printf("Now serving %s under %s\n", repo.Backend().Location(), mountpoint)
 	cmd.global.Printf("Don't forget to umount after quitting !\n")
+
+	cmd.ready <- struct{}{}
 
 	err = fs.Serve(c, &root)
 	if err != nil {
