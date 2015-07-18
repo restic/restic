@@ -9,7 +9,7 @@ os:
   - linux
   - osx
 
-env: GOX_OS="linux darwin openbsd freebsd" GOX_ARCH="386 amd64 arm"
+env: GOX_OS="linux darwin openbsd freebsd" GOX_ARCH="386 amd64 arm" RESTIC_TEST_FUSE="0"
 
 notifications:
   irc:
