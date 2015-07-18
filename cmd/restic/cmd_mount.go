@@ -58,7 +58,7 @@ func (cmd CmdMount) Execute(args []string) error {
 	mountpoint := args[0]
 	if _, err := os.Stat(mountpoint); err != nil {
 		if os.IsNotExist(err) {
-			cmd.global.Verbosef("Mountpoint [%s] doesn't exist, creating it\n", mountpoint)
+			cmd.global.Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
 			err = os.Mkdir(mountpoint, os.ModeDir|0755)
 			if err != nil {
 				return err

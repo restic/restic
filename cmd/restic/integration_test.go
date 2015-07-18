@@ -519,7 +519,9 @@ func TestMount(t *testing.T) {
 
 		mountpoint, err := ioutil.TempDir(TestTempDir, "restic-test-mount-")
 		OK(t, err)
-		defer OK(t, os.RemoveAll(mountpoint))
+
+		// We remove the mountpoint now to check that cmdMount creates it
+		OK(t, os.RemoveAll(mountpoint))
 
 		ready := make(chan struct{}, 1)
 		go cmdMount(t, global, mountpoint, ready)
