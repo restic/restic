@@ -94,6 +94,9 @@ func (cmd CmdMount) Execute(args []string) error {
 	return c.MountError
 }
 
+// These lines statically ensure that a *snapshots implement the given
+// interfaces; a misplaced refactoring of the implementation that breaks
+// the interface will be catched by the compiler
 var _ = fs.HandleReadDirAller(&snapshots{})
 var _ = fs.NodeStringLookuper(&snapshots{})
 
@@ -155,6 +158,7 @@ func (sn *snapshots) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	return nil, fuse.ENOENT
 }
 
+// Statically ensure that *dir implement those interface
 var _ = fs.HandleReadDirAller(&dir{})
 var _ = fs.NodeStringLookuper(&dir{})
 
@@ -215,6 +219,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	return nil, fuse.ENOENT
 }
 
+// Statically ensure that *file implements the given interface
 var _ = fs.HandleReader(&file{})
 
 type file struct {
