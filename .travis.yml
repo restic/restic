@@ -29,6 +29,9 @@ install:
   - go get github.com/mitchellh/gox
   - go version | grep -q "go1\.3" && export GOX_ARCH="386 amd64" || true
   - go version | grep -q "darwin" && export GOX_OS="darwin" || true
+  - uname -s | grep -qi darwin && brew install osxfuse || true
+  - uname -s | grep -qi darwin && sudo /bin/cp -RfX /usr/local/opt/osxfuse/Library/Filesystems/osxfusefs.fs /Library/Filesystems/ || true
+  - uname -s | grep -qi darwin && sudo chmod +s /Library/Filesystems/osxfusefs.fs/Support/load_osxfusefs || true
   - echo "cross-compile for \"$GOX_OS\" on \"$GOX_ARCH\""
   - gox -build-toolchain -os "$GOX_OS" -arch "$GOX_ARCH"
 
