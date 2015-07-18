@@ -60,6 +60,16 @@ The restic binary can be built from the directory `cmd/restic` this way:
     $ ./restic version
     restic compiled manually on go1.4.2
 
+if you want to run your tests on Linux, OpenBSD or FreeBSD, you can use
+[vagrant](https://www.vagrantup.com/) with the proveded `Vagrantfile` to
+quickly set up VMs and run the tests, e.g.:
+
+    $ vagrant up freebsd
+    [...]
+
+    $ vagrant ssh freebsd -c 'cd restic/restic; go test -v ./...'
+    [...]
+
 Providing Patches
 =================
 
