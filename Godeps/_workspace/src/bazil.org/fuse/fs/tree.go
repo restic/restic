@@ -77,8 +77,9 @@ func (t *tree) add(name string, n Node) {
 	t.dir = append(t.dir, treeDir{name, n})
 }
 
-func (t *tree) Attr(a *fuse.Attr) {
+func (t *tree) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Mode = os.ModeDir | 0555
+	return nil
 }
 
 func (t *tree) Lookup(ctx context.Context, name string) (Node, error) {

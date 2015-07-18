@@ -91,9 +91,10 @@ type snapshots struct {
 	repo *repository.Repository
 }
 
-func (sn *snapshots) Attr(a *fuse.Attr) {
+func (sn *snapshots) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = 0
 	a.Mode = os.ModeDir | 0555
+	return nil
 }
 
 func (sn *snapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
@@ -144,9 +145,10 @@ type dir struct {
 	inode uint64
 }
 
-func (d *dir) Attr(a *fuse.Attr) {
+func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = d.inode
 	a.Mode = os.ModeDir | 0555
+	return nil
 }
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
@@ -224,10 +226,11 @@ func makeFile(repo *repository.Repository, node *restic.Node) (*file, error) {
 	}, nil
 }
 
-func (f *file) Attr(a *fuse.Attr) {
+func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = f.node.Inode
 	a.Mode = f.node.Mode
 	a.Size = f.node.Size
+	return nil
 }
 
 func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {

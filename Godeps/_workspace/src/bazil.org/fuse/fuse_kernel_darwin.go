@@ -22,6 +22,8 @@ type attr struct {
 	Gid        uint32
 	Rdev       uint32
 	Flags_     uint32 // OS X only; see chflags(2)
+	Blksize    uint32
+	padding    uint32
 }
 
 func (a *attr) SetCrtime(s uint64, ns uint32) {

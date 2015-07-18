@@ -6,3 +6,6 @@
 .*.swp
 
 *.test
+
+/clockfs
+/hellofs

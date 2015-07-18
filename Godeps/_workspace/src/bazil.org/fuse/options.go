@@ -5,14 +5,16 @@ import (
 	"strings"
 )
 
-func dummyOption(conf *MountConfig) error {
+func dummyOption(conf *mountConfig) error {
 	return nil
 }
 
-// MountConfig holds the configuration for a mount operation.
+// mountConfig holds the configuration for a mount operation.
 // Use it by passing MountOption values to Mount.
-type MountConfig struct {
-	options map[string]string
+type mountConfig struct {
+	options      map[string]string
+	maxReadahead uint32
+	initFlags    InitFlags
 }
 
 func escapeComma(s string) string {
@@ -24,7 +26,7 @@ func escapeComma(s string) string {
 // getOptions makes a string of options suitable for passing to FUSE
 // mount flag `-o`. Returns an empty string if no options were set.
 // Any platform specific adjustments should happen before the call.
-func (m *MountConfig) getOptions() string {
+func (m *mountConfig) getOptions() string {
 	var opts []string
 	for k, v := range m.options {
 		k = escapeComma(k)
@@ -36,15 +38,17 @@ func (m *MountConfig) getOptions() string {
 	return strings.Join(opts, ",")
 }
 
+type mountOption func(*mountConfig) error
+
 // MountOption is passed to Mount to change the behavior of the mount.
-type MountOption func(*MountConfig) error
+type MountOption mountOption
 
 // FSName sets the file system name (also called source) that is
 // visible in the list of mounted file systems.
 //
 // FreeBSD ignores this option.
 func FSName(name string) MountOption {
-	return func(conf *MountConfig) error {
+	return func(conf *mountConfig) error {
 		conf.options["fsname"] = name
 		return nil
 	}
@@ -57,7 +61,7 @@ func FSName(name string) MountOption {
 // OS X ignores this option.
 // FreeBSD ignores this option.
 func Subtype(fstype string) MountOption {
-	return func(conf *MountConfig) error {
+	return func(conf *mountConfig) error {
 		conf.options["subtype"] = fstype
 		return nil
 	}
@@ -84,7 +88,7 @@ var ErrCannotCombineAllowOtherAndAllowRoot = errors.New("cannot combine AllowOth
 //
 // Only one of AllowOther or AllowRoot can be used.
 func AllowOther() MountOption {
-	return func(conf *MountConfig) error {
+	return func(conf *mountConfig) error {
 		if _, ok := conf.options["allow_root"]; ok {
 			return ErrCannotCombineAllowOtherAndAllowRoot
 		}
@@ -99,7 +103,7 @@ func AllowOther() MountOption {
 //
 // FreeBSD ignores this option.
 func AllowRoot() MountOption {
-	return func(conf *MountConfig) error {
+	return func(conf *mountConfig) error {
 		if _, ok := conf.options["allow_other"]; ok {
 			return ErrCannotCombineAllowOtherAndAllowRoot
 		}
@@ -117,7 +121,7 @@ func AllowRoot() MountOption {
 //
 // FreeBSD ignores this option.
 func DefaultPermissions() MountOption {
-	return func(conf *MountConfig) error {
+	return func(conf *mountConfig) error {
 		conf.options["default_permissions"] = ""
 		return nil
 	}
@@ -125,8 +129,42 @@ func DefaultPermissions() MountOption {
 
 // ReadOnly makes the mount read-only.
 func ReadOnly() MountOption {
-	return func(conf *MountConfig) error {
+	return func(conf *mountConfig) error {
 		conf.options["ro"] = ""
+		return nil
+	}
+}
+
+// MaxReadahead sets the number of bytes that can be prefetched for
+// sequential reads. The kernel can enforce a maximum value lower than
+// this.
+//
+// This setting makes the kernel perform speculative reads that do not
+// originate from any client process. This usually tremendously
+// improves read performance.
+func MaxReadahead(n uint32) MountOption {
+	return func(conf *mountConfig) error {
+		conf.maxReadahead = n
+		return nil
+	}
+}
+
+// AsyncRead enables multiple outstanding read requests for the same
+// handle. Without this, there is at most one request in flight at a
+// time.
+func AsyncRead() MountOption {
+	return func(conf *mountConfig) error {
+		conf.initFlags |= InitAsyncRead
+		return nil
+	}
+}
+
+// WritebackCache enables the kernel to buffer writes before sending
+// them to the FUSE server. Without this, writethrough caching is
+// used.
+func WritebackCache() MountOption {
+	return func(conf *mountConfig) error {
+		conf.initFlags |= InitWritebackCache
 		return nil
 	}
 }

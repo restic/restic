@@ -1,6 +1,6 @@
 package fuse
 
-func localVolume(conf *MountConfig) error {
+func localVolume(conf *mountConfig) error {
 	return nil
 }
 

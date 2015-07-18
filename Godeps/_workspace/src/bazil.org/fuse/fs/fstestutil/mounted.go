@@ -17,7 +17,8 @@ type Mount struct {
 	// Dir is the temporary directory where the filesystem is mounted.
 	Dir string
 
-	Conn *fuse.Conn
+	Conn   *fuse.Conn
+	Server *fs.Server
 
 	// Error will receive the return value of Serve.
 	Error <-chan error
@@ -55,7 +56,7 @@ func (mnt *Mount) Close() {
 // workaround).
 //
 // After successful return, caller must clean up by calling Close.
-func Mounted(srv *fs.Server, options ...fuse.MountOption) (*Mount, error) {
+func Mounted(filesys fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Mount, error) {
 	dir, err := ioutil.TempDir("", "fusetest")
 	if err != nil {
 		return nil, err
@@ -64,26 +65,27 @@ func Mounted(srv *fs.Server, options ...fuse.MountOption) (*Mount, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	server := fs.New(c, conf)
 	done := make(chan struct{})
 	serveErr := make(chan error, 1)
 	mnt := &Mount{
-		Dir:   dir,
-		Conn:  c,
-		Error: serveErr,
-		done:  done,
+		Dir:    dir,
+		Conn:   c,
+		Server: server,
+		Error:  serveErr,
+		done:   done,
 	}
 	go func() {
 		defer close(done)
-		serveErr <- srv.Serve(c)
+		serveErr <- server.Serve(filesys)
 	}()
 
 	select {
 	case <-mnt.Conn.Ready:
-		if mnt.Conn.MountError != nil {
+		if err := mnt.Conn.MountError; err != nil {
 			return nil, err
 		}
-		return mnt, err
+		return mnt, nil
 	case err = <-mnt.Error:
 		// Serve quit early
 		if err != nil {
@@ -100,14 +102,14 @@ func Mounted(srv *fs.Server, options ...fuse.MountOption) (*Mount, error) {
 //
 // The debug log is not enabled by default. Use `-fuse.debug` or call
 // DebugByDefault to enable.
-func MountedT(t testing.TB, filesys fs.FS, options ...fuse.MountOption) (*Mount, error) {
-	srv := &fs.Server{
-		FS: filesys,
+func MountedT(t testing.TB, filesys fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Mount, error) {
+	if conf == nil {
+		conf = &fs.Config{}
 	}
-	if debug {
-		srv.Debug = func(msg interface{}) {
+	if debug && conf.Debug == nil {
+		conf.Debug = func(msg interface{}) {
 			t.Logf("FUSE: %s", msg)
 		}
 	}
-	return Mounted(srv, options...)
+	return Mounted(filesys, conf, options...)
 }

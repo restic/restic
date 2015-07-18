@@ -15,7 +15,7 @@ Here’s how to get going:
 
 Website: http://bazil.org/fuse/
 
-Github repository: https://github.com/bazillion/fuse
+Github repository: https://github.com/bazil/fuse
 
 API docs: http://godoc.org/bazil.org/fuse
 

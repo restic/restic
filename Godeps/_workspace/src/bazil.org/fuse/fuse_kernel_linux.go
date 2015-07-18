@@ -17,8 +17,8 @@ type attr struct {
 	Uid       uint32
 	Gid       uint32
 	Rdev      uint32
-	//	Blksize   uint32  // Only in protocol 7.9
-	//	padding_  uint32  // Only in protocol 7.9
+	Blksize   uint32
+	padding   uint32
 }
 
 func (a *attr) Crtime() time.Time {

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func mount(dir string, conf *MountConfig, ready chan<- struct{}, errp *error) (*os.File, error) {
+func mount(dir string, conf *mountConfig, ready chan<- struct{}, errp *error) (*os.File, error) {
 	for k, v := range conf.options {
 		if strings.Contains(k, ",") || strings.Contains(v, ",") {
 			// Silly limitation but the mount helper does not

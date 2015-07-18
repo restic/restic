@@ -35,7 +35,7 @@ type Counter struct {
 }
 
 func (r *Counter) Inc() {
-	atomic.StoreUint32(&r.count, 1)
+	atomic.AddUint32(&r.count, 1)
 }
 
 func (r *Counter) Count() uint32 {
@@ -341,6 +341,9 @@ var _ = fs.NodeSetxattrer(&Setxattrs{})
 // wrap this call in a function that returns a more useful result.
 func (r *Setxattrs) Setxattr(ctx context.Context, req *fuse.SetxattrRequest) error {
 	tmp := *req
+	// The byte slice points to memory that will be reused, so make a
+	// deep copy.
+	tmp.Xattr = append([]byte(nil), req.Xattr...)
 	r.rec.RecordRequest(&tmp)
 	return nil
 }

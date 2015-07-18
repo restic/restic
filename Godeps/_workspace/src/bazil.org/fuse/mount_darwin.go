@@ -52,7 +52,7 @@ func openOSXFUSEDev() (*os.File, error) {
 	}
 }
 
-func callMount(dir string, conf *MountConfig, f *os.File, ready chan<- struct{}, errp *error) error {
+func callMount(dir string, conf *mountConfig, f *os.File, ready chan<- struct{}, errp *error) error {
 	bin := "/Library/Filesystems/osxfusefs.fs/Support/mount_osxfusefs"
 
 	for k, v := range conf.options {
@@ -104,7 +104,7 @@ func callMount(dir string, conf *MountConfig, f *os.File, ready chan<- struct{},
 	return err
 }
 
-func mount(dir string, conf *MountConfig, ready chan<- struct{}, errp *error) (*os.File, error) {
+func mount(dir string, conf *mountConfig, ready chan<- struct{}, errp *error) (*os.File, error) {
 	f, err := openOSXFUSEDev()
 	if err == errNotLoaded {
 		err = loadOSXFUSE()

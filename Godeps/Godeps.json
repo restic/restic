@@ -7,7 +7,7 @@
 	"Deps": [
 		{
 			"ImportPath": "bazil.org/fuse",
-			"Rev": "6312e7c7c12b9337021a37aff2b0f655f4709688"
+			"Rev": "18419ee53958df28fcfc9490fe6123bd59e237bb"
 		},
 		{
 			"ImportPath": "github.com/jessevdk/go-flags",
