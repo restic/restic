@@ -18,8 +18,8 @@ type Restorer struct {
 	repo *repository.Repository
 	sn   *Snapshot
 
-	Error            func(dir string, node *Node, err error) error
-	SelectForRestore func(item string, dstpath string, node *Node) bool
+	Error        func(dir string, node *Node, err error) error
+	SelectFilter func(item string, dstpath string, node *Node) bool
 }
 
 var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
@@ -28,7 +28,7 @@ var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { r
 func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) {
 	r := &Restorer{
 		repo: repo, Error: restorerAbortOnAllErrors,
-		SelectForRestore: func(string, string, *Node) bool { return true },
+		SelectFilter: func(string, string, *Node) bool { return true },
 	}
 
 	var err error
@@ -48,7 +48,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 	}
 
 	for _, node := range tree.Nodes {
-		selectedForRestore := res.SelectForRestore(filepath.Join(dir, node.Name),
+		selectedForRestore := res.SelectFilter(filepath.Join(dir, node.Name),
 			filepath.Join(dst, dir, node.Name), node)
 		debug.Log("Restorer.restoreNodeTo", "SelectForRestore returned %v", selectedForRestore)
 
