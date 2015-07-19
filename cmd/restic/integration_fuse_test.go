@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,6 +18,41 @@ import (
 	. "github.com/restic/restic/test"
 )
 
+const (
+	mountWait       = 20
+	mountSleep      = 100 * time.Millisecond
+	mountTestSubdir = "snapshots"
+)
+
+// waitForMount blocks (max mountWait * mountSleep) until the subdir
+// "snapshots" appears in the dir.
+func waitForMount(dir string) error {
+	for i := 0; i < mountWait; i++ {
+		f, err := os.Open(dir)
+		if err != nil {
+			return err
+		}
+
+		names, err := f.Readdirnames(-1)
+		if err != nil {
+			return err
+		}
+
+		if err = f.Close(); err != nil {
+			return err
+		}
+
+		for _, name := range names {
+			if name == mountTestSubdir {
+				return nil
+			}
+		}
+
+		time.Sleep(mountSleep)
+	}
+
+	return fmt.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
+}
 func TestMount(t *testing.T) {
 	if !RunFuseTest {
 		t.Skip("Skipping fuse tests")
@@ -72,6 +108,7 @@ func TestMount(t *testing.T) {
 				OK(t, err)
 			}
 		}()
+		OK(t, waitForMount(mountpoint))
 
 		mountpointDir, err := os.Open(mountpoint)
 		OK(t, err)
