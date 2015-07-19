@@ -13,6 +13,7 @@ import (
 var cleanupHandlers struct {
 	sync.Mutex
 	list []func() error
+	done bool
 }
 
 var stderr = os.Stderr
@@ -38,6 +39,11 @@ func AddCleanupHandler(f func() error) {
 func RunCleanupHandlers() {
 	cleanupHandlers.Lock()
 	defer cleanupHandlers.Unlock()
+
+	if cleanupHandlers.done {
+		return
+	}
+	cleanupHandlers.done = true
 
 	for _, f := range cleanupHandlers.list {
 		err := f()

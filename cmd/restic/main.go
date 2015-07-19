@@ -32,6 +32,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\nthe `unlock` command can be used to remove stale locks\n")
 	}
 
+	RunCleanupHandlers()
+
 	if err != nil {
 		os.Exit(1)
 	}
