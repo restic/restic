@@ -31,6 +31,7 @@ install:
   - go version | grep -q "darwin" && export GOX_OS="darwin" || true
   - uname -s | grep -qi darwin && brew install caskroom/cask/brew-cask || true
   - uname -s | grep -qi darwin && brew cask install osxfuse || true
+  - uname -s | grep -vqi darwin && export RESTIC_TEST_FUSE="0" || true
   - echo "cross-compile for \"$GOX_OS\" on \"$GOX_ARCH\""
   - gox -build-toolchain -os "$GOX_OS" -arch "$GOX_ARCH"
 
