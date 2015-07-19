@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"bazil.org/fuse"
-
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/repository"
@@ -53,6 +51,15 @@ func waitForMount(dir string) error {
 
 	return fmt.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
+
+func cmdMount(t testing.TB, global GlobalOptions, dir string, ready, done chan struct{}) {
+	cmd := &CmdMount{global: &global, ready: ready, done: done}
+	OK(t, cmd.Execute([]string{dir}))
+	if TestCleanup {
+		OK(t, os.RemoveAll(dir))
+	}
+}
+
 func TestMount(t *testing.T) {
 	if !RunFuseTest {
 		t.Skip("Skipping fuse tests")
@@ -97,17 +104,10 @@ func TestMount(t *testing.T) {
 		OK(t, os.RemoveAll(mountpoint))
 
 		ready := make(chan struct{}, 1)
-		go cmdMount(t, global, mountpoint, ready)
+		done := make(chan struct{})
+		go cmdMount(t, global, mountpoint, ready, done)
 		<-ready
-
-		defer func() {
-			err := fuse.Unmount(mountpoint)
-			OK(t, err)
-			if TestCleanup {
-				err = os.RemoveAll(mountpoint)
-				OK(t, err)
-			}
-		}()
+		defer close(done)
 		OK(t, waitForMount(mountpoint))
 
 		mountpointDir, err := os.Open(mountpoint)

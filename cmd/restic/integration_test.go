@@ -73,11 +73,6 @@ func cmdCheck(t testing.TB, global GlobalOptions) {
 	OK(t, cmd.Execute(nil))
 }
 
-func cmdMount(t testing.TB, global GlobalOptions, dir string, ready chan struct{}) {
-	cmd := &CmdMount{global: &global, ready: ready}
-	OK(t, cmd.Execute([]string{dir}))
-}
-
 func TestBackup(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")

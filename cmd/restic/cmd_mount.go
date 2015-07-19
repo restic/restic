@@ -15,6 +15,7 @@ import (
 type CmdMount struct {
 	global *GlobalOptions
 	ready  chan struct{}
+	done   chan struct{}
 }
 
 func init() {
@@ -24,6 +25,7 @@ func init() {
 		&CmdMount{
 			global: &globalOpts,
 			ready:  make(chan struct{}, 1),
+			done:   make(chan struct{}),
 		})
 	if err != nil {
 		panic(err)
@@ -78,11 +80,25 @@ func (cmd CmdMount) Execute(args []string) error {
 
 	cmd.ready <- struct{}{}
 
-	err = fs.Serve(c, &root)
-	if err != nil {
-		return err
-	}
+	errServe := make(chan error)
+	go func() {
+		err = fs.Serve(c, &root)
+		if err != nil {
+			errServe <- err
+		}
 
-	<-c.Ready
-	return c.MountError
+		<-c.Ready
+		errServe <- c.MountError
+	}()
+
+	select {
+	case err := <-errServe:
+		return err
+	case <-cmd.done:
+		err := c.Close()
+		if err != nil {
+			cmd.global.Printf("Error closing fuse connection: %s\n", err)
+		}
+		return systemFuse.Unmount(mountpoint)
+	}
 }
