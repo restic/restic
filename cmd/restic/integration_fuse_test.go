@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"bazil.org/fuse"
+
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/repository"
@@ -61,6 +63,15 @@ func TestMount(t *testing.T) {
 		ready := make(chan struct{}, 1)
 		go cmdMount(t, global, mountpoint, ready)
 		<-ready
+
+		defer func() {
+			err := fuse.Unmount(mountpoint)
+			OK(t, err)
+			if TestCleanup {
+				err = os.RemoveAll(mountpoint)
+				OK(t, err)
+			}
+		}()
 
 		mountpointDir, err := os.Open(mountpoint)
 		OK(t, err)
