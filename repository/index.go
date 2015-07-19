@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
 )
@@ -89,6 +90,16 @@ func (idx *Index) Has(id backend.ID) bool {
 	}
 
 	return false
+}
+
+// LookupSize returns the length of the cleartext content behind the
+// given id
+func (idx *Index) LookupSize(id backend.ID) (cleartextLength uint, err error) {
+	_, _, _, encryptedLength, err := idx.Lookup(id)
+	if err != nil {
+		return 0, err
+	}
+	return encryptedLength - crypto.Extension, nil
 }
 
 // Merge loads all items from other into idx.
