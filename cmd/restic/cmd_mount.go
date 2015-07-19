@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -79,7 +80,7 @@ func (cmd CmdMount) Execute(args []string) error {
 	root := fs.Tree{}
 	root.Add("snapshots", &snapshots{
 		repo:           repo,
-		knownSnapshots: make(map[string]*restic.Snapshot),
+		knownSnapshots: make(map[string]snapshotWithId),
 	})
 
 	cmd.global.Printf("Now serving %s under %s\n", repo.Backend().Location(), mountpoint)
@@ -96,6 +97,11 @@ func (cmd CmdMount) Execute(args []string) error {
 	return c.MountError
 }
 
+type snapshotWithId struct {
+	*restic.Snapshot
+	backend.ID
+}
+
 // These lines statically ensure that a *snapshots implement the given
 // interfaces; a misplaced refactoring of the implementation that breaks
 // the interface will be catched by the compiler
@@ -105,8 +111,9 @@ var _ = fs.NodeStringLookuper(&snapshots{})
 type snapshots struct {
 	repo *repository.Repository
 
-	// snapshot timestamp -> snapshot
-	knownSnapshots map[string]*restic.Snapshot
+	// knownSnapshots maps snapshot timestamp to the snapshot
+	sync.RWMutex
+	knownSnapshots map[string]snapshotWithId
 }
 
 func (sn *snapshots) Attr(ctx context.Context, a *fuse.Attr) error {
@@ -115,16 +122,39 @@ func (sn *snapshots) Attr(ctx context.Context, a *fuse.Attr) error {
 	return nil
 }
 
-func (sn *snapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	ret := make([]fuse.Dirent, 0)
+func (sn *snapshots) updateCache(ctx context.Context) error {
+	sn.Lock()
+	defer sn.Unlock()
+
 	for id := range sn.repo.List(backend.Snapshot, ctx.Done()) {
 		snapshot, err := restic.LoadSnapshot(sn.repo, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		sn.knownSnapshots[snapshot.Time.Format(time.RFC3339)] = snapshot
+		sn.knownSnapshots[snapshot.Time.Format(time.RFC3339)] = snapshotWithId{snapshot, id}
+	}
+	return nil
+}
+func (sn *snapshots) get(name string) (snapshot snapshotWithId, ok bool) {
+	sn.Lock()
+	snapshot, ok = sn.knownSnapshots[name]
+	sn.Unlock()
+	return snapshot, ok
+}
+
+func (sn *snapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	err := sn.updateCache(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sn.RLock()
+	defer sn.RUnlock()
+
+	ret := make([]fuse.Dirent, 0)
+	for _, snapshot := range sn.knownSnapshots {
 		ret = append(ret, fuse.Dirent{
-			Inode: binary.BigEndian.Uint64(id[:8]),
+			Inode: binary.BigEndian.Uint64(snapshot.ID[:8]),
 			Type:  fuse.DT_Dir,
 			Name:  snapshot.Time.Format(time.RFC3339),
 		})
@@ -134,21 +164,21 @@ func (sn *snapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 }
 
 func (sn *snapshots) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	if _, ok := sn.knownSnapshots[name]; !ok {
-		// At least this snapshot is not cached. We use this opportunity to
-		// load all missing snapshots
-		for id := range sn.repo.List(backend.Snapshot, ctx.Done()) {
-			snapshot, err := restic.LoadSnapshot(sn.repo, id)
-			if err != nil {
-				return nil, err
-			}
-			snapshotName := snapshot.Time.Format(time.RFC3339)
-			sn.knownSnapshots[snapshotName] = snapshot
-			break
+	snapshot, ok := sn.get(name)
+
+	if !ok {
+		// We don't know about it, update the cache
+		err := sn.updateCache(ctx)
+		if err != nil {
+			return nil, err
+		}
+		snapshot, ok = sn.get(name)
+		if !ok {
+			// We still don't know about it, this time it really doesn't exist
+			return nil, fuse.ENOENT
 		}
 	}
 
-	snapshot := sn.knownSnapshots[name]
 	tree, err := restic.LoadTree(sn.repo, snapshot.Tree)
 	if err != nil {
 		return nil, err
@@ -157,7 +187,6 @@ func (sn *snapshots) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		repo: sn.repo,
 		tree: tree,
 	}, nil
-	return nil, fuse.ENOENT
 }
 
 // Statically ensure that *dir implement those interface
