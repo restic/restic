@@ -1,7 +1,6 @@
 package fuse
 
 import (
-	"encoding/binary"
 	"os"
 	"sync"
 	"time"
@@ -80,7 +79,7 @@ func (sn *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	ret := make([]fuse.Dirent, 0)
 	for _, snapshot := range sn.knownSnapshots {
 		ret = append(ret, fuse.Dirent{
-			Inode: binary.BigEndian.Uint64(snapshot.ID[:8]),
+			Inode: inodeFromBackendId(snapshot.ID),
 			Type:  fuse.DT_Dir,
 			Name:  snapshot.Time.Format(time.RFC3339),
 		})

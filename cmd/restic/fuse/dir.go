@@ -1,7 +1,6 @@
 package fuse
 
 import (
-	"encoding/binary"
 	"os"
 
 	"bazil.org/fuse"
@@ -52,7 +51,7 @@ func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId) (*
 	return &dir{
 		repo:     repo,
 		children: children,
-		inode:    binary.BigEndian.Uint64(snapshot.ID),
+		inode:    inodeFromBackendId(snapshot.ID),
 	}, nil
 }
 
