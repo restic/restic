@@ -72,6 +72,10 @@ func (cmd CmdMount) Execute(args []string) error {
 	cmd.global.Printf("Now serving %s at %s\n", repo.Backend().Location(), mountpoint)
 	cmd.global.Printf("Don't forget to umount after quitting!\n")
 
+	AddCleanupHandler(func() error {
+		return systemFuse.Unmount(mountpoint)
+	})
+
 	cmd.ready <- struct{}{}
 
 	err = fs.Serve(c, &root)
