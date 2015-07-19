@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/restic/restic"
@@ -123,19 +121,5 @@ func unlockAll() error {
 }
 
 func init() {
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT)
-
-	go CleanupHandler(c)
-}
-
-// CleanupHandler handles the SIGINT signal.
-func CleanupHandler(c <-chan os.Signal) {
-	for s := range c {
-		debug.Log("CleanupHandler", "signal %v received, cleaning up", s)
-		fmt.Println("\x1b[2KInterrupt received, cleaning up")
-		unlockAll()
-		fmt.Println("exiting")
-		os.Exit(0)
-	}
+	AddCleanupHandler(unlockAll)
 }
