@@ -222,138 +222,31 @@ func BenchmarkFilterLines(b *testing.B) {
 	}
 }
 
-func BenchmarkFilterSingle(b *testing.B) {
-	pattern := "sdk/*/cpp/*/*vars.html"
-	line := "/usr/share/doc/libreoffice/sdk/docs/cpp/ref/a00517.html"
+func BenchmarkFilterPatterns(b *testing.B) {
+	patterns := []string{
+		"sdk/*",
+		"*.html",
+	}
+	lines := extractTestLines(b)
+	var c uint
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		filter.Match(pattern, line)
-	}
-}
-
-type test struct {
-	path  string
-	match bool
-}
-
-var filterTests = []struct {
-	include, exclude []string
-	tests            []test
-}{
-	{
-		[]string{"*.go", "/home/user"},
-		[]string{},
-		[]test{
-			{"/home/user/foo/test.c", true},
-			{"/home/user/foo/test.go", true},
-			{"/home/foo/test.go", true},
-			{"/home/foo/test.doc", false},
-			{"/x", false},
-			{"main.go", true},
-		},
-	},
-	{
-		nil,
-		[]string{"*.docx", "*.xlsx"},
-		[]test{
-			{"/home/user/foo/test.c", true},
-			{"/home/user/foo/test.docx", false},
-			{"/home/foo/test.xlsx", false},
-			{"/home/foo/test.doc", true},
-			{"/x", true},
-			{"main.go", true},
-		},
-	},
-	{
-		[]string{"accounting.*", "*Partner*"},
-		[]string{"*.docx", "*.xlsx"},
-		[]test{
-			{"/home/user/foo/test.c", true},
-			{"/home/user/Partner/test.docx", true},
-			{"/home/user/bar/test.docx", false},
-			{"/home/user/test.xlsx", false},
-			{"/home/foo/test.doc", true},
-			{"/x", true},
-			{"main.go", true},
-			{"/users/A/accounting.xlsx", true},
-			{"/users/A/Calculation Partner.xlsx", true},
-		},
-	},
-	{
-		[]string{"accounting.*", "*Partner*", "user/**/important*"},
-		[]string{"*.docx", "*.xlsx", "user/**/*hidden*"},
-		[]test{
-			{"/home/user/foo/test.c", true},
-			{"/home/user/Partner/test.docx", true},
-			{"/home/user/bar/test.docx", false},
-			{"/home/user/test.xlsx", false},
-			{"/home/foo/test.doc", true},
-			{"/x", true},
-			{"main.go", true},
-			{"/users/A/accounting.xlsx", true},
-			{"/users/A/Calculation Partner.xlsx", true},
-			{"/home/user/work/shared/test/important Calculations/help.txt", true},
-			{"/home/user/work/shared/test/important.xlsx", true},
-			{"/home/user/work/x/y/hidden/x", false},
-		},
-	},
-}
-
-func TestFilter(t *testing.T) {
-	for i, test := range filterTests {
-		f := filter.New(test.include, test.exclude)
-
-		for _, testfile := range test.tests {
-			matched, err := f.Match(testfile.path)
+		c = 0
+		for _, line := range lines {
+			match, err := filter.MatchList(patterns, line)
 			if err != nil {
-				t.Error(err)
+				b.Fatal(err)
 			}
 
-			if matched != testfile.match {
-				t.Errorf("test %d: filter.Match(%q): expected %v, got %v",
-					i, testfile.path, testfile.match, matched)
+			if match {
+				c++
 			}
 		}
-	}
-}
 
-func BenchmarkFilter(b *testing.B) {
-	lines := extractTestLines(b)
-	f := filter.New([]string{"sdk", "*.html"}, []string{"*.png"})
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for _, line := range lines {
-			f.Match(line)
-		}
-	}
-}
-
-func BenchmarkFilterInclude(b *testing.B) {
-	lines := extractTestLines(b)
-	f := filter.New([]string{"sdk", "*.html"}, nil)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for _, line := range lines {
-			f.Match(line)
-		}
-	}
-}
-
-func BenchmarkFilterExclude(b *testing.B) {
-	lines := extractTestLines(b)
-	f := filter.New(nil, []string{"*.png"})
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for _, line := range lines {
-			f.Match(line)
+		if c != 22185 {
+			b.Fatalf("wrong number of matches: expected 22185, got %d", c)
 		}
 	}
 }
