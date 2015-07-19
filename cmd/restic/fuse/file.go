@@ -2,7 +2,6 @@ package fuse
 
 import (
 	"github.com/restic/restic"
-	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/pack"
 	"github.com/restic/restic/repository"
 
@@ -25,11 +24,11 @@ type file struct {
 func newFile(repo *repository.Repository, node *restic.Node) (*file, error) {
 	sizes := make([]uint32, len(node.Content))
 	for i, blobId := range node.Content {
-		_, _, _, length, err := repo.Index().Lookup(blobId)
+		length, err := repo.Index().LookupSize(blobId)
 		if err != nil {
 			return nil, err
 		}
-		sizes[i] = uint32(length) - crypto.Extension
+		sizes[i] = uint32(length)
 	}
 
 	return &file{
