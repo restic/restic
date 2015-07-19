@@ -25,9 +25,18 @@ def packages_linux
   EOF
 end
 
+def packages_darwin
+  return <<-EOF
+    ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    brew install caskroom/cask/brew-cask
+    brew cask install osxfuse
+  EOF
+end
+
 def install_gimme
   return <<-EOF
     rm -rf /opt/gimme
+    mkdir -p /opt/gimme || true
     git clone https://github.com/meatballhat/gimme /opt/gimme
     perl -p -i -e 's,/bin/bash,/usr/bin/env bash,' /opt/gimme/gimme
     ln -sf /opt/gimme/gimme /usr/bin/gimme
@@ -40,7 +49,7 @@ def prepare_user(boxname)
     export PATH=/usr/local/bin:$PATH
 
     gimme #{GO_VERSION} >> ~/.profile
-    echo export 'GOPATH=$HOME/go' >> ~/.profile
+    echo export 'GOPATH=/vagrant/go' >> ~/.profile
     echo export 'CDPATH=.:$GOPATH/src/github.com' >> ~/.profile
     echo export 'PATH=$GOPATH/bin:/usr/local/bin:$PATH' >> ~/.profile
 
@@ -58,7 +67,7 @@ end
 
 def fix_perms
   return <<-EOF
-    chown -R vagrant:vagrant /home/vagrant/go
+    chown -R vagrant /vagrant/go
   EOF
 end
 
@@ -67,11 +76,8 @@ end
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure(2) do |config|
-  # disable default mount
-  config.vm.synced_folder ".", "/vagrant", :disabled => true
-
   # use rsync to copy content to the folder
-  config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/restic/restic", :type => "rsync"
+  config.vm.synced_folder ".", "/vagrant/go/src/github.com/restic/restic", :type => "rsync"
 
   # fix permissions on synced folder
   config.vm.provision "fix perms", :type => :shell, :inline => fix_perms
@@ -96,4 +102,13 @@ Vagrant.configure(2) do |config|
     b.vm.provision "install gimme",  :type => :shell, :inline => install_gimme
     b.vm.provision "prepare user",   :type => :shell, :privileged => false, :inline => prepare_user("openbsd")
   end
+
+  config.vm.define "darwin" do |b|
+    #b.vm.box = "jhcook/osx-yosemite-10.10"
+    b.vm.box = "jhcook/yosemite-clitools"
+    b.vm.provision "packages darwin", :type => :shell, :privileged => false, :inline => packages_darwin
+    b.vm.provision "install gimme",  :type => :shell, :inline => install_gimme
+    b.vm.provision "prepare user",   :type => :shell, :privileged => false, :inline => prepare_user("darwin")
+  end
+
 end
