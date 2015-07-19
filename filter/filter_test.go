@@ -121,7 +121,7 @@ var filterListTests = []struct {
 
 func TestMatchList(t *testing.T) {
 	for i, test := range filterListTests {
-		match, err := filter.MatchList(test.patterns, test.path)
+		match, err := filter.List(test.patterns, test.path)
 		if err != nil {
 			t.Errorf("test %d failed: expected no error for patterns %q, but error returned: %v",
 				i, test.patterns, err)
@@ -136,7 +136,7 @@ func TestMatchList(t *testing.T) {
 }
 
 func ExampleMatchList() {
-	match, _ := filter.MatchList([]string{"*.c", "*.go"}, "/home/user/file.go")
+	match, _ := filter.List([]string{"*.c", "*.go"}, "/home/user/file.go")
 	fmt.Printf("match: %v\n", match)
 	// Output:
 	// match: true
@@ -235,7 +235,7 @@ func BenchmarkFilterPatterns(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		c = 0
 		for _, line := range lines {
-			match, err := filter.MatchList(patterns, line)
+			match, err := filter.List(patterns, line)
 			if err != nil {
 				b.Fatal(err)
 			}

@@ -19,6 +19,10 @@ type stats struct {
 	dirs, files int
 }
 
+func acceptAll(string, os.FileInfo) bool {
+	return true
+}
+
 func statPath(path string) (stats, error) {
 	var s stats
 
@@ -118,7 +122,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	}()
 
 	resCh := make(chan pipe.Result, 1)
-	err = pipe.Walk([]string{TestWalkerPath}, done, jobs, resCh)
+	err = pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
 	OK(t, err)
 
 	// wait for all workers to terminate
@@ -198,7 +202,7 @@ func TestPipelineWalker(t *testing.T) {
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	err = pipe.Walk([]string{TestWalkerPath}, done, jobs, resCh)
+	err = pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
 	OK(t, err)
 
 	// wait for all workers to terminate
@@ -298,7 +302,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 		}()
 
 		resCh := make(chan pipe.Result, 1)
-		err := pipe.Walk([]string{TestWalkerPath}, done, jobs, resCh)
+		err := pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
 		OK(b, err)
 
 		// wait for all workers to terminate
@@ -375,7 +379,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	err = pipe.Walk(paths, done, jobs, resCh)
+	err = pipe.Walk(paths, acceptAll, done, jobs, resCh)
 	OK(t, err)
 
 	// wait for all workers to terminate

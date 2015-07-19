@@ -91,8 +91,8 @@ func match(patterns, strs []string) (matched bool, err error) {
 	return false, nil
 }
 
-// MatchList returns true if str matches one of the patterns.
-func MatchList(patterns []string, str string) (matched bool, err error) {
+// List returns true if str matches one of the patterns.
+func List(patterns []string, str string) (matched bool, err error) {
 	for _, pat := range patterns {
 		matched, err = Match(pat, str)
 		if err != nil {

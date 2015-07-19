@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -44,7 +45,11 @@ func cmdInit(t testing.TB, global GlobalOptions) {
 }
 
 func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID backend.ID) {
-	cmd := &CmdBackup{global: &global}
+	cmdBackupExcludes(t, global, target, parentID, nil)
+}
+
+func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID backend.ID, excludes []string) {
+	cmd := &CmdBackup{global: &global, Exclude: excludes}
 	cmd.Parent = parentID.String()
 
 	t.Logf("backing up %v", target)
@@ -71,6 +76,16 @@ func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backe
 func cmdCheck(t testing.TB, global GlobalOptions) {
 	cmd := &CmdCheck{global: &global, ReadData: true}
 	OK(t, cmd.Execute(nil))
+}
+
+func cmdLs(t testing.TB, global GlobalOptions, snapshotID string) []string {
+	var buf bytes.Buffer
+	global.stdout = &buf
+
+	cmd := &CmdLs{global: &global}
+	OK(t, cmd.Execute([]string{snapshotID}))
+
+	return strings.Split(string(buf.Bytes()), "\n")
 }
 
 func TestBackup(t *testing.T) {
@@ -234,6 +249,86 @@ func TestBackupMissingFile2(t *testing.T) {
 
 		Assert(t, ranHook, "hook did not run")
 		debug.RemoveHook("pipe.walk2")
+	})
+}
+
+func includes(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+
+	return false
+}
+
+func loadSnapshotMap(t testing.TB, global GlobalOptions) map[string]struct{} {
+	snapshotIDs := cmdList(t, global, "snapshots")
+
+	m := make(map[string]struct{})
+	for _, id := range snapshotIDs {
+		m[id.String()] = struct{}{}
+	}
+
+	return m
+}
+
+func lastSnapshot(old, new map[string]struct{}) (map[string]struct{}, string) {
+	for k := range new {
+		if _, ok := old[k]; !ok {
+			old[k] = struct{}{}
+			return old, k
+		}
+	}
+
+	return old, ""
+}
+
+var backupExcludeFilenames = []string{
+	"testfile1",
+	"foo.tar.gz",
+	"private/secret/passwords.txt",
+	"work/source/test.c",
+}
+
+func TestBackupExclude(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		cmdInit(t, global)
+
+		datadir := filepath.Join(env.base, "testdata")
+
+		for _, filename := range backupExcludeFilenames {
+			fp := filepath.Join(datadir, filename)
+			OK(t, os.MkdirAll(filepath.Dir(fp), 0755))
+
+			f, err := os.Create(fp)
+			OK(t, err)
+
+			fmt.Fprintf(f, filename)
+			OK(t, f.Close())
+		}
+
+		snapshots := make(map[string]struct{})
+
+		cmdBackup(t, global, []string{datadir}, nil)
+		snapshots, snapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, global))
+		files := cmdLs(t, global, snapshotID)
+		Assert(t, includes(files, filepath.Join("testdata", "foo.tar.gz")),
+			"expected file %q in first snapshot, but it's not included", "foo.tar.gz")
+
+		cmdBackupExcludes(t, global, []string{datadir}, nil, []string{"*.tar.gz"})
+		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, global))
+		files = cmdLs(t, global, snapshotID)
+		Assert(t, !includes(files, filepath.Join("testdata", "foo.tar.gz")),
+			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
+
+		cmdBackupExcludes(t, global, []string{datadir}, nil, []string{"*.tar.gz", "private/secret"})
+		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, global))
+		files = cmdLs(t, global, snapshotID)
+		Assert(t, !includes(files, filepath.Join("testdata", "foo.tar.gz")),
+			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
+		Assert(t, !includes(files, filepath.Join("testdata", "private", "secret", "passwords.txt")),
+			"expected file %q not in first snapshot, but it's included", "passwords.txt")
 	})
 }
 

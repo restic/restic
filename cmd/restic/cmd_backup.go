@@ -10,13 +10,15 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/filter"
 	"github.com/restic/restic/repository"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 type CmdBackup struct {
-	Parent string `short:"p" long:"parent"    description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
-	Force  bool   `short:"f" long:"force" description:"Force re-reading the target. Overrides the \"parent\" flag"`
+	Parent  string   `short:"p" long:"parent"  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
+	Force   bool     `short:"f" long:"force"   description:"Force re-reading the target. Overrides the \"parent\" flag"`
+	Exclude []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
 
 	global *GlobalOptions
 }
@@ -282,14 +284,22 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	cmd.global.Verbosef("scan %v\n", target)
 
-	stat, err := restic.Scan(target, cmd.newScanProgress())
+	selectFilter := func(item string, fi os.FileInfo) bool {
+		matched, err := filter.List(cmd.Exclude, item)
+		if err != nil {
+			cmd.global.Warnf("error for exclude pattern: %v", err)
+		}
 
-	// TODO: add filter
-	// arch.Filter = func(dir string, fi os.FileInfo) bool {
-	// 	return true
-	// }
+		return !matched
+	}
+
+	stat, err := restic.Scan(target, selectFilter, cmd.newScanProgress())
+	if err != nil {
+		return err
+	}
 
 	arch := restic.NewArchiver(repo)
+	arch.SelectFilter = selectFilter
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
 		// TODO: make ignoring errors configurable

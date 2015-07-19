@@ -11,6 +11,8 @@ import (
 )
 
 type CmdLs struct {
+	Long bool `short:"l" long:"long" description:"Use a long listing format showing size and mode"`
+
 	global *GlobalOptions
 }
 
@@ -24,7 +26,11 @@ func init() {
 	}
 }
 
-func printNode(prefix string, n *restic.Node) string {
+func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
+	if !cmd.Long {
+		return filepath.Join(prefix, n.Name)
+	}
+
 	switch n.Type {
 	case "file":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
@@ -40,17 +46,17 @@ func printNode(prefix string, n *restic.Node) string {
 	}
 }
 
-func printTree(prefix string, repo *repository.Repository, id backend.ID) error {
+func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id backend.ID) error {
 	tree, err := restic.LoadTree(repo, id)
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range tree.Nodes {
-		fmt.Println(printNode(prefix, entry))
+		cmd.global.Printf(cmd.printNode(prefix, entry) + "\n")
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			err = printTree(filepath.Join(prefix, entry.Name), repo, entry.Subtree)
+			err = cmd.printTree(filepath.Join(prefix, entry.Name), repo, entry.Subtree)
 			if err != nil {
 				return err
 			}
@@ -89,7 +95,7 @@ func (cmd CmdLs) Execute(args []string) error {
 		return err
 	}
 
-	fmt.Printf("snapshot of %v at %s:\n", sn.Paths, sn.Time)
+	cmd.global.Verbosef("snapshot of %v at %s:\n", sn.Paths, sn.Time)
 
-	return printTree("", repo, sn.Tree)
+	return cmd.printTree("", repo, sn.Tree)
 }
