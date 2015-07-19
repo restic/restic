@@ -21,22 +21,30 @@ func TestMount(t *testing.T) {
 	}
 
 	checkSnapshots := func(repo *repository.Repository, mountpoint string, snapshotIDs []backend.ID) {
-		stSnapshots, err := os.Open(filepath.Join(mountpoint, "snapshots"))
+		snapshotsDir, err := os.Open(filepath.Join(mountpoint, "snapshots"))
 		OK(t, err)
-		namesInSnapshots, err := stSnapshots.Readdirnames(-1)
+		namesInSnapshots, err := snapshotsDir.Readdirnames(-1)
 		OK(t, err)
 		Assert(t,
 			len(namesInSnapshots) == len(snapshotIDs),
 			"Invalid number of snapshots: expected %d, got %d", len(snapshotIDs), len(namesInSnapshots))
 
-		for i, id := range snapshotIDs {
+		namesMap := make(map[string]bool)
+		for _, name := range namesInSnapshots {
+			namesMap[name] = false
+		}
+
+		for _, id := range snapshotIDs {
 			snapshot, err := restic.LoadSnapshot(repo, id)
 			OK(t, err)
-			Assert(t,
-				namesInSnapshots[i] == snapshot.Time.Format(time.RFC3339),
-				"Invalid snapshot directory name: expected %s, got %s", snapshot.Time.Format(time.RFC3339), namesInSnapshots[i])
+			_, ok := namesMap[snapshot.Time.Format(time.RFC3339)]
+			Assert(t, ok, "Snapshot %s isn't present in fuse dir", snapshot.Time.Format(time.RFC3339))
+			namesMap[snapshot.Time.Format(time.RFC3339)] = true
 		}
-		OK(t, stSnapshots.Close())
+		for name, present := range namesMap {
+			Assert(t, present, "Directory %s is present in fuse dir but is not a snapshot", name)
+		}
+		OK(t, snapshotsDir.Close())
 	}
 
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
@@ -54,12 +62,12 @@ func TestMount(t *testing.T) {
 		go cmdMount(t, global, mountpoint, ready)
 		<-ready
 
-		stMountPoint, err := os.Open(mountpoint)
+		mountpointDir, err := os.Open(mountpoint)
 		OK(t, err)
-		names, err := stMountPoint.Readdirnames(-1)
+		names, err := mountpointDir.Readdirnames(-1)
 		OK(t, err)
-		Assert(t, len(names) == 1 && names[0] == "snapshots", "expected the snapshots directory to exist")
-		OK(t, stMountPoint.Close())
+		Assert(t, len(names) == 1 && names[0] == "snapshots", `The fuse virtual directory "snapshots" doesn't exist`)
+		OK(t, mountpointDir.Close())
 
 		checkSnapshots(repo, mountpoint, []backend.ID{})
 
