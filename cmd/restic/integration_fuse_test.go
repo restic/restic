@@ -34,7 +34,7 @@ func TestMount(t *testing.T) {
 			OK(t, err)
 			Assert(t,
 				namesInSnapshots[i] == snapshot.Time.Format(time.RFC3339),
-				"Invalid snapshot folder name: expected %s, got %s", snapshot.Time.Format(time.RFC3339), namesInSnapshots[i])
+				"Invalid snapshot directory name: expected %s, got %s", snapshot.Time.Format(time.RFC3339), namesInSnapshots[i])
 		}
 		OK(t, stSnapshots.Close())
 	}

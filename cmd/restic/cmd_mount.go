@@ -59,13 +59,11 @@ func (cmd CmdMount) Execute(args []string) error {
 	}
 
 	mountpoint := args[0]
-	if _, err := os.Stat(mountpoint); err != nil {
-		if os.IsNotExist(err) {
-			cmd.global.Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
-			err = os.Mkdir(mountpoint, os.ModeDir|0700)
-			if err != nil {
-				return err
-			}
+	if _, err := os.Stat(mountpoint); os.IsNotExist(err) {
+		cmd.global.Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
+		err = os.Mkdir(mountpoint, os.ModeDir|0700)
+		if err != nil {
+			return err
 		}
 	}
 	c, err := fuse.Mount(
@@ -83,8 +81,8 @@ func (cmd CmdMount) Execute(args []string) error {
 		knownSnapshots: make(map[string]snapshotWithId),
 	})
 
-	cmd.global.Printf("Now serving %s under %s\n", repo.Backend().Location(), mountpoint)
-	cmd.global.Printf("Don't forget to umount after quitting !\n")
+	cmd.global.Printf("Now serving %s at %s\n", repo.Backend().Location(), mountpoint)
+	cmd.global.Printf("Don't forget to umount after quitting!\n")
 
 	cmd.ready <- struct{}{}
 
@@ -116,9 +114,9 @@ type snapshots struct {
 	knownSnapshots map[string]snapshotWithId
 }
 
-func (sn *snapshots) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Inode = 0
-	a.Mode = os.ModeDir | 0555
+func (sn *snapshots) Attr(ctx context.Context, attr *fuse.Attr) error {
+	attr.Inode = 0
+	attr.Mode = os.ModeDir | 0555
 	return nil
 }
 
@@ -247,7 +245,6 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		}
 	}
 
-	return nil, fuse.ENOENT
 }
 
 // Statically ensure that *file implements the given interface
@@ -265,8 +262,8 @@ type file struct {
 
 func makeFile(repo *repository.Repository, node *restic.Node) (*file, error) {
 	sizes := make([]uint32, len(node.Content))
-	for i, bid := range node.Content {
-		_, _, _, length, err := repo.Index().Lookup(bid)
+	for i, blobId := range node.Content {
+		_, _, _, length, err := repo.Index().Lookup(blobId)
 		if err != nil {
 			return nil, err
 		}
