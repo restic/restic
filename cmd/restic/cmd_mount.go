@@ -177,14 +177,7 @@ func (sn *snapshots) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		}
 	}
 
-	tree, err := restic.LoadTree(sn.repo, snapshot.Tree)
-	if err != nil {
-		return nil, err
-	}
-	return &dir{
-		repo: sn.repo,
-		tree: tree,
-	}, nil
+	return newDirFromSnapshot(sn.repo, snapshot)
 }
 
 // Statically ensure that *dir implement those interface
@@ -192,9 +185,43 @@ var _ = fs.HandleReadDirAller(&dir{})
 var _ = fs.NodeStringLookuper(&dir{})
 
 type dir struct {
-	repo  *repository.Repository
-	tree  *restic.Tree
-	inode uint64
+	repo     *repository.Repository
+	children map[string]*restic.Node
+	inode    uint64
+}
+
+func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
+	tree, err := restic.LoadTree(repo, node.Subtree)
+	if err != nil {
+		return nil, err
+	}
+	children := make(map[string]*restic.Node)
+	for _, child := range tree.Nodes {
+		children[child.Name] = child
+	}
+
+	return &dir{
+		repo:     repo,
+		children: children,
+		inode:    node.Inode,
+	}, nil
+}
+
+func newDirFromSnapshot(repo *repository.Repository, snapshot snapshotWithId) (*dir, error) {
+	tree, err := restic.LoadTree(repo, snapshot.Tree)
+	if err != nil {
+		return nil, err
+	}
+	children := make(map[string]*restic.Node)
+	for _, node := range tree.Nodes {
+		children[node.Name] = node
+	}
+
+	return &dir{
+		repo:     repo,
+		children: children,
+		inode:    binary.BigEndian.Uint64(snapshot.ID),
+	}, nil
 }
 
 func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
@@ -204,9 +231,9 @@ func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	ret := make([]fuse.Dirent, 0, len(d.tree.Nodes))
+	ret := make([]fuse.Dirent, 0, len(d.children))
 
-	for _, node := range d.tree.Nodes {
+	for _, node := range d.children {
 		var typ fuse.DirentType
 		switch {
 		case node.Mode.IsDir():
@@ -226,25 +253,18 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 }
 
 func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	for _, node := range d.tree.Nodes {
-		if node.Name == name {
-			switch {
-			case node.Mode.IsDir():
-				subtree, err := restic.LoadTree(d.repo, node.Subtree)
-				if err != nil {
-					return nil, err
-				}
-				return &dir{
-					repo:  d.repo,
-					tree:  subtree,
-					inode: binary.BigEndian.Uint64(node.Subtree[:8]),
-				}, nil
-			case node.Mode.IsRegular():
-				return makeFile(d.repo, node)
-			}
-		}
+	child, ok := d.children[name]
+	if !ok {
+		return nil, fuse.ENOENT
 	}
-
+	switch {
+	case child.Mode.IsDir():
+		return newDir(d.repo, child)
+	case child.Mode.IsRegular():
+		return newFile(d.repo, child)
+	default:
+		return nil, fuse.ENOENT
+	}
 }
 
 // Statically ensure that *file implements the given interface
@@ -260,7 +280,7 @@ type file struct {
 	clearContent [][]byte
 }
 
-func makeFile(repo *repository.Repository, node *restic.Node) (*file, error) {
+func newFile(repo *repository.Repository, node *restic.Node) (*file, error) {
 	sizes := make([]uint32, len(node.Content))
 	for i, blobId := range node.Content {
 		_, _, _, length, err := repo.Index().Lookup(blobId)
