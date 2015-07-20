@@ -11,6 +11,7 @@ import (
 
 type CmdRestore struct {
 	Exclude []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
+	Include []string `short:"i" long:"include" description:"Include a pattern, exclude everything else (can be specified multiple times)"`
 	Target  string   `short:"t" long:"target"  description:"Directory to restore to"`
 
 	global *GlobalOptions
@@ -37,6 +38,10 @@ func (cmd CmdRestore) Execute(args []string) error {
 
 	if cmd.Target == "" {
 		return errors.New("please specify a directory to restore to (--target)")
+	}
+
+	if len(cmd.Exclude) > 0 && len(cmd.Include) > 0 {
+		return errors.New("exclude and include patterns are mutually exclusive")
 	}
 
 	snapshotIDString := args[0]
@@ -74,7 +79,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return err
 	}
 
-	selectFilter := func(item string, dstpath string, node *restic.Node) bool {
+	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) bool {
 		matched, err := filter.List(cmd.Exclude, item)
 		if err != nil {
 			cmd.global.Warnf("error for exclude pattern: %v", err)
@@ -83,8 +88,19 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return !matched
 	}
 
+	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) bool {
+		matched, err := filter.List(cmd.Include, item)
+		if err != nil {
+			cmd.global.Warnf("error for include pattern: %v", err)
+		}
+
+		return matched
+	}
+
 	if len(cmd.Exclude) > 0 {
-		res.SelectFilter = selectFilter
+		res.SelectFilter = selectExcludeFilter
+	} else if len(cmd.Include) > 0 {
+		res.SelectFilter = selectIncludeFilter
 	}
 
 	cmd.global.Verbosef("restoring %s to %s\n", res.Snapshot(), cmd.Target)

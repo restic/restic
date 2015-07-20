@@ -78,6 +78,11 @@ func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshot
 	OK(t, cmd.Execute([]string{snapshotID.String()}))
 }
 
+func cmdRestoreIncludes(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, includes []string) {
+	cmd := &CmdRestore{global: &global, Target: dir, Include: includes}
+	OK(t, cmd.Execute([]string{snapshotID.String()}))
+}
+
 func cmdCheck(t testing.TB, global GlobalOptions) {
 	cmd := &CmdCheck{global: &global, ReadData: true}
 	OK(t, cmd.Execute(nil))
@@ -563,7 +568,7 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 		// restore with filter "*.ext", this should restore "file.ext", but
 		// since the directories are ignored and only created because of
 		// "file.ext", no meta data should be restored for them.
-		cmdRestoreExcludes(t, global, filepath.Join(env.base, "restore0"), snapshotID, []string{"*.ext"})
+		cmdRestoreIncludes(t, global, filepath.Join(env.base, "restore0"), snapshotID, []string{"*.ext"})
 
 		f1 := filepath.Join(env.base, "restore0", "testdata", "subdir1", "subdir2")
 		fi, err := os.Stat(f1)
@@ -573,7 +578,7 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 			"meta data of intermediate directory has been restore although it was ignored")
 
 		// restore with filter "*", this should restore meta data on everything.
-		cmdRestoreExcludes(t, global, filepath.Join(env.base, "restore1"), snapshotID, []string{"*"})
+		cmdRestoreIncludes(t, global, filepath.Join(env.base, "restore1"), snapshotID, []string{"*"})
 
 		f2 := filepath.Join(env.base, "restore1", "testdata", "subdir1", "subdir2")
 		fi, err = os.Stat(f2)
