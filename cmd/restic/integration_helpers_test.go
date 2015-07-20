@@ -65,7 +65,10 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 		return false
 	}
 
-	if runtime.GOOS != "darwin" {
+	switch runtime.GOOS {
+	case "darwin", "freebsd":
+		// Skip ModTime check on darwin and freebsd
+	default:
 		if e.fi.ModTime() != other.fi.ModTime() {
 			fmt.Fprintf(os.Stderr, "%v: ModTime does not match (%v != %v)\n", e.path, e.fi.ModTime(), other.fi.ModTime())
 			return false
