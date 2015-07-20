@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -43,8 +42,10 @@ func (cmd CmdWeb) Execute(args []string) error {
 	}
 	repo.LoadIndex()
 	httpRepo := &httpRepo{
-		repo:      repo,
-		snapshots: make(map[string]*restic.Snapshot),
+		repo: repo,
+		objects: map[string]http.File{
+			"": &httpRoot{repo: repo},
+		},
 	}
 
 	portStr := args[0]
@@ -60,13 +61,139 @@ func (cmd CmdWeb) Execute(args []string) error {
 type httpRepo struct {
 	repo *repository.Repository
 
-	// snapshot timestamp -> snapshot
-	snapshots map[string]*restic.Snapshot
+	// Object path -> object
+	objects map[string]http.File
 }
 
 func (hr httpRepo) Open(name string) (http.File, error) {
-	parts := strings.Split(name, "/")[1:]
-	log.Printf("Serving %s: %#v\n", name, parts)
+	var object http.File
+	var found bool
+
+	parts := strings.Split(name, "/")
+	for _, part := range parts {
+		object, found = hr.objects[part]
+		if !found {
+			return nil, fmt.Errorf("%s not found", name)
+		}
+		children, err := object.(childrener).loadChildren()
+		if err != nil {
+			return nil, err
+		}
+		for _, child := range children {
+			if _, ok := hr.objects[child.Name()]; !ok {
+				hr.objects[child.Name()] = child
+			}
+		}
+	}
+
+	return object, nil
+}
+
+type childrener interface {
+	loadChildren() ([]*httpObject, error)
+}
+
+type httpObject struct {
+	name    string
+	size    int64
+	mode    os.FileMode
+	modtime time.Time
+
+	repo *repository.Repository
+	tree backend.ID
+
+	// lazily loaded
+	children      []*httpObject
+	readdirOffset int
+}
+
+func newHttpObject(repo *repository.Repository, node *restic.Node) *httpObject {
+	return &httpObject{
+		name:    node.Name,
+		size:    int64(node.Size),
+		mode:    node.Mode,
+		modtime: node.ModTime,
+
+		repo: repo,
+		tree: node.Subtree,
+	}
+}
+
+func newHttpObjectFromSnapshot(repo *repository.Repository, snapshot *restic.Snapshot) *httpObject {
+	return &httpObject{
+		name:    snapshot.Time.Format(time.RFC3339),
+		size:    0,
+		mode:    os.ModeDir,
+		modtime: snapshot.Time,
+
+		repo: repo,
+		tree: snapshot.Tree,
+	}
+}
+
+func (ho *httpObject) Close() error                                 { return nil }
+func (ho *httpObject) Read(p []byte) (int, error)                   { return len(p), nil }
+func (ho *httpObject) Seek(offset int64, whence int) (int64, error) { return offset, nil }
+func (ho *httpObject) Stat() (os.FileInfo, error)                   { return ho, nil }
+
+func (ho *httpObject) loadChildren() ([]*httpObject, error) {
+	if len(ho.children) > 0 {
+		return ho.children, nil
+	}
+
+	tree, err := restic.LoadTree(ho.repo, ho.tree)
+	if err != nil {
+		return nil, err
+	}
+	ho.children = make([]*httpObject, len(tree.Nodes))
+	for i, node := range tree.Nodes {
+		ho.children[i] = newHttpObject(ho.repo, node)
+	}
+
+	return ho.children, nil
+}
+
+func (ho *httpObject) Readdir(n int) ([]os.FileInfo, error) {
+	children, err := ho.loadChildren()
+
+	start := ho.readdirOffset
+	end := start + n
+	if end > len(children) {
+		end = len(children)
+	}
+	ho.readdirOffset = end
+
+	if start == end {
+		ho.readdirOffset = 0
+	}
+
+	return conv(children[start:end]), err
+}
+
+func (ho *httpObject) Name() string       { return ho.name }
+func (ho *httpObject) Size() int64        { return ho.size }
+func (ho *httpObject) Mode() os.FileMode  { return ho.mode }
+func (ho *httpObject) IsDir() bool        { return ho.mode.IsDir() }
+func (ho *httpObject) Sys() interface{}   { return nil }
+func (ho *httpObject) ModTime() time.Time { return ho.modtime }
+
+type httpRoot struct {
+	repo          *repository.Repository
+	readdirOffset int
+
+	// Lazily loaded
+	snapshots []*httpObject
+}
+
+func (hr *httpRoot) Close() error                                 { return nil }
+func (hr *httpRoot) Read(p []byte) (int, error)                   { return len(p), nil }
+func (hr *httpRoot) Seek(offset int64, whence int) (int64, error) { return offset, nil }
+func (hr *httpRoot) Stat() (os.FileInfo, error)                   { return hr, nil }
+
+func (hr *httpRoot) loadChildren() ([]*httpObject, error) {
+	if len(hr.snapshots) > 0 {
+		return hr.snapshots, nil
+	}
 
 	done := make(chan struct{})
 	defer close(done)
@@ -75,62 +202,30 @@ func (hr httpRepo) Open(name string) (http.File, error) {
 		if err != nil {
 			return nil, err
 		}
-		hr.snapshots[snapshot.Time.Format(time.RFC3339)] = snapshot
+		hr.snapshots = append(hr.snapshots, newHttpObjectFromSnapshot(hr.repo, snapshot))
 	}
 
-	if parts[0] == "" {
-		return &httpRoot{repo: hr.repo}, nil
-	}
-	snapshot, ok := hr.snapshots[parts[0]]
-	if ok && len(parts) == 1 {
-		return &httpSnapshot{repo: hr.repo, snapshot: snapshot}, nil
-	}
-	return nil, fmt.Errorf("Not found")
+	return hr.snapshots, nil
 }
-
-type httpRoot struct {
-	repo          *repository.Repository
-	readdirOffset int
-
-	// Lazily loaded
-	snapshots []os.FileInfo
-}
-
-func (hr *httpRoot) Close() error                                 { return nil }
-func (hr *httpRoot) Read(p []byte) (int, error)                   { return len(p), nil }
-func (hr *httpRoot) Seek(offset int64, whence int) (int64, error) { return offset, nil }
-func (hr *httpRoot) Stat() (os.FileInfo, error)                   { return hr, nil }
 
 func (hr *httpRoot) Readdir(n int) ([]os.FileInfo, error) {
-	if hr.readdirOffset == 0 || hr.snapshots == nil {
-		if hr.snapshots == nil {
-			hr.snapshots = make([]os.FileInfo, 0)
-		} else {
-			hr.snapshots = hr.snapshots[:0]
-		}
-
-		done := make(chan struct{})
-		defer close(done)
-		for id := range hr.repo.List(backend.Snapshot, done) {
-			snapshot, err := restic.LoadSnapshot(hr.repo, id)
-			if err != nil {
-				return nil, err
-			}
-			hr.snapshots = append(hr.snapshots, httpSnapshot{
-				repo:     hr.repo,
-				snapshot: snapshot,
-			})
-		}
+	snapshots, err := hr.loadChildren()
+	if err != nil {
+		return nil, err
 	}
 
 	start := hr.readdirOffset
 	end := start + n
-	if end > len(hr.snapshots) {
-		end = len(hr.snapshots)
+	if end > len(snapshots) {
+		end = len(snapshots)
 	}
 	hr.readdirOffset = end
 
-	return hr.snapshots[start:end], nil
+	if start == end {
+		hr.readdirOffset = 0
+	}
+
+	return conv(snapshots[start:end]), nil
 }
 
 func (hr httpRoot) Name() string      { return "/" }
@@ -148,117 +243,10 @@ func (hr httpRoot) ModTime() time.Time {
 	return modtime
 }
 
-type httpSnapshot struct {
-	repo     *repository.Repository
-	snapshot *restic.Snapshot
-
-	// Lazily loaded
-	httpNodes     []os.FileInfo
-	readdirOffset int
-}
-
-var _ = http.File(&httpSnapshot{})
-
-func (hs *httpSnapshot) Close() error                                 { return nil }
-func (hs *httpSnapshot) Read(p []byte) (int, error)                   { return len(p), nil }
-func (hs *httpSnapshot) Seek(offset int64, whence int) (int64, error) { return offset, nil }
-func (hs *httpSnapshot) Stat() (os.FileInfo, error)                   { return hs, nil }
-
-func (hs *httpSnapshot) Readdir(n int) ([]os.FileInfo, error) {
-	if len(hs.httpNodes) == 0 {
-		tree, err := restic.LoadTree(hs.repo, hs.snapshot.Tree)
-		if err != nil {
-			return nil, err
-		}
-		hs.httpNodes = make([]os.FileInfo, len(tree.Nodes))
-		for i := range tree.Nodes {
-			hs.httpNodes[i] = httpNodeInfo{tree.Nodes[i]}
-		}
+func conv(in []*httpObject) (out []os.FileInfo) {
+	out = make([]os.FileInfo, len(in))
+	for i, iin := range in {
+		out[i] = os.FileInfo(iin)
 	}
-
-	start := hs.readdirOffset
-	end := start + n
-	if end > len(hs.httpNodes) {
-		end = len(hs.httpNodes)
-	}
-	hs.readdirOffset = end
-
-	return hs.httpNodes[start:end], nil
+	return out
 }
-
-func (hs httpSnapshot) Name() string       { return hs.snapshot.Time.Format(time.RFC3339) }
-func (hs httpSnapshot) Size() int64        { return 0 }
-func (hs httpSnapshot) Mode() os.FileMode  { return os.ModeDir }
-func (hs httpSnapshot) ModTime() time.Time { return hs.snapshot.Time }
-func (hs httpSnapshot) IsDir() bool        { return true }
-func (hs httpSnapshot) Sys() interface{}   { return nil }
-
-/*
-type treeer interface {
-	tree() backend.ID
-}
-type snapshotTreeer struct {
-	*restic.Snapshot
-}
-
-func (sn snapshotTreeer) tree() backend.ID { return sn.Snapshot.Tree }
-
-type treeTreeer struct {
-	*restic.Node
-}
-
-func (sn treeTreeer) tree() backend.ID { return sn.Node.Subtree }
-*/
-
-type httpNode struct {
-	repo *repository.Repository
-	node *restic.Node
-
-	httpNodes     []os.FileInfo
-	readdirOffset int
-}
-
-var _ = http.File(&httpNode{})
-
-// http.File interface
-func (hn *httpNode) Close() error                                 { return nil }
-func (hn *httpNode) Read(p []byte) (int, error)                   { return len(p), nil }
-func (hn *httpNode) Seek(offset int64, whence int) (int64, error) { return offset, nil }
-func (hn *httpNode) Stat() (os.FileInfo, error)                   { return httpNodeInfo{hn.node}, nil }
-
-func (hn *httpNode) Readdir(n int) ([]os.FileInfo, error) {
-	if hn.node.Subtree == nil {
-		return nil, nil
-	}
-
-	if len(hn.httpNodes) == 0 {
-		subtree, err := restic.LoadTree(hn.repo, hn.node.Subtree)
-		if err != nil {
-			return nil, err
-		}
-		hn.httpNodes = make([]os.FileInfo, len(subtree.Nodes))
-		for i := range subtree.Nodes {
-			hn.httpNodes[i] = httpNodeInfo{subtree.Nodes[i]}
-		}
-	}
-
-	start := hn.readdirOffset
-	end := start + n
-	if end > len(hn.httpNodes) {
-		end = len(hn.httpNodes)
-	}
-	hn.readdirOffset = end
-
-	return hn.httpNodes[start:end], nil
-}
-
-type httpNodeInfo struct {
-	node *restic.Node
-}
-
-func (hn httpNodeInfo) Name() string       { return hn.node.Name }
-func (hn httpNodeInfo) Size() int64        { return int64(hn.node.Size) }
-func (hn httpNodeInfo) Mode() os.FileMode  { return hn.node.Mode }
-func (hn httpNodeInfo) ModTime() time.Time { return hn.node.ModTime }
-func (hn httpNodeInfo) IsDir() bool        { return hn.node.Subtree != nil }
-func (hn httpNodeInfo) Sys() interface{}   { return nil }
