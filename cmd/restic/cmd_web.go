@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/cmd/restic/web"
 	"github.com/restic/restic/repository"
 )
 
@@ -18,7 +19,7 @@ type CmdWeb struct {
 }
 
 func init() {
-	_, err := parser.AddCommand("web",
+	_, err := parser.AddCommand("server",
 		"serve repository in a web interface",
 		"The web command serves the repository in a web interface",
 		&CmdWeb{global: &globalOpts})
@@ -101,13 +102,18 @@ type httpObject struct {
 
 	repo *repository.Repository
 	tree backend.ID
+	file *web.File
 
 	// lazily loaded
 	children      []*httpObject
 	readdirOffset int
 }
 
-func newHttpObject(repo *repository.Repository, node *restic.Node) *httpObject {
+func newHttpObject(repo *repository.Repository, node *restic.Node) (*httpObject, error) {
+	file, err := web.NewFile(repo, node)
+	if err != nil {
+		return nil, err
+	}
 	return &httpObject{
 		name:    node.Name,
 		size:    int64(node.Size),
@@ -116,7 +122,8 @@ func newHttpObject(repo *repository.Repository, node *restic.Node) *httpObject {
 
 		repo: repo,
 		tree: node.Subtree,
-	}
+		file: file,
+	}, nil
 }
 
 func newHttpObjectFromSnapshot(repo *repository.Repository, snapshot *restic.Snapshot) *httpObject {
@@ -131,14 +138,20 @@ func newHttpObjectFromSnapshot(repo *repository.Repository, snapshot *restic.Sna
 	}
 }
 
-func (ho *httpObject) Close() error                                 { return nil }
-func (ho *httpObject) Read(p []byte) (int, error)                   { return len(p), nil }
-func (ho *httpObject) Seek(offset int64, whence int) (int64, error) { return offset, nil }
-func (ho *httpObject) Stat() (os.FileInfo, error)                   { return ho, nil }
+func (ho *httpObject) Close() error               { return nil }
+func (ho *httpObject) Read(p []byte) (int, error) { return ho.file.Read(p) }
+func (ho *httpObject) Seek(offset int64, whence int) (int64, error) {
+	return ho.file.Seek(offset, whence)
+}
+func (ho *httpObject) Stat() (os.FileInfo, error) { return ho, nil }
 
 func (ho *httpObject) loadChildren() ([]*httpObject, error) {
 	if len(ho.children) > 0 {
 		return ho.children, nil
+	}
+
+	if ho.file != nil {
+		return nil, nil
 	}
 
 	tree, err := restic.LoadTree(ho.repo, ho.tree)
@@ -147,7 +160,11 @@ func (ho *httpObject) loadChildren() ([]*httpObject, error) {
 	}
 	ho.children = make([]*httpObject, len(tree.Nodes))
 	for i, node := range tree.Nodes {
-		ho.children[i] = newHttpObject(ho.repo, node)
+		child, err := newHttpObject(ho.repo, node)
+		if err != nil {
+			return nil, err
+		}
+		ho.children[i] = child
 	}
 
 	return ho.children, nil
