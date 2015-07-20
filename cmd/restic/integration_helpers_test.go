@@ -54,6 +54,22 @@ func walkDir(dir string) <-chan *dirEntry {
 	return ch
 }
 
+func isSymlink(fi os.FileInfo) bool {
+	mode := fi.Mode() & (os.ModeType | os.ModeCharDevice)
+	return mode == os.ModeSymlink
+}
+
+func sameModTime(fi1, fi2 os.FileInfo) bool {
+	switch runtime.GOOS {
+	case "darwin", "freebsd", "openbsd":
+		if isSymlink(fi1) && isSymlink(fi2) {
+			return true
+		}
+	}
+
+	return fi1.ModTime() == fi2.ModTime()
+}
+
 func (e *dirEntry) equals(other *dirEntry) bool {
 	if e.path != other.path {
 		fmt.Fprintf(os.Stderr, "%v: path does not match (%v != %v)\n", e.path, e.path, other.path)
@@ -65,14 +81,9 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 		return false
 	}
 
-	switch runtime.GOOS {
-	case "darwin", "freebsd":
-		// Skip ModTime check on darwin and freebsd
-	default:
-		if e.fi.ModTime() != other.fi.ModTime() {
-			fmt.Fprintf(os.Stderr, "%v: ModTime does not match (%v != %v)\n", e.path, e.fi.ModTime(), other.fi.ModTime())
-			return false
-		}
+	if !sameModTime(e.fi, other.fi) {
+		fmt.Fprintf(os.Stderr, "%v: ModTime does not match (%v != %v)\n", e.path, e.fi.ModTime(), other.fi.ModTime())
+		return false
 	}
 
 	stat, _ := e.fi.Sys().(*syscall.Stat_t)

@@ -153,10 +153,10 @@ func TestNodeRestoreAt(t *testing.T) {
 func AssertFsTimeEqual(t *testing.T, label string, nodeType string, t1 time.Time, t2 time.Time) {
 	var equal bool
 
-	// Go currently doesn't support setting timestamps of symbolic links on darwin and freebsd
+	// Go currently doesn't support setting timestamps of symbolic links on darwin and bsd
 	if nodeType == "symlink" {
 		switch runtime.GOOS {
-		case "darwin", "freebsd":
+		case "darwin", "freebsd", "openbsd":
 			return
 		}
 	}
