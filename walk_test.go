@@ -1,6 +1,7 @@
 package restic_test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -33,7 +34,11 @@ func TestWalkTree(t *testing.T) {
 	// start filesystem walker
 	fsJobs := make(chan pipe.Job)
 	resCh := make(chan pipe.Result, 1)
-	go pipe.Walk(dirs, done, fsJobs, resCh)
+
+	f := func(string, os.FileInfo) bool {
+		return true
+	}
+	go pipe.Walk(dirs, f, done, fsJobs, resCh)
 
 	for {
 		// receive fs job

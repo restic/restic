@@ -34,8 +34,8 @@ type Archiver struct {
 
 	blobToken chan struct{}
 
-	Error  func(dir string, fi os.FileInfo, err error) error
-	Filter func(item string, fi os.FileInfo) bool
+	Error        func(dir string, fi os.FileInfo, err error) error
+	SelectFilter pipe.SelectFunc
 }
 
 // NewArchiver returns a new archiver.
@@ -50,7 +50,7 @@ func NewArchiver(repo *repository.Repository) *Archiver {
 	}
 
 	arch.Error = archiverAbortOnAllErrors
-	arch.Filter = archiverAllowAllFiles
+	arch.SelectFilter = archiverAllowAllFiles
 
 	return arch
 }
@@ -577,7 +577,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 	pipeCh := make(chan pipe.Job)
 	resCh := make(chan pipe.Result, 1)
 	go func() {
-		err := pipe.Walk(paths, done, pipeCh, resCh)
+		err := pipe.Walk(paths, arch.SelectFilter, done, pipeCh, resCh)
 		if err != nil {
 			debug.Log("Archiver.Snapshot", "pipe.Walk returned error %v", err)
 			return
@@ -659,7 +659,7 @@ func isRegularFile(fi os.FileInfo) bool {
 
 // Scan traverses the dirs to collect Stat information while emitting progress
 // information with p.
-func Scan(dirs []string, p *Progress) (Stat, error) {
+func Scan(dirs []string, filter pipe.SelectFunc, p *Progress) (Stat, error) {
 	p.Start()
 	defer p.Done()
 
@@ -678,6 +678,15 @@ func Scan(dirs []string, p *Progress) (Stat, error) {
 				fmt.Fprintf(os.Stderr, "error for %v: FileInfo is nil\n", str)
 				return nil
 			}
+
+			if !filter(str, fi) {
+				debug.Log("Scan.Walk", "path %v excluded", str)
+				if fi.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+
 			s := Stat{}
 			if fi.IsDir() {
 				s.Dirs++

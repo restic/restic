@@ -1,14 +1,19 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"path/filepath"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/filter"
 )
 
 type CmdRestore struct {
+	Exclude []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
+	Include []string `short:"i" long:"include" description:"Include a pattern, exclude everything else (can be specified multiple times)"`
+	Target  string   `short:"t" long:"target"  description:"Directory to restore to"`
+
 	global *GlobalOptions
 }
 
@@ -23,13 +28,25 @@ func init() {
 }
 
 func (cmd CmdRestore) Usage() string {
-	return "snapshot-ID TARGETDIR [PATTERN]"
+	return "snapshot-ID"
 }
 
 func (cmd CmdRestore) Execute(args []string) error {
-	if len(args) < 2 || len(args) > 3 {
+	if len(args) != 1 {
 		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
+
+	if cmd.Target == "" {
+		return errors.New("please specify a directory to restore to (--target)")
+	}
+
+	if len(cmd.Exclude) > 0 && len(cmd.Include) > 0 {
+		return errors.New("exclude and include patterns are mutually exclusive")
+	}
+
+	snapshotIDString := args[0]
+
+	debug.Log("restore", "restore %v to %v", snapshotIDString, cmd.Target)
 
 	repo, err := cmd.global.OpenRepository()
 	if err != nil {
@@ -47,14 +64,11 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return err
 	}
 
-	id, err := restic.FindSnapshot(repo, args[0])
+	id, err := restic.FindSnapshot(repo, snapshotIDString)
 	if err != nil {
-		cmd.global.Exitf(1, "invalid id %q: %v", args[0], err)
+		cmd.global.Exitf(1, "invalid id %q: %v", snapshotIDString, err)
 	}
 
-	target := args[1]
-
-	// create restorer
 	res, err := restic.NewRestorer(repo, id)
 	if err != nil {
 		cmd.global.Exitf(2, "creating restorer failed: %v\n", err)
@@ -62,41 +76,36 @@ func (cmd CmdRestore) Execute(args []string) error {
 
 	res.Error = func(dir string, node *restic.Node, err error) error {
 		cmd.global.Warnf("error for %s: %+v\n", dir, err)
-
-		// if node.Type == "dir" {
-		// 	if e, ok := err.(*os.PathError); ok {
-		// 		if errn, ok := e.Err.(syscall.Errno); ok {
-		// 			if errn == syscall.EEXIST {
-		// 				fmt.Printf("ignoring already existing directory %s\n", dir)
-		// 				return nil
-		// 			}
-		// 		}
-		// 	}
-		// }
 		return err
 	}
 
-	// TODO: a filter against the full path sucks as filepath.Match doesn't match
-	// directory separators on '*'. still, it's better than nothing.
-	if len(args) > 2 {
-		pattern := args[2]
-		cmd.global.Verbosef("filter pattern %q\n", pattern)
-
-		res.SelectForRestore = func(item string, dstpath string, node *restic.Node) bool {
-			matched, err := filepath.Match(pattern, node.Name)
-			if err != nil {
-				panic(err)
-			}
-			if !matched {
-				debug.Log("restic.restore", "item %v doesn't match pattern %q", item, pattern)
-			}
-			return matched
+	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) bool {
+		matched, err := filter.List(cmd.Exclude, item)
+		if err != nil {
+			cmd.global.Warnf("error for exclude pattern: %v", err)
 		}
+
+		return !matched
 	}
 
-	cmd.global.Verbosef("restoring %s to %s\n", res.Snapshot(), target)
+	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) bool {
+		matched, err := filter.List(cmd.Include, item)
+		if err != nil {
+			cmd.global.Warnf("error for include pattern: %v", err)
+		}
 
-	err = res.RestoreTo(target)
+		return matched
+	}
+
+	if len(cmd.Exclude) > 0 {
+		res.SelectFilter = selectExcludeFilter
+	} else if len(cmd.Include) > 0 {
+		res.SelectFilter = selectIncludeFilter
+	}
+
+	cmd.global.Verbosef("restoring %s to %s\n", res.Snapshot(), cmd.Target)
+
+	err = res.RestoreTo(cmd.Target)
 	if err != nil {
 		return err
 	}
