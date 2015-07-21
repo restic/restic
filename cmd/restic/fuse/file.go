@@ -23,8 +23,8 @@ type file struct {
 
 func newFile(repo *repository.Repository, node *restic.Node) (*file, error) {
 	sizes := make([]uint32, len(node.Content))
-	for i, blobId := range node.Content {
-		length, err := repo.Index().LookupSize(blobId)
+	for i, blobID := range node.Content {
+		length, err := repo.Index().LookupSize(blobID)
 		if err != nil {
 			return nil, err
 		}
