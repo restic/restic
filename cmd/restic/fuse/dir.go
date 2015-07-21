@@ -71,6 +71,8 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			typ = fuse.DT_Dir
 		case "file":
 			typ = fuse.DT_File
+		case "symlink":
+			typ = fuse.DT_Link
 		}
 
 		ret = append(ret, fuse.Dirent{
@@ -93,6 +95,8 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return newDir(d.repo, child)
 	case "file":
 		return newFile(d.repo, child)
+	case "symlink":
+		return newLink(d.repo, child)
 	default:
 		return nil, fuse.ENOENT
 	}
