@@ -7,6 +7,13 @@ def packages_freebsd
   return <<-EOF
     pkg install -y git
     pkg install -y curl
+
+    echo 'fuse_load="YES"' >> /boot/loader.conf
+    echo 'vfs.usermount=1' >> /etc/sysctl.conf
+
+    kldload fuse
+    sysctl vfs.usermount=1
+    pw groupmod operator -M vagrant
   EOF
 end
 

@@ -153,17 +153,21 @@ func TestNodeRestoreAt(t *testing.T) {
 func AssertFsTimeEqual(t *testing.T, label string, nodeType string, t1 time.Time, t2 time.Time) {
 	var equal bool
 
-	if runtime.GOOS == "darwin" {
-		// Go currently doesn't support setting timestamps of symbolic links on darwin
-		if nodeType == "symlink" {
+	// Go currently doesn't support setting timestamps of symbolic links on darwin and bsd
+	if nodeType == "symlink" {
+		switch runtime.GOOS {
+		case "darwin", "freebsd", "openbsd":
 			return
 		}
+	}
 
+	switch runtime.GOOS {
+	case "darwin":
 		// HFS+ timestamps don't support sub-second precision,
 		// see https://en.wikipedia.org/wiki/Comparison_of_file_systems
 		diff := int(t1.Sub(t2).Seconds())
 		equal = diff == 0
-	} else {
+	default:
 		equal = t1.Equal(t2)
 	}
 

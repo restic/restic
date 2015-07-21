@@ -88,7 +88,7 @@ func RandomReader(seed, size int) *bytes.Reader {
 
 // SetupTarTestFixture extracts the tarFile to outputDir.
 func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
-	err := System("sh", "-c", `(cd "$1" && tar xz) < "$2"`,
+	err := System("sh", "-c", `(cd "$1" && tar xzf - ) < "$2"`,
 		"sh", outputDir, tarFile)
 	OK(t, err)
 }
