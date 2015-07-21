@@ -56,7 +56,7 @@ func newBlob(repo *repository.Repository, id backend.ID) (*lazyBlob, error) {
 	}, nil
 }
 
-func (lb lazyBlob) ReadAt(p []byte, off int64) (n int, err error) {
+func (lb *lazyBlob) ReadAt(p []byte, off int64) (n int, err error) {
 	if len(lb.content) == 0 {
 		lb.content, err = lb.repo.LoadBlob(pack.Data, lb.id)
 		if err != nil {
