@@ -26,5 +26,10 @@ func (l *link) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string,
 func (l *link) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = l.node.Inode
 	a.Mode = l.node.Mode
+	a.Uid = l.node.UID
+	a.Gid = l.node.GID
+	a.Atime = l.node.AccessTime
+	a.Ctime = l.node.ChangeTime
+	a.Mtime = l.node.ModTime
 	return nil
 }

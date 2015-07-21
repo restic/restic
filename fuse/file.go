@@ -62,6 +62,11 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = f.node.Inode
 	a.Mode = f.node.Mode
 	a.Size = f.node.Size
+	a.Uid = f.node.UID
+	a.Gid = f.node.GID
+	a.Atime = f.node.AccessTime
+	a.Ctime = f.node.ChangeTime
+	a.Mtime = f.node.ModTime
 	return nil
 }
 

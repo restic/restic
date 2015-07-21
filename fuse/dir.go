@@ -19,6 +19,7 @@ type dir struct {
 	repo  *repository.Repository
 	items map[string]*restic.Node
 	inode uint64
+	node  *restic.Node
 }
 
 func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
@@ -33,6 +34,7 @@ func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
 
 	return &dir{
 		repo:  repo,
+		node:  node,
 		items: items,
 		inode: node.Inode,
 	}, nil
@@ -49,7 +51,15 @@ func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId) (*
 	}
 
 	return &dir{
-		repo:  repo,
+		repo: repo,
+		node: &restic.Node{
+			UID:        uint32(os.Getuid()),
+			GID:        uint32(os.Getgid()),
+			AccessTime: snapshot.Time,
+			ModTime:    snapshot.Time,
+			ChangeTime: snapshot.Time,
+			Mode:       os.ModeDir | 0555,
+		},
 		items: items,
 		inode: inodeFromBackendId(snapshot.ID),
 	}, nil
@@ -57,7 +67,13 @@ func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId) (*
 
 func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = d.inode
-	a.Mode = os.ModeDir | 0555
+	a.Mode = os.ModeDir | d.node.Mode
+
+	a.Uid = d.node.UID
+	a.Gid = d.node.GID
+	a.Atime = d.node.AccessTime
+	a.Ctime = d.node.ChangeTime
+	a.Mtime = d.node.ModTime
 	return nil
 }
 
