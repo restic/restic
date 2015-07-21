@@ -16,9 +16,9 @@ var _ = fs.HandleReadDirAller(&dir{})
 var _ = fs.NodeStringLookuper(&dir{})
 
 type dir struct {
-	repo     *repository.Repository
-	children map[string]*restic.Node
-	inode    uint64
+	repo  *repository.Repository
+	items map[string]*restic.Node
+	inode uint64
 }
 
 func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
@@ -26,15 +26,15 @@ func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
 	if err != nil {
 		return nil, err
 	}
-	children := make(map[string]*restic.Node)
-	for _, child := range tree.Nodes {
-		children[child.Name] = child
+	items := make(map[string]*restic.Node)
+	for _, node := range tree.Nodes {
+		items[node.Name] = node
 	}
 
 	return &dir{
-		repo:     repo,
-		children: children,
-		inode:    node.Inode,
+		repo:  repo,
+		items: items,
+		inode: node.Inode,
 	}, nil
 }
 
@@ -43,15 +43,15 @@ func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId) (*
 	if err != nil {
 		return nil, err
 	}
-	children := make(map[string]*restic.Node)
+	items := make(map[string]*restic.Node)
 	for _, node := range tree.Nodes {
-		children[node.Name] = node
+		items[node.Name] = node
 	}
 
 	return &dir{
-		repo:     repo,
-		children: children,
-		inode:    inodeFromBackendId(snapshot.ID),
+		repo:  repo,
+		items: items,
+		inode: inodeFromBackendId(snapshot.ID),
 	}, nil
 }
 
@@ -62,15 +62,17 @@ func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	ret := make([]fuse.Dirent, 0, len(d.children))
+	ret := make([]fuse.Dirent, 0, len(d.items))
 
-	for _, node := range d.children {
+	for _, node := range d.items {
 		var typ fuse.DirentType
-		switch {
-		case node.Mode.IsDir():
+		switch node.Type {
+		case "dir":
 			typ = fuse.DT_Dir
-		case node.Mode.IsRegular():
+		case "file":
 			typ = fuse.DT_File
+		case "symlink":
+			typ = fuse.DT_Link
 		}
 
 		ret = append(ret, fuse.Dirent{
@@ -84,15 +86,17 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 }
 
 func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	child, ok := d.children[name]
+	node, ok := d.items[name]
 	if !ok {
 		return nil, fuse.ENOENT
 	}
-	switch {
-	case child.Mode.IsDir():
-		return newDir(d.repo, child)
-	case child.Mode.IsRegular():
-		return newFile(d.repo, child)
+	switch node.Type {
+	case "dir":
+		return newDir(d.repo, node)
+	case "file":
+		return newFile(d.repo, node)
+	case "symlink":
+		return newLink(d.repo, node)
 	default:
 		return nil, fuse.ENOENT
 	}
