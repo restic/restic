@@ -66,10 +66,10 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	for _, node := range d.children {
 		var typ fuse.DirentType
-		switch {
-		case node.Mode.IsDir():
+		switch node.Type {
+		case "dir":
 			typ = fuse.DT_Dir
-		case node.Mode.IsRegular():
+		case "file":
 			typ = fuse.DT_File
 		}
 
@@ -88,10 +88,10 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	if !ok {
 		return nil, fuse.ENOENT
 	}
-	switch {
-	case child.Mode.IsDir():
+	switch child.Type {
+	case "dir":
 		return newDir(d.repo, child)
-	case child.Mode.IsRegular():
+	case "file":
 		return newFile(d.repo, child)
 	default:
 		return nil, fuse.ENOENT
