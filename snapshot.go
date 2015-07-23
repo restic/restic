@@ -21,6 +21,7 @@ type Snapshot struct {
 	Username string     `json:"username,omitempty"`
 	UID      uint32     `json:"uid,omitempty"`
 	GID      uint32     `json:"gid,omitempty"`
+	Excludes []string   `json:"excludes,omitempty"`
 
 	id backend.ID // plaintext ID, used during restore
 }

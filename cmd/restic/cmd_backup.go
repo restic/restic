@@ -16,9 +16,9 @@ import (
 )
 
 type CmdBackup struct {
-	Parent  string   `short:"p" long:"parent"  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
-	Force   bool     `short:"f" long:"force"   description:"Force re-reading the target. Overrides the \"parent\" flag"`
-	Exclude []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
+	Parent   string   `short:"p" long:"parent"  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
+	Force    bool     `short:"f" long:"force"   description:"Force re-reading the target. Overrides the \"parent\" flag"`
+	Excludes []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
 
 	global *GlobalOptions
 }
@@ -285,7 +285,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 	cmd.global.Verbosef("scan %v\n", target)
 
 	selectFilter := func(item string, fi os.FileInfo) bool {
-		matched, err := filter.List(cmd.Exclude, item)
+		matched, err := filter.List(cmd.Excludes, item)
 		if err != nil {
 			cmd.global.Warnf("error for exclude pattern: %v", err)
 		}
@@ -299,6 +299,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 	}
 
 	arch := restic.NewArchiver(repo)
+	arch.Excludes = cmd.Excludes
 	arch.SelectFilter = selectFilter
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {

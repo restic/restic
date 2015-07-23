@@ -36,6 +36,7 @@ type Archiver struct {
 
 	Error        func(dir string, fi os.FileInfo, err error) error
 	SelectFilter pipe.SelectFunc
+	Excludes     []string
 }
 
 // NewArchiver returns a new archiver.
@@ -549,6 +550,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 	if err != nil {
 		return nil, nil, err
 	}
+	sn.Excludes = arch.Excludes
 
 	jobs := archivePipe{}
 

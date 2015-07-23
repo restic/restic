@@ -50,7 +50,7 @@ func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID bac
 }
 
 func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID backend.ID, excludes []string) {
-	cmd := &CmdBackup{global: &global, Exclude: excludes}
+	cmd := &CmdBackup{global: &global, Excludes: excludes}
 	cmd.Parent = parentID.String()
 
 	t.Logf("backing up %v", target)
