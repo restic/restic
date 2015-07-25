@@ -276,18 +276,20 @@ func (cmd CmdBackup) Execute(args []string) error {
 		}
 
 		parentSnapshotID = &id
-		cmd.global.Verbosef("found parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
 	// Find last snapshot to set it as parent, if not already set
 	if !cmd.Force && parentSnapshotID == nil {
 		id, err := findLatestSnapshot(repo, target)
 		if err == nil {
-			cmd.global.Verbosef("using parent snapshot %v\n", parentSnapshotID)
 			parentSnapshotID = &id
 		} else if err != errNoSnapshotFound {
 			return err
 		}
+	}
+
+	if parentSnapshotID != nil {
+		cmd.global.Verbosef("using parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
 	cmd.global.Verbosef("scan %v\n", target)
