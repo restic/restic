@@ -45,13 +45,15 @@ func cmdInit(t testing.TB, global GlobalOptions) {
 	t.Logf("repository initialized at %v", global.Repo)
 }
 
-func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID backend.ID) {
+func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID *backend.ID) {
 	cmdBackupExcludes(t, global, target, parentID, nil)
 }
 
-func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID backend.ID, excludes []string) {
+func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID *backend.ID, excludes []string) {
 	cmd := &CmdBackup{global: &global, Excludes: excludes}
-	cmd.Parent = parentID.String()
+	if parentID != nil {
+		cmd.Parent = parentID.String()
+	}
 
 	t.Logf("backing up %v", target)
 
@@ -136,7 +138,7 @@ func TestBackup(t *testing.T) {
 
 		cmdCheck(t, global)
 		// third backup, explicit incremental
-		cmdBackup(t, global, []string{env.testdata}, snapshotIDs[0])
+		cmdBackup(t, global, []string{env.testdata}, &snapshotIDs[0])
 		snapshotIDs = cmdList(t, global, "snapshots")
 		Assert(t, len(snapshotIDs) == 3,
 			"expected three snapshots, got %v", snapshotIDs)

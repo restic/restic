@@ -70,7 +70,7 @@ func LoadConfig(r JSONUnpackedLoader) (Config, error) {
 		cfg Config
 	)
 
-	err := r.LoadJSONUnpacked(backend.Config, nil, &cfg)
+	err := r.LoadJSONUnpacked(backend.Config, backend.ID{}, &cfg)
 	if err != nil {
 		return Config{}, err
 	}

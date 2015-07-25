@@ -23,10 +23,7 @@ const hashSize = sha256.Size
 
 // Hash returns the ID for data.
 func Hash(data []byte) ID {
-	h := hashData(data)
-	id := make([]byte, IDSize)
-	copy(id, h[:])
-	return id
+	return hashData(data)
 }
 
 // Find loads the list of all blobs of type t and searches for names which

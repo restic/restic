@@ -54,8 +54,6 @@ func (cmd CmdCat) Execute(args []string) error {
 	if tpe != "masterkey" && tpe != "config" {
 		id, err = backend.ParseID(args[1])
 		if err != nil {
-			id = nil
-
 			if tpe != "snapshot" {
 				return err
 			}

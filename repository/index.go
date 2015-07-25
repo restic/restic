@@ -20,7 +20,7 @@ type Index struct {
 
 type indexEntry struct {
 	tpe    pack.BlobType
-	packID backend.ID
+	packID *backend.ID
 	offset uint
 	length uint
 	old    bool
@@ -33,7 +33,7 @@ func NewIndex() *Index {
 	}
 }
 
-func (idx *Index) store(t pack.BlobType, id, pack backend.ID, offset, length uint, old bool) {
+func (idx *Index) store(t pack.BlobType, id backend.ID, pack *backend.ID, offset, length uint, old bool) {
 	idx.pack[id.String()] = indexEntry{
 		tpe:    t,
 		packID: pack,
@@ -44,7 +44,7 @@ func (idx *Index) store(t pack.BlobType, id, pack backend.ID, offset, length uin
 }
 
 // Store remembers the id and pack in the index.
-func (idx *Index) Store(t pack.BlobType, id, pack backend.ID, offset, length uint) {
+func (idx *Index) Store(t pack.BlobType, id backend.ID, pack *backend.ID, offset, length uint) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -68,7 +68,7 @@ func (idx *Index) Remove(packID backend.ID) {
 }
 
 // Lookup returns the pack for the id.
-func (idx *Index) Lookup(id backend.ID) (packID backend.ID, tpe pack.BlobType, offset, length uint, err error) {
+func (idx *Index) Lookup(id backend.ID) (packID *backend.ID, tpe pack.BlobType, offset, length uint, err error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -155,7 +155,7 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 					Type:   blob.tpe,
 					Length: uint32(blob.length),
 				},
-				PackID: blob.packID,
+				PackID: *blob.packID,
 			}:
 			}
 		}
@@ -206,7 +206,7 @@ func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON,
 
 		debug.Log("Index.generatePackList", "handle blob %q", id[:8])
 
-		if blob.packID == nil {
+		if blob.packID.IsNull() {
 			debug.Log("Index.generatePackList", "blob %q has no packID! (type %v, offset %v, length %v)",
 				id[:8], blob.tpe, blob.offset, blob.length)
 			return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", id)
@@ -315,7 +315,7 @@ func DecodeIndex(rd io.Reader) (*Index, error) {
 				return nil, err
 			}
 
-			idx.store(blob.Type, blobID, packID, blob.Offset, blob.Length, true)
+			idx.store(blob.Type, blobID, &packID, blob.Offset, blob.Length, true)
 		}
 	}
 

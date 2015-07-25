@@ -13,17 +13,17 @@ import (
 )
 
 type Snapshot struct {
-	Time     time.Time  `json:"time"`
-	Parent   backend.ID `json:"parent,omitempty"`
-	Tree     backend.ID `json:"tree"`
-	Paths    []string   `json:"paths"`
-	Hostname string     `json:"hostname,omitempty"`
-	Username string     `json:"username,omitempty"`
-	UID      uint32     `json:"uid,omitempty"`
-	GID      uint32     `json:"gid,omitempty"`
-	Excludes []string   `json:"excludes,omitempty"`
+	Time     time.Time   `json:"time"`
+	Parent   *backend.ID `json:"parent,omitempty"`
+	Tree     *backend.ID `json:"tree"`
+	Paths    []string    `json:"paths"`
+	Hostname string      `json:"hostname,omitempty"`
+	Username string      `json:"username,omitempty"`
+	UID      uint32      `json:"uid,omitempty"`
+	GID      uint32      `json:"gid,omitempty"`
+	Excludes []string    `json:"excludes,omitempty"`
 
-	id backend.ID // plaintext ID, used during restore
+	id *backend.ID // plaintext ID, used during restore
 }
 
 func NewSnapshot(paths []string) (*Snapshot, error) {
@@ -52,7 +52,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 }
 
 func LoadSnapshot(repo *repository.Repository, id backend.ID) (*Snapshot, error) {
-	sn := &Snapshot{id: id}
+	sn := &Snapshot{id: &id}
 	err := repo.LoadJSONUnpacked(backend.Snapshot, id, sn)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (sn Snapshot) String() string {
 	return fmt.Sprintf("<Snapshot of %v at %s>", sn.Paths, sn.Time)
 }
 
-func (sn Snapshot) ID() backend.ID {
+func (sn Snapshot) ID() *backend.ID {
 	return sn.id
 }
 
@@ -97,7 +97,7 @@ func FindSnapshot(repo *repository.Repository, s string) (backend.ID, error) {
 	// find snapshot id with prefix
 	name, err := backend.Find(repo.Backend(), backend.Snapshot, s)
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	return backend.ParseID(name)

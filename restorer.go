@@ -65,7 +65,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 			}
 
 			subp := filepath.Join(dir, node.Name)
-			err = res.restoreTo(dst, subp, node.Subtree)
+			err = res.restoreTo(dst, subp, *node.Subtree)
 			if err != nil {
 				err = res.Error(subp, node, errors.Annotate(err, "restore subtree"))
 				if err != nil {
@@ -125,7 +125,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 // RestoreTo creates the directories and files in the snapshot below dir.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(dir string) error {
-	return res.restoreTo(dir, "", res.sn.Tree)
+	return res.restoreTo(dir, "", *res.sn.Tree)
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.

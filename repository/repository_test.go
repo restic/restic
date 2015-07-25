@@ -39,7 +39,7 @@ func TestSaveJSON(t *testing.T) {
 		id, err := repo.SaveJSON(pack.Tree, obj)
 		OK(t, err)
 
-		Assert(t, bytes.Equal(h[:], id),
+		Assert(t, h == id,
 			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
 			h, id)
 	}
@@ -62,7 +62,7 @@ func BenchmarkSaveJSON(t *testing.B) {
 		id, err := repo.SaveJSON(pack.Tree, obj)
 		OK(t, err)
 
-		Assert(t, bytes.Equal(h[:], id),
+		Assert(t, h == id,
 			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
 			h, id)
 	}
@@ -114,13 +114,13 @@ func TestSaveFrom(t *testing.T) {
 		id := backend.Hash(data)
 
 		// save
-		err = repo.SaveFrom(pack.Data, id[:], uint(size), bytes.NewReader(data))
+		err = repo.SaveFrom(pack.Data, &id, uint(size), bytes.NewReader(data))
 		OK(t, err)
 
 		OK(t, repo.Flush())
 
 		// read back
-		buf, err := repo.LoadBlob(pack.Data, id[:])
+		buf, err := repo.LoadBlob(pack.Data, id)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -142,14 +142,14 @@ func BenchmarkSaveFrom(t *testing.B) {
 	_, err := io.ReadFull(rand.Reader, data)
 	OK(t, err)
 
-	id := sha256.Sum256(data)
+	id := backend.ID(sha256.Sum256(data))
 
 	t.ResetTimer()
 	t.SetBytes(int64(size))
 
 	for i := 0; i < t.N; i++ {
 		// save
-		err = repo.SaveFrom(pack.Data, id[:], uint(size), bytes.NewReader(data))
+		err = repo.SaveFrom(pack.Data, &id, uint(size), bytes.NewReader(data))
 		OK(t, err)
 	}
 }
@@ -167,7 +167,7 @@ func TestLoadJSONPack(t *testing.T) {
 	OK(t, repo.Flush())
 
 	tree := restic.NewTree()
-	err := repo.LoadJSONPack(pack.Tree, sn.Tree, &tree)
+	err := repo.LoadJSONPack(pack.Tree, *sn.Tree, &tree)
 	OK(t, err)
 }
 
