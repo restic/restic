@@ -76,7 +76,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 
 	res.Error = func(dir string, node *restic.Node, err error) error {
 		cmd.global.Warnf("error for %s: %+v\n", dir, err)
-		return err
+		return nil
 	}
 
 	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) bool {

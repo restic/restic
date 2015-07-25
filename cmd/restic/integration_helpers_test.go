@@ -206,6 +206,7 @@ func configureRestic(t testing.TB, cache, repo string) GlobalOptions {
 
 		password: TestPassword,
 		stdout:   os.Stdout,
+		stderr:   os.Stderr,
 	}
 }
 
