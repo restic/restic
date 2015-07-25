@@ -203,6 +203,7 @@ func TestBackupMissingFile1(t *testing.T) {
 
 		cmdInit(t, global)
 
+		global.stderr = ioutil.Discard
 		ranHook := false
 		debug.Hook("pipe.walk1", func(context interface{}) {
 			pathname := context.(string)
@@ -240,6 +241,7 @@ func TestBackupMissingFile2(t *testing.T) {
 
 		cmdInit(t, global)
 
+		global.stderr = ioutil.Discard
 		ranHook := false
 		debug.Hook("pipe.walk2", func(context interface{}) {
 			pathname := context.(string)
@@ -539,6 +541,31 @@ func TestRestoreFilter(t *testing.T) {
 			}
 		}
 
+	})
+}
+
+func TestRestoreWithPermissionFailure(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("testdata", "repo-restore-permissions-test.tar.gz")
+		SetupTarTestFixture(t, env.base, datafile)
+
+		snapshots := cmdList(t, global, "snapshots")
+		Assert(t, len(snapshots) > 0,
+			"no snapshots found in repo (%v)", datafile)
+
+		global.stderr = ioutil.Discard
+		cmdRestore(t, global, filepath.Join(env.base, "restore"), snapshots[0])
+
+		// make sure that all files have been restored, regardeless of any
+		// permission errors
+		files := cmdLs(t, global, snapshots[0].String())
+		for _, filename := range files {
+			fi, err := os.Lstat(filepath.Join(env.base, "restore", filename))
+			OK(t, err)
+
+			Assert(t, !isFile(fi) || fi.Size() > 0,
+				"file %v restored, but filesize is 0", filename)
+		}
 	})
 }
 
