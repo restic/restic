@@ -617,7 +617,7 @@ func (c *Checker) UnusedBlobs() (blobs backend.IDs) {
 	debug.Log("Checker.UnusedBlobs", "checking %d blobs", len(c.blobs))
 	for id := range c.blobs {
 		if c.blobRefs.M[id] == 0 {
-			debug.Log("Checker.UnusedBlobs", "blob %v not not referenced", id.Str())
+			debug.Log("Checker.UnusedBlobs", "blob %v not referenced", id.Str())
 			blobs = append(blobs, id)
 		}
 	}
