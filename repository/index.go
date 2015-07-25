@@ -256,8 +256,15 @@ func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON,
 	return list, nil
 }
 
+type jsonIndex struct {
+	Supersedes []backend.ID `json:"supersedes,omitempty"`
+	Packs      []*packJSON  `json:"packs"`
+}
+
+type jsonOldIndex []*packJSON
+
 // encode writes the JSON serialization of the index filtered by selectFn to enc.
-func (idx *Index) encode(w io.Writer, selectFn func(indexEntry) bool) error {
+func (idx *Index) encode(w io.Writer, supersedes []backend.ID, selectFn func(indexEntry) bool) error {
 	list, err := idx.generatePackList(func(entry indexEntry) bool {
 		return !entry.old
 	})
@@ -268,7 +275,11 @@ func (idx *Index) encode(w io.Writer, selectFn func(indexEntry) bool) error {
 	debug.Log("Index.Encode", "done")
 
 	enc := json.NewEncoder(w)
-	return enc.Encode(list)
+	idxJSON := jsonIndex{
+		Supersedes: supersedes,
+		Packs:      list,
+	}
+	return enc.Encode(idxJSON)
 }
 
 // Encode writes the JSON serialization of the index to the writer w. This
@@ -279,7 +290,7 @@ func (idx *Index) Encode(w io.Writer) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	return idx.encode(w, func(e indexEntry) bool { return !e.old })
+	return idx.encode(w, nil, func(e indexEntry) bool { return !e.old })
 }
 
 // Dump writes the pretty-printed JSON representation of the index to w.
@@ -309,14 +320,38 @@ func (idx *Index) Dump(w io.Writer) error {
 }
 
 // DecodeIndex loads and unserializes an index from rd.
-func DecodeIndex(rd io.Reader) (*Index, error) {
+func DecodeIndex(rd io.Reader) (*Index, backend.IDs, error) {
 	debug.Log("Index.DecodeIndex", "Start decoding index")
+	idxJSON := jsonIndex{}
+
+	dec := json.NewDecoder(rd)
+	err := dec.Decode(&idxJSON)
+	if err != nil {
+		debug.Log("Index.DecodeIndex", "Error %#v", err)
+		return nil, nil, err
+	}
+
+	idx := NewIndex()
+	for _, pack := range idxJSON.Packs {
+		for _, blob := range pack.Blobs {
+			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length, true)
+		}
+	}
+
+	debug.Log("Index.DecodeIndex", "done")
+	return idx, idxJSON.Supersedes, err
+}
+
+// DecodeOldIndex loads and unserializes an index in the old format from rd.
+func DecodeOldIndex(rd io.Reader) (*Index, backend.IDs, error) {
+	debug.Log("Index.DecodeOldIndex", "Start decoding old index")
 	list := []*packJSON{}
 
 	dec := json.NewDecoder(rd)
 	err := dec.Decode(&list)
 	if err != nil {
-		return nil, err
+		debug.Log("Index.DecodeOldIndex", "Error %#v", err)
+		return nil, nil, err
 	}
 
 	idx := NewIndex()
@@ -326,6 +361,6 @@ func DecodeIndex(rd io.Reader) (*Index, error) {
 		}
 	}
 
-	debug.Log("Index.DecodeIndex", "done")
-	return idx, err
+	debug.Log("Index.DecodeOldIndex", "done")
+	return idx, backend.IDs{}, err
 }

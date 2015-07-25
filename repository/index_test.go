@@ -58,7 +58,7 @@ func TestIndexSerialize(t *testing.T) {
 	err := idx.Encode(wr)
 	OK(t, err)
 
-	idx2, err := repository.DecodeIndex(wr)
+	idx2, _, err := repository.DecodeIndex(wr)
 	OK(t, err)
 	Assert(t, idx2 != nil,
 		"nil returned for decoded index")
@@ -113,7 +113,7 @@ func TestIndexSerialize(t *testing.T) {
 	err = idx2.Encode(wr3)
 	OK(t, err)
 
-	idx3, err := repository.DecodeIndex(wr3)
+	idx3, _, err := repository.DecodeIndex(wr3)
 	OK(t, err)
 	Assert(t, idx3 != nil,
 		"nil returned for decoded index")
@@ -165,26 +165,58 @@ func TestIndexSize(t *testing.T) {
 
 // example index serialization from doc/Design.md
 var docExample = []byte(`
+{
+  "supersedes": [
+	"ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452"
+  ],
+  "packs": [
+	{
+	  "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
+	  "blobs": [
+		{
+		  "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+		  "type": "data",
+		  "offset": 0,
+		  "length": 25
+		},{
+		  "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+		  "type": "tree",
+		  "offset": 38,
+		  "length": 100
+		},
+		{
+		  "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
+		  "type": "data",
+		  "offset": 150,
+		  "length": 123
+		}
+	  ]
+	}
+  ]
+}
+`)
+
+var docOldExample = []byte(`
 [ {
   "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
   "blobs": [
-    {
-      "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
-      "type": "data",
-      "offset": 0,
-      "length": 25
-    },{
-      "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
-      "type": "tree",
-      "offset": 38,
-      "length": 100
-    },
-    {
-      "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
-      "type": "data",
-      "offset": 150,
-      "length": 123
-    }
+	{
+	  "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+	  "type": "data",
+	  "offset": 0,
+	  "length": 25
+	},{
+	  "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+	  "type": "tree",
+	  "offset": 38,
+	  "length": 100
+	},
+	{
+	  "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
+	  "type": "data",
+	  "offset": 150,
+	  "length": 123
+	}
   ]
 } ]
 `)
@@ -210,7 +242,9 @@ var exampleTests = []struct {
 }
 
 func TestIndexUnserialize(t *testing.T) {
-	idx, err := repository.DecodeIndex(bytes.NewReader(docExample))
+	oldIdx := backend.IDs{ParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
+
+	idx, supersedes, err := repository.DecodeIndex(bytes.NewReader(docExample))
 	OK(t, err)
 
 	for _, test := range exampleTests {
@@ -222,6 +256,26 @@ func TestIndexUnserialize(t *testing.T) {
 		Equals(t, test.offset, offset)
 		Equals(t, test.length, length)
 	}
+
+	Equals(t, oldIdx, supersedes)
+}
+
+func TestIndexUnserializeOld(t *testing.T) {
+	idx, supersedes, err := repository.DecodeOldIndex(bytes.NewReader(docOldExample))
+	OK(t, err)
+
+	for _, test := range exampleTests {
+		packID, tpe, offset, length, err := idx.Lookup(test.id)
+		OK(t, err)
+
+		Equals(t, test.packID, *packID)
+		Equals(t, test.tpe, tpe)
+		Equals(t, test.offset, offset)
+		Equals(t, test.length, length)
+	}
+
+	Assert(t, len(supersedes) == 0,
+		"expected %v supersedes, got %v", 0, len(supersedes))
 }
 
 func TestStoreOverwritesPreliminaryEntry(t *testing.T) {

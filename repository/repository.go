@@ -555,7 +555,7 @@ func LoadIndex(repo *Repository, id string) (*Index, error) {
 		return nil, err
 	}
 
-	idx, err := DecodeIndex(decryptRd)
+	idx, _, err := DecodeIndex(decryptRd)
 	if err != nil {
 		debug.Log("LoadIndex", "error while decoding index %v: %v", id, err)
 		return nil, err
