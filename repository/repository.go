@@ -257,7 +257,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), sid.Str())
-		r.idx.Store(b.Type, b.ID, sid, b.Offset, uint(b.Length))
+		r.idx.Store(b.Type, b.ID, &sid, b.Offset, uint(b.Length))
 	}
 
 	return nil
@@ -273,10 +273,11 @@ func (r *Repository) countPacker() int {
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data is small
 // enough, it will be packed together with other small blobs.
-func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id backend.ID) (backend.ID, error) {
+func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID) (backend.ID, error) {
 	if id == nil {
 		// compute plaintext hash
-		id = backend.Hash(data)
+		hashedID := backend.Hash(data)
+		id = &hashedID
 	}
 
 	debug.Log("Repo.Save", "save id %v (%v, %d bytes)", id.Str(), t, len(data))
@@ -288,21 +289,21 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id backend.ID)
 	// encrypt blob
 	ciphertext, err := r.Encrypt(ciphertext, data)
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	// find suitable packer and add blob
 	packer, err := r.findPacker(uint(len(ciphertext)))
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	// save ciphertext
-	packer.Add(t, id, bytes.NewReader(ciphertext))
+	packer.Add(t, *id, bytes.NewReader(ciphertext))
 
 	// add this id to the index, although we don't know yet in which pack it
 	// will be saved, the entry will be updated when the pack is written.
-	r.idx.Store(t, id, nil, 0, 0)
+	r.idx.Store(t, *id, nil, 0, 0)
 	debug.Log("Repo.Save", "saving stub for %v (%v) in index", id.Str, t)
 
 	// if the pack is not full enough and there are less than maxPackers
@@ -310,15 +311,15 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id backend.ID)
 	if packer.Size() < minPackSize && r.countPacker() < maxPackers {
 		debug.Log("Repo.Save", "pack is not full enough (%d bytes)", packer.Size())
 		r.insertPacker(packer)
-		return id, nil
+		return *id, nil
 	}
 
 	// else write the pack to the backend
-	return id, r.savePacker(packer)
+	return *id, r.savePacker(packer)
 }
 
 // SaveFrom encrypts data read from rd and stores it in a pack in the backend as type t.
-func (r *Repository) SaveFrom(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
+func (r *Repository) SaveFrom(t pack.BlobType, id *backend.ID, length uint, rd io.Reader) error {
 	debug.Log("Repo.SaveFrom", "save id %v (%v, %d bytes)", id.Str(), t, length)
 	if id == nil {
 		return errors.New("id is nil")
@@ -349,7 +350,7 @@ func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, er
 	enc := json.NewEncoder(wr)
 	err := enc.Encode(item)
 	if err != nil {
-		return nil, fmt.Errorf("json.Encode: %v", err)
+		return backend.ID{}, fmt.Errorf("json.Encode: %v", err)
 	}
 
 	buf = wr.Bytes()
@@ -362,7 +363,7 @@ func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 	// create file
 	blob, err := r.be.Create()
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 	debug.Log("Repo.SaveJSONUnpacked", "create new blob %v", t)
 
@@ -375,21 +376,23 @@ func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 	enc := json.NewEncoder(ewr)
 	err = enc.Encode(item)
 	if err != nil {
-		return nil, fmt.Errorf("json.Encode: %v", err)
+		return backend.ID{}, fmt.Errorf("json.Encode: %v", err)
 	}
 
 	err = ewr.Close()
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	// finalize blob in the backend
-	sid := backend.ID(hw.Sum(nil))
+	hash := hw.Sum(nil)
+	sid := backend.ID{}
+	copy(sid[:], hash)
 
 	err = blob.Finalize(t, sid.String())
 	if err != nil {
 		debug.Log("Repo.SaveJSONUnpacked", "error saving blob %v as %v: %v", t, sid, err)
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	debug.Log("Repo.SaveJSONUnpacked", "new blob %v saved as %v", t, sid)
@@ -438,7 +441,7 @@ func (r *Repository) SaveIndex() (backend.ID, error) {
 	// create blob
 	blob, err := r.be.Create()
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	debug.Log("Repo.SaveIndex", "create new pack %p", blob)
@@ -451,20 +454,21 @@ func (r *Repository) SaveIndex() (backend.ID, error) {
 
 	err = r.idx.Encode(ewr)
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	err = ewr.Close()
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	// finalize blob in the backend
-	sid := backend.ID(hw.Sum(nil))
+	sid := backend.ID{}
+	copy(sid[:], hw.Sum(nil))
 
 	err = blob.Finalize(backend.Index, sid.String())
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	debug.Log("Repo.SaveIndex", "Saved index as %v", sid.Str())

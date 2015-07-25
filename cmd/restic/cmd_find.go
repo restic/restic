@@ -114,7 +114,7 @@ func (c CmdFind) findInSnapshot(repo *repository.Repository, id backend.ID) erro
 		return err
 	}
 
-	results, err := c.findInTree(repo, sn.Tree, "")
+	results, err := c.findInTree(repo, *sn.Tree, "")
 	if err != nil {
 		return err
 	}

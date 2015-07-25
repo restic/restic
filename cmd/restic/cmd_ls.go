@@ -56,7 +56,7 @@ func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id backen
 		cmd.global.Printf(cmd.printNode(prefix, entry) + "\n")
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			err = cmd.printTree(filepath.Join(prefix, entry.Name), repo, entry.Subtree)
+			err = cmd.printTree(filepath.Join(prefix, entry.Name), repo, *entry.Subtree)
 			if err != nil {
 				return err
 			}
@@ -97,5 +97,5 @@ func (cmd CmdLs) Execute(args []string) error {
 
 	cmd.global.Verbosef("snapshot of %v at %s:\n", sn.Paths, sn.Time)
 
-	return cmd.printTree("", repo, sn.Tree)
+	return cmd.printTree("", repo, *sn.Tree)
 }

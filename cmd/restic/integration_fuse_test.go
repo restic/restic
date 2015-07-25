@@ -147,7 +147,7 @@ func TestMount(t *testing.T) {
 		checkSnapshots(repo, mountpoint, snapshotIDs)
 
 		// third backup, explicit incremental
-		cmdBackup(t, global, []string{env.testdata}, snapshotIDs[0])
+		cmdBackup(t, global, []string{env.testdata}, &snapshotIDs[0])
 		snapshotIDs = cmdList(t, global, "snapshots")
 		Assert(t, len(snapshotIDs) == 3,
 			"expected three snapshots, got %v", snapshotIDs)

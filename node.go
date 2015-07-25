@@ -35,7 +35,7 @@ type Node struct {
 	LinkTarget string       `json:"linktarget,omitempty"`
 	Device     uint64       `json:"device,omitempty"`
 	Content    []backend.ID `json:"content"`
-	Subtree    backend.ID   `json:"subtree,omitempty"`
+	Subtree    *backend.ID  `json:"subtree,omitempty"`
 
 	Error string `json:"error,omitempty"`
 
@@ -316,8 +316,18 @@ func (node Node) Equals(other Node) bool {
 	if !node.sameContent(other) {
 		return false
 	}
-	if !node.Subtree.Equal(other.Subtree) {
-		return false
+	if node.Subtree != nil {
+		if other.Subtree == nil {
+			return false
+		}
+
+		if !node.Subtree.Equal(*other.Subtree) {
+			return false
+		}
+	} else {
+		if other.Subtree != nil {
+			return false
+		}
 	}
 	if node.Error != other.Error {
 		return false

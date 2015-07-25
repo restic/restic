@@ -22,7 +22,7 @@ type dir struct {
 }
 
 func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
-	tree, err := restic.LoadTree(repo, node.Subtree)
+	tree, err := restic.LoadTree(repo, *node.Subtree)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
 }
 
 func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId) (*dir, error) {
-	tree, err := restic.LoadTree(repo, snapshot.Tree)
+	tree, err := restic.LoadTree(repo, *snapshot.Tree)
 	if err != nil {
 		return nil, err
 	}

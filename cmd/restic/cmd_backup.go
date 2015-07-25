@@ -185,21 +185,29 @@ func samePaths(expected, actual []string) bool {
 	return true
 }
 
+var errNoSnapshotFound = errors.New("no snapshot found")
+
 func findLatestSnapshot(repo *repository.Repository, targets []string) (backend.ID, error) {
 	var (
 		latest   time.Time
 		latestID backend.ID
+		found    bool
 	)
 
 	for snapshotID := range repo.List(backend.Snapshot, make(chan struct{})) {
 		snapshot, err := restic.LoadSnapshot(repo, snapshotID)
 		if err != nil {
-			return nil, fmt.Errorf("Error listing snapshot: %v", err)
+			return backend.ID{}, fmt.Errorf("Error listing snapshot: %v", err)
 		}
 		if snapshot.Time.After(latest) && samePaths(snapshot.Paths, targets) {
 			latest = snapshot.Time
 			latestID = snapshotID
+			found = true
 		}
+	}
+
+	if !found {
+		return backend.ID{}, errNoSnapshotFound
 	}
 
 	return latestID, nil
@@ -258,27 +266,27 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	var parentSnapshotID backend.ID
+	var parentSnapshotID *backend.ID
 
 	// Force using a parent
 	if !cmd.Force && cmd.Parent != "" {
-		parentSnapshotID, err = restic.FindSnapshot(repo, cmd.Parent)
+		id, err := restic.FindSnapshot(repo, cmd.Parent)
 		if err != nil {
 			return fmt.Errorf("invalid id %q: %v", cmd.Parent, err)
 		}
 
+		parentSnapshotID = &id
 		cmd.global.Verbosef("found parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
 	// Find last snapshot to set it as parent, if not already set
 	if !cmd.Force && parentSnapshotID == nil {
-		parentSnapshotID, err = findLatestSnapshot(repo, target)
-		if err != nil {
-			return err
-		}
-
-		if parentSnapshotID != nil {
+		id, err := findLatestSnapshot(repo, target)
+		if err == nil {
 			cmd.global.Verbosef("using parent snapshot %v\n", parentSnapshotID)
+			parentSnapshotID = &id
+		} else if err != errNoSnapshotFound {
+			return err
 		}
 	}
 

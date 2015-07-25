@@ -1,7 +1,6 @@
 package checker
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"sync"
@@ -12,43 +11,19 @@ import (
 	"github.com/restic/restic/repository"
 )
 
-type mapID [backend.IDSize]byte
-
-func id2map(id backend.ID) (mid mapID) {
-	copy(mid[:], id)
-	return
-}
-
-func str2map(s string) (mid mapID, err error) {
-	data, err := hex.DecodeString(s)
-	if err != nil {
-		return mid, err
-	}
-
-	return id2map(data), nil
-}
-
-func map2str(id mapID) string {
-	return hex.EncodeToString(id[:])
-}
-
-func map2id(id mapID) backend.ID {
-	return backend.ID(id[:])
-}
-
 // Checker runs various checks on a repository. It is advisable to create an
 // exclusive Lock in the repository before running any checks.
 //
 // A Checker only tests for internal errors within the data structures of the
 // repository (e.g. missing blobs), and needs a valid Repository to work on.
 type Checker struct {
-	packs    map[mapID]struct{}
-	blobs    map[mapID]struct{}
+	packs    map[backend.ID]struct{}
+	blobs    map[backend.ID]struct{}
 	blobRefs struct {
 		sync.Mutex
-		M map[mapID]uint
+		M map[backend.ID]uint
 	}
-	indexes       map[mapID]*repository.Index
+	indexes       map[backend.ID]*repository.Index
 	orphanedPacks backend.IDs
 
 	masterIndex *repository.Index
@@ -59,14 +34,14 @@ type Checker struct {
 // New returns a new checker which runs on repo.
 func New(repo *repository.Repository) *Checker {
 	c := &Checker{
-		packs:       make(map[mapID]struct{}),
-		blobs:       make(map[mapID]struct{}),
+		packs:       make(map[backend.ID]struct{}),
+		blobs:       make(map[backend.ID]struct{}),
 		masterIndex: repository.NewIndex(),
-		indexes:     make(map[mapID]*repository.Index),
+		indexes:     make(map[backend.ID]*repository.Index),
 		repo:        repo,
 	}
 
-	c.blobRefs.M = make(map[mapID]uint)
+	c.blobRefs.M = make(map[backend.ID]uint)
 
 	return c
 }
@@ -111,7 +86,7 @@ func (c *Checker) LoadIndex() error {
 
 	for res := range indexCh {
 		debug.Log("LoadIndex", "process index %v", res.ID)
-		id, err := str2map(res.ID)
+		id, err := backend.ParseID(res.ID)
 		if err != nil {
 			return err
 		}
@@ -122,9 +97,9 @@ func (c *Checker) LoadIndex() error {
 		debug.Log("LoadIndex", "process blobs")
 		cnt := 0
 		for blob := range res.Index.Each(done) {
-			c.packs[id2map(blob.PackID)] = struct{}{}
-			c.blobs[id2map(blob.ID)] = struct{}{}
-			c.blobRefs.M[id2map(blob.ID)] = 0
+			c.packs[blob.PackID] = struct{}{}
+			c.blobs[blob.ID] = struct{}{}
+			c.blobRefs.M[blob.ID] = 0
 			cnt++
 		}
 
@@ -149,24 +124,24 @@ func (e PackError) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
-func packIDTester(repo *repository.Repository, inChan <-chan mapID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
+func packIDTester(repo *repository.Repository, inChan <-chan backend.ID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
 	debug.Log("Checker.testPackID", "worker start")
 	defer debug.Log("Checker.testPackID", "worker done")
 
 	defer wg.Done()
 
 	for id := range inChan {
-		ok, err := repo.Backend().Test(backend.Data, map2str(id))
+		ok, err := repo.Backend().Test(backend.Data, id.String())
 		if err != nil {
-			err = PackError{ID: map2id(id), Err: err}
+			err = PackError{ID: id, Err: err}
 		} else {
 			if !ok {
-				err = PackError{ID: map2id(id), Err: errors.New("does not exist")}
+				err = PackError{ID: id, Err: errors.New("does not exist")}
 			}
 		}
 
 		if err != nil {
-			debug.Log("Checker.testPackID", "error checking for pack %s: %v", map2id(id).Str(), err)
+			debug.Log("Checker.testPackID", "error checking for pack %s: %v", id.Str(), err)
 			select {
 			case <-done:
 				return
@@ -176,7 +151,7 @@ func packIDTester(repo *repository.Repository, inChan <-chan mapID, errChan chan
 			continue
 		}
 
-		debug.Log("Checker.testPackID", "pack %s exists", map2id(id).Str())
+		debug.Log("Checker.testPackID", "pack %s exists", id.Str())
 	}
 }
 
@@ -206,11 +181,11 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	defer close(errChan)
 
 	debug.Log("Checker.Packs", "checking for %d packs", len(c.packs))
-	seenPacks := make(map[mapID]struct{})
+	seenPacks := make(map[backend.ID]struct{})
 
 	var workerWG sync.WaitGroup
 
-	IDChan := make(chan mapID)
+	IDChan := make(chan backend.ID)
 	for i := 0; i < defaultParallelism; i++ {
 		workerWG.Add(1)
 		go packIDTester(c.repo, IDChan, errChan, &workerWG, done)
@@ -228,7 +203,7 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 
 	for id := range c.repo.List(backend.Data, done) {
 		debug.Log("Checker.Packs", "check data blob %v", id.Str())
-		if _, ok := seenPacks[id2map(id)]; !ok {
+		if _, ok := seenPacks[id]; !ok {
 			c.orphanedPacks = append(c.orphanedPacks, id)
 			select {
 			case <-done:
@@ -241,8 +216,8 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 
 // Error is an error that occurred while checking a repository.
 type Error struct {
-	TreeID backend.ID
-	BlobID backend.ID
+	TreeID *backend.ID
+	BlobID *backend.ID
 	Err    error
 }
 
@@ -265,15 +240,15 @@ func loadTreeFromSnapshot(repo *repository.Repository, id backend.ID) (backend.I
 	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {
 		debug.Log("Checker.loadTreeFromSnapshot", "error loading snapshot %v: %v", id.Str(), err)
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	if sn.Tree == nil {
 		debug.Log("Checker.loadTreeFromSnapshot", "snapshot %v has no tree", id.Str())
-		return nil, fmt.Errorf("snapshot %v has no tree", id)
+		return backend.ID{}, fmt.Errorf("snapshot %v has no tree", id)
 	}
 
-	return sn.Tree, nil
+	return *sn.Tree, nil
 }
 
 // loadSnapshotTreeIDs loads all snapshots from backend and returns the tree IDs.
@@ -402,7 +377,7 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- TreeError, done 
 				return
 			}
 
-			id := id2map(job.ID)
+			id := job.ID
 			alreadyChecked := false
 			c.blobRefs.Lock()
 			if c.blobRefs.M[id] > 0 {
@@ -556,23 +531,22 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 			blobs = append(blobs, node.Content...)
 		case "dir":
 			if node.Subtree == nil {
-				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("node %d is dir but has no subtree", i)})
+				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("node %d is dir but has no subtree", i)})
 				continue
 			}
 		}
 	}
 
 	for _, blobID := range blobs {
-		mid := id2map(blobID)
 		c.blobRefs.Lock()
-		c.blobRefs.M[mid]++
-		debug.Log("Checker.checkTree", "blob %v refcount %d", blobID.Str(), c.blobRefs.M[mid])
+		c.blobRefs.M[blobID]++
+		debug.Log("Checker.checkTree", "blob %v refcount %d", blobID.Str(), c.blobRefs.M[blobID])
 		c.blobRefs.Unlock()
 
-		if _, ok := c.blobs[id2map(blobID)]; !ok {
+		if _, ok := c.blobs[blobID]; !ok {
 			debug.Log("Checker.trees", "tree %v references blob %v which isn't contained in index", id.Str(), blobID.Str())
 
-			errs = append(errs, Error{TreeID: id, BlobID: blobID, Err: errors.New("not found in index")})
+			errs = append(errs, Error{TreeID: &id, BlobID: &blobID, Err: errors.New("not found in index")})
 		}
 	}
 
@@ -587,8 +561,8 @@ func (c *Checker) UnusedBlobs() (blobs backend.IDs) {
 	debug.Log("Checker.UnusedBlobs", "checking %d blobs", len(c.blobs))
 	for id := range c.blobs {
 		if c.blobRefs.M[id] == 0 {
-			debug.Log("Checker.UnusedBlobs", "blob %v not not referenced", map2id(id).Str())
-			blobs = append(blobs, map2id(id))
+			debug.Log("Checker.UnusedBlobs", "blob %v not not referenced", id.Str())
+			blobs = append(blobs, id)
 		}
 	}
 

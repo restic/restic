@@ -29,7 +29,7 @@ func TestWalkTree(t *testing.T) {
 
 	// start tree walker
 	treeJobs := make(chan restic.WalkTreeJob)
-	go restic.WalkTree(repo, sn.Tree, done, treeJobs)
+	go restic.WalkTree(repo, *sn.Tree, done, treeJobs)
 
 	// start filesystem walker
 	fsJobs := make(chan pipe.Job)

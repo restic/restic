@@ -94,7 +94,7 @@ func (t Tree) Find(name string) (*Node, error) {
 func (t Tree) Subtrees() (trees backend.IDs) {
 	for _, node := range t.Nodes {
 		if node.Type == "dir" && node.Subtree != nil {
-			trees = append(trees, node.Subtree)
+			trees = append(trees, *node.Subtree)
 		}
 	}
 

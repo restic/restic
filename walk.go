@@ -32,7 +32,7 @@ func walkTree(repo *repository.Repository, path string, treeID backend.ID, done 
 	for _, node := range t.Nodes {
 		p := filepath.Join(path, node.Name)
 		if node.Type == "dir" {
-			walkTree(repo, p, node.Subtree, done, jobCh)
+			walkTree(repo, p, *node.Subtree, done, jobCh)
 		} else {
 			select {
 			case jobCh <- WalkTreeJob{Path: p, Node: node}:

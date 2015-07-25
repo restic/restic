@@ -13,12 +13,12 @@ import (
 )
 
 func randomID() backend.ID {
-	buf := make([]byte, backend.IDSize)
-	_, err := io.ReadFull(rand.Reader, buf)
+	id := backend.ID{}
+	_, err := io.ReadFull(rand.Reader, id[:])
 	if err != nil {
 		panic(err)
 	}
-	return buf
+	return id
 }
 
 func TestIndexSerialize(t *testing.T) {
@@ -40,7 +40,7 @@ func TestIndexSerialize(t *testing.T) {
 		for j := 0; j < 20; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx.Store(pack.Data, id, packID, pos, length)
+			idx.Store(pack.Data, id, &packID, pos, length)
 
 			tests = append(tests, testEntry{
 				id:     id,
@@ -71,7 +71,7 @@ func TestIndexSerialize(t *testing.T) {
 		packID, tpe, offset, length, err := idx.Lookup(testBlob.id)
 		OK(t, err)
 
-		Equals(t, testBlob.pack, packID)
+		Equals(t, testBlob.pack, *packID)
 		Equals(t, testBlob.tpe, tpe)
 		Equals(t, testBlob.offset, offset)
 		Equals(t, testBlob.length, length)
@@ -79,7 +79,7 @@ func TestIndexSerialize(t *testing.T) {
 		packID, tpe, offset, length, err = idx2.Lookup(testBlob.id)
 		OK(t, err)
 
-		Equals(t, testBlob.pack, packID)
+		Equals(t, testBlob.pack, *packID)
 		Equals(t, testBlob.tpe, tpe)
 		Equals(t, testBlob.offset, offset)
 		Equals(t, testBlob.length, length)
@@ -94,7 +94,7 @@ func TestIndexSerialize(t *testing.T) {
 		for j := 0; j < 10; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx2.Store(pack.Data, id, packID, pos, length)
+			idx2.Store(pack.Data, id, &packID, pos, length)
 
 			newtests = append(newtests, testEntry{
 				id:     id,
@@ -130,7 +130,7 @@ func TestIndexSerialize(t *testing.T) {
 		packID, tpe, offset, length, err := idx3.Lookup(testBlob.id)
 		OK(t, err)
 
-		Equals(t, testBlob.pack, packID)
+		Equals(t, testBlob.pack, *packID)
 		Equals(t, testBlob.tpe, tpe)
 		Equals(t, testBlob.offset, offset)
 		Equals(t, testBlob.length, length)
@@ -149,7 +149,7 @@ func TestIndexSize(t *testing.T) {
 		for j := 0; j < blobs; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx.Store(pack.Data, id, packID, pos, length)
+			idx.Store(pack.Data, id, &packID, pos, length)
 
 			pos += length
 		}
@@ -217,7 +217,7 @@ func TestIndexUnserialize(t *testing.T) {
 		packID, tpe, offset, length, err := idx.Lookup(test.id)
 		OK(t, err)
 
-		Equals(t, test.packID, packID)
+		Equals(t, test.packID, *packID)
 		Equals(t, test.tpe, tpe)
 		Equals(t, test.offset, offset)
 		Equals(t, test.length, length)

@@ -3,6 +3,7 @@ package repository
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -199,7 +200,7 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 		return nil, err
 	}
 
-	name := backend.ID(plainhw.Sum(nil)).String()
+	name := hex.EncodeToString(plainhw.Sum(nil))
 
 	err = blob.Finalize(backend.Key, name)
 	if err != nil {

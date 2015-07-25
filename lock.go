@@ -33,7 +33,7 @@ type Lock struct {
 	GID       uint32    `json:"gid,omitempty"`
 
 	repo   *repository.Repository
-	lockID backend.ID
+	lockID *backend.ID
 }
 
 // ErrAlreadyLocked is returned when NewLock or NewExclusiveLock are unable to
@@ -92,10 +92,12 @@ func newLock(repo *repository.Repository, excl bool) (*Lock, error) {
 		return nil, err
 	}
 
-	lock.lockID, err = lock.createLock()
+	lockID, err := lock.createLock()
 	if err != nil {
 		return nil, err
 	}
+
+	lock.lockID = &lockID
 
 	time.Sleep(waitBeforeLockCheck)
 
@@ -137,7 +139,7 @@ func (l *Lock) fillUserInfo() error {
 // exclusive lock is found.
 func (l *Lock) checkForOtherLocks() error {
 	return eachLock(l.repo, func(id backend.ID, lock *Lock, err error) error {
-		if id.Equal(l.lockID) {
+		if l.lockID != nil && id.Equal(*l.lockID) {
 			return nil
 		}
 
@@ -177,7 +179,7 @@ func eachLock(repo *repository.Repository, f func(backend.ID, *Lock, error) erro
 func (l *Lock) createLock() (backend.ID, error) {
 	id, err := l.repo.SaveJSONUnpacked(backend.Lock, l)
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 
 	return id, nil
@@ -237,7 +239,7 @@ func (l *Lock) Refresh() error {
 	}
 
 	debug.Log("Lock.Refresh", "new lock ID %v", id.Str())
-	l.lockID = id
+	l.lockID = &id
 
 	return nil
 }
@@ -276,7 +278,7 @@ func LoadLock(repo *repository.Repository, id backend.ID) (*Lock, error) {
 	if err := repo.LoadJSONUnpacked(backend.Lock, id, lock); err != nil {
 		return nil, err
 	}
-	lock.lockID = id
+	lock.lockID = &id
 
 	return lock, nil
 }

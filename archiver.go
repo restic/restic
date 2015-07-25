@@ -67,7 +67,7 @@ func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Re
 	}
 
 	// otherwise save blob
-	err := arch.repo.SaveFrom(t, id, length, rd)
+	err := arch.repo.SaveFrom(t, &id, length, rd)
 	if err != nil {
 		debug.Log("Archiver.Save", "Save(%v, %v): error %v\n", t, id.Str(), err)
 		return err
@@ -81,7 +81,7 @@ func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Re
 func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
-		return nil, err
+		return backend.ID{}, err
 	}
 	data = append(data, '\n')
 
@@ -124,7 +124,11 @@ type saveResult struct {
 }
 
 func (arch *Archiver) saveChunk(chunk *chunker.Chunk, p *Progress, token struct{}, file *os.File, resultChannel chan<- saveResult) {
-	err := arch.Save(pack.Data, chunk.Digest, chunk.Length, chunk.Reader(file))
+	hash := chunk.Digest
+	id := backend.ID{}
+	copy(id[:], hash)
+
+	err := arch.Save(pack.Data, id, chunk.Length, chunk.Reader(file))
 	// TODO handle error
 	if err != nil {
 		panic(err)
@@ -132,7 +136,7 @@ func (arch *Archiver) saveChunk(chunk *chunker.Chunk, p *Progress, token struct{
 
 	p.Report(Stat{Bytes: uint64(chunk.Length)})
 	arch.blobToken <- token
-	resultChannel <- saveResult{id: backend.ID(chunk.Digest), bytes: uint64(chunk.Length)}
+	resultChannel <- saveResult{id: id, bytes: uint64(chunk.Length)}
 }
 
 func waitForResults(resultChannels [](<-chan saveResult)) ([]saveResult, error) {
@@ -356,7 +360,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 			}
 			debug.Log("Archiver.dirWorker", "save tree for %s: %v", dir.Path(), id.Str())
 
-			node.Subtree = id
+			node.Subtree = &id
 
 			dir.Result() <- node
 			if dir.Path() != "" {
@@ -532,7 +536,7 @@ func (j archiveJob) Copy() pipe.Job {
 // Snapshot creates a snapshot of the given paths. If parentID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
-func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID) (*Snapshot, backend.ID, error) {
+func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID) (*Snapshot, backend.ID, error) {
 	debug.Log("Archiver.Snapshot", "start for %v", paths)
 
 	debug.RunHook("Archiver.Snapshot", nil)
@@ -548,7 +552,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 	// create new snapshot
 	sn, err := NewSnapshot(paths)
 	if err != nil {
-		return nil, nil, err
+		return nil, backend.ID{}, err
 	}
 	sn.Excludes = arch.Excludes
 
@@ -559,14 +563,14 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 		sn.Parent = parentID
 
 		// load parent snapshot
-		parent, err := LoadSnapshot(arch.repo, parentID)
+		parent, err := LoadSnapshot(arch.repo, *parentID)
 		if err != nil {
-			return nil, nil, err
+			return nil, backend.ID{}, err
 		}
 
 		// start walker on old tree
 		ch := make(chan WalkTreeJob)
-		go WalkTree(arch.repo, parent.Tree, done, ch)
+		go WalkTree(arch.repo, *parent.Tree, done, ch)
 		jobs.Old = ch
 	} else {
 		// use closed channel
@@ -626,24 +630,24 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID backend.ID)
 	// save snapshot
 	id, err := arch.repo.SaveJSONUnpacked(backend.Snapshot, sn)
 	if err != nil {
-		return nil, nil, err
+		return nil, backend.ID{}, err
 	}
 
 	// store ID in snapshot struct
-	sn.id = id
+	sn.id = &id
 	debug.Log("Archiver.Snapshot", "saved snapshot %v", id.Str())
 
 	// flush repository
 	err = arch.repo.Flush()
 	if err != nil {
-		return nil, nil, err
+		return nil, backend.ID{}, err
 	}
 
 	// save index
 	indexID, err := arch.repo.SaveIndex()
 	if err != nil {
 		debug.Log("Archiver.Snapshot", "error saving index: %v", err)
-		return nil, nil, err
+		return nil, backend.ID{}, err
 	}
 
 	debug.Log("Archiver.Snapshot", "saved index %v", indexID.Str())

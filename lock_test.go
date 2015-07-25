@@ -203,25 +203,25 @@ func TestLockRefresh(t *testing.T) {
 	lock, err := restic.NewLock(repo)
 	OK(t, err)
 
-	var lockID backend.ID
+	var lockID *backend.ID
 	for id := range repo.List(backend.Lock, nil) {
 		if lockID != nil {
 			t.Error("more than one lock found")
 		}
-		lockID = id
+		lockID = &id
 	}
 
 	OK(t, lock.Refresh())
 
-	var lockID2 backend.ID
+	var lockID2 *backend.ID
 	for id := range repo.List(backend.Lock, nil) {
 		if lockID2 != nil {
 			t.Error("more than one lock found")
 		}
-		lockID2 = id
+		lockID2 = &id
 	}
 
-	Assert(t, !lockID.Equal(lockID2),
+	Assert(t, !lockID.Equal(*lockID2),
 		"expected a new ID after lock refresh, got the same")
 	OK(t, lock.Unlock())
 }

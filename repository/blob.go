@@ -1,17 +1,16 @@
 package repository
 
 import (
-	"bytes"
 	"fmt"
 
 	"github.com/restic/restic/backend"
 )
 
 type Blob struct {
-	ID          backend.ID `json:"id,omitempty"`
-	Size        uint64     `json:"size,omitempty"`
-	Storage     backend.ID `json:"sid,omitempty"`   // encrypted ID
-	StorageSize uint64     `json:"ssize,omitempty"` // encrypted Size
+	ID          *backend.ID `json:"id,omitempty"`
+	Size        uint64      `json:"size,omitempty"`
+	Storage     *backend.ID `json:"sid,omitempty"`   // encrypted ID
+	StorageSize uint64      `json:"ssize,omitempty"` // encrypted Size
 }
 
 type Blobs []Blob
@@ -32,15 +31,15 @@ func (b Blob) String() string {
 
 // Compare compares two blobs by comparing the ID and the size. It returns -1,
 // 0, or 1.
-func (blob Blob) Compare(other Blob) int {
-	if res := bytes.Compare(other.ID, blob.ID); res != 0 {
+func (b Blob) Compare(other Blob) int {
+	if res := b.ID.Compare(*other.ID); res != 0 {
 		return res
 	}
 
-	if blob.Size < other.Size {
+	if b.Size < other.Size {
 		return -1
 	}
-	if blob.Size > other.Size {
+	if b.Size > other.Size {
 		return 1
 	}
 

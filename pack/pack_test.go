@@ -31,7 +31,7 @@ func TestCreatePack(t *testing.T) {
 		_, err := io.ReadFull(rand.Reader, b)
 		OK(t, err)
 		h := sha256.Sum256(b)
-		bufs = append(bufs, Buf{data: b, id: h[:]})
+		bufs = append(bufs, Buf{data: b, id: h})
 	}
 
 	file := bytes.NewBuffer(nil)

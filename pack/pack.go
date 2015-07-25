@@ -165,8 +165,8 @@ func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
 		entry := headerEntry{
 			Type:   b.Type,
 			Length: b.Length,
+			ID:     b.ID,
 		}
-		copy(entry.ID[:], b.ID)
 
 		err := binary.Write(wr, binary.LittleEndian, entry)
 		if err != nil {
@@ -184,7 +184,11 @@ func (p *Packer) ID() backend.ID {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	return p.hw.Sum(nil)
+	hash := p.hw.Sum(nil)
+	id := backend.ID{}
+	copy(id[:], hash)
+
+	return id
 }
 
 // Size returns the number of bytes written so far.
@@ -273,7 +277,7 @@ func NewUnpacker(k *crypto.Key, entries []Blob, rd io.ReadSeeker) (*Unpacker, er
 			entries = append(entries, Blob{
 				Type:   e.Type,
 				Length: e.Length,
-				ID:     e.ID[:],
+				ID:     e.ID,
 				Offset: pos,
 			})
 
