@@ -3,7 +3,6 @@ package fuse
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -148,7 +147,6 @@ func TestFuseFile(t *testing.T) {
 		}
 
 		b := memfile[offset : offset+length]
-		fmt.Printf("test offset %d, length %d\n", offset, length)
 		res := testRead(t, f, offset, length, b)
 		if !bytes.Equal(b, res) {
 			t.Errorf("test %d failed (offset %d, length %d), wrong data returned", i, offset, length)
