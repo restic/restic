@@ -86,9 +86,9 @@ func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, erro
 }
 
 // LoadBlob tries to load and decrypt content identified by t and id from a
-// pack from the backend, the result is stored in buf, which must be large
-// enough to hold the complete blob.
-func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, buf []byte) ([]byte, error) {
+// pack from the backend, the result is stored in plaintextBuf, which must be
+// large enough to hold the complete blob.
+func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byte) ([]byte, error) {
 	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
 	// lookup pack
 	packID, tpe, offset, length, err := r.idx.Lookup(id)
@@ -97,8 +97,8 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, buf []byte) ([]byt
 		return nil, err
 	}
 
-	if length > uint(cap(buf))+crypto.Extension {
-		return nil, errors.New("buf is too small")
+	if length > uint(cap(plaintextBuf))+crypto.Extension {
+		return nil, fmt.Errorf("buf is too small, need %d more bytes", length-uint(cap(plaintextBuf))-crypto.Extension)
 	}
 
 	if tpe != t {
@@ -116,8 +116,8 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, buf []byte) ([]byt
 	}
 
 	// make buffer that is large enough for the complete blob
-	cbuf := make([]byte, length)
-	_, err = io.ReadFull(rd, cbuf)
+	ciphertextBuf := make([]byte, length)
+	_, err = io.ReadFull(rd, ciphertextBuf)
 	if err != nil {
 		return nil, err
 	}
@@ -128,17 +128,17 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, buf []byte) ([]byt
 	}
 
 	// decrypt
-	buf, err = r.decryptTo(buf, cbuf)
+	plaintextBuf, err = r.decryptTo(plaintextBuf, ciphertextBuf)
 	if err != nil {
 		return nil, err
 	}
 
 	// check hash
-	if !backend.Hash(buf).Equal(id) {
+	if !backend.Hash(plaintextBuf).Equal(id) {
 		return nil, errors.New("invalid data returned")
 	}
 
-	return buf, nil
+	return plaintextBuf, nil
 }
 
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
