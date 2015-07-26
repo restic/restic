@@ -60,6 +60,7 @@ func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
 	}
 	return nil
 }
+
 func (sn *SnapshotsDir) get(name string) (snapshot SnapshotWithId, ok bool) {
 	sn.RLock()
 	snapshot, ok = sn.knownSnapshots[name]

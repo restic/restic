@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/restic/restic/cmd/restic/fuse"
+	"github.com/restic/restic/fuse"
 
 	systemFuse "bazil.org/fuse"
 	"bazil.org/fuse/fs"
