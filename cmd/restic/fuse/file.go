@@ -4,8 +4,8 @@ import (
 	"sync"
 
 	"github.com/restic/restic"
+	"github.com/restic/restic/backend"
 	"github.com/restic/restic/pack"
-	"github.com/restic/restic/repository"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -16,11 +16,18 @@ import (
 var _ = fs.HandleReader(&file{})
 var _ = fs.HandleReleaser(&file{})
 
+// BlobLoader is an abstracted repository with a reduced set of methods used
+// for fuse operations.
+type BlobLoader interface {
+	LookupBlobSize(backend.ID) (uint, error)
+	LoadBlob(pack.BlobType, backend.ID, []byte) ([]byte, error)
+}
+
 type file struct {
-	repo *repository.Repository
+	repo BlobLoader
 	node *restic.Node
 
-	sizes []uint32
+	sizes []uint
 	blobs [][]byte
 }
 
@@ -32,14 +39,15 @@ var blobPool = sync.Pool{
 	},
 }
 
-func newFile(repo *repository.Repository, node *restic.Node) (*file, error) {
-	sizes := make([]uint32, len(node.Content))
-	for i, blobID := range node.Content {
-		length, err := repo.Index().LookupSize(blobID)
+func newFile(repo BlobLoader, node *restic.Node) (*file, error) {
+	sizes := make([]uint, len(node.Content))
+	for i, id := range node.Content {
+		size, err := repo.LookupBlobSize(id)
 		if err != nil {
 			return nil, err
 		}
-		sizes[i] = uint32(length)
+
+		sizes[i] = size
 	}
 
 	return &file{
@@ -65,7 +73,7 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 	buf := blobPool.Get().([]byte)
 	buf = buf[:cap(buf)]
 
-	if uint32(len(buf)) < f.sizes[i] {
+	if uint(len(buf)) < f.sizes[i] {
 		if len(buf) > defaultBlobSize {
 			blobPool.Put(buf)
 		}

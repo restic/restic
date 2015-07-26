@@ -201,6 +201,11 @@ func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface
 	return nil
 }
 
+// LookupBlobSize returns the size of blob id.
+func (r *Repository) LookupBlobSize(id backend.ID) (uint, error) {
+	return r.Index().LookupSize(id)
+}
+
 const minPackSize = 4 * chunker.MiB
 const maxPackSize = 16 * chunker.MiB
 const maxPackers = 200
