@@ -209,8 +209,19 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 		return errors.Annotate(err, "OpenFile")
 	}
 
+	var buf []byte
 	for _, id := range node.Content {
-		buf, err := repo.LoadBlob(pack.Data, id)
+		_, _, _, length, err := repo.Index().Lookup(id)
+		if err != nil {
+			return err
+		}
+
+		buf = buf[:cap(buf)]
+		if uint(len(buf)) < length {
+			buf = make([]byte, length)
+		}
+
+		buf, err := repo.LoadBlob(pack.Data, id, buf)
 		if err != nil {
 			return errors.Annotate(err, "Load")
 		}

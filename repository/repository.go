@@ -55,7 +55,6 @@ func (r *Repository) PrefixLength(t backend.Type) (int, error) {
 func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
-	// load blob from pack
 	rd, err := r.be.Get(t, id.String())
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
@@ -87,14 +86,19 @@ func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, erro
 }
 
 // LoadBlob tries to load and decrypt content identified by t and id from a
-// pack from the backend.
-func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
+// pack from the backend, the result is stored in buf, which must be large
+// enough to hold the complete blob.
+func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, buf []byte) ([]byte, error) {
 	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
 	// lookup pack
 	packID, tpe, offset, length, err := r.idx.Lookup(id)
 	if err != nil {
 		debug.Log("Repo.LoadBlob", "id %v not found in index: %v", id.Str(), err)
 		return nil, err
+	}
+
+	if length > uint(cap(buf))+crypto.Extension {
+		return nil, errors.New("buf is too small")
 	}
 
 	if tpe != t {
@@ -111,7 +115,9 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 		return nil, err
 	}
 
-	buf, err := ioutil.ReadAll(rd)
+	// make buffer that is large enough for the complete blob
+	cbuf := make([]byte, length)
+	_, err = io.ReadFull(rd, cbuf)
 	if err != nil {
 		return nil, err
 	}
@@ -122,17 +128,17 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID) ([]byte, error) {
 	}
 
 	// decrypt
-	plain, err := r.Decrypt(buf)
+	buf, err = r.decryptTo(buf, cbuf)
 	if err != nil {
 		return nil, err
 	}
 
 	// check hash
-	if !backend.Hash(plain).Equal(id) {
+	if !backend.Hash(buf).Equal(id) {
 		return nil, errors.New("invalid data returned")
 	}
 
-	return plain, nil
+	return buf, nil
 }
 
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
@@ -580,6 +586,12 @@ func (r *Repository) Init(password string) error {
 
 // Decrypt authenticates and decrypts ciphertext and returns the plaintext.
 func (r *Repository) Decrypt(ciphertext []byte) ([]byte, error) {
+	return r.decryptTo(nil, ciphertext)
+}
+
+// decrypt authenticates and decrypts ciphertext and stores the result in
+// plaintext.
+func (r *Repository) decryptTo(plaintext, ciphertext []byte) ([]byte, error) {
 	if r.key == nil {
 		return nil, errors.New("key for repository not set")
 	}
