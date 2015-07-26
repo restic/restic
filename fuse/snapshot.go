@@ -27,23 +27,30 @@ var _ = fs.HandleReadDirAller(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 
 type SnapshotsDir struct {
-	repo *repository.Repository
+	repo        *repository.Repository
+	ownerIsRoot bool
 
 	// knownSnapshots maps snapshot timestamp to the snapshot
 	sync.RWMutex
 	knownSnapshots map[string]SnapshotWithId
 }
 
-func NewSnapshotsDir(repo *repository.Repository) *SnapshotsDir {
+func NewSnapshotsDir(repo *repository.Repository, ownerIsRoot bool) *SnapshotsDir {
 	return &SnapshotsDir{
 		repo:           repo,
 		knownSnapshots: make(map[string]SnapshotWithId),
+		ownerIsRoot:    ownerIsRoot,
 	}
 }
 
 func (sn *SnapshotsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Inode = 0
 	attr.Mode = os.ModeDir | 0555
+
+	if !sn.ownerIsRoot {
+		attr.Uid = uint32(os.Getuid())
+		attr.Gid = uint32(os.Getgid())
+	}
 	return nil
 }
 
@@ -105,5 +112,5 @@ func (sn *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error
 		}
 	}
 
-	return newDirFromSnapshot(sn.repo, snapshot)
+	return newDirFromSnapshot(sn.repo, snapshot, sn.ownerIsRoot)
 }
