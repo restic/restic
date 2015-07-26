@@ -29,11 +29,6 @@ func init() {
 	}
 }
 
-func dumpIndex(r *repository.Repository, wr io.Writer) error {
-	fmt.Fprintln(wr, "foo")
-	return nil
-}
-
 func (cmd CmdDump) Usage() string {
 	return "[index|snapshots|trees|all]"
 }
