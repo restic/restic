@@ -7,17 +7,9 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
-)
-
-const (
-	minute = 60
-	hour   = 60 * minute
-	day    = 24 * hour
-	week   = 7 * day
 )
 
 type Table struct {
@@ -54,23 +46,6 @@ func (t Table) Write(w io.Writer) error {
 }
 
 const TimeFormat = "2006-01-02 15:04:05"
-
-func reltime(t time.Time) string {
-	sec := uint64(time.Since(t).Seconds())
-
-	switch {
-	case sec > week:
-		return t.Format(TimeFormat)
-	case sec > day:
-		return fmt.Sprintf("%d days ago", sec/day)
-	case sec > hour:
-		return fmt.Sprintf("%d hours ago", sec/hour)
-	case sec > minute:
-		return fmt.Sprintf("%d minutes ago", sec/minute)
-	default:
-		return fmt.Sprintf("%d seconds ago", sec)
-	}
-}
 
 type CmdSnapshots struct {
 	global *GlobalOptions

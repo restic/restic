@@ -155,25 +155,6 @@ func packIDTester(repo *repository.Repository, inChan <-chan backend.ID, errChan
 	}
 }
 
-func collectErrors(in <-chan error, out chan<- []error, done <-chan struct{}) {
-	var errs []error
-
-outer:
-	for {
-		select {
-		case err, ok := <-in:
-			if !ok {
-				break outer
-			}
-			errs = append(errs, err)
-		case <-done:
-			break outer
-		}
-	}
-
-	out <- errs
-}
-
 // Packs checks that all packs referenced in the index are still available and
 // there are no packs that aren't in an index. errChan is closed after all
 // packs have been checked.

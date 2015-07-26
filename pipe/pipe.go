@@ -76,10 +76,6 @@ func isDir(fi os.FileInfo) bool {
 	return fi.IsDir()
 }
 
-func isFile(fi os.FileInfo) bool {
-	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
-}
-
 var errCancelled = errors.New("walk cancelled")
 
 // SelectFunc returns true for all items that should be included (files and
