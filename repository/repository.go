@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"sync"
 
 	"github.com/restic/chunker"
@@ -540,7 +541,21 @@ func (r *Repository) LoadIndex() error {
 
 // LoadIndex loads the index id from backend and returns it.
 func LoadIndex(repo *Repository, id string) (*Index, error) {
-	debug.Log("LoadIndex", "Loading index %v", id[:8])
+	idx, err := loadIndex(repo, id, false)
+	if err == nil {
+		return idx, nil
+	}
+
+	if err == ErrOldIndexFormat {
+		fmt.Fprintf(os.Stderr, "index %v has old format\n", id)
+		return loadIndex(repo, id, true)
+	}
+
+	return nil, err
+}
+
+func loadIndex(repo *Repository, id string, oldFormat bool) (*Index, error) {
+	debug.Log("loadIndex", "Loading index %v", id[:8])
 
 	rd, err := repo.be.Get(backend.Index, id)
 	defer rd.Close()
@@ -555,9 +570,16 @@ func LoadIndex(repo *Repository, id string) (*Index, error) {
 		return nil, err
 	}
 
-	idx, _, err := DecodeIndex(decryptRd)
+	var idx *Index
+
+	if !oldFormat {
+		idx, _, err = DecodeIndex(decryptRd)
+	} else {
+		idx, _, err = DecodeOldIndex(decryptRd)
+	}
+
 	if err != nil {
-		debug.Log("LoadIndex", "error while decoding index %v: %v", id, err)
+		debug.Log("loadIndex", "error while decoding index %v: %v", id, err)
 		return nil, err
 	}
 
