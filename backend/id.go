@@ -102,33 +102,3 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 func IDFromData(d []byte) ID {
 	return hashData(d)
 }
-
-type IDs []ID
-
-func (ids IDs) Len() int {
-	return len(ids)
-}
-
-func (ids IDs) Less(i, j int) bool {
-	if len(ids[i]) < len(ids[j]) {
-		return true
-	}
-
-	for k, b := range ids[i] {
-		if b == ids[j][k] {
-			continue
-		}
-
-		if b < ids[j][k] {
-			return true
-		} else {
-			return false
-		}
-	}
-
-	return false
-}
-
-func (ids IDs) Swap(i, j int) {
-	ids[i], ids[j] = ids[j], ids[i]
-}
