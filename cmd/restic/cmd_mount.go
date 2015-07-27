@@ -13,6 +13,8 @@ import (
 )
 
 type CmdMount struct {
+	Root bool `long:"owner-root" description:"use 'root' as the owner of files and dirs" default:"false"`
+
 	global *GlobalOptions
 	ready  chan struct{}
 	done   chan struct{}
@@ -69,7 +71,7 @@ func (cmd CmdMount) Execute(args []string) error {
 	}
 
 	root := fs.Tree{}
-	root.Add("snapshots", fuse.NewSnapshotsDir(repo))
+	root.Add("snapshots", fuse.NewSnapshotsDir(repo, cmd.Root))
 
 	cmd.global.Printf("Now serving %s at %s\n", repo.Backend().Location(), mountpoint)
 	cmd.global.Printf("Don't forget to umount after quitting!\n")

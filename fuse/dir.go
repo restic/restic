@@ -16,12 +16,14 @@ var _ = fs.HandleReadDirAller(&dir{})
 var _ = fs.NodeStringLookuper(&dir{})
 
 type dir struct {
-	repo  *repository.Repository
-	items map[string]*restic.Node
-	inode uint64
+	repo        *repository.Repository
+	items       map[string]*restic.Node
+	inode       uint64
+	node        *restic.Node
+	ownerIsRoot bool
 }
 
-func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
+func newDir(repo *repository.Repository, node *restic.Node, ownerIsRoot bool) (*dir, error) {
 	tree, err := restic.LoadTree(repo, *node.Subtree)
 	if err != nil {
 		return nil, err
@@ -32,13 +34,15 @@ func newDir(repo *repository.Repository, node *restic.Node) (*dir, error) {
 	}
 
 	return &dir{
-		repo:  repo,
-		items: items,
-		inode: node.Inode,
+		repo:        repo,
+		node:        node,
+		items:       items,
+		inode:       node.Inode,
+		ownerIsRoot: ownerIsRoot,
 	}, nil
 }
 
-func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId) (*dir, error) {
+func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId, ownerIsRoot bool) (*dir, error) {
 	tree, err := restic.LoadTree(repo, *snapshot.Tree)
 	if err != nil {
 		return nil, err
@@ -49,15 +53,32 @@ func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId) (*
 	}
 
 	return &dir{
-		repo:  repo,
-		items: items,
-		inode: inodeFromBackendId(snapshot.ID),
+		repo: repo,
+		node: &restic.Node{
+			UID:        uint32(os.Getuid()),
+			GID:        uint32(os.Getgid()),
+			AccessTime: snapshot.Time,
+			ModTime:    snapshot.Time,
+			ChangeTime: snapshot.Time,
+			Mode:       os.ModeDir | 0555,
+		},
+		items:       items,
+		inode:       inodeFromBackendId(snapshot.ID),
+		ownerIsRoot: ownerIsRoot,
 	}, nil
 }
 
 func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = d.inode
-	a.Mode = os.ModeDir | 0555
+	a.Mode = os.ModeDir | d.node.Mode
+
+	if !d.ownerIsRoot {
+		a.Uid = d.node.UID
+		a.Gid = d.node.GID
+	}
+	a.Atime = d.node.AccessTime
+	a.Ctime = d.node.ChangeTime
+	a.Mtime = d.node.ModTime
 	return nil
 }
 
@@ -92,11 +113,11 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	switch node.Type {
 	case "dir":
-		return newDir(d.repo, node)
+		return newDir(d.repo, node, d.ownerIsRoot)
 	case "file":
-		return newFile(d.repo, node)
+		return newFile(d.repo, node, d.ownerIsRoot)
 	case "symlink":
-		return newLink(d.repo, node)
+		return newLink(d.repo, node, d.ownerIsRoot)
 	default:
 		return nil, fuse.ENOENT
 	}

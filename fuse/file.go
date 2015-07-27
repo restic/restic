@@ -24,8 +24,9 @@ type BlobLoader interface {
 }
 
 type file struct {
-	repo BlobLoader
-	node *restic.Node
+	repo        BlobLoader
+	node        *restic.Node
+	ownerIsRoot bool
 
 	sizes []uint
 	blobs [][]byte
@@ -39,7 +40,7 @@ var blobPool = sync.Pool{
 	},
 }
 
-func newFile(repo BlobLoader, node *restic.Node) (*file, error) {
+func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error) {
 	sizes := make([]uint, len(node.Content))
 	for i, id := range node.Content {
 		size, err := repo.LookupBlobSize(id)
@@ -51,10 +52,11 @@ func newFile(repo BlobLoader, node *restic.Node) (*file, error) {
 	}
 
 	return &file{
-		repo:  repo,
-		node:  node,
-		sizes: sizes,
-		blobs: make([][]byte, len(node.Content)),
+		repo:        repo,
+		node:        node,
+		sizes:       sizes,
+		blobs:       make([][]byte, len(node.Content)),
+		ownerIsRoot: ownerIsRoot,
 	}, nil
 }
 
@@ -62,6 +64,14 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = f.node.Inode
 	a.Mode = f.node.Mode
 	a.Size = f.node.Size
+
+	if !f.ownerIsRoot {
+		a.Uid = f.node.UID
+		a.Gid = f.node.GID
+	}
+	a.Atime = f.node.AccessTime
+	a.Ctime = f.node.ChangeTime
+	a.Mtime = f.node.ModTime
 	return nil
 }
 
