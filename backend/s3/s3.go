@@ -71,7 +71,7 @@ type s3Blob struct {
 
 func (bb *s3Blob) Write(p []byte) (int, error) {
 	if bb.final {
-		return 0, errors.New("blob already closed")
+		return 0, errors.New("Blob already closed")
 	}
 
 	n, err := bb.buf.Write(p)

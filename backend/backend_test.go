@@ -128,6 +128,7 @@ func testBackend(b backend.Backend, t *testing.T) {
 				OK(t, err)
 
 				found, err := b.Test(tpe, id.String())
+
 				OK(t, err)
 				Assert(t, found, fmt.Sprintf("id %q was not found before removal", id))
 
