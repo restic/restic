@@ -10,6 +10,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/backend/local"
+	"github.com/restic/restic/backend/rest"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
 	"github.com/restic/restic/repository"
@@ -132,7 +133,10 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 // * s3://region/bucket -> amazon s3 bucket
 // * sftp://user@host/foo/bar -> remote sftp repository on host for user at path foo/bar
 // * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
+// * http://host -> remote and public http repository
 func open(u string) (backend.Backend, error) {
+	fmt.Println(u)
+
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -142,6 +146,8 @@ func open(u string) (backend.Backend, error) {
 		return local.Open(url.Path)
 	} else if url.Scheme == "s3" {
 		return s3.Open(url.Host, url.Path[1:])
+	} else if url.Scheme == "http" {
+		return rest.Open(url)
 	}
 
 	args := []string{url.Host}
@@ -165,6 +171,8 @@ func create(u string) (backend.Backend, error) {
 		return local.Create(url.Path)
 	} else if url.Scheme == "s3" {
 		return s3.Open(url.Host, url.Path[1:])
+	} else if url.Scheme == "http" {
+		return rest.Open(url)
 	}
 
 	args := []string{url.Host}
