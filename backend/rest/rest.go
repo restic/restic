@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/restic/restic/backend"
 )
@@ -17,11 +18,14 @@ const connLimit = 10
 
 // Returns the url of the resource
 func restPath(url *url.URL, t backend.Type, name string) string {
-	if t == backend.Config {
-		return url.String() + "/" + string(t)
+	location := url.String()
+	if !strings.HasSuffix(location, "/") {
+		location += "/"
 	}
-
-	return url.String() + "/" + string(t) + "/" + name
+	if t == backend.Config {
+		return location + string(t)
+	}
+	return location + string(t) + "/" + name
 }
 
 type RestBlob struct {
