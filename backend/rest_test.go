@@ -79,7 +79,8 @@ func TestRestBackend(t *testing.T) {
 	// List the blobs of a given type.
 	r.HandleFunc("/{type}/", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		path := filepath.Join(path, vars["type"])
+		blobType := filepath.Clean(vars["type"])
+		path := filepath.Join(path, blobType)
 		files, _ := ioutil.ReadDir(path)
 		names := make([]string, len(files))
 		for i, f := range files {
@@ -92,7 +93,9 @@ func TestRestBackend(t *testing.T) {
 	// Check if a blob of a given type exists.
 	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blob := filepath.Join(path, vars["type"], vars["blob"])
+		blobType := filepath.Clean(vars["type"])
+		blobID := filepath.Clean(vars["blob"])
+		blob := filepath.Join(path, blobType, blobID)
 		if _, err := os.Stat(blob); err != nil {
 			http.Error(w, "Blob not found", 404)
 		}
@@ -101,7 +104,9 @@ func TestRestBackend(t *testing.T) {
 	// Get a blob of a given type.
 	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blob := filepath.Join(path, vars["type"], vars["blob"])
+		blobType := filepath.Clean(vars["type"])
+		blobID := filepath.Clean(vars["blob"])
+		blob := filepath.Join(path, blobType, blobID)
 		if file, err := os.Open(blob); err == nil {
 			http.ServeContent(w, r, "", time.Unix(0, 0), file)
 		} else {
@@ -112,7 +117,9 @@ func TestRestBackend(t *testing.T) {
 	// Save a blob of a given type.
 	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blob := filepath.Join(path, vars["type"], vars["blob"])
+		blobType := filepath.Clean(vars["type"])
+		blobID := filepath.Clean(vars["blob"])
+		blob := filepath.Join(path, blobType, blobID)
 		if _, err := os.Stat(blob); err == nil {
 			http.Error(w, "Blob already uploaded", 403)
 		} else {
@@ -124,7 +131,9 @@ func TestRestBackend(t *testing.T) {
 	// Delete a blob of a given type.
 	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blob := filepath.Join(path, vars["type"], vars["blob"])
+		blobType := filepath.Clean(vars["type"])
+		blobID := filepath.Clean(vars["blob"])
+		blob := filepath.Join(path, blobType, blobID)
 		if _, err := os.Stat(blob); err == nil {
 			os.Remove(blob)
 		} else {
