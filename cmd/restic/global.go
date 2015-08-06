@@ -135,8 +135,6 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 // * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
 // * http://host -> remote and public http repository
 func open(u string) (backend.Backend, error) {
-	fmt.Println(u)
-
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err

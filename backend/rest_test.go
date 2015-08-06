@@ -2,7 +2,6 @@ package backend_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/restic/restic/backend"
@@ -23,7 +23,8 @@ func setupRestBackend(t *testing.T) *rest.Rest {
 }
 
 func TestRestBackend(t *testing.T) {
-	// Initializing a temporary repository for the backend
+
+	// Initializing a temporary direcory for the rest backend.
 	path, _ := ioutil.TempDir("", "restic-repository-")
 	defer os.RemoveAll(path)
 
@@ -41,52 +42,33 @@ func TestRestBackend(t *testing.T) {
 		os.MkdirAll(d, backend.Modes.Dir)
 	}
 
-	// Routing the repository requests
+	// Initialize the router for the repository requests.
 	r := mux.NewRouter()
 
-	// Exists
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// Check if the repository has already been initialized.
+	r.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		file := filepath.Join(path, "config")
 		if _, err := os.Stat(file); err != nil {
-			http.Error(w, "No repository here", 404)
+			http.Error(w, "Repository not found", 404)
 		}
 	}).Methods("HEAD")
 
-	// List blobs
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// Get the configuration of the repository.
+	r.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		file := filepath.Join(path, "config")
-		if _, err := os.Stat(file); err != nil {
-			http.Error(w, "No repository here", 404)
-		}
-	}).Methods("GET")
-
-	// Head file
-	r.HandleFunc("/{file}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		file := filepath.Join(path, vars["file"])
-		if _, err := os.Stat(file); err != nil {
-			http.Error(w, "File not found", 404)
-		}
-	}).Methods("HEAD")
-
-	// Get file
-	r.HandleFunc("/{file}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		file := filepath.Join(path, vars["file"])
 		if _, err := os.Stat(file); err == nil {
 			bytes, _ := ioutil.ReadFile(file)
 			w.Write(bytes)
 		} else {
-			http.Error(w, "File not found", 404)
+			http.Error(w, "Repository not found", 404)
 		}
 	}).Methods("GET")
 
-	// Put file
-	r.HandleFunc("/{file}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		file := filepath.Join(path, vars["file"])
+	// Initialize the repository and save the configuration.
+	r.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+		file := filepath.Join(path, "config")
 		if _, err := os.Stat(file); err == nil {
-			fmt.Fprintf(w, "Blob already uploaded", 404)
+			http.Error(w, "Repository already initialized", 403)
 		} else {
 			bytes, _ := ioutil.ReadAll(r.Body)
 			ioutil.WriteFile(file, bytes, 0600)
@@ -94,18 +76,7 @@ func TestRestBackend(t *testing.T) {
 		}
 	}).Methods("POST")
 
-	// Delete file
-	r.HandleFunc("/{file}", func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		file := filepath.Join(path, vars["file"])
-		if _, err := os.Stat(file); err == nil {
-			os.Remove(file)
-		} else {
-			fmt.Fprintf(w, "File not found", 404)
-		}
-	}).Methods("DELETE")
-
-	// List blobs
+	// List the blobs of a given type.
 	r.HandleFunc("/{type}/", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		path := filepath.Join(path, vars["type"])
@@ -118,50 +89,50 @@ func TestRestBackend(t *testing.T) {
 		w.Write(data)
 	}).Methods("GET")
 
-	// Head blob
+	// Check if a blob of a given type exists.
 	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		blob := filepath.Join(path, vars["type"], vars["blob"])
 		if _, err := os.Stat(blob); err != nil {
-			http.Error(w, "File not found", 404)
+			http.Error(w, "Blob not found", 404)
 		}
 	}).Methods("HEAD")
 
-	// Get blob
+	// Get a blob of a given type.
 	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		blob := filepath.Join(path, vars["type"], vars["blob"])
-		if _, err := os.Stat(blob); err == nil {
-			bytes, _ := ioutil.ReadFile(blob)
-			w.Write(bytes)
+		if file, err := os.Open(blob); err == nil {
+			http.ServeContent(w, r, "", time.Unix(0, 0), file)
 		} else {
 			http.Error(w, "Blob not found", 404)
 		}
 	}).Methods("GET")
 
-	// Put blob
+	// Save a blob of a given type.
 	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		blob := filepath.Join(path, vars["type"], vars["blob"])
 		if _, err := os.Stat(blob); err == nil {
-			fmt.Fprintf(w, "Blob already uploaded", 404)
+			http.Error(w, "Blob already uploaded", 403)
 		} else {
 			bytes, _ := ioutil.ReadAll(r.Body)
 			ioutil.WriteFile(blob, bytes, 0600)
 		}
 	}).Methods("POST")
 
-	// Delete blob
+	// Delete a blob of a given type.
 	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		blob := filepath.Join(path, vars["type"], vars["blob"])
 		if _, err := os.Stat(blob); err == nil {
 			os.Remove(blob)
 		} else {
-			fmt.Fprintf(w, "Blob not found", 404)
+			http.Error(w, "Blob not found", 404)
 		}
 	}).Methods("DELETE")
 
+	// Start the server and launch the tests.
 	s := httptest.NewServer(r)
 	defer s.Close()
 

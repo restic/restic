@@ -66,7 +66,7 @@ type s3Blob struct {
 
 func (bb *s3Blob) Write(p []byte) (int, error) {
 	if bb.final {
-		return 0, errors.New("Blob already closed")
+		return 0, errors.New("blob already closed")
 	}
 
 	n, err := bb.buf.Write(p)
@@ -89,7 +89,7 @@ func (bb *s3Blob) Size() uint {
 
 func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	if bb.final {
-		return errors.New("Already finalized")
+		return errors.New("already finalized")
 	}
 
 	bb.final = true
@@ -99,7 +99,7 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	// Check key does not already exist
 	key, err := bb.b.bucket.GetKey(path)
 	if err == nil && key.Key == path {
-		return errors.New("Key already exists")
+		return errors.New("key already exists")
 	}
 
 	<-bb.b.connChan
