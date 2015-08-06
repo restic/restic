@@ -136,12 +136,15 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 // * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
 // * http://host -> remote and public http repository
 func open(u string) (backend.Backend, error) {
+<<<<<<< HEAD
 	// check if the url is a directory that exists
 	fi, err := os.Stat(u)
 	if err == nil && fi.IsDir() {
 		return local.Open(u)
 	}
 
+=======
+>>>>>>> integrated the comments from the review, simplified the backend and added some documentation
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err

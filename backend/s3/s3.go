@@ -71,7 +71,7 @@ type s3Blob struct {
 
 func (bb *s3Blob) Write(p []byte) (int, error) {
 	if bb.final {
-		return 0, errors.New("Blob already closed")
+		return 0, errors.New("blob already closed")
 	}
 
 	n, err := bb.buf.Write(p)
@@ -94,7 +94,7 @@ func (bb *s3Blob) Size() uint {
 
 func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	if bb.final {
-		return errors.New("Already finalized")
+		return errors.New("already finalized")
 	}
 
 	bb.final = true
@@ -102,9 +102,15 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	path := s3path(t, name)
 
 	// Check key does not already exist
+<<<<<<< HEAD
 	_, err := bb.b.bucket.GetReader(path)
 	if err == nil {
 		return errors.New("key already exists!")
+=======
+	key, err := bb.b.bucket.GetKey(path)
+	if err == nil && key.Key == path {
+		return errors.New("key already exists")
+>>>>>>> integrated the comments from the review, simplified the backend and added some documentation
 	}
 
 	<-bb.b.connChan
