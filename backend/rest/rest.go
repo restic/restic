@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/restic/restic/backend"
@@ -59,26 +61,15 @@ func (rb *RestBlob) Finalize(t backend.Type, name string) error {
 
 	rb.final = true
 
-	// Check key does not already exist.
-	req, err := http.NewRequest("HEAD", restPath(rb.b.url, t, name), nil)
-	if err != nil {
-		return err
-	}
-
-	resp, errh := http.DefaultClient.Do(req)
-	if errh != nil {
-		return errh
-	}
-	if resp.StatusCode == 200 {
-		return errors.New("key already exists")
-	}
-
 	<-rb.b.connChan
-	_, errp := http.Post(restPath(rb.b.url, t, name), "binary/octet-stream", rb.buf)
+	resp, err := http.Post(restPath(rb.b.url, t, name), "binary/octet-stream", rb.buf)
+	if resp.StatusCode == 409 {
+		err = errors.New("already exists")
+	}
 	rb.b.connChan <- struct{}{}
 	rb.buf.Reset()
 
-	return errp
+	return err
 }
 
 // Size returns the number of bytes written to the backend so far.
@@ -133,7 +124,7 @@ func (b *Rest) GetReader(t backend.Type, name string, offset, length uint) (io.R
 		return nil, err
 	}
 
-	req.Header.Add("Range", "bytes="+string(offset)+"-"+string(offset+length))
+	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", offset, offset+length))
 
 	resp, errg := http.DefaultClient.Do(req)
 	if errg != nil {
@@ -202,6 +193,7 @@ func (b *Rest) List(t backend.Type, done <-chan struct{}) <-chan string {
 
 	go func() {
 		defer close(ch)
+		sort.Strings(list)
 		for _, m := range list {
 			select {
 			case ch <- m:
