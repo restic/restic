@@ -18,22 +18,18 @@ const (
 )
 
 func ParseType(s string) (Type, error) {
-	if s == string(Data) {
+	switch s {
+	case string(Data):
 		return Data, nil
-	}
-	if s == string(Key) {
+	case string(Key):
 		return Key, nil
-	}
-	if s == string(Lock) {
+	case string(Lock):
 		return Lock, nil
-	}
-	if s == string(Snapshot) {
+	case string(Snapshot):
 		return Snapshot, nil
-	}
-	if s == string(Index) {
+	case string(Index):
 		return Index, nil
-	}
-	if s == string(Config) {
+	case string(Config):
 		return Config, nil
 	}
 	return "", errors.New("invalid type")
