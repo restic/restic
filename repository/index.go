@@ -109,7 +109,7 @@ func (idx *Index) Merge(other *Index) {
 
 	for k, v := range other.pack {
 		if _, ok := idx.pack[k]; ok {
-			debug.Log("Index.Merge", "index already has key %v, updating", k[:8])
+			debug.Log("Index.Merge", "index already has key %v, updating", k.Str())
 		}
 
 		idx.pack[k] = v
@@ -146,7 +146,7 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 					ID:     id,
 					Offset: blob.offset,
 					Type:   blob.tpe,
-					Length: uint32(blob.length),
+					Length: blob.length,
 				},
 				PackID: *blob.packID,
 			}:
@@ -166,7 +166,7 @@ func (idx *Index) Count(t pack.BlobType) (n uint) {
 	for id, blob := range idx.pack {
 		if blob.tpe == t {
 			n++
-			debug.Log("Index.Count", "  blob %v counted: %v", id[:8], blob)
+			debug.Log("Index.Count", "  blob %v counted: %v", id.Str(), blob)
 		}
 	}
 
@@ -201,7 +201,7 @@ func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON,
 
 		if blob.packID.IsNull() {
 			debug.Log("Index.generatePackList", "blob %q has no packID! (type %v, offset %v, length %v)",
-				id[:8], blob.tpe, blob.offset, blob.length)
+				id.Str(), blob.tpe, blob.offset, blob.length)
 			return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", id)
 		}
 
