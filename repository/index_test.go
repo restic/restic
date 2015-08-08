@@ -3,7 +3,9 @@ package repository_test
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"io"
+	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic/backend"
