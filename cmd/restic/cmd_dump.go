@@ -17,6 +17,8 @@ import (
 
 type CmdDump struct {
 	global *GlobalOptions
+
+	repo *repository.Repository
 }
 
 func init() {
@@ -94,6 +96,27 @@ func printTrees(repo *repository.Repository, wr io.Writer) error {
 	return nil
 }
 
+func (cmd CmdDump) DumpIndexes() error {
+	done := make(chan struct{})
+	defer close(done)
+
+	for id := range cmd.repo.List(backend.Index, done) {
+		fmt.Printf("index_id: %v\n", id)
+
+		idx, err := repository.LoadIndex(cmd.repo, id.String())
+		if err != nil {
+			return err
+		}
+
+		err = idx.Dump(os.Stdout)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (cmd CmdDump) Execute(args []string) error {
 	if len(args) != 1 {
 		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
@@ -103,6 +126,7 @@ func (cmd CmdDump) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
+	cmd.repo = repo
 
 	lock, err := lockRepo(repo)
 	defer unlockRepo(lock)
@@ -120,6 +144,8 @@ func (cmd CmdDump) Execute(args []string) error {
 	switch tpe {
 	case "index":
 		return repo.Index().Dump(os.Stdout)
+	case "indexes":
+		return cmd.DumpIndexes()
 	case "snapshots":
 		return printSnapshots(repo, os.Stdout)
 	case "trees":
@@ -134,6 +160,12 @@ func (cmd CmdDump) Execute(args []string) error {
 		fmt.Printf("\ntrees:\n")
 
 		err = printTrees(repo, os.Stdout)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("\nindexes:\n")
+		err = cmd.DumpIndexes()
 		if err != nil {
 			return err
 		}
