@@ -1,5 +1,10 @@
 package backend
 
+import (
+	"encoding/hex"
+	"fmt"
+)
+
 // IDs is an ordered list of IDs that implements sort.Interface.
 type IDs []ID
 
@@ -47,4 +52,18 @@ func (ids IDs) Uniq() (list IDs) {
 	}
 
 	return list
+}
+
+type shortID ID
+
+func (id shortID) String() string {
+	return hex.EncodeToString(id[:shortStr])
+}
+
+func (ids IDs) String() string {
+	elements := make([]shortID, 0, len(ids))
+	for _, id := range ids {
+		elements = append(elements, shortID(id))
+	}
+	return fmt.Sprintf("%v", elements)
 }
