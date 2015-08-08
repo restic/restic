@@ -579,14 +579,14 @@ func (r *Repository) LoadIndex() error {
 
 // LoadIndex loads the index id from backend and returns it.
 func LoadIndex(repo *Repository, id string) (*Index, error) {
-	idx, err := loadIndex(repo, id, false)
+	idx, err := LoadIndexWithDecoder(repo, id, DecodeIndex)
 	if err == nil {
 		return idx, nil
 	}
 
 	if err == ErrOldIndexFormat {
-		fmt.Fprintf(os.Stderr, "index %v has old format\n", id)
-		return loadIndex(repo, id, true)
+		fmt.Fprintf(os.Stderr, "index %v has old format\n", id[:10])
+		return LoadIndexWithDecoder(repo, id, DecodeOldIndex)
 	}
 
 	return nil, err
@@ -632,8 +632,9 @@ func (r *Repository) GetDecryptReader(t backend.Type, id string) (io.ReadCloser,
 	return newDecryptReadCloser(r.key, rd)
 }
 
-func loadIndex(repo *Repository, id string, oldFormat bool) (*Index, error) {
-	debug.Log("loadIndex", "Loading index %v", id[:8])
+// LoadIndexWithDecoder loads the index and decodes it with fn.
+func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (*Index, error) {
+	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
 
 	rd, err := repo.GetDecryptReader(backend.Index, id)
 	if err != nil {
@@ -641,16 +642,9 @@ func loadIndex(repo *Repository, id string, oldFormat bool) (*Index, error) {
 	}
 	defer rd.Close()
 
-	var idx *Index
-
-	if !oldFormat {
-		idx, _, err = DecodeIndex(rd)
-	} else {
-		idx, _, err = DecodeOldIndex(rd)
-	}
-
+	idx, err := fn(rd)
 	if err != nil {
-		debug.Log("loadIndex", "error while decoding index %v: %v", id, err)
+		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
 		return nil, err
 	}
 

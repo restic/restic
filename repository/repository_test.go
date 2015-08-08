@@ -199,7 +199,7 @@ func TestLoadJSONUnpacked(t *testing.T) {
 
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
-func TestLoadIndex(t *testing.T) {
+func TestRepositoryLoadIndex(t *testing.T) {
 	WithTestEnvironment(t, repoFixture, func(repodir string) {
 		repo := OpenLocalRepo(t, repodir)
 		OK(t, repo.LoadIndex())

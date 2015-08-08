@@ -17,6 +17,8 @@ import (
 type Index struct {
 	m    sync.Mutex
 	pack map[backend.ID]indexEntry
+
+	supersedes backend.IDs
 }
 
 type indexEntry struct {
@@ -139,6 +141,11 @@ func (idx *Index) Merge(other *Index) {
 	debug.Log("Index.Merge", "done merging index")
 }
 
+// Supersedes returns the list of indexes this index supersedes, if any.
+func (idx *Index) Supersedes() backend.IDs {
+	return idx.supersedes
+}
+
 // PackedBlob is a blob already saved within a pack.
 type PackedBlob struct {
 	pack.Blob
@@ -257,22 +264,20 @@ func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON,
 }
 
 type jsonIndex struct {
-	Supersedes []backend.ID `json:"supersedes,omitempty"`
-	Packs      []*packJSON  `json:"packs"`
+	Supersedes backend.IDs `json:"supersedes,omitempty"`
+	Packs      []*packJSON `json:"packs"`
 }
 
 type jsonOldIndex []*packJSON
 
 // encode writes the JSON serialization of the index filtered by selectFn to enc.
-func (idx *Index) encode(w io.Writer, supersedes []backend.ID, selectFn func(indexEntry) bool) error {
-	list, err := idx.generatePackList(func(entry indexEntry) bool {
-		return !entry.old
-	})
+func (idx *Index) encode(w io.Writer, supersedes backend.IDs, selectFn func(indexEntry) bool) error {
+	list, err := idx.generatePackList(selectFn)
 	if err != nil {
 		return err
 	}
 
-	debug.Log("Index.Encode", "done")
+	debug.Log("Index.Encode", "done, %d entries selected", len(list))
 
 	enc := json.NewEncoder(w)
 	idxJSON := jsonIndex{
@@ -290,7 +295,7 @@ func (idx *Index) Encode(w io.Writer) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	return idx.encode(w, nil, func(e indexEntry) bool { return !e.old })
+	return idx.encode(w, idx.supersedes, func(e indexEntry) bool { return !e.old })
 }
 
 // Dump writes the pretty-printed JSON representation of the index to w.
@@ -333,47 +338,48 @@ func isErrOldIndex(err error) bool {
 var ErrOldIndexFormat = errors.New("index has old format")
 
 // DecodeIndex loads and unserializes an index from rd.
-func DecodeIndex(rd io.Reader) (*Index, backend.IDs, error) {
+func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 	debug.Log("Index.DecodeIndex", "Start decoding index")
 	idxJSON := jsonIndex{}
 
 	dec := json.NewDecoder(rd)
-	err := dec.Decode(&idxJSON)
+	err = dec.Decode(&idxJSON)
 	if err != nil {
-		debug.Log("Index.DecodeIndex", "Error %#v", err)
+		debug.Log("Index.DecodeIndex", "Error %v", err)
 
 		if isErrOldIndex(err) {
 			debug.Log("Index.DecodeIndex", "index is probably old format, trying that")
 			err = ErrOldIndexFormat
 		}
 
-		return nil, nil, err
+		return nil, err
 	}
 
-	idx := NewIndex()
+	idx = NewIndex()
 	for _, pack := range idxJSON.Packs {
 		for _, blob := range pack.Blobs {
 			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length, true)
 		}
 	}
+	idx.supersedes = idxJSON.Supersedes
 
 	debug.Log("Index.DecodeIndex", "done")
-	return idx, idxJSON.Supersedes, err
+	return idx, err
 }
 
 // DecodeOldIndex loads and unserializes an index in the old format from rd.
-func DecodeOldIndex(rd io.Reader) (*Index, backend.IDs, error) {
+func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	debug.Log("Index.DecodeOldIndex", "Start decoding old index")
 	list := []*packJSON{}
 
 	dec := json.NewDecoder(rd)
-	err := dec.Decode(&list)
+	err = dec.Decode(&list)
 	if err != nil {
 		debug.Log("Index.DecodeOldIndex", "Error %#v", err)
-		return nil, nil, err
+		return nil, err
 	}
 
-	idx := NewIndex()
+	idx = NewIndex()
 	for _, pack := range list {
 		for _, blob := range pack.Blobs {
 			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length, true)
@@ -381,5 +387,76 @@ func DecodeOldIndex(rd io.Reader) (*Index, backend.IDs, error) {
 	}
 
 	debug.Log("Index.DecodeOldIndex", "done")
-	return idx, backend.IDs{}, err
+	return idx, err
+}
+
+// ConvertIndexes loads all indexes from the repo and converts them to the new
+// format (if necessary). When the conversion is succcessful, the old indexes
+// are removed.
+func ConvertIndexes(repo *Repository) error {
+	debug.Log("ConvertIndexes", "start")
+	done := make(chan struct{})
+	defer close(done)
+
+	for id := range repo.List(backend.Index, done) {
+		debug.Log("ConvertIndexes", "checking index %v", id.Str())
+
+		newID, err := ConvertIndex(repo, id)
+		if err != nil {
+			debug.Log("ConvertIndexes", "Converting index %v returns error: %v", id.Str(), err)
+			return err
+		}
+
+		if id != newID {
+			debug.Log("ConvertIndexes", "index %v converted to new format as %v", id.Str(), newID.Str())
+		}
+	}
+
+	debug.Log("ConvertIndexes", "done")
+	return nil
+}
+
+// ConvertIndex loads the given index from the repo and converts them to the new
+// format (if necessary). When the conversion is succcessful, the old index
+// is removed. Returned is either the old id (if no conversion was needed) or
+// the new id.
+func ConvertIndex(repo *Repository, id backend.ID) (backend.ID, error) {
+	debug.Log("ConvertIndex", "checking index %v", id.Str())
+
+	idx, err := LoadIndexWithDecoder(repo, id.String(), DecodeOldIndex)
+	if err != nil {
+		debug.Log("ConvertIndex", "LoadIndexWithDecoder(%v) returned error: %v", id.Str(), err)
+		return id, err
+	}
+
+	blob, err := repo.CreateEncryptedBlob(backend.Index)
+	if err != nil {
+		return id, err
+	}
+
+	idx.supersedes = backend.IDs{id}
+
+	// select all blobs for export
+	err = idx.encode(blob, idx.supersedes, func(e indexEntry) bool { return true })
+	if err != nil {
+		debug.Log("ConvertIndex", "oldIdx.Encode() returned error: %v", err)
+		return id, err
+	}
+
+	err = blob.Close()
+	if err != nil {
+		debug.Log("ConvertIndex", "blob.Close() returned error: %v", err)
+		return id, err
+	}
+
+	newID := blob.ID()
+	debug.Log("ConvertIndex", "index %v converted to new format as %v", id.Str(), newID.Str())
+
+	err = repo.be.Remove(backend.Index, id.String())
+	if err != nil {
+		debug.Log("ConvertIndex", "backend.Remove(%v) returned error: %v", id.Str(), err)
+		return id, err
+	}
+
+	return newID, nil
 }

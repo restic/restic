@@ -3,6 +3,7 @@ package checker
 import (
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/restic/restic"
@@ -58,15 +59,26 @@ func (c *Checker) LoadIndex() error {
 
 	indexCh := make(chan indexRes)
 
-	worker := func(id string, done <-chan struct{}) error {
+	worker := func(id backend.ID, done <-chan struct{}) error {
 		debug.Log("LoadIndex", "worker got index %v", id)
-		idx, err := repository.LoadIndex(c.repo, id)
+		idx, err := repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeIndex)
+		if err == repository.ErrOldIndexFormat {
+			debug.Log("LoadIndex", "old index format found, converting")
+			fmt.Fprintf(os.Stderr, "convert index %v to new format\n", id.Str())
+			id, err = repository.ConvertIndex(c.repo, id)
+			if err != nil {
+				return err
+			}
+
+			idx, err = repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeIndex)
+		}
+
 		if err != nil {
 			return err
 		}
 
 		select {
-		case indexCh <- indexRes{Index: idx, ID: id}:
+		case indexCh <- indexRes{Index: idx, ID: id.String()}:
 		case <-done:
 		}
 
@@ -77,7 +89,8 @@ func (c *Checker) LoadIndex() error {
 	go func() {
 		defer close(indexCh)
 		debug.Log("LoadIndex", "start loading indexes in parallel")
-		perr = repository.FilesInParallel(c.repo.Backend(), backend.Index, defaultParallelism, worker)
+		perr = repository.FilesInParallel(c.repo.Backend(), backend.Index, defaultParallelism,
+			repository.ParallelWorkFuncParseID(worker))
 		debug.Log("LoadIndex", "loading indexes finished, error: %v", perr)
 	}()
 

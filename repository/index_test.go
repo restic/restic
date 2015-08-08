@@ -3,7 +3,6 @@ package repository_test
 import (
 	"bytes"
 	"crypto/rand"
-	"fmt"
 	"io"
 	"path/filepath"
 	"testing"
@@ -60,7 +59,7 @@ func TestIndexSerialize(t *testing.T) {
 	err := idx.Encode(wr)
 	OK(t, err)
 
-	idx2, _, err := repository.DecodeIndex(wr)
+	idx2, err := repository.DecodeIndex(wr)
 	OK(t, err)
 	Assert(t, idx2 != nil,
 		"nil returned for decoded index")
@@ -115,7 +114,7 @@ func TestIndexSerialize(t *testing.T) {
 	err = idx2.Encode(wr3)
 	OK(t, err)
 
-	idx3, _, err := repository.DecodeIndex(wr3)
+	idx3, err := repository.DecodeIndex(wr3)
 	OK(t, err)
 	Assert(t, idx3 != nil,
 		"nil returned for decoded index")
@@ -246,7 +245,7 @@ var exampleTests = []struct {
 func TestIndexUnserialize(t *testing.T) {
 	oldIdx := backend.IDs{ParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
-	idx, supersedes, err := repository.DecodeIndex(bytes.NewReader(docExample))
+	idx, err := repository.DecodeIndex(bytes.NewReader(docExample))
 	OK(t, err)
 
 	for _, test := range exampleTests {
@@ -259,11 +258,11 @@ func TestIndexUnserialize(t *testing.T) {
 		Equals(t, test.length, length)
 	}
 
-	Equals(t, oldIdx, supersedes)
+	Equals(t, oldIdx, idx.Supersedes())
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
-	idx, supersedes, err := repository.DecodeOldIndex(bytes.NewReader(docOldExample))
+	idx, err := repository.DecodeOldIndex(bytes.NewReader(docOldExample))
 	OK(t, err)
 
 	for _, test := range exampleTests {
@@ -276,8 +275,57 @@ func TestIndexUnserializeOld(t *testing.T) {
 		Equals(t, test.length, length)
 	}
 
-	Assert(t, len(supersedes) == 0,
-		"expected %v supersedes, got %v", 0, len(supersedes))
+	Equals(t, 0, len(idx.Supersedes()))
+}
+
+var oldIndexTestRepo = filepath.Join("testdata", "old-index-repo.tar.gz")
+
+func TestConvertIndex(t *testing.T) {
+	WithTestEnvironment(t, oldIndexTestRepo, func(repodir string) {
+		repo := OpenLocalRepo(t, repodir)
+
+		old := make(map[backend.ID]*repository.Index)
+		for id := range repo.List(backend.Index, nil) {
+			idx, err := repository.LoadIndex(repo, id.String())
+			OK(t, err)
+			old[id] = idx
+		}
+
+		OK(t, repository.ConvertIndexes(repo))
+
+		for id := range repo.List(backend.Index, nil) {
+			idx, err := repository.LoadIndexWithDecoder(repo, id.String(), repository.DecodeIndex)
+			OK(t, err)
+
+			Assert(t, len(idx.Supersedes()) == 1,
+				"Expected index %v to supersed exactly one index, got %v", id, idx.Supersedes())
+
+			oldIndexID := idx.Supersedes()[0]
+
+			oldIndex, ok := old[oldIndexID]
+			Assert(t, ok,
+				"Index %v superseds %v, but that wasn't found in the old index map", id.Str(), oldIndexID.Str())
+
+			Assert(t, idx.Count(pack.Data) == oldIndex.Count(pack.Data),
+				"Index %v count blobs %v: %v != %v", id.Str(), pack.Data, idx.Count(pack.Data), oldIndex.Count(pack.Data))
+			Assert(t, idx.Count(pack.Tree) == oldIndex.Count(pack.Tree),
+				"Index %v count blobs %v: %v != %v", id.Str(), pack.Tree, idx.Count(pack.Tree), oldIndex.Count(pack.Tree))
+
+			for packedBlob := range idx.Each(nil) {
+				packID, tpe, offset, length, err := oldIndex.Lookup(packedBlob.ID)
+				OK(t, err)
+
+				Assert(t, *packID == packedBlob.PackID,
+					"Check blob %v: pack ID %v != %v", packedBlob.ID, packID, packedBlob.PackID)
+				Assert(t, tpe == packedBlob.Type,
+					"Check blob %v: Type %v != %v", packedBlob.ID, tpe, packedBlob.Type)
+				Assert(t, offset == packedBlob.Offset,
+					"Check blob %v: Type %v != %v", packedBlob.ID, offset, packedBlob.Offset)
+				Assert(t, length == packedBlob.Length,
+					"Check blob %v: Type %v != %v", packedBlob.ID, length, packedBlob.Length)
+			}
+		}
+	})
 }
 
 func TestStoreOverwritesPreliminaryEntry(t *testing.T) {

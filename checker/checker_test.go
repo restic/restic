@@ -91,8 +91,8 @@ func TestUnreferencedPack(t *testing.T) {
 	WithTestEnvironment(t, checkerTestData, func(repodir string) {
 		repo := OpenLocalRepo(t, repodir)
 
-		// index 8eb5 only references pack 60e0
-		indexID := "8eb5b61062bf8e959f244fba0c971108bc8d4d2a4b236f71a704998e28cc5cf6"
+		// index 3f1a only references pack 60e0
+		indexID := "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44"
 		packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
 		OK(t, repo.Backend().Remove(backend.Index, indexID))
 
