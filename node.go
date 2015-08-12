@@ -148,8 +148,8 @@ func (node *Node) CreateAt(path string, repo *repository.Repository) error {
 func (node Node) restoreMetadata(path string) error {
 	var err error
 
-	err = os.Lchown(path, int(node.UID), int(node.GID))
-	if err != nil && err != syscall.EWINDOWS {
+	err = lchown(path, int(node.UID), int(node.GID))
+	if err != nil {
 		return errors.Annotate(err, "Lchown")
 	}
 

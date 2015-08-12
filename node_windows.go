@@ -20,6 +20,11 @@ var mknod = func(path string, mode uint32, dev int) (err error) {
 	panic("mknod not implemented")
 }
 
+// Windows doesn't need lchown
+var lchown = func(path string, uid int, gid int) (err error) {
+	return nil
+}
+
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
 	return nil
 }

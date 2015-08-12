@@ -5,10 +5,12 @@
 package restic
 
 import (
+	"os"
 	"syscall"
 )
 
 var mknod = syscall.Mknod
+var lchown = os.Lchown
 
 type statUnix syscall.Stat_t
 
