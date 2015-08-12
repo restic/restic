@@ -1,8 +1,12 @@
 //
 
-// +build dragonfly linux netbsd openbsd solaris darwin
+// +build dragonfly linux netbsd openbsd freebsd solaris darwin
 
 package restic
+
+import (
+	"syscall"
+)
 
 var mknod = syscall.Mknod
 
@@ -12,7 +16,7 @@ func toStatT(i interface{}) (statT, bool) {
 	if i == nil {
 		return nil, false
 	}
-	s, ok := i.(syscall.Stat_t)
+	s, ok := i.(*syscall.Stat_t)
 	if ok && s != nil {
 		return statUnix(*s), true
 	}
