@@ -245,15 +245,15 @@ func (node Node) createSymlinkAt(path string) error {
 }
 
 func (node *Node) createDevAt(path string) error {
-	return syscall.Mknod(path, syscall.S_IFBLK|0600, int(node.Device))
+	return mknod(path, syscall.S_IFBLK|0600, int(node.Device))
 }
 
 func (node *Node) createCharDevAt(path string) error {
-	return syscall.Mknod(path, syscall.S_IFCHR|0600, int(node.Device))
+	return mknod(path, syscall.S_IFCHR|0600, int(node.Device))
 }
 
 func (node *Node) createFifoAt(path string) error {
-	return syscall.Mkfifo(path, 0600)
+	return mkfifo(path, 0600)
 }
 
 func (node Node) MarshalJSON() ([]byte, error) {
@@ -381,9 +381,19 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 		return true
 	}
 
-	extendedStat := fi.Sys().(*syscall.Stat_t)
-	inode := extendedStat.Ino
-	size := uint64(extendedStat.Size)
+	size := uint64(fi.Size())
+
+	extendedStat, ok := toStatT(fi.Sys())
+	if !ok {
+		if node.ModTime != fi.ModTime() ||
+			node.Size != size {
+			debug.Log("node.isNewer", "node %v is newer: timestamp, size or inode changed", path)
+			return true
+		}
+		return false
+	}
+
+	inode := extendedStat.ino()
 
 	if node.ModTime != fi.ModTime() ||
 		node.ChangeTime != changeTime(extendedStat) ||
@@ -397,11 +407,11 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 	return false
 }
 
-func (node *Node) fillUser(stat *syscall.Stat_t) error {
-	node.UID = stat.Uid
-	node.GID = stat.Gid
+func (node *Node) fillUser(stat statT) error {
+	node.UID = stat.uid()
+	node.GID = stat.gid()
 
-	username, err := lookupUsername(strconv.Itoa(int(stat.Uid)))
+	username, err := lookupUsername(strconv.Itoa(int(stat.uid())))
 	if err != nil {
 		return errors.Annotate(err, "fillUser")
 	}
@@ -439,12 +449,12 @@ func lookupUsername(uid string) (string, error) {
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
-	stat, ok := fi.Sys().(*syscall.Stat_t)
+	stat, ok := toStatT(fi.Sys())
 	if !ok {
 		return nil
 	}
 
-	node.Inode = uint64(stat.Ino)
+	node.Inode = uint64(stat.ino())
 
 	node.fillTimes(stat)
 
@@ -456,15 +466,15 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 
 	switch node.Type {
 	case "file":
-		node.Size = uint64(stat.Size)
-		node.Links = uint64(stat.Nlink)
+		node.Size = uint64(stat.size())
+		node.Links = uint64(stat.nlink())
 	case "dir":
 	case "symlink":
 		node.LinkTarget, err = os.Readlink(path)
 	case "dev":
-		node.Device = uint64(stat.Rdev)
+		node.Device = uint64(stat.rdev())
 	case "chardev":
-		node.Device = uint64(stat.Rdev)
+		node.Device = uint64(stat.rdev())
 	case "fifo":
 	case "socket":
 	default:
@@ -472,4 +482,33 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	}
 
 	return err
+}
+
+type statT interface {
+	dev() uint64
+	ino() uint64
+	nlink() uint64
+	uid() uint32
+	gid() uint32
+	rdev() uint64
+	size() int64
+	atim() syscall.Timespec
+	mtim() syscall.Timespec
+	ctim() syscall.Timespec
+}
+
+func mkfifo(path string, mode uint32) (err error) {
+	return mknod(path, mode|syscall.S_IFIFO, 0)
+}
+
+func (node *Node) fillTimes(stat statT) {
+	ctim := stat.ctim()
+	atim := stat.atim()
+	node.ChangeTime = time.Unix(ctim.Unix())
+	node.AccessTime = time.Unix(atim.Unix())
+}
+
+func changeTime(stat statT) time.Time {
+	ctim := stat.ctim()
+	return time.Unix(ctim.Unix())
 }
