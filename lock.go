@@ -203,11 +203,11 @@ func (l *Lock) Stale() bool {
 	}
 
 	proc, err := os.FindProcess(l.PID)
-	defer proc.Release()
 	if err != nil {
 		debug.Log("Lock.Stale", "error searching for process %d: %v\n", l.PID, err)
 		return true
 	}
+	defer proc.Release()
 
 	debug.Log("Lock.Stale", "sending SIGHUP to process %d\n", l.PID)
 	err = proc.Signal(syscall.SIGHUP)
