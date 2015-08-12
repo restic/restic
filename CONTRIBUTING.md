@@ -109,6 +109,22 @@ in the project root directory before committing. Installing the script
 pre-commit hook checks formatting before committing automatically, just copy
 this script to `.git/hooks/pre-commit`.
 
+Git Commits
+-----------
+
+I would be good if you could follow the same general style regarding Git
+commits as the rest of the project, this makes reviewing code, browsing the
+history and triaging bugs much easier.
+
+Git commit messages have a very terse summary in the first line of the commit
+message, followed by an empty line, followed by a more verbose description or a
+List of changed things. For examples, please refer to the excellent [How to
+Write a Git Commit Message](http://chris.beams.io/posts/git-commit/).
+
+If you change/add multiple different things that aren't related at all, try to
+make several smaller commits. This is much easier to review. Using `git add -p`
+allows staging and committing only some changes.
+
 Code Review
 ===========
 
