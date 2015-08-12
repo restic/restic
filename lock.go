@@ -116,16 +116,12 @@ func (l *Lock) fillUserInfo() error {
 	}
 	l.Username = usr.Username
 
-	uid, err := strconv.ParseInt(usr.Uid, 10, 32)
-	if err != nil {
-		return err
-	}
+	// We ignore the error. On Windows Uid is not a number
+	uid, _ := strconv.ParseInt(usr.Uid, 10, 32)
 	l.UID = uint32(uid)
 
-	gid, err := strconv.ParseInt(usr.Gid, 10, 32)
-	if err != nil {
-		return err
-	}
+	// We ignore the error. On Windows Gid is not a number
+	gid, _ := strconv.ParseInt(usr.Gid, 10, 32)
 	l.GID = uint32(gid)
 
 	return nil
