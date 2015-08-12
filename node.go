@@ -149,7 +149,7 @@ func (node Node) restoreMetadata(path string) error {
 	var err error
 
 	err = os.Lchown(path, int(node.UID), int(node.GID))
-	if err != nil {
+	if err != nil && err != syscall.EWINDOWS {
 		return errors.Annotate(err, "Lchown")
 	}
 
