@@ -28,6 +28,8 @@ type SFTP struct {
 	cmd *exec.Cmd
 }
 
+var sysProcAttr syscall.SysProcAttr
+
 func startClient(program string, args ...string) (*SFTP, error) {
 	// Connect to a remote host and request the sftp subsystem via the 'ssh'
 	// command.  This assumes that passwordless login is correctly configured.
@@ -37,7 +39,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	cmd.Stderr = os.Stderr
 
 	// ignore signals sent to the parent (e.g. SIGINT)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	cmd.SysProcAttr = &sysProcAttr
 
 	// get stdin and stdout
 	wr, err := cmd.StdinPipe()
