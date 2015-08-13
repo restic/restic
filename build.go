@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -261,8 +262,14 @@ func main() {
 	args := []string{
 		"-tags", strings.Join(buildTags, " "),
 		"-ldflags", fmt.Sprintf(`-s -X main.version %q -X main.compiledAt %q`, version, compileTime),
-		"-o", "restic", "github.com/restic/restic/cmd/restic",
 	}
+	if runtime.GOOS != "windows" {
+		args = append(args, "-o", "restic", "github.com/restic/restic/cmd/restic")
+
+	} else {
+		args = append(args, "-o", "restic.exe", "github.com/restic/restic/cmd/restic")
+	}
+
 	err = build(gopath, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "build failed: %v\n", err)

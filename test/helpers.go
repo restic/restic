@@ -21,7 +21,7 @@ import (
 func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
 	if !condition {
 		_, file, line, _ := runtime.Caller(1)
-		fmt.Printf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
+		fmt.Printf("%s:%d: "+msg+"\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
 		tb.FailNow()
 	}
 }
@@ -30,7 +30,7 @@ func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
 func OK(tb testing.TB, err error) {
 	if err != nil {
 		_, file, line, _ := runtime.Caller(1)
-		fmt.Printf("\033[31m%s:%d: unexpected error: %s\033[39m\n\n", filepath.Base(file), line, err.Error())
+		fmt.Printf("%s:%d: unexpected error: %s\n\n", filepath.Base(file), line, err.Error())
 		tb.FailNow()
 	}
 }
@@ -42,7 +42,7 @@ func OKs(tb testing.TB, errs []error) {
 		if err != nil {
 			errFound = true
 			_, file, line, _ := runtime.Caller(1)
-			fmt.Printf("\033[31m%s:%d: unexpected error: %s\033[39m\n\n", filepath.Base(file), line, err.Error())
+			fmt.Printf("%s:%d: unexpected error: %s\n\n", filepath.Base(file), line, err.Error())
 		}
 	}
 	if errFound {
@@ -54,7 +54,7 @@ func OKs(tb testing.TB, errs []error) {
 func Equals(tb testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {
 		_, file, line, _ := runtime.Caller(1)
-		fmt.Printf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
+		fmt.Printf("%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\n\n", filepath.Base(file), line, exp, act)
 		tb.FailNow()
 	}
 }
