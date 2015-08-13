@@ -119,6 +119,9 @@ func TestNodeRestoreAt(t *testing.T) {
 		nodePath := filepath.Join(tempdir, test.Name)
 		OK(t, test.CreateAt(nodePath, nil))
 
+		if test.Type == "symlink" && runtime.GOOS == "windows" {
+			continue
+		}
 		if test.Type == "dir" {
 			OK(t, test.RestoreTimestamps(nodePath))
 		}
@@ -135,14 +138,16 @@ func TestNodeRestoreAt(t *testing.T) {
 			"%v: type doesn't match (%v != %v)", test.Type, test.Type, n2.Type)
 		Assert(t, test.Size == n2.Size,
 			"%v: size doesn't match (%v != %v)", test.Size, test.Size, n2.Size)
-		Assert(t, test.UID == n2.UID,
-			"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
-		Assert(t, test.GID == n2.GID,
-			"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
 
-		if test.Type != "symlink" {
-			Assert(t, test.Mode == n2.Mode,
-				"%v: mode doesn't match (%v != %v)", test.Type, test.Mode, n2.Mode)
+		if runtime.GOOS != "windows" {
+			Assert(t, test.UID == n2.UID,
+				"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
+			Assert(t, test.GID == n2.GID,
+				"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
+			if test.Type != "symlink" {
+				Assert(t, test.Mode == n2.Mode,
+					"%v: mode doesn't match (%v != %v)", test.Type, test.Mode, n2.Mode)
+			}
 		}
 
 		AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
