@@ -63,6 +63,7 @@ func (rb *RestBlob) Finalize(t backend.Type, name string) error {
 
 	<-rb.b.connChan
 	resp, err := http.Post(restPath(rb.b.url, t, name), "binary/octet-stream", rb.buf)
+	defer resp.Body.Close()
 	if resp.StatusCode == 409 {
 		err = errors.New("already exists")
 	}
@@ -144,6 +145,7 @@ func (b *Rest) Test(t backend.Type, name string) (bool, error) {
 	}
 
 	resp, errh := http.DefaultClient.Do(req)
+	defer resp.Body.Close()
 	if resp.StatusCode == 200 {
 		found = true
 	}
@@ -157,7 +159,8 @@ func (b *Rest) Remove(t backend.Type, name string) error {
 		return err
 	}
 
-	_, errd := http.DefaultClient.Do(req)
+	resp, errd := http.DefaultClient.Do(req)
+	defer resp.Body.Close()
 	return errd
 }
 
@@ -173,6 +176,7 @@ func (b *Rest) List(t backend.Type, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
 	resp, err := http.Get(restPath(b.url, t, ""))
+	defer resp.Body.Close()
 	if err != nil {
 		close(ch)
 		return ch
