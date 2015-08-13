@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/backend"
+	"runtime"
 )
 
 var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
@@ -146,6 +147,9 @@ func (lb *localBlob) Finalize(t backend.Type, name string) error {
 		return err
 	}
 
+	if runtime.GOOS == "windows" {
+		return nil
+	}
 	return os.Chmod(f, fi.Mode()&os.FileMode(^uint32(0222)))
 }
 
@@ -258,15 +262,16 @@ func (b *Local) Test(t backend.Type, name string) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(t backend.Type, name string) error {
 	// Close all open files we may have.
+	fn := filename(b.p, t, name)
 	b.mu.Lock()
-	open, _ := b.open[filename(b.p, t, name)]
+	open, _ := b.open[fn]
 	for _, file := range open {
 		file.Close()
 	}
-	b.open[filename(b.p, t, name)] = nil
+	b.open[fn] = nil
 	b.mu.Unlock()
 
-	return os.Remove(filename(b.p, t, name))
+	return os.Remove(fn)
 }
 
 // List returns a channel that yields all names of blobs of type t. A
