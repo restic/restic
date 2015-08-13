@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
 	"github.com/restic/restic/repository"
+	"runtime"
 )
 
 // Node is a file, directory or other item in a backup.
@@ -236,6 +237,10 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 }
 
 func (node Node) createSymlinkAt(path string) error {
+	// Windows does not allow non-admins to create soft links.
+	if runtime.GOOS == "windows" {
+		return nil
+	}
 	err := os.Symlink(node.LinkTarget, path)
 	if err != nil {
 		return errors.Annotate(err, "Symlink")
