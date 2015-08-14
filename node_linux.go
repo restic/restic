@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"syscall"
-	"time"
 	"unsafe"
 
 	"github.com/juju/errors"
@@ -16,15 +15,6 @@ func (node *Node) OpenForReading() (*os.File, error) {
 		return os.OpenFile(node.path, os.O_RDONLY, 0)
 	}
 	return file, err
-}
-
-func (node *Node) fillTimes(stat *syscall.Stat_t) {
-	node.ChangeTime = time.Unix(stat.Ctim.Unix())
-	node.AccessTime = time.Unix(stat.Atim.Unix())
-}
-
-func changeTime(stat *syscall.Stat_t) time.Time {
-	return time.Unix(stat.Ctim.Unix())
 }
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
@@ -65,3 +55,7 @@ func utimensat(dirfd int, path string, times *[2]syscall.Timespec, flags int) (e
 func utimesNanoAt(dirfd int, path string, ts [2]syscall.Timespec, flags int) (err error) {
 	return utimensat(dirfd, path, (*[2]syscall.Timespec)(unsafe.Pointer(&ts[0])), flags)
 }
+
+func (s statUnix) atim() syscall.Timespec { return s.Atim }
+func (s statUnix) mtim() syscall.Timespec { return s.Mtim }
+func (s statUnix) ctim() syscall.Timespec { return s.Ctim }
