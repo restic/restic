@@ -13,6 +13,7 @@ import (
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/repository"
+	"runtime"
 )
 
 // Lock represents a process locking the repository for an operation.
@@ -116,16 +117,12 @@ func (l *Lock) fillUserInfo() error {
 	}
 	l.Username = usr.Username
 
-	uid, err := strconv.ParseInt(usr.Uid, 10, 32)
-	if err != nil {
-		return err
-	}
+	// We ignore the error. On Windows Uid is not a number
+	uid, _ := strconv.ParseInt(usr.Uid, 10, 32)
 	l.UID = uint32(uid)
 
-	gid, err := strconv.ParseInt(usr.Gid, 10, 32)
-	if err != nil {
-		return err
-	}
+	// We ignore the error. On Windows Gid is not a number
+	gid, _ := strconv.ParseInt(usr.Gid, 10, 32)
 	l.GID = uint32(gid)
 
 	return nil
@@ -207,17 +204,20 @@ func (l *Lock) Stale() bool {
 	}
 
 	proc, err := os.FindProcess(l.PID)
-	defer proc.Release()
 	if err != nil {
 		debug.Log("Lock.Stale", "error searching for process %d: %v\n", l.PID, err)
 		return true
 	}
+	defer proc.Release()
 
-	debug.Log("Lock.Stale", "sending SIGHUP to process %d\n", l.PID)
-	err = proc.Signal(syscall.SIGHUP)
-	if err != nil {
-		debug.Log("Lock.Stale", "signal error: %v, lock is probably stale\n", err)
-		return true
+	// Windows does not have SIGHUP
+	if runtime.GOOS != "windows" {
+		debug.Log("Lock.Stale", "sending SIGHUP to process %d\n", l.PID)
+		err = proc.Signal(syscall.SIGHUP)
+		if err != nil {
+			debug.Log("Lock.Stale", "signal error: %v, lock is probably stale\n", err)
+			return true
+		}
 	}
 
 	debug.Log("Lock.Stale", "lock not stale\n")
