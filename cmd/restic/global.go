@@ -132,7 +132,14 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 // * s3://region/bucket -> amazon s3 bucket
 // * sftp://user@host/foo/bar -> remote sftp repository on host for user at path foo/bar
 // * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
+// * c:\temp -> local repository at c:\temp - the path must exist
 func open(u string) (backend.Backend, error) {
+	// check if the url is a directory that exists
+	fi, err := os.Stat(u)
+	if err == nil && fi.IsDir() {
+		return local.Open(u)
+	}
+
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -140,7 +147,13 @@ func open(u string) (backend.Backend, error) {
 
 	if url.Scheme == "" {
 		return local.Open(url.Path)
-	} else if url.Scheme == "s3" {
+	}
+
+	if len(url.Path) < 1 {
+		return nil, fmt.Errorf("unable to parse url %v", url)
+	}
+
+	if url.Scheme == "s3" {
 		return s3.Open(url.Host, url.Path[1:])
 	}
 
@@ -156,6 +169,12 @@ func open(u string) (backend.Backend, error) {
 
 // Create the backend specified by URI.
 func create(u string) (backend.Backend, error) {
+	// check if the url is a directory that exists
+	fi, err := os.Stat(u)
+	if err == nil && fi.IsDir() {
+		return local.Create(u)
+	}
+
 	url, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -163,7 +182,13 @@ func create(u string) (backend.Backend, error) {
 
 	if url.Scheme == "" {
 		return local.Create(url.Path)
-	} else if url.Scheme == "s3" {
+	}
+
+	if len(url.Path) < 1 {
+		return nil, fmt.Errorf("unable to parse url %v", url)
+	}
+
+	if url.Scheme == "s3" {
 		return s3.Open(url.Host, url.Path[1:])
 	}
 
