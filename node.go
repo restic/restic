@@ -392,7 +392,7 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 	if !ok {
 		if node.ModTime != fi.ModTime() ||
 			node.Size != size {
-			debug.Log("node.isNewer", "node %v is newer: timestamp, size or inode changed", path)
+			debug.Log("node.isNewer", "node %v is newer: timestamp or size changed", path)
 			return true
 		}
 		return false
