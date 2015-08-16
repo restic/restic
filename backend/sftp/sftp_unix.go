@@ -6,7 +6,8 @@ import (
 	"syscall"
 )
 
-func init() {
-	// ignore signals sent to the parent (e.g. SIGINT)
-	sysProcAttr = syscall.SysProcAttr{Setsid: true}
+// ignoreSigIntProcAttr returns a syscall.SysProcAttr that
+// disables SIGINT on parent.
+func ignoreSigIntProcAttr() *syscall.SysProcAttr {
+	return &syscall.SysProcAttr{Setsid: true}
 }

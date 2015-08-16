@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
-	"syscall"
 
 	"github.com/juju/errors"
 	"github.com/pkg/sftp"
@@ -28,8 +27,6 @@ type SFTP struct {
 	cmd *exec.Cmd
 }
 
-var sysProcAttr syscall.SysProcAttr
-
 func startClient(program string, args ...string) (*SFTP, error) {
 	// Connect to a remote host and request the sftp subsystem via the 'ssh'
 	// command.  This assumes that passwordless login is correctly configured.
@@ -39,7 +36,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	cmd.Stderr = os.Stderr
 
 	// ignore signals sent to the parent (e.g. SIGINT)
-	cmd.SysProcAttr = &sysProcAttr
+	cmd.SysProcAttr = ignoreSigIntProcAttr()
 
 	// get stdin and stdout
 	wr, err := cmd.StdinPipe()
