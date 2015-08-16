@@ -206,6 +206,19 @@ func (l *Lock) Stale() bool {
 		return true
 	}
 
+	hn, err := os.Hostname()
+	if err != nil {
+		debug.Log("Lock.Stale", "unable to find current hostnanme: %v", err)
+		// since we cannot find the current hostname, assume that the lock is
+		// not stale.
+		return false
+	}
+
+	if hn != l.Hostname {
+		// lock was created on a different host, assume the lock is not stale.
+		return false
+	}
+
 	proc, err := os.FindProcess(l.PID)
 	defer proc.Release()
 	if err != nil {
