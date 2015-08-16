@@ -85,6 +85,7 @@ end
 Vagrant.configure(2) do |config|
   # use rsync to copy content to the folder
   config.vm.synced_folder ".", "/vagrant/go/src/github.com/restic/restic", :type => "rsync"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
 
   # fix permissions on synced folder
   config.vm.provision "fix perms", :type => :shell, :inline => fix_perms
