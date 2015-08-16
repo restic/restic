@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"errors"
 	"os"
 	"syscall"
 )
@@ -13,7 +14,7 @@ func (node *Node) OpenForReading() (*os.File, error) {
 // special file, or named pipe) named pathname, with attributes
 // specified by mode and dev.
 var mknod = func(path string, mode uint32, dev int) (err error) {
-	panic("mknod not implemented")
+	return errors.New("device nodes cannot be created on windows")
 }
 
 // Windows doesn't need lchown
