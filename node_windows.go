@@ -6,11 +6,7 @@ import (
 )
 
 func (node *Node) OpenForReading() (*os.File, error) {
-	file, err := os.OpenFile(node.path, os.O_RDONLY, 0)
-	if os.IsPermission(err) {
-		return os.OpenFile(node.path, os.O_RDONLY, 0)
-	}
-	return file, err
+	return os.OpenFile(node.path, os.O_RDONLY, 0)
 }
 
 // mknod() creates a filesystem node (file, device
