@@ -1,3 +1,5 @@
+// +build !openbsd
+
 package fuse
 
 import (
