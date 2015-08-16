@@ -259,15 +259,15 @@ func main() {
 
 	version := getVersion()
 	compileTime := time.Now().Format(timeFormat)
+	output := "restic"
+	if runtime.GOOS == "windows" {
+		output = "restic.exe"
+	}
+
 	args := []string{
 		"-tags", strings.Join(buildTags, " "),
 		"-ldflags", fmt.Sprintf(`-s -X main.version %q -X main.compiledAt %q`, version, compileTime),
-	}
-	if runtime.GOOS != "windows" {
-		args = append(args, "-o", "restic", "github.com/restic/restic/cmd/restic")
-
-	} else {
-		args = append(args, "-o", "restic.exe", "github.com/restic/restic/cmd/restic")
+		"-o", output, "github.com/restic/restic/cmd/restic",
 	}
 
 	err = build(gopath, args...)
