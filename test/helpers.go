@@ -88,19 +88,18 @@ func RandomReader(seed, size int) *bytes.Reader {
 
 // SetupTarTestFixture extracts the tarFile to outputDir.
 func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
-	err := System("sh", "-c", `(cd "$1" && tar xzf - ) < "$2"`,
-		"sh", outputDir, tarFile)
+	f, err := os.Open(tarFile)
+	defer f.Close()
 	OK(t, err)
-}
 
-// System runs the command and returns the exit code. Output is passed on to
-// stdout/stderr.
-func System(command string, args ...string) error {
-	cmd := exec.Command(command, args...)
+	cmd := exec.Command("tar", "xzf", "-")
+	cmd.Dir = outputDir
+
+	cmd.Stdin = f
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	OK(t, cmd.Run())
 }
 
 // WithTestEnvironment creates a test environment, extracts the repository
