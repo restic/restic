@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"sync"
 
@@ -147,16 +146,7 @@ func (lb *localBlob) Finalize(t backend.Type, name string) error {
 		return err
 	}
 
-	// set file to readonly, except on Windows,
-	// otherwise deletion will fail.
-	if runtime.GOOS != "windows" {
-		err = os.Chmod(f, fi.Mode()&os.FileMode(^uint32(0222)))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return setNewFileMode(f, fi)
 }
 
 // Create creates a new Blob. The data is available only after Finalize()
