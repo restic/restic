@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/restic/restic/backend"
@@ -76,15 +75,9 @@ func (sn *Snapshot) fillUserInfo() error {
 	}
 	sn.Username = usr.Username
 
-	// We ignore the error. On Windows Uid is not a number
-	uid, _ := strconv.ParseInt(usr.Uid, 10, 32)
-	sn.UID = uint32(uid)
-
-	// We ignore the error. On Windows Gid is not a number
-	gid, _ := strconv.ParseInt(usr.Gid, 10, 32)
-	sn.GID = uint32(gid)
-
-	return nil
+	// set userid and groupid
+	sn.UID, sn.GID, err = uidGidInt(*usr)
+	return err
 }
 
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches

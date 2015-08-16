@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"os/user"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -117,15 +116,8 @@ func (l *Lock) fillUserInfo() error {
 	}
 	l.Username = usr.Username
 
-	// We ignore the error. On Windows Uid is not a number
-	uid, _ := strconv.ParseInt(usr.Uid, 10, 32)
-	l.UID = uint32(uid)
-
-	// We ignore the error. On Windows Gid is not a number
-	gid, _ := strconv.ParseInt(usr.Gid, 10, 32)
-	l.GID = uint32(gid)
-
-	return nil
+	l.UID, l.GID, err = uidGidInt(*usr)
+	return err
 }
 
 // checkForOtherLocks looks for other locks that currently exist in the repository.
