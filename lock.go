@@ -12,7 +12,6 @@ import (
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/repository"
-	"runtime"
 )
 
 // Lock represents a process locking the repository for an operation.
@@ -195,21 +194,11 @@ func (l *Lock) Stale() bool {
 		return true
 	}
 
-	proc, err := os.FindProcess(l.PID)
-	if err != nil {
-		debug.Log("Lock.Stale", "error searching for process %d: %v\n", l.PID, err)
+	// check if we can reach the process retaining the lock
+	exists := l.processExists()
+	if !exists {
+		debug.Log("Lock.Stale", "could not reach process, %d, lock is probably stale\n", l.PID)
 		return true
-	}
-	defer proc.Release()
-
-	// Windows does not have SIGHUP
-	if runtime.GOOS != "windows" {
-		debug.Log("Lock.Stale", "sending SIGHUP to process %d\n", l.PID)
-		err = proc.Signal(syscall.SIGHUP)
-		if err != nil {
-			debug.Log("Lock.Stale", "signal error: %v, lock is probably stale\n", err)
-			return true
-		}
 	}
 
 	debug.Log("Lock.Stale", "lock not stale\n")
