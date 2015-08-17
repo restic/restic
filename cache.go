@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/restic/restic/backend"
@@ -212,8 +213,38 @@ func getCacheDir() (string, error) {
 	if dir := os.Getenv("RESTIC_CACHE"); dir != "" {
 		return dir, nil
 	}
+	if runtime.GOOS == "windows" {
+		return getWindowsCacheDir()
+	}
 
 	return getXDGCacheDir()
+}
+
+// getWindowsCacheDir will return %APPDATA%\restic or create
+// a folder in the temporary folder called "restic".
+func getWindowsCacheDir() (string, error) {
+	cachedir := os.Getenv("APPDATA")
+	if cachedir == "" {
+		cachedir = os.TempDir()
+	}
+	cachedir = filepath.Join(cachedir, "restic")
+	fi, err := os.Stat(cachedir)
+
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(cachedir, 0700)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	if !fi.IsDir() {
+		return "", fmt.Errorf("cache dir %v is not a directory", cachedir)
+	}
+	return cachedir, nil
 }
 
 // getXDGCacheDir returns the cache directory according to XDG basedir spec, see
