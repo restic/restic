@@ -194,10 +194,30 @@ func (l *Lock) Stale() bool {
 		return true
 	}
 
-	// check if we can reach the process retaining the lock
-	exists := l.processExists()
-	if !exists {
-		debug.Log("Lock.Stale", "could not reach process, %d, lock is probably stale\n", l.PID)
+	hn, err := os.Hostname()
+	if err != nil {
+		debug.Log("Lock.Stale", "unable to find current hostnanme: %v", err)
+		// since we cannot find the current hostname, assume that the lock is
+		// not stale.
+		return false
+	}
+
+	if hn != l.Hostname {
+		// lock was created on a different host, assume the lock is not stale.
+		return false
+	}
+
+	proc, err := os.FindProcess(l.PID)
+	defer proc.Release()
+	if err != nil {
+		debug.Log("Lock.Stale", "error searching for process %d: %v\n", l.PID, err)
+		return true
+	}
+
+	debug.Log("Lock.Stale", "sending SIGHUP to process %d\n", l.PID)
+	err = proc.Signal(syscall.SIGHUP)
+	if err != nil {
+		debug.Log("Lock.Stale", "signal error: %v, lock is probably stale\n", err)
 		return true
 	}
 

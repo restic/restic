@@ -93,7 +93,12 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 }
 
 func createFakeLock(repo *repository.Repository, t time.Time, pid int) (backend.ID, error) {
-	newLock := &restic.Lock{Time: t, PID: pid}
+	hostname, err := os.Hostname()
+	if err != nil {
+		return backend.ID{}, err
+	}
+
+	newLock := &restic.Lock{Time: t, PID: pid, Hostname: hostname}
 	return repo.SaveJSONUnpacked(backend.Lock, &newLock)
 }
 
@@ -102,42 +107,58 @@ func removeLock(repo *repository.Repository, id backend.ID) error {
 }
 
 var staleLockTests = []struct {
-	timestamp time.Time
-	stale     bool
-	pid       int
+	timestamp        time.Time
+	stale            bool
+	staleOnOtherHost bool
+	pid              int
 }{
 	{
-		timestamp: time.Now(),
-		stale:     false,
-		pid:       os.Getpid(),
+		timestamp:        time.Now(),
+		stale:            false,
+		staleOnOtherHost: false,
+		pid:              os.Getpid(),
 	},
 	{
-		timestamp: time.Now().Add(-time.Hour),
-		stale:     true,
-		pid:       os.Getpid(),
+		timestamp:        time.Now().Add(-time.Hour),
+		stale:            true,
+		staleOnOtherHost: true,
+		pid:              os.Getpid(),
 	},
 	{
-		timestamp: time.Now().Add(3 * time.Minute),
-		stale:     false,
-		pid:       os.Getpid(),
+		timestamp:        time.Now().Add(3 * time.Minute),
+		stale:            false,
+		staleOnOtherHost: false,
+		pid:              os.Getpid(),
 	},
 	{
-		timestamp: time.Now(),
-		stale:     true,
-		pid:       os.Getpid() + 500000,
+		timestamp:        time.Now(),
+		stale:            true,
+		staleOnOtherHost: false,
+		pid:              os.Getpid() + 500,
 	},
 }
 
 func TestLockStale(t *testing.T) {
+	hostname, err := os.Hostname()
+	OK(t, err)
+
+	otherHostname := "other-" + hostname
+
 	for i, test := range staleLockTests {
 		lock := restic.Lock{
-			Time: test.timestamp,
-			PID:  test.pid,
+			Time:     test.timestamp,
+			PID:      test.pid,
+			Hostname: hostname,
 		}
 
 		Assert(t, lock.Stale() == test.stale,
 			"TestStaleLock: test %d failed: expected stale: %v, got %v",
 			i, test.stale, !test.stale)
+
+		lock.Hostname = otherHostname
+		Assert(t, lock.Stale() == test.staleOnOtherHost,
+			"TestStaleLock: test %d failed: expected staleOnOtherHost: %v, got %v",
+			i, test.staleOnOtherHost, !test.staleOnOtherHost)
 	}
 }
 
