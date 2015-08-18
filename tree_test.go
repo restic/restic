@@ -50,7 +50,7 @@ func TestTree(t *testing.T) {
 	dir := createTempDir(t)
 	defer func() {
 		if TestCleanup {
-			OK(t, os.RemoveAll(dir))
+			RemoveAll(t, dir)
 		}
 	}()
 }
