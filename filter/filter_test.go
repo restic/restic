@@ -5,6 +5,8 @@ import (
 	"compress/bzip2"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/restic/restic/filter"
@@ -71,20 +73,40 @@ var matchTests = []struct {
 	{"foo/**/bar", "/home/user/foo/x/y/bar/main.go", true},
 	{"user/**/important*", "/home/user/work/x/y/hidden/x", false},
 	{"user/**/hidden*/**/c", "/home/user/work/x/y/hidden/z/a/b/c", true},
+	{"c:/foo/*test.*", "c:/foo/bar/test.go", false},
+	{"c:/foo/*/test.*", "c:/foo/bar/test.go", true},
+	{"c:/foo/*/bar/test.*", "c:/foo/bar/test.go", false},
+}
+
+func testpattern(t *testing.T, pattern, path string, shouldMatch bool) {
+	match, err := filter.Match(pattern, path)
+	if err != nil {
+		t.Errorf("test pattern %q failed: expected no error for path %q, but error returned: %v",
+			pattern, path, err)
+	}
+
+	if match != shouldMatch {
+		t.Errorf("test: filter.Match(%q, %q): expected %v, got %v",
+			pattern, path, shouldMatch, match)
+	}
 }
 
 func TestMatch(t *testing.T) {
-	for i, test := range matchTests {
-		match, err := filter.Match(test.pattern, test.path)
-		if err != nil {
-			t.Errorf("test %d failed: expected no error for pattern %q, but error returned: %v",
-				i, test.pattern, err)
-			continue
-		}
+	for _, test := range matchTests {
+		testpattern(t, test.pattern, test.path, test.match)
 
-		if match != test.match {
-			t.Errorf("test %d: filter.Match(%q, %q): expected %v, got %v",
-				i, test.pattern, test.path, test.match, match)
+		// Test with native path separator
+		if filepath.Separator != '/' {
+			// Test with pattern as native
+			pattern := strings.Replace(test.pattern, "/", string(filepath.Separator), -1)
+			testpattern(t, pattern, test.path, test.match)
+
+			// Test with path as native
+			path := strings.Replace(test.path, "/", string(filepath.Separator), -1)
+			testpattern(t, test.pattern, path, test.match)
+
+			// Test with both pattern and path as native
+			testpattern(t, pattern, path, test.match)
 		}
 	}
 }

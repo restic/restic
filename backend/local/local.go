@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 
 	"github.com/restic/restic/backend"
 )
@@ -15,7 +16,9 @@ import (
 var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
 
 type Local struct {
-	p string
+	p    string
+	mu   sync.Mutex
+	open map[string][]*os.File // Contains open files. Guarded by 'mu'.
 }
 
 // Open opens the local backend at dir.
@@ -37,7 +40,7 @@ func Open(dir string) (*Local, error) {
 		}
 	}
 
-	return &Local{p: dir}, nil
+	return &Local{p: dir, open: make(map[string][]*os.File)}, nil
 }
 
 // Create creates all the necessary files and directories for a new local
@@ -143,7 +146,7 @@ func (lb *localBlob) Finalize(t backend.Type, name string) error {
 		return err
 	}
 
-	return os.Chmod(f, fi.Mode()&os.FileMode(^uint32(0222)))
+	return setNewFileMode(f, fi)
 }
 
 // Create creates a new Blob. The data is available only after Finalize()
@@ -161,6 +164,11 @@ func (b *Local) Create() (backend.Blob, error) {
 		f:       file,
 		basedir: b.p,
 	}
+
+	b.mu.Lock()
+	open, _ := b.open["blobs"]
+	b.open["blobs"] = append(open, file)
+	b.mu.Unlock()
 
 	return &blob, nil
 }
@@ -198,7 +206,15 @@ func dirname(base string, t backend.Type, name string) string {
 // Get returns a reader that yields the content stored under the given
 // name. The reader should be closed after draining it.
 func (b *Local) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	return os.Open(filename(b.p, t, name))
+	file, err := os.Open(filename(b.p, t, name))
+	if err != nil {
+		return nil, err
+	}
+	b.mu.Lock()
+	open, _ := b.open[filename(b.p, t, name)]
+	b.open[filename(b.p, t, name)] = append(open, file)
+	b.mu.Unlock()
+	return file, nil
 }
 
 // GetReader returns an io.ReadCloser for the Blob with the given name of
@@ -208,6 +224,11 @@ func (b *Local) GetReader(t backend.Type, name string, offset, length uint) (io.
 	if err != nil {
 		return nil, err
 	}
+
+	b.mu.Lock()
+	open, _ := b.open[filename(b.p, t, name)]
+	b.open[filename(b.p, t, name)] = append(open, f)
+	b.mu.Unlock()
 
 	_, err = f.Seek(int64(offset), 0)
 	if err != nil {
@@ -236,7 +257,17 @@ func (b *Local) Test(t backend.Type, name string) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(t backend.Type, name string) error {
-	return os.Remove(filename(b.p, t, name))
+	// close all open files we may have.
+	fn := filename(b.p, t, name)
+	b.mu.Lock()
+	open, _ := b.open[fn]
+	for _, file := range open {
+		file.Close()
+	}
+	b.open[fn] = nil
+	b.mu.Unlock()
+
+	return os.Remove(fn)
 }
 
 // List returns a channel that yields all names of blobs of type t. A
@@ -283,7 +314,22 @@ func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 }
 
 // Delete removes the repository and all files.
-func (b *Local) Delete() error { return os.RemoveAll(b.p) }
+func (b *Local) Delete() error {
+	b.Close()
+	return os.RemoveAll(b.p)
+}
 
-// Close does nothing
-func (b *Local) Close() error { return nil }
+// Close closes all open files.
+// They may have been closed already,
+// so we ignore all errors.
+func (b *Local) Close() error {
+	b.mu.Lock()
+	for _, open := range b.open {
+		for _, file := range open {
+			file.Close()
+		}
+	}
+	b.open = make(map[string][]*os.File)
+	b.mu.Unlock()
+	return nil
+}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -96,16 +95,13 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 	}
 
 	// Did it fail because of ENOENT?
-	if pe, ok := errors.Cause(err).(*os.PathError); ok {
-		errn, ok := pe.Err.(syscall.Errno)
-		if ok && errn == syscall.ENOENT {
-			debug.Log("Restorer.restoreNodeTo", "create intermediate paths")
+	if err != nil && os.IsNotExist(errors.Cause(err)) {
+		debug.Log("Restorer.restoreNodeTo", "create intermediate paths")
 
-			// Create parent directories and retry
-			err = os.MkdirAll(filepath.Dir(dstPath), 0700)
-			if err == nil || err == os.ErrExist {
-				err = node.CreateAt(dstPath, res.repo)
-			}
+		// Create parent directories and retry
+		err = os.MkdirAll(filepath.Dir(dstPath), 0700)
+		if err == nil || err == os.ErrExist {
+			err = node.CreateAt(dstPath, res.repo)
 		}
 	}
 

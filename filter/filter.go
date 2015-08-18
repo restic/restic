@@ -25,8 +25,14 @@ func Match(pattern, str string) (matched bool, err error) {
 		return false, ErrBadString
 	}
 
-	patterns := strings.Split(pattern, string(filepath.Separator))
-	strs := strings.Split(str, string(filepath.Separator))
+	// convert file path separator to '/'
+	if filepath.Separator != '/' {
+		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
+		str = strings.Replace(str, string(filepath.Separator), "/", -1)
+	}
+
+	patterns := strings.Split(pattern, "/")
+	strs := strings.Split(str, "/")
 
 	return match(patterns, strs)
 }
