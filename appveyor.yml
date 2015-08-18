@@ -1,14 +1,14 @@
 clone_folder: c:\gopath\src\github.com\restic\restic
 
 environment:
-  GOPATH: c:\gopath
+  GOPATH: c:\gopath;c:\gopath\src\github.com\restic\restic\Godeps\_workspace
 
 install:
   - echo %PATH%
   - echo %GOPATH%
   - go version
   - go env
-  - go get -v -t ./...
 
 build_script:
+  - go run build.go
   - go test -v
