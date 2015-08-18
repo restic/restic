@@ -235,6 +235,8 @@ func getWindowsCacheDir() (string, error) {
 		if err != nil {
 			return "", err
 		}
+
+		return cachedir, nil
 	}
 
 	if err != nil {
