@@ -31,6 +31,10 @@ func testBackend(b backend.Backend, t *testing.T) {
 			_, err = b.Get(tpe, id.String())
 			Assert(t, err != nil, "blob data could be extracted before creation")
 
+			// try to read not existing blob
+			_, err = b.GetReader(tpe, id.String(), 0, 1)
+			Assert(t, err != nil, "blob reader could be obtained before creation")
+
 			// try to get string out, should fail
 			ret, err = b.Test(tpe, id.String())
 			OK(t, err)
@@ -51,6 +55,22 @@ func testBackend(b backend.Backend, t *testing.T) {
 			rd, err := b.Get(tpe, test.id)
 			OK(t, err)
 			Assert(t, rd != nil, "Get() returned nil")
+
+			// try to read it out again
+			reader, err := b.GetReader(tpe, test.id, 0, uint(len(test.data)))
+			OK(t, err)
+			Assert(t, reader != nil, "GetReader() returned nil")
+			bytes := make([]byte, len(test.data))
+			reader.Read(bytes)
+			Assert(t, test.data == string(bytes), "Read() returned different content")
+
+			// try to read it out with an offset and a length
+			readerOffLen, err := b.GetReader(tpe, test.id, 1, uint(len(test.data)-2))
+			OK(t, err)
+			Assert(t, readerOffLen != nil, "GetReader() returned nil")
+			bytesOffLen := make([]byte, len(test.data)-2)
+			readerOffLen.Read(bytesOffLen)
+			Assert(t, test.data[1:len(test.data)-1] == string(bytesOffLen), "Read() with offset and length returned different content")
 
 			buf, err := ioutil.ReadAll(rd)
 			OK(t, err)
