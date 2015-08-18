@@ -57,9 +57,20 @@ func testBackend(b backend.Backend, t *testing.T) {
 			Assert(t, rd != nil, "Get() returned nil")
 
 			// try to read it out again
-			r, err := b.GetReader(tpe, test.id, 0, uint(len(test.data)))
+			reader, err := b.GetReader(tpe, test.id, 0, uint(len(test.data)))
 			OK(t, err)
-			Assert(t, r != nil, "GetReader() returned nil")
+			Assert(t, reader != nil, "GetReader() returned nil")
+			bytes := make([]byte, len(test.data))
+			reader.Read(bytes)
+			Assert(t, test.data == string(bytes), "Read() returned different content")
+
+			// try to read it out with an offset and a length
+			readerOffLen, err := b.GetReader(tpe, test.id, 1, uint(len(test.data)-2))
+			OK(t, err)
+			Assert(t, readerOffLen != nil, "GetReader() returned nil")
+			bytesOffLen := make([]byte, len(test.data)-2)
+			readerOffLen.Read(bytesOffLen)
+			Assert(t, test.data[1:len(test.data)-1] == string(bytesOffLen), "Read() with offset and length returned different content")
 
 			buf, err := ioutil.ReadAll(rd)
 			OK(t, err)
