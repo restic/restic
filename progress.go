@@ -6,19 +6,22 @@ import (
 	"time"
 )
 
+const minTickerTime = time.Second / 60
+
 type Progress struct {
 	OnStart  func()
 	OnUpdate ProgressFunc
 	OnDone   ProgressFunc
 	fnM      sync.Mutex
 
-	cur    Stat
-	curM   sync.Mutex
-	start  time.Time
-	c      *time.Ticker
-	cancel chan struct{}
-	o      sync.Once
-	d      time.Duration
+	cur        Stat
+	curM       sync.Mutex
+	start      time.Time
+	c          *time.Ticker
+	cancel     chan struct{}
+	o          sync.Once
+	d          time.Duration
+	lastUpdate time.Time
 
 	running bool
 }
@@ -92,9 +95,17 @@ func (p *Progress) Report(s Stat) {
 	p.curM.Lock()
 	p.cur.Add(s)
 	cur := p.cur
+	needUpdate := false
+	if time.Since(p.lastUpdate) > minTickerTime {
+		p.lastUpdate = time.Now()
+		needUpdate = true
+	}
 	p.curM.Unlock()
 
-	p.updateProgress(cur, false)
+	if needUpdate {
+		p.updateProgress(cur, false)
+	}
+
 }
 
 func (p *Progress) updateProgress(cur Stat, ticker bool) {
