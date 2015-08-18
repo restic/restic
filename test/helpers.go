@@ -59,6 +59,7 @@ func Equals(tb testing.TB, exp, act interface{}) {
 	}
 }
 
+// ParseID parses s as a backend.ID and panics if that fails.
 func ParseID(s string) backend.ID {
 	id, err := backend.ParseID(s)
 	if err != nil {
@@ -88,19 +89,18 @@ func RandomReader(seed, size int) *bytes.Reader {
 
 // SetupTarTestFixture extracts the tarFile to outputDir.
 func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
-	err := System("sh", "-c", `(cd "$1" && tar xzf - ) < "$2"`,
-		"sh", outputDir, tarFile)
+	f, err := os.Open(tarFile)
+	defer f.Close()
 	OK(t, err)
-}
 
-// System runs the command and returns the exit code. Output is passed on to
-// stdout/stderr.
-func System(command string, args ...string) error {
-	cmd := exec.Command(command, args...)
+	cmd := exec.Command("tar", "xzf", "-")
+	cmd.Dir = outputDir
+
+	cmd.Stdin = f
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	return cmd.Run()
+	OK(t, cmd.Run())
 }
 
 // WithTestEnvironment creates a test environment, extracts the repository
@@ -124,7 +124,7 @@ func WithTestEnvironment(t testing.TB, repoFixture string, f func(repodir string
 		return
 	}
 
-	OK(t, os.RemoveAll(tempdir))
+	RemoveAll(t, tempdir)
 }
 
 // OpenLocalRepo opens the local repository located at dir.
@@ -137,4 +137,32 @@ func OpenLocalRepo(t testing.TB, dir string) *repository.Repository {
 	OK(t, err)
 
 	return repo
+}
+
+func isFile(fi os.FileInfo) bool {
+	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
+}
+
+// ResetReadOnly recursively resets the read-only flag recursively for dir.
+// This is mainly used for tests on Windows, which is unable to delete a file
+// set read-only.
+func ResetReadOnly(t testing.TB, dir string) {
+	OK(t, filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
+		if fi.IsDir() {
+			return os.Chmod(path, 0777)
+		}
+
+		if isFile(fi) {
+			return os.Chmod(path, 0666)
+		}
+
+		return nil
+	}))
+}
+
+// RemoveAll recursively resets the read-only flag of all files and dirs and
+// afterwards uses os.RemoveAll() to remove the path.
+func RemoveAll(t testing.TB, path string) {
+	ResetReadOnly(t, path)
+	OK(t, os.RemoveAll(path))
 }

@@ -57,7 +57,7 @@ func cmdMount(t testing.TB, global GlobalOptions, dir string, ready, done chan s
 	cmd := &CmdMount{global: &global, ready: ready, done: done}
 	OK(t, cmd.Execute([]string{dir}))
 	if TestCleanup {
-		OK(t, os.RemoveAll(dir))
+		RemoveAll(t, dir)
 	}
 }
 
@@ -102,7 +102,7 @@ func TestMount(t *testing.T) {
 		OK(t, err)
 
 		// We remove the mountpoint now to check that cmdMount creates it
-		OK(t, os.RemoveAll(mountpoint))
+		RemoveAll(t, mountpoint)
 
 		ready := make(chan struct{}, 1)
 		done := make(chan struct{})

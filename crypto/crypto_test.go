@@ -2,9 +2,9 @@ package crypto_test
 
 import (
 	"bytes"
+	"crypto/rand"
 	"io"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/restic/chunker"
@@ -50,10 +50,7 @@ func TestSmallBuffer(t *testing.T) {
 
 	size := 600
 	data := make([]byte, size)
-	f, err := os.Open("/dev/urandom")
-	OK(t, err)
-
-	_, err = io.ReadFull(f, data)
+	_, err := io.ReadFull(rand.Reader, data)
 	OK(t, err)
 
 	ciphertext := make([]byte, size/2)
@@ -75,10 +72,7 @@ func TestSameBuffer(t *testing.T) {
 
 	size := 600
 	data := make([]byte, size)
-	f, err := os.Open("/dev/urandom")
-	OK(t, err)
-
-	_, err = io.ReadFull(f, data)
+	_, err := io.ReadFull(rand.Reader, data)
 	OK(t, err)
 
 	ciphertext := make([]byte, 0, size+crypto.Extension)
@@ -124,10 +118,7 @@ func TestLargeEncrypt(t *testing.T) {
 
 	for _, size := range []int{chunker.MaxSize, chunker.MaxSize + 1, chunker.MaxSize + 1<<20} {
 		data := make([]byte, size)
-		f, err := os.Open("/dev/urandom")
-		OK(t, err)
-
-		_, err = io.ReadFull(f, data)
+		_, err := io.ReadFull(rand.Reader, data)
 		OK(t, err)
 
 		ciphertext, err := crypto.Encrypt(k, make([]byte, size+crypto.Extension), data)

@@ -183,7 +183,7 @@ func cleanupTempdir(t testing.TB, tempdir string) {
 		return
 	}
 
-	OK(t, os.RemoveAll(tempdir))
+	RemoveAll(t, tempdir)
 }
 
 // withTestEnvironment creates a test environment and calls f with it. After f has
@@ -214,5 +214,5 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 		return
 	}
 
-	OK(t, os.RemoveAll(tempdir))
+	RemoveAll(t, tempdir)
 }
