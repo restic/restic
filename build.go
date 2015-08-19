@@ -190,7 +190,8 @@ func gitVersion() string {
 		"--long", "--tags", "--dirty", "--always")
 	out, err := cmd.Output()
 	if err != nil {
-		die("git describe returned error: %v\n", err)
+		verbosePrintf("git describe returned error: %v\n", err)
+		return ""
 	}
 
 	version := strings.TrimSpace(string(out))
@@ -257,16 +258,19 @@ func main() {
 		die("copying files from %v to %v failed: %v\n", root, gopath, err)
 	}
 
-	version := getVersion()
-	compileTime := time.Now().Format(timeFormat)
 	output := "restic"
 	if runtime.GOOS == "windows" {
 		output = "restic.exe"
 	}
-
+	version := getVersion()
+	compileTime := time.Now().Format(timeFormat)
+	ldflags := fmt.Sprintf("-s -X main.compiledAt %q", compileTime)
+	if version != "" {
+		ldflags = fmt.Sprintf("%s -X main.version %q", ldflags, version)
+	}
 	args := []string{
 		"-tags", strings.Join(buildTags, " "),
-		"-ldflags", fmt.Sprintf(`-s -X main.version %q -X main.compiledAt %q`, version, compileTime),
+		"-ldflags", ldflags,
 		"-o", output, "github.com/restic/restic/cmd/restic",
 	}
 
