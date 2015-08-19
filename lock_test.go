@@ -134,7 +134,7 @@ var staleLockTests = []struct {
 		timestamp:        time.Now(),
 		stale:            true,
 		staleOnOtherHost: false,
-		pid:              os.Getpid() + 500,
+		pid:              os.Getpid() + 500000,
 	},
 }
 
@@ -204,7 +204,7 @@ func TestRemoveAllLocks(t *testing.T) {
 	id2, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
 	OK(t, err)
 
-	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500)
+	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
 	OK(t, err)
 
 	OK(t, restic.RemoveAllLocks(repo))
