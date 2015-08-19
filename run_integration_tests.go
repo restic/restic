@@ -41,6 +41,9 @@ func (env *TravisEnvironment) Prepare() {
 		}
 
 		env.goxOS = []string{"linux", "darwin", "freebsd", "openbsd", "windows"}
+	} else {
+		env.goxArch = []string{runtime.GOARCH}
+		env.goxOS = []string{runtime.GOOS}
 	}
 
 	msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
