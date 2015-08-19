@@ -25,22 +25,9 @@ install:
   - export PATH="$PATH:$GOBIN"
   - export GOPATH="$GOPATH:${TRAVIS_BUILD_DIR}/Godeps/_workspace"
   - go env
-  - go get github.com/mattn/goveralls
-  - go get github.com/mitchellh/gox
-  - go version | grep -q "go1\.3" && export GOX_ARCH="386 amd64" || true
-  - go version | grep -q "darwin" && export GOX_OS="darwin" || true
-  - uname -s | grep -qi darwin && brew install caskroom/cask/brew-cask || true
-  - uname -s | grep -qi darwin && brew cask install osxfuse || true
-  - uname -s | grep -vqi darwin && export RESTIC_TEST_FUSE="0" || true
-  - echo "cross-compile for \"$GOX_OS\" on \"$GOX_ARCH\""
-  - gox -build-toolchain -os "$GOX_OS" -arch "$GOX_ARCH"
 
 script:
-  - gox -verbose -os "$GOX_OS" -arch "$GOX_ARCH" -tags "release" ./cmd/restic
-  - gox -verbose -os "$GOX_OS" -arch "$GOX_ARCH" -tags "debug" ./cmd/restic
-  - go run build.go
-  - go run run_tests.go all.cov
-  - GOARCH=386 RESTIC_TEST_INTEGRATION=0 go test ./...
+  - go run run_integration_tests.go
+
+after_success:
   - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN" || true
-  - gofmt -l *.go */*.go */*/*.go
-  - test -z "$(gofmt -l *.go */*.go */*/*.go)"
