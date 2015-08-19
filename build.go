@@ -18,6 +18,7 @@ import (
 var (
 	verbose    bool
 	keepGopath bool
+	runTests   bool
 )
 
 const timeFormat = "2006-01-02 15:04:05"
@@ -30,6 +31,21 @@ func specialDir(name string) bool {
 
 	base := filepath.Base(name)
 	return base[0] == '_' || base[0] == '.'
+}
+
+// excludePath returns true if the file should not be copied to the new GOPATH.
+func excludePath(name string) bool {
+	ext := path.Ext(name)
+	if ext == ".go" || ext == ".s" {
+		return false
+	}
+
+	parentDir := filepath.Base(filepath.Dir(name))
+	if parentDir == "testdata" {
+		return false
+	}
+
+	return true
 }
 
 // updateGopath builds a valid GOPATH at dst, with all Go files in src/ copied
@@ -60,8 +76,7 @@ func updateGopath(dst, src, prefix string) error {
 			return nil
 		}
 
-		ext := path.Ext(name)
-		if ext != ".go" && ext != ".s" {
+		if excludePath(name) {
 			return nil
 		}
 
@@ -133,7 +148,10 @@ func showUsage(output io.Writer) {
 	fmt.Fprintf(output, "USAGE: go run build.go OPTIONS\n")
 	fmt.Fprintf(output, "\n")
 	fmt.Fprintf(output, "OPTIONS:\n")
-	fmt.Fprintf(output, "  -v     --verbose   output more messages\n")
+	fmt.Fprintf(output, "  -v     --verbose     output more messages\n")
+	fmt.Fprintf(output, "  -t     --tags        specify additional build tags\n")
+	fmt.Fprintf(output, "  -k     --keep-gopath do not remove the GOPATH after build\n")
+	fmt.Fprintf(output, "  -T     --test        run tests\n")
 }
 
 func verbosePrintf(message string, args ...interface{}) {
@@ -161,6 +179,18 @@ func cleanEnv() (env []string) {
 // build runs "go build args..." with GOPATH set to gopath.
 func build(gopath string, args ...string) error {
 	args = append([]string{"build"}, args...)
+	cmd := exec.Command("go", args...)
+	cmd.Env = append(cleanEnv(), "GOPATH="+gopath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	verbosePrintf("go %s\n", args)
+
+	return cmd.Run()
+}
+
+// test runs "go test args..." with GOPATH set to gopath.
+func test(gopath string, args ...string) error {
+	args = append([]string{"test"}, args...)
 	cmd := exec.Command("go", args...)
 	cmd.Env = append(cleanEnv(), "GOPATH="+gopath)
 	cmd.Stdout = os.Stdout
@@ -218,6 +248,8 @@ func main() {
 		case "-t", "-tags", "--tags":
 			skipNext = true
 			buildTags = strings.Split(params[i+1], " ")
+		case "-T", "--test":
+			runTests = true
 		case "-h":
 			showUsage(os.Stdout)
 		default:
@@ -258,6 +290,17 @@ func main() {
 		die("copying files from %v to %v failed: %v\n", root, gopath, err)
 	}
 
+	defer func() {
+		if !keepGopath {
+			verbosePrintf("remove %v\n", gopath)
+			if err = os.RemoveAll(gopath); err != nil {
+				die("remove GOPATH at %s failed: %v\n", err)
+			}
+		} else {
+			fmt.Printf("leaving temporary GOPATH at %v\n", gopath)
+		}
+	}()
+
 	output := "restic"
 	if runtime.GOOS == "windows" {
 		output = "restic.exe"
@@ -277,14 +320,15 @@ func main() {
 	err = build(gopath, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "build failed: %v\n", err)
+		return
 	}
 
-	if !keepGopath {
-		verbosePrintf("remove %v\n", gopath)
-		if err = os.RemoveAll(gopath); err != nil {
-			die("remove GOPATH at %s failed: %v\n", err)
+	if runTests {
+		verbosePrintf("running tests\n")
+
+		err = test(gopath, "github.com/restic/restic/...")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "build failed: %v\n", err)
 		}
-	} else {
-		fmt.Printf("leaving temporary GOPATH at %v\n", gopath)
 	}
 }
