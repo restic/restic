@@ -77,6 +77,19 @@ func (env *TravisEnvironment) RunTests() {
 	runGofmt()
 }
 
+type AppveyorEnvironment struct{}
+
+func (env *AppveyorEnvironment) Prepare() {
+	msg("preparing environment for Appveyor CI\n")
+
+	// install tar, gzip, bzip2
+}
+
+func (env *AppveyorEnvironment) RunTests() {
+	// run the build script and the tests
+	run("go", "run", "build.go", "-v", "-T")
+}
+
 // findGoFiles returns a list of go source code file names below dir.
 func findGoFiles(dir string) (list []string, err error) {
 	err = filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
@@ -153,12 +166,18 @@ func isTravis() bool {
 	return os.Getenv("TRAVIS_BUILD_DIR") != ""
 }
 
+func isAppveyor() bool {
+	return runtime.GOOS == "windows"
+}
+
 func main() {
 	var env CIEnvironment
 
 	switch {
 	case isTravis():
 		env = &TravisEnvironment{}
+	case isAppveyor():
+		env = &AppveyorEnvironment{}
 	default:
 		fmt.Fprintln(os.Stderr, "unknown CI environment")
 		os.Exit(1)

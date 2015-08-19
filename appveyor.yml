@@ -4,11 +4,8 @@ environment:
   GOPATH: c:\gopath;c:\gopath\src\github.com\restic\restic\Godeps\_workspace
 
 install:
-  - echo %PATH%
-  - echo %GOPATH%
   - go version
   - go env
 
 build_script:
-  - go run build.go
-  - go test -v
+  - go run run_integration_tests.go
