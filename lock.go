@@ -207,17 +207,10 @@ func (l *Lock) Stale() bool {
 		return false
 	}
 
-	proc, err := os.FindProcess(l.PID)
-	defer proc.Release()
-	if err != nil {
-		debug.Log("Lock.Stale", "error searching for process %d: %v\n", l.PID, err)
-		return true
-	}
-
-	debug.Log("Lock.Stale", "sending SIGHUP to process %d\n", l.PID)
-	err = proc.Signal(syscall.SIGHUP)
-	if err != nil {
-		debug.Log("Lock.Stale", "signal error: %v, lock is probably stale\n", err)
+	// check if we can reach the process retaining the lock
+	exists := l.processExists()
+	if !exists {
+		debug.Log("Lock.Stale", "could not reach process, %d, lock is probably stale\n", l.PID)
 		return true
 	}
 
