@@ -22,7 +22,7 @@ type TravisEnvironment struct {
 }
 
 func (env *TravisEnvironment) Prepare() {
-	fmt.Printf("preparing environment for Travis CI\n")
+	msg("preparing environment for Travis CI\n")
 
 	run("go", "get", "github.com/mattn/goveralls")
 	run("go", "get", "github.com/mitchellh/gox")
@@ -43,7 +43,7 @@ func (env *TravisEnvironment) Prepare() {
 		env.goxOS = []string{"linux", "darwin", "freebsd", "openbsd", "windows"}
 	}
 
-	fmt.Printf("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
+	msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
 	run("gox", "-build-toolchain",
 		"-os", strings.Join(env.goxOS, " "),
 		"-arch", strings.Join(env.goxArch, " "))
@@ -52,7 +52,7 @@ func (env *TravisEnvironment) Prepare() {
 func (env *TravisEnvironment) RunTests() {
 	// run fuse tests on darwin
 	if runtime.GOOS != "darwin" {
-		fmt.Printf("skip fuse integration tests on %v\n", runtime.GOOS)
+		msg("skip fuse integration tests on %v\n", runtime.GOOS)
 		os.Setenv("RESTIC_TEST_FUSE", "0")
 	}
 
@@ -96,6 +96,10 @@ func findGoFiles(dir string) (list []string, err error) {
 	return list, err
 }
 
+func msg(format string, args ...interface{}) {
+	fmt.Printf("CI: "+format, args...)
+}
+
 func runGofmt() {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -109,7 +113,7 @@ func runGofmt() {
 		os.Exit(4)
 	}
 
-	fmt.Printf("runGofmt() with %d files\n", len(files))
+	msg("runGofmt() with %d files\n", len(files))
 	args := append([]string{"-l"}, files...)
 	cmd := exec.Command("gofmt", args...)
 	cmd.Stderr = os.Stderr
@@ -129,7 +133,7 @@ func runGofmt() {
 }
 
 func run(command string, args ...string) {
-	fmt.Printf("run %v %v\n", command, strings.Join(args, " "))
+	msg("run %v %v\n", command, strings.Join(args, " "))
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
