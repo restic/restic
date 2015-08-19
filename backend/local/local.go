@@ -267,6 +267,12 @@ func (b *Local) Remove(t backend.Type, name string) error {
 	b.open[fn] = nil
 	b.mu.Unlock()
 
+	// reset read-only flag
+	err := os.Chmod(fn, 0666)
+	if err != nil {
+		return err
+	}
+
 	return os.Remove(fn)
 }
 
