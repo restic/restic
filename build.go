@@ -319,8 +319,7 @@ func main() {
 
 	err = build(gopath, args...)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "build failed: %v\n", err)
-		return
+		die("build failed: %v\n", err)
 	}
 
 	if runTests {
@@ -328,7 +327,7 @@ func main() {
 
 		err = test(gopath, "github.com/restic/restic/...")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "build failed: %v\n", err)
+			die("running tests failed: %v\n", err)
 		}
 	}
 }
