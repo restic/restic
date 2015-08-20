@@ -10,8 +10,6 @@ os:
   - linux
   - osx
 
-env: GOX_OS="linux darwin openbsd freebsd windows" GOX_ARCH="386 amd64 arm"
-
 notifications:
   irc:
     channels:
