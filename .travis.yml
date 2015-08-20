@@ -23,7 +23,6 @@ install:
   - go version
   - export GOBIN="$GOPATH/bin"
   - export PATH="$PATH:$GOBIN"
-  - export GOPATH="$GOPATH:${TRAVIS_BUILD_DIR}/Godeps/_workspace"
   - go env
 
 script:
