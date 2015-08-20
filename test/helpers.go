@@ -2,7 +2,10 @@ package test_helper
 
 import (
 	"bytes"
+	"compress/bzip2"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -89,14 +92,28 @@ func RandomReader(seed, size int) *bytes.Reader {
 
 // SetupTarTestFixture extracts the tarFile to outputDir.
 func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
-	f, err := os.Open(tarFile)
-	defer f.Close()
+	input, err := os.Open(tarFile)
+	defer input.Close()
 	OK(t, err)
 
-	cmd := exec.Command("tar", "xzf", "-")
+	var rd io.Reader
+	switch filepath.Ext(tarFile) {
+	case ".gz":
+		r, err := gzip.NewReader(input)
+		OK(t, err)
+
+		defer r.Close()
+		rd = r
+	case ".bzip2":
+		rd = bzip2.NewReader(input)
+	default:
+		rd = input
+	}
+
+	cmd := exec.Command("tar", "xf", "-")
 	cmd.Dir = outputDir
 
-	cmd.Stdin = f
+	cmd.Stdin = rd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 

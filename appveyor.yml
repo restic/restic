@@ -1,0 +1,14 @@
+clone_folder: c:\gopath\src\github.com\restic\restic
+
+environment:
+  GOPATH: c:\gopath;c:\gopath\src\github.com\restic\restic\Godeps\_workspace
+
+install:
+  - go version
+  - go env
+  - appveyor DownloadFile http://downloads.sourceforge.net/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -FileName tar.zip
+  - 7z x tar.zip bin/tar.exe
+  - set PATH=bin/;%PATH%
+
+build_script:
+  - go run run_integration_tests.go
