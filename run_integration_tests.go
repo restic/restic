@@ -81,12 +81,9 @@ type AppveyorEnvironment struct{}
 
 func (env *AppveyorEnvironment) Prepare() {
 	msg("preparing environment for Appveyor CI\n")
-
-	// install tar, gzip, bzip2
 }
 
 func (env *AppveyorEnvironment) RunTests() {
-	// run the build script and the tests
 	run("go", "run", "build.go", "-v", "-T")
 }
 
