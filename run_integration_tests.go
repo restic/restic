@@ -47,9 +47,12 @@ func (env *TravisEnvironment) Prepare() {
 	}
 
 	msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
-	run("gox", "-build-toolchain",
-		"-os", strings.Join(env.goxOS, " "),
-		"-arch", strings.Join(env.goxArch, " "))
+
+	if !strings.HasPrefix(runtime.Version(), "go1.5") {
+		run("gox", "-build-toolchain",
+			"-os", strings.Join(env.goxOS, " "),
+			"-arch", strings.Join(env.goxArch, " "))
+	}
 }
 
 func (env *TravisEnvironment) RunTests() {
