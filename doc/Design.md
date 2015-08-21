@@ -6,15 +6,15 @@ Terminology
 
 This section introduces terminology used in this document.
 
-*Repository*: All data produced during a backup is sent to and stored at a
-repository in structured form, for example in a file system hierarchy of with
-several subdirectories. A repository implementation must be able to fulfil a
+*Repository*: All data produced during a backup is sent to and stored in a
+repository in a structured form, for example in a file system hierarchy with
+several subdirectories. A repository implementation must be able to fulfill a
 number of operations, e.g. list the contents.
 
 *Blob*: A Blob combines a number of data bytes with identifying information
 like the SHA256 hash of the data and its length.
 
-*Pack*: A Pack combines one or more Blobs together, e.g. in a single file.
+*Pack*: A Pack combines one or more Blobs, e.g. in a single file.
 
 *Snapshot*: A Snapshot stands for the state of a file or directory that has
 been backed up at some point in time. The state here means the content and meta
@@ -22,7 +22,7 @@ data like the name and modification time for the file or the directory and its
 contents.
 
 *Storage ID*: A storage ID is the SHA-256 hash of the content stored in the
-repository. This ID is needed in order to load the file from the repository.
+repository. This ID is required in order to load the file from the repository.
 
 Repository Format
 =================
@@ -36,19 +36,20 @@ parallel. Only the delete operation removes data from the repository.
 
 At the time of writing, the only implemented repository type is based on
 directories and files. Such repositories can be accessed locally on the same
-system or via the integrated SFTP client. The directory layout is the same for
-both access methods. This repository type is described in the following.
+system or via the integrated SFTP client (or any other storage back end).
+The directory layout is the same for both access methods.
+This repository type is described in the following section.
 
 Repositories consist of several directories and a file called `config`. For
 all other files stored in the repository, the name for the file is the lower
 case hexadecimal representation of the storage ID, which is the SHA-256 hash of
-the file's contents. This allows easily checking all files for accidental
-modifications like disk read errors by simply running the program `sha256sum`
+the file's contents. This allows for easy verification of files for accidental
+modifications, like disk read errors, by simply running the program `sha256sum`
 and comparing its output to the file name. If the prefix of a filename is
 unique amongst all the other files in the same directory, the prefix may be
 used instead of the complete filename.
 
-Apart from the files stored below the `keys` directory, all files are encrypted
+Apart from the files stored within the `keys` directory, all files are encrypted
 with AES-256 in counter mode (CTR). The integrity of the encrypted data is
 secured by a Poly1305-AES message authentication code (sometimes also referred
 to as a "signature").
@@ -398,7 +399,7 @@ required to create a lock on the repository before doing anything.
 
 Locks come in two types: Exclusive and non-exclusive locks. At most one
 process can have an exclusive lock on the repository, and during that time
-there mustn't be any other locks (exclusive and non-exclusive). There may be
+there must not be any other locks (exclusive and non-exclusive). There may be
 multiple non-exclusive locks in parallel.
 
 A lock is a file in the subdir `locks` whose filename is the storage ID of
