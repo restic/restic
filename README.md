@@ -4,12 +4,6 @@
 [![sourcegraph status](https://sourcegraph.com/api/repos/github.com/restic/restic/.badges/status.png)](https://sourcegraph.com/github.com/restic/restic)
 [![Coverage Status](https://coveralls.io/repos/restic/restic/badge.svg)](https://coveralls.io/r/restic/restic)
 
-WARNING
-=======
-
-WARNING: At the moment, consider restic as alpha quality software, it is not
-yet finished. Do not use it for real data!
-
 Restic
 ======
 
@@ -76,6 +70,19 @@ afterwards you'll find the binary in the current directory:
 
 A short demo recording can be found here:
 [![asciicast](https://asciinema.org/a/23554.png)](https://asciinema.org/a/23554)
+
+Compatibility
+=============
+
+Backward compatibility for backups is important so that our users are always
+able to restore saved data. Therefore restic follows [Semantic
+Versioning](http://semver.org) to clearly define which versions are compatible.
+The repository and data structures contained therein are considered the "Public
+API" in the sense of Semantic Versioning.
+
+We guarantee backward compatibility of all repositories within one major version;
+as long as we do not increment the major version, data can be read and restored.
+We strive to be fully backward compatible to all prior versions.
 
 Contribute and Documentation
 ============================
