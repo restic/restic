@@ -90,7 +90,7 @@ Contribute and Documentation
 
 Contributions are welcome! More information can be found in
 [`CONTRIBUTING.md`](CONTRIBUTING.md). A document describing the design of
-restic and the data structures stored on the backend is contained in
+restic and the data structures stored on the back end is contained in
 [`doc/Design.md`](doc/Design.md).
 The development environment is described in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
