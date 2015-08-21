@@ -4,18 +4,19 @@
 [![sourcegraph status](https://sourcegraph.com/api/repos/github.com/restic/restic/.badges/status.png)](https://sourcegraph.com/github.com/restic/restic)
 [![Coverage Status](https://coveralls.io/repos/restic/restic/badge.svg)](https://coveralls.io/r/restic/restic)
 
-Restic
-======
+Restic Design Principles
+========================
 
-Restic is a program that does backups right. The design goals are:
+Restic is a program that does backups right and was designed with the following
+principles in mind:
 
- * Easy: Doing backups should be a frictionless process, otherwise you are
-   tempted to skip it.  Restic should be easy to configure and use, so that in
-   the unlikely event of a data loss you can just restore it. Likewise,
+ * Easy: Doing backups should be a frictionless process, otherwise you might be
+   tempted to skip it.  Restic should be easy to configure and use, so that, in
+   the event of a data loss, you can just restore it. Likewise,
    restoring data should not be complicated.
 
  * Fast: Backing up your data with restic should only be limited by your
-   network or harddisk bandwidth so that you can backup your files every day.
+   network or hard disk bandwidth so that you can backup your files every day.
    Nobody does backups if it takes too much time. Restoring backups should only
    transfer data that is needed for the files that are to be restored, so that
    this process is also fast.
@@ -31,12 +32,12 @@ Restic is a program that does backups right. The design goals are:
 
  * Efficient: With the growth of data, additional snapshots should only take
    the storage of the actual increment. Even more, duplicate data should be
-   de-duplicated before it is actually written to the storage backend to save
+   de-duplicated before it is actually written to the storage back end to save
    precious backup space.
 
 
-Building
-========
+Build restic
+============
 
 Install Go/Golang (at least version 1.3), then run `go run build.go`,
 afterwards you'll find the binary in the current directory:
@@ -89,15 +90,9 @@ Contribute and Documentation
 
 Contributions are welcome! More information can be found in
 [`CONTRIBUTING.md`](CONTRIBUTING.md). A document describing the design of
-restic and the data structures stored on disc is contained in
+restic and the data structures stored on the backend is contained in
 [`doc/Design.md`](doc/Design.md).
-
-Development
-===========
-
-For development, please have a look at [`CONTRIBUTING.md`](CONTRIBUTING.md),
-especially the section "Development Environment". If you have any questions,
-please get in touch!
+The development environment is described in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Contact
 =======
