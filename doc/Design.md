@@ -246,18 +246,18 @@ repository password. This is then used with `scrypt`, a key derivation function
 bytes. The first 32 bytes are used as the encryption key (for AES-256) and the
 last 32 bytes are used as the message authentication key (for Poly1305-AES).
 These last 32 bytes are divided into a 16 byte AES key `k` followed by 16 bytes
-of secret key `r`. They key `r` is then masked for use with Poly1305 (see the
+of secret key `r`. The key `r` is then masked for use with Poly1305 (see the
 paper for details).
 
-This message authentication key (`k` and `r`) is used to compute a MAC over the
-bytes contained in the JSON field `data` (after removing the Base64 encoding
-and not including the last 32 byte). If the password is incorrect or the key
-file has been tampered with, the computed MAC will not match the last 16 bytes
-of the data, and restic exits with an error. Otherwise, the data is decrypted
-with the encryption key derived from `scrypt`. This yields a JSON document
-which contains the master encryption and message authentication keys for this
-repository (encoded in Base64). The command `restic cat masterkey` can be used
-as follows to decrypt and pretty-print the master key:
+Those message authentication keys (`k` and `r`) are used to compute a MAC over
+the bytes contained in the JSON field `data` (after removing the Base64
+encoding and not including the last 32 byte). If the password is incorrect or
+the key file has been tampered with, the computed MAC will not match the last
+16 bytes of the data, and restic exits with an error. Otherwise, the data is
+decrypted with the encryption key derived from `scrypt`. This yields a JSON
+document which contains the master encryption and message authentication keys
+for this repository (encoded in Base64). The command `restic cat masterkey` can
+be used as follows to decrypt and pretty-print the master key:
 
     $ restic -r /tmp/restic-repo cat masterkey
     {
@@ -461,9 +461,9 @@ General assumptions:
 
 The restic backup program guarantees the following:
 
- * Accessing the unencrypted content of stored files and meta data should not
+ * Accessing the unencrypted content of stored files and metadata should not
    be possible without a password for the repository. Everything except the
-   meta data included for informational purposes in the key files is encrypted and
+   metadata included for informational purposes in the key files is encrypted and
    authenticated.
 
  * Modifications (intentional or unintentional) can be detected automatically
