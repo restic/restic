@@ -12,7 +12,7 @@ several subdirectories. A repository implementation must be able to fulfill a
 number of operations, e.g. list the contents.
 
 *Blob*: A Blob combines a number of data bytes with identifying information
-like the SHA256 hash of the data and its length.
+like the SHA-256 hash of the data and its length.
 
 *Pack*: A Pack combines one or more Blobs, e.g. in a single file.
 
@@ -246,18 +246,18 @@ repository password. This is then used with `scrypt`, a key derivation function
 bytes. The first 32 bytes are used as the encryption key (for AES-256) and the
 last 32 bytes are used as the message authentication key (for Poly1305-AES).
 These last 32 bytes are divided into a 16 byte AES key `k` followed by 16 bytes
-of secret key `r`. They key `r` is then masked for use with Poly1305 (see the
+of secret key `r`. The key `r` is then masked for use with Poly1305 (see the
 paper for details).
 
-This message authentication key is used to compute a MAC over the bytes contained
-in the JSON field `data` (after removing the Base64 encoding and not including
-the last 32 byte). If the password is incorrect or the key file has been
-tampered with, the computed MAC will not match the last 16 bytes of the data,
-and restic exits with an error. Otherwise, the data is decrypted with the
-encryption key derived from `scrypt`. This yields a JSON document which
-contains the master encryption and message authentication keys for this
-repository (encoded in Base64). The command `restic cat masterkey` can be used
-as follows to decrypt and pretty-print the master key:
+Those message authentication keys (`k` and `r`) are used to compute a MAC over
+the bytes contained in the JSON field `data` (after removing the Base64
+encoding and not including the last 32 byte). If the password is incorrect or
+the key file has been tampered with, the computed MAC will not match the last
+16 bytes of the data, and restic exits with an error. Otherwise, the data is
+decrypted with the encryption key derived from `scrypt`. This yields a JSON
+document which contains the master encryption and message authentication keys
+for this repository (encoded in Base64). The command `restic cat masterkey` can
+be used as follows to decrypt and pretty-print the master key:
 
     $ restic -r /tmp/restic-repo cat masterkey
     {
@@ -315,9 +315,8 @@ Trees and Data
 --------------
 
 A snapshot references a tree by the SHA-256 hash of the JSON string
-representation of its contents. Trees are saved in a subdirectory of the
-directory `trees`. The sub directory's name is the first two characters of the
-filename the tree object is stored in.
+representation of its contents. Trees and data are saved in pack files in a
+subdirectory of the directory `data`.
 
 The command `restic cat tree` can be used to inspect the tree referenced above:
 
@@ -462,10 +461,10 @@ General assumptions:
 
 The restic backup program guarantees the following:
 
- * Accessing the unencrypted content of stored files and meta data should not
+ * Accessing the unencrypted content of stored files and metadata should not
    be possible without a password for the repository. Everything except the
-   `version` and `id` files and the meta data included for informational
-   purposes in the key files is encrypted and authenticated.
+   metadata included for informational purposes in the key files is encrypted and
+   authenticated.
 
  * Modifications (intentional or unintentional) can be detected automatically
    on several layers:
