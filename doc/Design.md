@@ -12,7 +12,7 @@ several subdirectories. A repository implementation must be able to fulfill a
 number of operations, e.g. list the contents.
 
 *Blob*: A Blob combines a number of data bytes with identifying information
-like the SHA256 hash of the data and its length.
+like the SHA-256 hash of the data and its length.
 
 *Pack*: A Pack combines one or more Blobs, e.g. in a single file.
 
@@ -315,9 +315,8 @@ Trees and Data
 --------------
 
 A snapshot references a tree by the SHA-256 hash of the JSON string
-representation of its contents. Trees are saved in a subdirectory of the
-directory `trees`. The sub directory's name is the first two characters of the
-filename the tree object is stored in.
+representation of its contents. Trees and data are saved in pack files in a
+subdirectory of the directory `data`.
 
 The command `restic cat tree` can be used to inspect the tree referenced above:
 
@@ -464,8 +463,8 @@ The restic backup program guarantees the following:
 
  * Accessing the unencrypted content of stored files and meta data should not
    be possible without a password for the repository. Everything except the
-   `version` and `id` files and the meta data included for informational
-   purposes in the key files is encrypted and authenticated.
+   meta data included for informational purposes in the key files is encrypted and
+   authenticated.
 
  * Modifications (intentional or unintentional) can be detected automatically
    on several layers:
