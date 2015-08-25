@@ -200,17 +200,30 @@ func test(gopath string, args ...string) error {
 	return cmd.Run()
 }
 
-// getVersion returns a version string, either from the file VERSION in the
-// current directory or from git.
+// getVersion returns a version string which is a combination of the contents
+// of the file VERSION in the current directory and the version from git (if
+// available).
 func getVersion() string {
-	v, err := ioutil.ReadFile("VERSION")
-	version := strings.TrimSpace(string(v))
-	if err == nil {
-		verbosePrintf("version from file 'VERSION' is %s\n", version)
-		return version
+	buf, err := ioutil.ReadFile("VERSION")
+	if err != nil {
+		verbosePrintf("error reading file VERSION: %v\n", err)
+	}
+	versionFile := strings.TrimSpace(string(buf))
+	verbosePrintf("version from file 'VERSION' is %q\n", versionFile)
+
+	versionGit := gitVersion()
+	verbosePrintf("version from file 'VERSION' is %q\n", versionGit)
+
+	if versionFile == "" && versionGit == "" {
+		return "unknown"
 	}
 
-	return gitVersion()
+	version := versionFile
+	if versionGit != "" {
+		version += " (" + versionGit + ")"
+	}
+
+	return version
 }
 
 // gitVersion returns a version string that identifies the currently checked
