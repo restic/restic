@@ -1,10 +1,16 @@
 package s3
 
 import (
-	"github.com/mitchellh/goamz/aws"
+	"net/http"
+
+	"gopkg.in/amz.v3/aws"
 )
 
 var originalStrategy = attempts
+
+func BuildError(resp *http.Response) error {
+	return buildError(resp)
+}
 
 func SetAttemptStrategy(s *aws.AttemptStrategy) {
 	if s == nil {
@@ -14,8 +20,8 @@ func SetAttemptStrategy(s *aws.AttemptStrategy) {
 	}
 }
 
-func Sign(auth aws.Auth, method, path string, params, headers map[string][]string) {
-	sign(auth, method, path, params, headers)
+func AttemptStrategy() aws.AttemptStrategy {
+	return attempts
 }
 
 func SetListPartsMax(n int) {

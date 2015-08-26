@@ -1,10 +1,11 @@
 package s3_test
 
 import (
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/s3"
-	"github.com/mitchellh/goamz/s3/s3test"
-	. "github.com/motain/gocheck"
+	. "gopkg.in/check.v1"
+
+	"gopkg.in/amz.v3/aws"
+	"gopkg.in/amz.v3/s3"
+	"gopkg.in/amz.v3/s3/s3test"
 )
 
 type LocalServer struct {
@@ -52,9 +53,6 @@ var (
 func (s *LocalServerSuite) SetUpSuite(c *C) {
 	s.srv.SetUp(c)
 	s.clientTests.s3 = s3.New(s.srv.auth, s.srv.region)
-
-	// TODO Sadly the fake server ignores auth completely right now. :-(
-	s.clientTests.authIsBroken = true
 	s.clientTests.Cleanup()
 }
 

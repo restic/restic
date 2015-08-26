@@ -3,9 +3,9 @@ package backend_test
 import (
 	"testing"
 
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/s3"
-	"github.com/mitchellh/goamz/s3/s3test"
+	"gopkg.in/amz.v3/aws"
+	"gopkg.in/amz.v3/s3"
+	"gopkg.in/amz.v3/s3/s3test"
 
 	bes3 "github.com/restic/restic/backend/s3"
 	. "github.com/restic/restic/test"
