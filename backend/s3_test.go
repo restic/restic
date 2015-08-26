@@ -38,7 +38,7 @@ func setupS3Backend(t *testing.T) *bes3.S3Backend {
 
 	service := s3.New(s.auth, s.region)
 	bucket, berr := service.Bucket("testbucket")
-	OK(t, err)
+	OK(t, berr)
 	err = bucket.PutBucket("private")
 	OK(t, err)
 
