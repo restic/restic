@@ -159,7 +159,7 @@ func verbosePrintf(message string, args ...interface{}) {
 		return
 	}
 
-	fmt.Printf(message, args...)
+	fmt.Printf("build: "+message, args...)
 }
 
 // cleanEnv returns a clean environment with GOPATH and GOBIN removed (if
