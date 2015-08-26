@@ -26,7 +26,7 @@ install:
   - go env
 
 script:
-  - go run run_integration_tests.go
+  - travis_wait go run run_integration_tests.go
 
 after_success:
   - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN" || true
