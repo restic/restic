@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"io"
+	"net/http"
 	"sort"
 	"strconv"
 )
@@ -49,39 +50,66 @@ type listMultiResp struct {
 //
 // See http://goo.gl/ePioY for details.
 func (b *Bucket) ListMulti(prefix, delim string) (multis []*Multi, prefixes []string, err error) {
-	params := map[string][]string{
-		"uploads":     {""},
-		"max-uploads": {strconv.FormatInt(int64(listMultiMax), 10)},
-		"prefix":      {prefix},
-		"delimiter":   {delim},
+
+	req, err := http.NewRequest("GET", b.Region.ResolveS3BucketEndpoint(b.Name), nil)
+	if err != nil {
+		return nil, nil, err
 	}
+
+	query := req.URL.Query()
+	query.Add("uploads", "")
+	query.Add("max-uploads", strconv.FormatInt(int64(listMultiMax), 10))
+	query.Add("prefix", prefix)
+	query.Add("delimiter", delim)
+	req.URL.RawQuery = query.Encode()
+
+	addAmazonDateHeader(req.Header)
+
+	// We need to resign every iteration because we're changing variables.
+	if err := b.S3.Sign(req, b.Auth); err != nil {
+		return nil, nil, err
+	}
+
 	for attempt := attempts.Start(); attempt.Next(); {
-		req := &request{
-			method: "GET",
-			bucket: b.Name,
-			params: params,
-		}
-		var resp listMultiResp
-		err := b.S3.query(req, &resp)
-		if shouldRetry(err) && attempt.HasNext() {
-			continue
+
+		resp, err := requestRetryLoop(req, attempts)
+		if err == nil {
+			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+				err = buildError(resp)
+			}
 		}
 		if err != nil {
+			if shouldRetry(err) && attempt.HasNext() {
+				continue
+			}
 			return nil, nil, err
 		}
-		for i := range resp.Upload {
-			multi := &resp.Upload[i]
+
+		var multiResp listMultiResp
+		if err := xml.NewDecoder(resp.Body).Decode(&multiResp); err != nil {
+			return nil, nil, err
+		}
+		resp.Body.Close()
+
+		for i := range multiResp.Upload {
+			multi := &multiResp.Upload[i]
 			multi.Bucket = b
 			multis = append(multis, multi)
 		}
-		prefixes = append(prefixes, resp.CommonPrefixes...)
-		if !resp.IsTruncated {
+		prefixes = append(prefixes, multiResp.CommonPrefixes...)
+		if !multiResp.IsTruncated {
 			return multis, prefixes, nil
 		}
-		params["key-marker"] = []string{resp.NextKeyMarker}
-		params["upload-id-marker"] = []string{resp.NextUploadIdMarker}
-		attempt = attempts.Start() // Last request worked.
+
+		query := req.URL.Query()
+		query.Set("key-marker", multiResp.NextKeyMarker)
+		query.Set("upload-id-marker", multiResp.NextUploadIdMarker)
+		req.URL.RawQuery = query.Encode()
+
+		// Last request worked; restart our counter.
+		attempt = attempts.Start()
 	}
+
 	panic("unreachable")
 }
 
@@ -106,35 +134,44 @@ func (b *Bucket) Multi(key, contType string, perm ACL) (*Multi, error) {
 //
 // See http://goo.gl/XP8kL for details.
 func (b *Bucket) InitMulti(key string, contType string, perm ACL) (*Multi, error) {
-	headers := map[string][]string{
-		"Content-Type":   {contType},
-		"Content-Length": {"0"},
-		"x-amz-acl":      {string(perm)},
+
+	req, err := http.NewRequest("POST", b.Region.ResolveS3BucketEndpoint(b.Name), nil)
+	if err != nil {
+		return nil, err
 	}
-	params := map[string][]string{
-		"uploads": {""},
+	req.URL.Path += key
+
+	query := req.URL.Query()
+	query.Add("uploads", "")
+	req.URL.RawQuery = query.Encode()
+
+	req.Header.Add("Content-Type", contType)
+	req.Header.Add("Content-Length", "0")
+	req.Header.Add("x-amz-acl", string(perm))
+	addAmazonDateHeader(req.Header)
+
+	if err := b.S3.Sign(req, b.Auth); err != nil {
+		return nil, err
 	}
-	req := &request{
-		method:  "POST",
-		bucket:  b.Name,
-		path:    key,
-		headers: headers,
-		params:  params,
-	}
-	var err error
-	var resp struct {
-		UploadId string `xml:"UploadId"`
-	}
-	for attempt := attempts.Start(); attempt.Next(); {
-		err = b.S3.query(req, &resp)
-		if !shouldRetry(err) {
-			break
+
+	resp, err := requestRetryLoop(req, attempts)
+	if err == nil {
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+			err = buildError(resp)
 		}
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &Multi{Bucket: b, Key: key, UploadId: resp.UploadId}, nil
+
+	var multiResp struct {
+		UploadId string `xml:"UploadId"`
+	}
+	if err := xml.NewDecoder(resp.Body).Decode(&multiResp); err != nil {
+		return nil, err
+	}
+
+	return &Multi{Bucket: b, Key: key, UploadId: multiResp.UploadId}, nil
 }
 
 // PutPart sends part n of the multipart upload, reading all the content from r.
@@ -150,45 +187,51 @@ func (m *Multi) PutPart(n int, r io.ReadSeeker) (Part, error) {
 }
 
 func (m *Multi) putPart(n int, r io.ReadSeeker, partSize int64, md5b64 string) (Part, error) {
-	headers := map[string][]string{
-		"Content-Length": {strconv.FormatInt(partSize, 10)},
-		"Content-MD5":    {md5b64},
+	_, err := r.Seek(0, 0)
+	if err != nil {
+		return Part{}, err
 	}
-	params := map[string][]string{
-		"uploadId":   {m.UploadId},
-		"partNumber": {strconv.FormatInt(int64(n), 10)},
+
+	req, err := http.NewRequest("PUT", m.Bucket.Region.ResolveS3BucketEndpoint(m.Bucket.Name), r)
+	if err != nil {
+		return Part{}, err
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
-		_, err := r.Seek(0, 0)
-		if err != nil {
-			return Part{}, err
-		}
-		req := &request{
-			method:  "PUT",
-			bucket:  m.Bucket.Name,
-			path:    m.Key,
-			headers: headers,
-			params:  params,
-			payload: r,
-		}
-		err = m.Bucket.S3.prepare(req)
-		if err != nil {
-			return Part{}, err
-		}
-		resp, err := m.Bucket.S3.run(req, nil)
-		if shouldRetry(err) && attempt.HasNext() {
-			continue
-		}
-		if err != nil {
-			return Part{}, err
-		}
-		etag := resp.Header.Get("ETag")
-		if etag == "" {
-			return Part{}, errors.New("part upload succeeded with no ETag")
-		}
-		return Part{n, etag, partSize}, nil
+	req.Close = true
+	req.URL.Path += m.Key
+	req.ContentLength = partSize
+
+	query := req.URL.Query()
+	query.Add("uploadId", m.UploadId)
+	query.Add("partNumber", strconv.FormatInt(int64(n), 10))
+	req.URL.RawQuery = query.Encode()
+
+	req.Header.Add("Content-MD5", md5b64)
+	addAmazonDateHeader(req.Header)
+
+	if err := m.Bucket.S3.Sign(req, m.Bucket.Auth); err != nil {
+		return Part{}, err
 	}
-	panic("unreachable")
+	// Signing may read the request body.
+	if _, err := r.Seek(0, 0); err != nil {
+		return Part{}, err
+	}
+
+	resp, err := requestRetryLoop(req, attempts)
+	defer resp.Body.Close()
+
+	if err != nil {
+		return Part{}, err
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return Part{}, buildError(resp)
+	}
+
+	part := Part{n, resp.Header.Get("ETag"), partSize}
+	if part.ETag == "" {
+		return Part{}, errors.New("part upload succeeded with no ETag")
+	}
+
+	return part, nil
 }
 
 func seekerInfo(r io.ReadSeeker) (size int64, md5hex string, md5b64 string, err error) {
@@ -233,35 +276,62 @@ var listPartsMax = 1000
 //
 // See http://goo.gl/ePioY for details.
 func (m *Multi) ListParts() ([]Part, error) {
-	params := map[string][]string{
-		"uploadId":  {m.UploadId},
-		"max-parts": {strconv.FormatInt(int64(listPartsMax), 10)},
+
+	req, err := http.NewRequest("GET", m.Bucket.Region.ResolveS3BucketEndpoint(m.Bucket.Name), nil)
+	if err != nil {
+		return nil, err
 	}
+	req.Close = true
+	req.URL.Path += m.Key
+
+	query := req.URL.Query()
+	query.Add("uploadId", m.UploadId)
+	query.Add("max-parts", strconv.FormatInt(int64(listPartsMax), 10))
+	req.URL.RawQuery = query.Encode()
+
 	var parts partSlice
 	for attempt := attempts.Start(); attempt.Next(); {
-		req := &request{
-			method: "GET",
-			bucket: m.Bucket.Name,
-			path:   m.Key,
-			params: params,
-		}
-		var resp listPartsResp
-		err := m.Bucket.S3.query(req, &resp)
-		if shouldRetry(err) && attempt.HasNext() {
-			continue
-		}
-		if err != nil {
+
+		addAmazonDateHeader(req.Header)
+
+		// We need to resign every iteration because we're changing the URL.
+		if err := m.Bucket.S3.Sign(req, m.Bucket.Auth); err != nil {
 			return nil, err
 		}
-		parts = append(parts, resp.Part...)
-		if !resp.IsTruncated {
-			sort.Sort(parts)
-			return parts, nil
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		} else if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+			err = buildError(resp)
 		}
-		params["part-number-marker"] = []string{resp.NextPartNumberMarker}
-		attempt = attempts.Start() // Last request worked.
+
+		if err != nil {
+			if shouldRetry(err) && attempt.HasNext() {
+				continue
+			}
+			return nil, err
+		}
+
+		var listResp listPartsResp
+		if err := xml.NewDecoder(resp.Body).Decode(&listResp); err != nil {
+			return nil, err
+		}
+
+		parts = append(parts, listResp.Part...)
+		if listResp.IsTruncated == false {
+			break
+		}
+
+		query.Set("part-number-marker", listResp.NextPartNumberMarker)
+		req.URL.RawQuery = query.Encode()
+
+		// Last request worked; restart our counter.
+		attempt = attempts.Start()
 	}
-	panic("unreachable")
+
+	sort.Sort(parts)
+	return parts, nil
 }
 
 type ReaderAtSeeker interface {
@@ -280,6 +350,7 @@ func (m *Multi) PutAll(r ReaderAtSeeker, partSize int64) ([]Part, error) {
 	if err != nil && !hasCode(err, "NoSuchUpload") {
 		return nil, err
 	}
+
 	reuse := 0   // Index of next old part to consider reusing.
 	current := 1 // Part number of latest good part handled.
 	totalSize, err := r.Seek(0, 2)
@@ -344,33 +415,54 @@ func (p completeParts) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 //
 // See http://goo.gl/2Z7Tw for details.
 func (m *Multi) Complete(parts []Part) error {
-	params := map[string][]string{
-		"uploadId": {m.UploadId},
-	}
-	c := completeUpload{}
+
+	var c completeUpload
 	for _, p := range parts {
 		c.Parts = append(c.Parts, completePart{p.N, p.ETag})
 	}
 	sort.Sort(c.Parts)
+
 	data, err := xml.Marshal(&c)
 	if err != nil {
 		return err
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
-		req := &request{
-			method:  "POST",
-			bucket:  m.Bucket.Name,
-			path:    m.Key,
-			params:  params,
-			payload: bytes.NewReader(data),
-		}
-		err := m.Bucket.S3.query(req, nil)
-		if shouldRetry(err) && attempt.HasNext() {
-			continue
-		}
+	body := bytes.NewReader(data)
+
+	req, err := http.NewRequest(
+		"POST",
+		m.Bucket.Region.ResolveS3BucketEndpoint(m.Bucket.Name),
+		body,
+	)
+	if err != nil {
 		return err
 	}
-	panic("unreachable")
+	req.Close = true
+	req.ContentLength = int64(len(data))
+	req.URL.Path += m.Key
+
+	query := req.URL.Query()
+	query.Add("uploadId", m.UploadId)
+	req.URL.RawQuery = query.Encode()
+
+	addAmazonDateHeader(req.Header)
+
+	if err := m.Bucket.S3.Sign(req, m.Bucket.Auth); err != nil {
+		return err
+	}
+	// Signing may read the request body.
+	if _, err := body.Seek(0, 0); err != nil {
+		return err
+	}
+
+	resp, err := requestRetryLoop(req, attempts)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return buildError(resp)
+	}
+
+	return nil
 }
 
 // Abort deletes an unifinished multipart upload and any previously
@@ -389,21 +481,22 @@ func (m *Multi) Complete(parts []Part) error {
 //
 // See http://goo.gl/dnyJw for details.
 func (m *Multi) Abort() error {
-	params := map[string][]string{
-		"uploadId": {m.UploadId},
+
+	req, err := http.NewRequest("DELETE", m.Bucket.Region.ResolveS3BucketEndpoint(m.Bucket.Name), nil)
+	if err != nil {
+		return nil
 	}
-	for attempt := attempts.Start(); attempt.Next(); {
-		req := &request{
-			method: "DELETE",
-			bucket: m.Bucket.Name,
-			path:   m.Key,
-			params: params,
-		}
-		err := m.Bucket.S3.query(req, nil)
-		if shouldRetry(err) && attempt.HasNext() {
-			continue
-		}
+	req.URL.Path += m.Key
+
+	query := req.URL.Query()
+	query.Add("uploadId", m.UploadId)
+	req.URL.RawQuery = query.Encode()
+
+	addAmazonDateHeader(req.Header)
+
+	if err := m.Bucket.S3.Sign(req, m.Bucket.Auth); err != nil {
 		return err
 	}
-	panic("unreachable")
+	_, err = requestRetryLoop(req, attempts)
+	return err
 }

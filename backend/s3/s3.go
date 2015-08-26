@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/s3"
+	"gopkg.in/amz.v3/aws"
+	"gopkg.in/amz.v3/s3"
 
 	"github.com/restic/restic/backend"
 )
@@ -50,7 +50,12 @@ func Open(regionname, bucketname string) (backend.Backend, error) {
 
 	client := s3.New(auth, aws.Regions[regionname])
 
-	return OpenS3Bucket(client.Bucket(bucketname), bucketname), nil
+	s3bucket, s3err := client.Bucket(bucketname)
+	if s3err != nil {
+		return nil, s3err
+	}
+
+	return OpenS3Bucket(s3bucket, bucketname), nil
 }
 
 // Location returns this backend's location (the bucket name).
@@ -97,8 +102,8 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	path := s3path(t, name)
 
 	// Check key does not already exist
-	key, err := bb.b.bucket.GetKey(path)
-	if err == nil && key.Key == path {
+	_, err := bb.b.bucket.GetReader(path)
+	if err == nil {
 		return errors.New("key already exists!")
 	}
 
@@ -153,8 +158,8 @@ func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint)
 func (be *S3Backend) Test(t backend.Type, name string) (bool, error) {
 	found := false
 	path := s3path(t, name)
-	key, err := be.bucket.GetKey(path)
-	if err == nil && key.Key == path {
+	_, err := be.bucket.GetReader(path)
+	if err == nil {
 		found = true
 	}
 

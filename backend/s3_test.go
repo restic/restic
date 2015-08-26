@@ -3,9 +3,9 @@ package backend_test
 import (
 	"testing"
 
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/s3"
-	"github.com/mitchellh/goamz/s3/s3test"
+	"gopkg.in/amz.v3/aws"
+	"gopkg.in/amz.v3/s3"
+	"gopkg.in/amz.v3/s3/s3test"
 
 	bes3 "github.com/restic/restic/backend/s3"
 	. "github.com/restic/restic/test"
@@ -34,10 +34,11 @@ func setupS3Backend(t *testing.T) *bes3.S3Backend {
 		S3LocationConstraint: true, // s3test server requires a LocationConstraint
 	}
 
-	s.auth = aws.Auth{"abc", "123", ""}
+	s.auth = aws.Auth{"abc", "123"}
 
 	service := s3.New(s.auth, s.region)
-	bucket := service.Bucket("testbucket")
+	bucket, berr := service.Bucket("testbucket")
+	OK(t, berr)
 	err = bucket.PutBucket("private")
 	OK(t, err)
 

@@ -23,24 +23,12 @@
 			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 		},
 		{
-			"ImportPath": "github.com/mitchellh/goamz/aws",
-			"Rev": "caaaea8b30ee15616494ee68abd5d8ebbbef05cf"
-		},
-		{
-			"ImportPath": "github.com/mitchellh/goamz/s3",
-			"Rev": "caaaea8b30ee15616494ee68abd5d8ebbbef05cf"
-		},
-		{
 			"ImportPath": "github.com/pkg/sftp",
 			"Rev": "518aed2757a65cfa64d4b1b2baf08410f8b7a6bc"
 		},
 		{
 			"ImportPath": "github.com/restic/chunker",
 			"Rev": "e795b80f4c927ebcf2687ce18bcf1a39fee740b1"
-		},
-		{
-			"ImportPath": "github.com/vaughan0/go-ini",
-			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/pbkdf2",
@@ -57,6 +45,18 @@
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
 			"Rev": "cc04154d65fb9296747569b107cfd05380b1ea3e"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "7654728e381988afd88e58cabfd6363a5ea91810"
+		},
+		{
+			"ImportPath": "gopkg.in/amz.v3/aws",
+			"Rev": "bff3a097c4108da57bb8cbe3aad2990d74d23676"
+		},
+		{
+			"ImportPath": "gopkg.in/amz.v3/s3",
+			"Rev": "bff3a097c4108da57bb8cbe3aad2990d74d23676"
 		}
 	]
 }

@@ -2,17 +2,20 @@ package s3_test
 
 import (
 	"encoding/xml"
-	"github.com/mitchellh/goamz/s3"
-	. "github.com/motain/gocheck"
 	"io"
 	"io/ioutil"
 	"strings"
+
+	. "gopkg.in/check.v1"
+
+	"gopkg.in/amz.v3/s3"
 )
 
 func (s *S) TestInitMulti(c *C) {
 	testServer.Response(200, nil, InitMultiResultDump)
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -29,12 +32,13 @@ func (s *S) TestInitMulti(c *C) {
 
 func (s *S) TestMultiNoPreviousUpload(c *C) {
 	// Don't retry the NoSuchUpload error.
-	s.DisableRetries()
+	s3.RetryAttempts(false)
 
 	testServer.Response(404, nil, NoSuchUploadErrorDump)
 	testServer.Response(200, nil, InitMultiResultDump)
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.Multi("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -56,7 +60,8 @@ func (s *S) TestMultiNoPreviousUpload(c *C) {
 func (s *S) TestMultiReturnOld(c *C) {
 	testServer.Response(200, nil, ListMultiResultDump)
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.Multi("multi1", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -76,7 +81,8 @@ func (s *S) TestListParts(c *C) {
 	testServer.Response(404, nil, NoSuchUploadErrorDump) // :-(
 	testServer.Response(200, nil, ListPartsResultDump2)
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -116,7 +122,8 @@ func (s *S) TestPutPart(c *C) {
 	testServer.Response(200, nil, InitMultiResultDump)
 	testServer.Response(200, headers, "")
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -147,7 +154,7 @@ func readAll(r io.Reader) string {
 
 func (s *S) TestPutAllNoPreviousUpload(c *C) {
 	// Don't retry the NoSuchUpload error.
-	s.DisableRetries()
+	s3.RetryAttempts(false)
 
 	etag1 := map[string]string{"ETag": `"etag1"`}
 	etag2 := map[string]string{"ETag": `"etag2"`}
@@ -158,17 +165,18 @@ func (s *S) TestPutAllNoPreviousUpload(c *C) {
 	testServer.Response(200, etag2, "")
 	testServer.Response(200, etag3, "")
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
 
 	parts, err := multi.PutAll(strings.NewReader("part1part2last"), 5)
-	c.Assert(parts, HasLen, 3)
-	c.Assert(parts[0].ETag, Equals, `"etag1"`)
-	c.Assert(parts[1].ETag, Equals, `"etag2"`)
-	c.Assert(parts[2].ETag, Equals, `"etag3"`)
 	c.Assert(err, IsNil)
+	c.Assert(parts, HasLen, 3)
+	c.Check(parts[0].ETag, Equals, `"etag1"`)
+	c.Check(parts[1].ETag, Equals, `"etag2"`)
+	c.Check(parts[2].ETag, Equals, `"etag3"`)
 
 	// Init
 	testServer.WaitRequest()
@@ -205,14 +213,15 @@ func (s *S) TestPutAllNoPreviousUpload(c *C) {
 
 func (s *S) TestPutAllZeroSizeFile(c *C) {
 	// Don't retry the NoSuchUpload error.
-	s.DisableRetries()
+	s3.RetryAttempts(false)
 
 	etag1 := map[string]string{"ETag": `"etag1"`}
 	testServer.Response(200, nil, InitMultiResultDump)
 	testServer.Response(404, nil, NoSuchUploadErrorDump)
 	testServer.Response(200, etag1, "")
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -247,7 +256,8 @@ func (s *S) TestPutAllResume(c *C) {
 	testServer.Response(200, nil, ListPartsResultDump2)
 	testServer.Response(200, etag2, "")
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -293,7 +303,8 @@ func (s *S) TestMultiComplete(c *C) {
 	testServer.Response(200, nil, InternalErrorDump)
 	testServer.Response(200, nil, "")
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -301,8 +312,9 @@ func (s *S) TestMultiComplete(c *C) {
 	err = multi.Complete([]s3.Part{{2, `"ETag2"`, 32}, {1, `"ETag1"`, 64}})
 	c.Assert(err, IsNil)
 
-	testServer.WaitRequest()
-	req := testServer.WaitRequest()
+	// Grab the 2nd request.
+	req := testServer.WaitRequests(2)[1]
+
 	c.Assert(req.Method, Equals, "POST")
 	c.Assert(req.URL.Path, Equals, "/sample/multi")
 	c.Assert(req.Form.Get("uploadId"), Matches, "JNbR_[A-Za-z0-9.]+QQ--")
@@ -315,8 +327,7 @@ func (s *S) TestMultiComplete(c *C) {
 		}
 	}
 
-	dec := xml.NewDecoder(req.Body)
-	err = dec.Decode(&payload)
+	err = xml.NewDecoder(req.Body).Decode(&payload)
 	c.Assert(err, IsNil)
 
 	c.Assert(payload.XMLName.Local, Equals, "CompleteMultipartUpload")
@@ -331,7 +342,8 @@ func (s *S) TestMultiAbort(c *C) {
 	testServer.Response(200, nil, InitMultiResultDump)
 	testServer.Response(200, nil, "")
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multi, err := b.InitMulti("multi", "text/plain", s3.Private)
 	c.Assert(err, IsNil)
@@ -349,7 +361,8 @@ func (s *S) TestMultiAbort(c *C) {
 func (s *S) TestListMulti(c *C) {
 	testServer.Response(200, nil, ListMultiResultDump)
 
-	b := s.s3.Bucket("sample")
+	b, err := s.s3.Bucket("sample")
+	c.Assert(err, IsNil)
 
 	multis, prefixes, err := b.ListMulti("", "/")
 	c.Assert(err, IsNil)
