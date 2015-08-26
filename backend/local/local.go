@@ -62,13 +62,6 @@ func Create(dir string) (*Local, error) {
 		return nil, errors.New("config file already exists")
 	}
 
-	// test if directories already exist
-	for _, d := range dirs[1:] {
-		if _, err := os.Stat(d); err == nil {
-			return nil, fmt.Errorf("dir %s already exists", d)
-		}
-	}
-
 	// create paths for data, refs and temp
 	for _, d := range dirs {
 		err := os.MkdirAll(d, backend.Modes.Dir)
