@@ -34,10 +34,11 @@ func setupS3Backend(t *testing.T) *bes3.S3Backend {
 		S3LocationConstraint: true, // s3test server requires a LocationConstraint
 	}
 
-	s.auth = aws.Auth{"abc", "123", ""}
+	s.auth = aws.Auth{"abc", "123"}
 
 	service := s3.New(s.auth, s.region)
-	bucket := service.Bucket("testbucket")
+	bucket, berr := service.Bucket("testbucket")
+	OK(t, err)
 	err = bucket.PutBucket("private")
 	OK(t, err)
 
