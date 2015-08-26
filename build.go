@@ -159,7 +159,7 @@ func verbosePrintf(message string, args ...interface{}) {
 		return
 	}
 
-	fmt.Printf(message, args...)
+	fmt.Printf("build: "+message, args...)
 }
 
 // cleanEnv returns a clean environment with GOPATH and GOBIN removed (if
@@ -227,6 +227,27 @@ func gitVersion() string {
 	version := strings.TrimSpace(string(out))
 	verbosePrintf("git version is %s\n", version)
 	return version
+}
+
+// Constants represents a set of constants that are set in the final binary to
+// the given value via compiler flags.
+type Constants map[string]string
+
+// LDFlags returns the string that can be passed to go build's `-ldflags`.
+func (cs Constants) LDFlags() string {
+	l := make([]string, 0, len(cs))
+
+	if strings.HasPrefix(runtime.Version(), "go1.5") {
+		for k, v := range cs {
+			l = append(l, fmt.Sprintf(`-X "%s=%s"`, k, v))
+		}
+	} else {
+		for k, v := range cs {
+			l = append(l, fmt.Sprintf(`-X %q %q`, k, v))
+		}
+	}
+
+	return strings.Join(l, " ")
 }
 
 func main() {
@@ -297,7 +318,7 @@ func main() {
 				die("remove GOPATH at %s failed: %v\n", err)
 			}
 		} else {
-			fmt.Printf("leaving temporary GOPATH at %v\n", gopath)
+			verbosePrintf("leaving temporary GOPATH at %v\n", gopath)
 		}
 	}()
 
@@ -307,10 +328,13 @@ func main() {
 	}
 	version := getVersion()
 	compileTime := time.Now().Format(timeFormat)
-	ldflags := fmt.Sprintf("-s -X main.compiledAt %q", compileTime)
+	constants := Constants{`main.compiledAt`: compileTime}
 	if version != "" {
-		ldflags = fmt.Sprintf("%s -X main.version %q", ldflags, version)
+		constants["main.version"] = version
 	}
+	ldflags := "-s " + constants.LDFlags()
+	verbosePrintf("ldflags: %s\n", ldflags)
+
 	args := []string{
 		"-tags", strings.Join(buildTags, " "),
 		"-ldflags", ldflags,
