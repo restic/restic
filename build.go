@@ -200,35 +200,41 @@ func test(gopath string, args ...string) error {
 	return cmd.Run()
 }
 
+// getVersion returns the version string from the file VERSION in the current
+// directory.
+func getVersionFromFile() string {
+	buf, err := ioutil.ReadFile("VERSION")
+	if err != nil {
+		verbosePrintf("error reading file VERSION: %v\n", err)
+		return ""
+	}
+
+	return strings.TrimSpace(string(buf))
+}
+
 // getVersion returns a version string which is a combination of the contents
 // of the file VERSION in the current directory and the version from git (if
 // available).
 func getVersion() string {
-	buf, err := ioutil.ReadFile("VERSION")
-	if err != nil {
-		verbosePrintf("error reading file VERSION: %v\n", err)
-	}
-	versionFile := strings.TrimSpace(string(buf))
-	verbosePrintf("version from file 'VERSION' is %q\n", versionFile)
+	versionFile := getVersionFromFile()
+	versionGit := getVersionFromGit()
 
-	versionGit := gitVersion()
-	verbosePrintf("version from file 'VERSION' is %q\n", versionGit)
+	verbosePrintf("version from file 'VERSION' is %q, version from git %q\n",
+		versionFile, versionGit)
 
-	if versionFile == "" && versionGit == "" {
-		return "unknown"
-	}
-
-	version := versionFile
-	if versionGit != "" {
-		version += " (" + versionGit + ")"
+	switch {
+	case versionFile == "":
+		return versionGit
+	case versionGit == "":
+		return versionFile
 	}
 
-	return version
+	return fmt.Sprintf("%s (%s)", versionFile, versionGit)
 }
 
-// gitVersion returns a version string that identifies the currently checked
-// out git commit.
-func gitVersion() string {
+// getVersionFromGit returns a version string that identifies the currently
+// checked out git commit.
+func getVersionFromGit() string {
 	cmd := exec.Command("git", "describe",
 		"--long", "--tags", "--dirty", "--always")
 	out, err := cmd.Output()
