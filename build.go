@@ -229,8 +229,8 @@ func gitVersion() string {
 	return version
 }
 
-// Constants represents a set constants set in the final binary to the given
-// value.
+// Constants represents a set of constants that are set in the final binary to
+// the given value via compiler flags.
 type Constants map[string]string
 
 // LDFlags returns the string that can be passed to go build's `-ldflags`.
@@ -318,7 +318,7 @@ func main() {
 				die("remove GOPATH at %s failed: %v\n", err)
 			}
 		} else {
-			fmt.Printf("leaving temporary GOPATH at %v\n", gopath)
+			verbosePrintf("leaving temporary GOPATH at %v\n", gopath)
 		}
 	}()
 
@@ -333,7 +333,7 @@ func main() {
 		constants["main.version"] = version
 	}
 	ldflags := "-s " + constants.LDFlags()
-	fmt.Printf("ldflags: %s\n", ldflags)
+	verbosePrintf("ldflags: %s\n", ldflags)
 
 	args := []string{
 		"-tags", strings.Join(buildTags, " "),
