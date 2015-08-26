@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/restic/restic/backend"
 	"github.com/restic/restic/backend/local"
 	. "github.com/restic/restic/test"
 )
@@ -46,11 +47,13 @@ func TestLocalBackendCreationFailures(t *testing.T) {
 	b := setupLocalBackend(t)
 	defer teardownLocalBackend(t, b)
 
+	// create a fake config file
+	blob, err := b.Create()
+	OK(t, err)
+	fmt.Fprintf(blob, "config\n")
+	OK(t, blob.Finalize(backend.Config, ""))
+
 	// test failure to create a new repository at the same location
 	b2, err := local.Create(b.Location())
-	Assert(t, err != nil && b2 == nil, fmt.Sprintf("creating a repository at %s for the second time should have failed", b.Location()))
-
-	// test failure to create a new repository at the same location without a config file
-	b2, err = local.Create(b.Location())
 	Assert(t, err != nil && b2 == nil, fmt.Sprintf("creating a repository at %s for the second time should have failed", b.Location()))
 }

@@ -57,7 +57,7 @@ func Create(dir string) (*Local, error) {
 	}
 
 	// test if config file already exists
-	_, err := os.Lstat(backend.Paths.Config)
+	_, err := os.Lstat(filepath.Join(dir, backend.Paths.Config))
 	if err == nil {
 		return nil, errors.New("config file already exists")
 	}

@@ -110,7 +110,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// test if config file already exists
-	_, err = sftp.c.Lstat(backend.Paths.Config)
+	_, err = sftp.c.Lstat(filepath.Join(dir, backend.Paths.Config))
 	if err == nil {
 		return nil, errors.New("config file already exists")
 	}
