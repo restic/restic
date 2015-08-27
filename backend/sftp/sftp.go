@@ -110,16 +110,9 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// test if config file already exists
-	_, err = sftp.c.Lstat(backend.Paths.Config)
+	_, err = sftp.c.Lstat(filepath.Join(dir, backend.Paths.Config))
 	if err == nil {
 		return nil, errors.New("config file already exists")
-	}
-
-	// test if directories already exist
-	for _, d := range dirs[1:] {
-		if _, err := sftp.c.Lstat(d); err == nil {
-			return nil, fmt.Errorf("dir %s already exists", d)
-		}
 	}
 
 	// create paths for data, refs and temp blobs
