@@ -94,7 +94,7 @@ func (c CmdFind) findInTree(repo *repository.Repository, id backend.ID, path str
 		}
 
 		if node.Type == "dir" {
-			subdirResults, err := c.findInTree(repo, id, filepath.Join(path, node.Name))
+			subdirResults, err := c.findInTree(repo, *node.Subtree, filepath.Join(path, node.Name))
 			if err != nil {
 				return nil, err
 			}
@@ -164,6 +164,11 @@ func (c CmdFind) Execute(args []string) error {
 
 	lock, err := lockRepo(repo)
 	defer unlockRepo(lock)
+	if err != nil {
+		return err
+	}
+
+	err = repo.LoadIndex()
 	if err != nil {
 		return err
 	}
