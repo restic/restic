@@ -100,6 +100,16 @@ func cmdLs(t testing.TB, global GlobalOptions, snapshotID string) []string {
 	return strings.Split(string(buf.Bytes()), "\n")
 }
 
+func cmdFind(t testing.TB, global GlobalOptions, pattern string) []string {
+	var buf bytes.Buffer
+	global.stdout = &buf
+
+	cmd := &CmdFind{global: &global}
+	OK(t, cmd.Execute([]string{pattern}))
+
+	return strings.Split(string(buf.Bytes()), "\n")
+}
+
 func TestBackup(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
@@ -615,5 +625,24 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 
 		Assert(t, fi.ModTime() == time.Unix(0, 0),
 			"meta data of intermediate directory hasn't been restore")
+	})
+}
+
+func TestFind(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		cmdInit(t, global)
+		SetupTarTestFixture(t, env.testdata, datafile)
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		cmdCheck(t, global)
+
+		results := cmdFind(t, global, "unexistingfile")
+		Assert(t, len(results) != 0, "unexisting file found in repo (%v)", datafile)
+
+		results = cmdFind(t, global, "testfile")
+		Assert(t, len(results) != 1, "file not found in repo (%v)", datafile)
+
+		results = cmdFind(t, global, "test")
+		Assert(t, len(results) < 2, "less than two file found in repo (%v)", datafile)
 	})
 }

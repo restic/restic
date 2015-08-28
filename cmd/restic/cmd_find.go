@@ -122,11 +122,10 @@ func (c CmdFind) findInSnapshot(repo *repository.Repository, id backend.ID) erro
 	if len(results) == 0 {
 		return nil
 	}
-
-	fmt.Printf("found %d matching entries in snapshot %s\n", len(results), id)
+	c.global.Verbosef("found %d matching entries in snapshot %s\n", len(results), id)
 	for _, res := range results {
 		res.node.Name = filepath.Join(res.path, res.node.Name)
-		fmt.Printf("  %s\n", res.node)
+		c.global.Printf("  %s\n", res.node)
 	}
 
 	return nil
@@ -138,7 +137,7 @@ func (CmdFind) Usage() string {
 
 func (c CmdFind) Execute(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("invalid number of arguments, Usage: %s", c.Usage())
+		return fmt.Errorf("wrong number of arguments, Usage: %s", c.Usage())
 	}
 
 	var err error
