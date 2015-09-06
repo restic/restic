@@ -23,6 +23,10 @@
 			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 		},
 		{
+			"ImportPath": "github.com/stretchr/testify",
+			"Rev": "7c2b1e5640dcf2631213ca962d892bffa1e08860"
+		},
+		{
 			"ImportPath": "github.com/pkg/sftp",
 			"Rev": "518aed2757a65cfa64d4b1b2baf08410f8b7a6bc"
 		},
