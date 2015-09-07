@@ -2,6 +2,7 @@ package rest
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -62,7 +63,8 @@ func (rb *RestBlob) Finalize(t backend.Type, name string) error {
 	rb.final = true
 
 	<-rb.b.connChan
-	resp, err := http.Post(restPath(rb.b.url, t, name), "binary/octet-stream", rb.buf)
+	client := *rb.b.client
+	resp, err := client.Post(restPath(rb.b.url, t, name), "binary/octet-stream", rb.buf)
 	defer resp.Body.Close()
 	if resp.StatusCode == 409 {
 		err = errors.New("already exists")
@@ -82,6 +84,7 @@ func (rb *RestBlob) Size() uint {
 type Rest struct {
 	url      *url.URL
 	connChan chan struct{}
+	client   *http.Client
 }
 
 // Open opens the http backend at the specified url.
@@ -90,7 +93,11 @@ func Open(url *url.URL) (*Rest, error) {
 	for i := 0; i < connLimit; i++ {
 		connChan <- struct{}{}
 	}
-	return &Rest{url: url, connChan: connChan}, nil
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := http.Client{Transport: tr}
+	return &Rest{url: url, connChan: connChan, client: &client}, nil
 }
 
 // Location returns a string that specifies the location of the repository, like a URL.
@@ -110,7 +117,7 @@ func (b *Rest) Create() (backend.Blob, error) {
 
 // Get returns an io.ReadCloser for the Blob with the given name of type t.
 func (b *Rest) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	resp, err := http.Get(restPath(b.url, t, name))
+	resp, err := b.client.Get(restPath(b.url, t, name))
 	if err == nil && resp.StatusCode != 200 {
 		err = errors.New("blob not found")
 	}
@@ -127,7 +134,8 @@ func (b *Rest) GetReader(t backend.Type, name string, offset, length uint) (io.R
 
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", offset, offset+length))
 
-	resp, errg := http.DefaultClient.Do(req)
+	client := *b.client
+	resp, errg := client.Do(req)
 	if errg != nil {
 		return nil, errg
 	}
@@ -144,7 +152,8 @@ func (b *Rest) Test(t backend.Type, name string) (bool, error) {
 		return found, err
 	}
 
-	resp, errh := http.DefaultClient.Do(req)
+	client := *b.client
+	resp, errh := client.Do(req)
 	defer resp.Body.Close()
 	if resp.StatusCode == 200 {
 		found = true
@@ -159,7 +168,8 @@ func (b *Rest) Remove(t backend.Type, name string) error {
 		return err
 	}
 
-	resp, errd := http.DefaultClient.Do(req)
+	client := *b.client
+	resp, errd := client.Do(req)
 	defer resp.Body.Close()
 	return errd
 }
@@ -175,7 +185,8 @@ func (b *Rest) Close() error {
 func (b *Rest) List(t backend.Type, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
-	resp, err := http.Get(restPath(b.url, t, ""))
+	client := *b.client
+	resp, err := client.Get(restPath(b.url, t, ""))
 	defer resp.Body.Close()
 	if err != nil {
 		close(ch)
