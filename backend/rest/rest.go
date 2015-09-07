@@ -56,7 +56,7 @@ func (rb *RestBlob) Close() error {
 // Finalize moves the data blob to the final location for type and name.
 func (rb *RestBlob) Finalize(t backend.Type, name string) error {
 	if rb.final {
-		return errors.New("already finalized")
+		return errors.New("blob already finalized")
 	}
 
 	rb.final = true
@@ -65,8 +65,8 @@ func (rb *RestBlob) Finalize(t backend.Type, name string) error {
 	client := *rb.b.client
 	resp, err := client.Post(restPath(rb.b.url, t, name), "binary/octet-stream", rb.buf)
 	defer resp.Body.Close()
-	if resp.StatusCode == 409 {
-		err = errors.New("already exists")
+	if resp.StatusCode != 200 {
+		err = errors.New("blob not saved")
 	}
 	rb.b.connChan <- struct{}{}
 	rb.buf.Reset()
@@ -115,8 +115,11 @@ func (b *Rest) Create() (backend.Blob, error) {
 // Get returns an io.ReadCloser for the Blob with the given name of type t.
 func (b *Rest) Get(t backend.Type, name string) (io.ReadCloser, error) {
 	resp, err := b.client.Get(restPath(b.url, t, name))
-	if err == nil && resp.StatusCode != 200 {
-		err = errors.New("blob not found")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, errors.New("blob not found")
 	}
 	return resp.Body, err
 }
@@ -128,34 +131,34 @@ func (b *Rest) GetReader(t backend.Type, name string, offset, length uint) (io.R
 	if err != nil {
 		return nil, err
 	}
-
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", offset, offset+length))
-
 	client := *b.client
-	resp, errg := client.Do(req)
-	if errg != nil {
-		return nil, errg
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
 	}
-
+	if resp.StatusCode != 206 {
+		return nil, errors.New("blob not found")
+	}
 	return backend.LimitReadCloser(resp.Body, int64(length)), nil
 }
 
 // Test a boolean value whether a Blob with the name and type exists.
 func (b *Rest) Test(t backend.Type, name string) (bool, error) {
-	found := false
-
 	req, err := http.NewRequest("HEAD", restPath(b.url, t, name), nil)
 	if err != nil {
-		return found, err
+		return false, err
 	}
-
 	client := *b.client
-	resp, errh := client.Do(req)
+	resp, err := client.Do(req)
 	defer resp.Body.Close()
-	if resp.StatusCode == 200 {
-		found = true
+	if err != nil {
+		return false, err
 	}
-	return found, errh
+	if resp.StatusCode != 200 {
+		return false, nil
+	}
+	return true, nil
 }
 
 // Remove removes a Blob with type t and name.
@@ -164,11 +167,10 @@ func (b *Rest) Remove(t backend.Type, name string) error {
 	if err != nil {
 		return err
 	}
-
 	client := *b.client
-	resp, errd := client.Do(req)
+	resp, err := client.Do(req)
 	defer resp.Body.Close()
-	return errd
+	return err
 }
 
 // Close the backend
@@ -190,8 +192,8 @@ func (b *Rest) List(t backend.Type, done <-chan struct{}) <-chan string {
 		return ch
 	}
 
-	data, errd := ioutil.ReadAll(resp.Body)
-	if errd != nil {
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		close(ch)
 		return ch
 	}

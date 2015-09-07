@@ -2,6 +2,7 @@ package backend_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +22,6 @@ func TestRestBackend(t *testing.T) {
 	// Initializing a temporary direcory for the rest backend.
 	path, _ := ioutil.TempDir("", "restic-repository-")
 	defer os.RemoveAll(path)
-
 	dirs := []string{
 		path,
 		filepath.Join(path, string(backend.Data)),
@@ -30,7 +30,6 @@ func TestRestBackend(t *testing.T) {
 		filepath.Join(path, string(backend.Lock)),
 		filepath.Join(path, string(backend.Key)),
 	}
-
 	for _, d := range dirs {
 		os.MkdirAll(d, backend.Modes.Dir)
 	}
@@ -42,18 +41,19 @@ func TestRestBackend(t *testing.T) {
 		file := filepath.Join(path, "config")
 		if _, err := os.Stat(file); err != nil {
 			http.Error(w, "404 repository not found", 404)
+			return
 		}
 	}).Methods("HEAD")
 
 	// Get the configuration.
 	r.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		file := filepath.Join(path, "config")
-		if _, err := os.Stat(file); err == nil {
-			bytes, _ := ioutil.ReadFile(file)
-			w.Write(bytes)
-		} else {
+		if _, err := os.Stat(file); err != nil {
 			http.Error(w, "404 repository not found", 404)
+			return
 		}
+		bytes, _ := ioutil.ReadFile(file)
+		w.Write(bytes)
 	}).Methods("GET")
 
 	// Save the configuration.
@@ -61,11 +61,10 @@ func TestRestBackend(t *testing.T) {
 		file := filepath.Join(path, "config")
 		if _, err := os.Stat(file); err == nil {
 			http.Error(w, "409 repository already initialized", 409)
-		} else {
-			bytes, _ := ioutil.ReadAll(r.Body)
-			ioutil.WriteFile(file, bytes, 0600)
-
+			return
 		}
+		bytes, _ := ioutil.ReadAll(r.Body)
+		ioutil.WriteFile(file, bytes, 0600)
 	}).Methods("POST")
 
 	// List the blobs of a given type.
@@ -119,11 +118,13 @@ func TestRestBackend(t *testing.T) {
 			return
 		}
 		blob := filepath.Join(path, string(blobType), blobID.String())
-		if file, err := os.Open(blob); err == nil {
-			http.ServeContent(w, r, "", time.Unix(0, 0), file)
-		} else {
+		file, err := os.Open(blob)
+		defer file.Close()
+		if err != nil {
 			http.Error(w, "404 blob not found", 404)
+			return
 		}
+		http.ServeContent(w, r, "", time.Unix(0, 0), file)
 	}).Methods("GET")
 
 	// Save a blob of a given type.
@@ -142,10 +143,10 @@ func TestRestBackend(t *testing.T) {
 		blob := filepath.Join(path, string(blobType), blobID.String())
 		if _, err := os.Stat(blob); err == nil {
 			http.Error(w, "409 blob already uploaded", 409)
-		} else {
-			bytes, _ := ioutil.ReadAll(r.Body)
-			ioutil.WriteFile(blob, bytes, 0600)
+			return
 		}
+		bytes, _ := ioutil.ReadAll(r.Body)
+		ioutil.WriteFile(blob, bytes, 0600)
 	}).Methods("POST")
 
 	// Delete a blob of a given type.
@@ -162,17 +163,20 @@ func TestRestBackend(t *testing.T) {
 			return
 		}
 		blob := filepath.Join(path, string(blobType), blobID.String())
-		if _, err := os.Stat(blob); err == nil {
-			os.Remove(blob)
-		} else {
+		if _, err := os.Stat(blob); err != nil {
 			http.Error(w, "404 blob not found", 404)
+			return
+		}
+		if err := os.Remove(blob); err != nil {
+			fmt.Println(err.Error())
+			http.Error(w, "500 internal server error", 500)
+			return
 		}
 	}).Methods("DELETE")
 
 	// Start the server and launch the tests.
 	s := httptest.NewServer(r)
 	defer s.Close()
-
 	u, _ := url.Parse(s.URL)
 	backend, _ := rest.Open(u)
 
