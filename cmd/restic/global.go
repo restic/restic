@@ -195,6 +195,7 @@ func create(u string) (backend.Backend, error) {
 	if url.Scheme == "s3" {
 		return s3.Open(url.Host, url.Path[1:])
 	} else if url.Scheme == "http" || url.Scheme == "https" {
+
 		return rest.Open(url)
 	}
 

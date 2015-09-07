@@ -2,7 +2,6 @@ package rest
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -93,9 +92,7 @@ func Open(url *url.URL) (*Rest, error) {
 	for i := 0; i < connLimit; i++ {
 		connChan <- struct{}{}
 	}
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
+	tr := &http.Transport{}
 	client := http.Client{Transport: tr}
 	return &Rest{url: url, connChan: connChan, client: &client}, nil
 }
