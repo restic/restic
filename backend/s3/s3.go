@@ -102,15 +102,9 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	path := s3path(t, name)
 
 	// Check key does not already exist
-<<<<<<< HEAD
 	_, err := bb.b.bucket.GetReader(path)
 	if err == nil {
 		return errors.New("key already exists!")
-=======
-	key, err := bb.b.bucket.GetKey(path)
-	if err == nil && key.Key == path {
-		return errors.New("key already exists")
->>>>>>> integrated the comments from the review, simplified the backend and added some documentation
 	}
 
 	<-bb.b.connChan
