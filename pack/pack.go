@@ -57,7 +57,7 @@ func (t *BlobType) UnmarshalJSON(buf []byte) error {
 // Blob is a blob within a pack.
 type Blob struct {
 	Type   BlobType
-	Length uint32
+	Length uint
 	ID     backend.ID
 	Offset uint
 }
@@ -100,7 +100,7 @@ func (p *Packer) Add(t BlobType, id backend.ID, rd io.Reader) (int64, error) {
 	c := Blob{Type: t, ID: id}
 
 	n, err := io.Copy(p.hw, rd)
-	c.Length = uint32(n)
+	c.Length = uint(n)
 	c.Offset = p.bytes
 	p.bytes += uint(n)
 	p.blobs = append(p.blobs, c)
@@ -164,7 +164,7 @@ func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
 	for _, b := range p.blobs {
 		entry := headerEntry{
 			Type:   b.Type,
-			Length: b.Length,
+			Length: uint32(b.Length),
 			ID:     b.ID,
 		}
 
@@ -276,7 +276,7 @@ func NewUnpacker(k *crypto.Key, entries []Blob, rd io.ReadSeeker) (*Unpacker, er
 
 			entries = append(entries, Blob{
 				Type:   e.Type,
-				Length: e.Length,
+				Length: uint(e.Length),
 				ID:     e.ID,
 				Offset: pos,
 			})

@@ -489,21 +489,6 @@ func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
 func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 	debug.Log("Checker.checkTree", "checking tree %v", id.Str())
 
-	// if _, ok := c.blobs[id2map(id)]; !ok {
-	// 	errs = append(errs, Error{TreeID: id, Err: errors.New("not found in index")})
-	// }
-
-	// blobs, subtrees, treeErrors := c.tree(id)
-	// if treeErrors != nil {
-	// 	debug.Log("Checker.trees", "error checking tree %v: %v", id.Str(), treeErrors)
-	// 	errs = append(errs, treeErrors...)
-	// 	continue
-	// }
-
-	// treeIDs = append(treeIDs, subtrees...)
-
-	// treesChecked[id2map(id)] = struct{}{}
-
 	var blobs []backend.ID
 
 	for i, node := range tree.Nodes {

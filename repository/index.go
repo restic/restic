@@ -15,7 +15,7 @@ import (
 // Index holds a lookup table for id -> pack.
 type Index struct {
 	m    sync.Mutex
-	pack map[string]indexEntry
+	pack map[backend.ID]indexEntry
 }
 
 type indexEntry struct {
@@ -29,12 +29,12 @@ type indexEntry struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		pack: make(map[string]indexEntry),
+		pack: make(map[backend.ID]indexEntry),
 	}
 }
 
 func (idx *Index) store(t pack.BlobType, id backend.ID, pack *backend.ID, offset, length uint, old bool) {
-	idx.pack[id.String()] = indexEntry{
+	idx.pack[id] = indexEntry{
 		tpe:    t,
 		packID: pack,
 		offset: offset,
@@ -61,9 +61,8 @@ func (idx *Index) Remove(packID backend.ID) {
 
 	debug.Log("Index.Remove", "id %v removed", packID.Str())
 
-	s := packID.String()
-	if _, ok := idx.pack[s]; ok {
-		delete(idx.pack, s)
+	if _, ok := idx.pack[packID]; ok {
+		delete(idx.pack, packID)
 	}
 }
 
@@ -72,7 +71,7 @@ func (idx *Index) Lookup(id backend.ID) (packID *backend.ID, tpe pack.BlobType, 
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	if p, ok := idx.pack[id.String()]; ok {
+	if p, ok := idx.pack[id]; ok {
 		debug.Log("Index.Lookup", "id %v found in pack %v at %d, length %d",
 			id.Str(), p.packID.Str(), p.offset, p.length)
 		return p.packID, p.tpe, p.offset, p.length, nil
@@ -110,7 +109,7 @@ func (idx *Index) Merge(other *Index) {
 
 	for k, v := range other.pack {
 		if _, ok := idx.pack[k]; ok {
-			debug.Log("Index.Merge", "index already has key %v, updating", k[:8])
+			debug.Log("Index.Merge", "index already has key %v, updating", k.Str())
 		}
 
 		idx.pack[k] = v
@@ -138,13 +137,7 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 			close(ch)
 		}()
 
-		for ids, blob := range idx.pack {
-			id, err := backend.ParseID(ids)
-			if err != nil {
-				// ignore invalid IDs
-				continue
-			}
-
+		for id, blob := range idx.pack {
 			select {
 			case <-done:
 				return
@@ -153,7 +146,7 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 					ID:     id,
 					Offset: blob.offset,
 					Type:   blob.tpe,
-					Length: uint32(blob.length),
+					Length: blob.length,
 				},
 				PackID: *blob.packID,
 			}:
@@ -173,7 +166,7 @@ func (idx *Index) Count(t pack.BlobType) (n uint) {
 	for id, blob := range idx.pack {
 		if blob.tpe == t {
 			n++
-			debug.Log("Index.Count", "  blob %v counted: %v", id[:8], blob)
+			debug.Log("Index.Count", "  blob %v counted: %v", id.Str(), blob)
 		}
 	}
 
@@ -181,12 +174,12 @@ func (idx *Index) Count(t pack.BlobType) (n uint) {
 }
 
 type packJSON struct {
-	ID    string     `json:"id"`
+	ID    backend.ID `json:"id"`
 	Blobs []blobJSON `json:"blobs"`
 }
 
 type blobJSON struct {
-	ID     string        `json:"id"`
+	ID     backend.ID    `json:"id"`
 	Type   pack.BlobType `json:"type"`
 	Offset uint          `json:"offset"`
 	Length uint          `json:"length"`
@@ -197,7 +190,7 @@ type blobJSON struct {
 // blobs in the index.
 func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON, error) {
 	list := []*packJSON{}
-	packs := make(map[string]*packJSON)
+	packs := make(map[backend.ID]*packJSON)
 
 	for id, blob := range idx.pack {
 		if selectFn != nil && !selectFn(blob) {
@@ -208,15 +201,15 @@ func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON,
 
 		if blob.packID.IsNull() {
 			debug.Log("Index.generatePackList", "blob %q has no packID! (type %v, offset %v, length %v)",
-				id[:8], blob.tpe, blob.offset, blob.length)
+				id.Str(), blob.tpe, blob.offset, blob.length)
 			return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", id)
 		}
 
 		// see if pack is already in map
-		p, ok := packs[blob.packID.String()]
+		p, ok := packs[*blob.packID]
 		if !ok {
 			// else create new pack
-			p = &packJSON{ID: blob.packID.String()}
+			p = &packJSON{ID: *blob.packID}
 
 			// and append it to the list and map
 			list = append(list, p)
@@ -302,20 +295,8 @@ func DecodeIndex(rd io.Reader) (*Index, error) {
 
 	idx := NewIndex()
 	for _, pack := range list {
-		packID, err := backend.ParseID(pack.ID)
-		if err != nil {
-			debug.Log("Index.DecodeIndex", "error parsing pack ID %q: %v", pack.ID, err)
-			return nil, err
-		}
-
 		for _, blob := range pack.Blobs {
-			blobID, err := backend.ParseID(blob.ID)
-			if err != nil {
-				debug.Log("Index.DecodeIndex", "error parsing blob ID %q: %v", blob.ID, err)
-				return nil, err
-			}
-
-			idx.store(blob.Type, blobID, &packID, blob.Offset, blob.Length, true)
+			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length, true)
 		}
 	}
 
