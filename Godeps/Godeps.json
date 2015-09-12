@@ -28,7 +28,7 @@
 		},
 		{
 			"ImportPath": "github.com/restic/chunker",
-			"Rev": "e795b80f4c927ebcf2687ce18bcf1a39fee740b1"
+			"Rev": "fc45043175c38d59374024a38fb7123c40a64f20"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/pbkdf2",
