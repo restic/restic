@@ -64,7 +64,9 @@ func (rb *RestBlob) Finalize(t backend.Type, name string) error {
 	<-rb.b.connChan
 	client := *rb.b.client
 	resp, err := client.Post(restPath(rb.b.url, t, name), "binary/octet-stream", rb.buf)
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if resp.StatusCode != 200 {
 		err = errors.New("blob not saved")
 	}
@@ -151,7 +153,9 @@ func (b *Rest) Test(t backend.Type, name string) (bool, error) {
 	}
 	client := *b.client
 	resp, err := client.Do(req)
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return false, err
 	}
@@ -169,7 +173,9 @@ func (b *Rest) Remove(t backend.Type, name string) error {
 	}
 	client := *b.client
 	resp, err := client.Do(req)
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	return err
 }
 
@@ -186,7 +192,9 @@ func (b *Rest) List(t backend.Type, done <-chan struct{}) <-chan string {
 
 	client := *b.client
 	resp, err := client.Get(restPath(b.url, t, ""))
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		close(ch)
 		return ch
