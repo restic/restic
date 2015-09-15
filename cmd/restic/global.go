@@ -151,14 +151,16 @@ func open(u string) (backend.Backend, error) {
 		return local.Open(url.Path)
 	}
 
+	if url.Scheme == "http" || url.Scheme == "https" {
+		return rest.Open(url)
+	}
+
 	if len(url.Path) < 1 {
 		return nil, fmt.Errorf("unable to parse url %v", url)
 	}
 
 	if url.Scheme == "s3" {
 		return s3.Open(url.Host, url.Path[1:])
-	} else if url.Scheme == "http" || url.Scheme == "https" {
-		return rest.Open(url)
 	}
 
 	args := []string{url.Host}
@@ -188,15 +190,16 @@ func create(u string) (backend.Backend, error) {
 		return local.Create(url.Path)
 	}
 
+	if url.Scheme == "http" || url.Scheme == "https" {
+		return rest.Open(url)
+	}
+
 	if len(url.Path) < 1 {
 		return nil, fmt.Errorf("unable to parse url %v", url)
 	}
 
 	if url.Scheme == "s3" {
 		return s3.Open(url.Host, url.Path[1:])
-	} else if url.Scheme == "http" || url.Scheme == "https" {
-
-		return rest.Open(url)
 	}
 
 	args := []string{url.Host}
