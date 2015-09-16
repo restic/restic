@@ -65,7 +65,6 @@ func TestRestBackend(t *testing.T) {
 	})
 
 	for _, dir := range dirs {
-
 		r.HandleFunc("/"+dir+"/", func(w http.ResponseWriter, r *http.Request) {
 			method := r.Method
 			vars := strings.Split(r.RequestURI, "/")
