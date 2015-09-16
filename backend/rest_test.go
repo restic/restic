@@ -18,19 +18,20 @@ import (
 
 func TestRestBackend(t *testing.T) {
 
-	// Initializing a temporary direcory for the rest backend.
+	// Initialize a temporary direcory for the rest backend.
 	path, _ := ioutil.TempDir("", "restic-repository-")
 	defer os.RemoveAll(path)
+
+	// Create all the necessary subdirectories
 	dirs := []string{
-		path,
-		filepath.Join(path, string(backend.Paths.Data)),
-		filepath.Join(path, string(backend.Paths.Snapshots)),
-		filepath.Join(path, string(backend.Paths.Index)),
-		filepath.Join(path, string(backend.Paths.Locks)),
-		filepath.Join(path, string(backend.Paths.Keys)),
+		backend.Paths.Data,
+		backend.Paths.Snapshots,
+		backend.Paths.Index,
+		backend.Paths.Locks,
+		backend.Paths.Keys,
 	}
 	for _, d := range dirs {
-		os.MkdirAll(d, backend.Modes.Dir)
+		os.MkdirAll(filepath.Join(path, d), backend.Modes.Dir)
 	}
 
 	r := mux.NewRouter()
