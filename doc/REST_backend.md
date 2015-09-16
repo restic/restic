@@ -36,6 +36,10 @@ Returns "200 OK" if the blob with the given name and type is stored in the repos
 Returns the content of the blob with the given name and type if it is stored in the repository,
 "404 not found" otherwise.
 
+If the request specifies a partial read with a Range header field, 
+then the status code of the response is 206 instead of 200
+and the response only contains the specified range.
+
 Response format: binary/octet-stream
 
 ## POST /{type}/{name}
