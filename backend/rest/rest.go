@@ -23,10 +23,11 @@ func restPath(url *url.URL, t backend.Type, name string) string {
 	if !strings.HasSuffix(ept, "/") {
 		ept += "/"
 	}
+	if t == backend.Config {
+		return ept + backend.Paths.Config
+	}
 	var dir string
 	switch t {
-	case backend.Config:
-		dir = backend.Paths.Config
 	case backend.Data:
 		dir = backend.Paths.Data
 	case backend.Snapshot:
