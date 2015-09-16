@@ -19,14 +19,28 @@ const connLimit = 10
 
 // Returns the url of the resource
 func restPath(url *url.URL, t backend.Type, name string) string {
-	location := url.String()
-	if !strings.HasSuffix(location, "/") {
-		location += "/"
+	ept := url.String()
+	if !strings.HasSuffix(ept, "/") {
+		ept += "/"
 	}
-	if t == backend.Config {
-		return location + string(t)
+	var dir string
+	switch t {
+	case backend.Config:
+		dir = backend.Paths.Config
+	case backend.Data:
+		dir = backend.Paths.Data
+	case backend.Snapshot:
+		dir = backend.Paths.Snapshots
+	case backend.Index:
+		dir = backend.Paths.Index
+	case backend.Lock:
+		dir = backend.Paths.Locks
+	case backend.Key:
+		dir = backend.Paths.Keys
+	default:
+		dir = string(t)
 	}
-	return location + string(t) + "/" + name
+	return ept + dir + "/" + name
 }
 
 type RestBlob struct {

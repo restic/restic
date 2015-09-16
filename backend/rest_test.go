@@ -2,7 +2,6 @@ package backend_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -24,11 +23,11 @@ func TestRestBackend(t *testing.T) {
 	defer os.RemoveAll(path)
 	dirs := []string{
 		path,
-		filepath.Join(path, string(backend.Data)),
-		filepath.Join(path, string(backend.Snapshot)),
-		filepath.Join(path, string(backend.Index)),
-		filepath.Join(path, string(backend.Lock)),
-		filepath.Join(path, string(backend.Key)),
+		filepath.Join(path, string(backend.Paths.Data)),
+		filepath.Join(path, string(backend.Paths.Snapshots)),
+		filepath.Join(path, string(backend.Paths.Index)),
+		filepath.Join(path, string(backend.Paths.Locks)),
+		filepath.Join(path, string(backend.Paths.Keys)),
 	}
 	for _, d := range dirs {
 		os.MkdirAll(d, backend.Modes.Dir)
@@ -67,15 +66,11 @@ func TestRestBackend(t *testing.T) {
 		ioutil.WriteFile(file, bytes, 0600)
 	}).Methods("POST")
 
-	// List the blobs of a given type.
-	r.HandleFunc("/{type}/", func(w http.ResponseWriter, r *http.Request) {
+	// List the blobs of a given dir.
+	r.HandleFunc("/{dir}/", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blobType, errType := backend.ParseType(filepath.Clean(vars["type"]))
-		if errType != nil {
-			http.Error(w, "403 invalid blob type", 403)
-			return
-		}
-		path := filepath.Join(path, string(blobType))
+		dir := filepath.Clean(vars["dir"])
+		path := filepath.Join(path, dir)
 		files, _ := ioutil.ReadDir(path)
 		names := make([]string, len(files))
 		for i, f := range files {
@@ -85,40 +80,24 @@ func TestRestBackend(t *testing.T) {
 		w.Write(data)
 	}).Methods("GET")
 
-	// Check if a blob of a given type exists.
-	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
+	// Check if a blob of a given dir exists.
+	r.HandleFunc("/{dir}/{name}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blobType, errType := backend.ParseType(filepath.Clean(vars["type"]))
-		if errType != nil {
-			http.Error(w, "403 invalid blob type", 403)
-			return
-		}
-		blobID, errID := backend.ParseID(vars["blob"])
-		if errID != nil {
-			http.Error(w, "403 invalid blob ID", 403)
-			return
-		}
-		blob := filepath.Join(path, string(blobType), blobID.String())
-		if _, err := os.Stat(blob); err != nil {
+		dir := filepath.Clean(vars["dir"])
+		name := filepath.Clean(vars["name"])
+		path := filepath.Join(path, dir, name)
+		if _, err := os.Stat(path); err != nil {
 			http.Error(w, "404 blob not found", 404)
 		}
 	}).Methods("HEAD")
 
-	// Get a blob of a given type.
-	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
+	// Get a blob of a given dir.
+	r.HandleFunc("/{dir}/{name}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blobType, errType := backend.ParseType(filepath.Clean(vars["type"]))
-		if errType != nil {
-			http.Error(w, "403 invalid blob type", 403)
-			return
-		}
-		blobID, errID := backend.ParseID(vars["blob"])
-		if errID != nil {
-			http.Error(w, "403 invalid blob ID", 403)
-			return
-		}
-		blob := filepath.Join(path, string(blobType), blobID.String())
-		file, err := os.Open(blob)
+		dir := filepath.Clean(vars["dir"])
+		name := filepath.Clean(vars["name"])
+		path := filepath.Join(path, dir, name)
+		file, err := os.Open(path)
 		defer file.Close()
 		if err != nil {
 			http.Error(w, "404 blob not found", 404)
@@ -127,48 +106,31 @@ func TestRestBackend(t *testing.T) {
 		http.ServeContent(w, r, "", time.Unix(0, 0), file)
 	}).Methods("GET")
 
-	// Save a blob of a given type.
-	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
+	// Save a blob of a given dir.
+	r.HandleFunc("/{dir}/{name}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blobType, errType := backend.ParseType(filepath.Clean(vars["type"]))
-		if errType != nil {
-			http.Error(w, "403 invalid blob type", 403)
-			return
-		}
-		blobID, errID := backend.ParseID(vars["blob"])
-		if errID != nil {
-			http.Error(w, "403 invalid blob ID", 403)
-			return
-		}
-		blob := filepath.Join(path, string(blobType), blobID.String())
-		if _, err := os.Stat(blob); err == nil {
+		dir := filepath.Clean(vars["dir"])
+		name := filepath.Clean(vars["name"])
+		path := filepath.Join(path, dir, name)
+		if _, err := os.Stat(path); err == nil {
 			http.Error(w, "409 blob already uploaded", 409)
 			return
 		}
 		bytes, _ := ioutil.ReadAll(r.Body)
-		ioutil.WriteFile(blob, bytes, 0600)
+		ioutil.WriteFile(path, bytes, 0600)
 	}).Methods("POST")
 
-	// Delete a blob of a given type.
-	r.HandleFunc("/{type}/{blob}", func(w http.ResponseWriter, r *http.Request) {
+	// Delete a blob of a given dir.
+	r.HandleFunc("/{dir}/{name}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		blobType, errType := backend.ParseType(filepath.Clean(vars["type"]))
-		if errType != nil {
-			http.Error(w, "403 invalid blob type", 403)
-			return
-		}
-		blobID, errID := backend.ParseID(vars["blob"])
-		if errID != nil {
-			http.Error(w, "403 invalid blob ID", 403)
-			return
-		}
-		blob := filepath.Join(path, string(blobType), blobID.String())
-		if _, err := os.Stat(blob); err != nil {
+		dir := filepath.Clean(vars["dir"])
+		name := filepath.Clean(vars["name"])
+		path := filepath.Join(path, dir, name)
+		if _, err := os.Stat(path); err != nil {
 			http.Error(w, "404 blob not found", 404)
 			return
 		}
-		if err := os.Remove(blob); err != nil {
-			fmt.Println(err.Error())
+		if err := os.Remove(path); err != nil {
 			http.Error(w, "500 internal server error", 500)
 			return
 		}
