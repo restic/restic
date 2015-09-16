@@ -10,14 +10,6 @@
 			"Rev": "18419ee53958df28fcfc9490fe6123bd59e237bb"
 		},
 		{
-			"ImportPath": "github.com/gorilla/context",
-			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
-		},
-		{
-			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "f15e0c49460fd49eebe2bcc8486b05d1bef68d3a"
-		},
-		{
 			"ImportPath": "github.com/jessevdk/go-flags",
 			"Comment": "v1-297-g1b89bf7",
 			"Rev": "1b89bf73cd2c3a911d7b2a279ab085c4a18cf539"
