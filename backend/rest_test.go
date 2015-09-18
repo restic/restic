@@ -34,11 +34,12 @@ func TestRestBackend(t *testing.T) {
 		os.MkdirAll(filepath.Join(path, d), backend.Modes.Dir)
 	}
 
-	r := http.NewServeMux()
+	router := http.NewServeMux()
 
 	// Check if a configuration exists.
-	r.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		method := r.Method
+
 		file := filepath.Join(path, "config")
 		_, err := os.Stat(file)
 
@@ -65,9 +66,11 @@ func TestRestBackend(t *testing.T) {
 	})
 
 	for _, dir := range dirs {
-		r.HandleFunc("/"+dir+"/", func(w http.ResponseWriter, r *http.Request) {
+		router.HandleFunc("/"+dir+"/", func(w http.ResponseWriter, r *http.Request) {
 			method := r.Method
+
 			vars := strings.Split(r.RequestURI, "/")
+			dir := vars[1]
 			name := vars[2]
 			path := filepath.Join(path, dir, name)
 			_, err := os.Stat(path)
@@ -115,7 +118,7 @@ func TestRestBackend(t *testing.T) {
 	}
 
 	// Start the server and launch the tests.
-	s := httptest.NewServer(r)
+	s := httptest.NewServer(router)
 
 	defer s.Close()
 	u, _ := url.Parse(s.URL)
