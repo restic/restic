@@ -2,6 +2,7 @@ package repository
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -43,7 +44,8 @@ func (idx *Index) store(t pack.BlobType, id backend.ID, pack *backend.ID, offset
 	}
 }
 
-// Store remembers the id and pack in the index.
+// Store remembers the id and pack in the index. An existing entry will be
+// silently overwritten.
 func (idx *Index) Store(t pack.BlobType, id backend.ID, pack *backend.ID, offset, length uint) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
@@ -52,6 +54,26 @@ func (idx *Index) Store(t pack.BlobType, id backend.ID, pack *backend.ID, offset
 		pack.Str(), id.Str(), t, offset, length)
 
 	idx.store(t, id, pack, offset, length, false)
+}
+
+// StoreInProgress adds a preliminary index entry for a blob that is about to be
+// saved. The entry must be updated using Store once the the blob has been
+// written to a pack. Adding an preliminary index fails if there's an existing
+// entry associated with the same id.
+func (idx *Index) StoreInProgress(t pack.BlobType, id backend.ID) error {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	if _, hasID := idx.pack[id]; hasID {
+		errorMsg := fmt.Sprintf("index already contains id %v (%v)", id.Str(), t)
+		debug.Log("Index.StoreInProgress", errorMsg)
+		return errors.New(errorMsg)
+	}
+
+	idx.store(t, id, nil, 0, 0, false)
+	debug.Log("Index.StoreInProgress", "preliminary entry added for id %v (%v)",
+		id.Str(), t)
+	return nil
 }
 
 // Remove removes the pack ID from the index.
