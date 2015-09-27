@@ -24,6 +24,7 @@ type TravisEnvironment struct {
 func (env *TravisEnvironment) Prepare() {
 	msg("preparing environment for Travis CI\n")
 
+	run("go", "get", "golang.org/x/tools/cmd/cover")
 	run("go", "get", "github.com/mattn/goveralls")
 	run("go", "get", "github.com/mitchellh/gox")
 
