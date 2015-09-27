@@ -303,19 +303,30 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 		return backend.ID{}, err
 	}
 
+	// add this id to the index, although we don't know yet in which pack it
+	// will be saved; the entry will be updated when the pack is written.
+	// Note: the current id needs to be added to the index before searching
+	// for a suitable packer: There's a little chance that more than one
+	// goroutine handles the same blob concurrently. Due to idx.StoreInProgress
+	// locking the index and raising an error if a matching index entry
+	// already exists, updating the index first ensures that only one of
+	// those goroutines will continue. See issue restic#292.
+	debug.Log("Repo.Save", "saving stub for %v (%v) in index", id.Str, t)
+	err = r.idx.StoreInProgress(t, *id)
+	if err != nil {
+		debug.Log("Repo.Save", "another goroutine is already working on %v (%v) does already exist", id.Str, t)
+		return backend.ID{}, nil
+	}
+
 	// find suitable packer and add blob
 	packer, err := r.findPacker(uint(len(ciphertext)))
 	if err != nil {
+		r.idx.Remove(*id)
 		return backend.ID{}, err
 	}
 
 	// save ciphertext
 	packer.Add(t, *id, bytes.NewReader(ciphertext))
-
-	// add this id to the index, although we don't know yet in which pack it
-	// will be saved, the entry will be updated when the pack is written.
-	r.idx.Store(t, *id, nil, 0, 0)
-	debug.Log("Repo.Save", "saving stub for %v (%v) in index", id.Str, t)
 
 	// if the pack is not full enough and there are less than maxPackers
 	// packers, put back to the list
