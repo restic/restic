@@ -522,6 +522,11 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("node %d is dir but has no subtree", i)})
 				continue
 			}
+
+			if node.Subtree.IsNull() {
+				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("node %d is dir subtree id is null", i)})
+				continue
+			}
 		}
 	}
 
