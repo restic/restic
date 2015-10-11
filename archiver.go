@@ -334,6 +334,10 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 
 				if node.Type == "dir" {
 					debug.Log("Archiver.dirWorker", "got tree node for %s: %v", node.path, node.blobs)
+
+					if node.Subtree.IsNull() {
+						panic("invalid null subtree ID")
+					}
 				}
 			}
 
@@ -359,6 +363,9 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				panic(err)
 			}
 			debug.Log("Archiver.dirWorker", "save tree for %s: %v", dir.Path(), id.Str())
+			if id.IsNull() {
+				panic("invalid null subtree ID return from SaveTreeJSON()")
+			}
 
 			node.Subtree = &id
 
