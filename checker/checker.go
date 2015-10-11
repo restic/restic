@@ -204,14 +204,14 @@ type Error struct {
 
 func (e Error) Error() string {
 	if e.BlobID != nil && e.TreeID != nil {
-		msg := "tree " + e.TreeID.String()
-		msg += ", blob " + e.BlobID.String()
+		msg := "tree " + e.TreeID.Str()
+		msg += ", blob " + e.BlobID.Str()
 		msg += ": " + e.Err.Error()
 		return msg
 	}
 
 	if e.TreeID != nil {
-		return "tree " + e.TreeID.String() + ": " + e.Err.Error()
+		return "tree " + e.TreeID.Str() + ": " + e.Err.Error()
 	}
 
 	return e.Err.Error()
@@ -276,7 +276,7 @@ func loadSnapshotTreeIDs(repo *repository.Repository) (backend.IDs, []error) {
 	return trees.IDs, errs.errs
 }
 
-// TreeError is returned when loading a tree from the repository failed.
+// TreeError collects several errors that occurred while processing a tree.
 type TreeError struct {
 	ID     backend.ID
 	Errors []error
@@ -321,7 +321,7 @@ func loadTreeWorker(repo *repository.Repository,
 			debug.Log("checker.loadTreeWorker", "load tree %v", treeID.Str())
 
 			tree, err := restic.LoadTree(repo, treeID)
-			debug.Log("checker.loadTreeWorker", "load tree %v (%v) returned err %v", tree, treeID.Str(), err)
+			debug.Log("checker.loadTreeWorker", "load tree %v (%v) returned err: %v", tree, treeID.Str(), err)
 			job = treeJob{ID: treeID, error: err, Tree: tree}
 			outCh = out
 			inCh = nil
@@ -335,7 +335,7 @@ func loadTreeWorker(repo *repository.Repository,
 }
 
 // checkTreeWorker checks the trees received and sends out errors to errChan.
-func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- TreeError, done <-chan struct{}, wg *sync.WaitGroup) {
+func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-chan struct{}, wg *sync.WaitGroup) {
 	defer func() {
 		debug.Log("checker.checkTreeWorker", "exiting")
 		wg.Done()
@@ -351,10 +351,12 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- TreeError, done 
 	for {
 		select {
 		case <-done:
+			debug.Log("checker.checkTreeWorker", "done channel closed, exiting")
 			return
 
 		case job, ok := <-inCh:
 			if !ok {
+				debug.Log("checker.checkTreeWorker", "input channel closed, exiting")
 				return
 			}
 
@@ -372,9 +374,15 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- TreeError, done 
 				continue
 			}
 
-			debug.Log("checker.checkTreeWorker", "load tree %v", job.ID.Str())
+			debug.Log("checker.checkTreeWorker", "check tree %v (tree %v, err %v)", job.ID.Str(), job.Tree, job.error)
 
-			errs := c.checkTree(job.ID, job.Tree)
+			var errs []error
+			if job.error != nil {
+				errs = append(errs, job.error)
+			} else {
+				errs = c.checkTree(job.ID, job.Tree)
+			}
+
 			if len(errs) > 0 {
 				debug.Log("checker.checkTreeWorker", "checked tree %v: %v errors", job.ID.Str(), len(errs))
 				treeError = TreeError{ID: job.ID, Errors: errs}
@@ -437,9 +445,34 @@ func filterTrees(backlog backend.IDs, loaderChan chan<- backend.ID, in <-chan tr
 			}
 
 			outstandingLoadTreeJobs--
+
 			debug.Log("checker.filterTrees", "input job tree %v", j.ID.Str())
 
-			backlog = append(backlog, j.Tree.Subtrees()...)
+			var err error
+
+			if j.error != nil {
+				debug.Log("checker.filterTrees", "received job with error: %v (tree %v, ID %v)", j.error, j.Tree, j.ID.Str())
+			} else if j.Tree == nil {
+				debug.Log("checker.filterTrees", "received job with nil tree pointer: %v (ID %v)", j.error, j.ID.Str())
+				err = errors.New("tree is nil and error is nil")
+			} else {
+				debug.Log("checker.filterTrees", "subtrees for tree %v: %v", j.ID.Str(), j.Tree.Subtrees())
+				for _, id := range j.Tree.Subtrees() {
+					if id.IsNull() {
+						// We do not need to raise this error here, it is
+						// checked when the tree is checked. Just make sure
+						// that we do not add any null IDs to the backlog.
+						debug.Log("checker.filterTrees", "tree %v has nil subtree", j.ID.Str())
+						continue
+					}
+					backlog = append(backlog, id)
+				}
+			}
+
+			if err != nil {
+				// send a new job with the new error instead of the old one
+				j = treeJob{ID: j.ID, error: err}
+			}
 
 			job = j
 			outCh = out
@@ -472,13 +505,12 @@ func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
 	treeIDChan := make(chan backend.ID)
 	treeJobChan1 := make(chan treeJob)
 	treeJobChan2 := make(chan treeJob)
-	treeErrChan := make(chan TreeError)
 
 	var wg sync.WaitGroup
 	for i := 0; i < defaultParallelism; i++ {
 		wg.Add(2)
 		go loadTreeWorker(c.repo, treeIDChan, treeJobChan1, done, &wg)
-		go c.checkTreeWorker(treeJobChan2, treeErrChan, done, &wg)
+		go c.checkTreeWorker(treeJobChan2, errChan, done, &wg)
 	}
 
 	filterTrees(trees, treeIDChan, treeJobChan1, treeJobChan2, done)
@@ -491,13 +523,24 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 
 	var blobs []backend.ID
 
-	for i, node := range tree.Nodes {
+	for _, node := range tree.Nodes {
 		switch node.Type {
 		case "file":
-			blobs = append(blobs, node.Content...)
+			for b, blobID := range node.Content {
+				if blobID.IsNull() {
+					errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("file %q blob %d has null ID", node.Name, b)})
+					continue
+				}
+				blobs = append(blobs, blobID)
+			}
 		case "dir":
 			if node.Subtree == nil {
-				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("node %d is dir but has no subtree", i)})
+				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("dir node %q has no subtree", node.Name)})
+				continue
+			}
+
+			if node.Subtree.IsNull() {
+				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("dir node %q subtree id is null", node.Name)})
 				continue
 			}
 		}
