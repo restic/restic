@@ -321,7 +321,7 @@ func loadTreeWorker(repo *repository.Repository,
 			debug.Log("checker.loadTreeWorker", "load tree %v", treeID.Str())
 
 			tree, err := restic.LoadTree(repo, treeID)
-			debug.Log("checker.loadTreeWorker", "load tree %v (%v) returned err %v", tree, treeID.Str(), err)
+			debug.Log("checker.loadTreeWorker", "load tree %v (%v) returned err: %v", tree, treeID.Str(), err)
 			job = treeJob{ID: treeID, error: err, Tree: tree}
 			outCh = out
 			inCh = nil
@@ -437,9 +437,31 @@ func filterTrees(backlog backend.IDs, loaderChan chan<- backend.ID, in <-chan tr
 			}
 
 			outstandingLoadTreeJobs--
-			debug.Log("checker.filterTrees", "input job tree %v", j.ID.Str())
 
-			backlog = append(backlog, j.Tree.Subtrees()...)
+			debug.Log("checker.filterTrees", "input job tree %v, subtrees %v", j.ID.Str(), j.Tree.Subtrees())
+
+			var err error
+
+			if j.error != nil {
+				debug.Log("checker.filterTrees", "received job with error: %v (tree %v, ID %v)", j.error, j.Tree, j.ID.Str())
+			} else if j.Tree == nil {
+				debug.Log("checker.filterTrees", "received job with nil tree pointer: %v (ID %v)", j.error, j.ID.Str())
+				err = errors.New("tree is nil and error is nil")
+			} else {
+				for _, id := range j.Tree.Subtrees() {
+					if id.IsNull() {
+						debug.Log("checker.filterTrees", "tree %v has nil subtree", j.ID.Str())
+						err = fmt.Errorf("tree %v has subtree with null ID", j.ID)
+						continue
+					}
+					backlog = append(backlog, id)
+				}
+			}
+
+			if err != nil {
+				// send a new job with the new error instead of the old one
+				j = treeJob{ID: j.ID, error: err}
+			}
 
 			job = j
 			outCh = out
