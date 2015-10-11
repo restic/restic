@@ -315,7 +315,7 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 	err = r.idx.StoreInProgress(t, *id)
 	if err != nil {
 		debug.Log("Repo.Save", "another goroutine is already working on %v (%v) does already exist", id.Str, t)
-		return backend.ID{}, nil
+		return *id, nil
 	}
 
 	// find suitable packer and add blob
