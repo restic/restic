@@ -523,18 +523,24 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 
 	var blobs []backend.ID
 
-	for i, node := range tree.Nodes {
+	for _, node := range tree.Nodes {
 		switch node.Type {
 		case "file":
-			blobs = append(blobs, node.Content...)
+			for b, blobID := range node.Content {
+				if blobID.IsNull() {
+					errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("file %q blob %d has null ID", node.Name, b)})
+					continue
+				}
+				blobs = append(blobs, blobID)
+			}
 		case "dir":
 			if node.Subtree == nil {
-				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("node %d is dir but has no subtree", i)})
+				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("dir node %q has no subtree", node.Name)})
 				continue
 			}
 
 			if node.Subtree.IsNull() {
-				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("node %d is dir subtree id is null", i)})
+				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("dir node %q subtree id is null", node.Name)})
 				continue
 			}
 		}
