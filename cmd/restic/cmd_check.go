@@ -79,7 +79,14 @@ func (cmd CmdCheck) Execute(args []string) error {
 
 	for err := range errChan {
 		errorsFound = true
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		if e, ok := err.(checker.TreeError); ok {
+			fmt.Fprintf(os.Stderr, "error for tree %v:\n", e.ID.Str())
+			for _, treeErr := range e.Errors {
+				fmt.Fprintf(os.Stderr, "  %v\n", treeErr)
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		}
 	}
 
 	for _, id := range chkr.UnusedBlobs() {

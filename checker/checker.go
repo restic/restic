@@ -505,13 +505,12 @@ func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
 	treeIDChan := make(chan backend.ID)
 	treeJobChan1 := make(chan treeJob)
 	treeJobChan2 := make(chan treeJob)
-	treeErrChan := make(chan TreeError)
 
 	var wg sync.WaitGroup
 	for i := 0; i < defaultParallelism; i++ {
 		wg.Add(2)
 		go loadTreeWorker(c.repo, treeIDChan, treeJobChan1, done, &wg)
-		go c.checkTreeWorker(treeJobChan2, treeErrChan, done, &wg)
+		go c.checkTreeWorker(treeJobChan2, errChan, done, &wg)
 	}
 
 	filterTrees(trees, treeIDChan, treeJobChan1, treeJobChan2, done)
