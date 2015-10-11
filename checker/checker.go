@@ -204,14 +204,14 @@ type Error struct {
 
 func (e Error) Error() string {
 	if e.BlobID != nil && e.TreeID != nil {
-		msg := "tree " + e.TreeID.String()
-		msg += ", blob " + e.BlobID.String()
+		msg := "tree " + e.TreeID.Str()
+		msg += ", blob " + e.BlobID.Str()
 		msg += ": " + e.Err.Error()
 		return msg
 	}
 
 	if e.TreeID != nil {
-		return "tree " + e.TreeID.String() + ": " + e.Err.Error()
+		return "tree " + e.TreeID.Str() + ": " + e.Err.Error()
 	}
 
 	return e.Err.Error()

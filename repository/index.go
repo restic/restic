@@ -219,7 +219,7 @@ func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON,
 			continue
 		}
 
-		debug.Log("Index.generatePackList", "handle blob %q", id[:8])
+		debug.Log("Index.generatePackList", "handle blob %v", id.Str())
 
 		if blob.packID.IsNull() {
 			debug.Log("Index.generatePackList", "blob %q has no packID! (type %v, offset %v, length %v)",
