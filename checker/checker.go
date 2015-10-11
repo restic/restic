@@ -276,7 +276,7 @@ func loadSnapshotTreeIDs(repo *repository.Repository) (backend.IDs, []error) {
 	return trees.IDs, errs.errs
 }
 
-// TreeError is returned when loading a tree from the repository failed.
+// TreeError collects several errors that occurred while processing a tree.
 type TreeError struct {
 	ID     backend.ID
 	Errors []error
@@ -335,7 +335,7 @@ func loadTreeWorker(repo *repository.Repository,
 }
 
 // checkTreeWorker checks the trees received and sends out errors to errChan.
-func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- TreeError, done <-chan struct{}, wg *sync.WaitGroup) {
+func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-chan struct{}, wg *sync.WaitGroup) {
 	defer func() {
 		debug.Log("checker.checkTreeWorker", "exiting")
 		wg.Done()
@@ -351,10 +351,12 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- TreeError, done 
 	for {
 		select {
 		case <-done:
+			debug.Log("checker.checkTreeWorker", "done channel closed, exiting")
 			return
 
 		case job, ok := <-inCh:
 			if !ok {
+				debug.Log("checker.checkTreeWorker", "input channel closed, exiting")
 				return
 			}
 
@@ -372,9 +374,15 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- TreeError, done 
 				continue
 			}
 
-			debug.Log("checker.checkTreeWorker", "load tree %v", job.ID.Str())
+			debug.Log("checker.checkTreeWorker", "check tree %v (tree %v, err %v)", job.ID.Str(), job.Tree, job.error)
 
-			errs := c.checkTree(job.ID, job.Tree)
+			var errs []error
+			if job.error != nil {
+				errs = append(errs, job.error)
+			} else {
+				errs = c.checkTree(job.ID, job.Tree)
+			}
+
 			if len(errs) > 0 {
 				debug.Log("checker.checkTreeWorker", "checked tree %v: %v errors", job.ID.Str(), len(errs))
 				treeError = TreeError{ID: job.ID, Errors: errs}
@@ -438,7 +446,7 @@ func filterTrees(backlog backend.IDs, loaderChan chan<- backend.ID, in <-chan tr
 
 			outstandingLoadTreeJobs--
 
-			debug.Log("checker.filterTrees", "input job tree %v, subtrees %v", j.ID.Str(), j.Tree.Subtrees())
+			debug.Log("checker.filterTrees", "input job tree %v", j.ID.Str())
 
 			var err error
 
@@ -448,10 +456,13 @@ func filterTrees(backlog backend.IDs, loaderChan chan<- backend.ID, in <-chan tr
 				debug.Log("checker.filterTrees", "received job with nil tree pointer: %v (ID %v)", j.error, j.ID.Str())
 				err = errors.New("tree is nil and error is nil")
 			} else {
+				debug.Log("checker.filterTrees", "subtrees for tree %v: %v", j.ID.Str(), j.Tree.Subtrees())
 				for _, id := range j.Tree.Subtrees() {
 					if id.IsNull() {
+						// We do not need to raise this error here, it is
+						// checked when the tree is checked. Just make sure
+						// that we do not add any null IDs to the backlog.
 						debug.Log("checker.filterTrees", "tree %v has nil subtree", j.ID.Str())
-						err = fmt.Errorf("tree %v has subtree with null ID", j.ID)
 						continue
 					}
 					backlog = append(backlog, id)
