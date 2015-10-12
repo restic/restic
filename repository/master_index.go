@@ -187,7 +187,33 @@ func (mi *MasterIndex) NotFinalIndexes() []*Index {
 		}
 	}
 
-	debug.Log("MasterIndex.NotFinalIndexes", "saving %d indexes", len(list))
+	debug.Log("MasterIndex.NotFinalIndexes", "return %d indexes", len(list))
+	return list
+}
+
+// FullIndexes returns all indexes that are full.
+func (mi *MasterIndex) FullIndexes() []*Index {
+	mi.idxMutex.Lock()
+	defer mi.idxMutex.Unlock()
+
+	var list []*Index
+
+	debug.Log("MasterIndex.FullIndexes", "checking %d indexes", len(mi.idx))
+	for _, idx := range mi.idx {
+		if idx.Final() {
+			debug.Log("MasterIndex.FullIndexes", "index %p is final", idx)
+			continue
+		}
+
+		if idx.Full() {
+			debug.Log("MasterIndex.FullIndexes", "index %p is full", idx)
+			list = append(list, idx)
+		} else {
+			debug.Log("MasterIndex.FullIndexes", "index %p not full", idx)
+		}
+	}
+
+	debug.Log("MasterIndex.FullIndexes", "return %d indexes", len(list))
 	return list
 }
 

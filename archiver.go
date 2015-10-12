@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic/backend"
@@ -540,6 +541,30 @@ func (j archiveJob) Copy() pipe.Job {
 	return j.new
 }
 
+const saveIndexTime = 30 * time.Second
+
+// saveIndexes regularly queries the master index for full indexes and saves them.
+func (arch *Archiver) saveIndexes(wg *sync.WaitGroup, done <-chan struct{}) {
+	defer wg.Done()
+
+	ticker := time.NewTicker(saveIndexTime)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-done:
+			return
+		case <-ticker.C:
+			debug.Log("Archiver.saveIndexes", "saving full indexes")
+			err := arch.repo.SaveFullIndex()
+			if err != nil {
+				debug.Log("Archiver.saveIndexes", "save indexes returned an error: %v", err)
+				fmt.Fprintf(os.Stderr, "error saving preliminary index: %v\n", err)
+			}
+		}
+	}
+}
+
 // Snapshot creates a snapshot of the given paths. If parentID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
@@ -623,9 +648,19 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID
 		go arch.dirWorker(&wg, p, done, dirCh)
 	}
 
+	// run index saver
+	var wgIndexSaver sync.WaitGroup
+	stopIndexSaver := make(chan struct{})
+	wgIndexSaver.Add(1)
+	go arch.saveIndexes(&wgIndexSaver, stopIndexSaver)
+
 	// wait for all workers to terminate
 	debug.Log("Archiver.Snapshot", "wait for workers")
 	wg.Wait()
+
+	// stop index saver
+	close(stopIndexSaver)
+	wgIndexSaver.Wait()
 
 	debug.Log("Archiver.Snapshot", "workers terminated")
 
@@ -681,7 +716,6 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *Progress) (Stat, error) {
 	for _, dir := range dirs {
 		debug.Log("Scan", "Start for %v", dir)
 		err := filepath.Walk(dir, func(str string, fi os.FileInfo, err error) error {
-			debug.Log("Scan.Walk", "%v, fi: %v, err: %v", str, fi, err)
 			// TODO: integrate error reporting
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error for %v: %v\n", str, err)

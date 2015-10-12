@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/crypto"
@@ -20,6 +21,7 @@ type Index struct {
 
 	final      bool // set to true for all indexes read from the backend ("finalized")
 	supersedes backend.IDs
+	created    time.Time
 }
 
 type indexEntry struct {
@@ -32,7 +34,8 @@ type indexEntry struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		pack: make(map[backend.ID]indexEntry),
+		pack:    make(map[backend.ID]indexEntry),
+		created: time.Now(),
 	}
 }
 
@@ -52,6 +55,42 @@ func (idx *Index) Final() bool {
 	defer idx.m.Unlock()
 
 	return idx.final
+}
+
+const (
+	indexMinBlobs = 20
+	indexMaxBlobs = 2000
+	indexMinAge   = 2 * time.Minute
+	indexMaxAge   = 15 * time.Minute
+)
+
+// Full returns true iff the index is "full enough" to be saved as a preliminary index.
+func (idx *Index) Full() bool {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	debug.Log("Index.Full", "checking whether index %p is full", idx)
+
+	packs := len(idx.pack)
+	age := time.Now().Sub(idx.created)
+
+	if age > indexMaxAge {
+		debug.Log("Index.Full", "index %p is old enough", idx, age)
+		return true
+	}
+
+	if packs < indexMinBlobs || age < indexMinAge {
+		debug.Log("Index.Full", "index %p only has %d packs or is too young (%v)", idx, packs, age)
+		return false
+	}
+
+	if packs > indexMaxBlobs {
+		debug.Log("Index.Full", "index %p has %d packs", idx, packs)
+		return true
+	}
+
+	debug.Log("Index.Full", "index %p is not full", idx)
+	return false
 }
 
 // Store remembers the id and pack in the index. An existing entry will be

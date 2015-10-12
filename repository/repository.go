@@ -235,7 +235,7 @@ func (r *Repository) findPacker(size uint) (*pack.Packer, error) {
 	if err != nil {
 		return nil, err
 	}
-	debug.Log("Repo.findPacker", "create new pack %p", blob)
+	debug.Log("Repo.findPacker", "create new pack %p for %d bytes", blob, size)
 	return pack.NewPacker(r.key, blob), nil
 }
 
@@ -513,9 +513,9 @@ func (bw *BlobWriter) ID() backend.ID {
 	return bw.id
 }
 
-// SaveIndex saves all new indexes in the backend.
-func (r *Repository) SaveIndex() error {
-	for i, idx := range r.idx.NotFinalIndexes() {
+// saveIndex saves all indexes in the backend.
+func (r *Repository) saveIndex(indexes ...*Index) error {
+	for i, idx := range indexes {
 		debug.Log("Repo.SaveIndex", "Saving index %d", i)
 
 		blob, err := r.CreateEncryptedBlob(backend.Index)
@@ -539,6 +539,16 @@ func (r *Repository) SaveIndex() error {
 	}
 
 	return nil
+}
+
+// SaveIndex saves all new indexes in the backend.
+func (r *Repository) SaveIndex() error {
+	return r.saveIndex(r.idx.NotFinalIndexes()...)
+}
+
+// SaveFullIndex saves all full indexes in the backend.
+func (r *Repository) SaveFullIndex() error {
+	return r.saveIndex(r.idx.FullIndexes()...)
 }
 
 const loadIndexParallelism = 20
