@@ -70,22 +70,6 @@ func (idx *Index) Store(t pack.BlobType, id backend.ID, pack *backend.ID, offset
 	idx.store(t, id, pack, offset, length)
 }
 
-// Remove removes the pack ID from the index.
-func (idx *Index) Remove(packID backend.ID) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	if idx.final {
-		panic("remove item from finalized index")
-	}
-
-	debug.Log("Index.Remove", "id %v removed", packID.Str())
-
-	if _, ok := idx.pack[packID]; ok {
-		delete(idx.pack, packID)
-	}
-}
-
 // Lookup returns the pack for the id.
 func (idx *Index) Lookup(id backend.ID) (packID *backend.ID, tpe pack.BlobType, offset, length uint, err error) {
 	idx.m.Lock()
