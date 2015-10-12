@@ -70,30 +70,6 @@ func (idx *Index) Store(t pack.BlobType, id backend.ID, pack *backend.ID, offset
 	idx.store(t, id, pack, offset, length)
 }
 
-// StoreInProgress adds a preliminary index entry for a blob that is about to be
-// saved. The entry must be updated using Store once the the blob has been
-// written to a pack. Adding an preliminary index fails if there's an existing
-// entry associated with the same id.
-func (idx *Index) StoreInProgress(t pack.BlobType, id backend.ID) error {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	if idx.final {
-		panic("store new item in finalized index")
-	}
-
-	if _, hasID := idx.pack[id]; hasID {
-		errorMsg := fmt.Sprintf("index already contains id %v (%v)", id.Str(), t)
-		debug.Log("Index.StoreInProgress", errorMsg)
-		return errors.New(errorMsg)
-	}
-
-	idx.store(t, id, nil, 0, 0)
-	debug.Log("Index.StoreInProgress", "preliminary entry added for id %v (%v)",
-		id.Str(), t)
-	return nil
-}
-
 // Remove removes the pack ID from the index.
 func (idx *Index) Remove(packID backend.ID) {
 	idx.m.Lock()
