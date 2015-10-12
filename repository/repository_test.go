@@ -91,6 +91,7 @@ func TestSave(t *testing.T) {
 
 		// read back
 		buf, err := repo.LoadBlob(pack.Data, id, make([]byte, size))
+		OK(t, err)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -121,6 +122,7 @@ func TestSaveFrom(t *testing.T) {
 
 		// read back
 		buf, err := repo.LoadBlob(pack.Data, id, make([]byte, size))
+		OK(t, err)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
