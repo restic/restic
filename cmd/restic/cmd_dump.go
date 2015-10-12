@@ -144,8 +144,6 @@ func (cmd CmdDump) Execute(args []string) error {
 	tpe := args[0]
 
 	switch tpe {
-	case "index":
-		return repo.Index().Dump(os.Stdout)
 	case "indexes":
 		return cmd.DumpIndexes()
 	case "snapshots":
@@ -168,13 +166,6 @@ func (cmd CmdDump) Execute(args []string) error {
 
 		fmt.Printf("\nindexes:\n")
 		err = cmd.DumpIndexes()
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("\nindex:\n")
-
-		err = repo.Index().Dump(os.Stdout)
 		if err != nil {
 			return err
 		}
