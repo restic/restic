@@ -86,7 +86,7 @@ func TestIndexSerialize(t *testing.T) {
 		Equals(t, testBlob.length, length)
 	}
 
-	// add more blobs to idx2
+	// add more blobs to idx
 	newtests := []testEntry{}
 	for i := 0; i < 10; i++ {
 		packID := randomID()
@@ -95,7 +95,7 @@ func TestIndexSerialize(t *testing.T) {
 		for j := 0; j < 10; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx2.Store(pack.Data, id, &packID, pos, length)
+			idx.Store(pack.Data, id, &packID, pos, length)
 
 			newtests = append(newtests, testEntry{
 				id:     id,
@@ -109,22 +109,20 @@ func TestIndexSerialize(t *testing.T) {
 		}
 	}
 
-	// serialize idx2, unserialize to idx3
+	// serialize idx, unserialize to idx3
 	wr3 := bytes.NewBuffer(nil)
-	err = idx2.Encode(wr3)
+	err = idx.Finalize(wr3)
 	OK(t, err)
+
+	Assert(t, idx.Final(),
+		"index not final after encoding")
 
 	idx3, err := repository.DecodeIndex(wr3)
 	OK(t, err)
 	Assert(t, idx3 != nil,
 		"nil returned for decoded index")
-
-	// all old blobs must not be present in the index
-	for _, testBlob := range tests {
-		_, _, _, _, err := idx3.Lookup(testBlob.id)
-		Assert(t, err != nil,
-			"found old id %v in serialized index", testBlob.id.Str())
-	}
+	Assert(t, idx3.Final(),
+		"decoded index is not final")
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
@@ -333,7 +331,8 @@ func TestStoreOverwritesPreliminaryEntry(t *testing.T) {
 
 	blobID := randomID()
 	dataType := pack.Data
-	idx.StoreInProgress(dataType, blobID)
+	err := idx.StoreInProgress(dataType, blobID)
+	OK(t, err)
 
 	packID := randomID()
 	offset := uint(0)

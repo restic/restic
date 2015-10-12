@@ -18,6 +18,7 @@ type Index struct {
 	m    sync.Mutex
 	pack map[backend.ID]indexEntry
 
+	final      bool // set to true for all indexes read from the backend ("finalized")
 	supersedes backend.IDs
 }
 
@@ -26,7 +27,6 @@ type indexEntry struct {
 	packID *backend.ID
 	offset uint
 	length uint
-	old    bool
 }
 
 // NewIndex returns a new index.
@@ -36,14 +36,22 @@ func NewIndex() *Index {
 	}
 }
 
-func (idx *Index) store(t pack.BlobType, id backend.ID, pack *backend.ID, offset, length uint, old bool) {
+func (idx *Index) store(t pack.BlobType, id backend.ID, pack *backend.ID, offset, length uint) {
 	idx.pack[id] = indexEntry{
 		tpe:    t,
 		packID: pack,
 		offset: offset,
 		length: length,
-		old:    old,
 	}
+}
+
+// Final returns true iff the index is already written to the repository, it is
+// finalized.
+func (idx *Index) Final() bool {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	return idx.final
 }
 
 // Store remembers the id and pack in the index. An existing entry will be
@@ -52,10 +60,14 @@ func (idx *Index) Store(t pack.BlobType, id backend.ID, pack *backend.ID, offset
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
+	if idx.final {
+		panic("store new item in finalized index")
+	}
+
 	debug.Log("Index.Store", "pack %v contains id %v (%v), offset %v, length %v",
 		pack.Str(), id.Str(), t, offset, length)
 
-	idx.store(t, id, pack, offset, length, false)
+	idx.store(t, id, pack, offset, length)
 }
 
 // StoreInProgress adds a preliminary index entry for a blob that is about to be
@@ -66,13 +78,17 @@ func (idx *Index) StoreInProgress(t pack.BlobType, id backend.ID) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
+	if idx.final {
+		panic("store new item in finalized index")
+	}
+
 	if _, hasID := idx.pack[id]; hasID {
 		errorMsg := fmt.Sprintf("index already contains id %v (%v)", id.Str(), t)
 		debug.Log("Index.StoreInProgress", errorMsg)
 		return errors.New(errorMsg)
 	}
 
-	idx.store(t, id, nil, 0, 0, false)
+	idx.store(t, id, nil, 0, 0)
 	debug.Log("Index.StoreInProgress", "preliminary entry added for id %v (%v)",
 		id.Str(), t)
 	return nil
@@ -82,6 +98,10 @@ func (idx *Index) StoreInProgress(t pack.BlobType, id backend.ID) error {
 func (idx *Index) Remove(packID backend.ID) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
+
+	if idx.final {
+		panic("remove item from finalized index")
+	}
 
 	debug.Log("Index.Remove", "id %v removed", packID.Str())
 
@@ -270,32 +290,41 @@ type jsonIndex struct {
 
 type jsonOldIndex []*packJSON
 
-// encode writes the JSON serialization of the index filtered by selectFn to enc.
-func (idx *Index) encode(w io.Writer, supersedes backend.IDs, selectFn func(indexEntry) bool) error {
-	list, err := idx.generatePackList(selectFn)
-	if err != nil {
-		return err
-	}
-
-	debug.Log("Index.Encode", "done, %d entries selected", len(list))
-
-	enc := json.NewEncoder(w)
-	idxJSON := jsonIndex{
-		Supersedes: supersedes,
-		Packs:      list,
-	}
-	return enc.Encode(idxJSON)
-}
-
-// Encode writes the JSON serialization of the index to the writer w. This
-// serialization only contains new blobs added via idx.Store(), not old ones
-// introduced via DecodeIndex().
+// Encode writes the JSON serialization of the index to the writer w.
 func (idx *Index) Encode(w io.Writer) error {
 	debug.Log("Index.Encode", "encoding index")
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	return idx.encode(w, idx.supersedes, func(e indexEntry) bool { return !e.old })
+	return idx.encode(w)
+}
+
+// encode writes the JSON serialization of the index to the writer w.
+func (idx *Index) encode(w io.Writer) error {
+	debug.Log("Index.encode", "encoding index")
+
+	list, err := idx.generatePackList(nil)
+	if err != nil {
+		return err
+	}
+
+	enc := json.NewEncoder(w)
+	idxJSON := jsonIndex{
+		Supersedes: idx.supersedes,
+		Packs:      list,
+	}
+	return enc.Encode(idxJSON)
+}
+
+// Finalize sets the index to final and writes the JSON serialization to w.
+func (idx *Index) Finalize(w io.Writer) error {
+	debug.Log("Index.Encode", "encoding index")
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	idx.final = true
+
+	return idx.encode(w)
 }
 
 // Dump writes the pretty-printed JSON representation of the index to w.
@@ -358,10 +387,11 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 	idx = NewIndex()
 	for _, pack := range idxJSON.Packs {
 		for _, blob := range pack.Blobs {
-			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length, true)
+			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length)
 		}
 	}
 	idx.supersedes = idxJSON.Supersedes
+	idx.final = true
 
 	debug.Log("Index.DecodeIndex", "done")
 	return idx, err
@@ -382,7 +412,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	idx = NewIndex()
 	for _, pack := range list {
 		for _, blob := range pack.Blobs {
-			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length, true)
+			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length)
 		}
 	}
 
@@ -436,8 +466,7 @@ func ConvertIndex(repo *Repository, id backend.ID) (backend.ID, error) {
 
 	idx.supersedes = backend.IDs{id}
 
-	// select all blobs for export
-	err = idx.encode(blob, idx.supersedes, func(e indexEntry) bool { return true })
+	err = idx.Encode(blob)
 	if err != nil {
 		debug.Log("ConvertIndex", "oldIdx.Encode() returned error: %v", err)
 		return id, err

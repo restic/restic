@@ -73,12 +73,14 @@ func printTrees(repo *repository.Repository, wr io.Writer) error {
 
 	trees := []backend.ID{}
 
-	for blob := range repo.Index().Each(done) {
-		if blob.Type != pack.Tree {
-			continue
-		}
+	for _, idx := range repo.Index().All() {
+		for blob := range idx.Each(nil) {
+			if blob.Type != pack.Tree {
+				continue
+			}
 
-		trees = append(trees, blob.ID)
+			trees = append(trees, blob.ID)
+		}
 	}
 
 	for _, id := range trees {

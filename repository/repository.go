@@ -24,7 +24,7 @@ type Repository struct {
 	Config  Config
 	key     *crypto.Key
 	keyName string
-	idx     *Index
+	idx     *MasterIndex
 
 	pm    sync.Mutex
 	packs []*pack.Packer
@@ -34,7 +34,7 @@ type Repository struct {
 func New(be backend.Backend) *Repository {
 	return &Repository{
 		be:  be,
-		idx: NewIndex(),
+		idx: NewMasterIndex(),
 	}
 }
 
@@ -204,7 +204,7 @@ func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface
 
 // LookupBlobSize returns the size of blob id.
 func (r *Repository) LookupBlobSize(id backend.ID) (uint, error) {
-	return r.Index().LookupSize(id)
+	return r.idx.LookupSize(id)
 }
 
 const minPackSize = 4 * chunker.MiB
@@ -269,7 +269,8 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), sid.Str())
-		r.idx.Store(b.Type, b.ID, &sid, b.Offset, uint(b.Length))
+		r.idx.Current().Store(b.Type, b.ID, &sid, b.Offset, uint(b.Length))
+		r.idx.RemoveFromInFlight(b.ID)
 	}
 
 	return nil
@@ -304,16 +305,15 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 		return backend.ID{}, err
 	}
 
-	// add this id to the index, although we don't know yet in which pack it
-	// will be saved; the entry will be updated when the pack is written.
-	// Note: the current id needs to be added to the index before searching
-	// for a suitable packer: There's a little chance that more than one
-	// goroutine handles the same blob concurrently. Due to idx.StoreInProgress
-	// locking the index and raising an error if a matching index entry
-	// already exists, updating the index first ensures that only one of
-	// those goroutines will continue. See issue restic#292.
-	debug.Log("Repo.Save", "saving stub for %v (%v) in index", id.Str, t)
-	err = r.idx.StoreInProgress(t, *id)
+	// check if this id is already been saved by another goroutine
+	if r.idx.IsInFlight(*id) {
+		debug.Log("Repo.Save", "blob %v is already being saved", id.Str())
+		return *id, nil
+	}
+
+	// add this id to the list of in-flight chunk ids.
+	debug.Log("Repo.Save", "add %v to list of in-flight IDs", id.Str())
+	r.idx.AddInFlight(*id)
 	if err != nil {
 		debug.Log("Repo.Save", "another goroutine is already working on %v (%v) does already exist", id.Str, t)
 		return *id, nil
@@ -322,12 +322,15 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 	// find suitable packer and add blob
 	packer, err := r.findPacker(uint(len(ciphertext)))
 	if err != nil {
-		r.idx.Remove(*id)
+		r.idx.RemoveFromInFlight(*id)
 		return backend.ID{}, err
 	}
 
 	// save ciphertext
-	packer.Add(t, *id, bytes.NewReader(ciphertext))
+	_, err = packer.Add(t, *id, bytes.NewReader(ciphertext))
+	if err != nil {
+		return backend.ID{}, err
+	}
 
 	// if the pack is not full enough and there are less than maxPackers
 	// packers, put back to the list
@@ -446,13 +449,13 @@ func (r *Repository) Backend() backend.Backend {
 	return r.be
 }
 
-// Index returns the currently loaded Index.
-func (r *Repository) Index() *Index {
+// Index returns the currently used MasterIndex.
+func (r *Repository) Index() *MasterIndex {
 	return r.idx
 }
 
 // SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i *Index) {
+func (r *Repository) SetIndex(i *MasterIndex) {
 	r.idx = i
 }
 
@@ -510,37 +513,38 @@ func (bw *BlobWriter) ID() backend.ID {
 	return bw.id
 }
 
-// SaveIndex saves all new packs in the index in the backend, returned is the
-// storage ID.
-func (r *Repository) SaveIndex() (backend.ID, error) {
-	debug.Log("Repo.SaveIndex", "Saving index")
+// SaveIndex saves all new indexes in the backend.
+func (r *Repository) SaveIndex() error {
+	for i, idx := range r.idx.NotFinalIndexes() {
+		debug.Log("Repo.SaveIndex", "Saving index %d", i)
 
-	blob, err := r.CreateEncryptedBlob(backend.Index)
-	if err != nil {
-		return backend.ID{}, err
+		blob, err := r.CreateEncryptedBlob(backend.Index)
+		if err != nil {
+			return err
+		}
+
+		err = idx.Encode(blob)
+		if err != nil {
+			return err
+		}
+
+		err = blob.Close()
+		if err != nil {
+			return err
+		}
+
+		sid := blob.ID()
+
+		debug.Log("Repo.SaveIndex", "Saved index %d as %v", i, sid.Str())
 	}
 
-	err = r.idx.Encode(blob)
-	if err != nil {
-		return backend.ID{}, err
-	}
-
-	err = blob.Close()
-	if err != nil {
-		return backend.ID{}, err
-	}
-
-	sid := blob.ID()
-
-	debug.Log("Repo.SaveIndex", "Saved index as %v", sid.Str())
-
-	return sid, nil
+	return nil
 }
 
 const loadIndexParallelism = 20
 
-// LoadIndex loads all index files from the backend in parallel and merges them
-// with the current index. The first error that occurred is returned.
+// LoadIndex loads all index files from the backend in parallel and stores them
+// in the master index. The first error that occurred is returned.
 func (r *Repository) LoadIndex() error {
 	debug.Log("Repo.LoadIndex", "Loading index")
 
@@ -567,7 +571,7 @@ func (r *Repository) LoadIndex() error {
 	}()
 
 	for idx := range indexes {
-		r.idx.Merge(idx)
+		r.idx.Insert(idx)
 	}
 
 	if err := <-errCh; err != nil {

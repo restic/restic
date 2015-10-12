@@ -27,7 +27,7 @@ type Checker struct {
 	indexes       map[backend.ID]*repository.Index
 	orphanedPacks backend.IDs
 
-	masterIndex *repository.Index
+	masterIndex *repository.MasterIndex
 
 	repo *repository.Repository
 }
@@ -37,7 +37,7 @@ func New(repo *repository.Repository) *Checker {
 	c := &Checker{
 		packs:       make(map[backend.ID]struct{}),
 		blobs:       make(map[backend.ID]struct{}),
-		masterIndex: repository.NewIndex(),
+		masterIndex: repository.NewMasterIndex(),
 		indexes:     make(map[backend.ID]*repository.Index),
 		repo:        repo,
 	}
@@ -105,7 +105,7 @@ func (c *Checker) LoadIndex() error {
 		}
 
 		c.indexes[id] = res.Index
-		c.masterIndex.Merge(res.Index)
+		c.masterIndex.Insert(res.Index)
 
 		debug.Log("LoadIndex", "process blobs")
 		cnt := 0

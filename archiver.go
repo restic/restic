@@ -87,7 +87,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 
 	// check if tree has been saved before
 	id := backend.Hash(data)
-	if arch.repo.Index().Has(id) {
+	if arch.repo.Index().IsInFlight(id) || arch.repo.Index().Has(id) {
 		return id, nil
 	}
 
@@ -651,13 +651,13 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID
 	}
 
 	// save index
-	indexID, err := arch.repo.SaveIndex()
+	err = arch.repo.SaveIndex()
 	if err != nil {
 		debug.Log("Archiver.Snapshot", "error saving index: %v", err)
 		return nil, backend.ID{}, err
 	}
 
-	debug.Log("Archiver.Snapshot", "saved index %v", indexID.Str())
+	debug.Log("Archiver.Snapshot", "saved indexes")
 
 	return sn, id, nil
 }

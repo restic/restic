@@ -88,6 +88,7 @@ func TestSave(t *testing.T) {
 		Equals(t, id, sid)
 
 		OK(t, repo.Flush())
+		// OK(t, repo.SaveIndex())
 
 		// read back
 		buf, err := repo.LoadBlob(pack.Data, id, make([]byte, size))
@@ -214,7 +215,7 @@ func BenchmarkLoadIndex(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			repo.SetIndex(repository.NewIndex())
+			repo.SetIndex(repository.NewMasterIndex())
 			OK(b, repo.LoadIndex())
 		}
 	})

@@ -209,15 +209,17 @@ func BenchmarkLoadTree(t *testing.B) {
 	list := make([]backend.ID, 0, 10)
 	done := make(chan struct{})
 
-	for blob := range repo.Index().Each(done) {
-		if blob.Type != pack.Tree {
-			continue
-		}
+	for _, idx := range repo.Index().All() {
+		for blob := range idx.Each(done) {
+			if blob.Type != pack.Tree {
+				continue
+			}
 
-		list = append(list, blob.ID)
-		if len(list) == cap(list) {
-			close(done)
-			break
+			list = append(list, blob.ID)
+			if len(list) == cap(list) {
+				close(done)
+				break
+			}
 		}
 	}
 
