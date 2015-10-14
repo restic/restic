@@ -305,15 +305,9 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 		return backend.ID{}, err
 	}
 
-	// check if this id is already been saved by another goroutine
-	if r.idx.IsInFlight(*id) {
-		debug.Log("Repo.Save", "blob %v is already being saved", id.Str())
-		return *id, nil
-	}
-
 	// add this id to the list of in-flight chunk ids.
 	debug.Log("Repo.Save", "add %v to list of in-flight IDs", id.Str())
-	r.idx.AddInFlight(*id)
+	err = r.idx.AddInFlight(*id)
 	if err != nil {
 		debug.Log("Repo.Save", "another goroutine is already working on %v (%v) does already exist", id.Str, t)
 		return *id, nil

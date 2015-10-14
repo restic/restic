@@ -139,18 +139,19 @@ func (mi *MasterIndex) Current() *Index {
 	return newIdx
 }
 
-// AddInFlight add the given IDs to the list of in-flight IDs.
-func (mi *MasterIndex) AddInFlight(IDs ...backend.ID) {
+// AddInFlight add the given ID to the list of in-flight IDs. An error is
+// returned when the ID is already in the list.
+func (mi *MasterIndex) AddInFlight(id backend.ID) error {
 	mi.inFlight.Lock()
 	defer mi.inFlight.Unlock()
 
-	ids := backend.IDs(IDs)
-
-	debug.Log("MasterIndex.AddInFlight", "adding %v", ids)
-
-	for _, id := range ids {
-		mi.inFlight.Insert(id)
+	debug.Log("MasterIndex.AddInFlight", "adding %v", id)
+	if mi.inFlight.Has(id) {
+		return fmt.Errorf("%v is already in flight", id)
 	}
+
+	mi.inFlight.Insert(id)
+	return nil
 }
 
 // IsInFlight returns true iff the id is contained in the list of in-flight IDs.
