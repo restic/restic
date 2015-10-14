@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"sync"
 
 	"github.com/restic/chunker"
@@ -23,7 +24,7 @@ type Repository struct {
 	Config  Config
 	key     *crypto.Key
 	keyName string
-	idx     *Index
+	idx     *MasterIndex
 
 	pm    sync.Mutex
 	packs []*pack.Packer
@@ -33,7 +34,7 @@ type Repository struct {
 func New(be backend.Backend) *Repository {
 	return &Repository{
 		be:  be,
-		idx: NewIndex(),
+		idx: NewMasterIndex(),
 	}
 }
 
@@ -203,7 +204,7 @@ func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface
 
 // LookupBlobSize returns the size of blob id.
 func (r *Repository) LookupBlobSize(id backend.ID) (uint, error) {
-	return r.Index().LookupSize(id)
+	return r.idx.LookupSize(id)
 }
 
 const minPackSize = 4 * chunker.MiB
@@ -234,7 +235,7 @@ func (r *Repository) findPacker(size uint) (*pack.Packer, error) {
 	if err != nil {
 		return nil, err
 	}
-	debug.Log("Repo.findPacker", "create new pack %p", blob)
+	debug.Log("Repo.findPacker", "create new pack %p for %d bytes", blob, size)
 	return pack.NewPacker(r.key, blob), nil
 }
 
@@ -268,7 +269,8 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), sid.Str())
-		r.idx.Store(b.Type, b.ID, &sid, b.Offset, uint(b.Length))
+		r.idx.Current().Store(b.Type, b.ID, &sid, b.Offset, uint(b.Length))
+		r.idx.RemoveFromInFlight(b.ID)
 	}
 
 	return nil
@@ -303,16 +305,9 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 		return backend.ID{}, err
 	}
 
-	// add this id to the index, although we don't know yet in which pack it
-	// will be saved; the entry will be updated when the pack is written.
-	// Note: the current id needs to be added to the index before searching
-	// for a suitable packer: There's a little chance that more than one
-	// goroutine handles the same blob concurrently. Due to idx.StoreInProgress
-	// locking the index and raising an error if a matching index entry
-	// already exists, updating the index first ensures that only one of
-	// those goroutines will continue. See issue restic#292.
-	debug.Log("Repo.Save", "saving stub for %v (%v) in index", id.Str, t)
-	err = r.idx.StoreInProgress(t, *id)
+	// add this id to the list of in-flight chunk ids.
+	debug.Log("Repo.Save", "add %v to list of in-flight IDs", id.Str())
+	err = r.idx.AddInFlight(*id)
 	if err != nil {
 		debug.Log("Repo.Save", "another goroutine is already working on %v (%v) does already exist", id.Str, t)
 		return *id, nil
@@ -321,12 +316,15 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 	// find suitable packer and add blob
 	packer, err := r.findPacker(uint(len(ciphertext)))
 	if err != nil {
-		r.idx.Remove(*id)
+		r.idx.RemoveFromInFlight(*id)
 		return backend.ID{}, err
 	}
 
 	// save ciphertext
-	packer.Add(t, *id, bytes.NewReader(ciphertext))
+	_, err = packer.Add(t, *id, bytes.NewReader(ciphertext))
+	if err != nil {
+		return backend.ID{}, err
+	}
 
 	// if the pack is not full enough and there are less than maxPackers
 	// packers, put back to the list
@@ -445,28 +443,35 @@ func (r *Repository) Backend() backend.Backend {
 	return r.be
 }
 
-// Index returns the currently loaded Index.
-func (r *Repository) Index() *Index {
+// Index returns the currently used MasterIndex.
+func (r *Repository) Index() *MasterIndex {
 	return r.idx
 }
 
 // SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i *Index) {
+func (r *Repository) SetIndex(i *MasterIndex) {
 	r.idx = i
 }
 
-// SaveIndex saves all new packs in the index in the backend, returned is the
-// storage ID.
-func (r *Repository) SaveIndex() (backend.ID, error) {
-	debug.Log("Repo.SaveIndex", "Saving index")
+// BlobWriter encrypts and saves the data written to it in a backend. After
+// Close() was called, ID() returns the backend.ID.
+type BlobWriter struct {
+	id     backend.ID
+	blob   backend.Blob
+	hw     *backend.HashingWriter
+	ewr    io.WriteCloser
+	t      backend.Type
+	closed bool
+}
 
-	// create blob
+// CreateEncryptedBlob returns a BlobWriter that encrypts and saves the data
+// written to it in the backend. After Close() was called, ID() returns the
+// backend.ID.
+func (r *Repository) CreateEncryptedBlob(t backend.Type) (*BlobWriter, error) {
 	blob, err := r.be.Create()
 	if err != nil {
-		return backend.ID{}, err
+		return nil, err
 	}
-
-	debug.Log("Repo.SaveIndex", "create new pack %p", blob)
 
 	// hash
 	hw := backend.NewHashingWriter(blob, sha256.New())
@@ -474,34 +479,76 @@ func (r *Repository) SaveIndex() (backend.ID, error) {
 	// encrypt blob
 	ewr := crypto.EncryptTo(r.key, hw)
 
-	err = r.idx.Encode(ewr)
+	return &BlobWriter{t: t, blob: blob, hw: hw, ewr: ewr}, nil
+}
+
+func (bw *BlobWriter) Write(buf []byte) (int, error) {
+	return bw.ewr.Write(buf)
+}
+
+// Close finalizes the blob in the backend, afterwards ID() can be used to retrieve the ID.
+func (bw *BlobWriter) Close() error {
+	if bw.closed {
+		return errors.New("BlobWriter already closed")
+	}
+	bw.closed = true
+
+	err := bw.ewr.Close()
 	if err != nil {
-		return backend.ID{}, err
+		return err
 	}
 
-	err = ewr.Close()
-	if err != nil {
-		return backend.ID{}, err
+	copy(bw.id[:], bw.hw.Sum(nil))
+	return bw.blob.Finalize(bw.t, bw.id.String())
+}
+
+// ID returns the Id the blob has been written to after Close() was called.
+func (bw *BlobWriter) ID() backend.ID {
+	return bw.id
+}
+
+// saveIndex saves all indexes in the backend.
+func (r *Repository) saveIndex(indexes ...*Index) error {
+	for i, idx := range indexes {
+		debug.Log("Repo.SaveIndex", "Saving index %d", i)
+
+		blob, err := r.CreateEncryptedBlob(backend.Index)
+		if err != nil {
+			return err
+		}
+
+		err = idx.Encode(blob)
+		if err != nil {
+			return err
+		}
+
+		err = blob.Close()
+		if err != nil {
+			return err
+		}
+
+		sid := blob.ID()
+
+		debug.Log("Repo.SaveIndex", "Saved index %d as %v", i, sid.Str())
 	}
 
-	// finalize blob in the backend
-	sid := backend.ID{}
-	copy(sid[:], hw.Sum(nil))
+	return nil
+}
 
-	err = blob.Finalize(backend.Index, sid.String())
-	if err != nil {
-		return backend.ID{}, err
-	}
+// SaveIndex saves all new indexes in the backend.
+func (r *Repository) SaveIndex() error {
+	return r.saveIndex(r.idx.NotFinalIndexes()...)
+}
 
-	debug.Log("Repo.SaveIndex", "Saved index as %v", sid.Str())
-
-	return sid, nil
+// SaveFullIndex saves all full indexes in the backend.
+func (r *Repository) SaveFullIndex() error {
+	return r.saveIndex(r.idx.FullIndexes()...)
 }
 
 const loadIndexParallelism = 20
 
-// LoadIndex loads all index files from the backend in parallel and merges them
-// with the current index. The first error that occurred is returned.
+// LoadIndex loads all index files from the backend in parallel and stores them
+// in the master index. The first error that occurred is returned.
 func (r *Repository) LoadIndex() error {
 	debug.Log("Repo.LoadIndex", "Loading index")
 
@@ -528,7 +575,7 @@ func (r *Repository) LoadIndex() error {
 	}()
 
 	for idx := range indexes {
-		r.idx.Merge(idx)
+		r.idx.Insert(idx)
 	}
 
 	if err := <-errCh; err != nil {
@@ -540,24 +587,72 @@ func (r *Repository) LoadIndex() error {
 
 // LoadIndex loads the index id from backend and returns it.
 func LoadIndex(repo *Repository, id string) (*Index, error) {
-	debug.Log("LoadIndex", "Loading index %v", id[:8])
+	idx, err := LoadIndexWithDecoder(repo, id, DecodeIndex)
+	if err == nil {
+		return idx, nil
+	}
 
-	rd, err := repo.be.Get(backend.Index, id)
+	if err == ErrOldIndexFormat {
+		fmt.Fprintf(os.Stderr, "index %v has old format\n", id[:10])
+		return LoadIndexWithDecoder(repo, id, DecodeOldIndex)
+	}
+
+	return nil, err
+}
+
+// decryptReadCloser couples an underlying reader with a DecryptReader and
+// implements io.ReadCloser. On Close(), both readers are closed.
+type decryptReadCloser struct {
+	r  io.ReadCloser
+	dr io.ReadCloser
+}
+
+func newDecryptReadCloser(key *crypto.Key, rd io.ReadCloser) (io.ReadCloser, error) {
+	dr, err := crypto.DecryptFrom(key, rd)
+	if err != nil {
+		return nil, err
+	}
+
+	return &decryptReadCloser{r: rd, dr: dr}, nil
+}
+
+func (dr *decryptReadCloser) Read(buf []byte) (int, error) {
+	return dr.dr.Read(buf)
+}
+
+func (dr *decryptReadCloser) Close() error {
+	err := dr.dr.Close()
+	if err != nil {
+		return err
+	}
+
+	return dr.r.Close()
+}
+
+// GetDecryptReader opens the file id stored in the backend and returns a
+// reader that yields the decrypted content. The reader must be closed.
+func (r *Repository) GetDecryptReader(t backend.Type, id string) (io.ReadCloser, error) {
+	rd, err := r.be.Get(t, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return newDecryptReadCloser(r.key, rd)
+}
+
+// LoadIndexWithDecoder loads the index and decodes it with fn.
+func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (*Index, error) {
+	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
+
+	rd, err := repo.GetDecryptReader(backend.Index, id)
+	if err != nil {
+		return nil, err
+	}
 	defer rd.Close()
-	if err != nil {
-		return nil, err
-	}
 
-	// decrypt
-	decryptRd, err := crypto.DecryptFrom(repo.key, rd)
-	defer decryptRd.Close()
+	idx, err := fn(rd)
 	if err != nil {
-		return nil, err
-	}
-
-	idx, err := DecodeIndex(decryptRd)
-	if err != nil {
-		debug.Log("LoadIndex", "error while decoding index %v: %v", id, err)
+		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
 		return nil, err
 	}
 

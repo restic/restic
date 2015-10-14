@@ -49,8 +49,10 @@ func (cmd CmdList) Execute(args []string) error {
 			return err
 		}
 
-		for blob := range repo.Index().Each(nil) {
-			cmd.global.Printf("%s\n", blob.ID)
+		for _, idx := range repo.Index().All() {
+			for blob := range idx.Each(nil) {
+				cmd.global.Printf("%s\n", blob.ID)
+			}
 		}
 
 		return nil

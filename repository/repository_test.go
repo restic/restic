@@ -88,9 +88,11 @@ func TestSave(t *testing.T) {
 		Equals(t, id, sid)
 
 		OK(t, repo.Flush())
+		// OK(t, repo.SaveIndex())
 
 		// read back
 		buf, err := repo.LoadBlob(pack.Data, id, make([]byte, size))
+		OK(t, err)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -121,6 +123,7 @@ func TestSaveFrom(t *testing.T) {
 
 		// read back
 		buf, err := repo.LoadBlob(pack.Data, id, make([]byte, size))
+		OK(t, err)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -199,7 +202,7 @@ func TestLoadJSONUnpacked(t *testing.T) {
 
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
-func TestLoadIndex(t *testing.T) {
+func TestRepositoryLoadIndex(t *testing.T) {
 	WithTestEnvironment(t, repoFixture, func(repodir string) {
 		repo := OpenLocalRepo(t, repodir)
 		OK(t, repo.LoadIndex())
@@ -212,7 +215,7 @@ func BenchmarkLoadIndex(b *testing.B) {
 		b.ResetTimer()
 
 		for i := 0; i < b.N; i++ {
-			repo.SetIndex(repository.NewIndex())
+			repo.SetIndex(repository.NewMasterIndex())
 			OK(b, repo.LoadIndex())
 		}
 	})

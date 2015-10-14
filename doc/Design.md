@@ -164,7 +164,7 @@ Data and Tree Blobs, so the outer structure is `IV || Ciphertext || MAC` again.
 The plaintext consists of a JSON document like the following:
 
     {
-      "obsolete": [
+      "supersedes": [
         "ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452"
       ],
       "packs": [
@@ -197,10 +197,9 @@ This JSON document lists Packs and the blobs contained therein. In this
 example, the Pack `73d04e61` contains two data Blobs and one Tree blob, the
 plaintext hashes are listed afterwards.
 
-The field `obsolete` lists the storage IDs of index files that have been
+The field `supersedes` lists the storage IDs of index files that have been
 replaced with the current index file. This happens when index files are
-repacked, this happens for example when old snapshots are removed and Packs are
-recombined.
+repacked, for example when old snapshots are removed and Packs are recombined.
 
 There may be an arbitrary number of index files, containing information on
 non-disjoint sets of Packs. The number of packs described in a single file is
