@@ -140,3 +140,21 @@ func TestUnreferencedBlobs(t *testing.T) {
 		Equals(t, unusedBlobsBySnapshot, blobs)
 	})
 }
+
+var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
+
+func TestDuplicatePacksInIndex(t *testing.T) {
+	WithTestEnvironment(t, checkerDuplicateIndexTestData, func(repodir string) {
+		repo := OpenLocalRepo(t, repodir)
+
+		chkr := checker.New(repo)
+		err := chkr.LoadIndex()
+		if err == nil {
+			t.Fatalf("did not get expected checker error for duplicate packs in indexes")
+		}
+
+		if _, ok := err.(checker.ErrDuplicatePacks); !ok {
+			t.Fatalf("did not get ErrDuplicatePacks, got %v instead", err)
+		}
+	})
+}

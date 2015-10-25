@@ -49,6 +49,16 @@ func New(repo *repository.Repository) *Checker {
 
 const defaultParallelism = 40
 
+// ErrDuplicatePacks is returned when a pack is found in more than one index.
+type ErrDuplicatePacks struct {
+	PackID  backend.ID
+	Indexes backend.IDSet
+}
+
+func (e ErrDuplicatePacks) Error() string {
+	return fmt.Sprintf("pack %v contained in several indexes: %v", e.PackID.Str(), e.Indexes)
+}
+
 // LoadIndex loads all index files.
 func (c *Checker) LoadIndex() error {
 	debug.Log("LoadIndex", "Start")
@@ -97,14 +107,16 @@ func (c *Checker) LoadIndex() error {
 	done := make(chan struct{})
 	defer close(done)
 
+	packToIndex := make(map[backend.ID]backend.IDSet)
+
 	for res := range indexCh {
 		debug.Log("LoadIndex", "process index %v", res.ID)
-		id, err := backend.ParseID(res.ID)
+		idxID, err := backend.ParseID(res.ID)
 		if err != nil {
 			return err
 		}
 
-		c.indexes[id] = res.Index
+		c.indexes[idxID] = res.Index
 		c.masterIndex.Insert(res.Index)
 
 		debug.Log("LoadIndex", "process blobs")
@@ -114,12 +126,28 @@ func (c *Checker) LoadIndex() error {
 			c.blobs[blob.ID] = struct{}{}
 			c.blobRefs.M[blob.ID] = 0
 			cnt++
+
+			if _, ok := packToIndex[blob.PackID]; !ok {
+				packToIndex[blob.PackID] = backend.NewIDSet()
+			}
+			packToIndex[blob.PackID].Insert(idxID)
 		}
 
 		debug.Log("LoadIndex", "%d blobs processed", cnt)
 	}
 
 	debug.Log("LoadIndex", "done, error %v", perr)
+
+	debug.Log("LoadIndex", "checking for duplicate packs")
+	for packID := range c.packs {
+		debug.Log("LoadIndex", "  check pack %v: contained in %d indexes", packID.Str(), len(packToIndex[packID]))
+		if len(packToIndex[packID]) > 1 {
+			return ErrDuplicatePacks{
+				PackID:  packID,
+				Indexes: packToIndex[packID],
+			}
+		}
+	}
 
 	c.repo.SetIndex(c.masterIndex)
 
