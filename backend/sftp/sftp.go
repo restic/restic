@@ -336,9 +336,11 @@ func (r *SFTP) GetReader(t backend.Type, name string, offset, length uint) (io.R
 		return nil, err
 	}
 
-	_, err = f.Seek(int64(offset), 0)
-	if err != nil {
-		return nil, err
+	if offset > 0 {
+		_, err = f.Seek(int64(offset), 0)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if length == 0 {

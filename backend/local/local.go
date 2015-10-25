@@ -223,9 +223,11 @@ func (b *Local) GetReader(t backend.Type, name string, offset, length uint) (io.
 	b.open[filename(b.p, t, name)] = append(open, f)
 	b.mu.Unlock()
 
-	_, err = f.Seek(int64(offset), 0)
-	if err != nil {
-		return nil, err
+	if offset > 0 {
+		_, err = f.Seek(int64(offset), 0)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if length == 0 {
