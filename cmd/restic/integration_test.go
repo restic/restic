@@ -18,6 +18,7 @@ import (
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/filter"
+	"github.com/restic/restic/repository"
 	. "github.com/restic/restic/test"
 )
 
@@ -682,4 +683,9 @@ func TestRebuildIndex(t *testing.T) {
 			t.Fatalf("expected no output from the checker, got: %v", out)
 		}
 	})
+}
+
+func TestRebuildIndexAlwaysFull(t *testing.T) {
+	repository.IndexFull = func(*repository.Index) bool { return true }
+	TestRebuildIndex(t)
 }
