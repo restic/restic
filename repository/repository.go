@@ -517,7 +517,7 @@ func (r *Repository) saveIndex(indexes ...*Index) error {
 			return err
 		}
 
-		err = idx.Encode(blob)
+		err = idx.Finalize(blob)
 		if err != nil {
 			return err
 		}
