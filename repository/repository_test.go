@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"io"
+	mrand "math/rand"
 	"path/filepath"
 	"testing"
 
@@ -219,4 +220,71 @@ func BenchmarkLoadIndex(b *testing.B) {
 			OK(b, repo.LoadIndex())
 		}
 	})
+}
+
+// saveRandomDataBlobs generates random data blobs and saves them to the repository.
+func saveRandomDataBlobs(t testing.TB, repo *repository.Repository, num int, sizeMax int) {
+	for i := 0; i < num; i++ {
+		size := mrand.Int() % sizeMax
+
+		buf := make([]byte, size)
+		_, err := io.ReadFull(rand.Reader, buf)
+		OK(t, err)
+
+		_, err = repo.SaveAndEncrypt(pack.Data, buf, nil)
+		OK(t, err)
+	}
+}
+
+func TestRepositoryIncrementalIndex(t *testing.T) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
+	repository.IndexFull = func(*repository.Index) bool { return true }
+
+	// add 15 packs
+	for j := 0; j < 5; j++ {
+		// add 3 packs, write intermediate index
+		for i := 0; i < 3; i++ {
+			saveRandomDataBlobs(t, repo, 5, 1<<15)
+			OK(t, repo.Flush())
+		}
+
+		OK(t, repo.SaveFullIndex())
+	}
+
+	// add another 5 packs
+	for i := 0; i < 5; i++ {
+		saveRandomDataBlobs(t, repo, 5, 1<<15)
+		OK(t, repo.Flush())
+	}
+
+	// save final index
+	OK(t, repo.SaveIndex())
+
+	type packEntry struct {
+		id      backend.ID
+		indexes []*repository.Index
+	}
+
+	packEntries := make(map[backend.ID]map[backend.ID]struct{})
+
+	for id := range repo.List(backend.Index, nil) {
+		idx, err := repository.LoadIndex(repo, id.String())
+		OK(t, err)
+
+		for pb := range idx.Each(nil) {
+			if _, ok := packEntries[pb.PackID]; !ok {
+				packEntries[pb.PackID] = make(map[backend.ID]struct{})
+			}
+
+			packEntries[pb.PackID][id] = struct{}{}
+		}
+	}
+
+	for packID, ids := range packEntries {
+		if len(ids) > 1 {
+			t.Errorf("pack %v listed in %d indexes\n", packID, len(ids))
+		}
+	}
 }
