@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
+
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/repository"
 )
 
@@ -54,6 +59,7 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 	debug.Log("RebuildIndex.RebuildIndex", "found %v indexes", len(indexIDs))
 
 	combinedIndex := repository.NewIndex()
+	packsDone := backend.NewIDSet()
 
 	i := 0
 	for indexID := range indexIDs {
@@ -69,6 +75,7 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 
 		for packedBlob := range idx.Each(done) {
 			combinedIndex.Store(packedBlob.Type, packedBlob.ID, packedBlob.PackID, packedBlob.Offset, packedBlob.Length)
+			packsDone.Insert(packedBlob.PackID)
 		}
 
 		combinedIndex.AddToSupersedes(indexID)
@@ -101,6 +108,64 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 			return err
 		}
 	}
+
+	cmd.global.Printf("checking for additional packs\n")
+	newPacks := 0
+	for packID := range cmd.repo.List(backend.Data, done) {
+		if packsDone.Has(packID) {
+			continue
+		}
+
+		debug.Log("RebuildIndex.RebuildIndex", "pack %v not indexed", packID.Str())
+		newPacks++
+
+		rd, err := cmd.repo.Backend().GetReader(backend.Data, packID.String(), 0, 0)
+		if err != nil {
+			debug.Log("RebuildIndex.RebuildIndex", "GetReader returned error: %v", err)
+			return err
+		}
+
+		var readSeeker io.ReadSeeker
+		if r, ok := rd.(io.ReadSeeker); ok {
+			debug.Log("RebuildIndex.RebuildIndex", "reader is seekable")
+			readSeeker = r
+		} else {
+			debug.Log("RebuildIndex.RebuildIndex", "reader is not seekable, loading contents to ram")
+			buf, err := ioutil.ReadAll(rd)
+			if err != nil {
+				return err
+			}
+
+			readSeeker = bytes.NewReader(buf)
+		}
+
+		up, err := pack.NewUnpacker(cmd.repo.Key(), readSeeker)
+		if err != nil {
+			debug.Log("RebuildIndex.RebuildIndex", "error while unpacking pack %v", packID.Str())
+			return err
+		}
+
+		for _, blob := range up.Entries {
+			debug.Log("RebuildIndex.RebuildIndex", "pack %v: blob %v", packID.Str(), blob)
+			combinedIndex.Store(blob.Type, blob.ID, packID, blob.Offset, blob.Length)
+		}
+
+		if repository.IndexFull(combinedIndex) {
+			combinedIndex, err = cmd.storeIndex(combinedIndex)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if combinedIndex.Length() > 0 {
+		combinedIndex, err = cmd.storeIndex(combinedIndex)
+		if err != nil {
+			return err
+		}
+	}
+
+	cmd.global.Printf("added %d packs to the index\n", newPacks)
 
 	debug.Log("RebuildIndex.RebuildIndex", "done")
 	return nil

@@ -233,7 +233,7 @@ type Unpacker struct {
 
 // NewUnpacker returns a pointer to Unpacker which can be used to read
 // individual Blobs from a pack.
-func NewUnpacker(k *crypto.Key, entries []Blob, rd io.ReadSeeker) (*Unpacker, error) {
+func NewUnpacker(k *crypto.Key, rd io.ReadSeeker) (*Unpacker, error) {
 	var err error
 	ls := binary.Size(uint32(0))
 
@@ -261,28 +261,28 @@ func NewUnpacker(k *crypto.Key, entries []Blob, rd io.ReadSeeker) (*Unpacker, er
 		return nil, err
 	}
 
-	if entries == nil {
-		pos := uint(0)
-		for {
-			e := headerEntry{}
-			err = binary.Read(hrd, binary.LittleEndian, &e)
-			if err == io.EOF {
-				break
-			}
+	var entries []Blob
 
-			if err != nil {
-				return nil, err
-			}
-
-			entries = append(entries, Blob{
-				Type:   e.Type,
-				Length: uint(e.Length),
-				ID:     e.ID,
-				Offset: pos,
-			})
-
-			pos += uint(e.Length)
+	pos := uint(0)
+	for {
+		e := headerEntry{}
+		err = binary.Read(hrd, binary.LittleEndian, &e)
+		if err == io.EOF {
+			break
 		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, Blob{
+			Type:   e.Type,
+			Length: uint(e.Length),
+			ID:     e.ID,
+			Offset: pos,
+		})
+
+		pos += uint(e.Length)
 	}
 
 	p := &Unpacker{
