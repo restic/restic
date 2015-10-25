@@ -507,27 +507,36 @@ func (bw *BlobWriter) ID() backend.ID {
 	return bw.id
 }
 
+// SaveIndex saves an index to repo's backend.
+func SaveIndex(repo *Repository, index *Index) (backend.ID, error) {
+	blob, err := repo.CreateEncryptedBlob(backend.Index)
+	if err != nil {
+		return backend.ID{}, err
+	}
+
+	err = index.Finalize(blob)
+	if err != nil {
+		return backend.ID{}, err
+	}
+
+	err = blob.Close()
+	if err != nil {
+		return backend.ID{}, err
+	}
+
+	sid := blob.ID()
+	return sid, nil
+}
+
 // saveIndex saves all indexes in the backend.
 func (r *Repository) saveIndex(indexes ...*Index) error {
 	for i, idx := range indexes {
 		debug.Log("Repo.SaveIndex", "Saving index %d", i)
 
-		blob, err := r.CreateEncryptedBlob(backend.Index)
+		sid, err := SaveIndex(r, idx)
 		if err != nil {
 			return err
 		}
-
-		err = idx.Finalize(blob)
-		if err != nil {
-			return err
-		}
-
-		err = blob.Close()
-		if err != nil {
-			return err
-		}
-
-		sid := blob.ID()
 
 		debug.Log("Repo.SaveIndex", "Saved index %d as %v", i, sid.Str())
 	}
