@@ -99,6 +99,7 @@ func cmdCheckOutput(t testing.TB, global GlobalOptions) string {
 }
 
 func cmdRebuildIndex(t testing.TB, global GlobalOptions) {
+	global.stdout = ioutil.Discard
 	cmd := &CmdRebuildIndex{global: &global}
 	OK(t, cmd.Execute(nil))
 }
