@@ -50,8 +50,17 @@ func (cmd CmdCheck) Execute(args []string) error {
 	chkr := checker.New(repo)
 
 	cmd.global.Verbosef("Load indexes\n")
-	if err = chkr.LoadIndex(); err != nil {
-		return err
+	hints, errs := chkr.LoadIndex()
+
+	for _, hint := range hints {
+		cmd.global.Printf("%v\n", hint)
+	}
+
+	if len(errs) > 0 {
+		for _, err := range errs {
+			cmd.global.Warnf("error: %v\n", err)
+		}
+		return fmt.Errorf("LoadIndex returned errors")
 	}
 
 	done := make(chan struct{})

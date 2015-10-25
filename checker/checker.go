@@ -60,7 +60,7 @@ func (e ErrDuplicatePacks) Error() string {
 }
 
 // LoadIndex loads all index files.
-func (c *Checker) LoadIndex() error {
+func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	debug.Log("LoadIndex", "Start")
 	type indexRes struct {
 		Index *repository.Index
@@ -107,13 +107,19 @@ func (c *Checker) LoadIndex() error {
 	done := make(chan struct{})
 	defer close(done)
 
+	if perr != nil {
+		errs = append(errs, perr)
+		return hints, errs
+	}
+
 	packToIndex := make(map[backend.ID]backend.IDSet)
 
 	for res := range indexCh {
 		debug.Log("LoadIndex", "process index %v", res.ID)
 		idxID, err := backend.ParseID(res.ID)
 		if err != nil {
-			return err
+			errs = append(errs, fmt.Errorf("unable to parse as index ID: %v", res.ID))
+			continue
 		}
 
 		c.indexes[idxID] = res.Index
@@ -142,16 +148,16 @@ func (c *Checker) LoadIndex() error {
 	for packID := range c.packs {
 		debug.Log("LoadIndex", "  check pack %v: contained in %d indexes", packID.Str(), len(packToIndex[packID]))
 		if len(packToIndex[packID]) > 1 {
-			return ErrDuplicatePacks{
+			hints = append(hints, ErrDuplicatePacks{
 				PackID:  packID,
 				Indexes: packToIndex[packID],
-			}
+			})
 		}
 	}
 
 	c.repo.SetIndex(c.masterIndex)
 
-	return perr
+	return hints, errs
 }
 
 // PackError describes an error with a specific pack.

@@ -59,7 +59,15 @@ func TestCheckRepo(t *testing.T) {
 		repo := OpenLocalRepo(t, repodir)
 
 		chkr := checker.New(repo)
-		OK(t, chkr.LoadIndex())
+		hints, errs := chkr.LoadIndex()
+		if len(errs) > 0 {
+			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
+		if len(hints) > 0 {
+			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+		}
+
 		OKs(t, checkPacks(chkr))
 		OKs(t, checkStruct(chkr))
 	})
@@ -73,8 +81,16 @@ func TestMissingPack(t *testing.T) {
 		OK(t, repo.Backend().Remove(backend.Data, packID))
 
 		chkr := checker.New(repo)
-		OK(t, chkr.LoadIndex())
-		errs := checkPacks(chkr)
+		hints, errs := chkr.LoadIndex()
+		if len(errs) > 0 {
+			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
+		if len(hints) > 0 {
+			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+		}
+
+		errs = checkPacks(chkr)
 
 		Assert(t, len(errs) == 1,
 			"expected exactly one error, got %v", len(errs))
@@ -97,8 +113,16 @@ func TestUnreferencedPack(t *testing.T) {
 		OK(t, repo.Backend().Remove(backend.Index, indexID))
 
 		chkr := checker.New(repo)
-		OK(t, chkr.LoadIndex())
-		errs := checkPacks(chkr)
+		hints, errs := chkr.LoadIndex()
+		if len(errs) > 0 {
+			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
+		if len(hints) > 0 {
+			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+		}
+
+		errs = checkPacks(chkr)
 
 		Assert(t, len(errs) == 1,
 			"expected exactly one error, got %v", len(errs))
@@ -130,7 +154,15 @@ func TestUnreferencedBlobs(t *testing.T) {
 		sort.Sort(unusedBlobsBySnapshot)
 
 		chkr := checker.New(repo)
-		OK(t, chkr.LoadIndex())
+		hints, errs := chkr.LoadIndex()
+		if len(errs) > 0 {
+			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
+		if len(hints) > 0 {
+			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+		}
+
 		OKs(t, checkPacks(chkr))
 		OKs(t, checkStruct(chkr))
 
@@ -148,13 +180,27 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 		repo := OpenLocalRepo(t, repodir)
 
 		chkr := checker.New(repo)
-		err := chkr.LoadIndex()
-		if err == nil {
-			t.Fatalf("did not get expected checker error for duplicate packs in indexes")
+		hints, errs := chkr.LoadIndex()
+		if len(hints) == 0 {
+			t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
 		}
 
-		if _, ok := err.(checker.ErrDuplicatePacks); !ok {
-			t.Fatalf("did not get ErrDuplicatePacks, got %v instead", err)
+		found := false
+		for _, hint := range hints {
+			if _, ok := hint.(checker.ErrDuplicatePacks); ok {
+				found = true
+			} else {
+				t.Errorf("got unexpected hint: %v", hint)
+			}
 		}
+
+		if !found {
+			t.Fatalf("did not find hint ErrDuplicatePacks")
+		}
+
+		if len(errs) > 0 {
+			t.Errorf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
 	})
 }
