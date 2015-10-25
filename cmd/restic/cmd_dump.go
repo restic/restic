@@ -32,7 +32,7 @@ func init() {
 }
 
 func (cmd CmdDump) Usage() string {
-	return "[index|snapshots|trees|all]"
+	return "[indexes|snapshots|trees|all]"
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
