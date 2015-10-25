@@ -52,8 +52,16 @@ func (cmd CmdCheck) Execute(args []string) error {
 	cmd.global.Verbosef("Load indexes\n")
 	hints, errs := chkr.LoadIndex()
 
+	dupFound := false
 	for _, hint := range hints {
 		cmd.global.Printf("%v\n", hint)
+		if _, ok := hint.(checker.ErrDuplicatePacks); ok {
+			dupFound = true
+		}
+	}
+
+	if dupFound {
+		cmd.global.Printf("\nrun `restic rebuild-index' to correct this\n")
 	}
 
 	if len(errs) > 0 {
