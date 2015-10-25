@@ -61,6 +61,12 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 	combinedIndex := repository.NewIndex()
 	packsDone := backend.NewIDSet()
 
+	type Blob struct {
+		id  backend.ID
+		tpe pack.BlobType
+	}
+	blobsDone := make(map[Blob]struct{})
+
 	i := 0
 	for indexID := range indexIDs {
 		cmd.global.Printf("  loading index %v\n", i)
@@ -74,8 +80,17 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 		debug.Log("RebuildIndex.RebuildIndex", "adding blobs from index %v", indexID.Str())
 
 		for packedBlob := range idx.Each(done) {
-			combinedIndex.Store(packedBlob.Type, packedBlob.ID, packedBlob.PackID, packedBlob.Offset, packedBlob.Length)
 			packsDone.Insert(packedBlob.PackID)
+			b := Blob{
+				id:  packedBlob.ID,
+				tpe: packedBlob.Type,
+			}
+			if _, ok := blobsDone[b]; ok {
+				continue
+			}
+
+			blobsDone[b] = struct{}{}
+			combinedIndex.Store(packedBlob.Type, packedBlob.ID, packedBlob.PackID, packedBlob.Offset, packedBlob.Length)
 		}
 
 		combinedIndex.AddToSupersedes(indexID)
