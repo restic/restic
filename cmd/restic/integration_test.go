@@ -90,6 +90,19 @@ func cmdCheck(t testing.TB, global GlobalOptions) {
 	OK(t, cmd.Execute(nil))
 }
 
+func cmdCheckOutput(t testing.TB, global GlobalOptions) string {
+	buf := bytes.NewBuffer(nil)
+	global.stdout = buf
+	cmd := &CmdCheck{global: &global, ReadData: true}
+	OK(t, cmd.Execute(nil))
+	return string(buf.Bytes())
+}
+
+func cmdRebuildIndex(t testing.TB, global GlobalOptions) {
+	cmd := &CmdRebuildIndex{global: &global}
+	OK(t, cmd.Execute(nil))
+}
+
 func cmdLs(t testing.TB, global GlobalOptions, snapshotID string) []string {
 	var buf bytes.Buffer
 	global.stdout = &buf
@@ -644,5 +657,28 @@ func TestFind(t *testing.T) {
 
 		results = cmdFind(t, global, "test")
 		Assert(t, len(results) < 2, "less than two file found in repo (%v)", datafile)
+	})
+}
+
+func TestRebuildIndex(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("..", "..", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
+		SetupTarTestFixture(t, env.base, datafile)
+
+		out := cmdCheckOutput(t, global)
+		if !strings.Contains(out, "contained in several indexes") {
+			t.Fatalf("did not find checker hint for packs in several indexes")
+		}
+
+		if !strings.Contains(out, "restic rebuild-index") {
+			t.Fatalf("did not find hint for rebuild-index comman")
+		}
+
+		cmdRebuildIndex(t, global)
+
+		out = cmdCheckOutput(t, global)
+		if len(out) != 0 {
+			t.Fatalf("expected no output from the checker, got: %v", out)
+		}
 	})
 }

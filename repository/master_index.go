@@ -33,7 +33,7 @@ func NewMasterIndex() *MasterIndex {
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Lookup(id backend.ID) (packID *backend.ID, tpe pack.BlobType, offset, length uint, err error) {
+func (mi *MasterIndex) Lookup(id backend.ID) (packID backend.ID, tpe pack.BlobType, offset, length uint, err error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -50,7 +50,7 @@ func (mi *MasterIndex) Lookup(id backend.ID) (packID *backend.ID, tpe pack.BlobT
 	}
 
 	debug.Log("MasterIndex.Lookup", "id %v not found in any index", id.Str())
-	return nil, pack.Data, 0, 0, fmt.Errorf("id %v not found in any index", id)
+	return backend.ID{}, pack.Data, 0, 0, fmt.Errorf("id %v not found in any index", id)
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
@@ -206,7 +206,7 @@ func (mi *MasterIndex) FullIndexes() []*Index {
 			continue
 		}
 
-		if idx.Full() {
+		if IndexFull(idx) {
 			debug.Log("MasterIndex.FullIndexes", "index %p is full", idx)
 			list = append(list, idx)
 		} else {

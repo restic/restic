@@ -39,6 +39,27 @@ func (s IDSet) List() IDs {
 	return list
 }
 
+// Equals returns true iff s equals other.
+func (s IDSet) Equals(other IDSet) bool {
+	if len(s) != len(other) {
+		return false
+	}
+
+	for id := range s {
+		if _, ok := other[id]; !ok {
+			return false
+		}
+	}
+
+	for id := range other {
+		if _, ok := s[id]; !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (s IDSet) String() string {
 	str := s.List().String()
 	if len(str) < 2 {

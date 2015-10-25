@@ -59,7 +59,15 @@ func TestCheckRepo(t *testing.T) {
 		repo := OpenLocalRepo(t, repodir)
 
 		chkr := checker.New(repo)
-		OK(t, chkr.LoadIndex())
+		hints, errs := chkr.LoadIndex()
+		if len(errs) > 0 {
+			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
+		if len(hints) > 0 {
+			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+		}
+
 		OKs(t, checkPacks(chkr))
 		OKs(t, checkStruct(chkr))
 	})
@@ -73,8 +81,16 @@ func TestMissingPack(t *testing.T) {
 		OK(t, repo.Backend().Remove(backend.Data, packID))
 
 		chkr := checker.New(repo)
-		OK(t, chkr.LoadIndex())
-		errs := checkPacks(chkr)
+		hints, errs := chkr.LoadIndex()
+		if len(errs) > 0 {
+			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
+		if len(hints) > 0 {
+			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+		}
+
+		errs = checkPacks(chkr)
 
 		Assert(t, len(errs) == 1,
 			"expected exactly one error, got %v", len(errs))
@@ -97,8 +113,16 @@ func TestUnreferencedPack(t *testing.T) {
 		OK(t, repo.Backend().Remove(backend.Index, indexID))
 
 		chkr := checker.New(repo)
-		OK(t, chkr.LoadIndex())
-		errs := checkPacks(chkr)
+		hints, errs := chkr.LoadIndex()
+		if len(errs) > 0 {
+			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
+		if len(hints) > 0 {
+			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+		}
+
+		errs = checkPacks(chkr)
 
 		Assert(t, len(errs) == 1,
 			"expected exactly one error, got %v", len(errs))
@@ -130,7 +154,15 @@ func TestUnreferencedBlobs(t *testing.T) {
 		sort.Sort(unusedBlobsBySnapshot)
 
 		chkr := checker.New(repo)
-		OK(t, chkr.LoadIndex())
+		hints, errs := chkr.LoadIndex()
+		if len(errs) > 0 {
+			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
+		if len(hints) > 0 {
+			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+		}
+
 		OKs(t, checkPacks(chkr))
 		OKs(t, checkStruct(chkr))
 
@@ -138,5 +170,37 @@ func TestUnreferencedBlobs(t *testing.T) {
 		sort.Sort(blobs)
 
 		Equals(t, unusedBlobsBySnapshot, blobs)
+	})
+}
+
+var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
+
+func TestDuplicatePacksInIndex(t *testing.T) {
+	WithTestEnvironment(t, checkerDuplicateIndexTestData, func(repodir string) {
+		repo := OpenLocalRepo(t, repodir)
+
+		chkr := checker.New(repo)
+		hints, errs := chkr.LoadIndex()
+		if len(hints) == 0 {
+			t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
+		}
+
+		found := false
+		for _, hint := range hints {
+			if _, ok := hint.(checker.ErrDuplicatePacks); ok {
+				found = true
+			} else {
+				t.Errorf("got unexpected hint: %v", hint)
+			}
+		}
+
+		if !found {
+			t.Fatalf("did not find hint ErrDuplicatePacks")
+		}
+
+		if len(errs) > 0 {
+			t.Errorf("expected no errors, got %v: %v", len(errs), errs)
+		}
+
 	})
 }

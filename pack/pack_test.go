@@ -67,7 +67,7 @@ func TestCreatePack(t *testing.T) {
 
 	// read and parse it again
 	rd := bytes.NewReader(file.Bytes())
-	np, err := pack.NewUnpacker(k, nil, rd)
+	np, err := pack.NewUnpacker(k, rd)
 	OK(t, err)
 	Equals(t, len(np.Entries), len(bufs))
 
@@ -85,7 +85,7 @@ func TestCreatePack(t *testing.T) {
 	}
 }
 
-var blobTypeJson = []struct {
+var blobTypeJSON = []struct {
 	t   pack.BlobType
 	res string
 }{
@@ -94,7 +94,7 @@ var blobTypeJson = []struct {
 }
 
 func TestBlobTypeJSON(t *testing.T) {
-	for _, test := range blobTypeJson {
+	for _, test := range blobTypeJSON {
 		// test serialize
 		buf, err := json.Marshal(test.t)
 		OK(t, err)

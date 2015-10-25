@@ -121,7 +121,7 @@ func getPosition() string {
 
 	goroutine := goroutineNum()
 
-	return fmt.Sprintf("%3d %s:%3d", goroutine, filepath.Base(file), line)
+	return fmt.Sprintf("%3d %s:%d", goroutine, filepath.Base(file), line)
 }
 
 var maxTagLen = 10
