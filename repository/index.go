@@ -165,6 +165,20 @@ func (idx *Index) Supersedes() backend.IDs {
 	return idx.supersedes
 }
 
+// AddToSupersedes adds the ids to the list of indexes superseded by this
+// index. If the index has already been finalized, an error is returned.
+func (idx *Index) AddToSupersedes(ids ...backend.ID) error {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	if idx.final {
+		return errors.New("index already finalized")
+	}
+
+	idx.supersedes = append(idx.supersedes, ids...)
+	return nil
+}
+
 // PackedBlob is a blob already saved within a pack.
 type PackedBlob struct {
 	pack.Blob
