@@ -64,8 +64,8 @@ const (
 	indexMaxAge   = 15 * time.Minute
 )
 
-// Full returns true iff the index is "full enough" to be saved as a preliminary index.
-func (idx *Index) Full() bool {
+// IndexFull returns true iff the index is "full enough" to be saved as a preliminary index.
+var IndexFull = func(idx *Index) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 

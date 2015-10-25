@@ -206,7 +206,7 @@ func (mi *MasterIndex) FullIndexes() []*Index {
 			continue
 		}
 
-		if idx.Full() {
+		if IndexFull(idx) {
 			debug.Log("MasterIndex.FullIndexes", "index %p is full", idx)
 			list = append(list, idx)
 		} else {
