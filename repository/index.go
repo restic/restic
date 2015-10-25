@@ -26,7 +26,7 @@ type Index struct {
 
 type indexEntry struct {
 	tpe    pack.BlobType
-	packID *backend.ID
+	packID backend.ID
 	offset uint
 	length uint
 }
@@ -39,7 +39,7 @@ func NewIndex() *Index {
 	}
 }
 
-func (idx *Index) store(t pack.BlobType, id backend.ID, pack *backend.ID, offset, length uint) {
+func (idx *Index) store(t pack.BlobType, id backend.ID, pack backend.ID, offset, length uint) {
 	idx.pack[id] = indexEntry{
 		tpe:    t,
 		packID: pack,
@@ -95,7 +95,7 @@ func (idx *Index) Full() bool {
 
 // Store remembers the id and pack in the index. An existing entry will be
 // silently overwritten.
-func (idx *Index) Store(t pack.BlobType, id backend.ID, pack *backend.ID, offset, length uint) {
+func (idx *Index) Store(t pack.BlobType, id backend.ID, pack backend.ID, offset, length uint) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -110,7 +110,7 @@ func (idx *Index) Store(t pack.BlobType, id backend.ID, pack *backend.ID, offset
 }
 
 // Lookup returns the pack for the id.
-func (idx *Index) Lookup(id backend.ID) (packID *backend.ID, tpe pack.BlobType, offset, length uint, err error) {
+func (idx *Index) Lookup(id backend.ID) (packID backend.ID, tpe pack.BlobType, offset, length uint, err error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -121,7 +121,7 @@ func (idx *Index) Lookup(id backend.ID) (packID *backend.ID, tpe pack.BlobType, 
 	}
 
 	debug.Log("Index.Lookup", "id %v not found", id.Str())
-	return nil, pack.Data, 0, 0, fmt.Errorf("id %v not found in index", id)
+	return backend.ID{}, pack.Data, 0, 0, fmt.Errorf("id %v not found in index", id)
 }
 
 // Has returns true iff the id is listed in the index.
@@ -196,7 +196,7 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 					Type:   blob.tpe,
 					Length: blob.length,
 				},
-				PackID: *blob.packID,
+				PackID: blob.packID,
 			}:
 			}
 		}
@@ -239,8 +239,8 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 	packs := make(map[backend.ID]*packJSON)
 
 	for id, blob := range idx.pack {
-		if blob.packID == nil {
-			panic("nil pack id")
+		if blob.packID.IsNull() {
+			panic("null pack id")
 		}
 
 		debug.Log("Index.generatePackList", "handle blob %v", id.Str())
@@ -252,10 +252,10 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 		}
 
 		// see if pack is already in map
-		p, ok := packs[*blob.packID]
+		p, ok := packs[blob.packID]
 		if !ok {
 			// else create new pack
-			p = &packJSON{ID: *blob.packID}
+			p = &packJSON{ID: blob.packID}
 
 			// and append it to the list and map
 			list = append(list, p)
@@ -380,7 +380,7 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 	idx = NewIndex()
 	for _, pack := range idxJSON.Packs {
 		for _, blob := range pack.Blobs {
-			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length)
+			idx.store(blob.Type, blob.ID, pack.ID, blob.Offset, blob.Length)
 		}
 	}
 	idx.supersedes = idxJSON.Supersedes
@@ -405,7 +405,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	idx = NewIndex()
 	for _, pack := range list {
 		for _, blob := range pack.Blobs {
-			idx.store(blob.Type, blob.ID, &pack.ID, blob.Offset, blob.Length)
+			idx.store(blob.Type, blob.ID, pack.ID, blob.Offset, blob.Length)
 		}
 	}
 
