@@ -205,6 +205,19 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 	return ch
 }
 
+// Packs returns all packs in this index
+func (idx *Index) Packs() backend.IDSet {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	packs := backend.NewIDSet()
+	for _, entry := range idx.pack {
+		packs.Insert(entry.packID)
+	}
+
+	return packs
+}
+
 // Count returns the number of blobs of type t in the index.
 func (idx *Index) Count(t pack.BlobType) (n uint) {
 	debug.Log("Index.Count", "counting blobs of type %v", t)

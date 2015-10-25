@@ -325,3 +325,18 @@ func TestConvertIndex(t *testing.T) {
 		}
 	})
 }
+
+func TestIndexPacks(t *testing.T) {
+	idx := repository.NewIndex()
+	packs := backend.NewIDSet()
+
+	for i := 0; i < 20; i++ {
+		packID := randomID()
+		idx.Store(pack.Data, randomID(), packID, 0, 23)
+
+		packs.Insert(packID)
+	}
+
+	idxPacks := idx.Packs()
+	Assert(t, packs.Equals(idxPacks), "packs in index do not match packs added to index")
+}
