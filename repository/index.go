@@ -248,6 +248,15 @@ func (idx *Index) Count(t pack.BlobType) (n uint) {
 	return
 }
 
+// Length returns the number of entries in the Index.
+func (idx *Index) Length() uint {
+	debug.Log("Index.Count", "counting blobs")
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	return uint(len(idx.pack))
+}
+
 type packJSON struct {
 	ID    backend.ID `json:"id"`
 	Blobs []blobJSON `json:"blobs"`

@@ -22,6 +22,22 @@ func init() {
 	}
 }
 
+func (cmd CmdRebuildIndex) storeIndex(index *repository.Index) (*repository.Index, error) {
+	debug.Log("RebuildIndex.RebuildIndex", "saving index")
+
+	cmd.global.Printf("  saving new index\n")
+	id, err := repository.SaveIndex(cmd.repo, index)
+	if err != nil {
+		debug.Log("RebuildIndex.RebuildIndex", "error saving index: %v", err)
+		return nil, err
+	}
+
+	debug.Log("RebuildIndex.RebuildIndex", "index saved as %v", id.Str())
+	index = repository.NewIndex()
+
+	return index, nil
+}
+
 func (cmd CmdRebuildIndex) RebuildIndex() error {
 	debug.Log("RebuildIndex.RebuildIndex", "start")
 
@@ -33,11 +49,16 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 		indexIDs.Insert(id)
 	}
 
+	cmd.global.Printf("rebuilding index from %d indexes\n", len(indexIDs))
+
 	debug.Log("RebuildIndex.RebuildIndex", "found %v indexes", len(indexIDs))
 
-	var combinedIndex *repository.Index
+	combinedIndex := repository.NewIndex()
 
+	i := 0
 	for indexID := range indexIDs {
+		cmd.global.Printf("  loading index %v\n", i)
+
 		debug.Log("RebuildIndex.RebuildIndex", "load index %v", indexID.Str())
 		idx, err := repository.LoadIndex(cmd.repo, indexID.String())
 		if err != nil {
@@ -46,10 +67,6 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 
 		debug.Log("RebuildIndex.RebuildIndex", "adding blobs from index %v", indexID.Str())
 
-		if combinedIndex == nil {
-			combinedIndex = repository.NewIndex()
-		}
-
 		for packedBlob := range idx.Each(done) {
 			combinedIndex.Store(packedBlob.Type, packedBlob.ID, packedBlob.PackID, packedBlob.Offset, packedBlob.Length)
 		}
@@ -57,31 +74,28 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 		combinedIndex.AddToSupersedes(indexID)
 
 		if repository.IndexFull(combinedIndex) {
-			debug.Log("RebuildIndex.RebuildIndex", "saving full index")
-
-			id, err := repository.SaveIndex(cmd.repo, combinedIndex)
+			combinedIndex, err = cmd.storeIndex(combinedIndex)
 			if err != nil {
-				debug.Log("RebuildIndex.RebuildIndex", "error saving index: %v", err)
 				return err
 			}
+		}
 
-			debug.Log("RebuildIndex.RebuildIndex", "index saved as %v", id.Str())
-			combinedIndex = nil
+		i++
+	}
+
+	var err error
+	if combinedIndex.Length() > 0 {
+		combinedIndex, err = cmd.storeIndex(combinedIndex)
+		if err != nil {
+			return err
 		}
 	}
 
-	id, err := repository.SaveIndex(cmd.repo, combinedIndex)
-	if err != nil {
-		debug.Log("RebuildIndex.RebuildIndex", "error saving index: %v", err)
-		return err
-	}
-
-	debug.Log("RebuildIndex.RebuildIndex", "last index saved as %v", id.Str())
-
+	cmd.global.Printf("removing %d old indexes\n", len(indexIDs))
 	for id := range indexIDs {
 		debug.Log("RebuildIndex.RebuildIndex", "remove index %v", id.Str())
 
-		err = cmd.repo.Backend().Remove(backend.Index, id.String())
+		err := cmd.repo.Backend().Remove(backend.Index, id.String())
 		if err != nil {
 			debug.Log("RebuildIndex.RebuildIndex", "error removing index %v: %v", id.Str(), err)
 			return err
