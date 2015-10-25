@@ -233,20 +233,14 @@ type blobJSON struct {
 	Length uint          `json:"length"`
 }
 
-// generatePackList returns a list of packs containing only the index entries
-// that selsectFn returned true for. If selectFn is nil, the list contains all
-// blobs in the index.
-func (idx *Index) generatePackList(selectFn func(indexEntry) bool) ([]*packJSON, error) {
+// generatePackList returns a list of packs.
+func (idx *Index) generatePackList() ([]*packJSON, error) {
 	list := []*packJSON{}
 	packs := make(map[backend.ID]*packJSON)
 
 	for id, blob := range idx.pack {
 		if blob.packID == nil {
 			panic("nil pack id")
-		}
-
-		if selectFn != nil && !selectFn(blob) {
-			continue
 		}
 
 		debug.Log("Index.generatePackList", "handle blob %v", id.Str())
@@ -302,7 +296,7 @@ func (idx *Index) Encode(w io.Writer) error {
 func (idx *Index) encode(w io.Writer) error {
 	debug.Log("Index.encode", "encoding index")
 
-	list, err := idx.generatePackList(nil)
+	list, err := idx.generatePackList()
 	if err != nil {
 		return err
 	}
@@ -332,7 +326,7 @@ func (idx *Index) Dump(w io.Writer) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	list, err := idx.generatePackList(nil)
+	list, err := idx.generatePackList()
 	if err != nil {
 		return err
 	}
