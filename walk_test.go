@@ -4,9 +4,13 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/restic/restic"
+	"github.com/restic/restic/backend"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/pipe"
+	"github.com/restic/restic/repository"
 	. "github.com/restic/restic/test"
 )
 
@@ -83,4 +87,59 @@ func TestWalkTree(t *testing.T) {
 		Assert(t, fsEntries == treeEntries,
 			"wrong number of entries: %v != %v", fsEntries, treeEntries)
 	}
+}
+
+type delayRepo struct {
+	repo  *repository.Repository
+	delay time.Duration
+}
+
+func (d delayRepo) LoadJSONPack(t pack.BlobType, id backend.ID, dst interface{}) error {
+	time.Sleep(d.delay)
+	return d.repo.LoadJSONPack(t, id, dst)
+}
+
+var repoFixture = filepath.Join("testdata", "walktree-test-repo.tar.gz")
+
+func TestDelayedWalkTree(t *testing.T) {
+	WithTestEnvironment(t, repoFixture, func(repodir string) {
+		repo := OpenLocalRepo(t, repodir)
+		OK(t, repo.LoadIndex())
+
+		root, err := backend.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
+		OK(t, err)
+
+		dr := delayRepo{repo, 100 * time.Millisecond}
+
+		// start tree walker
+		treeJobs := make(chan restic.WalkTreeJob)
+		go restic.WalkTree(dr, root, nil, treeJobs)
+
+		for range treeJobs {
+		}
+	})
+}
+
+func BenchmarkDelayedWalkTree(t *testing.B) {
+	WithTestEnvironment(t, repoFixture, func(repodir string) {
+		repo := OpenLocalRepo(t, repodir)
+		OK(t, repo.LoadIndex())
+
+		root, err := backend.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
+		OK(t, err)
+
+		dr := delayRepo{repo, 10 * time.Millisecond}
+
+		t.ResetTimer()
+
+		for i := 0; i < t.N; i++ {
+			// start tree walker
+			treeJobs := make(chan restic.WalkTreeJob)
+			go restic.WalkTree(dr, root, nil, treeJobs)
+
+			for range treeJobs {
+				// fmt.Printf("job: %v\n", job)
+			}
+		}
+	})
 }
