@@ -1384,8 +1384,7 @@ func BenchmarkDelayedWalkTree(t *testing.B) {
 			treeJobs := make(chan restic.WalkTreeJob)
 			go restic.WalkTree(dr, root, nil, treeJobs)
 
-			for range treeJobs {
-				// fmt.Printf("job: %v\n", job)
+			for _ = range treeJobs {
 			}
 		}
 	})
