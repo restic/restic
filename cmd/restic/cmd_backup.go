@@ -10,6 +10,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 	"github.com/restic/restic/filter"
 	"github.com/restic/restic/repository"
 	"golang.org/x/crypto/ssh/terminal"
@@ -298,6 +299,10 @@ func (cmd CmdBackup) Execute(args []string) error {
 		matched, err := filter.List(cmd.Excludes, item)
 		if err != nil {
 			cmd.global.Warnf("error for exclude pattern: %v", err)
+		}
+
+		if matched {
+			debug.Log("backup.Execute", "path %q excluded by a filter", item)
 		}
 
 		return !matched
