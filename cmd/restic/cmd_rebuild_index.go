@@ -165,6 +165,9 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 			combinedIndex.Store(blob.Type, blob.ID, packID, blob.Offset, blob.Length)
 		}
 
+		err = rd.Close()
+		debug.Log("RebuildIndex.RebuildIndex", "error closing reader for pack %v: %v", packID.Str(), err)
+
 		if repository.IndexFull(combinedIndex) {
 			combinedIndex, err = cmd.storeIndex(combinedIndex)
 			if err != nil {
