@@ -1360,6 +1360,10 @@ func TestDelayedWalkTree(t *testing.T) {
 			}
 			i++
 		}
+
+		if i != len(walktreeTestItems) {
+			t.Fatalf("got %d items, expected %v", i, len(walktreeTestItems))
+		}
 	})
 }
 
