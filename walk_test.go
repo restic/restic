@@ -3,6 +3,7 @@ package restic_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -1355,7 +1356,8 @@ func TestDelayedWalkTree(t *testing.T) {
 
 		i := 0
 		for job := range treeJobs {
-			if job.Path != walktreeTestItems[i] {
+			expectedPath := filepath.Join(strings.Split(walktreeTestItems[i], "/")...)
+			if job.Path != expectedPath {
 				t.Fatalf("expected path %q (%v), got %q", walktreeTestItems[i], i, job.Path)
 			}
 			i++
