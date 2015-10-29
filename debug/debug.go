@@ -12,11 +12,18 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
+
+type process struct {
+	tag       string
+	goroutine int
+}
 
 var opts struct {
 	logger *log.Logger
 	tags   map[string]bool
+	last   map[process]time.Time
 	m      sync.Mutex
 }
 
@@ -65,6 +72,7 @@ func initDebugLogger() {
 
 func initDebugTags() {
 	opts.tags = make(map[string]bool)
+	opts.last = make(map[process]time.Time)
 
 	// defaults
 	opts.tags["break"] = true
@@ -113,13 +121,11 @@ func goroutineNum() int {
 }
 
 // taken from https://github.com/VividCortex/trace
-func getPosition() string {
+func getPosition(goroutine int) string {
 	_, file, line, ok := runtime.Caller(2)
 	if !ok {
 		return ""
 	}
-
-	goroutine := goroutineNum()
 
 	return fmt.Sprintf("%3d %s:%d", goroutine, filepath.Base(file), line)
 }
@@ -130,6 +136,15 @@ func Log(tag string, f string, args ...interface{}) {
 	opts.m.Lock()
 	defer opts.m.Unlock()
 
+	goroutine := goroutineNum()
+
+	last, ok := opts.last[process{tag, goroutine}]
+	if !ok {
+		last = time.Now()
+	}
+	current := time.Now()
+	opts.last[process{tag, goroutine}] = current
+
 	if f[len(f)-1] != '\n' {
 		f += "\n"
 	}
@@ -138,8 +153,8 @@ func Log(tag string, f string, args ...interface{}) {
 		maxTagLen = len(tag)
 	}
 
-	formatStringTag := "[%" + strconv.FormatInt(int64(maxTagLen), 10) + "s]"
-	formatString := fmt.Sprintf(formatStringTag+" %s %s", tag, getPosition(), f)
+	formatStringTag := "%2.3f [%" + strconv.FormatInt(int64(maxTagLen), 10) + "s]"
+	formatString := fmt.Sprintf(formatStringTag+" %s %s", current.Sub(last).Seconds(), tag, getPosition(goroutine), f)
 
 	dbgprint := func() {
 		fmt.Fprintf(os.Stderr, formatString, args...)

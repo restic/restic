@@ -175,6 +175,28 @@ func TestLoadJSONPack(t *testing.T) {
 	OK(t, err)
 }
 
+func BenchmarkLoadJSONPack(t *testing.B) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
+	if BenchArchiveDirectory == "" {
+		t.Skip("benchdir not set, skipping")
+	}
+
+	// archive a few files
+	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
+	OK(t, repo.Flush())
+
+	tree := restic.NewTree()
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		err := repo.LoadJSONPack(pack.Tree, *sn.Tree, &tree)
+		OK(t, err)
+	}
+}
+
 func TestLoadJSONUnpacked(t *testing.T) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
