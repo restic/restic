@@ -109,24 +109,32 @@ func (idx *Index) Store(t pack.BlobType, id backend.ID, pack backend.ID, offset,
 	idx.store(t, id, pack, offset, length)
 }
 
-// Lookup returns the pack for the id.
-func (idx *Index) Lookup(id backend.ID) (packID backend.ID, tpe pack.BlobType, offset, length uint, err error) {
+// Lookup queries the index for the blob ID and returns a PackedBlob.
+func (idx *Index) Lookup(id backend.ID) (pb PackedBlob, err error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
 	if p, ok := idx.pack[id]; ok {
 		debug.Log("Index.Lookup", "id %v found in pack %v at %d, length %d",
 			id.Str(), p.packID.Str(), p.offset, p.length)
-		return p.packID, p.tpe, p.offset, p.length, nil
+
+		pb := PackedBlob{
+			Type:   p.tpe,
+			Length: p.length,
+			ID:     id,
+			Offset: p.offset,
+			PackID: p.packID,
+		}
+		return pb, nil
 	}
 
 	debug.Log("Index.Lookup", "id %v not found", id.Str())
-	return backend.ID{}, pack.Data, 0, 0, fmt.Errorf("id %v not found in index", id)
+	return PackedBlob{}, fmt.Errorf("id %v not found in index", id)
 }
 
 // Has returns true iff the id is listed in the index.
 func (idx *Index) Has(id backend.ID) bool {
-	_, _, _, _, err := idx.Lookup(id)
+	_, err := idx.Lookup(id)
 	if err == nil {
 		return true
 	}
@@ -137,11 +145,11 @@ func (idx *Index) Has(id backend.ID) bool {
 // LookupSize returns the length of the cleartext content behind the
 // given id
 func (idx *Index) LookupSize(id backend.ID) (cleartextLength uint, err error) {
-	_, _, _, encryptedLength, err := idx.Lookup(id)
+	blob, err := idx.Lookup(id)
 	if err != nil {
 		return 0, err
 	}
-	return encryptedLength - crypto.Extension, nil
+	return blob.PlaintextLength(), nil
 }
 
 // Merge loads all items from other into idx.
@@ -181,8 +189,21 @@ func (idx *Index) AddToSupersedes(ids ...backend.ID) error {
 
 // PackedBlob is a blob already saved within a pack.
 type PackedBlob struct {
-	pack.Blob
+	Type   pack.BlobType
+	Length uint
+	ID     backend.ID
+	Offset uint
 	PackID backend.ID
+}
+
+func (pb PackedBlob) String() string {
+	return fmt.Sprintf("<PackedBlob %v type %v in pack %v: len %v, offset %v",
+		pb.ID.Str(), pb.Type, pb.PackID.Str(), pb.Length, pb.Offset)
+}
+
+// PlaintextLength returns the number of bytes the blob's plaintext occupies.
+func (pb PackedBlob) PlaintextLength() uint {
+	return pb.Length - crypto.Extension
 }
 
 // Each returns a channel that yields all blobs known to the index. If done is
@@ -204,12 +225,10 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 			case <-done:
 				return
 			case ch <- PackedBlob{
-				Blob: pack.Blob{
-					ID:     id,
-					Offset: blob.offset,
-					Type:   blob.tpe,
-					Length: blob.length,
-				},
+				ID:     id,
+				Offset: blob.offset,
+				Type:   blob.tpe,
+				Length: blob.length,
 				PackID: blob.packID,
 			}:
 			}

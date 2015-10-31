@@ -69,21 +69,21 @@ func TestIndexSerialize(t *testing.T) {
 	OK(t, err)
 
 	for _, testBlob := range tests {
-		packID, tpe, offset, length, err := idx.Lookup(testBlob.id)
+		result, err := idx.Lookup(testBlob.id)
 		OK(t, err)
 
-		Equals(t, testBlob.pack, packID)
-		Equals(t, testBlob.tpe, tpe)
-		Equals(t, testBlob.offset, offset)
-		Equals(t, testBlob.length, length)
+		Equals(t, testBlob.pack, result.PackID)
+		Equals(t, testBlob.tpe, result.Type)
+		Equals(t, testBlob.offset, result.Offset)
+		Equals(t, testBlob.length, result.Length)
 
-		packID, tpe, offset, length, err = idx2.Lookup(testBlob.id)
+		result2, err := idx2.Lookup(testBlob.id)
 		OK(t, err)
 
-		Equals(t, testBlob.pack, packID)
-		Equals(t, testBlob.tpe, tpe)
-		Equals(t, testBlob.offset, offset)
-		Equals(t, testBlob.length, length)
+		Equals(t, testBlob.pack, result2.PackID)
+		Equals(t, testBlob.tpe, result2.Type)
+		Equals(t, testBlob.offset, result2.Offset)
+		Equals(t, testBlob.length, result2.Length)
 	}
 
 	// add more blobs to idx
@@ -126,13 +126,13 @@ func TestIndexSerialize(t *testing.T) {
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
-		packID, tpe, offset, length, err := idx3.Lookup(testBlob.id)
+		blob, err := idx3.Lookup(testBlob.id)
 		OK(t, err)
 
-		Equals(t, testBlob.pack, packID)
-		Equals(t, testBlob.tpe, tpe)
-		Equals(t, testBlob.offset, offset)
-		Equals(t, testBlob.length, length)
+		Equals(t, testBlob.pack, blob.PackID)
+		Equals(t, testBlob.tpe, blob.Type)
+		Equals(t, testBlob.offset, blob.Offset)
+		Equals(t, testBlob.length, blob.Length)
 	}
 }
 
@@ -247,13 +247,13 @@ func TestIndexUnserialize(t *testing.T) {
 	OK(t, err)
 
 	for _, test := range exampleTests {
-		packID, tpe, offset, length, err := idx.Lookup(test.id)
+		blob, err := idx.Lookup(test.id)
 		OK(t, err)
 
-		Equals(t, test.packID, packID)
-		Equals(t, test.tpe, tpe)
-		Equals(t, test.offset, offset)
-		Equals(t, test.length, length)
+		Equals(t, test.packID, blob.PackID)
+		Equals(t, test.tpe, blob.Type)
+		Equals(t, test.offset, blob.Offset)
+		Equals(t, test.length, blob.Length)
 	}
 
 	Equals(t, oldIdx, idx.Supersedes())
@@ -264,13 +264,13 @@ func TestIndexUnserializeOld(t *testing.T) {
 	OK(t, err)
 
 	for _, test := range exampleTests {
-		packID, tpe, offset, length, err := idx.Lookup(test.id)
+		blob, err := idx.Lookup(test.id)
 		OK(t, err)
 
-		Equals(t, test.packID, packID)
-		Equals(t, test.tpe, tpe)
-		Equals(t, test.offset, offset)
-		Equals(t, test.length, length)
+		Equals(t, test.packID, blob.PackID)
+		Equals(t, test.tpe, blob.Type)
+		Equals(t, test.offset, blob.Offset)
+		Equals(t, test.length, blob.Length)
 	}
 
 	Equals(t, 0, len(idx.Supersedes()))
@@ -310,17 +310,17 @@ func TestConvertIndex(t *testing.T) {
 				"Index %v count blobs %v: %v != %v", id.Str(), pack.Tree, idx.Count(pack.Tree), oldIndex.Count(pack.Tree))
 
 			for packedBlob := range idx.Each(nil) {
-				packID, tpe, offset, length, err := oldIndex.Lookup(packedBlob.ID)
+				blob, err := oldIndex.Lookup(packedBlob.ID)
 				OK(t, err)
 
-				Assert(t, packID == packedBlob.PackID,
-					"Check blob %v: pack ID %v != %v", packedBlob.ID, packID, packedBlob.PackID)
-				Assert(t, tpe == packedBlob.Type,
-					"Check blob %v: Type %v != %v", packedBlob.ID, tpe, packedBlob.Type)
-				Assert(t, offset == packedBlob.Offset,
-					"Check blob %v: Type %v != %v", packedBlob.ID, offset, packedBlob.Offset)
-				Assert(t, length == packedBlob.Length,
-					"Check blob %v: Type %v != %v", packedBlob.ID, length, packedBlob.Length)
+				Assert(t, blob.PackID == packedBlob.PackID,
+					"Check blob %v: pack ID %v != %v", packedBlob.ID, blob.PackID, packedBlob.PackID)
+				Assert(t, blob.Type == packedBlob.Type,
+					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Type, packedBlob.Type)
+				Assert(t, blob.Offset == packedBlob.Offset,
+					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Offset, packedBlob.Offset)
+				Assert(t, blob.Length == packedBlob.Length,
+					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Length, packedBlob.Length)
 			}
 		}
 	})
