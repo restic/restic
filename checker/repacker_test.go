@@ -85,7 +85,7 @@ func TestRepackerFindPacks(t *testing.T) {
 	})
 }
 
-func TestRepackBlobs(t *testing.T) {
+func TestRepacker(t *testing.T) {
 	WithTestEnvironment(t, checkerTestData, func(repodir string) {
 		repo := OpenLocalRepo(t, repodir)
 		OK(t, repo.LoadIndex())

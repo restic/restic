@@ -38,6 +38,33 @@ func (r *Repacker) Repack() error {
 
 	debug.Log("Repacker.Repack", "found packs: %v", packs)
 
+	blobs, err := FindBlobsForPacks(r.src, packs)
+	if err != nil {
+		return err
+	}
+
+	debug.Log("Repacker.Repack", "found blobs: %v", blobs)
+
+	for id := range r.unusedBlobs {
+		debug.Log("Repacker.Repack", "remove unused blob %v", id.Str())
+		blobs.Delete(id)
+	}
+
+	debug.Log("Repacker.Repack", "need to repack blobs: %v", blobs)
+
+	err = RepackBlobs(r.src, r.dst, blobs)
+	if err != nil {
+		return err
+	}
+
+	debug.Log("Repacker.Repack", "remove unneeded packs: %v", packs)
+	for packID := range packs {
+		err = r.src.Backend().Remove(backend.Data, packID.String())
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -100,8 +127,8 @@ func repackBlob(src, dst *repository.Repository, id backend.ID) error {
 
 // RepackBlobs reads all blobs in blobIDs from src and saves them into new pack
 // files in dst. Source and destination repo may be the same.
-func RepackBlobs(src, dst *repository.Repository, blobIDs backend.IDs) (err error) {
-	for _, id := range blobIDs {
+func RepackBlobs(src, dst *repository.Repository, blobIDs backend.IDSet) (err error) {
+	for id := range blobIDs {
 		err = repackBlob(src, dst, id)
 		if err != nil {
 			return err
