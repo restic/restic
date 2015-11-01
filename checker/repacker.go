@@ -11,14 +11,14 @@ import (
 // Repacker extracts still used blobs from packs with unused blobs and creates
 // new packs.
 type Repacker struct {
-	unusedBlobs []backend.ID
+	unusedBlobs backend.IDSet
 	src, dst    *repository.Repository
 }
 
 // NewRepacker returns a new repacker that (when Repack() in run) cleans up the
 // repository and creates new packs and indexs so that all blobs in unusedBlobs
 // aren't used any more.
-func NewRepacker(src, dst *repository.Repository, unusedBlobs []backend.ID) *Repacker {
+func NewRepacker(src, dst *repository.Repository, unusedBlobs backend.IDSet) *Repacker {
 	return &Repacker{
 		src:         src,
 		dst:         dst,
@@ -30,7 +30,8 @@ func NewRepacker(src, dst *repository.Repository, unusedBlobs []backend.ID) *Rep
 // blobs, extracts them and creates new packs with just the still-in-use blobs.
 func (r *Repacker) Repack() error {
 	debug.Log("Repacker.Repack", "searching packs for %v", r.unusedBlobs)
-	packs, err := FindPacksforBlobs(r.src, r.unusedBlobs)
+
+	packs, err := FindPacksForBlobs(r.src, r.unusedBlobs)
 	if err != nil {
 		return err
 	}
@@ -40,11 +41,11 @@ func (r *Repacker) Repack() error {
 	return nil
 }
 
-// FindPacksforBlobs returns the set of packs that contain the blobs.
-func FindPacksforBlobs(repo *repository.Repository, blobs []backend.ID) (backend.IDSet, error) {
+// FindPacksForBlobs returns the set of packs that contain the blobs.
+func FindPacksForBlobs(repo *repository.Repository, blobs backend.IDSet) (backend.IDSet, error) {
 	packs := backend.NewIDSet()
 	idx := repo.Index()
-	for _, id := range blobs {
+	for id := range blobs {
 		blob, err := idx.Lookup(id)
 		if err != nil {
 			return nil, err
@@ -54,6 +55,19 @@ func FindPacksforBlobs(repo *repository.Repository, blobs []backend.ID) (backend
 	}
 
 	return packs, nil
+}
+
+// FindBlobsForPacks returns the set of blobs contained in a pack of packs.
+func FindBlobsForPacks(repo *repository.Repository, packs backend.IDSet) (backend.IDSet, error) {
+	blobs := backend.NewIDSet()
+
+	for packID := range packs {
+		for _, packedBlob := range repo.Index().ListPack(packID) {
+			blobs.Insert(packedBlob.ID)
+		}
+	}
+
+	return blobs, nil
 }
 
 // repackBlob loads a single blob from src and saves it in dst.
