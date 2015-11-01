@@ -240,6 +240,18 @@ var exampleTests = []struct {
 	},
 }
 
+var exampleLookupTest = struct {
+	packID backend.ID
+	blobs  backend.IDSet
+}{
+	ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
+	backend.IDSet{
+		ParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"): struct{}{},
+		ParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"): struct{}{},
+		ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"): struct{}{},
+	},
+}
+
 func TestIndexUnserialize(t *testing.T) {
 	oldIdx := backend.IDs{ParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
@@ -257,6 +269,17 @@ func TestIndexUnserialize(t *testing.T) {
 	}
 
 	Equals(t, oldIdx, idx.Supersedes())
+
+	blobs := idx.ListPack(exampleLookupTest.packID)
+	if len(blobs) != len(exampleLookupTest.blobs) {
+		t.Fatalf("expected %d blobs in pack, got %d", len(exampleLookupTest.blobs), len(blobs))
+	}
+
+	for _, blob := range blobs {
+		if !exampleLookupTest.blobs.Has(blob.ID) {
+			t.Errorf("unexpected blob %v found", blob.ID.Str())
+		}
+	}
 }
 
 func TestIndexUnserializeOld(t *testing.T) {

@@ -132,6 +132,26 @@ func (idx *Index) Lookup(id backend.ID) (pb PackedBlob, err error) {
 	return PackedBlob{}, fmt.Errorf("id %v not found in index", id)
 }
 
+// ListPack returns a list of blobs contained in a pack.
+func (idx *Index) ListPack(id backend.ID) (list []PackedBlob) {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	for blobID, entry := range idx.pack {
+		if entry.packID == id {
+			list = append(list, PackedBlob{
+				ID:     blobID,
+				Type:   entry.tpe,
+				Length: entry.length,
+				Offset: entry.offset,
+				PackID: entry.packID,
+			})
+		}
+	}
+
+	return list
+}
+
 // Has returns true iff the id is listed in the index.
 func (idx *Index) Has(id backend.ID) bool {
 	_, err := idx.Lookup(id)

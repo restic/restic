@@ -67,6 +67,22 @@ func (mi *MasterIndex) LookupSize(id backend.ID) (uint, error) {
 	return 0, fmt.Errorf("id %v not found in any index", id)
 }
 
+// ListPack returns the list of blobs in a pack. The first matching index is
+// returned, or nil if no index contains information about the pack id.
+func (mi *MasterIndex) ListPack(id backend.ID) (list []PackedBlob) {
+	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
+
+	for _, idx := range mi.idx {
+		list := idx.ListPack(id)
+		if len(list) > 0 {
+			return list
+		}
+	}
+
+	return nil
+}
+
 // Has queries all known Indexes for the ID and returns the first match.
 func (mi *MasterIndex) Has(id backend.ID) bool {
 	mi.idxMutex.RLock()
