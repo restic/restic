@@ -1,5 +1,7 @@
 package backend
 
+import "sort"
+
 // IDSet is a set of IDs.
 type IDSet map[ID]struct{}
 
@@ -35,6 +37,8 @@ func (s IDSet) List() IDs {
 	for id := range s {
 		list = append(list, id)
 	}
+
+	sort.Sort(list)
 
 	return list
 }
