@@ -66,5 +66,5 @@ func (s IDSet) String() string {
 		return "{}"
 	}
 
-	return "{" + str[1:len(str)-2] + "}"
+	return "{" + str[1:len(str)-1] + "}"
 }
