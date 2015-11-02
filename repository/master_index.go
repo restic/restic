@@ -33,24 +33,23 @@ func NewMasterIndex() *MasterIndex {
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Lookup(id backend.ID) (packID backend.ID, tpe pack.BlobType, offset, length uint, err error) {
+func (mi *MasterIndex) Lookup(id backend.ID) (blob PackedBlob, err error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	debug.Log("MasterIndex.Lookup", "looking up id %v", id.Str())
 
 	for _, idx := range mi.idx {
-		packID, tpe, offset, length, err = idx.Lookup(id)
+		blob, err = idx.Lookup(id)
 		if err == nil {
 			debug.Log("MasterIndex.Lookup",
-				"found id %v in pack %v at offset %d with length %d",
-				id.Str(), packID.Str(), offset, length)
+				"found id %v: %v", blob)
 			return
 		}
 	}
 
 	debug.Log("MasterIndex.Lookup", "id %v not found in any index", id.Str())
-	return backend.ID{}, pack.Data, 0, 0, fmt.Errorf("id %v not found in any index", id)
+	return PackedBlob{}, fmt.Errorf("id %v not found in any index", id)
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.

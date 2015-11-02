@@ -15,7 +15,6 @@ import (
 
 func BenchmarkNodeFillUser(t *testing.B) {
 	tempfile, err := ioutil.TempFile("", "restic-test-temp-")
-	defer tempfile.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,11 +31,13 @@ func BenchmarkNodeFillUser(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		restic.NodeFromFileInfo(path, fi)
 	}
+
+	OK(t, tempfile.Close())
+	RemoveAll(t, tempfile.Name())
 }
 
 func BenchmarkNodeFromFileInfo(t *testing.B) {
 	tempfile, err := ioutil.TempFile("", "restic-test-temp-")
-	defer tempfile.Close()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,6 +57,9 @@ func BenchmarkNodeFromFileInfo(t *testing.B) {
 			t.Fatal(err)
 		}
 	}
+
+	OK(t, tempfile.Close())
+	RemoveAll(t, tempfile.Name())
 }
 
 func parseTime(s string) time.Time {

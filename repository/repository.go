@@ -92,32 +92,33 @@ func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, erro
 func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byte) ([]byte, error) {
 	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
 	// lookup pack
-	packID, tpe, offset, length, err := r.idx.Lookup(id)
+	blob, err := r.idx.Lookup(id)
 	if err != nil {
 		debug.Log("Repo.LoadBlob", "id %v not found in index: %v", id.Str(), err)
 		return nil, err
 	}
 
-	if length > uint(cap(plaintextBuf))+crypto.Extension {
-		return nil, fmt.Errorf("buf is too small, need %d more bytes", length-uint(cap(plaintextBuf))-crypto.Extension)
+	plaintextBufSize := uint(cap(plaintextBuf))
+	if blob.PlaintextLength() > plaintextBufSize {
+		return nil, fmt.Errorf("buf is too small, need %d more bytes", blob.PlaintextLength()-plaintextBufSize)
 	}
 
-	if tpe != t {
-		debug.Log("Repo.LoadBlob", "wrong type returned for %v: wanted %v, got %v", id.Str(), t, tpe)
-		return nil, fmt.Errorf("blob has wrong type %v (wanted: %v)", tpe, t)
+	if blob.Type != t {
+		debug.Log("Repo.LoadBlob", "wrong type returned for %v: wanted %v, got %v", id.Str(), t, blob.Type)
+		return nil, fmt.Errorf("blob has wrong type %v (wanted: %v)", blob.Type, t)
 	}
 
-	debug.Log("Repo.LoadBlob", "id %v found in pack %v at offset %v (length %d)", id.Str(), packID.Str(), offset, length)
+	debug.Log("Repo.LoadBlob", "id %v found: %v", id.Str(), blob)
 
 	// load blob from pack
-	rd, err := r.be.GetReader(backend.Data, packID.String(), offset, length)
+	rd, err := r.be.GetReader(backend.Data, blob.PackID.String(), blob.Offset, blob.Length)
 	if err != nil {
-		debug.Log("Repo.LoadBlob", "error loading pack %v for %v: %v", packID.Str(), id.Str(), err)
+		debug.Log("Repo.LoadBlob", "error loading blob %v: %v", blob, err)
 		return nil, err
 	}
 
 	// make buffer that is large enough for the complete blob
-	ciphertextBuf := make([]byte, length)
+	ciphertextBuf := make([]byte, blob.Length)
 	_, err = io.ReadFull(rd, ciphertextBuf)
 	if err != nil {
 		return nil, err
@@ -173,13 +174,13 @@ func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interf
 // data and afterwards call json.Unmarshal on the item.
 func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) error {
 	// lookup pack
-	packID, _, offset, length, err := r.idx.Lookup(id)
+	blob, err := r.idx.Lookup(id)
 	if err != nil {
 		return err
 	}
 
 	// load blob from pack
-	rd, err := r.be.GetReader(backend.Data, packID.String(), offset, length)
+	rd, err := r.be.GetReader(backend.Data, blob.PackID.String(), blob.Offset, blob.Length)
 	if err != nil {
 		return err
 	}
