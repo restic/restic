@@ -117,6 +117,12 @@ func TestIndexSerialize(t *testing.T) {
 	Assert(t, idx.Final(),
 		"index not final after encoding")
 
+	id := randomID()
+	idx.SetID(id)
+	id2, err := idx.ID()
+	Assert(t, id2.Equal(id),
+		"wrong ID returned: want %v, got %v", id, id2)
+
 	idx3, err := repository.DecodeIndex(wr3)
 	OK(t, err)
 	Assert(t, idx3 != nil,

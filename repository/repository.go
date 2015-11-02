@@ -526,7 +526,8 @@ func SaveIndex(repo *Repository, index *Index) (backend.ID, error) {
 	}
 
 	sid := blob.ID()
-	return sid, nil
+	err = index.SetID(sid)
+	return sid, err
 }
 
 // saveIndex saves all indexes in the backend.

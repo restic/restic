@@ -19,7 +19,8 @@ type Index struct {
 	m    sync.Mutex
 	pack map[backend.ID]indexEntry
 
-	final      bool // set to true for all indexes read from the backend ("finalized")
+	final      bool       // set to true for all indexes read from the backend ("finalized")
+	id         backend.ID // set to the ID of the index when it's finalized
 	supersedes backend.IDs
 	created    time.Time
 }
@@ -393,6 +394,39 @@ func (idx *Index) Finalize(w io.Writer) error {
 	idx.final = true
 
 	return idx.encode(w)
+}
+
+// ID returns the ID of the index, if available. If the index is not yet
+// finalized, an error is returned.
+func (idx *Index) ID() (backend.ID, error) {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	if !idx.final {
+		return backend.ID{}, errors.New("index not finalized")
+	}
+
+	return idx.id, nil
+}
+
+// SetID sets the ID the index has been written to. This requires that
+// Finalize() has been called before, otherwise an error is returned.
+func (idx *Index) SetID(id backend.ID) error {
+	idx.m.Lock()
+	defer idx.m.Unlock()
+
+	if !idx.final {
+		return errors.New("indexs is not final")
+	}
+
+	if !idx.id.IsNull() {
+		return errors.New("ID already set")
+	}
+
+	debug.Log("Index.SetID", "ID set to %v", id.Str())
+	idx.id = id
+
+	return nil
 }
 
 // Dump writes the pretty-printed JSON representation of the index to w.
