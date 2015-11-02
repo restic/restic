@@ -439,7 +439,12 @@ func (idx *Index) Dump(w io.Writer) error {
 		return err
 	}
 
-	buf, err := json.MarshalIndent(list, "", "  ")
+	outer := jsonIndex{
+		Supersedes: idx.Supersedes(),
+		Packs:      list,
+	}
+
+	buf, err := json.MarshalIndent(outer, "", "  ")
 	if err != nil {
 		return err
 	}

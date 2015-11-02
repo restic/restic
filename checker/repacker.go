@@ -12,16 +12,15 @@ import (
 // new packs.
 type Repacker struct {
 	unusedBlobs backend.IDSet
-	src, dst    *repository.Repository
+	repo        *repository.Repository
 }
 
 // NewRepacker returns a new repacker that (when Repack() in run) cleans up the
 // repository and creates new packs and indexs so that all blobs in unusedBlobs
 // aren't used any more.
-func NewRepacker(src, dst *repository.Repository, unusedBlobs backend.IDSet) *Repacker {
+func NewRepacker(repo *repository.Repository, unusedBlobs backend.IDSet) *Repacker {
 	return &Repacker{
-		src:         src,
-		dst:         dst,
+		repo:        repo,
 		unusedBlobs: unusedBlobs,
 	}
 }
@@ -31,14 +30,14 @@ func NewRepacker(src, dst *repository.Repository, unusedBlobs backend.IDSet) *Re
 func (r *Repacker) Repack() error {
 	debug.Log("Repacker.Repack", "searching packs for %v", r.unusedBlobs)
 
-	packs, err := FindPacksForBlobs(r.src, r.unusedBlobs)
+	unneededPacks, err := FindPacksForBlobs(r.repo, r.unusedBlobs)
 	if err != nil {
 		return err
 	}
 
-	debug.Log("Repacker.Repack", "found packs: %v", packs)
+	debug.Log("Repacker.Repack", "found packs: %v", unneededPacks)
 
-	blobs, err := FindBlobsForPacks(r.src, packs)
+	blobs, err := FindBlobsForPacks(r.repo, unneededPacks)
 	if err != nil {
 		return err
 	}
@@ -52,17 +51,37 @@ func (r *Repacker) Repack() error {
 
 	debug.Log("Repacker.Repack", "need to repack blobs: %v", blobs)
 
-	err = RepackBlobs(r.src, r.dst, blobs)
+	err = RepackBlobs(r.repo, r.repo, blobs)
 	if err != nil {
 		return err
 	}
 
-	debug.Log("Repacker.Repack", "remove unneeded packs: %v", packs)
-	for packID := range packs {
-		err = r.src.Backend().Remove(backend.Data, packID.String())
+	debug.Log("Repacker.Repack", "remove unneeded packs: %v", unneededPacks)
+	for packID := range unneededPacks {
+		err = r.repo.Backend().Remove(backend.Data, packID.String())
 		if err != nil {
 			return err
 		}
+	}
+
+	debug.Log("Repacker.Repack", "rebuild index")
+	idx, err := r.repo.Index().RebuildIndex(unneededPacks)
+
+	newIndexID, err := repository.SaveIndex(r.repo, idx)
+	debug.Log("Repacker.Repack", "saved new index at %v, err %v", newIndexID, err)
+	if err != nil {
+		return err
+	}
+
+	debug.Log("Repacker.Repack", "remove old indexes: %v", idx.Supersedes())
+	for _, id := range idx.Supersedes() {
+		err = r.repo.Backend().Remove(backend.Index, id.String())
+		if err != nil {
+			debug.Log("Repacker.Repack", "error removing index %v: %v", id.Str(), err)
+			return err
+		}
+
+		debug.Log("Repacker.Repack", "removed index %v", id.Str())
 	}
 
 	return nil
@@ -136,11 +155,6 @@ func RepackBlobs(src, dst *repository.Repository, blobIDs backend.IDSet) (err er
 	}
 
 	err = dst.Flush()
-	if err != nil {
-		return err
-	}
-
-	err = dst.SaveIndex()
 	if err != nil {
 		return err
 	}

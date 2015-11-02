@@ -111,7 +111,7 @@ func TestRepacker(t *testing.T) {
 			t.Fatalf("expected unused blobs:\n  %v\ngot:\n  %v", unusedBlobs, list)
 		}
 
-		repacker := checker.NewRepacker(repo, repo, unusedBlobs)
+		repacker := checker.NewRepacker(repo, unusedBlobs)
 		OK(t, repacker.Repack())
 
 		chkr = checker.New(repo)

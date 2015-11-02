@@ -240,3 +240,47 @@ func (mi *MasterIndex) All() []*Index {
 
 	return mi.idx
 }
+
+// RebuildIndex combines all known indexes to a new index, leaving out any
+// packs whose ID is contained in packBlacklist. The new index contains the IDs
+// of all known indexes in the "supersedes" field.
+func (mi *MasterIndex) RebuildIndex(packBlacklist backend.IDSet) (*Index, error) {
+	mi.idxMutex.Lock()
+	defer mi.idxMutex.Unlock()
+
+	debug.Log("MasterIndex.RebuildIndex", "start rebuilding index, blob blacklist: %v", packBlacklist)
+
+	newIndex := NewIndex()
+	done := make(chan struct{})
+	defer close(done)
+
+	for i, idx := range mi.idx {
+		debug.Log("MasterIndex.RebuildIndex", "adding %d index ", i)
+
+		for pb := range idx.Each(done) {
+			if packBlacklist.Has(pb.PackID) {
+				continue
+			}
+
+			newIndex.Store(pb)
+		}
+
+		if !idx.Final() {
+			continue
+		}
+
+		id, err := idx.ID()
+		if err != nil {
+			return nil, err
+		}
+
+		debug.Log("MasterIndex.RebuildIndex", "adding index id %v to supersedes field", id)
+
+		err = newIndex.AddToSupersedes(id)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return newIndex, nil
+}
