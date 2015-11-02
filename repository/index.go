@@ -40,12 +40,12 @@ func NewIndex() *Index {
 	}
 }
 
-func (idx *Index) store(t pack.BlobType, id backend.ID, pack backend.ID, offset, length uint) {
-	idx.pack[id] = indexEntry{
-		tpe:    t,
-		packID: pack,
-		offset: offset,
-		length: length,
+func (idx *Index) store(blob PackedBlob) {
+	idx.pack[blob.ID] = indexEntry{
+		tpe:    blob.Type,
+		packID: blob.PackID,
+		offset: blob.Offset,
+		length: blob.Length,
 	}
 }
 
@@ -96,7 +96,7 @@ var IndexFull = func(idx *Index) bool {
 
 // Store remembers the id and pack in the index. An existing entry will be
 // silently overwritten.
-func (idx *Index) Store(t pack.BlobType, id backend.ID, pack backend.ID, offset, length uint) {
+func (idx *Index) Store(blob PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -104,10 +104,9 @@ func (idx *Index) Store(t pack.BlobType, id backend.ID, pack backend.ID, offset,
 		panic("store new item in finalized index")
 	}
 
-	debug.Log("Index.Store", "pack %v contains id %v (%v), offset %v, length %v",
-		pack.Str(), id.Str(), t, offset, length)
+	debug.Log("Index.Store", "%v", blob)
 
-	idx.store(t, id, pack, offset, length)
+	idx.store(blob)
 }
 
 // Lookup queries the index for the blob ID and returns a PackedBlob.
@@ -489,7 +488,13 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 	idx = NewIndex()
 	for _, pack := range idxJSON.Packs {
 		for _, blob := range pack.Blobs {
-			idx.store(blob.Type, blob.ID, pack.ID, blob.Offset, blob.Length)
+			idx.store(PackedBlob{
+				Type:   blob.Type,
+				ID:     blob.ID,
+				Offset: blob.Offset,
+				Length: blob.Length,
+				PackID: pack.ID,
+			})
 		}
 	}
 	idx.supersedes = idxJSON.Supersedes
@@ -514,7 +519,13 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	idx = NewIndex()
 	for _, pack := range list {
 		for _, blob := range pack.Blobs {
-			idx.store(blob.Type, blob.ID, pack.ID, blob.Offset, blob.Length)
+			idx.store(PackedBlob{
+				Type:   blob.Type,
+				ID:     blob.ID,
+				PackID: pack.ID,
+				Offset: blob.Offset,
+				Length: blob.Length,
+			})
 		}
 	}
 

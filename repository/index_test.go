@@ -41,7 +41,13 @@ func TestIndexSerialize(t *testing.T) {
 		for j := 0; j < 20; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx.Store(pack.Data, id, packID, pos, length)
+			idx.Store(repository.PackedBlob{
+				Type:   pack.Data,
+				ID:     id,
+				PackID: packID,
+				Offset: pos,
+				Length: length,
+			})
 
 			tests = append(tests, testEntry{
 				id:     id,
@@ -95,7 +101,13 @@ func TestIndexSerialize(t *testing.T) {
 		for j := 0; j < 10; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx.Store(pack.Data, id, packID, pos, length)
+			idx.Store(repository.PackedBlob{
+				Type:   pack.Data,
+				ID:     id,
+				PackID: packID,
+				Offset: pos,
+				Length: length,
+			})
 
 			newtests = append(newtests, testEntry{
 				id:     id,
@@ -154,7 +166,13 @@ func TestIndexSize(t *testing.T) {
 		for j := 0; j < blobs; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx.Store(pack.Data, id, packID, pos, length)
+			idx.Store(repository.PackedBlob{
+				Type:   pack.Data,
+				ID:     id,
+				PackID: packID,
+				Offset: pos,
+				Length: length,
+			})
 
 			pos += length
 		}
@@ -361,7 +379,13 @@ func TestIndexPacks(t *testing.T) {
 
 	for i := 0; i < 20; i++ {
 		packID := randomID()
-		idx.Store(pack.Data, randomID(), packID, 0, 23)
+		idx.Store(repository.PackedBlob{
+			Type:   pack.Data,
+			ID:     randomID(),
+			PackID: packID,
+			Offset: 0,
+			Length: 23,
+		})
 
 		packs.Insert(packID)
 	}
