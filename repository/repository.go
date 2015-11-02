@@ -650,25 +650,6 @@ func (r *Repository) GetDecryptReader(t backend.Type, id string) (io.ReadCloser,
 	return newDecryptReadCloser(r.key, rd)
 }
 
-// LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (*Index, error) {
-	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
-
-	rd, err := repo.GetDecryptReader(backend.Index, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rd.Close()
-
-	idx, err := fn(rd)
-	if err != nil {
-		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
-		return nil, err
-	}
-
-	return idx, nil
-}
-
 // SearchKey finds a key with the supplied password, afterwards the config is
 // read and parsed.
 func (r *Repository) SearchKey(password string) error {

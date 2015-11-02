@@ -514,6 +514,32 @@ func ConvertIndexes(repo *Repository) error {
 	return nil
 }
 
+// LoadIndexWithDecoder loads the index and decodes it with fn.
+func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (*Index, error) {
+	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
+
+	idxID, err := backend.ParseID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	rd, err := repo.GetDecryptReader(backend.Index, idxID.String())
+	if err != nil {
+		return nil, err
+	}
+	defer rd.Close()
+
+	idx, err := fn(rd)
+	if err != nil {
+		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
+		return nil, err
+	}
+
+	idx.id = idxID
+
+	return idx, nil
+}
+
 // ConvertIndex loads the given index from the repo and converts them to the new
 // format (if necessary). When the conversion is succcessful, the old index
 // is removed. Returned is either the old id (if no conversion was needed) or
