@@ -288,23 +288,7 @@ func (r *SFTP) Create() (backend.Blob, error) {
 }
 
 func Join(parts ...string) string {
-	if len(parts) == 0 {
-		return ""
-	}
-
-	result := strings.TrimRight(parts[0], "/")
-	if len(parts) == 1 {
-		return result
-	}
-
-	for _, s := range parts[1:] {
-		s = strings.TrimRight(s, "/")
-		if len(s) == 0 {
-			continue
-		}
-		result = result + "/" + s
-	}
-	return result
+	return filepath.Clean(strings.Join(parts, "/"))
 }
 
 // Construct path for given backend.Type and name.
