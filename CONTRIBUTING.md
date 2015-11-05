@@ -39,7 +39,10 @@ environment was used and so on. Please tell us at least the following things:
  * What happened instead?
  * Are you aware of a way to reproduce the bug?
 
-If you have the time you can compile restic with debug support by running
+Remember, the easier it is for us to reproduce the bug, the earlier it will be
+corrected!
+
+In addition, you can compile restic with debug support by running
 `go run build.go -tags debug` and instructing it to create a debug log by
 setting the environment variable `DEBUG_LOG` to a file, e.g. like this:
 
