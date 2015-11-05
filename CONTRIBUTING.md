@@ -25,6 +25,35 @@ those tagged
 [minor complexity](https://github.com/restic/restic/labels/minor%20complexity).
 
 
+Reporting Bugs
+==============
+
+You've found a bug? Thanks for letting us know so we can fix it! It is a good
+idea to describe in detail how to reproduce the bug (when you know how), what
+environment was used and so on. Please tell us at least the following things:
+
+ * What's the version of restic you used? Please include the output of
+   `restic version` in your bug report.
+ * What commands did you execute to get to where the bug occurred?
+ * What did you expect?
+ * What happened instead?
+ * Are you aware of a way to reproduce the bug?
+
+Remember, the easier it is for us to reproduce the bug, the earlier it will be
+corrected!
+
+In addition, you can compile restic with debug support by running
+`go run build.go -tags debug` and instructing it to create a debug log by
+setting the environment variable `DEBUG_LOG` to a file, e.g. like this:
+
+    $ export DEBUG_LOG=/tmp/restic-debug.log
+    $ restic backup ~/work
+
+Please be aware that the debug log file will contain potentially sensitive
+things like file and directory names, so please either redact it before
+uploading it somewhere or post only the parts that are really relevant.
+
+
 Development Environment
 =======================
 
