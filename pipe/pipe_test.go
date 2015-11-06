@@ -1,6 +1,8 @@
 package pipe_test
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -122,8 +124,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	}()
 
 	resCh := make(chan pipe.Result, 1)
-	err = pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
-	OK(t, err)
+	pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -202,8 +203,7 @@ func TestPipelineWalker(t *testing.T) {
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	err = pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
-	OK(t, err)
+	pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -215,6 +215,94 @@ func TestPipelineWalker(t *testing.T) {
 		after.dirs, after.files)
 
 	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+}
+
+func createFile(filename, data string) error {
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	_, err = f.Write([]byte(data))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TestPipeWalkerError(t *testing.T) {
+	dir, err := ioutil.TempDir("", "restic-test-")
+	OK(t, err)
+
+	base := filepath.Base(dir)
+
+	var testjobs = []struct {
+		path []string
+		err  bool
+	}{
+		{[]string{base, "a", "file_a"}, false},
+		{[]string{base, "a"}, false},
+		{[]string{base, "b"}, true},
+		{[]string{base, "c", "file_c"}, false},
+		{[]string{base, "c"}, false},
+		{[]string{base}, false},
+		{[]string{}, false},
+	}
+
+	OK(t, os.Mkdir(filepath.Join(dir, "a"), 0755))
+	OK(t, os.Mkdir(filepath.Join(dir, "b"), 0755))
+	OK(t, os.Mkdir(filepath.Join(dir, "c"), 0755))
+
+	OK(t, createFile(filepath.Join(dir, "a", "file_a"), "file a"))
+	OK(t, createFile(filepath.Join(dir, "b", "file_b"), "file b"))
+	OK(t, createFile(filepath.Join(dir, "c", "file_c"), "file c"))
+
+	OK(t, os.Chmod(filepath.Join(dir, "b"), 0))
+
+	done := make(chan struct{})
+	ch := make(chan pipe.Job)
+	resCh := make(chan pipe.Result, 1)
+
+	go pipe.Walk([]string{dir}, acceptAll, done, ch, resCh)
+
+	i := 0
+	for job := range ch {
+		if i == len(testjobs) {
+			t.Errorf("too many jobs received")
+			break
+		}
+
+		fmt.Printf("job %+v: %+v\n", job.Path(), job)
+
+		p := filepath.Join(testjobs[i].path...)
+		if p != job.Path() {
+			t.Errorf("job %d has wrong path: expected %q, got %q", i, p, job.Path())
+		}
+
+		if testjobs[i].err {
+			if job.Error() == nil {
+				t.Errorf("job %d expected error but got nil", i)
+			}
+		} else {
+			if job.Error() != nil {
+				t.Errorf("job %d expected no error but got %v", i, job.Error())
+			}
+		}
+
+		i++
+	}
+
+	if i != len(testjobs) {
+		t.Errorf("expected %d jobs, got %d", len(testjobs), i)
+	}
+
+	close(done)
+
+	OK(t, os.Chmod(filepath.Join(dir, "b"), 0755))
+	OK(t, os.RemoveAll(dir))
 }
 
 func BenchmarkPipelineWalker(b *testing.B) {
@@ -302,8 +390,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 		}()
 
 		resCh := make(chan pipe.Result, 1)
-		err := pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
-		OK(b, err)
+		pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
 
 		// wait for all workers to terminate
 		wg.Wait()
@@ -379,8 +466,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	err = pipe.Walk(paths, acceptAll, done, jobs, resCh)
-	OK(t, err)
+	pipe.Walk(paths, acceptAll, done, jobs, resCh)
 
 	// wait for all workers to terminate
 	wg.Wait()
