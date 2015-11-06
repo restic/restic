@@ -144,7 +144,8 @@ func walk(basedir, dir string, selectFunc SelectFunc, done chan struct{}, jobs c
 		if isDir(fi) {
 			err = walk(basedir, subpath, selectFunc, done, jobs, ch)
 			if err != nil {
-				return err
+				fmt.Printf("Error processing %v: %v\n", subpath, err)
+				continue
 			}
 
 		} else {

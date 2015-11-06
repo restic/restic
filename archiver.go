@@ -719,7 +719,7 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *Progress) (Stat, error) {
 			// TODO: integrate error reporting
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error for %v: %v\n", str, err)
-				return nil
+				return filepath.SkipDir
 			}
 			if fi == nil {
 				fmt.Fprintf(os.Stderr, "error for %v: FileInfo is nil\n", str)
@@ -736,6 +736,13 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *Progress) (Stat, error) {
 
 			s := Stat{}
 			if fi.IsDir() {
+				_, err2 := os.Stat(str)
+				if err2 != nil {
+					debug.Log("Scan.Walk", "%v, err: %v", str, err2)
+					fmt.Fprintf(os.Stderr, "error for %v: %v\n", str, err2)
+					return filepath.SkipDir
+				}
+
 				s.Dirs++
 			} else {
 				s.Files++
