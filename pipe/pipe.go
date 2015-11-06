@@ -113,6 +113,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		return
 	}
 
+	debug.RunHook("pipe.readdirnames", dir)
 	names, err := readDirNames(dir)
 	if err != nil {
 		debug.Log("pipe.walk", "Readdirnames(%v) returned error: %v", dir, err)

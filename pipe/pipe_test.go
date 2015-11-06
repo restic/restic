@@ -1,7 +1,6 @@
 package pipe_test
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pipe"
 	. "github.com/restic/restic/test"
 )
@@ -260,7 +260,22 @@ func TestPipeWalkerError(t *testing.T) {
 	OK(t, createFile(filepath.Join(dir, "b", "file_b"), "file b"))
 	OK(t, createFile(filepath.Join(dir, "c", "file_c"), "file c"))
 
-	OK(t, os.Chmod(filepath.Join(dir, "b"), 0))
+	ranHook := false
+	testdir := filepath.Join(dir, "b")
+
+	// install hook that removes the dir right before readdirnames()
+	debug.Hook("pipe.readdirnames", func(context interface{}) {
+		path := context.(string)
+
+		if path != testdir {
+			return
+		}
+
+		t.Logf("in hook, removing test file %v", testdir)
+		ranHook = true
+
+		OK(t, os.RemoveAll(testdir))
+	})
 
 	done := make(chan struct{})
 	ch := make(chan pipe.Job)
@@ -274,8 +289,6 @@ func TestPipeWalkerError(t *testing.T) {
 			t.Errorf("too many jobs received")
 			break
 		}
-
-		fmt.Printf("job %+v: %+v\n", job.Path(), job)
 
 		p := filepath.Join(testjobs[i].path...)
 		if p != job.Path() {
@@ -301,7 +314,7 @@ func TestPipeWalkerError(t *testing.T) {
 
 	close(done)
 
-	OK(t, os.Chmod(filepath.Join(dir, "b"), 0755))
+	Assert(t, ranHook, "hook did not run")
 	OK(t, os.RemoveAll(dir))
 }
 
