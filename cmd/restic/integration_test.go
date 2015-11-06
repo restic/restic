@@ -291,6 +291,56 @@ func TestBackupMissingFile2(t *testing.T) {
 	})
 }
 
+func TestBackupDirectoryError(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(err) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		SetupTarTestFixture(t, env.testdata, datafile)
+
+		cmdInit(t, global)
+
+		global.stderr = ioutil.Discard
+		ranHook := false
+
+		testdir := filepath.Join(env.testdata, "0", "0", "9")
+
+		// install hook that removes the dir right before readdirnames()
+		debug.Hook("pipe.readdirnames", func(context interface{}) {
+			path := context.(string)
+
+			if path != testdir {
+				return
+			}
+
+			t.Logf("in hook, removing test file %v", testdir)
+			ranHook = true
+
+			OK(t, os.RemoveAll(testdir))
+		})
+
+		cmdBackup(t, global, []string{filepath.Join(env.testdata, "0", "0")}, nil)
+		cmdCheck(t, global)
+
+		Assert(t, ranHook, "hook did not run")
+		debug.RemoveHook("pipe.walk2")
+
+		snapshots := cmdList(t, global, "snapshots")
+		Assert(t, len(snapshots) > 0,
+			"no snapshots found in repo (%v)", datafile)
+
+		files := cmdLs(t, global, snapshots[0].String())
+
+		Assert(t, len(files) > 1, "snapshot is empty")
+	})
+}
+
 func includes(haystack []string, needle string) bool {
 	for _, s := range haystack {
 		if s == needle {
