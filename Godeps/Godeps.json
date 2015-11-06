@@ -23,6 +23,11 @@
 			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
 		},
 		{
+			"ImportPath": "github.com/minio/minio-go",
+			"Comment": "v0.2.5-58-g5c3a491",
+			"Rev": "5c3a4919116141f088990bd6ee385877648c7a25"
+		},
+		{
 			"ImportPath": "github.com/pkg/sftp",
 			"Rev": "518aed2757a65cfa64d4b1b2baf08410f8b7a6bc"
 		},
@@ -49,14 +54,6 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "7654728e381988afd88e58cabfd6363a5ea91810"
-		},
-		{
-			"ImportPath": "gopkg.in/amz.v3/aws",
-			"Rev": "bff3a097c4108da57bb8cbe3aad2990d74d23676"
-		},
-		{
-			"ImportPath": "gopkg.in/amz.v3/s3",
-			"Rev": "bff3a097c4108da57bb8cbe3aad2990d74d23676"
 		}
 	]
 }
