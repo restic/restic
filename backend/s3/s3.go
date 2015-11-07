@@ -3,9 +3,7 @@ package s3
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -48,7 +46,11 @@ func Open(regionname, bucketname string) (backend.Backend, error) {
 		}
 	} else {
 		// S3 compatible endpoint
-		config.Endpoint = "https://" + regionname
+		if strings.Contains(regionname, "localhost") || strings.Contains(regionname, "127.0.0.1") {
+			config.Endpoint = "http://" + regionname
+		} else {
+			config.Endpoint = "https://" + regionname
+		}
 	}
 
 	s3api, s3err := minio.New(config)
@@ -142,27 +144,9 @@ func (be *S3Backend) Get(t backend.Type, name string) (io.ReadCloser, error) {
 // GetReader returns an io.ReadCloser for the Blob with the given name of
 // type t at offset and length. If length is 0, the reader reads until EOF.
 func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	rc, err := be.Get(t, name)
-	if err != nil {
-		return nil, err
-
-	}
-
-	n, errc := io.CopyN(ioutil.Discard, rc, int64(offset))
-	if errc != nil {
-		return nil, errc
-
-	} else if n != int64(offset) {
-		return nil, fmt.Errorf("less bytes read than expected, read: %d, expected: %d", n, offset)
-
-	}
-
-	if length == 0 {
-		return rc, nil
-
-	}
-
-	return backend.LimitReadCloser(rc, int64(length)), nil
+	path := s3path(t, name)
+	rc, _, err := be.s3api.GetPartialObject(be.bucketname, path, int64(offset), int64(length))
+	return rc, err
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
