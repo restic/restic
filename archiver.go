@@ -318,6 +318,13 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 			}
 			debug.Log("Archiver.dirWorker", "save dir %v (%d entries), error %v\n", dir.Path(), len(dir.Entries), dir.Error())
 
+			// ignore dir nodes with errors
+			if dir.Error() != nil {
+				dir.Result() <- nil
+				p.Report(Stat{Errors: 1})
+				continue
+			}
+
 			tree := NewTree()
 
 			// wait for all content
