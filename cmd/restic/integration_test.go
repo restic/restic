@@ -61,7 +61,7 @@ func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, pare
 	OK(t, cmd.Execute(target))
 }
 
-func cmdList(t testing.TB, global GlobalOptions, tpe string) []backend.ID {
+func cmdList(t testing.TB, global GlobalOptions, tpe string) backend.IDs {
 	var buf bytes.Buffer
 	global.stdout = &buf
 	cmd := &CmdList{global: &global}
@@ -87,7 +87,11 @@ func cmdRestoreIncludes(t testing.TB, global GlobalOptions, dir string, snapshot
 }
 
 func cmdCheck(t testing.TB, global GlobalOptions) {
-	cmd := &CmdCheck{global: &global, ReadData: true}
+	cmd := &CmdCheck{
+		global:      &global,
+		ReadData:    true,
+		CheckUnused: true,
+	}
 	OK(t, cmd.Execute(nil))
 }
 
@@ -102,6 +106,11 @@ func cmdCheckOutput(t testing.TB, global GlobalOptions) string {
 func cmdRebuildIndex(t testing.TB, global GlobalOptions) {
 	global.stdout = ioutil.Discard
 	cmd := &CmdRebuildIndex{global: &global}
+	OK(t, cmd.Execute(nil))
+}
+
+func cmdOptimize(t testing.TB, global GlobalOptions) {
+	cmd := &CmdOptimize{global: &global}
 	OK(t, cmd.Execute(nil))
 }
 
@@ -688,4 +697,18 @@ func TestRebuildIndex(t *testing.T) {
 func TestRebuildIndexAlwaysFull(t *testing.T) {
 	repository.IndexFull = func(*repository.Index) bool { return true }
 	TestRebuildIndex(t)
+}
+
+func TestOptimizeRemoveUnusedBlobs(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("..", "..", "checker", "testdata", "checker-test-repo.tar.gz")
+		SetupTarTestFixture(t, env.base, datafile)
+
+		// snapshotIDs := cmdList(t, global, "snapshots")
+		// t.Logf("snapshots: %v", snapshotIDs)
+
+		OK(t, os.Remove(filepath.Join(env.repo, "snapshots", "a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")))
+		cmdOptimize(t, global)
+		cmdCheck(t, global)
+	})
 }
