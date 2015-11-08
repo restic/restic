@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"io"
-	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic/backend"
@@ -321,56 +320,6 @@ func TestIndexUnserializeOld(t *testing.T) {
 	}
 
 	Equals(t, 0, len(idx.Supersedes()))
-}
-
-var oldIndexTestRepo = filepath.Join("testdata", "old-index-repo.tar.gz")
-
-func TestConvertIndex(t *testing.T) {
-	WithTestEnvironment(t, oldIndexTestRepo, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
-
-		old := make(map[backend.ID]*repository.Index)
-		for id := range repo.List(backend.Index, nil) {
-			idx, err := repository.LoadIndex(repo, id.String())
-			OK(t, err)
-			old[id] = idx
-		}
-
-		OK(t, repository.ConvertIndexes(repo))
-
-		for id := range repo.List(backend.Index, nil) {
-			idx, err := repository.LoadIndexWithDecoder(repo, id.String(), repository.DecodeIndex)
-			OK(t, err)
-
-			Assert(t, len(idx.Supersedes()) == 1,
-				"Expected index %v to supersed exactly one index, got %v", id, idx.Supersedes())
-
-			oldIndexID := idx.Supersedes()[0]
-
-			oldIndex, ok := old[oldIndexID]
-			Assert(t, ok,
-				"Index %v superseds %v, but that wasn't found in the old index map", id.Str(), oldIndexID.Str())
-
-			Assert(t, idx.Count(pack.Data) == oldIndex.Count(pack.Data),
-				"Index %v count blobs %v: %v != %v", id.Str(), pack.Data, idx.Count(pack.Data), oldIndex.Count(pack.Data))
-			Assert(t, idx.Count(pack.Tree) == oldIndex.Count(pack.Tree),
-				"Index %v count blobs %v: %v != %v", id.Str(), pack.Tree, idx.Count(pack.Tree), oldIndex.Count(pack.Tree))
-
-			for packedBlob := range idx.Each(nil) {
-				blob, err := oldIndex.Lookup(packedBlob.ID)
-				OK(t, err)
-
-				Assert(t, blob.PackID == packedBlob.PackID,
-					"Check blob %v: pack ID %v != %v", packedBlob.ID, blob.PackID, packedBlob.PackID)
-				Assert(t, blob.Type == packedBlob.Type,
-					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Type, packedBlob.Type)
-				Assert(t, blob.Offset == packedBlob.Offset,
-					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Offset, packedBlob.Offset)
-				Assert(t, blob.Length == packedBlob.Length,
-					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Length, packedBlob.Length)
-			}
-		}
-	})
 }
 
 func TestIndexPacks(t *testing.T) {

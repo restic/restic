@@ -539,32 +539,6 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	return idx, err
 }
 
-// ConvertIndexes loads all indexes from the repo and converts them to the new
-// format (if necessary). When the conversion is succcessful, the old indexes
-// are removed.
-func ConvertIndexes(repo *Repository) error {
-	debug.Log("ConvertIndexes", "start")
-	done := make(chan struct{})
-	defer close(done)
-
-	for id := range repo.List(backend.Index, done) {
-		debug.Log("ConvertIndexes", "checking index %v", id.Str())
-
-		newID, err := ConvertIndex(repo, id)
-		if err != nil {
-			debug.Log("ConvertIndexes", "Converting index %v returns error: %v", id.Str(), err)
-			return err
-		}
-
-		if id != newID {
-			debug.Log("ConvertIndexes", "index %v converted to new format as %v", id.Str(), newID.Str())
-		}
-	}
-
-	debug.Log("ConvertIndexes", "done")
-	return nil
-}
-
 // LoadIndexWithDecoder loads the index and decodes it with fn.
 func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (*Index, error) {
 	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])

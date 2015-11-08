@@ -708,7 +708,7 @@ var optimizeTests = []struct {
 		"a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43",
 	},
 	{
-		filepath.Join("..", "..", "repository", "testdata", "old-index-repo.tar.gz"),
+		filepath.Join("testdata", "old-index-repo.tar.gz"),
 		"",
 	},
 }
