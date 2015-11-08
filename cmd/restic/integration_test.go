@@ -699,16 +699,35 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 	TestRebuildIndex(t)
 }
 
+var optimizeTests = []struct {
+	testFilename string
+	snapshotID   string
+}{
+	{
+		filepath.Join("..", "..", "checker", "testdata", "checker-test-repo.tar.gz"),
+		"a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43",
+	},
+	{
+		filepath.Join("..", "..", "repository", "testdata", "old-index-repo.tar.gz"),
+		"",
+	},
+}
+
 func TestOptimizeRemoveUnusedBlobs(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		datafile := filepath.Join("..", "..", "checker", "testdata", "checker-test-repo.tar.gz")
-		SetupTarTestFixture(t, env.base, datafile)
+	for i, test := range optimizeTests {
+		withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+			SetupTarTestFixture(t, env.base, test.testFilename)
 
-		// snapshotIDs := cmdList(t, global, "snapshots")
-		// t.Logf("snapshots: %v", snapshotIDs)
+			if test.snapshotID != "" {
+				OK(t, os.Remove(filepath.Join(env.repo, "snapshots", test.snapshotID)))
+			}
 
-		OK(t, os.Remove(filepath.Join(env.repo, "snapshots", "a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")))
-		cmdOptimize(t, global)
-		cmdCheck(t, global)
-	})
+			cmdOptimize(t, global)
+			output := cmdCheckOutput(t, global)
+
+			if len(output) > 0 {
+				t.Errorf("expected no output for check in test %d, got:\n%v", i, output)
+			}
+		})
+	}
 }
