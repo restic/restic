@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/restic/restic/backend"
 	"github.com/restic/restic/checker"
 )
 
 type CmdCheck struct {
-	ReadData       bool `long:"read-data"   description:"Read data blobs" default:"false"`
-	RemoveOrphaned bool `long:"remove"      description:"Remove data that isn't used" default:"false"`
-	CheckUnused    bool `long:"check-unused" description:"Check for unused blobs" default:"false"`
+	ReadData    bool `long:"read-data"   description:"Read data blobs" default:"false"`
+	CheckUnused bool `long:"check-unused" description:"Check for unused blobs" default:"false"`
 
 	global *GlobalOptions
 }
@@ -81,14 +79,9 @@ func (cmd CmdCheck) Execute(args []string) error {
 	cmd.global.Verbosef("Check all packs\n")
 	go chkr.Packs(errChan, done)
 
-	foundOrphanedPacks := false
 	for err := range errChan {
 		errorsFound = true
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-
-		if e, ok := err.(checker.PackError); ok && e.Orphaned {
-			foundOrphanedPacks = true
-		}
 	}
 
 	cmd.global.Verbosef("Check snapshots, trees and blobs\n")
@@ -112,19 +105,6 @@ func (cmd CmdCheck) Execute(args []string) error {
 			cmd.global.Verbosef("unused blob %v\n", id.Str())
 			errorsFound = true
 		}
-	}
-
-	if foundOrphanedPacks && cmd.RemoveOrphaned {
-		IDs := chkr.OrphanedPacks()
-		cmd.global.Verbosef("Remove %d orphaned packs... ", len(IDs))
-
-		for _, id := range IDs {
-			if err := repo.Backend().Remove(backend.Data, id.String()); err != nil {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
-			}
-		}
-
-		cmd.global.Verbosef("done\n")
 	}
 
 	if errorsFound {
