@@ -726,7 +726,7 @@ func TestOptimizeRemoveUnusedBlobs(t *testing.T) {
 			SetupTarTestFixture(t, env.base, test.testFilename)
 
 			for id := range test.snapshots {
-				OK(t, os.Remove(filepath.Join(env.repo, "snapshots", id.String())))
+				OK(t, removeFile(filepath.Join(env.repo, "snapshots", id.String())))
 			}
 
 			cmdOptimize(t, global)

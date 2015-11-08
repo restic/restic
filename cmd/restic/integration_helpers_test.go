@@ -216,3 +216,13 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 
 	RemoveAll(t, tempdir)
 }
+
+// removeFile resets the read-only flag and then deletes the file.
+func removeFile(fn string) error {
+	err := os.Chmod(fn, 0666)
+	if err != nil {
+		return err
+	}
+
+	return os.Remove(fn)
+}
