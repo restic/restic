@@ -58,6 +58,16 @@ func (e ErrDuplicatePacks) Error() string {
 	return fmt.Sprintf("pack %v contained in several indexes: %v", e.PackID.Str(), e.Indexes)
 }
 
+// ErrOldIndexFormat is returned when an index with the old format is
+// found.
+type ErrOldIndexFormat struct {
+	backend.ID
+}
+
+func (err ErrOldIndexFormat) Error() string {
+	return fmt.Sprintf("index %v has old format", err.ID.Str())
+}
+
 // LoadIndex loads all index files.
 func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	debug.Log("LoadIndex", "Start")
@@ -73,6 +83,8 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 		idx, err := repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeIndex)
 		if err == repository.ErrOldIndexFormat {
 			debug.Log("LoadIndex", "index %v has old format", id.Str())
+			hints = append(hints, ErrOldIndexFormat{id})
+
 			idx, err = repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeOldIndex)
 		}
 
