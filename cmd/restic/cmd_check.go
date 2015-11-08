@@ -10,8 +10,9 @@ import (
 )
 
 type CmdCheck struct {
-	ReadData       bool `long:"read-data"  description:"Read data blobs" default:"false"`
-	RemoveOrphaned bool `long:"remove"     description:"Remove data that isn't used" default:"false"`
+	ReadData       bool `long:"read-data"   description:"Read data blobs" default:"false"`
+	RemoveOrphaned bool `long:"remove"      description:"Remove data that isn't used" default:"false"`
+	CheckUnused    bool `long:"check-unused" description:"Check for unused blobs" default:"false"`
 
 	global *GlobalOptions
 }
@@ -106,8 +107,11 @@ func (cmd CmdCheck) Execute(args []string) error {
 		}
 	}
 
-	for _, id := range chkr.UnusedBlobs() {
-		cmd.global.Verbosef("unused blob %v\n", id.Str())
+	if cmd.CheckUnused {
+		for _, id := range chkr.UnusedBlobs() {
+			cmd.global.Verbosef("unused blob %v\n", id.Str())
+			errorsFound = true
+		}
 	}
 
 	if foundOrphanedPacks && cmd.RemoveOrphaned {
