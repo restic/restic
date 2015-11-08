@@ -10,12 +10,13 @@ import (
 	"syscall"
 	"time"
 
+	"runtime"
+
 	"github.com/juju/errors"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
 	"github.com/restic/restic/pack"
 	"github.com/restic/restic/repository"
-	"runtime"
 )
 
 // Node is a file, directory or other item in a backup.

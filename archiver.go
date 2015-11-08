@@ -304,6 +304,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 }
 
 func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan struct{}, dirCh <-chan pipe.Dir) {
+	debug.Log("Archiver.dirWorker", "start")
 	defer func() {
 		debug.Log("Archiver.dirWorker", "done")
 		wg.Done()
@@ -315,12 +316,20 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				// channel is closed
 				return
 			}
-			debug.Log("Archiver.dirWorker", "save dir %v\n", dir.Path())
+			debug.Log("Archiver.dirWorker", "save dir %v (%d entries), error %v\n", dir.Path(), len(dir.Entries), dir.Error())
+
+			// ignore dir nodes with errors
+			if dir.Error() != nil {
+				dir.Result() <- nil
+				p.Report(Stat{Errors: 1})
+				continue
+			}
 
 			tree := NewTree()
 
 			// wait for all content
 			for _, ch := range dir.Entries {
+				debug.Log("Archiver.dirWorker", "receiving result from %v", ch)
 				res := <-ch
 
 				// if we get a nil pointer here, an error has happened while
@@ -342,21 +351,20 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				}
 			}
 
-			var (
-				node *Node
-				err  error
-			)
-			if dir.Path() == "" {
-				// if this is the top-level dir, only create a stub node
-				node = &Node{}
-			} else {
-				// else create node from path and fi
-				node, err = NodeFromFileInfo(dir.Path(), dir.Info())
+			node := &Node{}
+
+			if dir.Path() != "" && dir.Info() != nil {
+				n, err := NodeFromFileInfo(dir.Path(), dir.Info())
 				if err != nil {
-					node.Error = err.Error()
-					dir.Result() <- node
+					n.Error = err.Error()
+					dir.Result() <- n
 					continue
 				}
+				node = n
+			}
+
+			if err := dir.Error(); err != nil {
+				node.Error = err.Error()
 			}
 
 			id, err := arch.SaveTreeJSON(tree)
@@ -369,6 +377,8 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 			}
 
 			node.Subtree = &id
+
+			debug.Log("Archiver.dirWorker", "sending result to %v", dir.Result())
 
 			dir.Result() <- node
 			if dir.Path() != "" {
@@ -615,11 +625,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID
 	pipeCh := make(chan pipe.Job)
 	resCh := make(chan pipe.Result, 1)
 	go func() {
-		err := pipe.Walk(paths, arch.SelectFilter, done, pipeCh, resCh)
-		if err != nil {
-			debug.Log("Archiver.Snapshot", "pipe.Walk returned error %v", err)
-			return
-		}
+		pipe.Walk(paths, arch.SelectFilter, done, pipeCh, resCh)
 		debug.Log("Archiver.Snapshot", "pipe.Walk done")
 	}()
 	jobs.New = pipeCh

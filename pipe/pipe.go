@@ -82,32 +82,46 @@ var errCancelled = errors.New("walk cancelled")
 // dirs). If false is returned, files are ignored and dirs are not even walked.
 type SelectFunc func(item string, fi os.FileInfo) bool
 
-func walk(basedir, dir string, selectFunc SelectFunc, done chan struct{}, jobs chan<- Job, res chan<- Result) error {
+func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs chan<- Job, res chan<- Result) {
+	debug.Log("pipe.walk", "start on %v", dir)
+
+	relpath, err := filepath.Rel(basedir, dir)
+	if err != nil {
+		panic(err)
+	}
+
 	info, err := os.Lstat(dir)
 	if err != nil {
 		debug.Log("pipe.walk", "error for %v: %v", dir, err)
-		return err
+		select {
+		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
+		case <-done:
+		}
+		return
 	}
 
 	if !selectFunc(dir, info) {
 		debug.Log("pipe.walk", "file %v excluded by filter", dir)
-		return nil
+		return
 	}
-
-	relpath, _ := filepath.Rel(basedir, dir)
 
 	if !info.IsDir() {
 		select {
 		case jobs <- Entry{info: info, basedir: basedir, path: relpath, result: res}:
 		case <-done:
-			return errCancelled
 		}
-		return nil
+		return
 	}
 
+	debug.RunHook("pipe.readdirnames", dir)
 	names, err := readDirNames(dir)
 	if err != nil {
-		return err
+		debug.Log("pipe.walk", "Readdirnames(%v) returned error: %v", dir, err)
+		select {
+		case <-done:
+		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
+		}
+		return
 	}
 
 	// Insert breakpoint to allow testing behaviour with vanishing files
@@ -132,7 +146,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done chan struct{}, jobs c
 			select {
 			case jobs <- Entry{info: fi, error: statErr, basedir: basedir, path: filepath.Join(relpath, name), result: ch}:
 			case <-done:
-				return errCancelled
+				return
 			}
 			continue
 		}
@@ -141,32 +155,19 @@ func walk(basedir, dir string, selectFunc SelectFunc, done chan struct{}, jobs c
 		// between walk and open
 		debug.RunHook("pipe.walk2", filepath.Join(relpath, name))
 
-		if isDir(fi) {
-			err = walk(basedir, subpath, selectFunc, done, jobs, ch)
-			if err != nil {
-				return err
-			}
-
-		} else {
-			select {
-			case jobs <- Entry{info: fi, basedir: basedir, path: filepath.Join(relpath, name), result: ch}:
-			case <-done:
-				return errCancelled
-			}
-		}
+		walk(basedir, subpath, selectFunc, done, jobs, ch)
 	}
 
 	select {
 	case jobs <- Dir{basedir: basedir, path: relpath, info: info, Entries: entries, result: res}:
 	case <-done:
-		return errCancelled
 	}
-	return nil
 }
 
 // Walk sends a Job for each file and directory it finds below the paths. When
 // the channel done is closed, processing stops.
-func Walk(paths []string, selectFunc SelectFunc, done chan struct{}, jobs chan<- Job, res chan<- Result) error {
+func Walk(paths []string, selectFunc SelectFunc, done chan struct{}, jobs chan<- Job, res chan<- Result) {
+	debug.Log("pipe.Walk", "start on %v", paths)
 	defer func() {
 		debug.Log("pipe.Walk", "output channel closed")
 		close(jobs)
@@ -176,11 +177,7 @@ func Walk(paths []string, selectFunc SelectFunc, done chan struct{}, jobs chan<-
 	for _, path := range paths {
 		debug.Log("pipe.Walk", "start walker for %v", path)
 		ch := make(chan Result, 1)
-		err := walk(filepath.Dir(path), path, selectFunc, done, jobs, ch)
-		if err != nil {
-			debug.Log("pipe.Walk", "error for %v: %v", path, err)
-			continue
-		}
+		walk(filepath.Dir(path), path, selectFunc, done, jobs, ch)
 		entries = append(entries, ch)
 		debug.Log("pipe.Walk", "walker for %v done", path)
 	}
@@ -188,13 +185,11 @@ func Walk(paths []string, selectFunc SelectFunc, done chan struct{}, jobs chan<-
 	debug.Log("pipe.Walk", "sending root node")
 	select {
 	case <-done:
-		return errCancelled
+		return
 	case jobs <- Dir{Entries: entries, result: res}:
 	}
 
 	debug.Log("pipe.Walk", "walker done")
-
-	return nil
 }
 
 // Split feeds all elements read from inChan to dirChan and entChan.
