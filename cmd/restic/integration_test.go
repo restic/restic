@@ -701,15 +701,22 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 
 var optimizeTests = []struct {
 	testFilename string
-	snapshotID   string
+	snapshots    backend.IDSet
 }{
 	{
 		filepath.Join("..", "..", "checker", "testdata", "checker-test-repo.tar.gz"),
-		"a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43",
+		backend.NewIDSet(ParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")),
 	},
 	{
 		filepath.Join("testdata", "old-index-repo.tar.gz"),
-		"",
+		nil,
+	},
+	{
+		filepath.Join("testdata", "old-index-repo.tar.gz"),
+		backend.NewIDSet(
+			ParseID("f7d83db709977178c9d1a09e4009355e534cde1a135b8186b8b118a3fc4fcd41"),
+			ParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"),
+		),
 	},
 }
 
@@ -718,8 +725,8 @@ func TestOptimizeRemoveUnusedBlobs(t *testing.T) {
 		withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 			SetupTarTestFixture(t, env.base, test.testFilename)
 
-			if test.snapshotID != "" {
-				OK(t, os.Remove(filepath.Join(env.repo, "snapshots", test.snapshotID)))
+			for id := range test.snapshots {
+				OK(t, os.Remove(filepath.Join(env.repo, "snapshots", id.String())))
 			}
 
 			cmdOptimize(t, global)
