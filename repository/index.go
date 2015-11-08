@@ -533,6 +533,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 			})
 		}
 	}
+	idx.final = true
 
 	debug.Log("Index.DecodeOldIndex", "done")
 	return idx, err

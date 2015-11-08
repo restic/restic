@@ -64,11 +64,11 @@ func (r *Repacker) Repack() error {
 		}
 	}
 
-	debug.Log("Repacker.Repack", "rebuild index")
+	debug.Log("Repacker.Repack", "rebuild index, unneeded packs: %v", unneededPacks)
 	idx, err := r.repo.Index().RebuildIndex(unneededPacks)
 
 	newIndexID, err := repository.SaveIndex(r.repo, idx)
-	debug.Log("Repacker.Repack", "saved new index at %v, err %v", newIndexID, err)
+	debug.Log("Repacker.Repack", "saved new index at %v, err %v", newIndexID.Str(), err)
 	if err != nil {
 		return err
 	}

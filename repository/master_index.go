@@ -248,14 +248,14 @@ func (mi *MasterIndex) RebuildIndex(packBlacklist backend.IDSet) (*Index, error)
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
-	debug.Log("MasterIndex.RebuildIndex", "start rebuilding index, blob blacklist: %v", packBlacklist)
+	debug.Log("MasterIndex.RebuildIndex", "start rebuilding index of %d indexes, pack blacklist: %v", len(mi.idx), packBlacklist)
 
 	newIndex := NewIndex()
 	done := make(chan struct{})
 	defer close(done)
 
 	for i, idx := range mi.idx {
-		debug.Log("MasterIndex.RebuildIndex", "adding %d index ", i)
+		debug.Log("MasterIndex.RebuildIndex", "adding index %d", i)
 
 		for pb := range idx.Each(done) {
 			if packBlacklist.Has(pb.PackID) {
@@ -266,15 +266,17 @@ func (mi *MasterIndex) RebuildIndex(packBlacklist backend.IDSet) (*Index, error)
 		}
 
 		if !idx.Final() {
+			debug.Log("MasterIndex.RebuildIndex", "index %d isn't final, don't add to supersedes field", i)
 			continue
 		}
 
 		id, err := idx.ID()
 		if err != nil {
+			debug.Log("MasterIndex.RebuildIndex", "index %d does not have an ID: %v", err)
 			return nil, err
 		}
 
-		debug.Log("MasterIndex.RebuildIndex", "adding index id %v to supersedes field", id)
+		debug.Log("MasterIndex.RebuildIndex", "adding index id %v to supersedes field", id.Str())
 
 		err = newIndex.AddToSupersedes(id)
 		if err != nil {
