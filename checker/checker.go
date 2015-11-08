@@ -3,7 +3,6 @@ package checker
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/restic/restic"
@@ -73,14 +72,8 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 		debug.Log("LoadIndex", "worker got index %v", id)
 		idx, err := repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeIndex)
 		if err == repository.ErrOldIndexFormat {
-			debug.Log("LoadIndex", "old index format found, converting")
-			fmt.Fprintf(os.Stderr, "convert index %v to new format\n", id.Str())
-			id, err = repository.ConvertIndex(c.repo, id)
-			if err != nil {
-				return err
-			}
-
-			idx, err = repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeIndex)
+			debug.Log("LoadIndex", "index %v has old format", id.Str())
+			idx, err = repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeOldIndex)
 		}
 
 		if err != nil {
