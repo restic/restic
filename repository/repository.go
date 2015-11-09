@@ -270,7 +270,13 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), sid.Str())
-		r.idx.Current().Store(b.Type, b.ID, sid, b.Offset, uint(b.Length))
+		r.idx.Current().Store(PackedBlob{
+			Type:   b.Type,
+			ID:     b.ID,
+			PackID: sid,
+			Offset: b.Offset,
+			Length: uint(b.Length),
+		})
 		r.idx.RemoveFromInFlight(b.ID)
 	}
 
@@ -526,7 +532,8 @@ func SaveIndex(repo *Repository, index *Index) (backend.ID, error) {
 	}
 
 	sid := blob.ID()
-	return sid, nil
+	err = index.SetID(sid)
+	return sid, err
 }
 
 // saveIndex saves all indexes in the backend.
@@ -648,25 +655,6 @@ func (r *Repository) GetDecryptReader(t backend.Type, id string) (io.ReadCloser,
 	}
 
 	return newDecryptReadCloser(r.key, rd)
-}
-
-// LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (*Index, error) {
-	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
-
-	rd, err := repo.GetDecryptReader(backend.Index, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rd.Close()
-
-	idx, err := fn(rd)
-	if err != nil {
-		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
-		return nil, err
-	}
-
-	return idx, nil
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is

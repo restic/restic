@@ -90,7 +90,7 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 			}
 
 			blobsDone[b] = struct{}{}
-			combinedIndex.Store(packedBlob.Type, packedBlob.ID, packedBlob.PackID, packedBlob.Offset, packedBlob.Length)
+			combinedIndex.Store(packedBlob)
 		}
 
 		combinedIndex.AddToSupersedes(indexID)
@@ -162,7 +162,13 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 
 		for _, blob := range up.Entries {
 			debug.Log("RebuildIndex.RebuildIndex", "pack %v: blob %v", packID.Str(), blob)
-			combinedIndex.Store(blob.Type, blob.ID, packID, blob.Offset, blob.Length)
+			combinedIndex.Store(repository.PackedBlob{
+				Type:   blob.Type,
+				ID:     blob.ID,
+				PackID: packID,
+				Offset: blob.Offset,
+				Length: blob.Length,
+			})
 		}
 
 		err = rd.Close()

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"io"
-	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic/backend"
@@ -41,7 +40,13 @@ func TestIndexSerialize(t *testing.T) {
 		for j := 0; j < 20; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx.Store(pack.Data, id, packID, pos, length)
+			idx.Store(repository.PackedBlob{
+				Type:   pack.Data,
+				ID:     id,
+				PackID: packID,
+				Offset: pos,
+				Length: length,
+			})
 
 			tests = append(tests, testEntry{
 				id:     id,
@@ -95,7 +100,13 @@ func TestIndexSerialize(t *testing.T) {
 		for j := 0; j < 10; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx.Store(pack.Data, id, packID, pos, length)
+			idx.Store(repository.PackedBlob{
+				Type:   pack.Data,
+				ID:     id,
+				PackID: packID,
+				Offset: pos,
+				Length: length,
+			})
 
 			newtests = append(newtests, testEntry{
 				id:     id,
@@ -116,6 +127,12 @@ func TestIndexSerialize(t *testing.T) {
 
 	Assert(t, idx.Final(),
 		"index not final after encoding")
+
+	id := randomID()
+	idx.SetID(id)
+	id2, err := idx.ID()
+	Assert(t, id2.Equal(id),
+		"wrong ID returned: want %v, got %v", id, id2)
 
 	idx3, err := repository.DecodeIndex(wr3)
 	OK(t, err)
@@ -148,7 +165,13 @@ func TestIndexSize(t *testing.T) {
 		for j := 0; j < blobs; j++ {
 			id := randomID()
 			length := uint(i*100 + j)
-			idx.Store(pack.Data, id, packID, pos, length)
+			idx.Store(repository.PackedBlob{
+				Type:   pack.Data,
+				ID:     id,
+				PackID: packID,
+				Offset: pos,
+				Length: length,
+			})
 
 			pos += length
 		}
@@ -240,6 +263,18 @@ var exampleTests = []struct {
 	},
 }
 
+var exampleLookupTest = struct {
+	packID backend.ID
+	blobs  backend.IDSet
+}{
+	ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
+	backend.IDSet{
+		ParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"): struct{}{},
+		ParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"): struct{}{},
+		ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"): struct{}{},
+	},
+}
+
 func TestIndexUnserialize(t *testing.T) {
 	oldIdx := backend.IDs{ParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
@@ -257,6 +292,17 @@ func TestIndexUnserialize(t *testing.T) {
 	}
 
 	Equals(t, oldIdx, idx.Supersedes())
+
+	blobs := idx.ListPack(exampleLookupTest.packID)
+	if len(blobs) != len(exampleLookupTest.blobs) {
+		t.Fatalf("expected %d blobs in pack, got %d", len(exampleLookupTest.blobs), len(blobs))
+	}
+
+	for _, blob := range blobs {
+		if !exampleLookupTest.blobs.Has(blob.ID) {
+			t.Errorf("unexpected blob %v found", blob.ID.Str())
+		}
+	}
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
@@ -276,63 +322,19 @@ func TestIndexUnserializeOld(t *testing.T) {
 	Equals(t, 0, len(idx.Supersedes()))
 }
 
-var oldIndexTestRepo = filepath.Join("testdata", "old-index-repo.tar.gz")
-
-func TestConvertIndex(t *testing.T) {
-	WithTestEnvironment(t, oldIndexTestRepo, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
-
-		old := make(map[backend.ID]*repository.Index)
-		for id := range repo.List(backend.Index, nil) {
-			idx, err := repository.LoadIndex(repo, id.String())
-			OK(t, err)
-			old[id] = idx
-		}
-
-		OK(t, repository.ConvertIndexes(repo))
-
-		for id := range repo.List(backend.Index, nil) {
-			idx, err := repository.LoadIndexWithDecoder(repo, id.String(), repository.DecodeIndex)
-			OK(t, err)
-
-			Assert(t, len(idx.Supersedes()) == 1,
-				"Expected index %v to supersed exactly one index, got %v", id, idx.Supersedes())
-
-			oldIndexID := idx.Supersedes()[0]
-
-			oldIndex, ok := old[oldIndexID]
-			Assert(t, ok,
-				"Index %v superseds %v, but that wasn't found in the old index map", id.Str(), oldIndexID.Str())
-
-			Assert(t, idx.Count(pack.Data) == oldIndex.Count(pack.Data),
-				"Index %v count blobs %v: %v != %v", id.Str(), pack.Data, idx.Count(pack.Data), oldIndex.Count(pack.Data))
-			Assert(t, idx.Count(pack.Tree) == oldIndex.Count(pack.Tree),
-				"Index %v count blobs %v: %v != %v", id.Str(), pack.Tree, idx.Count(pack.Tree), oldIndex.Count(pack.Tree))
-
-			for packedBlob := range idx.Each(nil) {
-				blob, err := oldIndex.Lookup(packedBlob.ID)
-				OK(t, err)
-
-				Assert(t, blob.PackID == packedBlob.PackID,
-					"Check blob %v: pack ID %v != %v", packedBlob.ID, blob.PackID, packedBlob.PackID)
-				Assert(t, blob.Type == packedBlob.Type,
-					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Type, packedBlob.Type)
-				Assert(t, blob.Offset == packedBlob.Offset,
-					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Offset, packedBlob.Offset)
-				Assert(t, blob.Length == packedBlob.Length,
-					"Check blob %v: Type %v != %v", packedBlob.ID, blob.Length, packedBlob.Length)
-			}
-		}
-	})
-}
-
 func TestIndexPacks(t *testing.T) {
 	idx := repository.NewIndex()
 	packs := backend.NewIDSet()
 
 	for i := 0; i < 20; i++ {
 		packID := randomID()
-		idx.Store(pack.Data, randomID(), packID, 0, 23)
+		idx.Store(repository.PackedBlob{
+			Type:   pack.Data,
+			ID:     randomID(),
+			PackID: packID,
+			Offset: 0,
+			Length: 23,
+		})
 
 		packs.Insert(packID)
 	}

@@ -61,7 +61,7 @@ func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, pare
 	OK(t, cmd.Execute(target))
 }
 
-func cmdList(t testing.TB, global GlobalOptions, tpe string) []backend.ID {
+func cmdList(t testing.TB, global GlobalOptions, tpe string) backend.IDs {
 	var buf bytes.Buffer
 	global.stdout = &buf
 	cmd := &CmdList{global: &global}
@@ -87,7 +87,11 @@ func cmdRestoreIncludes(t testing.TB, global GlobalOptions, dir string, snapshot
 }
 
 func cmdCheck(t testing.TB, global GlobalOptions) {
-	cmd := &CmdCheck{global: &global, ReadData: true}
+	cmd := &CmdCheck{
+		global:      &global,
+		ReadData:    true,
+		CheckUnused: true,
+	}
 	OK(t, cmd.Execute(nil))
 }
 
@@ -102,6 +106,11 @@ func cmdCheckOutput(t testing.TB, global GlobalOptions) string {
 func cmdRebuildIndex(t testing.TB, global GlobalOptions) {
 	global.stdout = ioutil.Discard
 	cmd := &CmdRebuildIndex{global: &global}
+	OK(t, cmd.Execute(nil))
+}
+
+func cmdOptimize(t testing.TB, global GlobalOptions) {
+	cmd := &CmdOptimize{global: &global}
 	OK(t, cmd.Execute(nil))
 }
 
@@ -738,4 +747,44 @@ func TestRebuildIndex(t *testing.T) {
 func TestRebuildIndexAlwaysFull(t *testing.T) {
 	repository.IndexFull = func(*repository.Index) bool { return true }
 	TestRebuildIndex(t)
+}
+
+var optimizeTests = []struct {
+	testFilename string
+	snapshots    backend.IDSet
+}{
+	{
+		filepath.Join("..", "..", "checker", "testdata", "checker-test-repo.tar.gz"),
+		backend.NewIDSet(ParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")),
+	},
+	{
+		filepath.Join("testdata", "old-index-repo.tar.gz"),
+		nil,
+	},
+	{
+		filepath.Join("testdata", "old-index-repo.tar.gz"),
+		backend.NewIDSet(
+			ParseID("f7d83db709977178c9d1a09e4009355e534cde1a135b8186b8b118a3fc4fcd41"),
+			ParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"),
+		),
+	},
+}
+
+func TestOptimizeRemoveUnusedBlobs(t *testing.T) {
+	for i, test := range optimizeTests {
+		withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+			SetupTarTestFixture(t, env.base, test.testFilename)
+
+			for id := range test.snapshots {
+				OK(t, removeFile(filepath.Join(env.repo, "snapshots", id.String())))
+			}
+
+			cmdOptimize(t, global)
+			output := cmdCheckOutput(t, global)
+
+			if len(output) > 0 {
+				t.Errorf("expected no output for check in test %d, got:\n%v", i, output)
+			}
+		})
+	}
 }

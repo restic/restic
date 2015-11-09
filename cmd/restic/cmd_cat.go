@@ -167,12 +167,8 @@ func (cmd CmdCat) Execute(args []string) error {
 			return err
 		}
 
-		if blob.Type != pack.Data {
-			return errors.New("wrong type for blob")
-		}
-
 		buf := make([]byte, blob.Length)
-		data, err := repo.LoadBlob(pack.Data, id, buf)
+		data, err := repo.LoadBlob(blob.Type, id, buf)
 		if err != nil {
 			return err
 		}
