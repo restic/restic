@@ -103,6 +103,16 @@ func cmdCheckOutput(t testing.TB, global GlobalOptions) string {
 	return string(buf.Bytes())
 }
 
+func cmdCheckNoLock(t testing.TB, global GlobalOptions) {
+	cmd := &CmdCheck{
+		global:      &global,
+		ReadData:    true,
+		CheckUnused: true,
+		NoLock:      true,
+	}
+	OK(t, cmd.Execute(nil))
+}
+
 func cmdRebuildIndex(t testing.TB, global GlobalOptions) {
 	global.stdout = ioutil.Discard
 	cmd := &CmdRebuildIndex{global: &global}
@@ -787,4 +797,21 @@ func TestOptimizeRemoveUnusedBlobs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCheckRestoreNoLock(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		datafile := filepath.Join("testdata", "repo-restore-permissions-test.tar.gz")
+		SetupTarTestFixture(t, env.base, datafile)
+
+		err := filepath.Walk(env.repo, func(p string, fi os.FileInfo, e error) error {
+			if e != nil {
+				return e
+			}
+			return os.Chmod(p, fi.Mode() & ^(os.FileMode(0222)))
+		})
+		OK(t, err)
+
+		cmdCheckNoLock(t, global)
+	})
 }

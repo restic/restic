@@ -9,8 +9,9 @@ import (
 )
 
 type CmdCheck struct {
-	ReadData    bool `long:"read-data"   description:"Read data blobs" default:"false"`
-	CheckUnused bool `long:"check-unused" description:"Check for unused blobs" default:"false"`
+	ReadData    bool `long:"read-data"    default:"false" description:"Read data blobs"`
+	CheckUnused bool `long:"check-unused" default:"false" description:"Check for unused blobs"`
+	NoLock      bool `long:"no-lock"      default:"false" description:"Do not lock repository, this allows checking read-only"`
 
 	global *GlobalOptions
 }
@@ -39,11 +40,13 @@ func (cmd CmdCheck) Execute(args []string) error {
 		return err
 	}
 
-	cmd.global.Verbosef("Create exclusive lock for repository\n")
-	lock, err := lockRepoExclusive(repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if !cmd.NoLock {
+		cmd.global.Verbosef("Create exclusive lock for repository\n")
+		lock, err := lockRepoExclusive(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
 	}
 
 	chkr := checker.New(repo)
