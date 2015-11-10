@@ -62,18 +62,29 @@ func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, pare
 }
 
 func cmdList(t testing.TB, global GlobalOptions, tpe string) backend.IDs {
-	var buf bytes.Buffer
-	global.stdout = &buf
 	cmd := &CmdList{global: &global}
+	return executeAndParseIDs(t, cmd, tpe)
+}
 
-	OK(t, cmd.Execute([]string{tpe}))
-	IDs := parseIDsFromReader(t, &buf)
+func executeAndParseIDs(t testing.TB, cmd *CmdList, args ...string) backend.IDs {
+	buf := bytes.NewBuffer(nil)
+	cmd.global.stdout = buf
+	OK(t, cmd.Execute(args))
+	return parseIDsFromReader(t, buf)
+}
 
-	return IDs
+func cmdListNoLock(t testing.TB, global GlobalOptions, tpe string) backend.IDs {
+	cmd := &CmdList{global: &global, NoLock: true}
+	return executeAndParseIDs(t, cmd, tpe)
 }
 
 func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID) {
 	cmdRestoreExcludes(t, global, dir, snapshotID, nil)
+}
+
+func cmdRestoreNoLock(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID) {
+	cmd := &CmdRestore{global: &global, Target: dir, NoLock: true}
+	OK(t, cmd.Execute([]string{snapshotID.String()}))
 }
 
 func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, excludes []string) {
@@ -801,7 +812,7 @@ func TestOptimizeRemoveUnusedBlobs(t *testing.T) {
 
 func TestCheckRestoreNoLock(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		datafile := filepath.Join("testdata", "repo-restore-permissions-test.tar.gz")
+		datafile := filepath.Join("testdata", "small-repo.tar.gz")
 		SetupTarTestFixture(t, env.base, datafile)
 
 		err := filepath.Walk(env.repo, func(p string, fi os.FileInfo, e error) error {
@@ -813,5 +824,12 @@ func TestCheckRestoreNoLock(t *testing.T) {
 		OK(t, err)
 
 		cmdCheckNoLock(t, global)
+
+		snapshotIDs := cmdListNoLock(t, global, "snapshots")
+		if len(snapshotIDs) == 0 {
+			t.Fatalf("found no snapshots")
+		}
+
+		cmdRestoreNoLock(t, global, filepath.Join(env.base, "restore"), snapshotIDs[0])
 	})
 }
