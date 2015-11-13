@@ -59,7 +59,8 @@ Backward compatibility for backups is important so that our users are always
 able to restore saved data. Therefore restic follows [Semantic
 Versioning](http://semver.org) to clearly define which versions are compatible.
 The repository and data structures contained therein are considered the "Public
-API" in the sense of Semantic Versioning.
+API" in the sense of Semantic Versioning. This goes for all released versions
+of restic, this may not be the case for the master branch.
 
 We guarantee backward compatibility of all repositories within one major version;
 as long as we do not increment the major version, data can be read and restored.
