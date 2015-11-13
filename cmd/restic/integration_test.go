@@ -73,18 +73,8 @@ func executeAndParseIDs(t testing.TB, cmd *CmdList, args ...string) backend.IDs 
 	return parseIDsFromReader(t, buf)
 }
 
-func cmdListNoLock(t testing.TB, global GlobalOptions, tpe string) backend.IDs {
-	cmd := &CmdList{global: &global, NoLock: true}
-	return executeAndParseIDs(t, cmd, tpe)
-}
-
 func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID) {
 	cmdRestoreExcludes(t, global, dir, snapshotID, nil)
-}
-
-func cmdRestoreNoLock(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID) {
-	cmd := &CmdRestore{global: &global, Target: dir, NoLock: true}
-	OK(t, cmd.Execute([]string{snapshotID.String()}))
 }
 
 func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, excludes []string) {
@@ -112,16 +102,6 @@ func cmdCheckOutput(t testing.TB, global GlobalOptions) string {
 	cmd := &CmdCheck{global: &global, ReadData: true}
 	OK(t, cmd.Execute(nil))
 	return string(buf.Bytes())
-}
-
-func cmdCheckNoLock(t testing.TB, global GlobalOptions) {
-	cmd := &CmdCheck{
-		global:      &global,
-		ReadData:    true,
-		CheckUnused: true,
-		NoLock:      true,
-	}
-	OK(t, cmd.Execute(nil))
 }
 
 func cmdRebuildIndex(t testing.TB, global GlobalOptions) {
@@ -823,13 +803,14 @@ func TestCheckRestoreNoLock(t *testing.T) {
 		})
 		OK(t, err)
 
-		cmdCheckNoLock(t, global)
+		global.NoLock = true
+		cmdCheck(t, global)
 
-		snapshotIDs := cmdListNoLock(t, global, "snapshots")
+		snapshotIDs := cmdList(t, global, "snapshots")
 		if len(snapshotIDs) == 0 {
 			t.Fatalf("found no snapshots")
 		}
 
-		cmdRestoreNoLock(t, global, filepath.Join(env.base, "restore"), snapshotIDs[0])
+		cmdRestore(t, global, filepath.Join(env.base, "restore"), snapshotIDs[0])
 	})
 }

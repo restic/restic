@@ -13,7 +13,6 @@ type CmdRestore struct {
 	Exclude []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
 	Include []string `short:"i" long:"include" description:"Include a pattern, exclude everything else (can be specified multiple times)"`
 	Target  string   `short:"t" long:"target"  description:"Directory to restore to"`
-	NoLock  bool     `          long:"no-lock" default:"false" description:"Do not lock repository, this allows restoring a read-only repo"`
 
 	global *GlobalOptions
 }
@@ -54,7 +53,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return err
 	}
 
-	if !cmd.NoLock {
+	if !cmd.global.NoLock {
 		lock, err := lockRepo(repo)
 		defer unlockRepo(lock)
 		if err != nil {

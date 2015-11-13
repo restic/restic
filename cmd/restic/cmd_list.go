@@ -8,8 +8,6 @@ import (
 )
 
 type CmdList struct {
-	NoLock bool `long:"no-lock" default:"false" description:"Do not lock repository, this allows listing a read-only repo"`
-
 	global *GlobalOptions
 }
 
@@ -37,7 +35,7 @@ func (cmd CmdList) Execute(args []string) error {
 		return err
 	}
 
-	if !cmd.NoLock {
+	if !cmd.global.NoLock {
 		lock, err := lockRepo(repo)
 		defer unlockRepo(lock)
 		if err != nil {
