@@ -24,6 +24,7 @@ type GlobalOptions struct {
 	Repo     string `short:"r" long:"repo"                      description:"Repository directory to backup to/restore from"`
 	CacheDir string `          long:"cache-dir"                 description:"Directory to use as a local cache"`
 	Quiet    bool   `short:"q" long:"quiet"     default:"false" description:"Do not output comprehensive progress report"`
+	NoLock   bool   `          long:"no-lock"   default:"false" description:"Do not lock the repo, this allows some operations on read-only repos."`
 
 	password string
 	stdout   io.Writer
