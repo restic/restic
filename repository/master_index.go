@@ -43,7 +43,7 @@ func (mi *MasterIndex) Lookup(id backend.ID) (blob PackedBlob, err error) {
 		blob, err = idx.Lookup(id)
 		if err == nil {
 			debug.Log("MasterIndex.Lookup",
-				"found id %v: %v", blob)
+				"found id %v: %v", id.Str(), blob)
 			return
 		}
 	}
