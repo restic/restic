@@ -47,30 +47,10 @@ afterwards you'll find the binary in the current directory:
     $ ./restic --help
     Usage:
       restic [OPTIONS] <command>
+    [...]
 
-    Application Options:
-      -r, --repo= Repository directory to backup to/restore from
-
-    Help Options:
-      -h, --help  Show this help message
-
-    Available commands:
-      backup     save file/directory
-      cache      manage cache
-      cat        dump something
-      check      check the repository
-      find       find a file/directory
-      init       create repository
-      key        manage keys
-      list       lists data
-      ls         list files
-      restore    restore a snapshot
-      snapshots  show snapshots
-      unlock     remove locks
-      version    display version
-
-A short demo recording can be found here:
-[![asciicast](https://asciinema.org/a/23554.png)](https://asciinema.org/a/23554)
+More documentation can be found on the [website](https://restic.github.io),
+especially in the [user manual](https://restic.github.io/manual).
 
 Compatibility
 =============
@@ -79,7 +59,8 @@ Backward compatibility for backups is important so that our users are always
 able to restore saved data. Therefore restic follows [Semantic
 Versioning](http://semver.org) to clearly define which versions are compatible.
 The repository and data structures contained therein are considered the "Public
-API" in the sense of Semantic Versioning.
+API" in the sense of Semantic Versioning. This goes for all released versions
+of restic, this may not be the case for the master branch.
 
 We guarantee backward compatibility of all repositories within one major version;
 as long as we do not increment the major version, data can be read and restored.
