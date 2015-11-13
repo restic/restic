@@ -47,30 +47,10 @@ afterwards you'll find the binary in the current directory:
     $ ./restic --help
     Usage:
       restic [OPTIONS] <command>
+    [...]
 
-    Application Options:
-      -r, --repo= Repository directory to backup to/restore from
-
-    Help Options:
-      -h, --help  Show this help message
-
-    Available commands:
-      backup     save file/directory
-      cache      manage cache
-      cat        dump something
-      check      check the repository
-      find       find a file/directory
-      init       create repository
-      key        manage keys
-      list       lists data
-      ls         list files
-      restore    restore a snapshot
-      snapshots  show snapshots
-      unlock     remove locks
-      version    display version
-
-A short demo recording can be found here:
-[![asciicast](https://asciinema.org/a/23554.png)](https://asciinema.org/a/23554)
+More documentation can be found on the [website](https://restic.github.io),
+especially in the [user manual](https://restic.github.io/manual).
 
 Compatibility
 =============
