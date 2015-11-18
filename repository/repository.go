@@ -9,9 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"sync"
 
-	"github.com/restic/chunker"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
@@ -26,8 +24,7 @@ type Repository struct {
 	keyName string
 	idx     *MasterIndex
 
-	pm    sync.Mutex
-	packs []*pack.Packer
+	*packerManager
 }
 
 // New returns a new repository with backend be.
@@ -35,6 +32,9 @@ func New(be backend.Backend) *Repository {
 	return &Repository{
 		be:  be,
 		idx: NewMasterIndex(),
+		packerManager: &packerManager{
+			be: be,
+		},
 	}
 }
 
@@ -216,90 +216,6 @@ func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface
 // LookupBlobSize returns the size of blob id.
 func (r *Repository) LookupBlobSize(id backend.ID) (uint, error) {
 	return r.idx.LookupSize(id)
-}
-
-const minPackSize = 4 * chunker.MiB
-const maxPackSize = 16 * chunker.MiB
-const maxPackers = 200
-
-// findPacker returns a packer for a new blob of size bytes. Either a new one is
-// created or one is returned that already has some blobs.
-func (r *Repository) findPacker(size uint) (*pack.Packer, error) {
-	r.pm.Lock()
-	defer r.pm.Unlock()
-
-	// search for a suitable packer
-	if len(r.packs) > 0 {
-		debug.Log("Repo.findPacker", "searching packer for %d bytes\n", size)
-		for i, p := range r.packs {
-			if p.Size()+size < maxPackSize {
-				debug.Log("Repo.findPacker", "found packer %v", p)
-				// remove from list
-				r.packs = append(r.packs[:i], r.packs[i+1:]...)
-				return p, nil
-			}
-		}
-	}
-
-	// no suitable packer found, return new
-	blob, err := r.be.Create()
-	if err != nil {
-		return nil, err
-	}
-	debug.Log("Repo.findPacker", "create new pack %p for %d bytes", blob, size)
-	return pack.NewPacker(r.key, blob), nil
-}
-
-// insertPacker appends p to s.packs.
-func (r *Repository) insertPacker(p *pack.Packer) {
-	r.pm.Lock()
-	defer r.pm.Unlock()
-
-	r.packs = append(r.packs, p)
-	debug.Log("Repo.insertPacker", "%d packers\n", len(r.packs))
-}
-
-// savePacker stores p in the backend.
-func (r *Repository) savePacker(p *pack.Packer) error {
-	debug.Log("Repo.savePacker", "save packer with %d blobs\n", p.Count())
-	_, err := p.Finalize()
-	if err != nil {
-		return err
-	}
-
-	// move file to the final location
-	sid := p.ID()
-	err = p.Writer().(backend.Blob).Finalize(backend.Data, sid.String())
-	if err != nil {
-		debug.Log("Repo.savePacker", "blob Finalize() error: %v", err)
-		return err
-	}
-
-	debug.Log("Repo.savePacker", "saved as %v", sid.Str())
-
-	// update blobs in the index
-	var packedBlobs []PackedBlob
-	for _, b := range p.Blobs() {
-		packedBlobs = append(packedBlobs, PackedBlob{
-			Type:   b.Type,
-			ID:     b.ID,
-			PackID: sid,
-			Offset: b.Offset,
-			Length: uint(b.Length),
-		})
-		r.idx.RemoveFromInFlight(b.ID)
-	}
-	r.idx.Current().StoreBlobs(packedBlobs)
-
-	return nil
-}
-
-// countPacker returns the number of open (unfinished) packers.
-func (r *Repository) countPacker() int {
-	r.pm.Lock()
-	defer r.pm.Unlock()
-
-	return len(r.packs)
 }
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data is small
@@ -628,35 +544,6 @@ func LoadIndex(repo *Repository, id string) (*Index, error) {
 	return nil, err
 }
 
-// decryptReadCloser couples an underlying reader with a DecryptReader and
-// implements io.ReadCloser. On Close(), both readers are closed.
-type decryptReadCloser struct {
-	r  io.ReadCloser
-	dr io.ReadCloser
-}
-
-func newDecryptReadCloser(key *crypto.Key, rd io.ReadCloser) (io.ReadCloser, error) {
-	dr, err := crypto.DecryptFrom(key, rd)
-	if err != nil {
-		return nil, err
-	}
-
-	return &decryptReadCloser{r: rd, dr: dr}, nil
-}
-
-func (dr *decryptReadCloser) Read(buf []byte) (int, error) {
-	return dr.dr.Read(buf)
-}
-
-func (dr *decryptReadCloser) Close() error {
-	err := dr.dr.Close()
-	if err != nil {
-		return err
-	}
-
-	return dr.r.Close()
-}
-
 // GetDecryptReader opens the file id stored in the backend and returns a
 // reader that yields the decrypted content. The reader must be closed.
 func (r *Repository) GetDecryptReader(t backend.Type, id string) (io.ReadCloser, error) {
@@ -677,6 +564,7 @@ func (r *Repository) SearchKey(password string) error {
 	}
 
 	r.key = key.master
+	r.packerManager.key = key.master
 	r.keyName = key.Name()
 	r.Config, err = LoadConfig(r)
 	return err
@@ -699,6 +587,7 @@ func (r *Repository) Init(password string) error {
 	}
 
 	r.key = key.master
+	r.packerManager.key = key.master
 	r.keyName = key.Name()
 	r.Config, err = CreateConfig(r)
 	return err
