@@ -143,19 +143,29 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byt
 	return plaintextBuf, nil
 }
 
+// closeOrErr calls cl.Close() and sets err to the returned error value if
+// itself is not yet set.
+func closeOrErr(cl io.Closer, err *error) {
+	e := cl.Close()
+	if *err != nil {
+		return
+	}
+	*err = e
+}
+
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
-func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) error {
+func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) (err error) {
 	// load blob from backend
 	rd, err := r.be.Get(t, id.String())
 	if err != nil {
 		return err
 	}
-	defer rd.Close()
+	defer closeOrErr(rd, &err)
 
 	// decrypt
 	decryptRd, err := crypto.DecryptFrom(r.key, rd)
-	defer decryptRd.Close()
+	defer closeOrErr(decryptRd, &err)
 	if err != nil {
 		return err
 	}
@@ -172,7 +182,7 @@ func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interf
 
 // LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
 // data and afterwards call json.Unmarshal on the item.
-func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) error {
+func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) (err error) {
 	// lookup pack
 	blob, err := r.idx.Lookup(id)
 	if err != nil {
@@ -184,11 +194,11 @@ func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface
 	if err != nil {
 		return err
 	}
-	defer rd.Close()
+	defer closeOrErr(rd, &err)
 
 	// decrypt
 	decryptRd, err := crypto.DecryptFrom(r.key, rd)
-	defer decryptRd.Close()
+	defer closeOrErr(decryptRd, &err)
 	if err != nil {
 		return err
 	}

@@ -129,7 +129,7 @@ func TestIndexSerialize(t *testing.T) {
 		"index not final after encoding")
 
 	id := randomID()
-	idx.SetID(id)
+	OK(t, idx.SetID(id))
 	id2, err := idx.ID()
 	Assert(t, id2.Equal(id),
 		"wrong ID returned: want %v, got %v", id, id2)

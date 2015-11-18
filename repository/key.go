@@ -112,23 +112,23 @@ func SearchKey(s *Repository, password string) (*Key, error) {
 }
 
 // LoadKey loads a key from the backend.
-func LoadKey(s *Repository, name string) (*Key, error) {
+func LoadKey(s *Repository, name string) (k *Key, err error) {
 	// extract data from repo
 	rd, err := s.be.Get(backend.Key, name)
 	if err != nil {
 		return nil, err
 	}
-	defer rd.Close()
+	defer closeOrErr(rd, &err)
 
 	// restore json
 	dec := json.NewDecoder(rd)
-	k := Key{}
-	err = dec.Decode(&k)
+	k = new(Key)
+	err = dec.Decode(k)
 	if err != nil {
 		return nil, err
 	}
 
-	return &k, nil
+	return k, nil
 }
 
 // AddKey adds a new key to an already existing repository.
