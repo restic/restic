@@ -268,9 +268,9 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	debug.Log("Repo.savePacker", "saved as %v", sid.Str())
 
 	// update blobs in the index
+	var packedBlobs []PackedBlob
 	for _, b := range p.Blobs() {
-		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), sid.Str())
-		r.idx.Current().Store(PackedBlob{
+		packedBlobs = append(packedBlobs, PackedBlob{
 			Type:   b.Type,
 			ID:     b.ID,
 			PackID: sid,
@@ -279,6 +279,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 		})
 		r.idx.RemoveFromInFlight(b.ID)
 	}
+	r.idx.Current().StoreBlobs(packedBlobs)
 
 	return nil
 }
