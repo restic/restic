@@ -78,10 +78,10 @@ The development environment is described in [`CONTRIBUTING.md`](CONTRIBUTING.md)
 Contact
 =======
 
-If you discover a bug or find something surprising, please feel free to [open a
-github issue](https://github.com/restic/restic/issues/new). If you would like
-to chat about restic, there is also the IRC channel #restic on
-irc.freenode.net. Or just write me an email :)
+If you discover a bug, find something surprising or if you would like to
+discuss or ask something, please [open a github issue](https://github.com/restic/restic/issues/new).
+If you would like to chat about restic, there is also the IRC channel #restic
+on irc.freenode.net.
 
 **Important**: If you discover something that you believe to be a possible critical
 security problem, please do *not* open a GitHub issue but send an email directly to
