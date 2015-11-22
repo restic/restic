@@ -151,7 +151,7 @@ func memGetReader(be *MemoryBackend, t Type, name string, offset, length uint) (
 		name = ""
 	}
 
-	debug.Log("MemoryBackend.GetReader", "get %v %v", t, name)
+	debug.Log("MemoryBackend.GetReader", "get %v %v offset %v len %v", t, name, offset, length)
 
 	if _, ok := be.data[entry{t, name}]; !ok {
 		return nil, errors.New("no such data")
@@ -164,11 +164,13 @@ func memGetReader(be *MemoryBackend, t Type, name string, offset, length uint) (
 
 	buf = buf[offset:]
 
-	if length > uint(len(buf)) {
-		length = uint(len(buf))
-	}
+	if length > 0 {
+		if length > uint(len(buf)) {
+			length = uint(len(buf))
+		}
 
-	buf = buf[:length]
+		buf = buf[:length]
+	}
 
 	return readCloser{bytes.NewReader(buf)}, nil
 }
