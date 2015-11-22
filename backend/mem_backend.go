@@ -57,6 +57,14 @@ func NewMemoryBackend() *MemoryBackend {
 		return memList(be, t, done)
 	}
 
+	be.MockBackend.DeleteFn = func() error {
+		be.m.Lock()
+		defer be.m.Unlock()
+
+		be.data = make(memMap)
+		return nil
+	}
+
 	debug.Log("MemoryBackend.New", "created new memory backend")
 
 	return be
@@ -107,7 +115,7 @@ func (e *tempMemEntry) Finalize(t Type, name string) error {
 		name = ""
 	}
 
-	debug.Log("MemoryBackend", "save blob %p as %v %v", e, t, name)
+	debug.Log("MemoryBackend", "save blob %p (%d bytes) as %v %v", e, len(e.data.Bytes()), t, name)
 	return e.be.insert(t, name, e.data.Bytes())
 }
 
