@@ -96,6 +96,11 @@ func testBackend(b backend.Backend, t *testing.T) {
 		err = b.Remove(tpe, test.id)
 		OK(t, err)
 
+		// test that the blob is gone
+		ok, err := b.Test(tpe, test.id)
+		OK(t, err)
+		Assert(t, ok == false, "removed blob still present")
+
 		// create blob
 		blob, err = b.Create()
 		OK(t, err)
