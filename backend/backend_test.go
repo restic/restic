@@ -12,7 +12,34 @@ import (
 	. "github.com/restic/restic/test"
 )
 
+func testBackendConfig(b backend.Backend, t *testing.T) {
+	// create config and read it back
+	_, err := b.Get(backend.Config, "")
+	Assert(t, err != nil, "did not get expected error for non-existing config")
+
+	blob, err := b.Create()
+	OK(t, err)
+
+	_, err = blob.Write([]byte("Config"))
+	OK(t, err)
+	OK(t, blob.Finalize(backend.Config, ""))
+
+	// try accessing the config with different names, should all return the
+	// same config
+	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
+		rd, err := b.Get(backend.Config, name)
+		Assert(t, err == nil, "unable to read config")
+
+		buf, err := ioutil.ReadAll(rd)
+		OK(t, err)
+		OK(t, rd.Close())
+		Assert(t, string(buf) == "Config", "wrong data returned for config")
+	}
+}
+
 func testBackend(b backend.Backend, t *testing.T) {
+	testBackendConfig(b, t)
+
 	for _, tpe := range []backend.Type{
 		backend.Data, backend.Key, backend.Lock,
 		backend.Snapshot, backend.Index,

@@ -103,11 +103,18 @@ func (e *tempMemEntry) Size() uint {
 }
 
 func (e *tempMemEntry) Finalize(t Type, name string) error {
+	if t == Config {
+		name = ""
+	}
+
+	debug.Log("MemoryBackend", "save blob %p as %v %v", e, t, name)
 	return e.be.insert(t, name, e.data.Bytes())
 }
 
 func memCreate(be *MemoryBackend) (Blob, error) {
-	return &tempMemEntry{be: be}, nil
+	blob := &tempMemEntry{be: be}
+	debug.Log("MemoryBackend.Create", "create new blob %p", blob)
+	return blob, nil
 }
 
 // readCloser wraps a reader and adds a noop Close method.
@@ -123,6 +130,10 @@ func memGet(be *MemoryBackend, t Type, name string) (io.ReadCloser, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
+	if t == Config {
+		name = ""
+	}
+
 	debug.Log("MemoryBackend.Get", "get %v %v", t, name)
 
 	if _, ok := be.data[entry{t, name}]; !ok {
@@ -135,6 +146,10 @@ func memGet(be *MemoryBackend, t Type, name string) (io.ReadCloser, error) {
 func memGetReader(be *MemoryBackend, t Type, name string, offset, length uint) (io.ReadCloser, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
+
+	if t == Config {
+		name = ""
+	}
 
 	debug.Log("MemoryBackend.GetReader", "get %v %v", t, name)
 
