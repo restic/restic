@@ -4,16 +4,18 @@ import (
 	"bytes"
 	"compress/bzip2"
 	"compress/gzip"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"testing"
+
+	mrand "math/rand"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/backend/local"
@@ -76,7 +78,7 @@ func ParseID(s string) backend.ID {
 func Random(seed, count int) []byte {
 	buf := make([]byte, count)
 
-	rnd := rand.New(rand.NewSource(int64(seed)))
+	rnd := mrand.New(mrand.NewSource(int64(seed)))
 	for i := 0; i < count; i++ {
 		buf[i] = byte(rnd.Uint32())
 	}
@@ -88,6 +90,14 @@ func Random(seed, count int) []byte {
 // derived from the seed.
 func RandomReader(seed, size int) *bytes.Reader {
 	return bytes.NewReader(Random(seed, size))
+}
+
+// GenRandom returns a []byte filled with up to 1000 random bytes.
+func GenRandom(t testing.TB) []byte {
+	buf := make([]byte, mrand.Intn(1000))
+	_, err := io.ReadFull(rand.Reader, buf)
+	OK(t, err)
+	return buf
 }
 
 // SetupTarTestFixture extracts the tarFile to outputDir.
