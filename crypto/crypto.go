@@ -233,6 +233,10 @@ var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for p
 // necessary. ciphertext and plaintext may not point to (exactly) the same
 // slice or non-intersecting slices.
 func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
+	if !ks.Valid() {
+		return nil, errors.New("invalid key")
+	}
+
 	ciphertext = ciphertext[:cap(ciphertext)]
 
 	// test for same slice, if possible
@@ -271,6 +275,10 @@ func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
 // IV || Ciphertext || MAC. plaintext and ciphertext may point to (exactly) the
 // same slice.
 func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error) {
+	if !ks.Valid() {
+		return nil, errors.New("invalid key")
+	}
+
 	// check for plausible length
 	if len(ciphertextWithMac) < ivSize+macSize {
 		panic("trying to decrypt invalid data: ciphertext too small")
