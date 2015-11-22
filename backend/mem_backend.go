@@ -6,6 +6,8 @@ import (
 	"io"
 	"sort"
 	"sync"
+
+	"github.com/restic/restic/debug"
 )
 
 type entry struct {
@@ -55,6 +57,8 @@ func NewMemoryBackend() *MemoryBackend {
 		return memList(be, t, done)
 	}
 
+	debug.Log("MemoryBackend.New", "created new memory backend")
+
 	return be
 }
 
@@ -73,6 +77,8 @@ func (be *MemoryBackend) insert(t Type, name string, data []byte) error {
 func memTest(be *MemoryBackend, t Type, name string) (bool, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
+
+	debug.Log("MemoryBackend.Test", "test %v %v", t, name)
 
 	if _, ok := be.data[entry{t, name}]; ok {
 		return true, nil
@@ -117,6 +123,8 @@ func memGet(be *MemoryBackend, t Type, name string) (io.ReadCloser, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
+	debug.Log("MemoryBackend.Get", "get %v %v", t, name)
+
 	if _, ok := be.data[entry{t, name}]; !ok {
 		return nil, errors.New("no such data")
 	}
@@ -127,6 +135,8 @@ func memGet(be *MemoryBackend, t Type, name string) (io.ReadCloser, error) {
 func memGetReader(be *MemoryBackend, t Type, name string, offset, length uint) (io.ReadCloser, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
+
+	debug.Log("MemoryBackend.GetReader", "get %v %v", t, name)
 
 	if _, ok := be.data[entry{t, name}]; !ok {
 		return nil, errors.New("no such data")
@@ -152,6 +162,8 @@ func memRemove(be *MemoryBackend, t Type, name string) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
+	debug.Log("MemoryBackend.Remove", "get %v %v", t, name)
+
 	if _, ok := be.data[entry{t, name}]; !ok {
 		return errors.New("no such data")
 	}
@@ -176,6 +188,8 @@ func memList(be *MemoryBackend, t Type, done <-chan struct{}) <-chan string {
 	}
 
 	sort.Strings(ids)
+
+	debug.Log("MemoryBackend.List", "list %v: %v", t, ids)
 
 	go func() {
 		defer close(ch)
