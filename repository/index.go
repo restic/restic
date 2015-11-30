@@ -556,7 +556,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (*Index, error) {
+func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (idx *Index, err error) {
 	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
 
 	idxID, err := backend.ParseID(id)
@@ -568,9 +568,9 @@ func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Inde
 	if err != nil {
 		return nil, err
 	}
-	defer rd.Close()
+	defer closeOrErr(rd, &err)
 
-	idx, err := fn(rd)
+	idx, err = fn(rd)
 	if err != nil {
 		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
 		return nil, err
