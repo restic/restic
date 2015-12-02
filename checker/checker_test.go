@@ -1,10 +1,13 @@
 package checker_test
 
 import (
+	"io"
+	"math/rand"
 	"path/filepath"
 	"sort"
 	"testing"
 
+	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/checker"
 	"github.com/restic/restic/repository"
@@ -24,13 +27,13 @@ func list(repo *repository.Repository, t backend.Type) (IDs []string) {
 	return IDs
 }
 
-func checkPacks(chkr *checker.Checker) (errs []error) {
+func collectErrors(f func(chan<- error, <-chan struct{})) (errs []error) {
 	done := make(chan struct{})
 	defer close(done)
 
 	errChan := make(chan error)
 
-	go chkr.Packs(errChan, done)
+	go f(errChan, done)
 
 	for err := range errChan {
 		errs = append(errs, err)
@@ -39,19 +42,16 @@ func checkPacks(chkr *checker.Checker) (errs []error) {
 	return errs
 }
 
-func checkStruct(chkr *checker.Checker) (errs []error) {
-	done := make(chan struct{})
-	defer close(done)
+func checkPacks(chkr *checker.Checker) []error {
+	return collectErrors(chkr.Packs)
+}
 
-	errChan := make(chan error)
+func checkStruct(chkr *checker.Checker) []error {
+	return collectErrors(chkr.Structure)
+}
 
-	go chkr.Structure(errChan, done)
-
-	for err := range errChan {
-		errs = append(errs, err)
-	}
-
-	return errs
+func checkData(chkr *checker.Checker) []error {
+	return collectErrors(chkr.ReadData)
 }
 
 func TestCheckRepo(t *testing.T) {
@@ -203,4 +203,103 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 		}
 
 	})
+}
+
+// errorBackend randomly modifies data after reading.
+type errorBackend struct {
+	backend.Backend
+}
+
+func (b errorBackend) Get(t backend.Type, name string) (io.ReadCloser, error) {
+	rd, err := b.Backend.Get(t, name)
+	if err != nil {
+		return rd, err
+	}
+
+	if t != backend.Data {
+		return rd, err
+	}
+
+	return backend.ReadCloser(faultReader{rd}), nil
+}
+
+func (b errorBackend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
+	rd, err := b.Backend.GetReader(t, name, offset, length)
+	if err != nil {
+		return rd, err
+	}
+
+	if t != backend.Data {
+		return rd, err
+	}
+
+	return backend.ReadCloser(faultReader{rd}), nil
+}
+
+// induceError flips a bit in the slice.
+func induceError(data []byte) {
+	if rand.Float32() < 0.8 {
+		return
+	}
+
+	pos := rand.Intn(len(data))
+	data[pos] ^= 1
+}
+
+// faultReader wraps a reader and randomly modifies data on read.
+type faultReader struct {
+	rd io.Reader
+}
+
+func (f faultReader) Read(p []byte) (int, error) {
+	n, err := f.rd.Read(p)
+	if n > 0 {
+		induceError(p)
+	}
+
+	return n, err
+}
+
+func TestCheckerModifiedData(t *testing.T) {
+	be := backend.NewMemoryBackend()
+
+	repo := repository.New(be)
+	OK(t, repo.Init(TestPassword))
+
+	arch := restic.NewArchiver(repo)
+	_, id, err := arch.Snapshot(nil, []string{"."}, nil)
+	OK(t, err)
+	t.Logf("archived as %v", id.Str())
+
+	checkRepo := repository.New(errorBackend{be})
+	OK(t, checkRepo.SearchKey(TestPassword))
+
+	chkr := checker.New(checkRepo)
+
+	hints, errs := chkr.LoadIndex()
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
+
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+
+	errFound := false
+	for _, err := range checkPacks(chkr) {
+		t.Logf("pack error: %v", err)
+	}
+
+	for _, err := range checkStruct(chkr) {
+		t.Logf("struct error: %v", err)
+	}
+
+	for _, err := range checkData(chkr) {
+		t.Logf("struct error: %v", err)
+		errFound = true
+	}
+
+	if !errFound {
+		t.Fatal("no error found, checker is broken")
+	}
 }

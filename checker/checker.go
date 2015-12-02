@@ -1,13 +1,17 @@
 package checker
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"sync"
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/debug"
+	"github.com/restic/restic/pack"
 	"github.com/restic/restic/repository"
 )
 
@@ -335,7 +339,7 @@ type TreeError struct {
 }
 
 func (e TreeError) Error() string {
-	return fmt.Sprintf("%v: %d errors", e.ID.String(), len(e.Errors))
+	return fmt.Sprintf("tree %v: %v", e.ID.Str(), e.Errors)
 }
 
 type treeJob struct {
@@ -633,4 +637,74 @@ func (c *Checker) UnusedBlobs() (blobs backend.IDs) {
 // OrphanedPacks returns a slice of unused packs (only available after Packs() was run).
 func (c *Checker) OrphanedPacks() backend.IDs {
 	return c.orphanedPacks
+}
+
+// checkPack reads a pack and checks the integrity of all blobs.
+func checkPack(r *repository.Repository, id backend.ID) error {
+	debug.Log("Checker.checkPack", "checking pack %v", id.Str())
+	rd, err := r.Backend().Get(backend.Data, id.String())
+	if err != nil {
+		return err
+	}
+
+	buf, err := ioutil.ReadAll(rd)
+	if err != nil {
+		return err
+	}
+
+	err = rd.Close()
+	if err != nil {
+		return err
+	}
+
+	unpacker, err := pack.NewUnpacker(r.Key(), bytes.NewReader(buf))
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for i, blob := range unpacker.Entries {
+		debug.Log("Checker.checkPack", "  check blob %d: %v", i, blob.ID.Str())
+
+		plainBuf := make([]byte, blob.Length)
+		plainBuf, err = crypto.Decrypt(r.Key(), plainBuf, buf[blob.Offset:blob.Offset+blob.Length])
+		if err != nil {
+			debug.Log("Checker.checkPack", "  error decrypting blob %v: %v", blob.ID.Str(), err)
+			errs = append(errs, fmt.Errorf("blob %v: %v", i, err))
+			continue
+		}
+
+		hash := backend.Hash(plainBuf)
+		if !hash.Equal(blob.ID) {
+			debug.Log("Checker.checkPack", "  ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
+			errs = append(errs, fmt.Errorf("ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
+			continue
+		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("pack %v contains %v errors: %v", id.Str(), len(errs), errs)
+	}
+
+	return nil
+}
+
+// ReadData loads all data from the repository and checks the integrity.
+func (c *Checker) ReadData(errChan chan<- error, done <-chan struct{}) {
+	defer close(errChan)
+
+	for packID := range c.repo.List(backend.Data, done) {
+		debug.Log("Checker.ReadData", "checking pack %v", packID.Str())
+
+		err := checkPack(c.repo, packID)
+		if err == nil {
+			continue
+		}
+
+		select {
+		case <-done:
+			return
+		case errChan <- err:
+		}
+	}
 }
