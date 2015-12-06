@@ -29,41 +29,70 @@ type S3Backend struct {
 	bucketname string
 }
 
-// Open opens the S3 backend at bucket and region.
-func Open(regionname, bucketname string) (backend.Backend, error) {
+func getConfig(region, bucket string) minio.Config {
 	config := minio.Config{
 		AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 		SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		Region:          "us-east-1",
 	}
 
-	if !strings.Contains(regionname, ".") {
+	if !strings.Contains(region, ".") {
 		// Amazon region name
-		switch regionname {
+		switch region {
 		case "us-east-1":
 			config.Endpoint = "https://s3.amazonaws.com"
 		default:
-			config.Endpoint = "https://s3-" + regionname + ".amazonaws.com"
+			config.Endpoint = "https://s3-" + region + ".amazonaws.com"
+			config.Region = region
 		}
 	} else {
-		// S3 compatible endpoint
-		if strings.Contains(regionname, "localhost") || strings.Contains(regionname, "127.0.0.1") {
-			config.Endpoint = "http://" + regionname
+		// S3 compatible endpoint, use default region "us-east-1"
+		if strings.Contains(region, "localhost") || strings.Contains(region, "127.0.0.1") {
+			config.Endpoint = "http://" + region
 		} else {
-			config.Endpoint = "https://" + regionname
+			config.Endpoint = "https://" + region
 		}
 	}
 
-	s3api, s3err := minio.New(config)
-	if s3err != nil {
-		return nil, s3err
+	return config
+}
+
+// Open opens the S3 backend at bucket and region.
+func Open(regionname, bucketname string) (backend.Backend, error) {
+	s3api, err := minio.New(getConfig(regionname, bucketname))
+	if err != nil {
+		return nil, err
 	}
 
-	connChan := make(chan struct{}, connLimit)
+	be := &S3Backend{s3api: s3api, bucketname: bucketname}
+	be.createConnections()
+
+	return be, nil
+}
+
+// Create creates a new bucket in the given region and opens the backend.
+func Create(regionname, bucketname string) (backend.Backend, error) {
+	s3api, err := minio.New(getConfig(regionname, bucketname))
+	if err != nil {
+		return nil, err
+	}
+
+	be := &S3Backend{s3api: s3api, bucketname: bucketname}
+	be.createConnections()
+
+	err = s3api.MakeBucket(bucketname, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return be, nil
+}
+
+func (be *S3Backend) createConnections() {
+	be.connChan = make(chan struct{}, connLimit)
 	for i := 0; i < connLimit; i++ {
-		connChan <- struct{}{}
+		be.connChan <- struct{}{}
 	}
-
-	return &S3Backend{s3api: s3api, bucketname: bucketname, connChan: connChan}, nil
 }
 
 // Location returns this backend's location (the bucket name).
@@ -112,7 +141,7 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	// Check key does not already exist
 	_, err := bb.b.s3api.StatObject(bb.b.bucketname, path)
 	if err == nil {
-		return errors.New("key already exists!")
+		return errors.New("key already exists")
 	}
 
 	<-bb.b.connChan
@@ -197,24 +226,42 @@ func (be *S3Backend) List(t backend.Type, done <-chan struct{}) <-chan string {
 	return ch
 }
 
-// Remove keys for a specified backend type
-func (be *S3Backend) removeKeys(t backend.Type) {
-	doneChan := make(chan struct{})
-	for key := range be.List(backend.Data, doneChan) {
-		be.Remove(backend.Data, key)
+// Remove keys for a specified backend type.
+func (be *S3Backend) removeKeys(t backend.Type) error {
+	done := make(chan struct{})
+	defer close(done)
+	for key := range be.List(backend.Data, done) {
+		err := be.Remove(backend.Data, key)
+		if err != nil {
+			return err
+		}
 	}
-	close(doneChan)
+
+	return nil
 }
 
-// Delete removes all restic keys
+// Delete removes all restic keys and the bucket.
 func (be *S3Backend) Delete() error {
-	be.removeKeys(backend.Data)
-	be.removeKeys(backend.Key)
-	be.removeKeys(backend.Lock)
-	be.removeKeys(backend.Snapshot)
-	be.removeKeys(backend.Index)
-	be.removeKeys(backend.Config)
-	return nil
+	alltypes := []backend.Type{
+		backend.Data,
+		backend.Key,
+		backend.Lock,
+		backend.Snapshot,
+		backend.Index}
+
+	for _, t := range alltypes {
+		err := be.removeKeys(t)
+		if err != nil {
+			return nil
+		}
+	}
+
+	err := be.Remove(backend.Config, "")
+	if err != nil {
+		return err
+	}
+
+	return be.s3api.RemoveBucket(be.bucketname)
 }
 
 // Close does nothing
