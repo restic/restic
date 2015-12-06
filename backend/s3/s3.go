@@ -203,7 +203,7 @@ func (be *S3Backend) removeKeys(t backend.Type) {
 	for key := range be.List(backend.Data, doneChan) {
 		be.Remove(backend.Data, key)
 	}
-	doneChan <- struct{}{}
+	close(doneChan)
 }
 
 // Delete removes all restic keys
