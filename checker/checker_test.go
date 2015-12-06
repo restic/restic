@@ -51,7 +51,11 @@ func checkStruct(chkr *checker.Checker) []error {
 }
 
 func checkData(chkr *checker.Checker) []error {
-	return collectErrors(chkr.ReadData)
+	return collectErrors(
+		func(errCh chan<- error, done <-chan struct{}) {
+			chkr.ReadData(nil, errCh, done)
+		},
+	)
 }
 
 func TestCheckRepo(t *testing.T) {
