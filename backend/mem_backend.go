@@ -125,6 +125,11 @@ func memCreate(be *MemoryBackend) (Blob, error) {
 	return blob, nil
 }
 
+// ReadCloser wraps a reader and adds a noop Close method.
+func ReadCloser(rd io.Reader) io.ReadCloser {
+	return readCloser{rd}
+}
+
 // readCloser wraps a reader and adds a noop Close method.
 type readCloser struct {
 	io.Reader
