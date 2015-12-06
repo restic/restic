@@ -1,54 +1,34 @@
 package backend_test
 
 import (
+	"os"
 	"testing"
 
-	"gopkg.in/amz.v3/aws"
-	"gopkg.in/amz.v3/s3"
-	"gopkg.in/amz.v3/s3/s3test"
-
+	"github.com/minio/minio-go"
 	bes3 "github.com/restic/restic/backend/s3"
 	. "github.com/restic/restic/test"
 )
 
-type LocalServer struct {
-	auth   aws.Auth
-	region aws.Region
-	srv    *s3test.Server
-	config *s3test.Config
-}
-
-var s LocalServer
-
-func setupS3Backend(t *testing.T) *bes3.S3Backend {
-	s.config = &s3test.Config{
-		Send409Conflict: true,
-	}
-	srv, err := s3test.NewServer(s.config)
-	OK(t, err)
-	s.srv = srv
-
-	s.region = aws.Region{
-		Name:                 "faux-region-1",
-		S3Endpoint:           srv.URL(),
-		S3LocationConstraint: true, // s3test server requires a LocationConstraint
-	}
-
-	s.auth = aws.Auth{"abc", "123"}
-
-	service := s3.New(s.auth, s.region)
-	bucket, berr := service.Bucket("testbucket")
-	OK(t, berr)
-	err = bucket.PutBucket("private")
-	OK(t, err)
-
-	t.Logf("created s3 backend locally")
-
-	return bes3.OpenS3Bucket(bucket, "testbucket")
-}
-
 func TestS3Backend(t *testing.T) {
-	s := setupS3Backend(t)
+	config := minio.Config{
+		AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
+		SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		Endpoint:        "http://localhost:9000",
+	}
+	s3Client, err := minio.New(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bucketname := "restictestbucket"
+
+	err = s3Client.MakeBucket(bucketname, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	s, err := bes3.Open("127.0.0.1:9000", bucketname)
+	OK(t, err)
 
 	testBackend(s, t)
 }
