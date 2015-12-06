@@ -4,7 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
+	"golang.org/x/crypto/ssh/terminal"
+
+	"github.com/restic/restic"
 	"github.com/restic/restic/checker"
 )
 
@@ -27,6 +31,37 @@ func init() {
 
 func (cmd CmdCheck) Usage() string {
 	return "[check-options]"
+}
+
+func (cmd CmdCheck) newReadProgress(todo restic.Stat) *restic.Progress {
+	if !cmd.global.ShowProgress() {
+		return nil
+	}
+
+	readProgress := restic.NewProgress(time.Second)
+
+	readProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		status := fmt.Sprintf("[%s] %s  %d / %d items",
+			formatDuration(d),
+			formatPercent(s.Blobs, todo.Blobs),
+			s.Blobs, todo.Blobs)
+
+		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+		if err == nil {
+			if len(status) > w {
+				max := w - len(status) - 4
+				status = status[:max] + "... "
+			}
+		}
+
+		fmt.Printf("\x1b[2K%s\r", status)
+	}
+
+	readProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
+		fmt.Printf("\nduration: %s\n", formatDuration(d))
+	}
+
+	return readProgress
 }
 
 func (cmd CmdCheck) Execute(args []string) error {
@@ -110,11 +145,12 @@ func (cmd CmdCheck) Execute(args []string) error {
 	}
 
 	if cmd.ReadData {
-		cmd.global.Verbosef("reading all data\n")
+		cmd.global.Verbosef("Read all data\n")
 
+		p := cmd.newReadProgress(restic.Stat{Blobs: chkr.CountPacks()})
 		errChan := make(chan error)
 
-		go chkr.ReadData(errChan, done)
+		go chkr.ReadData(p, errChan, done)
 
 		for err := range errChan {
 			errorsFound = true

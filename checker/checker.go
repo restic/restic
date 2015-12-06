@@ -639,6 +639,11 @@ func (c *Checker) OrphanedPacks() backend.IDs {
 	return c.orphanedPacks
 }
 
+// CountPacks returns the number of packs in the repository.
+func (c *Checker) CountPacks() uint64 {
+	return uint64(len(c.packs))
+}
+
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(r *repository.Repository, id backend.ID) error {
 	debug.Log("Checker.checkPack", "checking pack %v", id.Str())
@@ -690,8 +695,11 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 }
 
 // ReadData loads all data from the repository and checks the integrity.
-func (c *Checker) ReadData(errChan chan<- error, done <-chan struct{}) {
+func (c *Checker) ReadData(p *restic.Progress, errChan chan<- error, done <-chan struct{}) {
 	defer close(errChan)
+
+	p.Start()
+	defer p.Done()
 
 	worker := func(wg *sync.WaitGroup, in <-chan backend.ID) {
 		defer wg.Done()
@@ -709,6 +717,7 @@ func (c *Checker) ReadData(errChan chan<- error, done <-chan struct{}) {
 			}
 
 			err := checkPack(c.repo, id)
+			p.Report(restic.Stat{Blobs: 1})
 			if err == nil {
 				continue
 			}
