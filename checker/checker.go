@@ -693,18 +693,41 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 func (c *Checker) ReadData(errChan chan<- error, done <-chan struct{}) {
 	defer close(errChan)
 
-	for packID := range c.repo.List(backend.Data, done) {
-		debug.Log("Checker.ReadData", "checking pack %v", packID.Str())
+	worker := func(wg *sync.WaitGroup, in <-chan backend.ID) {
+		defer wg.Done()
+		for {
+			var id backend.ID
+			var ok bool
 
-		err := checkPack(c.repo, packID)
-		if err == nil {
-			continue
-		}
+			select {
+			case <-done:
+				return
+			case id, ok = <-in:
+				if !ok {
+					return
+				}
+			}
 
-		select {
-		case <-done:
-			return
-		case errChan <- err:
+			err := checkPack(c.repo, id)
+			if err == nil {
+				continue
+			}
+
+			select {
+			case <-done:
+				return
+			case errChan <- err:
+			}
 		}
 	}
+
+	ch := c.repo.List(backend.Data, done)
+
+	var wg sync.WaitGroup
+	for i := 0; i < defaultParallelism; i++ {
+		wg.Add(1)
+		go worker(&wg, ch)
+	}
+
+	wg.Wait()
 }

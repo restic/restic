@@ -109,6 +109,19 @@ func (cmd CmdCheck) Execute(args []string) error {
 		}
 	}
 
+	if cmd.ReadData {
+		cmd.global.Verbosef("reading all data\n")
+
+		errChan := make(chan error)
+
+		go chkr.ReadData(errChan, done)
+
+		for err := range errChan {
+			errorsFound = true
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
+	}
+
 	if errorsFound {
 		return errors.New("repository contains errors")
 	}
