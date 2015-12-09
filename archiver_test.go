@@ -245,7 +245,7 @@ func BenchmarkLoadTree(t *testing.B) {
 // Saves several identical chunks concurrently and later checks that there are no
 // unreferenced packs in the repository. See also #292 and #358.
 func TestParallelSaveWithDuplication(t *testing.T) {
-	for seed := 0; seed < 5; seed++ {
+	for seed := 0; seed < 10; seed++ {
 		testParallelSaveWithDuplication(t, seed)
 	}
 }
@@ -254,7 +254,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
-	dataSizeMb := 92
+	dataSizeMb := 128
 	duplication := 7
 
 	arch := restic.NewArchiver(repo)
