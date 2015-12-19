@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -65,6 +66,20 @@ func (env *TravisEnvironment) Prepare() {
 	}
 }
 
+func goVersionAtLeast151() bool {
+	v := runtime.Version()
+
+	if match, _ := regexp.MatchString(`^go1\.[0-4]`, v); match {
+		return false
+	}
+
+	if v == "go1.5" {
+		return false
+	}
+
+	return true
+}
+
 func (env *TravisEnvironment) RunTests() {
 	// run fuse tests on darwin
 	if runtime.GOOS != "darwin" {
@@ -85,19 +100,31 @@ func (env *TravisEnvironment) RunTests() {
 	// run the build script
 	run("go", "run", "build.go")
 
-	minioCmd, err := runMinio()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
-		os.Exit(8)
+	var (
+		testEnv  map[string]string
+		minioCmd *exec.Cmd
+		err      error
+	)
+
+	if goVersionAtLeast151() {
+		minioCmd, err = runMinio()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
+			os.Exit(8)
+		}
+
+		testEnv = minioEnv
 	}
 
 	// run the tests and gather coverage information
-	runWithEnv(minioEnv, "gotestcover", "-coverprofile", "all.cov", "./...")
+	runWithEnv(testEnv, "gotestcover", "-coverprofile", "all.cov", "./...")
 
-	err = minioCmd.Process.Kill()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error stopping minio server: %v", err)
-		os.Exit(8)
+	if minioCmd != nil {
+		err := minioCmd.Process.Kill()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error stopping minio server: %v", err)
+			os.Exit(8)
+		}
 	}
 
 	runGofmt()
@@ -261,19 +288,17 @@ func runMinio() (*exec.Cmd, error) {
 		return nil, err
 	}
 
-	// logfile, err := os.Create(filepath.Join(cfgdir, "output"))
-	// if err != nil {
-	// 	return nil, err
-	// }
+	logfile, err := os.Create(filepath.Join(cfgdir, "output"))
+	if err != nil {
+		return nil, err
+	}
 
 	cmd := exec.Command("minio",
 		"--config-folder", cfgdir,
 		"--address", "127.0.0.1:9000",
 		"server", dir)
-	// cmd.Stdout = logfile
-	// cmd.Stderr = logfile
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = logfile
+	cmd.Stderr = logfile
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
