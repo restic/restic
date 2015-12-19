@@ -240,7 +240,7 @@ func (be *S3Backend) removeKeys(t backend.Type) error {
 	return nil
 }
 
-// Delete removes all restic keys and the bucket.
+// Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *S3Backend) Delete() error {
 	alltypes := []backend.Type{
 		backend.Data,
@@ -256,12 +256,7 @@ func (be *S3Backend) Delete() error {
 		}
 	}
 
-	err := be.Remove(backend.Config, "")
-	if err != nil {
-		return err
-	}
-
-	return be.s3api.RemoveBucket(be.bucketname)
+	return be.Remove(backend.Config, "")
 }
 
 // Close does nothing
