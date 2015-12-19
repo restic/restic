@@ -12,7 +12,11 @@ type deleter interface {
 }
 
 func TestS3Backend(t *testing.T) {
-	be, err := s3.Open("127.0.0.1:9000", "restictestbucket")
+	if TestS3Server == "" {
+		t.Skip("s3 test server not available")
+	}
+
+	be, err := s3.Open(TestS3Server, "restictestbucket")
 	OK(t, err)
 
 	testBackend(be, t)

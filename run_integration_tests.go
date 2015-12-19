@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,6 +22,10 @@ type TravisEnvironment struct {
 	goxOS   []string
 }
 
+var envVendorExperiment = map[string]string{
+	"GO15VENDOREXPERIMENT": "1",
+}
+
 func (env *TravisEnvironment) Prepare() {
 	msg("preparing environment for Travis CI\n")
 
@@ -28,6 +33,7 @@ func (env *TravisEnvironment) Prepare() {
 	run("go", "get", "github.com/mattn/goveralls")
 	run("go", "get", "github.com/pierrre/gotestcover")
 	run("go", "get", "github.com/mitchellh/gox")
+	runWithEnv(envVendorExperiment, "go", "get", "github.com/minio/minio")
 
 	if runtime.GOOS == "darwin" {
 		// install the libraries necessary for fuse
@@ -79,8 +85,20 @@ func (env *TravisEnvironment) RunTests() {
 	// run the build script
 	run("go", "run", "build.go")
 
-	// run tests and gather coverage information
-	run("gotestcover", "-coverprofile", "all.cov", "./...")
+	minioCmd, err := runMinio()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
+		os.Exit(4)
+	}
+
+	// run the tests and gather coverage information
+	runWithEnv(minioEnv, "gotestcover", "-coverprofile", "all.cov", "./...")
+
+	err = minioCmd.Process.Kill()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error stopping minio server: %v", err)
+		os.Exit(4)
+	}
 
 	runGofmt()
 }
@@ -89,6 +107,7 @@ type AppveyorEnvironment struct{}
 
 func (env *AppveyorEnvironment) Prepare() {
 	msg("preparing environment for Appveyor CI\n")
+	runWithEnv(envVendorExperiment, "go", "get", "github.com/minio/minio")
 }
 
 func (env *AppveyorEnvironment) RunTests() {
@@ -119,6 +138,26 @@ func findGoFiles(dir string) (list []string, err error) {
 
 func msg(format string, args ...interface{}) {
 	fmt.Printf("CI: "+format, args...)
+}
+
+func updateEnv(env []string, override map[string]string) []string {
+	var newEnv []string
+	for _, s := range env {
+		d := strings.SplitN(s, "=", 2)
+		key := d[0]
+
+		if _, ok := override[key]; ok {
+			continue
+		}
+
+		newEnv = append(newEnv, s)
+	}
+
+	for k, v := range override {
+		newEnv = append(newEnv, k+"="+v)
+	}
+
+	return newEnv
 }
 
 func runGofmt() {
@@ -155,9 +194,19 @@ func runGofmt() {
 
 func run(command string, args ...string) {
 	msg("run %v %v\n", command, strings.Join(args, " "))
+	runWithEnv(nil, command, args...)
+}
+
+// runWithEnv calls a command with the current environment, except the entries
+// of the env map are set additionally.
+func runWithEnv(env map[string]string, command string, args ...string) {
+	msg("runWithEnv %v %v\n", command, strings.Join(args, " "))
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if env != nil {
+		cmd.Env = updateEnv(os.Environ(), env)
+	}
 	err := cmd.Run()
 
 	if err != nil {
@@ -165,6 +214,66 @@ func run(command string, args ...string) {
 			command, strings.Join(args, " "), err)
 		os.Exit(3)
 	}
+}
+
+var minioConfig = `
+{
+	"version": "2",
+	"credentials": {
+		"accessKeyId": "KEBIYDZ87HCIH5D17YCN",
+		"secretAccessKey": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe"
+	}
+}
+`
+
+var minioEnv = map[string]string{
+	"RESTIC_TEST_S3_SERVER": "127.0.0.1:9000",
+	"AWS_ACCESS_KEY_ID":     "KEBIYDZ87HCIH5D17YCN",
+	"AWS_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
+}
+
+// runMinio prepares and runs a minio server for the s3 backend tests in a
+// temporary directory.
+func runMinio() (*exec.Cmd, error) {
+	cfgdir, err := ioutil.TempDir("", "minio-config-")
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := os.Create(filepath.Join(cfgdir, "config.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = cfg.Write([]byte(minioConfig))
+	if err != nil {
+		return nil, err
+	}
+
+	err = cfg.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	dir, err := ioutil.TempDir("", "minio-root")
+	if err != nil {
+		return nil, err
+	}
+
+	logfile, err := os.Create(filepath.Join(cfgdir, "output"))
+	if err != nil {
+		return nil, err
+	}
+
+	cmd := exec.Command("minio", "--config-folder", cfgdir, "server", dir)
+	cmd.Stdout = logfile
+	cmd.Stderr = logfile
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	return cmd, nil
 }
 
 func isTravis() bool {
