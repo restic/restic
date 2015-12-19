@@ -57,21 +57,8 @@ func getConfig(region, bucket string) minio.Config {
 	return config
 }
 
-// Open opens the S3 backend at bucket and region.
+// Open opens the S3 backend at bucket and region. The bucket is created if it does not exist yet.
 func Open(regionname, bucketname string) (backend.Backend, error) {
-	s3api, err := minio.New(getConfig(regionname, bucketname))
-	if err != nil {
-		return nil, err
-	}
-
-	be := &S3Backend{s3api: s3api, bucketname: bucketname}
-	be.createConnections()
-
-	return be, nil
-}
-
-// Create creates a new bucket in the given region and opens the backend.
-func Create(regionname, bucketname string) (backend.Backend, error) {
 	s3api, err := minio.New(getConfig(regionname, bucketname))
 	if err != nil {
 		return nil, err

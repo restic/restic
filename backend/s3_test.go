@@ -12,7 +12,7 @@ type deleter interface {
 }
 
 func TestS3Backend(t *testing.T) {
-	be, err := s3.Create("127.0.0.1:9000", "restictestbucket")
+	be, err := s3.Open("127.0.0.1:9000", "restictestbucket")
 	OK(t, err)
 
 	testBackend(be, t)
