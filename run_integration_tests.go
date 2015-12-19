@@ -72,6 +72,7 @@ func (env *TravisEnvironment) RunTests() {
 			"-os", strings.Join(env.goxOS, " "),
 			"-arch", strings.Join(env.goxArch, " "),
 			"-tags", tags,
+			"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
 			"./cmd/restic")
 	}
 
