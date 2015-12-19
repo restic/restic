@@ -88,7 +88,7 @@ func (env *TravisEnvironment) RunTests() {
 	minioCmd, err := runMinio()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
-		os.Exit(4)
+		os.Exit(8)
 	}
 
 	// run the tests and gather coverage information
@@ -97,7 +97,7 @@ func (env *TravisEnvironment) RunTests() {
 	err = minioCmd.Process.Kill()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error stopping minio server: %v", err)
-		os.Exit(4)
+		os.Exit(8)
 	}
 
 	runGofmt()
@@ -261,17 +261,19 @@ func runMinio() (*exec.Cmd, error) {
 		return nil, err
 	}
 
-	logfile, err := os.Create(filepath.Join(cfgdir, "output"))
-	if err != nil {
-		return nil, err
-	}
+	// logfile, err := os.Create(filepath.Join(cfgdir, "output"))
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	cmd := exec.Command("minio",
 		"--config-folder", cfgdir,
 		"--address", "127.0.0.1:9000",
 		"server", dir)
-	cmd.Stdout = logfile
-	cmd.Stderr = logfile
+	// cmd.Stdout = logfile
+	// cmd.Stderr = logfile
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
