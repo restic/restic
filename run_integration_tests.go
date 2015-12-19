@@ -235,6 +235,7 @@ var minioEnv = map[string]string{
 // runMinio prepares and runs a minio server for the s3 backend tests in a
 // temporary directory.
 func runMinio() (*exec.Cmd, error) {
+	msg("running minio server\n")
 	cfgdir, err := ioutil.TempDir("", "minio-config-")
 	if err != nil {
 		return nil, err
@@ -265,7 +266,10 @@ func runMinio() (*exec.Cmd, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command("minio", "--config-folder", cfgdir, "server", dir)
+	cmd := exec.Command("minio",
+		"--config-folder", cfgdir,
+		"--address", "127.0.0.1:9000",
+		"server", dir)
 	cmd.Stdout = logfile
 	cmd.Stderr = logfile
 	err = cmd.Start()
