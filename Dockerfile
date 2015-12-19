@@ -20,7 +20,7 @@ ARG GOARCH=amd64
 
 # install dependencies
 RUN apt-get update
-RUN apt-get install -y --no-install-recommends ca-certificates wget git
+RUN apt-get install -y --no-install-recommends ca-certificates wget git build-essential
 
 # download and install Go
 RUN wget -q -O /tmp/go.tar.gz https://storage.googleapis.com/golang/go${GOVERSION}.linux-${GOARCH}.tar.gz
@@ -47,6 +47,7 @@ RUN mkdir -p $GOPATH/src/github.com/restic/restic
 RUN go get golang.org/x/tools/cmd/cover
 RUN go get github.com/mattn/goveralls
 RUN go get github.com/mitchellh/gox
+RUN GO15VENDOREXPERIMENT=1 go get github.com/minio/minio
 
 # set TRAVIS_BUILD_DIR for integration script
 ENV TRAVIS_BUILD_DIR $GOPATH/src/github.com/restic/restic
