@@ -22,25 +22,23 @@ ARG GOARCH=amd64
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends ca-certificates wget git build-essential
 
-# download and install Go
-RUN wget -q -O /tmp/go.tar.gz https://storage.googleapis.com/golang/go${GOVERSION}.linux-${GOARCH}.tar.gz
-RUN cd /var/lib && tar xf /tmp/go.tar.gz
-RUN rm -f /tmp/go.tar.gz
-
-ENV GOROOT /var/lib/go
-ENV PATH $PATH:$GOROOT/bin
-
 # add and configure user
 ENV HOME /home/travis
-ENV GOPATH $HOME/gopath
-ENV PATH $PATH:$GOPATH/bin
 RUN useradd -m -d $HOME -s /bin/bash travis
 
 # run everything below as user travis
 USER travis
 WORKDIR $HOME
 
-# make gopath
+# download and install Go
+RUN wget -q -O /tmp/go.tar.gz https://storage.googleapis.com/golang/go${GOVERSION}.linux-${GOARCH}.tar.gz
+RUN tar xf /tmp/go.tar.gz && rm -f /tmp/go.tar.gz
+ENV GOROOT $HOME/go
+ENV PATH $PATH:$GOROOT/bin
+
+ENV GOPATH $HOME/gopath
+ENV PATH $PATH:$GOPATH/bin
+
 RUN mkdir -p $GOPATH/src/github.com/restic/restic
 
 # install tools
