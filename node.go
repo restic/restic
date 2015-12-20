@@ -67,10 +67,11 @@ func (node Node) Tree() *Tree {
 
 // NodeFromFileInfo returns a new node from the given path and FileInfo.
 func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
+	mask := os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky
 	node := &Node{
 		path:    path,
 		Name:    fi.Name(),
-		Mode:    fi.Mode() & (os.ModePerm | os.ModeType),
+		Mode:    fi.Mode() & mask,
 		ModTime: fi.ModTime(),
 	}
 

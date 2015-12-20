@@ -84,12 +84,45 @@ var nodeTests = []restic.Node{
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
 	},
 	restic.Node{
+		Name:       "testSuidFile",
+		Type:       "file",
+		Content:    []backend.ID{},
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0755 | os.ModeSetuid,
+		ModTime:    parseTime("2015-05-14 21:07:23.111"),
+		AccessTime: parseTime("2015-05-14 21:07:24.222"),
+		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
+	},
+	restic.Node{
+		Name:       "testSuidFile2",
+		Type:       "file",
+		Content:    []backend.ID{},
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0755 | os.ModeSetgid,
+		ModTime:    parseTime("2015-05-14 21:07:23.111"),
+		AccessTime: parseTime("2015-05-14 21:07:24.222"),
+		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
+	},
+	restic.Node{
+		Name:       "testSticky",
+		Type:       "file",
+		Content:    []backend.ID{},
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0755 | os.ModeSticky,
+		ModTime:    parseTime("2015-05-14 21:07:23.111"),
+		AccessTime: parseTime("2015-05-14 21:07:24.222"),
+		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
+	},
+	restic.Node{
 		Name:       "testDir",
 		Type:       "dir",
 		Subtree:    nil,
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
-		Mode:       020000000750,
+		Mode:       0750 | os.ModeDir,
 		ModTime:    parseTime("2015-05-14 21:07:23.111"),
 		AccessTime: parseTime("2015-05-14 21:07:24.222"),
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
@@ -100,7 +133,7 @@ var nodeTests = []restic.Node{
 		LinkTarget: "invalid",
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
-		Mode:       01000000777,
+		Mode:       0777 | os.ModeSymlink,
 		ModTime:    parseTime("2015-05-14 21:07:23.111"),
 		AccessTime: parseTime("2015-05-14 21:07:24.222"),
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
@@ -150,7 +183,7 @@ func TestNodeRestoreAt(t *testing.T) {
 				"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
 			if test.Type != "symlink" {
 				Assert(t, test.Mode == n2.Mode,
-					"%v: mode doesn't match (%v != %v)", test.Type, test.Mode, n2.Mode)
+					"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
 			}
 		}
 
