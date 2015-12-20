@@ -5,7 +5,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,6 +12,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 )
 
 type CIEnvironment interface {
@@ -82,6 +82,12 @@ func goVersionAtLeast151() bool {
 	return true
 }
 
+type MinioServer struct {
+	cmd  *exec.Cmd
+	done bool
+	m    sync.Mutex
+}
+
 func (env *TravisEnvironment) RunTests() {
 	// run fuse tests on darwin
 	if runtime.GOOS != "darwin" {
@@ -103,13 +109,13 @@ func (env *TravisEnvironment) RunTests() {
 	run("go", "run", "build.go")
 
 	var (
-		testEnv  map[string]string
-		minioCmd *exec.Cmd
-		err      error
+		testEnv map[string]string
+		srv     *MinioServer
+		err     error
 	)
 
 	if goVersionAtLeast151() {
-		minioCmd, err = runMinio()
+		srv, err = NewMinioServer()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
 			os.Exit(8)
@@ -121,15 +127,9 @@ func (env *TravisEnvironment) RunTests() {
 	// run the tests and gather coverage information
 	runWithEnv(testEnv, "gotestcover", "-coverprofile", "all.cov", "./...")
 
-	if minioCmd != nil {
-		err := minioCmd.Process.Kill()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error stopping minio server: %v", err)
-			os.Exit(8)
-		}
-	}
-
 	runGofmt()
+
+	srv.Stop()
 }
 
 type AppveyorEnvironment struct{}
@@ -261,9 +261,9 @@ var minioEnv = map[string]string{
 	"AWS_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
 }
 
-// runMinio prepares and runs a minio server for the s3 backend tests in a
-// temporary directory.
-func runMinio() (*exec.Cmd, error) {
+// NewMinioServer prepares and runs a minio server for the s3 backend tests in
+// a temporary directory.
+func NewMinioServer() (*MinioServer, error) {
 	msg("running minio server\n")
 	cfgdir, err := ioutil.TempDir("", "minio-config-")
 	if err != nil {
@@ -303,16 +303,40 @@ func runMinio() (*exec.Cmd, error) {
 		return nil, err
 	}
 
-	go func() {
-		err := cmd.Wait()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error running minio server: %v, output:\n", err)
-			io.Copy(os.Stderr, out)
-			os.Exit(12)
-		}
-	}()
+	srv := &MinioServer{cmd: cmd}
+	go srv.Wait()
 
-	return cmd, nil
+	return srv, nil
+}
+
+func (m *MinioServer) Stop() {
+	if m == nil {
+		return
+	}
+
+	msg("stopping minio server\n")
+	m.m.Lock()
+	m.done = true
+	m.m.Unlock()
+	err := m.cmd.Process.Kill()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error stopping minio server: %v", err)
+		os.Exit(8)
+	}
+}
+
+func (m *MinioServer) Wait() {
+	err := m.cmd.Wait()
+	msg("minio server exited\n")
+	m.m.Lock()
+	done := m.done
+	m.m.Unlock()
+
+	if err != nil && !done {
+		fmt.Fprintf(os.Stderr, "error running minio server: %#v, output:\n", err)
+		// io.Copy(os.Stderr, out)
+		os.Exit(12)
+	}
 }
 
 func isTravis() bool {
