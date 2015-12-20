@@ -3,7 +3,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -288,21 +290,27 @@ func runMinio() (*exec.Cmd, error) {
 		return nil, err
 	}
 
-	logfile, err := os.Create(filepath.Join(cfgdir, "output"))
-	if err != nil {
-		return nil, err
-	}
+	out := bytes.NewBuffer(nil)
 
 	cmd := exec.Command("minio",
 		"--config-folder", cfgdir,
 		"--address", "127.0.0.1:9000",
 		"server", dir)
-	cmd.Stdout = logfile
-	cmd.Stderr = logfile
+	cmd.Stdout = out
+	cmd.Stderr = out
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
 	}
+
+	go func() {
+		err := cmd.Wait()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error running minio server: %v, output:\n", err)
+			io.Copy(os.Stderr, out)
+			os.Exit(12)
+		}
+	}()
 
 	return cmd, nil
 }
