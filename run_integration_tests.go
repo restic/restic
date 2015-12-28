@@ -256,7 +256,7 @@ var minioConfig = `
 `
 
 var minioEnv = map[string]string{
-	"RESTIC_TEST_S3_SERVER": "127.0.0.1:9000",
+	"RESTIC_TEST_S3_SERVER": "http://127.0.0.1:9000",
 	"AWS_ACCESS_KEY_ID":     "KEBIYDZ87HCIH5D17YCN",
 	"AWS_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
 }
