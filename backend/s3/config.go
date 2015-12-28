@@ -2,13 +2,15 @@ package s3
 
 import (
 	"errors"
+	"net/url"
 	"strings"
 )
 
 // Config contains all configuration necessary to connect to an s3 compatible
 // server.
 type Config struct {
-	Host          string
+	Region        string
+	URL           string
 	KeyID, Secret string
 	Bucket        string
 }
@@ -26,15 +28,15 @@ func ParseConfig(s string) (interface{}, error) {
 		}
 
 		cfg := Config{
-			Host:   data[0],
+			Region: data[0],
 			Bucket: data[1],
 		}
 
 		return cfg, nil
 	}
 
-	data := strings.SplitN(s, ":", 3)
-	if len(data) != 3 {
+	data := strings.SplitN(s, ":", 2)
+	if len(data) != 2 {
 		return nil, errors.New("s3: invalid format")
 	}
 
@@ -42,9 +44,35 @@ func ParseConfig(s string) (interface{}, error) {
 		return nil, errors.New(`s3: config does not start with "s3"`)
 	}
 
-	cfg := Config{
-		Host:   data[1],
-		Bucket: data[2],
+	s = data[1]
+
+	cfg := Config{}
+	rest := strings.Split(s, "/")
+	if len(rest) < 2 {
+		return nil, errors.New("s3: region or bucket not found")
+	}
+
+	if len(rest) == 2 {
+		// assume that just a region name and a bucket has been specified, in
+		// the format region/bucket
+		cfg.Region = rest[0]
+		cfg.Bucket = rest[1]
+	} else {
+		// assume that a URL has been specified, parse it and use the path as
+		// the bucket name.
+		url, err := url.Parse(s)
+		if err != nil {
+			return nil, err
+		}
+
+		if url.Path == "" {
+			return nil, errors.New("s3: bucket name not found")
+		}
+
+		cfg.Bucket = url.Path[1:]
+		url.Path = ""
+
+		cfg.URL = url.String()
 	}
 
 	return cfg, nil

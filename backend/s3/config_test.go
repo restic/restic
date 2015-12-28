@@ -7,11 +7,19 @@ var configTests = []struct {
 	cfg Config
 }{
 	{"s3://eu-central-1/bucketname", Config{
-		Host:   "eu-central-1",
+		Region: "eu-central-1",
 		Bucket: "bucketname",
 	}},
-	{"s3:hostname:foobar", Config{
-		Host:   "hostname",
+	{"s3:eu-central-1/foobar", Config{
+		Region: "eu-central-1",
+		Bucket: "foobar",
+	}},
+	{"s3:https://hostname:9999/foobar", Config{
+		URL:    "https://hostname:9999",
+		Bucket: "foobar",
+	}},
+	{"s3:http://hostname:9999/foobar", Config{
+		URL:    "http://hostname:9999",
 		Bucket: "foobar",
 	}},
 }

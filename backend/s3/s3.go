@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/minio/minio-go"
@@ -29,45 +28,32 @@ type S3Backend struct {
 	bucketname string
 }
 
-func getConfig(region, bucket string) minio.Config {
-	config := minio.Config{
-		AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
-		SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
-		Region:          "us-east-1",
-	}
-
-	if !strings.Contains(region, ".") {
-		// Amazon region name
-		switch region {
-		case "us-east-1":
-			config.Endpoint = "https://s3.amazonaws.com"
-		default:
-			config.Endpoint = "https://s3-" + region + ".amazonaws.com"
-			config.Region = region
-		}
-	} else {
-		// S3 compatible endpoint, use default region "us-east-1"
-		if strings.Contains(region, "localhost") || strings.Contains(region, "127.0.0.1") {
-			config.Endpoint = "http://" + region
-		} else {
-			config.Endpoint = "https://" + region
-		}
-	}
-
-	return config
-}
-
 // Open opens the S3 backend at bucket and region. The bucket is created if it does not exist yet.
-func Open(regionname, bucketname string) (backend.Backend, error) {
-	s3api, err := minio.New(getConfig(regionname, bucketname))
+func Open(cfg Config) (backend.Backend, error) {
+	mcfg := minio.Config{
+		AccessKeyID:     cfg.KeyID,
+		SecretAccessKey: cfg.Secret,
+	}
+
+	if cfg.URL != "" {
+		mcfg.Endpoint = cfg.URL
+	} else {
+		mcfg.Region = cfg.Region
+	}
+
+	if mcfg.Region == "" {
+		mcfg.Region = "us-east-1"
+	}
+
+	s3api, err := minio.New(mcfg)
 	if err != nil {
 		return nil, err
 	}
 
-	be := &S3Backend{s3api: s3api, bucketname: bucketname}
+	be := &S3Backend{s3api: s3api, bucketname: cfg.Bucket}
 	be.createConnections()
 
-	err = s3api.MakeBucket(bucketname, "")
+	err = s3api.MakeBucket(cfg.Bucket, "")
 	if err != nil {
 		return nil, err
 	}

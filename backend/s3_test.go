@@ -1,6 +1,7 @@
 package backend_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/restic/restic/backend/s3"
@@ -16,7 +17,12 @@ func TestS3Backend(t *testing.T) {
 		t.Skip("s3 test server not available")
 	}
 
-	be, err := s3.Open(TestS3Server, "restictestbucket")
+	be, err := s3.Open(s3.Config{
+		URL:    TestS3Server,
+		Bucket: "restictestbucket",
+		KeyID:  os.Getenv("AWS_ACCESS_KEY_ID"),
+		Secret: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+	})
 	OK(t, err)
 
 	testBackend(be, t)
