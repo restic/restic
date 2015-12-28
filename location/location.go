@@ -1,5 +1,5 @@
-// Package uri implements parsing the restic repository location from a string.
-package uri
+// Package location implements parsing the restic repository location from a string.
+package location
 
 import (
 	"strings"
@@ -9,9 +9,9 @@ import (
 	"github.com/restic/restic/backend/sftp"
 )
 
-// URI specifies the location of a repository, including the method of access
-// and (possibly) credentials needed for access.
-type URI struct {
+// Location specifies the location of a repository, including the method of
+// access and (possibly) credentials needed for access.
+type Location struct {
 	Scheme string
 	Config interface{}
 }
@@ -29,11 +29,11 @@ var parsers = []parser{
 	{"s3", s3.ParseConfig},
 }
 
-// ParseURI parses a repository location from the string s. If s starts with a
+// ParseLocation parses a repository location from the string s. If s starts with a
 // backend name followed by a colon, that backend's Parse() function is called.
 // Otherwise, the local backend is used which interprets s as the name of a
 // directory.
-func ParseURI(s string) (u URI, err error) {
+func ParseLocation(s string) (u Location, err error) {
 	scheme := extractScheme(s)
 	u.Scheme = scheme
 
@@ -44,7 +44,7 @@ func ParseURI(s string) (u URI, err error) {
 
 		u.Config, err = parser.parse(s)
 		if err != nil {
-			return URI{}, err
+			return Location{}, err
 		}
 
 		return u, nil
@@ -54,7 +54,7 @@ func ParseURI(s string) (u URI, err error) {
 	u.Scheme = "local"
 	u.Config, err = local.ParseConfig("local:" + s)
 	if err != nil {
-		return URI{}, err
+		return Location{}, err
 	}
 
 	return u, nil

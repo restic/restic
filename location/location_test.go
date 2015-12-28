@@ -1,4 +1,4 @@
-package uri
+package location
 
 import (
 	"reflect"
@@ -10,53 +10,53 @@ import (
 
 var parseTests = []struct {
 	s string
-	u URI
+	u Location
 }{
-	{"local:/srv/repo", URI{Scheme: "local", Config: "/srv/repo"}},
-	{"local:dir1/dir2", URI{Scheme: "local", Config: "dir1/dir2"}},
-	{"local:dir1/dir2", URI{Scheme: "local", Config: "dir1/dir2"}},
-	{"dir1/dir2", URI{Scheme: "local", Config: "dir1/dir2"}},
-	{"local:../dir1/dir2", URI{Scheme: "local", Config: "../dir1/dir2"}},
-	{"/dir1/dir2", URI{Scheme: "local", Config: "/dir1/dir2"}},
+	{"local:/srv/repo", Location{Scheme: "local", Config: "/srv/repo"}},
+	{"local:dir1/dir2", Location{Scheme: "local", Config: "dir1/dir2"}},
+	{"local:dir1/dir2", Location{Scheme: "local", Config: "dir1/dir2"}},
+	{"dir1/dir2", Location{Scheme: "local", Config: "dir1/dir2"}},
+	{"local:../dir1/dir2", Location{Scheme: "local", Config: "../dir1/dir2"}},
+	{"/dir1/dir2", Location{Scheme: "local", Config: "/dir1/dir2"}},
 
-	{"sftp:user@host:/srv/repo", URI{Scheme: "sftp",
+	{"sftp:user@host:/srv/repo", Location{Scheme: "sftp",
 		Config: sftp.Config{
 			User: "user",
 			Host: "host",
 			Dir:  "/srv/repo",
 		}}},
-	{"sftp:host:/srv/repo", URI{Scheme: "sftp",
+	{"sftp:host:/srv/repo", Location{Scheme: "sftp",
 		Config: sftp.Config{
 			User: "",
 			Host: "host",
 			Dir:  "/srv/repo",
 		}}},
-	{"sftp://user@host/srv/repo", URI{Scheme: "sftp",
+	{"sftp://user@host/srv/repo", Location{Scheme: "sftp",
 		Config: sftp.Config{
 			User: "user",
 			Host: "host",
 			Dir:  "srv/repo",
 		}}},
-	{"sftp://user@host//srv/repo", URI{Scheme: "sftp",
+	{"sftp://user@host//srv/repo", Location{Scheme: "sftp",
 		Config: sftp.Config{
 			User: "user",
 			Host: "host",
 			Dir:  "/srv/repo",
 		}}},
 
-	{"s3://eu-central-1/bucketname", URI{Scheme: "s3",
+	{"s3://eu-central-1/bucketname", Location{Scheme: "s3",
 		Config: s3.Config{
 			Host:   "eu-central-1",
 			Bucket: "bucketname",
 		}},
 	},
-	{"s3://hostname.foo/bucketname", URI{Scheme: "s3",
+	{"s3://hostname.foo/bucketname", Location{Scheme: "s3",
 		Config: s3.Config{
 			Host:   "hostname.foo",
 			Bucket: "bucketname",
 		}},
 	},
-	{"s3:hostname.foo:repo", URI{Scheme: "s3",
+	{"s3:hostname.foo:repo", Location{Scheme: "s3",
 		Config: s3.Config{
 			Host:   "hostname.foo",
 			Bucket: "repo",
@@ -64,9 +64,9 @@ var parseTests = []struct {
 	},
 }
 
-func TestParseURI(t *testing.T) {
+func TestParseLocation(t *testing.T) {
 	for i, test := range parseTests {
-		u, err := ParseURI(test.s)
+		u, err := ParseLocation(test.s)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			continue

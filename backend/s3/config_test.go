@@ -2,7 +2,7 @@ package s3
 
 import "testing"
 
-var uriTests = []struct {
+var configTests = []struct {
 	s   string
 	cfg Config
 }{
@@ -17,7 +17,7 @@ var uriTests = []struct {
 }
 
 func TestParseConfig(t *testing.T) {
-	for i, test := range uriTests {
+	for i, test := range configTests {
 		cfg, err := ParseConfig(test.s)
 		if err != nil {
 			t.Errorf("test %d failed: %v", i, err)
