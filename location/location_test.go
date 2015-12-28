@@ -64,9 +64,9 @@ var parseTests = []struct {
 	},
 }
 
-func TestParseLocation(t *testing.T) {
+func TestParse(t *testing.T) {
 	for i, test := range parseTests {
-		u, err := ParseLocation(test.s)
+		u, err := Parse(test.s)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			continue

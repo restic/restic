@@ -29,11 +29,11 @@ var parsers = []parser{
 	{"s3", s3.ParseConfig},
 }
 
-// ParseLocation parses a repository location from the string s. If s starts with a
-// backend name followed by a colon, that backend's Parse() function is called.
-// Otherwise, the local backend is used which interprets s as the name of a
-// directory.
-func ParseLocation(s string) (u Location, err error) {
+// Parse extracts repository location information from the string s. If s
+// starts with a backend name followed by a colon, that backend's Parse()
+// function is called. Otherwise, the local backend is used which interprets s
+// as the name of a directory.
+func Parse(s string) (u Location, err error) {
 	scheme := extractScheme(s)
 	u.Scheme = scheme
 
