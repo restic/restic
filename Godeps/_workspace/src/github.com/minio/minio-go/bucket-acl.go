@@ -16,10 +16,10 @@
 
 package minio
 
-// BucketACL - bucket level access control
+// BucketACL - bucket level access control.
 type BucketACL string
 
-// different types of ACL's currently supported for buckets
+// Different types of ACL's currently supported for buckets.
 const (
 	bucketPrivate       = BucketACL("private")
 	bucketReadOnly      = BucketACL("public-read")
@@ -27,7 +27,7 @@ const (
 	bucketAuthenticated = BucketACL("authenticated-read")
 )
 
-// String printer helper
+// Stringify acl.
 func (b BucketACL) String() string {
 	if string(b) == "" {
 		return "private"
@@ -35,7 +35,7 @@ func (b BucketACL) String() string {
 	return string(b)
 }
 
-// isValidBucketACL - is provided acl string supported
+// isValidBucketACL - is provided acl string supported.
 func (b BucketACL) isValidBucketACL() bool {
 	switch true {
 	case b.isPrivate():
@@ -54,22 +54,22 @@ func (b BucketACL) isValidBucketACL() bool {
 	}
 }
 
-// IsPrivate - is acl Private
+// isPrivate - is acl Private.
 func (b BucketACL) isPrivate() bool {
 	return b == bucketPrivate
 }
 
-// IsPublicRead - is acl PublicRead
+// isPublicRead - is acl PublicRead.
 func (b BucketACL) isReadOnly() bool {
 	return b == bucketReadOnly
 }
 
-// IsPublicReadWrite - is acl PublicReadWrite
+// isPublicReadWrite - is acl PublicReadWrite.
 func (b BucketACL) isPublic() bool {
 	return b == bucketPublic
 }
 
-// IsAuthenticated - is acl AuthenticatedRead
+// isAuthenticated - is acl AuthenticatedRead.
 func (b BucketACL) isAuthenticated() bool {
 	return b == bucketAuthenticated
 }

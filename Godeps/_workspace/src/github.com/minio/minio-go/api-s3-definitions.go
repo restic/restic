@@ -90,8 +90,8 @@ type initiator struct {
 	DisplayName string
 }
 
-// partMetadata container for particular part of an object
-type partMetadata struct {
+// objectPart container for particular part of an object
+type objectPart struct {
 	// Part number identifies the part.
 	PartNumber int
 
@@ -103,6 +103,9 @@ type partMetadata struct {
 
 	// Size of the uploaded part data.
 	Size int64
+
+	// Error
+	Err error
 }
 
 // listObjectPartsResult container for ListObjectParts response.
@@ -121,7 +124,7 @@ type listObjectPartsResult struct {
 
 	// Indicates whether the returned list of parts is truncated.
 	IsTruncated bool
-	Parts       []partMetadata `xml:"Part"`
+	ObjectParts []objectPart `xml:"Part"`
 
 	EncodingType string
 }
@@ -162,7 +165,9 @@ type createBucketConfiguration struct {
 	Location string   `xml:"LocationConstraint"`
 }
 
+// grant container for the grantee and his or her permissions.
 type grant struct {
+	// grantee container for DisplayName and ID of the person being granted permissions.
 	Grantee struct {
 		ID           string
 		DisplayName  string
@@ -173,7 +178,9 @@ type grant struct {
 	Permission string
 }
 
+// accessControlPolicy contains the elements providing ACL permissions for a bucket.
 type accessControlPolicy struct {
+	// accessControlList container for ACL information.
 	AccessControlList struct {
 		Grant []grant
 	}

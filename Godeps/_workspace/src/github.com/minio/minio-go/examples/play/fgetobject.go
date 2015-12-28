@@ -19,33 +19,26 @@
 package main
 
 import (
-	"io"
 	"log"
-	"os"
 
 	"github.com/minio/minio-go"
 )
 
 func main() {
-	config := minio.Config{
-		Endpoint: "https://play.minio.io:9000",
-	}
-	s3Client, err := minio.New(config)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	reader, stat, err := s3Client.GetPartialObject("mybucket", "myobject", 0, 10)
+	// Note: my-bucketname, my-objectname and my-filename.csv are dummy values, please replace them with original values.
+
+	// Requests are always secure by default. set inSecure=true to enable insecure access.
+	// inSecure boolean is the last argument for New().
+
+	// New provides a client object backend by automatically detected signature type based
+	// on the provider.
+	s3Client, err := minio.New("play.minio.io:9002", "Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG", false)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	localfile, err := os.Create("testfile")
-	if err != nil {
+	if err := s3Client.FGetObject("bucket-name", "objectName", "fileName.csv"); err != nil {
 		log.Fatalln(err)
 	}
-	defer localfile.Close()
-
-	if _, err = io.CopyN(localfile, reader, stat.Size); err != nil {
-		log.Fatalln(err)
-	}
+	log.Println("Successfully saved fileName.csv")
 }

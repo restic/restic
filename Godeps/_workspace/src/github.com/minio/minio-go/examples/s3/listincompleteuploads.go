@@ -19,26 +19,39 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/minio/minio-go"
 )
 
 func main() {
-	config := minio.Config{
-		AccessKeyID:     "YOUR-ACCESS-KEY-HERE",
-		SecretAccessKey: "YOUR-PASSWORD-HERE",
-		Endpoint:        "https://s3.amazonaws.com",
-	}
-	s3Client, err := minio.New(config)
+	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefixname
+	// are dummy values, please replace them with original values.
+
+	// Requests are always secure (HTTPS) by default. Set insecure=true to enable insecure (HTTP) access.
+	// This boolean value is the last argument for New().
+
+	// New returns an Amazon S3 compatible client object. API copatibality (v2 or v4) is automatically
+	// determined based on the Endpoint value.
+	s3Client, err := minio.New("s3.amazonaws.com", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", false)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// Recursive
-	for multipartObject := range s3Client.ListIncompleteUploads("mybucket", "myobject", true) {
+
+	// Create a done channel to control 'ListObjects' go routine.
+	doneCh := make(struct{})
+
+	// Indicate to our routine to exit cleanly upon return.
+	defer close(doneCh)
+
+	// List all multipart uploads from a bucket-name with a matching prefix.
+	for multipartObject := range s3Client.ListIncompleteUploads("my-bucketname", "my-prefixname", true, doneCh) {
 		if multipartObject.Err != nil {
-			log.Fatalln(multipartObject.Err)
+			fmt.Println(multipartObject.Err)
+			return
 		}
-		log.Println(multipartObject)
+		fmt.Println(multipartObject)
 	}
+	return
 }

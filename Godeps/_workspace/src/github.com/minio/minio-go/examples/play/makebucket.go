@@ -25,14 +25,19 @@ import (
 )
 
 func main() {
-	config := minio.Config{
-		Endpoint: "https://play.minio.io:9000",
-	}
-	s3Client, err := minio.New(config)
+	// Note: my-bucketname is a dummy value, please replace them with original value.
+
+	// Requests are always secure by default. set inSecure=true to enable insecure access.
+	// inSecure boolean is the last argument for New().
+
+	// New provides a client object backend by automatically detected signature type based
+	// on the provider.
+	s3Client, err := minio.New("play.minio.io:9002", "Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG", false)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	err = s3Client.MakeBucket("mybucket", "")
+
+	err = s3Client.MakeBucket("my-bucketname", minio.BucketACL("private"), "us-east-1")
 	if err != nil {
 		log.Fatalln(err)
 	}

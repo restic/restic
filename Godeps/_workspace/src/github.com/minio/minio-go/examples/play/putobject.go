@@ -26,27 +26,28 @@ import (
 )
 
 func main() {
-	config := minio.Config{
-		Endpoint: "https://play.minio.io:9000",
-	}
-	s3Client, err := minio.New(config)
+	// Note: my-bucketname, my-objectname and my-testfile are dummy values, please replace them with original values.
+
+	// Requests are always secure by default. set inSecure=true to enable insecure access.
+	// inSecure boolean is the last argument for New().
+
+	// New provides a client object backend by automatically detected signature type based
+	// on the provider.
+	s3Client, err := minio.New("play.minio.io:9002", "Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG", false)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	object, err := os.Open("testfile")
+
+	object, err := os.Open("my-testfile")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer object.Close()
-	objectInfo, err := object.Stat()
-	if err != nil {
-		object.Close()
-		log.Fatalln(err)
-	}
 
-	err = s3Client.PutObject("mybucket", "myobject", "application/octet-stream", objectInfo.Size(), object)
+	st, _ := object.Stat()
+	n, err := s3Client.PutObject("my-bucketname", "my-objectname", object, st.Size(), "application/octet-stream")
 	if err != nil {
 		log.Fatalln(err)
 	}
-
+	log.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
 }

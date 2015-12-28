@@ -17,25 +17,25 @@
 package minio
 
 import (
-	"strings"
+	"net/url"
 	"testing"
 )
 
 func TestSignature(t *testing.T) {
-	conf := new(Config)
-	if !conf.Signature.isLatest() {
-		t.Fatalf("Error")
+	clnt := Client{}
+	if !clnt.signature.isV4() {
+		t.Fatal("Error")
 	}
-	conf.Signature = SignatureV2
-	if !conf.Signature.isV2() {
-		t.Fatalf("Error")
+	clnt.signature = SignatureV2
+	if !clnt.signature.isV2() {
+		t.Fatal("Error")
 	}
-	if conf.Signature.isV4() {
-		t.Fatalf("Error")
+	if clnt.signature.isV4() {
+		t.Fatal("Error")
 	}
-	conf.Signature = SignatureV4
-	if !conf.Signature.isV4() {
-		t.Fatalf("Error")
+	clnt.signature = SignatureV4
+	if !clnt.signature.isV4() {
+		t.Fatal("Error")
 	}
 }
 
@@ -54,36 +54,17 @@ func TestACLTypes(t *testing.T) {
 	}
 }
 
-func TestUserAgent(t *testing.T) {
-	conf := new(Config)
-	conf.SetUserAgent("minio", "1.0", "amd64")
-	if !strings.Contains(conf.userAgent, "minio") {
-		t.Fatalf("Error")
-	}
-}
-
-func TestGetRegion(t *testing.T) {
-	region := getRegion("s3.amazonaws.com")
-	if region != "us-east-1" {
-		t.Fatalf("Error")
-	}
-	region = getRegion("localhost:9000")
-	if region != "milkyway" {
-		t.Fatalf("Error")
-	}
-}
-
 func TestPartSize(t *testing.T) {
 	var maxPartSize int64 = 1024 * 1024 * 1024 * 5
-	partSize := calculatePartSize(5000000000000000000)
+	partSize := optimalPartSize(5000000000000000000)
 	if partSize > minimumPartSize {
 		if partSize > maxPartSize {
-			t.Fatal("invalid result, cannot be bigger than maxPartSize 5GB")
+			t.Fatal("invalid result, cannot be bigger than maxPartSize 5GiB")
 		}
 	}
-	partSize = calculatePartSize(50000000000)
+	partSize = optimalPartSize(50000000000)
 	if partSize > minimumPartSize {
-		t.Fatal("invalid result, cannot be bigger than minimumPartSize 5MB")
+		t.Fatal("invalid result, cannot be bigger than minimumPartSize 5MiB")
 	}
 }
 
@@ -121,8 +102,148 @@ func TestURLEncoding(t *testing.T) {
 	}
 
 	for _, u := range want {
-		if u.encodedName != getURLEncodedPath(u.name) {
-			t.Errorf("Error")
+		if u.encodedName != urlEncodePath(u.name) {
+			t.Fatal("Error")
+		}
+	}
+}
+
+func TestGetEndpointURL(t *testing.T) {
+	if _, err := getEndpointURL("s3.amazonaws.com", false); err != nil {
+		t.Fatal("Error:", err)
+	}
+	if _, err := getEndpointURL("192.168.1.1", false); err != nil {
+		t.Fatal("Error:", err)
+	}
+	if _, err := getEndpointURL("13333.123123.-", false); err == nil {
+		t.Fatal("Error")
+	}
+	if _, err := getEndpointURL("s3.aamzza.-", false); err == nil {
+		t.Fatal("Error")
+	}
+	if _, err := getEndpointURL("s3.amazonaws.com:443", false); err == nil {
+		t.Fatal("Error")
+	}
+}
+
+func TestValidIP(t *testing.T) {
+	type validIP struct {
+		ip    string
+		valid bool
+	}
+
+	want := []validIP{
+		{
+			ip:    "192.168.1.1",
+			valid: true,
+		},
+		{
+			ip:    "192.1.8",
+			valid: false,
+		},
+		{
+			ip:    "..192.",
+			valid: false,
+		},
+		{
+			ip:    "192.168.1.1.1",
+			valid: false,
+		},
+	}
+	for _, w := range want {
+		valid := isValidIP(w.ip)
+		if valid != w.valid {
+			t.Fatal("Error")
+		}
+	}
+}
+
+func TestValidEndpointDomain(t *testing.T) {
+	type validEndpoint struct {
+		endpointDomain string
+		valid          bool
+	}
+
+	want := []validEndpoint{
+		{
+			endpointDomain: "s3.amazonaws.com",
+			valid:          true,
+		},
+		{
+			endpointDomain: "s3.amazonaws.com_",
+			valid:          false,
+		},
+		{
+			endpointDomain: "%$$$",
+			valid:          false,
+		},
+		{
+			endpointDomain: "s3.amz.test.com",
+			valid:          true,
+		},
+		{
+			endpointDomain: "s3.%%",
+			valid:          false,
+		},
+		{
+			endpointDomain: "localhost",
+			valid:          true,
+		},
+		{
+			endpointDomain: "-localhost",
+			valid:          false,
+		},
+		{
+			endpointDomain: "",
+			valid:          false,
+		},
+		{
+			endpointDomain: "\n \t",
+			valid:          false,
+		},
+		{
+			endpointDomain: "    ",
+			valid:          false,
+		},
+	}
+	for _, w := range want {
+		valid := isValidDomain(w.endpointDomain)
+		if valid != w.valid {
+			t.Fatal("Error:", w.endpointDomain)
+		}
+	}
+}
+
+func TestValidEndpointURL(t *testing.T) {
+	type validURL struct {
+		url   string
+		valid bool
+	}
+	want := []validURL{
+		{
+			url:   "https://s3.amazonaws.com",
+			valid: true,
+		},
+		{
+			url:   "https://s3.amazonaws.com/bucket/object",
+			valid: false,
+		},
+		{
+			url:   "192.168.1.1",
+			valid: false,
+		},
+	}
+	for _, w := range want {
+		u, err := url.Parse(w.url)
+		if err != nil {
+			t.Fatal("Error:", err)
+		}
+		valid := false
+		if err := isValidEndpointURL(u); err == nil {
+			valid = true
+		}
+		if valid != w.valid {
+			t.Fatal("Error")
 		}
 	}
 }
