@@ -221,14 +221,14 @@ func (a apiCore) abortMultipartUpload(bucket, object, uploadID string) error {
 			case http.StatusForbidden:
 				errorResponse = ErrorResponse{
 					Code:      "AccessDenied",
-					Message:   "Access Denied",
+					Message:   "Access Denied.",
 					Resource:  separator + bucket + separator + object,
 					RequestID: resp.Header.Get("x-amz-request-id"),
 				}
 			default:
 				errorResponse = ErrorResponse{
 					Code:      resp.Status,
-					Message:   "",
+					Message:   "Unknown error, please report this at https://github.com/minio/minio-go-legacy/issues.",
 					Resource:  separator + bucket + separator + object,
 					RequestID: resp.Header.Get("x-amz-request-id"),
 				}
@@ -299,7 +299,9 @@ func (a apiCore) uploadPartRequest(bucket, object, uploadID string, md5SumBytes 
 		return nil, err
 	}
 	// set Content-MD5 as base64 encoded md5
-	r.Set("Content-MD5", base64.StdEncoding.EncodeToString(md5SumBytes))
+	if md5SumBytes != nil {
+		r.Set("Content-MD5", base64.StdEncoding.EncodeToString(md5SumBytes))
+	}
 	r.req.ContentLength = size
 	return r, nil
 }

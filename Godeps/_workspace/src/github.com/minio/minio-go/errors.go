@@ -152,7 +152,7 @@ func invalidObjectError(object string) error {
 func invalidArgumentError(arg string) error {
 	errorResponse := ErrorResponse{
 		Code:      "InvalidArgument",
-		Message:   "Invalid Argument",
+		Message:   "Invalid Argument.",
 		RequestID: "minio",
 	}
 	if strings.TrimSpace(arg) == "" || arg == "" {

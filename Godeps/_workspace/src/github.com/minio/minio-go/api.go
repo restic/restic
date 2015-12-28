@@ -149,6 +149,9 @@ var regions = map[string]string{
 	"s3-ap-northeast-1.amazonaws.com":     "ap-northeast-1",
 	"s3-sa-east-1.amazonaws.com":          "sa-east-1",
 	"s3.cn-north-1.amazonaws.com.cn":      "cn-north-1",
+
+	// Add google cloud storage as one of the regions
+	"storage.googleapis.com": "google",
 }
 
 // getRegion returns a region based on its endpoint mapping.
@@ -161,12 +164,38 @@ func getRegion(host string) (region string) {
 	return "milkyway"
 }
 
+// SignatureType is type of signature to be used for a request
+type SignatureType int
+
+// Different types of supported signatures - default is Latest i.e SignatureV4
+const (
+	Latest SignatureType = iota
+	SignatureV4
+	SignatureV2
+)
+
+// isV2 - is signature SignatureV2?
+func (s SignatureType) isV2() bool {
+	return s == SignatureV2
+}
+
+// isV4 - is signature SignatureV4?
+func (s SignatureType) isV4() bool {
+	return s == SignatureV4
+}
+
+// isLatest - is signature Latest?
+func (s SignatureType) isLatest() bool {
+	return s == Latest
+}
+
 // Config - main configuration struct used by all to set endpoint, credentials, and other options for requests.
 type Config struct {
 	// Standard options
 	AccessKeyID     string
 	SecretAccessKey string
 	Endpoint        string
+	Signature       SignatureType
 
 	// Advanced options
 	// Specify this to get server response in non XML style if server supports it
@@ -234,11 +263,35 @@ func New(config Config) (API, error) {
 			hostSplits := strings.SplitN(u.Host, ".", 2)
 			u.Host = hostSplits[1]
 		}
+		matchGoogle, _ := filepath.Match("*.storage.googleapis.com", u.Host)
+		if matchGoogle {
+			config.isVirtualStyle = true
+			hostSplits := strings.SplitN(u.Host, ".", 2)
+			u.Host = hostSplits[1]
+		}
 		config.Region = getRegion(u.Host)
+		if config.Region == "google" {
+			// Google cloud storage is signature V2
+			config.Signature = SignatureV2
+		}
 	}
 	config.SetUserAgent(LibraryName, LibraryVersion, runtime.GOOS, runtime.GOARCH)
 	config.isUserAgentSet = false // default
 	return api{apiCore{&config}}, nil
+}
+
+// PresignedPostPolicy return POST form data that can be used for object upload
+func (a api) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
+	if p.expiration.IsZero() {
+		return nil, errors.New("Expiration time must be specified")
+	}
+	if _, ok := p.formData["key"]; !ok {
+		return nil, errors.New("object key must be specified")
+	}
+	if _, ok := p.formData["bucket"]; !ok {
+		return nil, errors.New("bucket name must be specified")
+	}
+	return a.presignedPostPolicy(p), nil
 }
 
 /// Object operations
@@ -549,20 +602,6 @@ func (a api) continueObjectUpload(bucket, object, uploadID string, size int64, d
 	return nil
 }
 
-// PresignedPostPolicy return POST form data that can be used for object upload
-func (a api) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
-	if p.expiration.IsZero() {
-		return nil, errors.New("Expiration time must be specified")
-	}
-	if _, ok := p.formData["key"]; !ok {
-		return nil, errors.New("object key must be specified")
-	}
-	if _, ok := p.formData["bucket"]; !ok {
-		return nil, errors.New("bucket name must be specified")
-	}
-	return a.presignedPostPolicy(p), nil
-}
-
 // PutObject create an object in a bucket
 //
 // You must have WRITE permissions on a bucket to create an object
@@ -587,6 +626,21 @@ func (a api) PutObject(bucket, object, contentType string, size int64, data io.R
 			}
 			return nil
 		}
+	}
+	// Special handling just for Google Cloud Storage.
+	// TODO - we should remove this in future when we fully implement Resumable object upload.
+	if a.config.Region == "google" {
+		if size > maxPartSize {
+			return ErrorResponse{
+				Code:     "EntityTooLarge",
+				Message:  "Your proposed upload exceeds the maximum allowed object size.",
+				Resource: separator + bucket + separator + object,
+			}
+		}
+		if _, err := a.putObject(bucket, object, contentType, nil, size, ReadSeekCloser(data)); err != nil {
+			return err
+		}
+		return nil
 	}
 	switch {
 	case size < minimumPartSize && size > 0:

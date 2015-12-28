@@ -51,7 +51,7 @@ func TestBucketOperations(t *testing.T) {
 	if err == nil {
 		t.Fatal("Error")
 	}
-	if err.Error() != "Access Denied" {
+	if err.Error() != "Access Denied." {
 		t.Fatal("Error")
 	}
 

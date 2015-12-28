@@ -21,6 +21,24 @@ import (
 	"testing"
 )
 
+func TestSignature(t *testing.T) {
+	conf := new(Config)
+	if !conf.Signature.isLatest() {
+		t.Fatalf("Error")
+	}
+	conf.Signature = SignatureV2
+	if !conf.Signature.isV2() {
+		t.Fatalf("Error")
+	}
+	if conf.Signature.isV4() {
+		t.Fatalf("Error")
+	}
+	conf.Signature = SignatureV4
+	if !conf.Signature.isV4() {
+		t.Fatalf("Error")
+	}
+}
+
 func TestACLTypes(t *testing.T) {
 	want := map[string]bool{
 		"private":            true,

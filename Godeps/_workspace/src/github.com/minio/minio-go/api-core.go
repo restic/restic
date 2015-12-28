@@ -209,10 +209,14 @@ func (a apiCore) getBucketACL(bucket string) (accessControlPolicy, error) {
 	if err != nil {
 		return accessControlPolicy{}, err
 	}
+	// In-case of google private bucket policy doesn't have any Grant list
+	if a.config.Region == "google" {
+		return policy, nil
+	}
 	if policy.AccessControlList.Grant == nil {
 		errorResponse := ErrorResponse{
 			Code:      "InternalError",
-			Message:   "Access control Grant list is empty, please report this at https://github.com/minio/minio-go/issues",
+			Message:   "Access control Grant list is empty, please report this at https://github.com/minio/minio-go/issues.",
 			Resource:  separator + bucket,
 			RequestID: resp.Header.Get("x-amz-request-id"),
 			HostID:    resp.Header.Get("x-amz-id-2"),
@@ -371,7 +375,7 @@ func (a apiCore) headBucket(bucket string) error {
 			case http.StatusForbidden:
 				errorResponse = ErrorResponse{
 					Code:      "AccessDenied",
-					Message:   "Access Denied",
+					Message:   "Access Denied.",
 					Resource:  separator + bucket,
 					RequestID: resp.Header.Get("x-amz-request-id"),
 					HostID:    resp.Header.Get("x-amz-id-2"),
@@ -434,7 +438,7 @@ func (a apiCore) deleteBucket(bucket string) error {
 			case http.StatusForbidden:
 				errorResponse = ErrorResponse{
 					Code:      "AccessDenied",
-					Message:   "Access Denied",
+					Message:   "Access Denied.",
 					Resource:  separator + bucket,
 					RequestID: resp.Header.Get("x-amz-request-id"),
 					HostID:    resp.Header.Get("x-amz-id-2"),
@@ -442,7 +446,7 @@ func (a apiCore) deleteBucket(bucket string) error {
 			case http.StatusConflict:
 				errorResponse = ErrorResponse{
 					Code:      "Conflict",
-					Message:   "Bucket not empty",
+					Message:   "Bucket not empty.",
 					Resource:  separator + bucket,
 					RequestID: resp.Header.Get("x-amz-request-id"),
 					HostID:    resp.Header.Get("x-amz-id-2"),
@@ -520,7 +524,9 @@ func (a apiCore) putObjectRequest(bucket, object, contentType string, md5SumByte
 		return nil, err
 	}
 	// set Content-MD5 as base64 encoded md5
-	r.Set("Content-MD5", base64.StdEncoding.EncodeToString(md5SumBytes))
+	if md5SumBytes != nil {
+		r.Set("Content-MD5", base64.StdEncoding.EncodeToString(md5SumBytes))
+	}
 	r.Set("Content-Type", contentType)
 	r.req.ContentLength = size
 	return r, nil
@@ -552,6 +558,13 @@ func (a apiCore) presignedPostPolicy(p *PostPolicy) map[string]string {
 	t := time.Now().UTC()
 	r := new(request)
 	r.config = a.config
+	if r.config.Signature.isV2() {
+		policyBase64 := p.base64()
+		p.formData["policy"] = policyBase64
+		p.formData["AWSAccessKeyId"] = r.config.AccessKeyID
+		p.formData["signature"] = r.PostPresignSignatureV2(policyBase64)
+		return p.formData
+	}
 	credential := getCredential(r.config.AccessKeyID, r.config.Region, t)
 	p.addNewPolicy(policy{"eq", "$x-amz-date", t.Format(iso8601DateFormat)})
 	p.addNewPolicy(policy{"eq", "$x-amz-algorithm", authHeader})
@@ -562,7 +575,7 @@ func (a apiCore) presignedPostPolicy(p *PostPolicy) map[string]string {
 	p.formData["x-amz-algorithm"] = authHeader
 	p.formData["x-amz-credential"] = credential
 	p.formData["x-amz-date"] = t.Format(iso8601DateFormat)
-	p.formData["x-amz-signature"] = r.PostPresignSignature(policyBase64, t)
+	p.formData["x-amz-signature"] = r.PostPresignSignatureV4(policyBase64, t)
 	return p.formData
 }
 
@@ -572,9 +585,12 @@ func (a apiCore) presignedPutObject(bucket, object string, expires int64) (strin
 		HTTPMethod: "PUT",
 		HTTPPath:   separator + bucket + separator + object,
 	}
-	r, err := newPresignedRequest(op, a.config, strconv.FormatInt(expires, 10))
+	r, err := newPresignedRequest(op, a.config, expires)
 	if err != nil {
 		return "", err
+	}
+	if r.config.Signature.isV2() {
+		return r.PreSignV2()
 	}
 	return r.PreSignV4()
 }
@@ -585,7 +601,7 @@ func (a apiCore) presignedGetObjectRequest(bucket, object string, expires, offse
 		HTTPMethod: "GET",
 		HTTPPath:   separator + bucket + separator + object,
 	}
-	r, err := newPresignedRequest(op, a.config, strconv.FormatInt(expires, 10))
+	r, err := newPresignedRequest(op, a.config, expires)
 	if err != nil {
 		return nil, err
 	}
@@ -604,11 +620,14 @@ func (a apiCore) presignedGetObject(bucket, object string, expires, offset, leng
 	if err := invalidArgumentError(object); err != nil {
 		return "", err
 	}
-	req, err := a.presignedGetObjectRequest(bucket, object, expires, offset, length)
+	r, err := a.presignedGetObjectRequest(bucket, object, expires, offset, length)
 	if err != nil {
 		return "", err
 	}
-	return req.PreSignV4()
+	if r.config.Signature.isV2() {
+		return r.PreSignV2()
+	}
+	return r.PreSignV4()
 }
 
 // getObjectRequest wrapper creates a new getObject request
@@ -623,12 +642,13 @@ func (a apiCore) getObjectRequest(bucket, object string, offset, length int64) (
 		return nil, err
 	}
 	switch {
-	case length > 0 && offset > 0:
+	case length > 0 && offset >= 0:
 		r.Set("Range", fmt.Sprintf("bytes=%d-%d", offset, offset+length-1))
 	case offset > 0 && length == 0:
 		r.Set("Range", fmt.Sprintf("bytes=%d-", offset))
-	case length > 0 && offset == 0:
-		r.Set("Range", fmt.Sprintf("bytes=-%d", length))
+	// The final length bytes
+	case length < 0 && offset == 0:
+		r.Set("Range", fmt.Sprintf("bytes=%d", length))
 	}
 	return r, nil
 }
@@ -638,7 +658,8 @@ func (a apiCore) getObjectRequest(bucket, object string, offset, length int64) (
 // Additionally this function also takes range arguments to download the specified
 // range bytes of an object. Setting offset and length = 0 will download the full object.
 //
-// For more information about the HTTP Range header, go to http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35.
+// For more information about the HTTP Range header.
+// go to http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35.
 func (a apiCore) getObject(bucket, object string, offset, length int64) (io.ReadCloser, ObjectStat, error) {
 	if err := invalidArgumentError(object); err != nil {
 		return nil, ObjectStat{}, err
@@ -664,7 +685,7 @@ func (a apiCore) getObject(bucket, object string, offset, length int64) (io.Read
 	if err != nil {
 		return nil, ObjectStat{}, ErrorResponse{
 			Code:      "InternalError",
-			Message:   "Last-Modified time format not recognized, please report this issue at https://github.com/minio/minio-go/issues",
+			Message:   "Last-Modified time format not recognized, please report this issue at https://github.com/minio/minio-go/issues.",
 			RequestID: resp.Header.Get("x-amz-request-id"),
 			HostID:    resp.Header.Get("x-amz-id-2"),
 		}
@@ -726,7 +747,7 @@ func (a apiCore) deleteObject(bucket, object string) error {
 			case http.StatusForbidden:
 				errorResponse = ErrorResponse{
 					Code:      "AccessDenied",
-					Message:   "Access Denied",
+					Message:   "Access Denied.",
 					Resource:  separator + bucket + separator + object,
 					RequestID: resp.Header.Get("x-amz-request-id"),
 					HostID:    resp.Header.Get("x-amz-id-2"),
@@ -788,7 +809,7 @@ func (a apiCore) headObject(bucket, object string) (ObjectStat, error) {
 			case http.StatusForbidden:
 				errorResponse = ErrorResponse{
 					Code:      "AccessDenied",
-					Message:   "Access Denied",
+					Message:   "Access Denied.",
 					Resource:  separator + bucket + separator + object,
 					RequestID: resp.Header.Get("x-amz-request-id"),
 					HostID:    resp.Header.Get("x-amz-id-2"),
@@ -811,7 +832,7 @@ func (a apiCore) headObject(bucket, object string) (ObjectStat, error) {
 	if err != nil {
 		return ObjectStat{}, ErrorResponse{
 			Code:      "InternalError",
-			Message:   "Content-Length not recognized, please report this issue at https://github.com/minio/minio-go/issues",
+			Message:   "Content-Length not recognized, please report this issue at https://github.com/minio/minio-go/issues.",
 			RequestID: resp.Header.Get("x-amz-request-id"),
 			HostID:    resp.Header.Get("x-amz-id-2"),
 		}
@@ -820,7 +841,7 @@ func (a apiCore) headObject(bucket, object string) (ObjectStat, error) {
 	if err != nil {
 		return ObjectStat{}, ErrorResponse{
 			Code:      "InternalError",
-			Message:   "Last-Modified time format not recognized, please report this issue at https://github.com/minio/minio-go/issues",
+			Message:   "Last-Modified time format not recognized, please report this issue at https://github.com/minio/minio-go/issues.",
 			RequestID: resp.Header.Get("x-amz-request-id"),
 			HostID:    resp.Header.Get("x-amz-id-2"),
 		}
@@ -867,7 +888,7 @@ func (a apiCore) listBuckets() (listAllMyBucketsResult, error) {
 		if resp.StatusCode == http.StatusTemporaryRedirect {
 			return listAllMyBucketsResult{}, ErrorResponse{
 				Code:      "AccessDenied",
-				Message:   "Anonymous access is forbidden for this operation",
+				Message:   "Anonymous access is forbidden for this operation.",
 				RequestID: resp.Header.Get("x-amz-request-id"),
 				HostID:    resp.Header.Get("x-amz-id-2"),
 			}
