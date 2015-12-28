@@ -21,7 +21,7 @@ type Local struct {
 	open map[string][]*os.File // Contains open files. Guarded by 'mu'.
 }
 
-// Open opens the local backend at dir.
+// Open opens the local backend as specified by config.
 func Open(dir string) (*Local, error) {
 	items := []string{
 		dir,
