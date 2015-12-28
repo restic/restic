@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 	"strings"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/restic/restic/backend/local"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
+	"github.com/restic/restic/location"
 	"github.com/restic/restic/repository"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -164,78 +164,58 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 	return s, nil
 }
 
-// Open the backend specified by URI.
-// Valid formats are:
-// * /foo/bar -> local repository at /foo/bar
-// * s3://region/bucket -> amazon s3 bucket
-// * sftp://user@host/foo/bar -> remote sftp repository on host for user at path foo/bar
-// * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
-// * c:\temp -> local repository at c:\temp - the path must exist
-func open(u string) (backend.Backend, error) {
-	// check if the url is a directory that exists
-	fi, err := os.Stat(u)
-	if err == nil && fi.IsDir() {
-		return local.Open(u)
-	}
-
-	url, err := url.Parse(u)
+// Open the backend specified by a location config.
+func open(s string) (backend.Backend, error) {
+	loc, err := location.Parse(s)
 	if err != nil {
 		return nil, err
 	}
 
-	if url.Scheme == "" {
-		return local.Open(url.Path)
+	switch loc.Scheme {
+	case "local":
+		return local.Open(loc.Config.(string))
+	case "sftp":
+		return sftp.OpenWithConfig(loc.Config.(sftp.Config))
+	case "s3":
+		cfg := loc.Config.(s3.Config)
+		if cfg.KeyID == "" {
+			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
+
+		}
+		if cfg.Secret == "" {
+			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		}
+
+		return s3.Open(loc.Config.(s3.Config))
 	}
 
-	if len(url.Path) < 1 {
-		return nil, fmt.Errorf("unable to parse url %v", url)
-	}
-
-	if url.Scheme == "s3" {
-		return s3.Open(url.Host, url.Path[1:])
-	}
-
-	args := []string{url.Host}
-	if url.User != nil && url.User.Username() != "" {
-		args = append(args, "-l")
-		args = append(args, url.User.Username())
-	}
-	args = append(args, "-s")
-	args = append(args, "sftp")
-	return sftp.Open(url.Path[1:], "ssh", args...)
+	return nil, fmt.Errorf("invalid scheme %q", loc.Scheme)
 }
 
 // Create the backend specified by URI.
-func create(u string) (backend.Backend, error) {
-	// check if the url is a directory that exists
-	fi, err := os.Stat(u)
-	if err == nil && fi.IsDir() {
-		return local.Create(u)
-	}
-
-	url, err := url.Parse(u)
+func create(s string) (backend.Backend, error) {
+	loc, err := location.Parse(s)
 	if err != nil {
 		return nil, err
 	}
 
-	if url.Scheme == "" {
-		return local.Create(url.Path)
+	switch loc.Scheme {
+	case "local":
+		return local.Create(loc.Config.(string))
+	case "sftp":
+		return sftp.CreateWithConfig(loc.Config.(sftp.Config))
+	case "s3":
+		cfg := loc.Config.(s3.Config)
+		if cfg.KeyID == "" {
+			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
+
+		}
+		if cfg.Secret == "" {
+			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		}
+
+		return s3.Open(loc.Config.(s3.Config))
 	}
 
-	if len(url.Path) < 1 {
-		return nil, fmt.Errorf("unable to parse url %v", url)
-	}
-
-	if url.Scheme == "s3" {
-		return s3.Open(url.Host, url.Path[1:])
-	}
-
-	args := []string{url.Host}
-	if url.User != nil && url.User.Username() != "" {
-		args = append(args, "-l")
-		args = append(args, url.User.Username())
-	}
-	args = append(args, "-s")
-	args = append(args, "sftp")
-	return sftp.Create(url.Path[1:], "ssh", args...)
+	return nil, fmt.Errorf("invalid scheme %q", loc.Scheme)
 }
