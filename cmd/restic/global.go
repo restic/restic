@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/backend/local"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
+	"github.com/restic/restic/debug"
 	"github.com/restic/restic/location"
 	"github.com/restic/restic/repository"
 	"golang.org/x/crypto/ssh/terminal"
@@ -166,6 +167,7 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 
 // Open the backend specified by a location config.
 func open(s string) (backend.Backend, error) {
+	debug.Log("open", "parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
 		return nil, err
@@ -173,8 +175,10 @@ func open(s string) (backend.Backend, error) {
 
 	switch loc.Scheme {
 	case "local":
+		debug.Log("open", "opening local repository at %#v", loc.Config)
 		return local.Open(loc.Config.(string))
 	case "sftp":
+		debug.Log("open", "opening sftp repository at %#v", loc.Config)
 		return sftp.OpenWithConfig(loc.Config.(sftp.Config))
 	case "s3":
 		cfg := loc.Config.(s3.Config)
@@ -186,14 +190,17 @@ func open(s string) (backend.Backend, error) {
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		}
 
-		return s3.Open(loc.Config.(s3.Config))
+		debug.Log("open", "opening s3 repository at %#v", cfg)
+		return s3.Open(cfg)
 	}
 
+	debug.Log("open", "invalid repository location: %v", s)
 	return nil, fmt.Errorf("invalid scheme %q", loc.Scheme)
 }
 
 // Create the backend specified by URI.
 func create(s string) (backend.Backend, error) {
+	debug.Log("open", "parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
 		return nil, err
@@ -201,8 +208,10 @@ func create(s string) (backend.Backend, error) {
 
 	switch loc.Scheme {
 	case "local":
+		debug.Log("open", "create local repository at %#v", loc.Config)
 		return local.Create(loc.Config.(string))
 	case "sftp":
+		debug.Log("open", "create sftp repository at %#v", loc.Config)
 		return sftp.CreateWithConfig(loc.Config.(sftp.Config))
 	case "s3":
 		cfg := loc.Config.(s3.Config)
@@ -214,8 +223,10 @@ func create(s string) (backend.Backend, error) {
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		}
 
-		return s3.Open(loc.Config.(s3.Config))
+		debug.Log("open", "create s3 repository at %#v", loc.Config)
+		return s3.Open(cfg)
 	}
 
+	debug.Log("open", "invalid repository scheme: %v", s)
 	return nil, fmt.Errorf("invalid scheme %q", loc.Scheme)
 }

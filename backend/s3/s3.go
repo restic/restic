@@ -9,6 +9,7 @@ import (
 	"github.com/minio/minio-go"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
 
 const maxKeysInList = 1000
@@ -28,7 +29,8 @@ type S3Backend struct {
 	bucketname string
 }
 
-// Open opens the S3 backend at bucket and region. The bucket is created if it does not exist yet.
+// Open opens the S3 backend at bucket and region. The bucket is created if it
+// does not exist yet.
 func Open(cfg Config) (backend.Backend, error) {
 	mcfg := minio.Config{
 		AccessKeyID:     cfg.KeyID,
@@ -54,6 +56,15 @@ func Open(cfg Config) (backend.Backend, error) {
 	be.createConnections()
 
 	err = s3api.MakeBucket(cfg.Bucket, "")
+
+	if err != nil {
+		e, ok := err.(minio.ErrorResponse)
+		if ok && e.Code == "BucketAlreadyExists" {
+			debug.Log("s3.Open", "ignoring error that bucket %q already exists", cfg.Bucket)
+			err = nil
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
