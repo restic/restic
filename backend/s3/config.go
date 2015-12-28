@@ -9,8 +9,8 @@ import (
 // Config contains all configuration necessary to connect to an s3 compatible
 // server.
 type Config struct {
-	Region        string
-	URL           string
+	Endpoint      string
+	UseHTTP       bool
 	KeyID, Secret string
 	Bucket        string
 }
@@ -28,8 +28,8 @@ func ParseConfig(s string) (interface{}, error) {
 		}
 
 		cfg := Config{
-			Region: data[0],
-			Bucket: data[1],
+			Endpoint: data[0],
+			Bucket:   data[1],
 		}
 
 		return cfg, nil
@@ -55,7 +55,7 @@ func ParseConfig(s string) (interface{}, error) {
 	if len(rest) == 2 {
 		// assume that just a region name and a bucket has been specified, in
 		// the format region/bucket
-		cfg.Region = rest[0]
+		cfg.Endpoint = rest[0]
 		cfg.Bucket = rest[1]
 	} else {
 		// assume that a URL has been specified, parse it and use the path as
@@ -69,10 +69,12 @@ func ParseConfig(s string) (interface{}, error) {
 			return nil, errors.New("s3: bucket name not found")
 		}
 
-		cfg.Bucket = url.Path[1:]
-		url.Path = ""
+		cfg.Endpoint = url.Host
+		if url.Scheme == "http" {
+			cfg.UseHTTP = true
+		}
 
-		cfg.URL = url.String()
+		cfg.Bucket = url.Path[1:]
 	}
 
 	return cfg, nil
