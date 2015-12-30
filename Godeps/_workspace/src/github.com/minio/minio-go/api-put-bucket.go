@@ -67,7 +67,7 @@ func (c Client) MakeBucket(bucketName string, acl BucketACL, location string) er
 	}
 
 	// Execute the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err
@@ -201,7 +201,7 @@ func (c Client) SetBucketACL(bucketName string, acl BucketACL) error {
 	}
 
 	// Initiate the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err

@@ -34,7 +34,7 @@ func (c Client) BucketExists(bucketName string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (c Client) StatObject(bucketName, objectName string) (ObjectStat, error) {
 	if err != nil {
 		return ObjectStat{}, err
 	}
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return ObjectStat{}, err

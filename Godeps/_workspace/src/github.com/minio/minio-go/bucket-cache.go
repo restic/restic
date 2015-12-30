@@ -82,7 +82,7 @@ func (c Client) getBucketLocation(bucketName string) (string, error) {
 	}
 
 	// Initiate the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return "", err

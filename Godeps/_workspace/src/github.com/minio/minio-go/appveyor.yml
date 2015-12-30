@@ -18,7 +18,6 @@ install:
   - go env
   - go get -u github.com/golang/lint/golint
   - go get -u golang.org/x/tools/cmd/vet
-  - go get -u github.com/fzipp/gocyclo
   - go get -u github.com/remyoudompheng/go-misc/deadcode
 
 # to run your custom scripts instead of automatic MSBuild
@@ -26,7 +25,6 @@ build_script:
   - go vet ./...
   - gofmt -s -l .
   - golint github.com/minio/minio-go...
-  - gocyclo -over 30 .
   - deadcode
   - go test
   - go test -race

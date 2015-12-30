@@ -379,7 +379,7 @@ func (c Client) putObject(bucketName, objectName string, putObjMetadata putObjec
 		return ObjectStat{}, err
 	}
 	// Execute the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return ObjectStat{}, err
@@ -432,7 +432,7 @@ func (c Client) initiateMultipartUpload(bucketName, objectName, contentType stri
 		return initiateMultipartUploadResult{}, err
 	}
 	// Execute the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return initiateMultipartUploadResult{}, err
@@ -484,7 +484,7 @@ func (c Client) uploadPart(bucketName, objectName, uploadID string, uploadingPar
 		return objectPart{}, err
 	}
 	// Execute the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return objectPart{}, err
@@ -539,7 +539,7 @@ func (c Client) completeMultipartUpload(bucketName, objectName, uploadID string,
 	}
 
 	// Execute the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return completeMultipartUploadResult{}, err

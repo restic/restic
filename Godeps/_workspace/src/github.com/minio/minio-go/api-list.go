@@ -39,7 +39,7 @@ func (c Client) ListBuckets() ([]BucketStat, error) {
 		return nil, err
 	}
 	// Initiate the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return nil, err
@@ -197,7 +197,7 @@ func (c Client) listObjectsQuery(bucketName, objectPrefix, objectMarker, delimit
 		return listBucketResult{}, err
 	}
 	// Execute list buckets.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return listBucketResult{}, err
@@ -361,7 +361,7 @@ func (c Client) listMultipartUploadsQuery(bucketName, keyMarker, uploadIDMarker,
 		return listMultipartUploadsResult{}, err
 	}
 	// Execute list multipart uploads request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return listMultipartUploadsResult{}, err
@@ -466,7 +466,7 @@ func (c Client) listObjectPartsQuery(bucketName, objectName, uploadID string, pa
 		return listObjectPartsResult{}, err
 	}
 	// Exectue list object parts.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return listObjectPartsResult{}, err

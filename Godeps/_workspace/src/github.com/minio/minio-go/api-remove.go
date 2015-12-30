@@ -35,7 +35,7 @@ func (c Client) RemoveBucket(bucketName string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (c Client) RemoveObject(bucketName, objectName string) error {
 	if err != nil {
 		return err
 	}
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err
@@ -137,8 +137,9 @@ func (c Client) abortMultipartUpload(bucketName, objectName, uploadID string) er
 	if err != nil {
 		return err
 	}
+
 	// execute the request.
-	resp, err := c.httpClient.Do(req)
+	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
 		return err

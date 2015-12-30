@@ -19,10 +19,14 @@ package minio
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
+	"os"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -44,6 +48,10 @@ type Client struct {
 	// Needs allocation.
 	httpClient     *http.Client
 	bucketLocCache *bucketLocationCache
+
+	// Advanced functionality
+	isTraceEnabled bool
+	traceOutput    io.Writer
 }
 
 // Global constants.
@@ -159,6 +167,26 @@ func (c *Client) SetCustomTransport(customHTTPTransport http.RoundTripper) {
 	}
 }
 
+// TraceOn - enable HTTP tracing.
+func (c *Client) TraceOn(outputStream io.Writer) error {
+	// if outputStream is nil then default to os.Stdout.
+	if outputStream == nil {
+		outputStream = os.Stdout
+	}
+	// Sets a new output stream.
+	c.traceOutput = outputStream
+
+	// Enable tracing.
+	c.isTraceEnabled = true
+	return nil
+}
+
+// TraceOff - disable HTTP tracing.
+func (c *Client) TraceOff() {
+	// Disable tracing.
+	c.isTraceEnabled = false
+}
+
 // requestMetadata - is container for all the values to make a request.
 type requestMetadata struct {
 	// If set newRequest presigns the URL.
@@ -178,6 +206,66 @@ type requestMetadata struct {
 	contentMD5Bytes    []byte
 }
 
+// dumpHTTP - dump HTTP request and response.
+func (c Client) dumpHTTP(req *http.Request, resp *http.Response) error {
+	// Starts http dump.
+	_, err := fmt.Fprintln(c.traceOutput, "---------START-HTTP---------")
+	if err != nil {
+		return err
+	}
+
+	// Only display request header.
+	reqTrace, err := httputil.DumpRequestOut(req, false)
+	if err != nil {
+		return err
+	}
+
+	// Write request to trace output.
+	_, err = fmt.Fprint(c.traceOutput, string(reqTrace))
+	if err != nil {
+		return err
+	}
+
+	// Only display response header.
+	respTrace, err := httputil.DumpResponse(resp, false)
+	if err != nil {
+		return err
+	}
+
+	// Write response to trace output.
+	_, err = fmt.Fprint(c.traceOutput, strings.TrimSuffix(string(respTrace), "\r\n"))
+	if err != nil {
+		return err
+	}
+
+	// Ends the http dump.
+	_, err = fmt.Fprintln(c.traceOutput, "---------END-HTTP---------")
+	if err != nil {
+		return err
+	}
+
+	// Returns success.
+	return nil
+}
+
+// do - execute http request.
+func (c Client) do(req *http.Request) (*http.Response, error) {
+	// execute the request.
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return resp, err
+	}
+	// If trace is enabled, dump http request and response.
+	if c.isTraceEnabled {
+		err = c.dumpHTTP(req, resp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return resp, nil
+}
+
+// newRequest - instantiate a new HTTP request for a given method.
 func (c Client) newRequest(method string, metadata requestMetadata) (*http.Request, error) {
 	// If no method is supplied default to 'POST'.
 	if method == "" {
@@ -344,4 +432,8 @@ type CloudStorageClient interface {
 
 	// Set custom transport.
 	SetCustomTransport(customTransport http.RoundTripper)
+
+	// HTTP tracing methods.
+	TraceOn(traceOutput io.Writer) error
+	TraceOff()
 }
