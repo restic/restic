@@ -93,7 +93,7 @@ func (c Client) FPutObject(bucketName, objectName, filePath, contentType string)
 	// NOTE: Google Cloud Storage multipart Put is not compatible with Amazon S3 APIs.
 	// Current implementation will only upload a maximum of 5GiB to Google Cloud Storage servers.
 	if isGoogleEndpoint(c.endpointURL) {
-		if fileSize <= -1 || fileSize > int64(maxSinglePutObjectSize) {
+		if fileSize > int64(maxSinglePutObjectSize) {
 			return 0, ErrorResponse{
 				Code:       "NotImplemented",
 				Message:    fmt.Sprintf("Invalid Content-Length %d for file uploads to Google Cloud Storage.", fileSize),
@@ -108,7 +108,7 @@ func (c Client) FPutObject(bucketName, objectName, filePath, contentType string)
 
 	// NOTE: S3 doesn't allow anonymous multipart requests.
 	if isAmazonEndpoint(c.endpointURL) && c.anonymous {
-		if fileSize <= -1 || fileSize > int64(maxSinglePutObjectSize) {
+		if fileSize > int64(maxSinglePutObjectSize) {
 			return 0, ErrorResponse{
 				Code:       "NotImplemented",
 				Message:    fmt.Sprintf("For anonymous requests Content-Length cannot be %d.", fileSize),
@@ -121,14 +121,11 @@ func (c Client) FPutObject(bucketName, objectName, filePath, contentType string)
 		return n, err
 	}
 
-	// Large file upload is initiated for uploads for input data size
-	// if its greater than 5MiB or data size is negative.
-	if fileSize >= minimumPartSize || fileSize < 0 {
-		n, err := c.fputLargeObject(bucketName, objectName, fileData, fileSize, contentType)
-		return n, err
+	// Small object upload is initiated for uploads for input data size smaller than 5MiB.
+	if fileSize < minimumPartSize {
+		return c.putSmallObject(bucketName, objectName, fileData, fileSize, contentType)
 	}
-	n, err := c.putSmallObject(bucketName, objectName, fileData, fileSize, contentType)
-	return n, err
+	return c.fputLargeObject(bucketName, objectName, fileData, fileSize, contentType)
 }
 
 // computeHash - calculates MD5 and Sha256 for an input read Seeker.
@@ -192,7 +189,6 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 	var prevMaxPartSize int64
 	// Loop through all parts and calculate totalUploadedSize.
 	for _, partInfo := range partsInfo {
-		totalUploadedSize += partInfo.Size
 		// Choose the maximum part size.
 		if partInfo.Size >= prevMaxPartSize {
 			prevMaxPartSize = partInfo.Size
@@ -206,11 +202,14 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 		partSize = prevMaxPartSize
 	}
 
-	// Part number always starts with '1'.
-	partNumber := 1
+	// Part number always starts with '0'.
+	partNumber := 0
 
 	// Loop through until EOF.
 	for totalUploadedSize < fileSize {
+		// Increment part number.
+		partNumber++
+
 		// Get a section reader on a particular offset.
 		sectionReader := io.NewSectionReader(fileData, totalUploadedSize, partSize)
 
@@ -221,7 +220,7 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 		}
 
 		// Save all the part metadata.
-		partMdata := partMetadata{
+		prtData := partData{
 			ReadCloser: ioutil.NopCloser(sectionReader),
 			Size:       size,
 			MD5Sum:     md5Sum,
@@ -229,31 +228,26 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 			Number:     partNumber, // Part number to be uploaded.
 		}
 
-		// If part number already uploaded, move to the next one.
-		if isPartUploaded(objectPart{
-			ETag:       hex.EncodeToString(partMdata.MD5Sum),
-			PartNumber: partMdata.Number,
+		// If part not uploaded proceed to upload.
+		if !isPartUploaded(objectPart{
+			ETag:       hex.EncodeToString(prtData.MD5Sum),
+			PartNumber: prtData.Number,
 		}, partsInfo) {
-			// Close the read closer.
-			partMdata.ReadCloser.Close()
-			continue
+			// Upload the part.
+			objPart, err := c.uploadPart(bucketName, objectName, uploadID, prtData)
+			if err != nil {
+				prtData.ReadCloser.Close()
+				return totalUploadedSize, err
+			}
+			// Save successfully uploaded part metadata.
+			partsInfo[prtData.Number] = objPart
 		}
 
-		// Upload the part.
-		objPart, err := c.uploadPart(bucketName, objectName, uploadID, partMdata)
-		if err != nil {
-			partMdata.ReadCloser.Close()
-			return totalUploadedSize, err
-		}
+		// Close the read closer for temporary file.
+		prtData.ReadCloser.Close()
 
 		// Save successfully uploaded size.
-		totalUploadedSize += partMdata.Size
-
-		// Save successfully uploaded part metadata.
-		partsInfo[partMdata.Number] = objPart
-
-		// Increment to next part number.
-		partNumber++
+		totalUploadedSize += prtData.Size
 	}
 
 	// if totalUploadedSize is different than the file 'size'. Do not complete the request throw an error.
@@ -267,6 +261,11 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 		complPart.ETag = part.ETag
 		complPart.PartNumber = part.PartNumber
 		completeMultipartUpload.Parts = append(completeMultipartUpload.Parts, complPart)
+	}
+
+	// If partNumber is different than total list of parts, error out.
+	if partNumber != len(completeMultipartUpload.Parts) {
+		return totalUploadedSize, ErrInvalidParts(partNumber, len(completeMultipartUpload.Parts))
 	}
 
 	// Sort all completed parts.

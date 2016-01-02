@@ -27,7 +27,7 @@ build_script:
   - golint github.com/minio/minio-go...
   - deadcode
   - go test
-  - go test -race
+  - go test -test.short -race
 
 # to disable automatic tests
 test: off

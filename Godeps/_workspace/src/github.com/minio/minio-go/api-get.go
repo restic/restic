@@ -365,9 +365,12 @@ func (c Client) getObject(bucketName, objectName string, offset, length int64) (
 			return nil, ObjectStat{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
-	// trim off the odd double quotes.
-	md5sum := strings.Trim(resp.Header.Get("ETag"), "\"")
-	// parse the date.
+
+	// Trim off the odd double quotes from ETag in the beginning and end.
+	md5sum := strings.TrimPrefix(resp.Header.Get("ETag"), "\"")
+	md5sum = strings.TrimSuffix(md5sum, "\"")
+
+	// Parse the date.
 	date, err := time.Parse(http.TimeFormat, resp.Header.Get("Last-Modified"))
 	if err != nil {
 		msg := "Last-Modified time format not recognized. " + reportIssue
@@ -379,6 +382,7 @@ func (c Client) getObject(bucketName, objectName string, offset, length int64) (
 			AmzBucketRegion: resp.Header.Get("x-amz-bucket-region"),
 		}
 	}
+	// Get content-type.
 	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
 	if contentType == "" {
 		contentType = "application/octet-stream"

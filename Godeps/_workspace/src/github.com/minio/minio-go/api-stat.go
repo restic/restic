@@ -73,7 +73,12 @@ func (c Client) StatObject(bucketName, objectName string) (ObjectStat, error) {
 			return ObjectStat{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
-	md5sum := strings.Trim(resp.Header.Get("ETag"), "\"") // trim off the odd double quotes
+
+	// Trim off the odd double quotes from ETag in the beginning and end.
+	md5sum := strings.TrimPrefix(resp.Header.Get("ETag"), "\"")
+	md5sum = strings.TrimSuffix(md5sum, "\"")
+
+	// Parse content length.
 	size, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
 	if err != nil {
 		return ObjectStat{}, ErrorResponse{

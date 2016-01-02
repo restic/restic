@@ -19,7 +19,6 @@ package minio
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"sync"
 )
 
@@ -40,21 +39,6 @@ func newTempFile(prefix string) (*tempFile, error) {
 		File:  file,
 		mutex: new(sync.Mutex),
 	}, nil
-}
-
-// cleanupStaleTempFiles - cleanup any stale files present in temp directory at a prefix.
-func cleanupStaleTempfiles(prefix string) error {
-	globPath := filepath.Join(os.TempDir(), prefix) + "*"
-	staleFiles, err := filepath.Glob(globPath)
-	if err != nil {
-		return err
-	}
-	for _, staleFile := range staleFiles {
-		if err := os.Remove(staleFile); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Close - closer wrapper to close and remove temporary file.

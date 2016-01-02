@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // ListBuckets list all buckets owned by this authenticated user.
@@ -393,6 +394,9 @@ func (c Client) listObjectParts(bucketName, objectName, uploadID string) (partsI
 		}
 		// Append to parts info.
 		for _, part := range listObjPartsResult.ObjectParts {
+			// Trim off the odd double quotes from ETag in the beginning and end.
+			part.ETag = strings.TrimPrefix(part.ETag, "\"")
+			part.ETag = strings.TrimSuffix(part.ETag, "\"")
 			partsInfo[part.PartNumber] = part
 		}
 		// Keep part number marker, for the next iteration.

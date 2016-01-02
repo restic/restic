@@ -218,6 +218,16 @@ func ErrInvalidObjectName(message string) error {
 	}
 }
 
+// ErrInvalidParts - invalid number of parts.
+func ErrInvalidParts(expectedParts, uploadedParts int) error {
+	msg := fmt.Sprintf("Unexpected number of parts found Want %d, Got %d", expectedParts, uploadedParts)
+	return ErrorResponse{
+		Code:      "InvalidParts",
+		Message:   msg,
+		RequestID: "minio",
+	}
+}
+
 // ErrInvalidObjectPrefix - invalid object prefix response is
 // similar to object name response.
 var ErrInvalidObjectPrefix = ErrInvalidObjectName

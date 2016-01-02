@@ -17,11 +17,14 @@
 package minio
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
+	"io/ioutil"
 	"sort"
 )
 
@@ -34,9 +37,187 @@ func (c Client) PutObjectPartial(bucketName, objectName string, data ReadAtClose
 	if err := isValidObjectName(objectName); err != nil {
 		return 0, err
 	}
+	// Input size negative should return error.
+	if size < 0 {
+		return 0, ErrInvalidArgument("Input file size cannot be negative.")
+	}
+	// Input size bigger than 5TiB should fail.
+	if size > int64(maxMultipartPutObjectSize) {
+		return 0, ErrInvalidArgument("Input file size is bigger than the supported maximum of 5TiB.")
+	}
 
-	// Cleanup any previously left stale files, as the function exits.
-	defer cleanupStaleTempfiles("multiparts$-putobject-partial")
+	// NOTE: Google Cloud Storage does not implement Amazon S3 Compatible multipart PUT.
+	// So we fall back to single PUT operation with the maximum limit of 5GiB.
+	if isGoogleEndpoint(c.endpointURL) {
+		if size > int64(maxSinglePutObjectSize) {
+			return 0, ErrorResponse{
+				Code:       "NotImplemented",
+				Message:    fmt.Sprintf("Invalid Content-Length %d for file uploads to Google Cloud Storage.", size),
+				Key:        objectName,
+				BucketName: bucketName,
+			}
+		}
+		// Do not compute MD5 for Google Cloud Storage. Uploads upto 5GiB in size.
+		n, err := c.putPartialNoChksum(bucketName, objectName, data, size, contentType)
+		return n, err
+	}
+
+	// NOTE: S3 doesn't allow anonymous multipart requests.
+	if isAmazonEndpoint(c.endpointURL) && c.anonymous {
+		if size > int64(maxSinglePutObjectSize) {
+			return 0, ErrorResponse{
+				Code:       "NotImplemented",
+				Message:    fmt.Sprintf("For anonymous requests Content-Length cannot be %d.", size),
+				Key:        objectName,
+				BucketName: bucketName,
+			}
+		}
+		// Do not compute MD5 for anonymous requests to Amazon S3. Uploads upto 5GiB in size.
+		n, err := c.putPartialAnonymous(bucketName, objectName, data, size, contentType)
+		return n, err
+	}
+
+	// Small file upload is initiated for uploads for input data size smaller than 5MiB.
+	if size < minimumPartSize {
+		n, err = c.putPartialSmallObject(bucketName, objectName, data, size, contentType)
+		return n, err
+	}
+	n, err = c.putPartialLargeObject(bucketName, objectName, data, size, contentType)
+	return n, err
+
+}
+
+// putNoChecksumPartial special function used Google Cloud Storage. This special function
+// is used for Google Cloud Storage since Google's multipart API is not S3 compatible.
+func (c Client) putPartialNoChksum(bucketName, objectName string, data ReadAtCloser, size int64, contentType string) (n int64, err error) {
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return 0, err
+	}
+	if err := isValidObjectName(objectName); err != nil {
+		return 0, err
+	}
+	if size > maxPartSize {
+		return 0, ErrEntityTooLarge(size, bucketName, objectName)
+	}
+
+	// Create a new pipe to stage the reads.
+	reader, writer := io.Pipe()
+
+	// readAtOffset to carry future offsets.
+	var readAtOffset int64
+
+	// readAt defaults to reading at 5MiB buffer.
+	readAtBuffer := make([]byte, 1024*1024*5)
+
+	// Initiate a routine to start writing.
+	go func() {
+		for {
+			readAtSize, rerr := data.ReadAt(readAtBuffer, readAtOffset)
+			if rerr != nil {
+				if rerr != io.EOF {
+					writer.CloseWithError(rerr)
+					return
+				}
+			}
+			writeSize, werr := writer.Write(readAtBuffer[:readAtSize])
+			if werr != nil {
+				writer.CloseWithError(werr)
+				return
+			}
+			if readAtSize != writeSize {
+				writer.CloseWithError(errors.New("Something really bad happened here. " + reportIssue))
+				return
+			}
+			readAtOffset += int64(writeSize)
+			if rerr == io.EOF {
+				writer.Close()
+				return
+			}
+		}
+	}()
+	// For anonymous requests, we will not calculate sha256 and md5sum.
+	putObjData := putObjectData{
+		MD5Sum:      nil,
+		Sha256Sum:   nil,
+		ReadCloser:  reader,
+		Size:        size,
+		ContentType: contentType,
+	}
+	// Execute put object.
+	st, err := c.putObject(bucketName, objectName, putObjData)
+	if err != nil {
+		return 0, err
+	}
+	if st.Size != size {
+		return 0, ErrUnexpectedEOF(st.Size, size, bucketName, objectName)
+	}
+	return size, nil
+}
+
+// putAnonymousPartial is a special function for uploading content as anonymous request.
+// This special function is necessary since Amazon S3 doesn't allow anonymous multipart uploads.
+func (c Client) putPartialAnonymous(bucketName, objectName string, data ReadAtCloser, size int64, contentType string) (n int64, err error) {
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return 0, err
+	}
+	if err := isValidObjectName(objectName); err != nil {
+		return 0, err
+	}
+	return c.putPartialNoChksum(bucketName, objectName, data, size, contentType)
+}
+
+// putSmallObjectPartial uploads files smaller than 5MiB.
+func (c Client) putPartialSmallObject(bucketName, objectName string, data ReadAtCloser, size int64, contentType string) (n int64, err error) {
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return 0, err
+	}
+	if err := isValidObjectName(objectName); err != nil {
+		return 0, err
+	}
+
+	// readAt defaults to reading at 5MiB buffer.
+	readAtBuffer := make([]byte, size)
+	readAtSize, err := data.ReadAt(readAtBuffer, 0)
+	if err != nil {
+		if err != io.EOF {
+			return 0, err
+		}
+	}
+	if int64(readAtSize) != size {
+		return 0, ErrUnexpectedEOF(int64(readAtSize), size, bucketName, objectName)
+	}
+
+	// Construct a new PUT object metadata.
+	putObjData := putObjectData{
+		MD5Sum:      sumMD5(readAtBuffer),
+		Sha256Sum:   sum256(readAtBuffer),
+		ReadCloser:  ioutil.NopCloser(bytes.NewReader(readAtBuffer)),
+		Size:        size,
+		ContentType: contentType,
+	}
+	// Single part use case, use putObject directly.
+	st, err := c.putObject(bucketName, objectName, putObjData)
+	if err != nil {
+		return 0, err
+	}
+	if st.Size != size {
+		return 0, ErrUnexpectedEOF(st.Size, size, bucketName, objectName)
+	}
+	return size, nil
+}
+
+// putPartialLargeObject uploads files bigger than 5MiB.
+func (c Client) putPartialLargeObject(bucketName, objectName string, data ReadAtCloser, size int64, contentType string) (n int64, err error) {
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return 0, err
+	}
+	if err := isValidObjectName(objectName); err != nil {
+		return 0, err
+	}
 
 	// getUploadID for an object, initiates a new multipart request
 	// if it cannot find any previously partially uploaded object.
@@ -139,7 +320,7 @@ func (c Client) PutObjectPartial(bucketName, objectName string, data ReadAtClose
 		}
 
 		// Save all the part metadata.
-		partMdata := partMetadata{
+		prtData := partData{
 			ReadCloser: tmpFile,
 			MD5Sum:     hashMD5.Sum(nil),
 			Size:       totalReadPartSize,
@@ -147,25 +328,25 @@ func (c Client) PutObjectPartial(bucketName, objectName string, data ReadAtClose
 
 		// Signature version '4'.
 		if c.signature.isV4() {
-			partMdata.Sha256Sum = hashSha256.Sum(nil)
+			prtData.Sha256Sum = hashSha256.Sum(nil)
 		}
 
 		// Current part number to be uploaded.
-		partMdata.Number = partNumber
+		prtData.Number = partNumber
 
 		// execute upload part.
-		objPart, err := c.uploadPart(bucketName, objectName, uploadID, partMdata)
+		objPart, err := c.uploadPart(bucketName, objectName, uploadID, prtData)
 		if err != nil {
 			// Close the read closer.
-			partMdata.ReadCloser.Close()
+			prtData.ReadCloser.Close()
 			return totalUploadedSize, err
 		}
 
 		// Save successfully uploaded size.
-		totalUploadedSize += partMdata.Size
+		totalUploadedSize += prtData.Size
 
 		// Save successfully uploaded part metadata.
-		partsInfo[partMdata.Number] = objPart
+		partsInfo[prtData.Number] = objPart
 
 		// Move to next part.
 		partNumber++

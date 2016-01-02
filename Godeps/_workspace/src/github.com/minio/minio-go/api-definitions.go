@@ -71,20 +71,20 @@ type ObjectMultipartStat struct {
 	Err error
 }
 
-// partMetadata - container for each partMetadata.
-type partMetadata struct {
+// partData - container for each part.
+type partData struct {
 	MD5Sum     []byte
 	Sha256Sum  []byte
 	ReadCloser io.ReadCloser
 	Size       int64
-	Number     int // partMetadata number.
+	Number     int // partData number.
 
 	// Error
 	Err error
 }
 
-// putObjectMetadata - container for each single PUT operation.
-type putObjectMetadata struct {
+// putObjectData - container for each single PUT operation.
+type putObjectData struct {
 	MD5Sum      []byte
 	Sha256Sum   []byte
 	ReadCloser  io.ReadCloser
