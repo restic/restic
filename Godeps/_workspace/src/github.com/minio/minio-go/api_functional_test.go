@@ -18,6 +18,7 @@ package minio_test
 
 import (
 	"bytes"
+	crand "crypto/rand"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -83,8 +84,13 @@ func TestGetObjectPartialFunctional(t *testing.T) {
 		t.Fatal("Error:", err, bucketName)
 	}
 
-	// generate data
-	buf := make([]byte, rand.Intn(1<<20))
+	// generate data more than 32K
+	buf := make([]byte, rand.Intn(1<<20)+32*1024)
+
+	_, err = io.ReadFull(crand.Reader, buf)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
 
 	// save the data
 	objectName := randString(60, rand.NewSource(time.Now().UnixNano()))
@@ -122,6 +128,10 @@ func TestGetObjectPartialFunctional(t *testing.T) {
 	if m != len(buf2) {
 		t.Fatalf("Error: ReadAt read shorter bytes before reaching EOF, want %v, got %v\n", m, len(buf2))
 	}
+	if !bytes.Equal(buf2, buf[offset:offset+512]) {
+		t.Fatal("Error: Incorrect read between two ReadAt from same offset.")
+	}
+	offset += 512
 	m, err = r.ReadAt(buf3, offset)
 	if err != nil {
 		t.Fatal("Error:", err, st.Size, len(buf3), offset)
@@ -129,9 +139,10 @@ func TestGetObjectPartialFunctional(t *testing.T) {
 	if m != len(buf3) {
 		t.Fatalf("Error: ReadAt read shorter bytes before reaching EOF, want %v, got %v\n", m, len(buf3))
 	}
-	if !bytes.Equal(buf2, buf3) {
+	if !bytes.Equal(buf3, buf[offset:offset+512]) {
 		t.Fatal("Error: Incorrect read between two ReadAt from same offset.")
 	}
+	offset += 512
 	m, err = r.ReadAt(buf4, offset)
 	if err != nil {
 		t.Fatal("Error:", err, st.Size, len(buf4), offset)
@@ -139,7 +150,7 @@ func TestGetObjectPartialFunctional(t *testing.T) {
 	if m != len(buf4) {
 		t.Fatalf("Error: ReadAt read shorter bytes before reaching EOF, want %v, got %v\n", m, len(buf4))
 	}
-	if !bytes.Equal(buf2, buf4) {
+	if !bytes.Equal(buf4, buf[offset:offset+512]) {
 		t.Fatal("Error: Incorrect read between two ReadAt from same offset.")
 	}
 

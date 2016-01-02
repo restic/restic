@@ -17,7 +17,6 @@
 package minio
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -186,7 +185,7 @@ func (c Client) GetObjectPartial(bucketName, objectName string) (ReadAtCloser, O
 				// Get shortest length.
 				// NOTE: Last remaining bytes are usually smaller than
 				// req.Buffer size. Use that as the final length.
-				length := math.Min(float64(req.Buffer.Len()), float64(objectStat.Size-req.Offset))
+				length := math.Min(float64(len(req.Buffer)), float64(objectStat.Size-req.Offset))
 				httpReader, _, err := c.getObject(bucketName, objectName, req.Offset, int64(length))
 				if err != nil {
 					resCh <- readAtResponse{
@@ -194,7 +193,12 @@ func (c Client) GetObjectPartial(bucketName, objectName string) (ReadAtCloser, O
 					}
 					return
 				}
-				size, err := io.CopyN(req.Buffer, httpReader, int64(length))
+				size, err := io.ReadFull(httpReader, req.Buffer)
+				if err == io.ErrUnexpectedEOF {
+					// If an EOF happens after reading some but not all the bytes
+					// ReadFull returns ErrUnexpectedEOF
+					err = io.EOF
+				}
 				resCh <- readAtResponse{
 					Size:  int(size),
 					Error: err,
@@ -214,7 +218,7 @@ type readAtResponse struct {
 
 // request message container to communicate with internal go-routine.
 type readAtRequest struct {
-	Buffer *bytes.Buffer
+	Buffer []byte
 	Offset int64 // readAt offset.
 }
 
@@ -267,7 +271,7 @@ func (r *objectReadAtCloser) ReadAt(b []byte, offset int64) (int, error) {
 	reqMsg := readAtRequest{}
 
 	// Send the current offset and bytes requested.
-	reqMsg.Buffer = bytes.NewBuffer(b)
+	reqMsg.Buffer = b
 	reqMsg.Offset = offset
 
 	// Send read request over the control channel.
