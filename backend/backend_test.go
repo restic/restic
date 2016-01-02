@@ -41,7 +41,7 @@ func testBackendConfig(b backend.Backend, t *testing.T) {
 }
 
 func testGetReader(b backend.Backend, t testing.TB) {
-	length := rand.Intn(1<<23) + 2000
+	length := rand.Intn(1<<24) + 2000
 
 	data := make([]byte, length)
 	_, err := io.ReadFull(crand.Reader, data)
@@ -83,6 +83,53 @@ func testGetReader(b backend.Backend, t testing.TB) {
 	}
 
 	OK(t, b.Remove(backend.Data, id.String()))
+}
+
+func testWrite(b backend.Backend, t testing.TB) {
+	length := rand.Intn(1<<23) + 2000
+
+	data := make([]byte, length)
+	_, err := io.ReadFull(crand.Reader, data)
+	OK(t, err)
+	id := backend.Hash(data)
+
+	for i := 0; i < 10; i++ {
+		blob, err := b.Create()
+		OK(t, err)
+
+		o := 0
+		for o < len(data) {
+			l := rand.Intn(len(data) - o)
+			if len(data)-o < 20 {
+				l = len(data) - o
+			}
+
+			n, err := blob.Write(data[o : o+l])
+			OK(t, err)
+			if n != l {
+				t.Fatalf("wrong number of bytes written, want %v, got %v", l, n)
+			}
+
+			o += l
+		}
+
+		name := fmt.Sprintf("%s-%d", id, i)
+		OK(t, blob.Finalize(backend.Data, name))
+
+		rd, err := b.Get(backend.Data, name)
+		OK(t, err)
+
+		buf, err := ioutil.ReadAll(rd)
+		OK(t, err)
+
+		if len(buf) != len(data) {
+			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
+		}
+
+		if !bytes.Equal(buf, data) {
+			t.Fatalf("data not equal")
+		}
+	}
 }
 
 func store(t testing.TB, b backend.Backend, tpe backend.Type, data []byte) {
@@ -232,4 +279,5 @@ func testBackend(b backend.Backend, t *testing.T) {
 	}
 
 	testGetReader(b, t)
+	testWrite(b, t)
 }
