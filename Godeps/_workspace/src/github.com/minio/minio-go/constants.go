@@ -20,19 +20,19 @@ package minio
 
 // minimumPartSize - minimum part size 5MiB per object after which
 // putObject behaves internally as multipart.
-var minimumPartSize int64 = 1024 * 1024 * 5
+const minimumPartSize = 1024 * 1024 * 5
 
 // maxParts - maximum parts for a single multipart session.
-var maxParts = int64(10000)
+const maxParts = 10000
 
 // maxPartSize - maximum part size 5GiB for a single multipart upload operation.
-var maxPartSize int64 = 1024 * 1024 * 1024 * 5
+const maxPartSize = 1024 * 1024 * 1024 * 5
 
 // maxSinglePutObjectSize - maximum size 5GiB of object per PUT operation.
-var maxSinglePutObjectSize = 1024 * 1024 * 1024 * 5
+const maxSinglePutObjectSize = 1024 * 1024 * 1024 * 5
 
 // maxMultipartPutObjectSize - maximum size 5TiB of object for Multipart operation.
-var maxMultipartPutObjectSize = 1024 * 1024 * 1024 * 1024 * 5
+const maxMultipartPutObjectSize = 1024 * 1024 * 1024 * 1024 * 5
 
 // optimalReadAtBufferSize - optimal buffer 5MiB used for reading through ReadAt operation.
-var optimalReadAtBufferSize = 1024 * 1024 * 5
+const optimalReadAtBufferSize = 1024 * 1024 * 5
