@@ -46,26 +46,33 @@ var parseTests = []struct {
 
 	{"s3://eu-central-1/bucketname", Location{Scheme: "s3",
 		Config: s3.Config{
-			Region: "eu-central-1",
-			Bucket: "bucketname",
+			Endpoint: "eu-central-1",
+			Bucket:   "bucketname",
 		}},
 	},
 	{"s3://hostname.foo/bucketname", Location{Scheme: "s3",
 		Config: s3.Config{
-			Region: "hostname.foo",
-			Bucket: "bucketname",
+			Endpoint: "hostname.foo",
+			Bucket:   "bucketname",
 		}},
 	},
 	{"s3:eu-central-1/repo", Location{Scheme: "s3",
 		Config: s3.Config{
-			Region: "eu-central-1",
-			Bucket: "repo",
+			Endpoint: "eu-central-1",
+			Bucket:   "repo",
 		}},
 	},
 	{"s3:https://hostname.foo/repo", Location{Scheme: "s3",
 		Config: s3.Config{
-			URL:    "https://hostname.foo",
-			Bucket: "repo",
+			Endpoint: "hostname.foo",
+			Bucket:   "repo",
+		}},
+	},
+	{"s3:http://hostname.foo/repo", Location{Scheme: "s3",
+		Config: s3.Config{
+			Endpoint: "hostname.foo",
+			Bucket:   "repo",
+			UseHTTP:  true,
 		}},
 	},
 }
