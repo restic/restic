@@ -3,6 +3,7 @@ package s3
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 
@@ -116,14 +117,22 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 		return errors.New("key already exists")
 	}
 
+	expectedBytes := bb.buf.Len()
+
 	<-bb.b.connChan
-	_, err = bb.b.client.PutObject(bb.b.bucketname, path, bb.buf, int64(bb.buf.Len()), "binary/octet-stream")
+	n, err := bb.b.client.PutObject(bb.b.bucketname, path, bb.buf, int64(bb.buf.Len()), "binary/octet-stream")
 	bb.b.connChan <- struct{}{}
-	bb.buf.Reset()
 
-	debug.Log("s3.Finalize", "finalized %v -> err %v", path, err)
+	debug.Log("s3.Finalize", "finalized %v -> n %v, err %v", path, n, err)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if n != int64(expectedBytes) {
+		return errors.New("could not store all bytes")
+	}
+
+	return nil
 }
 
 // Create creates a new Blob. The data is available only after Finalize()
@@ -160,24 +169,26 @@ func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint)
 	l, o := int64(length), int64(offset)
 
 	if l == 0 {
-		l = stat.Size - o
+		l = stat.Size
 	}
 
-	if l > stat.Size-o {
+	if o > stat.Size {
+		return nil, fmt.Errorf("offset beyond end of file (%v > %v)", o, stat.Size)
+	}
+
+	if o+l > stat.Size {
 		l = stat.Size - o
 	}
 
 	debug.Log("s3.GetReader", "%v %v, o %v l %v", t, name, o, l)
 
-	buf := make([]byte, l)
-	n, err := rd.ReadAt(buf, o)
-	debug.Log("s3.GetReader", " -> n %v err %v", n, err)
-	if err == io.EOF && int64(n) == l {
-		debug.Log("s3.GetReader", " ignoring EOF error")
-		err = nil
+	var r io.Reader
+	r = &ContinuousReader{R: rd, Offset: o}
+	if length > 0 {
+		r = io.LimitReader(r, int64(length))
 	}
 
-	return backend.ReadCloser(bytes.NewReader(buf[:n])), err
+	return backend.ReadCloser(r), nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.

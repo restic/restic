@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"sort"
 	"testing"
+
+	crand "crypto/rand"
 
 	"github.com/restic/restic/backend"
 	. "github.com/restic/restic/test"
@@ -34,6 +37,70 @@ func testBackendConfig(b backend.Backend, t *testing.T) {
 		OK(t, err)
 		OK(t, rd.Close())
 		Assert(t, string(buf) == "Config", "wrong data returned for config")
+	}
+}
+
+func testGetReader(b backend.Backend, t testing.TB) {
+	length := rand.Intn(1<<23) + 2000
+
+	data := make([]byte, length)
+	_, err := io.ReadFull(crand.Reader, data)
+	OK(t, err)
+
+	blob, err := b.Create()
+	OK(t, err)
+
+	id := backend.Hash(data)
+
+	_, err = blob.Write([]byte(data))
+	OK(t, err)
+	OK(t, blob.Finalize(backend.Data, id.String()))
+
+	for i := 0; i < 500; i++ {
+		l := rand.Intn(length + 2000)
+		o := rand.Intn(length + 2000)
+
+		d := data
+		if o < len(d) {
+			d = d[o:]
+		} else {
+			o = len(d)
+			d = d[:0]
+		}
+
+		if l > 0 && l < len(d) {
+			d = d[:l]
+		}
+
+		rd, err := b.GetReader(backend.Data, id.String(), uint(o), uint(l))
+		OK(t, err)
+		buf, err := ioutil.ReadAll(rd)
+		OK(t, err)
+
+		if !bytes.Equal(buf, d) {
+			t.Fatalf("data not equal")
+		}
+	}
+
+	OK(t, b.Remove(backend.Data, id.String()))
+}
+
+func store(t testing.TB, b backend.Backend, tpe backend.Type, data []byte) {
+	id := backend.Hash(data)
+
+	blob, err := b.Create()
+	OK(t, err)
+
+	_, err = blob.Write([]byte(data))
+	OK(t, err)
+	OK(t, blob.Finalize(tpe, id.String()))
+}
+
+func read(t testing.TB, rd io.Reader, expectedData []byte) {
+	buf, err := ioutil.ReadAll(rd)
+	OK(t, err)
+	if expectedData != nil {
+		Equals(t, expectedData, buf)
 	}
 }
 
@@ -70,41 +137,34 @@ func testBackend(b backend.Backend, t *testing.T) {
 
 		// add files
 		for _, test := range TestStrings {
-			// store string in backend
-			blob, err := b.Create()
-			OK(t, err)
+			store(t, b, tpe, []byte(test.data))
 
-			_, err = blob.Write([]byte(test.data))
-			OK(t, err)
-			OK(t, blob.Finalize(tpe, test.id))
-
-			// try to get it out again
+			// test Get()
 			rd, err := b.Get(tpe, test.id)
 			OK(t, err)
 			Assert(t, rd != nil, "Get() returned nil")
 
-			// try to read it out again
-			reader, err := b.GetReader(tpe, test.id, 0, uint(len(test.data)))
+			read(t, rd, []byte(test.data))
+			OK(t, rd.Close())
+
+			// test GetReader()
+			rd, err = b.GetReader(tpe, test.id, 0, uint(len(test.data)))
 			OK(t, err)
-			Assert(t, reader != nil, "GetReader() returned nil")
-			bytes := make([]byte, len(test.data))
-			reader.Read(bytes)
-			Assert(t, test.data == string(bytes), "Read() returned different content")
+			Assert(t, rd != nil, "GetReader() returned nil")
+
+			read(t, rd, []byte(test.data))
+			OK(t, rd.Close())
 
 			// try to read it out with an offset and a length
-			readerOffLen, err := b.GetReader(tpe, test.id, 1, uint(len(test.data)-2))
+			start := 1
+			end := len(test.data) - 2
+			length := end - start
+			rd, err = b.GetReader(tpe, test.id, uint(start), uint(length))
 			OK(t, err)
-			Assert(t, readerOffLen != nil, "GetReader() returned nil")
-			bytesOffLen := make([]byte, len(test.data)-2)
-			readerOffLen.Read(bytesOffLen)
-			Assert(t, test.data[1:len(test.data)-1] == string(bytesOffLen), "Read() with offset and length returned different content")
+			Assert(t, rd != nil, "GetReader() returned nil")
 
-			buf, err := ioutil.ReadAll(rd)
-			OK(t, err)
-			Equals(t, test.data, string(buf))
-
-			// compare content
-			Equals(t, test.data, string(buf))
+			read(t, rd, []byte(test.data[start:end]))
+			OK(t, rd.Close())
 		}
 
 		// test adding the first file again
@@ -161,7 +221,6 @@ func testBackend(b backend.Backend, t *testing.T) {
 
 				found, err := b.Test(tpe, id.String())
 				OK(t, err)
-				Assert(t, found, fmt.Sprintf("id %q was not found before removal", id))
 
 				OK(t, b.Remove(tpe, id.String()))
 
@@ -170,6 +229,7 @@ func testBackend(b backend.Backend, t *testing.T) {
 				Assert(t, !found, fmt.Sprintf("id %q not found after removal", id))
 			}
 		}
-
 	}
+
+	testGetReader(b, t)
 }
