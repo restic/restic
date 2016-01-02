@@ -20,7 +20,7 @@ ARG GOARCH=amd64
 
 # install dependencies
 RUN apt-get update
-RUN apt-get install -y --no-install-recommends ca-certificates wget git build-essential
+RUN apt-get install -y --no-install-recommends ca-certificates wget git build-essential openssh-server
 
 # add and configure user
 ENV HOME /home/travis
