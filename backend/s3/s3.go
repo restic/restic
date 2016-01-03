@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/minio/minio-go"
@@ -43,19 +44,15 @@ func Open(cfg Config) (backend.Backend, error) {
 	be := &S3Backend{client: client, bucketname: cfg.Bucket}
 	be.createConnections()
 
-	// create new bucket with default ACL in default region
-	err = client.MakeBucket(cfg.Bucket, "", "")
+	if err := client.BucketExists(cfg.Bucket); err != nil {
+		debug.Log("s3.Open", "BucketExists(%v) returned err %v, trying to create the bucket", err)
 
-	if err != nil {
-		e, ok := err.(minio.ErrorResponse)
-		if ok && e.Code == "BucketAlreadyExists" {
-			debug.Log("s3.Open", "ignoring error that bucket %q already exists", cfg.Bucket)
-			err = nil
+		// create new bucket with default ACL in default region
+		err = client.MakeBucket(cfg.Bucket, "", "")
+
+		if err != nil {
+			return nil, err
 		}
-	}
-
-	if err != nil {
-		return nil, err
 	}
 
 	return be, nil
@@ -103,6 +100,7 @@ func (bb *s3Blob) Size() uint {
 }
 
 func (bb *s3Blob) Finalize(t backend.Type, name string) error {
+	debug.Log("s3.blob.Finalize()", "bucket %v, finalize %v, %d bytes", bb.b.bucketname, name, bb.buf.Len())
 	if bb.final {
 		return errors.New("Already finalized")
 	}
@@ -114,16 +112,19 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	// Check key does not already exist
 	_, err := bb.b.client.StatObject(bb.b.bucketname, path)
 	if err == nil {
+		debug.Log("s3.blob.Finalize()", "%v already exists", name)
 		return errors.New("key already exists")
 	}
 
 	expectedBytes := bb.buf.Len()
 
 	<-bb.b.connChan
+	debug.Log("s3.Finalize", "PutObject(%v, %v, %v, %v)",
+		bb.b.bucketname, path, int64(bb.buf.Len()), "binary/octet-stream")
 	n, err := bb.b.client.PutObject(bb.b.bucketname, path, bb.buf, int64(bb.buf.Len()), "binary/octet-stream")
+	debug.Log("s3.Finalize", "finalized %v -> n %v, err %#v", path, n, err)
 	bb.b.connChan <- struct{}{}
 
-	debug.Log("s3.Finalize", "finalized %v -> n %v, err %v", path, n, err)
 	if err != nil {
 		return err
 	}
@@ -216,6 +217,7 @@ func (be *S3Backend) Remove(t backend.Type, name string) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (be *S3Backend) List(t backend.Type, done <-chan struct{}) <-chan string {
+	debug.Log("s3.List", "listing %v", t)
 	ch := make(chan string)
 
 	prefix := s3path(t, "")
