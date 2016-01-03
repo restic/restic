@@ -102,7 +102,7 @@ func (c Client) makeBucketRequest(bucketName string, acl BucketACL, location str
 		// If endpoint supports virtual host style use that always.
 		// Currently only S3 and Google Cloud Storage would support this.
 		if isVirtualHostSupported(c.endpointURL) {
-			targetURL.Host = bucketName + "/" + c.endpointURL.Host
+			targetURL.Host = bucketName + "." + c.endpointURL.Host
 			targetURL.Path = "/"
 		} else {
 			// If not fall back to using path style.
