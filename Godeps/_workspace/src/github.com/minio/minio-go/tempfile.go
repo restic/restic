@@ -37,7 +37,7 @@ func newTempFile(prefix string) (*tempFile, error) {
 	}
 	return &tempFile{
 		File:  file,
-		mutex: new(sync.Mutex),
+		mutex: &sync.Mutex{},
 	}, nil
 }
 

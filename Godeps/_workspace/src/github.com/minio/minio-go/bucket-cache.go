@@ -24,25 +24,26 @@ import (
 	"sync"
 )
 
-// bucketLocationCache provides simple mechansim to hold bucket locations in memory.
+// bucketLocationCache - Provides simple mechansim to hold bucket
+// locations in memory.
 type bucketLocationCache struct {
-	// Mutex is used for handling the concurrent
-	// read/write requests for cache
+	// mutex is used for handling the concurrent
+	// read/write requests for cache.
 	sync.RWMutex
 
 	// items holds the cached bucket locations.
 	items map[string]string
 }
 
-// newBucketLocationCache provides a new bucket location cache to be used
-// internally with the client object.
+// newBucketLocationCache - Provides a new bucket location cache to be
+// used internally with the client object.
 func newBucketLocationCache() *bucketLocationCache {
 	return &bucketLocationCache{
 		items: make(map[string]string),
 	}
 }
 
-// Get returns a value of a given key if it exists
+// Get - Returns a value of a given key if it exists.
 func (r *bucketLocationCache) Get(bucketName string) (location string, ok bool) {
 	r.RLock()
 	defer r.RUnlock()
@@ -50,21 +51,21 @@ func (r *bucketLocationCache) Get(bucketName string) (location string, ok bool) 
 	return
 }
 
-// Set will persist a value to the cache
+// Set - Will persist a value into cache.
 func (r *bucketLocationCache) Set(bucketName string, location string) {
 	r.Lock()
 	defer r.Unlock()
 	r.items[bucketName] = location
 }
 
-// Delete deletes a bucket name.
+// Delete - Deletes a bucket name from cache.
 func (r *bucketLocationCache) Delete(bucketName string) {
 	r.Lock()
 	defer r.Unlock()
 	delete(r.items, bucketName)
 }
 
-// getBucketLocation - get location for the bucketName from location map cache.
+// getBucketLocation - Get location for the bucketName from location map cache.
 func (c Client) getBucketLocation(bucketName string) (string, error) {
 	// For anonymous requests, default to "us-east-1" and let other calls
 	// move forward.
@@ -101,12 +102,12 @@ func (c Client) getBucketLocation(bucketName string) (string, error) {
 	}
 
 	location := locationConstraint
-	// location is empty will be 'us-east-1'.
+	// Location is empty will be 'us-east-1'.
 	if location == "" {
 		location = "us-east-1"
 	}
 
-	// location can be 'EU' convert it to meaningful 'eu-west-1'.
+	// Location can be 'EU' convert it to meaningful 'eu-west-1'.
 	if location == "EU" {
 		location = "eu-west-1"
 	}
@@ -118,7 +119,7 @@ func (c Client) getBucketLocation(bucketName string) (string, error) {
 	return location, nil
 }
 
-// getBucketLocationRequest wrapper creates a new getBucketLocation request.
+// getBucketLocationRequest - Wrapper creates a new getBucketLocation request.
 func (c Client) getBucketLocationRequest(bucketName string) (*http.Request, error) {
 	// Set location query.
 	urlValues := make(url.Values)
@@ -129,16 +130,16 @@ func (c Client) getBucketLocationRequest(bucketName string) (*http.Request, erro
 	targetURL.Path = filepath.Join(bucketName, "")
 	targetURL.RawQuery = urlValues.Encode()
 
-	// get a new HTTP request for the method.
+	// Get a new HTTP request for the method.
 	req, err := http.NewRequest("GET", targetURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// set UserAgent for the request.
+	// Set UserAgent for the request.
 	c.setUserAgent(req)
 
-	// set sha256 sum for signature calculation only with signature version '4'.
+	// Set sha256 sum for signature calculation only with signature version '4'.
 	if c.signature.isV4() {
 		req.Header.Set("X-Amz-Content-Sha256", hex.EncodeToString(sum256([]byte{})))
 	}

@@ -45,8 +45,7 @@ func main() {
 	}
 	defer object.Close()
 
-	st, _ := object.Stat()
-	n, err := s3Client.PutObject("my-bucketname", "my-objectname", object, st.Size(), "application/octet-stream")
+	n, err := s3Client.PutObject("my-bucketname", "my-objectname", object, "application/octet-stream")
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -25,14 +25,18 @@ const minimumPartSize = 1024 * 1024 * 5
 // maxParts - maximum parts for a single multipart session.
 const maxParts = 10000
 
-// maxPartSize - maximum part size 5GiB for a single multipart upload operation.
+// maxPartSize - maximum part size 5GiB for a single multipart upload
+// operation.
 const maxPartSize = 1024 * 1024 * 1024 * 5
 
-// maxSinglePutObjectSize - maximum size 5GiB of object per PUT operation.
+// maxSinglePutObjectSize - maximum size 5GiB of object per PUT
+// operation.
 const maxSinglePutObjectSize = 1024 * 1024 * 1024 * 5
 
-// maxMultipartPutObjectSize - maximum size 5TiB of object for Multipart operation.
+// maxMultipartPutObjectSize - maximum size 5TiB of object for
+// Multipart operation.
 const maxMultipartPutObjectSize = 1024 * 1024 * 1024 * 1024 * 5
 
-// optimalReadAtBufferSize - optimal buffer 5MiB used for reading through ReadAt operation.
+// optimalReadAtBufferSize - optimal buffer 5MiB used for reading
+// through ReadAt operation.
 const optimalReadAtBufferSize = 1024 * 1024 * 5

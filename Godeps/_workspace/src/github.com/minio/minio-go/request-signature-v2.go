@@ -30,7 +30,7 @@ import (
 	"time"
 )
 
-// signature and API related constants.
+// Signature and API related constants.
 const (
 	signV2Algorithm = "AWS"
 )
@@ -55,14 +55,14 @@ func encodeURL2Path(u *url.URL) (path string) {
 }
 
 // PreSignV2 - presign the request in following style.
-// https://${S3_BUCKET}.s3.amazonaws.com/${S3_OBJECT}?AWSAccessKeyId=${S3_ACCESS_KEY}&Expires=${TIMESTAMP}&Signature=${SIGNATURE}
+// https://${S3_BUCKET}.s3.amazonaws.com/${S3_OBJECT}?AWSAccessKeyId=${S3_ACCESS_KEY}&Expires=${TIMESTAMP}&Signature=${SIGNATURE}.
 func PreSignV2(req http.Request, accessKeyID, secretAccessKey string, expires int64) *http.Request {
-	// presign is a noop for anonymous credentials.
+	// Presign is not needed for anonymous credentials.
 	if accessKeyID == "" || secretAccessKey == "" {
-		return nil
+		return &req
 	}
 	d := time.Now().UTC()
-	// Add date if not present
+	// Add date if not present.
 	if date := req.Header.Get("Date"); date == "" {
 		req.Header.Set("Date", d.Format(http.TimeFormat))
 	}
@@ -73,12 +73,12 @@ func PreSignV2(req http.Request, accessKeyID, secretAccessKey string, expires in
 	// Find epoch expires when the request will expire.
 	epochExpires := d.Unix() + expires
 
-	// get string to sign.
+	// Get string to sign.
 	stringToSign := fmt.Sprintf("%s\n\n\n%d\n%s", req.Method, epochExpires, path)
 	hm := hmac.New(sha1.New, []byte(secretAccessKey))
 	hm.Write([]byte(stringToSign))
 
-	// calculate signature.
+	// Calculate signature.
 	signature := base64.StdEncoding.EncodeToString(hm.Sum(nil))
 
 	query := req.URL.Query()
@@ -98,7 +98,8 @@ func PreSignV2(req http.Request, accessKeyID, secretAccessKey string, expires in
 	return &req
 }
 
-// PostPresignSignatureV2 - presigned signature for PostPolicy request
+// PostPresignSignatureV2 - presigned signature for PostPolicy
+// request.
 func PostPresignSignatureV2(policyBase64, secretAccessKey string) string {
 	hm := hmac.New(sha1.New, []byte(secretAccessKey))
 	hm.Write([]byte(policyBase64))
@@ -124,6 +125,11 @@ func PostPresignSignatureV2(policyBase64, secretAccessKey string) string {
 
 // SignV2 sign the request before Do() (AWS Signature Version 2).
 func SignV2(req http.Request, accessKeyID, secretAccessKey string) *http.Request {
+	// Signature calculation is not needed for anonymous credentials.
+	if accessKeyID == "" || secretAccessKey == "" {
+		return &req
+	}
+
 	// Initial time.
 	d := time.Now().UTC()
 
@@ -160,11 +166,11 @@ func SignV2(req http.Request, accessKeyID, secretAccessKey string) *http.Request
 //	 CanonicalizedResource;
 func getStringToSignV2(req http.Request) string {
 	buf := new(bytes.Buffer)
-	// write standard headers.
+	// Write standard headers.
 	writeDefaultHeaders(buf, req)
-	// write canonicalized protocol headers if any.
+	// Write canonicalized protocol headers if any.
 	writeCanonicalizedHeaders(buf, req)
-	// write canonicalized Query resources if any.
+	// Write canonicalized Query resources if any.
 	writeCanonicalizedResource(buf, req)
 	return buf.String()
 }
@@ -186,7 +192,7 @@ func writeCanonicalizedHeaders(buf *bytes.Buffer, req http.Request) {
 	var protoHeaders []string
 	vals := make(map[string][]string)
 	for k, vv := range req.Header {
-		// all the AMZ and GOOG headers should be lowercase
+		// All the AMZ headers should be lowercase
 		lk := strings.ToLower(k)
 		if strings.HasPrefix(lk, "x-amz") {
 			protoHeaders = append(protoHeaders, lk)
@@ -246,6 +252,7 @@ var resourceList = []string{
 // 	  <HTTP-Request-URI, from the protocol name up to the query string> +
 // 	  [ sub-resource, if present. For example "?acl", "?location", "?logging", or "?torrent"];
 func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request) error {
+	// Save request URL.
 	requestURL := req.URL
 
 	// Get encoded URL path.
@@ -256,20 +263,21 @@ func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request) error {
 	if requestURL.RawQuery != "" {
 		var n int
 		vals, _ := url.ParseQuery(requestURL.RawQuery)
-		// loop through all the supported resourceList.
+		// Verify if any sub resource queries are present, if yes
+		// canonicallize them.
 		for _, resource := range resourceList {
 			if vv, ok := vals[resource]; ok && len(vv) > 0 {
 				n++
-				// first element
+				// First element
 				switch n {
 				case 1:
 					buf.WriteByte('?')
-				// the rest
+				// The rest
 				default:
 					buf.WriteByte('&')
 				}
 				buf.WriteString(resource)
-				// request parameters
+				// Request parameters
 				if len(vv[0]) > 0 {
 					buf.WriteByte('=')
 					buf.WriteString(url.QueryEscape(vv[0]))

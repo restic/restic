@@ -67,14 +67,14 @@ func main() {
 * [RemoveBucket(bucketName) error](examples/s3/removebucket.go)
 * [GetBucketACL(bucketName) (BucketACL, error)](examples/s3/getbucketacl.go)
 * [SetBucketACL(bucketName, BucketACL) error)](examples/s3/setbucketacl.go)
-* [ListBuckets() []BucketStat](examples/s3/listbuckets.go)
-* [ListObjects(bucketName, objectPrefix, recursive, chan<- struct{}) <-chan ObjectStat](examples/s3/listobjects.go)
-* [ListIncompleteUploads(bucketName, prefix, recursive, chan<- struct{}) <-chan ObjectMultipartStat](examples/s3/listincompleteuploads.go)
+* [ListBuckets() []BucketInfo](examples/s3/listbuckets.go)
+* [ListObjects(bucketName, objectPrefix, recursive, chan<- struct{}) <-chan ObjectInfo](examples/s3/listobjects.go)
+* [ListIncompleteUploads(bucketName, prefix, recursive, chan<- struct{}) <-chan ObjectMultipartInfo](examples/s3/listincompleteuploads.go)
 
 ### Object Operations.
 * [PutObject(bucketName, objectName, io.Reader, size, contentType) error](examples/s3/putobject.go)
-* [GetObject(bucketName, objectName) (io.ReadCloser, ObjectStat, error)](examples/s3/getobject.go)
-* [StatObject(bucketName, objectName) (ObjectStat, error)](examples/s3/statobject.go)
+* [GetObject(bucketName, objectName) (io.ReadCloser, ObjectInfo, error)](examples/s3/getobject.go)
+* [StatObject(bucketName, objectName) (ObjectInfo, error)](examples/s3/statobject.go)
 * [RemoveObject(bucketName, objectName) error](examples/s3/removeobject.go)
 * [RemoveIncompleteUpload(bucketName, objectName) <-chan error](examples/s3/removeincompleteupload.go)
 

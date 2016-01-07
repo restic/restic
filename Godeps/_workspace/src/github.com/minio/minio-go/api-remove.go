@@ -26,15 +26,18 @@ import (
 //  All objects (including all object versions and delete markers).
 //  in the bucket must be deleted before successfully attempting this request.
 func (c Client) RemoveBucket(bucketName string) error {
+	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return err
 	}
+	// Instantiate a new request.
 	req, err := c.newRequest("DELETE", requestMetadata{
 		bucketName: bucketName,
 	})
 	if err != nil {
 		return err
 	}
+	// Initiate the request.
 	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
@@ -54,12 +57,14 @@ func (c Client) RemoveBucket(bucketName string) error {
 
 // RemoveObject remove an object from a bucket.
 func (c Client) RemoveObject(bucketName, objectName string) error {
+	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return err
 	}
 	if err := isValidObjectName(objectName); err != nil {
 		return err
 	}
+	// Instantiate the request.
 	req, err := c.newRequest("DELETE", requestMetadata{
 		bucketName: bucketName,
 		objectName: objectName,
@@ -67,6 +72,7 @@ func (c Client) RemoveObject(bucketName, objectName string) error {
 	if err != nil {
 		return err
 	}
+	// Initiate the request.
 	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
@@ -81,42 +87,32 @@ func (c Client) RemoveObject(bucketName, objectName string) error {
 // RemoveIncompleteUpload aborts an partially uploaded object.
 // Requires explicit authentication, no anonymous requests are allowed for multipart API.
 func (c Client) RemoveIncompleteUpload(bucketName, objectName string) error {
-	// Validate input arguments.
+	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return err
 	}
 	if err := isValidObjectName(objectName); err != nil {
 		return err
 	}
-	errorCh := make(chan error)
-	go func(errorCh chan<- error) {
-		defer close(errorCh)
-		// Find multipart upload id of the object.
-		uploadID, err := c.findUploadID(bucketName, objectName)
-		if err != nil {
-			errorCh <- err
-			return
-		}
-		if uploadID != "" {
-			// If uploadID is not an empty string, initiate the request.
-			err := c.abortMultipartUpload(bucketName, objectName, uploadID)
-			if err != nil {
-				errorCh <- err
-				return
-			}
-			return
-		}
-	}(errorCh)
-	err, ok := <-errorCh
-	if ok && err != nil {
+	// Find multipart upload id of the object to be aborted.
+	uploadID, err := c.findUploadID(bucketName, objectName)
+	if err != nil {
 		return err
+	}
+	if uploadID != "" {
+		// Upload id found, abort the incomplete multipart upload.
+		err := c.abortMultipartUpload(bucketName, objectName, uploadID)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// abortMultipartUpload aborts a multipart upload for the given uploadID, all parts are deleted.
+// abortMultipartUpload aborts a multipart upload for the given
+// uploadID, all previously uploaded parts are deleted.
 func (c Client) abortMultipartUpload(bucketName, objectName, uploadID string) error {
-	// Validate input arguments.
+	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return err
 	}
@@ -138,7 +134,7 @@ func (c Client) abortMultipartUpload(bucketName, objectName, uploadID string) er
 		return err
 	}
 
-	// execute the request.
+	// Initiate the request.
 	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
@@ -146,11 +142,12 @@ func (c Client) abortMultipartUpload(bucketName, objectName, uploadID string) er
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusNoContent {
-			// Abort has no response body, handle it.
+			// Abort has no response body, handle it for any errors.
 			var errorResponse ErrorResponse
 			switch resp.StatusCode {
 			case http.StatusNotFound:
-				// This is needed specifically for Abort and it cannot be converged.
+				// This is needed specifically for abort and it cannot
+				// be converged into default case.
 				errorResponse = ErrorResponse{
 					Code:            "NoSuchUpload",
 					Message:         "The specified multipart upload does not exist.",

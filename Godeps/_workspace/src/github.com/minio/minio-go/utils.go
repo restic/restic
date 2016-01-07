@@ -17,7 +17,10 @@
 package minio
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/xml"
 	"io"
 	"io/ioutil"
 	"net"
@@ -28,6 +31,26 @@ import (
 	"time"
 	"unicode/utf8"
 )
+
+// xmlDecoder provide decoded value in xml.
+func xmlDecoder(body io.Reader, v interface{}) error {
+	d := xml.NewDecoder(body)
+	return d.Decode(v)
+}
+
+// sum256 calculate sha256 sum for an input byte array.
+func sum256(data []byte) []byte {
+	hash := sha256.New()
+	hash.Write(data)
+	return hash.Sum(nil)
+}
+
+// sumHMAC calculate hmac between two input byte array.
+func sumHMAC(key []byte, data []byte) []byte {
+	hash := hmac.New(sha256.New, key)
+	hash.Write(data)
+	return hash.Sum(nil)
+}
 
 // isPartUploaded - true if part is already uploaded.
 func isPartUploaded(objPart objectPart, objectParts map[int]objectPart) (isUploaded bool) {
@@ -261,7 +284,6 @@ func isValidObjectPrefix(objectPrefix string) error {
 // - if input object size is -1 then return maxPartSize.
 // - if it happens to be that partSize is indeed bigger
 //   than the maximum part size just return maxPartSize.
-//
 func optimalPartSize(objectSize int64) int64 {
 	// if object size is -1 choose part size as 5GiB.
 	if objectSize == -1 {

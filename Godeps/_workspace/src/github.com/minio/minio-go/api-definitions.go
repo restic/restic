@@ -16,26 +16,27 @@
 
 package minio
 
-import (
-	"io"
-	"time"
-)
+import "time"
 
-// BucketStat container for bucket metadata.
-type BucketStat struct {
+// BucketInfo container for bucket metadata.
+type BucketInfo struct {
 	// The name of the bucket.
 	Name string
 	// Date the bucket was created.
 	CreationDate time.Time
 }
 
-// ObjectStat container for object metadata.
-type ObjectStat struct {
-	ETag         string
-	Key          string
-	LastModified time.Time
-	Size         int64
-	ContentType  string
+// ObjectInfo container for object metadata.
+type ObjectInfo struct {
+	// An ETag is optionally set to md5sum of an object.  In case of multipart objects,
+	// ETag is of the form MD5SUM-N where MD5SUM is md5sum of all individual md5sums of
+	// each parts concatenated into one string.
+	ETag string
+
+	Key          string    // Name of the object
+	LastModified time.Time // Date and time the object was last modified.
+	Size         int64     // Size in bytes of the object.
+	ContentType  string    // A standard MIME type describing the format of the object data.
 
 	// Owner name.
 	Owner struct {
@@ -50,18 +51,21 @@ type ObjectStat struct {
 	Err error
 }
 
-// ObjectMultipartStat container for multipart object metadata.
-type ObjectMultipartStat struct {
+// ObjectMultipartInfo container for multipart object metadata.
+type ObjectMultipartInfo struct {
 	// Date and time at which the multipart upload was initiated.
 	Initiated time.Time `type:"timestamp" timestampFormat:"iso8601"`
 
 	Initiator initiator
 	Owner     owner
 
+	// The type of storage to use for the object. Defaults to 'STANDARD'.
 	StorageClass string
 
 	// Key of the object for which the multipart upload was initiated.
-	Key  string
+	Key string
+
+	// Size in bytes of the object.
 	Size int64
 
 	// Upload ID that identifies the multipart upload.
@@ -69,25 +73,4 @@ type ObjectMultipartStat struct {
 
 	// Error
 	Err error
-}
-
-// partData - container for each part.
-type partData struct {
-	MD5Sum     []byte
-	Sha256Sum  []byte
-	ReadCloser io.ReadCloser
-	Size       int64
-	Number     int // partData number.
-
-	// Error
-	Err error
-}
-
-// putObjectData - container for each single PUT operation.
-type putObjectData struct {
-	MD5Sum      []byte
-	Sha256Sum   []byte
-	ReadCloser  io.ReadCloser
-	Size        int64
-	ContentType string
 }

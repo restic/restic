@@ -26,8 +26,8 @@ build_script:
   - gofmt -s -l .
   - golint github.com/minio/minio-go...
   - deadcode
-  - go test
-  - go test -test.short -race
+  - go test -short -v
+  - go test -short -race -v
 
 # to disable automatic tests
 test: off

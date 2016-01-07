@@ -17,7 +17,6 @@
 package minio
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -36,7 +35,7 @@ import (
 </Error>
 */
 
-// ErrorResponse is the type error returned by some API operations.
+// ErrorResponse - Is the typed error returned by all API operations.
 type ErrorResponse struct {
 	XMLName    xml.Name `xml:"Error" json:"-"`
 	Code       string
@@ -46,12 +45,13 @@ type ErrorResponse struct {
 	RequestID  string `xml:"RequestId"`
 	HostID     string `xml:"HostId"`
 
-	// This is a new undocumented field, set only if available.
+	// Region where the bucket is located. This header is returned
+	// only in HEAD bucket and ListObjects response.
 	AmzBucketRegion string
 }
 
-// ToErrorResponse returns parsed ErrorResponse struct, if input is nil or not ErrorResponse return value is nil
-// this fuction is useful when some one wants to dig deeper into the error structures over the network.
+// ToErrorResponse - Returns parsed ErrorResponse struct from body and
+// http headers.
 //
 // For example:
 //
@@ -61,7 +61,6 @@ type ErrorResponse struct {
 //   reader, stat, err := s3.GetObject(...)
 //   if err != nil {
 //      resp := s3.ToErrorResponse(err)
-//      fmt.Println(resp.ToXML())
 //   }
 //   ...
 func ToErrorResponse(err error) ErrorResponse {
@@ -73,47 +72,32 @@ func ToErrorResponse(err error) ErrorResponse {
 	}
 }
 
-// ToXML send raw xml marshalled as string
-func (e ErrorResponse) ToXML() string {
-	b, err := xml.Marshal(&e)
-	if err != nil {
-		panic(err)
-	}
-	return string(b)
-}
-
-// ToJSON send raw json marshalled as string
-func (e ErrorResponse) ToJSON() string {
-	b, err := json.Marshal(&e)
-	if err != nil {
-		panic(err)
-	}
-	return string(b)
-}
-
-// Error formats HTTP error string
+// Error - Returns HTTP error string
 func (e ErrorResponse) Error() string {
 	return e.Message
 }
 
-// Common reporting string
+// Common string for errors to report issue location in unexpected
+// cases.
 const (
 	reportIssue = "Please report this issue at https://github.com/minio/minio-go/issues."
 )
 
-// HTTPRespToErrorResponse returns a new encoded ErrorResponse structure
+// HTTPRespToErrorResponse returns a new encoded ErrorResponse
+// structure as error.
 func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string) error {
 	if resp == nil {
 		msg := "Response is empty. " + reportIssue
 		return ErrInvalidArgument(msg)
 	}
-	var errorResponse ErrorResponse
-	err := xmlDecoder(resp.Body, &errorResponse)
+	var errResp ErrorResponse
+	err := xmlDecoder(resp.Body, &errResp)
+	// Xml decoding failed with no body, fall back to HTTP headers.
 	if err != nil {
 		switch resp.StatusCode {
 		case http.StatusNotFound:
 			if objectName == "" {
-				errorResponse = ErrorResponse{
+				errResp = ErrorResponse{
 					Code:            "NoSuchBucket",
 					Message:         "The specified bucket does not exist.",
 					BucketName:      bucketName,
@@ -122,7 +106,7 @@ func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string)
 					AmzBucketRegion: resp.Header.Get("x-amz-bucket-region"),
 				}
 			} else {
-				errorResponse = ErrorResponse{
+				errResp = ErrorResponse{
 					Code:            "NoSuchKey",
 					Message:         "The specified key does not exist.",
 					BucketName:      bucketName,
@@ -133,7 +117,7 @@ func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string)
 				}
 			}
 		case http.StatusForbidden:
-			errorResponse = ErrorResponse{
+			errResp = ErrorResponse{
 				Code:            "AccessDenied",
 				Message:         "Access Denied.",
 				BucketName:      bucketName,
@@ -143,7 +127,7 @@ func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string)
 				AmzBucketRegion: resp.Header.Get("x-amz-bucket-region"),
 			}
 		case http.StatusConflict:
-			errorResponse = ErrorResponse{
+			errResp = ErrorResponse{
 				Code:            "Conflict",
 				Message:         "Bucket not empty.",
 				BucketName:      bucketName,
@@ -152,7 +136,7 @@ func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string)
 				AmzBucketRegion: resp.Header.Get("x-amz-bucket-region"),
 			}
 		default:
-			errorResponse = ErrorResponse{
+			errResp = ErrorResponse{
 				Code:            resp.Status,
 				Message:         resp.Status,
 				BucketName:      bucketName,
@@ -162,10 +146,21 @@ func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string)
 			}
 		}
 	}
-	return errorResponse
+
+	// AccessDenied without a signature mismatch code, usually means
+	// that the bucket policy has certain restrictions where some API
+	// operations are not allowed. Handle this case so that top level
+	// callers can interpret this easily and fall back if needed to a
+	// lower functionality call. Read each individual API specific
+	// code for such fallbacks.
+	if errResp.Code == "AccessDenied" && errResp.Message == "Access Denied" {
+		errResp.Code = "NotImplemented"
+		errResp.Message = "Operation is not allowed according to your bucket policy."
+	}
+	return errResp
 }
 
-// ErrEntityTooLarge input size is larger than supported maximum.
+// ErrEntityTooLarge - Input size is larger than supported maximum.
 func ErrEntityTooLarge(totalSize int64, bucketName, objectName string) error {
 	msg := fmt.Sprintf("Your proposed upload size ‘%d’ exceeds the maximum allowed object size '5GiB' for single PUT operation.", totalSize)
 	return ErrorResponse{
@@ -176,7 +171,19 @@ func ErrEntityTooLarge(totalSize int64, bucketName, objectName string) error {
 	}
 }
 
-// ErrUnexpectedShortRead unexpected shorter read of input buffer from target.
+// ErrEntityTooSmall - Input size is smaller than supported minimum.
+func ErrEntityTooSmall(totalSize int64, bucketName, objectName string) error {
+	msg := fmt.Sprintf("Your proposed upload size ‘%d’ is below the minimum allowed object size '0B' for single PUT operation.", totalSize)
+	return ErrorResponse{
+		Code:       "EntityTooLarge",
+		Message:    msg,
+		BucketName: bucketName,
+		Key:        objectName,
+	}
+}
+
+// ErrUnexpectedShortRead - Unexpected shorter read of input buffer from
+// target.
 func ErrUnexpectedShortRead(totalRead, totalSize int64, bucketName, objectName string) error {
 	msg := fmt.Sprintf("Data read ‘%s’ is shorter than the size ‘%s’ of input buffer.",
 		strconv.FormatInt(totalRead, 10), strconv.FormatInt(totalSize, 10))
@@ -188,7 +195,7 @@ func ErrUnexpectedShortRead(totalRead, totalSize int64, bucketName, objectName s
 	}
 }
 
-// ErrUnexpectedEOF unexpected end of file reached.
+// ErrUnexpectedEOF - Unexpected end of file reached.
 func ErrUnexpectedEOF(totalRead, totalSize int64, bucketName, objectName string) error {
 	msg := fmt.Sprintf("Data read ‘%s’ is not equal to the size ‘%s’ of the input Reader.",
 		strconv.FormatInt(totalRead, 10), strconv.FormatInt(totalSize, 10))
@@ -200,7 +207,7 @@ func ErrUnexpectedEOF(totalRead, totalSize int64, bucketName, objectName string)
 	}
 }
 
-// ErrInvalidBucketName - invalid bucket name response.
+// ErrInvalidBucketName - Invalid bucket name response.
 func ErrInvalidBucketName(message string) error {
 	return ErrorResponse{
 		Code:      "InvalidBucketName",
@@ -209,7 +216,7 @@ func ErrInvalidBucketName(message string) error {
 	}
 }
 
-// ErrInvalidObjectName - invalid object name response.
+// ErrInvalidObjectName - Invalid object name response.
 func ErrInvalidObjectName(message string) error {
 	return ErrorResponse{
 		Code:      "NoSuchKey",
@@ -218,7 +225,7 @@ func ErrInvalidObjectName(message string) error {
 	}
 }
 
-// ErrInvalidParts - invalid number of parts.
+// ErrInvalidParts - Invalid number of parts.
 func ErrInvalidParts(expectedParts, uploadedParts int) error {
 	msg := fmt.Sprintf("Unexpected number of parts found Want %d, Got %d", expectedParts, uploadedParts)
 	return ErrorResponse{
@@ -228,11 +235,11 @@ func ErrInvalidParts(expectedParts, uploadedParts int) error {
 	}
 }
 
-// ErrInvalidObjectPrefix - invalid object prefix response is
+// ErrInvalidObjectPrefix - Invalid object prefix response is
 // similar to object name response.
 var ErrInvalidObjectPrefix = ErrInvalidObjectName
 
-// ErrInvalidArgument - invalid argument response.
+// ErrInvalidArgument - Invalid argument response.
 func ErrInvalidArgument(message string) error {
 	return ErrorResponse{
 		Code:      "InvalidArgument",

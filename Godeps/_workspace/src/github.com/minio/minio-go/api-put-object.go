@@ -18,20 +18,42 @@ package minio
 
 import (
 	"bytes"
-	"crypto/md5"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/xml"
-	"fmt"
-	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"sort"
-	"strconv"
+	"os"
 	"strings"
 )
+
+// getReaderSize gets the size of the underlying reader, if possible.
+func getReaderSize(reader io.Reader) (size int64, err error) {
+	size = -1
+	if reader != nil {
+		switch v := reader.(type) {
+		case *bytes.Buffer:
+			size = int64(v.Len())
+		case *bytes.Reader:
+			size = int64(v.Len())
+		case *strings.Reader:
+			size = int64(v.Len())
+		case *os.File:
+			var st os.FileInfo
+			st, err = v.Stat()
+			if err != nil {
+				return 0, err
+			}
+			size = st.Size()
+		case *Object:
+			var st ObjectInfo
+			st, err = v.Stat()
+			if err != nil {
+				return 0, err
+			}
+			size = st.Size
+		}
+	}
+	return size, nil
+}
 
 // completedParts is a collection of parts sortable by their part numbers.
 // used for sorting the uploaded parts before completing the multipart request.
@@ -54,13 +76,24 @@ func (a completedParts) Less(i, j int) bool { return a[i].PartNumber < a[j].Part
 // So we fall back to single PUT operation with the maximum limit of 5GiB.
 //
 // NOTE: For anonymous requests Amazon S3 doesn't allow multipart upload. So we fall back to single PUT operation.
-func (c Client) PutObject(bucketName, objectName string, data io.Reader, size int64, contentType string) (n int64, err error) {
+func (c Client) PutObject(bucketName, objectName string, reader io.Reader, contentType string) (n int64, err error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return 0, err
 	}
 	if err := isValidObjectName(objectName); err != nil {
 		return 0, err
+	}
+
+	// get reader size.
+	size, err := getReaderSize(reader)
+	if err != nil {
+		return 0, err
+	}
+
+	// Check for largest object size allowed.
+	if size > int64(maxMultipartPutObjectSize) {
+		return 0, ErrEntityTooLarge(size, bucketName, objectName)
 	}
 
 	// NOTE: Google Cloud Storage does not implement Amazon S3 Compatible multipart PUT.
@@ -74,35 +107,56 @@ func (c Client) PutObject(bucketName, objectName string, data io.Reader, size in
 				BucketName: bucketName,
 			}
 		}
+		if size > maxSinglePutObjectSize {
+			return 0, ErrEntityTooLarge(size, bucketName, objectName)
+		}
 		// Do not compute MD5 for Google Cloud Storage. Uploads upto 5GiB in size.
-		return c.putNoChecksum(bucketName, objectName, data, size, contentType)
+		return c.putObjectNoChecksum(bucketName, objectName, reader, size, contentType)
 	}
 
 	// NOTE: S3 doesn't allow anonymous multipart requests.
 	if isAmazonEndpoint(c.endpointURL) && c.anonymous {
-		if size <= -1 || size > int64(maxSinglePutObjectSize) {
+		if size <= -1 {
 			return 0, ErrorResponse{
 				Code:       "NotImplemented",
-				Message:    fmt.Sprintf("For anonymous requests Content-Length cannot be %d.", size),
+				Message:    "Content-Length cannot be negative for anonymous requests.",
 				Key:        objectName,
 				BucketName: bucketName,
 			}
 		}
+		if size > maxSinglePutObjectSize {
+			return 0, ErrEntityTooLarge(size, bucketName, objectName)
+		}
 		// Do not compute MD5 for anonymous requests to Amazon S3. Uploads upto 5GiB in size.
-		return c.putAnonymous(bucketName, objectName, data, size, contentType)
+		return c.putObjectNoChecksum(bucketName, objectName, reader, size, contentType)
 	}
 
-	// Large file upload is initiated for uploads for input data size
-	// if its greater than 5MiB or data size is negative.
-	if size >= minimumPartSize || size < 0 {
-		return c.putLargeObject(bucketName, objectName, data, size, contentType)
+	// putSmall object.
+	if size < minimumPartSize && size > 0 {
+		return c.putObjectSingle(bucketName, objectName, reader, size, contentType)
 	}
-	return c.putSmallObject(bucketName, objectName, data, size, contentType)
+	// For all sizes greater than 5MiB do multipart.
+	n, err = c.putObjectMultipart(bucketName, objectName, reader, size, contentType)
+	if err != nil {
+		errResp := ToErrorResponse(err)
+		// Verify if multipart functionality is not available, if not
+		// fall back to single PutObject operation.
+		if errResp.Code == "NotImplemented" {
+			// Verify if size of reader is greater than '5GiB'.
+			if size > maxSinglePutObjectSize {
+				return 0, ErrEntityTooLarge(size, bucketName, objectName)
+			}
+			// Fall back to uploading as single PutObject operation.
+			return c.putObjectSingle(bucketName, objectName, reader, size, contentType)
+		}
+		return n, err
+	}
+	return n, nil
 }
 
-// putNoChecksum special function used Google Cloud Storage. This special function
+// putObjectNoChecksum special function used Google Cloud Storage. This special function
 // is used for Google Cloud Storage since Google's multipart API is not S3 compatible.
-func (c Client) putNoChecksum(bucketName, objectName string, data io.Reader, size int64, contentType string) (n int64, err error) {
+func (c Client) putObjectNoChecksum(bucketName, objectName string, reader io.Reader, size int64, contentType string) (n int64, err error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return 0, err
@@ -110,19 +164,12 @@ func (c Client) putNoChecksum(bucketName, objectName string, data io.Reader, siz
 	if err := isValidObjectName(objectName); err != nil {
 		return 0, err
 	}
-	if size > maxPartSize {
+	if size > maxSinglePutObjectSize {
 		return 0, ErrEntityTooLarge(size, bucketName, objectName)
 	}
-	// For anonymous requests, we will not calculate sha256 and md5sum.
-	putObjData := putObjectData{
-		MD5Sum:      nil,
-		Sha256Sum:   nil,
-		ReadCloser:  ioutil.NopCloser(data),
-		Size:        size,
-		ContentType: contentType,
-	}
+	// This function does not calculate sha256 and md5sum for payload.
 	// Execute put object.
-	st, err := c.putObject(bucketName, objectName, putObjData)
+	st, err := c.putObjectDo(bucketName, objectName, ioutil.NopCloser(reader), nil, nil, size, contentType)
 	if err != nil {
 		return 0, err
 	}
@@ -132,10 +179,9 @@ func (c Client) putNoChecksum(bucketName, objectName string, data io.Reader, siz
 	return size, nil
 }
 
-// putAnonymous is a special function for uploading content as anonymous request.
-// This special function is necessary since Amazon S3 doesn't allow anonymous
-// multipart uploads.
-func (c Client) putAnonymous(bucketName, objectName string, data io.Reader, size int64, contentType string) (n int64, err error) {
+// putObjectSingle is a special function for uploading single put object request.
+// This special function is used as a fallback when multipart upload fails.
+func (c Client) putObjectSingle(bucketName, objectName string, reader io.Reader, size int64, contentType string) (n int64, err error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return 0, err
@@ -143,431 +189,96 @@ func (c Client) putAnonymous(bucketName, objectName string, data io.Reader, size
 	if err := isValidObjectName(objectName); err != nil {
 		return 0, err
 	}
-	return c.putNoChecksum(bucketName, objectName, data, size, contentType)
-}
-
-// putSmallObject uploads files smaller than 5 mega bytes.
-func (c Client) putSmallObject(bucketName, objectName string, data io.Reader, size int64, contentType string) (n int64, err error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return 0, err
+	if size > maxSinglePutObjectSize {
+		return 0, ErrEntityTooLarge(size, bucketName, objectName)
 	}
-	if err := isValidObjectName(objectName); err != nil {
-		return 0, err
+	// If size is a stream, upload upto 5GiB.
+	if size <= -1 {
+		size = maxSinglePutObjectSize
 	}
-	// Read input data fully into buffer.
-	dataBytes, err := ioutil.ReadAll(data)
+	// Initialize a new temporary file.
+	tmpFile, err := newTempFile("single$-putobject-single")
 	if err != nil {
 		return 0, err
 	}
-	if int64(len(dataBytes)) != size {
-		return 0, ErrUnexpectedEOF(int64(len(dataBytes)), size, bucketName, objectName)
-	}
-	// Construct a new PUT object metadata.
-	putObjData := putObjectData{
-		MD5Sum:      sumMD5(dataBytes),
-		Sha256Sum:   sum256(dataBytes),
-		ReadCloser:  ioutil.NopCloser(bytes.NewReader(dataBytes)),
-		Size:        size,
-		ContentType: contentType,
-	}
-	// Single part use case, use putObject directly.
-	st, err := c.putObject(bucketName, objectName, putObjData)
+	md5Sum, sha256Sum, size, err := c.hashCopyN(tmpFile, reader, size)
 	if err != nil {
-		return 0, err
-	}
-	if st.Size != size {
-		return 0, ErrUnexpectedEOF(st.Size, size, bucketName, objectName)
-	}
-	return size, nil
-}
-
-// hashCopy - calculates Md5sum and Sha256sum for upto partSize amount of bytes.
-func (c Client) hashCopy(writer io.ReadWriteSeeker, data io.Reader, partSize int64) (md5Sum, sha256Sum []byte, size int64, err error) {
-	// MD5 and Sha256 hasher.
-	var hashMD5, hashSha256 hash.Hash
-	// MD5 and Sha256 hasher.
-	hashMD5 = md5.New()
-	hashWriter := io.MultiWriter(writer, hashMD5)
-	if c.signature.isV4() {
-		hashSha256 = sha256.New()
-		hashWriter = io.MultiWriter(writer, hashMD5, hashSha256)
-	}
-
-	// Copies to input at writer.
-	size, err = io.CopyN(hashWriter, data, partSize)
-	if err != nil {
-		// If not EOF return error right here.
 		if err != io.EOF {
-			return nil, nil, 0, err
-		}
-	}
-
-	// Seek back to beginning of input, any error fail right here.
-	if _, err := writer.Seek(0, 0); err != nil {
-		return nil, nil, 0, err
-	}
-
-	// Finalize md5shum and sha256 sum.
-	md5Sum = hashMD5.Sum(nil)
-	if c.signature.isV4() {
-		sha256Sum = hashSha256.Sum(nil)
-	}
-	return md5Sum, sha256Sum, size, err
-}
-
-// putLargeObject uploads files bigger than 5 mega bytes.
-func (c Client) putLargeObject(bucketName, objectName string, data io.Reader, size int64, contentType string) (n int64, err error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return 0, err
-	}
-	if err := isValidObjectName(objectName); err != nil {
-		return 0, err
-	}
-
-	// getUploadID for an object, initiates a new multipart request
-	// if it cannot find any previously partially uploaded object.
-	uploadID, err := c.getUploadID(bucketName, objectName, contentType)
-	if err != nil {
-		return 0, err
-	}
-
-	// total data read and written to server. should be equal to 'size' at the end of the call.
-	var totalUploadedSize int64
-
-	// Complete multipart upload.
-	var completeMultipartUpload completeMultipartUpload
-
-	// Fetch previously upload parts and save the total size.
-	partsInfo, err := c.listObjectParts(bucketName, objectName, uploadID)
-	if err != nil {
-		return 0, err
-	}
-	// Previous maximum part size
-	var prevMaxPartSize int64
-	// Loop through all parts and calculate totalUploadedSize.
-	for _, partInfo := range partsInfo {
-		// Choose the maximum part size.
-		if partInfo.Size >= prevMaxPartSize {
-			prevMaxPartSize = partInfo.Size
-		}
-	}
-
-	// Calculate the optimal part size for a given size.
-	partSize := optimalPartSize(size)
-	// If prevMaxPartSize is set use that.
-	if prevMaxPartSize != 0 {
-		partSize = prevMaxPartSize
-	}
-
-	// Part number always starts with '0'.
-	partNumber := 0
-
-	// Loop through until EOF.
-	for {
-		// Increment part number.
-		partNumber++
-
-		// Initialize a new temporary file.
-		tmpFile, err := newTempFile("multiparts$-putobject")
-		if err != nil {
 			return 0, err
 		}
-
-		// Calculates MD5 and Sha256 sum while copying partSize bytes into tmpFile.
-		md5Sum, sha256Sum, size, rErr := c.hashCopy(tmpFile, data, partSize)
-		if rErr != nil {
-			if rErr != io.EOF {
-				return 0, rErr
-			}
-		}
-
-		// Save all the part metadata.
-		prtData := partData{
-			ReadCloser: tmpFile,
-			Size:       size,
-			MD5Sum:     md5Sum,
-			Sha256Sum:  sha256Sum,
-			Number:     partNumber, // Current part number to be uploaded.
-		}
-
-		// If part not uploaded proceed to upload.
-		if !isPartUploaded(objectPart{
-			ETag:       hex.EncodeToString(prtData.MD5Sum),
-			PartNumber: partNumber,
-		}, partsInfo) {
-			// execute upload part.
-			objPart, err := c.uploadPart(bucketName, objectName, uploadID, prtData)
-			if err != nil {
-				// Close the read closer.
-				prtData.ReadCloser.Close()
-				return 0, err
-			}
-			// Save successfully uploaded part metadata.
-			partsInfo[prtData.Number] = objPart
-		}
-
-		// Close the read closer.
-		prtData.ReadCloser.Close()
-
-		// If read error was an EOF, break out of the loop.
-		if rErr == io.EOF {
-			break
-		}
 	}
-
-	// Loop over uploaded parts to save them in a Parts array before completing the multipart request.
-	for _, part := range partsInfo {
-		var complPart completePart
-		complPart.ETag = part.ETag
-		complPart.PartNumber = part.PartNumber
-		completeMultipartUpload.Parts = append(completeMultipartUpload.Parts, complPart)
-		// Save successfully uploaded size.
-		totalUploadedSize += part.Size
-	}
-
-	// If size is greater than zero verify totalUploadedSize. if totalUploadedSize is
-	// different than the input 'size', do not complete the request throw an error.
-	if size > 0 {
-		if totalUploadedSize != size {
-			return totalUploadedSize, ErrUnexpectedEOF(totalUploadedSize, size, bucketName, objectName)
-		}
-	}
-
-	// If partNumber is different than total list of parts, error out.
-	if partNumber != len(completeMultipartUpload.Parts) {
-		return totalUploadedSize, ErrInvalidParts(partNumber, len(completeMultipartUpload.Parts))
-	}
-
-	// Sort all completed parts.
-	sort.Sort(completedParts(completeMultipartUpload.Parts))
-	_, err = c.completeMultipartUpload(bucketName, objectName, uploadID, completeMultipartUpload)
+	// Execute put object.
+	st, err := c.putObjectDo(bucketName, objectName, tmpFile, md5Sum, sha256Sum, size, contentType)
 	if err != nil {
-		return totalUploadedSize, err
+		return 0, err
 	}
-
-	// Return final size.
-	return totalUploadedSize, nil
+	if st.Size != size {
+		return 0, ErrUnexpectedEOF(st.Size, size, bucketName, objectName)
+	}
+	return size, nil
 }
 
-// putObject - add an object to a bucket.
+// putObjectDo - executes the put object http operation.
 // NOTE: You must have WRITE permissions on a bucket to add an object to it.
-func (c Client) putObject(bucketName, objectName string, putObjData putObjectData) (ObjectStat, error) {
+func (c Client) putObjectDo(bucketName, objectName string, reader io.ReadCloser, md5Sum []byte, sha256Sum []byte, size int64, contentType string) (ObjectInfo, error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
-		return ObjectStat{}, err
+		return ObjectInfo{}, err
 	}
 	if err := isValidObjectName(objectName); err != nil {
-		return ObjectStat{}, err
+		return ObjectInfo{}, err
 	}
 
-	if strings.TrimSpace(putObjData.ContentType) == "" {
-		putObjData.ContentType = "application/octet-stream"
+	if size <= -1 {
+		return ObjectInfo{}, ErrEntityTooSmall(size, bucketName, objectName)
+	}
+
+	if size > maxSinglePutObjectSize {
+		return ObjectInfo{}, ErrEntityTooLarge(size, bucketName, objectName)
+	}
+
+	if strings.TrimSpace(contentType) == "" {
+		contentType = "application/octet-stream"
 	}
 
 	// Set headers.
 	customHeader := make(http.Header)
-	customHeader.Set("Content-Type", putObjData.ContentType)
+	customHeader.Set("Content-Type", contentType)
 
 	// Populate request metadata.
 	reqMetadata := requestMetadata{
 		bucketName:         bucketName,
 		objectName:         objectName,
 		customHeader:       customHeader,
-		contentBody:        putObjData.ReadCloser,
-		contentLength:      putObjData.Size,
-		contentSha256Bytes: putObjData.Sha256Sum,
-		contentMD5Bytes:    putObjData.MD5Sum,
+		contentBody:        reader,
+		contentLength:      size,
+		contentMD5Bytes:    md5Sum,
+		contentSHA256Bytes: sha256Sum,
 	}
 	// Initiate new request.
 	req, err := c.newRequest("PUT", reqMetadata)
 	if err != nil {
-		return ObjectStat{}, err
+		return ObjectInfo{}, err
 	}
 	// Execute the request.
 	resp, err := c.do(req)
 	defer closeResponse(resp)
 	if err != nil {
-		return ObjectStat{}, err
+		return ObjectInfo{}, err
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return ObjectStat{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
+			return ObjectInfo{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
 
-	var metadata ObjectStat
+	var metadata ObjectInfo
 	// Trim off the odd double quotes from ETag in the beginning and end.
 	metadata.ETag = strings.TrimPrefix(resp.Header.Get("ETag"), "\"")
 	metadata.ETag = strings.TrimSuffix(metadata.ETag, "\"")
 	// A success here means data was written to server successfully.
-	metadata.Size = putObjData.Size
+	metadata.Size = size
 
 	// Return here.
 	return metadata, nil
-}
-
-// initiateMultipartUpload initiates a multipart upload and returns an upload ID.
-func (c Client) initiateMultipartUpload(bucketName, objectName, contentType string) (initiateMultipartUploadResult, error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return initiateMultipartUploadResult{}, err
-	}
-	if err := isValidObjectName(objectName); err != nil {
-		return initiateMultipartUploadResult{}, err
-	}
-
-	// Initialize url queries.
-	urlValues := make(url.Values)
-	urlValues.Set("uploads", "")
-
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
-
-	// set ContentType header.
-	customHeader := make(http.Header)
-	customHeader.Set("Content-Type", contentType)
-
-	reqMetadata := requestMetadata{
-		bucketName:   bucketName,
-		objectName:   objectName,
-		queryValues:  urlValues,
-		customHeader: customHeader,
-	}
-
-	// Instantiate the request.
-	req, err := c.newRequest("POST", reqMetadata)
-	if err != nil {
-		return initiateMultipartUploadResult{}, err
-	}
-	// Execute the request.
-	resp, err := c.do(req)
-	defer closeResponse(resp)
-	if err != nil {
-		return initiateMultipartUploadResult{}, err
-	}
-	if resp != nil {
-		if resp.StatusCode != http.StatusOK {
-			return initiateMultipartUploadResult{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
-		}
-	}
-	// Decode xml initiate multipart.
-	initiateMultipartUploadResult := initiateMultipartUploadResult{}
-	err = xmlDecoder(resp.Body, &initiateMultipartUploadResult)
-	if err != nil {
-		return initiateMultipartUploadResult, err
-	}
-	return initiateMultipartUploadResult, nil
-}
-
-// uploadPart uploads a part in a multipart upload.
-func (c Client) uploadPart(bucketName, objectName, uploadID string, uploadingPart partData) (objectPart, error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return objectPart{}, err
-	}
-	if err := isValidObjectName(objectName); err != nil {
-		return objectPart{}, err
-	}
-
-	// Get resources properly escaped and lined up before using them in http request.
-	urlValues := make(url.Values)
-	// Set part number.
-	urlValues.Set("partNumber", strconv.Itoa(uploadingPart.Number))
-	// Set upload id.
-	urlValues.Set("uploadId", uploadID)
-
-	reqMetadata := requestMetadata{
-		bucketName:         bucketName,
-		objectName:         objectName,
-		queryValues:        urlValues,
-		contentBody:        uploadingPart.ReadCloser,
-		contentLength:      uploadingPart.Size,
-		contentSha256Bytes: uploadingPart.Sha256Sum,
-		contentMD5Bytes:    uploadingPart.MD5Sum,
-	}
-
-	// Instantiate a request.
-	req, err := c.newRequest("PUT", reqMetadata)
-	if err != nil {
-		return objectPart{}, err
-	}
-	// Execute the request.
-	resp, err := c.do(req)
-	defer closeResponse(resp)
-	if err != nil {
-		return objectPart{}, err
-	}
-	if resp != nil {
-		if resp.StatusCode != http.StatusOK {
-			return objectPart{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
-		}
-	}
-	// Once successfully uploaded, return completed part.
-	objPart := objectPart{}
-	objPart.Size = uploadingPart.Size
-	objPart.PartNumber = uploadingPart.Number
-	// Trim off the odd double quotes from ETag in the beginning and end.
-	objPart.ETag = strings.TrimPrefix(resp.Header.Get("ETag"), "\"")
-	objPart.ETag = strings.TrimSuffix(objPart.ETag, "\"")
-	return objPart, nil
-}
-
-// completeMultipartUpload completes a multipart upload by assembling previously uploaded parts.
-func (c Client) completeMultipartUpload(bucketName, objectName, uploadID string, complete completeMultipartUpload) (completeMultipartUploadResult, error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return completeMultipartUploadResult{}, err
-	}
-	if err := isValidObjectName(objectName); err != nil {
-		return completeMultipartUploadResult{}, err
-	}
-
-	// Initialize url queries.
-	urlValues := make(url.Values)
-	urlValues.Set("uploadId", uploadID)
-
-	// Marshal complete multipart body.
-	completeMultipartUploadBytes, err := xml.Marshal(complete)
-	if err != nil {
-		return completeMultipartUploadResult{}, err
-	}
-
-	// Instantiate all the complete multipart buffer.
-	completeMultipartUploadBuffer := bytes.NewBuffer(completeMultipartUploadBytes)
-	reqMetadata := requestMetadata{
-		bucketName:         bucketName,
-		objectName:         objectName,
-		queryValues:        urlValues,
-		contentBody:        ioutil.NopCloser(completeMultipartUploadBuffer),
-		contentLength:      int64(completeMultipartUploadBuffer.Len()),
-		contentSha256Bytes: sum256(completeMultipartUploadBuffer.Bytes()),
-	}
-
-	// Instantiate the request.
-	req, err := c.newRequest("POST", reqMetadata)
-	if err != nil {
-		return completeMultipartUploadResult{}, err
-	}
-
-	// Execute the request.
-	resp, err := c.do(req)
-	defer closeResponse(resp)
-	if err != nil {
-		return completeMultipartUploadResult{}, err
-	}
-	if resp != nil {
-		if resp.StatusCode != http.StatusOK {
-			return completeMultipartUploadResult{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
-		}
-	}
-	// If successful response, decode the body.
-	completeMultipartUploadResult := completeMultipartUploadResult{}
-	err = xmlDecoder(resp.Body, &completeMultipartUploadResult)
-	if err != nil {
-		return completeMultipartUploadResult, err
-	}
-	return completeMultipartUploadResult, nil
 }

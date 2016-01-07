@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-// PresignedGetObject returns a presigned URL to access an object without credentials.
+// PresignedGetObject - Returns a presigned URL to access an object without credentials.
 // Expires maximum is 7days - ie. 604800 and minimum is 1.
 func (c Client) PresignedGetObject(bucketName, objectName string, expires time.Duration) (string, error) {
 	// Input validation.
@@ -50,7 +50,7 @@ func (c Client) PresignedGetObject(bucketName, objectName string, expires time.D
 	return req.URL.String(), nil
 }
 
-// PresignedPutObject returns a presigned URL to upload an object without credentials.
+// PresignedPutObject - Returns a presigned URL to upload an object without credentials.
 // Expires maximum is 7days - ie. 604800 and minimum is 1.
 func (c Client) PresignedPutObject(bucketName, objectName string, expires time.Duration) (string, error) {
 	// Input validation.
@@ -79,7 +79,7 @@ func (c Client) PresignedPutObject(bucketName, objectName string, expires time.D
 	return req.URL.String(), nil
 }
 
-// PresignedPostPolicy returns POST form data to upload an object at a location.
+// PresignedPostPolicy - Returns POST form data to upload an object at a location.
 func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 	// Validate input arguments.
 	if p.expiration.IsZero() {
@@ -93,7 +93,7 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 	}
 
 	bucketName := p.formData["bucket"]
-	// Fetch the location.
+	// Fetch the bucket location.
 	location, err := c.getBucketLocation(bucketName)
 	if err != nil {
 		return nil, err
@@ -101,6 +101,7 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 
 	// Keep time.
 	t := time.Now().UTC()
+	// For signature version '2' handle here.
 	if c.signature.isV2() {
 		policyBase64 := p.base64()
 		p.formData["policy"] = policyBase64
@@ -135,7 +136,7 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 		condition: "$x-amz-credential",
 		value:     credential,
 	})
-	// get base64 encoded policy.
+	// Get base64 encoded policy.
 	policyBase64 := p.base64()
 	// Fill in the form data.
 	p.formData["policy"] = policyBase64

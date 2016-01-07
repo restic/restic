@@ -35,23 +35,29 @@ func main() {
 
 	// New returns an Amazon S3 compatible client object. API copatibality (v2 or v4) is automatically
 	// determined based on the Endpoint value.
-	s3Client, err := minio.New("s3.amazonaws.com", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", false)
+	s3Client, err := minio.New("s3.amazonaws.com", "YOUR-ACCESS-KEY-HERE", "YOUR-SECRET-KEY-HERE", false)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	reader, _, err := s3Client.GetObject("my-bucketname", "my-objectname")
+	reader, err := s3Client.GetObject("my-bucketname", "my-objectname")
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer reader.Close()
 
-	localfile, err := os.Create("my-testfile")
+	localFile, err := os.Create("my-testfile")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	defer localfile.Close()
 
-	if _, err = io.Copy(localfile, reader); err != nil {
+	stat, err := reader.Stat()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if _, err := io.CopyN(localFile, reader, stat.Size); err != nil {
 		log.Fatalln(err)
 	}
 }

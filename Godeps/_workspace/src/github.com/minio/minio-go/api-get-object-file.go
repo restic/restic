@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 )
 
-// FGetObject - get object to a file.
+// FGetObject - download contents of an object to a local file.
 func (c Client) FGetObject(bucketName, objectName, filePath string) error {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {

@@ -97,7 +97,7 @@ func (c Client) makeBucketRequest(bucketName string, acl BucketACL, location str
 	}
 
 	// Set get bucket location always as path style.
-	targetURL := c.endpointURL
+	targetURL := *c.endpointURL
 	if bucketName != "" {
 		// If endpoint supports virtual host style use that always.
 		// Currently only S3 and Google Cloud Storage would support this.
@@ -132,7 +132,7 @@ func (c Client) makeBucketRequest(bucketName string, acl BucketACL, location str
 
 	// If location is not 'us-east-1' create bucket location config.
 	if location != "us-east-1" && location != "" {
-		createBucketConfig := new(createBucketConfiguration)
+		createBucketConfig := createBucketConfiguration{}
 		createBucketConfig.Location = location
 		var createBucketConfigBytes []byte
 		createBucketConfigBytes, err = xml.Marshal(createBucketConfig)

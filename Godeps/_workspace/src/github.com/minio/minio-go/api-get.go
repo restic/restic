@@ -28,15 +28,18 @@ import (
 	"time"
 )
 
-// GetBucketACL get the permissions on an existing bucket.
+// GetBucketACL - Get the permissions on an existing bucket.
 //
 // Returned values are:
 //
-//  private - owner gets full access.
-//  public-read - owner gets full access, others get read access.
-//  public-read-write - owner gets full access, others get full access too.
-//  authenticated-read - owner gets full access, authenticated users get read access.
+//  private - Owner gets full access.
+//  public-read - Owner gets full access, others get read access.
+//  public-read-write - Owner gets full access, others get full access
+//  too.
+//  authenticated-read - Owner gets full access, authenticated users
+//  get read access.
 func (c Client) GetBucketACL(bucketName string) (BucketACL, error) {
+	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return "", err
 	}
@@ -73,9 +76,10 @@ func (c Client) GetBucketACL(bucketName string) (BucketACL, error) {
 		return "", err
 	}
 
-	// We need to avoid following de-serialization check for Google Cloud Storage.
-	// On Google Cloud Storage "private" canned ACL's policy do not have grant list.
-	// Treat it as a valid case, check for all other vendors.
+	// We need to avoid following de-serialization check for Google
+	// Cloud Storage. On Google Cloud Storage "private" canned ACL's
+	// policy do not have grant list. Treat it as a valid case, check
+	// for all other vendors.
 	if !isGoogleEndpoint(c.endpointURL) {
 		if policy.AccessControlList.Grant == nil {
 			errorResponse := ErrorResponse{
@@ -90,8 +94,8 @@ func (c Client) GetBucketACL(bucketName string) (BucketACL, error) {
 		}
 	}
 
-	// boolean cues to indentify right canned acls.
-	var publicRead, publicWrite bool
+	// Boolean cues to indentify right canned acls.
+	var publicRead, publicWrite, authenticatedRead bool
 
 	// Handle grants.
 	grants := policy.AccessControlList.Grant
@@ -100,7 +104,8 @@ func (c Client) GetBucketACL(bucketName string) (BucketACL, error) {
 			continue
 		}
 		if g.Grantee.URI == "http://acs.amazonaws.com/groups/global/AuthenticatedUsers" && g.Permission == "READ" {
-			return BucketACL("authenticated-read"), nil
+			authenticatedRead = true
+			break
 		} else if g.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && g.Permission == "WRITE" {
 			publicWrite = true
 		} else if g.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && g.Permission == "READ" {
@@ -108,15 +113,19 @@ func (c Client) GetBucketACL(bucketName string) (BucketACL, error) {
 		}
 	}
 
-	// public write and not enabled. return.
+	// Verify if acl is authenticated read.
+	if authenticatedRead {
+		return BucketACL("authenticated-read"), nil
+	}
+	// Verify if acl is private.
 	if !publicWrite && !publicRead {
 		return BucketACL("private"), nil
 	}
-	// public write not enabled but public read is. return.
+	// Verify if acl is public-read.
 	if !publicWrite && publicRead {
 		return BucketACL("public-read"), nil
 	}
-	// public read and public write are enabled return.
+	// Verify if acl is public-read-write.
 	if publicRead && publicWrite {
 		return BucketACL("public-read-write"), nil
 	}
@@ -129,47 +138,30 @@ func (c Client) GetBucketACL(bucketName string) (BucketACL, error) {
 	}
 }
 
-// GetObject gets object content from specified bucket.
-// You may also look at GetPartialObject.
-func (c Client) GetObject(bucketName, objectName string) (io.ReadCloser, ObjectStat, error) {
+// GetObject - returns an seekable, readable object.
+func (c Client) GetObject(bucketName, objectName string) (*Object, error) {
+	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
-		return nil, ObjectStat{}, err
+		return nil, err
 	}
 	if err := isValidObjectName(objectName); err != nil {
-		return nil, ObjectStat{}, err
+		return nil, err
 	}
-	// get the whole object as a stream, no seek or resume supported for this.
-	return c.getObject(bucketName, objectName, 0, 0)
-}
-
-// ReadAtCloser readat closer interface.
-type ReadAtCloser interface {
-	io.ReaderAt
-	io.Closer
-}
-
-// GetObjectPartial returns a io.ReadAt for reading sparse entries.
-func (c Client) GetObjectPartial(bucketName, objectName string) (ReadAtCloser, ObjectStat, error) {
-	if err := isValidBucketName(bucketName); err != nil {
-		return nil, ObjectStat{}, err
-	}
-	if err := isValidObjectName(objectName); err != nil {
-		return nil, ObjectStat{}, err
-	}
-	// Send an explicit stat to get the actual object size.
-	objectStat, err := c.StatObject(bucketName, objectName)
+	// Send an explicit info to get the actual object size.
+	objectInfo, err := c.StatObject(bucketName, objectName)
 	if err != nil {
-		return nil, ObjectStat{}, err
+		return nil, err
 	}
 
 	// Create request channel.
-	reqCh := make(chan readAtRequest)
+	reqCh := make(chan readRequest)
 	// Create response channel.
-	resCh := make(chan readAtResponse)
+	resCh := make(chan readResponse)
 	// Create done channel.
 	doneCh := make(chan struct{})
 
-	// This routine feeds partial object data as and when the caller reads.
+	// This routine feeds partial object data as and when the caller
+	// reads.
 	go func() {
 		defer close(reqCh)
 		defer close(resCh)
@@ -185,21 +177,21 @@ func (c Client) GetObjectPartial(bucketName, objectName string) (ReadAtCloser, O
 				// Get shortest length.
 				// NOTE: Last remaining bytes are usually smaller than
 				// req.Buffer size. Use that as the final length.
-				length := math.Min(float64(len(req.Buffer)), float64(objectStat.Size-req.Offset))
+				length := math.Min(float64(len(req.Buffer)), float64(objectInfo.Size-req.Offset))
 				httpReader, _, err := c.getObject(bucketName, objectName, req.Offset, int64(length))
 				if err != nil {
-					resCh <- readAtResponse{
+					resCh <- readResponse{
 						Error: err,
 					}
 					return
 				}
 				size, err := io.ReadFull(httpReader, req.Buffer)
 				if err == io.ErrUnexpectedEOF {
-					// If an EOF happens after reading some but not all the bytes
-					// ReadFull returns ErrUnexpectedEOF
+					// If an EOF happens after reading some but not
+					// all the bytes ReadFull returns ErrUnexpectedEOF
 					err = io.EOF
 				}
-				resCh <- readAtResponse{
+				resCh <- readResponse{
 					Size:  int(size),
 					Error: err,
 				}
@@ -207,78 +199,148 @@ func (c Client) GetObjectPartial(bucketName, objectName string) (ReadAtCloser, O
 		}
 	}()
 	// Return the readerAt backed by routine.
-	return newObjectReadAtCloser(reqCh, resCh, doneCh, objectStat.Size), objectStat, nil
+	return newObject(reqCh, resCh, doneCh, objectInfo), nil
 }
 
-// response message container to reply back for the request.
-type readAtResponse struct {
+// Read response message container to reply back for the request.
+type readResponse struct {
 	Size  int
 	Error error
 }
 
-// request message container to communicate with internal go-routine.
-type readAtRequest struct {
+// Read request message container to communicate with internal
+// go-routine.
+type readRequest struct {
 	Buffer []byte
 	Offset int64 // readAt offset.
 }
 
-// objectReadAtCloser container for io.ReadAtCloser.
-type objectReadAtCloser struct {
-	// mutex.
+// Object represents an open object. It implements Read, ReadAt,
+// Seeker, Close for a HTTP stream.
+type Object struct {
+	// Mutex.
 	mutex *sync.Mutex
 
 	// User allocated and defined.
-	reqCh      chan<- readAtRequest
-	resCh      <-chan readAtResponse
+	reqCh      chan<- readRequest
+	resCh      <-chan readResponse
 	doneCh     chan<- struct{}
-	objectSize int64
+	currOffset int64
+	objectInfo ObjectInfo
 
 	// Previous error saved for future calls.
 	prevErr error
 }
 
-// newObjectReadAtCloser implements a io.ReadSeeker for a HTTP stream.
-func newObjectReadAtCloser(reqCh chan<- readAtRequest, resCh <-chan readAtResponse, doneCh chan<- struct{}, objectSize int64) *objectReadAtCloser {
-	return &objectReadAtCloser{
-		mutex:      new(sync.Mutex),
-		reqCh:      reqCh,
-		resCh:      resCh,
-		doneCh:     doneCh,
-		objectSize: objectSize,
+// Read reads up to len(p) bytes into p. It returns the number of
+// bytes read (0 <= n <= len(p)) and any error encountered. Returns
+// io.EOF upon end of file.
+func (o *Object) Read(b []byte) (n int, err error) {
+	if o == nil {
+		return 0, ErrInvalidArgument("Object is nil")
 	}
+
+	// Locking.
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+
+	// If current offset has reached Size limit, return EOF.
+	if o.currOffset >= o.objectInfo.Size {
+		return 0, io.EOF
+	}
+
+	// Previous prevErr is which was saved in previous operation.
+	if o.prevErr != nil {
+		return 0, o.prevErr
+	}
+
+	// Send current information over control channel to indicate we
+	// are ready.
+	reqMsg := readRequest{}
+
+	// Send the offset and pointer to the buffer over the channel.
+	reqMsg.Buffer = b
+	reqMsg.Offset = o.currOffset
+
+	// Send read request over the control channel.
+	o.reqCh <- reqMsg
+
+	// Get data over the response channel.
+	dataMsg := <-o.resCh
+
+	// Bytes read.
+	bytesRead := int64(dataMsg.Size)
+
+	// Update current offset.
+	o.currOffset += bytesRead
+
+	if dataMsg.Error == nil {
+		// If currOffset read is equal to objectSize
+		// We have reached end of file, we return io.EOF.
+		if o.currOffset >= o.objectInfo.Size {
+			return dataMsg.Size, io.EOF
+		}
+		return dataMsg.Size, nil
+	}
+
+	// Save any error.
+	o.prevErr = dataMsg.Error
+	return dataMsg.Size, dataMsg.Error
 }
 
-// ReadAt reads len(b) bytes from the File starting at byte offset off.
-// It returns the number of bytes read and the error, if any.
-// ReadAt always returns a non-nil error when n < len(b).
-// At end of file, that error is io.EOF.
-func (r *objectReadAtCloser) ReadAt(b []byte, offset int64) (int, error) {
+// Stat returns the ObjectInfo structure describing object.
+func (o *Object) Stat() (ObjectInfo, error) {
+	if o == nil {
+		return ObjectInfo{}, ErrInvalidArgument("Object is nil")
+	}
 	// Locking.
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
 
-	// if offset is negative and offset is greater than or equal to object size we return EOF.
-	if offset < 0 || offset >= r.objectSize {
+	if o.prevErr != nil {
+		return ObjectInfo{}, o.prevErr
+	}
+
+	return o.objectInfo, nil
+}
+
+// ReadAt reads len(b) bytes from the File starting at byte offset
+// off. It returns the number of bytes read and the error, if any.
+// ReadAt always returns a non-nil error when n < len(b). At end of
+// file, that error is io.EOF.
+func (o *Object) ReadAt(b []byte, offset int64) (n int, err error) {
+	if o == nil {
+		return 0, ErrInvalidArgument("Object is nil")
+	}
+
+	// Locking.
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+
+	// If offset is negative and offset is greater than or equal to
+	// object size we return EOF.
+	if offset < 0 || offset >= o.objectInfo.Size {
 		return 0, io.EOF
 	}
 
 	// prevErr is which was saved in previous operation.
-	if r.prevErr != nil {
-		return 0, r.prevErr
+	if o.prevErr != nil {
+		return 0, o.prevErr
 	}
 
-	// Send current information over control channel to indicate we are ready.
-	reqMsg := readAtRequest{}
+	// Send current information over control channel to indicate we
+	// are ready.
+	reqMsg := readRequest{}
 
-	// Send the current offset and bytes requested.
+	// Send the offset and pointer to the buffer over the channel.
 	reqMsg.Buffer = b
 	reqMsg.Offset = offset
 
 	// Send read request over the control channel.
-	r.reqCh <- reqMsg
+	o.reqCh <- reqMsg
 
 	// Get data over the response channel.
-	dataMsg := <-r.resCh
+	dataMsg := <-o.resCh
 
 	// Bytes read.
 	bytesRead := int64(dataMsg.Size)
@@ -286,38 +348,109 @@ func (r *objectReadAtCloser) ReadAt(b []byte, offset int64) (int, error) {
 	if dataMsg.Error == nil {
 		// If offset+bytes read is equal to objectSize
 		// we have reached end of file, we return io.EOF.
-		if offset+bytesRead == r.objectSize {
+		if offset+bytesRead == o.objectInfo.Size {
 			return dataMsg.Size, io.EOF
 		}
 		return dataMsg.Size, nil
 	}
 
 	// Save any error.
-	r.prevErr = dataMsg.Error
+	o.prevErr = dataMsg.Error
 	return dataMsg.Size, dataMsg.Error
 }
 
-// Closer is the interface that wraps the basic Close method.
+// Seek sets the offset for the next Read or Write to offset,
+// interpreted according to whence: 0 means relative to the
+// origin of the file, 1 means relative to the current offset,
+// and 2 means relative to the end.
+// Seek returns the new offset and an error, if any.
 //
-// The behavior of Close after the first call returns error for
-// subsequent Close() calls.
-func (r *objectReadAtCloser) Close() (err error) {
+// Seeking to a negative offset is an error. Seeking to any positive
+// offset is legal, subsequent io operations succeed until the
+// underlying object is not closed.
+func (o *Object) Seek(offset int64, whence int) (n int64, err error) {
+	if o == nil {
+		return 0, ErrInvalidArgument("Object is nil")
+	}
+
 	// Locking.
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
+
+	if o.prevErr != nil {
+		// At EOF seeking is legal, for any other errors we return.
+		if o.prevErr != io.EOF {
+			return 0, o.prevErr
+		}
+	}
+
+	// Negative offset is valid for whence of '2'.
+	if offset < 0 && whence != 2 {
+		return 0, ErrInvalidArgument(fmt.Sprintf("Object: negative position not allowed for %d.", whence))
+	}
+	switch whence {
+	default:
+		return 0, ErrInvalidArgument(fmt.Sprintf("Object: invalid whence %d", whence))
+	case 0:
+		if offset > o.objectInfo.Size {
+			return 0, io.EOF
+		}
+		o.currOffset = offset
+	case 1:
+		if o.currOffset+offset > o.objectInfo.Size {
+			return 0, io.EOF
+		}
+		o.currOffset += offset
+	case 2:
+		// Seeking to positive offset is valid for whence '2', but
+		// since we are backing a Reader we have reached 'EOF' if
+		// offset is positive.
+		if offset > 0 {
+			return 0, io.EOF
+		}
+		// Seeking to negative position not allowed for whence.
+		if o.objectInfo.Size+offset < 0 {
+			return 0, ErrInvalidArgument(fmt.Sprintf("Object: Seeking at negative offset not allowed for %d", whence))
+		}
+		o.currOffset += offset
+	}
+	// Return the effective offset.
+	return o.currOffset, nil
+}
+
+// Close - The behavior of Close after the first call returns error
+// for subsequent Close() calls.
+func (o *Object) Close() (err error) {
+	if o == nil {
+		return ErrInvalidArgument("Object is nil")
+	}
+	// Locking.
+	o.mutex.Lock()
+	defer o.mutex.Unlock()
 
 	// prevErr is which was saved in previous operation.
-	if r.prevErr != nil {
-		return r.prevErr
+	if o.prevErr != nil {
+		return o.prevErr
 	}
 
 	// Close successfully.
-	close(r.doneCh)
+	close(o.doneCh)
 
 	// Save this for any subsequent frivolous reads.
-	errMsg := "objectReadAtCloser: is already closed. Bad file descriptor."
-	r.prevErr = errors.New(errMsg)
-	return
+	errMsg := "Object: Is already closed. Bad file descriptor."
+	o.prevErr = errors.New(errMsg)
+	return nil
+}
+
+// newObject instantiates a new *minio.Object*
+func newObject(reqCh chan<- readRequest, resCh <-chan readResponse, doneCh chan<- struct{}, objectInfo ObjectInfo) *Object {
+	return &Object{
+		mutex:      &sync.Mutex{},
+		reqCh:      reqCh,
+		resCh:      resCh,
+		doneCh:     doneCh,
+		objectInfo: objectInfo,
+	}
 }
 
 // getObject - retrieve object from Object Storage.
@@ -327,13 +460,13 @@ func (r *objectReadAtCloser) Close() (err error) {
 //
 // For more information about the HTTP Range header.
 // go to http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35.
-func (c Client) getObject(bucketName, objectName string, offset, length int64) (io.ReadCloser, ObjectStat, error) {
+func (c Client) getObject(bucketName, objectName string, offset, length int64) (io.ReadCloser, ObjectInfo, error) {
 	// Validate input arguments.
 	if err := isValidBucketName(bucketName); err != nil {
-		return nil, ObjectStat{}, err
+		return nil, ObjectInfo{}, err
 	}
 	if err := isValidObjectName(objectName); err != nil {
-		return nil, ObjectStat{}, err
+		return nil, ObjectInfo{}, err
 	}
 
 	customHeader := make(http.Header)
@@ -353,16 +486,16 @@ func (c Client) getObject(bucketName, objectName string, offset, length int64) (
 		customHeader: customHeader,
 	})
 	if err != nil {
-		return nil, ObjectStat{}, err
+		return nil, ObjectInfo{}, err
 	}
 	// Execute the request.
 	resp, err := c.do(req)
 	if err != nil {
-		return nil, ObjectStat{}, err
+		return nil, ObjectInfo{}, err
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-			return nil, ObjectStat{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
+			return nil, ObjectInfo{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
 
@@ -374,7 +507,7 @@ func (c Client) getObject(bucketName, objectName string, offset, length int64) (
 	date, err := time.Parse(http.TimeFormat, resp.Header.Get("Last-Modified"))
 	if err != nil {
 		msg := "Last-Modified time format not recognized. " + reportIssue
-		return nil, ObjectStat{}, ErrorResponse{
+		return nil, ObjectInfo{}, ErrorResponse{
 			Code:            "InternalError",
 			Message:         msg,
 			RequestID:       resp.Header.Get("x-amz-request-id"),
@@ -387,7 +520,7 @@ func (c Client) getObject(bucketName, objectName string, offset, length int64) (
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
-	var objectStat ObjectStat
+	var objectStat ObjectInfo
 	objectStat.ETag = md5sum
 	objectStat.Key = objectName
 	objectStat.Size = resp.ContentLength

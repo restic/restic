@@ -28,7 +28,8 @@ import (
 	"sort"
 )
 
-// getUploadID if already present for object name or initiate a request to fetch a new upload id.
+// getUploadID - fetch upload id if already present for an object name
+// or initiate a new request to fetch a new upload id.
 func (c Client) getUploadID(bucketName, objectName, contentType string) (string, error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
@@ -60,84 +61,16 @@ func (c Client) getUploadID(bucketName, objectName, contentType string) (string,
 	return uploadID, nil
 }
 
-// FPutObject - put object a file.
-func (c Client) FPutObject(bucketName, objectName, filePath, contentType string) (int64, error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return 0, err
-	}
-	if err := isValidObjectName(objectName); err != nil {
-		return 0, err
-	}
-
-	// Open the referenced file.
-	fileData, err := os.Open(filePath)
-	// If any error fail quickly here.
-	if err != nil {
-		return 0, err
-	}
-	defer fileData.Close()
-
-	// Save the file stat.
-	fileStat, err := fileData.Stat()
-	if err != nil {
-		return 0, err
-	}
-
-	// Save the file size.
-	fileSize := fileStat.Size()
-	if fileSize > int64(maxMultipartPutObjectSize) {
-		return 0, ErrInvalidArgument("Input file size is bigger than the supported maximum of 5TiB.")
-	}
-
-	// NOTE: Google Cloud Storage multipart Put is not compatible with Amazon S3 APIs.
-	// Current implementation will only upload a maximum of 5GiB to Google Cloud Storage servers.
-	if isGoogleEndpoint(c.endpointURL) {
-		if fileSize > int64(maxSinglePutObjectSize) {
-			return 0, ErrorResponse{
-				Code:       "NotImplemented",
-				Message:    fmt.Sprintf("Invalid Content-Length %d for file uploads to Google Cloud Storage.", fileSize),
-				Key:        objectName,
-				BucketName: bucketName,
-			}
-		}
-		// Do not compute MD5 for Google Cloud Storage. Uploads upto 5GiB in size.
-		n, err := c.putNoChecksum(bucketName, objectName, fileData, fileSize, contentType)
-		return n, err
-	}
-
-	// NOTE: S3 doesn't allow anonymous multipart requests.
-	if isAmazonEndpoint(c.endpointURL) && c.anonymous {
-		if fileSize > int64(maxSinglePutObjectSize) {
-			return 0, ErrorResponse{
-				Code:       "NotImplemented",
-				Message:    fmt.Sprintf("For anonymous requests Content-Length cannot be %d.", fileSize),
-				Key:        objectName,
-				BucketName: bucketName,
-			}
-		}
-		// Do not compute MD5 for anonymous requests to Amazon S3. Uploads upto 5GiB in size.
-		n, err := c.putAnonymous(bucketName, objectName, fileData, fileSize, contentType)
-		return n, err
-	}
-
-	// Small object upload is initiated for uploads for input data size smaller than 5MiB.
-	if fileSize < minimumPartSize {
-		return c.putSmallObject(bucketName, objectName, fileData, fileSize, contentType)
-	}
-	return c.fputLargeObject(bucketName, objectName, fileData, fileSize, contentType)
-}
-
-// computeHash - calculates MD5 and Sha256 for an input read Seeker.
+// computeHash - Calculates MD5 and SHA256 for an input read Seeker.
 func (c Client) computeHash(reader io.ReadSeeker) (md5Sum, sha256Sum []byte, size int64, err error) {
-	// MD5 and Sha256 hasher.
-	var hashMD5, hashSha256 hash.Hash
-	// MD5 and Sha256 hasher.
+	// MD5 and SHA256 hasher.
+	var hashMD5, hashSHA256 hash.Hash
+	// MD5 and SHA256 hasher.
 	hashMD5 = md5.New()
 	hashWriter := io.MultiWriter(hashMD5)
 	if c.signature.isV4() {
-		hashSha256 = sha256.New()
-		hashWriter = io.MultiWriter(hashMD5, hashSha256)
+		hashSHA256 = sha256.New()
+		hashWriter = io.MultiWriter(hashMD5, hashSHA256)
 	}
 
 	size, err = io.Copy(hashWriter, reader)
@@ -153,12 +86,13 @@ func (c Client) computeHash(reader io.ReadSeeker) (md5Sum, sha256Sum []byte, siz
 	// Finalize md5shum and sha256 sum.
 	md5Sum = hashMD5.Sum(nil)
 	if c.signature.isV4() {
-		sha256Sum = hashSha256.Sum(nil)
+		sha256Sum = hashSHA256.Sum(nil)
 	}
 	return md5Sum, sha256Sum, size, nil
 }
 
-func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File, fileSize int64, contentType string) (int64, error) {
+// FPutObject - Create an object in a bucket, with contents from file at filePath.
+func (c Client) FPutObject(bucketName, objectName, filePath, contentType string) (n int64, err error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return 0, err
@@ -167,27 +101,119 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 		return 0, err
 	}
 
-	// getUploadID for an object, initiates a new multipart request
+	// Open the referenced file.
+	fileReader, err := os.Open(filePath)
+	// If any error fail quickly here.
+	if err != nil {
+		return 0, err
+	}
+	defer fileReader.Close()
+
+	// Save the file stat.
+	fileStat, err := fileReader.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	// Save the file size.
+	fileSize := fileStat.Size()
+
+	// Check for largest object size allowed.
+	if fileSize > int64(maxMultipartPutObjectSize) {
+		return 0, ErrEntityTooLarge(fileSize, bucketName, objectName)
+	}
+
+	// NOTE: Google Cloud Storage multipart Put is not compatible with Amazon S3 APIs.
+	// Current implementation will only upload a maximum of 5GiB to Google Cloud Storage servers.
+	if isGoogleEndpoint(c.endpointURL) {
+		if fileSize > int64(maxSinglePutObjectSize) {
+			return 0, ErrorResponse{
+				Code:       "NotImplemented",
+				Message:    fmt.Sprintf("Invalid Content-Length %d for file uploads to Google Cloud Storage.", fileSize),
+				Key:        objectName,
+				BucketName: bucketName,
+			}
+		}
+		// Do not compute MD5 for Google Cloud Storage. Uploads upto 5GiB in size.
+		return c.putObjectNoChecksum(bucketName, objectName, fileReader, fileSize, contentType)
+	}
+
+	// NOTE: S3 doesn't allow anonymous multipart requests.
+	if isAmazonEndpoint(c.endpointURL) && c.anonymous {
+		if fileSize > int64(maxSinglePutObjectSize) {
+			return 0, ErrorResponse{
+				Code:       "NotImplemented",
+				Message:    fmt.Sprintf("For anonymous requests Content-Length cannot be %d.", fileSize),
+				Key:        objectName,
+				BucketName: bucketName,
+			}
+		}
+		// Do not compute MD5 for anonymous requests to Amazon S3. Uploads upto 5GiB in size.
+		return c.putObjectNoChecksum(bucketName, objectName, fileReader, fileSize, contentType)
+	}
+
+	// Small object upload is initiated for uploads for input data size smaller than 5MiB.
+	if fileSize < minimumPartSize {
+		return c.putObjectSingle(bucketName, objectName, fileReader, fileSize, contentType)
+	}
+	// Upload all large objects as multipart.
+	n, err = c.putObjectMultipartFromFile(bucketName, objectName, fileReader, fileSize, contentType)
+	if err != nil {
+		errResp := ToErrorResponse(err)
+		// Verify if multipart functionality is not available, if not
+		// fall back to single PutObject operation.
+		if errResp.Code == "NotImplemented" {
+			// If size of file is greater than '5GiB' fail.
+			if fileSize > maxSinglePutObjectSize {
+				return 0, ErrEntityTooLarge(fileSize, bucketName, objectName)
+			}
+			// Fall back to uploading as single PutObject operation.
+			return c.putObjectSingle(bucketName, objectName, fileReader, fileSize, contentType)
+		}
+		return n, err
+	}
+	return n, nil
+}
+
+// putObjectMultipartFromFile - Creates object from contents of *os.File
+//
+// NOTE: This function is meant to be used for readers with local
+// file as in *os.File. This function resumes by skipping all the
+// necessary parts which were already uploaded by verifying them
+// against MD5SUM of each individual parts. This function also
+// effectively utilizes file system capabilities of reading from
+// specific sections and not having to create temporary files.
+func (c Client) putObjectMultipartFromFile(bucketName, objectName string, fileReader *os.File, fileSize int64, contentType string) (int64, error) {
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return 0, err
+	}
+	if err := isValidObjectName(objectName); err != nil {
+		return 0, err
+	}
+
+	// Get upload id for an object, initiates a new multipart request
 	// if it cannot find any previously partially uploaded object.
 	uploadID, err := c.getUploadID(bucketName, objectName, contentType)
 	if err != nil {
 		return 0, err
 	}
 
-	// total data read and written to server. should be equal to 'size' at the end of the call.
+	// Total data read and written to server. should be equal to 'size' at the end of the call.
 	var totalUploadedSize int64
 
 	// Complete multipart upload.
 	var completeMultipartUpload completeMultipartUpload
 
-	// Fetch previously upload parts and save the total size.
+	// Fetch previously upload parts.
 	partsInfo, err := c.listObjectParts(bucketName, objectName, uploadID)
 	if err != nil {
 		return 0, err
 	}
+
 	// Previous maximum part size
 	var prevMaxPartSize int64
-	// Loop through all parts and calculate totalUploadedSize.
+	// Loop through all parts and fetch prevMaxPartSize.
 	for _, partInfo := range partsInfo {
 		// Choose the maximum part size.
 		if partInfo.Size >= prevMaxPartSize {
@@ -197,7 +223,7 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 
 	// Calculate the optimal part size for a given file size.
 	partSize := optimalPartSize(fileSize)
-	// If prevMaxPartSize is set use that.
+	// Use prevMaxPartSize if available.
 	if prevMaxPartSize != 0 {
 		partSize = prevMaxPartSize
 	}
@@ -205,52 +231,39 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 	// Part number always starts with '0'.
 	partNumber := 0
 
-	// Loop through until EOF.
+	// Upload each part until fileSize.
 	for totalUploadedSize < fileSize {
 		// Increment part number.
 		partNumber++
 
 		// Get a section reader on a particular offset.
-		sectionReader := io.NewSectionReader(fileData, totalUploadedSize, partSize)
+		sectionReader := io.NewSectionReader(fileReader, totalUploadedSize, partSize)
 
-		// Calculates MD5 and Sha256 sum for a section reader.
+		// Calculates MD5 and SHA256 sum for a section reader.
 		md5Sum, sha256Sum, size, err := c.computeHash(sectionReader)
 		if err != nil {
 			return 0, err
 		}
 
-		// Save all the part metadata.
-		prtData := partData{
-			ReadCloser: ioutil.NopCloser(sectionReader),
-			Size:       size,
-			MD5Sum:     md5Sum,
-			Sha256Sum:  sha256Sum,
-			Number:     partNumber, // Part number to be uploaded.
-		}
-
-		// If part not uploaded proceed to upload.
+		// Verify if part was not uploaded.
 		if !isPartUploaded(objectPart{
-			ETag:       hex.EncodeToString(prtData.MD5Sum),
-			PartNumber: prtData.Number,
+			ETag:       hex.EncodeToString(md5Sum),
+			PartNumber: partNumber,
 		}, partsInfo) {
-			// Upload the part.
-			objPart, err := c.uploadPart(bucketName, objectName, uploadID, prtData)
+			// Proceed to upload the part.
+			objPart, err := c.uploadPart(bucketName, objectName, uploadID, ioutil.NopCloser(sectionReader), partNumber, md5Sum, sha256Sum, size)
 			if err != nil {
-				prtData.ReadCloser.Close()
 				return totalUploadedSize, err
 			}
 			// Save successfully uploaded part metadata.
-			partsInfo[prtData.Number] = objPart
+			partsInfo[partNumber] = objPart
 		}
 
-		// Close the read closer for temporary file.
-		prtData.ReadCloser.Close()
-
 		// Save successfully uploaded size.
-		totalUploadedSize += prtData.Size
+		totalUploadedSize += size
 	}
 
-	// if totalUploadedSize is different than the file 'size'. Do not complete the request throw an error.
+	// Verify if we uploaded all data.
 	if totalUploadedSize != fileSize {
 		return totalUploadedSize, ErrUnexpectedEOF(totalUploadedSize, fileSize, bucketName, objectName)
 	}
@@ -263,7 +276,7 @@ func (c Client) fputLargeObject(bucketName, objectName string, fileData *os.File
 		completeMultipartUpload.Parts = append(completeMultipartUpload.Parts, complPart)
 	}
 
-	// If partNumber is different than total list of parts, error out.
+	// Verify if partNumber is different than total list of parts.
 	if partNumber != len(completeMultipartUpload.Parts) {
 		return totalUploadedSize, ErrInvalidParts(partNumber, len(completeMultipartUpload.Parts))
 	}

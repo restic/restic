@@ -26,7 +26,7 @@ import (
 	"time"
 )
 
-// signature and API related constants.
+// Signature and API related constants.
 const (
 	signV4Algorithm   = "AWS4-HMAC-SHA256"
 	iso8601DateFormat = "20060102T150405Z"
@@ -34,28 +34,35 @@ const (
 )
 
 ///
-/// Excerpts from @lsegal - https://github.com/aws/aws-sdk-js/issues/659#issuecomment-120477258.
+/// Excerpts from @lsegal -
+/// https://github.com/aws/aws-sdk-js/issues/659#issuecomment-120477258.
 ///
 ///  User-Agent:
 ///
-///      This is ignored from signing because signing this causes problems with generating pre-signed URLs
-///      (that are executed by other agents) or when customers pass requests through proxies, which may
-///      modify the user-agent.
+///      This is ignored from signing because signing this causes
+///      problems with generating pre-signed URLs (that are executed
+///      by other agents) or when customers pass requests through
+///      proxies, which may modify the user-agent.
 ///
 ///  Content-Length:
 ///
-///      This is ignored from signing because generating a pre-signed URL should not provide a content-length
-///      constraint, specifically when vending a S3 pre-signed PUT URL. The corollary to this is that when
-///      sending regular requests (non-pre-signed), the signature contains a checksum of the body, which
-///      implicitly validates the payload length (since changing the number of bytes would change the checksum)
+///      This is ignored from signing because generating a pre-signed
+///      URL should not provide a content-length constraint,
+///      specifically when vending a S3 pre-signed PUT URL. The
+///      corollary to this is that when sending regular requests
+///      (non-pre-signed), the signature contains a checksum of the
+///      body, which implicitly validates the payload length (since
+///      changing the number of bytes would change the checksum)
 ///      and therefore this header is not valuable in the signature.
 ///
 ///  Content-Type:
 ///
-///      Signing this header causes quite a number of problems in browser environments, where browsers
-///      like to modify and normalize the content-type header in different ways. There is more information
-///      on this in https://github.com/aws/aws-sdk-js/issues/244. Avoiding this field simplifies logic
-///      and reduces the possibility of future bugs
+///      Signing this header causes quite a number of problems in
+///      browser environments, where browsers like to modify and
+///      normalize the content-type header in different ways. There is
+///      more information on this in https://goo.gl/2E9gyy. Avoiding
+///      this field simplifies logic and reduces the possibility of
+///      future bugs.
 ///
 ///  Authorization:
 ///
@@ -68,7 +75,7 @@ var ignoredHeaders = map[string]bool{
 	"User-Agent":     true,
 }
 
-// getSigningKey hmac seed to calculate final signature
+// getSigningKey hmac seed to calculate final signature.
 func getSigningKey(secret, loc string, t time.Time) []byte {
 	date := sumHMAC([]byte("AWS4"+secret), []byte(t.Format(yyyymmdd)))
 	location := sumHMAC(date, []byte(loc))
@@ -77,12 +84,13 @@ func getSigningKey(secret, loc string, t time.Time) []byte {
 	return signingKey
 }
 
-// getSignature final signature in hexadecimal form
+// getSignature final signature in hexadecimal form.
 func getSignature(signingKey []byte, stringToSign string) string {
 	return hex.EncodeToString(sumHMAC(signingKey, []byte(stringToSign)))
 }
 
-// getScope generate a string of a specific date, an AWS region, and a service
+// getScope generate a string of a specific date, an AWS region, and a
+// service.
 func getScope(location string, t time.Time) string {
 	scope := strings.Join([]string{
 		t.Format(yyyymmdd),
@@ -93,13 +101,14 @@ func getScope(location string, t time.Time) string {
 	return scope
 }
 
-// getCredential generate a credential string
+// getCredential generate a credential string.
 func getCredential(accessKeyID, location string, t time.Time) string {
 	scope := getScope(location, t)
 	return accessKeyID + "/" + scope
 }
 
-// getHashedPayload get the hexadecimal value of the SHA256 hash of the request payload
+// getHashedPayload get the hexadecimal value of the SHA256 hash of
+// the request payload.
 func getHashedPayload(req http.Request) string {
 	hashedPayload := req.Header.Get("X-Amz-Content-Sha256")
 	if hashedPayload == "" {
@@ -109,7 +118,8 @@ func getHashedPayload(req http.Request) string {
 	return hashedPayload
 }
 
-// getCanonicalHeaders generate a list of request headers for signature.
+// getCanonicalHeaders generate a list of request headers for
+// signature.
 func getCanonicalHeaders(req http.Request) string {
 	var headers []string
 	vals := make(map[string][]string)
@@ -124,6 +134,8 @@ func getCanonicalHeaders(req http.Request) string {
 	sort.Strings(headers)
 
 	var buf bytes.Buffer
+	// Save all the headers in canonical form <header>:<value> newline
+	// separated for each header.
 	for _, k := range headers {
 		buf.WriteString(k)
 		buf.WriteByte(':')
@@ -145,12 +157,13 @@ func getCanonicalHeaders(req http.Request) string {
 }
 
 // getSignedHeaders generate all signed request headers.
-// i.e alphabetically sorted, semicolon-separated list of lowercase request header names
+// i.e lexically sorted, semicolon-separated list of lowercase
+// request header names.
 func getSignedHeaders(req http.Request) string {
 	var headers []string
 	for k := range req.Header {
 		if _, ok := ignoredHeaders[http.CanonicalHeaderKey(k)]; ok {
-			continue // ignored header
+			continue // Ignored header found continue.
 		}
 		headers = append(headers, strings.ToLower(k))
 	}
@@ -168,7 +181,6 @@ func getSignedHeaders(req http.Request) string {
 //  <CanonicalHeaders>\n
 //  <SignedHeaders>\n
 //  <HashedPayload>
-//
 func getCanonicalRequest(req http.Request) string {
 	req.URL.RawQuery = strings.Replace(req.URL.Query().Encode(), "+", "%20", -1)
 	canonicalRequest := strings.Join([]string{
@@ -193,20 +205,21 @@ func getStringToSignV4(t time.Time, location, canonicalRequest string) string {
 // PreSignV4 presign the request, in accordance with
 // http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html.
 func PreSignV4(req http.Request, accessKeyID, secretAccessKey, location string, expires int64) *http.Request {
-	// presign is a noop for anonymous credentials.
+	// Presign is not needed for anonymous credentials.
 	if accessKeyID == "" || secretAccessKey == "" {
-		return nil
+		return &req
 	}
+
 	// Initial time.
 	t := time.Now().UTC()
 
-	// get credential string.
+	// Get credential string.
 	credential := getCredential(accessKeyID, location, t)
 
 	// Get all signed headers.
 	signedHeaders := getSignedHeaders(req)
 
-	// set URL query.
+	// Set URL query.
 	query := req.URL.Query()
 	query.Set("X-Amz-Algorithm", signV4Algorithm)
 	query.Set("X-Amz-Date", t.Format(iso8601DateFormat))
@@ -221,10 +234,10 @@ func PreSignV4(req http.Request, accessKeyID, secretAccessKey, location string, 
 	// Get string to sign from canonical request.
 	stringToSign := getStringToSignV4(t, location, canonicalRequest)
 
-	// get hmac signing key.
+	// Gext hmac signing key.
 	signingKey := getSigningKey(secretAccessKey, location, t)
 
-	// calculate signature.
+	// Calculate signature.
 	signature := getSignature(signingKey, stringToSign)
 
 	// Add signature header to RawQuery.
@@ -233,9 +246,12 @@ func PreSignV4(req http.Request, accessKeyID, secretAccessKey, location string, 
 	return &req
 }
 
-// PostPresignSignatureV4 - presigned signature for PostPolicy requests.
+// PostPresignSignatureV4 - presigned signature for PostPolicy
+// requests.
 func PostPresignSignatureV4(policyBase64 string, t time.Time, secretAccessKey, location string) string {
+	// Get signining key.
 	signingkey := getSigningKey(secretAccessKey, location, t)
+	// Calculate signature.
 	signature := getSignature(signingkey, policyBase64)
 	return signature
 }
@@ -243,6 +259,11 @@ func PostPresignSignatureV4(policyBase64 string, t time.Time, secretAccessKey, l
 // SignV4 sign the request before Do(), in accordance with
 // http://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html.
 func SignV4(req http.Request, accessKeyID, secretAccessKey, location string) *http.Request {
+	// Signature calculation is not needed for anonymous credentials.
+	if accessKeyID == "" || secretAccessKey == "" {
+		return &req
+	}
+
 	// Initial time.
 	t := time.Now().UTC()
 
@@ -255,19 +276,19 @@ func SignV4(req http.Request, accessKeyID, secretAccessKey, location string) *ht
 	// Get string to sign from canonical request.
 	stringToSign := getStringToSignV4(t, location, canonicalRequest)
 
-	// get hmac signing key.
+	// Get hmac signing key.
 	signingKey := getSigningKey(secretAccessKey, location, t)
 
-	// get credential string.
+	// Get credential string.
 	credential := getCredential(accessKeyID, location, t)
 
 	// Get all signed headers.
 	signedHeaders := getSignedHeaders(req)
 
-	// calculate signature.
+	// Calculate signature.
 	signature := getSignature(signingKey, stringToSign)
 
-	// if regular request, construct the final authorization header.
+	// If regular request, construct the final authorization header.
 	parts := []string{
 		signV4Algorithm + " Credential=" + credential,
 		"SignedHeaders=" + signedHeaders,
