@@ -3,7 +3,6 @@ package s3
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 
@@ -120,7 +119,7 @@ func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	<-bb.b.connChan
 	debug.Log("s3.Finalize", "PutObject(%v, %v, %v, %v)",
 		bb.b.bucketname, path, int64(bb.buf.Len()), "binary/octet-stream")
-	n, err := bb.b.client.PutObject(bb.b.bucketname, path, bb.buf, int64(bb.buf.Len()), "binary/octet-stream")
+	n, err := bb.b.client.PutObject(bb.b.bucketname, path, bb.buf, "binary/octet-stream")
 	debug.Log("s3.Finalize", "finalized %v -> n %v, err %#v", path, n, err)
 	bb.b.connChan <- struct{}{}
 
@@ -150,9 +149,13 @@ func (be *S3Backend) Create() (backend.Blob, error) {
 // name. The reader should be closed after draining it.
 func (be *S3Backend) Get(t backend.Type, name string) (io.ReadCloser, error) {
 	path := s3path(t, name)
-	rc, _, err := be.client.GetObject(be.bucketname, path)
+	rc, err := be.client.GetObject(be.bucketname, path)
 	debug.Log("s3.Get", "%v %v -> err %v", t, name, err)
-	return rc, err
+	if err != nil {
+		return nil, err
+	}
+
+	return rc, nil
 }
 
 // GetReader returns an io.ReadCloser for the Blob with the given name of
@@ -160,35 +163,24 @@ func (be *S3Backend) Get(t backend.Type, name string) (io.ReadCloser, error) {
 func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
 	debug.Log("s3.GetReader", "%v %v, offset %v len %v", t, name, offset, length)
 	path := s3path(t, name)
-	rd, stat, err := be.client.GetObjectPartial(be.bucketname, path)
-	debug.Log("s3.GetReader", "  stat %v, err %v", stat, err)
+	obj, err := be.client.GetObject(be.bucketname, path)
 	if err != nil {
+		debug.Log("s3.GetReader", "  err %v", err)
 		return nil, err
 	}
 
-	l, o := int64(length), int64(offset)
-
-	if l == 0 {
-		l = stat.Size
+	if offset > 0 {
+		_, err = obj.Seek(int64(offset), 0)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if o > stat.Size {
-		return nil, fmt.Errorf("offset beyond end of file (%v > %v)", o, stat.Size)
+	if length == 0 {
+		return obj, nil
 	}
 
-	if o+l > stat.Size {
-		l = stat.Size - o
-	}
-
-	debug.Log("s3.GetReader", "%v %v, o %v l %v", t, name, o, l)
-
-	var r io.Reader
-	r = &ContinuousReader{R: rd, Offset: o}
-	if length > 0 {
-		r = io.LimitReader(r, int64(length))
-	}
-
-	return backend.ReadCloser(r), nil
+	return backend.LimitReadCloser(obj, int64(length)), nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
