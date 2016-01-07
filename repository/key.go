@@ -13,6 +13,7 @@ import (
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/crypto"
+	"github.com/restic/restic/debug"
 )
 
 var (
@@ -58,6 +59,7 @@ func createMasterKey(s *Repository, password string) (*Key, error) {
 func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	k, err := LoadKey(s, name)
 	if err != nil {
+		debug.Log("OpenKey", "LoadKey(%v) returned error %v", name[:12], err)
 		return nil, err
 	}
 
@@ -82,6 +84,7 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	k.master = &crypto.Key{}
 	err = json.Unmarshal(buf, k.master)
 	if err != nil {
+		debug.Log("OpenKey", "Unmarshal() returned error %v", err)
 		return nil, err
 	}
 	k.name = name
@@ -100,11 +103,14 @@ func SearchKey(s *Repository, password string) (*Key, error) {
 	done := make(chan struct{})
 	defer close(done)
 	for name := range s.Backend().List(backend.Key, done) {
+		debug.Log("SearchKey", "trying key %v", name[:12])
 		key, err := OpenKey(s, name, password)
 		if err != nil {
+			debug.Log("SearchKey", "key %v returned error %v", name[:12], err)
 			continue
 		}
 
+		debug.Log("SearchKey", "successfully opened key %v", name[:12])
 		return key, nil
 	}
 
