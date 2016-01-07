@@ -1,9 +1,7 @@
 [![Build Status](https://travis-ci.org/restic/restic.svg?branch=master)](https://travis-ci.org/restic/restic)
 [![Build status](https://ci.appveyor.com/api/projects/status/nuy4lfbgfbytw92q/branch/master?svg=true)](https://ci.appveyor.com/project/fd0/restic/branch/master)
 [![Report Card](http://goreportcard.com/badge/restic/restic)](http://goreportcard.com/report/restic/restic)
-[![sourcegraph status](https://sourcegraph.com/api/repos/github.com/restic/restic/.badges/status.png)](https://sourcegraph.com/github.com/restic/restic)
 [![Coverage Status](https://coveralls.io/repos/restic/restic/badge.svg)](https://coveralls.io/r/restic/restic)
-[![Stories in Ready](https://badge.waffle.io/restic/restic.png?label=ready&title=Ready)](https://waffle.io/restic/restic)
 
 Restic Design Principles
 ========================
