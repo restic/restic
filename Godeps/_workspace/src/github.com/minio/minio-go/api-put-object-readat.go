@@ -46,7 +46,7 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 
 	// Get upload id for an object, initiates a new multipart request
 	// if it cannot find any previously partially uploaded object.
-	uploadID, err := c.getUploadID(bucketName, objectName, contentType)
+	uploadID, isNew, err := c.getUploadID(bucketName, objectName, contentType)
 	if err != nil {
 		return 0, err
 	}
@@ -57,25 +57,21 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 	// Complete multipart upload.
 	var completeMultipartUpload completeMultipartUpload
 
-	// Fetch previously upload parts.
-	partsInfo, err := c.listObjectParts(bucketName, objectName, uploadID)
-	if err != nil {
-		return 0, err
-	}
-
 	// Previous maximum part size
 	var prevMaxPartSize int64
+
 	// Previous part number.
 	var prevPartNumber int
-	// Loop through all parts and calculate totalUploadedSize.
-	for _, partInfo := range partsInfo {
-		totalUploadedSize += partInfo.Size
-		// Choose the maximum part size.
-		if partInfo.Size >= prevMaxPartSize {
-			prevMaxPartSize = partInfo.Size
+
+	// A map of all uploaded parts.
+	var partsInfo = make(map[int]objectPart)
+
+	// Fetch all parts info previously uploaded.
+	if !isNew {
+		partsInfo, totalUploadedSize, prevMaxPartSize, prevPartNumber, err = c.getPartsInfo(bucketName, objectName, uploadID)
+		if err != nil {
+			return 0, err
 		}
-		// Save previous part number.
-		prevPartNumber = partInfo.PartNumber
 	}
 
 	// Calculate the optimal part size for a given file size.

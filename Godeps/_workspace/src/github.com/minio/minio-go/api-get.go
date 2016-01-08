@@ -228,6 +228,9 @@ type Object struct {
 	currOffset int64
 	objectInfo ObjectInfo
 
+	// Keeps track of closed call.
+	isClosed bool
+
 	// Previous error saved for future calls.
 	prevErr error
 }
@@ -244,14 +247,14 @@ func (o *Object) Read(b []byte) (n int, err error) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
+	// Previous prevErr is which was saved in previous operation.
+	if o.prevErr != nil || o.isClosed {
+		return 0, o.prevErr
+	}
+
 	// If current offset has reached Size limit, return EOF.
 	if o.currOffset >= o.objectInfo.Size {
 		return 0, io.EOF
-	}
-
-	// Previous prevErr is which was saved in previous operation.
-	if o.prevErr != nil {
-		return 0, o.prevErr
 	}
 
 	// Send current information over control channel to indicate we
@@ -297,7 +300,7 @@ func (o *Object) Stat() (ObjectInfo, error) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
-	if o.prevErr != nil {
+	if o.prevErr != nil || o.isClosed {
 		return ObjectInfo{}, o.prevErr
 	}
 
@@ -317,15 +320,15 @@ func (o *Object) ReadAt(b []byte, offset int64) (n int, err error) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
+	// prevErr is which was saved in previous operation.
+	if o.prevErr != nil || o.isClosed {
+		return 0, o.prevErr
+	}
+
 	// If offset is negative and offset is greater than or equal to
 	// object size we return EOF.
 	if offset < 0 || offset >= o.objectInfo.Size {
 		return 0, io.EOF
-	}
-
-	// prevErr is which was saved in previous operation.
-	if o.prevErr != nil {
-		return 0, o.prevErr
 	}
 
 	// Send current information over control channel to indicate we
@@ -386,11 +389,11 @@ func (o *Object) Seek(offset int64, whence int) (n int64, err error) {
 
 	// Negative offset is valid for whence of '2'.
 	if offset < 0 && whence != 2 {
-		return 0, ErrInvalidArgument(fmt.Sprintf("Object: negative position not allowed for %d.", whence))
+		return 0, ErrInvalidArgument(fmt.Sprintf("Negative position not allowed for %d.", whence))
 	}
 	switch whence {
 	default:
-		return 0, ErrInvalidArgument(fmt.Sprintf("Object: invalid whence %d", whence))
+		return 0, ErrInvalidArgument(fmt.Sprintf("Invalid whence %d", whence))
 	case 0:
 		if offset > o.objectInfo.Size {
 			return 0, io.EOF
@@ -410,7 +413,7 @@ func (o *Object) Seek(offset int64, whence int) (n int64, err error) {
 		}
 		// Seeking to negative position not allowed for whence.
 		if o.objectInfo.Size+offset < 0 {
-			return 0, ErrInvalidArgument(fmt.Sprintf("Object: Seeking at negative offset not allowed for %d", whence))
+			return 0, ErrInvalidArgument(fmt.Sprintf("Seeking at negative offset not allowed for %d", whence))
 		}
 		o.currOffset += offset
 	}
@@ -428,17 +431,19 @@ func (o *Object) Close() (err error) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
-	// prevErr is which was saved in previous operation.
-	if o.prevErr != nil {
+	// if already closed return an error.
+	if o.isClosed {
 		return o.prevErr
 	}
 
 	// Close successfully.
 	close(o.doneCh)
 
-	// Save this for any subsequent frivolous reads.
-	errMsg := "Object: Is already closed. Bad file descriptor."
+	// Save for future operations.
+	errMsg := "Object is already closed. Bad file descriptor."
 	o.prevErr = errors.New(errMsg)
+	// Save here that we closed done channel successfully.
+	o.isClosed = true
 	return nil
 }
 

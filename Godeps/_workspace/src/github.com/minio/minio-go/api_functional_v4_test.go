@@ -55,6 +55,90 @@ func randString(n int, src rand.Source) string {
 	return string(b[0:30])
 }
 
+func TestGetObjectClosedTwice(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping functional tests for short runs")
+	}
+
+	// Seed random based on current time.
+	rand.Seed(time.Now().Unix())
+
+	// Connect and make sure bucket exists.
+	c, err := minio.New(
+		"s3.amazonaws.com",
+		os.Getenv("ACCESS_KEY"),
+		os.Getenv("SECRET_KEY"),
+		false,
+	)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Enable tracing, write to stderr.
+	// c.TraceOn(os.Stderr)
+
+	// Set user agent.
+	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
+
+	// Generate a new random bucket name.
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+
+	// Make a new bucket.
+	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName)
+	}
+
+	// Generate data more than 32K
+	buf := make([]byte, rand.Intn(1<<20)+32*1024)
+
+	_, err = io.ReadFull(crand.Reader, buf)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Save the data
+	objectName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	n, err := c.PutObject(bucketName, objectName, bytes.NewReader(buf), "binary/octet-stream")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+
+	if n != int64(len(buf)) {
+		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n", len(buf), n)
+	}
+
+	// Read the data back
+	r, err := c.GetObject(bucketName, objectName)
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+
+	st, err := r.Stat()
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+	if st.Size != int64(len(buf)) {
+		t.Fatalf("Error: number of bytes in stat does not match, want %v, got %v\n",
+			len(buf), st.Size)
+	}
+	if err := r.Close(); err != nil {
+		t.Fatal("Error:", err)
+	}
+	if err := r.Close(); err == nil {
+		t.Fatal("Error: object is already closed, should return error")
+	}
+
+	err = c.RemoveObject(bucketName, objectName)
+	if err != nil {
+		t.Fatal("Error: ", err)
+	}
+	err = c.RemoveBucket(bucketName)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+}
+
 // Tests removing partially uploaded objects.
 func TestRemovePartiallyUploaded(t *testing.T) {
 	if testing.Short() {

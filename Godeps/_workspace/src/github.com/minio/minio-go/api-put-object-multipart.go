@@ -18,11 +18,8 @@ package minio
 
 import (
 	"bytes"
-	"crypto/md5"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/xml"
-	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -32,58 +29,6 @@ import (
 	"strconv"
 	"strings"
 )
-
-// Verify if reader is *os.File
-func isFile(reader io.Reader) (ok bool) {
-	_, ok = reader.(*os.File)
-	return
-}
-
-// Verify if reader is *minio.Object
-func isObject(reader io.Reader) (ok bool) {
-	_, ok = reader.(*Object)
-	return
-}
-
-// Verify if reader is a generic ReaderAt
-func isReadAt(reader io.Reader) (ok bool) {
-	_, ok = reader.(io.ReaderAt)
-	return
-}
-
-// hashCopyN - Calculates Md5sum and SHA256sum for upto partSize amount of bytes.
-func (c Client) hashCopyN(writer io.ReadWriteSeeker, reader io.Reader, partSize int64) (md5Sum, sha256Sum []byte, size int64, err error) {
-	// MD5 and SHA256 hasher.
-	var hashMD5, hashSHA256 hash.Hash
-	// MD5 and SHA256 hasher.
-	hashMD5 = md5.New()
-	hashWriter := io.MultiWriter(writer, hashMD5)
-	if c.signature.isV4() {
-		hashSHA256 = sha256.New()
-		hashWriter = io.MultiWriter(writer, hashMD5, hashSHA256)
-	}
-
-	// Copies to input at writer.
-	size, err = io.CopyN(hashWriter, reader, partSize)
-	if err != nil {
-		// If not EOF return error right here.
-		if err != io.EOF {
-			return nil, nil, 0, err
-		}
-	}
-
-	// Seek back to beginning of input, any error fail right here.
-	if _, err := writer.Seek(0, 0); err != nil {
-		return nil, nil, 0, err
-	}
-
-	// Finalize md5shum and sha256 sum.
-	md5Sum = hashMD5.Sum(nil)
-	if c.signature.isV4() {
-		sha256Sum = hashSHA256.Sum(nil)
-	}
-	return md5Sum, sha256Sum, size, err
-}
 
 // Comprehensive put object operation involving multipart resumable uploads.
 //
@@ -130,7 +75,7 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 
 	// getUploadID for an object, initiates a new multipart request
 	// if it cannot find any previously partially uploaded object.
-	uploadID, err := c.getUploadID(bucketName, objectName, contentType)
+	uploadID, isNew, err := c.getUploadID(bucketName, objectName, contentType)
 	if err != nil {
 		return 0, err
 	}
@@ -141,18 +86,19 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 	// Complete multipart upload.
 	var completeMultipartUpload completeMultipartUpload
 
-	// Fetch previously upload parts.
-	partsInfo, err := c.listObjectParts(bucketName, objectName, uploadID)
-	if err != nil {
-		return 0, err
-	}
 	// Previous maximum part size
 	var prevMaxPartSize int64
-	// Loop through all parts and calculate totalUploadedSize.
-	for _, partInfo := range partsInfo {
-		// Choose the maximum part size.
-		if partInfo.Size >= prevMaxPartSize {
-			prevMaxPartSize = partInfo.Size
+
+	// A map of all previously uploaded parts.
+	var partsInfo = make(map[int]objectPart)
+
+	// If This session is a continuation of a previous session fetch all
+	// previously uploaded parts info.
+	if !isNew {
+		// Fetch previously uploaded parts and maximum part size.
+		partsInfo, _, prevMaxPartSize, _, err = c.getPartsInfo(bucketName, objectName, uploadID)
+		if err != nil {
+			return 0, err
 		}
 	}
 
@@ -204,6 +150,9 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 		// Close the temporary file.
 		tmpFile.Close()
 
+		// Save successfully uploaded size.
+		totalUploadedSize += size
+
 		// If read error was an EOF, break out of the loop.
 		if rErr == io.EOF {
 			break
@@ -223,8 +172,6 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 		complPart.ETag = part.ETag
 		complPart.PartNumber = part.PartNumber
 		completeMultipartUpload.Parts = append(completeMultipartUpload.Parts, complPart)
-		// Save successfully uploaded size.
-		totalUploadedSize += part.Size
 	}
 
 	// Verify if partNumber is different than total list of parts.

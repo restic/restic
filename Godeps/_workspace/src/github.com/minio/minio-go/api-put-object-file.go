@@ -17,79 +17,13 @@
 package minio
 
 import (
-	"crypto/md5"
-	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"hash"
 	"io"
 	"io/ioutil"
 	"os"
 	"sort"
 )
-
-// getUploadID - fetch upload id if already present for an object name
-// or initiate a new request to fetch a new upload id.
-func (c Client) getUploadID(bucketName, objectName, contentType string) (string, error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return "", err
-	}
-	if err := isValidObjectName(objectName); err != nil {
-		return "", err
-	}
-
-	// Set content Type to default if empty string.
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
-
-	// Find upload id for previous upload for an object.
-	uploadID, err := c.findUploadID(bucketName, objectName)
-	if err != nil {
-		return "", err
-	}
-	if uploadID == "" {
-		// Initiate multipart upload for an object.
-		initMultipartUploadResult, err := c.initiateMultipartUpload(bucketName, objectName, contentType)
-		if err != nil {
-			return "", err
-		}
-		// Save the new upload id.
-		uploadID = initMultipartUploadResult.UploadID
-	}
-	return uploadID, nil
-}
-
-// computeHash - Calculates MD5 and SHA256 for an input read Seeker.
-func (c Client) computeHash(reader io.ReadSeeker) (md5Sum, sha256Sum []byte, size int64, err error) {
-	// MD5 and SHA256 hasher.
-	var hashMD5, hashSHA256 hash.Hash
-	// MD5 and SHA256 hasher.
-	hashMD5 = md5.New()
-	hashWriter := io.MultiWriter(hashMD5)
-	if c.signature.isV4() {
-		hashSHA256 = sha256.New()
-		hashWriter = io.MultiWriter(hashMD5, hashSHA256)
-	}
-
-	size, err = io.Copy(hashWriter, reader)
-	if err != nil {
-		return nil, nil, 0, err
-	}
-
-	// Seek back reader to the beginning location.
-	if _, err := reader.Seek(0, 0); err != nil {
-		return nil, nil, 0, err
-	}
-
-	// Finalize md5shum and sha256 sum.
-	md5Sum = hashMD5.Sum(nil)
-	if c.signature.isV4() {
-		sha256Sum = hashSHA256.Sum(nil)
-	}
-	return md5Sum, sha256Sum, size, nil
-}
 
 // FPutObject - Create an object in a bucket, with contents from file at filePath.
 func (c Client) FPutObject(bucketName, objectName, filePath, contentType string) (n int64, err error) {
@@ -194,7 +128,7 @@ func (c Client) putObjectMultipartFromFile(bucketName, objectName string, fileRe
 
 	// Get upload id for an object, initiates a new multipart request
 	// if it cannot find any previously partially uploaded object.
-	uploadID, err := c.getUploadID(bucketName, objectName, contentType)
+	uploadID, isNew, err := c.getUploadID(bucketName, objectName, contentType)
 	if err != nil {
 		return 0, err
 	}
@@ -205,19 +139,19 @@ func (c Client) putObjectMultipartFromFile(bucketName, objectName string, fileRe
 	// Complete multipart upload.
 	var completeMultipartUpload completeMultipartUpload
 
-	// Fetch previously upload parts.
-	partsInfo, err := c.listObjectParts(bucketName, objectName, uploadID)
-	if err != nil {
-		return 0, err
-	}
-
 	// Previous maximum part size
 	var prevMaxPartSize int64
-	// Loop through all parts and fetch prevMaxPartSize.
-	for _, partInfo := range partsInfo {
-		// Choose the maximum part size.
-		if partInfo.Size >= prevMaxPartSize {
-			prevMaxPartSize = partInfo.Size
+
+	// A map of all uploaded parts.
+	var partsInfo = make(map[int]objectPart)
+
+	// If this session is a continuation of a previous session fetch all
+	// previously uploaded parts info.
+	if !isNew {
+		// Fetch previously upload parts and maximum part size.
+		partsInfo, _, prevMaxPartSize, _, err = c.getPartsInfo(bucketName, objectName, uploadID)
+		if err != nil {
+			return 0, err
 		}
 	}
 
