@@ -43,7 +43,7 @@ func Open(cfg Config) (backend.Backend, error) {
 	be.createConnections()
 
 	if err := client.BucketExists(cfg.Bucket); err != nil {
-		debug.Log("s3.Open", "BucketExists(%v) returned err %v, trying to create the bucket", err)
+		debug.Log("s3.Open", "BucketExists(%v) returned err %v, trying to create the bucket", cfg.Bucket, err)
 
 		// create new bucket with default ACL in default region
 		err = client.MakeBucket(cfg.Bucket, "", "")
