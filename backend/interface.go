@@ -1,6 +1,9 @@
 package backend
 
-import "io"
+import (
+	"errors"
+	"io"
+)
 
 // Type is the type of a Blob.
 type Type string
@@ -13,6 +16,24 @@ const (
 	Index         = "index"
 	Config        = "config"
 )
+
+func ParseType(s string) (Type, error) {
+	switch s {
+	case string(Data):
+		return Data, nil
+	case string(Key):
+		return Key, nil
+	case string(Lock):
+		return Lock, nil
+	case string(Snapshot):
+		return Snapshot, nil
+	case string(Index):
+		return Index, nil
+	case string(Config):
+		return Config, nil
+	}
+	return "", errors.New("invalid type")
+}
 
 // A Backend manages data stored somewhere.
 type Backend interface {

@@ -94,7 +94,7 @@ func (bb *s3Blob) Size() uint {
 
 func (bb *s3Blob) Finalize(t backend.Type, name string) error {
 	if bb.final {
-		return errors.New("Already finalized")
+		return errors.New("already finalized")
 	}
 
 	bb.final = true

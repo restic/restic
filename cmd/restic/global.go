@@ -11,6 +11,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/backend/local"
+	"github.com/restic/restic/backend/rest"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
 	"github.com/restic/restic/repository"
@@ -167,10 +168,11 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 // Open the backend specified by URI.
 // Valid formats are:
 // * /foo/bar -> local repository at /foo/bar
+// * c:\temp -> local repository at c:\temp - the path must exist
 // * s3://region/bucket -> amazon s3 bucket
 // * sftp://user@host/foo/bar -> remote sftp repository on host for user at path foo/bar
 // * sftp://host//tmp/backup -> remote sftp repository on host at path /tmp/backup
-// * c:\temp -> local repository at c:\temp - the path must exist
+// * http://host -> remote and public http repository
 func open(u string) (backend.Backend, error) {
 	// check if the url is a directory that exists
 	fi, err := os.Stat(u)
@@ -185,6 +187,10 @@ func open(u string) (backend.Backend, error) {
 
 	if url.Scheme == "" {
 		return local.Open(url.Path)
+	}
+
+	if url.Scheme == "http" || url.Scheme == "https" {
+		return rest.Open(url)
 	}
 
 	if len(url.Path) < 1 {
@@ -220,6 +226,10 @@ func create(u string) (backend.Backend, error) {
 
 	if url.Scheme == "" {
 		return local.Create(url.Path)
+	}
+
+	if url.Scheme == "http" || url.Scheme == "https" {
+		return rest.Open(url)
 	}
 
 	if len(url.Path) < 1 {
