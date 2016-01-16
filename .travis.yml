@@ -13,7 +13,10 @@ os:
 
 matrix:
   allow_failures:
-    go: tip
+    - go: tip
+      os: linux
+    - go: tip
+      os: osx
 
 notifications:
   irc:
