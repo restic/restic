@@ -51,7 +51,8 @@ func (env *TravisEnvironment) Prepare() {
 
 	msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
 
-	if !strings.HasPrefix(runtime.Version(), "go1.5") {
+	v := runtime.Version()
+	if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
 		run("gox", "-build-toolchain",
 			"-os", strings.Join(env.goxOS, " "),
 			"-arch", strings.Join(env.goxArch, " "))
