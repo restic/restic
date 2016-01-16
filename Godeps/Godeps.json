@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/restic/restic",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.1",
 	"Packages": [
 		"./..."
 	],
@@ -8,6 +8,14 @@
 		{
 			"ImportPath": "bazil.org/fuse",
 			"Rev": "18419ee53958df28fcfc9490fe6123bd59e237bb"
+		},
+		{
+			"ImportPath": "github.com/bradfitz/http2",
+			"Rev": "f8202bc903bda493ebba4aa54922d78430c2c42f"
+		},
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "535a10468679b4cf155f6a7afdf53b554633fc09"
 		},
 		{
 			"ImportPath": "github.com/jessevdk/go-flags",
@@ -31,6 +39,10 @@
 			"Rev": "fc45043175c38d59374024a38fb7123c40a64f20"
 		},
 		{
+			"ImportPath": "github.com/twinj/uuid",
+			"Rev": "70cac2bcd273ef6a371bb96cde363d28b68734c3"
+		},
+		{
 			"ImportPath": "golang.org/x/crypto/pbkdf2",
 			"Rev": "cc04154d65fb9296747569b107cfd05380b1ea3e"
 		},
@@ -49,6 +61,35 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "7654728e381988afd88e58cabfd6363a5ea91810"
+		},
+		{
+			"ImportPath": "golang.org/x/net/internal/timeseries",
+			"Rev": "7654728e381988afd88e58cabfd6363a5ea91810"
+		},
+		{
+			"ImportPath": "golang.org/x/net/trace",
+			"Rev": "7654728e381988afd88e58cabfd6363a5ea91810"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "ad0128250e8fba646a92ca9129716e523d63ef9f"
+		},
+		{
+			"ImportPath": "google.golang.org/api/googleapi",
+			"Rev": "8cbf97d5e925c857511aedf459affeed490e6861"
+		},
+		{
+			"ImportPath": "google.golang.org/api/storage/v1",
+			"Rev": "8cbf97d5e925c857511aedf459affeed490e6861"
+		},
+		{
+			"ImportPath": "google.golang.org/cloud",
+			"Comment": "cloud.mailed",
+			"Rev": "56b945c78d7f2b5bfb33df2cea5275e92e8b9084"
+		},
+		{
+			"ImportPath": "google.golang.org/grpc",
+			"Rev": "5feca5d7a525c9432cb0ffbcac62f61ea1e08ba3"
 		},
 		{
 			"ImportPath": "gopkg.in/amz.v3/aws",
