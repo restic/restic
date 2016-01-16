@@ -26,6 +26,7 @@ func (env *TravisEnvironment) Prepare() {
 
 	run("go", "get", "golang.org/x/tools/cmd/cover")
 	run("go", "get", "github.com/mattn/goveralls")
+	run("go", "get", "github.com/pierrre/gotestcover")
 	run("go", "get", "github.com/mitchellh/gox")
 
 	if runtime.GOOS == "darwin" {
@@ -76,8 +77,8 @@ func (env *TravisEnvironment) RunTests() {
 	// run the build script
 	run("go", "run", "build.go")
 
-	// gather coverage information
-	run("go", "run", "run_tests.go", "all.cov")
+	// run tests and gather coverage information
+	run("gotestcover", "-coverprofile", "all.cov", "./...")
 
 	runGofmt()
 }
