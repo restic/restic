@@ -26,6 +26,7 @@ func (env *TravisEnvironment) Prepare() {
 
 	run("go", "get", "golang.org/x/tools/cmd/cover")
 	run("go", "get", "github.com/mattn/goveralls")
+	run("go", "get", "github.com/pierrre/gotestcover")
 	run("go", "get", "github.com/mitchellh/gox")
 
 	if runtime.GOOS == "darwin" {
@@ -50,7 +51,8 @@ func (env *TravisEnvironment) Prepare() {
 
 	msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
 
-	if !strings.HasPrefix(runtime.Version(), "go1.5") {
+	v := runtime.Version()
+	if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
 		run("gox", "-build-toolchain",
 			"-os", strings.Join(env.goxOS, " "),
 			"-arch", strings.Join(env.goxArch, " "))
@@ -76,8 +78,8 @@ func (env *TravisEnvironment) RunTests() {
 	// run the build script
 	run("go", "run", "build.go")
 
-	// gather coverage information
-	run("go", "run", "run_tests.go", "all.cov")
+	// run tests and gather coverage information
+	run("gotestcover", "-coverprofile", "all.cov", "./...")
 
 	runGofmt()
 }

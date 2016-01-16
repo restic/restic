@@ -256,7 +256,8 @@ type Constants map[string]string
 func (cs Constants) LDFlags() string {
 	l := make([]string, 0, len(cs))
 
-	if strings.HasPrefix(runtime.Version(), "go1.5") {
+	v := runtime.Version()
+	if strings.HasPrefix(v, "go1.5") || strings.HasPrefix(v, "go1.6") {
 		for k, v := range cs {
 			l = append(l, fmt.Sprintf(`-X "%s=%s"`, k, v))
 		}
