@@ -15,7 +15,7 @@
 
 FROM ubuntu:14.04
 
-ARG GOVERSION=1.5.2
+ARG GOVERSION=1.5.3
 ARG GOARCH=amd64
 
 # install dependencies
@@ -45,6 +45,7 @@ RUN mkdir -p $GOPATH/src/github.com/restic/restic
 RUN go get golang.org/x/tools/cmd/cover
 RUN go get github.com/mattn/goveralls
 RUN go get github.com/mitchellh/gox
+RUN go get github.com/pierrre/gotestcover
 RUN GO15VENDOREXPERIMENT=1 go get github.com/minio/minio
 
 # set TRAVIS_BUILD_DIR for integration script
