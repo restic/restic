@@ -133,7 +133,6 @@ func TestLargeEncrypt(t *testing.T) {
 
 func BenchmarkEncryptWriter(b *testing.B) {
 	size := 8 << 20 // 8MiB
-	rd := RandomReader(23, size)
 
 	k := crypto.NewRandomKey()
 
@@ -141,7 +140,7 @@ func BenchmarkEncryptWriter(b *testing.B) {
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
-		rd.Seek(0, 0)
+		rd := RandomReader(23, size)
 		wr := crypto.EncryptTo(k, ioutil.Discard)
 		n, err := io.Copy(wr, rd)
 		OK(b, err)
@@ -195,14 +194,13 @@ func BenchmarkEncryptDecryptReader(b *testing.B) {
 	k := crypto.NewRandomKey()
 
 	size := 8 << 20 // 8MiB
-	rd := RandomReader(23, size)
 
 	b.ResetTimer()
 	b.SetBytes(int64(size))
 
 	buf := bytes.NewBuffer(nil)
 	for i := 0; i < b.N; i++ {
-		rd.Seek(0, 0)
+		rd := RandomReader(23, size)
 		buf.Reset()
 		wr := crypto.EncryptTo(k, buf)
 		_, err := io.Copy(wr, rd)
