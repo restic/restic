@@ -1,6 +1,8 @@
 package restic
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -66,6 +68,8 @@ func (tw *TreeWalker) walk(path string, tree *Tree, done chan struct{}) {
 	debug.Log("TreeWalker.walk", "start on %q", path)
 	defer debug.Log("TreeWalker.walk", "done for %q", path)
 
+	debug.Log("TreeWalker.walk", "tree %#v", tree)
+
 	// load all subtrees in parallel
 	results := make([]<-chan loadTreeResult, len(tree.Nodes))
 	for i, node := range tree.Nodes {
@@ -90,7 +94,11 @@ func (tw *TreeWalker) walk(path string, tree *Tree, done chan struct{}) {
 			}
 
 			res := <-results[i]
-			tw.walk(p, res.tree, done)
+			if res.err == nil {
+				tw.walk(p, res.tree, done)
+			} else {
+				fmt.Fprintf(os.Stderr, "error loading tree: %v\n", res.err)
+			}
 
 			job = WalkTreeJob{Path: p, Tree: res.tree, Error: res.err}
 		} else {

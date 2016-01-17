@@ -1,54 +1,42 @@
 package backend_test
 
 import (
+	"net/url"
+	"os"
 	"testing"
 
-	"gopkg.in/amz.v3/aws"
-	"gopkg.in/amz.v3/s3"
-	"gopkg.in/amz.v3/s3/s3test"
-
-	bes3 "github.com/restic/restic/backend/s3"
+	"github.com/restic/restic/backend/s3"
 	. "github.com/restic/restic/test"
 )
 
-type LocalServer struct {
-	auth   aws.Auth
-	region aws.Region
-	srv    *s3test.Server
-	config *s3test.Config
-}
-
-var s LocalServer
-
-func setupS3Backend(t *testing.T) *bes3.S3Backend {
-	s.config = &s3test.Config{
-		Send409Conflict: true,
-	}
-	srv, err := s3test.NewServer(s.config)
-	OK(t, err)
-	s.srv = srv
-
-	s.region = aws.Region{
-		Name:                 "faux-region-1",
-		S3Endpoint:           srv.URL(),
-		S3LocationConstraint: true, // s3test server requires a LocationConstraint
-	}
-
-	s.auth = aws.Auth{"abc", "123"}
-
-	service := s3.New(s.auth, s.region)
-	bucket, berr := service.Bucket("testbucket")
-	OK(t, berr)
-	err = bucket.PutBucket("private")
-	OK(t, err)
-
-	t.Logf("created s3 backend locally")
-
-	return bes3.OpenS3Bucket(bucket, "testbucket")
+type deleter interface {
+	Delete() error
 }
 
 func TestS3Backend(t *testing.T) {
-	s := setupS3Backend(t)
+	if TestS3Server == "" {
+		t.Skip("s3 test server not available")
+	}
 
-	testBackend(s, t)
+	url, err := url.Parse(TestS3Server)
+	OK(t, err)
+
+	cfg := s3.Config{
+		Endpoint: url.Host,
+		Bucket:   "restictestbucket",
+		KeyID:    os.Getenv("AWS_ACCESS_KEY_ID"),
+		Secret:   os.Getenv("AWS_SECRET_ACCESS_KEY"),
+	}
+
+	if url.Scheme == "http" {
+		cfg.UseHTTP = true
+	}
+
+	be, err := s3.Open(cfg)
+	OK(t, err)
+
+	testBackend(be, t)
+
+	del := be.(deleter)
+	OK(t, del.Delete())
 }

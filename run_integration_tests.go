@@ -3,13 +3,24 @@
 package main
 
 import (
+	"bytes"
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 )
+
+var runCrossCompile = flag.Bool("cross-compile", true, "run cross compilation tests")
+
+func init() {
+	flag.Parse()
+}
 
 type CIEnvironment interface {
 	Prepare()
@@ -21,13 +32,17 @@ type TravisEnvironment struct {
 	goxOS   []string
 }
 
+var envVendorExperiment = map[string]string{
+	"GO15VENDOREXPERIMENT": "1",
+}
+
 func (env *TravisEnvironment) Prepare() {
 	msg("preparing environment for Travis CI\n")
 
 	run("go", "get", "golang.org/x/tools/cmd/cover")
 	run("go", "get", "github.com/mattn/goveralls")
 	run("go", "get", "github.com/pierrre/gotestcover")
-	run("go", "get", "github.com/mitchellh/gox")
+	runWithEnv(envVendorExperiment, "go", "get", "github.com/minio/minio")
 
 	if runtime.GOOS == "darwin" {
 		// install the libraries necessary for fuse
@@ -36,27 +51,50 @@ func (env *TravisEnvironment) Prepare() {
 		run("brew", "cask", "install", "osxfuse")
 	}
 
-	// only test cross compilation on linux with Travis
-	if runtime.GOOS == "linux" {
-		env.goxArch = []string{"386", "amd64"}
-		if !strings.HasPrefix(runtime.Version(), "go1.3") {
-			env.goxArch = append(env.goxArch, "arm")
+	if *runCrossCompile {
+		// only test cross compilation on linux with Travis
+		run("go", "get", "github.com/mitchellh/gox")
+		if runtime.GOOS == "linux" {
+			env.goxArch = []string{"386", "amd64"}
+			if !strings.HasPrefix(runtime.Version(), "go1.3") {
+				env.goxArch = append(env.goxArch, "arm")
+			}
+
+			env.goxOS = []string{"linux", "darwin", "freebsd", "openbsd", "windows"}
+		} else {
+			env.goxArch = []string{runtime.GOARCH}
+			env.goxOS = []string{runtime.GOOS}
 		}
 
-		env.goxOS = []string{"linux", "darwin", "freebsd", "openbsd", "windows"}
-	} else {
-		env.goxArch = []string{runtime.GOARCH}
-		env.goxOS = []string{runtime.GOOS}
+		msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
+
+		v := runtime.Version()
+		if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
+			run("gox", "-build-toolchain",
+				"-os", strings.Join(env.goxOS, " "),
+				"-arch", strings.Join(env.goxArch, " "))
+		}
 	}
+}
 
-	msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
-
+func goVersionAtLeast151() bool {
 	v := runtime.Version()
-	if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
-		run("gox", "-build-toolchain",
-			"-os", strings.Join(env.goxOS, " "),
-			"-arch", strings.Join(env.goxArch, " "))
+
+	if match, _ := regexp.MatchString(`^go1\.[0-4]`, v); match {
+		return false
 	}
+
+	if v == "go1.5" {
+		return false
+	}
+
+	return true
+}
+
+type MinioServer struct {
+	cmd  *exec.Cmd
+	done bool
+	m    sync.Mutex
 }
 
 func (env *TravisEnvironment) RunTests() {
@@ -66,22 +104,43 @@ func (env *TravisEnvironment) RunTests() {
 		os.Setenv("RESTIC_TEST_FUSE", "0")
 	}
 
-	// compile for all target architectures with tags
-	for _, tags := range []string{"release", "debug"} {
-		run("gox", "-verbose",
-			"-os", strings.Join(env.goxOS, " "),
-			"-arch", strings.Join(env.goxArch, " "),
-			"-tags", tags,
-			"./cmd/restic")
+	if *runCrossCompile {
+		// compile for all target architectures with tags
+		for _, tags := range []string{"release", "debug"} {
+			run("gox", "-verbose",
+				"-os", strings.Join(env.goxOS, " "),
+				"-arch", strings.Join(env.goxArch, " "),
+				"-tags", tags,
+				"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
+				"./cmd/restic")
+		}
 	}
 
 	// run the build script
 	run("go", "run", "build.go")
 
-	// run tests and gather coverage information
-	run("gotestcover", "-coverprofile", "all.cov", "./...")
+	var (
+		testEnv map[string]string
+		srv     *MinioServer
+		err     error
+	)
+
+	if goVersionAtLeast151() {
+		srv, err = NewMinioServer()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
+			os.Exit(8)
+		}
+
+		testEnv = minioEnv
+	}
+
+	// run the tests and gather coverage information
+	runWithEnv(testEnv, "gotestcover", "-coverprofile", "all.cov", "./...")
 
 	runGofmt()
+
+	srv.Stop()
 }
 
 type AppveyorEnvironment struct{}
@@ -120,6 +179,26 @@ func msg(format string, args ...interface{}) {
 	fmt.Printf("CI: "+format, args...)
 }
 
+func updateEnv(env []string, override map[string]string) []string {
+	var newEnv []string
+	for _, s := range env {
+		d := strings.SplitN(s, "=", 2)
+		key := d[0]
+
+		if _, ok := override[key]; ok {
+			continue
+		}
+
+		newEnv = append(newEnv, s)
+	}
+
+	for k, v := range override {
+		newEnv = append(newEnv, k+"="+v)
+	}
+
+	return newEnv
+}
+
 func runGofmt() {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -154,15 +233,119 @@ func runGofmt() {
 
 func run(command string, args ...string) {
 	msg("run %v %v\n", command, strings.Join(args, " "))
+	runWithEnv(nil, command, args...)
+}
+
+// runWithEnv calls a command with the current environment, except the entries
+// of the env map are set additionally.
+func runWithEnv(env map[string]string, command string, args ...string) {
+	msg("runWithEnv %v %v\n", command, strings.Join(args, " "))
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if env != nil {
+		cmd.Env = updateEnv(os.Environ(), env)
+	}
 	err := cmd.Run()
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error running %v %v: %v",
 			command, strings.Join(args, " "), err)
 		os.Exit(3)
+	}
+}
+
+var minioConfig = `
+{
+	"version": "2",
+	"credentials": {
+		"accessKeyId": "KEBIYDZ87HCIH5D17YCN",
+		"secretAccessKey": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe"
+	}
+}
+`
+
+var minioEnv = map[string]string{
+	"RESTIC_TEST_S3_SERVER": "http://127.0.0.1:9000",
+	"AWS_ACCESS_KEY_ID":     "KEBIYDZ87HCIH5D17YCN",
+	"AWS_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
+}
+
+// NewMinioServer prepares and runs a minio server for the s3 backend tests in
+// a temporary directory.
+func NewMinioServer() (*MinioServer, error) {
+	msg("running minio server\n")
+	cfgdir, err := ioutil.TempDir("", "minio-config-")
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := os.Create(filepath.Join(cfgdir, "config.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = cfg.Write([]byte(minioConfig))
+	if err != nil {
+		return nil, err
+	}
+
+	err = cfg.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	dir, err := ioutil.TempDir("", "minio-root")
+	if err != nil {
+		return nil, err
+	}
+
+	out := bytes.NewBuffer(nil)
+
+	cmd := exec.Command("minio",
+		"--config-folder", cfgdir,
+		"--address", "127.0.0.1:9000",
+		"server", dir)
+	cmd.Stdout = out
+	cmd.Stderr = out
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	srv := &MinioServer{cmd: cmd}
+	go srv.Wait()
+
+	return srv, nil
+}
+
+func (m *MinioServer) Stop() {
+	if m == nil {
+		return
+	}
+
+	msg("stopping minio server\n")
+	m.m.Lock()
+	m.done = true
+	m.m.Unlock()
+	err := m.cmd.Process.Kill()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error stopping minio server: %v", err)
+		os.Exit(8)
+	}
+}
+
+func (m *MinioServer) Wait() {
+	err := m.cmd.Wait()
+	msg("minio server exited\n")
+	m.m.Lock()
+	done := m.done
+	m.m.Unlock()
+
+	if err != nil && !done {
+		fmt.Fprintf(os.Stderr, "error running minio server: %#v, output:\n", err)
+		// io.Copy(os.Stderr, out)
+		os.Exit(12)
 	}
 }
 

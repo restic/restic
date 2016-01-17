@@ -92,6 +92,23 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 	return sftp, nil
 }
 
+func buildSSHCommand(cfg Config) []string {
+	args := []string{cfg.Host}
+	if cfg.User != "" {
+		args = append(args, "-l")
+		args = append(args, cfg.User)
+	}
+	args = append(args, "-s")
+	args = append(args, "sftp")
+	return args
+}
+
+// OpenWithConfig opens an sftp backend as described by the config by running
+// "ssh" with the appropiate arguments.
+func OpenWithConfig(cfg Config) (*SFTP, error) {
+	return Open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
+}
+
 // Create creates all the necessary files and directories for a new sftp
 // backend at dir. Afterwards a new config blob should be created.
 func Create(dir string, program string, args ...string) (*SFTP, error) {
@@ -136,6 +153,12 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 
 	// open backend
 	return Open(dir, program, args...)
+}
+
+// CreateWithConfig creates an sftp backend as described by the config by running
+// "ssh" with the appropiate arguments.
+func CreateWithConfig(cfg Config) (*SFTP, error) {
+	return Create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
 }
 
 // Location returns this backend's location (the directory name).
