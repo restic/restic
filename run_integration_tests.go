@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,6 +15,12 @@ import (
 	"strings"
 	"sync"
 )
+
+var runCrossCompile = flag.Bool("cross-compile", true, "run cross compilation tests")
+
+func init() {
+	flag.Parse()
+}
 
 type CIEnvironment interface {
 	Prepare()
@@ -35,7 +42,6 @@ func (env *TravisEnvironment) Prepare() {
 	run("go", "get", "golang.org/x/tools/cmd/cover")
 	run("go", "get", "github.com/mattn/goveralls")
 	run("go", "get", "github.com/pierrre/gotestcover")
-	run("go", "get", "github.com/mitchellh/gox")
 	runWithEnv(envVendorExperiment, "go", "get", "github.com/minio/minio")
 
 	if runtime.GOOS == "darwin" {
@@ -45,26 +51,29 @@ func (env *TravisEnvironment) Prepare() {
 		run("brew", "cask", "install", "osxfuse")
 	}
 
-	// only test cross compilation on linux with Travis
-	if runtime.GOOS == "linux" {
-		env.goxArch = []string{"386", "amd64"}
-		if !strings.HasPrefix(runtime.Version(), "go1.3") {
-			env.goxArch = append(env.goxArch, "arm")
+	if *runCrossCompile {
+		// only test cross compilation on linux with Travis
+		run("go", "get", "github.com/mitchellh/gox")
+		if runtime.GOOS == "linux" {
+			env.goxArch = []string{"386", "amd64"}
+			if !strings.HasPrefix(runtime.Version(), "go1.3") {
+				env.goxArch = append(env.goxArch, "arm")
+			}
+
+			env.goxOS = []string{"linux", "darwin", "freebsd", "openbsd", "windows"}
+		} else {
+			env.goxArch = []string{runtime.GOARCH}
+			env.goxOS = []string{runtime.GOOS}
 		}
 
-		env.goxOS = []string{"linux", "darwin", "freebsd", "openbsd", "windows"}
-	} else {
-		env.goxArch = []string{runtime.GOARCH}
-		env.goxOS = []string{runtime.GOOS}
-	}
+		msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
 
-	msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
-
-	v := runtime.Version()
-	if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
-		run("gox", "-build-toolchain",
-			"-os", strings.Join(env.goxOS, " "),
-			"-arch", strings.Join(env.goxArch, " "))
+		v := runtime.Version()
+		if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
+			run("gox", "-build-toolchain",
+				"-os", strings.Join(env.goxOS, " "),
+				"-arch", strings.Join(env.goxArch, " "))
+		}
 	}
 }
 
@@ -95,14 +104,16 @@ func (env *TravisEnvironment) RunTests() {
 		os.Setenv("RESTIC_TEST_FUSE", "0")
 	}
 
-	// compile for all target architectures with tags
-	for _, tags := range []string{"release", "debug"} {
-		run("gox", "-verbose",
-			"-os", strings.Join(env.goxOS, " "),
-			"-arch", strings.Join(env.goxArch, " "),
-			"-tags", tags,
-			"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
-			"./cmd/restic")
+	if *runCrossCompile {
+		// compile for all target architectures with tags
+		for _, tags := range []string{"release", "debug"} {
+			run("gox", "-verbose",
+				"-os", strings.Join(env.goxOS, " "),
+				"-arch", strings.Join(env.goxArch, " "),
+				"-tags", tags,
+				"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
+				"./cmd/restic")
+		}
 	}
 
 	// run the build script
@@ -136,7 +147,6 @@ type AppveyorEnvironment struct{}
 
 func (env *AppveyorEnvironment) Prepare() {
 	msg("preparing environment for Appveyor CI\n")
-	runWithEnv(envVendorExperiment, "go", "get", "github.com/minio/minio")
 }
 
 func (env *AppveyorEnvironment) RunTests() {
