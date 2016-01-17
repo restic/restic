@@ -5,12 +5,15 @@ import (
 	"crypto/sha256"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/restic/chunker"
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/checker"
 	"github.com/restic/restic/crypto"
 	"github.com/restic/restic/pack"
+	"github.com/restic/restic/repository"
 	. "github.com/restic/restic/test"
 )
 
@@ -19,6 +22,11 @@ var testPol = chunker.Pol(0x3DA3358B4DC173)
 type Rdr interface {
 	io.ReadSeeker
 	io.ReaderAt
+}
+
+type chunkedData struct {
+	buf    []byte
+	chunks []*chunker.Chunk
 }
 
 func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.Key) {
@@ -231,5 +239,104 @@ func BenchmarkLoadTree(t *testing.B) {
 			_, err := restic.LoadTree(repo, id)
 			OK(t, err)
 		}
+	}
+}
+
+// Saves several identical chunks concurrently and later checks that there are no
+// unreferenced packs in the repository. See also #292 and #358.
+func TestParallelSaveWithDuplication(t *testing.T) {
+	for seed := 0; seed < 10; seed++ {
+		testParallelSaveWithDuplication(t, seed)
+	}
+}
+
+func testParallelSaveWithDuplication(t *testing.T, seed int) {
+	repo := SetupRepo()
+	defer TeardownRepo(repo)
+
+	dataSizeMb := 128
+	duplication := 7
+
+	arch := restic.NewArchiver(repo)
+	data, chunks := getRandomData(seed, dataSizeMb*1024*1024)
+	reader := bytes.NewReader(data)
+
+	errChannels := [](<-chan error){}
+
+	// interweaved processing of subsequent chunks
+	maxParallel := 2*duplication - 1
+	barrier := make(chan struct{}, maxParallel)
+
+	for _, c := range chunks {
+		for dupIdx := 0; dupIdx < duplication; dupIdx++ {
+			errChan := make(chan error)
+			errChannels = append(errChannels, errChan)
+
+			go func(reader *bytes.Reader, c *chunker.Chunk, errChan chan<- error) {
+				barrier <- struct{}{}
+
+				hash := c.Digest
+				id := backend.ID{}
+				copy(id[:], hash)
+
+				time.Sleep(time.Duration(hash[0]))
+				err := arch.Save(pack.Data, id, c.Length, c.Reader(reader))
+				<-barrier
+				errChan <- err
+			}(reader, c, errChan)
+		}
+	}
+
+	for _, errChan := range errChannels {
+		OK(t, <-errChan)
+	}
+
+	OK(t, repo.Flush())
+	OK(t, repo.SaveIndex())
+
+	chkr := createAndInitChecker(t, repo)
+	assertNoUnreferencedPacks(t, chkr)
+}
+
+func getRandomData(seed int, size int) ([]byte, []*chunker.Chunk) {
+	buf := Random(seed, size)
+	chunks := []*chunker.Chunk{}
+	chunker := chunker.New(bytes.NewReader(buf), testPol, sha256.New())
+
+	for {
+		c, err := chunker.Next()
+		if err == io.EOF {
+			break
+		}
+		chunks = append(chunks, c)
+	}
+
+	return buf, chunks
+}
+
+func createAndInitChecker(t *testing.T, repo *repository.Repository) *checker.Checker {
+	chkr := checker.New(repo)
+
+	hints, errs := chkr.LoadIndex()
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
+
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+
+	return chkr
+}
+
+func assertNoUnreferencedPacks(t *testing.T, chkr *checker.Checker) {
+	done := make(chan struct{})
+	defer close(done)
+
+	errChan := make(chan error)
+	go chkr.Packs(errChan, done)
+
+	for err := range errChan {
+		OK(t, err)
 	}
 }

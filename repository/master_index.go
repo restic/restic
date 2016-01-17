@@ -157,27 +157,47 @@ func (mi *MasterIndex) Current() *Index {
 // AddInFlight add the given ID to the list of in-flight IDs. An error is
 // returned when the ID is already in the list.
 func (mi *MasterIndex) AddInFlight(id backend.ID) error {
-	mi.inFlight.Lock()
-	defer mi.inFlight.Unlock()
+    // The index + inFlight store must be searched for a matching id in one
+    // atomic operation. This requires locking the inFlight store and the 
+    // index together!
+    mi.inFlight.Lock()
+    defer mi.inFlight.Unlock()
 
-	debug.Log("MasterIndex.AddInFlight", "adding %v", id)
-	if mi.inFlight.Has(id) {
-		return fmt.Errorf("%v is already in flight", id)
-	}
+    // Note: mi.Has read locks the index again.
+    mi.idxMutex.RLock()
+    defer mi.idxMutex.RUnlock()
 
-	mi.inFlight.Insert(id)
-	return nil
+    debug.Log("MasterIndex.AddInFlight", "adding %v", id)
+    if mi.inFlight.Has(id) {
+        return fmt.Errorf("%v is already in flight", id)
+    }
+    if mi.Has(id) {
+        return fmt.Errorf("%v is already indexed (fully processed)", id)
+    }
+
+    mi.inFlight.Insert(id)
+    return nil
 }
 
 // IsInFlight returns true iff the id is contained in the list of in-flight IDs.
 func (mi *MasterIndex) IsInFlight(id backend.ID) bool {
-	mi.inFlight.RLock()
-	defer mi.inFlight.RUnlock()
+    // The index + inFlight store must be searched for a matching id in one
+    // atomic operation. This requires locking the inFlight store and the 
+    // index together!
+    mi.inFlight.RLock()
+    defer mi.inFlight.RUnlock()
 
-	inFlight := mi.inFlight.Has(id)
-	debug.Log("MasterIndex.IsInFlight", "testing whether %v is in flight: %v", id.Str(), inFlight)
+    // Note: mi.Has read locks the index again.
+    mi.idxMutex.RLock()
+    defer mi.idxMutex.RUnlock()
 
-	return inFlight
+    inFlight := mi.inFlight.Has(id)
+    debug.Log("MasterIndex.IsInFlight", "testing whether %v is in flight: %v", id.Str(), inFlight)
+
+    indexed := mi.Has(id)
+    debug.Log("MasterIndex.IsInFlight", "testing whether %v is indexed (fully processed): %v", id.Str(), indexed)
+
+    return inFlight
 }
 
 // RemoveFromInFlight deletes the given ID from the liste of in-flight IDs.
