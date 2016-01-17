@@ -136,7 +136,7 @@ func repackBlob(src, dst *repository.Repository, id backend.ID) error {
 		return errors.New("LoadBlob returned wrong data, len() doesn't match")
 	}
 
-	_, err = dst.SaveAndEncrypt(blob.Type, buf, &id)
+	_, err = dst.SaveAndEncrypt(blob.Type, buf, &id, true)
 	if err != nil {
 		return err
 	}

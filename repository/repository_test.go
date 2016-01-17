@@ -83,7 +83,7 @@ func TestSave(t *testing.T) {
 		id := backend.Hash(data)
 
 		// save
-		sid, err := repo.SaveAndEncrypt(pack.Data, data, nil)
+		sid, err := repo.SaveAndEncrypt(pack.Data, data, nil, false)
 		OK(t, err)
 
 		Equals(t, id, sid)
@@ -253,7 +253,7 @@ func saveRandomDataBlobs(t testing.TB, repo *repository.Repository, num int, siz
 		_, err := io.ReadFull(rand.Reader, buf)
 		OK(t, err)
 
-		_, err = repo.SaveAndEncrypt(pack.Data, buf, nil)
+		_, err = repo.SaveAndEncrypt(pack.Data, buf, nil, false)
 		OK(t, err)
 	}
 }

@@ -155,49 +155,55 @@ func (mi *MasterIndex) Current() *Index {
 }
 
 // AddInFlight add the given ID to the list of in-flight IDs. An error is
-// returned when the ID is already in the list.
-func (mi *MasterIndex) AddInFlight(id backend.ID) error {
-    // The index + inFlight store must be searched for a matching id in one
-    // atomic operation. This requires locking the inFlight store and the 
-    // index together!
-    mi.inFlight.Lock()
-    defer mi.inFlight.Unlock()
+// returned when the ID is already in the list. Setting ignoreDuplicates to
+// true only checks the in flight list, otherwise the index itself is also
+// tested.
+func (mi *MasterIndex) AddInFlight(id backend.ID, ignoreDuplicates bool) error {
+	// The index + inFlight store must be searched for a matching id in one
+	// atomic operation. This requires locking the inFlight store and the
+	// index together!
+	mi.inFlight.Lock()
+	defer mi.inFlight.Unlock()
 
-    // Note: mi.Has read locks the index again.
-    mi.idxMutex.RLock()
-    defer mi.idxMutex.RUnlock()
+	if !ignoreDuplicates {
+		// Note: mi.Has read locks the index again.
+		mi.idxMutex.RLock()
+		defer mi.idxMutex.RUnlock()
+	}
 
-    debug.Log("MasterIndex.AddInFlight", "adding %v", id)
-    if mi.inFlight.Has(id) {
-        return fmt.Errorf("%v is already in flight", id)
-    }
-    if mi.Has(id) {
-        return fmt.Errorf("%v is already indexed (fully processed)", id)
-    }
+	debug.Log("MasterIndex.AddInFlight", "adding %v", id.Str())
+	if mi.inFlight.Has(id) {
+		return fmt.Errorf("%v is already in flight", id.Str())
+	}
 
-    mi.inFlight.Insert(id)
-    return nil
+	if !ignoreDuplicates {
+		if mi.Has(id) {
+			return fmt.Errorf("%v is already indexed (fully processed)", id)
+		}
+	}
+
+	mi.inFlight.Insert(id)
+	return nil
 }
 
 // IsInFlight returns true iff the id is contained in the list of in-flight IDs.
 func (mi *MasterIndex) IsInFlight(id backend.ID) bool {
-    // The index + inFlight store must be searched for a matching id in one
-    // atomic operation. This requires locking the inFlight store and the 
-    // index together!
-    mi.inFlight.RLock()
-    defer mi.inFlight.RUnlock()
+	// The index + inFlight store must be searched for a matching id in one
+	// atomic operation. This requires locking the inFlight store and the
+	// index together!
+	mi.inFlight.RLock()
+	defer mi.inFlight.RUnlock()
 
-    // Note: mi.Has read locks the index again.
-    mi.idxMutex.RLock()
-    defer mi.idxMutex.RUnlock()
+	mi.idxMutex.RLock()
+	defer mi.idxMutex.RUnlock()
 
-    inFlight := mi.inFlight.Has(id)
-    debug.Log("MasterIndex.IsInFlight", "testing whether %v is in flight: %v", id.Str(), inFlight)
+	inFlight := mi.inFlight.Has(id)
+	debug.Log("MasterIndex.IsInFlight", "testing whether %v is in flight: %v", id.Str(), inFlight)
 
-    indexed := mi.Has(id)
-    debug.Log("MasterIndex.IsInFlight", "testing whether %v is indexed (fully processed): %v", id.Str(), indexed)
+	indexed := mi.Has(id)
+	debug.Log("MasterIndex.IsInFlight", "testing whether %v is indexed (fully processed): %v", id.Str(), indexed)
 
-    return inFlight
+	return inFlight
 }
 
 // RemoveFromInFlight deletes the given ID from the liste of in-flight IDs.
