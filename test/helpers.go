@@ -90,7 +90,6 @@ type rndReader struct {
 }
 
 func (r *rndReader) Read(p []byte) (int, error) {
-	fmt.Printf("Read(%v)\n", len(p))
 	for i := range p {
 		p[i] = byte(r.src.Uint32())
 	}
