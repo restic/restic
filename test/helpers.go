@@ -1,7 +1,6 @@
 package test_helper
 
 import (
-	"bytes"
 	"compress/bzip2"
 	"compress/gzip"
 	"crypto/rand"
@@ -86,10 +85,24 @@ func Random(seed, count int) []byte {
 	return buf
 }
 
+type rndReader struct {
+	src *mrand.Rand
+}
+
+func (r *rndReader) Read(p []byte) (int, error) {
+	fmt.Printf("Read(%v)\n", len(p))
+	for i := range p {
+		p[i] = byte(r.src.Uint32())
+	}
+
+	return len(p), nil
+}
+
 // RandomReader returns a reader that returns size bytes of pseudo-random data
 // derived from the seed.
-func RandomReader(seed, size int) *bytes.Reader {
-	return bytes.NewReader(Random(seed, size))
+func RandomReader(seed, size int) io.Reader {
+	r := &rndReader{src: mrand.New(mrand.NewSource(int64(seed)))}
+	return io.LimitReader(r, int64(size))
 }
 
 // GenRandom returns a []byte filled with up to 1000 random bytes.
