@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"hash"
 	"io"
+	"math"
 	"os"
 )
 
@@ -42,8 +43,59 @@ func isReadAt(reader io.Reader) (ok bool) {
 	return
 }
 
+// shouldUploadPart - verify if part should be uploaded.
+func shouldUploadPart(objPart objectPart, objectParts map[int]objectPart) bool {
+	// If part not found should upload the part.
+	uploadedPart, found := objectParts[objPart.PartNumber]
+	if !found {
+		return true
+	}
+	// if size mismatches should upload the part.
+	if objPart.Size != uploadedPart.Size {
+		return true
+	}
+	// if md5sum mismatches should upload the part.
+	if objPart.ETag == uploadedPart.ETag {
+		return true
+	}
+	return false
+}
+
+// optimalPartInfo - calculate the optimal part info for a given
+// object size.
+//
+// NOTE: Assumption here is that for any object to be uploaded to any S3 compatible
+// object storage it will have the following parameters as constants.
+//
+//  maxPartsCount - 10000
+//  minPartSize - 5MiB
+//  maxMultipartPutObjectSize - 5TiB
+//
+func optimalPartInfo(objectSize int64) (totalPartsCount int, partSize int64, lastPartSize int64, err error) {
+	// object size is '-1' set it to 5TiB.
+	if objectSize == -1 {
+		objectSize = maxMultipartPutObjectSize
+	}
+	// object size is larger than supported maximum.
+	if objectSize > maxMultipartPutObjectSize {
+		err = ErrEntityTooLarge(objectSize, maxMultipartPutObjectSize, "", "")
+		return
+	}
+	// Use floats for part size for all calculations to avoid
+	// overflows during float64 to int64 conversions.
+	partSizeFlt := math.Ceil(float64(objectSize / maxPartsCount))
+	partSizeFlt = math.Ceil(partSizeFlt/minPartSize) * minPartSize
+	// Total parts count.
+	totalPartsCount = int(math.Ceil(float64(objectSize) / partSizeFlt))
+	// Part size.
+	partSize = int64(partSizeFlt)
+	// Last part size.
+	lastPartSize = objectSize - int64(totalPartsCount-1)*partSize
+	return totalPartsCount, partSize, lastPartSize, nil
+}
+
 // hashCopyN - Calculates Md5sum and SHA256sum for upto partSize amount of bytes.
-func (c Client) hashCopyN(writer io.ReadWriteSeeker, reader io.Reader, partSize int64) (md5Sum, sha256Sum []byte, size int64, err error) {
+func (c Client) hashCopyN(writer io.ReadWriter, reader io.Reader, partSize int64) (md5Sum, sha256Sum []byte, size int64, err error) {
 	// MD5 and SHA256 hasher.
 	var hashMD5, hashSHA256 hash.Hash
 	// MD5 and SHA256 hasher.
@@ -61,11 +113,6 @@ func (c Client) hashCopyN(writer io.ReadWriteSeeker, reader io.Reader, partSize 
 		if err != io.EOF {
 			return nil, nil, 0, err
 		}
-	}
-
-	// Seek back to beginning of input, any error fail right here.
-	if _, err := writer.Seek(0, 0); err != nil {
-		return nil, nil, 0, err
 	}
 
 	// Finalize md5shum and sha256 sum.
@@ -139,29 +186,4 @@ func (c Client) computeHash(reader io.ReadSeeker) (md5Sum, sha256Sum []byte, siz
 		sha256Sum = hashSHA256.Sum(nil)
 	}
 	return md5Sum, sha256Sum, size, nil
-}
-
-// Fetch all parts info, including total uploaded size, maximum part
-// size and max part number.
-func (c Client) getPartsInfo(bucketName, objectName, uploadID string) (prtsInfo map[int]objectPart, totalSize int64, maxPrtSize int64, maxPrtNumber int, err error) {
-	// Fetch previously upload parts.
-	prtsInfo, err = c.listObjectParts(bucketName, objectName, uploadID)
-	if err != nil {
-		return nil, 0, 0, 0, err
-	}
-	// Peek through all the parts and calculate totalSize, maximum
-	// part size and last part number.
-	for _, prtInfo := range prtsInfo {
-		// Save previously uploaded size.
-		totalSize += prtInfo.Size
-		// Choose the maximum part size.
-		if prtInfo.Size >= maxPrtSize {
-			maxPrtSize = prtInfo.Size
-		}
-		// Choose the maximum part number.
-		if maxPrtNumber < prtInfo.PartNumber {
-			maxPrtNumber = prtInfo.PartNumber
-		}
-	}
-	return prtsInfo, totalSize, maxPrtSize, maxPrtNumber, nil
 }

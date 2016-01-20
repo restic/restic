@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Create a done channel to control 'ListObjects' go routine.
-	doneCh := make(struct{})
+	doneCh := make(chan struct{})
 
 	// Indicate to our routine to exit cleanly upon return.
 	defer close(doneCh)
