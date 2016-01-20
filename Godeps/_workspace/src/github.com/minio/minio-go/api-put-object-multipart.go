@@ -42,7 +42,7 @@ import (
 // is where each part is re-downloaded, checksummed and verified
 // before upload.
 func (c Client) putObjectMultipart(bucketName, objectName string, reader io.Reader, size int64, contentType string) (n int64, err error) {
-	if size > 0 && size >= minimumPartSize {
+	if size > 0 && size >= minPartSize {
 		// Verify if reader is *os.File, then use file system functionalities.
 		if isFile(reader) {
 			return c.putObjectMultipartFromFile(bucketName, objectName, reader.(*os.File), size, contentType)
@@ -73,6 +73,15 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 		return 0, err
 	}
 
+	// Total data read and written to server. should be equal to 'size' at the end of the call.
+	var totalUploadedSize int64
+
+	// Complete multipart upload.
+	var completeMultipartUpload completeMultipartUpload
+
+	// A map of all previously uploaded parts.
+	var partsInfo = make(map[int]objectPart)
+
 	// getUploadID for an object, initiates a new multipart request
 	// if it cannot find any previously partially uploaded object.
 	uploadID, isNew, err := c.getUploadID(bucketName, objectName, contentType)
@@ -80,83 +89,70 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 		return 0, err
 	}
 
-	// Total data read and written to server. should be equal to 'size' at the end of the call.
-	var totalUploadedSize int64
-
-	// Complete multipart upload.
-	var completeMultipartUpload completeMultipartUpload
-
-	// Previous maximum part size
-	var prevMaxPartSize int64
-
-	// A map of all previously uploaded parts.
-	var partsInfo = make(map[int]objectPart)
-
 	// If This session is a continuation of a previous session fetch all
 	// previously uploaded parts info.
 	if !isNew {
 		// Fetch previously uploaded parts and maximum part size.
-		partsInfo, _, prevMaxPartSize, _, err = c.getPartsInfo(bucketName, objectName, uploadID)
+		partsInfo, err = c.listObjectParts(bucketName, objectName, uploadID)
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	// Calculate the optimal part size for a given size.
-	partSize := optimalPartSize(size)
-	// Use prevMaxPartSize if available.
-	if prevMaxPartSize != 0 {
-		partSize = prevMaxPartSize
+	// Calculate the optimal parts info for a given size.
+	totalPartsCount, partSize, _, err := optimalPartInfo(size)
+	if err != nil {
+		return 0, err
 	}
 
-	// Part number always starts with '0'.
-	partNumber := 0
+	// Part number always starts with '1'.
+	partNumber := 1
 
-	// Upload each part until EOF.
-	for {
-		// Increment part number.
-		partNumber++
+	// Initialize a temporary buffer.
+	tmpBuffer := new(bytes.Buffer)
 
-		// Initialize a new temporary file.
-		tmpFile, err := newTempFile("multiparts$-putobject-stream")
-		if err != nil {
-			return 0, err
-		}
-
-		// Calculates MD5 and SHA256 sum while copying partSize bytes into tmpFile.
-		md5Sum, sha256Sum, size, rErr := c.hashCopyN(tmpFile, reader, partSize)
+	for partNumber <= totalPartsCount {
+		// Calculates MD5 and SHA256 sum while copying partSize bytes
+		// into tmpBuffer.
+		md5Sum, sha256Sum, prtSize, rErr := c.hashCopyN(tmpBuffer, reader, partSize)
 		if rErr != nil {
 			if rErr != io.EOF {
 				return 0, rErr
 			}
 		}
 
-		// Verify if part was not uploaded.
-		if !isPartUploaded(objectPart{
+		// Verify if part should be uploaded.
+		if shouldUploadPart(objectPart{
 			ETag:       hex.EncodeToString(md5Sum),
 			PartNumber: partNumber,
+			Size:       prtSize,
 		}, partsInfo) {
 			// Proceed to upload the part.
-			objPart, err := c.uploadPart(bucketName, objectName, uploadID, tmpFile, partNumber, md5Sum, sha256Sum, size)
+			objPart, err := c.uploadPart(bucketName, objectName, uploadID, ioutil.NopCloser(tmpBuffer), partNumber,
+				md5Sum, sha256Sum, prtSize)
 			if err != nil {
-				// Close the temporary file upon any error.
-				tmpFile.Close()
+				// Reset the temporary buffer upon any error.
+				tmpBuffer.Reset()
 				return 0, err
 			}
 			// Save successfully uploaded part metadata.
 			partsInfo[partNumber] = objPart
 		}
 
-		// Close the temporary file.
-		tmpFile.Close()
+		// Reset the temporary buffer.
+		tmpBuffer.Reset()
 
 		// Save successfully uploaded size.
-		totalUploadedSize += size
+		totalUploadedSize += prtSize
 
-		// If read error was an EOF, break out of the loop.
-		if rErr == io.EOF {
+		// For unknown size, Read EOF we break away.
+		// We do not have to upload till totalPartsCount.
+		if size < 0 && rErr == io.EOF {
 			break
 		}
+
+		// Increment part number.
+		partNumber++
 	}
 
 	// Verify if we uploaded all the data.
@@ -174,9 +170,11 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 		completeMultipartUpload.Parts = append(completeMultipartUpload.Parts, complPart)
 	}
 
-	// Verify if partNumber is different than total list of parts.
-	if partNumber != len(completeMultipartUpload.Parts) {
-		return totalUploadedSize, ErrInvalidParts(partNumber, len(completeMultipartUpload.Parts))
+	if size > 0 {
+		// Verify if totalPartsCount is not equal to total list of parts.
+		if totalPartsCount != len(completeMultipartUpload.Parts) {
+			return totalUploadedSize, ErrInvalidParts(partNumber, len(completeMultipartUpload.Parts))
+		}
 	}
 
 	// Sort all completed parts.
@@ -255,7 +253,7 @@ func (c Client) uploadPart(bucketName, objectName, uploadID string, reader io.Re
 		return objectPart{}, err
 	}
 	if size > maxPartSize {
-		return objectPart{}, ErrEntityTooLarge(size, bucketName, objectName)
+		return objectPart{}, ErrEntityTooLarge(size, maxPartSize, bucketName, objectName)
 	}
 	if size <= -1 {
 		return objectPart{}, ErrEntityTooSmall(size, bucketName, objectName)

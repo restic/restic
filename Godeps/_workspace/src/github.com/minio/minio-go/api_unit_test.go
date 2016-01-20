@@ -17,13 +17,195 @@
 package minio
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 )
 
+type customReader struct{}
+
+func (c *customReader) Read(p []byte) (n int, err error) {
+	return 0, nil
+}
+
+func (c *customReader) Size() (n int64) {
+	return 10
+}
+
+// Tests getReaderSize() for various Reader types.
+func TestGetReaderSize(t *testing.T) {
+	var reader io.Reader
+	size, err := getReaderSize(reader)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size != -1 {
+		t.Fatal("Reader shouldn't have any length.")
+	}
+
+	bytesReader := bytes.NewReader([]byte("Hello World"))
+	size, err = getReaderSize(bytesReader)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size != int64(len("Hello World")) {
+		t.Fatalf("Reader length doesn't match got: %v, want: %v", size, len("Hello World"))
+	}
+
+	size, err = getReaderSize(new(customReader))
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size != int64(10) {
+		t.Fatalf("Reader length doesn't match got: %v, want: %v", size, 10)
+	}
+
+	stringsReader := strings.NewReader("Hello World")
+	size, err = getReaderSize(stringsReader)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size != int64(len("Hello World")) {
+		t.Fatalf("Reader length doesn't match got: %v, want: %v", size, len("Hello World"))
+	}
+
+	// Create request channel.
+	reqCh := make(chan readRequest)
+	// Create response channel.
+	resCh := make(chan readResponse)
+	// Create done channel.
+	doneCh := make(chan struct{})
+	// objectInfo.
+	objectInfo := ObjectInfo{Size: 10}
+	objectReader := newObject(reqCh, resCh, doneCh, objectInfo)
+	defer objectReader.Close()
+
+	size, err = getReaderSize(objectReader)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size != int64(10) {
+		t.Fatalf("Reader length doesn't match got: %v, want: %v", size, 10)
+	}
+
+	fileReader, err := ioutil.TempFile(os.TempDir(), "prefix")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	defer fileReader.Close()
+	defer os.RemoveAll(fileReader.Name())
+
+	size, err = getReaderSize(fileReader)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size == -1 {
+		t.Fatal("Reader length for file cannot be -1.")
+	}
+
+	// Verify for standard input, output and error file descriptors.
+	size, err = getReaderSize(os.Stdin)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size != -1 {
+		t.Fatal("Stdin should have length of -1.")
+	}
+	size, err = getReaderSize(os.Stdout)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size != -1 {
+		t.Fatal("Stdout should have length of -1.")
+	}
+	size, err = getReaderSize(os.Stderr)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if size != -1 {
+		t.Fatal("Stderr should have length of -1.")
+	}
+	file, err := os.Open(os.TempDir())
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	defer file.Close()
+	size, err = getReaderSize(file)
+	if err == nil {
+		t.Fatal("Input file as directory should throw an error.")
+	}
+}
+
+// Tests valid hosts for location.
+func TestValidBucketLocation(t *testing.T) {
+	s3Hosts := []struct {
+		bucketLocation string
+		endpoint       string
+	}{
+		{"us-east-1", "s3.amazonaws.com"},
+		{"unknown", "s3.amazonaws.com"},
+		{"ap-southeast-1", "s3-ap-southeast-1.amazonaws.com"},
+	}
+	for _, s3Host := range s3Hosts {
+		endpoint := getS3Endpoint(s3Host.bucketLocation)
+		if endpoint != s3Host.endpoint {
+			t.Fatal("Error: invalid bucket location", endpoint)
+		}
+	}
+}
+
+// Tests valid bucket names.
+func TestBucketNames(t *testing.T) {
+	buckets := []struct {
+		name  string
+		valid error
+	}{
+		{".mybucket", ErrInvalidBucketName("Bucket name cannot start or end with a '.' dot.")},
+		{"mybucket.", ErrInvalidBucketName("Bucket name cannot start or end with a '.' dot.")},
+		{"mybucket-", ErrInvalidBucketName("Bucket name contains invalid characters.")},
+		{"my", ErrInvalidBucketName("Bucket name cannot be smaller than 3 characters.")},
+		{"", ErrInvalidBucketName("Bucket name cannot be empty.")},
+		{"my.bucket.com", nil},
+		{"my-bucket", nil},
+		{"123my-bucket", nil},
+	}
+
+	for _, b := range buckets {
+		err := isValidBucketName(b.name)
+		if err != b.valid {
+			t.Fatal("Error:", err)
+		}
+	}
+}
+
+// Tests temp file.
+func TestTempFile(t *testing.T) {
+	tmpFile, err := newTempFile("testing")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	fileName := tmpFile.Name()
+	// Closing temporary file purges the file.
+	err = tmpFile.Close()
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	st, err := os.Stat(fileName)
+	if err != nil && !os.IsNotExist(err) {
+		t.Fatal("Error:", err)
+	}
+	if err == nil && st != nil {
+		t.Fatal("Error: file should be deleted and should not exist.")
+	}
+}
+
+// Tests url encoding.
 func TestEncodeURL2Path(t *testing.T) {
 	type urlStrings struct {
 		objName        string
@@ -66,6 +248,7 @@ func TestEncodeURL2Path(t *testing.T) {
 	}
 }
 
+// Tests error response structure.
 func TestErrorResponse(t *testing.T) {
 	var err error
 	err = ErrorResponse{
@@ -90,6 +273,7 @@ func TestErrorResponse(t *testing.T) {
 	}
 }
 
+// Tests signature calculation.
 func TestSignatureCalculation(t *testing.T) {
 	req, err := http.NewRequest("GET", "https://s3.amazonaws.com", nil)
 	if err != nil {
@@ -136,6 +320,7 @@ func TestSignatureCalculation(t *testing.T) {
 	}
 }
 
+// Tests signature type.
 func TestSignatureType(t *testing.T) {
 	clnt := Client{}
 	if !clnt.signature.isV4() {
@@ -154,7 +339,8 @@ func TestSignatureType(t *testing.T) {
 	}
 }
 
-func TestACLTypes(t *testing.T) {
+// Tests bucket acl types.
+func TestBucketACLTypes(t *testing.T) {
 	want := map[string]bool{
 		"private":            true,
 		"public-read":        true,
@@ -169,20 +355,48 @@ func TestACLTypes(t *testing.T) {
 	}
 }
 
+// Tests optimal part size.
 func TestPartSize(t *testing.T) {
-	var maxPartSize int64 = 1024 * 1024 * 1024 * 5
-	partSize := optimalPartSize(5000000000000000000)
-	if partSize > minimumPartSize {
-		if partSize > maxPartSize {
-			t.Fatal("invalid result, cannot be bigger than maxPartSize 5GiB")
-		}
+	totalPartsCount, partSize, lastPartSize, err := optimalPartInfo(5000000000000000000)
+	if err == nil {
+		t.Fatal("Error: should fail")
 	}
-	partSize = optimalPartSize(50000000000)
-	if partSize > minimumPartSize {
-		t.Fatal("invalid result, cannot be bigger than minimumPartSize 5MiB")
+	totalPartsCount, partSize, lastPartSize, err = optimalPartInfo(5497558138880)
+	if err != nil {
+		t.Fatal("Error: ", err)
+	}
+	if totalPartsCount != 9987 {
+		t.Fatalf("Error: expecting total parts count of 9987: got %v instead", totalPartsCount)
+	}
+	if partSize != 550502400 {
+		t.Fatalf("Error: expecting part size of 550502400: got %v instead", partSize)
+	}
+	if lastPartSize != 241172480 {
+		t.Fatalf("Error: expecting last part size of 241172480: got %v instead", lastPartSize)
+	}
+	totalPartsCount, partSize, lastPartSize, err = optimalPartInfo(5000000000)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if partSize != minPartSize {
+		t.Fatalf("Error: expecting part size of %v: got %v instead", minPartSize, partSize)
+	}
+	totalPartsCount, partSize, lastPartSize, err = optimalPartInfo(-1)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if totalPartsCount != 9987 {
+		t.Fatalf("Error: expecting total parts count of 9987: got %v instead", totalPartsCount)
+	}
+	if partSize != 550502400 {
+		t.Fatalf("Error: expecting part size of 550502400: got %v instead", partSize)
+	}
+	if lastPartSize != 241172480 {
+		t.Fatalf("Error: expecting last part size of 241172480: got %v instead", lastPartSize)
 	}
 }
 
+// Tests url encoding.
 func TestURLEncoding(t *testing.T) {
 	type urlStrings struct {
 		name        string
@@ -223,6 +437,7 @@ func TestURLEncoding(t *testing.T) {
 	}
 }
 
+// Tests constructing valid endpoint url.
 func TestGetEndpointURL(t *testing.T) {
 	if _, err := getEndpointURL("s3.amazonaws.com", false); err != nil {
 		t.Fatal("Error:", err)
@@ -241,7 +456,8 @@ func TestGetEndpointURL(t *testing.T) {
 	}
 }
 
-func TestValidIP(t *testing.T) {
+// Tests valid ip address.
+func TestValidIPAddr(t *testing.T) {
 	type validIP struct {
 		ip    string
 		valid bool
@@ -273,6 +489,7 @@ func TestValidIP(t *testing.T) {
 	}
 }
 
+// Tests valid endpoint domain.
 func TestValidEndpointDomain(t *testing.T) {
 	type validEndpoint struct {
 		endpointDomain string
@@ -329,6 +546,7 @@ func TestValidEndpointDomain(t *testing.T) {
 	}
 }
 
+// Tests valid endpoint url.
 func TestValidEndpointURL(t *testing.T) {
 	type validURL struct {
 		url   string

@@ -22,37 +22,87 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"reflect"
+	"runtime"
 	"strings"
 )
 
-// getReaderSize gets the size of the underlying reader, if possible.
+// getReaderSize - Determine the size of Reader if available.
 func getReaderSize(reader io.Reader) (size int64, err error) {
+	var result []reflect.Value
 	size = -1
 	if reader != nil {
-		switch v := reader.(type) {
-		case *bytes.Buffer:
-			size = int64(v.Len())
-		case *bytes.Reader:
-			size = int64(v.Len())
-		case *strings.Reader:
-			size = int64(v.Len())
-		case *os.File:
-			var st os.FileInfo
-			st, err = v.Stat()
-			if err != nil {
-				return 0, err
+		// Verify if there is a method by name 'Size'.
+		lenFn := reflect.ValueOf(reader).MethodByName("Size")
+		if lenFn.IsValid() {
+			if lenFn.Kind() == reflect.Func {
+				// Call the 'Size' function and save its return value.
+				result = lenFn.Call([]reflect.Value{})
+				if result != nil && len(result) == 1 {
+					lenValue := result[0]
+					if lenValue.IsValid() {
+						switch lenValue.Kind() {
+						case reflect.Int:
+							fallthrough
+						case reflect.Int8:
+							fallthrough
+						case reflect.Int16:
+							fallthrough
+						case reflect.Int32:
+							fallthrough
+						case reflect.Int64:
+							size = lenValue.Int()
+						}
+					}
+				}
 			}
-			size = st.Size()
-		case *Object:
-			var st ObjectInfo
-			st, err = v.Stat()
-			if err != nil {
-				return 0, err
+		} else {
+			// Fallback to Stat() method, two possible Stat() structs
+			// exist.
+			switch v := reader.(type) {
+			case *os.File:
+				var st os.FileInfo
+				st, err = v.Stat()
+				if err != nil {
+					// Handle this case specially for "windows",
+					// certain files for example 'Stdin', 'Stdout' and
+					// 'Stderr' it is not allowed to fetch file information.
+					if runtime.GOOS == "windows" {
+						if strings.Contains(err.Error(), "GetFileInformationByHandle") {
+							return -1, nil
+						}
+					}
+					return
+				}
+				// Ignore if input is a directory, throw an error.
+				if st.Mode().IsDir() {
+					return -1, ErrInvalidArgument("Input file cannot be a directory.")
+				}
+				// Ignore 'Stdin', 'Stdout' and 'Stderr', since they
+				// represent *os.File type but internally do not
+				// implement Seekable calls. Ignore them and treat
+				// them like a stream with unknown length.
+				switch st.Name() {
+				case "stdin":
+					fallthrough
+				case "stdout":
+					fallthrough
+				case "stderr":
+					return
+				}
+				size = st.Size()
+			case *Object:
+				var st ObjectInfo
+				st, err = v.Stat()
+				if err != nil {
+					return
+				}
+				size = st.Size
 			}
-			size = st.Size
 		}
 	}
-	return size, nil
+	// Returns the size here.
+	return size, err
 }
 
 // completedParts is a collection of parts sortable by their part numbers.
@@ -85,7 +135,7 @@ func (c Client) PutObject(bucketName, objectName string, reader io.Reader, conte
 		return 0, err
 	}
 
-	// get reader size.
+	// Get reader size.
 	size, err := getReaderSize(reader)
 	if err != nil {
 		return 0, err
@@ -93,7 +143,7 @@ func (c Client) PutObject(bucketName, objectName string, reader io.Reader, conte
 
 	// Check for largest object size allowed.
 	if size > int64(maxMultipartPutObjectSize) {
-		return 0, ErrEntityTooLarge(size, bucketName, objectName)
+		return 0, ErrEntityTooLarge(size, maxMultipartPutObjectSize, bucketName, objectName)
 	}
 
 	// NOTE: Google Cloud Storage does not implement Amazon S3 Compatible multipart PUT.
@@ -108,7 +158,7 @@ func (c Client) PutObject(bucketName, objectName string, reader io.Reader, conte
 			}
 		}
 		if size > maxSinglePutObjectSize {
-			return 0, ErrEntityTooLarge(size, bucketName, objectName)
+			return 0, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
 		}
 		// Do not compute MD5 for Google Cloud Storage. Uploads upto 5GiB in size.
 		return c.putObjectNoChecksum(bucketName, objectName, reader, size, contentType)
@@ -125,14 +175,14 @@ func (c Client) PutObject(bucketName, objectName string, reader io.Reader, conte
 			}
 		}
 		if size > maxSinglePutObjectSize {
-			return 0, ErrEntityTooLarge(size, bucketName, objectName)
+			return 0, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
 		}
 		// Do not compute MD5 for anonymous requests to Amazon S3. Uploads upto 5GiB in size.
 		return c.putObjectNoChecksum(bucketName, objectName, reader, size, contentType)
 	}
 
 	// putSmall object.
-	if size < minimumPartSize && size > 0 {
+	if size < minPartSize && size > 0 {
 		return c.putObjectSingle(bucketName, objectName, reader, size, contentType)
 	}
 	// For all sizes greater than 5MiB do multipart.
@@ -144,7 +194,7 @@ func (c Client) PutObject(bucketName, objectName string, reader io.Reader, conte
 		if errResp.Code == "NotImplemented" {
 			// Verify if size of reader is greater than '5GiB'.
 			if size > maxSinglePutObjectSize {
-				return 0, ErrEntityTooLarge(size, bucketName, objectName)
+				return 0, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
 			}
 			// Fall back to uploading as single PutObject operation.
 			return c.putObjectSingle(bucketName, objectName, reader, size, contentType)
@@ -165,7 +215,7 @@ func (c Client) putObjectNoChecksum(bucketName, objectName string, reader io.Rea
 		return 0, err
 	}
 	if size > maxSinglePutObjectSize {
-		return 0, ErrEntityTooLarge(size, bucketName, objectName)
+		return 0, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
 	}
 	// This function does not calculate sha256 and md5sum for payload.
 	// Execute put object.
@@ -190,25 +240,40 @@ func (c Client) putObjectSingle(bucketName, objectName string, reader io.Reader,
 		return 0, err
 	}
 	if size > maxSinglePutObjectSize {
-		return 0, ErrEntityTooLarge(size, bucketName, objectName)
+		return 0, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
 	}
 	// If size is a stream, upload upto 5GiB.
 	if size <= -1 {
 		size = maxSinglePutObjectSize
 	}
-	// Initialize a new temporary file.
-	tmpFile, err := newTempFile("single$-putobject-single")
-	if err != nil {
-		return 0, err
+	var md5Sum, sha256Sum []byte
+	var readCloser io.ReadCloser
+	if size <= minPartSize {
+		// Initialize a new temporary buffer.
+		tmpBuffer := new(bytes.Buffer)
+		md5Sum, sha256Sum, size, err = c.hashCopyN(tmpBuffer, reader, size)
+		readCloser = ioutil.NopCloser(tmpBuffer)
+	} else {
+		// Initialize a new temporary file.
+		tmpFile, err := newTempFile("single$-putobject-single")
+		if err != nil {
+			return 0, err
+		}
+		md5Sum, sha256Sum, size, err = c.hashCopyN(tmpFile, reader, size)
+		// Seek back to beginning of the temporary file.
+		if _, err := tmpFile.Seek(0, 0); err != nil {
+			return 0, err
+		}
+		readCloser = tmpFile
 	}
-	md5Sum, sha256Sum, size, err := c.hashCopyN(tmpFile, reader, size)
+	// Return error if its not io.EOF.
 	if err != nil {
 		if err != io.EOF {
 			return 0, err
 		}
 	}
 	// Execute put object.
-	st, err := c.putObjectDo(bucketName, objectName, tmpFile, md5Sum, sha256Sum, size, contentType)
+	st, err := c.putObjectDo(bucketName, objectName, readCloser, md5Sum, sha256Sum, size, contentType)
 	if err != nil {
 		return 0, err
 	}
@@ -234,7 +299,7 @@ func (c Client) putObjectDo(bucketName, objectName string, reader io.ReadCloser,
 	}
 
 	if size > maxSinglePutObjectSize {
-		return ObjectInfo{}, ErrEntityTooLarge(size, bucketName, objectName)
+		return ObjectInfo{}, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
 	}
 
 	if strings.TrimSpace(contentType) == "" {

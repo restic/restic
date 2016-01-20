@@ -161,8 +161,8 @@ func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string)
 }
 
 // ErrEntityTooLarge - Input size is larger than supported maximum.
-func ErrEntityTooLarge(totalSize int64, bucketName, objectName string) error {
-	msg := fmt.Sprintf("Your proposed upload size ‘%d’ exceeds the maximum allowed object size '5GiB' for single PUT operation.", totalSize)
+func ErrEntityTooLarge(totalSize, maxObjectSize int64, bucketName, objectName string) error {
+	msg := fmt.Sprintf("Your proposed upload size ‘%d’ exceeds the maximum allowed object size ‘%d’ for single PUT operation.", totalSize, maxObjectSize)
 	return ErrorResponse{
 		Code:       "EntityTooLarge",
 		Message:    msg,
