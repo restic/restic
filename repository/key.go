@@ -225,6 +225,7 @@ func (k *Key) String() string {
 	return fmt.Sprintf("<Key of %s@%s, created on %s>", k.Username, k.Hostname, k.Created)
 }
 
+// Name returns an identifier for the key.
 func (k Key) Name() string {
 	return k.name
 }
