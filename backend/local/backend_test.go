@@ -13,75 +13,75 @@ func TestLocalBackendCreate(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Create(t)
+	test.TestCreate(t)
 }
 
 func TestLocalBackendOpen(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Open(t)
+	test.TestOpen(t)
 }
 
 func TestLocalBackendCreateWithConfig(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.CreateWithConfig(t)
+	test.TestCreateWithConfig(t)
 }
 
 func TestLocalBackendLocation(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Location(t)
+	test.TestLocation(t)
 }
 
 func TestLocalBackendConfig(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Config(t)
+	test.TestConfig(t)
 }
 
 func TestLocalBackendGetReader(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.GetReader(t)
+	test.TestGetReader(t)
 }
 
 func TestLocalBackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Load(t)
+	test.TestLoad(t)
 }
 
 func TestLocalBackendWrite(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Write(t)
+	test.TestWrite(t)
 }
 
-func TestLocalBackendGeneric(t *testing.T) {
+func TestLocalBackendBackend(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Generic(t)
+	test.TestBackend(t)
 }
 
 func TestLocalBackendDelete(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Delete(t)
+	test.TestDelete(t)
 }
 
 func TestLocalBackendCleanup(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Cleanup(t)
+	test.TestCleanup(t)
 }

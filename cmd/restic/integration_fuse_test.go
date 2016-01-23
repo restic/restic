@@ -60,7 +60,7 @@ func cmdMount(t testing.TB, global GlobalOptions, dir string, ready, done chan s
 
 	cmd := &CmdMount{global: &global, ready: ready, done: done}
 	OK(t, cmd.Execute([]string{dir}))
-	if TestCleanup {
+	if TestCleanupTempDirs {
 		RemoveAll(t, dir)
 	}
 }

@@ -158,7 +158,7 @@ func WithTestEnvironment(t testing.TB, repoFixture string, f func(repodir string
 
 	f(filepath.Join(tempdir, "repo"))
 
-	if !TestCleanup {
+	if !TestCleanupTempDirs {
 		t.Logf("leaving temporary directory %v used for test", tempdir)
 		return
 	}

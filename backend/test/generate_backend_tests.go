@@ -39,7 +39,7 @@ var SkipMessage string
 {{ range $f := .Funcs }}
 func Test{{ $prefix }}{{ $f }}(t *testing.T){
 	if SkipMessage != "" { t.Skip(SkipMessage) }
-	test.{{ $f }}(t)
+	test.Test{{ $f }}(t)
 }
 
 {{ end }}
@@ -60,7 +60,7 @@ func errx(err error) {
 	os.Exit(1)
 }
 
-var funcRegex = regexp.MustCompile(`^func\s+([A-Z].*)\s*\(`)
+var funcRegex = regexp.MustCompile(`^func\s+Test(.+)\s*\(`)
 
 func findTestFunctions() (funcs []string) {
 	f, err := os.Open(*testFile)

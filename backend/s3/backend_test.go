@@ -13,75 +13,75 @@ func TestS3BackendCreate(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Create(t)
+	test.TestCreate(t)
 }
 
 func TestS3BackendOpen(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Open(t)
+	test.TestOpen(t)
 }
 
 func TestS3BackendCreateWithConfig(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.CreateWithConfig(t)
+	test.TestCreateWithConfig(t)
 }
 
 func TestS3BackendLocation(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Location(t)
+	test.TestLocation(t)
 }
 
 func TestS3BackendConfig(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Config(t)
+	test.TestConfig(t)
 }
 
 func TestS3BackendGetReader(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.GetReader(t)
+	test.TestGetReader(t)
 }
 
 func TestS3BackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Load(t)
+	test.TestLoad(t)
 }
 
 func TestS3BackendWrite(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Write(t)
+	test.TestWrite(t)
 }
 
-func TestS3BackendGeneric(t *testing.T) {
+func TestS3BackendBackend(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Generic(t)
+	test.TestBackend(t)
 }
 
 func TestS3BackendDelete(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Delete(t)
+	test.TestDelete(t)
 }
 
 func TestS3BackendCleanup(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Cleanup(t)
+	test.TestCleanup(t)
 }

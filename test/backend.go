@@ -15,7 +15,7 @@ import (
 
 var (
 	TestPassword          = getStringVar("RESTIC_TEST_PASSWORD", "geheim")
-	TestCleanup           = getBoolVar("RESTIC_TEST_CLEANUP", true)
+	TestCleanupTempDirs   = getBoolVar("RESTIC_TEST_CLEANUP", true)
 	TestTempDir           = getStringVar("RESTIC_TEST_TMPDIR", "")
 	RunIntegrationTest    = getBoolVar("RESTIC_TEST_INTEGRATION", true)
 	RunFuseTest           = getBoolVar("RESTIC_TEST_FUSE", true)
@@ -70,7 +70,7 @@ func SetupRepo() *repository.Repository {
 }
 
 func TeardownRepo(repo *repository.Repository) {
-	if !TestCleanup {
+	if !TestCleanupTempDirs {
 		l := repo.Backend().(*local.Local)
 		fmt.Printf("leaving local backend at %s\n", l.Location())
 		return

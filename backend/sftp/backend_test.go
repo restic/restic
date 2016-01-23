@@ -13,75 +13,75 @@ func TestSftpBackendCreate(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Create(t)
+	test.TestCreate(t)
 }
 
 func TestSftpBackendOpen(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Open(t)
+	test.TestOpen(t)
 }
 
 func TestSftpBackendCreateWithConfig(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.CreateWithConfig(t)
+	test.TestCreateWithConfig(t)
 }
 
 func TestSftpBackendLocation(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Location(t)
+	test.TestLocation(t)
 }
 
 func TestSftpBackendConfig(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Config(t)
+	test.TestConfig(t)
 }
 
 func TestSftpBackendGetReader(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.GetReader(t)
+	test.TestGetReader(t)
 }
 
 func TestSftpBackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Load(t)
+	test.TestLoad(t)
 }
 
 func TestSftpBackendWrite(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Write(t)
+	test.TestWrite(t)
 }
 
-func TestSftpBackendGeneric(t *testing.T) {
+func TestSftpBackendBackend(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Generic(t)
+	test.TestBackend(t)
 }
 
 func TestSftpBackendDelete(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Delete(t)
+	test.TestDelete(t)
 }
 
 func TestSftpBackendCleanup(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.Cleanup(t)
+	test.TestCleanup(t)
 }

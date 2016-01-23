@@ -178,7 +178,7 @@ func configureRestic(t testing.TB, cache, repo string) GlobalOptions {
 }
 
 func cleanupTempdir(t testing.TB, tempdir string) {
-	if !TestCleanup {
+	if !TestCleanupTempDirs {
 		t.Logf("leaving temporary directory %v used for test", tempdir)
 		return
 	}
@@ -209,7 +209,7 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 
 	f(&env, configureRestic(t, env.cache, env.repo))
 
-	if !TestCleanup {
+	if !TestCleanupTempDirs {
 		t.Logf("leaving temporary directory %v used for test", tempdir)
 		return
 	}

@@ -70,8 +70,8 @@ func close(t testing.TB) {
 	but = nil
 }
 
-// Create creates a backend.
-func Create(t testing.TB) {
+// TestCreate creates a backend.
+func TestCreate(t testing.TB) {
 	if CreateFn == nil {
 		t.Fatalf("CreateFn not set!")
 	}
@@ -90,8 +90,8 @@ func Create(t testing.TB) {
 	}
 }
 
-// Open opens a previously created backend.
-func Open(t testing.TB) {
+// TestOpen opens a previously created backend.
+func TestOpen(t testing.TB) {
 	if OpenFn == nil {
 		t.Fatalf("OpenFn not set!")
 	}
@@ -107,9 +107,9 @@ func Open(t testing.TB) {
 	}
 }
 
-// CreateWithConfig tests that creating a backend in a location which already
+// TestCreateWithConfig tests that creating a backend in a location which already
 // has a config file fails.
-func CreateWithConfig(t testing.TB) {
+func TestCreateWithConfig(t testing.TB) {
 	if CreateFn == nil {
 		t.Fatalf("CreateFn not set")
 	}
@@ -133,8 +133,8 @@ func CreateWithConfig(t testing.TB) {
 	}
 }
 
-// Location tests that a location string is returned.
-func Location(t testing.TB) {
+// TestLocation tests that a location string is returned.
+func TestLocation(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
@@ -144,8 +144,8 @@ func Location(t testing.TB) {
 	}
 }
 
-// Config saves and loads a config from the backend.
-func Config(t testing.TB) {
+// TestConfig saves and loads a config from the backend.
+func TestConfig(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
@@ -196,8 +196,8 @@ func Config(t testing.TB) {
 	}
 }
 
-// GetReader tests various ways the GetReader function can be called.
-func GetReader(t testing.TB) {
+// TestGetReader tests various ways the GetReader function can be called.
+func TestGetReader(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
@@ -245,8 +245,8 @@ func GetReader(t testing.TB) {
 	OK(t, b.Remove(backend.Data, id.String()))
 }
 
-// Load tests the backend's Load function.
-func Load(t testing.TB) {
+// TestLoad tests the backend's Load function.
+func TestLoad(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
@@ -325,8 +325,8 @@ func Load(t testing.TB) {
 	OK(t, b.Remove(backend.Data, id.String()))
 }
 
-// Write tests writing data to the backend.
-func Write(t testing.TB) {
+// TestWrite tests writing data to the backend.
+func TestWrite(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
@@ -410,8 +410,8 @@ func read(t testing.TB, rd io.Reader, expectedData []byte) {
 	}
 }
 
-// Generic tests all functions of the backend.
-func Generic(t testing.TB) {
+// TestBackend tests all functions of the backend.
+func TestBackend(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
@@ -523,7 +523,7 @@ func Generic(t testing.TB) {
 		}
 
 		// remove content if requested
-		if TestCleanup {
+		if TestCleanupTempDirs {
 			for _, test := range testStrings {
 				id, err := backend.ParseID(test.id)
 				OK(t, err)
@@ -541,8 +541,8 @@ func Generic(t testing.TB) {
 	}
 }
 
-// Delete tests the Delete function.
-func Delete(t testing.TB) {
+// TestDelete tests the Delete function.
+func TestDelete(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
@@ -557,14 +557,14 @@ func Delete(t testing.TB) {
 	}
 }
 
-// Cleanup runs the cleanup function after all tests are run.
-func Cleanup(t testing.TB) {
+// TestCleanup runs the cleanup function after all tests are run.
+func TestCleanup(t testing.TB) {
 	if CleanupFn == nil {
 		t.Log("CleanupFn function not set")
 		return
 	}
 
-	if !TestCleanup {
+	if !TestCleanupTempDirs {
 		t.Logf("not cleaning up backend")
 		return
 	}
