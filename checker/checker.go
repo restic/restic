@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"sync"
 
 	"github.com/restic/restic"
@@ -647,17 +646,8 @@ func (c *Checker) CountPacks() uint64 {
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(r *repository.Repository, id backend.ID) error {
 	debug.Log("Checker.checkPack", "checking pack %v", id.Str())
-	rd, err := r.Backend().GetReader(backend.Data, id.String(), 0, 0)
-	if err != nil {
-		return err
-	}
-
-	buf, err := ioutil.ReadAll(rd)
-	if err != nil {
-		return err
-	}
-
-	err = rd.Close()
+	h := backend.Handle{Type: backend.Data, Name: id.String()}
+	buf, err := backend.LoadAll(r.Backend(), h, nil)
 	if err != nil {
 		return err
 	}
