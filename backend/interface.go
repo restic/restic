@@ -63,9 +63,9 @@ type Backend interface {
 
 // Lister implements listing data items stored in a backend.
 type Lister interface {
-	// List returns a channel that yields all names of blobs of type t in
-	// lexicographic order. A goroutine is started for this. If the channel
-	// done is closed, sending stops.
+	// List returns a channel that yields all names of blobs of type t in an
+	// arbitrary order. A goroutine is started for this. If the channel done is
+	// closed, sending stops.
 	List(t Type, done <-chan struct{}) <-chan string
 }
 
