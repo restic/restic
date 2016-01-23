@@ -56,24 +56,14 @@ func (r *Repository) PrefixLength(t backend.Type) (int, error) {
 func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
-	rd, err := r.be.GetReader(t, id.String(), 0, 0)
+	h := backend.Handle{Type: t, Name: id.String()}
+	buf, err := backend.LoadAll(r.be, h, nil)
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
 		return nil, err
 	}
 
-	buf, err := ioutil.ReadAll(rd)
-	if err != nil {
-		return nil, err
-	}
-
-	err = rd.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// check hash
-	if !backend.Hash(buf).Equal(id) {
+	if t != backend.Config && !backend.Hash(buf).Equal(id) {
 		return nil, errors.New("invalid data returned")
 	}
 
@@ -100,7 +90,9 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byt
 
 	plaintextBufSize := uint(cap(plaintextBuf))
 	if blob.PlaintextLength() > plaintextBufSize {
-		return nil, fmt.Errorf("buf is too small, need %d more bytes", blob.PlaintextLength()-plaintextBufSize)
+		debug.Log("Repo.LoadBlob", "need to expand buffer: want %d bytes, got %d",
+			blob.PlaintextLength(), plaintextBufSize)
+		plaintextBuf = make([]byte, blob.PlaintextLength())
 	}
 
 	if blob.Type != t {
@@ -111,22 +103,18 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byt
 	debug.Log("Repo.LoadBlob", "id %v found: %v", id.Str(), blob)
 
 	// load blob from pack
-	rd, err := r.be.GetReader(backend.Data, blob.PackID.String(), blob.Offset, blob.Length)
+	h := backend.Handle{Type: backend.Data, Name: blob.PackID.String()}
+	ciphertextBuf := make([]byte, blob.Length)
+	n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
 	if err != nil {
 		debug.Log("Repo.LoadBlob", "error loading blob %v: %v", blob, err)
 		return nil, err
 	}
 
-	// make buffer that is large enough for the complete blob
-	ciphertextBuf := make([]byte, blob.Length)
-	_, err = io.ReadFull(rd, ciphertextBuf)
-	if err != nil {
-		return nil, err
-	}
-
-	err = rd.Close()
-	if err != nil {
-		return nil, err
+	if uint(n) != blob.Length {
+		debug.Log("Repo.LoadBlob", "error loading blob %v: wrong length returned, want %d, got %d",
+			blob.Length, uint(n))
+		return nil, errors.New("wrong length returned")
 	}
 
 	// decrypt
@@ -156,61 +144,23 @@ func closeOrErr(cl io.Closer, err *error) {
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
 func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) (err error) {
-	// load blob from backend
-	rd, err := r.be.GetReader(t, id.String(), 0, 0)
-	if err != nil {
-		return err
-	}
-	defer closeOrErr(rd, &err)
-
-	// decrypt
-	decryptRd, err := crypto.DecryptFrom(r.key, rd)
-	defer closeOrErr(decryptRd, &err)
+	buf, err := r.LoadAndDecrypt(t, id)
 	if err != nil {
 		return err
 	}
 
-	// decode
-	decoder := json.NewDecoder(decryptRd)
-	err = decoder.Decode(item)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json.Unmarshal(buf, item)
 }
 
 // LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
 // data and afterwards call json.Unmarshal on the item.
 func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) (err error) {
-	// lookup pack
-	blob, err := r.idx.Lookup(id)
+	buf, err := r.LoadBlob(t, id, nil)
 	if err != nil {
 		return err
 	}
 
-	// load blob from pack
-	rd, err := r.be.GetReader(backend.Data, blob.PackID.String(), blob.Offset, blob.Length)
-	if err != nil {
-		return err
-	}
-	defer closeOrErr(rd, &err)
-
-	// decrypt
-	decryptRd, err := crypto.DecryptFrom(r.key, rd)
-	defer closeOrErr(decryptRd, &err)
-	if err != nil {
-		return err
-	}
-
-	// decode
-	decoder := json.NewDecoder(decryptRd)
-	err = decoder.Decode(item)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json.Unmarshal(buf, item)
 }
 
 // LookupBlobSize returns the size of blob id.
