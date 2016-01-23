@@ -45,6 +45,10 @@ func NewMemoryBackend() *MemoryBackend {
 		return memGetReader(be, t, name, offset, length)
 	}
 
+	be.MockBackend.LoadFn = func(h Handle, p []byte, off int64) (int, error) {
+		return memLoad(be, h, p, off)
+	}
+
 	be.MockBackend.RemoveFn = func(t Type, name string) error {
 		return memRemove(be, t, name)
 	}
@@ -59,6 +63,10 @@ func NewMemoryBackend() *MemoryBackend {
 
 		be.data = make(memMap)
 		return nil
+	}
+
+	be.MockBackend.LocationFn = func() string {
+		return "Memory Backend"
 	}
 
 	debug.Log("MemoryBackend.New", "created new memory backend")
@@ -169,6 +177,40 @@ func memGetReader(be *MemoryBackend, t Type, name string, offset, length uint) (
 	}
 
 	return readCloser{bytes.NewReader(buf)}, nil
+}
+
+func memLoad(be *MemoryBackend, h Handle, p []byte, off int64) (int, error) {
+	be.m.Lock()
+	defer be.m.Unlock()
+
+	if err := h.Valid(); err != nil {
+		return 0, err
+	}
+
+	if h.Type == Config {
+		h.Name = ""
+	}
+
+	debug.Log("MemoryBackend.Load", "get %v offset %v len %v", h, off, len(p))
+
+	if _, ok := be.data[entry{h.Type, h.Name}]; !ok {
+		return 0, errors.New("no such data")
+	}
+
+	buf := be.data[entry{h.Type, h.Name}]
+	if off > int64(len(buf)) {
+		return 0, errors.New("offset beyond end of file")
+	}
+
+	buf = buf[off:]
+
+	n := copy(p, buf)
+
+	if len(p) > len(buf) {
+		return n, io.ErrUnexpectedEOF
+	}
+
+	return n, nil
 }
 
 func memRemove(be *MemoryBackend, t Type, name string) error {
