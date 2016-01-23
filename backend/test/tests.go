@@ -107,6 +107,32 @@ func Open(t testing.TB) {
 	}
 }
 
+// CreateWithConfig tests that creating a backend in a location which already
+// has a config file fails.
+func CreateWithConfig(t testing.TB) {
+	if CreateFn == nil {
+		t.Fatalf("CreateFn not set")
+	}
+
+	b := open(t)
+	defer close(t)
+
+	// save a config
+	store(t, b, backend.Config, []byte("test config"))
+
+	// now create the backend again, this must fail
+	_, err := CreateFn()
+	if err == nil {
+		t.Fatalf("expected error not found for creating a backend with an existing config file")
+	}
+
+	// remove config
+	err = b.Remove(backend.Config, "")
+	if err != nil {
+		t.Fatalf("unexpected error removing config: %v", err)
+	}
+}
+
 // Location tests that a location string is returned.
 func Location(t testing.TB) {
 	b := open(t)

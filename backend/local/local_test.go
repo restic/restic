@@ -1,7 +1,6 @@
 package local_test
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,28 +14,35 @@ var tempBackendDir string
 
 //go:generate go run ../test/generate_backend_tests.go
 
+func createTempdir() error {
+	if tempBackendDir != "" {
+		return nil
+	}
+
+	tempdir, err := ioutil.TempDir("", "restic-local-test-")
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("created new test backend at %v\n", tempdir)
+	tempBackendDir = tempdir
+	return nil
+}
+
 func init() {
 	test.CreateFn = func() (backend.Backend, error) {
-		if tempBackendDir != "" {
-			return nil, errors.New("temporary local backend dir already exists")
-		}
-
-		tempdir, err := ioutil.TempDir("", "restic-local-test-")
+		err := createTempdir()
 		if err != nil {
 			return nil, err
 		}
-
-		fmt.Printf("created new test backend at %v\n", tempdir)
-		tempBackendDir = tempdir
-
-		return local.Create(tempdir)
+		return local.Create(tempBackendDir)
 	}
 
 	test.OpenFn = func() (backend.Backend, error) {
-		if tempBackendDir == "" {
-			return nil, errors.New("repository not initialized")
+		err := createTempdir()
+		if err != nil {
+			return nil, err
 		}
-
 		return local.Open(tempBackendDir)
 	}
 
