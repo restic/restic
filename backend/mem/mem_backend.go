@@ -49,6 +49,10 @@ func New() *MemoryBackend {
 		return memLoad(be, h, p, off)
 	}
 
+	be.MockBackend.StatFn = func(h backend.Handle) (backend.BlobInfo, error) {
+		return memStat(be, h)
+	}
+
 	be.MockBackend.RemoveFn = func(t backend.Type, name string) error {
 		return memRemove(be, t, name)
 	}
@@ -193,6 +197,28 @@ func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, err
 	}
 
 	return n, nil
+}
+
+func memStat(be *MemoryBackend, h backend.Handle) (backend.BlobInfo, error) {
+	be.m.Lock()
+	defer be.m.Unlock()
+
+	if err := h.Valid(); err != nil {
+		return backend.BlobInfo{}, err
+	}
+
+	if h.Type == backend.Config {
+		h.Name = ""
+	}
+
+	debug.Log("MemoryBackend.Stat", "stat %v", h)
+
+	e, ok := be.data[entry{h.Type, h.Name}]
+	if !ok {
+		return backend.BlobInfo{}, errors.New("no such data")
+	}
+
+	return backend.BlobInfo{Size: int64(len(e))}, nil
 }
 
 func memRemove(be *MemoryBackend, t backend.Type, name string) error {

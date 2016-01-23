@@ -191,6 +191,25 @@ func (be S3Backend) Load(h backend.Handle, p []byte, off int64) (int, error) {
 	return io.ReadFull(obj, p)
 }
 
+// Stat returns information about a blob.
+func (be S3Backend) Stat(h backend.Handle) (backend.BlobInfo, error) {
+	debug.Log("s3.Stat", "%v")
+	path := s3path(h.Type, h.Name)
+	obj, err := be.client.GetObject(be.bucketname, path)
+	if err != nil {
+		debug.Log("s3.Stat", "GetObject() err %v", err)
+		return backend.BlobInfo{}, err
+	}
+
+	fi, err := obj.Stat()
+	if err != nil {
+		debug.Log("s3.Stat", "Stat() err %v", err)
+		return backend.BlobInfo{}, err
+	}
+
+	return backend.BlobInfo{Size: fi.Size}, nil
+}
+
 // Test returns true if a blob of the given type and name exists in the backend.
 func (be *S3Backend) Test(t backend.Type, name string) (bool, error) {
 	found := false

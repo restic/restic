@@ -374,6 +374,13 @@ func TestWrite(t testing.TB) {
 			t.Fatalf("data not equal")
 		}
 
+		fi, err := b.Stat(backend.Handle{Type: backend.Data, Name: name})
+		OK(t, err)
+
+		if fi.Size != int64(len(data)) {
+			t.Fatalf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
+		}
+
 		err = b.Remove(backend.Data, name)
 		if err != nil {
 			t.Fatalf("error removing item: %v", err)

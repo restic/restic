@@ -43,6 +43,9 @@ type Backend interface {
 	// Load returns the data stored in the backend for h at the given offset
 	// and saves it in p. Load has the same semantics as io.ReaderAt.
 	Load(h Handle, p []byte, off int64) (int, error)
+
+	// Stat returns information about the blob identified by h.
+	Stat(h Handle) (BlobInfo, error)
 }
 
 // Lister implements listing data items stored in a backend.
@@ -57,6 +60,11 @@ type Lister interface {
 type Deleter interface {
 	// Delete the complete repository.
 	Delete() error
+}
+
+// BlobInfo is returned by Stat() and contains information about a stored blob.
+type BlobInfo struct {
+	Size int64
 }
 
 // Blob is old.

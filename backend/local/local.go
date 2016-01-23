@@ -252,6 +252,20 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	return io.ReadFull(f, p)
 }
 
+// Stat returns information about a blob.
+func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
+	if err := h.Valid(); err != nil {
+		return backend.BlobInfo{}, err
+	}
+
+	fi, err := os.Stat(filename(b.p, h.Type, h.Name))
+	if err != nil {
+		return backend.BlobInfo{}, err
+	}
+
+	return backend.BlobInfo{Size: fi.Size()}, nil
+}
+
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(t backend.Type, name string) (bool, error) {
 	_, err := os.Stat(filename(b.p, t, name))
