@@ -1,4 +1,4 @@
-package backend
+package mem
 
 import (
 	"bytes"
@@ -7,11 +7,12 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
 )
 
 type entry struct {
-	Type Type
+	Type backend.Type
 	Name string
 }
 
@@ -23,37 +24,36 @@ type MemoryBackend struct {
 	data memMap
 	m    sync.Mutex
 
-	MockBackend
+	backend.MockBackend
 }
 
-// NewMemoryBackend returns a new backend that saves all data in a map in
-// memory.
-func NewMemoryBackend() *MemoryBackend {
+// New returns a new backend that saves all data in a map in memory.
+func New() *MemoryBackend {
 	be := &MemoryBackend{
 		data: make(memMap),
 	}
 
-	be.MockBackend.TestFn = func(t Type, name string) (bool, error) {
+	be.MockBackend.TestFn = func(t backend.Type, name string) (bool, error) {
 		return memTest(be, t, name)
 	}
 
-	be.MockBackend.CreateFn = func() (Blob, error) {
+	be.MockBackend.CreateFn = func() (backend.Blob, error) {
 		return memCreate(be)
 	}
 
-	be.MockBackend.GetReaderFn = func(t Type, name string, offset, length uint) (io.ReadCloser, error) {
+	be.MockBackend.GetReaderFn = func(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
 		return memGetReader(be, t, name, offset, length)
 	}
 
-	be.MockBackend.LoadFn = func(h Handle, p []byte, off int64) (int, error) {
+	be.MockBackend.LoadFn = func(h backend.Handle, p []byte, off int64) (int, error) {
 		return memLoad(be, h, p, off)
 	}
 
-	be.MockBackend.RemoveFn = func(t Type, name string) error {
+	be.MockBackend.RemoveFn = func(t backend.Type, name string) error {
 		return memRemove(be, t, name)
 	}
 
-	be.MockBackend.ListFn = func(t Type, done <-chan struct{}) <-chan string {
+	be.MockBackend.ListFn = func(t backend.Type, done <-chan struct{}) <-chan string {
 		return memList(be, t, done)
 	}
 
@@ -74,7 +74,7 @@ func NewMemoryBackend() *MemoryBackend {
 	return be
 }
 
-func (be *MemoryBackend) insert(t Type, name string, data []byte) error {
+func (be *MemoryBackend) insert(t backend.Type, name string, data []byte) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -86,7 +86,7 @@ func (be *MemoryBackend) insert(t Type, name string, data []byte) error {
 	return nil
 }
 
-func memTest(be *MemoryBackend, t Type, name string) (bool, error) {
+func memTest(be *MemoryBackend, t backend.Type, name string) (bool, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -114,8 +114,8 @@ func (e *tempMemEntry) Size() uint {
 	return uint(len(e.data.Bytes()))
 }
 
-func (e *tempMemEntry) Finalize(t Type, name string) error {
-	if t == Config {
+func (e *tempMemEntry) Finalize(t backend.Type, name string) error {
+	if t == backend.Config {
 		name = ""
 	}
 
@@ -123,35 +123,17 @@ func (e *tempMemEntry) Finalize(t Type, name string) error {
 	return e.be.insert(t, name, e.data.Bytes())
 }
 
-func memCreate(be *MemoryBackend) (Blob, error) {
+func memCreate(be *MemoryBackend) (backend.Blob, error) {
 	blob := &tempMemEntry{be: be}
 	debug.Log("MemoryBackend.Create", "create new blob %p", blob)
 	return blob, nil
 }
 
-// ReadCloser wraps a reader and adds a noop Close method if rd does not implement io.Closer.
-func ReadCloser(rd io.Reader) io.ReadCloser {
-	return readCloser{rd}
-}
-
-// readCloser wraps a reader and adds a noop Close method if rd does not implement io.Closer.
-type readCloser struct {
-	io.Reader
-}
-
-func (rd readCloser) Close() error {
-	if r, ok := rd.Reader.(io.Closer); ok {
-		return r.Close()
-	}
-
-	return nil
-}
-
-func memGetReader(be *MemoryBackend, t Type, name string, offset, length uint) (io.ReadCloser, error) {
+func memGetReader(be *MemoryBackend, t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	if t == Config {
+	if t == backend.Config {
 		name = ""
 	}
 
@@ -176,10 +158,10 @@ func memGetReader(be *MemoryBackend, t Type, name string, offset, length uint) (
 		buf = buf[:length]
 	}
 
-	return readCloser{bytes.NewReader(buf)}, nil
+	return backend.ReadCloser(bytes.NewReader(buf)), nil
 }
 
-func memLoad(be *MemoryBackend, h Handle, p []byte, off int64) (int, error) {
+func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -187,7 +169,7 @@ func memLoad(be *MemoryBackend, h Handle, p []byte, off int64) (int, error) {
 		return 0, err
 	}
 
-	if h.Type == Config {
+	if h.Type == backend.Config {
 		h.Name = ""
 	}
 
@@ -213,7 +195,7 @@ func memLoad(be *MemoryBackend, h Handle, p []byte, off int64) (int, error) {
 	return n, nil
 }
 
-func memRemove(be *MemoryBackend, t Type, name string) error {
+func memRemove(be *MemoryBackend, t backend.Type, name string) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -228,7 +210,7 @@ func memRemove(be *MemoryBackend, t Type, name string) error {
 	return nil
 }
 
-func memList(be *MemoryBackend, t Type, done <-chan struct{}) <-chan string {
+func memList(be *MemoryBackend, t backend.Type, done <-chan struct{}) <-chan string {
 	be.m.Lock()
 	defer be.m.Unlock()
 

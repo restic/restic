@@ -1,5 +1,5 @@
 // DO NOT EDIT, AUTOMATICALLY GENERATED
-package backend_test
+package mem_test
 
 import (
 	"testing"

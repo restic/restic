@@ -1,15 +1,16 @@
-package backend_test
+package mem_test
 
 import (
 	"errors"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/backend/mem"
 	"github.com/restic/restic/backend/test"
 )
 
 var be backend.Backend
 
-//go:generate go run test/generate_backend_tests.go -testfile test/tests.go -output mem_backend_test.go -prefix MemBackend
+//go:generate go run ../test/generate_backend_tests.go
 
 func init() {
 	test.CreateFn = func() (backend.Backend, error) {
@@ -17,7 +18,7 @@ func init() {
 			return nil, errors.New("temporary memory backend dir already exists")
 		}
 
-		be = backend.NewMemoryBackend()
+		be = mem.New()
 
 		return be, nil
 	}

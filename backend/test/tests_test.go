@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/backend/mem"
 	"github.com/restic/restic/backend/test"
 )
 
@@ -17,7 +18,7 @@ func init() {
 			return nil, errors.New("temporary memory backend dir already exists")
 		}
 
-		be = backend.NewMemoryBackend()
+		be = mem.New()
 
 		return be, nil
 	}

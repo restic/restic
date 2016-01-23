@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/backend/mem"
 	"github.com/restic/restic/checker"
 	"github.com/restic/restic/repository"
 	. "github.com/restic/restic/test"
@@ -252,7 +253,7 @@ func (f faultReader) Read(p []byte) (int, error) {
 }
 
 func TestCheckerModifiedData(t *testing.T) {
-	be := backend.NewMemoryBackend()
+	be := mem.New()
 
 	repo := repository.New(be)
 	OK(t, repo.Init(TestPassword))
