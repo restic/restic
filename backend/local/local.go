@@ -223,6 +223,31 @@ func (b *Local) GetReader(t backend.Type, name string, offset, length uint) (io.
 	return backend.LimitReadCloser(f, int64(length)), nil
 }
 
+// Load returns the data stored in the backend for h at the given offset
+// and saves it in p. Load has the same semantics as io.ReaderAt.
+func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+	f, err := os.Open(filename(b.p, h.Type, h.Name))
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		e := f.Close()
+		if err == nil && e != nil {
+			err = e
+		}
+	}()
+
+	if off > 0 {
+		_, err = f.Seek(off, 0)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return io.ReadFull(f, p)
+}
+
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(t backend.Type, name string) (bool, error) {
 	_, err := os.Stat(filename(b.p, t, name))

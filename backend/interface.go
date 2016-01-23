@@ -56,6 +56,10 @@ type Backend interface {
 	Close() error
 
 	Lister
+
+	// Load returns the data stored in the backend for h at the given offset
+	// and saves it in p. Load has the same semantics as io.ReaderAt.
+	Load(h Handle, p []byte, off int64) (int, error)
 }
 
 // Lister implements listing data items stored in a backend.

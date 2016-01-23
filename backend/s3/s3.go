@@ -170,6 +170,27 @@ func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint)
 	return backend.LimitReadCloser(obj, int64(length)), nil
 }
 
+// Load returns the data stored in the backend for h at the given offset
+// and saves it in p. Load has the same semantics as io.ReaderAt.
+func (be S3Backend) Load(h backend.Handle, p []byte, off int64) (int, error) {
+	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
+	path := s3path(h.Type, h.Name)
+	obj, err := be.client.GetObject(be.bucketname, path)
+	if err != nil {
+		debug.Log("s3.GetReader", "  err %v", err)
+		return 0, err
+	}
+
+	if off > 0 {
+		_, err = obj.Seek(off, 0)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return io.ReadFull(obj, p)
+}
+
 // Test returns true if a blob of the given type and name exists in the backend.
 func (be *S3Backend) Test(t backend.Type, name string) (bool, error) {
 	found := false

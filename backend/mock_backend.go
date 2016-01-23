@@ -10,6 +10,7 @@ import (
 type MockBackend struct {
 	CloseFn     func() error
 	CreateFn    func() (Blob, error)
+	LoadFn      func(h Handle, p []byte, off int64) (int, error)
 	GetReaderFn func(Type, string, uint, uint) (io.ReadCloser, error)
 	ListFn      func(Type, <-chan struct{}) <-chan string
 	RemoveFn    func(Type, string) error
@@ -40,6 +41,14 @@ func (m *MockBackend) Create() (Blob, error) {
 	}
 
 	return m.CreateFn()
+}
+
+func (m *MockBackend) Load(h Handle, p []byte, off int64) (int, error) {
+	if m.LoadFn == nil {
+		return 0, errors.New("not implemented")
+	}
+
+	return m.Load(h, p, off)
 }
 
 func (m *MockBackend) GetReader(t Type, name string, offset, len uint) (io.ReadCloser, error) {
