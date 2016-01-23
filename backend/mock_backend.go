@@ -48,7 +48,7 @@ func (m *MockBackend) Load(h Handle, p []byte, off int64) (int, error) {
 		return 0, errors.New("not implemented")
 	}
 
-	return m.Load(h, p, off)
+	return m.LoadFn(h, p, off)
 }
 
 func (m *MockBackend) GetReader(t Type, name string, offset, len uint) (io.ReadCloser, error) {
