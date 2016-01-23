@@ -1,9 +1,6 @@
 package backend
 
-import (
-	"fmt"
-	"io"
-)
+import "io"
 
 // Type is the type of a Blob.
 type Type string
@@ -17,20 +14,6 @@ const (
 	Index         = "index"
 	Config        = "config"
 )
-
-// Handle is used to store and access data in a backend.
-type Handle struct {
-	Type Type
-	Name string
-}
-
-func (h Handle) String() string {
-	name := h.Name
-	if len(name) > 10 {
-		name = name[:10]
-	}
-	return fmt.Sprintf("<%s/%s>", h.Type, name)
-}
 
 // Backend is used to store and access data.
 type Backend interface {
