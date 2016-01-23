@@ -119,17 +119,14 @@ func SearchKey(s *Repository, password string) (*Key, error) {
 
 // LoadKey loads a key from the backend.
 func LoadKey(s *Repository, name string) (k *Key, err error) {
-	// extract data from repo
-	rd, err := s.be.GetReader(backend.Key, name, 0, 0)
+	h := backend.Handle{Type: backend.Key, Name: name}
+	data, err := backend.LoadAll(s.be, h, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer closeOrErr(rd, &err)
 
-	// restore json
-	dec := json.NewDecoder(rd)
-	k = new(Key)
-	err = dec.Decode(k)
+	k = &Key{}
+	err = json.Unmarshal(data, k)
 	if err != nil {
 		return nil, err
 	}
