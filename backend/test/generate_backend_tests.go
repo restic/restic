@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"text/template"
-	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -22,12 +21,10 @@ var data struct {
 	Package       string
 	PackagePrefix string
 	Funcs         []string
-	Timestamp     string
 }
 
 var testTemplate = `
-// DO NOT EDIT!
-// generated at {{ .Timestamp }}
+// DO NOT EDIT, AUTOMATICALLY GENERATED
 package {{ .Package }}
 
 import (
@@ -125,7 +122,6 @@ func main() {
 		data.PackagePrefix = packageTestFunctionPrefix(pkg) + "Backend"
 	}
 	data.Funcs = findTestFunctions()
-	data.Timestamp = time.Now().Format("2006-02-01 15:04:05 -0700 MST")
 	generateOutput(f, data)
 
 	errx(f.Close())

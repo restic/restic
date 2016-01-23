@@ -1,5 +1,4 @@
-// DO NOT EDIT!
-// generated at 2016-23-01 17:41:27 +0100 CET
+// DO NOT EDIT, AUTOMATICALLY GENERATED
 package test_test
 
 import (
