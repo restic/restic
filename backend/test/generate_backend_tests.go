@@ -14,12 +14,15 @@ import (
 	"regexp"
 	"text/template"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 var data struct {
-	Package   string
-	Funcs     []string
-	Timestamp string
+	Package       string
+	PackagePrefix string
+	Funcs         []string
+	Timestamp     string
 }
 
 var testTemplate = `
@@ -33,12 +36,15 @@ import (
 	"github.com/restic/restic/backend/test"
 )
 
-{{ range $f := .Funcs }}func Test{{ $f }}(t *testing.T){ test.{{ $f }}(t) }
+{{ $prefix := .PackagePrefix }}
+{{ range $f := .Funcs }}func Test{{ $prefix }}{{ $f }}(t *testing.T){ test.{{ $f }}(t) }
 {{ end }}
 `
 
 var testFile = flag.String("testfile", "../test/tests.go", "file to search test functions in")
 var outputFile = flag.String("output", "backend_test.go", "output file to write generated code to")
+var packageName = flag.String("package", "", "the package name to use")
+var prefix = flag.String("prefix", "", "test function prefix")
 
 func errx(err error) {
 	if err == nil {
@@ -84,6 +90,15 @@ func generateOutput(wr io.Writer, data interface{}) {
 	errx(cmd.Wait())
 }
 
+func packageTestFunctionPrefix(pkg string) string {
+	if pkg == "" {
+		return ""
+	}
+
+	r, n := utf8.DecodeRuneInString(pkg)
+	return string(unicode.ToUpper(r)) + pkg[n:]
+}
+
 func init() {
 	flag.Parse()
 }
@@ -95,17 +110,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	packageName := filepath.Base(dir)
+	pkg := *packageName
+	if pkg == "" {
+		pkg = filepath.Base(dir)
+	}
 
 	f, err := os.Create(*outputFile)
 	errx(err)
 
-	data.Package = packageName + "_test"
+	data.Package = pkg + "_test"
+	if *prefix != "" {
+		data.PackagePrefix = *prefix
+	} else {
+		data.PackagePrefix = packageTestFunctionPrefix(pkg) + "Backend"
+	}
 	data.Funcs = findTestFunctions()
 	data.Timestamp = time.Now().Format("2006-02-01 15:04:05 -0700 MST")
 	generateOutput(f, data)
 
 	errx(f.Close())
 
-	fmt.Printf("wrote backend tests for package %v\n", packageName)
+	fmt.Printf("wrote backend tests for package %v to %v\n", data.Package, *outputFile)
 }

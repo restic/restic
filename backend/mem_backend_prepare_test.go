@@ -1,4 +1,4 @@
-package test_test
+package backend_test
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 
 var be backend.Backend
 
-//go:generate go run ../test/generate_backend_tests.go
+//go:generate go run test/generate_backend_tests.go -testfile test/tests.go -output mem_backend_test.go -prefix MemBackend
 
 func init() {
 	test.CreateFn = func() (backend.Backend, error) {

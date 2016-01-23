@@ -1,5 +1,5 @@
 // DO NOT EDIT!
-// generated at 2016-23-01 17:06:38 +0100 CET
+// generated at 2016-23-01 17:41:09 +0100 CET
 package local_test
 
 import (
@@ -8,13 +8,13 @@ import (
 	"github.com/restic/restic/backend/test"
 )
 
-func TestCreate(t *testing.T)    { test.Create(t) }
-func TestOpen(t *testing.T)      { test.Open(t) }
-func TestLocation(t *testing.T)  { test.Location(t) }
-func TestConfig(t *testing.T)    { test.Config(t) }
-func TestGetReader(t *testing.T) { test.GetReader(t) }
-func TestLoad(t *testing.T)      { test.Load(t) }
-func TestWrite(t *testing.T)     { test.Write(t) }
-func TestGeneric(t *testing.T)   { test.Generic(t) }
-func TestDelete(t *testing.T)    { test.Delete(t) }
-func TestCleanup(t *testing.T)   { test.Cleanup(t) }
+func TestLocalBackendCreate(t *testing.T)    { test.Create(t) }
+func TestLocalBackendOpen(t *testing.T)      { test.Open(t) }
+func TestLocalBackendLocation(t *testing.T)  { test.Location(t) }
+func TestLocalBackendConfig(t *testing.T)    { test.Config(t) }
+func TestLocalBackendGetReader(t *testing.T) { test.GetReader(t) }
+func TestLocalBackendLoad(t *testing.T)      { test.Load(t) }
+func TestLocalBackendWrite(t *testing.T)     { test.Write(t) }
+func TestLocalBackendGeneric(t *testing.T)   { test.Generic(t) }
+func TestLocalBackendDelete(t *testing.T)    { test.Delete(t) }
+func TestLocalBackendCleanup(t *testing.T)   { test.Cleanup(t) }
