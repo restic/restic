@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/restic/restic"
@@ -101,20 +100,19 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		return nil
 	case "key":
-		rd, err := repo.Backend().GetReader(backend.Key, id.String(), 0, 0)
+		h := backend.Handle{Type: backend.Key, Name: id.String()}
+		buf, err := backend.LoadAll(repo.Backend(), h, nil)
 		if err != nil {
 			return err
 		}
 
-		dec := json.NewDecoder(rd)
-
-		var key repository.Key
-		err = dec.Decode(&key)
+		key := &repository.Key{}
+		err = json.Unmarshal(buf, key)
 		if err != nil {
 			return err
 		}
 
-		buf, err := json.MarshalIndent(&key, "", "  ")
+		buf, err = json.MarshalIndent(&key, "", "  ")
 		if err != nil {
 			return err
 		}
@@ -153,12 +151,13 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	switch tpe {
 	case "pack":
-		rd, err := repo.Backend().GetReader(backend.Data, id.String(), 0, 0)
+		h := backend.Handle{Type: backend.Data, Name: id.String()}
+		buf, err := backend.LoadAll(repo.Backend(), h, nil)
 		if err != nil {
 			return err
 		}
 
-		_, err = io.Copy(os.Stdout, rd)
+		_, err = os.Stdout.Write(buf)
 		return err
 
 	case "blob":
