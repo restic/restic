@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"io"
-	"io/ioutil"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -126,6 +124,7 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 
 	cmd.global.Printf("checking for additional packs\n")
 	newPacks := 0
+	var buf []byte
 	for packID := range cmd.repo.List(backend.Data, done) {
 		if packsDone.Has(packID) {
 			continue
@@ -134,27 +133,12 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 		debug.Log("RebuildIndex.RebuildIndex", "pack %v not indexed", packID.Str())
 		newPacks++
 
-		rd, err := cmd.repo.Backend().GetReader(backend.Data, packID.String(), 0, 0)
-		if err != nil {
-			debug.Log("RebuildIndex.RebuildIndex", "GetReader returned error: %v", err)
-			return err
-		}
+		var err error
 
-		var readSeeker io.ReadSeeker
-		if r, ok := rd.(io.ReadSeeker); ok {
-			debug.Log("RebuildIndex.RebuildIndex", "reader is seekable")
-			readSeeker = r
-		} else {
-			debug.Log("RebuildIndex.RebuildIndex", "reader is not seekable, loading contents to ram")
-			buf, err := ioutil.ReadAll(rd)
-			if err != nil {
-				return err
-			}
+		h := backend.Handle{Type: backend.Data, Name: packID.String()}
+		buf, err = backend.LoadAll(cmd.repo.Backend(), h, buf)
 
-			readSeeker = bytes.NewReader(buf)
-		}
-
-		up, err := pack.NewUnpacker(cmd.repo.Key(), readSeeker)
+		up, err := pack.NewUnpacker(cmd.repo.Key(), bytes.NewReader(buf))
 		if err != nil {
 			debug.Log("RebuildIndex.RebuildIndex", "error while unpacking pack %v", packID.Str())
 			return err
@@ -170,9 +154,6 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 				Length: blob.Length,
 			})
 		}
-
-		err = rd.Close()
-		debug.Log("RebuildIndex.RebuildIndex", "error closing reader for pack %v: %v", packID.Str(), err)
 
 		if repository.IndexFull(combinedIndex) {
 			combinedIndex, err = cmd.storeIndex(combinedIndex)
