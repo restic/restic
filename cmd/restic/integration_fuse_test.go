@@ -54,6 +54,10 @@ func waitForMount(dir string) error {
 }
 
 func cmdMount(t testing.TB, global GlobalOptions, dir string, ready, done chan struct{}) {
+	defer func() {
+		ready <- struct{}{}
+	}()
+
 	cmd := &CmdMount{global: &global, ready: ready, done: done}
 	OK(t, cmd.Execute([]string{dir}))
 	if TestCleanup {
@@ -104,7 +108,7 @@ func TestMount(t *testing.T) {
 		// We remove the mountpoint now to check that cmdMount creates it
 		RemoveAll(t, mountpoint)
 
-		ready := make(chan struct{}, 1)
+		ready := make(chan struct{}, 2)
 		done := make(chan struct{})
 		go cmdMount(t, global, mountpoint, ready, done)
 		<-ready
