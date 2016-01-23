@@ -1,10 +1,14 @@
 package backend
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // Type is the type of a Blob.
 type Type string
 
+// These are the different data types a backend can store.
 const (
 	Data     Type = "data"
 	Key           = "key"
@@ -14,10 +18,24 @@ const (
 	Config        = "config"
 )
 
-// A Backend manages data stored somewhere.
+// Handle is used to store and access data in a backend.
+type Handle struct {
+	Type Type
+	Name string
+}
+
+func (h Handle) String() string {
+	name := h.Name
+	if len(name) > 10 {
+		name = name[:10]
+	}
+	return fmt.Sprintf("<%s/%s>", h.Type, name)
+}
+
+// Backend is used to store and access data.
 type Backend interface {
-	// Location returns a string that specifies the location of the repository,
-	// like a URL.
+	// Location returns a string that describes the type and location of the
+	// repository.
 	Location() string
 
 	// Create creates a new Blob. The data is available only after Finalize()
@@ -43,6 +61,7 @@ type Backend interface {
 	Lister
 }
 
+// Lister implements listing data items stored in a backend.
 type Lister interface {
 	// List returns a channel that yields all names of blobs of type t in
 	// lexicographic order. A goroutine is started for this. If the channel
@@ -50,11 +69,13 @@ type Lister interface {
 	List(t Type, done <-chan struct{}) <-chan string
 }
 
+// Deleter are backends that allow to self-delete all content stored in them.
 type Deleter interface {
 	// Delete the complete repository.
 	Delete() error
 }
 
+// Blob is old.
 type Blob interface {
 	io.Writer
 
