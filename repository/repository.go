@@ -495,17 +495,6 @@ func LoadIndex(repo *Repository, id string) (*Index, error) {
 	return nil, err
 }
 
-// GetDecryptReader opens the file id stored in the backend and returns a
-// reader that yields the decrypted content. The reader must be closed.
-func (r *Repository) GetDecryptReader(t backend.Type, id string) (io.ReadCloser, error) {
-	rd, err := r.be.GetReader(t, id, 0, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	return newDecryptReadCloser(r.key, rd)
-}
-
 // SearchKey finds a key with the supplied password, afterwards the config is
 // read and parsed.
 func (r *Repository) SearchKey(password string) error {

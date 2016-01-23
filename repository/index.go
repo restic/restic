@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -564,13 +565,12 @@ func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Inde
 		return nil, err
 	}
 
-	rd, err := repo.GetDecryptReader(backend.Index, idxID.String())
+	buf, err := repo.LoadAndDecrypt(backend.Index, idxID)
 	if err != nil {
 		return nil, err
 	}
-	defer closeOrErr(rd, &err)
 
-	idx, err = fn(rd)
+	idx, err = fn(bytes.NewReader(buf))
 	if err != nil {
 		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
 		return nil, err
