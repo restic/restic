@@ -369,6 +369,10 @@ func (r *SFTP) GetReader(t backend.Type, name string, offset, length uint) (io.R
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+	if err := h.Valid(); err != nil {
+		return 0, err
+	}
+
 	f, err := r.c.Open(r.filename(h.Type, h.Name))
 	if err != nil {
 		return 0, err

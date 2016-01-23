@@ -1,5 +1,5 @@
 // DO NOT EDIT, AUTOMATICALLY GENERATED
-package backend_test
+package sftp_test
 
 import (
 	"testing"
@@ -9,77 +9,77 @@ import (
 
 var SkipMessage string
 
-func TestMemBackendCreate(t *testing.T) {
+func TestSftpBackendCreate(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.Create(t)
 }
 
-func TestMemBackendOpen(t *testing.T) {
+func TestSftpBackendOpen(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.Open(t)
 }
 
-func TestMemBackendCreateWithConfig(t *testing.T) {
+func TestSftpBackendCreateWithConfig(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.CreateWithConfig(t)
 }
 
-func TestMemBackendLocation(t *testing.T) {
+func TestSftpBackendLocation(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.Location(t)
 }
 
-func TestMemBackendConfig(t *testing.T) {
+func TestSftpBackendConfig(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.Config(t)
 }
 
-func TestMemBackendGetReader(t *testing.T) {
+func TestSftpBackendGetReader(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.GetReader(t)
 }
 
-func TestMemBackendLoad(t *testing.T) {
+func TestSftpBackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.Load(t)
 }
 
-func TestMemBackendWrite(t *testing.T) {
+func TestSftpBackendWrite(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.Write(t)
 }
 
-func TestMemBackendGeneric(t *testing.T) {
+func TestSftpBackendGeneric(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.Generic(t)
 }
 
-func TestMemBackendDelete(t *testing.T) {
+func TestSftpBackendDelete(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
 	test.Delete(t)
 }
 
-func TestMemBackendCleanup(t *testing.T) {
+func TestSftpBackendCleanup(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}

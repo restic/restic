@@ -33,8 +33,15 @@ import (
 	"github.com/restic/restic/backend/test"
 )
 
+var SkipMessage string
+
 {{ $prefix := .PackagePrefix }}
-{{ range $f := .Funcs }}func Test{{ $prefix }}{{ $f }}(t *testing.T){ test.{{ $f }}(t) }
+{{ range $f := .Funcs }}
+func Test{{ $prefix }}{{ $f }}(t *testing.T){
+	if SkipMessage != "" { t.Skip(SkipMessage) }
+	test.{{ $f }}(t)
+}
+
 {{ end }}
 `
 
@@ -42,6 +49,7 @@ var testFile = flag.String("testfile", "../test/tests.go", "file to search test 
 var outputFile = flag.String("output", "backend_test.go", "output file to write generated code to")
 var packageName = flag.String("package", "", "the package name to use")
 var prefix = flag.String("prefix", "", "test function prefix")
+var quiet = flag.Bool("quiet", false, "be quiet")
 
 func errx(err error) {
 	if err == nil {
@@ -126,5 +134,7 @@ func main() {
 
 	errx(f.Close())
 
-	fmt.Printf("wrote backend tests for package %v to %v\n", data.Package, *outputFile)
+	if !*quiet {
+		fmt.Printf("wrote backend tests for package %v to %v\n", data.Package, *outputFile)
+	}
 }
