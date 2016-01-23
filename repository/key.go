@@ -120,7 +120,7 @@ func SearchKey(s *Repository, password string) (*Key, error) {
 // LoadKey loads a key from the backend.
 func LoadKey(s *Repository, name string) (k *Key, err error) {
 	// extract data from repo
-	rd, err := s.be.Get(backend.Key, name)
+	rd, err := s.be.GetReader(backend.Key, name, 0, 0)
 	if err != nil {
 		return nil, err
 	}

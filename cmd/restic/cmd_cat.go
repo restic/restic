@@ -101,7 +101,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		return nil
 	case "key":
-		rd, err := repo.Backend().Get(backend.Key, id.String())
+		rd, err := repo.Backend().GetReader(backend.Key, id.String(), 0, 0)
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	switch tpe {
 	case "pack":
-		rd, err := repo.Backend().Get(backend.Data, id.String())
+		rd, err := repo.Backend().GetReader(backend.Data, id.String(), 0, 0)
 		if err != nil {
 			return err
 		}

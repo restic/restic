@@ -214,19 +214,6 @@ type errorBackend struct {
 	backend.Backend
 }
 
-func (b errorBackend) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	rd, err := b.Backend.Get(t, name)
-	if err != nil {
-		return rd, err
-	}
-
-	if t != backend.Data {
-		return rd, err
-	}
-
-	return backend.ReadCloser(faultReader{rd}), nil
-}
-
 func (b errorBackend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
 	rd, err := b.Backend.GetReader(t, name, offset, length)
 	if err != nil {

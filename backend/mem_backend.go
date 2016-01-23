@@ -41,10 +41,6 @@ func NewMemoryBackend() *MemoryBackend {
 		return memCreate(be)
 	}
 
-	be.MockBackend.GetFn = func(t Type, name string) (io.ReadCloser, error) {
-		return memGet(be, t, name)
-	}
-
 	be.MockBackend.GetReaderFn = func(t Type, name string, offset, length uint) (io.ReadCloser, error) {
 		return memGetReader(be, t, name, offset, length)
 	}
@@ -141,23 +137,6 @@ func (rd readCloser) Close() error {
 	}
 
 	return nil
-}
-
-func memGet(be *MemoryBackend, t Type, name string) (io.ReadCloser, error) {
-	be.m.Lock()
-	defer be.m.Unlock()
-
-	if t == Config {
-		name = ""
-	}
-
-	debug.Log("MemoryBackend.Get", "get %v %v", t, name)
-
-	if _, ok := be.data[entry{t, name}]; !ok {
-		return nil, errors.New("no such data")
-	}
-
-	return readCloser{bytes.NewReader(be.data[entry{t, name}])}, nil
 }
 
 func memGetReader(be *MemoryBackend, t Type, name string, offset, length uint) (io.ReadCloser, error) {

@@ -344,18 +344,6 @@ func (r *SFTP) dirname(t backend.Type, name string) string {
 	return Join(r.p, n)
 }
 
-// Get returns a reader that yields the content stored under the given
-// name. The reader should be closed after draining it.
-func (r *SFTP) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	// try to open file
-	file, err := r.c.Open(r.filename(t, name))
-	if err != nil {
-		return nil, err
-	}
-
-	return file, nil
-}
-
 // GetReader returns an io.ReadCloser for the Blob with the given name of
 // type t at offset and length. If length is 0, the reader reads until EOF.
 func (r *SFTP) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {

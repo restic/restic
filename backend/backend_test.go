@@ -17,7 +17,7 @@ import (
 
 func testBackendConfig(b backend.Backend, t *testing.T) {
 	// create config and read it back
-	_, err := b.Get(backend.Config, "")
+	_, err := b.GetReader(backend.Config, "", 0, 0)
 	Assert(t, err != nil, "did not get expected error for non-existing config")
 
 	blob, err := b.Create()
@@ -30,7 +30,7 @@ func testBackendConfig(b backend.Backend, t *testing.T) {
 	// try accessing the config with different names, should all return the
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
-		rd, err := b.Get(backend.Config, name)
+		rd, err := b.GetReader(backend.Config, name, 0, 0)
 		Assert(t, err == nil, "unable to read config")
 
 		buf, err := ioutil.ReadAll(rd)
@@ -116,7 +116,7 @@ func testWrite(b backend.Backend, t testing.TB) {
 		name := fmt.Sprintf("%s-%d", id, i)
 		OK(t, blob.Finalize(backend.Data, name))
 
-		rd, err := b.Get(backend.Data, name)
+		rd, err := b.GetReader(backend.Data, name, 0, 0)
 		OK(t, err)
 
 		buf, err := ioutil.ReadAll(rd)
@@ -169,7 +169,7 @@ func testBackend(b backend.Backend, t *testing.T) {
 			Assert(t, !ret, "blob was found to exist before creating")
 
 			// try to open not existing blob
-			_, err = b.Get(tpe, id.String())
+			_, err = b.GetReader(tpe, id.String(), 0, 0)
 			Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
@@ -186,16 +186,8 @@ func testBackend(b backend.Backend, t *testing.T) {
 		for _, test := range TestStrings {
 			store(t, b, tpe, []byte(test.data))
 
-			// test Get()
-			rd, err := b.Get(tpe, test.id)
-			OK(t, err)
-			Assert(t, rd != nil, "Get() returned nil")
-
-			read(t, rd, []byte(test.data))
-			OK(t, rd.Close())
-
 			// test GetReader()
-			rd, err = b.GetReader(tpe, test.id, 0, uint(len(test.data)))
+			rd, err := b.GetReader(tpe, test.id, 0, uint(len(test.data)))
 			OK(t, err)
 			Assert(t, rd != nil, "GetReader() returned nil")
 

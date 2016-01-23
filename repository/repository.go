@@ -56,7 +56,7 @@ func (r *Repository) PrefixLength(t backend.Type) (int, error) {
 func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
-	rd, err := r.be.Get(t, id.String())
+	rd, err := r.be.GetReader(t, id.String(), 0, 0)
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
 		return nil, err
@@ -157,7 +157,7 @@ func closeOrErr(cl io.Closer, err *error) {
 // the item.
 func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) (err error) {
 	// load blob from backend
-	rd, err := r.be.Get(t, id.String())
+	rd, err := r.be.GetReader(t, id.String(), 0, 0)
 	if err != nil {
 		return err
 	}
@@ -548,7 +548,7 @@ func LoadIndex(repo *Repository, id string) (*Index, error) {
 // GetDecryptReader opens the file id stored in the backend and returns a
 // reader that yields the decrypted content. The reader must be closed.
 func (r *Repository) GetDecryptReader(t backend.Type, id string) (io.ReadCloser, error) {
-	rd, err := r.be.Get(t, id)
+	rd, err := r.be.GetReader(t, id, 0, 0)
 	if err != nil {
 		return nil, err
 	}

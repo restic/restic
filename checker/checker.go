@@ -647,7 +647,7 @@ func (c *Checker) CountPacks() uint64 {
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(r *repository.Repository, id backend.ID) error {
 	debug.Log("Checker.checkPack", "checking pack %v", id.Str())
-	rd, err := r.Backend().Get(backend.Data, id.String())
+	rd, err := r.Backend().GetReader(backend.Data, id.String(), 0, 0)
 	if err != nil {
 		return err
 	}

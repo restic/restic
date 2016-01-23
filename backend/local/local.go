@@ -196,20 +196,6 @@ func dirname(base string, t backend.Type, name string) string {
 	return filepath.Join(base, n)
 }
 
-// Get returns a reader that yields the content stored under the given
-// name. The reader should be closed after draining it.
-func (b *Local) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	file, err := os.Open(filename(b.p, t, name))
-	if err != nil {
-		return nil, err
-	}
-	b.mu.Lock()
-	open, _ := b.open[filename(b.p, t, name)]
-	b.open[filename(b.p, t, name)] = append(open, file)
-	b.mu.Unlock()
-	return file, nil
-}
-
 // GetReader returns an io.ReadCloser for the Blob with the given name of
 // type t at offset and length. If length is 0, the reader reads until EOF.
 func (b *Local) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {

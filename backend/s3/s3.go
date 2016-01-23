@@ -145,19 +145,6 @@ func (be *S3Backend) Create() (backend.Blob, error) {
 	return &blob, nil
 }
 
-// Get returns a reader that yields the content stored under the given
-// name. The reader should be closed after draining it.
-func (be *S3Backend) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	path := s3path(t, name)
-	rc, err := be.client.GetObject(be.bucketname, path)
-	debug.Log("s3.Get", "%v %v -> err %v", t, name, err)
-	if err != nil {
-		return nil, err
-	}
-
-	return rc, nil
-}
-
 // GetReader returns an io.ReadCloser for the Blob with the given name of
 // type t at offset and length. If length is 0, the reader reads until EOF.
 func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
