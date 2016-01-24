@@ -34,23 +34,19 @@ func TestCreatePack(t *testing.T) {
 		bufs = append(bufs, Buf{data: b, id: h})
 	}
 
-	file := bytes.NewBuffer(nil)
-
 	// create random keys
 	k := crypto.NewRandomKey()
 
 	// pack blobs
-	p := pack.NewPacker(k, file)
+	p := pack.NewPacker(k, nil)
 	for _, b := range bufs {
 		p.Add(pack.Tree, b.id, bytes.NewReader(b.data))
 	}
 
-	// write file
-	n, err := p.Finalize()
+	packData, err := p.Finalize()
 	OK(t, err)
 
 	written := 0
-	// data
 	for _, l := range lengths {
 		written += l
 	}
@@ -62,11 +58,11 @@ func TestCreatePack(t *testing.T) {
 	written += crypto.Extension
 
 	// check length
-	Equals(t, uint(written), n)
+	Equals(t, written, len(packData))
 	Equals(t, uint(written), p.Size())
 
 	// read and parse it again
-	rd := bytes.NewReader(file.Bytes())
+	rd := bytes.NewReader(packData)
 	np, err := pack.NewUnpacker(k, rd)
 	OK(t, err)
 	Equals(t, len(np.Entries), len(bufs))

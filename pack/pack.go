@@ -1,7 +1,7 @@
 package pack
 
 import (
-	"crypto/sha256"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -12,8 +12,10 @@ import (
 	"github.com/restic/restic/crypto"
 )
 
+// BlobType specifies what a blob stored in a pack is.
 type BlobType uint8
 
+// These are the blob types that can be stored in a pack.
 const (
 	Data BlobType = 0
 	Tree          = 1
@@ -30,6 +32,7 @@ func (t BlobType) String() string {
 	return fmt.Sprintf("<BlobType %d>", t)
 }
 
+// MarshalJSON encodes the BlobType into JSON.
 func (t BlobType) MarshalJSON() ([]byte, error) {
 	switch t {
 	case Data:
@@ -41,6 +44,7 @@ func (t BlobType) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("unknown blob type")
 }
 
+// UnmarshalJSON decodes the BlobType from JSON.
 func (t *BlobType) UnmarshalJSON(buf []byte) error {
 	switch string(buf) {
 	case `"data"`:
@@ -79,16 +83,15 @@ type Packer struct {
 
 	bytes uint
 	k     *crypto.Key
-	wr    io.Writer
-	hw    *backend.HashingWriter
+	buf   *bytes.Buffer
 
 	m sync.Mutex
 }
 
 // NewPacker returns a new Packer that can be used to pack blobs
 // together.
-func NewPacker(k *crypto.Key, w io.Writer) *Packer {
-	return &Packer{k: k, wr: w, hw: backend.NewHashingWriter(w, sha256.New())}
+func NewPacker(k *crypto.Key, buf []byte) *Packer {
+	return &Packer{k: k, buf: bytes.NewBuffer(buf)}
 }
 
 // Add saves the data read from rd as a new blob to the packer. Returned is the
@@ -99,7 +102,7 @@ func (p *Packer) Add(t BlobType, id backend.ID, rd io.Reader) (int64, error) {
 
 	c := Blob{Type: t, ID: id}
 
-	n, err := io.Copy(p.hw, rd)
+	n, err := io.Copy(p.buf, rd)
 	c.Length = uint(n)
 	c.Offset = p.bytes
 	p.bytes += uint(n)
@@ -118,45 +121,47 @@ type headerEntry struct {
 }
 
 // Finalize writes the header for all added blobs and finalizes the pack.
-// Returned are the complete number of bytes written, including the header.
-// After Finalize() has finished, the ID of this pack can be obtained by
-// calling ID().
-func (p *Packer) Finalize() (bytesWritten uint, err error) {
+// Returned are all bytes written, including the header.
+func (p *Packer) Finalize() ([]byte, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	bytesWritten = p.bytes
+	bytesWritten := p.bytes
 
-	// create writer to encrypt header
-	wr := crypto.EncryptTo(p.k, p.hw)
-
-	bytesHeader, err := p.writeHeader(wr)
+	hdrBuf := bytes.NewBuffer(nil)
+	bytesHeader, err := p.writeHeader(hdrBuf)
 	if err != nil {
-		wr.Close()
-		return bytesWritten + bytesHeader, err
+		return nil, err
 	}
 
-	bytesWritten += bytesHeader
-
-	// finalize encrypted header
-	err = wr.Close()
+	encryptedHeader, err := crypto.Encrypt(p.k, nil, hdrBuf.Bytes())
 	if err != nil {
-		return bytesWritten, err
+		return nil, err
 	}
 
-	// account for crypto overhead
-	bytesWritten += crypto.Extension
+	// append the header
+	n, err := p.buf.Write(encryptedHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	hdrBytes := bytesHeader + crypto.Extension
+	if uint(n) != hdrBytes {
+		return nil, errors.New("wrong number of bytes written")
+	}
+
+	bytesWritten += hdrBytes
 
 	// write length
-	err = binary.Write(p.hw, binary.LittleEndian, uint32(uint(len(p.blobs))*entrySize+crypto.Extension))
+	err = binary.Write(p.buf, binary.LittleEndian, uint32(uint(len(p.blobs))*entrySize+crypto.Extension))
 	if err != nil {
-		return bytesWritten, err
+		return nil, err
 	}
 	bytesWritten += uint(binary.Size(uint32(0)))
 
 	p.bytes = uint(bytesWritten)
 
-	return bytesWritten, nil
+	return p.buf.Bytes(), nil
 }
 
 // writeHeader constructs and writes the header to wr.
@@ -177,18 +182,6 @@ func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
 	}
 
 	return
-}
-
-// ID returns the ID of all data written so far.
-func (p *Packer) ID() backend.ID {
-	p.m.Lock()
-	defer p.m.Unlock()
-
-	hash := p.hw.Sum(nil)
-	id := backend.ID{}
-	copy(id[:], hash)
-
-	return id
 }
 
 // Size returns the number of bytes written so far.
@@ -213,11 +206,6 @@ func (p *Packer) Blobs() []Blob {
 	defer p.m.Unlock()
 
 	return p.blobs
-}
-
-// Writer returns the underlying writer.
-func (p *Packer) Writer() io.Writer {
-	return p.wr
 }
 
 func (p *Packer) String() string {
