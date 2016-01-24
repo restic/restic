@@ -2,6 +2,7 @@ package s3
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"strings"
 
@@ -102,6 +103,13 @@ func (be S3Backend) Save(h backend.Handle, p []byte) (err error) {
 	debug.Log("s3.Save", "%v bytes at %d", len(p), h)
 
 	path := s3path(h.Type, h.Name)
+
+	// Check key does not already exist
+	_, err = be.client.StatObject(be.bucketname, path)
+	if err == nil {
+		debug.Log("s3.blob.Finalize()", "%v already exists", h)
+		return errors.New("key already exists")
+	}
 
 	<-be.connChan
 	defer func() {

@@ -171,14 +171,17 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 
 	f := filename(b.p, h.Type, h.Name)
 
-	// create directories if necessary, ignore errors
-	if h.Type == backend.Data {
-		os.MkdirAll(filepath.Dir(f), backend.Modes.Dir)
-	}
-
 	// test if new path already exists
 	if _, err := os.Stat(f); err == nil {
 		return fmt.Errorf("Rename(): file %v already exists", f)
+	}
+
+	// create directories if necessary, ignore errors
+	if h.Type == backend.Data {
+		err = os.MkdirAll(filepath.Dir(f), backend.Modes.Dir)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = os.Rename(tmpfile.Name(), f)
