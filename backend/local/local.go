@@ -14,8 +14,7 @@ import (
 	"github.com/restic/restic/debug"
 )
 
-var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
-
+// Local is a backend in a local directory.
 type Local struct {
 	p    string
 	mu   sync.Mutex
@@ -78,93 +77,6 @@ func Create(dir string) (*Local, error) {
 // Location returns this backend's location (the directory name).
 func (b *Local) Location() string {
 	return b.p
-}
-
-// Return temp directory in correct directory for this backend.
-func (b *Local) tempFile() (*os.File, error) {
-	return ioutil.TempFile(filepath.Join(b.p, backend.Paths.Temp), "temp-")
-}
-
-type localBlob struct {
-	f       *os.File
-	size    uint
-	final   bool
-	basedir string
-}
-
-func (lb *localBlob) Write(p []byte) (int, error) {
-	if lb.final {
-		return 0, errors.New("blob already closed")
-	}
-
-	n, err := lb.f.Write(p)
-	lb.size += uint(n)
-	return n, err
-}
-
-func (lb *localBlob) Size() uint {
-	return lb.size
-}
-
-func (lb *localBlob) Finalize(t backend.Type, name string) error {
-	if lb.final {
-		return errors.New("Already finalized")
-	}
-
-	lb.final = true
-
-	err := lb.f.Close()
-	if err != nil {
-		return fmt.Errorf("local: file.Close: %v", err)
-	}
-
-	f := filename(lb.basedir, t, name)
-
-	// create directories if necessary, ignore errors
-	if t == backend.Data {
-		os.MkdirAll(filepath.Dir(f), backend.Modes.Dir)
-	}
-
-	// test if new path already exists
-	if _, err := os.Stat(f); err == nil {
-		return fmt.Errorf("Close(): file %v already exists", f)
-	}
-
-	if err := os.Rename(lb.f.Name(), f); err != nil {
-		return err
-	}
-
-	// set mode to read-only
-	fi, err := os.Stat(f)
-	if err != nil {
-		return err
-	}
-
-	return setNewFileMode(f, fi)
-}
-
-// Create creates a new Blob. The data is available only after Finalize()
-// has been called on the returned Blob.
-func (b *Local) Create() (backend.Blob, error) {
-	// TODO: make sure that tempfile is removed upon error
-
-	// create tempfile in backend
-	file, err := b.tempFile()
-	if err != nil {
-		return nil, err
-	}
-
-	blob := localBlob{
-		f:       file,
-		basedir: b.p,
-	}
-
-	b.mu.Lock()
-	open, _ := b.open["blobs"]
-	b.open["blobs"] = append(open, file)
-	b.mu.Unlock()
-
-	return &blob, nil
 }
 
 // Construct path for given Type and name.

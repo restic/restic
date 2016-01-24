@@ -20,13 +20,8 @@ func TestLoadAll(t *testing.T) {
 		data := Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := backend.Hash(data)
-
-		blob, err := b.Create()
+		err := b.Save(backend.Handle{Name: id.String(), Type: backend.Data}, data)
 		OK(t, err)
-
-		_, err = blob.Write([]byte(data))
-		OK(t, err)
-		OK(t, blob.Finalize(backend.Data, id.String()))
 
 		buf, err := backend.LoadAll(b, backend.Handle{Type: backend.Data, Name: id.String()}, nil)
 		OK(t, err)

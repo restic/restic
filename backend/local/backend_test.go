@@ -51,13 +51,6 @@ func TestLocalBackendLoad(t *testing.T) {
 	test.TestLoad(t)
 }
 
-func TestLocalBackendWrite(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestWrite(t)
-}
-
 func TestLocalBackendSave(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)

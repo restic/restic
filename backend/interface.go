@@ -1,7 +1,5 @@
 package backend
 
-import "io"
-
 // Type is the type of a Blob.
 type Type string
 
@@ -20,10 +18,6 @@ type Backend interface {
 	// Location returns a string that describes the type and location of the
 	// repository.
 	Location() string
-
-	// Create creates a new Blob. The data is available only after Finalize()
-	// has been called on the returned Blob.
-	Create() (Blob, error)
 
 	// Test a boolean value whether a Blob with the name and type exists.
 	Test(t Type, name string) (bool, error)
@@ -64,15 +58,4 @@ type Deleter interface {
 // BlobInfo is returned by Stat() and contains information about a stored blob.
 type BlobInfo struct {
 	Size int64
-}
-
-// Blob is old.
-type Blob interface {
-	io.Writer
-
-	// Finalize moves the data blob to the final location for type and name.
-	Finalize(t Type, name string) error
-
-	// Size returns the number of bytes written to the backend so far.
-	Size() uint
 }

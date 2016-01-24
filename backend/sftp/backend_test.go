@@ -51,13 +51,6 @@ func TestSftpBackendLoad(t *testing.T) {
 	test.TestLoad(t)
 }
 
-func TestSftpBackendWrite(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestWrite(t)
-}
-
 func TestSftpBackendSave(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)

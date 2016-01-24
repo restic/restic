@@ -6,7 +6,6 @@ import "errors"
 // should only be used for tests.
 type MockBackend struct {
 	CloseFn    func() error
-	CreateFn   func() (Blob, error)
 	LoadFn     func(h Handle, p []byte, off int64) (int, error)
 	SaveFn     func(h Handle, p []byte) error
 	StatFn     func(h Handle) (BlobInfo, error)
@@ -31,14 +30,6 @@ func (m *MockBackend) Location() string {
 	}
 
 	return m.LocationFn()
-}
-
-func (m *MockBackend) Create() (Blob, error) {
-	if m.CreateFn == nil {
-		return nil, errors.New("not implemented")
-	}
-
-	return m.CreateFn()
 }
 
 func (m *MockBackend) Load(h Handle, p []byte, off int64) (int, error) {

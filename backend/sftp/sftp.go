@@ -22,6 +22,7 @@ const (
 	tempfileRandomSuffixLength = 10
 )
 
+// SFTP is a backend in a directory accessed via SFTP.
 type SFTP struct {
 	c *sftp.Client
 	p string
@@ -253,64 +254,7 @@ func (r *SFTP) renameFile(oldname string, t backend.Type, name string) error {
 	return r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
 }
 
-type sftpBlob struct {
-	f        *sftp.File
-	tempname string
-	size     uint
-	closed   bool
-	backend  *SFTP
-}
-
-func (sb *sftpBlob) Finalize(t backend.Type, name string) error {
-	if sb.closed {
-		return errors.New("Close() called on closed file")
-	}
-	sb.closed = true
-
-	err := sb.f.Close()
-	if err != nil {
-		return fmt.Errorf("sftp: file.Close: %v", err)
-	}
-
-	// rename file
-	err = sb.backend.renameFile(sb.tempname, t, name)
-	if err != nil {
-		return fmt.Errorf("sftp: renameFile: %v", err)
-	}
-
-	return nil
-}
-
-func (sb *sftpBlob) Write(p []byte) (int, error) {
-	n, err := sb.f.Write(p)
-	sb.size += uint(n)
-	return n, err
-}
-
-func (sb *sftpBlob) Size() uint {
-	return sb.size
-}
-
-// Create creates a new Blob. The data is available only after Finalize()
-// has been called on the returned Blob.
-func (r *SFTP) Create() (backend.Blob, error) {
-	// TODO: make sure that tempfile is removed upon error
-
-	// create tempfile in backend
-	filename, file, err := r.tempFile()
-	if err != nil {
-		return nil, errors.Annotate(err, "create tempfile")
-	}
-
-	blob := sftpBlob{
-		f:        file,
-		tempname: filename,
-		backend:  r,
-	}
-
-	return &blob, nil
-}
-
+// Join joins the given paths and cleans them afterwards.
 func Join(parts ...string) string {
 	return filepath.Clean(strings.Join(parts, "/"))
 }
@@ -515,16 +459,16 @@ func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
 }
 
 // Close closes the sftp connection and terminates the underlying command.
-func (s *SFTP) Close() error {
-	if s == nil {
+func (r *SFTP) Close() error {
+	if r == nil {
 		return nil
 	}
 
-	s.c.Close()
+	r.c.Close()
 
-	if err := s.cmd.Process.Kill(); err != nil {
+	if err := r.cmd.Process.Kill(); err != nil {
 		return err
 	}
 
-	return s.cmd.Wait()
+	return r.cmd.Wait()
 }

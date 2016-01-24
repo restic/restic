@@ -37,10 +37,6 @@ func New() *MemoryBackend {
 		return memTest(be, t, name)
 	}
 
-	be.MockBackend.CreateFn = func() (backend.Blob, error) {
-		return memCreate(be)
-	}
-
 	be.MockBackend.LoadFn = func(h backend.Handle, p []byte, off int64) (int, error) {
 		return memLoad(be, h, p, off)
 	}
@@ -127,12 +123,6 @@ func (e *tempMemEntry) Finalize(t backend.Type, name string) error {
 	return e.be.insert(t, name, e.data.Bytes())
 }
 
-func memCreate(be *MemoryBackend) (backend.Blob, error) {
-	blob := &tempMemEntry{be: be}
-	debug.Log("MemoryBackend.Create", "create new blob %p", blob)
-	return blob, nil
-}
-
 func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, error) {
 	if err := h.Valid(); err != nil {
 		return 0, err
@@ -177,6 +167,10 @@ func memSave(be *MemoryBackend, h backend.Handle, p []byte) error {
 
 	if h.Type == backend.Config {
 		h.Name = ""
+	}
+
+	if _, ok := be.data[entry{h.Type, h.Name}]; ok {
+		return errors.New("file already exists")
 	}
 
 	debug.Log("MemoryBackend.Save", "save %v bytes at %v", len(p), h)

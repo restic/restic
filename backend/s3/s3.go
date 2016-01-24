@@ -2,7 +2,6 @@ package s3
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"strings"
 
@@ -23,6 +22,7 @@ func s3path(t backend.Type, name string) string {
 	return backendPrefix + "/" + string(t) + "/" + name
 }
 
+// S3Backend is a backend which stores the data on an S3 endpoint.
 type S3Backend struct {
 	client     minio.CloudStorageClient
 	connChan   chan struct{}
@@ -66,83 +66,6 @@ func (be *S3Backend) createConnections() {
 // Location returns this backend's location (the bucket name).
 func (be *S3Backend) Location() string {
 	return be.bucketname
-}
-
-type s3Blob struct {
-	b     *S3Backend
-	buf   *bytes.Buffer
-	final bool
-}
-
-func (bb *s3Blob) Write(p []byte) (int, error) {
-	if bb.final {
-		return 0, errors.New("blob already closed")
-	}
-
-	n, err := bb.buf.Write(p)
-	return n, err
-}
-
-func (bb *s3Blob) Read(p []byte) (int, error) {
-	return bb.buf.Read(p)
-}
-
-func (bb *s3Blob) Close() error {
-	bb.final = true
-	bb.buf.Reset()
-	return nil
-}
-
-func (bb *s3Blob) Size() uint {
-	return uint(bb.buf.Len())
-}
-
-func (bb *s3Blob) Finalize(t backend.Type, name string) error {
-	debug.Log("s3.blob.Finalize()", "bucket %v, finalize %v, %d bytes", bb.b.bucketname, name, bb.buf.Len())
-	if bb.final {
-		return errors.New("Already finalized")
-	}
-
-	bb.final = true
-
-	path := s3path(t, name)
-
-	// Check key does not already exist
-	_, err := bb.b.client.StatObject(bb.b.bucketname, path)
-	if err == nil {
-		debug.Log("s3.blob.Finalize()", "%v already exists", name)
-		return errors.New("key already exists")
-	}
-
-	expectedBytes := bb.buf.Len()
-
-	<-bb.b.connChan
-	debug.Log("s3.Finalize", "PutObject(%v, %v, %v, %v)",
-		bb.b.bucketname, path, int64(bb.buf.Len()), "binary/octet-stream")
-	n, err := bb.b.client.PutObject(bb.b.bucketname, path, bb.buf, "binary/octet-stream")
-	debug.Log("s3.Finalize", "finalized %v -> n %v, err %#v", path, n, err)
-	bb.b.connChan <- struct{}{}
-
-	if err != nil {
-		return err
-	}
-
-	if n != int64(expectedBytes) {
-		return errors.New("could not store all bytes")
-	}
-
-	return nil
-}
-
-// Create creates a new Blob. The data is available only after Finalize()
-// has been called on the returned Blob.
-func (be *S3Backend) Create() (backend.Blob, error) {
-	blob := s3Blob{
-		b:   be,
-		buf: &bytes.Buffer{},
-	}
-
-	return &blob, nil
 }
 
 // Load returns the data stored in the backend for h at the given offset

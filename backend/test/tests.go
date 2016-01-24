@@ -156,19 +156,9 @@ func TestConfig(t testing.TB) {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 
-	blob, err := b.Create()
+	err = b.Save(backend.Handle{Type: backend.Config}, []byte(testString))
 	if err != nil {
-		t.Fatalf("Create() error: %v", err)
-	}
-
-	_, err = blob.Write([]byte(testString))
-	if err != nil {
-		t.Fatalf("Write() error: %v", err)
-	}
-
-	err = blob.Finalize(backend.Config, "")
-	if err != nil {
-		t.Fatalf("Finalize() error: %v", err)
+		t.Fatalf("Save() error: %v", err)
 	}
 
 	// try accessing the config with different names, should all return the
@@ -205,12 +195,11 @@ func TestLoad(t testing.TB) {
 	data := Random(23, length)
 	id := backend.Hash(data)
 
-	blob, err := b.Create()
-	OK(t, err)
-
-	_, err = blob.Write([]byte(data))
-	OK(t, err)
-	OK(t, blob.Finalize(backend.Data, id.String()))
+	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	err = b.Save(handle, data)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
 
 	for i := 0; i < 500; i++ {
 		l := rand.Intn(length + 2000)
@@ -229,8 +218,7 @@ func TestLoad(t testing.TB) {
 		}
 
 		buf := make([]byte, l)
-		h := backend.Handle{Type: backend.Data, Name: id.String()}
-		n, err := b.Load(h, buf, int64(o))
+		n, err := b.Load(handle, buf, int64(o))
 
 		// if we requested data beyond the end of the file, ignore
 		// ErrUnexpectedEOF error
@@ -258,63 +246,6 @@ func TestLoad(t testing.TB) {
 	}
 
 	OK(t, b.Remove(backend.Data, id.String()))
-}
-
-// TestWrite tests writing data to the backend.
-func TestWrite(t testing.TB) {
-	b := open(t)
-	defer close(t)
-
-	length := rand.Intn(1<<23) + 2000
-
-	data := Random(23, length)
-	id := backend.Hash(data)
-
-	for i := 0; i < 10; i++ {
-		blob, err := b.Create()
-		OK(t, err)
-
-		o := 0
-		for o < len(data) {
-			l := rand.Intn(len(data) - o)
-			if len(data)-o < 20 {
-				l = len(data) - o
-			}
-
-			n, err := blob.Write(data[o : o+l])
-			OK(t, err)
-			if n != l {
-				t.Fatalf("wrong number of bytes written, want %v, got %v", l, n)
-			}
-
-			o += l
-		}
-
-		name := fmt.Sprintf("%s-%d", id, i)
-		OK(t, blob.Finalize(backend.Data, name))
-
-		buf, err := backend.LoadAll(b, backend.Handle{Type: backend.Data, Name: name}, nil)
-		OK(t, err)
-		if len(buf) != len(data) {
-			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
-		}
-
-		if !bytes.Equal(buf, data) {
-			t.Fatalf("data not equal")
-		}
-
-		fi, err := b.Stat(backend.Handle{Type: backend.Data, Name: name})
-		OK(t, err)
-
-		if fi.Size != int64(len(data)) {
-			t.Fatalf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
-		}
-
-		err = b.Remove(backend.Data, name)
-		if err != nil {
-			t.Fatalf("error removing item: %v", err)
-		}
-	}
 }
 
 // TestSave tests saving data in the backend.
@@ -415,13 +346,8 @@ var testStrings = []struct {
 
 func store(t testing.TB, b backend.Backend, tpe backend.Type, data []byte) {
 	id := backend.Hash(data)
-
-	blob, err := b.Create()
+	err := b.Save(backend.Handle{Name: id.String(), Type: tpe}, data)
 	OK(t, err)
-
-	_, err = blob.Write([]byte(data))
-	OK(t, err)
-	OK(t, blob.Finalize(tpe, id.String()))
 }
 
 func read(t testing.TB, rd io.Reader, expectedData []byte) {
@@ -492,12 +418,7 @@ func TestBackend(t testing.TB) {
 		test := testStrings[0]
 
 		// create blob
-		blob, err := b.Create()
-		OK(t, err)
-
-		_, err = blob.Write([]byte(test.data))
-		OK(t, err)
-		err = blob.Finalize(tpe, test.id)
+		err := b.Save(backend.Handle{Type: tpe, Name: test.id}, []byte(test.data))
 		Assert(t, err != nil, "expected error, got %v", err)
 
 		// remove and recreate
@@ -510,12 +431,8 @@ func TestBackend(t testing.TB) {
 		Assert(t, ok == false, "removed blob still present")
 
 		// create blob
-		blob, err = b.Create()
+		err = b.Save(backend.Handle{Type: tpe, Name: test.id}, []byte(test.data))
 		OK(t, err)
-
-		_, err = io.Copy(blob, bytes.NewReader([]byte(test.data)))
-		OK(t, err)
-		OK(t, blob.Finalize(tpe, test.id))
 
 		// list items
 		IDs := backend.IDs{}
