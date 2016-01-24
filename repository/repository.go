@@ -2,7 +2,6 @@ package repository
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -327,60 +326,6 @@ func (r *Repository) Index() *MasterIndex {
 // SetIndex instructs the repository to use the given index.
 func (r *Repository) SetIndex(i *MasterIndex) {
 	r.idx = i
-}
-
-// BlobWriter encrypts and saves the data written to it in a backend. After
-// Close() was called, ID() returns the backend.ID.
-type BlobWriter struct {
-	id     backend.ID
-	blob   backend.Blob
-	hw     *backend.HashingWriter
-	ewr    io.WriteCloser
-	t      backend.Type
-	closed bool
-}
-
-// CreateEncryptedBlob returns a BlobWriter that encrypts and saves the data
-// written to it in the backend. After Close() was called, ID() returns the
-// backend.ID.
-func (r *Repository) CreateEncryptedBlob(t backend.Type) (*BlobWriter, error) {
-	blob, err := r.be.Create()
-	if err != nil {
-		return nil, err
-	}
-
-	// hash
-	hw := backend.NewHashingWriter(blob, sha256.New())
-
-	// encrypt blob
-	ewr := crypto.EncryptTo(r.key, hw)
-
-	return &BlobWriter{t: t, blob: blob, hw: hw, ewr: ewr}, nil
-}
-
-func (bw *BlobWriter) Write(buf []byte) (int, error) {
-	return bw.ewr.Write(buf)
-}
-
-// Close finalizes the blob in the backend, afterwards ID() can be used to retrieve the ID.
-func (bw *BlobWriter) Close() error {
-	if bw.closed {
-		return errors.New("BlobWriter already closed")
-	}
-	bw.closed = true
-
-	err := bw.ewr.Close()
-	if err != nil {
-		return err
-	}
-
-	copy(bw.id[:], bw.hw.Sum(nil))
-	return bw.blob.Finalize(bw.t, bw.id.String())
-}
-
-// ID returns the Id the blob has been written to after Close() was called.
-func (bw *BlobWriter) ID() backend.ID {
-	return bw.id
 }
 
 // SaveIndex saves an index in the repository.
