@@ -163,7 +163,34 @@ func (be S3Backend) Load(h backend.Handle, p []byte, off int64) (int, error) {
 		}
 	}
 
+	<-be.connChan
+	defer func() {
+		be.connChan <- struct{}{}
+	}()
 	return io.ReadFull(obj, p)
+}
+
+// Save stores data in the backend at the handle.
+func (be S3Backend) Save(h backend.Handle, p []byte) (err error) {
+	if err := h.Valid(); err != nil {
+		return err
+	}
+
+	debug.Log("s3.Save", "%v bytes at %d", len(p), h)
+
+	path := s3path(h.Type, h.Name)
+
+	<-be.connChan
+	defer func() {
+		be.connChan <- struct{}{}
+	}()
+
+	debug.Log("s3.Save", "PutObject(%v, %v, %v, %v)",
+		be.bucketname, path, int64(len(p)), "binary/octet-stream")
+	n, err := be.client.PutObject(be.bucketname, path, bytes.NewReader(p), "binary/octet-stream")
+	debug.Log("s3.Save", "%v -> %v bytes, err %#v", path, n, err)
+
+	return err
 }
 
 // Stat returns information about a blob.

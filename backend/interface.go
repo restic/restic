@@ -40,6 +40,9 @@ type Backend interface {
 	// and saves it in p. Load has the same semantics as io.ReaderAt.
 	Load(h Handle, p []byte, off int64) (int, error)
 
+	// Save stores the data in the backend under the given handle.
+	Save(h Handle, p []byte) error
+
 	// Stat returns information about the blob identified by h.
 	Stat(h Handle) (BlobInfo, error)
 }

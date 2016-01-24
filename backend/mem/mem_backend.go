@@ -130,12 +130,12 @@ func memCreate(be *MemoryBackend) (backend.Blob, error) {
 }
 
 func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, error) {
-	be.m.Lock()
-	defer be.m.Unlock()
-
 	if err := h.Valid(); err != nil {
 		return 0, err
 	}
+
+	be.m.Lock()
+	defer be.m.Unlock()
 
 	if h.Type == backend.Config {
 		h.Name = ""
@@ -161,6 +161,26 @@ func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, err
 	}
 
 	return n, nil
+}
+
+func memSave(be *MemoryBackend, h backend.Handle, p []byte) error {
+	if err := h.Valid(); err != nil {
+		return err
+	}
+
+	be.m.Lock()
+	defer be.m.Unlock()
+
+	if h.Type == backend.Config {
+		h.Name = ""
+	}
+
+	debug.Log("MemoryBackend.Save", "save %v bytes at %v", len(p), h)
+	buf := make([]byte, len(p))
+	copy(buf, p)
+	be.data[entry{h.Type, h.Name}] = buf
+
+	return nil
 }
 
 func memStat(be *MemoryBackend, h backend.Handle) (backend.BlobInfo, error) {

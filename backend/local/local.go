@@ -225,6 +225,33 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	return io.ReadFull(f, p)
 }
 
+// Save stores data in the backend at the handle.
+func (b *Local) Save(h backend.Handle, p []byte) (err error) {
+	if err := h.Valid(); err != nil {
+		return err
+	}
+
+	f, err := os.Create(filename(b.p, h.Type, h.Name))
+	if err != nil {
+		return err
+	}
+
+	n, err := f.Write(p)
+	if err != nil {
+		return err
+	}
+
+	if n != len(p) {
+		return errors.New("not all bytes writen")
+	}
+
+	if err = f.Sync(); err != nil {
+		return err
+	}
+
+	return f.Close()
+}
+
 // Stat returns information about a blob.
 func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
 	if err := h.Valid(); err != nil {
