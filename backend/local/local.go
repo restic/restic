@@ -283,23 +283,7 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 		return err
 	}
 
-	err = setNewFileMode(f, fi)
-	if err != nil {
-		return err
-	}
-
-	// try to flush directory
-	d, err := os.Open(filepath.Dir(f))
-	if err != nil {
-		return err
-	}
-
-	err = d.Sync()
-	if err != nil {
-		return err
-	}
-
-	return d.Close()
+	return setNewFileMode(f, fi)
 }
 
 // Stat returns information about a blob.
