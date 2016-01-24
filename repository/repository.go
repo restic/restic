@@ -271,13 +271,19 @@ func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 		return backend.ID{}, fmt.Errorf("json.Encode: %v", err)
 	}
 
-	ciphertext := make([]byte, len(plaintext)+crypto.Extension)
-	ciphertext, err = crypto.Encrypt(r.key, ciphertext, plaintext)
+	return r.SaveUnpacked(t, plaintext)
+}
+
+// SaveUnpacked encrypts data and stores it in the backend. Returned is the
+// storage hash.
+func (r *Repository) SaveUnpacked(t backend.Type, p []byte) (id backend.ID, err error) {
+	ciphertext := make([]byte, len(p)+crypto.Extension)
+	ciphertext, err = r.Encrypt(ciphertext, p)
 	if err != nil {
 		return backend.ID{}, err
 	}
 
-	id := backend.Hash(ciphertext)
+	id = backend.Hash(ciphertext)
 	h := backend.Handle{Type: t, Name: id.String()}
 
 	err = r.be.Save(h, ciphertext)
@@ -377,26 +383,16 @@ func (bw *BlobWriter) ID() backend.ID {
 	return bw.id
 }
 
-// SaveIndex saves an index to repo's backend.
+// SaveIndex saves an index in the repository.
 func SaveIndex(repo *Repository, index *Index) (backend.ID, error) {
-	blob, err := repo.CreateEncryptedBlob(backend.Index)
+	buf := bytes.NewBuffer(nil)
+
+	err := index.Finalize(buf)
 	if err != nil {
 		return backend.ID{}, err
 	}
 
-	err = index.Finalize(blob)
-	if err != nil {
-		return backend.ID{}, err
-	}
-
-	err = blob.Close()
-	if err != nil {
-		return backend.ID{}, err
-	}
-
-	sid := blob.ID()
-	err = index.SetID(sid)
-	return sid, err
+	return repo.SaveUnpacked(backend.Index, buf.Bytes())
 }
 
 // saveIndex saves all indexes in the backend.
