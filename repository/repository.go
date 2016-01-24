@@ -265,44 +265,29 @@ func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, er
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
 func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend.ID, error) {
-	// create file
-	blob, err := r.be.Create()
-	if err != nil {
-		return backend.ID{}, err
-	}
-	debug.Log("Repo.SaveJSONUnpacked", "create new blob %v", t)
-
-	// hash
-	hw := backend.NewHashingWriter(blob, sha256.New())
-
-	// encrypt blob
-	ewr := crypto.EncryptTo(r.key, hw)
-
-	enc := json.NewEncoder(ewr)
-	err = enc.Encode(item)
+	debug.Log("Repo.SaveJSONUnpacked", "save new blob %v", t)
+	plaintext, err := json.Marshal(item)
 	if err != nil {
 		return backend.ID{}, fmt.Errorf("json.Encode: %v", err)
 	}
 
-	err = ewr.Close()
+	ciphertext := make([]byte, len(plaintext)+crypto.Extension)
+	ciphertext, err = crypto.Encrypt(r.key, ciphertext, plaintext)
 	if err != nil {
 		return backend.ID{}, err
 	}
 
-	// finalize blob in the backend
-	hash := hw.Sum(nil)
-	sid := backend.ID{}
-	copy(sid[:], hash)
+	id := backend.Hash(ciphertext)
+	h := backend.Handle{Type: t, Name: id.String()}
 
-	err = blob.Finalize(t, sid.String())
+	err = r.be.Save(h, ciphertext)
 	if err != nil {
-		debug.Log("Repo.SaveJSONUnpacked", "error saving blob %v as %v: %v", t, sid, err)
+		debug.Log("Repo.SaveJSONUnpacked", "error saving blob %v: %v", h, err)
 		return backend.ID{}, err
 	}
 
-	debug.Log("Repo.SaveJSONUnpacked", "new blob %v saved as %v", t, sid)
-
-	return sid, nil
+	debug.Log("Repo.SaveJSONUnpacked", "blob %v saved", h)
+	return id, nil
 }
 
 // Flush saves all remaining packs.
