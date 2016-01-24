@@ -2,8 +2,6 @@ package repository
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -191,26 +189,17 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	}
 
 	// store in repository and return
-	blob, err := s.be.Create()
+	h := backend.Handle{
+		Type: backend.Key,
+		Name: backend.Hash(buf).String(),
+	}
+
+	err = s.be.Save(h, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	plainhw := backend.NewHashingWriter(blob, sha256.New())
-
-	_, err = plainhw.Write(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	name := hex.EncodeToString(plainhw.Sum(nil))
-
-	err = blob.Finalize(backend.Key, name)
-	if err != nil {
-		return nil, err
-	}
-
-	newkey.name = name
+	newkey.name = h.Name
 
 	return newkey, nil
 }
