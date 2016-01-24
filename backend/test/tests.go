@@ -201,7 +201,7 @@ func TestLoad(t testing.TB) {
 		t.Fatalf("Save() error: %v", err)
 	}
 
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 50; i++ {
 		l := rand.Intn(length + 2000)
 		o := rand.Intn(length + 2000)
 
