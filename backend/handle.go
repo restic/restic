@@ -33,7 +33,7 @@ func (h Handle) Valid() error {
 	case Index:
 	case Config:
 	default:
-		return fmt.Errorf("invalid config %q", h.Type)
+		return fmt.Errorf("invalid Type %q", h.Type)
 	}
 
 	if h.Type == Config {

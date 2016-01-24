@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
 
 var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
@@ -231,12 +232,14 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 		return err
 	}
 
-	f, err := os.Create(filename(b.p, h.Type, h.Name))
+	tmpfile, err := ioutil.TempFile(filepath.Join(b.p, backend.Paths.Temp), "temp-")
 	if err != nil {
 		return err
 	}
 
-	n, err := f.Write(p)
+	debug.Log("local.Save", "save %v (%d bytes) to %v", h, len(p), tmpfile.Name())
+
+	n, err := tmpfile.Write(p)
 	if err != nil {
 		return err
 	}
@@ -245,11 +248,58 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 		return errors.New("not all bytes writen")
 	}
 
-	if err = f.Sync(); err != nil {
+	if err = tmpfile.Sync(); err != nil {
 		return err
 	}
 
-	return f.Close()
+	err = tmpfile.Close()
+	if err != nil {
+		return err
+	}
+
+	f := filename(b.p, h.Type, h.Name)
+
+	// create directories if necessary, ignore errors
+	if h.Type == backend.Data {
+		os.MkdirAll(filepath.Dir(f), backend.Modes.Dir)
+	}
+
+	// test if new path already exists
+	if _, err := os.Stat(f); err == nil {
+		return fmt.Errorf("Rename(): file %v already exists", f)
+	}
+
+	err = os.Rename(tmpfile.Name(), f)
+	debug.Log("local.Save", "save %v: rename %v -> %v: %v",
+		h, filepath.Base(tmpfile.Name()), filepath.Base(f), err)
+
+	if err != nil {
+		return err
+	}
+
+	// set mode to read-only
+	fi, err := os.Stat(f)
+	if err != nil {
+		return err
+	}
+
+	err = setNewFileMode(f, fi)
+	if err != nil {
+		return err
+	}
+
+	// try to flush directory
+	d, err := os.Open(filepath.Dir(f))
+	if err != nil {
+		return err
+	}
+
+	err = d.Sync()
+	if err != nil {
+		return err
+	}
+
+	return d.Close()
 }
 
 // Stat returns information about a blob.

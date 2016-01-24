@@ -58,6 +58,20 @@ func TestTestBackendWrite(t *testing.T) {
 	test.TestWrite(t)
 }
 
+func TestTestBackendSave(t *testing.T) {
+	if SkipMessage != "" {
+		t.Skip(SkipMessage)
+	}
+	test.TestSave(t)
+}
+
+func TestTestBackendSaveFilenames(t *testing.T) {
+	if SkipMessage != "" {
+		t.Skip(SkipMessage)
+	}
+	test.TestSaveFilenames(t)
+}
+
 func TestTestBackendBackend(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)

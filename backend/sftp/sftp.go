@@ -15,6 +15,7 @@ import (
 	"github.com/juju/errors"
 	"github.com/pkg/sftp"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
 
 const (
@@ -379,12 +380,10 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 		return err
 	}
 
-	f, err := r.c.Create(r.filename(h.Type, h.Name))
-	if err != nil {
-		return err
-	}
+	filename, tmpfile, err := r.tempFile()
+	debug.Log("sftp.Save", "save %v (%d bytes) to %v", h, len(p), filename)
 
-	n, err := f.Write(p)
+	n, err := tmpfile.Write(p)
 	if err != nil {
 		return err
 	}
@@ -393,7 +392,19 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 		return errors.New("not all bytes writen")
 	}
 
-	return f.Close()
+	err = tmpfile.Close()
+	if err != nil {
+		return err
+	}
+
+	err = r.renameFile(filename, h.Type, h.Name)
+	debug.Log("sftp.Save", "save %v: rename %v: %v",
+		h, filepath.Base(filename), err)
+	if err != nil {
+		return fmt.Errorf("sftp: renameFile: %v", err)
+	}
+
+	return nil
 }
 
 // Stat returns information about a blob.

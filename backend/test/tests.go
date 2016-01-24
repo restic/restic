@@ -325,6 +325,93 @@ func TestWrite(t testing.TB) {
 	}
 }
 
+// TestSave tests saving data in the backend.
+func TestSave(t testing.TB) {
+	b := open(t)
+	defer close(t)
+
+	length := rand.Intn(1<<23) + 2000
+	data := make([]byte, length)
+
+	for i := 0; i < 10; i++ {
+		_, err := io.ReadFull(crand.Reader, data)
+		OK(t, err)
+		id := backend.Hash(data)
+
+		h := backend.Handle{
+			Type: backend.Data,
+			Name: fmt.Sprintf("%s-%d", id, i),
+		}
+		err = b.Save(h, data)
+		OK(t, err)
+
+		buf, err := backend.LoadAll(b, h, nil)
+		OK(t, err)
+		if len(buf) != len(data) {
+			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
+		}
+
+		if !bytes.Equal(buf, data) {
+			t.Fatalf("data not equal")
+		}
+
+		fi, err := b.Stat(h)
+		OK(t, err)
+
+		if fi.Size != int64(len(data)) {
+			t.Fatalf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
+		}
+
+		err = b.Remove(h.Type, h.Name)
+		if err != nil {
+			t.Fatalf("error removing item: %v", err)
+		}
+	}
+}
+
+var filenameTests = []struct {
+	name string
+	data string
+}{
+	{"1dfc6bc0f06cb255889e9ea7860a5753e8eb9665c9a96627971171b444e3113e", "x"},
+	{"foobar", "foobar"},
+	{
+		"1dfc6bc0f06cb255889e9ea7860a5753e8eb9665c9a96627971171b444e3113e4bf8f2d9144cc5420a80f04a4880ad6155fc58903a4fb6457c476c43541dcaa6-5",
+		"foobar content of data blob",
+	},
+}
+
+// TestSaveFilenames tests saving data with various file names in the backend.
+func TestSaveFilenames(t testing.TB) {
+	b := open(t)
+	defer close(t)
+
+	for i, test := range filenameTests {
+		h := backend.Handle{Name: test.name, Type: backend.Data}
+		err := b.Save(h, []byte(test.data))
+		if err != nil {
+			t.Errorf("test %d failed: Save() returned %v", i, err)
+			continue
+		}
+
+		buf, err := backend.LoadAll(b, h, nil)
+		if err != nil {
+			t.Errorf("test %d failed: Load() returned %v", i, err)
+			continue
+		}
+
+		if !bytes.Equal(buf, []byte(test.data)) {
+			t.Errorf("test %d: returned wrong bytes", i)
+		}
+
+		err = b.Remove(h.Type, h.Name)
+		if err != nil {
+			t.Errorf("test %d failed: Remove() returned %v", i, err)
+			continue
+		}
+	}
+}
+
 var testStrings = []struct {
 	id   string
 	data string

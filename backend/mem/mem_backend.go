@@ -45,6 +45,10 @@ func New() *MemoryBackend {
 		return memLoad(be, h, p, off)
 	}
 
+	be.MockBackend.SaveFn = func(h backend.Handle, p []byte) error {
+		return memSave(be, h, p)
+	}
+
 	be.MockBackend.StatFn = func(h backend.Handle) (backend.BlobInfo, error) {
 		return memStat(be, h)
 	}
