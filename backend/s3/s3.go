@@ -145,31 +145,6 @@ func (be *S3Backend) Create() (backend.Blob, error) {
 	return &blob, nil
 }
 
-// GetReader returns an io.ReadCloser for the Blob with the given name of
-// type t at offset and length. If length is 0, the reader reads until EOF.
-func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	debug.Log("s3.GetReader", "%v %v, offset %v len %v", t, name, offset, length)
-	path := s3path(t, name)
-	obj, err := be.client.GetObject(be.bucketname, path)
-	if err != nil {
-		debug.Log("s3.GetReader", "  err %v", err)
-		return nil, err
-	}
-
-	if offset > 0 {
-		_, err = obj.Seek(int64(offset), 0)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if length == 0 {
-		return obj, nil
-	}
-
-	return backend.LimitReadCloser(obj, int64(length)), nil
-}
-
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (be S3Backend) Load(h backend.Handle, p []byte, off int64) (int, error) {

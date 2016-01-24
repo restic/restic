@@ -44,13 +44,6 @@ func TestMemBackendConfig(t *testing.T) {
 	test.TestConfig(t)
 }
 
-func TestMemBackendGetReader(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestGetReader(t)
-}
-
 func TestMemBackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)

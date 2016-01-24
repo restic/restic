@@ -344,28 +344,6 @@ func (r *SFTP) dirname(t backend.Type, name string) string {
 	return Join(r.p, n)
 }
 
-// GetReader returns an io.ReadCloser for the Blob with the given name of
-// type t at offset and length. If length is 0, the reader reads until EOF.
-func (r *SFTP) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	f, err := r.c.Open(r.filename(t, name))
-	if err != nil {
-		return nil, err
-	}
-
-	if offset > 0 {
-		_, err = f.Seek(int64(offset), 0)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if length == 0 {
-		return f, nil
-	}
-
-	return backend.LimitReadCloser(f, int64(length)), nil
-}
-
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {

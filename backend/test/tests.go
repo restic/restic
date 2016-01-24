@@ -152,7 +152,7 @@ func TestConfig(t testing.TB) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := b.GetReader(backend.Config, "", 0, 0)
+	_, err := backend.LoadAll(b, backend.Handle{Type: backend.Config}, nil)
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
@@ -175,74 +175,15 @@ func TestConfig(t testing.TB) {
 	// try accessing the config with different names, should all return the
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
-		rd, err := b.GetReader(backend.Config, name, 0, 0)
+		buf, err := backend.LoadAll(b, backend.Handle{Type: backend.Config}, nil)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %v", name, err)
-		}
-
-		buf, err := ioutil.ReadAll(rd)
-		if err != nil {
-			t.Fatalf("read config error: %v", err)
-		}
-
-		err = rd.Close()
-		if err != nil {
-			t.Fatalf("close error: %v", err)
 		}
 
 		if string(buf) != testString {
 			t.Fatalf("wrong data returned, want %q, got %q", testString, string(buf))
 		}
 	}
-}
-
-// TestGetReader tests various ways the GetReader function can be called.
-func TestGetReader(t testing.TB) {
-	b := open(t)
-	defer close(t)
-
-	length := rand.Intn(1<<24) + 2000
-
-	data := make([]byte, length)
-	_, err := io.ReadFull(crand.Reader, data)
-	OK(t, err)
-
-	blob, err := b.Create()
-	OK(t, err)
-
-	id := backend.Hash(data)
-
-	_, err = blob.Write([]byte(data))
-	OK(t, err)
-	OK(t, blob.Finalize(backend.Data, id.String()))
-
-	for i := 0; i < 500; i++ {
-		l := rand.Intn(length + 2000)
-		o := rand.Intn(length + 2000)
-
-		d := data
-		if o < len(d) {
-			d = d[o:]
-		} else {
-			o = len(d)
-			d = d[:0]
-		}
-
-		if l > 0 && l < len(d) {
-			d = d[:l]
-		}
-
-		rd, err := b.GetReader(backend.Data, id.String(), uint(o), uint(l))
-		OK(t, err)
-		buf, err := ioutil.ReadAll(rd)
-		OK(t, err)
-
-		if !bytes.Equal(buf, d) {
-			t.Fatalf("data not equal")
-		}
-	}
-
-	OK(t, b.Remove(backend.Data, id.String()))
 }
 
 // TestLoad tests the backend's Load function.
@@ -360,12 +301,8 @@ func TestWrite(t testing.TB) {
 		name := fmt.Sprintf("%s-%d", id, i)
 		OK(t, blob.Finalize(backend.Data, name))
 
-		rd, err := b.GetReader(backend.Data, name, 0, 0)
+		buf, err := backend.LoadAll(b, backend.Handle{Type: backend.Data, Name: name}, nil)
 		OK(t, err)
-
-		buf, err := ioutil.ReadAll(rd)
-		OK(t, err)
-
 		if len(buf) != len(data) {
 			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
 		}
@@ -436,12 +373,13 @@ func TestBackend(t testing.TB) {
 			OK(t, err)
 			Assert(t, !ret, "blob was found to exist before creating")
 
-			// try to open not existing blob
-			_, err = b.GetReader(tpe, id.String(), 0, 0)
+			// try to stat a not existing blob
+			h := backend.Handle{Type: tpe, Name: id.String()}
+			_, err = b.Stat(h)
 			Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
-			_, err = b.GetReader(tpe, id.String(), 0, 1)
+			_, err = b.Load(h, nil, 0)
 			Assert(t, err != nil, "blob reader could be obtained before creation")
 
 			// try to get string out, should fail
@@ -454,24 +392,22 @@ func TestBackend(t testing.TB) {
 		for _, test := range testStrings {
 			store(t, b, tpe, []byte(test.data))
 
-			// test GetReader()
-			rd, err := b.GetReader(tpe, test.id, 0, uint(len(test.data)))
+			// test Load()
+			h := backend.Handle{Type: tpe, Name: test.id}
+			buf, err := backend.LoadAll(b, h, nil)
 			OK(t, err)
-			Assert(t, rd != nil, "GetReader() returned nil")
-
-			read(t, rd, []byte(test.data))
-			OK(t, rd.Close())
+			Equals(t, test.data, string(buf))
 
 			// try to read it out with an offset and a length
 			start := 1
 			end := len(test.data) - 2
 			length := end - start
-			rd, err = b.GetReader(tpe, test.id, uint(start), uint(length))
-			OK(t, err)
-			Assert(t, rd != nil, "GetReader() returned nil")
 
-			read(t, rd, []byte(test.data[start:end]))
-			OK(t, rd.Close())
+			buf2 := make([]byte, length)
+			n, err := b.Load(h, buf2, int64(start))
+			OK(t, err)
+			Equals(t, length, n)
+			Equals(t, test.data[start:end], string(buf2))
 		}
 
 		// test adding the first file again

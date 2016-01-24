@@ -44,13 +44,6 @@ func TestS3BackendConfig(t *testing.T) {
 	test.TestConfig(t)
 }
 
-func TestS3BackendGetReader(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestGetReader(t)
-}
-
 func TestS3BackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)

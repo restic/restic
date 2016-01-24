@@ -1,23 +1,19 @@
 package backend
 
-import (
-	"errors"
-	"io"
-)
+import "errors"
 
 // MockBackend implements a backend whose functions can be specified. This
 // should only be used for tests.
 type MockBackend struct {
-	CloseFn     func() error
-	CreateFn    func() (Blob, error)
-	LoadFn      func(h Handle, p []byte, off int64) (int, error)
-	StatFn      func(h Handle) (BlobInfo, error)
-	GetReaderFn func(Type, string, uint, uint) (io.ReadCloser, error)
-	ListFn      func(Type, <-chan struct{}) <-chan string
-	RemoveFn    func(Type, string) error
-	TestFn      func(Type, string) (bool, error)
-	DeleteFn    func() error
-	LocationFn  func() string
+	CloseFn    func() error
+	CreateFn   func() (Blob, error)
+	LoadFn     func(h Handle, p []byte, off int64) (int, error)
+	StatFn     func(h Handle) (BlobInfo, error)
+	ListFn     func(Type, <-chan struct{}) <-chan string
+	RemoveFn   func(Type, string) error
+	TestFn     func(Type, string) (bool, error)
+	DeleteFn   func() error
+	LocationFn func() string
 }
 
 func (m *MockBackend) Close() error {
@@ -58,14 +54,6 @@ func (m *MockBackend) Stat(h Handle) (BlobInfo, error) {
 	}
 
 	return m.StatFn(h)
-}
-
-func (m *MockBackend) GetReader(t Type, name string, offset, len uint) (io.ReadCloser, error) {
-	if m.GetReaderFn == nil {
-		return nil, errors.New("not implemented")
-	}
-
-	return m.GetReaderFn(t, name, offset, len)
 }
 
 func (m *MockBackend) List(t Type, done <-chan struct{}) <-chan string {

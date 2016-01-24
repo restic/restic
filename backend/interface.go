@@ -25,10 +25,6 @@ type Backend interface {
 	// has been called on the returned Blob.
 	Create() (Blob, error)
 
-	// GetReader returns an io.ReadCloser for the Blob with the given name of
-	// type t at offset and length.
-	GetReader(t Type, name string, offset, length uint) (io.ReadCloser, error)
-
 	// Test a boolean value whether a Blob with the name and type exists.
 	Test(t Type, name string) (bool, error)
 

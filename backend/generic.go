@@ -3,7 +3,6 @@ package backend
 import (
 	"crypto/sha256"
 	"errors"
-	"io"
 )
 
 const (
@@ -81,40 +80,4 @@ outer:
 	}
 
 	return IDSize, nil
-}
-
-// wrap around io.LimitedReader that implements io.ReadCloser
-type blobReader struct {
-	cl     io.Closer
-	rd     io.Reader
-	closed bool
-}
-
-func (l *blobReader) Read(p []byte) (int, error) {
-	n, err := l.rd.Read(p)
-	if err == io.EOF {
-		l.Close()
-	}
-
-	return n, err
-}
-
-func (l *blobReader) Close() error {
-	if l == nil {
-		return nil
-	}
-
-	if !l.closed {
-		err := l.cl.Close()
-		l.closed = true
-		return err
-	}
-
-	return nil
-}
-
-// LimitReadCloser returns a new reader wraps r in an io.LimitReader, but also
-// implements the Close() method.
-func LimitReadCloser(r io.ReadCloser, n int64) *blobReader {
-	return &blobReader{cl: r, rd: io.LimitReader(r, n)}
 }

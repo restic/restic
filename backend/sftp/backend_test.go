@@ -44,13 +44,6 @@ func TestSftpBackendConfig(t *testing.T) {
 	test.TestConfig(t)
 }
 
-func TestSftpBackendGetReader(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestGetReader(t)
-}
-
 func TestSftpBackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)

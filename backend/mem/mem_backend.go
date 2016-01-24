@@ -41,10 +41,6 @@ func New() *MemoryBackend {
 		return memCreate(be)
 	}
 
-	be.MockBackend.GetReaderFn = func(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-		return memGetReader(be, t, name, offset, length)
-	}
-
 	be.MockBackend.LoadFn = func(h backend.Handle, p []byte, off int64) (int, error) {
 		return memLoad(be, h, p, off)
 	}
@@ -131,38 +127,6 @@ func memCreate(be *MemoryBackend) (backend.Blob, error) {
 	blob := &tempMemEntry{be: be}
 	debug.Log("MemoryBackend.Create", "create new blob %p", blob)
 	return blob, nil
-}
-
-func memGetReader(be *MemoryBackend, t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	be.m.Lock()
-	defer be.m.Unlock()
-
-	if t == backend.Config {
-		name = ""
-	}
-
-	debug.Log("MemoryBackend.GetReader", "get %v %v offset %v len %v", t, name, offset, length)
-
-	if _, ok := be.data[entry{t, name}]; !ok {
-		return nil, errors.New("no such data")
-	}
-
-	buf := be.data[entry{t, name}]
-	if offset > uint(len(buf)) {
-		return nil, errors.New("offset beyond end of file")
-	}
-
-	buf = buf[offset:]
-
-	if length > 0 {
-		if length > uint(len(buf)) {
-			length = uint(len(buf))
-		}
-
-		buf = buf[:length]
-	}
-
-	return backend.ReadCloser(bytes.NewReader(buf)), nil
 }
 
 func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, error) {

@@ -44,13 +44,6 @@ func TestTestBackendConfig(t *testing.T) {
 	test.TestConfig(t)
 }
 
-func TestTestBackendGetReader(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestGetReader(t)
-}
-
 func TestTestBackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
