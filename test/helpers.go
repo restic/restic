@@ -75,14 +75,33 @@ func ParseID(s string) backend.ID {
 
 // Random returns size bytes of pseudo-random data derived from the seed.
 func Random(seed, count int) []byte {
-	buf := make([]byte, count)
+	p := make([]byte, count)
 
 	rnd := mrand.New(mrand.NewSource(int64(seed)))
-	for i := 0; i < count; i++ {
-		buf[i] = byte(rnd.Uint32())
+
+	for i := 0; i < len(p); i += 8 {
+		val := rnd.Int63()
+		var data = []byte{
+			byte((val >> 0) & 0xff),
+			byte((val >> 8) & 0xff),
+			byte((val >> 16) & 0xff),
+			byte((val >> 24) & 0xff),
+			byte((val >> 32) & 0xff),
+			byte((val >> 40) & 0xff),
+			byte((val >> 48) & 0xff),
+			byte((val >> 56) & 0xff),
+		}
+
+		for j := range data {
+			cur := i + j
+			if len(p) >= cur {
+				break
+			}
+			p[cur] = data[j]
+		}
 	}
 
-	return buf
+	return p
 }
 
 type rndReader struct {
@@ -90,18 +109,41 @@ type rndReader struct {
 }
 
 func (r *rndReader) Read(p []byte) (int, error) {
-	for i := range p {
-		p[i] = byte(r.src.Uint32())
+	for i := 0; i < len(p); i += 8 {
+		val := r.src.Int63()
+		var data = []byte{
+			byte((val >> 0) & 0xff),
+			byte((val >> 8) & 0xff),
+			byte((val >> 16) & 0xff),
+			byte((val >> 24) & 0xff),
+			byte((val >> 32) & 0xff),
+			byte((val >> 40) & 0xff),
+			byte((val >> 48) & 0xff),
+			byte((val >> 56) & 0xff),
+		}
+
+		for j := range data {
+			cur := i + j
+			if len(p) >= cur {
+				break
+			}
+			p[cur] = data[j]
+		}
 	}
 
 	return len(p), nil
 }
 
-// RandomReader returns a reader that returns size bytes of pseudo-random data
+// RandomReader returns a reader that returns deterministic pseudo-random data
 // derived from the seed.
-func RandomReader(seed, size int) io.Reader {
-	r := &rndReader{src: mrand.New(mrand.NewSource(int64(seed)))}
-	return io.LimitReader(r, int64(size))
+func RandomReader(seed int) io.Reader {
+	return &rndReader{src: mrand.New(mrand.NewSource(int64(seed)))}
+}
+
+// RandomLimitReader returns a reader that returns size bytes of deterministic
+// pseudo-random data derived from the seed.
+func RandomLimitReader(seed, size int) io.Reader {
+	return io.LimitReader(RandomReader(seed), int64(size))
 }
 
 // GenRandom returns a []byte filled with up to 1000 random bytes.

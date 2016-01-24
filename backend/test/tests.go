@@ -2,7 +2,6 @@ package test
 
 import (
 	"bytes"
-	crand "crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -203,12 +202,7 @@ func TestLoad(t testing.TB) {
 
 	length := rand.Intn(1<<24) + 2000
 
-	data := make([]byte, length)
-	_, err = io.ReadFull(crand.Reader, data)
-	if err != nil {
-		t.Fatalf("reading random data failed: %v", err)
-	}
-
+	data := Random(23, length)
 	id := backend.Hash(data)
 
 	blob, err := b.Create()
@@ -273,9 +267,7 @@ func TestWrite(t testing.TB) {
 
 	length := rand.Intn(1<<23) + 2000
 
-	data := make([]byte, length)
-	_, err := io.ReadFull(crand.Reader, data)
-	OK(t, err)
+	data := Random(23, length)
 	id := backend.Hash(data)
 
 	for i := 0; i < 10; i++ {
@@ -329,20 +321,19 @@ func TestWrite(t testing.TB) {
 func TestSave(t testing.TB) {
 	b := open(t)
 	defer close(t)
-
-	length := rand.Intn(1<<23) + 2000
-	data := make([]byte, length)
+	var id backend.ID
 
 	for i := 0; i < 10; i++ {
-		_, err := io.ReadFull(crand.Reader, data)
-		OK(t, err)
-		id := backend.Hash(data)
+		length := rand.Intn(1<<23) + 200000
+		data := Random(23, length)
+		// use the first 32 byte as the ID
+		copy(id[:], data)
 
 		h := backend.Handle{
 			Type: backend.Data,
 			Name: fmt.Sprintf("%s-%d", id, i),
 		}
-		err = b.Save(h, data)
+		err := b.Save(h, data)
 		OK(t, err)
 
 		buf, err := backend.LoadAll(b, h, nil)
