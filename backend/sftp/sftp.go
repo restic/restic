@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/juju/errors"
@@ -407,8 +406,6 @@ func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
 				dirs = append(dirs, d.Name())
 			}
 
-			sort.Strings(dirs)
-
 			// read files
 			for _, dir := range dirs {
 				entries, err := r.c.ReadDir(Join(basedir, dir))
@@ -420,8 +417,6 @@ func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
 				for _, entry := range entries {
 					items = append(items, entry.Name())
 				}
-
-				sort.Strings(items)
 
 				for _, file := range items {
 					select {
@@ -441,8 +436,6 @@ func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
 			for _, entry := range entries {
 				items = append(items, entry.Name())
 			}
-
-			sort.Strings(items)
 
 			for _, file := range items {
 				select {

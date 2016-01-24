@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sort"
 	"sync"
 
 	"github.com/restic/restic/backend"
@@ -253,7 +252,6 @@ func (b *Local) Remove(t backend.Type, name string) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
-	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
 	var pattern string
 	if t == backend.Data {
 		pattern = filepath.Join(dirname(b.p, t, ""), "*", "*")
@@ -271,8 +269,6 @@ func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 	for i := range matches {
 		matches[i] = filepath.Base(matches[i])
 	}
-
-	sort.Strings(matches)
 
 	go func() {
 		defer close(ch)

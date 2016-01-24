@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"sort"
 	"sync"
 
 	"github.com/restic/restic/backend"
@@ -231,8 +230,6 @@ func memList(be *MemoryBackend, t backend.Type, done <-chan struct{}) <-chan str
 		}
 		ids = append(ids, entry.Name)
 	}
-
-	sort.Strings(ids)
 
 	debug.Log("MemoryBackend.List", "list %v: %v", t, ids)
 
