@@ -126,67 +126,73 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	return io.ReadFull(f, p)
 }
 
+// writeToTempfile saves p into a tempfile in tempdir.
+func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
+	tmpfile, err := ioutil.TempFile(tempdir, "temp-")
+	if err != nil {
+		return "", err
+	}
+
+	n, err := tmpfile.Write(p)
+	if err != nil {
+		return "", err
+	}
+
+	if n != len(p) {
+		return "", errors.New("not all bytes writen")
+	}
+
+	if err = tmpfile.Sync(); err != nil {
+		return "", err
+	}
+
+	err = tmpfile.Close()
+	if err != nil {
+		return "", err
+	}
+
+	return tmpfile.Name(), nil
+}
+
 // Save stores data in the backend at the handle.
 func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
-	tmpfile, err := ioutil.TempFile(filepath.Join(b.p, backend.Paths.Temp), "temp-")
-	if err != nil {
-		return err
-	}
+	tmpfile, err := writeToTempfile(filepath.Join(b.p, backend.Paths.Temp), p)
+	debug.Log("local.Save", "saved %v (%d bytes) to %v", h, len(p), tmpfile)
 
-	debug.Log("local.Save", "save %v (%d bytes) to %v", h, len(p), tmpfile.Name())
-
-	n, err := tmpfile.Write(p)
-	if err != nil {
-		return err
-	}
-
-	if n != len(p) {
-		return errors.New("not all bytes writen")
-	}
-
-	if err = tmpfile.Sync(); err != nil {
-		return err
-	}
-
-	err = tmpfile.Close()
-	if err != nil {
-		return err
-	}
-
-	f := filename(b.p, h.Type, h.Name)
+	filename := filename(b.p, h.Type, h.Name)
 
 	// test if new path already exists
-	if _, err := os.Stat(f); err == nil {
-		return fmt.Errorf("Rename(): file %v already exists", f)
+	if _, err := os.Stat(filename); err == nil {
+		return fmt.Errorf("Rename(): file %v already exists", filename)
 	}
 
 	// create directories if necessary, ignore errors
 	if h.Type == backend.Data {
-		err = os.MkdirAll(filepath.Dir(f), backend.Modes.Dir)
+		err = os.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = os.Rename(tmpfile.Name(), f)
+	err = os.Rename(tmpfile, filename)
 	debug.Log("local.Save", "save %v: rename %v -> %v: %v",
-		h, filepath.Base(tmpfile.Name()), filepath.Base(f), err)
+		h, filepath.Base(tmpfile), filepath.Base(filename), err)
 
 	if err != nil {
 		return err
 	}
 
 	// set mode to read-only
-	fi, err := os.Stat(f)
+	fi, err := os.Stat(filename)
 	if err != nil {
 		return err
 	}
 
-	return setNewFileMode(f, fi)
+	return setNewFileMode(filename, fi)
 }
 
 // Stat returns information about a blob.
