@@ -86,10 +86,12 @@ func (id ID) Compare(other ID) int {
 	return bytes.Compare(other[:], id[:])
 }
 
+// MarshalJSON returns the JSON encoding of id.
 func (id ID) MarshalJSON() ([]byte, error) {
 	return json.Marshal(id.String())
 }
 
+// UnmarshalJSON parses the JSON-encoded data and stores the result in id.
 func (id *ID) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
