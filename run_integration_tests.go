@@ -49,7 +49,10 @@ func (env *TravisEnvironment) getMinio() {
 		os.Exit(10)
 	}
 
-	res, err := http.Get("https://dl.minio.io/server/minio/release/linux-amd64/minio")
+	url := fmt.Sprintf("https://dl.minio.io/server/minio/release/%s-%s/minio",
+		runtime.GOOS, runtime.GOARCH)
+	msg("downloading %v\n", url)
+	res, err := http.Get(url)
 	if err != nil {
 		msg("downloading minio failed: %v\n", err)
 		return

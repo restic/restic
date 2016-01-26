@@ -48,7 +48,7 @@ RUN go get github.com/mattn/goveralls
 RUN go get github.com/mitchellh/gox
 RUN go get github.com/pierrre/gotestcover
 RUN mkdir $HOME/bin \
-    && wget -q -O $HOME/bin/minio https://dl.minio.io/server/minio/release/linux-amd64/minio \
+    && wget -q -O $HOME/bin/minio https://dl.minio.io/server/minio/release/linux-${GOARCH}/minio \
     && chmod +x $HOME/bin/minio
 
 # set TRAVIS_BUILD_DIR for integration script
