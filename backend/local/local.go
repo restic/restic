@@ -17,9 +17,8 @@ type Local struct {
 	p string
 }
 
-// Open opens the local backend as specified by config.
-func Open(dir string) (*Local, error) {
-	items := []string{
+func paths(dir string) []string {
+	return []string{
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
@@ -28,9 +27,12 @@ func Open(dir string) (*Local, error) {
 		filepath.Join(dir, backend.Paths.Keys),
 		filepath.Join(dir, backend.Paths.Temp),
 	}
+}
 
+// Open opens the local backend as specified by config.
+func Open(dir string) (*Local, error) {
 	// test if all necessary dirs are there
-	for _, d := range items {
+	for _, d := range paths(dir) {
 		if _, err := os.Stat(d); err != nil {
 			return nil, fmt.Errorf("%s does not exist", d)
 		}
@@ -42,16 +44,6 @@ func Open(dir string) (*Local, error) {
 // Create creates all the necessary files and directories for a new local
 // backend at dir. Afterwards a new config blob should be created.
 func Create(dir string) (*Local, error) {
-	dirs := []string{
-		dir,
-		filepath.Join(dir, backend.Paths.Data),
-		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Index),
-		filepath.Join(dir, backend.Paths.Locks),
-		filepath.Join(dir, backend.Paths.Keys),
-		filepath.Join(dir, backend.Paths.Temp),
-	}
-
 	// test if config file already exists
 	_, err := os.Lstat(filepath.Join(dir, backend.Paths.Config))
 	if err == nil {
@@ -59,7 +51,7 @@ func Create(dir string) (*Local, error) {
 	}
 
 	// create paths for data, refs and temp
-	for _, d := range dirs {
+	for _, d := range paths(dir) {
 		err := os.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {
 			return nil, err
