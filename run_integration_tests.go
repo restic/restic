@@ -6,7 +6,9 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +19,7 @@ import (
 )
 
 var runCrossCompile = flag.Bool("cross-compile", true, "run cross compilation tests")
+var minioServer = flag.String("minio", "", "path to the minio server binary")
 
 func init() {
 	flag.Parse()
@@ -30,10 +33,54 @@ type CIEnvironment interface {
 type TravisEnvironment struct {
 	goxArch []string
 	goxOS   []string
+	minio   string
 }
 
-var envVendorExperiment = map[string]string{
-	"GO15VENDOREXPERIMENT": "1",
+func (env *TravisEnvironment) getMinio() {
+	if *minioServer != "" {
+		msg("using minio server at %q\n", *minioServer)
+		env.minio = *minioServer
+		return
+	}
+
+	tempfile, err := ioutil.TempFile("", "minio-server-")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "create tempfile failed: %v\n", err)
+		os.Exit(10)
+	}
+
+	res, err := http.Get("https://dl.minio.io/server/minio/release/linux-amd64/minio")
+	if err != nil {
+		msg("downloading minio failed: %v\n", err)
+		return
+	}
+
+	_, err = io.Copy(tempfile, res.Body)
+	if err != nil {
+		msg("downloading minio failed: %v\n", err)
+		return
+	}
+
+	err = res.Body.Close()
+	if err != nil {
+		msg("saving minio failed: %v\n", err)
+		return
+	}
+
+	err = tempfile.Close()
+	if err != nil {
+		msg("closing tempfile failed: %v\n", err)
+		return
+	}
+
+	err = os.Chmod(tempfile.Name(), 0755)
+	if err != nil {
+		msg("making minio server executable failed: %v\n", err)
+		return
+	}
+
+	msg("downloaded minio server to %v\n", tempfile.Name())
+	env.minio = tempfile.Name()
 }
 
 func (env *TravisEnvironment) Prepare() {
@@ -42,9 +89,7 @@ func (env *TravisEnvironment) Prepare() {
 	run("go", "get", "golang.org/x/tools/cmd/cover")
 	run("go", "get", "github.com/mattn/goveralls")
 	run("go", "get", "github.com/pierrre/gotestcover")
-	if goVersionAtLeast151() {
-		runWithEnv(envVendorExperiment, "go", "get", "github.com/minio/minio")
-	}
+	env.getMinio()
 
 	if runtime.GOOS == "darwin" {
 		// install the libraries necessary for fuse
@@ -127,8 +172,8 @@ func (env *TravisEnvironment) RunTests() {
 		err     error
 	)
 
-	if goVersionAtLeast151() {
-		srv, err = NewMinioServer()
+	if env.minio != "" {
+		srv, err = NewMinioServer(env.minio)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
 			os.Exit(8)
@@ -275,7 +320,7 @@ var minioEnv = map[string]string{
 
 // NewMinioServer prepares and runs a minio server for the s3 backend tests in
 // a temporary directory.
-func NewMinioServer() (*MinioServer, error) {
+func NewMinioServer(minio string) (*MinioServer, error) {
 	msg("running minio server\n")
 	cfgdir, err := ioutil.TempDir("", "minio-config-")
 	if err != nil {
@@ -304,7 +349,7 @@ func NewMinioServer() (*MinioServer, error) {
 
 	out := bytes.NewBuffer(nil)
 
-	cmd := exec.Command("minio",
+	cmd := exec.Command(minio,
 		"--config-folder", cfgdir,
 		"--address", "127.0.0.1:9000",
 		"server", dir)
