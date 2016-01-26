@@ -42,7 +42,9 @@ func (env *TravisEnvironment) Prepare() {
 	run("go", "get", "golang.org/x/tools/cmd/cover")
 	run("go", "get", "github.com/mattn/goveralls")
 	run("go", "get", "github.com/pierrre/gotestcover")
-	runWithEnv(envVendorExperiment, "go", "get", "github.com/minio/minio")
+	if goVersionAtLeast151() {
+		runWithEnv(envVendorExperiment, "go", "get", "github.com/minio/minio")
+	}
 
 	if runtime.GOOS == "darwin" {
 		// install the libraries necessary for fuse
