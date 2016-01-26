@@ -2,7 +2,7 @@ package backend
 
 import "os"
 
-// Default paths for file-based backends (e.g. local)
+// Paths contains the default paths for file-based backends (e.g. local).
 var Paths = struct {
 	Data      string
 	Snapshots string
@@ -21,5 +21,6 @@ var Paths = struct {
 	"config",
 }
 
-// Default modes for file-based backends
+// Modes holds the default modes for directories and files for file-based
+// backends.
 var Modes = struct{ Dir, File os.FileMode }{0700, 0600}
