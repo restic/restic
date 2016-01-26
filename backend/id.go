@@ -2,13 +2,19 @@ package backend
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 )
 
+// Hash returns the ID for data.
+func Hash(data []byte) ID {
+	return sha256.Sum256(data)
+}
+
 // IDSize contains the size of an ID, in bytes.
-const IDSize = hashSize
+const IDSize = sha256.Size
 
 // ID references content within a repository.
 type ID [IDSize]byte
@@ -97,8 +103,4 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
-}
-
-func IDFromData(d []byte) ID {
-	return hashData(d)
 }

@@ -1,29 +1,14 @@
 package backend
 
-import (
-	"crypto/sha256"
-	"errors"
-)
+import "errors"
 
-const (
-	MinPrefixLength = 8
-)
+// ErrNoIDPrefixFound is returned by Find() when no ID for the given prefix
+// could be found.
+var ErrNoIDPrefixFound = errors.New("no ID found")
 
-var (
-	ErrNoIDPrefixFound   = errors.New("no ID found")
-	ErrMultipleIDMatches = errors.New("multiple IDs with prefix found")
-)
-
-var (
-	hashData = sha256.Sum256
-)
-
-const hashSize = sha256.Size
-
-// Hash returns the ID for data.
-func Hash(data []byte) ID {
-	return hashData(data)
-}
+// ErrMultipleIDMatches is returned by Find() when multiple IDs with the given
+// prefix are found.
+var ErrMultipleIDMatches = errors.New("multiple IDs with prefix found")
 
 // Find loads the list of all blobs of type t and searches for names which
 // start with prefix. If none is found, nil and ErrNoIDPrefixFound is returned.
@@ -52,6 +37,8 @@ func Find(be Lister, t Type, prefix string) (string, error) {
 	return "", ErrNoIDPrefixFound
 }
 
+const minPrefixLength = 8
+
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all names of type t are unique.
 func PrefixLength(be Lister, t Type) (int, error) {
@@ -66,7 +53,7 @@ func PrefixLength(be Lister, t Type) (int, error) {
 
 	// select prefixes of length l, test if the last one is the same as the current one
 outer:
-	for l := MinPrefixLength; l < IDSize; l++ {
+	for l := minPrefixLength; l < IDSize; l++ {
 		var last string
 
 		for _, name := range list {
