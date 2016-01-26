@@ -64,6 +64,18 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	return &SFTP{c: client, cmd: cmd}, nil
 }
 
+func paths(dir string) []string {
+	return []string{
+		dir,
+		Join(dir, backend.Paths.Data),
+		Join(dir, backend.Paths.Snapshots),
+		Join(dir, backend.Paths.Index),
+		Join(dir, backend.Paths.Locks),
+		Join(dir, backend.Paths.Keys),
+		Join(dir, backend.Paths.Temp),
+	}
+}
+
 // Open opens an sftp backend. When the command is started via
 // exec.Command, it is expected to speak sftp on stdin/stdout. The backend
 // is expected at the given path.
@@ -74,16 +86,7 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// test if all necessary dirs and files are there
-	items := []string{
-		dir,
-		Join(dir, backend.Paths.Data),
-		Join(dir, backend.Paths.Snapshots),
-		Join(dir, backend.Paths.Index),
-		Join(dir, backend.Paths.Locks),
-		Join(dir, backend.Paths.Keys),
-		Join(dir, backend.Paths.Temp),
-	}
-	for _, d := range items {
+	for _, d := range paths(dir) {
 		if _, err := sftp.c.Lstat(d); err != nil {
 			return nil, fmt.Errorf("%s does not exist", d)
 		}
@@ -118,16 +121,6 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 		return nil, err
 	}
 
-	dirs := []string{
-		dir,
-		Join(dir, backend.Paths.Data),
-		Join(dir, backend.Paths.Snapshots),
-		Join(dir, backend.Paths.Index),
-		Join(dir, backend.Paths.Locks),
-		Join(dir, backend.Paths.Keys),
-		Join(dir, backend.Paths.Temp),
-	}
-
 	// test if config file already exists
 	_, err = sftp.c.Lstat(Join(dir, backend.Paths.Config))
 	if err == nil {
@@ -135,7 +128,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// create paths for data, refs and temp blobs
-	for _, d := range dirs {
+	for _, d := range paths(dir) {
 		err = sftp.mkdirAll(d, backend.Modes.Dir)
 		if err != nil {
 			return nil, err
@@ -457,7 +450,8 @@ func (r *SFTP) Close() error {
 		return nil
 	}
 
-	r.c.Close()
+	err := r.c.Close()
+	debug.Log("sftp.Close", "Close returned error %v", err)
 
 	if err := r.cmd.Process.Kill(); err != nil {
 		return err

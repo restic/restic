@@ -38,8 +38,7 @@ func init() {
 
 	for _, dir := range strings.Split(TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
-		fd, err := os.Open(testpath)
-		fd.Close()
+		_, err := os.Stat(testpath)
 		if !os.IsNotExist(err) {
 			sftpserver = testpath
 			break
