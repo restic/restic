@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -15,9 +14,7 @@ import (
 
 // Local is a backend in a local directory.
 type Local struct {
-	p    string
-	mu   sync.Mutex
-	open map[string][]*os.File // Contains open files. Guarded by 'mu'.
+	p string
 }
 
 // Open opens the local backend as specified by config.
@@ -39,7 +36,7 @@ func Open(dir string) (*Local, error) {
 		}
 	}
 
-	return &Local{p: dir, open: make(map[string][]*os.File)}, nil
+	return &Local{p: dir}, nil
 }
 
 // Create creates all the necessary files and directories for a new local
@@ -229,15 +226,7 @@ func (b *Local) Test(t backend.Type, name string) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(t backend.Type, name string) error {
-	// close all open files we may have.
 	fn := filename(b.p, t, name)
-	b.mu.Lock()
-	open, _ := b.open[fn]
-	for _, file := range open {
-		file.Close()
-	}
-	b.open[fn] = nil
-	b.mu.Unlock()
 
 	// reset read-only flag
 	err := os.Chmod(fn, 0666)
@@ -290,21 +279,12 @@ func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 
 // Delete removes the repository and all files.
 func (b *Local) Delete() error {
-	b.Close()
 	return os.RemoveAll(b.p)
 }
 
 // Close closes all open files.
-// They may have been closed already,
-// so we ignore all errors.
 func (b *Local) Close() error {
-	b.mu.Lock()
-	for _, open := range b.open {
-		for _, file := range open {
-			file.Close()
-		}
-	}
-	b.open = make(map[string][]*os.File)
-	b.mu.Unlock()
+	// this does not need to do anything, all open files are closed within the
+	// same function.
 	return nil
 }
