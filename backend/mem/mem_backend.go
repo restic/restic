@@ -1,7 +1,6 @@
 package mem
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"sync"
@@ -96,30 +95,6 @@ func memTest(be *MemoryBackend, t backend.Type, name string) (bool, error) {
 	}
 
 	return false, nil
-}
-
-// tempMemEntry temporarily holds data written to the memory backend before it
-// is finalized.
-type tempMemEntry struct {
-	be   *MemoryBackend
-	data bytes.Buffer
-}
-
-func (e *tempMemEntry) Write(p []byte) (int, error) {
-	return e.data.Write(p)
-}
-
-func (e *tempMemEntry) Size() uint {
-	return uint(len(e.data.Bytes()))
-}
-
-func (e *tempMemEntry) Finalize(t backend.Type, name string) error {
-	if t == backend.Config {
-		name = ""
-	}
-
-	debug.Log("MemoryBackend", "save blob %p (%d bytes) as %v %v", e, len(e.data.Bytes()), t, name)
-	return e.be.insert(t, name, e.data.Bytes())
 }
 
 func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, error) {
