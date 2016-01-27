@@ -1,7 +1,7 @@
 package checker_test
 
 import (
-	"io"
+	"fmt"
 	"math/rand"
 	"path/filepath"
 	"sort"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/backend/mem"
 	"github.com/restic/restic/checker"
 	"github.com/restic/restic/repository"
 	. "github.com/restic/restic/test"
@@ -212,37 +213,22 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 // errorBackend randomly modifies data after reading.
 type errorBackend struct {
 	backend.Backend
+	ProduceErrors bool
 }
 
-func (b errorBackend) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	rd, err := b.Backend.Get(t, name)
-	if err != nil {
-		return rd, err
+func (b errorBackend) Load(h backend.Handle, p []byte, off int64) (int, error) {
+	fmt.Printf("load %v\n", h)
+	n, err := b.Backend.Load(h, p, off)
+
+	if b.ProduceErrors {
+		induceError(p)
 	}
-
-	if t != backend.Data {
-		return rd, err
-	}
-
-	return backend.ReadCloser(faultReader{rd}), nil
-}
-
-func (b errorBackend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	rd, err := b.Backend.GetReader(t, name, offset, length)
-	if err != nil {
-		return rd, err
-	}
-
-	if t != backend.Data {
-		return rd, err
-	}
-
-	return backend.ReadCloser(faultReader{rd}), nil
+	return n, err
 }
 
 // induceError flips a bit in the slice.
 func induceError(data []byte) {
-	if rand.Float32() < 0.8 {
+	if rand.Float32() < 0.2 {
 		return
 	}
 
@@ -250,22 +236,8 @@ func induceError(data []byte) {
 	data[pos] ^= 1
 }
 
-// faultReader wraps a reader and randomly modifies data on read.
-type faultReader struct {
-	rd io.Reader
-}
-
-func (f faultReader) Read(p []byte) (int, error) {
-	n, err := f.rd.Read(p)
-	if n > 0 {
-		induceError(p)
-	}
-
-	return n, err
-}
-
 func TestCheckerModifiedData(t *testing.T) {
-	be := backend.NewMemoryBackend()
+	be := mem.New()
 
 	repo := repository.New(be)
 	OK(t, repo.Init(TestPassword))
@@ -275,7 +247,8 @@ func TestCheckerModifiedData(t *testing.T) {
 	OK(t, err)
 	t.Logf("archived as %v", id.Str())
 
-	checkRepo := repository.New(errorBackend{be})
+	beError := &errorBackend{Backend: be}
+	checkRepo := repository.New(beError)
 	OK(t, checkRepo.SearchKey(TestPassword))
 
 	chkr := checker.New(checkRepo)
@@ -289,6 +262,7 @@ func TestCheckerModifiedData(t *testing.T) {
 		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
 	}
 
+	beError.ProduceErrors = true
 	errFound := false
 	for _, err := range checkPacks(chkr) {
 		t.Logf("pack error: %v", err)

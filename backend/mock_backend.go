@@ -1,24 +1,22 @@
 package backend
 
-import (
-	"errors"
-	"io"
-)
+import "errors"
 
 // MockBackend implements a backend whose functions can be specified. This
 // should only be used for tests.
 type MockBackend struct {
-	CloseFn     func() error
-	CreateFn    func() (Blob, error)
-	GetFn       func(Type, string) (io.ReadCloser, error)
-	GetReaderFn func(Type, string, uint, uint) (io.ReadCloser, error)
-	ListFn      func(Type, <-chan struct{}) <-chan string
-	RemoveFn    func(Type, string) error
-	TestFn      func(Type, string) (bool, error)
-	DeleteFn    func() error
-	LocationFn  func() string
+	CloseFn    func() error
+	LoadFn     func(h Handle, p []byte, off int64) (int, error)
+	SaveFn     func(h Handle, p []byte) error
+	StatFn     func(h Handle) (BlobInfo, error)
+	ListFn     func(Type, <-chan struct{}) <-chan string
+	RemoveFn   func(Type, string) error
+	TestFn     func(Type, string) (bool, error)
+	DeleteFn   func() error
+	LocationFn func() string
 }
 
+// Close the backend.
 func (m *MockBackend) Close() error {
 	if m.CloseFn == nil {
 		return nil
@@ -27,6 +25,7 @@ func (m *MockBackend) Close() error {
 	return m.CloseFn()
 }
 
+// Location returns a location string.
 func (m *MockBackend) Location() string {
 	if m.LocationFn == nil {
 		return ""
@@ -35,30 +34,34 @@ func (m *MockBackend) Location() string {
 	return m.LocationFn()
 }
 
-func (m *MockBackend) Create() (Blob, error) {
-	if m.CreateFn == nil {
-		return nil, errors.New("not implemented")
+// Load loads data from the backend.
+func (m *MockBackend) Load(h Handle, p []byte, off int64) (int, error) {
+	if m.LoadFn == nil {
+		return 0, errors.New("not implemented")
 	}
 
-	return m.CreateFn()
+	return m.LoadFn(h, p, off)
 }
 
-func (m *MockBackend) Get(t Type, name string) (io.ReadCloser, error) {
-	if m.GetFn == nil {
-		return nil, errors.New("not implemented")
+// Save data in the backend.
+func (m *MockBackend) Save(h Handle, p []byte) error {
+	if m.SaveFn == nil {
+		return errors.New("not implemented")
 	}
 
-	return m.GetFn(t, name)
+	return m.SaveFn(h, p)
 }
 
-func (m *MockBackend) GetReader(t Type, name string, offset, len uint) (io.ReadCloser, error) {
-	if m.GetReaderFn == nil {
-		return nil, errors.New("not implemented")
+// Stat an object in the backend.
+func (m *MockBackend) Stat(h Handle) (BlobInfo, error) {
+	if m.StatFn == nil {
+		return BlobInfo{}, errors.New("not implemented")
 	}
 
-	return m.GetReaderFn(t, name, offset, len)
+	return m.StatFn(h)
 }
 
+// List items of type t.
 func (m *MockBackend) List(t Type, done <-chan struct{}) <-chan string {
 	if m.ListFn == nil {
 		ch := make(chan string)
@@ -69,6 +72,7 @@ func (m *MockBackend) List(t Type, done <-chan struct{}) <-chan string {
 	return m.ListFn(t, done)
 }
 
+// Remove data from the backend.
 func (m *MockBackend) Remove(t Type, name string) error {
 	if m.RemoveFn == nil {
 		return errors.New("not implemented")
@@ -77,6 +81,7 @@ func (m *MockBackend) Remove(t Type, name string) error {
 	return m.RemoveFn(t, name)
 }
 
+// Test for the existence of a specific item.
 func (m *MockBackend) Test(t Type, name string) (bool, error) {
 	if m.TestFn == nil {
 		return false, errors.New("not implemented")
@@ -85,6 +90,7 @@ func (m *MockBackend) Test(t Type, name string) (bool, error) {
 	return m.TestFn(t, name)
 }
 
+// Delete all data.
 func (m *MockBackend) Delete() error {
 	if m.DeleteFn == nil {
 		return errors.New("not implemented")

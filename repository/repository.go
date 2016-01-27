@@ -2,7 +2,6 @@ package repository
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,24 +55,14 @@ func (r *Repository) PrefixLength(t backend.Type) (int, error) {
 func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
-	rd, err := r.be.Get(t, id.String())
+	h := backend.Handle{Type: t, Name: id.String()}
+	buf, err := backend.LoadAll(r.be, h, nil)
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
 		return nil, err
 	}
 
-	buf, err := ioutil.ReadAll(rd)
-	if err != nil {
-		return nil, err
-	}
-
-	err = rd.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// check hash
-	if !backend.Hash(buf).Equal(id) {
+	if t != backend.Config && !backend.Hash(buf).Equal(id) {
 		return nil, errors.New("invalid data returned")
 	}
 
@@ -100,7 +89,9 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byt
 
 	plaintextBufSize := uint(cap(plaintextBuf))
 	if blob.PlaintextLength() > plaintextBufSize {
-		return nil, fmt.Errorf("buf is too small, need %d more bytes", blob.PlaintextLength()-plaintextBufSize)
+		debug.Log("Repo.LoadBlob", "need to expand buffer: want %d bytes, got %d",
+			blob.PlaintextLength(), plaintextBufSize)
+		plaintextBuf = make([]byte, blob.PlaintextLength())
 	}
 
 	if blob.Type != t {
@@ -111,22 +102,18 @@ func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byt
 	debug.Log("Repo.LoadBlob", "id %v found: %v", id.Str(), blob)
 
 	// load blob from pack
-	rd, err := r.be.GetReader(backend.Data, blob.PackID.String(), blob.Offset, blob.Length)
+	h := backend.Handle{Type: backend.Data, Name: blob.PackID.String()}
+	ciphertextBuf := make([]byte, blob.Length)
+	n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
 	if err != nil {
 		debug.Log("Repo.LoadBlob", "error loading blob %v: %v", blob, err)
 		return nil, err
 	}
 
-	// make buffer that is large enough for the complete blob
-	ciphertextBuf := make([]byte, blob.Length)
-	_, err = io.ReadFull(rd, ciphertextBuf)
-	if err != nil {
-		return nil, err
-	}
-
-	err = rd.Close()
-	if err != nil {
-		return nil, err
+	if uint(n) != blob.Length {
+		debug.Log("Repo.LoadBlob", "error loading blob %v: wrong length returned, want %d, got %d",
+			blob.Length, uint(n))
+		return nil, errors.New("wrong length returned")
 	}
 
 	// decrypt
@@ -156,61 +143,23 @@ func closeOrErr(cl io.Closer, err *error) {
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
 func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) (err error) {
-	// load blob from backend
-	rd, err := r.be.Get(t, id.String())
-	if err != nil {
-		return err
-	}
-	defer closeOrErr(rd, &err)
-
-	// decrypt
-	decryptRd, err := crypto.DecryptFrom(r.key, rd)
-	defer closeOrErr(decryptRd, &err)
+	buf, err := r.LoadAndDecrypt(t, id)
 	if err != nil {
 		return err
 	}
 
-	// decode
-	decoder := json.NewDecoder(decryptRd)
-	err = decoder.Decode(item)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json.Unmarshal(buf, item)
 }
 
 // LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
 // data and afterwards call json.Unmarshal on the item.
 func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) (err error) {
-	// lookup pack
-	blob, err := r.idx.Lookup(id)
+	buf, err := r.LoadBlob(t, id, nil)
 	if err != nil {
 		return err
 	}
 
-	// load blob from pack
-	rd, err := r.be.GetReader(backend.Data, blob.PackID.String(), blob.Offset, blob.Length)
-	if err != nil {
-		return err
-	}
-	defer closeOrErr(rd, &err)
-
-	// decrypt
-	decryptRd, err := crypto.DecryptFrom(r.key, rd)
-	defer closeOrErr(decryptRd, &err)
-	if err != nil {
-		return err
-	}
-
-	// decode
-	decoder := json.NewDecoder(decryptRd)
-	err = decoder.Decode(item)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return json.Unmarshal(buf, item)
 }
 
 // LookupBlobSize returns the size of blob id.
@@ -315,44 +264,35 @@ func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, er
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
 func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend.ID, error) {
-	// create file
-	blob, err := r.be.Create()
-	if err != nil {
-		return backend.ID{}, err
-	}
-	debug.Log("Repo.SaveJSONUnpacked", "create new blob %v", t)
-
-	// hash
-	hw := backend.NewHashingWriter(blob, sha256.New())
-
-	// encrypt blob
-	ewr := crypto.EncryptTo(r.key, hw)
-
-	enc := json.NewEncoder(ewr)
-	err = enc.Encode(item)
+	debug.Log("Repo.SaveJSONUnpacked", "save new blob %v", t)
+	plaintext, err := json.Marshal(item)
 	if err != nil {
 		return backend.ID{}, fmt.Errorf("json.Encode: %v", err)
 	}
 
-	err = ewr.Close()
+	return r.SaveUnpacked(t, plaintext)
+}
+
+// SaveUnpacked encrypts data and stores it in the backend. Returned is the
+// storage hash.
+func (r *Repository) SaveUnpacked(t backend.Type, p []byte) (id backend.ID, err error) {
+	ciphertext := make([]byte, len(p)+crypto.Extension)
+	ciphertext, err = r.Encrypt(ciphertext, p)
 	if err != nil {
 		return backend.ID{}, err
 	}
 
-	// finalize blob in the backend
-	hash := hw.Sum(nil)
-	sid := backend.ID{}
-	copy(sid[:], hash)
+	id = backend.Hash(ciphertext)
+	h := backend.Handle{Type: t, Name: id.String()}
 
-	err = blob.Finalize(t, sid.String())
+	err = r.be.Save(h, ciphertext)
 	if err != nil {
-		debug.Log("Repo.SaveJSONUnpacked", "error saving blob %v as %v: %v", t, sid, err)
+		debug.Log("Repo.SaveJSONUnpacked", "error saving blob %v: %v", h, err)
 		return backend.ID{}, err
 	}
 
-	debug.Log("Repo.SaveJSONUnpacked", "new blob %v saved as %v", t, sid)
-
-	return sid, nil
+	debug.Log("Repo.SaveJSONUnpacked", "blob %v saved", h)
+	return id, nil
 }
 
 // Flush saves all remaining packs.
@@ -388,80 +328,16 @@ func (r *Repository) SetIndex(i *MasterIndex) {
 	r.idx = i
 }
 
-// BlobWriter encrypts and saves the data written to it in a backend. After
-// Close() was called, ID() returns the backend.ID.
-type BlobWriter struct {
-	id     backend.ID
-	blob   backend.Blob
-	hw     *backend.HashingWriter
-	ewr    io.WriteCloser
-	t      backend.Type
-	closed bool
-}
-
-// CreateEncryptedBlob returns a BlobWriter that encrypts and saves the data
-// written to it in the backend. After Close() was called, ID() returns the
-// backend.ID.
-func (r *Repository) CreateEncryptedBlob(t backend.Type) (*BlobWriter, error) {
-	blob, err := r.be.Create()
-	if err != nil {
-		return nil, err
-	}
-
-	// hash
-	hw := backend.NewHashingWriter(blob, sha256.New())
-
-	// encrypt blob
-	ewr := crypto.EncryptTo(r.key, hw)
-
-	return &BlobWriter{t: t, blob: blob, hw: hw, ewr: ewr}, nil
-}
-
-func (bw *BlobWriter) Write(buf []byte) (int, error) {
-	return bw.ewr.Write(buf)
-}
-
-// Close finalizes the blob in the backend, afterwards ID() can be used to retrieve the ID.
-func (bw *BlobWriter) Close() error {
-	if bw.closed {
-		return errors.New("BlobWriter already closed")
-	}
-	bw.closed = true
-
-	err := bw.ewr.Close()
-	if err != nil {
-		return err
-	}
-
-	copy(bw.id[:], bw.hw.Sum(nil))
-	return bw.blob.Finalize(bw.t, bw.id.String())
-}
-
-// ID returns the Id the blob has been written to after Close() was called.
-func (bw *BlobWriter) ID() backend.ID {
-	return bw.id
-}
-
-// SaveIndex saves an index to repo's backend.
+// SaveIndex saves an index in the repository.
 func SaveIndex(repo *Repository, index *Index) (backend.ID, error) {
-	blob, err := repo.CreateEncryptedBlob(backend.Index)
+	buf := bytes.NewBuffer(nil)
+
+	err := index.Finalize(buf)
 	if err != nil {
 		return backend.ID{}, err
 	}
 
-	err = index.Finalize(blob)
-	if err != nil {
-		return backend.ID{}, err
-	}
-
-	err = blob.Close()
-	if err != nil {
-		return backend.ID{}, err
-	}
-
-	sid := blob.ID()
-	err = index.SetID(sid)
-	return sid, err
+	return repo.SaveUnpacked(backend.Index, buf.Bytes())
 }
 
 // saveIndex saves all indexes in the backend.
@@ -543,17 +419,6 @@ func LoadIndex(repo *Repository, id string) (*Index, error) {
 	}
 
 	return nil, err
-}
-
-// GetDecryptReader opens the file id stored in the backend and returns a
-// reader that yields the decrypted content. The reader must be closed.
-func (r *Repository) GetDecryptReader(t backend.Type, id string) (io.ReadCloser, error) {
-	rd, err := r.be.Get(t, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return newDecryptReadCloser(r.key, rd)
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is

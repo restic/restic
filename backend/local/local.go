@@ -7,23 +7,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sort"
-	"sync"
 
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/debug"
 )
 
-var ErrWrongData = errors.New("wrong data returned by backend, checksum does not match")
-
+// Local is a backend in a local directory.
 type Local struct {
-	p    string
-	mu   sync.Mutex
-	open map[string][]*os.File // Contains open files. Guarded by 'mu'.
+	p string
 }
 
-// Open opens the local backend as specified by config.
-func Open(dir string) (*Local, error) {
-	items := []string{
+func paths(dir string) []string {
+	return []string{
 		dir,
 		filepath.Join(dir, backend.Paths.Data),
 		filepath.Join(dir, backend.Paths.Snapshots),
@@ -32,30 +27,23 @@ func Open(dir string) (*Local, error) {
 		filepath.Join(dir, backend.Paths.Keys),
 		filepath.Join(dir, backend.Paths.Temp),
 	}
+}
 
+// Open opens the local backend as specified by config.
+func Open(dir string) (*Local, error) {
 	// test if all necessary dirs are there
-	for _, d := range items {
+	for _, d := range paths(dir) {
 		if _, err := os.Stat(d); err != nil {
 			return nil, fmt.Errorf("%s does not exist", d)
 		}
 	}
 
-	return &Local{p: dir, open: make(map[string][]*os.File)}, nil
+	return &Local{p: dir}, nil
 }
 
 // Create creates all the necessary files and directories for a new local
 // backend at dir. Afterwards a new config blob should be created.
 func Create(dir string) (*Local, error) {
-	dirs := []string{
-		dir,
-		filepath.Join(dir, backend.Paths.Data),
-		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Index),
-		filepath.Join(dir, backend.Paths.Locks),
-		filepath.Join(dir, backend.Paths.Keys),
-		filepath.Join(dir, backend.Paths.Temp),
-	}
-
 	// test if config file already exists
 	_, err := os.Lstat(filepath.Join(dir, backend.Paths.Config))
 	if err == nil {
@@ -63,7 +51,7 @@ func Create(dir string) (*Local, error) {
 	}
 
 	// create paths for data, refs and temp
-	for _, d := range dirs {
+	for _, d := range paths(dir) {
 		err := os.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {
 			return nil, err
@@ -77,93 +65,6 @@ func Create(dir string) (*Local, error) {
 // Location returns this backend's location (the directory name).
 func (b *Local) Location() string {
 	return b.p
-}
-
-// Return temp directory in correct directory for this backend.
-func (b *Local) tempFile() (*os.File, error) {
-	return ioutil.TempFile(filepath.Join(b.p, backend.Paths.Temp), "temp-")
-}
-
-type localBlob struct {
-	f       *os.File
-	size    uint
-	final   bool
-	basedir string
-}
-
-func (lb *localBlob) Write(p []byte) (int, error) {
-	if lb.final {
-		return 0, errors.New("blob already closed")
-	}
-
-	n, err := lb.f.Write(p)
-	lb.size += uint(n)
-	return n, err
-}
-
-func (lb *localBlob) Size() uint {
-	return lb.size
-}
-
-func (lb *localBlob) Finalize(t backend.Type, name string) error {
-	if lb.final {
-		return errors.New("Already finalized")
-	}
-
-	lb.final = true
-
-	err := lb.f.Close()
-	if err != nil {
-		return fmt.Errorf("local: file.Close: %v", err)
-	}
-
-	f := filename(lb.basedir, t, name)
-
-	// create directories if necessary, ignore errors
-	if t == backend.Data {
-		os.MkdirAll(filepath.Dir(f), backend.Modes.Dir)
-	}
-
-	// test if new path already exists
-	if _, err := os.Stat(f); err == nil {
-		return fmt.Errorf("Close(): file %v already exists", f)
-	}
-
-	if err := os.Rename(lb.f.Name(), f); err != nil {
-		return err
-	}
-
-	// set mode to read-only
-	fi, err := os.Stat(f)
-	if err != nil {
-		return err
-	}
-
-	return setNewFileMode(f, fi)
-}
-
-// Create creates a new Blob. The data is available only after Finalize()
-// has been called on the returned Blob.
-func (b *Local) Create() (backend.Blob, error) {
-	// TODO: make sure that tempfile is removed upon error
-
-	// create tempfile in backend
-	file, err := b.tempFile()
-	if err != nil {
-		return nil, err
-	}
-
-	blob := localBlob{
-		f:       file,
-		basedir: b.p,
-	}
-
-	b.mu.Lock()
-	open, _ := b.open["blobs"]
-	b.open["blobs"] = append(open, file)
-	b.mu.Unlock()
-
-	return &blob, nil
 }
 
 // Construct path for given Type and name.
@@ -196,45 +97,116 @@ func dirname(base string, t backend.Type, name string) string {
 	return filepath.Join(base, n)
 }
 
-// Get returns a reader that yields the content stored under the given
-// name. The reader should be closed after draining it.
-func (b *Local) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	file, err := os.Open(filename(b.p, t, name))
-	if err != nil {
-		return nil, err
-	}
-	b.mu.Lock()
-	open, _ := b.open[filename(b.p, t, name)]
-	b.open[filename(b.p, t, name)] = append(open, file)
-	b.mu.Unlock()
-	return file, nil
-}
-
-// GetReader returns an io.ReadCloser for the Blob with the given name of
-// type t at offset and length. If length is 0, the reader reads until EOF.
-func (b *Local) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	f, err := os.Open(filename(b.p, t, name))
-	if err != nil {
-		return nil, err
+// Load returns the data stored in the backend for h at the given offset
+// and saves it in p. Load has the same semantics as io.ReaderAt.
+func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+	if err := h.Valid(); err != nil {
+		return 0, err
 	}
 
-	b.mu.Lock()
-	open, _ := b.open[filename(b.p, t, name)]
-	b.open[filename(b.p, t, name)] = append(open, f)
-	b.mu.Unlock()
+	f, err := os.Open(filename(b.p, h.Type, h.Name))
+	if err != nil {
+		return 0, err
+	}
 
-	if offset > 0 {
-		_, err = f.Seek(int64(offset), 0)
+	defer func() {
+		e := f.Close()
+		if err == nil && e != nil {
+			err = e
+		}
+	}()
+
+	if off > 0 {
+		_, err = f.Seek(off, 0)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 	}
 
-	if length == 0 {
-		return f, nil
+	return io.ReadFull(f, p)
+}
+
+// writeToTempfile saves p into a tempfile in tempdir.
+func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
+	tmpfile, err := ioutil.TempFile(tempdir, "temp-")
+	if err != nil {
+		return "", err
 	}
 
-	return backend.LimitReadCloser(f, int64(length)), nil
+	n, err := tmpfile.Write(p)
+	if err != nil {
+		return "", err
+	}
+
+	if n != len(p) {
+		return "", errors.New("not all bytes writen")
+	}
+
+	if err = tmpfile.Sync(); err != nil {
+		return "", err
+	}
+
+	err = tmpfile.Close()
+	if err != nil {
+		return "", err
+	}
+
+	return tmpfile.Name(), nil
+}
+
+// Save stores data in the backend at the handle.
+func (b *Local) Save(h backend.Handle, p []byte) (err error) {
+	if err := h.Valid(); err != nil {
+		return err
+	}
+
+	tmpfile, err := writeToTempfile(filepath.Join(b.p, backend.Paths.Temp), p)
+	debug.Log("local.Save", "saved %v (%d bytes) to %v", h, len(p), tmpfile)
+
+	filename := filename(b.p, h.Type, h.Name)
+
+	// test if new path already exists
+	if _, err := os.Stat(filename); err == nil {
+		return fmt.Errorf("Rename(): file %v already exists", filename)
+	}
+
+	// create directories if necessary, ignore errors
+	if h.Type == backend.Data {
+		err = os.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = os.Rename(tmpfile, filename)
+	debug.Log("local.Save", "save %v: rename %v -> %v: %v",
+		h, filepath.Base(tmpfile), filepath.Base(filename), err)
+
+	if err != nil {
+		return err
+	}
+
+	// set mode to read-only
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return err
+	}
+
+	return setNewFileMode(filename, fi)
+}
+
+// Stat returns information about a blob.
+func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
+	if err := h.Valid(); err != nil {
+		return backend.BlobInfo{}, err
+	}
+
+	fi, err := os.Stat(filename(b.p, h.Type, h.Name))
+	if err != nil {
+		return backend.BlobInfo{}, err
+	}
+
+	return backend.BlobInfo{Size: fi.Size()}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -252,15 +224,7 @@ func (b *Local) Test(t backend.Type, name string) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(t backend.Type, name string) error {
-	// close all open files we may have.
 	fn := filename(b.p, t, name)
-	b.mu.Lock()
-	open, _ := b.open[fn]
-	for _, file := range open {
-		file.Close()
-	}
-	b.open[fn] = nil
-	b.mu.Unlock()
 
 	// reset read-only flag
 	err := os.Chmod(fn, 0666)
@@ -275,7 +239,6 @@ func (b *Local) Remove(t backend.Type, name string) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
-	// TODO: use os.Open() and d.Readdirnames() instead of Glob()
 	var pattern string
 	if t == backend.Data {
 		pattern = filepath.Join(dirname(b.p, t, ""), "*", "*")
@@ -293,8 +256,6 @@ func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 	for i := range matches {
 		matches[i] = filepath.Base(matches[i])
 	}
-
-	sort.Strings(matches)
 
 	go func() {
 		defer close(ch)
@@ -316,21 +277,12 @@ func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 
 // Delete removes the repository and all files.
 func (b *Local) Delete() error {
-	b.Close()
 	return os.RemoveAll(b.p)
 }
 
 // Close closes all open files.
-// They may have been closed already,
-// so we ignore all errors.
 func (b *Local) Close() error {
-	b.mu.Lock()
-	for _, open := range b.open {
-		for _, file := range open {
-			file.Close()
-		}
-	}
-	b.open = make(map[string][]*os.File)
-	b.mu.Unlock()
+	// this does not need to do anything, all open files are closed within the
+	// same function.
 	return nil
 }

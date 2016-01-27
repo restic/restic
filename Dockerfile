@@ -41,12 +41,15 @@ ENV PATH $PATH:$GOPATH/bin
 
 RUN mkdir -p $GOPATH/src/github.com/restic/restic
 
-# install tools
+# pre-install tools, this speeds up running the tests itself
+RUN go get github.com/tools/godep
 RUN go get golang.org/x/tools/cmd/cover
 RUN go get github.com/mattn/goveralls
 RUN go get github.com/mitchellh/gox
 RUN go get github.com/pierrre/gotestcover
-RUN GO15VENDOREXPERIMENT=1 go get github.com/minio/minio
+RUN mkdir $HOME/bin \
+    && wget -q -O $HOME/bin/minio https://dl.minio.io/server/minio/release/linux-${GOARCH}/minio \
+    && chmod +x $HOME/bin/minio
 
 # set TRAVIS_BUILD_DIR for integration script
 ENV TRAVIS_BUILD_DIR $GOPATH/src/github.com/restic/restic

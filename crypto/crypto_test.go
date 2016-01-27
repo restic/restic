@@ -23,10 +23,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 
 	for _, size := range tests {
-		data := make([]byte, size)
-		_, err := io.ReadFull(RandomReader(42, size), data)
-		OK(t, err)
-
+		data := Random(42, size)
 		buf := make([]byte, size+crypto.Extension)
 
 		ciphertext, err := crypto.Encrypt(k, buf, data)
@@ -140,7 +137,7 @@ func BenchmarkEncryptWriter(b *testing.B) {
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
-		rd := RandomReader(23, size)
+		rd := RandomLimitReader(23, size)
 		wr := crypto.EncryptTo(k, ioutil.Discard)
 		n, err := io.Copy(wr, rd)
 		OK(b, err)
@@ -200,7 +197,7 @@ func BenchmarkEncryptDecryptReader(b *testing.B) {
 
 	buf := bytes.NewBuffer(nil)
 	for i := 0; i < b.N; i++ {
-		rd := RandomReader(23, size)
+		rd := RandomLimitReader(23, size)
 		buf.Reset()
 		wr := crypto.EncryptTo(k, buf)
 		_, err := io.Copy(wr, rd)
@@ -245,14 +242,12 @@ func TestEncryptStreamWriter(t *testing.T) {
 	}
 
 	for _, size := range tests {
-		data := make([]byte, size)
-		_, err := io.ReadFull(RandomReader(42, size), data)
-		OK(t, err)
+		data := Random(42, size)
 
 		ciphertext := bytes.NewBuffer(nil)
 		wr := crypto.EncryptTo(k, ciphertext)
 
-		_, err = io.Copy(wr, bytes.NewReader(data))
+		_, err := io.Copy(wr, bytes.NewReader(data))
 		OK(t, err)
 		OK(t, wr.Close())
 
@@ -279,10 +274,8 @@ func TestDecryptStreamReader(t *testing.T) {
 	}
 
 	for _, size := range tests {
-		data := make([]byte, size)
-		_, err := io.ReadFull(RandomReader(42, size), data)
-		OK(t, err)
-
+		data := Random(42, size)
+		var err error
 		ciphertext := make([]byte, size+crypto.Extension)
 
 		// encrypt with default function
@@ -313,14 +306,12 @@ func TestEncryptWriter(t *testing.T) {
 	}
 
 	for _, size := range tests {
-		data := make([]byte, size)
-		_, err := io.ReadFull(RandomReader(42, size), data)
-		OK(t, err)
+		data := Random(42, size)
 
 		buf := bytes.NewBuffer(nil)
 		wr := crypto.EncryptTo(k, buf)
 
-		_, err = io.Copy(wr, bytes.NewReader(data))
+		_, err := io.Copy(wr, bytes.NewReader(data))
 		OK(t, err)
 		OK(t, wr.Close())
 

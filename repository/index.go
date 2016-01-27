@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -564,13 +565,12 @@ func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Inde
 		return nil, err
 	}
 
-	rd, err := repo.GetDecryptReader(backend.Index, idxID.String())
+	buf, err := repo.LoadAndDecrypt(backend.Index, idxID)
 	if err != nil {
 		return nil, err
 	}
-	defer closeOrErr(rd, &err)
 
-	idx, err = fn(rd)
+	idx, err = fn(bytes.NewReader(buf))
 	if err != nil {
 		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
 		return nil, err
@@ -594,33 +594,14 @@ func ConvertIndex(repo *Repository, id backend.ID) (backend.ID, error) {
 		return id, err
 	}
 
-	blob, err := repo.CreateEncryptedBlob(backend.Index)
-	if err != nil {
-		return id, err
-	}
-
+	buf := bytes.NewBuffer(nil)
 	idx.supersedes = backend.IDs{id}
 
-	err = idx.Encode(blob)
+	err = idx.Encode(buf)
 	if err != nil {
 		debug.Log("ConvertIndex", "oldIdx.Encode() returned error: %v", err)
 		return id, err
 	}
 
-	err = blob.Close()
-	if err != nil {
-		debug.Log("ConvertIndex", "blob.Close() returned error: %v", err)
-		return id, err
-	}
-
-	newID := blob.ID()
-	debug.Log("ConvertIndex", "index %v converted to new format as %v", id.Str(), newID.Str())
-
-	err = repo.be.Remove(backend.Index, id.String())
-	if err != nil {
-		debug.Log("ConvertIndex", "backend.Remove(%v) returned error: %v", id.Str(), err)
-		return id, err
-	}
-
-	return newID, nil
+	return repo.SaveUnpacked(backend.Index, buf.Bytes())
 }

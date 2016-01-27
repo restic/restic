@@ -12,7 +12,6 @@ import (
 	"github.com/restic/restic/debug"
 )
 
-const maxKeysInList = 1000
 const connLimit = 10
 const backendPrefix = "restic"
 
@@ -23,7 +22,8 @@ func s3path(t backend.Type, name string) string {
 	return backendPrefix + "/" + string(t) + "/" + name
 }
 
-type S3Backend struct {
+// s3 is a backend which stores the data on an S3 endpoint.
+type s3 struct {
 	client     minio.CloudStorageClient
 	connChan   chan struct{}
 	bucketname string
@@ -39,7 +39,7 @@ func Open(cfg Config) (backend.Backend, error) {
 		return nil, err
 	}
 
-	be := &S3Backend{client: client, bucketname: cfg.Bucket}
+	be := &s3{client: client, bucketname: cfg.Bucket}
 	be.createConnections()
 
 	if err := client.BucketExists(cfg.Bucket); err != nil {
@@ -56,7 +56,7 @@ func Open(cfg Config) (backend.Backend, error) {
 	return be, nil
 }
 
-func (be *S3Backend) createConnections() {
+func (be *s3) createConnections() {
 	be.connChan = make(chan struct{}, connLimit)
 	for i := 0; i < connLimit; i++ {
 		be.connChan <- struct{}{}
@@ -64,127 +64,86 @@ func (be *S3Backend) createConnections() {
 }
 
 // Location returns this backend's location (the bucket name).
-func (be *S3Backend) Location() string {
+func (be *s3) Location() string {
 	return be.bucketname
 }
 
-type s3Blob struct {
-	b     *S3Backend
-	buf   *bytes.Buffer
-	final bool
-}
-
-func (bb *s3Blob) Write(p []byte) (int, error) {
-	if bb.final {
-		return 0, errors.New("blob already closed")
-	}
-
-	n, err := bb.buf.Write(p)
-	return n, err
-}
-
-func (bb *s3Blob) Read(p []byte) (int, error) {
-	return bb.buf.Read(p)
-}
-
-func (bb *s3Blob) Close() error {
-	bb.final = true
-	bb.buf.Reset()
-	return nil
-}
-
-func (bb *s3Blob) Size() uint {
-	return uint(bb.buf.Len())
-}
-
-func (bb *s3Blob) Finalize(t backend.Type, name string) error {
-	debug.Log("s3.blob.Finalize()", "bucket %v, finalize %v, %d bytes", bb.b.bucketname, name, bb.buf.Len())
-	if bb.final {
-		return errors.New("Already finalized")
-	}
-
-	bb.final = true
-
-	path := s3path(t, name)
-
-	// Check key does not already exist
-	_, err := bb.b.client.StatObject(bb.b.bucketname, path)
-	if err == nil {
-		debug.Log("s3.blob.Finalize()", "%v already exists", name)
-		return errors.New("key already exists")
-	}
-
-	expectedBytes := bb.buf.Len()
-
-	<-bb.b.connChan
-	debug.Log("s3.Finalize", "PutObject(%v, %v, %v, %v)",
-		bb.b.bucketname, path, int64(bb.buf.Len()), "binary/octet-stream")
-	n, err := bb.b.client.PutObject(bb.b.bucketname, path, bb.buf, "binary/octet-stream")
-	debug.Log("s3.Finalize", "finalized %v -> n %v, err %#v", path, n, err)
-	bb.b.connChan <- struct{}{}
-
-	if err != nil {
-		return err
-	}
-
-	if n != int64(expectedBytes) {
-		return errors.New("could not store all bytes")
-	}
-
-	return nil
-}
-
-// Create creates a new Blob. The data is available only after Finalize()
-// has been called on the returned Blob.
-func (be *S3Backend) Create() (backend.Blob, error) {
-	blob := s3Blob{
-		b:   be,
-		buf: &bytes.Buffer{},
-	}
-
-	return &blob, nil
-}
-
-// Get returns a reader that yields the content stored under the given
-// name. The reader should be closed after draining it.
-func (be *S3Backend) Get(t backend.Type, name string) (io.ReadCloser, error) {
-	path := s3path(t, name)
-	rc, err := be.client.GetObject(be.bucketname, path)
-	debug.Log("s3.Get", "%v %v -> err %v", t, name, err)
-	if err != nil {
-		return nil, err
-	}
-
-	return rc, nil
-}
-
-// GetReader returns an io.ReadCloser for the Blob with the given name of
-// type t at offset and length. If length is 0, the reader reads until EOF.
-func (be *S3Backend) GetReader(t backend.Type, name string, offset, length uint) (io.ReadCloser, error) {
-	debug.Log("s3.GetReader", "%v %v, offset %v len %v", t, name, offset, length)
-	path := s3path(t, name)
+// Load returns the data stored in the backend for h at the given offset
+// and saves it in p. Load has the same semantics as io.ReaderAt.
+func (be s3) Load(h backend.Handle, p []byte, off int64) (int, error) {
+	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
+	path := s3path(h.Type, h.Name)
 	obj, err := be.client.GetObject(be.bucketname, path)
 	if err != nil {
 		debug.Log("s3.GetReader", "  err %v", err)
-		return nil, err
+		return 0, err
 	}
 
-	if offset > 0 {
-		_, err = obj.Seek(int64(offset), 0)
+	if off > 0 {
+		_, err = obj.Seek(off, 0)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 	}
 
-	if length == 0 {
-		return obj, nil
+	<-be.connChan
+	defer func() {
+		be.connChan <- struct{}{}
+	}()
+	return io.ReadFull(obj, p)
+}
+
+// Save stores data in the backend at the handle.
+func (be s3) Save(h backend.Handle, p []byte) (err error) {
+	if err := h.Valid(); err != nil {
+		return err
 	}
 
-	return backend.LimitReadCloser(obj, int64(length)), nil
+	debug.Log("s3.Save", "%v bytes at %d", len(p), h)
+
+	path := s3path(h.Type, h.Name)
+
+	// Check key does not already exist
+	_, err = be.client.StatObject(be.bucketname, path)
+	if err == nil {
+		debug.Log("s3.blob.Finalize()", "%v already exists", h)
+		return errors.New("key already exists")
+	}
+
+	<-be.connChan
+	defer func() {
+		be.connChan <- struct{}{}
+	}()
+
+	debug.Log("s3.Save", "PutObject(%v, %v, %v, %v)",
+		be.bucketname, path, int64(len(p)), "binary/octet-stream")
+	n, err := be.client.PutObject(be.bucketname, path, bytes.NewReader(p), "binary/octet-stream")
+	debug.Log("s3.Save", "%v -> %v bytes, err %#v", path, n, err)
+
+	return err
+}
+
+// Stat returns information about a blob.
+func (be s3) Stat(h backend.Handle) (backend.BlobInfo, error) {
+	debug.Log("s3.Stat", "%v")
+	path := s3path(h.Type, h.Name)
+	obj, err := be.client.GetObject(be.bucketname, path)
+	if err != nil {
+		debug.Log("s3.Stat", "GetObject() err %v", err)
+		return backend.BlobInfo{}, err
+	}
+
+	fi, err := obj.Stat()
+	if err != nil {
+		debug.Log("s3.Stat", "Stat() err %v", err)
+		return backend.BlobInfo{}, err
+	}
+
+	return backend.BlobInfo{Size: fi.Size}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *S3Backend) Test(t backend.Type, name string) (bool, error) {
+func (be *s3) Test(t backend.Type, name string) (bool, error) {
 	found := false
 	path := s3path(t, name)
 	_, err := be.client.StatObject(be.bucketname, path)
@@ -197,7 +156,7 @@ func (be *S3Backend) Test(t backend.Type, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *S3Backend) Remove(t backend.Type, name string) error {
+func (be *s3) Remove(t backend.Type, name string) error {
 	path := s3path(t, name)
 	err := be.client.RemoveObject(be.bucketname, path)
 	debug.Log("s3.Remove", "%v %v -> err %v", t, name, err)
@@ -207,7 +166,7 @@ func (be *S3Backend) Remove(t backend.Type, name string) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (be *S3Backend) List(t backend.Type, done <-chan struct{}) <-chan string {
+func (be *s3) List(t backend.Type, done <-chan struct{}) <-chan string {
 	debug.Log("s3.List", "listing %v", t)
 	ch := make(chan string)
 
@@ -235,7 +194,7 @@ func (be *S3Backend) List(t backend.Type, done <-chan struct{}) <-chan string {
 }
 
 // Remove keys for a specified backend type.
-func (be *S3Backend) removeKeys(t backend.Type) error {
+func (be *s3) removeKeys(t backend.Type) error {
 	done := make(chan struct{})
 	defer close(done)
 	for key := range be.List(backend.Data, done) {
@@ -249,7 +208,7 @@ func (be *S3Backend) removeKeys(t backend.Type) error {
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
-func (be *S3Backend) Delete() error {
+func (be *s3) Delete() error {
 	alltypes := []backend.Type{
 		backend.Data,
 		backend.Key,
@@ -268,4 +227,4 @@ func (be *S3Backend) Delete() error {
 }
 
 // Close does nothing
-func (be *S3Backend) Close() error { return nil }
+func (be *s3) Close() error { return nil }

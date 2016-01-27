@@ -49,7 +49,7 @@ func createTempDir(t *testing.T) string {
 func TestTree(t *testing.T) {
 	dir := createTempDir(t)
 	defer func() {
-		if TestCleanup {
+		if TestCleanupTempDirs {
 			RemoveAll(t, dir)
 		}
 	}()

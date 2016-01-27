@@ -42,12 +42,8 @@ func (r *packerManager) findPacker(size uint) (*pack.Packer, error) {
 	}
 
 	// no suitable packer found, return new
-	blob, err := r.be.Create()
-	if err != nil {
-		return nil, err
-	}
-	debug.Log("Repo.findPacker", "create new pack %p for %d bytes", blob, size)
-	return pack.NewPacker(r.key, blob), nil
+	debug.Log("Repo.findPacker", "create new pack for %d bytes", size)
+	return pack.NewPacker(r.key, nil), nil
 }
 
 // insertPacker appends p to s.packs.
@@ -62,28 +58,29 @@ func (r *packerManager) insertPacker(p *pack.Packer) {
 // savePacker stores p in the backend.
 func (r *Repository) savePacker(p *pack.Packer) error {
 	debug.Log("Repo.savePacker", "save packer with %d blobs\n", p.Count())
-	_, err := p.Finalize()
+	data, err := p.Finalize()
 	if err != nil {
 		return err
 	}
 
-	// move file to the final location
-	sid := p.ID()
-	err = p.Writer().(backend.Blob).Finalize(backend.Data, sid.String())
+	id := backend.Hash(data)
+	h := backend.Handle{Type: backend.Data, Name: id.String()}
+
+	err = r.be.Save(h, data)
 	if err != nil {
-		debug.Log("Repo.savePacker", "blob Finalize() error: %v", err)
+		debug.Log("Repo.savePacker", "Save(%v) error: %v", h, err)
 		return err
 	}
 
-	debug.Log("Repo.savePacker", "saved as %v", sid.Str())
+	debug.Log("Repo.savePacker", "saved as %v", h)
 
 	// update blobs in the index
 	for _, b := range p.Blobs() {
-		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), sid.Str())
+		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), id.Str())
 		r.idx.Current().Store(PackedBlob{
 			Type:   b.Type,
 			ID:     b.ID,
-			PackID: sid,
+			PackID: id,
 			Offset: b.Offset,
 			Length: uint(b.Length),
 		})

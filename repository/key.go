@@ -2,8 +2,6 @@ package repository
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -119,17 +117,14 @@ func SearchKey(s *Repository, password string) (*Key, error) {
 
 // LoadKey loads a key from the backend.
 func LoadKey(s *Repository, name string) (k *Key, err error) {
-	// extract data from repo
-	rd, err := s.be.Get(backend.Key, name)
+	h := backend.Handle{Type: backend.Key, Name: name}
+	data, err := backend.LoadAll(s.be, h, nil)
 	if err != nil {
 		return nil, err
 	}
-	defer closeOrErr(rd, &err)
 
-	// restore json
-	dec := json.NewDecoder(rd)
-	k = new(Key)
-	err = dec.Decode(k)
+	k = &Key{}
+	err = json.Unmarshal(data, k)
 	if err != nil {
 		return nil, err
 	}
@@ -194,26 +189,17 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	}
 
 	// store in repository and return
-	blob, err := s.be.Create()
+	h := backend.Handle{
+		Type: backend.Key,
+		Name: backend.Hash(buf).String(),
+	}
+
+	err = s.be.Save(h, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	plainhw := backend.NewHashingWriter(blob, sha256.New())
-
-	_, err = plainhw.Write(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	name := hex.EncodeToString(plainhw.Sum(nil))
-
-	err = blob.Finalize(backend.Key, name)
-	if err != nil {
-		return nil, err
-	}
-
-	newkey.name = name
+	newkey.name = h.Name
 
 	return newkey, nil
 }
@@ -225,6 +211,7 @@ func (k *Key) String() string {
 	return fmt.Sprintf("<Key of %s@%s, created on %s>", k.Username, k.Hostname, k.Created)
 }
 
+// Name returns an identifier for the key.
 func (k Key) Name() string {
 	return k.name
 }

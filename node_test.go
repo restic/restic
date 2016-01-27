@@ -145,7 +145,7 @@ func TestNodeRestoreAt(t *testing.T) {
 	OK(t, err)
 
 	defer func() {
-		if TestCleanup {
+		if TestCleanupTempDirs {
 			RemoveAll(t, tempdir)
 		} else {
 			t.Logf("leaving tempdir at %v", tempdir)
