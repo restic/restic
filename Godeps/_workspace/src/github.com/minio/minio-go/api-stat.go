@@ -44,7 +44,7 @@ func (c Client) BucketExists(bucketName string) error {
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return HTTPRespToErrorResponse(resp, bucketName, "")
+			return httpRespToErrorResponse(resp, bucketName, "")
 		}
 	}
 	return nil
@@ -75,7 +75,7 @@ func (c Client) StatObject(bucketName, objectName string) (ObjectInfo, error) {
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return ObjectInfo{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
+			return ObjectInfo{}, httpRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
 

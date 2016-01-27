@@ -17,13 +17,25 @@
 package minio
 
 import (
-	"crypto/md5"
-	"crypto/sha256"
-	"errors"
-	"hash"
+	"bytes"
 	"io"
+	"io/ioutil"
 	"sort"
 )
+
+// shouldUploadPartReadAt - verify if part should be uploaded.
+func shouldUploadPartReadAt(objPart objectPart, objectParts map[int]objectPart) bool {
+	// If part not found part should be uploaded.
+	uploadedPart, found := objectParts[objPart.PartNumber]
+	if !found {
+		return true
+	}
+	// if size mismatches part should be uploaded.
+	if uploadedPart.Size != objPart.Size {
+		return true
+	}
+	return false
+}
 
 // putObjectMultipartFromReadAt - Uploads files bigger than 5MiB. Supports reader
 // of type which implements io.ReaderAt interface (ReadAt method).
@@ -35,7 +47,7 @@ import (
 // temporary files for staging all the data, these temporary files are
 // cleaned automatically when the caller i.e http client closes the
 // stream after uploading all the contents successfully.
-func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, reader io.ReaderAt, size int64, contentType string) (n int64, err error) {
+func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, reader io.ReaderAt, size int64, contentType string, progress io.Reader) (n int64, err error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return 0, err
@@ -55,121 +67,114 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 	var totalUploadedSize int64
 
 	// Complete multipart upload.
-	var completeMultipartUpload completeMultipartUpload
-
-	// Previous maximum part size
-	var prevMaxPartSize int64
-
-	// Previous part number.
-	var prevPartNumber int
+	var complMultipartUpload completeMultipartUpload
 
 	// A map of all uploaded parts.
 	var partsInfo = make(map[int]objectPart)
 
 	// Fetch all parts info previously uploaded.
 	if !isNew {
-		partsInfo, totalUploadedSize, prevMaxPartSize, prevPartNumber, err = c.getPartsInfo(bucketName, objectName, uploadID)
+		partsInfo, err = c.listObjectParts(bucketName, objectName, uploadID)
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	// Calculate the optimal part size for a given file size.
-	partSize := optimalPartSize(size)
-	// If prevMaxPartSize is set use that.
-	if prevMaxPartSize != 0 {
-		partSize = prevMaxPartSize
+	// Calculate the optimal parts info for a given size.
+	totalPartsCount, partSize, lastPartSize, err := optimalPartInfo(size)
+	if err != nil {
+		return 0, err
 	}
 
-	// MD5 and SHA256 hasher.
-	var hashMD5, hashSHA256 hash.Hash
+	// Used for readability, lastPartNumber is always
+	// totalPartsCount.
+	lastPartNumber := totalPartsCount
 
-	// Part number always starts with prevPartNumber + 1. i.e The next part number.
-	partNumber := prevPartNumber + 1
+	// partNumber always starts with '1'.
+	partNumber := 1
 
-	// Upload each part until totalUploadedSize reaches input reader size.
-	for totalUploadedSize < size {
-		// Initialize a new temporary file.
-		tmpFile, err := newTempFile("multiparts$-putobject-partial")
-		if err != nil {
-			return 0, err
+	// Initialize a temporary buffer.
+	tmpBuffer := new(bytes.Buffer)
+
+	// Read defaults to reading at 5MiB buffer.
+	readBuffer := make([]byte, optimalReadBufferSize)
+
+	// Upload all the missing parts.
+	for partNumber <= lastPartNumber {
+		// Verify object if its uploaded.
+		verifyObjPart := objectPart{
+			PartNumber: partNumber,
+			Size:       partSize,
+		}
+		// Special case if we see a last part number, save last part
+		// size as the proper part size.
+		if partNumber == lastPartNumber {
+			verifyObjPart = objectPart{
+				PartNumber: lastPartNumber,
+				Size:       lastPartSize,
+			}
 		}
 
-		// Create a hash multiwriter.
-		hashMD5 = md5.New()
-		hashWriter := io.MultiWriter(hashMD5)
-		if c.signature.isV4() {
-			hashSHA256 = sha256.New()
-			hashWriter = io.MultiWriter(hashMD5, hashSHA256)
-		}
-		writer := io.MultiWriter(tmpFile, hashWriter)
-
-		// Choose totalUploadedSize as the current readAtOffset.
-		readAtOffset := totalUploadedSize
-
-		// Read until partSize.
-		var totalReadPartSize int64
-
-		// ReadAt defaults to reading at 5MiB buffer.
-		readAtBuffer := make([]byte, optimalReadAtBufferSize)
-
-		// Following block reads data at an offset from the input
-		// reader and copies data to into local temporary file.
-		// Temporary file data is limited to the partSize.
-		for totalReadPartSize < partSize {
-			readAtSize, rerr := reader.ReadAt(readAtBuffer, readAtOffset)
-			if rerr != nil {
-				if rerr != io.EOF {
-					return 0, rerr
+		// Verify if part should be uploaded.
+		if !shouldUploadPartReadAt(verifyObjPart, partsInfo) {
+			// Increment part number when not uploaded.
+			partNumber++
+			if progress != nil {
+				// Update the progress reader for the skipped part.
+				if _, err = io.CopyN(ioutil.Discard, progress, verifyObjPart.Size); err != nil {
+					return 0, err
 				}
 			}
-			writeSize, werr := writer.Write(readAtBuffer[:readAtSize])
-			if werr != nil {
-				return 0, werr
-			}
-			if readAtSize != writeSize {
-				return 0, errors.New("Something really bad happened here. " + reportIssue)
-			}
-			readAtOffset += int64(writeSize)
-			totalReadPartSize += int64(writeSize)
-			if rerr == io.EOF {
-				break
-			}
+			continue
 		}
 
-		// Seek back to beginning of the temporary file.
-		if _, err := tmpFile.Seek(0, 0); err != nil {
+		// If partNumber was not uploaded we calculate the missing
+		// part offset and size. For all other part numbers we
+		// calculate offset based on multiples of partSize.
+		readOffset := int64(partNumber-1) * partSize
+		missingPartSize := partSize
+
+		// As a special case if partNumber is lastPartNumber, we
+		// calculate the offset based on the last part size.
+		if partNumber == lastPartNumber {
+			readOffset = (size - lastPartSize)
+			missingPartSize = lastPartSize
+		}
+
+		// Get a section reader on a particular offset.
+		sectionReader := io.NewSectionReader(reader, readOffset, missingPartSize)
+
+		// Calculates MD5 and SHA256 sum for a section reader.
+		var md5Sum, sha256Sum []byte
+		var prtSize int64
+		md5Sum, sha256Sum, prtSize, err = c.hashCopyBuffer(tmpBuffer, sectionReader, readBuffer)
+		if err != nil {
 			return 0, err
 		}
 
-		var md5Sum, sha256Sum []byte
-		md5Sum = hashMD5.Sum(nil)
-		// Signature version '4'.
-		if c.signature.isV4() {
-			sha256Sum = hashSHA256.Sum(nil)
-		}
+		var reader io.Reader
+		// Update progress reader appropriately to the latest offset
+		// as we read from the source.
+		reader = newHook(tmpBuffer, progress)
 
 		// Proceed to upload the part.
-		objPart, err := c.uploadPart(bucketName, objectName, uploadID, tmpFile, partNumber, md5Sum, sha256Sum, totalReadPartSize)
+		var objPart objectPart
+		objPart, err = c.uploadPart(bucketName, objectName, uploadID, ioutil.NopCloser(reader),
+			partNumber, md5Sum, sha256Sum, prtSize)
 		if err != nil {
-			// Close the read closer.
-			tmpFile.Close()
-			return totalUploadedSize, err
+			// Reset the buffer upon any error.
+			tmpBuffer.Reset()
+			return 0, err
 		}
-
-		// Save successfully uploaded size.
-		totalUploadedSize += totalReadPartSize
 
 		// Save successfully uploaded part metadata.
 		partsInfo[partNumber] = objPart
 
-		// Move to next part.
+		// Increment part number here after successful part upload.
 		partNumber++
-	}
 
-	// Verify if we uploaded all the data.
-	if totalUploadedSize != size {
-		return totalUploadedSize, ErrUnexpectedEOF(totalUploadedSize, size, bucketName, objectName)
+		// Reset the buffer.
+		tmpBuffer.Reset()
 	}
 
 	// Loop over uploaded parts to save them in a Parts array before completing the multipart request.
@@ -177,12 +182,23 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 		var complPart completePart
 		complPart.ETag = part.ETag
 		complPart.PartNumber = part.PartNumber
-		completeMultipartUpload.Parts = append(completeMultipartUpload.Parts, complPart)
+		totalUploadedSize += part.Size
+		complMultipartUpload.Parts = append(complMultipartUpload.Parts, complPart)
+	}
+
+	// Verify if we uploaded all the data.
+	if totalUploadedSize != size {
+		return totalUploadedSize, ErrUnexpectedEOF(totalUploadedSize, size, bucketName, objectName)
+	}
+
+	// Verify if totalPartsCount is not equal to total list of parts.
+	if totalPartsCount != len(complMultipartUpload.Parts) {
+		return totalUploadedSize, ErrInvalidParts(totalPartsCount, len(complMultipartUpload.Parts))
 	}
 
 	// Sort all completed parts.
-	sort.Sort(completedParts(completeMultipartUpload.Parts))
-	_, err = c.completeMultipartUpload(bucketName, objectName, uploadID, completeMultipartUpload)
+	sort.Sort(completedParts(complMultipartUpload.Parts))
+	_, err = c.completeMultipartUpload(bucketName, objectName, uploadID, complMultipartUpload)
 	if err != nil {
 		return totalUploadedSize, err
 	}

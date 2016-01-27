@@ -65,7 +65,7 @@ func (c Client) GetBucketACL(bucketName string) (BucketACL, error) {
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return "", HTTPRespToErrorResponse(resp, bucketName, "")
+			return "", httpRespToErrorResponse(resp, bucketName, "")
 		}
 	}
 
@@ -500,7 +500,7 @@ func (c Client) getObject(bucketName, objectName string, offset, length int64) (
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-			return nil, ObjectInfo{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
+			return nil, ObjectInfo{}, httpRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
 

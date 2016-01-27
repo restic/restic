@@ -52,15 +52,6 @@ func sumHMAC(key []byte, data []byte) []byte {
 	return hash.Sum(nil)
 }
 
-// isPartUploaded - true if part is already uploaded.
-func isPartUploaded(objPart objectPart, objectParts map[int]objectPart) (isUploaded bool) {
-	_, isUploaded = objectParts[objPart.PartNumber]
-	if isUploaded {
-		isUploaded = (objPart.ETag == objectParts[objPart.PartNumber].ETag)
-	}
-	return
-}
-
 // getEndpointURL - construct a new endpoint.
 func getEndpointURL(endpoint string, inSecure bool) (*url.URL, error) {
 	if strings.Contains(endpoint, ":") {
@@ -151,9 +142,16 @@ func closeResponse(resp *http.Response) {
 	}
 }
 
-// isVirtualHostSupported - verify if host supports virtual hosted style.
-// Currently only Amazon S3 and Google Cloud Storage would support this.
-func isVirtualHostSupported(endpointURL *url.URL) bool {
+// isVirtualHostSupported - verifies if bucketName can be part of
+// virtual host. Currently only Amazon S3 and Google Cloud Storage would
+// support this.
+func isVirtualHostSupported(endpointURL *url.URL, bucketName string) bool {
+	// bucketName can be valid but '.' in the hostname will fail SSL
+	// certificate validation. So do not use host-style for such buckets.
+	if endpointURL.Scheme == "https" && strings.Contains(bucketName, ".") {
+		return false
+	}
+	// Return true for all other cases
 	return isAmazonEndpoint(endpointURL) || isGoogleEndpoint(endpointURL)
 }
 
@@ -212,13 +210,9 @@ func isValidExpiry(expires time.Duration) error {
 	return nil
 }
 
-/// Excerpts from - http://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html
-/// When using virtual hosted–style buckets with SSL, the SSL wild card
-/// certificate only matches buckets that do not contain periods.
-/// To work around this, use HTTP or write your own certificate verification logic.
-
-// We decided to not support bucketNames with '.' in them.
-var validBucketName = regexp.MustCompile(`^[a-z0-9][a-z0-9\-]{1,61}[a-z0-9]$`)
+// We support '.' with bucket names but we fallback to using path
+// style requests instead for such buckets.
+var validBucketName = regexp.MustCompile(`^[a-z0-9][a-z0-9\.\-]{1,61}[a-z0-9]$`)
 
 // isValidBucketName - verify bucket name in accordance with
 //  - http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html
@@ -234,6 +228,9 @@ func isValidBucketName(bucketName string) error {
 	}
 	if bucketName[0] == '.' || bucketName[len(bucketName)-1] == '.' {
 		return ErrInvalidBucketName("Bucket name cannot start or end with a '.' dot.")
+	}
+	if match, _ := regexp.MatchString("\\.\\.", bucketName); match == true {
+		return ErrInvalidBucketName("Bucket name cannot have successive periods.")
 	}
 	if !validBucketName.MatchString(bucketName) {
 		return ErrInvalidBucketName("Bucket name contains invalid characters.")
@@ -265,39 +262,6 @@ func isValidObjectPrefix(objectPrefix string) error {
 		return ErrInvalidObjectPrefix("Object prefix with non UTF-8 strings are not supported.")
 	}
 	return nil
-}
-
-// optimalPartSize - calculate the optimal part size for the given objectSize.
-//
-// NOTE: Assumption here is that for any object to be uploaded to any S3 compatible
-// object storage it will have the following parameters as constants.
-//
-//  maxParts - 10000
-//  minimumPartSize - 5MiB
-//  maximumPartSize - 5GiB
-//
-// if the partSize after division with maxParts is greater than minimumPartSize
-// then choose miniumPartSize as the new part size, if not return minimumPartSize.
-//
-// Special cases
-//
-// - if input object size is -1 then return maxPartSize.
-// - if it happens to be that partSize is indeed bigger
-//   than the maximum part size just return maxPartSize.
-func optimalPartSize(objectSize int64) int64 {
-	// if object size is -1 choose part size as 5GiB.
-	if objectSize == -1 {
-		return maxPartSize
-	}
-	// make sure last part has enough buffer and handle this poperly.
-	partSize := (objectSize / (maxParts - 1))
-	if partSize > minimumPartSize {
-		if partSize > maxPartSize {
-			return maxPartSize
-		}
-		return partSize
-	}
-	return minimumPartSize
 }
 
 // urlEncodePath encode the strings from UTF-8 byte representations to HTML hex escape sequences

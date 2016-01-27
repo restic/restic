@@ -83,9 +83,9 @@ const (
 	reportIssue = "Please report this issue at https://github.com/minio/minio-go/issues."
 )
 
-// HTTPRespToErrorResponse returns a new encoded ErrorResponse
+// httpRespToErrorResponse returns a new encoded ErrorResponse
 // structure as error.
-func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string) error {
+func httpRespToErrorResponse(resp *http.Response, bucketName, objectName string) error {
 	if resp == nil {
 		msg := "Response is empty. " + reportIssue
 		return ErrInvalidArgument(msg)
@@ -161,8 +161,8 @@ func HTTPRespToErrorResponse(resp *http.Response, bucketName, objectName string)
 }
 
 // ErrEntityTooLarge - Input size is larger than supported maximum.
-func ErrEntityTooLarge(totalSize int64, bucketName, objectName string) error {
-	msg := fmt.Sprintf("Your proposed upload size ‘%d’ exceeds the maximum allowed object size '5GiB' for single PUT operation.", totalSize)
+func ErrEntityTooLarge(totalSize, maxObjectSize int64, bucketName, objectName string) error {
+	msg := fmt.Sprintf("Your proposed upload size ‘%d’ exceeds the maximum allowed object size ‘%d’ for single PUT operation.", totalSize, maxObjectSize)
 	return ErrorResponse{
 		Code:       "EntityTooLarge",
 		Message:    msg,
@@ -176,19 +176,6 @@ func ErrEntityTooSmall(totalSize int64, bucketName, objectName string) error {
 	msg := fmt.Sprintf("Your proposed upload size ‘%d’ is below the minimum allowed object size '0B' for single PUT operation.", totalSize)
 	return ErrorResponse{
 		Code:       "EntityTooLarge",
-		Message:    msg,
-		BucketName: bucketName,
-		Key:        objectName,
-	}
-}
-
-// ErrUnexpectedShortRead - Unexpected shorter read of input buffer from
-// target.
-func ErrUnexpectedShortRead(totalRead, totalSize int64, bucketName, objectName string) error {
-	msg := fmt.Sprintf("Data read ‘%s’ is shorter than the size ‘%s’ of input buffer.",
-		strconv.FormatInt(totalRead, 10), strconv.FormatInt(totalSize, 10))
-	return ErrorResponse{
-		Code:       "UnexpectedShortRead",
 		Message:    msg,
 		BucketName: bucketName,
 		Key:        objectName,

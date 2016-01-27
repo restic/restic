@@ -24,8 +24,8 @@
 		},
 		{
 			"ImportPath": "github.com/minio/minio-go",
-			"Comment": "v0.2.5-209-g77f35ea",
-			"Rev": "77f35ea56099f50b0425d0e2f3949773dae723c0"
+			"Comment": "v0.2.5-247-ge168a01",
+			"Rev": "e168a01f2683897cc623db67f39ccff35bec0597"
 		},
 		{
 			"ImportPath": "github.com/pkg/sftp",

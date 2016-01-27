@@ -19,15 +19,15 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/minio/minio-go"
+	"github.com/minio/pb"
 )
 
 func main() {
-	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefixname
-	// are dummy values, please replace them with original values.
+	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-testfile, my-bucketname and
+	// my-objectname are dummy values, please replace them with original values.
 
 	// Requests are always secure (HTTPS) by default. Set insecure=true to enable insecure (HTTP) access.
 	// This boolean value is the last argument for New().
@@ -39,19 +39,26 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// Create a done channel to control 'ListObjects' go routine.
-	doneCh := make(chan struct{})
-
-	// Indicate to our routine to exit cleanly upon return.
-	defer close(doneCh)
-
-	// List all multipart uploads from a bucket-name with a matching prefix.
-	for multipartObject := range s3Client.ListIncompleteUploads("my-bucketname", "my-prefixname", true, doneCh) {
-		if multipartObject.Err != nil {
-			fmt.Println(multipartObject.Err)
-			return
-		}
-		fmt.Println(multipartObject)
+	reader, err := s3Client.GetObject("my-bucketname", "my-objectname")
+	if err != nil {
+		log.Fatalln(err)
 	}
-	return
+	defer reader.Close()
+
+	objectInfo, err := reader.Stat()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// progress reader is notified as PutObject makes progress with
+	// the read. For partial resume put object, progress reader is
+	// appropriately advanced.
+	progress := pb.New64(objectInfo.Size)
+	progress.Start()
+
+	n, err := s3Client.PutObjectWithProgress("my-bucketname", "my-objectname-progress", reader, "application/octet-stream", progress)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
 }

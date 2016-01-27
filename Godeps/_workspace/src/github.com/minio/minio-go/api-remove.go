@@ -45,7 +45,7 @@ func (c Client) RemoveBucket(bucketName string) error {
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusNoContent {
-			return HTTPRespToErrorResponse(resp, bucketName, "")
+			return httpRespToErrorResponse(resp, bucketName, "")
 		}
 	}
 
@@ -158,7 +158,7 @@ func (c Client) abortMultipartUpload(bucketName, objectName, uploadID string) er
 					AmzBucketRegion: resp.Header.Get("x-amz-bucket-region"),
 				}
 			default:
-				return HTTPRespToErrorResponse(resp, bucketName, objectName)
+				return httpRespToErrorResponse(resp, bucketName, objectName)
 			}
 			return errorResponse
 		}
