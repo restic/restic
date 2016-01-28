@@ -100,6 +100,7 @@ Talks
 
 The following talks will be or have been given about restic:
 
+ * 2016-01-31: Lightning Talk at the Go Devroom at FOSDEM 2016, Brussels, Belgium
  * 2016-01-29: [restic - Backups mal richtig](https://koeln.ccc.de/updates/2016-01-13_OC_Restic.xml): Public lecture in German at [CCC Cologne e.V.](https://koeln.ccc.de) in Cologne, Germany
  * 2015-08-23: [A Solution to the Backup Inconvenience](https://programm.froscon.de/2015/events/1515.html): Lecture at [FROSCON 2015](https://www.froscon.de) in Bonn, Germany
  * 2015-02-01: [Lightning Talk at FOSDEM 2015](https://www.youtube.com/watch?v=oM-MfeflUZ8&t=11m40s): A short introduction (with slightly outdated command line)
