@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -38,8 +39,11 @@ const (
 // Encode input URL path to URL encoded path.
 func encodeURL2Path(u *url.URL) (path string) {
 	// Encode URL path.
-	if strings.HasSuffix(u.Host, ".s3.amazonaws.com") {
-		path = "/" + strings.TrimSuffix(u.Host, ".s3.amazonaws.com")
+	if isS3, _ := filepath.Match("*.s3*.amazonaws.com", u.Host); isS3 {
+		hostSplits := strings.SplitN(u.Host, ".", 4)
+		// First element is the bucket name.
+		bucketName := hostSplits[0]
+		path = "/" + bucketName
 		path += u.Path
 		path = urlEncodePath(path)
 		return
@@ -54,9 +58,9 @@ func encodeURL2Path(u *url.URL) (path string) {
 	return
 }
 
-// PreSignV2 - presign the request in following style.
+// preSignV2 - presign the request in following style.
 // https://${S3_BUCKET}.s3.amazonaws.com/${S3_OBJECT}?AWSAccessKeyId=${S3_ACCESS_KEY}&Expires=${TIMESTAMP}&Signature=${SIGNATURE}.
-func PreSignV2(req http.Request, accessKeyID, secretAccessKey string, expires int64) *http.Request {
+func preSignV2(req http.Request, accessKeyID, secretAccessKey string, expires int64) *http.Request {
 	// Presign is not needed for anonymous credentials.
 	if accessKeyID == "" || secretAccessKey == "" {
 		return &req
@@ -98,9 +102,9 @@ func PreSignV2(req http.Request, accessKeyID, secretAccessKey string, expires in
 	return &req
 }
 
-// PostPresignSignatureV2 - presigned signature for PostPolicy
+// postPresignSignatureV2 - presigned signature for PostPolicy
 // request.
-func PostPresignSignatureV2(policyBase64, secretAccessKey string) string {
+func postPresignSignatureV2(policyBase64, secretAccessKey string) string {
 	hm := hmac.New(sha1.New, []byte(secretAccessKey))
 	hm.Write([]byte(policyBase64))
 	signature := base64.StdEncoding.EncodeToString(hm.Sum(nil))
@@ -123,8 +127,8 @@ func PostPresignSignatureV2(policyBase64, secretAccessKey string) string {
 //
 // CanonicalizedProtocolHeaders = <described below>
 
-// SignV2 sign the request before Do() (AWS Signature Version 2).
-func SignV2(req http.Request, accessKeyID, secretAccessKey string) *http.Request {
+// signV2 sign the request before Do() (AWS Signature Version 2).
+func signV2(req http.Request, accessKeyID, secretAccessKey string) *http.Request {
 	// Signature calculation is not needed for anonymous credentials.
 	if accessKeyID == "" || secretAccessKey == "" {
 		return &req
@@ -251,10 +255,9 @@ var resourceList = []string{
 // CanonicalizedResource = [ "/" + Bucket ] +
 // 	  <HTTP-Request-URI, from the protocol name up to the query string> +
 // 	  [ sub-resource, if present. For example "?acl", "?location", "?logging", or "?torrent"];
-func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request) error {
+func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request) {
 	// Save request URL.
 	requestURL := req.URL
-
 	// Get encoded URL path.
 	path := encodeURL2Path(requestURL)
 	buf.WriteString(path)
@@ -285,5 +288,4 @@ func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request) error {
 			}
 		}
 	}
-	return nil
 }

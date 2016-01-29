@@ -47,7 +47,7 @@ func (c Client) ListBuckets() ([]BucketInfo, error) {
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return nil, HTTPRespToErrorResponse(resp, "", "")
+			return nil, httpRespToErrorResponse(resp, "", "")
 		}
 	}
 	listAllMyBucketsResult := listAllMyBucketsResult{}
@@ -64,7 +64,7 @@ func (c Client) ListBuckets() ([]BucketInfo, error) {
 // the specified bucket. If recursion is enabled it would list
 // all subdirectories and all its contents.
 //
-// Your input paramters are just bucketName, objectPrefix, recursive
+// Your input parameters are just bucketName, objectPrefix, recursive
 // and a done channel for pro-actively closing the internal go
 // routine. If you enable recursive as 'true' this function will
 // return back all the objects in a given bucket name and object
@@ -168,7 +168,7 @@ func (c Client) ListObjects(bucketName, objectPrefix string, recursive bool, don
 // listObjects - (List Objects) - List some or all (up to 1000) of the objects in a bucket.
 //
 // You can use the request parameters as selection criteria to return a subset of the objects in a bucket.
-// request paramters :-
+// request parameters :-
 // ---------
 // ?marker - Specifies the key to start with when listing objects in a bucket.
 // ?delimiter - A delimiter is a character you use to group keys.
@@ -222,7 +222,7 @@ func (c Client) listObjectsQuery(bucketName, objectPrefix, objectMarker, delimit
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return listBucketResult{}, HTTPRespToErrorResponse(resp, bucketName, "")
+			return listBucketResult{}, httpRespToErrorResponse(resp, bucketName, "")
 		}
 	}
 	// Decode listBuckets XML.
@@ -240,8 +240,8 @@ func (c Client) listObjectsQuery(bucketName, objectPrefix, objectMarker, delimit
 // objectPrefix from the specified bucket. If recursion is enabled
 // it would list all subdirectories and all its contents.
 //
-// Your input paramters are just bucketName, objectPrefix, recursive
-// and a done channel to proactively close the internal go routine.
+// Your input parameters are just bucketName, objectPrefix, recursive
+// and a done channel to pro-actively close the internal go routine.
 // If you enable recursive as 'true' this function will return back all
 // the multipart objects in a given bucket name.
 //
@@ -352,7 +352,7 @@ func (c Client) listIncompleteUploads(bucketName, objectPrefix string, recursive
 //   - Lists some or all (up to 1000) in-progress multipart uploads in a bucket.
 //
 // You can use the request parameters as selection criteria to return a subset of the uploads in a bucket.
-// request paramters. :-
+// request parameters. :-
 // ---------
 // ?key-marker - Specifies the multipart upload after which listing should begin.
 // ?upload-id-marker - Together with key-marker specifies the multipart upload after which listing should begin.
@@ -404,7 +404,7 @@ func (c Client) listMultipartUploadsQuery(bucketName, keyMarker, uploadIDMarker,
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return listMultipartUploadsResult{}, HTTPRespToErrorResponse(resp, bucketName, "")
+			return listMultipartUploadsResult{}, httpRespToErrorResponse(resp, bucketName, "")
 		}
 	}
 	// Decode response body.
@@ -447,23 +447,29 @@ func (c Client) listObjectParts(bucketName, objectName, uploadID string) (partsI
 }
 
 // findUploadID lists all incomplete uploads and finds the uploadID of the matching object name.
-func (c Client) findUploadID(bucketName, objectName string) (string, error) {
+func (c Client) findUploadID(bucketName, objectName string) (uploadID string, err error) {
 	// Make list incomplete uploads recursive.
 	isRecursive := true
 	// Turn off size aggregation of individual parts, in this request.
 	isAggregateSize := false
-	// NOTE: done Channel is set to 'nil, this will drain go routine until exhaustion.
-	for mpUpload := range c.listIncompleteUploads(bucketName, objectName, isRecursive, isAggregateSize, nil) {
+	// latestUpload to track the latest multipart info for objectName.
+	var latestUpload ObjectMultipartInfo
+	// Create done channel to cleanup the routine.
+	doneCh := make(chan struct{})
+	defer close(doneCh)
+	// List all incomplete uploads.
+	for mpUpload := range c.listIncompleteUploads(bucketName, objectName, isRecursive, isAggregateSize, doneCh) {
 		if mpUpload.Err != nil {
 			return "", mpUpload.Err
 		}
-		// if object name found, return the upload id.
 		if objectName == mpUpload.Key {
-			return mpUpload.UploadID, nil
+			if mpUpload.Initiated.Sub(latestUpload.Initiated) > 0 {
+				latestUpload = mpUpload
+			}
 		}
 	}
-	// No upload id was found, return success and empty upload id.
-	return "", nil
+	// Return the latest upload id.
+	return latestUpload.UploadID, nil
 }
 
 // getTotalMultipartSize - calculate total uploaded size for the a given multipart object.
@@ -484,7 +490,7 @@ func (c Client) getTotalMultipartSize(bucketName, objectName, uploadID string) (
 //     for a specific multipart upload
 //
 // You can use the request parameters as selection criteria to return
-// a subset of the uploads in a bucket, request paramters :-
+// a subset of the uploads in a bucket, request parameters :-
 // ---------
 // ?part-number-marker - Specifies the part after which listing should
 // begin.
@@ -520,7 +526,7 @@ func (c Client) listObjectPartsQuery(bucketName, objectName, uploadID string, pa
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return listObjectPartsResult{}, HTTPRespToErrorResponse(resp, bucketName, objectName)
+			return listObjectPartsResult{}, httpRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
 	// Decode list object parts XML.

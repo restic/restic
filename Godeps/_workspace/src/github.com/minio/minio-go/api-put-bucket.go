@@ -42,11 +42,6 @@ import (
 // For Amazon S3 for more supported regions - http://docs.aws.amazon.com/general/latest/gr/rande.html
 // For Google Cloud Storage for more supported regions - https://cloud.google.com/storage/docs/bucket-locations
 func (c Client) MakeBucket(bucketName string, acl BucketACL, location string) error {
-	// Validate if request is made on anonymous requests.
-	if c.anonymous {
-		return ErrInvalidArgument("Make bucket cannot be issued with anonymous credentials.")
-	}
-
 	// Validate the input arguments.
 	if err := isValidBucketName(bucketName); err != nil {
 		return err
@@ -75,11 +70,11 @@ func (c Client) MakeBucket(bucketName string, acl BucketACL, location string) er
 
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return HTTPRespToErrorResponse(resp, bucketName, "")
+			return httpRespToErrorResponse(resp, bucketName, "")
 		}
 	}
 
-	// Save the location into cache on a succesful makeBucket response.
+	// Save the location into cache on a successfull makeBucket response.
 	c.bucketLocCache.Set(bucketName, location)
 
 	// Return.
@@ -96,19 +91,14 @@ func (c Client) makeBucketRequest(bucketName string, acl BucketACL, location str
 		return nil, ErrInvalidArgument("Unrecognized ACL " + acl.String())
 	}
 
-	// Set get bucket location always as path style.
+	// In case of Amazon S3.  The make bucket issued on already
+	// existing bucket would fail with 'AuthorizationMalformed' error
+	// if virtual style is used. So we default to 'path style' as that
+	// is the preferred method here. The final location of the
+	// 'bucket' is provided through XML LocationConstraint data with
+	// the request.
 	targetURL := *c.endpointURL
-	if bucketName != "" {
-		// If endpoint supports virtual host style use that always.
-		// Currently only S3 and Google Cloud Storage would support this.
-		if isVirtualHostSupported(c.endpointURL) {
-			targetURL.Host = bucketName + "." + c.endpointURL.Host
-			targetURL.Path = "/"
-		} else {
-			// If not fall back to using path style.
-			targetURL.Path = "/" + bucketName
-		}
-	}
+	targetURL.Path = "/" + bucketName + "/"
 
 	// get a new HTTP request for the method.
 	req, err := http.NewRequest("PUT", targetURL.String(), nil)
@@ -151,9 +141,9 @@ func (c Client) makeBucketRequest(bucketName string, acl BucketACL, location str
 	if c.signature.isV4() {
 		// Signature calculated for MakeBucket request should be for 'us-east-1',
 		// regardless of the bucket's location constraint.
-		req = SignV4(*req, c.accessKeyID, c.secretAccessKey, "us-east-1")
+		req = signV4(*req, c.accessKeyID, c.secretAccessKey, "us-east-1")
 	} else if c.signature.isV2() {
-		req = SignV2(*req, c.accessKeyID, c.secretAccessKey)
+		req = signV2(*req, c.accessKeyID, c.secretAccessKey)
 	}
 
 	// Return signed request.
@@ -210,7 +200,7 @@ func (c Client) SetBucketACL(bucketName string, acl BucketACL) error {
 	if resp != nil {
 		// if error return.
 		if resp.StatusCode != http.StatusOK {
-			return HTTPRespToErrorResponse(resp, bucketName, "")
+			return httpRespToErrorResponse(resp, bucketName, "")
 		}
 	}
 

@@ -72,8 +72,8 @@ func main() {
 * [ListIncompleteUploads(bucketName, prefix, recursive, chan<- struct{}) <-chan ObjectMultipartInfo](examples/s3/listincompleteuploads.go)
 
 ### Object Operations.
-* [PutObject(bucketName, objectName, io.Reader, size, contentType) error](examples/s3/putobject.go)
-* [GetObject(bucketName, objectName) (io.ReadCloser, ObjectInfo, error)](examples/s3/getobject.go)
+* [PutObject(bucketName, objectName, io.Reader, contentType) error](examples/s3/putobject.go)
+* [GetObject(bucketName, objectName) (*Object, error)](examples/s3/getobject.go)
 * [StatObject(bucketName, objectName) (ObjectInfo, error)](examples/s3/statobject.go)
 * [RemoveObject(bucketName, objectName) error](examples/s3/removeobject.go)
 * [RemoveIncompleteUpload(bucketName, objectName) <-chan error](examples/s3/removeincompleteupload.go)

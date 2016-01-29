@@ -21,9 +21,9 @@ import (
 	"time"
 )
 
-// PresignedGetObject - Returns a presigned URL to access an object without credentials.
+// presignURL - Returns a presigned URL for an input 'method'.
 // Expires maximum is 7days - ie. 604800 and minimum is 1.
-func (c Client) PresignedGetObject(bucketName, objectName string, expires time.Duration) (string, error) {
+func (c Client) presignURL(method string, bucketName string, objectName string, expires time.Duration) (url string, err error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return "", err
@@ -35,10 +35,14 @@ func (c Client) PresignedGetObject(bucketName, objectName string, expires time.D
 		return "", err
 	}
 
+	if method == "" {
+		return "", ErrInvalidArgument("method cannot be empty.")
+	}
+
 	expireSeconds := int64(expires / time.Second)
 	// Instantiate a new request.
 	// Since expires is set newRequest will presign the request.
-	req, err := c.newRequest("GET", requestMetadata{
+	req, err := c.newRequest(method, requestMetadata{
 		presignURL: true,
 		bucketName: bucketName,
 		objectName: objectName,
@@ -50,33 +54,16 @@ func (c Client) PresignedGetObject(bucketName, objectName string, expires time.D
 	return req.URL.String(), nil
 }
 
+// PresignedGetObject - Returns a presigned URL to access an object without credentials.
+// Expires maximum is 7days - ie. 604800 and minimum is 1.
+func (c Client) PresignedGetObject(bucketName string, objectName string, expires time.Duration) (url string, err error) {
+	return c.presignURL("GET", bucketName, objectName, expires)
+}
+
 // PresignedPutObject - Returns a presigned URL to upload an object without credentials.
 // Expires maximum is 7days - ie. 604800 and minimum is 1.
-func (c Client) PresignedPutObject(bucketName, objectName string, expires time.Duration) (string, error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return "", err
-	}
-	if err := isValidObjectName(objectName); err != nil {
-		return "", err
-	}
-	if err := isValidExpiry(expires); err != nil {
-		return "", err
-	}
-
-	expireSeconds := int64(expires / time.Second)
-	// Instantiate a new request.
-	// Since expires is set newRequest will presign the request.
-	req, err := c.newRequest("PUT", requestMetadata{
-		presignURL: true,
-		bucketName: bucketName,
-		objectName: objectName,
-		expires:    expireSeconds,
-	})
-	if err != nil {
-		return "", err
-	}
-	return req.URL.String(), nil
+func (c Client) PresignedPutObject(bucketName string, objectName string, expires time.Duration) (url string, err error) {
+	return c.presignURL("PUT", bucketName, objectName, expires)
 }
 
 // PresignedPostPolicy - Returns POST form data to upload an object at a location.
@@ -113,29 +100,38 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 			p.formData["AWSAccessKeyId"] = c.accessKeyID
 		}
 		// Sign the policy.
-		p.formData["signature"] = PostPresignSignatureV2(policyBase64, c.secretAccessKey)
+		p.formData["signature"] = postPresignSignatureV2(policyBase64, c.secretAccessKey)
 		return p.formData, nil
 	}
 
 	// Add date policy.
-	p.addNewPolicy(policyCondition{
+	if err = p.addNewPolicy(policyCondition{
 		matchType: "eq",
 		condition: "$x-amz-date",
 		value:     t.Format(iso8601DateFormat),
-	})
+	}); err != nil {
+		return nil, err
+	}
+
 	// Add algorithm policy.
-	p.addNewPolicy(policyCondition{
+	if err = p.addNewPolicy(policyCondition{
 		matchType: "eq",
 		condition: "$x-amz-algorithm",
 		value:     signV4Algorithm,
-	})
+	}); err != nil {
+		return nil, err
+	}
+
 	// Add a credential policy.
 	credential := getCredential(c.accessKeyID, location, t)
-	p.addNewPolicy(policyCondition{
+	if err = p.addNewPolicy(policyCondition{
 		matchType: "eq",
 		condition: "$x-amz-credential",
 		value:     credential,
-	})
+	}); err != nil {
+		return nil, err
+	}
+
 	// Get base64 encoded policy.
 	policyBase64 := p.base64()
 	// Fill in the form data.
@@ -143,6 +139,6 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 	p.formData["x-amz-algorithm"] = signV4Algorithm
 	p.formData["x-amz-credential"] = credential
 	p.formData["x-amz-date"] = t.Format(iso8601DateFormat)
-	p.formData["x-amz-signature"] = PostPresignSignatureV4(policyBase64, t, c.secretAccessKey, location)
+	p.formData["x-amz-signature"] = postPresignSignatureV4(policyBase64, t, c.secretAccessKey, location)
 	return p.formData, nil
 }

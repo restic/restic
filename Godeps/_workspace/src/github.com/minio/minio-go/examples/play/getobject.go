@@ -45,12 +45,6 @@ func main() {
 	}
 	defer reader.Close()
 
-	reader, err := s3Client.GetObject("my-bucketname", "my-objectname")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer reader.Close()
-
 	localFile, err := os.Create("my-testfile")
 	if err != nil {
 		log.Fatalln(err)

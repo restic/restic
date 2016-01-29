@@ -21,9 +21,9 @@ import "time"
 // BucketInfo container for bucket metadata.
 type BucketInfo struct {
 	// The name of the bucket.
-	Name string
+	Name string `json:"name"`
 	// Date the bucket was created.
-	CreationDate time.Time
+	CreationDate time.Time `json:"creationDate"`
 }
 
 // ObjectInfo container for object metadata.
@@ -31,24 +31,24 @@ type ObjectInfo struct {
 	// An ETag is optionally set to md5sum of an object.  In case of multipart objects,
 	// ETag is of the form MD5SUM-N where MD5SUM is md5sum of all individual md5sums of
 	// each parts concatenated into one string.
-	ETag string
+	ETag string `json:"etag"`
 
-	Key          string    // Name of the object
-	LastModified time.Time // Date and time the object was last modified.
-	Size         int64     // Size in bytes of the object.
-	ContentType  string    // A standard MIME type describing the format of the object data.
+	Key          string    `json:"name"`         // Name of the object
+	LastModified time.Time `json:"lastModified"` // Date and time the object was last modified.
+	Size         int64     `json:"size"`         // Size in bytes of the object.
+	ContentType  string    `json:"contentType"`  // A standard MIME type describing the format of the object data.
 
 	// Owner name.
 	Owner struct {
-		DisplayName string
-		ID          string
-	}
+		DisplayName string `json:"name"`
+		ID          string `json:"id"`
+	} `json:"owner"`
 
 	// The class of storage used to store the object.
-	StorageClass string
+	StorageClass string `json:"storageClass"`
 
 	// Error
-	Err error
+	Err error `json:"-"`
 }
 
 // ObjectMultipartInfo container for multipart object metadata.

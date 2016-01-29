@@ -10,10 +10,11 @@ env:
 - ARCH=i686
 
 go:
-- 1.5.1
 - 1.5.2
+- 1.5.3
 
 script:
+- diff -au <(gofmt -d .) <(printf "")
 - go vet ./...
 - go test -short -race -v ./...
 
