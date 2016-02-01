@@ -1,4 +1,4 @@
-package repository
+package restic_test
 
 import (
 	"bytes"
@@ -10,13 +10,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic"
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/pack"
+	"github.com/restic/restic/repository"
 )
 
-const parallelSaves = 20
-const saveIndexTime = 100 * time.Millisecond
-const testTimeout = 1 * time.Second
+const parallelSaves = 50
+const testSaveIndexTime = 100 * time.Millisecond
+const testTimeout = 2 * time.Second
 
 var DupID backend.ID
 
@@ -70,17 +72,19 @@ func forgetfulBackend() backend.Backend {
 	return be
 }
 
-func testMasterIndex(t *testing.T) {
+func testArchiverDuplication(t *testing.T) {
 	_, err := io.ReadFull(rand.Reader, DupID[:])
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	repo := New(forgetfulBackend())
+	repo := repository.New(forgetfulBackend())
 	err = repo.Init("foo")
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	arch := restic.NewArchiver(repo)
 
 	wg := &sync.WaitGroup{}
 	done := make(chan struct{})
@@ -103,7 +107,7 @@ func testMasterIndex(t *testing.T) {
 
 				buf := make([]byte, 50)
 
-				err := repo.SaveFrom(pack.Data, &id, uint(len(buf)), bytes.NewReader(buf))
+				err := arch.Save(pack.Data, id, uint(len(buf)), bytes.NewReader(buf))
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -111,10 +115,10 @@ func testMasterIndex(t *testing.T) {
 		}()
 	}
 
-	saveIndexes := func() {
+	saveIndex := func() {
 		defer wg.Done()
 
-		ticker := time.NewTicker(saveIndexTime)
+		ticker := time.NewTicker(testSaveIndexTime)
 		defer ticker.Stop()
 
 		for {
@@ -131,7 +135,7 @@ func testMasterIndex(t *testing.T) {
 	}
 
 	wg.Add(1)
-	go saveIndexes()
+	go saveIndex()
 
 	<-time.After(testTimeout)
 	close(done)
@@ -139,8 +143,8 @@ func testMasterIndex(t *testing.T) {
 	wg.Wait()
 }
 
-func TestMasterIndex(t *testing.T) {
+func TestArchiverDuplication(t *testing.T) {
 	for i := 0; i < 5; i++ {
-		testMasterIndex(t)
+		testArchiverDuplication(t)
 	}
 }
