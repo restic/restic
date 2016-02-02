@@ -31,7 +31,11 @@ var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
 // Archiver is used to backup a set of directories.
 type Archiver struct {
-	repo *repository.Repository
+	repo       *repository.Repository
+	knownBlobs struct {
+		backend.IDSet
+		sync.Mutex
+	}
 
 	blobToken chan struct{}
 
@@ -45,6 +49,12 @@ func NewArchiver(repo *repository.Repository) *Archiver {
 	arch := &Archiver{
 		repo:      repo,
 		blobToken: make(chan struct{}, maxConcurrentBlobs),
+		knownBlobs: struct {
+			backend.IDSet
+			sync.Mutex
+		}{
+			IDSet: backend.NewIDSet(),
+		},
 	}
 
 	for i := 0; i < maxConcurrentBlobs; i++ {
@@ -57,17 +67,37 @@ func NewArchiver(repo *repository.Repository) *Archiver {
 	return arch
 }
 
+// isKnownBlob returns true iff the blob is not yet in the list of known blobs.
+// When the blob is not known, false is returned and the blob is added to the
+// list. This means that the caller false is returned to is responsible to save
+// the blob to the backend.
+func (arch *Archiver) isKnownBlob(id backend.ID) bool {
+	arch.knownBlobs.Lock()
+	defer arch.knownBlobs.Unlock()
+
+	if arch.knownBlobs.Has(id) {
+		return true
+	}
+
+	arch.knownBlobs.Insert(id)
+
+	_, err := arch.repo.Index().Lookup(id)
+	if err == nil {
+		return true
+	}
+
+	return false
+}
+
 // Save stores a blob read from rd in the repository.
 func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
-	// test if this blob is already known
-	if arch.repo.Index().Has(id) {
-		debug.Log("Archiver.Save", "(%v, %v) already saved\n", t, id.Str())
+	if arch.isKnownBlob(id) {
+		debug.Log("Archiver.Save", "blob %v is known\n", id.Str())
 		return nil
 	}
 
-	// otherwise save blob
 	err := arch.repo.SaveFrom(t, &id, length, rd)
 	if err != nil {
 		debug.Log("Archiver.Save", "Save(%v, %v): error %v\n", t, id.Str(), err)
@@ -88,7 +118,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 
 	// check if tree has been saved before
 	id := backend.Hash(data)
-	if arch.repo.Index().IsInFlight(id) || arch.repo.Index().Has(id) {
+	if arch.isKnownBlob(id) {
 		return id, nil
 	}
 

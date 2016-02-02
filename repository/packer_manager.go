@@ -84,7 +84,6 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 			Offset: b.Offset,
 			Length: uint(b.Length),
 		})
-		r.idx.RemoveFromInFlight(b.ID)
 	}
 
 	return nil

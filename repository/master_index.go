@@ -13,23 +13,11 @@ import (
 type MasterIndex struct {
 	idx      []*Index
 	idxMutex sync.RWMutex
-
-	inFlight struct {
-		backend.IDSet
-		sync.RWMutex
-	}
 }
 
 // NewMasterIndex creates a new master index.
 func NewMasterIndex() *MasterIndex {
-	return &MasterIndex{
-		inFlight: struct {
-			backend.IDSet
-			sync.RWMutex
-		}{
-			IDSet: backend.NewIDSet(),
-		},
-	}
+	return &MasterIndex{}
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
@@ -152,68 +140,6 @@ func (mi *MasterIndex) Current() *Index {
 	mi.idx = append(mi.idx, newIdx)
 
 	return newIdx
-}
-
-// AddInFlight add the given ID to the list of in-flight IDs. An error is
-// returned when the ID is already in the list. Setting ignoreDuplicates to
-// true only checks the in flight list, otherwise the index itself is also
-// tested.
-func (mi *MasterIndex) AddInFlight(id backend.ID, ignoreDuplicates bool) error {
-	// The index + inFlight store must be searched for a matching id in one
-	// atomic operation. This requires locking the inFlight store and the
-	// index together!
-	mi.inFlight.Lock()
-	defer mi.inFlight.Unlock()
-
-	if !ignoreDuplicates {
-		// Note: mi.Has read locks the index again.
-		mi.idxMutex.RLock()
-		defer mi.idxMutex.RUnlock()
-	}
-
-	debug.Log("MasterIndex.AddInFlight", "adding %v", id.Str())
-	if mi.inFlight.Has(id) {
-		return fmt.Errorf("%v is already in flight", id.Str())
-	}
-
-	if !ignoreDuplicates {
-		if mi.Has(id) {
-			return fmt.Errorf("%v is already indexed (fully processed)", id)
-		}
-	}
-
-	mi.inFlight.Insert(id)
-	return nil
-}
-
-// IsInFlight returns true iff the id is contained in the list of in-flight IDs.
-func (mi *MasterIndex) IsInFlight(id backend.ID) bool {
-	// The index + inFlight store must be searched for a matching id in one
-	// atomic operation. This requires locking the inFlight store and the
-	// index together!
-	mi.inFlight.RLock()
-	defer mi.inFlight.RUnlock()
-
-	mi.idxMutex.RLock()
-	defer mi.idxMutex.RUnlock()
-
-	inFlight := mi.inFlight.Has(id)
-	debug.Log("MasterIndex.IsInFlight", "testing whether %v is in flight: %v", id.Str(), inFlight)
-
-	indexed := mi.Has(id)
-	debug.Log("MasterIndex.IsInFlight", "testing whether %v is indexed (fully processed): %v", id.Str(), indexed)
-
-	return inFlight
-}
-
-// RemoveFromInFlight deletes the given ID from the liste of in-flight IDs.
-func (mi *MasterIndex) RemoveFromInFlight(id backend.ID) {
-	mi.inFlight.Lock()
-	defer mi.inFlight.Unlock()
-
-	debug.Log("MasterIndex.RemoveFromInFlight", "removing %v from list of in flight blobs", id.Str())
-
-	mi.inFlight.Delete(id)
 }
 
 // NotFinalIndexes returns all indexes that have not yet been saved.

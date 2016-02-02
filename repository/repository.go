@@ -167,10 +167,9 @@ func (r *Repository) LookupBlobSize(id backend.ID) (uint, error) {
 	return r.idx.LookupSize(id)
 }
 
-// SaveAndEncrypt encrypts data and stores it to the backend as type t. If data is small
-// enough, it will be packed together with other small blobs. When
-// ignoreDuplicates is true, blobs already in the index will be saved again.
-func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID, ignoreDuplicates bool) (backend.ID, error) {
+// SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
+// is small enough, it will be packed together with other small blobs.
+func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID) (backend.ID, error) {
 	if id == nil {
 		// compute plaintext hash
 		hashedID := backend.Hash(data)
@@ -189,18 +188,9 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 		return backend.ID{}, err
 	}
 
-	// add this id to the list of in-flight chunk ids.
-	debug.Log("Repo.Save", "add %v to list of in-flight IDs", id.Str())
-	err = r.idx.AddInFlight(*id, ignoreDuplicates)
-	if err != nil {
-		debug.Log("Repo.Save", "another goroutine is already working on %v (%v) does already exist", id.Str, t)
-		return *id, nil
-	}
-
 	// find suitable packer and add blob
 	packer, err := r.findPacker(uint(len(ciphertext)))
 	if err != nil {
-		r.idx.RemoveFromInFlight(*id)
 		return backend.ID{}, err
 	}
 
@@ -234,7 +224,7 @@ func (r *Repository) SaveFrom(t pack.BlobType, id *backend.ID, length uint, rd i
 		return err
 	}
 
-	_, err = r.SaveAndEncrypt(t, buf, id, false)
+	_, err = r.SaveAndEncrypt(t, buf, id)
 	if err != nil {
 		return err
 	}
@@ -258,7 +248,7 @@ func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, er
 	}
 
 	buf = wr.Bytes()
-	return r.SaveAndEncrypt(t, buf, nil, false)
+	return r.SaveAndEncrypt(t, buf, nil)
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
