@@ -3,16 +3,19 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
-	"github.com/juju/errors"
 	"restic"
 	"restic/backend"
 	"restic/pack"
 	"restic/repository"
+
+	"github.com/juju/errors"
+	"restic/worker"
 )
 
 type CmdDump struct {
@@ -32,7 +35,7 @@ func init() {
 }
 
 func (cmd CmdDump) Usage() string {
-	return "[indexes|snapshots|trees|all]"
+	return "[indexes|snapshots|trees|all|packs]"
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
@@ -98,6 +101,85 @@ func printTrees(repo *repository.Repository, wr io.Writer) error {
 	return nil
 }
 
+const numWorkers = 10
+
+// Pack is the struct used in printPacks.
+type Pack struct {
+	Name string `json:"name"`
+
+	Blobs []Blob `json:"blobs"`
+}
+
+// Blob is the struct used in printPacks.
+type Blob struct {
+	Type   pack.BlobType `json:"type"`
+	Length uint          `json:"length"`
+	ID     backend.ID    `json:"id"`
+	Offset uint          `json:"offset"`
+}
+
+func printPacks(repo *repository.Repository, wr io.Writer) error {
+	done := make(chan struct{})
+	defer close(done)
+
+	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
+		name := job.Data.(string)
+
+		h := backend.Handle{Type: backend.Data, Name: name}
+		buf, err := backend.LoadAll(repo.Backend(), h, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		unpacker, err := pack.NewUnpacker(repo.Key(), bytes.NewReader(buf))
+		if err != nil {
+			return nil, err
+		}
+
+		return unpacker.Entries, nil
+	}
+
+	jobCh := make(chan worker.Job)
+	resCh := make(chan worker.Job)
+	wp := worker.New(numWorkers, f, jobCh, resCh)
+
+	go func() {
+		for name := range repo.Backend().List(backend.Data, done) {
+			jobCh <- worker.Job{Data: name}
+		}
+		close(jobCh)
+	}()
+
+	for job := range resCh {
+		name := job.Data.(string)
+
+		if job.Error != nil {
+			fmt.Fprintf(os.Stderr, "error for pack %v: %v\n", name, job.Error)
+			continue
+		}
+
+		entries := job.Result.([]pack.Blob)
+		p := Pack{
+			Name:  name,
+			Blobs: make([]Blob, len(entries)),
+		}
+		for i, blob := range entries {
+			p.Blobs[i] = Blob{
+				Type:   blob.Type,
+				Length: blob.Length,
+				ID:     blob.ID,
+				Offset: blob.Offset,
+			}
+		}
+
+		prettyPrintJSON(os.Stdout, p)
+	}
+
+	wp.Wait()
+
+	return nil
+}
+
 func (cmd CmdDump) DumpIndexes() error {
 	done := make(chan struct{})
 	defer close(done)
@@ -150,6 +232,8 @@ func (cmd CmdDump) Execute(args []string) error {
 		return printSnapshots(repo, os.Stdout)
 	case "trees":
 		return printTrees(repo, os.Stdout)
+	case "packs":
+		return printPacks(repo, os.Stdout)
 	case "all":
 		fmt.Printf("snapshots:\n")
 		err := printSnapshots(repo, os.Stdout)
