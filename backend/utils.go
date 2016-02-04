@@ -1,7 +1,11 @@
 package backend
 
+import "io"
+
 // LoadAll reads all data stored in the backend for the handle. The buffer buf
-// is resized to accomodate all data in the blob.
+// is resized to accomodate all data in the blob. Errors returned by be.Load()
+// are passed on, except io.ErrUnexpectedEOF is silenced and nil returned
+// instead, since it means this function is working properly.
 func LoadAll(be Backend, h Handle, buf []byte) ([]byte, error) {
 	fi, err := be.Stat(h)
 	if err != nil {
@@ -13,6 +17,9 @@ func LoadAll(be Backend, h Handle, buf []byte) ([]byte, error) {
 	}
 
 	n, err := be.Load(h, buf, 0)
+	if err == io.ErrUnexpectedEOF {
+		err = nil
+	}
 	buf = buf[:n]
 	return buf, err
 }
