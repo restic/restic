@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"log"
 	"strings"
+	"time"
+
+	"github.com/cenkalti/backoff"
 
 	"github.com/minio/minio-go"
 
@@ -14,6 +18,10 @@ import (
 
 const connLimit = 10
 const backendPrefix = "restic"
+
+func notifyError(err error, wait time.Duration) {
+	log.Printf("got error '%v', retrying in %v\n", err.Error(), wait)
+}
 
 func s3path(t backend.Type, name string) string {
 	if t == backend.Config {
@@ -73,11 +81,19 @@ func (be *s3) Location() string {
 func (be s3) Load(h backend.Handle, p []byte, off int64) (int, error) {
 	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
 	path := s3path(h.Type, h.Name)
-	obj, err := be.client.GetObject(be.bucketname, path)
+	objCh := make(chan *minio.Object, 1)
+	operation := func() error {
+		obj, err := be.client.GetObject(be.bucketname, path)
+		objCh <- obj
+		return err
+	}
+	err := backoff.RetryNotify(operation, backoff.NewExponentialBackOff(), notifyError)
 	if err != nil {
 		debug.Log("s3.GetReader", "  err %v", err)
 		return 0, err
 	}
+
+	obj := <-objCh
 
 	if off > 0 {
 		_, err = obj.Seek(off, 0)
@@ -117,21 +133,37 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 
 	debug.Log("s3.Save", "PutObject(%v, %v, %v, %v)",
 		be.bucketname, path, int64(len(p)), "binary/octet-stream")
-	n, err := be.client.PutObject(be.bucketname, path, bytes.NewReader(p), "binary/octet-stream")
-	debug.Log("s3.Save", "%v -> %v bytes, err %#v", path, n, err)
+
+	operation := func() error {
+	    n, err := be.client.PutObject(be.bucketname, path, bytes.NewReader(p), "binary/octet-stream")
+	    debug.Log("s3.Save", "%v -> %v bytes, err %#v", path, n, err)
+	    return err
+	}
+
+	err = backoff.RetryNotify(operation, backoff.NewExponentialBackOff(), notifyError)
 
 	return err
 }
 
 // Stat returns information about a blob.
 func (be s3) Stat(h backend.Handle) (backend.BlobInfo, error) {
-	debug.Log("s3.Stat", "%v")
 	path := s3path(h.Type, h.Name)
-	obj, err := be.client.GetObject(be.bucketname, path)
+	debug.Log("s3.Stat", "%v", path)
+	objCh := make(chan *minio.Object, 1)
+
+	operation := func() error {
+		obj, err := be.client.GetObject(be.bucketname, path)
+		objCh <- obj
+		debug.Log("s3.GetObject", "%v %v", err, obj)
+		return err
+	}
+	err := backoff.RetryNotify(operation, backoff.NewExponentialBackOff(), notifyError)
 	if err != nil {
 		debug.Log("s3.Stat", "GetObject() err %v", err)
 		return backend.BlobInfo{}, err
 	}
+
+	obj := <-objCh
 
 	fi, err := obj.Stat()
 	if err != nil {
@@ -158,8 +190,12 @@ func (be *s3) Test(t backend.Type, name string) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (be *s3) Remove(t backend.Type, name string) error {
 	path := s3path(t, name)
-	err := be.client.RemoveObject(be.bucketname, path)
-	debug.Log("s3.Remove", "%v %v -> err %v", t, name, err)
+	operation := func() error {
+		err := be.client.RemoveObject(be.bucketname, path)
+		debug.Log("s3.Remove", "%v %v -> err %v", t, name, err)
+		return err
+	}
+	err := backoff.RetryNotify(operation, backoff.NewExponentialBackOff(), notifyError)
 	return err
 }
 
