@@ -652,6 +652,12 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 		return err
 	}
 
+	hash := backend.Hash(buf)
+	if !hash.Equal(id) {
+		debug.Log("Checker.checkPack", "Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
+		return fmt.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
+	}
+
 	unpacker, err := pack.NewUnpacker(r.Key(), bytes.NewReader(buf))
 	if err != nil {
 		return err
@@ -671,8 +677,8 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 
 		hash := backend.Hash(plainBuf)
 		if !hash.Equal(blob.ID) {
-			debug.Log("Checker.checkPack", "  ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
-			errs = append(errs, fmt.Errorf("ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
+			debug.Log("Checker.checkPack", "  Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
+			errs = append(errs, fmt.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
 			continue
 		}
 	}
