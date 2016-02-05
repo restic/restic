@@ -1,14 +1,14 @@
 package worker
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
-// Job is one unit of work.
-type Job interface{}
-
-// Result is something the worker function returned, including the original job
-// and an (eventual) error.
-type Result struct {
-	Job    Job
+// Job is one unit of work. It is given to a Func, and the returned result and
+// error are stored in Result and Error.
+type Job struct {
+	Data   interface{}
 	Result interface{}
 	Error  error
 }
@@ -22,12 +22,12 @@ type Pool struct {
 	done  chan struct{}
 	wg    *sync.WaitGroup
 	jobCh <-chan Job
-	resCh chan<- Result
+	resCh chan<- Job
 }
 
 // New returns a new worker pool with n goroutines, each running the function
 // f. The workers are started immediately.
-func New(n int, f Func, jobChan <-chan Job, resultChan chan<- Result) *Pool {
+func New(n int, f Func, jobChan <-chan Job, resultChan chan<- Job) *Pool {
 	p := &Pool{
 		f:     f,
 		done:  make(chan struct{}),
@@ -52,10 +52,9 @@ func (p *Pool) runWorker(numWorker int) {
 		// enable the input channel when starting up a new goroutine
 		inCh = p.jobCh
 		// but do not enable the output channel until we have a result
-		outCh chan<- Result
+		outCh chan<- Job
 
 		job Job
-		res Result
 		ok  bool
 	)
 
@@ -66,16 +65,15 @@ func (p *Pool) runWorker(numWorker int) {
 
 		case job, ok = <-inCh:
 			if !ok {
+				fmt.Printf("in channel closed, worker exiting\n")
 				return
 			}
 
-			r, err := p.f(job, p.done)
-			res = Result{Job: job, Result: r, Error: err}
-
+			job.Result, job.Error = p.f(job, p.done)
 			inCh = nil
 			outCh = p.resCh
 
-		case outCh <- res:
+		case outCh <- job:
 			outCh = nil
 			inCh = p.jobCh
 		}
