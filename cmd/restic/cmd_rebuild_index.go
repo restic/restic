@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/restic/restic/backend"
 	"github.com/restic/restic/debug"
@@ -137,6 +138,16 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 
 		h := backend.Handle{Type: backend.Data, Name: packID.String()}
 		buf, err = backend.LoadAll(cmd.repo.Backend(), h, buf)
+		if err != nil {
+			debug.Log("RebuildIndex.RebuildIndex", "error while loading pack %v", packID.Str())
+			return fmt.Errorf("error while loading pack %v: %v", packID.Str(), err)
+		}
+
+		hash := backend.Hash(buf)
+		if !hash.Equal(packID) {
+			debug.Log("RebuildIndex.RebuildIndex", "Pack ID does not match, want %v, got %v", packID.Str(), hash.Str())
+			return fmt.Errorf("Pack ID does not match, want %v, got %v", packID.Str(), hash.Str())
+		}
 
 		up, err := pack.NewUnpacker(cmd.repo.Key(), bytes.NewReader(buf))
 		if err != nil {
