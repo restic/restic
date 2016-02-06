@@ -5,11 +5,20 @@ go:
   - 1.3.3
   - 1.4.3
   - 1.5.3
-  - 1.6rc1
+  - 1.6rc2
 
 os:
   - linux
   - osx
+
+matrix:
+  exclude:
+    - os: osx
+      go: 1.3.3
+    - os: osx
+      go: 1.4.3
+    - os: osx
+      go: 1.6rc2
 
 notifications:
   irc:
