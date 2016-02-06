@@ -17,7 +17,7 @@ install:
   - msiexec /i go1.5.3.windows-amd64.msi /q
   - go version
   - go env
-  - appveyor DownloadFile http://downloads.sourceforge.net/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -FileName tar.zip
+  - appveyor DownloadFile http://sourceforge.netcologne.de/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -FileName tar.zip
   - 7z x tar.zip bin/tar.exe
   - set PATH=bin/;%PATH%
 
