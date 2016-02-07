@@ -13,53 +13,28 @@ type Config struct {
 	UseHTTP       bool
 	KeyID, Secret string
 	Bucket        string
+	Prefix	      string
 }
 
+const defaultPrefix = "restic"
+
 // ParseConfig parses the string s and extracts the s3 config. The two
-// supported configuration formats are s3://host/bucketname and
-// s3:host:bucketname. The host can also be a valid s3 region name.
+// supported configuration formats are s3://host/bucketname/prefix and
+// s3:host:bucketname/prefix. The host can also be a valid s3 region
+// name. If no prefix is given the prefix "restic" will be used.
 func ParseConfig(s string) (interface{}, error) {
+     	var path []string
+	cfg:= Config {};
 	if strings.HasPrefix(s, "s3://") {
 		s = s[5:]
-
-		data := strings.SplitN(s, "/", 2)
-		if len(data) != 2 {
-			return nil, errors.New("s3: invalid format, host/region or bucket name not found")
-		}
-
-		cfg := Config{
-			Endpoint: data[0],
-			Bucket:   data[1],
-		}
-
-		return cfg, nil
-	}
-
-	data := strings.SplitN(s, ":", 2)
-	if len(data) != 2 {
-		return nil, errors.New("s3: invalid format")
-	}
-
-	if data[0] != "s3" {
-		return nil, errors.New(`s3: config does not start with "s3"`)
-	}
-
-	s = data[1]
-
-	cfg := Config{}
-	rest := strings.Split(s, "/")
-	if len(rest) < 2 {
-		return nil, errors.New("s3: region or bucket not found")
-	}
-
-	if len(rest) == 2 {
-		// assume that just a region name and a bucket has been specified, in
-		// the format region/bucket
-		cfg.Endpoint = rest[0]
-		cfg.Bucket = rest[1]
-	} else {
-		// assume that a URL has been specified, parse it and use the path as
-		// the bucket name.
+	       	path = strings.SplitN(s, "/", 3)
+		cfg.Endpoint = path[0]
+		path = path[1:]
+        } else if strings.HasPrefix(s, "s3:http") {
+	       s = s[3:]
+		// assume that a URL has been specified, parse it and
+		// use the host as the endpoint and the path as the
+		// bucket name and prefix
 		url, err := url.Parse(s)
 		if err != nil {
 			return nil, err
@@ -73,9 +48,25 @@ func ParseConfig(s string) (interface{}, error) {
 		if url.Scheme == "http" {
 			cfg.UseHTTP = true
 		}
-
-		cfg.Bucket = url.Path[1:]
+		path = strings.SplitN(url.Path[1:], "/", 2)
+	} else if strings.HasPrefix(s, "s3:") {
+	       s = s[3:]
+	       path = strings.SplitN(s, "/",3)
+	       cfg.Endpoint = path[0]
+	       path = path[1:]
+	} else {
+		return nil, errors.New("s3: invalid format")
 	}
+	if len(path) < 1 {
+		return nil, errors.New("s3: invalid format, host/region or bucket name not found")
+	}
+	cfg.Bucket = path[0];
+	if len(path) > 1 {
+	   cfg.Prefix = path[1]
+	} else {
+	   cfg.Prefix = defaultPrefix
+        }
 
 	return cfg, nil
 }
+
