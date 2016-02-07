@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -51,6 +52,12 @@ const maxWorkers = 100
 func TestPipelineWalkerWithSplit(t *testing.T) {
 	if TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
+	}
+
+	var err error
+	if !filepath.IsAbs(TestWalkerPath) {
+		TestWalkerPath, err = filepath.Abs(TestWalkerPath)
+		OK(t, err)
 	}
 
 	before, err := statPath(TestWalkerPath)
@@ -141,6 +148,12 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 func TestPipelineWalker(t *testing.T) {
 	if TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
+	}
+
+	var err error
+	if !filepath.IsAbs(TestWalkerPath) {
+		TestWalkerPath, err = filepath.Abs(TestWalkerPath)
+		OK(t, err)
 	}
 
 	before, err := statPath(TestWalkerPath)
@@ -421,6 +434,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 	}
 
 	paths, err := filepath.Glob(filepath.Join(TestWalkerPath, "*"))
+	OK(t, err)
 
 	before, err := statPath(TestWalkerPath)
 	OK(t, err)
@@ -490,4 +504,96 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 	t.Logf("walked %d paths with %d dirs, %d files", len(paths), after.dirs, after.files)
 
 	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+}
+
+func dirsInPath(path string) int {
+	if path == "/" || path == "." || path == "" {
+		return 0
+	}
+
+	n := 0
+	for dir := path; dir != "/" && dir != "."; dir = filepath.Dir(dir) {
+		n++
+	}
+
+	return n
+}
+
+func TestPipeWalkerRoot(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skipf("not running TestPipeWalkerRoot on %s", runtime.GOOS)
+		return
+	}
+
+	cwd, err := os.Getwd()
+	OK(t, err)
+
+	testPaths := []string{
+		string(filepath.Separator),
+		".",
+		cwd,
+	}
+
+	for _, path := range testPaths {
+		testPipeWalkerRootWithPath(path, t)
+	}
+}
+
+func testPipeWalkerRootWithPath(path string, t *testing.T) {
+	pattern := filepath.Join(path, "*")
+	rootPaths, err := filepath.Glob(pattern)
+	OK(t, err)
+
+	for i, p := range rootPaths {
+		rootPaths[i], err = filepath.Rel(path, p)
+		OK(t, err)
+	}
+
+	t.Logf("paths in %v (pattern %q) expanded to %v items", path, pattern, len(rootPaths))
+
+	done := make(chan struct{})
+	defer close(done)
+
+	jobCh := make(chan pipe.Job)
+	var jobs []pipe.Job
+
+	worker := func(wg *sync.WaitGroup) {
+		defer wg.Done()
+		for job := range jobCh {
+			jobs = append(jobs, job)
+		}
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go worker(&wg)
+
+	filter := func(p string, fi os.FileInfo) bool {
+		p, err := filepath.Rel(path, p)
+		OK(t, err)
+		return dirsInPath(p) <= 1
+	}
+
+	resCh := make(chan pipe.Result, 1)
+	pipe.Walk([]string{path}, filter, done, jobCh, resCh)
+
+	wg.Wait()
+
+	t.Logf("received %d jobs", len(jobs))
+
+	for i, job := range jobs[:len(jobs)-1] {
+		path := job.Path()
+		if path == "." || path == ".." || path == string(filepath.Separator) {
+			t.Errorf("job %v has invalid path %q", i, path)
+		}
+	}
+
+	lastPath := jobs[len(jobs)-1].Path()
+	if lastPath != "" {
+		t.Errorf("last job has non-empty path %q", lastPath)
+	}
+
+	if len(jobs) < len(rootPaths) {
+		t.Errorf("want at least %v jobs, got %v for path %v\n", len(rootPaths), len(jobs), path)
+	}
 }

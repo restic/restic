@@ -83,7 +83,7 @@ var errCancelled = errors.New("walk cancelled")
 type SelectFunc func(item string, fi os.FileInfo) bool
 
 func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs chan<- Job, res chan<- Result) {
-	debug.Log("pipe.walk", "start on %v", dir)
+	debug.Log("pipe.walk", "start on %q, basedir %q", dir, basedir)
 
 	relpath, err := filepath.Rel(basedir, dir)
 	if err != nil {
@@ -158,15 +158,41 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		walk(basedir, subpath, selectFunc, done, jobs, ch)
 	}
 
+	debug.Log("pipe.walk", "sending dirjob for %q, basedir %q", dir, basedir)
 	select {
 	case jobs <- Dir{basedir: basedir, path: relpath, info: info, Entries: entries, result: res}:
 	case <-done:
 	}
 }
 
+// cleanupPath is used to clean a path. For a normal path, a slice with just
+// the path is returned. For special cases such as "." and "/" the list of
+// names within those paths is returned.
+func cleanupPath(path string) ([]string, error) {
+	path = filepath.Clean(path)
+	if filepath.Dir(path) != path {
+		return []string{path}, nil
+	}
+
+	return readDirNames(path)
+}
+
 // Walk sends a Job for each file and directory it finds below the paths. When
 // the channel done is closed, processing stops.
-func Walk(paths []string, selectFunc SelectFunc, done chan struct{}, jobs chan<- Job, res chan<- Result) {
+func Walk(walkPaths []string, selectFunc SelectFunc, done chan struct{}, jobs chan<- Job, res chan<- Result) {
+	var paths []string
+
+	for _, p := range walkPaths {
+		ps, err := cleanupPath(p)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Readdirnames(%v): %v, skipping\n", p, err)
+			debug.Log("pipe.Walk", "Readdirnames(%v) returned error: %v, skipping", p, err)
+			continue
+		}
+
+		paths = append(paths, ps...)
+	}
+
 	debug.Log("pipe.Walk", "start on %v", paths)
 	defer func() {
 		debug.Log("pipe.Walk", "output channel closed")
