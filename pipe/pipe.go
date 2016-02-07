@@ -82,7 +82,7 @@ var errCancelled = errors.New("walk cancelled")
 // dirs). If false is returned, files are ignored and dirs are not even walked.
 type SelectFunc func(item string, fi os.FileInfo) bool
 
-func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs chan<- Job, res chan<- Result) {
+func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs chan<- Job, res chan<- Result) (excluded bool) {
 	debug.Log("pipe.walk", "start on %q, basedir %q", dir, basedir)
 
 	relpath, err := filepath.Rel(basedir, dir)
@@ -102,6 +102,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 
 	if !selectFunc(dir, info) {
 		debug.Log("pipe.walk", "file %v excluded by filter, res %p", dir, res)
+		excluded = true
 		return
 	}
 
@@ -165,6 +166,8 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 	case jobs <- Dir{basedir: basedir, path: relpath, info: info, Entries: entries, result: res}:
 	case <-done:
 	}
+
+	return
 }
 
 // cleanupPath is used to clean a path. For a normal path, a slice with just
@@ -214,7 +217,13 @@ func Walk(walkPaths []string, selectFunc SelectFunc, done chan struct{}, jobs ch
 	for _, path := range paths {
 		debug.Log("pipe.Walk", "start walker for %v", path)
 		ch := make(chan Result, 1)
-		walk(filepath.Dir(path), path, selectFunc, done, jobs, ch)
+		excluded := walk(filepath.Dir(path), path, selectFunc, done, jobs, ch)
+
+		if excluded {
+			debug.Log("pipe.Walk", "walker for %v done, it was excluded by the filter", path)
+			continue
+		}
+
 		entries = append(entries, ch)
 		debug.Log("pipe.Walk", "walker for %v done", path)
 	}
