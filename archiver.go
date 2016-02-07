@@ -350,6 +350,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 
 			// ignore dir nodes with errors
 			if dir.Error() != nil {
+				fmt.Fprintf(os.Stderr, "error walking dir %v: %v\n", dir.Path(), dir.Error())
 				dir.Result() <- nil
 				p.Report(Stat{Errors: 1})
 				continue
@@ -365,6 +366,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				// if we get a nil pointer here, an error has happened while
 				// processing this entry. Ignore it for now.
 				if res == nil {
+					debug.Log("Archiver.dirWorker", "got nil result?")
 					continue
 				}
 
@@ -373,7 +375,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				tree.Insert(node)
 
 				if node.Type == "dir" {
-					debug.Log("Archiver.dirWorker", "got tree node for %s: %v", node.path, node.blobs)
+					debug.Log("Archiver.dirWorker", "got tree node for %s: %v", node.path, node.Subtree)
 
 					if node.Subtree.IsNull() {
 						panic("invalid null subtree ID")
