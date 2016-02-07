@@ -45,14 +45,40 @@ func newDir(repo *repository.Repository, node *restic.Node, ownerIsRoot bool) (*
 	}, nil
 }
 
+// replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
+// Otherwise, the node is returned.
+func replaceSpecialNodes(repo *repository.Repository, node *restic.Node) ([]*restic.Node, error) {
+	if node.Type != "dir" || node.Subtree == nil {
+		return []*restic.Node{node}, nil
+	}
+
+	if node.Name != "." && node.Name != "/" {
+		return []*restic.Node{node}, nil
+	}
+
+	tree, err := restic.LoadTree(repo, *node.Subtree)
+	if err != nil {
+		return nil, err
+	}
+
+	return tree.Nodes, nil
+}
+
 func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId, ownerIsRoot bool) (*dir, error) {
 	tree, err := restic.LoadTree(repo, *snapshot.Tree)
 	if err != nil {
 		return nil, err
 	}
 	items := make(map[string]*restic.Node)
-	for _, node := range tree.Nodes {
-		items[node.Name] = node
+	for _, n := range tree.Nodes {
+		nodes, err := replaceSpecialNodes(repo, n)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, node := range nodes {
+			items[node.Name] = node
+		}
 	}
 
 	return &dir{
