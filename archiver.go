@@ -605,14 +605,30 @@ func (arch *Archiver) saveIndexes(wg *sync.WaitGroup, done <-chan struct{}) {
 	}
 }
 
+// unique returns a slice that only contains unique strings.
+func unique(items []string) []string {
+	seen := make(map[string]struct{})
+	for _, item := range items {
+		seen[item] = struct{}{}
+	}
+
+	items = items[:0]
+	for item := range seen {
+		items = append(items, item)
+	}
+	return items
+}
+
 // Snapshot creates a snapshot of the given paths. If parentID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
 func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID) (*Snapshot, backend.ID, error) {
+	paths = unique(paths)
+	sort.Strings(paths)
+
 	debug.Log("Archiver.Snapshot", "start for %v", paths)
 
 	debug.RunHook("Archiver.Snapshot", nil)
-	sort.Strings(paths)
 
 	// signal the whole pipeline to stop
 	done := make(chan struct{})
