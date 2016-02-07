@@ -54,6 +54,12 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
+	var err error
+	if !filepath.IsAbs(TestWalkerPath) {
+		TestWalkerPath, err = filepath.Abs(TestWalkerPath)
+		OK(t, err)
+	}
+
 	before, err := statPath(TestWalkerPath)
 	OK(t, err)
 
@@ -142,6 +148,12 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 func TestPipelineWalker(t *testing.T) {
 	if TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
+	}
+
+	var err error
+	if !filepath.IsAbs(TestWalkerPath) {
+		TestWalkerPath, err = filepath.Abs(TestWalkerPath)
+		OK(t, err)
 	}
 
 	before, err := statPath(TestWalkerPath)
