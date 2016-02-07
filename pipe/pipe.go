@@ -92,7 +92,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 
 	info, err := os.Lstat(dir)
 	if err != nil {
-		debug.Log("pipe.walk", "error for %v: %v", dir, err)
+		debug.Log("pipe.walk", "error for %v: %v, res %p", dir, err, res)
 		select {
 		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
 		case <-done:
@@ -101,11 +101,12 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 	}
 
 	if !selectFunc(dir, info) {
-		debug.Log("pipe.walk", "file %v excluded by filter", dir)
+		debug.Log("pipe.walk", "file %v excluded by filter, res %p", dir, res)
 		return
 	}
 
 	if !info.IsDir() {
+		debug.Log("pipe.walk", "sending file job for %v, res %p", dir, res)
 		select {
 		case jobs <- Entry{info: info, basedir: basedir, path: relpath, result: res}:
 		case <-done:
@@ -116,7 +117,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 	debug.RunHook("pipe.readdirnames", dir)
 	names, err := readDirNames(dir)
 	if err != nil {
-		debug.Log("pipe.walk", "Readdirnames(%v) returned error: %v", dir, err)
+		debug.Log("pipe.walk", "Readdirnames(%v) returned error: %v, res %p", dir, err, res)
 		select {
 		case <-done:
 		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
@@ -143,6 +144,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		entries = append(entries, ch)
 
 		if statErr != nil {
+			debug.Log("pipe.walk", "sending file job for %v, err %v, res %p", subpath, err, res)
 			select {
 			case jobs <- Entry{info: fi, error: statErr, basedir: basedir, path: filepath.Join(relpath, name), result: ch}:
 			case <-done:
@@ -158,7 +160,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		walk(basedir, subpath, selectFunc, done, jobs, ch)
 	}
 
-	debug.Log("pipe.walk", "sending dirjob for %q, basedir %q", dir, basedir)
+	debug.Log("pipe.walk", "sending dirjob for %q, basedir %q, res %p", dir, basedir, res)
 	select {
 	case jobs <- Dir{basedir: basedir, path: relpath, info: info, Entries: entries, result: res}:
 	case <-done:
@@ -217,7 +219,7 @@ func Walk(walkPaths []string, selectFunc SelectFunc, done chan struct{}, jobs ch
 		debug.Log("pipe.Walk", "walker for %v done", path)
 	}
 
-	debug.Log("pipe.Walk", "sending root node")
+	debug.Log("pipe.Walk", "sending root node, res %p", res)
 	select {
 	case <-done:
 		return
