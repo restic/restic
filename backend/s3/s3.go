@@ -13,13 +13,12 @@ import (
 )
 
 const connLimit = 10
-const backendPrefix = "restic"
 
-func s3path(t backend.Type, name string) string {
+func s3path(prefix string, t backend.Type, name string) string {
 	if t == backend.Config {
-		return backendPrefix + "/" + string(t)
+		return prefix + "/" + string(t)
 	}
-	return backendPrefix + "/" + string(t) + "/" + name
+	return prefix + "/" + string(t) + "/" + name
 }
 
 // s3 is a backend which stores the data on an S3 endpoint.
@@ -27,6 +26,7 @@ type s3 struct {
 	client     minio.CloudStorageClient
 	connChan   chan struct{}
 	bucketname string
+	prefix     string
 }
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
@@ -39,7 +39,7 @@ func Open(cfg Config) (backend.Backend, error) {
 		return nil, err
 	}
 
-	be := &s3{client: client, bucketname: cfg.Bucket}
+	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix}
 	be.createConnections()
 
 	if err := client.BucketExists(cfg.Bucket); err != nil {
@@ -72,7 +72,7 @@ func (be *s3) Location() string {
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (be s3) Load(h backend.Handle, p []byte, off int64) (int, error) {
 	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
-	path := s3path(h.Type, h.Name)
+	path := s3path(be.prefix, h.Type, h.Name)
 	obj, err := be.client.GetObject(be.bucketname, path)
 	if err != nil {
 		debug.Log("s3.GetReader", "  err %v", err)
@@ -101,7 +101,7 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 
 	debug.Log("s3.Save", "%v bytes at %d", len(p), h)
 
-	path := s3path(h.Type, h.Name)
+	path := s3path(be.prefix, h.Type, h.Name)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, path)
@@ -126,7 +126,7 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 // Stat returns information about a blob.
 func (be s3) Stat(h backend.Handle) (backend.BlobInfo, error) {
 	debug.Log("s3.Stat", "%v")
-	path := s3path(h.Type, h.Name)
+	path := s3path(be.prefix, h.Type, h.Name)
 	obj, err := be.client.GetObject(be.bucketname, path)
 	if err != nil {
 		debug.Log("s3.Stat", "GetObject() err %v", err)
@@ -145,7 +145,7 @@ func (be s3) Stat(h backend.Handle) (backend.BlobInfo, error) {
 // Test returns true if a blob of the given type and name exists in the backend.
 func (be *s3) Test(t backend.Type, name string) (bool, error) {
 	found := false
-	path := s3path(t, name)
+	path := s3path(be.prefix, t, name)
 	_, err := be.client.StatObject(be.bucketname, path)
 	if err == nil {
 		found = true
@@ -157,7 +157,7 @@ func (be *s3) Test(t backend.Type, name string) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (be *s3) Remove(t backend.Type, name string) error {
-	path := s3path(t, name)
+	path := s3path(be.prefix, t, name)
 	err := be.client.RemoveObject(be.bucketname, path)
 	debug.Log("s3.Remove", "%v %v -> err %v", t, name, err)
 	return err
@@ -170,7 +170,7 @@ func (be *s3) List(t backend.Type, done <-chan struct{}) <-chan string {
 	debug.Log("s3.List", "listing %v", t)
 	ch := make(chan string)
 
-	prefix := s3path(t, "")
+	prefix := s3path(be.prefix, t, "")
 
 	listresp := be.client.ListObjects(be.bucketname, prefix, true, done)
 
