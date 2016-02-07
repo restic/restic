@@ -245,6 +245,17 @@ func TestLoad(t testing.TB) {
 		}
 	}
 
+	// load with a too-large buffer, this should return io.ErrUnexpectedEOF
+	buf := make([]byte, length+100)
+	n, err := b.Load(handle, buf, 0)
+	if n != length {
+		t.Errorf("wrong length for larger buffer returned, want %d, got %d", length, n)
+	}
+
+	if err != io.ErrUnexpectedEOF {
+		t.Errorf("wrong error returned for larger buffer: want io.ErrUnexpectedEOF, got %#v", err)
+	}
+
 	OK(t, b.Remove(backend.Data, id.String()))
 }
 
