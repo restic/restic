@@ -350,6 +350,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 
 			// ignore dir nodes with errors
 			if dir.Error() != nil {
+				fmt.Fprintf(os.Stderr, "error walking dir %v: %v\n", dir.Path(), dir.Error())
 				dir.Result() <- nil
 				p.Report(Stat{Errors: 1})
 				continue
