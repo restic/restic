@@ -174,7 +174,16 @@ func cleanupPath(path string) ([]string, error) {
 		return []string{path}, nil
 	}
 
-	return readDirNames(path)
+	paths, err := readDirNames(path)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, p := range paths {
+		paths[i] = filepath.Join(path, p)
+	}
+
+	return paths, nil
 }
 
 // Walk sends a Job for each file and directory it finds below the paths. When
