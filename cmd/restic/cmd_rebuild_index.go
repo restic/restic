@@ -125,7 +125,6 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 
 	cmd.global.Printf("checking for additional packs\n")
 	newPacks := 0
-	var buf []byte
 	for packID := range cmd.repo.List(backend.Data, done) {
 		if packsDone.Has(packID) {
 			continue
@@ -137,6 +136,7 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 		var err error
 
 		h := backend.Handle{Type: backend.Data, Name: packID.String()}
+		buf := make([]byte, 0)
 		buf, err = backend.LoadAll(cmd.repo.Backend(), h, buf)
 		if err != nil {
 			debug.Log("RebuildIndex.RebuildIndex", "error while loading pack %v", packID.Str())
