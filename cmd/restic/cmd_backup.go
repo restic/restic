@@ -153,9 +153,13 @@ func (cmd CmdBackup) newArchiveProgress(todo restic.Stat) *restic.Progress {
 
 		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
 		if err == nil {
-			if len(status1)+len(status2) > w {
-				max := w - len(status2) - 4
-				status1 = status1[:max] + "... "
+			maxlen := w - len(status2)
+
+			if maxlen < 4 {
+				status1 = ""
+			} else if len(status1) > maxlen {
+				status1 = status1[:maxlen-4]
+				status1 += "... "
 			}
 		}
 
