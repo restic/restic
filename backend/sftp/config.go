@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const Scheme = "sftp"
+
 // Config collects all information required to connect to an sftp server.
 type Config struct {
 	User, Host, Dir string

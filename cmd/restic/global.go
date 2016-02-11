@@ -9,6 +9,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/restic/restic/backend"
+	"github.com/restic/restic/backend/gcs"
 	"github.com/restic/restic/backend/local"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
@@ -204,6 +205,17 @@ func open(s string) (backend.Backend, error) {
 
 		debug.Log("open", "opening s3 repository at %#v", cfg)
 		return s3.Open(cfg)
+	case gcs.Scheme:
+		cfg := loc.Config.(gcs.Config)
+		if cfg.KeyID == "" {
+			cfg.KeyID = os.Getenv("GS_ACCESS_KEY_ID")
+
+		}
+		if cfg.Secret == "" {
+			cfg.Secret = os.Getenv("GS_SECRET_ACCESS_KEY")
+		}
+		debug.Log("open", "opening gcs repository at %#v", cfg)
+		return gcs.Open(cfg)
 	}
 
 	debug.Log("open", "invalid repository location: %v", s)
@@ -237,6 +249,18 @@ func create(s string) (backend.Backend, error) {
 
 		debug.Log("open", "create s3 repository at %#v", loc.Config)
 		return s3.Open(cfg)
+	case gcs.Scheme:
+		cfg := loc.Config.(gcs.Config)
+		if cfg.KeyID == "" {
+			cfg.KeyID = os.Getenv("GS_ACCESS_KEY_ID")
+
+		}
+		if cfg.Secret == "" {
+			cfg.Secret = os.Getenv("GS_SECRET_ACCESS_KEY")
+		}
+
+		debug.Log("open", "create gcs repository at %#v", loc.Config)
+		return gcs.Open(cfg)
 	}
 
 	debug.Log("open", "invalid repository scheme: %v", s)

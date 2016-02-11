@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/restic/restic/backend/gcs"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
 )
@@ -44,6 +45,34 @@ var parseTests = []struct {
 			Dir:  "/srv/repo",
 		}}},
 
+	{"gs://bucketname", Location{Scheme: "gs",
+		Config: gcs.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "restic",
+		}},
+	},
+	{"gs://bucketname/prefix/directory", Location{Scheme: "gs",
+		Config: gcs.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "prefix/directory",
+		}},
+	},
+	{"gs:bucketname", Location{Scheme: "gs",
+		Config: gcs.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "restic",
+		}},
+	},
+	{"gs:bucketname/prefix/directory", Location{Scheme: "gs",
+		Config: gcs.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "prefix/directory",
+		}},
+	},
 	{"s3://eu-central-1/bucketname", Location{Scheme: "s3",
 		Config: s3.Config{
 			Endpoint: "eu-central-1",

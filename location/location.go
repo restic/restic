@@ -4,6 +4,7 @@ package location
 import (
 	"strings"
 
+	"github.com/restic/restic/backend/gcs"
 	"github.com/restic/restic/backend/local"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
@@ -27,6 +28,7 @@ var parsers = []parser{
 	{local.Scheme, local.ParseConfig},
 	{sftp.Scheme, sftp.ParseConfig},
 	{s3.Scheme, s3.ParseConfig},
+	{gcs.Scheme, gcs.ParseConfig},
 }
 
 // Parse extracts repository location information from the string s. If s
