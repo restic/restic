@@ -11,6 +11,8 @@ type Config struct {
 	User, Host, Dir string
 }
 
+const Scheme = "sftp"
+
 // ParseConfig extracts all information for the sftp connection from the string s.
 func ParseConfig(s string) (interface{}, error) {
 	if strings.HasPrefix(s, "sftp://") {
