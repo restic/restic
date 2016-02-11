@@ -186,13 +186,13 @@ func open(s string) (backend.Backend, error) {
 	}
 
 	switch loc.Scheme {
-	case "local":
+	case local.Scheme:
 		debug.Log("open", "opening local repository at %#v", loc.Config)
 		return local.Open(loc.Config.(string))
-	case "sftp":
+	case sftp.Scheme:
 		debug.Log("open", "opening sftp repository at %#v", loc.Config)
 		return sftp.OpenWithConfig(loc.Config.(sftp.Config))
-	case "s3":
+	case s3.Scheme:
 		cfg := loc.Config.(s3.Config)
 		if cfg.KeyID == "" {
 			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
@@ -219,13 +219,13 @@ func create(s string) (backend.Backend, error) {
 	}
 
 	switch loc.Scheme {
-	case "local":
+	case local.Scheme:
 		debug.Log("open", "create local repository at %#v", loc.Config)
 		return local.Create(loc.Config.(string))
-	case "sftp":
+	case sftp.Scheme:
 		debug.Log("open", "create sftp repository at %#v", loc.Config)
 		return sftp.CreateWithConfig(loc.Config.(sftp.Config))
-	case "s3":
+	case s3.Scheme:
 		cfg := loc.Config.(s3.Config)
 		if cfg.KeyID == "" {
 			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")

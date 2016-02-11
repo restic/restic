@@ -16,6 +16,8 @@ type Config struct {
 	Prefix	      string
 }
 
+const Scheme = "s3"
+
 const defaultPrefix = "restic"
 
 // ParseConfig parses the string s and extracts the s3 config. The two
