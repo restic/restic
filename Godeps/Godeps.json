@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/restic/restic",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5",
 	"Packages": [
 		"./..."
 	],
@@ -29,7 +29,7 @@
 		},
 		{
 			"ImportPath": "github.com/pkg/sftp",
-			"Rev": "518aed2757a65cfa64d4b1b2baf08410f8b7a6bc"
+			"Rev": "e84cc8c755ca39b7b64f510fe1fffc1b51f210a5"
 		},
 		{
 			"ImportPath": "github.com/restic/chunker",
