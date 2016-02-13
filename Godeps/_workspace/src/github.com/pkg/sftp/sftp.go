@@ -46,6 +46,32 @@ const (
 	ssh_FX_NO_CONNECTION     = 6
 	ssh_FX_CONNECTION_LOST   = 7
 	ssh_FX_OP_UNSUPPORTED    = 8
+
+	// see draft-ietf-secsh-filexfer-13
+	// https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-9.1
+	ssh_FX_INVALID_HANDLE              = 9
+	ssh_FX_NO_SUCH_PATH                = 10
+	ssh_FX_FILE_ALREADY_EXISTS         = 11
+	ssh_FX_WRITE_PROTECT               = 12
+	ssh_FX_NO_MEDIA                    = 13
+	ssh_FX_NO_SPACE_ON_FILESYSTEM      = 14
+	ssh_FX_QUOTA_EXCEEDED              = 15
+	ssh_FX_UNKNOWN_PRINCIPAL           = 16
+	ssh_FX_LOCK_CONFLICT               = 17
+	ssh_FX_DIR_NOT_EMPTY               = 18
+	ssh_FX_NOT_A_DIRECTORY             = 19
+	ssh_FX_INVALID_FILENAME            = 20
+	ssh_FX_LINK_LOOP                   = 21
+	ssh_FX_CANNOT_DELETE               = 22
+	ssh_FX_INVALID_PARAMETER           = 23
+	ssh_FX_FILE_IS_A_DIRECTORY         = 24
+	ssh_FX_BYTE_RANGE_LOCK_CONFLICT    = 25
+	ssh_FX_BYTE_RANGE_LOCK_REFUSED     = 26
+	ssh_FX_DELETE_PENDING              = 27
+	ssh_FX_FILE_CORRUPT                = 28
+	ssh_FX_OWNER_INVALID               = 29
+	ssh_FX_GROUP_INVALID               = 30
+	ssh_FX_NO_MATCHING_BYTE_RANGE_LOCK = 31
 )
 
 const (
@@ -159,9 +185,9 @@ func unimplementedPacketErr(u uint8) error {
 	return fmt.Errorf("sftp: unimplemented packet type: got %v", fxp(u))
 }
 
-type unexpectedIdErr struct{ want, got uint32 }
+type unexpectedIDErr struct{ want, got uint32 }
 
-func (u *unexpectedIdErr) Error() string {
+func (u *unexpectedIDErr) Error() string {
 	return fmt.Sprintf("sftp: unexpected id: want %v, got %v", u.want, u.got)
 }
 
@@ -179,6 +205,8 @@ func (u *unexpectedVersionErr) Error() string {
 	return fmt.Sprintf("sftp: unexpected server version: want %v, got %v", u.want, u.got)
 }
 
+// A StatusError is returned when an SFTP operation fails, and provides
+// additional information about the failure.
 type StatusError struct {
 	Code      uint32
 	msg, lang string
