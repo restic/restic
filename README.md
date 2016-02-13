@@ -51,6 +51,9 @@ afterwards you'll find the binary in the current directory:
 More documentation can be found on the [website](https://restic.github.io),
 especially in the [user manual](https://restic.github.io/manual).
 
+At the moment, the only tested compiler for restic is the official Go compiler.
+Building restic with gccgo may work, but is not supported.
+
 Compatibility
 =============
 
