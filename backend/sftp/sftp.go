@@ -360,11 +360,11 @@ func (r *SFTP) Stat(h backend.Handle) (backend.BlobInfo, error) {
 // Test returns true if a blob of the given type and name exists in the backend.
 func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
 	_, err := r.c.Lstat(r.filename(t, name))
-	if err != nil {
-		if _, ok := err.(*sftp.StatusError); ok {
-			return false, nil
-		}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
 
+	if err != nil {
 		return false, err
 	}
 
