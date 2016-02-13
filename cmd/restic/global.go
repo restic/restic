@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/restic/restic/backend"
@@ -32,6 +33,48 @@ type GlobalOptions struct {
 	password string
 	stdout   io.Writer
 	stderr   io.Writer
+}
+
+func init() {
+	restoreTerminal()
+}
+
+// checkErrno returns nil when err is set to syscall.Errno(0), since this is no
+// error condition.
+func checkErrno(err error) error {
+	e, ok := err.(syscall.Errno)
+	if !ok {
+		return err
+	}
+
+	if e == 0 {
+		return nil
+	}
+
+	return err
+}
+
+// restoreTerminal installs a cleanup handler that restores the previous
+// terminal state on exit.
+func restoreTerminal() {
+	fd := int(os.Stdout.Fd())
+	if !terminal.IsTerminal(fd) {
+		return
+	}
+
+	state, err := terminal.GetState(fd)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
+		return
+	}
+
+	AddCleanupHandler(func() error {
+		err := checkErrno(terminal.Restore(fd, state))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable to get restore terminal state: %#+v\n", err)
+		}
+		return err
+	})
 }
 
 var globalOpts = GlobalOptions{stdout: os.Stdout, stderr: os.Stderr}
