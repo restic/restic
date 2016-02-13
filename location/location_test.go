@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/restic/restic/backend/gcs"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
 )
@@ -44,34 +45,88 @@ var parseTests = []struct {
 			Dir:  "/srv/repo",
 		}}},
 
+	{"gs://bucketname", Location{Scheme: "gs",
+		Config: gcs.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "restic",
+		}},
+	},
+	{"gs://bucketname/prefix/directory", Location{Scheme: "gs",
+		Config: gcs.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "prefix/directory",
+		}},
+	},
+	{"gs:bucketname", Location{Scheme: "gs",
+		Config: gcs.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "restic",
+		}},
+	},
+	{"gs:bucketname/prefix/directory", Location{Scheme: "gs",
+		Config: gcs.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "prefix/directory",
+		}},
+	},
 	{"s3://eu-central-1/bucketname", Location{Scheme: "s3",
 		Config: s3.Config{
 			Endpoint: "eu-central-1",
 			Bucket:   "bucketname",
+			Prefix:   "restic",
 		}},
 	},
 	{"s3://hostname.foo/bucketname", Location{Scheme: "s3",
 		Config: s3.Config{
 			Endpoint: "hostname.foo",
 			Bucket:   "bucketname",
+			Prefix:   "restic",
+		}},
+	},
+	{"s3://hostname.foo/bucketname/prefix/directory", Location{Scheme: "s3",
+		Config: s3.Config{
+			Endpoint: "hostname.foo",
+			Bucket:   "bucketname",
+			Prefix:   "prefix/directory",
 		}},
 	},
 	{"s3:eu-central-1/repo", Location{Scheme: "s3",
 		Config: s3.Config{
 			Endpoint: "eu-central-1",
 			Bucket:   "repo",
+			Prefix:   "restic",
+		}},
+	},
+	{"s3:eu-central-1/repo/prefix/directory", Location{Scheme: "s3",
+		Config: s3.Config{
+			Endpoint: "eu-central-1",
+			Bucket:   "repo",
+			Prefix:   "prefix/directory",
 		}},
 	},
 	{"s3:https://hostname.foo/repo", Location{Scheme: "s3",
 		Config: s3.Config{
 			Endpoint: "hostname.foo",
 			Bucket:   "repo",
+			Prefix:   "restic",
+		}},
+	},
+	{"s3:https://hostname.foo/repo/prefix/directory", Location{Scheme: "s3",
+		Config: s3.Config{
+			Endpoint: "hostname.foo",
+			Bucket:   "repo",
+			Prefix:   "prefix/directory",
 		}},
 	},
 	{"s3:http://hostname.foo/repo", Location{Scheme: "s3",
 		Config: s3.Config{
 			Endpoint: "hostname.foo",
 			Bucket:   "repo",
+			Prefix:   "restic",
 			UseHTTP:  true,
 		}},
 	},

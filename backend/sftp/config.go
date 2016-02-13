@@ -6,10 +6,14 @@ import (
 	"strings"
 )
 
+const Scheme = "sftp"
+
 // Config collects all information required to connect to an sftp server.
 type Config struct {
 	User, Host, Dir string
 }
+
+const Scheme = "sftp"
 
 // ParseConfig extracts all information for the sftp connection from the string s.
 func ParseConfig(s string) (interface{}, error) {

@@ -1,4 +1,4 @@
-package s3
+package gcs
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 	"github.com/restic/restic/debug"
 )
 
-const connLimit = 10
+const connLimit = 20
 
 func s3path(prefix string, t backend.Type, name string) string {
 	if t == backend.Config {
@@ -21,7 +21,7 @@ func s3path(prefix string, t backend.Type, name string) string {
 	return prefix + "/" + string(t) + "/" + name
 }
 
-// s3 is a backend which stores the data on an S3 endpoint.
+// s3 is a backend which stores the data on an S3 compatible endpoint.
 type s3 struct {
 	client     minio.CloudStorageClient
 	connChan   chan struct{}
@@ -32,7 +32,7 @@ type s3 struct {
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
 func Open(cfg Config) (backend.Backend, error) {
-	debug.Log("s3.Open", "open, config %#v", cfg)
+	debug.Log("gcs.Open", "open, config %#v", cfg)
 
 	client, err := minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, cfg.UseHTTP)
 	if err != nil {
@@ -43,7 +43,7 @@ func Open(cfg Config) (backend.Backend, error) {
 	be.createConnections()
 
 	if err := client.BucketExists(cfg.Bucket); err != nil {
-		debug.Log("s3.Open", "BucketExists(%v) returned err %v, trying to create the bucket", cfg.Bucket, err)
+		debug.Log("gcs.Open", "BucketExists(%v) returned err %v, trying to create the bucket", cfg.Bucket, err)
 
 		// create new bucket with default ACL in default region
 		err = client.MakeBucket(cfg.Bucket, "", "")
@@ -71,11 +71,11 @@ func (be *s3) Location() string {
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (be s3) Load(h backend.Handle, p []byte, off int64) (int, error) {
-	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
+	debug.Log("gcs.Load", "%v, offset %v, len %v", h, off, len(p))
 	path := s3path(be.prefix, h.Type, h.Name)
 	obj, err := be.client.GetObject(be.bucketname, path)
 	if err != nil {
-		debug.Log("s3.GetReader", "  err %v", err)
+		debug.Log("gcs.GetReader", "  err %v", err)
 		return 0, err
 	}
 
@@ -99,14 +99,14 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 		return err
 	}
 
-	debug.Log("s3.Save", "%v bytes at %d", len(p), h)
+	debug.Log("gcs.Save", "%v bytes at %d", len(p), h)
 
 	path := s3path(be.prefix, h.Type, h.Name)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, path)
 	if err == nil {
-		debug.Log("s3.blob.Finalize()", "%v already exists", h)
+		debug.Log("gcs.blob.Finalize()", "%v already exists", h)
 		return errors.New("key already exists")
 	}
 
@@ -115,21 +115,21 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 		be.connChan <- struct{}{}
 	}()
 
-	debug.Log("s3.Save", "PutObject(%v, %v, %v, %v)",
+	debug.Log("gcs.Save", "PutObject(%v, %v, %v, %v)",
 		be.bucketname, path, int64(len(p)), "binary/octet-stream")
 	n, err := be.client.PutObject(be.bucketname, path, bytes.NewReader(p), "binary/octet-stream")
-	debug.Log("s3.Save", "%v -> %v bytes, err %#v", path, n, err)
+	debug.Log("gcs.Save", "%v -> %v bytes, err %#v", path, n, err)
 
 	return err
 }
 
 // Stat returns information about a blob.
 func (be s3) Stat(h backend.Handle) (backend.BlobInfo, error) {
-	debug.Log("s3.Stat", "%v")
+	debug.Log("gcs.Stat", "%v")
 	path := s3path(be.prefix, h.Type, h.Name)
 	obj, err := be.client.GetObject(be.bucketname, path)
 	if err != nil {
-		debug.Log("s3.Stat", "GetObject() err %v", err)
+		debug.Log("gcs.Stat", "GetObject() err %v", err)
 		return backend.BlobInfo{}, err
 	}
 
@@ -159,7 +159,7 @@ func (be *s3) Test(t backend.Type, name string) (bool, error) {
 func (be *s3) Remove(t backend.Type, name string) error {
 	path := s3path(be.prefix, t, name)
 	err := be.client.RemoveObject(be.bucketname, path)
-	debug.Log("s3.Remove", "%v %v -> err %v", t, name, err)
+	debug.Log("gcs.Remove", "%v %v -> err %v", t, name, err)
 	return err
 }
 
@@ -167,7 +167,7 @@ func (be *s3) Remove(t backend.Type, name string) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (be *s3) List(t backend.Type, done <-chan struct{}) <-chan string {
-	debug.Log("s3.List", "listing %v", t)
+	debug.Log("gcs.List", "listing %v", t)
 	ch := make(chan string)
 
 	prefix := s3path(be.prefix, t, "")

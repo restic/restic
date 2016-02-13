@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const Scheme = "local"
+
 // ParseConfig parses a local backend config.
 func ParseConfig(cfg string) (interface{}, error) {
 	if !strings.HasPrefix(cfg, "local:") {

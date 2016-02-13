@@ -9,18 +9,38 @@ var configTests = []struct {
 	{"s3://eu-central-1/bucketname", Config{
 		Endpoint: "eu-central-1",
 		Bucket:   "bucketname",
+		Prefix:   "restic",
+	}},
+	{"s3://eu-central-1/bucketname/prefix/directory", Config{
+		Endpoint: "eu-central-1",
+		Bucket:   "bucketname",
+		Prefix:   "prefix/directory",
 	}},
 	{"s3:eu-central-1/foobar", Config{
 		Endpoint: "eu-central-1",
 		Bucket:   "foobar",
+		Prefix:   "restic",
+	}},
+	{"s3:eu-central-1/foobar/prefix/directory", Config{
+		Endpoint: "eu-central-1",
+		Bucket:   "foobar",
+		Prefix:   "prefix/directory",
 	}},
 	{"s3:https://hostname:9999/foobar", Config{
 		Endpoint: "hostname:9999",
 		Bucket:   "foobar",
+		Prefix:   "restic",
 	}},
 	{"s3:http://hostname:9999/foobar", Config{
 		Endpoint: "hostname:9999",
 		Bucket:   "foobar",
+		Prefix:   "restic",
+		UseHTTP:  true,
+	}},
+	{"s3:http://hostname:9999/bucket/prefix/directory", Config{
+		Endpoint: "hostname:9999",
+		Bucket:   "bucket",
+		Prefix:   "prefix/directory",
 		UseHTTP:  true,
 	}},
 }

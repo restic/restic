@@ -316,9 +316,9 @@ var minioConfig = `
 `
 
 var minioEnv = map[string]string{
-	"RESTIC_TEST_S3_SERVER": "http://127.0.0.1:9000",
-	"AWS_ACCESS_KEY_ID":     "KEBIYDZ87HCIH5D17YCN",
-	"AWS_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
+	"RESTIC_TEST_S3_SERVER": "http://127.0.0.1:9000/restic/prefix",
+	"S3_ACCESS_KEY_ID":     "KEBIYDZ87HCIH5D17YCN",
+	"S3_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
 }
 
 // NewMinioServer prepares and runs a minio server for the s3 backend tests in

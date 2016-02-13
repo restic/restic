@@ -4,6 +4,7 @@ package location
 import (
 	"strings"
 
+	"github.com/restic/restic/backend/gcs"
 	"github.com/restic/restic/backend/local"
 	"github.com/restic/restic/backend/s3"
 	"github.com/restic/restic/backend/sftp"
@@ -24,9 +25,10 @@ type parser struct {
 // parsers is a list of valid config parsers for the backends. The first parser
 // is the fallback and should always be set to the local backend.
 var parsers = []parser{
-	{"local", local.ParseConfig},
-	{"sftp", sftp.ParseConfig},
-	{"s3", s3.ParseConfig},
+	{local.Scheme, local.ParseConfig},
+	{sftp.Scheme, sftp.ParseConfig},
+	{s3.Scheme, s3.ParseConfig},
+	{gcs.Scheme, gcs.ParseConfig},
 }
 
 // Parse extracts repository location information from the string s. If s
@@ -51,8 +53,8 @@ func Parse(s string) (u Location, err error) {
 	}
 
 	// try again, with the local parser and the prefix "local:"
-	u.Scheme = "local"
-	u.Config, err = local.ParseConfig("local:" + s)
+	u.Scheme = local.Scheme
+	u.Config, err = local.ParseConfig(local.Scheme + ":" + s)
 	if err != nil {
 		return Location{}, err
 	}
