@@ -54,7 +54,34 @@ var parseTests = []struct {
 			Host: "host",
 			Dir:  "/srv/repo",
 		}}},
-
+	{"gs://bucketname", Location{Scheme: "gs",
+		Config: s3.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "restic",
+		}},
+	},
+	{"gs://bucketname/prefix", Location{Scheme: "gs",
+		Config: s3.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "prefix",
+		}},
+	},
+	{"gs:bucketname", Location{Scheme: "gs",
+		Config: s3.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "restic",
+		}},
+	},
+	{"gs:bucketname/prefix", Location{Scheme: "gs",
+		Config: s3.Config{
+			Endpoint: "storage.googleapis.com",
+			Bucket:   "bucketname",
+			Prefix:   "prefix",
+		}},
+	},
 	{"s3://eu-central-1/bucketname", Location{Scheme: "s3",
 		Config: s3.Config{
 			Endpoint: "eu-central-1",

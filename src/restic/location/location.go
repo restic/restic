@@ -4,6 +4,7 @@ package location
 import (
 	"strings"
 
+	"restic/backend/gcs"
 	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
@@ -28,6 +29,7 @@ var parsers = []parser{
 	{"local", local.ParseConfig},
 	{"sftp", sftp.ParseConfig},
 	{"s3", s3.ParseConfig},
+	{"gs", gcs.ParseConfig},
 	{"rest", rest.ParseConfig},
 }
 
