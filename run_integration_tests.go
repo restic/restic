@@ -212,7 +212,7 @@ func (env *AppveyorEnvironment) RunTests() {
 // findGoFiles returns a list of go source code file names below dir.
 func findGoFiles(dir string) (list []string, err error) {
 	err = filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
-		if filepath.Base(name) == "Godeps" {
+		if filepath.Base(name) == "vendor" {
 			return filepath.SkipDir
 		}
 
