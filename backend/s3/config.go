@@ -23,20 +23,12 @@ const defaultPrefix = "restic"
 // s3:host:bucketname/prefix. The host can also be a valid s3 region
 // name. If no prefix is given the prefix "restic" will be used.
 func ParseConfig(s string) (interface{}, error) {
-	var path []string
-	cfg := Config{}
 	switch {
-	case strings.HasPrefix(s, "s3://"):
-		s = s[5:]
-		path = strings.SplitN(s, "/", 3)
-		cfg.Endpoint = path[0]
-		path = path[1:]
 	case strings.HasPrefix(s, "s3:http"):
-		s = s[3:]
 		// assume that a URL has been specified, parse it and
 		// use the host as the endpoint and the path as the
 		// bucket name and prefix
-		url, err := url.Parse(s)
+		url, err := url.Parse(s[3:])
 		if err != nil {
 			return nil, err
 		}
@@ -45,28 +37,36 @@ func ParseConfig(s string) (interface{}, error) {
 			return nil, errors.New("s3: bucket name not found")
 		}
 
-		cfg.Endpoint = url.Host
-		if url.Scheme == "http" {
-			cfg.UseHTTP = true
-		}
-		path = strings.SplitN(url.Path[1:], "/", 2)
+		path := strings.SplitN(url.Path[1:], "/", 2)
+		return createConfig(url.Host, path, url.Scheme == "http")
 	case strings.HasPrefix(s, "s3:"):
+		// use the first entry of the path as the endpoint and the
+		// remainder as bucket name and prefix
 		s = s[3:]
-		path = strings.SplitN(s, "/", 3)
-		cfg.Endpoint = path[0]
-		path = path[1:]
+		if strings.HasPrefix(s, "//") {
+			s = s[2:]
+		}
+		path := strings.SplitN(s, "/", 3)
+		return createConfig(path[0], path[1:], false)
 	default:
 		return nil, errors.New("s3: invalid format")
 	}
-	if len(path) < 1 {
-		return nil, errors.New("s3: invalid format, host/region or bucket name not found")
-	}
-	cfg.Bucket = path[0]
-	if len(path) > 1 {
-		cfg.Prefix = strings.TrimRight(path[1], "/")
-	} else {
-		cfg.Prefix = defaultPrefix
-	}
+}
 
-	return cfg, nil
+func createConfig(endpoint string, path []string, useHttp bool) (interface{}, error) {
+	var prefix string
+	switch {
+	case len(path) < 1:
+		return nil, errors.New("s3: invalid format, host/region or bucket name not found")
+	case len(path) == 1:
+		prefix = defaultPrefix
+	default:
+		prefix = strings.TrimRight(path[1], "/")
+	}
+	return Config{
+		Endpoint: endpoint,
+		UseHTTP:  useHttp,
+		Bucket:   path[0],
+		Prefix:   prefix,
+	}, nil
 }
