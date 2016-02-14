@@ -53,7 +53,7 @@ func ParseConfig(s string) (interface{}, error) {
 	}
 }
 
-func createConfig(endpoint string, path []string, useHttp bool) (interface{}, error) {
+func createConfig(endpoint string, path []string, useHTTP bool) (interface{}, error) {
 	var prefix string
 	switch {
 	case len(path) < 1:
@@ -65,7 +65,7 @@ func createConfig(endpoint string, path []string, useHttp bool) (interface{}, er
 	}
 	return Config{
 		Endpoint: endpoint,
-		UseHTTP:  useHttp,
+		UseHTTP:  useHTTP,
 		Bucket:   path[0],
 		Prefix:   prefix,
 	}, nil
