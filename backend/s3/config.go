@@ -39,18 +39,17 @@ func ParseConfig(s string) (interface{}, error) {
 
 		path := strings.SplitN(url.Path[1:], "/", 2)
 		return createConfig(url.Host, path, url.Scheme == "http")
+	case strings.HasPrefix(s, "s3://"):
+		s = s[5:]
 	case strings.HasPrefix(s, "s3:"):
-		// use the first entry of the path as the endpoint and the
-		// remainder as bucket name and prefix
 		s = s[3:]
-		if strings.HasPrefix(s, "//") {
-			s = s[2:]
-		}
-		path := strings.SplitN(s, "/", 3)
-		return createConfig(path[0], path[1:], false)
 	default:
 		return nil, errors.New("s3: invalid format")
 	}
+	// use the first entry of the path as the endpoint and the
+	// remainder as bucket name and prefix
+	path := strings.SplitN(s, "/", 3)
+	return createConfig(path[0], path[1:], false)
 }
 
 func createConfig(endpoint string, path []string, useHTTP bool) (interface{}, error) {
