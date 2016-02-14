@@ -63,7 +63,7 @@ func ParseConfig(s string) (interface{}, error) {
 	}
 	cfg.Bucket = path[0]
 	if len(path) > 1 {
-		cfg.Prefix = path[1]
+		cfg.Prefix = strings.TrimRight(path[1], "/")
 	} else {
 		cfg.Prefix = defaultPrefix
 	}
