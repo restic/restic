@@ -15,6 +15,9 @@ import (
 	"golang.org/x/net/context"
 )
 
+// The default block size to report in stat
+const blockSize = 512
+
 // Statically ensure that *file implements the given interface
 var _ = fs.HandleReader(&file{})
 var _ = fs.HandleReleaser(&file{})
@@ -67,6 +70,8 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = f.node.Inode
 	a.Mode = f.node.Mode
 	a.Size = f.node.Size
+	a.Blocks = (f.node.Size / blockSize) + 1
+	a.BlockSize = blockSize
 
 	if !f.ownerIsRoot {
 		a.Uid = f.node.UID
