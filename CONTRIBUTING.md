@@ -138,6 +138,14 @@ in the project root directory before committing. Installing the script
 pre-commit hook checks formatting before committing automatically, just copy
 this script to `.git/hooks/pre-commit`.
 
+For each pull request, several different systems run the integration tests on
+Linux, OS X and Windows. We won't merge any code that does not pass all tests
+for all systems, so when a tests fails, try to find out what's wrong and fix
+it. If you need help on this, please leave a comment in the pull request, and
+we'll be glad to assist. Having a PR with failing integration tests is nothing
+to be ashamed of. In contrast, that happens regularly for all of us. That's
+what the tests are there for.
+
 Git Commits
 -----------
 
