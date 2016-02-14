@@ -3,6 +3,7 @@ package s3
 import (
 	"errors"
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -52,20 +53,20 @@ func ParseConfig(s string) (interface{}, error) {
 	return createConfig(path[0], path[1:], false)
 }
 
-func createConfig(endpoint string, path []string, useHTTP bool) (interface{}, error) {
+func createConfig(endpoint string, p []string, useHTTP bool) (interface{}, error) {
 	var prefix string
 	switch {
-	case len(path) < 1:
+	case len(p) < 1:
 		return nil, errors.New("s3: invalid format, host/region or bucket name not found")
-	case len(path) == 1:
+	case len(p) == 1 || p[1] == "":
 		prefix = defaultPrefix
 	default:
-		prefix = strings.TrimRight(path[1], "/")
+		prefix = path.Clean(p[1])
 	}
 	return Config{
 		Endpoint: endpoint,
 		UseHTTP:  useHTTP,
-		Bucket:   path[0],
+		Bucket:   p[0],
 		Prefix:   prefix,
 	}, nil
 }
