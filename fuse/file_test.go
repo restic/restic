@@ -132,6 +132,7 @@ func TestFuseFile(t *testing.T) {
 	Equals(t, node.Inode, attr.Inode)
 	Equals(t, node.Mode, attr.Mode)
 	Equals(t, node.Size, attr.Size)
+	Equals(t, (node.Size/uint64(attr.BlockSize))+1, attr.Blocks)
 
 	for i, test := range offsetReadsTests {
 		b := memfile[test.offset : test.offset+test.length]
