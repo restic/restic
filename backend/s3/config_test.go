@@ -11,6 +11,11 @@ var configTests = []struct {
 		Bucket:   "bucketname",
 		Prefix:   "restic",
 	}},
+	{"s3://eu-central-1/bucketname/", Config{
+		Endpoint: "eu-central-1",
+		Bucket:   "bucketname",
+		Prefix:   "",
+	}},
 	{"s3://eu-central-1/bucketname/prefix/directory", Config{
 		Endpoint: "eu-central-1",
 		Bucket:   "bucketname",
@@ -21,6 +26,11 @@ var configTests = []struct {
 		Bucket:   "foobar",
 		Prefix:   "restic",
 	}},
+	{"s3:eu-central-1/foobar/", Config{
+		Endpoint: "eu-central-1",
+		Bucket:   "foobar",
+		Prefix:   "",
+	}},
 	{"s3:eu-central-1/foobar/prefix/directory", Config{
 		Endpoint: "eu-central-1",
 		Bucket:   "foobar",
@@ -30,6 +40,11 @@ var configTests = []struct {
 		Endpoint: "hostname:9999",
 		Bucket:   "foobar",
 		Prefix:   "restic",
+	}},
+	{"s3:https://hostname:9999/foobar/", Config{
+		Endpoint: "hostname:9999",
+		Bucket:   "foobar",
+		Prefix:   "",
 	}},
 	{"s3:http://hostname:9999/foobar", Config{
 		Endpoint: "hostname:9999",
