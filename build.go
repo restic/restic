@@ -30,7 +30,11 @@ func specialDir(name string) bool {
 	}
 
 	base := filepath.Base(name)
-	return base[0] == '_' || base[0] == '.'
+	if base == "vendor" || base[0] == '_' || base[0] == '.' {
+		return true
+	}
+
+	return false
 }
 
 // excludePath returns true if the file should not be copied to the new GOPATH.
@@ -177,10 +181,11 @@ func cleanEnv() (env []string) {
 }
 
 // build runs "go build args..." with GOPATH set to gopath.
-func build(gopath string, args ...string) error {
+func build(cwd, gopath string, args ...string) error {
 	args = append([]string{"build"}, args...)
 	cmd := exec.Command("go", args...)
 	cmd.Env = append(cleanEnv(), "GOPATH="+gopath)
+	cmd.Dir = cwd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	verbosePrintf("go %s\n", args)
@@ -189,10 +194,11 @@ func build(gopath string, args ...string) error {
 }
 
 // test runs "go test args..." with GOPATH set to gopath.
-func test(gopath string, args ...string) error {
+func test(cwd, gopath string, args ...string) error {
 	args = append([]string{"test"}, args...)
 	cmd := exec.Command("go", args...)
 	cmd.Env = append(cleanEnv(), "GOPATH="+gopath)
+	cmd.Dir = cwd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	verbosePrintf("go %s\n", args)
@@ -293,6 +299,7 @@ func main() {
 			runTests = true
 		case "-h":
 			showUsage(os.Stdout)
+			return
 		default:
 			fmt.Fprintf(os.Stderr, "Error: unknown option %q\n\n", arg)
 			showUsage(os.Stderr)
@@ -322,11 +329,11 @@ func main() {
 	}
 
 	verbosePrintf("create GOPATH at %v\n", gopath)
-	if err = updateGopath(gopath, root, "github.com/restic/restic"); err != nil {
+	if err = updateGopath(gopath, filepath.Join(root, "src"), ""); err != nil {
 		die("copying files from %v to %v failed: %v\n", root, gopath, err)
 	}
 
-	vendor := filepath.Join(root, "Godeps", "_workspace", "src")
+	vendor := filepath.Join(root, "vendor", "src")
 	if err = updateGopath(gopath, vendor, ""); err != nil {
 		die("copying files from %v to %v failed: %v\n", root, gopath, err)
 	}
@@ -342,10 +349,17 @@ func main() {
 		}
 	}()
 
-	output := "restic"
+	outputFilename := "restic"
 	if runtime.GOOS == "windows" {
-		output = "restic.exe"
+		outputFilename = "restic.exe"
 	}
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		die("Getwd() returned %v\n", err)
+	}
+	output := filepath.Join(cwd, outputFilename)
+
 	version := getVersion()
 	compileTime := time.Now().Format(timeFormat)
 	constants := Constants{`main.compiledAt`: compileTime}
@@ -358,10 +372,10 @@ func main() {
 	args := []string{
 		"-tags", strings.Join(buildTags, " "),
 		"-ldflags", ldflags,
-		"-o", output, "github.com/restic/restic/cmd/restic",
+		"-o", output, "restic/cmd/restic",
 	}
 
-	err = build(gopath, args...)
+	err = build(filepath.Join(gopath, "src"), gopath, args...)
 	if err != nil {
 		die("build failed: %v\n", err)
 	}
@@ -369,7 +383,7 @@ func main() {
 	if runTests {
 		verbosePrintf("running tests\n")
 
-		err = test(gopath, "github.com/restic/restic/...")
+		err = test(filepath.Join(gopath, "src"), gopath, "restic/...")
 		if err != nil {
 			die("running tests failed: %v\n", err)
 		}
