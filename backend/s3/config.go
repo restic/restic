@@ -25,12 +25,13 @@ const defaultPrefix = "restic"
 func ParseConfig(s string) (interface{}, error) {
 	var path []string
 	cfg := Config{}
-	if strings.HasPrefix(s, "s3://") {
+	switch {
+	case strings.HasPrefix(s, "s3://"):
 		s = s[5:]
 		path = strings.SplitN(s, "/", 3)
 		cfg.Endpoint = path[0]
 		path = path[1:]
-	} else if strings.HasPrefix(s, "s3:http") {
+	case strings.HasPrefix(s, "s3:http"):
 		s = s[3:]
 		// assume that a URL has been specified, parse it and
 		// use the host as the endpoint and the path as the
@@ -49,12 +50,12 @@ func ParseConfig(s string) (interface{}, error) {
 			cfg.UseHTTP = true
 		}
 		path = strings.SplitN(url.Path[1:], "/", 2)
-	} else if strings.HasPrefix(s, "s3:") {
+	case strings.HasPrefix(s, "s3:"):
 		s = s[3:]
 		path = strings.SplitN(s, "/", 3)
 		cfg.Endpoint = path[0]
 		path = path[1:]
-	} else {
+	default:
 		return nil, errors.New("s3: invalid format")
 	}
 	if len(path) < 1 {
