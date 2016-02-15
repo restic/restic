@@ -3,6 +3,7 @@ package s3
 import (
 	"bytes"
 	"io"
+	"path"
 	"restic"
 	"strings"
 
@@ -54,17 +55,10 @@ func Open(cfg Config) (restic.Backend, error) {
 }
 
 func (be *s3) s3path(t restic.FileType, name string) string {
-	var path string
-
-	if be.prefix != "" {
-		path = be.prefix + "/"
-	}
-	path += string(t)
-
 	if t == restic.ConfigFile {
-		return path
+		return path.Join(be.prefix, string(t))
 	}
-	return path + "/" + name
+	return path.Join(be.prefix, string(t), name)
 }
 
 func (be *s3) createConnections() {
@@ -85,14 +79,14 @@ func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	var obj *minio.Object
 
 	debug.Log("%v, offset %v, len %v", h, off, len(p))
-	path := be.s3path(h.Type, h.Name)
+	objName := be.s3path(h.Type, h.Name)
 
 	<-be.connChan
 	defer func() {
 		be.connChan <- struct{}{}
 	}()
 
-	obj, err = be.client.GetObject(be.bucketname, path)
+	obj, err = be.client.GetObject(be.bucketname, objName)
 	if err != nil {
 		debug.Log("  err %v", err)
 		return 0, errors.Wrap(err, "client.GetObject")
@@ -160,10 +154,10 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 
 	debug.Log("%v with %d bytes", h, len(p))
 
-	path := be.s3path(h.Type, h.Name)
+	objName := be.s3path(h.Type, h.Name)
 
 	// Check key does not already exist
-	_, err = be.client.StatObject(be.bucketname, path)
+	_, err = be.client.StatObject(be.bucketname, objName)
 	if err == nil {
 		debug.Log("%v already exists", h)
 		return errors.New("key already exists")
@@ -175,9 +169,9 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 	}()
 
 	debug.Log("PutObject(%v, %v, %v, %v)",
-		be.bucketname, path, int64(len(p)), "binary/octet-stream")
-	n, err := be.client.PutObject(be.bucketname, path, bytes.NewReader(p), "binary/octet-stream")
-	debug.Log("%v -> %v bytes, err %#v", path, n, err)
+		be.bucketname, objName, int64(len(p)), "binary/octet-stream")
+	n, err := be.client.PutObject(be.bucketname, objName, bytes.NewReader(p), "binary/octet-stream")
+	debug.Log("%v -> %v bytes, err %#v", objName, n, err)
 
 	return errors.Wrap(err, "client.PutObject")
 }
@@ -186,10 +180,10 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("%v", h)
 
-	path := be.s3path(h.Type, h.Name)
+	objName := be.s3path(h.Type, h.Name)
 	var obj *minio.Object
 
-	obj, err = be.client.GetObject(be.bucketname, path)
+	obj, err = be.client.GetObject(be.bucketname, objName)
 	if err != nil {
 		debug.Log("GetObject() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "client.GetObject")
@@ -215,8 +209,8 @@ func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 // Test returns true if a blob of the given type and name exists in the backend.
 func (be *s3) Test(t restic.FileType, name string) (bool, error) {
 	found := false
-	path := be.s3path(t, name)
-	_, err := be.client.StatObject(be.bucketname, path)
+	objName := be.s3path(t, name)
+	_, err := be.client.StatObject(be.bucketname, objName)
 	if err == nil {
 		found = true
 	}
@@ -227,8 +221,8 @@ func (be *s3) Test(t restic.FileType, name string) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (be *s3) Remove(t restic.FileType, name string) error {
-	path := be.s3path(t, name)
-	err := be.client.RemoveObject(be.bucketname, path)
+	objName := be.s3path(t, name)
+	err := be.client.RemoveObject(be.bucketname, objName)
 	debug.Log("%v %v -> err %v", t, name, err)
 	return errors.Wrap(err, "client.RemoveObject")
 }
@@ -240,7 +234,7 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
-	prefix := be.s3path(t, "")
+	prefix := be.s3path(t, "") + "/"
 
 	listresp := be.client.ListObjects(be.bucketname, prefix, true, done)
 
