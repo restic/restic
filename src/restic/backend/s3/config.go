@@ -25,6 +25,7 @@ const defaultPrefix = "restic"
 // s3:host:bucketname/prefix. The host can also be a valid s3 region
 // name. If no prefix is given the prefix "restic" will be used.
 func ParseConfig(s string) (interface{}, error) {
+	s = strings.TrimRight(s, "/") // remove trailing slashes
 	switch {
 	case strings.HasPrefix(s, "s3:http"):
 		// assume that a URL has been specified, parse it and
