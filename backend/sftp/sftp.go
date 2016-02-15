@@ -97,7 +97,11 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 }
 
 func buildSSHCommand(cfg Config) []string {
-	args := []string{cfg.Host}
+	hostport := strings.Split(cfg.Host, ":")
+	args := []string{hostport[0]}
+	if len(hostport) > 1 {
+		args = append(args, "-p", hostport[1])
+	}
 	if cfg.User != "" {
 		args = append(args, "-l")
 		args = append(args, cfg.User)

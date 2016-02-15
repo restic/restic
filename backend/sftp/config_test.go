@@ -19,6 +19,14 @@ var configTests = []struct {
 		"sftp://host//dir/subdir",
 		Config{Host: "host", Dir: "/dir/subdir"},
 	},
+	{
+		"sftp://host:10022//dir/subdir",
+		Config{Host: "host:10022", Dir: "/dir/subdir"},
+	},
+	{
+		"sftp://user@host:10022//dir/subdir",
+		Config{User: "user", Host: "host:10022", Dir: "/dir/subdir"},
+	},
 
 	// second form, user specified sftp:user@host:/dir
 	{
