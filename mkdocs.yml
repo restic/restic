@@ -1,0 +1,7 @@
+site_name: Documentation for restic
+theme: readthedocs
+docs_dir: doc
+pages:
+  - Getting Started: index.md
+  - User Manual: Manual.md
+  - restic Design Document: Design.md
