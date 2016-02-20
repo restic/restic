@@ -23,6 +23,7 @@ var (
 	TestWalkerPath        = getStringVar("RESTIC_TEST_PATH", ".")
 	BenchArchiveDirectory = getStringVar("RESTIC_BENCH_DIR", ".")
 	TestS3Server          = getStringVar("RESTIC_TEST_S3_SERVER", "")
+	TestRESTServer        = getStringVar("RESTIC_TEST_REST_SERVER", "")
 )
 
 func getStringVar(name, defaultValue string) string {
