@@ -1,0 +1,82 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "bazil.org/fuse",
+			"repository": "https://github.com/bazil/fuse",
+			"revision": "18419ee53958df28fcfc9490fe6123bd59e237bb",
+			"branch": "HEAD"
+		},
+		{
+			"importpath": "github.com/jessevdk/go-flags",
+			"repository": "https://github.com/jessevdk/go-flags",
+			"revision": "1b89bf73cd2c3a911d7b2a279ab085c4a18cf539",
+			"branch": "HEAD"
+		},
+		{
+			"importpath": "github.com/juju/errors",
+			"repository": "https://github.com/juju/errors",
+			"revision": "4567a5e69fd3130ca0d89f69478e7ac025b67452",
+			"branch": "HEAD"
+		},
+		{
+			"importpath": "github.com/kr/fs",
+			"repository": "https://github.com/kr/fs",
+			"revision": "2788f0dbd16903de03cb8186e5c7d97b69ad387b",
+			"branch": "HEAD"
+		},
+		{
+			"importpath": "github.com/minio/minio-go",
+			"repository": "https://github.com/minio/minio-go",
+			"revision": "a4cd3caabd5f9c35ac100110eb60c2b80798f1af",
+			"branch": "HEAD"
+		},
+		{
+			"importpath": "github.com/pkg/sftp",
+			"repository": "https://github.com/pkg/sftp",
+			"revision": "e84cc8c755ca39b7b64f510fe1fffc1b51f210a5",
+			"branch": "HEAD"
+		},
+		{
+			"importpath": "github.com/restic/chunker",
+			"repository": "https://github.com/restic/chunker",
+			"revision": "fc45043175c38d59374024a38fb7123c40a64f20",
+			"branch": "HEAD"
+		},
+		{
+			"importpath": "golang.org/x/crypto/pbkdf2",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "cc04154d65fb9296747569b107cfd05380b1ea3e",
+			"branch": "HEAD",
+			"path": "/pbkdf2"
+		},
+		{
+			"importpath": "golang.org/x/crypto/poly1305",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "cc04154d65fb9296747569b107cfd05380b1ea3e",
+			"branch": "HEAD",
+			"path": "/poly1305"
+		},
+		{
+			"importpath": "golang.org/x/crypto/scrypt",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "cc04154d65fb9296747569b107cfd05380b1ea3e",
+			"branch": "HEAD",
+			"path": "/scrypt"
+		},
+		{
+			"importpath": "golang.org/x/crypto/ssh",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "cc04154d65fb9296747569b107cfd05380b1ea3e",
+			"branch": "HEAD",
+			"path": "/ssh"
+		},
+		{
+			"importpath": "golang.org/x/net/context",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "7654728e381988afd88e58cabfd6363a5ea91810",
+			"branch": "HEAD",
+			"path": "/context"
+		}
+	]
+}
