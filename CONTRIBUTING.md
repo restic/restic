@@ -57,39 +57,32 @@ uploading it somewhere or post only the parts that are really relevant.
 Development Environment
 =======================
 
-For development, it is recommended to check out the restic repository within a
-`GOPATH`, an introductory text is
-["How to Write Go Code"](https://golang.org/doc/code.html). It is recommended
-to have a working directory, we're using `~/work/restic` in the following. This
-directory mainly contains the directory `src`, where the source code is stored.
+For development you need the build tool [`gb`](https://getgb.io), it can be
+installed by running the following command:
 
-First, create the necessary directory structure and clone the restic repository
-to the correct location:
+    $ go get github.com/constabulary/...
 
-    $ mkdir --parents ~/work/restic/src/github.com/restic
-    $ cd ~/work/restic/src/github.com/restic
+The repository contains two directories with code: `src/` contains the code
+written for restic, whereas `vendor/` contains copies of libraries restic
+depends on. The libraries are managed with the `gb vendor` command.
+
+Just clone the repository, `cd` to it and run `gb build` to build the binary:
+
     $ git clone https://github.com/restic/restic
     $ cd restic
-
-Now we're in the main directory of the restic repository. The last step is to
-set the environment variable `$GOPATH` to the correct value:
-
-    $ export GOPATH=~/work/restic:~/work/restic/src/github.com/restic/restic/Godeps/_workspace
+    $ gb build
+    [...]
+    $ bin/restic version
+    restic compiled manually
+    compiled at unknown time with go1.6
 
 The following commands can be used to run all the tests:
 
-    $ go test ./...
+    $ gb test
     ok          github.com/restic/restic        8.174s
     [...]
 
-The restic binary can be built from the directory `cmd/restic` this way:
-
-    $ cd cmd/restic
-    $ go build
-    $ ./restic version
-    restic compiled manually on go1.4.2
-
-if you want to run your tests on Linux, OpenBSD or FreeBSD, you can use
+If you want to run your tests on Linux, OpenBSD or FreeBSD, you can use
 [vagrant](https://www.vagrantup.com/) with the proveded `Vagrantfile` to
 quickly set up VMs and run the tests, e.g.:
 
@@ -107,23 +100,32 @@ get it into the project! The workflow we're using is also described on the
 [GitHub Flow](https://guides.github.com/introduction/flow/) website, it boils
 down to the following steps:
 
+ 0. If you want to work on something, please add a comment to the issue on
+    GitHub. For a new feature, please add an issue before starting to work on
+    it, so that duplicate work is prevented.
+
  1. First we would kindly ask you to fork our project on GitHub if you haven't
     done so already.
+
  2. Clone the repository locally and create a new branch. If you are working on
     the code itself, please set up the development environment as described in
-    the previous section and instead of cloning add your fork on GitHub as a
-    remote to the clone of the restic repository.
+    the previous section.
+
  3. Then commit your changes as fine grained as possible, as smaller patches,
     that handle one and only one issue are easier to discuss and merge.
+
  4. Push the new branch with your changes to your fork of the repository.
+
  5. Create a pull request by visiting the GitHub website, it will guide you
     through the process.
+
  6. You will receive comments on your code and the feature or bug that they
     address. Maybe you need to rework some minor things, in this case push new
     commits to the branch you created for the pull request, they will be
     automatically added to the pull request.
- 7. Once your code looks good, we'll merge it. Thanks a low for your
-    contribution!
+
+ 7. Once your code looks good and passes all the tests, we'll merge it. Thanks
+    a low for your contribution!
 
 Please provide the patches for each bug or feature in a separate branch and
 open up a pull request for each.

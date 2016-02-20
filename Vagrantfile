@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-GO_VERSION = '1.4.2'
+GO_VERSION = '1.6'
 
 def packages_freebsd
   return <<-EOF
@@ -57,24 +57,23 @@ def prepare_user(boxname)
 
     gimme #{GO_VERSION} >> ~/.profile
     echo export 'GOPATH=/vagrant/go' >> ~/.profile
-    echo export 'CDPATH=.:$GOPATH/src/github.com' >> ~/.profile
     echo export 'PATH=$GOPATH/bin:/usr/local/bin:$PATH' >> ~/.profile
 
     . ~/.profile
 
     go get golang.org/x/tools/cmd/cover
-    go get github.com/tools/godep
+    go get github.com/constabulary/gb/...
 
     echo
     echo "Run:"
     echo "  vagrant rsync #{boxname}"
-    echo "  vagrant ssh #{boxname} -c 'cd project/path; godep go test ./...'"
+    echo "  vagrant ssh #{boxname} -c 'cd /vagrant; gb build && gb test'"
   EOF
 end
 
 def fix_perms
   return <<-EOF
-    chown -R vagrant /vagrant/go
+    chown -R vagrant /vagrant
   EOF
 end
 
@@ -84,11 +83,15 @@ end
 # you're doing.
 Vagrant.configure(2) do |config|
   # use rsync to copy content to the folder
-  config.vm.synced_folder ".", "/vagrant/go/src/github.com/restic/restic", :type => "rsync"
-  config.vm.synced_folder ".", "/vagrant", disabled: true
+  config.vm.synced_folder ".", "/vagrant", :type => "rsync"
 
   # fix permissions on synced folder
   config.vm.provision "fix perms", :type => :shell, :inline => fix_perms
+
+  # fix network card
+  config.vm.provider "virtualbox" do |v|
+    v.customize ["modifyvm", :id, "--nictype1", "virtio"]
+  end
 
   config.vm.define "linux" do |b|
     b.vm.box = "ubuntu/trusty64"

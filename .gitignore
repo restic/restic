@@ -1,8 +1,4 @@
-/.gopath
+/pkg
+/bin
 /restic
-/restic.debug
-/dirdiff
-cmd/dirdiff/dirdiff
-cmd/gentestdata/gentestdata
-cmd/restic/restic
 /.vagrant

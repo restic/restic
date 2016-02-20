@@ -154,27 +154,31 @@ func (env *TravisEnvironment) RunTests() {
 		os.Setenv("RESTIC_TEST_FUSE", "0")
 	}
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Getwd() returned error: %v", err)
+		os.Exit(9)
+	}
+
+	envWithGOPATH := make(map[string]string)
+	envWithGOPATH["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
+
 	if *runCrossCompile {
 		// compile for all target architectures with tags
 		for _, tags := range []string{"release", "debug"} {
-			run("gox", "-verbose",
+			runWithEnv(envWithGOPATH, "gox", "-verbose",
 				"-os", strings.Join(env.goxOS, " "),
 				"-arch", strings.Join(env.goxArch, " "),
 				"-tags", tags,
 				"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
-				"./cmd/restic")
+				"restic/cmd/restic")
 		}
 	}
 
 	// run the build script
 	run("go", "run", "build.go")
 
-	var (
-		testEnv map[string]string
-		srv     *MinioServer
-		err     error
-	)
-
+	var srv *MinioServer
 	if env.minio != "" {
 		srv, err = NewMinioServer(env.minio)
 		if err != nil {
@@ -182,11 +186,13 @@ func (env *TravisEnvironment) RunTests() {
 			os.Exit(8)
 		}
 
-		testEnv = minioEnv
+		for k, v := range minioEnv {
+			envWithGOPATH[k] = v
+		}
 	}
 
 	// run the tests and gather coverage information
-	runWithEnv(testEnv, "gotestcover", "-coverprofile", "all.cov", "./...")
+	runWithEnv(envWithGOPATH, "gotestcover", "-coverprofile", "all.cov", "restic/...")
 
 	runGofmt()
 
@@ -206,7 +212,7 @@ func (env *AppveyorEnvironment) RunTests() {
 // findGoFiles returns a list of go source code file names below dir.
 func findGoFiles(dir string) (list []string, err error) {
 	err = filepath.Walk(dir, func(name string, fi os.FileInfo, err error) error {
-		if filepath.Base(name) == "Godeps" {
+		if filepath.Base(name) == "vendor" {
 			return filepath.SkipDir
 		}
 
