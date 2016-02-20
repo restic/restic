@@ -3,7 +3,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,8 +13,9 @@ import (
 	"restic/pack"
 	"restic/repository"
 
-	"github.com/juju/errors"
 	"restic/worker"
+
+	"github.com/juju/errors"
 )
 
 type CmdDump struct {
@@ -126,12 +126,9 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 		name := job.Data.(string)
 
 		h := backend.Handle{Type: backend.Data, Name: name}
-		buf, err := backend.LoadAll(repo.Backend(), h, nil)
-		if err != nil {
-			return nil, err
-		}
+		rd := backend.NewReadSeeker(repo.Backend(), h)
 
-		unpacker, err := pack.NewUnpacker(repo.Key(), bytes.NewReader(buf))
+		unpacker, err := pack.NewUnpacker(repo.Key(), rd)
 		if err != nil {
 			return nil, err
 		}
