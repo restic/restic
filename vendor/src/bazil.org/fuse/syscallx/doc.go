@@ -10,4 +10,4 @@
 //
 // Options can be implemented with separate wrappers, in the style of
 // Linux getxattr/lgetxattr/fgetxattr.
-package syscallx
+package syscallx // import "bazil.org/fuse/syscallx"

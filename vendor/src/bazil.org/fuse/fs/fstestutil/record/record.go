@@ -1,4 +1,4 @@
-package record
+package record // import "bazil.org/fuse/fs/fstestutil/record"
 
 import (
 	"sync"
