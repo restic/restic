@@ -92,10 +92,17 @@ func TestPoolErrors(t *testing.T) {
 
 var errCancelled = errors.New("cancelled")
 
+type Job struct {
+	suc chan struct{}
+	d   time.Duration
+}
+
 func wait(job worker.Job, done <-chan struct{}) (interface{}, error) {
-	d := job.Data.(time.Duration)
+	j := job.Data.(Job)
 	select {
-	case <-time.After(d):
+	case j.suc <- struct{}{}:
+		return time.Now(), nil
+	case <-time.After(j.d):
 		return time.Now(), nil
 	case <-done:
 		return nil, errCancelled
@@ -105,11 +112,12 @@ func wait(job worker.Job, done <-chan struct{}) (interface{}, error) {
 func TestPoolCancel(t *testing.T) {
 	jobCh, resCh, p := newBufferedPool(20, concurrency, wait)
 
+	suc := make(chan struct{}, 1)
 	for i := 0; i < 20; i++ {
-		jobCh <- worker.Job{Data: 10 * time.Millisecond}
+		jobCh <- worker.Job{Data: Job{suc: suc, d: time.Second}}
 	}
 
-	time.Sleep(20 * time.Millisecond)
+	<-suc
 	p.Cancel()
 	p.Wait()
 
