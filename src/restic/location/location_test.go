@@ -1,12 +1,23 @@
 package location
 
 import (
+	"net/url"
 	"reflect"
 	"testing"
 
+	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
 )
+
+func parseURL(s string) *url.URL {
+	u, err := url.Parse(s)
+	if err != nil {
+		panic(err)
+	}
+
+	return u
+}
 
 var parseTests = []struct {
 	s string
@@ -99,6 +110,11 @@ var parseTests = []struct {
 			Bucket:   "repo",
 			Prefix:   "restic",
 			UseHTTP:  true,
+		}},
+	},
+	{"rest:http://hostname.foo:1234/", Location{Scheme: "rest",
+		Config: rest.Config{
+			URL: parseURL("http://hostname.foo:1234/"),
 		}},
 	},
 }
