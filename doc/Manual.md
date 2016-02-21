@@ -28,6 +28,9 @@ In order to build restic from source, execute the following steps:
 
     $ go run build.go
 
+At the moment, the only tested compiler for restic is the official Go compiler.
+Building restic with gccgo may work, but is not supported.
+
 Usage help is available:
 
     $ ./restic --help
