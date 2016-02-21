@@ -164,7 +164,8 @@ func TestConfig(t testing.TB) {
 	// try accessing the config with different names, should all return the
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
-		buf, err := backend.LoadAll(b, backend.Handle{Type: backend.Config}, nil)
+		h := backend.Handle{Type: backend.Config, Name: name}
+		buf, err := backend.LoadAll(b, h, nil)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %v", name, err)
 		}
