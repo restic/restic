@@ -1,3 +1,5 @@
+// +build go1.4
+
 package main
 
 /*
@@ -36,10 +38,14 @@ import (
 // lookup passwords in a htpasswd file
 // The entries must have been created with -s for SHA encryption
 
+// HtpasswdFile is a map for usernames to passwords.
 type HtpasswdFile struct {
 	Users map[string]string
 }
 
+// NewHtpasswdFromFile reads the users and passwords from a htpasswd
+// file and returns them. If an error is encountered, it is returned, together
+// with a nil-Pointer for the HtpasswdFile.
 func NewHtpasswdFromFile(path string) (*HtpasswdFile, error) {
 	r, err := os.Open(path)
 	if err != nil {
@@ -49,13 +55,16 @@ func NewHtpasswdFromFile(path string) (*HtpasswdFile, error) {
 	return NewHtpasswd(r)
 }
 
+// NewHtpasswd reads the users and passwords from a htpasswd
+// datastream in file and returns them. If an error is encountered,
+// it is returned, together with a nil-Pointer for the HtpasswdFile.
 func NewHtpasswd(file io.Reader) (*HtpasswdFile, error) {
-	csv_reader := csv.NewReader(file)
-	csv_reader.Comma = ':'
-	csv_reader.Comment = '#'
-	csv_reader.TrimLeadingSpace = true
+	cr := csv.NewReader(file)
+	cr.Comma = ':'
+	cr.Comment = '#'
+	cr.TrimLeadingSpace = true
 
-	records, err := csv_reader.ReadAll()
+	records, err := cr.ReadAll()
 	if err != nil {
 		return nil, err
 	}
@@ -66,6 +75,9 @@ func NewHtpasswd(file io.Reader) (*HtpasswdFile, error) {
 	return h, nil
 }
 
+// Validate returns true if password matches the stored password
+// for user. If no password for user is stored, or the password
+// is wrong, false is returned.
 func (h *HtpasswdFile) Validate(user string, password string) bool {
 	realPassword, exists := h.Users[user]
 	if !exists {

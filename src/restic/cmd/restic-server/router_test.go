@@ -1,3 +1,5 @@
+// +build go1.4
+
 package main
 
 import (
@@ -6,8 +8,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestRouter(t *testing.T) {
@@ -38,21 +38,37 @@ func TestRouter(t *testing.T) {
 
 	getConfigResp, _ := http.Get(server.URL + "/config")
 	getConfigBody, _ := ioutil.ReadAll(getConfigResp.Body)
-	require.Equal(t, 200, getConfigResp.StatusCode)
-	require.Equal(t, string(getConfig), string(getConfigBody))
+	if getConfigResp.StatusCode != 200 {
+		t.Fatalf("Wanted HTTP Status 200, got %d", getConfigResp.StatusCode)
+	}
+	if string(getConfig) != string(getConfigBody) {
+		t.Fatalf("Config wrong:\nWanted '%s'\nGot: '%s'", string(getConfig), string(getConfigBody))
+	}
 
 	postConfigResp, _ := http.Post(server.URL+"/config", "binary/octet-stream", strings.NewReader("post test"))
 	postConfigBody, _ := ioutil.ReadAll(postConfigResp.Body)
-	require.Equal(t, 200, postConfigResp.StatusCode)
-	require.Equal(t, string(postConfig), string(postConfigBody))
+	if postConfigResp.StatusCode != 200 {
+		t.Fatalf("Wanted HTTP Status 200, got %d", postConfigResp.StatusCode)
+	}
+	if string(postConfig) != string(postConfigBody) {
+		t.Fatalf("Config wrong:\nWanted '%s'\nGot: '%s'", string(postConfig), string(postConfigBody))
+	}
 
 	getBlobsResp, _ := http.Get(server.URL + "/blobs/")
 	getBlobsBody, _ := ioutil.ReadAll(getBlobsResp.Body)
-	require.Equal(t, 200, getBlobsResp.StatusCode)
-	require.Equal(t, string(getBlobs), string(getBlobsBody))
+	if getBlobsResp.StatusCode != 200 {
+		t.Fatalf("Wanted HTTP Status 200, got %d", getBlobsResp.StatusCode)
+	}
+	if string(getBlobs) != string(getBlobsBody) {
+		t.Fatalf("Config wrong:\nWanted '%s'\nGot: '%s'", string(getBlobs), string(getBlobsBody))
+	}
 
 	getBlobResp, _ := http.Get(server.URL + "/blobs/test")
 	getBlobBody, _ := ioutil.ReadAll(getBlobResp.Body)
-	require.Equal(t, 200, getBlobResp.StatusCode)
-	require.Equal(t, string(getBlob), string(getBlobBody))
+	if getBlobResp.StatusCode != 200 {
+		t.Fatalf("Wanted HTTP Status 200, got %d", getBlobResp.StatusCode)
+	}
+	if string(getBlob) != string(getBlobBody) {
+		t.Fatalf("Config wrong:\nWanted '%s'\nGot: '%s'", string(getBlob), string(getBlobBody))
+	}
 }

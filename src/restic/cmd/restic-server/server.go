@@ -1,3 +1,5 @@
+// +build go1.4
+
 package main
 
 import (
@@ -9,8 +11,8 @@ import (
 )
 
 const (
-	HTTP  = ":8000"
-	HTTPS = ":8443"
+	defaultHTTPPort  = ":8000"
+	defaultHTTPSPort = ":8443"
 )
 
 func main() {
@@ -56,15 +58,15 @@ func main() {
 
 	// start the server
 	if !*tls {
-		log.Printf("start server on port %s\n", HTTP)
-		http.ListenAndServe(HTTP, handler)
+		log.Printf("start server on port %s\n", defaultHTTPPort)
+		http.ListenAndServe(defaultHTTPPort, handler)
 	} else {
 		privateKey := filepath.Join(*path, "private_key")
 		publicKey := filepath.Join(*path, "public_key")
 		log.Println("TLS enabled")
 		log.Printf("private key: %s", privateKey)
 		log.Printf("public key: %s", publicKey)
-		log.Printf("start server on port %s\n", HTTPS)
-		http.ListenAndServeTLS(HTTPS, publicKey, privateKey, handler)
+		log.Printf("start server on port %s\n", defaultHTTPSPort)
+		http.ListenAndServeTLS(defaultHTTPSPort, publicKey, privateKey, handler)
 	}
 }
