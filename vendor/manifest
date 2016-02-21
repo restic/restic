@@ -77,6 +77,12 @@
 			"revision": "7654728e381988afd88e58cabfd6363a5ea91810",
 			"branch": "HEAD",
 			"path": "/context"
+		},
+		{
+			"importpath": "golang.org/x/oauth2",
+			"repository": "https://go.googlesource.com/oauth2",
+			"revision": "1f9b3a17f090a52da60820f681d766e04a3349b5",
+			"branch": "master"
 		}
 	]
 }
