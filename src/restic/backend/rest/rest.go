@@ -48,7 +48,7 @@ func restPath(url *url.URL, h backend.Handle) string {
 type restBackend struct {
 	url      *url.URL
 	connChan chan struct{}
-	client   *http.Client
+	client   http.Client
 }
 
 // Open opens the REST backend with the given config.
@@ -60,7 +60,7 @@ func Open(cfg Config) (backend.Backend, error) {
 	tr := &http.Transport{}
 	client := http.Client{Transport: tr}
 
-	return &restBackend{url: cfg.URL, connChan: connChan, client: &client}, nil
+	return &restBackend{url: cfg.URL, connChan: connChan, client: client}, nil
 }
 
 // Location returns this backend's location (the server's URL).
@@ -80,10 +80,8 @@ func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err er
 		return 0, err
 	}
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", off, off+int64(len(p))))
-	client := *b.client
-
 	<-b.connChan
-	resp, err := client.Do(req)
+	resp, err := b.client.Do(req)
 	b.connChan <- struct{}{}
 
 	if resp != nil {
@@ -112,10 +110,8 @@ func (b *restBackend) Save(h backend.Handle, p []byte) (err error) {
 		return err
 	}
 
-	client := *b.client
-
 	<-b.connChan
-	resp, err := client.Post(restPath(b.url, h), "binary/octet-stream", bytes.NewReader(p))
+	resp, err := b.client.Post(restPath(b.url, h), "binary/octet-stream", bytes.NewReader(p))
 	b.connChan <- struct{}{}
 
 	if resp != nil {
@@ -145,9 +141,8 @@ func (b *restBackend) Stat(h backend.Handle) (backend.BlobInfo, error) {
 		return backend.BlobInfo{}, err
 	}
 
-	client := *b.client
 	<-b.connChan
-	resp, err := client.Head(restPath(b.url, h))
+	resp, err := b.client.Head(restPath(b.url, h))
 	b.connChan <- struct{}{}
 	if err != nil {
 		return backend.BlobInfo{}, err
@@ -193,10 +188,8 @@ func (b *restBackend) Remove(t backend.Type, name string) error {
 	if err != nil {
 		return err
 	}
-	client := *b.client
-
 	<-b.connChan
-	resp, err := client.Do(req)
+	resp, err := b.client.Do(req)
 	b.connChan <- struct{}{}
 
 	if err != nil {
@@ -221,9 +214,8 @@ func (b *restBackend) List(t backend.Type, done <-chan struct{}) <-chan string {
 		url += "/"
 	}
 
-	client := *b.client
 	<-b.connChan
-	resp, err := client.Get(url)
+	resp, err := b.client.Get(url)
 	b.connChan <- struct{}{}
 
 	if resp != nil {
