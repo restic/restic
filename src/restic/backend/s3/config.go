@@ -41,7 +41,7 @@ func ParseConfig(s string) (interface{}, error) {
 		}
 
 		path := strings.SplitN(url.Path[1:], "/", 2)
-		return createConfig(url.Host, path, url.Scheme == "http")
+		return NewConfig(url.Host, path, url.Scheme == "http")
 	case strings.HasPrefix(s, "s3://"):
 		s = s[5:]
 	case strings.HasPrefix(s, "s3:"):
@@ -52,23 +52,26 @@ func ParseConfig(s string) (interface{}, error) {
 	// use the first entry of the path as the endpoint and the
 	// remainder as bucket name and prefix
 	path := strings.SplitN(s, "/", 3)
-	return createConfig(path[0], path[1:], false)
+	return NewConfig(path[0], path[1:], false)
 }
 
-func createConfig(endpoint string, p []string, useHTTP bool) (interface{}, error) {
+// NewConfig creates a Config at the specified endpoint. The Bucket is
+// the first entry in p and the remaining entries will be used as the
+// object name prefix.
+func NewConfig(endpoint string, bucketPrefix []string, useHTTP bool) (interface{}, error) {
 	var prefix string
 	switch {
-	case len(p) < 1:
+	case len(bucketPrefix) < 1:
 		return nil, errors.New("s3: invalid format, host/region or bucket name not found")
-	case len(p) == 1 || p[1] == "":
+	case len(bucketPrefix) == 1 || bucketPrefix[1] == "":
 		prefix = defaultPrefix
 	default:
-		prefix = path.Clean(p[1])
+		prefix = path.Clean(bucketPrefix[1])
 	}
 	return Config{
 		Endpoint: endpoint,
 		UseHTTP:  useHTTP,
-		Bucket:   p[0],
+		Bucket:   bucketPrefix[0],
 		Prefix:   prefix,
 	}, nil
 }

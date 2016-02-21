@@ -2,7 +2,6 @@ package gcs
 
 import (
 	"errors"
-	"path"
 	"restic/backend/s3"
 	"strings"
 )
@@ -25,19 +24,5 @@ func ParseConfig(s string) (interface{}, error) {
 		return nil, errors.New(`gcs: config does not start with "gs"`)
 	}
 	p := strings.SplitN(s, "/", 2)
-	var prefix string
-	switch {
-	case len(p) < 1:
-		return nil, errors.New("gcs: invalid format: bucket name not found")
-	case len(p) == 1 || p[1] == "":
-		prefix = defaultPrefix
-	default:
-		prefix = path.Clean(p[1])
-	}
-	return s3.Config{
-		Endpoint: gcsEndpoint,
-		UseHTTP:  false,
-		Bucket:   p[0],
-		Prefix:   prefix,
-	}, nil
+	return s3.NewConfig(gcsEndpoint, p, false)
 }
