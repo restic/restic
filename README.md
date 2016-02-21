@@ -4,37 +4,20 @@
 [![Report Card](http://goreportcard.com/badge/restic/restic)](http://goreportcard.com/report/restic/restic)
 [![Coverage Status](https://coveralls.io/repos/restic/restic/badge.svg)](https://coveralls.io/r/restic/restic)
 
-Restic Design Principles
-========================
 
-Restic is a program that does backups right and was designed with the following
-principles in mind:
+Introduction
+============
 
- * Easy: Doing backups should be a frictionless process, otherwise you might be
-   tempted to skip it.  Restic should be easy to configure and use, so that, in
-   the event of a data loss, you can just restore it. Likewise,
-   restoring data should not be complicated.
+restic is a backup program that is fast, efficient and secure. Detailed
+information can be found in [the documentation](doc/index.md) and [the user
+manual](doc/Manual.md). The [design document](doc/Design.md) lists the
+technical background and gives detailed information about the structure of the
+repository and the data saved therein.
 
- * Fast: Backing up your data with restic should only be limited by your
-   network or hard disk bandwidth so that you can backup your files every day.
-   Nobody does backups if it takes too much time. Restoring backups should only
-   transfer data that is needed for the files that are to be restored, so that
-   this process is also fast.
-
- * Verifiable: Much more important than backup is restore, so restic enables
-   you to easily verify that all data can be restored.
-
- * Secure: Restic uses cryptography to guarantee confidentiality and integrity
-   of your data. The location the backup data is stored is assumed not to be a
-   trusted environment (e.g. a shared space where others like system
-   administrators are able to access your backups). Restic is built to secure
-   your data against such attackers.
-
- * Efficient: With the growth of data, additional snapshots should only take
-   the storage of the actual increment. Even more, duplicate data should be
-   de-duplicated before it is actually written to the storage back end to save
-   precious backup space.
-
+The latest documentation can be viewed online at
+<https://restic.readthedocs.org/en/latest>. On the bottom left corner there is
+a menu that allows switching to the documentation and user manual for the
+latest released version.
 
 Build restic
 ============
@@ -49,25 +32,10 @@ afterwards you'll find the binary in the current directory:
       restic [OPTIONS] <command>
     [...]
 
-More documentation can be found on the [website](https://restic.github.io),
-especially in the [user manual](https://restic.github.io/manual).
+More documentation can be found in the [user manual](doc/Manual.md).
 
 At the moment, the only tested compiler for restic is the official Go compiler.
 Building restic with gccgo may work, but is not supported.
-
-Compatibility
-=============
-
-Backward compatibility for backups is important so that our users are always
-able to restore saved data. Therefore restic follows [Semantic
-Versioning](http://semver.org) to clearly define which versions are compatible.
-The repository and data structures contained therein are considered the "Public
-API" in the sense of Semantic Versioning. This goes for all released versions
-of restic, this may not be the case for the master branch.
-
-We guarantee backward compatibility of all repositories within one major version;
-as long as we do not increment the major version, data can be read and restored.
-We strive to be fully backward compatible to all prior versions.
 
 Contribute and Documentation
 ============================
@@ -98,17 +66,6 @@ pub   4096R/91A6868BD3F7A907 2014-11-01
       uid                          Alexander Neumann <alexander@debian.org>
       sub   4096R/D5FC2ACF4043FDF1 2014-11-01
 ```
-
-Talks
-=====
-
-The following talks will be or have been given about restic:
-
- * 2016-01-31: Lightning Talk at the Go Devroom at FOSDEM 2016, Brussels, Belgium
- * 2016-01-29: [restic - Backups mal richtig](https://media.ccc.de/v/c4.openchaos.2016.01.restic): Public lecture in German at [CCC Cologne e.V.](https://koeln.ccc.de) in Cologne, Germany
- * 2015-08-23: [A Solution to the Backup Inconvenience](https://programm.froscon.de/2015/events/1515.html): Lecture at [FROSCON 2015](https://www.froscon.de) in Bonn, Germany
- * 2015-02-01: [Lightning Talk at FOSDEM 2015](https://www.youtube.com/watch?v=oM-MfeflUZ8&t=11m40s): A short introduction (with slightly outdated command line)
- * 2015-01-27: [Talk about restic at CCC Aachen](https://videoag.fsmpi.rwth-aachen.de/?view=player&lectureid=4442#content) (in German)
 
 License
 =======
