@@ -82,7 +82,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 	}
 
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Source", "Directory")
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Source", "Comment")
 	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
 
 	done := make(chan struct{})
@@ -119,13 +119,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 			continue
 		}
 		id := sn.ID()
-		tab.Rows = append(tab.Rows, []interface{}{hex.EncodeToString(id[:plen/2]), sn.Time.Format(TimeFormat), sn.Hostname, sn.Paths[0]})
-
-		if len(sn.Paths) > 1 {
-			for _, path := range sn.Paths[1:] {
-				tab.Rows = append(tab.Rows, []interface{}{"", "", "", path})
-			}
-		}
+		tab.Rows = append(tab.Rows, []interface{}{hex.EncodeToString(id[:plen/2]), sn.Time.Format(TimeFormat), sn.Hostname, sn.Comment})
 	}
 
 	tab.Write(os.Stdout)

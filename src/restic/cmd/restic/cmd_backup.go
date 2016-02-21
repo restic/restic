@@ -20,6 +20,7 @@ type CmdBackup struct {
 	Parent   string   `short:"p" long:"parent"  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
 	Force    bool     `short:"f" long:"force"   description:"Force re-reading the target. Overrides the \"parent\" flag"`
 	Excludes []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
+	Comment  string   `short:"c" long:"comment" description:"Descriptive comment"`
 
 	global *GlobalOptions
 }
@@ -327,7 +328,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
-	_, id, err := arch.Snapshot(cmd.newArchiveProgress(stat), target, parentSnapshotID)
+	_, id, err := arch.Snapshot(cmd.newArchiveProgress(stat), target, parentSnapshotID, cmd.Comment)
 	if err != nil {
 		return err
 	}

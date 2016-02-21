@@ -16,6 +16,7 @@ type Snapshot struct {
 	Parent   *backend.ID `json:"parent,omitempty"`
 	Tree     *backend.ID `json:"tree"`
 	Paths    []string    `json:"paths"`
+	Comment  string      `json:"comment"`
 	Hostname string      `json:"hostname,omitempty"`
 	Username string      `json:"username,omitempty"`
 	UID      uint32      `json:"uid,omitempty"`

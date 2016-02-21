@@ -84,7 +84,7 @@ func TeardownRepo(repo *repository.Repository) {
 
 func SnapshotDir(t testing.TB, repo *repository.Repository, path string, parent *backend.ID) *restic.Snapshot {
 	arch := restic.NewArchiver(repo)
-	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
+	sn, _, err := arch.Snapshot(nil, []string{path}, parent, "")
 	OK(t, err)
 	return sn
 }

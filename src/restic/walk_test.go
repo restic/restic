@@ -24,7 +24,7 @@ func TestWalkTree(t *testing.T) {
 
 	// archive a few files
 	arch := restic.NewArchiver(repo)
-	sn, _, err := arch.Snapshot(nil, dirs, nil)
+	sn, _, err := arch.Snapshot(nil, dirs, nil, "")
 	OK(t, err)
 
 	// flush repo, write all packs
