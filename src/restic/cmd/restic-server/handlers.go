@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -40,10 +41,12 @@ func AuthHandler(f *HtpasswdFile, h http.Handler) http.HandlerFunc {
 func CheckConfig(c *Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		config := filepath.Join(c.path, "config")
-		if _, err := os.Stat(config); err != nil {
+		st, err := os.Stat(config)
+		if err != nil {
 			http.Error(w, "404 not found", 404)
 			return
 		}
+		w.Header().Add("Content-Length", fmt.Sprint(st.Size()))
 	}
 }
 
@@ -113,11 +116,12 @@ func CheckBlob(c *Context) http.HandlerFunc {
 		dir := vars[1]
 		name := vars[2]
 		path := filepath.Join(c.path, dir, name)
-		_, err := os.Stat(path)
+		st, err := os.Stat(path)
 		if err != nil {
 			http.Error(w, "404 not found", 404)
 			return
 		}
+		w.Header().Add("Content-Length", fmt.Sprint(st.Size()))
 	}
 }
 
