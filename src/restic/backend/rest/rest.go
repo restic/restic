@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 
 	"restic/backend"
 )
@@ -17,16 +18,14 @@ const connLimit = 10
 
 // restPath returns the path to the given resource.
 func restPath(url *url.URL, h backend.Handle) string {
-	p := url.Path
-	if p == "" {
-		p = "/"
-	}
+	u := *url
 
 	var dir string
 
 	switch h.Type {
 	case backend.Config:
 		dir = ""
+		h.Name = "config"
 	case backend.Data:
 		dir = backend.Paths.Data
 	case backend.Snapshot:
@@ -41,7 +40,9 @@ func restPath(url *url.URL, h backend.Handle) string {
 		dir = string(h.Type)
 	}
 
-	return path.Join(p, dir, h.Name)
+	u.Path = path.Join(url.Path, dir, h.Name)
+
+	return u.String()
 }
 
 type restBackend struct {
@@ -98,8 +99,8 @@ func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err er
 	if err != nil {
 		return 0, err
 	}
-	if resp.StatusCode != 206 {
-		return 0, errors.New("blob not found")
+	if resp.StatusCode != 200 && resp.StatusCode != 206 {
+		return 0, fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	return io.ReadFull(resp.Body, p)
@@ -132,7 +133,7 @@ func (b *restBackend) Save(h backend.Handle, p []byte) (err error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return errors.New("blob not saved")
+		return fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	return nil
@@ -157,7 +158,7 @@ func (b *restBackend) Stat(h backend.Handle) (backend.BlobInfo, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return backend.BlobInfo{}, errors.New("blob not saved")
+		return backend.BlobInfo{}, fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	if resp.ContentLength < 0 {
@@ -215,9 +216,14 @@ func (b *restBackend) Remove(t backend.Type, name string) error {
 func (b *restBackend) List(t backend.Type, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
+	url := restPath(b.url, backend.Handle{Type: t})
+	if !strings.HasSuffix(url, "/") {
+		url += "/"
+	}
+
 	client := *b.client
 	<-b.connChan
-	resp, err := client.Get(restPath(b.url, backend.Handle{Type: t}))
+	resp, err := client.Get(url)
 	b.connChan <- struct{}{}
 
 	if resp != nil {
