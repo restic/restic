@@ -1,38 +1,41 @@
 REST Backend
 ============
 
-Restic can interact with HTTP Backend that respects the following REST API.
+Restic can interact with HTTP Backend that respects the following REST API. The
+following values are valid for `{type}`: `data`, `keys`, `locks`, `snapshots`,
+`index`, `config`. `{path}` is a path to the repository, so that multiple
+different repositories can be accessed. The default path is `/`.
 
-## HEAD /config
+## HEAD {path}/config
 
 Returns "200 OK" if the repository has a configuration,
 an HTTP error otherwise.
 
-## GET /config
+## GET {path}/config
 
 Returns the content of the configuration file if the repository has a configuration,
 an HTTP error otherwise.
 
 Response format: binary/octet-stream
 
-## POST /config
+## POST {path}/config
 
 Returns "200 OK" if the configuration of the request body has been saved,
 an HTTP error otherwise.
 
-## GET /{type}/
+## GET {path}/{type}/
 
 Returns a JSON array containing the names of all the blobs stored for a given type.
 
 Response format: JSON
 
-## HEAD /{type}/{name}
+## HEAD {path}/{type}/{name}
 
 Returns "200 OK" if the blob with the given name and type is stored in the repository,
 "404 not found" otherwise. If the blob exists, the HTTP header `Content-Length`
 is set to the file size.
 
-## GET /{type}/{name}
+## GET {path}/{type}/{name}
 
 Returns the content of the blob with the given name and type if it is stored in the repository,
 "404 not found" otherwise.
@@ -43,14 +46,14 @@ and the response only contains the specified range.
 
 Response format: binary/octet-stream
 
-## POST /{type}/{name}
+## POST {path}/{type}/{name}
 
 Saves the content of the request body as a blob with the given name and type,
 an HTTP error otherwise.
 
 Request format: binary/octet-stream
 
-## DELETE /{type}/{name}
+## DELETE {path}/{type}/{name}
 
 Returns "200 OK" if the blob with the given name and type has been deleted from the repository,
 an HTTP error otherwise.
