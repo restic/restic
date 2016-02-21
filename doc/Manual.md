@@ -1,9 +1,7 @@
-# User Manual
-
 Thanks for using restic. This document will give you an overview of the basic
 functionality provided by restic.
 
-## Building restic
+# Building/installing restic
 
 If you are using Mac OS X, you can install restic using the
 [homebrew](http://brew.sh/) packet manager:
@@ -81,7 +79,7 @@ them, e.g. for the `backup` command:
           -f, --force    Force re-reading the target. Overrides the "parent" flag
           -e, --exclude= Exclude a pattern (can be specified multiple times)
 
-## Initialize a repository
+# Initialize a repository
 
 First, we need to create a "repository". This is the place where your backups
 will be saved at.
@@ -103,7 +101,7 @@ For automated backups, restic accepts the repository location in the
 environment variable `RESTIC_REPOSITORY` and also the password in the variable
 `RESTIC_PASSWORD`.
 
-### Password prompt on Windows
+## Password prompt on Windows
 
 At the moment, restic only supports the default Windows console interaction.
 If you use emulation environments like [MSYS2](https://msys2.github.io/) or
@@ -118,7 +116,7 @@ you can install `winpty` as follows:
     $ pacman -S winpty
     $ winpty restic -r /tmp/backup init
 
-## Create a snapshot
+# Create a snapshot
 
 Now we're ready to backup some data. The contents of a directory at a specific
 point in time is called a "snapshot" in restic. Run the following command and
@@ -160,7 +158,7 @@ You can even backup individual files in the same repository.
 In fact several hosts may use the same repository to backup directories and
 files leading to a greater de-duplication.
 
-## List all snapshots
+# List all snapshots
 
 Now, you can list all the snapshots stored in the repository:
 
@@ -171,7 +169,7 @@ Now, you can list all the snapshots stored in the repository:
     40dc1520  2015-05-08 21:38:30  kasimir     /home/user/work
     79766175  2015-05-08 21:40:19  kasimir     /home/user/work
 
-## Restore a snapshot
+# Restore a snapshot
 
 Restoring a snapshot is as easy as it sounds, just use the following command to
 restore the contents of the latest snapshot to `/tmp/restore-work`:
@@ -180,7 +178,7 @@ restore the contents of the latest snapshot to `/tmp/restore-work`:
     enter password for repository:
     restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
 
-## Manage repository keys
+# Manage repository keys
 
 The `key` command allows you to set multiple access keys or passwords per
 repository. In fact, you can use the `list`, `add`, `remove` and `passwd`
@@ -205,7 +203,7 @@ sub-commands to manage these keys very precisely:
      5c657874    username    kasimir   2015-08-12 13:35:05
     *eb78040b    username    kasimir   2015-08-12 13:29:57
 
-## Check integrity and consistency
+# Check integrity and consistency
 
 Imagine your repository is saved on a server that has a faulty hard drive, or
 even worse, attackers get privileged access and modify your backup with the
@@ -228,7 +226,7 @@ the same error:
     Load indexes
     ciphertext verification failed
 
-## Mount a repository
+# Mount a repository
 
 Browsing your backup as a regular file system is also very easy. First, create
 a mount point such as `/mnt/restic` and then use the following command to serve
@@ -245,7 +243,7 @@ Windows doesn't support FUSE directly. Projects like
 yet, but we'd like to hear about your experience. For setup information see
 [dokan FUSE in dokan's wiki](https://github.com/dokan-dev/dokany/wiki/FUSE).
 
-## Create an SFTP repository
+# Create an SFTP repository
 
 In order to backup data via SFTP, you must first set up a server with SSH and
 let it know your public key. Passwordless login is really important since
@@ -268,7 +266,7 @@ a repository in the user's home directory on the server, use the location
 `sftp://user@host/foo/bar/repo`. In this case the directory is relative to the
 user's home directory: `foo/bar/repo`.
 
-## Create an Amazon S3 repository
+# Create an Amazon S3 repository
 
 Restic can backup data to any Amazon S3 bucket. However, in this case, changing the URL scheme is not enough since Amazon uses special security credentials to sign HTTP requests. By consequence, you must first setup the following environment variables with the credentials you obtained while creating the bucket.
 
@@ -287,7 +285,22 @@ You can then easily initialize a repository that uses your Amazon S3 as a backen
 For an S3-compatible repository without TLS available, use the alternative URI
 protocol `s3:http://server:port/bucket_name`.
 
-## Under the hood: Browse repository objects
+# Debugging restic
+
+The program can be built with debug support like this:
+
+    $ go run build.go -tags debug
+
+Afterwards, extensive debug messages are written to the file in environment
+variable `RESTIC_DEBUG`, e.g.:
+
+    $ RESTIC_DEBUG=/tmp/restic-debug.log restic backup ~/work
+
+If you suspect that there is a bug, you can have a look at the debug log.
+Please be aware that the debug log might contain sensitive information such as
+file and directory names.
+
+# Under the hood: Browse repository objects
 
 Internally, a repository stores data of several different types described in the [design documentation](https://github.com/restic/restic/blob/master/doc/Design.md). You can `list` objects such as blobs, packs, index, snapshots, keys or locks with the following command:
 
