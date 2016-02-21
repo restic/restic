@@ -10,6 +10,7 @@ import (
 
 	"restic/backend"
 	"restic/backend/local"
+	"restic/backend/onedrive"
 	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
@@ -251,6 +252,9 @@ func open(s string) (backend.Backend, error) {
 		return s3.Open(cfg)
 	case "rest":
 		return rest.Open(loc.Config.(rest.Config))
+	case "onedrive":
+		debug.Log("open", "opening ondrive repository")
+		return onedrive.Open(loc.Config.(onedrive.Config))
 	}
 
 	debug.Log("open", "invalid repository location: %v", s)
@@ -286,6 +290,9 @@ func create(s string) (backend.Backend, error) {
 		return s3.Open(cfg)
 	case "rest":
 		return rest.Open(loc.Config.(rest.Config))
+	case "onedrive":
+		debug.Log("open", "opening ondrive repository")
+		return onedrive.Open(loc.Config.(onedrive.Config))
 	}
 
 	debug.Log("open", "invalid repository scheme: %v", s)
