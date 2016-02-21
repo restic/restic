@@ -132,7 +132,7 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 
 // Stat returns information about a blob.
 func (be s3) Stat(h backend.Handle) (backend.BlobInfo, error) {
-	debug.Log("s3.Stat", "%v")
+	debug.Log("s3.Stat", "%v", h)
 	path := be.s3path(h.Type, h.Name)
 	obj, err := be.client.GetObject(be.bucketname, path)
 	if err != nil {
