@@ -28,6 +28,7 @@ func main() {
 		"index",
 		"locks",
 		"keys",
+		"tmp",
 	}
 	for _, d := range dirs {
 		os.MkdirAll(filepath.Join(*path, d), 0700)
