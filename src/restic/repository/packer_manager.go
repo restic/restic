@@ -3,7 +3,6 @@ package repository
 import (
 	"sync"
 
-	"github.com/restic/chunker"
 	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
@@ -18,8 +17,8 @@ type packerManager struct {
 	packs []*pack.Packer
 }
 
-const minPackSize = 4 * chunker.MiB
-const maxPackSize = 16 * chunker.MiB
+const minPackSize = 4 * 1024 * 1024
+const maxPackSize = 16 * 1024 * 1024
 const maxPackers = 200
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is
