@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"restic/backend/local"
+	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
 )
@@ -27,6 +28,7 @@ var parsers = []parser{
 	{"local", local.ParseConfig},
 	{"sftp", sftp.ParseConfig},
 	{"s3", s3.ParseConfig},
+	{"rest", rest.ParseConfig},
 }
 
 // Parse extracts repository location information from the string s. If s

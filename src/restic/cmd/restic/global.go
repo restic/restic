@@ -8,15 +8,17 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/jessevdk/go-flags"
-	"golang.org/x/crypto/ssh/terminal"
 	"restic/backend"
 	"restic/backend/local"
+	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
 	"restic/debug"
 	"restic/location"
 	"restic/repository"
+
+	"github.com/jessevdk/go-flags"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var version = "compiled manually"
@@ -247,6 +249,8 @@ func open(s string) (backend.Backend, error) {
 
 		debug.Log("open", "opening s3 repository at %#v", cfg)
 		return s3.Open(cfg)
+	case "rest":
+		return rest.Open(loc.Config.(rest.Config))
 	}
 
 	debug.Log("open", "invalid repository location: %v", s)
@@ -280,6 +284,8 @@ func create(s string) (backend.Backend, error) {
 
 		debug.Log("open", "create s3 repository at %#v", loc.Config)
 		return s3.Open(cfg)
+	case "rest":
+		return rest.Open(loc.Config.(rest.Config))
 	}
 
 	debug.Log("open", "invalid repository scheme: %v", s)
