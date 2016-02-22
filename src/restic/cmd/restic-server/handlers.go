@@ -5,6 +5,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -150,13 +151,22 @@ func SaveBlob(c *Context) http.HandlerFunc {
 		dir := vars[1]
 		name := vars[2]
 		path := filepath.Join(c.path, dir, name)
-		bytes, err := ioutil.ReadAll(r.Body)
+		tmp := path + "_tmp"
+		tf, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
-			http.Error(w, "400 bad request", 400)
+			http.Error(w, "500 internal server error", 500)
 			return
 		}
-		errw := ioutil.WriteFile(path, bytes, 0600)
-		if errw != nil {
+		if _, err := io.Copy(tf, r.Body); err != nil {
+			http.Error(w, "400 bad request", 400)
+			tf.Close()
+			os.Remove(tmp)
+			return
+		}
+		if err := tf.Close(); err != nil {
+			http.Error(w, "500 internal server error", 500)
+		}
+		if err := os.Rename(tmp, path); err != nil {
 			http.Error(w, "500 internal server error", 500)
 			return
 		}
