@@ -30,7 +30,7 @@ func main() {
 		"keys",
 	}
 	for _, d := range dirs {
-		os.MkdirAll(filepath.Join(*path, d), 0600)
+		os.MkdirAll(filepath.Join(*path, d), 0700)
 	}
 
 	// Define the routes
