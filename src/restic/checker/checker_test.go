@@ -243,7 +243,7 @@ func TestCheckerModifiedData(t *testing.T) {
 	OK(t, repo.Init(TestPassword))
 
 	arch := restic.NewArchiver(repo)
-	_, id, err := arch.Snapshot(nil, []string{"."}, nil)
+	_, id, err := arch.Snapshot(nil, []string{"."}, nil, "")
 	OK(t, err)
 	t.Logf("archived as %v", id.Str())
 

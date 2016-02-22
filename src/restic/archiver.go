@@ -11,12 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/restic/chunker"
 	"restic/backend"
 	"restic/debug"
 	"restic/pack"
 	"restic/pipe"
 	"restic/repository"
+
+	"github.com/restic/chunker"
 
 	"github.com/juju/errors"
 )
@@ -624,7 +625,7 @@ func unique(items []string) []string {
 // Snapshot creates a snapshot of the given paths. If parentID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
-func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID) (*Snapshot, backend.ID, error) {
+func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID, comment string) (*Snapshot, backend.ID, error) {
 	paths = unique(paths)
 	sort.Strings(paths)
 
@@ -644,6 +645,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID
 	if err != nil {
 		return nil, backend.ID{}, err
 	}
+	sn.Comment = comment
 	sn.Excludes = arch.Excludes
 
 	jobs := archivePipe{}

@@ -17,7 +17,7 @@ func TestCache(t *testing.T) {
 	arch := restic.NewArchiver(repo)
 
 	// archive some files, this should automatically cache all blobs from the snapshot
-	_, _, err = arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
+	_, _, err = arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil, "")
 
 	// TODO: test caching index
 }

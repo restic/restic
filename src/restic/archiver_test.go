@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/chunker"
 	"restic"
 	"restic/backend"
 	"restic/checker"
@@ -15,6 +14,8 @@ import (
 	"restic/pack"
 	"restic/repository"
 	. "restic/test"
+
+	"github.com/restic/chunker"
 )
 
 var testPol = chunker.Pol(0x3DA3358B4DC173)
@@ -112,7 +113,7 @@ func archiveDirectory(b testing.TB) {
 
 	arch := restic.NewArchiver(repo)
 
-	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
+	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil, "")
 	OK(b, err)
 
 	b.Logf("snapshot archived as %v", id)
@@ -210,7 +211,7 @@ func BenchmarkLoadTree(t *testing.B) {
 
 	// archive a few files
 	arch := restic.NewArchiver(repo)
-	sn, _, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
+	sn, _, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil, "")
 	OK(t, err)
 	t.Logf("archived snapshot %v", sn.ID())
 
