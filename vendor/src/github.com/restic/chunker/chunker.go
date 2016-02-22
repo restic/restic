@@ -2,14 +2,13 @@ package chunker
 
 import (
 	"errors"
-	"hash"
 	"io"
 	"sync"
 )
 
 const (
-	KiB = 1024
-	MiB = 1024 * KiB
+	kiB = 1024
+	miB = 1024 * kiB
 
 	// WindowSize is the size of the sliding window.
 	windowSize = 64
@@ -17,19 +16,15 @@ const (
 	// aim to create chunks of 20 bits or about 1MiB on average.
 	averageBits = 20
 
-	// MinSize is the minimal size of a chunk.
-	MinSize = 512 * KiB
-	// MaxSize is the maximal size of a chunk.
-	MaxSize = 8 * MiB
+	// MinSize is the default minimal size of a chunk.
+	MinSize = 512 * kiB
+	// MaxSize is the default maximal size of a chunk.
+	MaxSize = 8 * miB
 
 	splitmask = (1 << averageBits) - 1
 
-	chunkerBufSize = 512 * KiB
+	chunkerBufSize = 512 * kiB
 )
-
-var bufPool = sync.Pool{
-	New: func() interface{} { return make([]byte, chunkerBufSize) },
-}
 
 type tables struct {
 	out [256]Pol
@@ -52,15 +47,13 @@ type Chunk struct {
 	Start  uint
 	Length uint
 	Cut    uint64
-	Digest []byte
-}
-
-func (c Chunk) Reader(r io.ReaderAt) io.Reader {
-	return io.NewSectionReader(r, int64(c.Start), int64(c.Length))
+	Data   []byte
 }
 
 // Chunker splits content with Rabin Fingerprints.
 type Chunker struct {
+	MinSize, MaxSize uint
+
 	pol      Pol
 	polShift uint
 	tables   *tables
@@ -82,22 +75,35 @@ type Chunker struct {
 	pre uint // wait for this many bytes before start calculating an new chunk
 
 	digest uint64
-	h      hash.Hash
 }
 
 // New returns a new Chunker based on polynomial p that reads from rd
 // with bufsize and pass all data to hash along the way.
-func New(rd io.Reader, pol Pol, h hash.Hash) *Chunker {
+func New(rd io.Reader, pol Pol) *Chunker {
 	c := &Chunker{
-		buf: bufPool.Get().([]byte),
-		h:   h,
-		pol: pol,
-		rd:  rd,
+		buf:     make([]byte, chunkerBufSize),
+		pol:     pol,
+		rd:      rd,
+		MinSize: MinSize,
+		MaxSize: MaxSize,
 	}
 
 	c.reset()
 
 	return c
+}
+
+// Reset reinitializes the chunker with a new reader and polynomial.
+func (c *Chunker) Reset(rd io.Reader, pol Pol) {
+	*c = Chunker{
+		buf:     c.buf,
+		pol:     pol,
+		rd:      rd,
+		MinSize: c.MinSize,
+		MaxSize: c.MaxSize,
+	}
+
+	c.reset()
 }
 
 func (c *Chunker) reset() {
@@ -115,12 +121,8 @@ func (c *Chunker) reset() {
 	c.slide(1)
 	c.start = c.pos
 
-	if c.h != nil {
-		c.h.Reset()
-	}
-
 	// do not start a new chunk unless at least MinSize bytes have been read
-	c.pre = MinSize - windowSize
+	c.pre = c.MinSize - windowSize
 }
 
 // Calculate out_table and mod_table for optimization. Must be called only
@@ -179,12 +181,13 @@ func (c *Chunker) fillTables() {
 }
 
 // Next returns the position and length of the next chunk of data. If an error
-// occurs while reading, the error is returned with a nil chunk. The state of
-// the current chunk is undefined. When the last chunk has been returned, all
-// subsequent calls yield a nil chunk and an io.EOF error.
-func (c *Chunker) Next() (*Chunk, error) {
+// occurs while reading, the error is returned. Afterwards, the state of the
+// current chunk is undefined. When the last chunk has been returned, all
+// subsequent calls yield an io.EOF error.
+func (c *Chunker) Next(data []byte) (Chunk, error) {
+	data = data[:0]
 	if c.tables == nil {
-		return nil, errors.New("polynomial is not set")
+		return Chunk{}, errors.New("polynomial is not set")
 	}
 
 	for {
@@ -203,22 +206,19 @@ func (c *Chunker) Next() (*Chunk, error) {
 			if err == io.EOF && !c.closed {
 				c.closed = true
 
-				// return the buffer to the pool
-				bufPool.Put(c.buf)
-
 				// return current chunk, if any bytes have been processed
 				if c.count > 0 {
-					return &Chunk{
+					return Chunk{
 						Start:  c.start,
 						Length: c.count,
 						Cut:    c.digest,
-						Digest: c.hashDigest(),
+						Data:   data,
 					}, nil
 				}
 			}
 
 			if err != nil {
-				return nil, err
+				return Chunk{}, err
 			}
 
 			c.bpos = 0
@@ -230,7 +230,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 			n := c.bmax - c.bpos
 			if c.pre > uint(n) {
 				c.pre -= uint(n)
-				c.updateHash(c.buf[c.bpos:c.bmax])
+				data = append(data, c.buf[c.bpos:c.bmax]...)
 
 				c.count += uint(n)
 				c.pos += uint(n)
@@ -239,7 +239,7 @@ func (c *Chunker) Next() (*Chunk, error) {
 				continue
 			}
 
-			c.updateHash(c.buf[c.bpos : c.bpos+c.pre])
+			data = append(data, c.buf[c.bpos:c.bpos+c.pre]...)
 
 			c.bpos += c.pre
 			c.count += c.pre
@@ -264,22 +264,22 @@ func (c *Chunker) Next() (*Chunk, error) {
 			// end inline
 
 			add++
-			if add < MinSize {
+			if add < c.MinSize {
 				continue
 			}
 
 			if (c.digest&splitmask) == 0 || add >= MaxSize {
 				i := add - c.count - 1
-				c.updateHash(c.buf[c.bpos : c.bpos+uint(i)+1])
+				data = append(data, c.buf[c.bpos:c.bpos+uint(i)+1]...)
 				c.count = add
 				c.pos += uint(i) + 1
 				c.bpos += uint(i) + 1
 
-				chunk := &Chunk{
+				chunk := Chunk{
 					Start:  c.start,
 					Length: c.count,
 					Cut:    c.digest,
-					Digest: c.hashDigest(),
+					Data:   data,
 				}
 
 				c.reset()
@@ -290,30 +290,12 @@ func (c *Chunker) Next() (*Chunk, error) {
 
 		steps := c.bmax - c.bpos
 		if steps > 0 {
-			c.updateHash(c.buf[c.bpos : c.bpos+steps])
+			data = append(data, c.buf[c.bpos:c.bpos+steps]...)
 		}
 		c.count += steps
 		c.pos += steps
 		c.bpos = c.bmax
 	}
-}
-
-func (c *Chunker) updateHash(data []byte) {
-	if c.h != nil {
-		// the hashes from crypto/sha* do not return an error
-		_, err := c.h.Write(data)
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-func (c *Chunker) hashDigest() []byte {
-	if c.h == nil {
-		return nil
-	}
-
-	return c.h.Sum(nil)
 }
 
 func (c *Chunker) append(b byte) {
