@@ -171,7 +171,7 @@ func (env *TravisEnvironment) RunTests() {
 				"-arch", strings.Join(env.goxArch, " "),
 				"-tags", tags,
 				"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
-				"restic/cmd/restic")
+				"cmds/restic")
 		}
 	}
 
@@ -192,7 +192,7 @@ func (env *TravisEnvironment) RunTests() {
 	}
 
 	// run the tests and gather coverage information
-	runWithEnv(envWithGOPATH, "gotestcover", "-coverprofile", "all.cov", "restic/...")
+	runWithEnv(envWithGOPATH, "gotestcover", "-coverprofile", "all.cov", "cmds/...", "restic/...")
 
 	runGofmt()
 

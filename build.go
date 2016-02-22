@@ -329,13 +329,17 @@ func main() {
 	}
 
 	verbosePrintf("create GOPATH at %v\n", gopath)
-	if err = updateGopath(gopath, filepath.Join(root, "src"), ""); err != nil {
-		die("copying files from %v to %v failed: %v\n", root, gopath, err)
+	if err = updateGopath(gopath, filepath.Join(root, "src", "restic"), "restic"); err != nil {
+		die("copying files from %v/src/restic to %v/src/restic failed: %v\n", root, gopath, err)
+	}
+
+	if err = updateGopath(gopath, filepath.Join(root, "src", "cmds"), "cmds"); err != nil {
+		die("copying files from %v/src/cmds to %v/src/restic/cmds failed: %v\n", root, gopath, err)
 	}
 
 	vendor := filepath.Join(root, "vendor", "src")
 	if err = updateGopath(gopath, vendor, ""); err != nil {
-		die("copying files from %v to %v failed: %v\n", root, gopath, err)
+		die("copying files from %v to %v/src failed: %v\n", vendor, gopath, err)
 	}
 
 	defer func() {
@@ -372,7 +376,7 @@ func main() {
 	args := []string{
 		"-tags", strings.Join(buildTags, " "),
 		"-ldflags", ldflags,
-		"-o", output, "restic/cmd/restic",
+		"-o", output, "cmds/restic",
 	}
 
 	err = build(filepath.Join(gopath, "src"), gopath, args...)
