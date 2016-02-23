@@ -724,7 +724,7 @@ func TestFind(t *testing.T) {
 
 func TestRebuildIndex(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		datafile := filepath.Join("..", "..", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
+		datafile := filepath.Join("..", "..", "restic", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 		SetupTarTestFixture(t, env.base, datafile)
 
 		out := cmdCheckOutput(t, global)
@@ -755,7 +755,7 @@ var optimizeTests = []struct {
 	snapshots    backend.IDSet
 }{
 	{
-		filepath.Join("..", "..", "checker", "testdata", "checker-test-repo.tar.gz"),
+		filepath.Join("..", "..", "restic", "checker", "testdata", "checker-test-repo.tar.gz"),
 		backend.NewIDSet(ParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")),
 	},
 	{
