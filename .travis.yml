@@ -38,4 +38,4 @@ script:
   - go run run_integration_tests.go
 
 after_success:
-  - goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN"
+  - GOPATH=$PWD:$PWD/vendor goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN"
