@@ -101,7 +101,7 @@ func printTrees(repo *repository.Repository, wr io.Writer) error {
 	return nil
 }
 
-const numWorkers = 10
+const dumpPackWorkers = 10
 
 // Pack is the struct used in printPacks.
 type Pack struct {
@@ -138,7 +138,7 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 
 	jobCh := make(chan worker.Job)
 	resCh := make(chan worker.Job)
-	wp := worker.New(numWorkers, f, jobCh, resCh)
+	wp := worker.New(dumpPackWorkers, f, jobCh, resCh)
 
 	go func() {
 		for name := range repo.Backend().List(backend.Data, done) {
