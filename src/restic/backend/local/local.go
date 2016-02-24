@@ -235,31 +235,84 @@ func (b *Local) Remove(t backend.Type, name string) error {
 	return os.Remove(fn)
 }
 
+func isFile(fi os.FileInfo) bool {
+	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
+}
+
+func readdir(d string) (fileInfos []os.FileInfo, err error) {
+	f, e := os.Open(d)
+	if e != nil {
+		return nil, e
+	}
+
+	defer func() {
+		e := f.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+
+	return f.Readdir(-1)
+}
+
+// listDir returns a list of all files in d.
+func listDir(d string) (filenames []string, err error) {
+	fileInfos, err := readdir(d)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fi := range fileInfos {
+		if isFile(fi) {
+			filenames = append(filenames, fi.Name())
+		}
+	}
+
+	return filenames, nil
+}
+
+// listDirs returns a list of all files in directories within d.
+func listDirs(dir string) (filenames []string, err error) {
+	fileInfos, err := readdir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, fi := range fileInfos {
+		if !fi.IsDir() {
+			continue
+		}
+
+		files, err := listDir(filepath.Join(dir, fi.Name()))
+		if err != nil {
+			continue
+		}
+
+		filenames = append(filenames, files...)
+	}
+
+	return filenames, nil
+}
+
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
-	var pattern string
+	lister := listDir
 	if t == backend.Data {
-		pattern = filepath.Join(dirname(b.p, t, ""), "*", "*")
-	} else {
-		pattern = filepath.Join(dirname(b.p, t, ""), "*")
+		lister = listDirs
 	}
 
 	ch := make(chan string)
-	matches, err := filepath.Glob(pattern)
+	items, err := lister(filepath.Join(dirname(b.p, t, "")))
 	if err != nil {
 		close(ch)
 		return ch
 	}
 
-	for i := range matches {
-		matches[i] = filepath.Base(matches[i])
-	}
-
 	go func() {
 		defer close(ch)
-		for _, m := range matches {
+		for _, m := range items {
 			if m == "" {
 				continue
 			}
