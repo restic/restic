@@ -557,15 +557,10 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Index, error)) (idx *Index, err error) {
+func LoadIndexWithDecoder(repo *Repository, id backend.ID, fn func(io.Reader) (*Index, error)) (idx *Index, err error) {
 	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
 
-	idxID, err := backend.ParseID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	buf, err := repo.LoadAndDecrypt(backend.Index, idxID)
+	buf, err := repo.LoadAndDecrypt(backend.Index, id)
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +571,7 @@ func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Inde
 		return nil, err
 	}
 
-	idx.id = idxID
+	idx.id = id
 
 	return idx, nil
 }
@@ -588,7 +583,7 @@ func LoadIndexWithDecoder(repo *Repository, id string, fn func(io.Reader) (*Inde
 func ConvertIndex(repo *Repository, id backend.ID) (backend.ID, error) {
 	debug.Log("ConvertIndex", "checking index %v", id.Str())
 
-	idx, err := LoadIndexWithDecoder(repo, id.String(), DecodeOldIndex)
+	idx, err := LoadIndexWithDecoder(repo, id, DecodeOldIndex)
 	if err != nil {
 		debug.Log("ConvertIndex", "LoadIndexWithDecoder(%v) returned error: %v", id.Str(), err)
 		return id, err

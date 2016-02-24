@@ -105,7 +105,7 @@ func (cmd CmdDump) DumpIndexes() error {
 	for id := range cmd.repo.List(backend.Index, done) {
 		fmt.Printf("index_id: %v\n", id)
 
-		idx, err := repository.LoadIndex(cmd.repo, id.String())
+		idx, err := repository.LoadIndex(cmd.repo, id)
 		if err != nil {
 			return err
 		}

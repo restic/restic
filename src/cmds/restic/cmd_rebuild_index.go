@@ -71,7 +71,7 @@ func (cmd CmdRebuildIndex) RebuildIndex() error {
 		cmd.global.Printf("  loading index %v\n", i)
 
 		debug.Log("RebuildIndex.RebuildIndex", "load index %v", indexID.Str())
-		idx, err := repository.LoadIndex(cmd.repo, indexID.String())
+		idx, err := repository.LoadIndex(cmd.repo, indexID)
 		if err != nil {
 			return err
 		}
