@@ -84,7 +84,7 @@ func listIndexIDs(repo *repository.Repository) (list backend.IDs) {
 	return list
 }
 
-func (cmd CmdRebuildIndex) RebuildIndex() error {
+func (cmd CmdRebuildIndex) rebuildIndex() error {
 	debug.Log("RebuildIndex.RebuildIndex", "start rebuilding index")
 
 	packs := loadBlobsFromPacks(cmd.repo)
@@ -137,5 +137,5 @@ func (cmd CmdRebuildIndex) Execute(args []string) error {
 		return err
 	}
 
-	return cmd.RebuildIndex()
+	return cmd.rebuildIndex()
 }
