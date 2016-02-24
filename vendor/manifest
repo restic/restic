@@ -40,8 +40,8 @@
 		{
 			"importpath": "github.com/restic/chunker",
 			"repository": "https://github.com/restic/chunker",
-			"revision": "fc45043175c38d59374024a38fb7123c40a64f20",
-			"branch": "HEAD"
+			"revision": "16c849a106e0a50d658e8f5e49a01f6728f4f92c",
+			"branch": "master"
 		},
 		{
 			"importpath": "golang.org/x/crypto/pbkdf2",

@@ -2,12 +2,10 @@ package restic_test
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"io"
 	"testing"
 	"time"
 
-	"github.com/restic/chunker"
 	"restic"
 	"restic/backend"
 	"restic/checker"
@@ -15,6 +13,8 @@ import (
 	"restic/pack"
 	"restic/repository"
 	. "restic/test"
+
+	"github.com/restic/chunker"
 )
 
 var testPol = chunker.Pol(0x3DA3358B4DC173)
@@ -24,17 +24,12 @@ type Rdr interface {
 	io.ReaderAt
 }
 
-type chunkedData struct {
-	buf    []byte
-	chunks []*chunker.Chunk
-}
-
 func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.Key) {
 	rd.Seek(0, 0)
-	ch := chunker.New(rd, testPol, sha256.New())
+	ch := chunker.New(rd, testPol)
 
 	for {
-		chunk, err := ch.Next()
+		chunk, err := ch.Next(buf)
 
 		if err == io.EOF {
 			break
@@ -43,12 +38,10 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 		OK(b, err)
 
 		// reduce length of buf
-		buf = buf[:chunk.Length]
-		n, err := io.ReadFull(chunk.Reader(rd), buf)
-		OK(b, err)
-		Assert(b, uint(n) == chunk.Length, "invalid length: got %d, expected %d", n, chunk.Length)
+		Assert(b, uint(len(chunk.Data)) == chunk.Length,
+			"invalid length: got %d, expected %d", len(chunk.Data), chunk.Length)
 
-		_, err = crypto.Encrypt(key, buf2, buf)
+		_, err = crypto.Encrypt(key, buf2, chunk.Data)
 		OK(b, err)
 	}
 }
@@ -72,18 +65,16 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 }
 
 func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) {
-	ch := chunker.New(rd, testPol, sha256.New())
+	ch := chunker.New(rd, testPol)
 
 	for {
-		chunk, err := ch.Next()
+		chunk, err := ch.Next(buf)
 		if err == io.EOF {
 			break
 		}
 
 		// reduce length of chunkBuf
-		buf = buf[:chunk.Length]
-		io.ReadFull(chunk.Reader(rd), buf)
-		crypto.Encrypt(key, buf, buf)
+		crypto.Encrypt(key, chunk.Data, chunk.Data)
 	}
 }
 
@@ -258,8 +249,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 	duplication := 7
 
 	arch := restic.NewArchiver(repo)
-	data, chunks := getRandomData(seed, dataSizeMb*1024*1024)
-	reader := bytes.NewReader(data)
+	chunks := getRandomData(seed, dataSizeMb*1024*1024)
 
 	errChannels := [](<-chan error){}
 
@@ -272,18 +262,15 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 			errChan := make(chan error)
 			errChannels = append(errChannels, errChan)
 
-			go func(reader *bytes.Reader, c *chunker.Chunk, errChan chan<- error) {
+			go func(c chunker.Chunk, errChan chan<- error) {
 				barrier <- struct{}{}
 
-				hash := c.Digest
-				id := backend.ID{}
-				copy(id[:], hash)
-
-				time.Sleep(time.Duration(hash[0]))
-				err := arch.Save(pack.Data, id, c.Length, c.Reader(reader))
+				id := backend.Hash(c.Data)
+				time.Sleep(time.Duration(id[0]))
+				err := arch.Save(pack.Data, id, c.Length, bytes.NewReader(c.Data))
 				<-barrier
 				errChan <- err
-			}(reader, c, errChan)
+			}(c, errChan)
 		}
 	}
 
@@ -298,20 +285,20 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 	assertNoUnreferencedPacks(t, chkr)
 }
 
-func getRandomData(seed int, size int) ([]byte, []*chunker.Chunk) {
+func getRandomData(seed int, size int) []chunker.Chunk {
 	buf := Random(seed, size)
-	chunks := []*chunker.Chunk{}
-	chunker := chunker.New(bytes.NewReader(buf), testPol, sha256.New())
+	var chunks []chunker.Chunk
+	chunker := chunker.New(bytes.NewReader(buf), testPol)
 
 	for {
-		c, err := chunker.Next()
+		c, err := chunker.Next(nil)
 		if err == io.EOF {
 			break
 		}
 		chunks = append(chunks, c)
 	}
 
-	return buf, chunks
+	return chunks
 }
 
 func createAndInitChecker(t *testing.T, repo *repository.Repository) *checker.Checker {

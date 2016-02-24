@@ -1,7 +1,7 @@
 package restic
 
 import (
-	"crypto/sha256"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,12 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/restic/chunker"
 	"restic/backend"
 	"restic/debug"
 	"restic/pack"
 	"restic/pipe"
 	"restic/repository"
+
+	"github.com/restic/chunker"
 
 	"github.com/juju/errors"
 )
@@ -154,12 +155,11 @@ type saveResult struct {
 	bytes uint64
 }
 
-func (arch *Archiver) saveChunk(chunk *chunker.Chunk, p *Progress, token struct{}, file *os.File, resultChannel chan<- saveResult) {
-	hash := chunk.Digest
-	id := backend.ID{}
-	copy(id[:], hash)
+func (arch *Archiver) saveChunk(chunk chunker.Chunk, p *Progress, token struct{}, file *os.File, resultChannel chan<- saveResult) {
+	defer freeBuf(chunk.Data)
 
-	err := arch.Save(pack.Data, id, chunk.Length, chunk.Reader(file))
+	id := backend.Hash(chunk.Data)
+	err := arch.Save(pack.Data, id, chunk.Length, bytes.NewReader(chunk.Data))
 	// TODO handle error
 	if err != nil {
 		panic(err)
@@ -220,11 +220,11 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		return err
 	}
 
-	chnker := chunker.New(file, arch.repo.Config.ChunkerPolynomial, sha256.New())
+	chnker := chunker.New(file, arch.repo.Config.ChunkerPolynomial)
 	resultChannels := [](<-chan saveResult){}
 
 	for {
-		chunk, err := chnker.Next()
+		chunk, err := chnker.Next(getBuf())
 		if err == io.EOF {
 			break
 		}

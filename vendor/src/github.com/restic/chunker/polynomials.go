@@ -258,13 +258,15 @@ func qp(p uint, g Pol) Pol {
 	return res.Add(2).Mod(g)
 }
 
-func (p Pol) MarshalJSON() ([]byte, error) {
-	buf := strconv.AppendUint([]byte{'"'}, uint64(p), 16)
+// MarshalJSON returns the JSON representation of the Pol.
+func (x Pol) MarshalJSON() ([]byte, error) {
+	buf := strconv.AppendUint([]byte{'"'}, uint64(x), 16)
 	buf = append(buf, '"')
 	return buf, nil
 }
 
-func (p *Pol) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON parses a Pol from the JSON data.
+func (x *Pol) UnmarshalJSON(data []byte) error {
 	if len(data) < 2 {
 		return errors.New("invalid string for polynomial")
 	}
@@ -272,7 +274,7 @@ func (p *Pol) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	*p = Pol(n)
+	*x = Pol(n)
 
 	return nil
 }
