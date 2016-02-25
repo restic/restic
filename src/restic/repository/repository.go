@@ -366,7 +366,7 @@ func (r *Repository) LoadIndex() error {
 	errCh := make(chan error, 1)
 	indexes := make(chan *Index)
 
-	worker := func(id string, done <-chan struct{}) error {
+	worker := func(id backend.ID, done <-chan struct{}) error {
 		idx, err := LoadIndex(r, id)
 		if err != nil {
 			return err
@@ -382,7 +382,8 @@ func (r *Repository) LoadIndex() error {
 
 	go func() {
 		defer close(indexes)
-		errCh <- FilesInParallel(r.be, backend.Index, loadIndexParallelism, worker)
+		errCh <- FilesInParallel(r.be, backend.Index, loadIndexParallelism,
+			ParallelWorkFuncParseID(worker))
 	}()
 
 	for idx := range indexes {
@@ -397,14 +398,14 @@ func (r *Repository) LoadIndex() error {
 }
 
 // LoadIndex loads the index id from backend and returns it.
-func LoadIndex(repo *Repository, id string) (*Index, error) {
+func LoadIndex(repo *Repository, id backend.ID) (*Index, error) {
 	idx, err := LoadIndexWithDecoder(repo, id, DecodeIndex)
 	if err == nil {
 		return idx, nil
 	}
 
 	if err == ErrOldIndexFormat {
-		fmt.Fprintf(os.Stderr, "index %v has old format\n", id[:10])
+		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
 		return LoadIndexWithDecoder(repo, id, DecodeOldIndex)
 	}
 

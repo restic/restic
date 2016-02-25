@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"restic/backend"
+	"restic/debug"
 )
 
 func closeIfOpen(ch chan struct{}) {
@@ -75,12 +76,14 @@ func FilesInParallel(repo backend.Lister, t backend.Type, n uint, f ParallelWork
 }
 
 // ParallelWorkFuncParseID converts a function that takes a backend.ID to a
-// function that takes a string.
+// function that takes a string. Filenames that do not parse as a backend.ID
+// are ignored.
 func ParallelWorkFuncParseID(f ParallelIDWorkFunc) ParallelWorkFunc {
 	return func(s string, done <-chan struct{}) error {
 		id, err := backend.ParseID(s)
 		if err != nil {
-			return err
+			debug.Log("repository.ParallelWorkFuncParseID", "invalid ID %q: %v", id, err)
+			return nil
 		}
 
 		return f(id, done)

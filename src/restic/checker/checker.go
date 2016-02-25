@@ -83,12 +83,12 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 
 	worker := func(id backend.ID, done <-chan struct{}) error {
 		debug.Log("LoadIndex", "worker got index %v", id)
-		idx, err := repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeIndex)
+		idx, err := repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeIndex)
 		if err == repository.ErrOldIndexFormat {
 			debug.Log("LoadIndex", "index %v has old format", id.Str())
 			hints = append(hints, ErrOldIndexFormat{id})
 
-			idx, err = repository.LoadIndexWithDecoder(c.repo, id.String(), repository.DecodeOldIndex)
+			idx, err = repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeOldIndex)
 		}
 
 		if err != nil {
