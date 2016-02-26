@@ -20,8 +20,8 @@ import (
 // A Checker only tests for internal errors within the data structures of the
 // repository (e.g. missing blobs), and needs a valid Repository to work on.
 type Checker struct {
-	packs    map[backend.ID]struct{}
-	blobs    map[backend.ID]struct{}
+	packs    backend.IDSet
+	blobs    backend.IDSet
 	blobRefs struct {
 		sync.Mutex
 		M map[backend.ID]uint
@@ -37,8 +37,8 @@ type Checker struct {
 // New returns a new checker which runs on repo.
 func New(repo *repository.Repository) *Checker {
 	c := &Checker{
-		packs:       make(map[backend.ID]struct{}),
-		blobs:       make(map[backend.ID]struct{}),
+		packs:       backend.NewIDSet(),
+		blobs:       backend.NewIDSet(),
 		masterIndex: repository.NewMasterIndex(),
 		indexes:     make(map[backend.ID]*repository.Index),
 		repo:        repo,
@@ -136,8 +136,8 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 		debug.Log("LoadIndex", "process blobs")
 		cnt := 0
 		for blob := range res.Index.Each(done) {
-			c.packs[blob.PackID] = struct{}{}
-			c.blobs[blob.ID] = struct{}{}
+			c.packs.Insert(blob.PackID)
+			c.blobs.Insert(blob.ID)
 			c.blobRefs.M[blob.ID] = 0
 			cnt++
 
@@ -217,7 +217,7 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	defer close(errChan)
 
 	debug.Log("Checker.Packs", "checking for %d packs", len(c.packs))
-	seenPacks := make(map[backend.ID]struct{})
+	seenPacks := backend.NewIDSet()
 
 	var workerWG sync.WaitGroup
 
@@ -228,7 +228,7 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	}
 
 	for id := range c.packs {
-		seenPacks[id] = struct{}{}
+		seenPacks.Insert(id)
 		IDChan <- id
 	}
 	close(IDChan)
@@ -239,7 +239,7 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 
 	for id := range c.repo.List(backend.Data, done) {
 		debug.Log("Checker.Packs", "check data blob %v", id.Str())
-		if _, ok := seenPacks[id]; !ok {
+		if !seenPacks.Has(id) {
 			c.orphanedPacks = append(c.orphanedPacks, id)
 			select {
 			case <-done:
@@ -607,7 +607,7 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 		debug.Log("Checker.checkTree", "blob %v refcount %d", blobID.Str(), c.blobRefs.M[blobID])
 		c.blobRefs.Unlock()
 
-		if _, ok := c.blobs[blobID]; !ok {
+		if !c.blobs.Has(blobID) {
 			debug.Log("Checker.trees", "tree %v references blob %v which isn't contained in index", id.Str(), blobID.Str())
 
 			errs = append(errs, Error{TreeID: &id, BlobID: &blobID, Err: errors.New("not found in index")})
