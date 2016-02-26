@@ -252,20 +252,20 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 
 // Error is an error that occurred while checking a repository.
 type Error struct {
-	TreeID *backend.ID
-	BlobID *backend.ID
+	TreeID backend.ID
+	BlobID backend.ID
 	Err    error
 }
 
 func (e Error) Error() string {
-	if e.BlobID != nil && e.TreeID != nil {
+	if !e.BlobID.IsNull() && !e.TreeID.IsNull() {
 		msg := "tree " + e.TreeID.Str()
 		msg += ", blob " + e.BlobID.Str()
 		msg += ": " + e.Err.Error()
 		return msg
 	}
 
-	if e.TreeID != nil {
+	if !e.TreeID.IsNull() {
 		return "tree " + e.TreeID.Str() + ": " + e.Err.Error()
 	}
 
@@ -583,19 +583,19 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 		case "file":
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
-					errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("file %q blob %d has null ID", node.Name, b)})
+					errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q blob %d has null ID", node.Name, b)})
 					continue
 				}
 				blobs = append(blobs, blobID)
 			}
 		case "dir":
 			if node.Subtree == nil {
-				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("dir node %q has no subtree", node.Name)})
+				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("dir node %q has no subtree", node.Name)})
 				continue
 			}
 
 			if node.Subtree.IsNull() {
-				errs = append(errs, Error{TreeID: &id, Err: fmt.Errorf("dir node %q subtree id is null", node.Name)})
+				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("dir node %q subtree id is null", node.Name)})
 				continue
 			}
 		}
@@ -610,7 +610,7 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 		if !c.blobs.Has(blobID) {
 			debug.Log("Checker.trees", "tree %v references blob %v which isn't contained in index", id.Str(), blobID.Str())
 
-			errs = append(errs, Error{TreeID: &id, BlobID: &blobID, Err: errors.New("not found in index")})
+			errs = append(errs, Error{TreeID: id, BlobID: blobID, Err: errors.New("not found in index")})
 		}
 	}
 
