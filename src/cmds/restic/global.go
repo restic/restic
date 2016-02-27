@@ -339,7 +339,7 @@ func open(s string) (restic.Backend, error) {
 			cfg.Secret = os.Getenv("GS_SECRET_ACCESS_KEY")
 		}
 		debug.Log("open", "opening gcs repository at %#v", cfg)
-		be, err := s3.Open(cfg)
+		be, err = s3.Open(cfg)
 	case "rest":
 		be, err = rest.Open(loc.Config.(rest.Config))
 	default:
