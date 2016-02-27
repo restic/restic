@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"restic/backend"
+	"restic/backend/mem"
 	"restic/crypto"
 	"restic/pack"
 	. "restic/test"
@@ -18,12 +19,12 @@ import (
 
 var lengths = []int{23, 31650, 25860, 10928, 13769, 19862, 5211, 127, 13690, 30231}
 
-func TestCreatePack(t *testing.T) {
-	type Buf struct {
-		data []byte
-		id   backend.ID
-	}
+type Buf struct {
+	data []byte
+	id   backend.ID
+}
 
+func newPack(t testing.TB, k *crypto.Key) ([]Buf, []byte, uint) {
 	bufs := []Buf{}
 
 	for _, l := range lengths {
@@ -34,9 +35,6 @@ func TestCreatePack(t *testing.T) {
 		bufs = append(bufs, Buf{data: b, id: h})
 	}
 
-	// create random keys
-	k := crypto.NewRandomKey()
-
 	// pack blobs
 	p := pack.NewPacker(k, nil)
 	for _, b := range bufs {
@@ -46,6 +44,10 @@ func TestCreatePack(t *testing.T) {
 	packData, err := p.Finalize()
 	OK(t, err)
 
+	return bufs, packData, p.Size()
+}
+
+func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReadSeeker, packSize uint) {
 	written := 0
 	for _, l := range lengths {
 		written += l
@@ -58,11 +60,9 @@ func TestCreatePack(t *testing.T) {
 	written += crypto.Extension
 
 	// check length
-	Equals(t, written, len(packData))
-	Equals(t, uint(written), p.Size())
+	Equals(t, uint(written), packSize)
 
 	// read and parse it again
-	rd := bytes.NewReader(packData)
 	np, err := pack.NewUnpacker(k, rd)
 	OK(t, err)
 	Equals(t, len(np.Entries), len(bufs))
@@ -79,6 +79,15 @@ func TestCreatePack(t *testing.T) {
 		Assert(t, bytes.Equal(b.data, data),
 			"data for blob %v doesn't match", i)
 	}
+}
+
+func TestCreatePack(t *testing.T) {
+	// create random keys
+	k := crypto.NewRandomKey()
+
+	bufs, packData, packSize := newPack(t, k)
+	Equals(t, uint(len(packData)), packSize)
+	verifyBlobs(t, bufs, k, bytes.NewReader(packData), packSize)
 }
 
 var blobTypeJSON = []struct {
@@ -102,4 +111,19 @@ func TestBlobTypeJSON(t *testing.T) {
 		OK(t, err)
 		Equals(t, test.t, v)
 	}
+}
+
+func TestUnpackReadSeeker(t *testing.T) {
+	// create random keys
+	k := crypto.NewRandomKey()
+
+	bufs, packData, packSize := newPack(t, k)
+
+	b := mem.New()
+	id := backend.Hash(packData)
+
+	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	OK(t, b.Save(handle, packData))
+	rd := backend.NewReadSeeker(b, handle)
+	verifyBlobs(t, bufs, k, rd, packSize)
 }
