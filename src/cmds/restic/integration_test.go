@@ -110,11 +110,6 @@ func cmdRebuildIndex(t testing.TB, global GlobalOptions) {
 	OK(t, cmd.Execute(nil))
 }
 
-func cmdOptimize(t testing.TB, global GlobalOptions) {
-	cmd := &CmdOptimize{global: &global}
-	OK(t, cmd.Execute(nil))
-}
-
 func cmdLs(t testing.TB, global GlobalOptions, snapshotID string) []string {
 	var buf bytes.Buffer
 	global.stdout = &buf
@@ -769,25 +764,6 @@ var optimizeTests = []struct {
 			ParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"),
 		),
 	},
-}
-
-func TestOptimizeRemoveUnusedBlobs(t *testing.T) {
-	for i, test := range optimizeTests {
-		withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-			SetupTarTestFixture(t, env.base, test.testFilename)
-
-			for id := range test.snapshots {
-				OK(t, removeFile(filepath.Join(env.repo, "snapshots", id.String())))
-			}
-
-			cmdOptimize(t, global)
-			output := cmdCheckOutput(t, global)
-
-			if len(output) > 0 {
-				t.Errorf("expected no output for check in test %d, got:\n%v", i, output)
-			}
-		})
-	}
 }
 
 func TestCheckRestoreNoLock(t *testing.T) {
