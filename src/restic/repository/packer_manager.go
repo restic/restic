@@ -9,9 +9,14 @@ import (
 	"restic/pack"
 )
 
+// Saver implements saving data in a backend.
+type Saver interface {
+	Save(h backend.Handle, p []byte) error
+}
+
 // packerManager keeps a list of open packs and creates new on demand.
 type packerManager struct {
-	be    backend.Backend
+	be    Saver
 	key   *crypto.Key
 	pm    sync.Mutex
 	packs []*pack.Packer
