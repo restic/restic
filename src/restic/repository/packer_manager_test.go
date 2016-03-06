@@ -145,7 +145,7 @@ func TestPackerManager(t *testing.T) {
 	rnd := newRandReader(rand.NewSource(23))
 
 	be := mem.New()
-	pm := NewPackerManager(be, crypto.NewRandomKey())
+	pm := newPackerManager(be, crypto.NewRandomKey())
 
 	blobBuf := make([]byte, maxBlobSize)
 
@@ -159,7 +159,7 @@ func BenchmarkPackerManager(t *testing.B) {
 	rnd := newRandReader(rand.NewSource(23))
 
 	be := &fakeBackend{}
-	pm := NewPackerManager(be, crypto.NewRandomKey())
+	pm := newPackerManager(be, crypto.NewRandomKey())
 	blobBuf := make([]byte, maxBlobSize)
 
 	t.ResetTimer()

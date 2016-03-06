@@ -32,9 +32,9 @@ const minPackSize = 4 * 1024 * 1024
 const maxPackSize = 16 * 1024 * 1024
 const maxPackers = 200
 
-// NewPackerManager returns an new packer manager which writes temporary files
+// newPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory
-func NewPackerManager(be Saver, key *crypto.Key) *packerManager {
+func newPackerManager(be Saver, key *crypto.Key) *packerManager {
 	return &packerManager{
 		be:  be,
 		key: key,

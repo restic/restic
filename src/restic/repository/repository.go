@@ -31,7 +31,7 @@ func New(be backend.Backend) *Repository {
 	repo := &Repository{
 		be:            be,
 		idx:           NewMasterIndex(),
-		packerManager: NewPackerManager(be, nil),
+		packerManager: newPackerManager(be, nil),
 	}
 
 	return repo
