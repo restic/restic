@@ -27,6 +27,7 @@ func (cmd CmdInit) Execute(args []string) error {
 	}
 
 	s := repository.New(be)
+
 	err = s.Init(cmd.global.password)
 	if err != nil {
 		cmd.global.Exitf(1, "creating key in backend at %s failed: %v\n", cmd.global.Repo, err)

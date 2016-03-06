@@ -38,12 +38,13 @@ func newPack(t testing.TB, k *crypto.Key) ([]Buf, []byte, uint) {
 	// pack blobs
 	p := pack.NewPacker(k, nil)
 	for _, b := range bufs {
-		p.Add(pack.Tree, b.id, bytes.NewReader(b.data))
+		p.Add(pack.Tree, b.id, b.data)
 	}
 
-	packData, err := p.Finalize()
+	_, err := p.Finalize()
 	OK(t, err)
 
+	packData := p.Writer().(*bytes.Buffer).Bytes()
 	return bufs, packData, p.Size()
 }
 

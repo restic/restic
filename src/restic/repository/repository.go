@@ -28,13 +28,13 @@ type Repository struct {
 
 // New returns a new repository with backend be.
 func New(be backend.Backend) *Repository {
-	return &Repository{
-		be:  be,
-		idx: NewMasterIndex(),
-		packerManager: &packerManager{
-			be: be,
-		},
+	repo := &Repository{
+		be:            be,
+		idx:           NewMasterIndex(),
+		packerManager: newPackerManager(be, nil),
 	}
+
+	return repo
 }
 
 // Find loads the list of all blobs of type t and searches for names which start
@@ -195,7 +195,7 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, *id, bytes.NewReader(ciphertext))
+	_, err = packer.Add(t, *id, ciphertext)
 	if err != nil {
 		return backend.ID{}, err
 	}
@@ -299,7 +299,6 @@ func (r *Repository) Flush() error {
 		}
 	}
 	r.packs = r.packs[:0]
-
 	return nil
 }
 

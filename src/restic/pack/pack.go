@@ -83,26 +83,29 @@ type Packer struct {
 
 	bytes uint
 	k     *crypto.Key
-	buf   *bytes.Buffer
+	wr    io.Writer
 
 	m sync.Mutex
 }
 
 // NewPacker returns a new Packer that can be used to pack blobs
-// together.
-func NewPacker(k *crypto.Key, buf []byte) *Packer {
-	return &Packer{k: k, buf: bytes.NewBuffer(buf)}
+// together. If wr is nil, a bytes.Buffer is used.
+func NewPacker(k *crypto.Key, wr io.Writer) *Packer {
+	if wr == nil {
+		wr = bytes.NewBuffer(nil)
+	}
+	return &Packer{k: k, wr: wr}
 }
 
 // Add saves the data read from rd as a new blob to the packer. Returned is the
 // number of bytes written to the pack.
-func (p *Packer) Add(t BlobType, id backend.ID, rd io.Reader) (int64, error) {
+func (p *Packer) Add(t BlobType, id backend.ID, data []byte) (int, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
 	c := Blob{Type: t, ID: id}
 
-	n, err := io.Copy(p.buf, rd)
+	n, err := p.wr.Write(data)
 	c.Length = uint(n)
 	c.Offset = p.bytes
 	p.bytes += uint(n)
@@ -121,8 +124,9 @@ type headerEntry struct {
 }
 
 // Finalize writes the header for all added blobs and finalizes the pack.
-// Returned are all bytes written, including the header.
-func (p *Packer) Finalize() ([]byte, error) {
+// Returned are the number of bytes written, including the header. If the
+// underlying writer implements io.Closer, it is closed.
+func (p *Packer) Finalize() (uint, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
@@ -131,37 +135,41 @@ func (p *Packer) Finalize() ([]byte, error) {
 	hdrBuf := bytes.NewBuffer(nil)
 	bytesHeader, err := p.writeHeader(hdrBuf)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	encryptedHeader, err := crypto.Encrypt(p.k, nil, hdrBuf.Bytes())
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// append the header
-	n, err := p.buf.Write(encryptedHeader)
+	n, err := p.wr.Write(encryptedHeader)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	hdrBytes := bytesHeader + crypto.Extension
 	if uint(n) != hdrBytes {
-		return nil, errors.New("wrong number of bytes written")
+		return 0, errors.New("wrong number of bytes written")
 	}
 
 	bytesWritten += hdrBytes
 
 	// write length
-	err = binary.Write(p.buf, binary.LittleEndian, uint32(uint(len(p.blobs))*entrySize+crypto.Extension))
+	err = binary.Write(p.wr, binary.LittleEndian, uint32(uint(len(p.blobs))*entrySize+crypto.Extension))
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	bytesWritten += uint(binary.Size(uint32(0)))
 
 	p.bytes = uint(bytesWritten)
 
-	return p.buf.Bytes(), nil
+	if w, ok := p.wr.(io.Closer); ok {
+		return bytesWritten, w.Close()
+	}
+
+	return bytesWritten, nil
 }
 
 // writeHeader constructs and writes the header to wr.
@@ -206,6 +214,11 @@ func (p *Packer) Blobs() []Blob {
 	defer p.m.Unlock()
 
 	return p.blobs
+}
+
+// Writer return the underlying writer.
+func (p *Packer) Writer() io.Writer {
+	return p.wr
 }
 
 func (p *Packer) String() string {
