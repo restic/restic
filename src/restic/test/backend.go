@@ -61,7 +61,10 @@ func SetupRepo() *repository.Repository {
 		panic(err)
 	}
 
-	repo := repository.New(b)
+	repo, err := repository.New(b)
+	if err != nil {
+		panic(err)
+	}
 	err = repo.Init(TestPassword)
 	if err != nil {
 		panic(err)

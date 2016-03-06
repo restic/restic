@@ -213,7 +213,10 @@ func OpenLocalRepo(t testing.TB, dir string) *repository.Repository {
 	be, err := local.Open(dir)
 	OK(t, err)
 
-	repo := repository.New(be)
+	repo, err := repository.New(be)
+	if err != nil {
+		t.Fatal(err)
+	}
 	err = repo.SearchKey(TestPassword)
 	OK(t, err)
 

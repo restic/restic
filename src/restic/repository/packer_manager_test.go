@@ -3,6 +3,7 @@ package repository
 import (
 	"io"
 	"math/rand"
+	"os"
 	"restic/backend"
 	"restic/backend/mem"
 	"restic/crypto"
@@ -19,7 +20,39 @@ func randomID(rd io.Reader) backend.ID {
 	return id
 }
 
-func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager) (bytes int) {
+const maxBlobSize = 1 << 20
+
+func saveFile(t testing.TB, be Saver, filename string, n int) {
+	f, err := os.Open(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data := make([]byte, n)
+	m, err := io.ReadFull(f, data)
+
+	if m != n {
+		t.Fatalf("read wrong number of bytes from %v: want %v, got %v", filename, m, n)
+	}
+
+	if err = f.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	h := backend.Handle{Type: backend.Data, Name: backend.Hash(data).String()}
+
+	err = be.Save(h, data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.Remove(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []byte) (bytes int) {
 	for i := 0; i < 100; i++ {
 		l := rnd.Intn(1 << 20)
 		seed := rnd.Int63()
@@ -31,9 +64,14 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager) (bytes
 
 		rd := rand.New(rand.NewSource(seed))
 		id := randomID(rd)
-		n, err := packer.Add(pack.Data, id, io.LimitReader(rd, int64(l)))
+		buf = buf[:l]
+		_, err = io.ReadFull(rd, buf)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		if n != int64(l) {
+		n, err := packer.Add(pack.Data, id, buf)
+		if n != l {
 			t.Errorf("Add() returned invalid number of bytes: want %v, got %v", n, l)
 		}
 		bytes += l
@@ -43,17 +81,13 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager) (bytes
 			continue
 		}
 
-		data, err := packer.Finalize()
+		bytesWritten, err := packer.Finalize()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		h := backend.Handle{Type: backend.Data, Name: randomID(rd).String()}
-
-		err = be.Save(h, data)
-		if err != nil {
-			t.Fatal(err)
-		}
+		tmpfile := packer.Writer().(*os.File)
+		saveFile(t, be, tmpfile.Name(), int(bytesWritten))
 	}
 
 	return bytes
@@ -62,18 +96,14 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager) (bytes
 func flushRemainingPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager) (bytes int) {
 	if pm.countPacker() > 0 {
 		for _, packer := range pm.packs {
-			data, err := packer.Finalize()
+			n, err := packer.Finalize()
 			if err != nil {
 				t.Fatal(err)
 			}
-			bytes += len(data)
+			bytes += int(n)
 
-			h := backend.Handle{Type: backend.Data, Name: randomID(rnd).String()}
-
-			err = be.Save(h, data)
-			if err != nil {
-				t.Fatal(err)
-			}
+			tmpfile := packer.Writer().(*os.File)
+			saveFile(t, be, tmpfile.Name(), bytes)
 		}
 	}
 
@@ -90,33 +120,45 @@ func TestPackerManager(t *testing.T) {
 	rnd := rand.New(rand.NewSource(23))
 
 	be := mem.New()
-	pm := &packerManager{
-		be:  be,
-		key: crypto.NewRandomKey(),
+	pm, err := NewPackerManager(be, crypto.NewRandomKey())
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	bytes := fillPacks(t, rnd, be, pm)
+	blobBuf := make([]byte, maxBlobSize)
+
+	bytes := fillPacks(t, rnd, be, pm, blobBuf)
 	bytes += flushRemainingPacks(t, rnd, be, pm)
 
 	t.Logf("saved %d bytes", bytes)
+	err = pm.removeTempdir()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func BenchmarkPackerManager(t *testing.B) {
 	rnd := rand.New(rand.NewSource(23))
 
 	be := &fakeBackend{}
-	pm := &packerManager{
-		be:  be,
-		key: crypto.NewRandomKey(),
+	pm, err := NewPackerManager(be, crypto.NewRandomKey())
+	if err != nil {
+		t.Fatal(err)
 	}
+	blobBuf := make([]byte, maxBlobSize)
 
 	t.ResetTimer()
 
 	bytes := 0
 	for i := 0; i < t.N; i++ {
-		bytes += fillPacks(t, rnd, be, pm)
+		bytes += fillPacks(t, rnd, be, pm, blobBuf)
 	}
 
 	bytes += flushRemainingPacks(t, rnd, be, pm)
 	t.Logf("saved %d bytes", bytes)
+
+	err = pm.removeTempdir()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

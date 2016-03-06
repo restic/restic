@@ -27,14 +27,19 @@ type Repository struct {
 }
 
 // New returns a new repository with backend be.
-func New(be backend.Backend) *Repository {
-	return &Repository{
-		be:  be,
-		idx: NewMasterIndex(),
-		packerManager: &packerManager{
-			be: be,
-		},
+func New(be backend.Backend) (*Repository, error) {
+	pm, err := NewPackerManager(be, nil)
+	if err != nil {
+		return nil, err
 	}
+
+	repo := &Repository{
+		be:            be,
+		idx:           NewMasterIndex(),
+		packerManager: pm,
+	}
+
+	return repo, nil
 }
 
 // Find loads the list of all blobs of type t and searches for names which start
@@ -195,7 +200,7 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 	}
 
 	// save ciphertext
-	_, err = packer.Add(t, *id, bytes.NewReader(ciphertext))
+	_, err = packer.Add(t, *id, ciphertext)
 	if err != nil {
 		return backend.ID{}, err
 	}
