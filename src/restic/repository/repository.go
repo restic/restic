@@ -27,19 +27,14 @@ type Repository struct {
 }
 
 // New returns a new repository with backend be.
-func New(be backend.Backend) (*Repository, error) {
-	pm, err := NewPackerManager(be, nil)
-	if err != nil {
-		return nil, err
-	}
-
+func New(be backend.Backend) *Repository {
 	repo := &Repository{
 		be:            be,
 		idx:           NewMasterIndex(),
-		packerManager: pm,
+		packerManager: NewPackerManager(be, nil),
 	}
 
-	return repo, nil
+	return repo
 }
 
 // Find loads the list of all blobs of type t and searches for names which start
@@ -304,7 +299,6 @@ func (r *Repository) Flush() error {
 		}
 	}
 	r.packs = r.packs[:0]
-
 	return nil
 }
 

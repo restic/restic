@@ -208,10 +208,7 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 		return nil, err
 	}
 
-	s, err := repository.New(be)
-	if err != nil {
-		return nil, err
-	}
+	s := repository.New(be)
 
 	if o.password == "" {
 		o.password = o.ReadPassword("enter password for repository: ")

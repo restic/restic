@@ -120,10 +120,7 @@ func TestPackerManager(t *testing.T) {
 	rnd := rand.New(rand.NewSource(23))
 
 	be := mem.New()
-	pm, err := NewPackerManager(be, crypto.NewRandomKey())
-	if err != nil {
-		t.Fatal(err)
-	}
+	pm := NewPackerManager(be, crypto.NewRandomKey())
 
 	blobBuf := make([]byte, maxBlobSize)
 
@@ -131,20 +128,13 @@ func TestPackerManager(t *testing.T) {
 	bytes += flushRemainingPacks(t, rnd, be, pm)
 
 	t.Logf("saved %d bytes", bytes)
-	err = pm.removeTempdir()
-	if err != nil {
-		t.Fatal(err)
-	}
 }
 
 func BenchmarkPackerManager(t *testing.B) {
 	rnd := rand.New(rand.NewSource(23))
 
 	be := &fakeBackend{}
-	pm, err := NewPackerManager(be, crypto.NewRandomKey())
-	if err != nil {
-		t.Fatal(err)
-	}
+	pm := NewPackerManager(be, crypto.NewRandomKey())
 	blobBuf := make([]byte, maxBlobSize)
 
 	t.ResetTimer()
@@ -156,9 +146,4 @@ func BenchmarkPackerManager(t *testing.B) {
 
 	bytes += flushRemainingPacks(t, rnd, be, pm)
 	t.Logf("saved %d bytes", bytes)
-
-	err = pm.removeTempdir()
-	if err != nil {
-		t.Fatal(err)
-	}
 }

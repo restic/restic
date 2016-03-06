@@ -26,10 +26,7 @@ func (cmd CmdInit) Execute(args []string) error {
 			"enter password again: ")
 	}
 
-	s, err := repository.New(be)
-	if err != nil {
-		return err
-	}
+	s := repository.New(be)
 
 	err = s.Init(cmd.global.password)
 	if err != nil {

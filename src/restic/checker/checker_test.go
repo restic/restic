@@ -239,8 +239,7 @@ func induceError(data []byte) {
 func TestCheckerModifiedData(t *testing.T) {
 	be := mem.New()
 
-	repo, err := repository.New(be)
-	OK(t, err)
+	repo := repository.New(be)
 	OK(t, repo.Init(TestPassword))
 
 	arch := restic.NewArchiver(repo)
@@ -249,8 +248,7 @@ func TestCheckerModifiedData(t *testing.T) {
 	t.Logf("archived as %v", id.Str())
 
 	beError := &errorBackend{Backend: be}
-	checkRepo, err := repository.New(beError)
-	OK(t, err)
+	checkRepo := repository.New(beError)
 	OK(t, checkRepo.SearchKey(TestPassword))
 
 	chkr := checker.New(checkRepo)

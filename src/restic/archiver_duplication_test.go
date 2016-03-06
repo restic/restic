@@ -78,10 +78,7 @@ func testArchiverDuplication(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo, err := repository.New(forgetfulBackend())
-	if err != nil {
-		t.Fatal(err)
-	}
+	repo := repository.New(forgetfulBackend())
 
 	err = repo.Init("foo")
 	if err != nil {

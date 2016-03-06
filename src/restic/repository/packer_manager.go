@@ -25,7 +25,7 @@ type packerManager struct {
 	pm    sync.Mutex
 	packs []*pack.Packer
 
-	tempdir string
+	pool sync.Pool
 }
 
 const minPackSize = 4 * 1024 * 1024
@@ -34,23 +34,21 @@ const maxPackers = 200
 
 // NewPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory
-func NewPackerManager(be Saver, key *crypto.Key) (pm *packerManager, err error) {
-	pm = &packerManager{
+func NewPackerManager(be Saver, key *crypto.Key) *packerManager {
+	return &packerManager{
 		be:  be,
 		key: key,
+		pool: sync.Pool{
+			New: func() interface{} {
+				return make([]byte, (minPackSize+maxPackSize)/2)
+			},
+		},
 	}
-
-	pm.tempdir, err = ioutil.TempDir("", fmt.Sprintf("restic-packs-%d-", os.Getpid()))
-	if err != nil {
-		return nil, err
-	}
-
-	return pm, nil
 }
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is
 // created or one is returned that already has some blobs.
-func (r *packerManager) findPacker(size uint) (*pack.Packer, error) {
+func (r *packerManager) findPacker(size uint) (packer *pack.Packer, err error) {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
@@ -69,7 +67,7 @@ func (r *packerManager) findPacker(size uint) (*pack.Packer, error) {
 
 	// no suitable packer found, return new
 	debug.Log("Repo.findPacker", "create new pack for %d bytes", size)
-	tmpfile, err := ioutil.TempFile(r.tempdir, "restic-pack-")
+	tmpfile, err := ioutil.TempFile("", "restic-temp-pack-")
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +120,11 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 
 	debug.Log("Repo.savePacker", "saved as %v", h)
 
+	err = os.Remove(tmpfile.Name())
+	if err != nil {
+		return err
+	}
+
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), id.Str())
@@ -143,11 +146,4 @@ func (r *packerManager) countPacker() int {
 	defer r.pm.Unlock()
 
 	return len(r.packs)
-}
-
-// removeTempdir deletes the temporary directory.
-func (r *packerManager) removeTempdir() error {
-	err := os.RemoveAll(r.tempdir)
-	r.tempdir = ""
-	return err
 }
