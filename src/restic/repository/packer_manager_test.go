@@ -87,7 +87,7 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 			t.Fatal(err)
 		}
 
-		rd := rand.New(rand.NewSource(seed))
+		rd := newRandReader(rand.NewSource(seed))
 		id := randomID(rd)
 		buf = buf[:l]
 		_, err = io.ReadFull(rd, buf)
