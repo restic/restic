@@ -74,7 +74,6 @@ func (r *packerManager) findPacker(size uint) (*pack.Packer, error) {
 		return nil, err
 	}
 
-	fmt.Printf("tmpfile: %v, tempdir %v\n", tmpfile.Name(), r.tempdir)
 	return pack.NewPacker(r.key, tmpfile), nil
 }
 
