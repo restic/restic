@@ -11,6 +11,31 @@ import (
 	"testing"
 )
 
+type randReader struct {
+	src  rand.Source
+	rand *rand.Rand
+}
+
+func newRandReader(src rand.Source) *randReader {
+	return &randReader{
+		src:  src,
+		rand: rand.New(src),
+	}
+}
+
+// Read generates len(p) random bytes and writes them into p. It
+// always returns len(p) and a nil error.
+func (r *randReader) Read(p []byte) (n int, err error) {
+	for i := 0; i < len(p); i += 7 {
+		val := r.src.Int63()
+		for j := 0; i+j < len(p) && j < 7; j++ {
+			p[i+j] = byte(val)
+			val >>= 8
+		}
+	}
+	return len(p), nil
+}
+
 func randomID(rd io.Reader) backend.ID {
 	id := backend.ID{}
 	_, err := io.ReadFull(rd, id[:])
@@ -52,10 +77,10 @@ func saveFile(t testing.TB, be Saver, filename string, n int) {
 	}
 }
 
-func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []byte) (bytes int) {
+func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf []byte) (bytes int) {
 	for i := 0; i < 100; i++ {
-		l := rnd.Intn(1 << 20)
-		seed := rnd.Int63()
+		l := rnd.rand.Intn(1 << 20)
+		seed := rnd.rand.Int63()
 
 		packer, err := pm.findPacker(uint(l))
 		if err != nil {
@@ -93,7 +118,7 @@ func fillPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager, buf []
 	return bytes
 }
 
-func flushRemainingPacks(t testing.TB, rnd *rand.Rand, be Saver, pm *packerManager) (bytes int) {
+func flushRemainingPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager) (bytes int) {
 	if pm.countPacker() > 0 {
 		for _, packer := range pm.packs {
 			n, err := packer.Finalize()
@@ -117,7 +142,7 @@ func (f *fakeBackend) Save(h backend.Handle, data []byte) error {
 }
 
 func TestPackerManager(t *testing.T) {
-	rnd := rand.New(rand.NewSource(23))
+	rnd := newRandReader(rand.NewSource(23))
 
 	be := mem.New()
 	pm := NewPackerManager(be, crypto.NewRandomKey())
@@ -131,7 +156,7 @@ func TestPackerManager(t *testing.T) {
 }
 
 func BenchmarkPackerManager(t *testing.B) {
-	rnd := rand.New(rand.NewSource(23))
+	rnd := newRandReader(rand.NewSource(23))
 
 	be := &fakeBackend{}
 	pm := NewPackerManager(be, crypto.NewRandomKey())
