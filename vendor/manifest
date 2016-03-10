@@ -40,7 +40,7 @@
 		{
 			"importpath": "github.com/restic/chunker",
 			"repository": "https://github.com/restic/chunker",
-			"revision": "16c849a106e0a50d658e8f5e49a01f6728f4f92c",
+			"revision": "d1a97fa6e55ab338a8ceb769d72f856a56e9379a",
 			"branch": "master"
 		},
 		{
