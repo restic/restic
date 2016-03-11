@@ -16,7 +16,7 @@ import (
 
 var (
 	// ErrNoKeyFound is returned when no key for the repository could be decrypted.
-	ErrNoKeyFound = errors.New("no key could be found")
+	ErrNoKeyFound = errors.New("wrong password or no key found")
 )
 
 // TODO: figure out scrypt values on the fly depending on the current
