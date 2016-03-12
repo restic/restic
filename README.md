@@ -46,6 +46,12 @@ restic and the data structures stored on the back end is contained in
 [`doc/Design.md`](doc/Design.md).
 The development environment is described in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
+If you'd like to start contributing to restic, but don't know exactly what do
+to, have a look at this great article by Dave Cheney:
+[Suggestions for contributing to an Open Source project](http://dave.cheney.net/2016/03/12/suggestions-for-contributing-to-an-open-source-project)
+A few issues have been tagged with the label `help wanted`, you can start
+looking at those: https://github.com/restic/restic/labels/help%20wanted
+
 Contact
 =======
 
