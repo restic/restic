@@ -58,12 +58,17 @@ func (f *nonCachingFile) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func (f *nonCachingFile) ClearCache() error {
-	err := f.File.Sync()
+// ClearCache syncs and then removes the file's content from the OS cache.
+func ClearCache(file File) error {
+	f, ok := file.(*os.File)
+	if !ok {
+		panic("ClearCache called for file not *os.File")
+	}
 
+	err := f.Sync()
 	if err != nil {
 		return err
 	}
 
-	return unix.Fadvise(int(f.File.Fd()), 0, 0, _POSIX_FADV_DONTNEED)
+	return unix.Fadvise(int(f.Fd()), 0, 0, _POSIX_FADV_DONTNEED)
 }

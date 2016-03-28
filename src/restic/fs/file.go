@@ -12,7 +12,4 @@ type File interface {
 	io.Closer
 
 	Stat() (os.FileInfo, error)
-
-	// ClearCache removes the file's content from the OS cache.
-	ClearCache() error
 }
