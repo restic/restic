@@ -13,6 +13,7 @@ import (
 
 	"restic/backend"
 	"restic/debug"
+	"restic/fs"
 	"restic/pack"
 	"restic/pipe"
 	"restic/repository"
@@ -126,7 +127,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	return arch.repo.SaveJSON(pack.Tree, item)
 }
 
-func (arch *Archiver) reloadFileIfChanged(node *Node, file *os.File) (*Node, error) {
+func (arch *Archiver) reloadFileIfChanged(node *Node, file fs.File) (*Node, error) {
 	fi, err := file.Stat()
 	if err != nil {
 		return nil, err
@@ -155,7 +156,7 @@ type saveResult struct {
 	bytes uint64
 }
 
-func (arch *Archiver) saveChunk(chunk chunker.Chunk, p *Progress, token struct{}, file *os.File, resultChannel chan<- saveResult) {
+func (arch *Archiver) saveChunk(chunk chunker.Chunk, p *Progress, token struct{}, file fs.File, resultChannel chan<- saveResult) {
 	defer freeBuf(chunk.Data)
 
 	id := backend.Hash(chunk.Data)
@@ -209,7 +210,7 @@ func updateNodeContent(node *Node, results []saveResult) error {
 // SaveFile stores the content of the file on the backend as a Blob by calling
 // Save for each chunk.
 func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
-	file, err := node.OpenForReading()
+	file, err := fs.Open(node.path)
 	defer file.Close()
 	if err != nil {
 		return err
