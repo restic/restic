@@ -16,15 +16,6 @@ func Open(name string) (File, error) {
 	return &nonCachingFile{File: file}, err
 }
 
-// osFile wraps an *os.File and adds a no-op ClearCache() method.
-type osFile struct {
-	*os.File
-}
-
-func (osFile) ClearCache() error {
-	return nil
-}
-
 // these constants should've been defined in x/sys/unix, but somehow aren't.
 const (
 	_POSIX_FADV_NORMAL = iota
