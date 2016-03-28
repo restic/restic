@@ -10,6 +10,7 @@ import (
 
 	"restic/backend"
 	"restic/debug"
+	"restic/fs"
 )
 
 // Local is a backend in a local directory.
@@ -143,6 +144,11 @@ func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 	}
 
 	if err = tmpfile.Sync(); err != nil {
+		return "", err
+	}
+
+	err = fs.ClearCache(tmpfile)
+	if err != nil {
 		return "", err
 	}
 
