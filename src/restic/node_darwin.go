@@ -1,13 +1,6 @@
 package restic
 
-import (
-	"os"
-	"syscall"
-)
-
-func (node *Node) OpenForReading() (*os.File, error) {
-	return os.Open(node.path)
-}
+import "syscall"
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
 	return nil

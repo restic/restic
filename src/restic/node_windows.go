@@ -2,13 +2,8 @@ package restic
 
 import (
 	"errors"
-	"os"
 	"syscall"
 )
-
-func (node *Node) OpenForReading() (*os.File, error) {
-	return os.OpenFile(node.path, os.O_RDONLY, 0)
-}
 
 // mknod() creates a filesystem node (file, device
 // special file, or named pipe) named pathname, with attributes
