@@ -13,6 +13,12 @@ On archlinux, there is a package called `restic-git` which can be installed from
 
     $ pacaur -S restic-git
 
+At debian stable you can install 'go' directly from the repositories (as root):
+
+     $ apt-get install golang-go
+
+after installation of 'go' go straight forward to 'git clone [...]'
+
 If you are using Linux, BSD or Windows, the only way to install restic on your
 system right now is to compile it from source. restic is written in the Go
 programming language and you need at least Go version 1.3. See the [Getting
