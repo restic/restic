@@ -1,12 +1,12 @@
-.PHONY: all clean test
+.PHONY: all clean test restic
 
 all: restic
 
-restic: $(SOURCE)
+restic:
 	go run build.go
 
 clean:
 	rm -rf restic
 
-test: $(SOURCE)
+test:
 	go test ./...
