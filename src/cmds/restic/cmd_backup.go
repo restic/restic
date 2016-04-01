@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -17,9 +18,10 @@ import (
 )
 
 type CmdBackup struct {
-	Parent   string   `short:"p" long:"parent"  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
-	Force    bool     `short:"f" long:"force"   description:"Force re-reading the target. Overrides the \"parent\" flag"`
-	Excludes []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
+	Parent      string   `short:"p" long:"parent"  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
+	Force       bool     `short:"f" long:"force"   description:"Force re-reading the target. Overrides the \"parent\" flag"`
+	Excludes    []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
+	ExcludeFile string   `long:"exclude-file" description:"Read exclude-patterns from file"`
 
 	global *GlobalOptions
 }
@@ -298,6 +300,23 @@ func (cmd CmdBackup) Execute(args []string) error {
 	}
 
 	cmd.global.Verbosef("scan %v\n", target)
+
+	// add patterns from file
+	if cmd.ExcludeFile != "" {
+		file, err := os.Open(cmd.ExcludeFile)
+		if err != nil {
+			cmd.global.Warnf("error reading exclude patterns: %v", err)
+			return nil
+		}
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if !strings.HasPrefix(line, "#") {
+				cmd.Excludes = append(cmd.Excludes, line)
+			}
+		}
+	}
 
 	selectFilter := func(item string, fi os.FileInfo) bool {
 		matched, err := filter.List(cmd.Excludes, item)
