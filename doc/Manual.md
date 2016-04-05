@@ -167,6 +167,20 @@ You can even backup individual files in the same repository.
 In fact several hosts may use the same repository to backup directories and
 files leading to a greater de-duplication.
 
+You can exclude folders and files by specifying exclude-patterns.  
+Either specify them with multiple `--exclude`'s or one `--exclude-file`
+
+    $ cat exclude
+    # exclude go-files
+    *.go
+    # exclude foo/x/y/z/bar foo/x/bar foo/bar
+    foo/**/bar
+    $ restic -r /tmp/backup backup ~/work --exclude=*.c --exclude-file=exclude
+
+Patterns use [`filepath.Glob`](https://golang.org/pkg/path/filepath/#Glob) internally,
+see [`filepath.Match`](https://golang.org/pkg/path/filepath/#Match) for syntax.
+Additionally `**` exludes arbitrary subdirectories.
+
 # List all snapshots
 
 Now, you can list all the snapshots stored in the repository:
