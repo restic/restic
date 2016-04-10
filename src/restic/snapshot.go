@@ -60,6 +60,22 @@ func LoadSnapshot(repo *repository.Repository, id backend.ID) (*Snapshot, error)
 	return sn, nil
 }
 
+func LoadAllSnapshots(repo *repository.Repository) (snapshots []*Snapshot, err error) {
+	done := make(chan struct{})
+	defer close(done)
+
+	for id := range repo.List(backend.Snapshot, done) {
+		sn, err := LoadSnapshot(repo, id)
+		if err != nil {
+			return nil, err
+		}
+
+		snapshots = append(snapshots, sn)
+	}
+
+	return snapshots, nil
+}
+
 func (sn Snapshot) String() string {
 	return fmt.Sprintf("<Snapshot of %v at %s>", sn.Paths, sn.Time)
 }
