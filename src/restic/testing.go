@@ -116,6 +116,9 @@ func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs ba
 	return blobs
 }
 
+const maxFileSize = 1500000
+const maxSeed = 100
+
 // saveTree saves a tree of fake files in the repo and returns the ID.
 func saveTree(t testing.TB, repo *repository.Repository, seed int64) backend.ID {
 	rnd := rand.NewSource(seed)
@@ -124,10 +127,17 @@ func saveTree(t testing.TB, repo *repository.Repository, seed int64) backend.ID 
 
 	var tree Tree
 	for i := 0; i < numNodes; i++ {
-		t.Logf("create node %v", i)
+		seed := rnd.Int63() % maxSeed
+		size := rnd.Int63() % maxFileSize
 
-		node := &Node{}
+		node := &Node{
+			Name: fmt.Sprintf("file-%v", seed),
+			Type: "file",
+			Mode: 0644,
+			Size: uint64(size),
+		}
 
+		node.Content = saveFile(t, repo, fakeFile(t, seed, size))
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
