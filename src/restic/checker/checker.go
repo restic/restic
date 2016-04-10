@@ -586,6 +586,10 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q has nil blob list", node.Name)})
 			}
 
+			if node.Mode == 0 {
+				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q has invalid mode: %v", node.Name, node.Mode)})
+			}
+
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
 					errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q blob %d has null ID", node.Name, b)})
