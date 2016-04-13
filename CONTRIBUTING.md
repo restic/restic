@@ -60,7 +60,7 @@ Development Environment
 For development you need the build tool [`gb`](https://getgb.io), it can be
 installed by running the following command:
 
-    $ go get github.com/constabulary/...
+    $ go get github.com/constabulary/gb/...
 
 The repository contains two directories with code: `src/` contains the code
 written for restic, whereas `vendor/` contains copies of libraries restic
