@@ -98,10 +98,10 @@ func (cmd CmdMount) Execute(args []string) error {
 	case err := <-errServe:
 		return err
 	case <-cmd.done:
-		err := c.Close()
+		err := systemFuse.Unmount(mountpoint)
 		if err != nil {
-			cmd.global.Printf("Error closing fuse connection: %s\n", err)
+			cmd.global.Printf("Error umounting: %s\n", err)
 		}
-		return systemFuse.Unmount(mountpoint)
+		return c.Close()
 	}
 }
