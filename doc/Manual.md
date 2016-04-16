@@ -179,7 +179,8 @@ Either specify them with multiple `--exclude`'s or one `--exclude-file`
 
 Patterns use [`filepath.Glob`](https://golang.org/pkg/path/filepath/#Glob) internally,
 see [`filepath.Match`](https://golang.org/pkg/path/filepath/#Match) for syntax.
-Additionally `**` exludes arbitrary subdirectories.
+Additionally `**` exludes arbitrary subdirectories.  
+Environment-variables in exclude-files are expanded with [`os.ExpandEnv`](https://golang.org/pkg/os/#ExpandEnv).
 
 # List all snapshots
 
