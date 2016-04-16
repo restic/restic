@@ -97,7 +97,6 @@ func (env *TravisEnvironment) Prepare() {
 	if runtime.GOOS == "darwin" {
 		// install the libraries necessary for fuse
 		run("brew", "update")
-		run("brew", "install", "caskroom/cask/brew-cask")
 		run("brew", "cask", "install", "osxfuse")
 	}
 
