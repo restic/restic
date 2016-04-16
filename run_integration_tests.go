@@ -310,15 +310,10 @@ func runWithEnv(env map[string]string, command string, args ...string) {
 	}
 }
 
-var minioConfig = `
-{
-	"version": "2",
-	"credentials": {
-		"accessKeyId": "KEBIYDZ87HCIH5D17YCN",
-		"secretAccessKey": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe"
-	}
+var minioServerEnv = map[string]string{
+	"MINIO_ACCESS_KEY": "KEBIYDZ87HCIH5D17YCN",
+	"MINIO_SECRET_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
 }
-`
 
 var minioEnv = map[string]string{
 	"RESTIC_TEST_S3_SERVER": "http://127.0.0.1:9000",
@@ -330,25 +325,6 @@ var minioEnv = map[string]string{
 // a temporary directory.
 func NewMinioServer(minio string) (*MinioServer, error) {
 	msg("running minio server\n")
-	cfgdir, err := ioutil.TempDir("", "minio-config-")
-	if err != nil {
-		return nil, err
-	}
-
-	cfg, err := os.Create(filepath.Join(cfgdir, "config.json"))
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = cfg.Write([]byte(minioConfig))
-	if err != nil {
-		return nil, err
-	}
-
-	err = cfg.Close()
-	if err != nil {
-		return nil, err
-	}
 
 	dir, err := ioutil.TempDir("", "minio-root")
 	if err != nil {
@@ -356,13 +332,14 @@ func NewMinioServer(minio string) (*MinioServer, error) {
 	}
 
 	out := bytes.NewBuffer(nil)
-
 	cmd := exec.Command(minio,
-		"--config-folder", cfgdir,
+		"server",
 		"--address", "127.0.0.1:9000",
-		"server", dir)
+		dir)
 	cmd.Stdout = out
 	cmd.Stderr = out
+	cmd.Env = updateEnv(os.Environ(), minioServerEnv)
+
 	err = cmd.Start()
 	if err != nil {
 		return nil, err
