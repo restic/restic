@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
-	"time"
-
-	"golang.org/x/crypto/ssh/terminal"
 	"restic"
 	"restic/backend"
 	"restic/debug"
 	"restic/filter"
 	"restic/repository"
+	"strings"
+	"time"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type CmdBackup struct {
@@ -313,6 +313,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		for scanner.Scan() {
 			line := scanner.Text()
 			if !strings.HasPrefix(line, "#") {
+				line = os.ExpandEnv(line)
 				cmd.Excludes = append(cmd.Excludes, line)
 			}
 		}
