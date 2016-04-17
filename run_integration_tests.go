@@ -15,11 +15,21 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	"sync"
 )
 
 var runCrossCompile = flag.Bool("cross-compile", true, "run cross compilation tests")
 var minioServer = flag.String("minio", "", "path to the minio server binary")
+
+var minioServerEnv = map[string]string{
+	"MINIO_ACCESS_KEY": "KEBIYDZ87HCIH5D17YCN",
+	"MINIO_SECRET_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
+}
+
+var minioEnv = map[string]string{
+	"RESTIC_TEST_S3_SERVER": "http://127.0.0.1:9000",
+	"AWS_ACCESS_KEY_ID":     "KEBIYDZ87HCIH5D17YCN",
+	"AWS_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
+}
 
 func init() {
 	flag.Parse()
@@ -28,12 +38,18 @@ func init() {
 type CIEnvironment interface {
 	Prepare()
 	RunTests()
+	Teardown()
 }
 
 type TravisEnvironment struct {
 	goxArch []string
 	goxOS   []string
 	minio   string
+
+	minioSrv     *Background
+	minioTempdir string
+
+	env map[string]string
 }
 
 func (env *TravisEnvironment) getMinio() {
@@ -86,13 +102,43 @@ func (env *TravisEnvironment) getMinio() {
 	env.minio = tempfile.Name()
 }
 
+func (env *TravisEnvironment) runMinio() {
+	// start minio server
+	if env.minio != "" {
+		msg("starting minio server at %s", env.minio)
+
+		dir, err := ioutil.TempDir("", "minio-root")
+		if err != nil {
+			os.Exit(80)
+		}
+
+		env.minioSrv, err = StartBackgroundCommand(minioServerEnv, env.minio,
+			"server",
+			"--address", "127.0.0.1:9000",
+			dir)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
+			os.Exit(80)
+		}
+
+		for k, v := range minioEnv {
+			env.env[k] = v
+		}
+
+		env.minioTempdir = dir
+	}
+}
+
 func (env *TravisEnvironment) Prepare() {
+	env.env = make(map[string]string)
+
 	msg("preparing environment for Travis CI\n")
 
 	run("go", "get", "golang.org/x/tools/cmd/cover")
 	run("go", "get", "github.com/mattn/goveralls")
 	run("go", "get", "github.com/pierrre/gotestcover")
 	env.getMinio()
+	env.runMinio()
 
 	if runtime.GOOS == "darwin" {
 		// install the libraries necessary for fuse
@@ -126,6 +172,24 @@ func (env *TravisEnvironment) Prepare() {
 	}
 }
 
+func (env *TravisEnvironment) Teardown() {
+	msg("run travis teardown\n")
+	if env.minioSrv != nil {
+		msg("stopping minio server\n")
+		result := <-env.minioSrv.Result
+		if result.Error != nil {
+			msg("minio server returned error: %v\n", result.Error)
+			msg("stdout: %s\n", result.Stdout)
+			msg("stderr: %s\n", result.Stderr)
+		}
+
+		err := os.RemoveAll(env.minioTempdir)
+		if err != nil {
+			msg("error removing minio tempdir %v: %v\n", env.minioTempdir, err)
+		}
+	}
+}
+
 func goVersionAtLeast151() bool {
 	v := runtime.Version()
 
@@ -140,10 +204,51 @@ func goVersionAtLeast151() bool {
 	return true
 }
 
-type MinioServer struct {
-	cmd  *exec.Cmd
-	done bool
-	m    sync.Mutex
+type Background struct {
+	Cmd    *exec.Cmd
+	Done   chan struct{}
+	Result chan Result
+}
+
+type Result struct {
+	Stdout, Stderr string
+	Error          error
+}
+
+func StartBackgroundCommand(env map[string]string, cmd string, args ...string) (*Background, error) {
+	msg("running background command %v %v\n", cmd, args)
+	b := Background{
+		Done:   make(chan struct{}),
+		Result: make(chan Result, 1),
+	}
+
+	stdout := bytes.NewBuffer(nil)
+	stderr := bytes.NewBuffer(nil)
+
+	c := exec.Command(cmd, args...)
+	c.Stdout = stdout
+	c.Stderr = stderr
+	c.Env = updateEnv(os.Environ(), env)
+
+	b.Cmd = c
+
+	err := c.Start()
+	if err != nil {
+		msg("error starting background job %v: %v\n", cmd, err)
+		return nil, err
+	}
+
+	go func() {
+		err := b.Cmd.Wait()
+		msg("background job %v returned: %v\n", cmd, err)
+		b.Result <- Result{
+			Stdout: string(stdout.Bytes()),
+			Stderr: string(stderr.Bytes()),
+			Error:  err,
+		}
+	}()
+
+	return &b, nil
 }
 
 func (env *TravisEnvironment) RunTests() {
@@ -159,13 +264,12 @@ func (env *TravisEnvironment) RunTests() {
 		os.Exit(9)
 	}
 
-	envWithGOPATH := make(map[string]string)
-	envWithGOPATH["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
+	env.env["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
 
 	if *runCrossCompile {
 		// compile for all target architectures with tags
 		for _, tags := range []string{"release", "debug"} {
-			runWithEnv(envWithGOPATH, "gox", "-verbose",
+			runWithEnv(env.env, "gox", "-verbose",
 				"-os", strings.Join(env.goxOS, " "),
 				"-arch", strings.Join(env.goxArch, " "),
 				"-tags", tags,
@@ -177,25 +281,10 @@ func (env *TravisEnvironment) RunTests() {
 	// run the build script
 	run("go", "run", "build.go")
 
-	var srv *MinioServer
-	if env.minio != "" {
-		srv, err = NewMinioServer(env.minio)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
-			os.Exit(8)
-		}
-
-		for k, v := range minioEnv {
-			envWithGOPATH[k] = v
-		}
-	}
-
 	// run the tests and gather coverage information
-	runWithEnv(envWithGOPATH, "gotestcover", "-coverprofile", "all.cov", "cmds/...", "restic/...")
+	runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "cmds/...", "restic/...")
 
 	runGofmt()
-
-	srv.Stop()
 }
 
 type AppveyorEnvironment struct{}
@@ -207,6 +296,8 @@ func (env *AppveyorEnvironment) Prepare() {
 func (env *AppveyorEnvironment) RunTests() {
 	run("go", "run", "build.go", "-v", "-T")
 }
+
+func (env *AppveyorEnvironment) Teardown() {}
 
 // findGoFiles returns a list of go source code file names below dir.
 func findGoFiles(dir string) (list []string, err error) {
@@ -310,77 +401,6 @@ func runWithEnv(env map[string]string, command string, args ...string) {
 	}
 }
 
-var minioServerEnv = map[string]string{
-	"MINIO_ACCESS_KEY": "KEBIYDZ87HCIH5D17YCN",
-	"MINIO_SECRET_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
-}
-
-var minioEnv = map[string]string{
-	"RESTIC_TEST_S3_SERVER": "http://127.0.0.1:9000",
-	"AWS_ACCESS_KEY_ID":     "KEBIYDZ87HCIH5D17YCN",
-	"AWS_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
-}
-
-// NewMinioServer prepares and runs a minio server for the s3 backend tests in
-// a temporary directory.
-func NewMinioServer(minio string) (*MinioServer, error) {
-	msg("running minio server\n")
-
-	dir, err := ioutil.TempDir("", "minio-root")
-	if err != nil {
-		return nil, err
-	}
-
-	out := bytes.NewBuffer(nil)
-	cmd := exec.Command(minio,
-		"server",
-		"--address", "127.0.0.1:9000",
-		dir)
-	cmd.Stdout = out
-	cmd.Stderr = out
-	cmd.Env = updateEnv(os.Environ(), minioServerEnv)
-
-	err = cmd.Start()
-	if err != nil {
-		return nil, err
-	}
-
-	srv := &MinioServer{cmd: cmd}
-	go srv.Wait()
-
-	return srv, nil
-}
-
-func (m *MinioServer) Stop() {
-	if m == nil {
-		return
-	}
-
-	msg("stopping minio server\n")
-	m.m.Lock()
-	m.done = true
-	m.m.Unlock()
-	err := m.cmd.Process.Kill()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error stopping minio server: %v", err)
-		os.Exit(8)
-	}
-}
-
-func (m *MinioServer) Wait() {
-	err := m.cmd.Wait()
-	msg("minio server exited\n")
-	m.m.Lock()
-	done := m.done
-	m.m.Unlock()
-
-	if err != nil && !done {
-		fmt.Fprintf(os.Stderr, "error running minio server: %#v, output:\n", err)
-		// io.Copy(os.Stderr, out)
-		os.Exit(12)
-	}
-}
-
 func isTravis() bool {
 	return os.Getenv("TRAVIS_BUILD_DIR") != ""
 }
@@ -402,7 +422,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, f := range []func(){env.Prepare, env.RunTests} {
+	for _, f := range []func(){env.Prepare, env.RunTests, env.Teardown} {
 		f()
 	}
 }
