@@ -468,10 +468,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	foundError := false
 	for _, f := range []func() error{env.Prepare, env.RunTests, env.Teardown} {
 		err := f()
 		if err != nil {
+			foundError = true
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		}
+	}
+
+	if foundError {
+		os.Exit(1)
 	}
 }
