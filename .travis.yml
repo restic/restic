@@ -18,7 +18,7 @@ matrix:
     - os: osx
       go: 1.4.3
     - os: osx
-      go: 1.5.3
+      go: 1.5.4
 
 notifications:
   irc:
