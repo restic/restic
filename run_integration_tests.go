@@ -138,21 +138,39 @@ func (env *TravisEnvironment) Prepare() error {
 
 	msg("preparing environment for Travis CI\n")
 
-	run("go", "get", "golang.org/x/tools/cmd/cover")
-	run("go", "get", "github.com/mattn/goveralls")
-	run("go", "get", "github.com/pierrre/gotestcover")
-	env.getMinio()
-	env.runMinio()
+	for _, pkg := range []string{
+		"golang.org/x/tools/cmd/cover",
+		"github.com/mattn/goveralls",
+		"github.com/pierrre/gotestcover",
+	} {
+		err := run("go", "get", pkg)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := env.getMinio(); err != nil {
+		return err
+	}
+	if err := env.runMinio(); err != nil {
+		return err
+	}
 
 	if runtime.GOOS == "darwin" {
 		// install the libraries necessary for fuse
-		run("brew", "update")
-		run("brew", "cask", "install", "osxfuse")
+		if err := run("brew", "update"); err != nil {
+			return err
+		}
+		if err := run("brew", "cask", "install", "osxfuse"); err != nil {
+			return err
+		}
 	}
 
 	if *runCrossCompile {
 		// only test cross compilation on linux with Travis
-		run("go", "get", "github.com/mitchellh/gox")
+		if err := run("go", "get", "github.com/mitchellh/gox"); err != nil {
+			return err
+		}
 		if runtime.GOOS == "linux" {
 			env.goxArch = []string{"386", "amd64"}
 			if !strings.HasPrefix(runtime.Version(), "go1.3") {
@@ -169,9 +187,13 @@ func (env *TravisEnvironment) Prepare() error {
 
 		v := runtime.Version()
 		if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
-			run("gox", "-build-toolchain",
+			err := run("gox", "-build-toolchain",
 				"-os", strings.Join(env.goxOS, " "),
 				"-arch", strings.Join(env.goxArch, " "))
+
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -299,10 +321,15 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	// run the build script
-	run("go", "run", "build.go")
+	if err := run("go", "run", "build.go"); err != nil {
+		return err
+	}
 
 	// run the tests and gather coverage information
-	runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "cmds/...", "restic/...")
+	err = runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "cmds/...", "restic/...")
+	if err != nil {
+		return err
+	}
 
 	return runGofmt()
 }
@@ -315,8 +342,7 @@ func (env *AppveyorEnvironment) Prepare() error {
 }
 
 func (env *AppveyorEnvironment) RunTests() error {
-	run("go", "run", "build.go", "-v", "-T")
-	return nil
+	return run("go", "run", "build.go", "-v", "-T")
 }
 
 func (env *AppveyorEnvironment) Teardown() error {
@@ -397,9 +423,9 @@ func runGofmt() error {
 	return nil
 }
 
-func run(command string, args ...string) {
+func run(command string, args ...string) error {
 	msg("run %v %v\n", command, strings.Join(args, " "))
-	runWithEnv(nil, command, args...)
+	return runWithEnv(nil, command, args...)
 }
 
 // runWithEnv calls a command with the current environment, except the entries
