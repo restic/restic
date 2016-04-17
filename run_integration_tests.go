@@ -19,6 +19,7 @@ import (
 
 var runCrossCompile = flag.Bool("cross-compile", true, "run cross compilation tests")
 var minioServer = flag.String("minio", "", "path to the minio server binary")
+var debug = flag.Bool("debug", false, "output debug messages")
 
 var minioServerEnv = map[string]string{
 	"MINIO_ACCESS_KEY": "KEBIYDZ87HCIH5D17YCN",
@@ -36,9 +37,9 @@ func init() {
 }
 
 type CIEnvironment interface {
-	Prepare()
-	RunTests()
-	Teardown()
+	Prepare() error
+	RunTests() error
+	Teardown() error
 }
 
 type TravisEnvironment struct {
@@ -52,17 +53,16 @@ type TravisEnvironment struct {
 	env map[string]string
 }
 
-func (env *TravisEnvironment) getMinio() {
+func (env *TravisEnvironment) getMinio() error {
 	if *minioServer != "" {
 		msg("using minio server at %q\n", *minioServer)
 		env.minio = *minioServer
-		return
+		return nil
 	}
 
 	tempfile, err := ioutil.TempFile("", "minio-server-")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "create tempfile failed: %v\n", err)
-		os.Exit(10)
+		return fmt.Errorf("create tempfile for minio download failed: %v\n", err)
 	}
 
 	url := fmt.Sprintf("https://dl.minio.io/server/minio/release/%s-%s/minio",
@@ -70,66 +70,70 @@ func (env *TravisEnvironment) getMinio() {
 	msg("downloading %v\n", url)
 	res, err := http.Get(url)
 	if err != nil {
-		msg("downloading minio failed: %v\n", err)
-		return
+		return fmt.Errorf("error downloading minio server: %v\n", err)
 	}
 
 	_, err = io.Copy(tempfile, res.Body)
 	if err != nil {
-		msg("downloading minio failed: %v\n", err)
-		return
+		return fmt.Errorf("error saving minio server to file: %v\n", err)
 	}
 
 	err = res.Body.Close()
 	if err != nil {
-		msg("saving minio failed: %v\n", err)
-		return
+		return fmt.Errorf("error closing HTTP download: %v\n", err)
 	}
 
 	err = tempfile.Close()
 	if err != nil {
 		msg("closing tempfile failed: %v\n", err)
-		return
+		return fmt.Errorf("error closing minio server file: %v\n", err)
 	}
 
 	err = os.Chmod(tempfile.Name(), 0755)
 	if err != nil {
-		msg("making minio server executable failed: %v\n", err)
-		return
+		return fmt.Errorf("chmod(minio-server) failed: %v", err)
 	}
 
 	msg("downloaded minio server to %v\n", tempfile.Name())
 	env.minio = tempfile.Name()
+	return nil
 }
 
-func (env *TravisEnvironment) runMinio() {
-	// start minio server
-	if env.minio != "" {
-		msg("starting minio server at %s", env.minio)
-
-		dir, err := ioutil.TempDir("", "minio-root")
-		if err != nil {
-			os.Exit(80)
-		}
-
-		env.minioSrv, err = StartBackgroundCommand(minioServerEnv, env.minio,
-			"server",
-			"--address", "127.0.0.1:9000",
-			dir)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error running minio server: %v", err)
-			os.Exit(80)
-		}
-
-		for k, v := range minioEnv {
-			env.env[k] = v
-		}
-
-		env.minioTempdir = dir
+func (env *TravisEnvironment) runMinio() error {
+	if env.minio == "" {
+		return nil
 	}
+
+	// start minio server
+	msg("starting minio server at %s", env.minio)
+
+	dir, err := ioutil.TempDir("", "minio-root")
+	if err != nil {
+		return fmt.Errorf("running minio server failed: %v", err)
+	}
+
+	env.minioSrv, err = StartBackgroundCommand(minioServerEnv, env.minio,
+		"server",
+		"--address", "127.0.0.1:9000",
+		dir)
+	if err != nil {
+		return fmt.Errorf("error running minio server: %v", err)
+	}
+
+	// go func() {
+	// 	time.Sleep(300 * time.Millisecond)
+	// 	env.minioSrv.Cmd.Process.Kill()
+	// }()
+
+	for k, v := range minioEnv {
+		env.env[k] = v
+	}
+
+	env.minioTempdir = dir
+	return nil
 }
 
-func (env *TravisEnvironment) Prepare() {
+func (env *TravisEnvironment) Prepare() error {
 	env.env = make(map[string]string)
 
 	msg("preparing environment for Travis CI\n")
@@ -170,17 +174,27 @@ func (env *TravisEnvironment) Prepare() {
 				"-arch", strings.Join(env.goxArch, " "))
 		}
 	}
+
+	return nil
 }
 
-func (env *TravisEnvironment) Teardown() {
+func (env *TravisEnvironment) Teardown() error {
 	msg("run travis teardown\n")
 	if env.minioSrv != nil {
 		msg("stopping minio server\n")
-		result := <-env.minioSrv.Result
-		if result.Error != nil {
-			msg("minio server returned error: %v\n", result.Error)
-			msg("stdout: %s\n", result.Stdout)
-			msg("stderr: %s\n", result.Stderr)
+
+		if env.minioSrv.Cmd.ProcessState == nil {
+			err := env.minioSrv.Cmd.Process.Kill()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error killing minio server process: %v", err)
+			}
+		} else {
+			result := <-env.minioSrv.Result
+			if result.Error != nil {
+				msg("minio server returned error: %v\n", result.Error)
+				msg("stdout: %s\n", result.Stdout)
+				msg("stderr: %s\n", result.Stderr)
+			}
 		}
 
 		err := os.RemoveAll(env.minioTempdir)
@@ -188,6 +202,8 @@ func (env *TravisEnvironment) Teardown() {
 			msg("error removing minio tempdir %v: %v\n", env.minioTempdir, err)
 		}
 	}
+
+	return nil
 }
 
 func goVersionAtLeast151() bool {
@@ -206,7 +222,6 @@ func goVersionAtLeast151() bool {
 
 type Background struct {
 	Cmd    *exec.Cmd
-	Done   chan struct{}
 	Result chan Result
 }
 
@@ -218,7 +233,6 @@ type Result struct {
 func StartBackgroundCommand(env map[string]string, cmd string, args ...string) (*Background, error) {
 	msg("running background command %v %v\n", cmd, args)
 	b := Background{
-		Done:   make(chan struct{}),
 		Result: make(chan Result, 1),
 	}
 
@@ -228,6 +242,11 @@ func StartBackgroundCommand(env map[string]string, cmd string, args ...string) (
 	c := exec.Command(cmd, args...)
 	c.Stdout = stdout
 	c.Stderr = stderr
+
+	if *debug {
+		c.Stdout = io.MultiWriter(c.Stdout, os.Stdout)
+		c.Stderr = io.MultiWriter(c.Stderr, os.Stderr)
+	}
 	c.Env = updateEnv(os.Environ(), env)
 
 	b.Cmd = c
@@ -241,6 +260,8 @@ func StartBackgroundCommand(env map[string]string, cmd string, args ...string) (
 	go func() {
 		err := b.Cmd.Wait()
 		msg("background job %v returned: %v\n", cmd, err)
+		msg("stdout: %s\n", stdout.Bytes())
+		msg("stderr: %s\n", stderr.Bytes())
 		b.Result <- Result{
 			Stdout: string(stdout.Bytes()),
 			Stderr: string(stderr.Bytes()),
@@ -251,7 +272,7 @@ func StartBackgroundCommand(env map[string]string, cmd string, args ...string) (
 	return &b, nil
 }
 
-func (env *TravisEnvironment) RunTests() {
+func (env *TravisEnvironment) RunTests() error {
 	// run fuse tests on darwin
 	if runtime.GOOS != "darwin" {
 		msg("skip fuse integration tests on %v\n", runtime.GOOS)
@@ -260,8 +281,7 @@ func (env *TravisEnvironment) RunTests() {
 
 	cwd, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Getwd() returned error: %v", err)
-		os.Exit(9)
+		return fmt.Errorf("Getwd() returned error: %v", err)
 	}
 
 	env.env["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
@@ -284,20 +304,24 @@ func (env *TravisEnvironment) RunTests() {
 	// run the tests and gather coverage information
 	runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "cmds/...", "restic/...")
 
-	runGofmt()
+	return runGofmt()
 }
 
 type AppveyorEnvironment struct{}
 
-func (env *AppveyorEnvironment) Prepare() {
+func (env *AppveyorEnvironment) Prepare() error {
 	msg("preparing environment for Appveyor CI\n")
+	return nil
 }
 
-func (env *AppveyorEnvironment) RunTests() {
+func (env *AppveyorEnvironment) RunTests() error {
 	run("go", "run", "build.go", "-v", "-T")
+	return nil
 }
 
-func (env *AppveyorEnvironment) Teardown() {}
+func (env *AppveyorEnvironment) Teardown() error {
+	return nil
+}
 
 // findGoFiles returns a list of go source code file names below dir.
 func findGoFiles(dir string) (list []string, err error) {
@@ -345,17 +369,15 @@ func updateEnv(env []string, override map[string]string) []string {
 	return newEnv
 }
 
-func runGofmt() {
+func runGofmt() error {
 	dir, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Getwd(): %v\n", err)
-		os.Exit(5)
+		return fmt.Errorf("Getwd(): %v\n", err)
 	}
 
 	files, err := findGoFiles(dir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error finding Go files: %v\n", err)
-		os.Exit(4)
+		return fmt.Errorf("error finding Go files: %v\n", err)
 	}
 
 	msg("runGofmt() with %d files\n", len(files))
@@ -365,16 +387,14 @@ func runGofmt() {
 
 	buf, err := cmd.Output()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error running gofmt: %v", err)
-		fmt.Fprintf(os.Stderr, "output:\n%s\n", buf)
-		os.Exit(3)
+		return fmt.Errorf("error running gofmt: %v\noutput: %s\n", err, buf)
 	}
 
 	if len(buf) > 0 {
-		fmt.Fprintf(os.Stderr, "not formatted with `gofmt`:\n")
-		fmt.Fprintln(os.Stderr, string(buf))
-		os.Exit(6)
+		return fmt.Errorf("not formatted with `gofmt`:\n%s\n", buf)
 	}
+
+	return nil
 }
 
 func run(command string, args ...string) {
@@ -384,7 +404,7 @@ func run(command string, args ...string) {
 
 // runWithEnv calls a command with the current environment, except the entries
 // of the env map are set additionally.
-func runWithEnv(env map[string]string, command string, args ...string) {
+func runWithEnv(env map[string]string, command string, args ...string) error {
 	msg("runWithEnv %v %v\n", command, strings.Join(args, " "))
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
@@ -395,10 +415,10 @@ func runWithEnv(env map[string]string, command string, args ...string) {
 	err := cmd.Run()
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error running %v %v: %v",
+		return fmt.Errorf("error running %v %v: %v",
 			command, strings.Join(args, " "), err)
-		os.Exit(3)
 	}
+	return nil
 }
 
 func isTravis() bool {
@@ -422,7 +442,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, f := range []func(){env.Prepare, env.RunTests, env.Teardown} {
-		f()
+	for _, f := range []func() error{env.Prepare, env.RunTests, env.Teardown} {
+		err := f()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		}
 	}
 }
