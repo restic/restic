@@ -7,19 +7,17 @@
 
 // +build arm,!gccgo,!appengine
 
-#include "textflag.h"
-
 DATA poly1305_init_constants_armv6<>+0x00(SB)/4, $0x3ffffff
 DATA poly1305_init_constants_armv6<>+0x04(SB)/4, $0x3ffff03
 DATA poly1305_init_constants_armv6<>+0x08(SB)/4, $0x3ffc0ff
 DATA poly1305_init_constants_armv6<>+0x0c(SB)/4, $0x3f03fff
 DATA poly1305_init_constants_armv6<>+0x10(SB)/4, $0x00fffff
-GLOBL poly1305_init_constants_armv6<>(SB), RODATA, $20
+GLOBL poly1305_init_constants_armv6<>(SB), 8, $20
 
 // Warning: the linker may use R11 to synthesize certain instructions. Please
 // take care and verify that no synthetic instructions use it.
 
-TEXT poly1305_init_ext_armv6<>(SB),NOSPLIT,$-4
+TEXT poly1305_init_ext_armv6<>(SB),4,$-4
   MOVM.DB.W [R4-R11], (R13)
   MOVM.IA.W (R1), [R2-R5]
   MOVW $poly1305_init_constants_armv6<>(SB), R7
@@ -49,7 +47,17 @@ TEXT poly1305_init_ext_armv6<>(SB),NOSPLIT,$-4
   MOVM.IA.W (R13), [R4-R11]
   RET
 
-TEXT poly1305_blocks_armv6<>(SB),NOSPLIT,$-4
+#define MOVW_UNALIGNED(Rsrc, Rdst, Rtmp, offset) \
+  MOVBU (offset+0)(Rsrc), Rtmp; \
+  MOVBU Rtmp, (offset+0)(Rdst); \
+  MOVBU (offset+1)(Rsrc), Rtmp; \
+  MOVBU Rtmp, (offset+1)(Rdst); \
+  MOVBU (offset+2)(Rsrc), Rtmp; \
+  MOVBU Rtmp, (offset+2)(Rdst); \
+  MOVBU (offset+3)(Rsrc), Rtmp; \
+  MOVBU Rtmp, (offset+3)(Rdst)
+
+TEXT poly1305_blocks_armv6<>(SB),4,$-4
   MOVM.DB.W [R4, R5, R6, R7, R8, R9, g, R11, R14], (R13)
   SUB $128, R13
   MOVW R0, 36(R13)
@@ -68,7 +76,19 @@ TEXT poly1305_blocks_armv6<>(SB),NOSPLIT,$-4
   CMP $16, R12
   BLO poly1305_blocks_armv6_done
 poly1305_blocks_armv6_mainloop:
+  WORD $0xe31e0003 // TST R14, #3 not working see issue 5921
+  BEQ poly1305_blocks_armv6_mainloop_aligned
+  ADD $48, R13, g
+  MOVW_UNALIGNED(R14, g, R0, 0)
+  MOVW_UNALIGNED(R14, g, R0, 4)
+  MOVW_UNALIGNED(R14, g, R0, 8)
+  MOVW_UNALIGNED(R14, g, R0, 12)
+  MOVM.IA (g), [R0-R3]
+  ADD $16, R14
+  B poly1305_blocks_armv6_mainloop_loaded
+poly1305_blocks_armv6_mainloop_aligned:
   MOVM.IA.W (R14), [R0-R3]
+poly1305_blocks_armv6_mainloop_loaded:
   MOVW R0>>26, g
   MOVW R1>>20, R11
   MOVW R2>>14, R12
@@ -176,7 +196,17 @@ poly1305_blocks_armv6_done:
   MOVM.IA.W (R13), [R4, R5, R6, R7, R8, R9, g, R11, R14]
   RET
 
-TEXT poly1305_finish_ext_armv6<>(SB),NOSPLIT,$-4
+#define MOVHUP_UNALIGNED(Rsrc, Rdst, Rtmp) \
+  MOVBU.P 1(Rsrc), Rtmp; \
+  MOVBU.P Rtmp, 1(Rdst); \
+  MOVBU.P 1(Rsrc), Rtmp; \
+  MOVBU.P Rtmp, 1(Rdst)
+
+#define MOVWP_UNALIGNED(Rsrc, Rdst, Rtmp) \
+  MOVHUP_UNALIGNED(Rsrc, Rdst, Rtmp); \
+  MOVHUP_UNALIGNED(Rsrc, Rdst, Rtmp)
+
+TEXT poly1305_finish_ext_armv6<>(SB),4,$-4
   MOVM.DB.W [R4, R5, R6, R7, R8, R9, g, R11, R14], (R13)
   SUB $16, R13, R13
   MOVW R0, R5
@@ -191,16 +221,32 @@ TEXT poly1305_finish_ext_armv6<>(SB),NOSPLIT,$-4
   MOVW R0, 4(R13)
   MOVW R0, 8(R13)
   MOVW R0, 12(R13)
+  WORD $0xe3110003 // TST R1, #3 not working see issue 5921
+  BEQ poly1305_finish_ext_armv6_aligned
   WORD $0xe3120008 // TST R2, #8 not working see issue 5921
   BEQ poly1305_finish_ext_armv6_skip8
-  MOVM.IA.W (R1), [g-R11]
-  MOVM.IA.W [g-R11], (R9)
+  MOVWP_UNALIGNED(R1, R9, g)
+  MOVWP_UNALIGNED(R1, R9, g)
 poly1305_finish_ext_armv6_skip8:
   WORD $0xe3120004 // TST $4, R2 not working see issue 5921
   BEQ poly1305_finish_ext_armv6_skip4
+  MOVWP_UNALIGNED(R1, R9, g)
+poly1305_finish_ext_armv6_skip4:
+  WORD $0xe3120002 // TST $2, R2 not working see issue 5921
+  BEQ poly1305_finish_ext_armv6_skip2
+  MOVHUP_UNALIGNED(R1, R9, g)
+  B poly1305_finish_ext_armv6_skip2
+poly1305_finish_ext_armv6_aligned:
+  WORD $0xe3120008 // TST R2, #8 not working see issue 5921
+  BEQ poly1305_finish_ext_armv6_skip8_aligned
+  MOVM.IA.W (R1), [g-R11]
+  MOVM.IA.W [g-R11], (R9)
+poly1305_finish_ext_armv6_skip8_aligned:
+  WORD $0xe3120004 // TST $4, R2 not working see issue 5921
+  BEQ poly1305_finish_ext_armv6_skip4_aligned
   MOVW.P 4(R1), g
   MOVW.P g, 4(R9)
-poly1305_finish_ext_armv6_skip4:
+poly1305_finish_ext_armv6_skip4_aligned:
   WORD $0xe3120002 // TST $2, R2 not working see issue 5921
   BEQ poly1305_finish_ext_armv6_skip2
   MOVHU.P 2(R1), g
