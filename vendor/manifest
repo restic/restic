@@ -28,8 +28,8 @@
 		{
 			"importpath": "github.com/minio/minio-go",
 			"repository": "https://github.com/minio/minio-go",
-			"revision": "a4cd3caabd5f9c35ac100110eb60c2b80798f1af",
-			"branch": "HEAD"
+			"revision": "17b4ebd52505bde655e3b14df732e31850641bb7",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/pkg/sftp",

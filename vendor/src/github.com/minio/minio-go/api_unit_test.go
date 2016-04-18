@@ -160,31 +160,6 @@ func TestValidBucketLocation(t *testing.T) {
 	}
 }
 
-// Tests valid bucket names.
-func TestBucketNames(t *testing.T) {
-	buckets := []struct {
-		name  string
-		valid error
-	}{
-		{".mybucket", ErrInvalidBucketName("Bucket name cannot start or end with a '.' dot.")},
-		{"mybucket.", ErrInvalidBucketName("Bucket name cannot start or end with a '.' dot.")},
-		{"mybucket-", ErrInvalidBucketName("Bucket name contains invalid characters.")},
-		{"my", ErrInvalidBucketName("Bucket name cannot be smaller than 3 characters.")},
-		{"", ErrInvalidBucketName("Bucket name cannot be empty.")},
-		{"my..bucket", ErrInvalidBucketName("Bucket name cannot have successive periods.")},
-		{"my.bucket.com", nil},
-		{"my-bucket", nil},
-		{"123my-bucket", nil},
-	}
-
-	for _, b := range buckets {
-		err := isValidBucketName(b.name)
-		if err != b.valid {
-			t.Fatal("Error:", err)
-		}
-	}
-}
-
 // Tests temp file.
 func TestTempFile(t *testing.T) {
 	tmpFile, err := newTempFile("testing")
@@ -340,17 +315,17 @@ func TestSignatureType(t *testing.T) {
 	}
 }
 
-// Tests bucket acl types.
-func TestBucketACLTypes(t *testing.T) {
+// Tests bucket policy types.
+func TestBucketPolicyTypes(t *testing.T) {
 	want := map[string]bool{
-		"private":            true,
-		"public-read":        true,
-		"public-read-write":  true,
-		"authenticated-read": true,
-		"invalid":            false,
+		"none":      true,
+		"readonly":  true,
+		"writeonly": true,
+		"readwrite": true,
+		"invalid":   false,
 	}
-	for acl, ok := range want {
-		if BucketACL(acl).isValidBucketACL() != ok {
+	for bucketPolicy, ok := range want {
+		if BucketPolicy(bucketPolicy).isValidBucketPolicy() != ok {
 			t.Fatal("Error")
 		}
 	}
@@ -394,190 +369,5 @@ func TestPartSize(t *testing.T) {
 	}
 	if lastPartSize != 241172480 {
 		t.Fatalf("Error: expecting last part size of 241172480: got %v instead", lastPartSize)
-	}
-}
-
-// Tests url encoding.
-func TestURLEncoding(t *testing.T) {
-	type urlStrings struct {
-		name        string
-		encodedName string
-	}
-
-	want := []urlStrings{
-		{
-			name:        "bigfile-1._%",
-			encodedName: "bigfile-1._%25",
-		},
-		{
-			name:        "本語",
-			encodedName: "%E6%9C%AC%E8%AA%9E",
-		},
-		{
-			name:        "本語.1",
-			encodedName: "%E6%9C%AC%E8%AA%9E.1",
-		},
-		{
-			name:        ">123>3123123",
-			encodedName: "%3E123%3E3123123",
-		},
-		{
-			name:        "test 1 2.txt",
-			encodedName: "test%201%202.txt",
-		},
-		{
-			name:        "test++ 1.txt",
-			encodedName: "test%2B%2B%201.txt",
-		},
-	}
-
-	for _, u := range want {
-		if u.encodedName != urlEncodePath(u.name) {
-			t.Fatal("Error")
-		}
-	}
-}
-
-// Tests constructing valid endpoint url.
-func TestGetEndpointURL(t *testing.T) {
-	if _, err := getEndpointURL("s3.amazonaws.com", false); err != nil {
-		t.Fatal("Error:", err)
-	}
-	if _, err := getEndpointURL("192.168.1.1", false); err != nil {
-		t.Fatal("Error:", err)
-	}
-	if _, err := getEndpointURL("13333.123123.-", false); err == nil {
-		t.Fatal("Error")
-	}
-	if _, err := getEndpointURL("s3.aamzza.-", false); err == nil {
-		t.Fatal("Error")
-	}
-	if _, err := getEndpointURL("s3.amazonaws.com:443", false); err == nil {
-		t.Fatal("Error")
-	}
-}
-
-// Tests valid ip address.
-func TestValidIPAddr(t *testing.T) {
-	type validIP struct {
-		ip    string
-		valid bool
-	}
-
-	want := []validIP{
-		{
-			ip:    "192.168.1.1",
-			valid: true,
-		},
-		{
-			ip:    "192.1.8",
-			valid: false,
-		},
-		{
-			ip:    "..192.",
-			valid: false,
-		},
-		{
-			ip:    "192.168.1.1.1",
-			valid: false,
-		},
-	}
-	for _, w := range want {
-		valid := isValidIP(w.ip)
-		if valid != w.valid {
-			t.Fatal("Error")
-		}
-	}
-}
-
-// Tests valid endpoint domain.
-func TestValidEndpointDomain(t *testing.T) {
-	type validEndpoint struct {
-		endpointDomain string
-		valid          bool
-	}
-
-	want := []validEndpoint{
-		{
-			endpointDomain: "s3.amazonaws.com",
-			valid:          true,
-		},
-		{
-			endpointDomain: "s3.amazonaws.com_",
-			valid:          false,
-		},
-		{
-			endpointDomain: "%$$$",
-			valid:          false,
-		},
-		{
-			endpointDomain: "s3.amz.test.com",
-			valid:          true,
-		},
-		{
-			endpointDomain: "s3.%%",
-			valid:          false,
-		},
-		{
-			endpointDomain: "localhost",
-			valid:          true,
-		},
-		{
-			endpointDomain: "-localhost",
-			valid:          false,
-		},
-		{
-			endpointDomain: "",
-			valid:          false,
-		},
-		{
-			endpointDomain: "\n \t",
-			valid:          false,
-		},
-		{
-			endpointDomain: "    ",
-			valid:          false,
-		},
-	}
-	for _, w := range want {
-		valid := isValidDomain(w.endpointDomain)
-		if valid != w.valid {
-			t.Fatal("Error:", w.endpointDomain)
-		}
-	}
-}
-
-// Tests valid endpoint url.
-func TestValidEndpointURL(t *testing.T) {
-	type validURL struct {
-		url   string
-		valid bool
-	}
-	want := []validURL{
-		{
-			url:   "https://s3.amazonaws.com",
-			valid: true,
-		},
-		{
-			url:   "https://s3.amazonaws.com/bucket/object",
-			valid: false,
-		},
-		{
-			url:   "192.168.1.1",
-			valid: false,
-		},
-	}
-	for _, w := range want {
-		u, err := url.Parse(w.url)
-		if err != nil {
-			t.Fatal("Error:", err)
-		}
-		valid := false
-		if err := isValidEndpointURL(u); err == nil {
-			valid = true
-		}
-		if valid != w.valid {
-			t.Fatal("Error")
-		}
 	}
 }

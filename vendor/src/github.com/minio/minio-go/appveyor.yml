@@ -17,8 +17,8 @@ install:
   - go version
   - go env
   - go get -u github.com/golang/lint/golint
-  - go get -u golang.org/x/tools/cmd/vet
   - go get -u github.com/remyoudompheng/go-misc/deadcode
+  - go get -u github.com/gordonklaus/ineffassign
 
 # to run your custom scripts instead of automatic MSBuild
 build_script:
@@ -26,6 +26,7 @@ build_script:
   - gofmt -s -l .
   - golint github.com/minio/minio-go...
   - deadcode
+  - ineffassign .
   - go test -short -v
   - go test -short -race -v
 

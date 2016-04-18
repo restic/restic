@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer localfile.Close()
+	defer localFile.Close()
 
 	stat, err := reader.Stat()
 	if err != nil {

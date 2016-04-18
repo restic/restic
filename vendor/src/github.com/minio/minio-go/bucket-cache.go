@@ -20,7 +20,8 @@ import (
 	"encoding/hex"
 	"net/http"
 	"net/url"
-	"path/filepath"
+	"path"
+	"strings"
 	"sync"
 )
 
@@ -67,11 +68,6 @@ func (r *bucketLocationCache) Delete(bucketName string) {
 
 // getBucketLocation - Get location for the bucketName from location map cache.
 func (c Client) getBucketLocation(bucketName string) (string, error) {
-	// For anonymous requests, default to "us-east-1" and let other calls
-	// move forward.
-	if c.anonymous {
-		return "us-east-1", nil
-	}
 	if location, ok := c.bucketLocCache.Get(bucketName); ok {
 		return location, nil
 	}
@@ -90,7 +86,15 @@ func (c Client) getBucketLocation(bucketName string) (string, error) {
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return "", httpRespToErrorResponse(resp, bucketName, "")
+			err = httpRespToErrorResponse(resp, bucketName, "")
+			errResp := ToErrorResponse(err)
+			// For access denied error, it could be an anonymous
+			// request. Move forward and let the top level callers
+			// succeed if possible based on their policy.
+			if errResp.Code == "AccessDenied" && strings.Contains(errResp.Message, "Access Denied") {
+				return "us-east-1", nil
+			}
+			return "", err
 		}
 	}
 
@@ -127,7 +131,7 @@ func (c Client) getBucketLocationRequest(bucketName string) (*http.Request, erro
 
 	// Set get bucket location always as path style.
 	targetURL := c.endpointURL
-	targetURL.Path = filepath.Join(bucketName, "") + "/"
+	targetURL.Path = path.Join(bucketName, "") + "/"
 	targetURL.RawQuery = urlValues.Encode()
 
 	// Get a new HTTP request for the method.
