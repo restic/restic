@@ -1,4 +1,4 @@
-// +build ignore
+// xbuild ignore
 
 package main
 
@@ -36,12 +36,14 @@ func init() {
 	flag.Parse()
 }
 
+// CIEnvironment is implemented by environments where tests can be run.
 type CIEnvironment interface {
 	Prepare() error
 	RunTests() error
 	Teardown() error
 }
 
+// TravisEnvironment is the environment in which Travis tests run.
 type TravisEnvironment struct {
 	goxArch []string
 	goxOS   []string
@@ -133,6 +135,7 @@ func (env *TravisEnvironment) runMinio() error {
 	return nil
 }
 
+// Prepare installs dependencies and starts services in order to run the tests.
 func (env *TravisEnvironment) Prepare() error {
 	env.env = make(map[string]string)
 
@@ -200,6 +203,7 @@ func (env *TravisEnvironment) Prepare() error {
 	return nil
 }
 
+// Teardown stops backend services and cleans the environment again.
 func (env *TravisEnvironment) Teardown() error {
 	msg("run travis teardown\n")
 	if env.minioSrv != nil {
@@ -242,16 +246,19 @@ func goVersionAtLeast151() bool {
 	return true
 }
 
+// Background is a program running in the background.
 type Background struct {
 	Cmd    *exec.Cmd
 	Result chan Result
 }
 
+// Result is the result of a program that ran in the background.
 type Result struct {
 	Stdout, Stderr string
 	Error          error
 }
 
+// StartBackgroundCommand runs a program in the background.
 func StartBackgroundCommand(env map[string]string, cmd string, args ...string) (*Background, error) {
 	msg("running background command %v %v\n", cmd, args)
 	b := Background{
@@ -294,6 +301,7 @@ func StartBackgroundCommand(env map[string]string, cmd string, args ...string) (
 	return &b, nil
 }
 
+// RunTests starts the tests for Travis.
 func (env *TravisEnvironment) RunTests() error {
 	// run fuse tests on darwin
 	if runtime.GOOS != "darwin" {
@@ -334,17 +342,21 @@ func (env *TravisEnvironment) RunTests() error {
 	return runGofmt()
 }
 
+// AppveyorEnvironment is the environment on Windows.
 type AppveyorEnvironment struct{}
 
+// Prepare installs dependencies and starts services in order to run the tests.
 func (env *AppveyorEnvironment) Prepare() error {
 	msg("preparing environment for Appveyor CI\n")
 	return nil
 }
 
+// RunTests start the tests.
 func (env *AppveyorEnvironment) RunTests() error {
 	return run("go", "run", "build.go", "-v", "-T")
 }
 
+// Teardown is a noop.
 func (env *AppveyorEnvironment) Teardown() error {
 	return nil
 }
