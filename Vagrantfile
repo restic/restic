@@ -35,7 +35,6 @@ end
 def packages_darwin
   return <<-EOF
     ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    brew install caskroom/cask/brew-cask
     brew cask install osxfuse
   EOF
 end

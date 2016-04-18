@@ -77,7 +77,6 @@ func TestCreate(t testing.TB) {
 
 	be, err := CreateFn()
 	if err != nil {
-		fmt.Printf("foo\n")
 		t.Fatalf("Create returned error: %v", err)
 	}
 
