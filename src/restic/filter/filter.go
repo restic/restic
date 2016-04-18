@@ -21,6 +21,8 @@ func Match(pattern, str string) (matched bool, err error) {
 		return true, nil
 	}
 
+	pattern = filepath.Clean(pattern)
+
 	if str == "" {
 		return false, ErrBadString
 	}
