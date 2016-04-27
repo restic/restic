@@ -103,21 +103,16 @@ func (sn *Snapshot) fillUserInfo() error {
 	return err
 }
 
-// SamePaths compares the Snapshot's paths and provided paths are exactly the same
 func SamePaths(expected, actual []string) bool {
 	if expected == nil || actual == nil {
 		return true
 	}
 
+	if len(expected) != len(actual) {
+		return false
+	}
 	for i := range expected {
-		found := false
-		for j := range actual {
-			if expected[i] == actual[j] {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if expected[i] != actual[i] {
 			return false
 		}
 	}
@@ -125,10 +120,8 @@ func SamePaths(expected, actual []string) bool {
 	return true
 }
 
-// Error when no snapshot is found for the given criteria
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
-// FindLatestSnapshot finds latest snapshot with optional target/directory and source filters
 func FindLatestSnapshot(repo *repository.Repository, targets []string, source string) (backend.ID, error) {
 	var (
 		latest   time.Time
