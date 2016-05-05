@@ -14,7 +14,7 @@ Building and viewing the documentation
 The documentation you're currently viewing may not match the version of restic
 you have installed. If you cloned the repository manually, you can find the
 right documentation in the directory `doc/`. If you're viewing this online at
-<https://restic.readthedocs.org>, there is a small menu at the bottom left of
+<https://restic.readthedocs.io>, there is a small menu at the bottom left of
 this page, where you can select the version.
 
 The restic documentation is built with [MkDocs](http://www.mkdocs.org). After

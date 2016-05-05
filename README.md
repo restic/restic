@@ -1,4 +1,4 @@
-[![Documentation](https://readthedocs.org/projects/restic/badge/?version=latest)](https://restic.readthedocs.org/en/latest/?badge=latest)
+[![Documentation](https://readthedocs.io/projects/restic/badge/?version=latest)](https://restic.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/restic/restic.svg?branch=master)](https://travis-ci.org/restic/restic)
 [![Build status](https://ci.appveyor.com/api/projects/status/nuy4lfbgfbytw92q/branch/master?svg=true)](https://ci.appveyor.com/project/fd0/restic/branch/master)
 [![Report Card](http://goreportcard.com/badge/restic/restic)](http://goreportcard.com/report/restic/restic)
@@ -15,7 +15,7 @@ technical background and gives detailed information about the structure of the
 repository and the data saved therein.
 
 The latest documentation can be viewed online at
-<https://restic.readthedocs.org/en/latest>. On the bottom left corner there is
+<https://restic.readthedocs.io/en/latest>. On the bottom left corner there is
 a menu that allows switching to the documentation and user manual for the
 latest released version.
 
