@@ -5,7 +5,7 @@ go:
   - 1.3.3
   - 1.4.3
   - 1.5.4
-  - 1.6.1
+  - 1.6.2
 
 os:
   - linux
@@ -33,6 +33,7 @@ install:
   - export GOBIN="$GOPATH/bin"
   - export PATH="$PATH:$GOBIN"
   - go env
+  - ulimit -n 2048
 
 script:
   - go run run_integration_tests.go
