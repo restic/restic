@@ -1,4 +1,4 @@
-[![Documentation](https://readthedocs.io/projects/restic/badge/?version=latest)](https://restic.readthedocs.io/en/latest/?badge=latest)
+[![Documentation](https://readthedocs.org/projects/restic/badge/?version=latest)](https://restic.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/restic/restic.svg?branch=master)](https://travis-ci.org/restic/restic)
 [![Build status](https://ci.appveyor.com/api/projects/status/nuy4lfbgfbytw92q/branch/master?svg=true)](https://ci.appveyor.com/project/fd0/restic/branch/master)
 [![Report Card](http://goreportcard.com/badge/restic/restic)](http://goreportcard.com/report/restic/restic)
