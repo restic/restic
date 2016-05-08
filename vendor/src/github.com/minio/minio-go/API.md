@@ -60,10 +60,10 @@ s3Client can be used to perform operations on S3 storage. APIs are described bel
 ### Bucket operations
 ---------------------------------------
 <a name="MakeBucket">
-#### MakeBucket(bucketName, location)
+#### MakeBucket(bucketName string, location string) error
 Create a new bucket.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_ - Name of the bucket.
 * `location` _string_ - region valid values are _us-west-1_, _us-west-2_,  _eu-west-1_, _eu-central-1_, _ap-southeast-1_, _ap-northeast-1_, _ap-southeast-2_, _sa-east-1_
 
@@ -78,10 +78,10 @@ fmt.Println("Successfully created mybucket.")
 ```
 ---------------------------------------
 <a name="ListBuckets">
-#### ListBuckets()
-List all buckets.
+#### ListBuckets() ([]BucketInfo, error)
+Lists all buckets.
 
-`bucketList` emits bucket with the format:
+`bucketList` lists bucket in the format:
 * `bucket.Name` _string_: bucket name
 * `bucket.CreationDate` time.Time : date when bucket was created
 
@@ -98,10 +98,10 @@ for _, bucket := range buckets {
 ```
 ---------------------------------------
 <a name="BucketExists">
-#### BucketExists(bucketName)
+#### BucketExists(bucketName string) error
 Check if bucket exists.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_ : name of the bucket
 
 __Example__
@@ -114,10 +114,10 @@ if err != nil {
 ```
 ---------------------------------------
 <a name="RemoveBucket">
-#### RemoveBucket(bucketName)
+#### RemoveBucket(bucketName string) error
 Remove a bucket.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_ : name of the bucket
 
 __Example__
@@ -130,16 +130,16 @@ if err != nil {
 ```
 ---------------------------------------
 <a name="GetBucketPolicy">
-#### GetBucketPolicy(bucketName, objectPrefix)
+#### GetBucketPolicy(bucketName string, objectPrefix string) error
 Get access permissions on a bucket or a prefix.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_ : name of the bucket
 * `objectPrefix` _string_ : name of the object prefix
 
 __Example__
 ```go
-bucketPolicy, err := s3Client.GetBucketPolicy("mybucket")
+bucketPolicy, err := s3Client.GetBucketPolicy("mybucket", "")
 if err != nil {
     fmt.Println(err)
     return
@@ -148,13 +148,13 @@ fmt.Println("Access permissions for mybucket is", bucketPolicy)
 ```
 ---------------------------------------
 <a name="SetBucketPolicy">
-#### SetBucketPolicy(bucketname, objectPrefix, policy)
+#### SetBucketPolicy(bucketname string, objectPrefix string, policy BucketPolicy) error
 Set access permissions on bucket or an object prefix.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectPrefix` _string_ : name of the object prefix
-* `policy` _BucketPolicy_: policy can be _non_, _readonly_, _readwrite_, _writeonly_
+* `policy` _BucketPolicy_: policy can be _BucketPolicyNone_, _BucketPolicyReadOnly_, _BucketPolicyReadWrite_, _BucketPolicyWriteOnly_
 
 __Example__
 ```go
@@ -166,10 +166,10 @@ if err != nil {
 ```
 ---------------------------------------
 <a name="RemoveBucketPolicy">
-#### RemoveBucketPolicy(bucketname, objectPrefix)
+#### RemoveBucketPolicy(bucketname string, objectPrefix string) error
 Remove existing permissions on bucket or an object prefix.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectPrefix` _string_ : name of the object prefix
 
@@ -184,10 +184,10 @@ if err != nil {
 
 ---------------------------------------
 <a name="ListObjects">
-#### ListObjects(bucketName, prefix, recursive, doneCh)
+#### ListObjects(bucketName string, prefix string, recursive bool, doneCh chan struct{}) <-chan ObjectInfo
 List objects in a bucket.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectPrefix` _string_: the prefix of the objects that should be listed
 * `recursive` _bool_: `true` indicates recursive style listing and `false` indicates directory style listing delimited by '/'
@@ -222,10 +222,10 @@ for object := range objectCh {
 
 ---------------------------------------
 <a name="ListIncompleteUploads">
-#### ListIncompleteUploads(bucketName, prefix, recursive)
+#### ListIncompleteUploads(bucketName string, prefix string, recursive bool, doneCh chan struct{}) <-chan ObjectMultipartInfo
 List partially uploaded objects in a bucket.
 
-__Arguments__
+__Parameters__
 * `bucketname` _string_: name of the bucket
 * `prefix` _string_: prefix of the object names that are partially uploaded
 * `recursive` bool: directory style listing when false, recursive listing when true
@@ -259,15 +259,15 @@ for multiPartObject := range multiPartObjectCh {
 ---------------------------------------
 ### Object operations
 <a name="GetObject">
-#### GetObject(bucketName, objectName)
+#### GetObject(bucketName string, objectName string) *Object
 Download an object.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 
 __Return Value__
-* `object` _*minio.Object_ : _minio.Object_ represents object reader.
+* `object` _*Object_ : _Object_ represents object reader.
 
 __Example__
 ```go
@@ -285,10 +285,10 @@ if _, err := io.Copy(localFile, object); err != nil {
 ---------------------------------------
 ---------------------------------------
 <a name="FGetObject">
-#### FGetObject(bucketName, objectName, filePath)
+#### FGetObject(bucketName string, objectName string, filePath string) error
 Callback is called with `error` in case of error or `null` in case of success
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 * `filePath` _string_: path to which the object data will be written to
@@ -303,11 +303,10 @@ if err != nil {
 ```
 ---------------------------------------
 <a name="PutObject">
-#### PutObject(bucketName, objectName, reader, contentType)
-Upload an object.
+#### PutObject(bucketName string, objectName string, reader io.Reader, contentType string) (n int, err error)
+Upload contents from `io.Reader` to objectName.
 
-Uploading a stream
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 * `reader` _io.Reader_: Any golang object implementing io.Reader
@@ -331,10 +330,10 @@ if err != nil {
 
 ---------------------------------------
 <a name="CopyObject">
-#### CopyObject(bucketName, objectName, objectSource, conditions)
+#### CopyObject(bucketName string, objectName string, objectSource string, conditions CopyConditions) error
 Copy a source object into a new object with the provided name in the provided bucket.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 * `objectSource` _string_: name of the object source.
@@ -367,10 +366,10 @@ if err != nil {
 
 ---------------------------------------
 <a name="FPutObject">
-#### FPutObject(bucketName, objectName, filePath, contentType)
+#### FPutObject(bucketName string, objectName string, filePath string, contentType string) error
 Uploads the object using contents from a file
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 * `filePath` _string_: file path of the file to be uploaded
@@ -386,10 +385,10 @@ if err != nil {
 ```
 ---------------------------------------
 <a name="StatObject">
-#### StatObject(bucketName, objectName)
+#### StatObject(bucketName string, objectName string) (ObjectInfo, error)
 Get metadata of an object.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 
@@ -411,10 +410,10 @@ fmt.Println(objInfo)
 ```
 ---------------------------------------
 <a name="RemoveObject">
-#### RemoveObject(bucketName, objectName)
+#### RemoveObject(bucketName string, objectName string) error
 Remove an object.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 
@@ -428,10 +427,10 @@ if err != nil {
 ```
 ---------------------------------------
 <a name="RemoveIncompleteUpload">
-#### RemoveIncompleteUpload(bucketName, objectName)
+#### RemoveIncompleteUpload(bucketName string, objectName string) error
 Remove an partially uploaded object.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 
@@ -447,14 +446,14 @@ if err != nil {
 ### Presigned operations
 ---------------------------------------
 <a name="PresignedGetObject">
-#### PresignedGetObject(bucketName, objectName, expiry)
+#### PresignedGetObject(bucketName, objectName string, expiry time.Duration, reqParams url.Values) error
 Generate a presigned URL for GET.
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket.
 * `objectName` _string_: name of the object.
 * `expiry` _time.Duration_: expiry in seconds.
-  `reqParams` _url.Values_ : additional response header overrides supports _response-expires_, _response-content-type_, _response-cache-control_, _response-content-disposition_
+* `reqParams` _url.Values_ : additional response header overrides supports _response-expires_, _response-content-type_, _response-cache-control_, _response-content-disposition_
 
 __Example__
 ```go
@@ -472,13 +471,13 @@ if err != nil {
 
 ---------------------------------------
 <a name="PresignedPutObject">
-#### PresignedPutObject(bucketName, objectName, expiry)
+#### PresignedPutObject(bucketName string, objectName string, expiry time.Duration) (string, error)
 Generate a presigned URL for PUT.
 <blockquote>
 NOTE: you can upload to S3 only with specified object name.
 </blockquote>
 
-__Arguments__
+__Parameters__
 * `bucketName` _string_: name of the bucket
 * `objectName` _string_: name of the object
 * `expiry` _time.Duration_: expiry in seconds
@@ -495,7 +494,7 @@ if err != nil {
 
 ---------------------------------------
 <a name="PresignedPostPolicy">
-#### PresignedPostPolicy
+#### PresignedPostPolicy(policy PostPolicy) (map[string]string, error)
 PresignedPostPolicy we can provide policies specifying conditions restricting
 what you want to allow in a POST request, such as bucket name where objects can be
 uploaded, key name prefixes that you want to allow for the object being created and more.

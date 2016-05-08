@@ -61,7 +61,7 @@ func (c Client) getBucketPolicy(bucketName string, objectPrefix string) (BucketA
 
 }
 
-// processes the GetPolicy http resposne from the server.
+// processes the GetPolicy http response from the server.
 func processBucketPolicyResponse(bucketName string, resp *http.Response) (BucketAccessPolicy, error) {
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {

@@ -72,6 +72,14 @@ func (c Client) getBucketLocation(bucketName string) (string, error) {
 		return location, nil
 	}
 
+	if isAmazonChinaEndpoint(c.endpointURL) {
+		// For china specifically we need to set everything to
+		// cn-north-1 for now, there is no easier way until AWS S3
+		// provides a cleaner compatible API across "us-east-1" and
+		// China region.
+		return "cn-north-1", nil
+	}
+
 	// Initialize a new request.
 	req, err := c.getBucketLocationRequest(bucketName)
 	if err != nil {
@@ -84,6 +92,16 @@ func (c Client) getBucketLocation(bucketName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	location, err := processBucketLocationResponse(resp, bucketName)
+	if err != nil {
+		return "", err
+	}
+	c.bucketLocCache.Set(bucketName, location)
+	return location, nil
+}
+
+// processes the getBucketLocation http response from the server.
+func processBucketLocationResponse(resp *http.Response, bucketName string) (bucketLocation string, err error) {
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
 			err = httpRespToErrorResponse(resp, bucketName, "")
@@ -117,7 +135,6 @@ func (c Client) getBucketLocation(bucketName string) (string, error) {
 	}
 
 	// Save the location into cache.
-	c.bucketLocCache.Set(bucketName, location)
 
 	// Return.
 	return location, nil

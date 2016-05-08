@@ -419,11 +419,20 @@ func (c Client) executeMethod(method string, metadata requestMetadata) (res *htt
 		bodySeeker, isRetryable = metadata.contentBody.(io.Seeker)
 	}
 
-	// Retry executes the following function body if request has an
-	// error until maxRetries have been exhausted, retry attempts are
-	// performed after waiting for a given period of time in a
-	// binomial fashion.
-	for range c.newRetryTimer(MaxRetry, time.Second, time.Second*30, MaxJitter) {
+	// Create a done channel to control 'ListObjects' go routine.
+	doneCh := make(chan struct{}, 1)
+
+	// Indicate to our routine to exit cleanly upon return.
+	defer close(doneCh)
+
+	// Blank indentifier is kept here on purpose since 'range' without
+	// blank identifiers is only supported since go1.4
+	// https://golang.org/doc/go1.4#forrange.
+	for _ = range c.newRetryTimer(MaxRetry, time.Second, time.Second*30, MaxJitter, doneCh) {
+		// Retry executes the following function body if request has an
+		// error until maxRetries have been exhausted, retry attempts are
+		// performed after waiting for a given period of time in a
+		// binomial fashion.
 		if isRetryable {
 			// Seek back to beginning for each attempt.
 			if _, err = bodySeeker.Seek(0, 0); err != nil {
@@ -505,8 +514,18 @@ func (c Client) newRequest(method string, metadata requestMetadata) (req *http.R
 	if method == "" {
 		method = "POST"
 	}
+
+	// Default all requests to "us-east-1" or "cn-north-1" (china region)
+	location := "us-east-1"
+	if isAmazonChinaEndpoint(c.endpointURL) {
+		// For china specifically we need to set everything to
+		// cn-north-1 for now, there is no easier way until AWS S3
+		// provides a cleaner compatible API across "us-east-1" and
+		// China region.
+		location = "cn-north-1"
+	}
+
 	// Gather location only if bucketName is present.
-	location := "us-east-1" // Default all other requests to "us-east-1".
 	if metadata.bucketName != "" {
 		location, err = c.getBucketLocation(metadata.bucketName)
 		if err != nil {
@@ -648,6 +667,5 @@ func (c Client) makeTargetURL(bucketName, objectName, bucketLocation string, que
 	if err != nil {
 		return nil, err
 	}
-
 	return u, nil
 }

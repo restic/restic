@@ -35,7 +35,7 @@ const NoJitter = 0.0
 
 // newRetryTimer creates a timer with exponentially increasing delays
 // until the maximum retry attempts are reached.
-func (c Client) newRetryTimer(maxRetry int, unit time.Duration, cap time.Duration, jitter float64) <-chan int {
+func (c Client) newRetryTimer(maxRetry int, unit time.Duration, cap time.Duration, jitter float64, doneCh chan struct{}) <-chan int {
 	attemptCh := make(chan int)
 
 	// computes the exponential backoff duration according to
@@ -63,7 +63,13 @@ func (c Client) newRetryTimer(maxRetry int, unit time.Duration, cap time.Duratio
 	go func() {
 		defer close(attemptCh)
 		for i := 0; i < maxRetry; i++ {
-			attemptCh <- i + 1 // Attempts start from 1.
+			select {
+			// Attempts start from 1.
+			case attemptCh <- i + 1:
+			case <-doneCh:
+				// Stop the routine.
+				return
+			}
 			time.Sleep(exponentialBackoffWait(i))
 		}
 	}()
@@ -73,13 +79,24 @@ func (c Client) newRetryTimer(maxRetry int, unit time.Duration, cap time.Duratio
 // isNetErrorRetryable - is network error retryable.
 func isNetErrorRetryable(err error) bool {
 	switch err.(type) {
-	case *net.DNSError, *net.OpError, net.UnknownNetworkError:
-		return true
-	case *url.Error:
-		// For a URL error, where it replies back "connection closed"
-		// retry again.
-		if strings.Contains(err.Error(), "Connection closed by foreign host") {
+	case net.Error:
+		switch err.(type) {
+		case *net.DNSError, *net.OpError, net.UnknownNetworkError:
 			return true
+		case *url.Error:
+			// For a URL error, where it replies back "connection closed"
+			// retry again.
+			if strings.Contains(err.Error(), "Connection closed by foreign host") {
+				return true
+			}
+		default:
+			if strings.Contains(err.Error(), "net/http: TLS handshake timeout") {
+				// If error is - tlsHandshakeTimeoutError, retry.
+				return true
+			} else if strings.Contains(err.Error(), "i/o timeout") {
+				// If error is - tcp timeoutError, retry.
+				return true
+			}
 		}
 	}
 	return false

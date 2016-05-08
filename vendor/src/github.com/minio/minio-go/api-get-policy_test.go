@@ -19,65 +19,24 @@ package minio
 import (
 	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"testing"
 )
 
-type APIError struct {
-	Code           string
-	Description    string
-	HTTPStatusCode int
-}
-
-// Mocks XML error response from the server.
-func generateErrorResponse(resp *http.Response, APIErr APIError, bucketName string) *http.Response {
-	// generate error response.
-	errorResponse := getAPIErrorResponse(APIErr, bucketName)
-	encodedErrorResponse := encodeResponse(errorResponse)
-	// write Header.
-	resp.StatusCode = APIErr.HTTPStatusCode
-	resp.Body = ioutil.NopCloser(bytes.NewBuffer(encodedErrorResponse))
-
-	return resp
-}
-
-// getErrorResponse gets in standard error and resource value and
-// provides a encodable populated response values.
-func getAPIErrorResponse(err APIError, bucketName string) ErrorResponse {
-	var data = ErrorResponse{}
-	data.Code = err.Code
-	data.Message = err.Description
-
-	data.BucketName = bucketName
-	// TODO implement this in future
-	return data
-}
-
-// Encodes the response headers into XML format.
-func encodeResponse(response interface{}) []byte {
-	var bytesBuffer bytes.Buffer
-	bytesBuffer.WriteString(xml.Header)
-	encode := xml.NewEncoder(&bytesBuffer)
-	encode.Encode(response)
-	return bytesBuffer.Bytes()
-}
-
 // Mocks valid http response containing bucket policy from server.
 func generatePolicyResponse(resp *http.Response, policy BucketAccessPolicy) (*http.Response, error) {
-	policyBytes, e := json.Marshal(policy)
-	if e != nil {
-		return nil, e
+	policyBytes, err := json.Marshal(policy)
+	if err != nil {
+		return nil, err
 	}
 	resp.StatusCode = http.StatusOK
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer(policyBytes))
 	return resp, nil
-
 }
 
-// Tests the processing of GetPolicy resposne from server.
+// Tests the processing of GetPolicy response from server.
 func TestProcessBucketPolicyResopnse(t *testing.T) {
 	bucketAccesPolicies := []BucketAccessPolicy{
 		{Version: "1.0"},
@@ -139,6 +98,5 @@ func TestProcessBucketPolicyResopnse(t *testing.T) {
 				t.Errorf("Test %d: The expected BucketPolicy doesnt match the actual BucketPolicy", i+1)
 			}
 		}
-
 	}
 }

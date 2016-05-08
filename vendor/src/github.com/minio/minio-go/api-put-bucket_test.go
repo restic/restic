@@ -27,71 +27,71 @@ import (
 	"testing"
 )
 
-// Generates expected http request for bucket creation.
-// Used for asserting with the actual request generated.
-func createExpectedRequest(c *Client, bucketName string, location string, req *http.Request) (*http.Request, error) {
+// Tests validate http request formulated for creation of bucket.
+func TestMakeBucketRequest(t *testing.T) {
+	// Generates expected http request for bucket creation.
+	// Used for asserting with the actual request generated.
+	createExpectedRequest := func(c *Client, bucketName string, location string, req *http.Request) (*http.Request, error) {
 
-	targetURL := *c.endpointURL
-	targetURL.Path = "/" + bucketName + "/"
+		targetURL := *c.endpointURL
+		targetURL.Path = "/" + bucketName + "/"
 
-	// get a new HTTP request for the method.
-	req, err := http.NewRequest("PUT", targetURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// set UserAgent for the request.
-	c.setUserAgent(req)
-
-	// set sha256 sum for signature calculation only with signature version '4'.
-	if c.signature.isV4() {
-		req.Header.Set("X-Amz-Content-Sha256", hex.EncodeToString(sum256([]byte{})))
-	}
-
-	// If location is not 'us-east-1' create bucket location config.
-	if location != "us-east-1" && location != "" {
-		createBucketConfig := createBucketConfiguration{}
-		createBucketConfig.Location = location
-		var createBucketConfigBytes []byte
-		createBucketConfigBytes, err = xml.Marshal(createBucketConfig)
+		// get a new HTTP request for the method.
+		req, err := http.NewRequest("PUT", targetURL.String(), nil)
 		if err != nil {
 			return nil, err
 		}
-		createBucketConfigBuffer := bytes.NewBuffer(createBucketConfigBytes)
-		req.Body = ioutil.NopCloser(createBucketConfigBuffer)
-		req.ContentLength = int64(len(createBucketConfigBytes))
-		// Set content-md5.
-		req.Header.Set("Content-Md5", base64.StdEncoding.EncodeToString(sumMD5(createBucketConfigBytes)))
+
+		// set UserAgent for the request.
+		c.setUserAgent(req)
+
+		// set sha256 sum for signature calculation only with signature version '4'.
 		if c.signature.isV4() {
-			// Set sha256.
-			req.Header.Set("X-Amz-Content-Sha256", hex.EncodeToString(sum256(createBucketConfigBytes)))
+			req.Header.Set("X-Amz-Content-Sha256", hex.EncodeToString(sum256([]byte{})))
 		}
+
+		// If location is not 'us-east-1' create bucket location config.
+		if location != "us-east-1" && location != "" {
+			createBucketConfig := createBucketConfiguration{}
+			createBucketConfig.Location = location
+			var createBucketConfigBytes []byte
+			createBucketConfigBytes, err = xml.Marshal(createBucketConfig)
+			if err != nil {
+				return nil, err
+			}
+			createBucketConfigBuffer := bytes.NewBuffer(createBucketConfigBytes)
+			req.Body = ioutil.NopCloser(createBucketConfigBuffer)
+			req.ContentLength = int64(len(createBucketConfigBytes))
+			// Set content-md5.
+			req.Header.Set("Content-Md5", base64.StdEncoding.EncodeToString(sumMD5(createBucketConfigBytes)))
+			if c.signature.isV4() {
+				// Set sha256.
+				req.Header.Set("X-Amz-Content-Sha256", hex.EncodeToString(sum256(createBucketConfigBytes)))
+			}
+		}
+
+		// Sign the request.
+		if c.signature.isV4() {
+			// Signature calculated for MakeBucket request should be for 'us-east-1',
+			// regardless of the bucket's location constraint.
+			req = signV4(*req, c.accessKeyID, c.secretAccessKey, "us-east-1")
+		} else if c.signature.isV2() {
+			req = signV2(*req, c.accessKeyID, c.secretAccessKey)
+		}
+
+		// Return signed request.
+		return req, nil
 	}
 
-	// Sign the request.
-	if c.signature.isV4() {
-		// Signature calculated for MakeBucket request should be for 'us-east-1',
-		// regardless of the bucket's location constraint.
-		req = signV4(*req, c.accessKeyID, c.secretAccessKey, "us-east-1")
-	} else if c.signature.isV2() {
-		req = signV2(*req, c.accessKeyID, c.secretAccessKey)
+	// Get Request body.
+	getReqBody := func(reqBody io.ReadCloser) (string, error) {
+		contents, err := ioutil.ReadAll(reqBody)
+		if err != nil {
+			return "", err
+		}
+		return string(contents), nil
 	}
 
-	// Return signed request.
-	return req, nil
-}
-
-// Get Request body.
-func getReqBody(reqBody io.ReadCloser) (string, error) {
-	contents, err := ioutil.ReadAll(reqBody)
-	if err != nil {
-		return "", err
-	}
-	return string(contents), nil
-}
-
-// Tests validate http request formulated for creation of bucket.
-func TestMakeBucketRequest(t *testing.T) {
 	// Info for 'Client' creation.
 	// Will be used as arguments for 'NewClient'.
 	type infoForClient struct {
