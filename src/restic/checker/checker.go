@@ -608,6 +608,9 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 				continue
 			}
 
+		case "symlink":
+			// nothing to check
+
 		default:
 			errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("node %q with invalid type %q", node.Name, node.Type)})
 		}
