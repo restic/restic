@@ -44,6 +44,7 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 	chnker := chunker.New(rd, repo.Config.ChunkerPolynomial)
 
 	var ids backend.IDs
+	var fileSize uint64
 
 	for {
 		chunk, err := chnker.Next(getBuf())
@@ -72,6 +73,7 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 		ids = append(ids, id)
 
 		p.Report(Stat{Bytes: uint64(chunk.Length)})
+		fileSize += uint64(chunk.Length)
 	}
 
 	tree := &Tree{
@@ -82,6 +84,7 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 				ModTime:    time.Now(),
 				Type:       "file",
 				Mode:       0644,
+				Size:       fileSize,
 				UID:        sn.UID,
 				GID:        sn.GID,
 				User:       sn.Username,
