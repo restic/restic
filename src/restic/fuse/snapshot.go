@@ -13,6 +13,7 @@ import (
 
 	"restic"
 	"restic/backend"
+	"restic/debug"
 	"restic/repository"
 
 	"golang.org/x/net/context"
@@ -39,6 +40,7 @@ type SnapshotsDir struct {
 }
 
 func NewSnapshotsDir(repo *repository.Repository, ownerIsRoot bool) *SnapshotsDir {
+	debug.Log("NewSnapshotsDir", "fuse mount initiated")
 	return &SnapshotsDir{
 		repo:           repo,
 		knownSnapshots: make(map[string]SnapshotWithId),
@@ -54,10 +56,12 @@ func (sn *SnapshotsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 		attr.Uid = uint32(os.Getuid())
 		attr.Gid = uint32(os.Getgid())
 	}
+	debug.Log("SnapshotsDir.Attr", "attr is %v", attr)
 	return nil
 }
 
 func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
+	debug.Log("SnapshotsDir.updateCache", "called")
 	sn.Lock()
 	defer sn.Unlock()
 
@@ -75,10 +79,12 @@ func (sn *SnapshotsDir) get(name string) (snapshot SnapshotWithId, ok bool) {
 	sn.RLock()
 	snapshot, ok = sn.knownSnapshots[name]
 	sn.RUnlock()
+	debug.Log("SnapshotsDir.get", "get(%s) -> %v %v", name, snapshot, ok)
 	return snapshot, ok
 }
 
 func (sn *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	debug.Log("SnapshotsDir.ReadDirAll", "called")
 	err := sn.updateCache(ctx)
 	if err != nil {
 		return nil, err
@@ -96,21 +102,25 @@ func (sn *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		})
 	}
 
+	debug.Log("SnapshotsDir.ReadDirAll", "  -> %d entries", len(ret))
 	return ret, nil
 }
 
 func (sn *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+	debug.Log("SnapshotsDir.updateCache", "Lookup(%s)", name)
 	snapshot, ok := sn.get(name)
 
 	if !ok {
 		// We don't know about it, update the cache
 		err := sn.updateCache(ctx)
 		if err != nil {
+			debug.Log("SnapshotsDir.updateCache", "  Lookup(%s) -> err %v", name, err)
 			return nil, err
 		}
 		snapshot, ok = sn.get(name)
 		if !ok {
 			// We still don't know about it, this time it really doesn't exist
+			debug.Log("SnapshotsDir.updateCache", "  Lookup(%s) -> not found", name)
 			return nil, fuse.ENOENT
 		}
 	}

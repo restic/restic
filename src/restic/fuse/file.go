@@ -8,6 +8,7 @@ import (
 
 	"restic"
 	"restic/backend"
+	"restic/debug"
 	"restic/pack"
 
 	"bazil.org/fuse"
@@ -47,6 +48,7 @@ var blobPool = sync.Pool{
 }
 
 func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error) {
+	debug.Log("newFile", "create new file for %v with %d blobs", node.Name, len(node.Content))
 	sizes := make([]uint, len(node.Content))
 	for i, id := range node.Content {
 		size, err := repo.LookupBlobSize(id)
@@ -67,6 +69,7 @@ func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error
 }
 
 func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
+	debug.Log("file.Attr", "Attr(%v)", f.node.Name)
 	a.Inode = f.node.Inode
 	a.Mode = f.node.Mode
 	a.Size = f.node.Size
@@ -84,6 +87,7 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (f *file) getBlobAt(i int) (blob []byte, err error) {
+	debug.Log("file.getBlobAt", "getBlobAt(%v, %v)", f.node.Name, i)
 	if f.blobs[i] != nil {
 		return f.blobs[i], nil
 	}
@@ -100,6 +104,7 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 
 	blob, err = f.repo.LoadBlob(pack.Data, f.node.Content[i], buf)
 	if err != nil {
+		debug.Log("file.getBlobAt", "LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err
 	}
 	f.blobs[i] = blob
@@ -108,6 +113,7 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 }
 
 func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+	debug.Log("file.Read", "Read(%v), file size %v", req.Size, f.node.Size)
 	offset := req.Offset
 
 	// Skip blobs before the offset
