@@ -1,5 +1,5 @@
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015 Minio, Inc.
+ * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015, 2016 Minio, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 	tmpBuffer := new(bytes.Buffer)
 
 	// Read defaults to reading at 5MiB buffer.
-	readBuffer := make([]byte, optimalReadBufferSize)
+	readAtBuffer := make([]byte, optimalReadBufferSize)
 
 	// Upload all the missing parts.
 	for partNumber <= lastPartNumber {
@@ -147,7 +147,7 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 		// Calculates MD5 and SHA256 sum for a section reader.
 		var md5Sum, sha256Sum []byte
 		var prtSize int64
-		md5Sum, sha256Sum, prtSize, err = c.hashCopyBuffer(tmpBuffer, sectionReader, readBuffer)
+		md5Sum, sha256Sum, prtSize, err = c.hashCopyBuffer(tmpBuffer, sectionReader, readAtBuffer)
 		if err != nil {
 			return 0, err
 		}
@@ -159,8 +159,7 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 
 		// Proceed to upload the part.
 		var objPart objectPart
-		objPart, err = c.uploadPart(bucketName, objectName, uploadID, ioutil.NopCloser(reader),
-			partNumber, md5Sum, sha256Sum, prtSize)
+		objPart, err = c.uploadPart(bucketName, objectName, uploadID, reader, partNumber, md5Sum, sha256Sum, prtSize)
 		if err != nil {
 			// Reset the buffer upon any error.
 			tmpBuffer.Reset()

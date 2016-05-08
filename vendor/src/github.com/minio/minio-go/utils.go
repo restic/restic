@@ -17,7 +17,9 @@
 package minio
 
 import (
+	"bytes"
 	"crypto/hmac"
+	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/xml"
@@ -27,6 +29,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -41,6 +44,13 @@ func xmlDecoder(body io.Reader, v interface{}) error {
 // sum256 calculate sha256 sum for an input byte array.
 func sum256(data []byte) []byte {
 	hash := sha256.New()
+	hash.Write(data)
+	return hash.Sum(nil)
+}
+
+// sumMD5 calculate sumMD5 sum for an input byte array.
+func sumMD5(data []byte) []byte {
+	hash := md5.New()
 	hash.Write(data)
 	return hash.Sum(nil)
 }
@@ -163,6 +173,23 @@ func isAmazonEndpoint(endpointURL *url.URL) bool {
 	if endpointURL.Host == "s3.amazonaws.com" {
 		return true
 	}
+	if isAmazonChinaEndpoint(endpointURL) {
+		return true
+	}
+	return false
+}
+
+// Match if it is exactly Amazon S3 China endpoint.
+// Customers who wish to use the new Beijing Region are required to sign up for a separate set of account credentials unique to the China (Beijing) Region.
+// Customers with existing AWS credentials will not be able to access resources in the new Region, and vice versa."
+// For more info https://aws.amazon.com/about-aws/whats-new/2013/12/18/announcing-the-aws-china-beijing-region/
+func isAmazonChinaEndpoint(endpointURL *url.URL) bool {
+	if endpointURL == nil {
+		return false
+	}
+	if endpointURL.Host == "s3.cn-north-1.amazonaws.com.cn" {
+		return true
+	}
 	return false
 }
 
@@ -183,7 +210,7 @@ func isValidEndpointURL(endpointURL *url.URL) error {
 		return ErrInvalidArgument("Endpoint url cannot be empty.")
 	}
 	if endpointURL.Path != "/" && endpointURL.Path != "" {
-		return ErrInvalidArgument("Endpoing url cannot have fully qualified paths.")
+		return ErrInvalidArgument("Endpoint url cannot have fully qualified paths.")
 	}
 	if strings.Contains(endpointURL.Host, ".amazonaws.com") {
 		if !isAmazonEndpoint(endpointURL) {
@@ -229,7 +256,7 @@ func isValidBucketName(bucketName string) error {
 	if bucketName[0] == '.' || bucketName[len(bucketName)-1] == '.' {
 		return ErrInvalidBucketName("Bucket name cannot start or end with a '.' dot.")
 	}
-	if match, _ := regexp.MatchString("\\.\\.", bucketName); match == true {
+	if match, _ := regexp.MatchString("\\.\\.", bucketName); match {
 		return ErrInvalidBucketName("Bucket name cannot have successive periods.")
 	}
 	if !validBucketName.MatchString(bucketName) {
@@ -262,6 +289,31 @@ func isValidObjectPrefix(objectPrefix string) error {
 		return ErrInvalidObjectPrefix("Object prefix with non UTF-8 strings are not supported.")
 	}
 	return nil
+}
+
+// queryEncode - encodes query values in their URL encoded form.
+func queryEncode(v url.Values) string {
+	if v == nil {
+		return ""
+	}
+	var buf bytes.Buffer
+	keys := make([]string, 0, len(v))
+	for k := range v {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		vs := v[k]
+		prefix := urlEncodePath(k) + "="
+		for _, v := range vs {
+			if buf.Len() > 0 {
+				buf.WriteByte('&')
+			}
+			buf.WriteString(prefix)
+			buf.WriteString(urlEncodePath(v))
+		}
+	}
+	return buf.String()
 }
 
 // urlEncodePath encode the strings from UTF-8 byte representations to HTML hex escape sequences

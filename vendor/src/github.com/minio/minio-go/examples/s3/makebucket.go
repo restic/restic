@@ -38,7 +38,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	err = s3Client.MakeBucket("my-bucketname", minio.BucketACL("private"), "us-east-1")
+	err = s3Client.MakeBucket("my-bucketname", "us-east-1")
 	if err != nil {
 		log.Fatalln(err)
 	}

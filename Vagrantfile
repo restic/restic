@@ -87,16 +87,16 @@ Vagrant.configure(2) do |config|
   # fix permissions on synced folder
   config.vm.provision "fix perms", :type => :shell, :inline => fix_perms
 
-  # fix network card
-  config.vm.provider "virtualbox" do |v|
-    v.customize ["modifyvm", :id, "--nictype1", "virtio"]
-  end
-
   config.vm.define "linux" do |b|
     b.vm.box = "ubuntu/trusty64"
     b.vm.provision "packages linux", :type => :shell, :inline => packages_linux
     b.vm.provision "install gimme",  :type => :shell, :inline => install_gimme
     b.vm.provision "prepare user",   :type => :shell, :privileged => false, :inline => prepare_user("linux")
+
+    # fix network card
+    config.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--nictype1", "virtio"]
+    end
   end
 
   config.vm.define "freebsd" do |b|

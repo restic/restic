@@ -38,10 +38,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for err := range s3Client.RemoveIncompleteUpload("my-bucketname", "my-objectname") {
-		if err != nil {
-			log.Fatalln(err)
-		}
+	err = s3Client.RemoveIncompleteUpload("my-bucketname", "my-objectname")
+	if err != nil {
+		log.Fatalln(err)
 	}
 	log.Println("Success")
 }

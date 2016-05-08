@@ -1,7 +1,7 @@
 // +build ignore
 
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015 Minio, Inc.
+ * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015, 2016 Minio, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import (
 )
 
 func main() {
-	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname
-	// are dummy values, please replace them with original values.
+	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
+	// dummy values, please replace them with original values.
 
 	// Requests are always secure (HTTPS) by default. Set insecure=true to enable insecure (HTTP) access.
 	// This boolean value is the last argument for New().
@@ -38,9 +38,16 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	err = s3Client.SetBucketACL("my-bucketname", minio.BucketACL("public-read-write"))
+	// s3Client.TraceOn(os.Stderr)
+
+	policy, err := s3Client.GetBucketPolicy("my-bucketname", "my-objectprefix")
 	if err != nil {
 		log.Fatalln(err)
 	}
-
+	// Description of policy output.
+	// "none" -  The specified bucket does not have a bucket policy.
+	// "readonly" - Read only operatoins are allowed.
+	// "writeonly" - Write only operations are allowed.
+	// "readwrite" - both read and write operations are allowed, the bucket is public.
+	log.Println("Success - ", policy)
 }

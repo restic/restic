@@ -16,7 +16,7 @@ const connLimit = 10
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
-	client     minio.CloudStorageClient
+	client     *minio.Client
 	connChan   chan struct{}
 	bucketname string
 	prefix     string
@@ -39,7 +39,7 @@ func Open(cfg Config) (backend.Backend, error) {
 		debug.Log("s3.Open", "BucketExists(%v) returned err %v, trying to create the bucket", cfg.Bucket, err)
 
 		// create new bucket with default ACL in default region
-		err = client.MakeBucket(cfg.Bucket, "", "")
+		err = client.MakeBucket(cfg.Bucket, "")
 
 		if err != nil {
 			return nil, err

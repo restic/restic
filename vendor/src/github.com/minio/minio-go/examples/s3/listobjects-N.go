@@ -19,14 +19,14 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/minio/minio-go"
 )
 
 func main() {
-	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-	// dummy values, please replace them with original values.
+	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefixname
+	// are dummy values, please replace them with original values.
 
 	// Requests are always secure (HTTPS) by default. Set insecure=true to enable insecure (HTTP) access.
 	// This boolean value is the last argument for New().
@@ -35,13 +35,42 @@ func main() {
 	// determined based on the Endpoint value.
 	s3Client, err := minio.New("s3.amazonaws.com", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", false)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		return
 	}
 
-	acl, err := s3Client.GetBucketACL("my-bucketname")
+	// List 'N' number of objects from a bucket-name with a matching prefix.
+	listObjectsN := func(bucket, prefix string, recursive bool, N int) (objsInfo []minio.ObjectInfo, err error) {
+		// Create a done channel to control 'ListObjects' go routine.
+		doneCh := make(chan struct{}, 1)
+
+		// Free the channel upon return.
+		defer close(doneCh)
+
+		i := 1
+		for object := range s3Client.ListObjects(bucket, prefix, recursive, doneCh) {
+			if object.Err != nil {
+				return nil, object.Err
+			}
+			i++
+			// Verify if we have printed N objects.
+			if i == N {
+				// Indicate ListObjects go-routine to exit and stop
+				// feeding the objectInfo channel.
+				doneCh <- struct{}{}
+			}
+			objsInfo = append(objsInfo, object)
+		}
+		return objsInfo, nil
+	}
+
+	// List recursively first 100 entries for prefix 'my-prefixname'.
+	recursive := true
+	objsInfo, err := listObjectsN("my-bucketname", "my-prefixname", recursive, 100)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
 	}
-	log.Println(acl)
 
+	// Print all the entries.
+	fmt.Println(objsInfo)
 }

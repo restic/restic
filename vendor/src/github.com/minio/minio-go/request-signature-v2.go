@@ -73,6 +73,11 @@ func preSignV2(req http.Request, accessKeyID, secretAccessKey string, expires in
 
 	// Get encoded URL path.
 	path := encodeURL2Path(req.URL)
+	if len(req.URL.Query()) > 0 {
+		// Keep the usual queries unescaped for string to sign.
+		query, _ := url.QueryUnescape(queryEncode(req.URL.Query()))
+		path = path + "?" + query
+	}
 
 	// Find epoch expires when the request will expire.
 	epochExpires := d.Unix() + expires
@@ -93,12 +98,16 @@ func preSignV2(req http.Request, accessKeyID, secretAccessKey string, expires in
 		query.Set("AWSAccessKeyId", accessKeyID)
 	}
 
-	// Fill in Expires and Signature for presigned query.
+	// Fill in Expires for presigned query.
 	query.Set("Expires", strconv.FormatInt(epochExpires, 10))
-	query.Set("Signature", signature)
 
 	// Encode query and save.
-	req.URL.RawQuery = query.Encode()
+	req.URL.RawQuery = queryEncode(query)
+
+	// Save signature finally.
+	req.URL.RawQuery += "&Signature=" + urlEncodePath(signature)
+
+	// Return.
 	return &req
 }
 
@@ -115,7 +124,7 @@ func postPresignSignatureV2(policyBase64, secretAccessKey string) string {
 // Signature = Base64( HMAC-SHA1( YourSecretAccessKeyID, UTF-8-Encoding-Of( StringToSign ) ) );
 //
 // StringToSign = HTTP-Verb + "\n" +
-//  	Content-MD5 + "\n" +
+//  	Content-Md5 + "\n" +
 //  	Content-Type + "\n" +
 //  	Date + "\n" +
 //  	CanonicalizedProtocolHeaders +
@@ -163,7 +172,7 @@ func signV2(req http.Request, accessKeyID, secretAccessKey string) *http.Request
 // From the Amazon docs:
 //
 // StringToSign = HTTP-Verb + "\n" +
-// 	 Content-MD5 + "\n" +
+// 	 Content-Md5 + "\n" +
 //	 Content-Type + "\n" +
 //	 Date + "\n" +
 //	 CanonicalizedProtocolHeaders +
@@ -183,7 +192,7 @@ func getStringToSignV2(req http.Request) string {
 func writeDefaultHeaders(buf *bytes.Buffer, req http.Request) {
 	buf.WriteString(req.Method)
 	buf.WriteByte('\n')
-	buf.WriteString(req.Header.Get("Content-MD5"))
+	buf.WriteString(req.Header.Get("Content-Md5"))
 	buf.WriteByte('\n')
 	buf.WriteString(req.Header.Get("Content-Type"))
 	buf.WriteByte('\n')
@@ -226,7 +235,8 @@ func writeCanonicalizedHeaders(buf *bytes.Buffer, req http.Request) {
 	}
 }
 
-// Must be sorted:
+// The following list is already sorted and should always be, otherwise we could
+// have signature-related issues
 var resourceList = []string{
 	"acl",
 	"location",
@@ -234,13 +244,13 @@ var resourceList = []string{
 	"notification",
 	"partNumber",
 	"policy",
-	"response-content-type",
-	"response-content-language",
-	"response-expires",
+	"requestPayment",
 	"response-cache-control",
 	"response-content-disposition",
 	"response-content-encoding",
-	"requestPayment",
+	"response-content-language",
+	"response-content-type",
+	"response-expires",
 	"torrent",
 	"uploadId",
 	"uploads",
@@ -262,7 +272,6 @@ func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request) {
 	path := encodeURL2Path(requestURL)
 	buf.WriteString(path)
 
-	sort.Strings(resourceList)
 	if requestURL.RawQuery != "" {
 		var n int
 		vals, _ := url.ParseQuery(requestURL.RawQuery)
@@ -283,7 +292,7 @@ func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request) {
 				// Request parameters
 				if len(vv[0]) > 0 {
 					buf.WriteByte('=')
-					buf.WriteString(url.QueryEscape(vv[0]))
+					buf.WriteString(strings.Replace(url.QueryEscape(vv[0]), "+", "%20", -1))
 				}
 			}
 		}

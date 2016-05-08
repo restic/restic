@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -85,10 +86,10 @@ func TestMakeBucketError(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket in 'eu-central-1'.
-	if err = c.MakeBucket(bucketName, "private", "eu-central-1"); err != nil {
+	if err = c.MakeBucket(bucketName, "eu-central-1"); err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
-	if err = c.MakeBucket(bucketName, "private", "eu-central-1"); err == nil {
+	if err = c.MakeBucket(bucketName, "eu-central-1"); err == nil {
 		t.Fatal("Error: make bucket should should fail for", bucketName)
 	}
 	// Verify valid error response from server.
@@ -131,7 +132,7 @@ func TestMakeBucketRegions(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket in 'eu-central-1'.
-	if err = c.MakeBucket(bucketName, "private", "eu-central-1"); err != nil {
+	if err = c.MakeBucket(bucketName, "eu-central-1"); err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
 
@@ -142,7 +143,7 @@ func TestMakeBucketRegions(t *testing.T) {
 	// Make a new bucket with '.' in its name, in 'us-west-2'. This
 	// request is internally staged into a path style instead of
 	// virtual host style.
-	if err = c.MakeBucket(bucketName+".withperiod", "private", "us-west-2"); err != nil {
+	if err = c.MakeBucket(bucketName+".withperiod", "us-west-2"); err != nil {
 		t.Fatal("Error:", err, bucketName+".withperiod")
 	}
 
@@ -182,7 +183,7 @@ func TestGetObjectClosedTwice(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	err = c.MakeBucket(bucketName, "us-east-1")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
@@ -267,7 +268,7 @@ func TestRemovePartiallyUploaded(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	err = c.MakeBucket(bucketName, "us-east-1")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
@@ -307,7 +308,7 @@ func TestRemovePartiallyUploaded(t *testing.T) {
 }
 
 // Tests resumable put object cloud to cloud.
-func TestResumbalePutObject(t *testing.T) {
+func TestResumablePutObject(t *testing.T) {
 	// By passing 'go test -short' skips these tests.
 	if testing.Short() {
 		t.Skip("skipping functional tests for the short runs")
@@ -337,7 +338,7 @@ func TestResumbalePutObject(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	err = c.MakeBucket(bucketName, "us-east-1")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
@@ -447,7 +448,7 @@ func TestResumableFPutObject(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	err = c.MakeBucket(bucketName, "us-east-1")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
@@ -497,10 +498,10 @@ func TestResumableFPutObject(t *testing.T) {
 	}
 }
 
-// Tests resumable put object multipart upload.
-func TestResumablePutObject(t *testing.T) {
+// Tests FPutObject hidden contentType setting
+func TestFPutObject(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping functional tests for the short runs")
+		t.Skip("skipping functional tests for short runs")
 	}
 
 	// Seed random based on current time.
@@ -527,30 +528,108 @@ func TestResumablePutObject(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	err = c.MakeBucket(bucketName, "us-east-1")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
 
-	// Generate 11MB
-	buf := make([]byte, 11*1024*1024)
-
-	_, err = io.ReadFull(crand.Reader, buf)
+	// Make a temp file with 11*1024*1024 bytes of data.
+	file, err := ioutil.TempFile(os.TempDir(), "FPutObjectTest")
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
 
-	objectName := bucketName + "-resumable"
-	reader := bytes.NewReader(buf)
-	n, err := c.PutObject(bucketName, objectName, reader, "application/octet-stream")
+	n, err := io.CopyN(file, crand.Reader, 11*1024*1024)
 	if err != nil {
-		t.Fatal("Error:", err, bucketName, objectName)
+		t.Fatal("Error:", err)
 	}
-	if n != int64(len(buf)) {
-		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n", len(buf), n)
+	if n != int64(11*1024*1024) {
+		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n", 11*1024*1024, n)
 	}
 
-	err = c.RemoveObject(bucketName, objectName)
+	// Close the file pro-actively for windows.
+	err = file.Close()
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Set base object name
+	objectName := bucketName + "FPutObject"
+
+	// Perform standard FPutObject with contentType provided (Expecting application/octet-stream)
+	n, err = c.FPutObject(bucketName, objectName+"-standard", file.Name(), "application/octet-stream")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if n != int64(11*1024*1024) {
+		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n", 11*1024*1024, n)
+	}
+
+	// Perform FPutObject with no contentType provided (Expecting application/octet-stream)
+	n, err = c.FPutObject(bucketName, objectName+"-Octet", file.Name(), "")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if n != int64(11*1024*1024) {
+		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n", 11*1024*1024, n)
+	}
+
+	// Add extension to temp file name
+	fileName := file.Name()
+	err = os.Rename(file.Name(), fileName+".gtar")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Perform FPutObject with no contentType provided (Expecting application/x-gtar)
+	n, err = c.FPutObject(bucketName, objectName+"-GTar", fileName+".gtar", "")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if n != int64(11*1024*1024) {
+		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n", 11*1024*1024, n)
+	}
+
+	// Check headers
+	rStandard, err := c.StatObject(bucketName, objectName+"-standard")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName+"-standard")
+	}
+	if rStandard.ContentType != "application/octet-stream" {
+		t.Fatalf("Error: Content-Type headers mismatched, want %v, got %v\n",
+			"application/octet-stream", rStandard.ContentType)
+	}
+
+	rOctet, err := c.StatObject(bucketName, objectName+"-Octet")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName+"-Octet")
+	}
+	if rOctet.ContentType != "application/octet-stream" {
+		t.Fatalf("Error: Content-Type headers mismatched, want %v, got %v\n",
+			"application/octet-stream", rStandard.ContentType)
+	}
+
+	rGTar, err := c.StatObject(bucketName, objectName+"-GTar")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName+"-GTar")
+	}
+	if rGTar.ContentType != "application/x-gtar" {
+		t.Fatalf("Error: Content-Type headers mismatched, want %v, got %v\n",
+			"application/x-gtar", rStandard.ContentType)
+	}
+
+	// Remove all objects and bucket and temp file
+	err = c.RemoveObject(bucketName, objectName+"-standard")
+	if err != nil {
+		t.Fatal("Error: ", err)
+	}
+
+	err = c.RemoveObject(bucketName, objectName+"-Octet")
+	if err != nil {
+		t.Fatal("Error: ", err)
+	}
+
+	err = c.RemoveObject(bucketName, objectName+"-GTar")
 	if err != nil {
 		t.Fatal("Error: ", err)
 	}
@@ -559,6 +638,12 @@ func TestResumablePutObject(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
+
+	err = os.Remove(fileName + ".gtar")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
 }
 
 // Tests get object ReaderSeeker interface methods.
@@ -591,7 +676,7 @@ func TestGetObjectReadSeekFunctional(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	err = c.MakeBucket(bucketName, "us-east-1")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
@@ -658,13 +743,37 @@ func TestGetObjectReadSeekFunctional(t *testing.T) {
 	if n != 0 {
 		t.Fatalf("Error: number of bytes seeked back does not match, want 0, got %v\n", n)
 	}
-	var buffer bytes.Buffer
-	if _, err = io.CopyN(&buffer, r, st.Size); err != nil {
-		t.Fatal("Error:", err)
+
+	var buffer1 bytes.Buffer
+	if n, err = io.CopyN(&buffer1, r, st.Size); err != nil {
+		if err != io.EOF {
+			t.Fatal("Error:", err)
+		}
 	}
-	if !bytes.Equal(buf, buffer.Bytes()) {
+	if !bytes.Equal(buf, buffer1.Bytes()) {
 		t.Fatal("Error: Incorrect read bytes v/s original buffer.")
 	}
+
+	// Seek again and read again.
+	n, err = r.Seek(offset-1, 0)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if n != (offset - 1) {
+		t.Fatalf("Error: number of bytes seeked back does not match, want %v, got %v\n", offset-1, n)
+	}
+
+	var buffer2 bytes.Buffer
+	if _, err = io.CopyN(&buffer2, r, st.Size); err != nil {
+		if err != io.EOF {
+			t.Fatal("Error:", err)
+		}
+	}
+	// Verify now lesser bytes.
+	if !bytes.Equal(buf[2047:], buffer2.Bytes()) {
+		t.Fatal("Error: Incorrect read bytes v/s original buffer.")
+	}
+
 	err = c.RemoveObject(bucketName, objectName)
 	if err != nil {
 		t.Fatal("Error: ", err)
@@ -705,7 +814,7 @@ func TestGetObjectReadAtFunctional(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	err = c.MakeBucket(bucketName, "us-east-1")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
@@ -817,6 +926,132 @@ func TestGetObjectReadAtFunctional(t *testing.T) {
 	}
 }
 
+// Tests copy object
+func TestCopyObject(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping functional tests for short runs")
+	}
+	// Seed random based on current time.
+	rand.Seed(time.Now().Unix())
+
+	// Instantiate new minio client object
+	c, err := minio.NewV4(
+		"s3.amazonaws.com",
+		os.Getenv("ACCESS_KEY"),
+		os.Getenv("SECRET_KEY"),
+		false,
+	)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Enable tracing, write to stderr.
+	// c.TraceOn(os.Stderr)
+
+	// Set user agent.
+	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
+
+	// Generate a new random bucket name.
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+
+	// Make a new bucket in 'us-east-1' (source bucket).
+	err = c.MakeBucket(bucketName, "us-east-1")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName)
+	}
+
+	// Make a new bucket in 'us-east-1' (destination bucket).
+	err = c.MakeBucket(bucketName+"-copy", "us-east-1")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName+"-copy")
+	}
+
+	// Generate data more than 32K
+	buf := make([]byte, rand.Intn(1<<20)+32*1024)
+
+	_, err = io.ReadFull(crand.Reader, buf)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Save the data
+	objectName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	n, err := c.PutObject(bucketName, objectName, bytes.NewReader(buf), "binary/octet-stream")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+
+	if n != int64(len(buf)) {
+		t.Fatalf("Error: number of bytes does not match want %v, got %v",
+			len(buf), n)
+	}
+
+	// Set copy conditions.
+	copyConds := minio.NewCopyConditions()
+	err = copyConds.SetModified(time.Date(2014, time.April, 0, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Copy source.
+	copySource := bucketName + "/" + objectName
+
+	// Perform the Copy
+	err = c.CopyObject(bucketName+"-copy", objectName+"-copy", copySource, copyConds)
+	if err != nil {
+		t.Fatal("Error:", err, bucketName+"-copy", objectName+"-copy")
+	}
+
+	// Source object
+	reader, err := c.GetObject(bucketName, objectName)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	// Destination object
+	readerCopy, err := c.GetObject(bucketName+"-copy", objectName+"-copy")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	// Check the various fields of source object against destination object.
+	objInfo, err := reader.Stat()
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	objInfoCopy, err := readerCopy.Stat()
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if objInfo.Size != objInfoCopy.Size {
+		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n",
+			objInfo.Size, objInfoCopy.Size)
+	}
+	if objInfo.ETag != objInfoCopy.ETag {
+		t.Fatalf("Error: ETags do not match, want %v, got %v\n",
+			objInfoCopy.ETag, objInfo.ETag)
+	}
+
+	// Remove all objects and buckets
+	err = c.RemoveObject(bucketName, objectName)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	err = c.RemoveObject(bucketName+"-copy", objectName+"-copy")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	err = c.RemoveBucket(bucketName)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	err = c.RemoveBucket(bucketName + "-copy")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+}
+
 // Tests comprehensive list of all methods.
 func TestFunctional(t *testing.T) {
 	if testing.Short() {
@@ -846,7 +1081,7 @@ func TestFunctional(t *testing.T) {
 	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
 
 	// Make a new bucket.
-	err = c.MakeBucket(bucketName, "private", "us-east-1")
+	err = c.MakeBucket(bucketName, "us-east-1")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
@@ -872,23 +1107,54 @@ func TestFunctional(t *testing.T) {
 		t.Fatal("Error:", err, bucketName)
 	}
 
+	// Asserting the default bucket policy.
+	policy, err := c.GetBucketPolicy(bucketName, "")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if policy != "none" {
+		t.Fatalf("Default bucket policy incorrect")
+	}
+	// Set the bucket policy to 'public readonly'.
+	err = c.SetBucketPolicy(bucketName, "", minio.BucketPolicyReadOnly)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	// should return policy `readonly`.
+	policy, err = c.GetBucketPolicy(bucketName, "")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if policy != "readonly" {
+		t.Fatalf("Expected bucket policy to be readonly")
+	}
+
+	// Make the bucket 'public writeonly'.
+	err = c.SetBucketPolicy(bucketName, "", minio.BucketPolicyWriteOnly)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	// should return policy `writeonly`.
+	policy, err = c.GetBucketPolicy(bucketName, "")
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+	if policy != "writeonly" {
+		t.Fatalf("Expected bucket policy to be writeonly")
+	}
 	// Make the bucket 'public read/write'.
-	err = c.SetBucketACL(bucketName, "public-read-write")
+	err = c.SetBucketPolicy(bucketName, "", minio.BucketPolicyReadWrite)
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-
-	// Get the previously set acl.
-	acl, err := c.GetBucketACL(bucketName)
+	// should return policy `readwrite`.
+	policy, err = c.GetBucketPolicy(bucketName, "")
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-
-	// ACL must be 'public read/write'.
-	if acl != minio.BucketACL("public-read-write") {
-		t.Fatal("Error:", acl)
+	if policy != "readwrite" {
+		t.Fatalf("Expected bucket policy to be readwrite")
 	}
-
 	// List all buckets.
 	buckets, err := c.ListBuckets()
 	if len(buckets) == 0 {
@@ -983,11 +1249,13 @@ func TestFunctional(t *testing.T) {
 		t.Fatal("Error: ", err)
 	}
 
-	presignedGetURL, err := c.PresignedGetObject(bucketName, objectName, 3600*time.Second)
+	// Generate presigned GET object url.
+	presignedGetURL, err := c.PresignedGetObject(bucketName, objectName, 3600*time.Second, nil)
 	if err != nil {
 		t.Fatal("Error: ", err)
 	}
 
+	// Verify if presigned url works.
 	resp, err := http.Get(presignedGetURL)
 	if err != nil {
 		t.Fatal("Error: ", err)
@@ -1003,6 +1271,32 @@ func TestFunctional(t *testing.T) {
 		t.Fatal("Error: bytes mismatch.")
 	}
 
+	// Set request parameters.
+	reqParams := make(url.Values)
+	reqParams.Set("response-content-disposition", "attachment; filename=\"test.txt\"")
+	presignedGetURL, err = c.PresignedGetObject(bucketName, objectName, 3600*time.Second, reqParams)
+	if err != nil {
+		t.Fatal("Error: ", err)
+	}
+	// Verify if presigned url works.
+	resp, err = http.Get(presignedGetURL)
+	if err != nil {
+		t.Fatal("Error: ", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatal("Error: ", resp.Status)
+	}
+	newPresignedBytes, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal("Error: ", err)
+	}
+	if !bytes.Equal(newPresignedBytes, buf) {
+		t.Fatal("Error: bytes mismatch for presigned GET URL.")
+	}
+	if resp.Header.Get("Content-Disposition") != "attachment; filename=\"test.txt\"" {
+		t.Fatalf("Error: wrong Content-Disposition received %s", resp.Header.Get("Content-Disposition"))
+	}
+
 	presignedPutURL, err := c.PresignedPutObject(bucketName, objectName+"-presigned", 3600*time.Second)
 	if err != nil {
 		t.Fatal("Error: ", err)
@@ -1016,7 +1310,13 @@ func TestFunctional(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error: ", err)
 	}
-	httpClient := &http.Client{}
+	httpClient := &http.Client{
+		// Setting a sensible time out of 30secs to wait for response
+		// headers. Request is pro-actively cancelled after 30secs
+		// with no response.
+		Timeout:   30 * time.Second,
+		Transport: http.DefaultTransport,
+	}
 	resp, err = httpClient.Do(req)
 	if err != nil {
 		t.Fatal("Error: ", err)

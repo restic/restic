@@ -1,5 +1,5 @@
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015 Minio, Inc.
+ * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015, 2016 Minio, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,123 +20,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
 )
-
-// GetBucketACL - Get the permissions on an existing bucket.
-//
-// Returned values are:
-//
-//  private - Owner gets full access.
-//  public-read - Owner gets full access, others get read access.
-//  public-read-write - Owner gets full access, others get full access
-//  too.
-//  authenticated-read - Owner gets full access, authenticated users
-//  get read access.
-func (c Client) GetBucketACL(bucketName string) (BucketACL, error) {
-	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
-		return "", err
-	}
-
-	// Set acl query.
-	urlValues := make(url.Values)
-	urlValues.Set("acl", "")
-
-	// Instantiate a new request.
-	req, err := c.newRequest("GET", requestMetadata{
-		bucketName:  bucketName,
-		queryValues: urlValues,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	// Initiate the request.
-	resp, err := c.do(req)
-	defer closeResponse(resp)
-	if err != nil {
-		return "", err
-	}
-	if resp != nil {
-		if resp.StatusCode != http.StatusOK {
-			return "", httpRespToErrorResponse(resp, bucketName, "")
-		}
-	}
-
-	// Decode access control policy.
-	policy := accessControlPolicy{}
-	err = xmlDecoder(resp.Body, &policy)
-	if err != nil {
-		return "", err
-	}
-
-	// We need to avoid following de-serialization check for Google
-	// Cloud Storage. On Google Cloud Storage "private" canned ACL's
-	// policy do not have grant list. Treat it as a valid case, check
-	// for all other vendors.
-	if !isGoogleEndpoint(c.endpointURL) {
-		if policy.AccessControlList.Grant == nil {
-			errorResponse := ErrorResponse{
-				Code:            "InternalError",
-				Message:         "Access control Grant list is empty. " + reportIssue,
-				BucketName:      bucketName,
-				RequestID:       resp.Header.Get("x-amz-request-id"),
-				HostID:          resp.Header.Get("x-amz-id-2"),
-				AmzBucketRegion: resp.Header.Get("x-amz-bucket-region"),
-			}
-			return "", errorResponse
-		}
-	}
-
-	// Boolean cues to indentify right canned acls.
-	var publicRead, publicWrite, authenticatedRead bool
-
-	// Handle grants.
-	grants := policy.AccessControlList.Grant
-	for _, g := range grants {
-		if g.Grantee.URI == "" && g.Permission == "FULL_CONTROL" {
-			continue
-		}
-		if g.Grantee.URI == "http://acs.amazonaws.com/groups/global/AuthenticatedUsers" && g.Permission == "READ" {
-			authenticatedRead = true
-			break
-		} else if g.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && g.Permission == "WRITE" {
-			publicWrite = true
-		} else if g.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" && g.Permission == "READ" {
-			publicRead = true
-		}
-	}
-
-	// Verify if acl is authenticated read.
-	if authenticatedRead {
-		return BucketACL("authenticated-read"), nil
-	}
-	// Verify if acl is private.
-	if !publicWrite && !publicRead {
-		return BucketACL("private"), nil
-	}
-	// Verify if acl is public-read.
-	if !publicWrite && publicRead {
-		return BucketACL("public-read"), nil
-	}
-	// Verify if acl is public-read-write.
-	if publicRead && publicWrite {
-		return BucketACL("public-read-write"), nil
-	}
-
-	return "", ErrorResponse{
-		Code:       "NoSuchBucketPolicy",
-		Message:    "The specified bucket does not have a bucket policy.",
-		BucketName: bucketName,
-		RequestID:  "minio",
-	}
-}
 
 // GetObject - returns an seekable, readable object.
 func (c Client) GetObject(bucketName, objectName string) (*Object, error) {
@@ -147,8 +35,9 @@ func (c Client) GetObject(bucketName, objectName string) (*Object, error) {
 	if err := isValidObjectName(objectName); err != nil {
 		return nil, err
 	}
-	// Send an explicit info to get the actual object size.
-	objectInfo, err := c.StatObject(bucketName, objectName)
+
+	// Start the request as soon Get is initiated.
+	httpReader, objectInfo, err := c.getObject(bucketName, objectName, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +49,7 @@ func (c Client) GetObject(bucketName, objectName string) (*Object, error) {
 	// Create done channel.
 	doneCh := make(chan struct{})
 
-	// This routine feeds partial object data as and when the caller
-	// reads.
+	// This routine feeds partial object data as and when the caller reads.
 	go func() {
 		defer close(reqCh)
 		defer close(resCh)
@@ -174,23 +62,27 @@ func (c Client) GetObject(bucketName, objectName string) (*Object, error) {
 				return
 			// Request message.
 			case req := <-reqCh:
-				// Get shortest length.
-				// NOTE: Last remaining bytes are usually smaller than
-				// req.Buffer size. Use that as the final length.
-				length := math.Min(float64(len(req.Buffer)), float64(objectInfo.Size-req.Offset))
-				httpReader, _, err := c.getObject(bucketName, objectName, req.Offset, int64(length))
-				if err != nil {
-					resCh <- readResponse{
-						Error: err,
+				// Offset changes fetch the new object at an Offset.
+				if req.DidOffsetChange {
+					// Read from offset.
+					httpReader, _, err = c.getObject(bucketName, objectName, req.Offset, 0)
+					if err != nil {
+						resCh <- readResponse{
+							Error: err,
+						}
+						return
 					}
-					return
 				}
+
+				// Read at least req.Buffer bytes, if not we have
+				// reached our EOF.
 				size, err := io.ReadFull(httpReader, req.Buffer)
 				if err == io.ErrUnexpectedEOF {
 					// If an EOF happens after reading some but not
 					// all the bytes ReadFull returns ErrUnexpectedEOF
 					err = io.EOF
 				}
+				// Reply back how much was read.
 				resCh <- readResponse{
 					Size:  int(size),
 					Error: err,
@@ -211,8 +103,9 @@ type readResponse struct {
 // Read request message container to communicate with internal
 // go-routine.
 type readRequest struct {
-	Buffer []byte
-	Offset int64 // readAt offset.
+	Buffer          []byte
+	Offset          int64 // readAt offset.
+	DidOffsetChange bool
 }
 
 // Object represents an open object. It implements Read, ReadAt,
@@ -225,6 +118,7 @@ type Object struct {
 	reqCh      chan<- readRequest
 	resCh      <-chan readResponse
 	doneCh     chan<- struct{}
+	prevOffset int64
 	currOffset int64
 	objectInfo ObjectInfo
 
@@ -247,7 +141,7 @@ func (o *Object) Read(b []byte) (n int, err error) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
-	// Previous prevErr is which was saved in previous operation.
+	// prevErr is previous error saved from previous operation.
 	if o.prevErr != nil || o.isClosed {
 		return 0, o.prevErr
 	}
@@ -257,13 +151,27 @@ func (o *Object) Read(b []byte) (n int, err error) {
 		return 0, io.EOF
 	}
 
-	// Send current information over control channel to indicate we
-	// are ready.
+	// Send current information over control channel to indicate we are ready.
 	reqMsg := readRequest{}
-
-	// Send the offset and pointer to the buffer over the channel.
+	// Send the pointer to the buffer over the channel.
 	reqMsg.Buffer = b
-	reqMsg.Offset = o.currOffset
+
+	// Verify if offset has changed and currOffset is greater than
+	// previous offset. Perhaps due to Seek().
+	offsetChange := o.prevOffset - o.currOffset
+	if offsetChange < 0 {
+		offsetChange = -offsetChange
+	}
+	if offsetChange > 0 {
+		// Fetch the new reader at the current offset again.
+		reqMsg.Offset = o.currOffset
+		reqMsg.DidOffsetChange = true
+	} else {
+		// No offset changes no need to fetch new reader, continue
+		// reading.
+		reqMsg.DidOffsetChange = false
+		reqMsg.Offset = 0
+	}
 
 	// Send read request over the control channel.
 	o.reqCh <- reqMsg
@@ -276,6 +184,9 @@ func (o *Object) Read(b []byte) (n int, err error) {
 
 	// Update current offset.
 	o.currOffset += bytesRead
+
+	// Save the current offset as previous offset.
+	o.prevOffset = o.currOffset
 
 	if dataMsg.Error == nil {
 		// If currOffset read is equal to objectSize
@@ -320,7 +231,7 @@ func (o *Object) ReadAt(b []byte, offset int64) (n int, err error) {
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
-	// prevErr is which was saved in previous operation.
+	// prevErr is error which was saved in previous operation.
 	if o.prevErr != nil || o.isClosed {
 		return 0, o.prevErr
 	}
@@ -337,7 +248,16 @@ func (o *Object) ReadAt(b []byte, offset int64) (n int, err error) {
 
 	// Send the offset and pointer to the buffer over the channel.
 	reqMsg.Buffer = b
-	reqMsg.Offset = offset
+
+	// For ReadAt offset always changes, minor optimization where
+	// offset same as currOffset we don't change the offset.
+	reqMsg.DidOffsetChange = offset != o.currOffset
+	if reqMsg.DidOffsetChange {
+		// Set new offset.
+		reqMsg.Offset = offset
+		// Save new offset as current offset.
+		o.currOffset = offset
+	}
 
 	// Send read request over the control channel.
 	o.reqCh <- reqMsg
@@ -348,10 +268,16 @@ func (o *Object) ReadAt(b []byte, offset int64) (n int, err error) {
 	// Bytes read.
 	bytesRead := int64(dataMsg.Size)
 
+	// Update current offset.
+	o.currOffset += bytesRead
+
+	// Save current offset as previous offset before returning.
+	o.prevOffset = o.currOffset
+
 	if dataMsg.Error == nil {
-		// If offset+bytes read is equal to objectSize
+		// If currentOffset is equal to objectSize
 		// we have reached end of file, we return io.EOF.
-		if offset+bytesRead == o.objectInfo.Size {
+		if o.currOffset >= o.objectInfo.Size {
 			return dataMsg.Size, io.EOF
 		}
 		return dataMsg.Size, nil
@@ -381,7 +307,7 @@ func (o *Object) Seek(offset int64, whence int) (n int64, err error) {
 	defer o.mutex.Unlock()
 
 	if o.prevErr != nil {
-		// At EOF seeking is legal, for any other errors we return.
+		// At EOF seeking is legal allow only io.EOF, for any other errors we return.
 		if o.prevErr != io.EOF {
 			return 0, o.prevErr
 		}
@@ -391,6 +317,11 @@ func (o *Object) Seek(offset int64, whence int) (n int64, err error) {
 	if offset < 0 && whence != 2 {
 		return 0, ErrInvalidArgument(fmt.Sprintf("Negative position not allowed for %d.", whence))
 	}
+
+	// Save current offset as previous offset.
+	o.prevOffset = o.currOffset
+
+	// Switch through whence.
 	switch whence {
 	default:
 		return 0, ErrInvalidArgument(fmt.Sprintf("Invalid whence %d", whence))
@@ -484,17 +415,12 @@ func (c Client) getObject(bucketName, objectName string, offset, length int64) (
 		customHeader.Set("Range", fmt.Sprintf("bytes=%d", length))
 	}
 
-	// Instantiate a new request.
-	req, err := c.newRequest("GET", requestMetadata{
+	// Execute GET on objectName.
+	resp, err := c.executeMethod("GET", requestMetadata{
 		bucketName:   bucketName,
 		objectName:   objectName,
 		customHeader: customHeader,
 	})
-	if err != nil {
-		return nil, ObjectInfo{}, err
-	}
-	// Execute the request.
-	resp, err := c.do(req)
 	if err != nil {
 		return nil, ObjectInfo{}, err
 	}
@@ -513,11 +439,11 @@ func (c Client) getObject(bucketName, objectName string, offset, length int64) (
 	if err != nil {
 		msg := "Last-Modified time format not recognized. " + reportIssue
 		return nil, ObjectInfo{}, ErrorResponse{
-			Code:            "InternalError",
-			Message:         msg,
-			RequestID:       resp.Header.Get("x-amz-request-id"),
-			HostID:          resp.Header.Get("x-amz-id-2"),
-			AmzBucketRegion: resp.Header.Get("x-amz-bucket-region"),
+			Code:      "InternalError",
+			Message:   msg,
+			RequestID: resp.Header.Get("x-amz-request-id"),
+			HostID:    resp.Header.Get("x-amz-id-2"),
+			Region:    resp.Header.Get("x-amz-bucket-region"),
 		}
 	}
 	// Get content-type.
