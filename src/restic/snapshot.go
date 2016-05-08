@@ -11,6 +11,7 @@ import (
 	"restic/repository"
 )
 
+// Snapshot is the state of a resource at one point in time.
 type Snapshot struct {
 	Time     time.Time   `json:"time"`
 	Parent   *backend.ID `json:"parent,omitempty"`
@@ -25,6 +26,8 @@ type Snapshot struct {
 	id *backend.ID // plaintext ID, used during restore
 }
 
+// NewSnapshot returns an initialized snapshot struct for the current user and
+// time.
 func NewSnapshot(paths []string) (*Snapshot, error) {
 	for i, path := range paths {
 		if p, err := filepath.Abs(path); err != nil {
@@ -50,6 +53,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 	return sn, nil
 }
 
+// LoadSnapshot loads the snapshot with the id and returns it.
 func LoadSnapshot(repo *repository.Repository, id backend.ID) (*Snapshot, error) {
 	sn := &Snapshot{id: &id}
 	err := repo.LoadJSONUnpacked(backend.Snapshot, id, sn)
@@ -60,6 +64,7 @@ func LoadSnapshot(repo *repository.Repository, id backend.ID) (*Snapshot, error)
 	return sn, nil
 }
 
+// LoadAllSnapshots returns a list of all snapshots in the repo.
 func LoadAllSnapshots(repo *repository.Repository) (snapshots []*Snapshot, err error) {
 	done := make(chan struct{})
 	defer close(done)
@@ -80,6 +85,7 @@ func (sn Snapshot) String() string {
 	return fmt.Sprintf("<Snapshot of %v at %s>", sn.Paths, sn.Time)
 }
 
+// ID retuns the snapshot's ID.
 func (sn Snapshot) ID() *backend.ID {
 	return sn.id
 }

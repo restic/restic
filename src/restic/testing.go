@@ -147,7 +147,7 @@ func saveTree(t testing.TB, repo *repository.Repository, seed int64) backend.ID 
 	return id
 }
 
-// TestRepositoryCreateSnapshot creates a snapshot filled with fake data. The
+// TestCreateSnapshot creates a snapshot filled with fake data. The
 // fake data is generated deterministically from the timestamp `at`, which is
 // also used as the snapshot's timestamp.
 func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time) backend.ID {
