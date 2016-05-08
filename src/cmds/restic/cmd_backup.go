@@ -18,10 +18,12 @@ import (
 )
 
 type CmdBackup struct {
-	Parent      string   `short:"p" long:"parent"  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
-	Force       bool     `short:"f" long:"force"   description:"Force re-reading the target. Overrides the \"parent\" flag"`
-	Excludes    []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
-	ExcludeFile string   `long:"exclude-file" description:"Read exclude-patterns from file"`
+	Parent        string   `short:"p" long:"parent"                  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
+	Force         bool     `short:"f" long:"force"                   description:"Force re-reading the target. Overrides the \"parent\" flag"`
+	Excludes      []string `short:"e" long:"exclude"                 description:"Exclude a pattern (can be specified multiple times)"`
+	ExcludeFile   string   `long:"exclude-file"                      description:"Read exclude-patterns from file"`
+	Stdin         bool     `long:"stdin"                             description:"read backup data from stdin"`
+	StdinFilename string   `long:"stdin-filename"    default:"stdin" description:"file name to use when reading from stdin"`
 
 	global *GlobalOptions
 }
@@ -175,6 +177,47 @@ func (cmd CmdBackup) newArchiveProgress(todo restic.Stat) *restic.Progress {
 	return archiveProgress
 }
 
+func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
+	if !cmd.global.ShowProgress() {
+		return nil
+	}
+
+	archiveProgress := restic.NewProgress(time.Second)
+
+	var bps uint64
+
+	archiveProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		sec := uint64(d / time.Second)
+		if s.Bytes > 0 && sec > 0 && ticker {
+			bps = s.Bytes / sec
+		}
+
+		status1 := fmt.Sprintf("[%s] %s  %s/s", formatDuration(d),
+			formatBytes(s.Bytes),
+			formatBytes(bps))
+
+		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+		if err == nil {
+			maxlen := w - len(status1)
+
+			if maxlen < 4 {
+				status1 = ""
+			} else if len(status1) > maxlen {
+				status1 = status1[:maxlen-4]
+				status1 += "... "
+			}
+		}
+
+		fmt.Printf("\x1b[2K%s\r", status1)
+	}
+
+	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
+		fmt.Printf("\nduration: %s, %s\n", formatDuration(d), formatRate(s.Bytes, d))
+	}
+
+	return archiveProgress
+}
+
 func samePaths(expected, actual []string) bool {
 	if expected == nil || actual == nil {
 		return true
@@ -239,7 +282,41 @@ func filterExisting(items []string) (result []string, err error) {
 	return
 }
 
+func (cmd CmdBackup) readFromStdin(args []string) error {
+	if len(args) != 0 {
+		return fmt.Errorf("when reading from stdin, no additional files can be specified")
+	}
+
+	repo, err := cmd.global.OpenRepository()
+	if err != nil {
+		return err
+	}
+
+	lock, err := lockRepo(repo)
+	defer unlockRepo(lock)
+	if err != nil {
+		return err
+	}
+
+	err = repo.LoadIndex()
+	if err != nil {
+		return err
+	}
+
+	_, id, err := restic.ArchiveReader(repo, cmd.newArchiveStdinProgress(), os.Stdin, cmd.StdinFilename)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("archived as %v\n", id.Str())
+	return nil
+}
+
 func (cmd CmdBackup) Execute(args []string) error {
+	if cmd.Stdin {
+		return cmd.readFromStdin(args)
+	}
+
 	if len(args) == 0 {
 		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
 	}
