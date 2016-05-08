@@ -31,7 +31,7 @@ func TestCreateSnapshot(t *testing.T) {
 
 	sn := snapshots[0]
 	if sn.Time.Before(testSnapshotTime) || sn.Time.After(testSnapshotTime.Add(testCreateSnapshots*time.Second)) {
-		t.Fatalf("timestamp %v is outside of the allowed time range", sn.Time, testSnapshotTime)
+		t.Fatalf("timestamp %v is outside of the allowed time range", sn.Time)
 	}
 
 	if sn.Tree == nil {
