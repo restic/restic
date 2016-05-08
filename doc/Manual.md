@@ -182,6 +182,22 @@ see [`filepath.Match`](https://golang.org/pkg/path/filepath/#Match) for syntax.
 Additionally `**` exludes arbitrary subdirectories.  
 Environment-variables in exclude-files are expanded with [`os.ExpandEnv`](https://golang.org/pkg/os/#ExpandEnv).
 
+## Reading data from stdin
+
+Sometimes it can be nice to directly save the output of a program, e.g.
+`mysqldump` so that the SQL can later be restored. Restic supports this mode of
+operation, just supply the option `--stdin` to the `backup` command like this:
+
+    $ mysqldump [...] | restic -r /tmp/backup backup --stdin
+
+This creates a new snapshot of the output of `mqsqldump`. You can then use e.g.
+the fuse mounting option (see below) to mount the repository and read the file.
+
+By default, the file name `stdin` is used, a different name can be specified
+with `--stdin-filename`, e.g. like this:
+
+    $ mysqldump [...] | restic -r /tmp/backup backup --stdin --stdin-filenam production.sql
+
 # List all snapshots
 
 Now, you can list all the snapshots stored in the repository:
