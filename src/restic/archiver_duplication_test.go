@@ -1,7 +1,6 @@
 package restic_test
 
 import (
-	"bytes"
 	"crypto/rand"
 	"errors"
 	"io"
@@ -108,7 +107,7 @@ func testArchiverDuplication(t *testing.T) {
 
 				buf := make([]byte, 50)
 
-				err := arch.Save(pack.Data, id, uint(len(buf)), bytes.NewReader(buf))
+				err := arch.Save(pack.Data, buf, id)
 				if err != nil {
 					t.Fatal(err)
 				}

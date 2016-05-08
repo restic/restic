@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"math/rand"
@@ -105,8 +104,7 @@ func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs ba
 			t.Fatalf("unabel to save chunk in repo: %v", err)
 		}
 
-		id := backend.Hash(chunk.Data)
-		err = repo.SaveFrom(pack.Data, &id, uint(len(chunk.Data)), bytes.NewReader(chunk.Data))
+		id, err := repo.SaveAndEncrypt(pack.Data, chunk.Data, nil)
 		if err != nil {
 			t.Fatalf("error saving chunk: %v", err)
 		}

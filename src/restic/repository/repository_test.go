@@ -117,8 +117,9 @@ func TestSaveFrom(t *testing.T) {
 		id := backend.Hash(data)
 
 		// save
-		err = repo.SaveFrom(pack.Data, &id, uint(size), bytes.NewReader(data))
+		id2, err := repo.SaveAndEncrypt(pack.Data, data, &id)
 		OK(t, err)
+		Equals(t, id, id2)
 
 		OK(t, repo.Flush())
 
@@ -136,7 +137,7 @@ func TestSaveFrom(t *testing.T) {
 	}
 }
 
-func BenchmarkSaveFrom(t *testing.B) {
+func BenchmarkSaveAndEncrypt(t *testing.B) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
@@ -153,7 +154,7 @@ func BenchmarkSaveFrom(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		// save
-		err = repo.SaveFrom(pack.Data, &id, uint(size), bytes.NewReader(data))
+		_, err = repo.SaveAndEncrypt(pack.Data, data, &id)
 		OK(t, err)
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"restic/backend"
@@ -210,26 +209,6 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 
 	// else write the pack to the backend
 	return *id, r.savePacker(packer)
-}
-
-// SaveFrom encrypts data read from rd and stores it in a pack in the backend as type t.
-func (r *Repository) SaveFrom(t pack.BlobType, id *backend.ID, length uint, rd io.Reader) error {
-	debug.Log("Repo.SaveFrom", "save id %v (%v, %d bytes)", id.Str(), t, length)
-	if id == nil {
-		return errors.New("id is nil")
-	}
-
-	buf, err := ioutil.ReadAll(rd)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.SaveAndEncrypt(t, buf, id)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // SaveJSON serialises item as JSON and encrypts and saves it in a pack in the
