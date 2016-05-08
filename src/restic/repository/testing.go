@@ -13,6 +13,7 @@ func TestBackend(t testing.TB) (be backend.Backend, cleanup func()) {
 	return mem.New(), func() {}
 }
 
+// TestPassword is used for all repositories created by the Test* functions.
 const TestPassword = "geheim"
 
 // TestRepositoryWithBackend returns a repository initialized with a test
