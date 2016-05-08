@@ -49,6 +49,7 @@ var blobPool = sync.Pool{
 
 func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error) {
 	debug.Log("newFile", "create new file for %v with %d blobs", node.Name, len(node.Content))
+	var bytes uint64
 	sizes := make([]uint, len(node.Content))
 	for i, id := range node.Content {
 		size, err := repo.LookupBlobSize(id)
@@ -57,6 +58,12 @@ func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error
 		}
 
 		sizes[i] = size
+		bytes += uint64(size)
+	}
+
+	if bytes != node.Size {
+		debug.Log("newFile", "sizes do not match: node.Size %v != size %v, using real size", node.Size, bytes)
+		node.Size = bytes
 	}
 
 	return &file{
