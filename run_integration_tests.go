@@ -183,7 +183,7 @@ func (env *TravisEnvironment) Prepare() error {
 			}
 			if !strings.HasPrefix(runtime.Version(), "go1.3") {
 				env.goxOSArch = append(env.goxOSArch,
-					"linux/arm", "darwin/arm", "freebsd/arm")
+					"linux/arm", "freebsd/arm")
 			}
 		} else {
 			env.goxOSArch = []string{runtime.GOOS + "/" + runtime.GOARCH}
