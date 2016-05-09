@@ -622,6 +622,8 @@ func unique(items []string) []string {
 	return items
 }
 
+// BaseNameSlice allows sorting paths by basename.
+//
 // Snapshots have contents sorted by basename, but we receive full paths.
 // For the archivePipe to advance them in pairs, we traverse the given
 // paths in the same order as the snapshot.
