@@ -181,14 +181,14 @@ func samePaths(expected, actual []string) bool {
 	}
 
 	for i := range expected {
-               found := false
-               for j := range actual {
-                       if expected[i] == actual[j] {
-                               found = true
-                               break
-                       }
-               }
-               if !found {
+		found := false
+		for j := range actual {
+			if expected[i] == actual[j] {
+				found = true
+				break
+			}
+		}
+		if !found {
 			return false
 		}
 	}
