@@ -96,24 +96,30 @@ type Job struct {
 	suc chan struct{}
 }
 
-func wait(job worker.Job, done <-chan struct{}) (interface{}, error) {
-	j := job.Data.(Job)
-	select {
-	case j.suc <- struct{}{}:
-		return time.Now(), nil
-	case <-done:
-		return nil, errCancelled
-	}
-}
-
 func TestPoolCancel(t *testing.T) {
+	barrier := make(chan struct{})
+
+	wait := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
+		j := job.Data.(Job)
+
+		<-barrier
+
+		select {
+		case j.suc <- struct{}{}:
+			return time.Now(), nil
+		case <-done:
+			return nil, errCancelled
+		}
+	}
+
 	jobCh, resCh, p := newBufferedPool(20, concurrency, wait)
 
-	suc := make(chan struct{}, 1)
+	suc := make(chan struct{})
 	for i := 0; i < 20; i++ {
 		jobCh <- worker.Job{Data: Job{suc: suc}}
 	}
 
+	close(barrier)
 	<-suc
 	p.Cancel()
 	p.Wait()
