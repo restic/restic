@@ -622,12 +622,21 @@ func unique(items []string) []string {
 	return items
 }
 
+// Snapshots have contents sorted by basename, but we receive full paths.
+// For the archivePipe to advance them in pairs, we traverse the given
+// paths in the same order as the snapshot.
+type BaseNameSlice []string
+
+func (p BaseNameSlice) Len() int           { return len(p) }
+func (p BaseNameSlice) Less(i, j int) bool { return filepath.Base(p[i]) < filepath.Base(p[j]) }
+func (p BaseNameSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
 // Snapshot creates a snapshot of the given paths. If parentID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
 func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID) (*Snapshot, backend.ID, error) {
 	paths = unique(paths)
-	sort.Strings(paths)
+	sort.Sort(BaseNameSlice(paths))
 
 	debug.Log("Archiver.Snapshot", "start for %v", paths)
 
