@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/context"
 
 	"restic"
+	"restic/debug"
 	"restic/repository"
 )
 
@@ -27,8 +28,10 @@ type dir struct {
 }
 
 func newDir(repo *repository.Repository, node *restic.Node, ownerIsRoot bool) (*dir, error) {
+	debug.Log("newDir", "new dir for %v (%v)", node.Name, node.Subtree.Str())
 	tree, err := restic.LoadTree(repo, *node.Subtree)
 	if err != nil {
+		debug.Log("newDir", "  error loading tree %v: %v", node.Subtree.Str(), err)
 		return nil, err
 	}
 	items := make(map[string]*restic.Node)
@@ -65,14 +68,17 @@ func replaceSpecialNodes(repo *repository.Repository, node *restic.Node) ([]*res
 }
 
 func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId, ownerIsRoot bool) (*dir, error) {
+	debug.Log("newDirFromSnapshot", "new dir for snapshot %v (%v)", snapshot.ID.Str(), snapshot.Tree.Str())
 	tree, err := restic.LoadTree(repo, *snapshot.Tree)
 	if err != nil {
+		debug.Log("newDirFromSnapshot", "  loadTree(%v) failed: %v", snapshot.ID.Str(), err)
 		return nil, err
 	}
 	items := make(map[string]*restic.Node)
 	for _, n := range tree.Nodes {
 		nodes, err := replaceSpecialNodes(repo, n)
 		if err != nil {
+			debug.Log("newDirFromSnapshot", "  replaceSpecialNodes(%v) failed: %v", n, err)
 			return nil, err
 		}
 
@@ -98,6 +104,7 @@ func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId, ow
 }
 
 func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
+	debug.Log("dir.Attr", "called")
 	a.Inode = d.inode
 	a.Mode = os.ModeDir | d.node.Mode
 
@@ -112,6 +119,7 @@ func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	debug.Log("dir.ReadDirAll", "called")
 	ret := make([]fuse.Dirent, 0, len(d.items))
 
 	for _, node := range d.items {
@@ -136,8 +144,10 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 }
 
 func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+	debug.Log("dir.Lookup", "Lookup(%v)", name)
 	node, ok := d.items[name]
 	if !ok {
+		debug.Log("dir.Lookup", "  Lookup(%v) -> not found", name)
 		return nil, fuse.ENOENT
 	}
 	switch node.Type {
@@ -148,6 +158,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	case "symlink":
 		return newLink(d.repo, node, d.ownerIsRoot)
 	default:
+		debug.Log("dir.Lookup", "  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT
 	}
 }
