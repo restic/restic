@@ -21,6 +21,40 @@ func loadBlob(t *testing.T, repo *repository.Repository, id backend.ID, buf []by
 	return buf
 }
 
+func checkSavedFile(t *testing.T, repo *repository.Repository, treeID backend.ID, name string, rd io.Reader) {
+	tree, err := LoadTree(repo, treeID)
+	if err != nil {
+		t.Fatalf("LoadTree() returned error %v", err)
+	}
+
+	if len(tree.Nodes) != 1 {
+		t.Fatalf("wrong number of nodes for tree, want %v, got %v", 1, len(tree.Nodes))
+	}
+
+	node := tree.Nodes[0]
+	if node.Name != "fakefile" {
+		t.Fatalf("wrong filename, want %v, got %v", "fakefile", node.Name)
+	}
+
+	if len(node.Content) == 0 {
+		t.Fatalf("node.Content has length 0")
+	}
+
+	// check blobs
+	buf := make([]byte, chunker.MaxSize)
+	buf2 := make([]byte, chunker.MaxSize)
+	for i, id := range node.Content {
+		buf = loadBlob(t, repo, id, buf)
+
+		buf2 = buf2[:len(buf)]
+		_, err = io.ReadFull(rd, buf2)
+
+		if !bytes.Equal(buf, buf2) {
+			t.Fatalf("blob %d (%v) is wrong", i, id.Str())
+		}
+	}
+}
+
 func TestArchiveReader(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
@@ -42,36 +76,28 @@ func TestArchiveReader(t *testing.T) {
 
 	t.Logf("snapshot saved as %v, tree is %v", id.Str(), sn.Tree.Str())
 
-	tree, err := LoadTree(repo, *sn.Tree)
+	checkSavedFile(t, repo, *sn.Tree, "fakefile", fakeFile(t, seed, size))
+}
+
+func BenchmarkArchiveReader(t *testing.B) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	const size = 50 * 1024 * 1024
+
+	buf := make([]byte, size)
+	_, err := io.ReadFull(fakeFile(t, 23, size), buf)
 	if err != nil {
-		t.Fatalf("LoadTree() returned error %v", err)
+		t.Fatal(err)
 	}
 
-	if len(tree.Nodes) != 1 {
-		t.Fatalf("wrong number of nodes for tree, want %v, got %v", 1, len(tree.Nodes))
-	}
+	t.SetBytes(size)
+	t.ResetTimer()
 
-	node := tree.Nodes[0]
-	if node.Name != "fakefile" {
-		t.Fatalf("wrong filename, want %v, got %v", "fakefile", node.Name)
-	}
-
-	if len(node.Content) == 0 {
-		t.Fatalf("node.Content has length 0")
-	}
-
-	// check blobs
-	f = fakeFile(t, seed, size)
-	buf := make([]byte, chunker.MaxSize)
-	buf2 := make([]byte, chunker.MaxSize)
-	for i, id := range node.Content {
-		buf = loadBlob(t, repo, id, buf)
-
-		buf2 = buf2[:len(buf)]
-		_, err = io.ReadFull(f, buf2)
-
-		if !bytes.Equal(buf, buf2) {
-			t.Fatalf("blob %d (%v) is wrong", i, id.Str())
+	for i := 0; i < t.N; i++ {
+		_, _, err := ArchiveReader(repo, nil, bytes.NewReader(buf), "fakefile")
+		if err != nil {
+			t.Fatal(err)
 		}
 	}
 }
