@@ -94,15 +94,12 @@ var errCancelled = errors.New("cancelled")
 
 type Job struct {
 	suc chan struct{}
-	d   time.Duration
 }
 
 func wait(job worker.Job, done <-chan struct{}) (interface{}, error) {
 	j := job.Data.(Job)
 	select {
 	case j.suc <- struct{}{}:
-		return time.Now(), nil
-	case <-time.After(j.d):
 		return time.Now(), nil
 	case <-done:
 		return nil, errCancelled
@@ -114,7 +111,7 @@ func TestPoolCancel(t *testing.T) {
 
 	suc := make(chan struct{}, 1)
 	for i := 0; i < 20; i++ {
-		jobCh <- worker.Job{Data: Job{suc: suc, d: time.Second}}
+		jobCh <- worker.Job{Data: Job{suc: suc}}
 	}
 
 	<-suc
