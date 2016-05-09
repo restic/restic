@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -92,7 +91,7 @@ func (arch *Archiver) isKnownBlob(id backend.ID) bool {
 }
 
 // Save stores a blob read from rd in the repository.
-func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Reader) error {
+func (arch *Archiver) Save(t pack.BlobType, data []byte, id backend.ID) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
 	if arch.isKnownBlob(id) {
@@ -100,7 +99,7 @@ func (arch *Archiver) Save(t pack.BlobType, id backend.ID, length uint, rd io.Re
 		return nil
 	}
 
-	err := arch.repo.SaveFrom(t, &id, length, rd)
+	_, err := arch.repo.SaveAndEncrypt(t, data, &id)
 	if err != nil {
 		debug.Log("Archiver.Save", "Save(%v, %v): error %v\n", t, id.Str(), err)
 		return err
@@ -160,7 +159,7 @@ func (arch *Archiver) saveChunk(chunk chunker.Chunk, p *Progress, token struct{}
 	defer freeBuf(chunk.Data)
 
 	id := backend.Hash(chunk.Data)
-	err := arch.Save(pack.Data, id, chunk.Length, bytes.NewReader(chunk.Data))
+	err := arch.Save(pack.Data, chunk.Data, id)
 	// TODO handle error
 	if err != nil {
 		panic(err)

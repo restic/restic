@@ -33,17 +33,7 @@ func loadBlobsFromPacks(repo *repository.Repository) (packs map[backend.ID][]pac
 	defer close(done)
 
 	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
-		id := job.Data.(backend.ID)
-
-		h := backend.Handle{Type: backend.Data, Name: id.String()}
-		rd := backend.NewReadSeeker(repo.Backend(), h)
-
-		unpacker, err := pack.NewUnpacker(repo.Key(), rd)
-		if err != nil {
-			return nil, err
-		}
-
-		return unpacker.Entries, nil
+		return repo.ListPack(job.Data.(backend.ID))
 	}
 
 	jobCh := make(chan worker.Job)

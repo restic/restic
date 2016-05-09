@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"restic/backend"
@@ -210,26 +209,6 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 
 	// else write the pack to the backend
 	return *id, r.savePacker(packer)
-}
-
-// SaveFrom encrypts data read from rd and stores it in a pack in the backend as type t.
-func (r *Repository) SaveFrom(t pack.BlobType, id *backend.ID, length uint, rd io.Reader) error {
-	debug.Log("Repo.SaveFrom", "save id %v (%v, %d bytes)", id.Str(), t, length)
-	if id == nil {
-		return errors.New("id is nil")
-	}
-
-	buf, err := ioutil.ReadAll(rd)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.SaveAndEncrypt(t, buf, id)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // SaveJSON serialises item as JSON and encrypts and saves it in a pack in the
@@ -537,6 +516,19 @@ func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 	go r.list(t, done, outCh)
 
 	return outCh
+}
+
+// ListPack returns the list of blobs saved in the pack id.
+func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, error) {
+	h := backend.Handle{Type: backend.Data, Name: id.String()}
+	rd := backend.NewReadSeeker(r.Backend(), h)
+
+	unpacker, err := pack.NewUnpacker(r.Key(), rd)
+	if err != nil {
+		return nil, err
+	}
+
+	return unpacker.Entries, nil
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error

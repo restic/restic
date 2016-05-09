@@ -45,9 +45,8 @@ type CIEnvironment interface {
 
 // TravisEnvironment is the environment in which Travis tests run.
 type TravisEnvironment struct {
-	goxArch []string
-	goxOS   []string
-	minio   string
+	goxOSArch []string
+	minio     string
 
 	minioSrv     *Background
 	minioTempdir string
@@ -175,24 +174,27 @@ func (env *TravisEnvironment) Prepare() error {
 			return err
 		}
 		if runtime.GOOS == "linux" {
-			env.goxArch = []string{"386", "amd64"}
-			if !strings.HasPrefix(runtime.Version(), "go1.3") {
-				env.goxArch = append(env.goxArch, "arm")
+			env.goxOSArch = []string{
+				"linux/386", "linux/amd64",
+				"windows/386", "windows/amd64",
+				"darwin/386", "darwin/amd64",
+				"freebsd/386", "freebsd/amd64",
+				"opendbsd/386", "opendbsd/amd64",
 			}
-
-			env.goxOS = []string{"linux", "darwin", "freebsd", "openbsd", "windows"}
+			if !strings.HasPrefix(runtime.Version(), "go1.3") {
+				env.goxOSArch = append(env.goxOSArch,
+					"linux/arm", "freebsd/arm")
+			}
 		} else {
-			env.goxArch = []string{runtime.GOARCH}
-			env.goxOS = []string{runtime.GOOS}
+			env.goxOSArch = []string{runtime.GOOS + "/" + runtime.GOARCH}
 		}
 
-		msg("gox: OS %v, ARCH %v\n", env.goxOS, env.goxArch)
+		msg("gox: OS/ARCH %v\n", env.goxOSArch)
 
 		v := runtime.Version()
 		if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
 			err := run("gox", "-build-toolchain",
-				"-os", strings.Join(env.goxOS, " "),
-				"-arch", strings.Join(env.goxArch, " "))
+				"-osarch", strings.Join(env.goxOSArch, " "))
 
 			if err != nil {
 				return err
@@ -320,8 +322,7 @@ func (env *TravisEnvironment) RunTests() error {
 		// compile for all target architectures with tags
 		for _, tags := range []string{"release", "debug"} {
 			runWithEnv(env.env, "gox", "-verbose",
-				"-os", strings.Join(env.goxOS, " "),
-				"-arch", strings.Join(env.goxArch, " "),
+				"-osarch", strings.Join(env.goxOSArch, " "),
 				"-tags", tags,
 				"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
 				"cmds/restic")

@@ -267,7 +267,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 
 				id := backend.Hash(c.Data)
 				time.Sleep(time.Duration(id[0]))
-				err := arch.Save(pack.Data, id, c.Length, bytes.NewReader(c.Data))
+				err := arch.Save(pack.Data, c.Data, id)
 				<-barrier
 				errChan <- err
 			}(c, errChan)

@@ -534,6 +534,7 @@ func filterTrees(backlog backend.IDs, loaderChan chan<- backend.ID, in <-chan tr
 			inCh = nil
 
 		case outCh <- job:
+			debug.Log("checker.FilterTrees", "tree sent to check: %v", job.ID.Str())
 			outCh = nil
 			inCh = in
 		}
@@ -581,6 +582,14 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 	for _, node := range tree.Nodes {
 		switch node.Type {
 		case "file":
+			if node.Content == nil {
+				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q has nil blob list", node.Name)})
+			}
+
+			if node.Mode == 0 {
+				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q has invalid mode: %v", node.Name, node.Mode)})
+			}
+
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
 					errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q blob %d has null ID", node.Name, b)})
@@ -598,6 +607,16 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("dir node %q subtree id is null", node.Name)})
 				continue
 			}
+
+		case "symlink":
+			// nothing to check
+
+		default:
+			errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("node %q with invalid type %q", node.Name, node.Type)})
+		}
+
+		if node.Name == "" {
+			errs = append(errs, Error{TreeID: id, Err: errors.New("node with empty name")})
 		}
 	}
 
