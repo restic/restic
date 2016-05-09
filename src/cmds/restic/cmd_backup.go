@@ -180,11 +180,15 @@ func samePaths(expected, actual []string) bool {
 		return true
 	}
 
-	if len(expected) != len(actual) {
-		return false
-	}
 	for i := range expected {
-		if expected[i] != actual[i] {
+               found := false
+               for j := range actual {
+                       if expected[i] == actual[j] {
+                               found = true
+                               break
+                       }
+               }
+               if !found {
 			return false
 		}
 	}
