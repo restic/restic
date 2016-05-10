@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"restic"
+	"restic/backend"
 	"restic/debug"
 	"restic/filter"
 )
@@ -13,6 +14,8 @@ type CmdRestore struct {
 	Exclude []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
 	Include []string `short:"i" long:"include" description:"Include a pattern, exclude everything else (can be specified multiple times)"`
 	Target  string   `short:"t" long:"target"  description:"Directory to restore to"`
+	Host  string   `short:"h" long:"host"  description:"Source Filter (for id=latest)"`
+	Paths   []string `short:"p" long:"path" description:"Path Filter (absolute path;for id=latest) (can be specified multiple times)"`
 
 	global *GlobalOptions
 }
@@ -66,9 +69,18 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return err
 	}
 
-	id, err := restic.FindSnapshot(repo, snapshotIDString)
-	if err != nil {
-		cmd.global.Exitf(1, "invalid id %q: %v", snapshotIDString, err)
+	var id backend.ID
+
+	if snapshotIDString == "latest" {
+		id, err = restic.FindLatestSnapshot(repo, cmd.Paths, cmd.Host)
+		if err != nil {
+			cmd.global.Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Host:%v", err, cmd.Paths, cmd.Host)
+		}
+	} else {
+		id, err = restic.FindSnapshot(repo, snapshotIDString)
+		if err != nil {
+			cmd.global.Exitf(1, "invalid id %q: %v", snapshotIDString, err)
+		}
 	}
 
 	res, err := restic.NewRestorer(repo, id)

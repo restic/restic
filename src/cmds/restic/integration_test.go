@@ -77,6 +77,11 @@ func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backe
 	cmdRestoreExcludes(t, global, dir, snapshotID, nil)
 }
 
+func cmdRestoreLatest(t testing.TB, global GlobalOptions, dir string, paths []string, host string) {
+	cmd := &CmdRestore{global: &global, Target: dir, Host: host, Paths: paths}
+	OK(t, cmd.Execute([]string{"latest"}))
+}
+
 func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, excludes []string) {
 	cmd := &CmdRestore{global: &global, Target: dir, Exclude: excludes}
 	OK(t, cmd.Execute([]string{snapshotID.String()}))
@@ -621,6 +626,60 @@ func TestRestoreFilter(t *testing.T) {
 						"expected %v to not exist in restore step %v, but it exists, err %v", test.name, i+1, err)
 				}
 			}
+		}
+
+	})
+}
+
+func TestRestoreLatest(t *testing.T) {
+
+	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		cmdInit(t, global)
+
+		p := filepath.Join(env.testdata, "testfile.c")
+		OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+		OK(t, appendRandomData(p, 100))
+
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		cmdCheck(t, global)
+
+		os.Remove(p)
+		OK(t, appendRandomData(p, 101))
+		cmdBackup(t, global, []string{env.testdata}, nil)
+		cmdCheck(t, global)
+
+		// Restore latest without any filters
+		cmdRestoreLatest(t, global, filepath.Join(env.base, "restore0"), nil, "")
+		OK(t, testFileSize(filepath.Join(env.base, "restore0", "testdata", "testfile.c"), int64(101)))
+
+		// Setup test files in different directories backed up in different snapshots
+		p1 := filepath.Join(env.testdata, "p1/testfile.c")
+		OK(t, os.MkdirAll(filepath.Dir(p1), 0755))
+		OK(t, appendRandomData(p1, 102))
+		cmdBackup(t, global, []string{filepath.Dir(p1)}, nil)
+		cmdCheck(t, global)
+
+		p2 := filepath.Join(env.testdata, "p2/testfile.c")
+		OK(t, os.MkdirAll(filepath.Dir(p2), 0755))
+		OK(t, appendRandomData(p2, 103))
+		cmdBackup(t, global, []string{filepath.Dir(p2)}, nil)
+		cmdCheck(t, global)
+
+		p1rAbs := filepath.Join(env.base, "restore1", "p1/testfile.c")
+		p2rAbs := filepath.Join(env.base, "restore2", "p2/testfile.c")
+
+		cmdRestoreLatest(t, global, filepath.Join(env.base, "restore1"), []string{filepath.Dir(p1)}, "")
+		OK(t, testFileSize(p1rAbs, int64(102)))
+		if _, err := os.Stat(p2rAbs); os.IsNotExist(err) {
+			Assert(t, os.IsNotExist(err),
+				"expected %v to not exist in restore, but it exists, err %v", p2rAbs, err)
+		}
+
+		cmdRestoreLatest(t, global, filepath.Join(env.base, "restore2"), []string{filepath.Dir(p2)}, "")
+		OK(t, testFileSize(p2rAbs, int64(103)))
+		if _, err := os.Stat(p1rAbs); os.IsNotExist(err) {
+			Assert(t, os.IsNotExist(err),
+				"expected %v to not exist in restore, but it exists, err %v", p1rAbs, err)
 		}
 
 	})
