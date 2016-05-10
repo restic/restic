@@ -48,8 +48,8 @@ func (t Table) Write(w io.Writer) error {
 const TimeFormat = "2006-01-02 15:04:05"
 
 type CmdSnapshots struct {
-	Host string   `short:"h" long:"host"  description:"Host Filter"`
-	Paths  []string `short:"p" long:"path" description:"Path Filter (absolute path) (can be specified multiple times)"`
+	Host  string   `short:"h" long:"host"  description:"Host Filter"`
+	Paths []string `short:"p" long:"path" description:"Path Filter (absolute path) (can be specified multiple times)"`
 
 	global *GlobalOptions
 }

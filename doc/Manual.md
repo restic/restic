@@ -230,7 +230,7 @@ Or filter by host:
     bdbd3439  2015-05-08 21:45:17  luigi       /home/art
     9f0bc19e  2015-05-08 21:46:11  luigi       /srv
 
-Combining filters are also possible.    
+Combining filters is also possible.    
 
 # Restore a snapshot
 
@@ -241,12 +241,13 @@ restore the contents of the latest snapshot to `/tmp/restore-work`:
     enter password for repository:
     restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
 
-Use the word 'latest' to restore the last backup. You can also combine 'latest'
-with the --host and --path filters to choose the last backup for a specific
+Use the word `latest` to restore the last backup. You can also combine `latest`
+with the `--host` and `--path` filters to choose the last backup for a specific
 host, path or both.
 
     $ restic -r /tmp/backup restore latest --target ~/tmp/restore-work --path "/home/art" --host luigi
-
+    enter password for repository:
+    restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-work
 
 
 # Manage repository keys

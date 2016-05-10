@@ -14,7 +14,7 @@ type CmdRestore struct {
 	Exclude []string `short:"e" long:"exclude" description:"Exclude a pattern (can be specified multiple times)"`
 	Include []string `short:"i" long:"include" description:"Include a pattern, exclude everything else (can be specified multiple times)"`
 	Target  string   `short:"t" long:"target"  description:"Directory to restore to"`
-	Host  string   `short:"h" long:"host"  description:"Source Filter (for id=latest)"`
+	Host    string   `short:"h" long:"host"  description:"Source Filter (for id=latest)"`
 	Paths   []string `short:"p" long:"path" description:"Path Filter (absolute path;for id=latest) (can be specified multiple times)"`
 
 	global *GlobalOptions
