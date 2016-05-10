@@ -48,7 +48,7 @@ func (t Table) Write(w io.Writer) error {
 const TimeFormat = "2006-01-02 15:04:05"
 
 type CmdSnapshots struct {
-	Source string   `short:"s" long:"source"  description:"Source Filter"`
+	Host string   `short:"h" long:"host"  description:"Host Filter"`
 	Paths  []string `short:"p" long:"path" description:"Path Filter (absolute path) (can be specified multiple times)"`
 
 	global *GlobalOptions
@@ -85,7 +85,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 	}
 
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Source", "Directory")
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Host", "Directory")
 	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
 
 	done := make(chan struct{})
@@ -99,7 +99,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 			continue
 		}
 
-		if restic.SamePaths(sn.Paths, cmd.Paths) && (cmd.Source == "" || cmd.Source == sn.Hostname) {
+		if restic.SamePaths(sn.Paths, cmd.Paths) && (cmd.Host == "" || cmd.Host == sn.Hostname) {
 			pos := sort.Search(len(list), func(i int) bool {
 				return list[i].Time.After(sn.Time)
 			})
