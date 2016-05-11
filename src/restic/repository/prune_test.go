@@ -55,12 +55,14 @@ func createRandomBlobs(t *testing.T, repo *Repository, blobs int, pData float32)
 	}
 }
 
-// selectBlobs returns a list of random blobs from the repository with probability p.
-func selectBlobs(t *testing.T, repo *Repository, p float32) backend.IDSet {
+// selectBlobs splits the list of all blobs randomly into two lists. A blob
+// will be contained in the firstone ith probability p.
+func selectBlobs(t *testing.T, repo *Repository, p float32) (list1, list2 backend.IDSet) {
 	done := make(chan struct{})
 	defer close(done)
 
-	blobs := backend.NewIDSet()
+	list1 = backend.NewIDSet()
+	list2 = backend.NewIDSet()
 
 	for id := range repo.List(backend.Data, done) {
 		entries, err := repo.ListPack(id)
@@ -70,12 +72,14 @@ func selectBlobs(t *testing.T, repo *Repository, p float32) backend.IDSet {
 
 		for _, entry := range entries {
 			if rand.Float32() <= p {
-				blobs.Insert(entry.ID)
+				list1.Insert(entry.ID)
+			} else {
+				list2.Insert(entry.ID)
 			}
 		}
 	}
 
-	return blobs
+	return list1, list2
 }
 
 func listPacks(t *testing.T, repo *Repository) backend.IDSet {
@@ -152,10 +156,11 @@ func TestRepack(t *testing.T) {
 
 	saveIndex(t, repo)
 
-	blobs := selectBlobs(t, repo, 0.2)
-	packs := findPacksForBlobs(t, repo, blobs)
+	removeBlobs, keepBlobs := selectBlobs(t, repo, 0.2)
 
-	repack(t, repo, packs, blobs)
+	packs := findPacksForBlobs(t, repo, keepBlobs)
+
+	repack(t, repo, packs, keepBlobs)
 	rebuildIndex(t, repo)
 	reloadIndex(t, repo)
 
@@ -167,7 +172,7 @@ func TestRepack(t *testing.T) {
 	}
 
 	idx := repo.Index()
-	for id := range blobs {
+	for id := range keepBlobs {
 		pb, err := idx.Lookup(id)
 		if err != nil {
 			t.Errorf("unable to find blob %v in repo", id.Str())
@@ -175,6 +180,12 @@ func TestRepack(t *testing.T) {
 
 		if packs.Has(pb.PackID) {
 			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID)
+		}
+	}
+
+	for id := range removeBlobs {
+		if _, err := idx.Lookup(id); err == nil {
+			t.Errorf("blob %v still contained in the repo", id.Str())
 		}
 	}
 }

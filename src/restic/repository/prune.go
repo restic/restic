@@ -25,6 +25,10 @@ func Repack(repo *Repository, packs, keepBlobs backend.IDSet) error {
 		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), list)
 
 		for _, blob := range list {
+			if !keepBlobs.Has(blob.ID) {
+				continue
+			}
+
 			buf, err = repo.LoadBlob(blob.Type, blob.ID, buf)
 			if err != nil {
 				return err
