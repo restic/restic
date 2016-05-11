@@ -55,55 +55,6 @@ func createRandomBlobs(t *testing.T, repo *Repository, blobs int, pData float32)
 	}
 }
 
-// redundancy returns the amount of duplicate data in the repo. It only looks
-// at all pack files.
-func redundancy(t *testing.T, repo *Repository) float32 {
-	done := make(chan struct{})
-	defer close(done)
-
-	type redEntry struct {
-		count int
-		size  int
-	}
-	red := make(map[backend.ID]redEntry)
-
-	for id := range repo.List(backend.Data, done) {
-		entries, err := repo.ListPack(id)
-		if err != nil {
-			t.Fatalf("error listing pack %v: %v", id.Str(), err)
-		}
-
-		for _, e := range entries {
-			updatedEntry := redEntry{
-				count: 1,
-				size:  int(e.Length),
-			}
-
-			if oldEntry, ok := red[e.ID]; ok {
-				updatedEntry.count += oldEntry.count
-
-				if updatedEntry.size != oldEntry.size {
-					t.Fatalf("sizes do not match: %v != %v", updatedEntry.size, oldEntry.size)
-				}
-			}
-
-			red[e.ID] = updatedEntry
-		}
-	}
-
-	totalBytes := 0
-	redundantBytes := 0
-	for _, v := range red {
-		totalBytes += v.count * v.size
-
-		if v.count > 1 {
-			redundantBytes += (v.count - 1) * v.size
-		}
-	}
-
-	return float32(redundantBytes) / float32(totalBytes)
-}
-
 // selectBlobs returns a list of random blobs from the repository with probability p.
 func selectBlobs(t *testing.T, repo *Repository, p float32) backend.IDSet {
 	done := make(chan struct{})
@@ -155,6 +106,32 @@ func findPacksForBlobs(t *testing.T, repo *Repository, blobs backend.IDSet) back
 	return packs
 }
 
+func repack(t *testing.T, repo *Repository, packs, blobs backend.IDSet) {
+	err := Repack(repo, packs, blobs)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func saveIndex(t *testing.T, repo *Repository) {
+	if err := repo.SaveIndex(); err != nil {
+		t.Fatalf("repo.SaveIndex() %v", err)
+	}
+}
+
+func rebuildIndex(t *testing.T, repo *Repository) {
+	if err := RebuildIndex(repo); err != nil {
+		t.Fatalf("error rebuilding index: %v", err)
+	}
+}
+
+func reloadIndex(t *testing.T, repo *Repository) {
+	repo.SetIndex(NewMasterIndex())
+	if err := repo.LoadIndex(); err != nil {
+		t.Fatalf("error loading new index: %v", err)
+	}
+}
+
 func TestRepack(t *testing.T) {
 	repo, cleanup := TestRepository(t)
 	defer cleanup()
@@ -164,10 +141,7 @@ func TestRepack(t *testing.T) {
 	packsBefore := listPacks(t, repo)
 
 	// Running repack on empty ID sets should not do anything at all.
-	err := Repack(repo, nil, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	repack(t, repo, nil, nil)
 
 	packsAfter := listPacks(t, repo)
 
@@ -176,19 +150,14 @@ func TestRepack(t *testing.T) {
 			packsBefore, packsAfter)
 	}
 
-	if err := repo.SaveIndex(); err != nil {
-		t.Fatalf("repo.SaveIndex() %v", err)
-	}
+	saveIndex(t, repo)
 
 	blobs := selectBlobs(t, repo, 0.2)
-	t.Logf("selected %d blobs: %v", len(blobs), blobs)
-
 	packs := findPacksForBlobs(t, repo, blobs)
 
-	err = Repack(repo, packs, blobs)
-	if err != nil {
-		t.Fatalf("Repack() error %v", err)
-	}
+	repack(t, repo, packs, blobs)
+	rebuildIndex(t, repo)
+	reloadIndex(t, repo)
 
 	packsAfter = listPacks(t, repo)
 	for id := range packs {
