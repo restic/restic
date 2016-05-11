@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/user"
@@ -82,7 +83,7 @@ func LoadAllSnapshots(repo *repository.Repository) (snapshots []*Snapshot, err e
 }
 
 func (sn Snapshot) String() string {
-	return fmt.Sprintf("<Snapshot of %v at %s>", sn.Paths, sn.Time)
+	return fmt.Sprintf("<Snapshot %s of %v at %s>", sn.id.Str(), sn.Paths, sn.Time)
 }
 
 // ID retuns the snapshot's ID.
@@ -102,9 +103,62 @@ func (sn *Snapshot) fillUserInfo() error {
 	return err
 }
 
+// SamePaths compares the Snapshot's paths and provided paths are exactly the same
+func SamePaths(expected, actual []string) bool {
+	if expected == nil || actual == nil {
+		return true
+	}
+
+	for i := range expected {
+		found := false
+		for j := range actual {
+			if expected[i] == actual[j] {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Error when no snapshot is found for the given criteria
+var ErrNoSnapshotFound = errors.New("no snapshot found")
+
+// FindLatestSnapshot finds latest snapshot with optional target/directory and source filters
+func FindLatestSnapshot(repo *repository.Repository, targets []string, source string) (backend.ID, error) {
+	var (
+		latest   time.Time
+		latestID backend.ID
+		found    bool
+	)
+
+	for snapshotID := range repo.List(backend.Snapshot, make(chan struct{})) {
+		snapshot, err := LoadSnapshot(repo, snapshotID)
+		if err != nil {
+			return backend.ID{}, fmt.Errorf("Error listing snapshot: %v", err)
+		}
+		if snapshot.Time.After(latest) && SamePaths(snapshot.Paths, targets) && (source == "" || source == snapshot.Hostname) {
+			latest = snapshot.Time
+			latestID = snapshotID
+			found = true
+		}
+	}
+
+	if !found {
+		return backend.ID{}, ErrNoSnapshotFound
+	}
+
+	return latestID, nil
+}
+
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches
 // the string as closely as possible.
 func FindSnapshot(repo *repository.Repository, s string) (backend.ID, error) {
+
 	// find snapshot id with prefix
 	name, err := backend.Find(repo.Backend(), backend.Snapshot, s)
 	if err != nil {

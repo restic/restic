@@ -10,7 +10,6 @@ import (
 	"restic/backend"
 	"restic/debug"
 	"restic/filter"
-	"restic/repository"
 	"strings"
 	"time"
 
@@ -218,55 +217,6 @@ func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
 	return archiveProgress
 }
 
-func samePaths(expected, actual []string) bool {
-	if expected == nil || actual == nil {
-		return true
-	}
-
-	for i := range expected {
-		found := false
-		for j := range actual {
-			if expected[i] == actual[j] {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-
-	return true
-}
-
-var errNoSnapshotFound = errors.New("no snapshot found")
-
-func findLatestSnapshot(repo *repository.Repository, targets []string) (backend.ID, error) {
-	var (
-		latest   time.Time
-		latestID backend.ID
-		found    bool
-	)
-
-	for snapshotID := range repo.List(backend.Snapshot, make(chan struct{})) {
-		snapshot, err := restic.LoadSnapshot(repo, snapshotID)
-		if err != nil {
-			return backend.ID{}, fmt.Errorf("Error listing snapshot: %v", err)
-		}
-		if snapshot.Time.After(latest) && samePaths(snapshot.Paths, targets) {
-			latest = snapshot.Time
-			latestID = snapshotID
-			found = true
-		}
-	}
-
-	if !found {
-		return backend.ID{}, errNoSnapshotFound
-	}
-
-	return latestID, nil
-}
-
 // filterExisting returns a slice of all existing items, or an error if no
 // items exist at all.
 func filterExisting(items []string) (result []string, err error) {
@@ -368,10 +318,10 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !cmd.Force && parentSnapshotID == nil {
-		id, err := findLatestSnapshot(repo, target)
+		id, err := restic.FindLatestSnapshot(repo, target, "")
 		if err == nil {
 			parentSnapshotID = &id
-		} else if err != errNoSnapshotFound {
+		} else if err != restic.ErrNoSnapshotFound {
 			return err
 		}
 	}
