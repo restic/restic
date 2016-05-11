@@ -158,14 +158,14 @@ func TestRepack(t *testing.T) {
 
 	removeBlobs, keepBlobs := selectBlobs(t, repo, 0.2)
 
-	packs := findPacksForBlobs(t, repo, keepBlobs)
+	removePacks := findPacksForBlobs(t, repo, removeBlobs)
 
-	repack(t, repo, packs, keepBlobs)
+	repack(t, repo, removePacks, keepBlobs)
 	rebuildIndex(t, repo)
 	reloadIndex(t, repo)
 
 	packsAfter = listPacks(t, repo)
-	for id := range packs {
+	for id := range removePacks {
 		if packsAfter.Has(id) {
 			t.Errorf("pack %v still present although it should have been repacked and removed", id.Str())
 		}
@@ -178,7 +178,7 @@ func TestRepack(t *testing.T) {
 			t.Errorf("unable to find blob %v in repo", id.Str())
 		}
 
-		if packs.Has(pb.PackID) {
+		if removePacks.Has(pb.PackID) {
 			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID)
 		}
 	}

@@ -41,6 +41,8 @@ func Repack(repo *Repository, packs, keepBlobs backend.IDSet) error {
 			}
 
 			debug.Log("Repack", "  saved blob %v", blob.ID.Str())
+
+			keepBlobs.Delete(blob.ID)
 		}
 	}
 
