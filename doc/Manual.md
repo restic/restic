@@ -357,6 +357,29 @@ You can then easily initialize a repository that uses your Amazon S3 as a backen
 For an S3-compatible repository without TLS available, use the alternative URI
 protocol `s3:http://server:port/bucket_name`.
 
+## Create a Minio Server repository
+
+[Minio](https://www.minio.io) is an Open Source Object Storage, written in Go and compatible with AWS S3 API.
+
+### Pre-Requisites
+
+* Download and Install [Minio Server](https://minio.io/download/). 
+* You can also refer to [https://docs.minio.io](https://docs.minio.io) for step by step guidance on installation and getting started on Minio CLient and Minio Server.
+
+You must first setup the following environment variables with the credentials of your running Minio Server.
+
+    $ export AWS_ACCESS_KEY_ID=<YOUR-MINIO-ACCESS-KEY-ID>
+    $ export AWS_SECRET_ACCESS_KEY= <YOUR-MINIO-SECRET-ACCESS-KEY>
+
+Now you can easily initialize restic to use Minio server as backend with this command.
+
+    $ ./restic -r s3:http://localhost:9000/restic init
+    enter password for new backend: 
+    enter password again: 
+    created restic backend 6ad29560f5 at s3:http://localhost:9000/restic1
+    Please note that knowledge of your password is required to access
+    the repository. Losing your password means that your data is irrecoverably lost. 
+
 # Debugging restic
 
 The program can be built with debug support like this:
