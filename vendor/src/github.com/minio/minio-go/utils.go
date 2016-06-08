@@ -63,7 +63,7 @@ func sumHMAC(key []byte, data []byte) []byte {
 }
 
 // getEndpointURL - construct a new endpoint.
-func getEndpointURL(endpoint string, inSecure bool) (*url.URL, error) {
+func getEndpointURL(endpoint string, secure bool) (*url.URL, error) {
 	if strings.Contains(endpoint, ":") {
 		host, _, err := net.SplitHostPort(endpoint)
 		if err != nil {
@@ -79,9 +79,9 @@ func getEndpointURL(endpoint string, inSecure bool) (*url.URL, error) {
 			return nil, ErrInvalidArgument(msg)
 		}
 	}
-	// if inSecure is true, use 'http' scheme.
+	// If secure is false, use 'http' scheme.
 	scheme := "https"
-	if inSecure {
+	if !secure {
 		scheme = "http"
 	}
 

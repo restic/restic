@@ -27,78 +27,94 @@ import (
 	"strings"
 )
 
+// toInt - converts go value to its integer representation based
+// on the value kind if it is an integer.
+func toInt(value reflect.Value) (size int64) {
+	size = -1
+	if value.IsValid() {
+		switch value.Kind() {
+		case reflect.Int:
+			fallthrough
+		case reflect.Int8:
+			fallthrough
+		case reflect.Int16:
+			fallthrough
+		case reflect.Int32:
+			fallthrough
+		case reflect.Int64:
+			size = value.Int()
+		}
+	}
+	return size
+}
+
 // getReaderSize - Determine the size of Reader if available.
 func getReaderSize(reader io.Reader) (size int64, err error) {
-	var result []reflect.Value
 	size = -1
-	if reader != nil {
-		// Verify if there is a method by name 'Size'.
-		lenFn := reflect.ValueOf(reader).MethodByName("Size")
-		if lenFn.IsValid() {
-			if lenFn.Kind() == reflect.Func {
-				// Call the 'Size' function and save its return value.
-				result = lenFn.Call([]reflect.Value{})
-				if len(result) == 1 {
-					lenValue := result[0]
-					if lenValue.IsValid() {
-						switch lenValue.Kind() {
-						case reflect.Int:
-							fallthrough
-						case reflect.Int8:
-							fallthrough
-						case reflect.Int16:
-							fallthrough
-						case reflect.Int32:
-							fallthrough
-						case reflect.Int64:
-							size = lenValue.Int()
-						}
+	if reader == nil {
+		return -1, nil
+	}
+	// Verify if there is a method by name 'Size'.
+	sizeFn := reflect.ValueOf(reader).MethodByName("Size")
+	// Verify if there is a method by name 'Len'.
+	lenFn := reflect.ValueOf(reader).MethodByName("Len")
+	if sizeFn.IsValid() {
+		if sizeFn.Kind() == reflect.Func {
+			// Call the 'Size' function and save its return value.
+			result := sizeFn.Call([]reflect.Value{})
+			if len(result) == 1 {
+				size = toInt(result[0])
+			}
+		}
+	} else if lenFn.IsValid() {
+		if lenFn.Kind() == reflect.Func {
+			// Call the 'Len' function and save its return value.
+			result := lenFn.Call([]reflect.Value{})
+			if len(result) == 1 {
+				size = toInt(result[0])
+			}
+		}
+	} else {
+		// Fallback to Stat() method, two possible Stat() structs exist.
+		switch v := reader.(type) {
+		case *os.File:
+			var st os.FileInfo
+			st, err = v.Stat()
+			if err != nil {
+				// Handle this case specially for "windows",
+				// certain files for example 'Stdin', 'Stdout' and
+				// 'Stderr' it is not allowed to fetch file information.
+				if runtime.GOOS == "windows" {
+					if strings.Contains(err.Error(), "GetFileInformationByHandle") {
+						return -1, nil
 					}
 				}
+				return
 			}
-		} else {
-			// Fallback to Stat() method, two possible Stat() structs
-			// exist.
-			switch v := reader.(type) {
-			case *os.File:
-				var st os.FileInfo
-				st, err = v.Stat()
-				if err != nil {
-					// Handle this case specially for "windows",
-					// certain files for example 'Stdin', 'Stdout' and
-					// 'Stderr' it is not allowed to fetch file information.
-					if runtime.GOOS == "windows" {
-						if strings.Contains(err.Error(), "GetFileInformationByHandle") {
-							return -1, nil
-						}
-					}
-					return
-				}
-				// Ignore if input is a directory, throw an error.
-				if st.Mode().IsDir() {
-					return -1, ErrInvalidArgument("Input file cannot be a directory.")
-				}
-				// Ignore 'Stdin', 'Stdout' and 'Stderr', since they
-				// represent *os.File type but internally do not
-				// implement Seekable calls. Ignore them and treat
-				// them like a stream with unknown length.
-				switch st.Name() {
-				case "stdin":
-					fallthrough
-				case "stdout":
-					fallthrough
-				case "stderr":
-					return
-				}
-				size = st.Size()
-			case *Object:
-				var st ObjectInfo
-				st, err = v.Stat()
-				if err != nil {
-					return
-				}
-				size = st.Size
+			// Ignore if input is a directory, throw an error.
+			if st.Mode().IsDir() {
+				return -1, ErrInvalidArgument("Input file cannot be a directory.")
 			}
+			// Ignore 'Stdin', 'Stdout' and 'Stderr', since they
+			// represent *os.File type but internally do not
+			// implement Seekable calls. Ignore them and treat
+			// them like a stream with unknown length.
+			switch st.Name() {
+			case "stdin":
+				fallthrough
+			case "stdout":
+				fallthrough
+			case "stderr":
+				return
+			}
+			size = st.Size()
+		case *Object:
+			var st ObjectInfo
+			st, err = v.Stat()
+			if err != nil {
+				return
+			}
+			size = st.Size
 		}
 	}
 	// Returns the size here.

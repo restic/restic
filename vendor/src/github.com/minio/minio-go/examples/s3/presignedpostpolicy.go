@@ -30,12 +30,12 @@ func main() {
 	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-objectname
 	// are dummy values, please replace them with original values.
 
-	// Requests are always secure (HTTPS) by default. Set insecure=true to enable insecure (HTTP) access.
+	// Requests are always secure (HTTPS) by default. Set secure=false to enable insecure (HTTP) access.
 	// This boolean value is the last argument for New().
 
-	// New returns an Amazon S3 compatible client object. API copatibality (v2 or v4) is automatically
+	// New returns an Amazon S3 compatible client object. API compatibility (v2 or v4) is automatically
 	// determined based on the Endpoint value.
-	s3Client, err := minio.New("s3.amazonaws.com", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", false)
+	s3Client, err := minio.New("s3.amazonaws.com", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -43,15 +43,17 @@ func main() {
 	policy := minio.NewPostPolicy()
 	policy.SetBucket("my-bucketname")
 	policy.SetKey("my-objectname")
-	policy.SetExpires(time.Now().UTC().AddDate(0, 0, 10)) // expires in 10 days
-	m, err := s3Client.PresignedPostPolicy(policy)
+	// Expires in 10 days.
+	policy.SetExpires(time.Now().UTC().AddDate(0, 0, 10))
+	// Returns form data for POST form request.
+	url, formData, err := s3Client.PresignedPostPolicy(policy)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	fmt.Printf("curl ")
-	for k, v := range m {
+	for k, v := range formData {
 		fmt.Printf("-F %s=%s ", k, v)
 	}
 	fmt.Printf("-F file=@/etc/bash.bashrc ")
-	fmt.Printf("https://my-bucketname.s3.amazonaws.com\n")
+	fmt.Printf("%s\n", url)
 }

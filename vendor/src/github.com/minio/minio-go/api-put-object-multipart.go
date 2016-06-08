@@ -42,7 +42,7 @@ import (
 // is where each part is re-downloaded, checksummed and verified
 // before upload.
 func (c Client) putObjectMultipart(bucketName, objectName string, reader io.Reader, size int64, contentType string, progress io.Reader) (n int64, err error) {
-	if size > 0 && size >= minPartSize {
+	if size > 0 && size > minPartSize {
 		// Verify if reader is *os.File, then use file system functionalities.
 		if isFile(reader) {
 			return c.putObjectMultipartFromFile(bucketName, objectName, reader.(*os.File), size, contentType, progress)

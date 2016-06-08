@@ -361,22 +361,52 @@ func TestUnMarshalBucketPolicyUntyped(t *testing.T) {
 	}
 }
 
-// Tests validate removal of policy statement from the list of statements.
-func TestRemoveBucketPolicyStatement(t *testing.T) {
+// Tests validate whether access policy is defined for the given object prefix
+func TestIsPolicyDefinedForObjectPrefix(t *testing.T) {
 	testCases := []struct {
 		bucketName      string
 		objectPrefix    string
 		inputStatements []Statement
+		expectedResult  bool
 	}{
-		{"my-bucket", "", []Statement{}},
-		{"read-only-bucket", "", setReadOnlyStatement("read-only-bucket", "")},
-		{"write-only-bucket", "", setWriteOnlyStatement("write-only-bucket", "")},
-		{"read-write-bucket", "", setReadWriteStatement("read-write-bucket", "")},
+		{"my-bucket", "abc/", setReadOnlyStatement("my-bucket", "abc/"), true},
+		{"my-bucket", "abc/", setReadOnlyStatement("my-bucket", "ab/"), false},
+		{"my-bucket", "abc/", setReadOnlyStatement("my-bucket", "abcde"), false},
+		{"my-bucket", "abc/", setReadOnlyStatement("my-bucket", "abc/de"), false},
+		{"my-bucket", "abc", setReadOnlyStatement("my-bucket", "abc"), true},
+		{"bucket", "", setReadOnlyStatement("bucket", "abc/"), false},
+	}
+	for i, testCase := range testCases {
+		actualResult := isPolicyDefinedForObjectPrefix(testCase.inputStatements, testCase.bucketName, testCase.objectPrefix)
+		if actualResult != testCase.expectedResult {
+			t.Errorf("Test %d: Expected isPolicyDefinedForObjectPrefix to '%v', but instead found '%v'", i+1, testCase.expectedResult, actualResult)
+		}
+	}
+}
+
+// Tests validate removal of policy statement from the list of statements.
+func TestRemoveBucketPolicyStatement(t *testing.T) {
+	var emptyStatement []Statement
+	testCases := []struct {
+		bucketName         string
+		objectPrefix       string
+		inputStatements    []Statement
+		expectedStatements []Statement
+	}{
+		{"my-bucket", "", nil, emptyStatement},
+		{"read-only-bucket", "", setReadOnlyStatement("read-only-bucket", ""), emptyStatement},
+		{"write-only-bucket", "", setWriteOnlyStatement("write-only-bucket", ""), emptyStatement},
+		{"read-write-bucket", "", setReadWriteStatement("read-write-bucket", ""), emptyStatement},
+		{"my-bucket", "abcd", setReadOnlyStatement("my-bucket", "abc"), setReadOnlyStatement("my-bucket", "abc")},
+		{"my-bucket", "abc/de", setReadOnlyStatement("my-bucket", "abc/"), setReadOnlyStatement("my-bucket", "abc/")},
+		{"my-bucket", "abcd", setWriteOnlyStatement("my-bucket", "abc"), setWriteOnlyStatement("my-bucket", "abc")},
+		{"my-bucket", "abc/de", setWriteOnlyStatement("my-bucket", "abc/"), setWriteOnlyStatement("my-bucket", "abc/")},
+		{"my-bucket", "abcd", setReadWriteStatement("my-bucket", "abc"), setReadWriteStatement("my-bucket", "abc")},
+		{"my-bucket", "abc/de", setReadWriteStatement("my-bucket", "abc/"), setReadWriteStatement("my-bucket", "abc/")},
 	}
 	for i, testCase := range testCases {
 		actualStatements := removeBucketPolicyStatement(testCase.inputStatements, testCase.bucketName, testCase.objectPrefix)
-		// empty statement is expected after the invocation of removeBucketPolicyStatement().
-		if len(actualStatements) != 0 {
+		if !reflect.DeepEqual(testCase.expectedStatements, actualStatements) {
 			t.Errorf("Test %d: The expected statements from resource statement generator doesn't match the actual statements", i+1)
 		}
 	}
@@ -393,10 +423,11 @@ func TestRemoveBucketPolicyStatementReadOnly(t *testing.T) {
 	}{
 		{"my-bucket", "", []Statement{}, emptyStatement},
 		{"read-only-bucket", "", setReadOnlyStatement("read-only-bucket", ""), emptyStatement},
+		{"read-only-bucket", "abc/", setReadOnlyStatement("read-only-bucket", "abc/"), emptyStatement},
+		{"my-bucket", "abc/", append(setReadOnlyStatement("my-bucket", "abc/"), setReadOnlyStatement("my-bucket", "def/")...), setReadOnlyStatement("my-bucket", "def/")},
 	}
 	for i, testCase := range testCases {
 		actualStatements := removeBucketPolicyStatementReadOnly(testCase.inputStatements, testCase.bucketName, testCase.objectPrefix)
-		// empty statement is expected after the invocation of removeBucketPolicyStatement().
 		if !reflect.DeepEqual(testCase.expectedStatements, actualStatements) {
 			t.Errorf("Test %d: Expected policy statements doesn't match the actual one", i+1)
 		}
@@ -414,10 +445,11 @@ func TestRemoveBucketPolicyStatementWriteOnly(t *testing.T) {
 	}{
 		{"my-bucket", "", []Statement{}, emptyStatement},
 		{"write-only-bucket", "", setWriteOnlyStatement("write-only-bucket", ""), emptyStatement},
+		{"write-only-bucket", "abc/", setWriteOnlyStatement("write-only-bucket", "abc/"), emptyStatement},
+		{"my-bucket", "abc/", append(setWriteOnlyStatement("my-bucket", "abc/"), setWriteOnlyStatement("my-bucket", "def/")...), setWriteOnlyStatement("my-bucket", "def/")},
 	}
 	for i, testCase := range testCases {
 		actualStatements := removeBucketPolicyStatementWriteOnly(testCase.inputStatements, testCase.bucketName, testCase.objectPrefix)
-		// empty statement is expected after the invocation of removeBucketPolicyStatement().
 		if !reflect.DeepEqual(testCase.expectedStatements, actualStatements) {
 			t.Errorf("Test %d: Expected policy statements doesn't match the actual one", i+1)
 		}
@@ -435,12 +467,69 @@ func TestRemoveBucketPolicyStatementReadWrite(t *testing.T) {
 	}{
 		{"my-bucket", "", []Statement{}, emptyStatement},
 		{"read-write-bucket", "", setReadWriteStatement("read-write-bucket", ""), emptyStatement},
+		{"read-write-bucket", "abc/", setReadWriteStatement("read-write-bucket", "abc/"), emptyStatement},
+		{"my-bucket", "abc/", append(setReadWriteStatement("my-bucket", "abc/"), setReadWriteStatement("my-bucket", "def/")...), setReadWriteStatement("my-bucket", "def/")},
 	}
 	for i, testCase := range testCases {
 		actualStatements := removeBucketPolicyStatementReadWrite(testCase.inputStatements, testCase.bucketName, testCase.objectPrefix)
-		// empty statement is expected after the invocation of removeBucketPolicyStatement().
 		if !reflect.DeepEqual(testCase.expectedStatements, actualStatements) {
 			t.Errorf("Test %d: Expected policy statements doesn't match the actual one", i+1)
+		}
+	}
+}
+
+// Tests validate Bucket policy resource matcher.
+func TestBucketPolicyResourceMatch(t *testing.T) {
+
+	// generates\ statement with given resource..
+	generateStatement := func(resource string) Statement {
+		statement := Statement{}
+		statement.Resources = []string{resource}
+		return statement
+	}
+
+	// generates resource prefix.
+	generateResource := func(bucketName, objectName string) string {
+		return awsResourcePrefix + bucketName + "/" + objectName
+	}
+
+	testCases := []struct {
+		resourceToMatch       string
+		statement             Statement
+		expectedResourceMatch bool
+	}{
+		// Test case 1-4.
+		// Policy with resource ending with bucket/* allows access to all objects inside the given bucket.
+		{generateResource("minio-bucket", ""), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/*")), true},
+		{generateResource("minio-bucket", ""), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/*")), true},
+		{generateResource("minio-bucket", ""), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/*")), true},
+		{generateResource("minio-bucket", ""), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/*")), true},
+		// Test case - 5.
+		// Policy with resource ending with bucket/oo* should not allow access to bucket/output.txt.
+		{generateResource("minio-bucket", "output.txt"), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/oo*")), false},
+		// Test case - 6.
+		// Policy with resource ending with bucket/oo* should allow access to bucket/ootput.txt.
+		{generateResource("minio-bucket", "ootput.txt"), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/oo*")), true},
+		// Test case - 7.
+		// Policy with resource ending with bucket/oo* allows access to all subfolders starting with "oo" inside given bucket.
+		{generateResource("minio-bucket", "oop-bucket/my-file"), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/oo*")), true},
+		// Test case - 8.
+		{generateResource("minio-bucket", "Asia/India/1.pjg"), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/Asia/Japan/*")), false},
+		// Test case - 9.
+		{generateResource("minio-bucket", "Asia/India/1.pjg"), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix, "minio-bucket"+"/Asia/Japan/*")), false},
+		// Test case - 10.
+		// Proves that the name space is flat.
+		{generateResource("minio-bucket", "Africa/Bihar/India/design_info.doc/Bihar"), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix,
+			"minio-bucket"+"/*/India/*/Bihar")), true},
+		// Test case - 11.
+		// Proves that the name space is flat.
+		{generateResource("minio-bucket", "Asia/China/India/States/Bihar/output.txt"), generateStatement(fmt.Sprintf("%s%s", awsResourcePrefix,
+			"minio-bucket"+"/*/India/*/Bihar/*")), true},
+	}
+	for i, testCase := range testCases {
+		actualResourceMatch := resourceMatch(testCase.statement.Resources[0], testCase.resourceToMatch)
+		if testCase.expectedResourceMatch != actualResourceMatch {
+			t.Errorf("Test %d: Expected Resource match to be `%v`, but instead found it to be `%v`", i+1, testCase.expectedResourceMatch, actualResourceMatch)
 		}
 	}
 }
@@ -458,10 +547,14 @@ func TestIsBucketPolicyReadOnly(t *testing.T) {
 		{"read-only-bucket", "", setReadOnlyStatement("read-only-bucket", ""), true},
 		{"write-only-bucket", "", setWriteOnlyStatement("write-only-bucket", ""), false},
 		{"read-write-bucket", "", setReadWriteStatement("read-write-bucket", ""), true},
+		{"my-bucket", "abc", setReadOnlyStatement("my-bucket", ""), true},
+		{"my-bucket", "abc", setReadOnlyStatement("my-bucket", "abc"), true},
+		{"my-bucket", "abcde", setReadOnlyStatement("my-bucket", "abc"), true},
+		{"my-bucket", "abc/d", setReadOnlyStatement("my-bucket", "abc/"), true},
+		{"my-bucket", "abc", setWriteOnlyStatement("my-bucket", ""), false},
 	}
 	for i, testCase := range testCases {
 		actualResult := isBucketPolicyReadOnly(testCase.inputStatements, testCase.bucketName, testCase.objectPrefix)
-		// empty statement is expected after the invocation of removeBucketPolicyStatement().
 		if testCase.expectedResult != actualResult {
 			t.Errorf("Test %d: Expected isBucketPolicyReadonly to '%v', but instead found '%v'", i+1, testCase.expectedResult, actualResult)
 		}
@@ -481,10 +574,13 @@ func TestIsBucketPolicyReadWrite(t *testing.T) {
 		{"read-only-bucket", "", setReadOnlyStatement("read-only-bucket", ""), false},
 		{"write-only-bucket", "", setWriteOnlyStatement("write-only-bucket", ""), false},
 		{"read-write-bucket", "", setReadWriteStatement("read-write-bucket", ""), true},
+		{"my-bucket", "abc", setReadWriteStatement("my-bucket", ""), true},
+		{"my-bucket", "abc", setReadWriteStatement("my-bucket", "abc"), true},
+		{"my-bucket", "abcde", setReadWriteStatement("my-bucket", "abc"), true},
+		{"my-bucket", "abc/d", setReadWriteStatement("my-bucket", "abc/"), true},
 	}
 	for i, testCase := range testCases {
 		actualResult := isBucketPolicyReadWrite(testCase.inputStatements, testCase.bucketName, testCase.objectPrefix)
-		// empty statement is expected after the invocation of removeBucketPolicyStatement().
 		if testCase.expectedResult != actualResult {
 			t.Errorf("Test %d: Expected isBucketPolicyReadonly to '%v', but instead found '%v'", i+1, testCase.expectedResult, actualResult)
 		}
@@ -504,10 +600,14 @@ func TestIsBucketPolicyWriteOnly(t *testing.T) {
 		{"read-only-bucket", "", setReadOnlyStatement("read-only-bucket", ""), false},
 		{"write-only-bucket", "", setWriteOnlyStatement("write-only-bucket", ""), true},
 		{"read-write-bucket", "", setReadWriteStatement("read-write-bucket", ""), true},
+		{"my-bucket", "abc", setWriteOnlyStatement("my-bucket", ""), true},
+		{"my-bucket", "abc", setWriteOnlyStatement("my-bucket", "abc"), true},
+		{"my-bucket", "abcde", setWriteOnlyStatement("my-bucket", "abc"), true},
+		{"my-bucket", "abc/d", setWriteOnlyStatement("my-bucket", "abc/"), true},
+		{"my-bucket", "abc", setReadOnlyStatement("my-bucket", ""), false},
 	}
 	for i, testCase := range testCases {
 		actualResult := isBucketPolicyWriteOnly(testCase.inputStatements, testCase.bucketName, testCase.objectPrefix)
-		// empty statement is expected after the invocation of removeBucketPolicyStatement().
 		if testCase.expectedResult != actualResult {
 			t.Errorf("Test %d: Expected isBucketPolicyReadonly to '%v', but instead found '%v'", i+1, testCase.expectedResult, actualResult)
 		}

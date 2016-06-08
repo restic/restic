@@ -26,6 +26,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 )
 
 /// Bucket operations
@@ -166,14 +167,22 @@ func (c Client) SetBucketPolicy(bucketName string, objectPrefix string, bucketPo
 		return nil
 	}
 	// Remove any previous policies at this path.
-	policy.Statements = removeBucketPolicyStatement(policy.Statements, bucketName, objectPrefix)
+	statements := removeBucketPolicyStatement(policy.Statements, bucketName, objectPrefix)
 
 	// generating []Statement for the given bucketPolicy.
-	statements, err := generatePolicyStatement(bucketPolicy, bucketName, objectPrefix)
+	generatedStatements, err := generatePolicyStatement(bucketPolicy, bucketName, objectPrefix)
 	if err != nil {
 		return err
 	}
-	policy.Statements = append(policy.Statements, statements...)
+	statements = append(statements, generatedStatements...)
+
+	// No change in the statements indicates an attempt of setting 'none' on a prefix
+	// which doesn't have a pre-existing policy.
+	if reflect.DeepEqual(policy.Statements, statements) {
+		return ErrNoSuchBucketPolicy(fmt.Sprintf("No policy exists on %s/%s", bucketName, objectPrefix))
+	}
+
+	policy.Statements = statements
 	// Save the updated policies.
 	return c.putBucketPolicy(bucketName, policy)
 }
