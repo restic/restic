@@ -27,7 +27,7 @@ type s3 struct {
 func Open(cfg Config) (backend.Backend, error) {
 	debug.Log("s3.Open", "open, config %#v", cfg)
 
-	client, err := minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, cfg.UseHTTP)
+	client, err := minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
 	if err != nil {
 		return nil, err
 	}
