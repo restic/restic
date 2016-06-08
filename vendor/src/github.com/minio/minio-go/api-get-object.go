@@ -59,6 +59,9 @@ func (c Client) GetObject(bucketName, objectName string) (*Object, error) {
 			select {
 			// When the done channel is closed exit our routine.
 			case <-doneCh:
+				// Close the http response body before returning.
+				// This ends the connection with the server.
+				httpReader.Close()
 				return
 			// Request message.
 			case req := <-reqCh:

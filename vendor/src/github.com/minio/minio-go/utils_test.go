@@ -27,7 +27,7 @@ func TestGetEndpointURL(t *testing.T) {
 	testCases := []struct {
 		// Inputs.
 		endPoint string
-		inSecure bool
+		secure   bool
 
 		// Expected result.
 		result string
@@ -35,23 +35,23 @@ func TestGetEndpointURL(t *testing.T) {
 		// Flag indicating whether the test is expected to pass or not.
 		shouldPass bool
 	}{
-		{"s3.amazonaws.com", false, "https://s3.amazonaws.com", nil, true},
-		{"s3.cn-north-1.amazonaws.com.cn", false, "https://s3.cn-north-1.amazonaws.com.cn", nil, true},
-		{"s3.amazonaws.com", true, "http://s3.amazonaws.com", nil, true},
-		{"s3.cn-north-1.amazonaws.com.cn", true, "http://s3.cn-north-1.amazonaws.com.cn", nil, true},
-		{"192.168.1.1:9000", true, "http://192.168.1.1:9000", nil, true},
-		{"192.168.1.1:9000", false, "https://192.168.1.1:9000", nil, true},
+		{"s3.amazonaws.com", true, "https://s3.amazonaws.com", nil, true},
+		{"s3.cn-north-1.amazonaws.com.cn", true, "https://s3.cn-north-1.amazonaws.com.cn", nil, true},
+		{"s3.amazonaws.com", false, "http://s3.amazonaws.com", nil, true},
+		{"s3.cn-north-1.amazonaws.com.cn", false, "http://s3.cn-north-1.amazonaws.com.cn", nil, true},
+		{"192.168.1.1:9000", false, "http://192.168.1.1:9000", nil, true},
+		{"192.168.1.1:9000", true, "https://192.168.1.1:9000", nil, true},
 		{"192.168.1.1::9000", false, "", fmt.Errorf("too many colons in address %s", "192.168.1.1::9000"), false},
-		{"13333.123123.-", false, "", fmt.Errorf("Endpoint: %s does not follow ip address or domain name standards.", "13333.123123.-"), false},
-		{"13333.123123.-", false, "", fmt.Errorf("Endpoint: %s does not follow ip address or domain name standards.", "13333.123123.-"), false},
-		{"s3.amazonaws.com:443", false, "", fmt.Errorf("Amazon S3 endpoint should be 's3.amazonaws.com'."), false},
-		{"storage.googleapis.com:4000", false, "", fmt.Errorf("Google Cloud Storage endpoint should be 'storage.googleapis.com'."), false},
-		{"s3.aamzza.-", false, "", fmt.Errorf("Endpoint: %s does not follow ip address or domain name standards.", "s3.aamzza.-"), false},
-		{"", false, "", fmt.Errorf("Endpoint:  does not follow ip address or domain name standards."), false},
+		{"13333.123123.-", true, "", fmt.Errorf("Endpoint: %s does not follow ip address or domain name standards.", "13333.123123.-"), false},
+		{"13333.123123.-", true, "", fmt.Errorf("Endpoint: %s does not follow ip address or domain name standards.", "13333.123123.-"), false},
+		{"s3.amazonaws.com:443", true, "", fmt.Errorf("Amazon S3 endpoint should be 's3.amazonaws.com'."), false},
+		{"storage.googleapis.com:4000", true, "", fmt.Errorf("Google Cloud Storage endpoint should be 'storage.googleapis.com'."), false},
+		{"s3.aamzza.-", true, "", fmt.Errorf("Endpoint: %s does not follow ip address or domain name standards.", "s3.aamzza.-"), false},
+		{"", true, "", fmt.Errorf("Endpoint:  does not follow ip address or domain name standards."), false},
 	}
 
 	for i, testCase := range testCases {
-		result, err := getEndpointURL(testCase.endPoint, testCase.inSecure)
+		result, err := getEndpointURL(testCase.endPoint, testCase.secure)
 		if err != nil && testCase.shouldPass {
 			t.Errorf("Test %d: Expected to pass, but failed with: <ERROR> %s", i+1, err.Error())
 		}

@@ -77,7 +77,7 @@ func (c Client) ListBuckets() ([]BucketInfo, error) {
 //
 func (c Client) ListObjects(bucketName, objectPrefix string, recursive bool, doneCh <-chan struct{}) <-chan ObjectInfo {
 	// Allocate new list objects channel.
-	objectStatCh := make(chan ObjectInfo)
+	objectStatCh := make(chan ObjectInfo, 1)
 	// Default listing is delimited at "/"
 	delimiter := "/"
 	if recursive {
@@ -254,7 +254,7 @@ func (c Client) ListIncompleteUploads(bucketName, objectPrefix string, recursive
 // listIncompleteUploads lists all incomplete uploads.
 func (c Client) listIncompleteUploads(bucketName, objectPrefix string, recursive, aggregateSize bool, doneCh <-chan struct{}) <-chan ObjectMultipartInfo {
 	// Allocate channel for multipart uploads.
-	objectMultipartStatCh := make(chan ObjectMultipartInfo)
+	objectMultipartStatCh := make(chan ObjectMultipartInfo, 1)
 	// Delimiter is set to "/" by default.
 	delimiter := "/"
 	if recursive {

@@ -33,19 +33,19 @@ var supportedGetReqParams = map[string]struct{}{
 
 // presignURL - Returns a presigned URL for an input 'method'.
 // Expires maximum is 7days - ie. 604800 and minimum is 1.
-func (c Client) presignURL(method string, bucketName string, objectName string, expires time.Duration, reqParams url.Values) (urlStr string, err error) {
+func (c Client) presignURL(method string, bucketName string, objectName string, expires time.Duration, reqParams url.Values) (u *url.URL, err error) {
 	// Input validation.
 	if method == "" {
-		return "", ErrInvalidArgument("method cannot be empty.")
+		return nil, ErrInvalidArgument("method cannot be empty.")
 	}
 	if err := isValidBucketName(bucketName); err != nil {
-		return "", err
+		return nil, err
 	}
 	if err := isValidObjectName(objectName); err != nil {
-		return "", err
+		return nil, err
 	}
 	if err := isValidExpiry(expires); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Convert expires into seconds.
@@ -63,7 +63,7 @@ func (c Client) presignURL(method string, bucketName string, objectName string, 
 		// Verify if input map has unsupported params, if yes exit.
 		for k := range reqParams {
 			if _, ok := supportedGetReqParams[k]; !ok {
-				return "", ErrInvalidArgument(k + " unsupported request parameter for presigned GET.")
+				return nil, ErrInvalidArgument(k + " unsupported request parameter for presigned GET.")
 			}
 		}
 		// Save the request parameters to be used in presigning for
@@ -75,43 +75,48 @@ func (c Client) presignURL(method string, bucketName string, objectName string, 
 	// Since expires is set newRequest will presign the request.
 	req, err := c.newRequest(method, reqMetadata)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return req.URL.String(), nil
+	return req.URL, nil
 }
 
 // PresignedGetObject - Returns a presigned URL to access an object
 // without credentials. Expires maximum is 7days - ie. 604800 and
 // minimum is 1. Additionally you can override a set of response
 // headers using the query parameters.
-func (c Client) PresignedGetObject(bucketName string, objectName string, expires time.Duration, reqParams url.Values) (url string, err error) {
+func (c Client) PresignedGetObject(bucketName string, objectName string, expires time.Duration, reqParams url.Values) (u *url.URL, err error) {
 	return c.presignURL("GET", bucketName, objectName, expires, reqParams)
 }
 
 // PresignedPutObject - Returns a presigned URL to upload an object without credentials.
 // Expires maximum is 7days - ie. 604800 and minimum is 1.
-func (c Client) PresignedPutObject(bucketName string, objectName string, expires time.Duration) (url string, err error) {
+func (c Client) PresignedPutObject(bucketName string, objectName string, expires time.Duration) (u *url.URL, err error) {
 	return c.presignURL("PUT", bucketName, objectName, expires, nil)
 }
 
-// PresignedPostPolicy - Returns POST form data to upload an object at a location.
-func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
+// PresignedPostPolicy - Returns POST urlString, form data to upload an object.
+func (c Client) PresignedPostPolicy(p *PostPolicy) (u *url.URL, formData map[string]string, err error) {
 	// Validate input arguments.
 	if p.expiration.IsZero() {
-		return nil, errors.New("Expiration time must be specified")
+		return nil, nil, errors.New("Expiration time must be specified")
 	}
 	if _, ok := p.formData["key"]; !ok {
-		return nil, errors.New("object key must be specified")
+		return nil, nil, errors.New("object key must be specified")
 	}
 	if _, ok := p.formData["bucket"]; !ok {
-		return nil, errors.New("bucket name must be specified")
+		return nil, nil, errors.New("bucket name must be specified")
 	}
 
 	bucketName := p.formData["bucket"]
 	// Fetch the bucket location.
 	location, err := c.getBucketLocation(bucketName)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	u, err = c.makeTargetURL(bucketName, "", location, nil)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Keep time.
@@ -129,7 +134,7 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 		}
 		// Sign the policy.
 		p.formData["signature"] = postPresignSignatureV2(policyBase64, c.secretAccessKey)
-		return p.formData, nil
+		return u, p.formData, nil
 	}
 
 	// Add date policy.
@@ -138,7 +143,7 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 		condition: "$x-amz-date",
 		value:     t.Format(iso8601DateFormat),
 	}); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Add algorithm policy.
@@ -147,7 +152,7 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 		condition: "$x-amz-algorithm",
 		value:     signV4Algorithm,
 	}); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Add a credential policy.
@@ -157,7 +162,7 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 		condition: "$x-amz-credential",
 		value:     credential,
 	}); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Get base64 encoded policy.
@@ -168,5 +173,5 @@ func (c Client) PresignedPostPolicy(p *PostPolicy) (map[string]string, error) {
 	p.formData["x-amz-credential"] = credential
 	p.formData["x-amz-date"] = t.Format(iso8601DateFormat)
 	p.formData["x-amz-signature"] = postPresignSignatureV4(policyBase64, t, c.secretAccessKey, location)
-	return p.formData, nil
+	return u, p.formData, nil
 }

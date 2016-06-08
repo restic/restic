@@ -223,3 +223,13 @@ func ErrInvalidArgument(message string) error {
 		RequestID: "minio",
 	}
 }
+
+// ErrNoSuchBucketPolicy - No Such Bucket Policy response
+// The specified bucket does not have a bucket policy.
+func ErrNoSuchBucketPolicy(message string) error {
+	return ErrorResponse{
+		Code:      "NoSuchBucketPolicy",
+		Message:   message,
+		RequestID: "minio",
+	}
+}

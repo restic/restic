@@ -46,7 +46,7 @@ func TestMakeBucketErrorV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -92,7 +92,7 @@ func TestGetObjectClosedTwiceV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -177,7 +177,7 @@ func TestRemovePartiallyUploadedV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -244,7 +244,7 @@ func TestResumablePutObjectV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -355,7 +355,7 @@ func TestFPutObjectV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -503,7 +503,7 @@ func TestResumableFPutObjectV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -580,7 +580,7 @@ func TestMakeBucketRegionsV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -631,7 +631,7 @@ func TestGetObjectReadSeekFunctionalV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -769,7 +769,7 @@ func TestGetObjectReadAtFunctionalV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -910,7 +910,7 @@ func TestCopyObjectV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -996,10 +996,6 @@ func TestCopyObjectV2(t *testing.T) {
 		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n",
 			objInfo.Size, objInfoCopy.Size)
 	}
-	if objInfo.ETag != objInfoCopy.ETag {
-		t.Fatalf("Error: ETags do not match, want %v, got %v\n",
-			objInfoCopy.ETag, objInfo.ETag)
-	}
 
 	// Remove all objects and buckets
 	err = c.RemoveObject(bucketName, objectName)
@@ -1036,7 +1032,7 @@ func TestFunctionalV2(t *testing.T) {
 		"s3.amazonaws.com",
 		os.Getenv("ACCESS_KEY"),
 		os.Getenv("SECRET_KEY"),
-		false,
+		true,
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -1184,7 +1180,7 @@ func TestFunctionalV2(t *testing.T) {
 		t.Fatal("Error: ", err)
 	}
 	// Verify if presigned url works.
-	resp, err := http.Get(presignedGetURL)
+	resp, err := http.Get(presignedGetURL.String())
 	if err != nil {
 		t.Fatal("Error: ", err)
 	}
@@ -1208,7 +1204,7 @@ func TestFunctionalV2(t *testing.T) {
 		t.Fatal("Error: ", err)
 	}
 	// Verify if presigned url works.
-	resp, err = http.Get(presignedGetURL)
+	resp, err = http.Get(presignedGetURL.String())
 	if err != nil {
 		t.Fatal("Error: ", err)
 	}
@@ -1236,7 +1232,7 @@ func TestFunctionalV2(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error: ", err)
 	}
-	req, err := http.NewRequest("PUT", presignedPutURL, bytes.NewReader(buf))
+	req, err := http.NewRequest("PUT", presignedPutURL.String(), bytes.NewReader(buf))
 	if err != nil {
 		t.Fatal("Error: ", err)
 	}
