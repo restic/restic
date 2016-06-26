@@ -190,7 +190,7 @@ operation, just supply the option `--stdin` to the `backup` command like this:
 
     $ mysqldump [...] | restic -r /tmp/backup backup --stdin
 
-This creates a new snapshot of the output of `mqsqldump`. You can then use e.g.
+This creates a new snapshot of the output of `mysqldump`. You can then use e.g.
 the fuse mounting option (see below) to mount the repository and read the file.
 
 By default, the file name `stdin` is used, a different name can be specified
