@@ -370,7 +370,7 @@ func main() {
 	if version != "" {
 		constants["main.version"] = version
 	}
-	ldflags := "-s " + constants.LDFlags()
+	ldflags := "-s -w " + constants.LDFlags()
 	verbosePrintf("ldflags: %s\n", ldflags)
 
 	args := []string{
