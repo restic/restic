@@ -283,10 +283,10 @@ func main() {
 
 	skipNext := false
 	params := os.Args[1:]
-	
+
 	targetGOOS := runtime.GOOS
 	targetGOARCH := runtime.GOARCH
-	
+
 	for i, arg := range params {
 		if skipNext {
 			skipNext = false
