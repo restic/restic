@@ -152,10 +152,12 @@ func showUsage(output io.Writer) {
 	fmt.Fprintf(output, "USAGE: go run build.go OPTIONS\n")
 	fmt.Fprintf(output, "\n")
 	fmt.Fprintf(output, "OPTIONS:\n")
-	fmt.Fprintf(output, "  -v     --verbose     output more messages\n")
-	fmt.Fprintf(output, "  -t     --tags        specify additional build tags\n")
-	fmt.Fprintf(output, "  -k     --keep-gopath do not remove the GOPATH after build\n")
-	fmt.Fprintf(output, "  -T     --test        run tests\n")
+	fmt.Fprintf(output, "  -v     --verbose       output more messages\n")
+	fmt.Fprintf(output, "  -t     --tags          specify additional build tags\n")
+	fmt.Fprintf(output, "  -k     --keep-gopath   do not remove the GOPATH after build\n")
+	fmt.Fprintf(output, "  -T     --test          run tests\n")
+	fmt.Fprintf(output, "         --goos value    set GOOS for cross-compilation\n")
+	fmt.Fprintf(output, "         --goarch value  set GOARCH for cross-compilation\n")
 }
 
 func verbosePrintf(message string, args ...interface{}) {
@@ -181,10 +183,10 @@ func cleanEnv() (env []string) {
 }
 
 // build runs "go build args..." with GOPATH set to gopath.
-func build(cwd, gopath string, args ...string) error {
+func build(cwd, goos, goarch, gopath string, args ...string) error {
 	args = append([]string{"build"}, args...)
 	cmd := exec.Command("go", args...)
-	cmd.Env = append(cleanEnv(), "GOPATH="+gopath)
+	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos)
 	cmd.Dir = cwd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -281,6 +283,10 @@ func main() {
 
 	skipNext := false
 	params := os.Args[1:]
+	
+	targetGOOS := runtime.GOOS
+	targetGOARCH := runtime.GOARCH
+	
 	for i, arg := range params {
 		if skipNext {
 			skipNext = false
@@ -297,6 +303,12 @@ func main() {
 			buildTags = strings.Split(params[i+1], " ")
 		case "-T", "--test":
 			runTests = true
+		case "--goos":
+			skipNext = true
+			targetGOOS = params[i+1]
+		case "--goarch":
+			skipNext = true
+			targetGOARCH = params[i+1]
 		case "-h":
 			showUsage(os.Stdout)
 			return
@@ -354,7 +366,7 @@ func main() {
 	}()
 
 	outputFilename := "restic"
-	if runtime.GOOS == "windows" {
+	if targetGOOS == "windows" {
 		outputFilename = "restic.exe"
 	}
 
@@ -379,7 +391,7 @@ func main() {
 		"-o", output, "cmds/restic",
 	}
 
-	err = build(filepath.Join(gopath, "src"), gopath, args...)
+	err = build(filepath.Join(gopath, "src"), targetGOOS, targetGOARCH, gopath, args...)
 	if err != nil {
 		die("build failed: %v\n", err)
 	}
