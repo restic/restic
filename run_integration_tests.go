@@ -1,4 +1,4 @@
-// xbuild ignore
+// +build ignore
 
 package main
 
