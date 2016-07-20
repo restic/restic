@@ -608,7 +608,7 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 				continue
 			}
 
-		case "symlink":
+		case "symlink", "socket", "chardev", "dev", "fifo":
 			// nothing to check
 
 		default:
