@@ -49,6 +49,11 @@ func Repack(repo *Repository, packs, keepBlobs backend.IDSet) (err error) {
 			}
 
 			ciphertext := buf[entry.Offset : entry.Offset+entry.Length]
+
+			if cap(plaintext) < len(ciphertext) {
+				plaintext = make([]byte, len(ciphertext))
+			}
+
 			plaintext, err = crypto.Decrypt(repo.Key(), plaintext, ciphertext)
 			if err != nil {
 				return err
