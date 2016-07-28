@@ -55,11 +55,7 @@ func (s IDSet) Equals(other IDSet) bool {
 		}
 	}
 
-	for id := range other {
-		if _, ok := s[id]; !ok {
-			return false
-		}
-	}
+	// length + one-way comparison is sufficient implication of equality
 
 	return true
 }
