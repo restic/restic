@@ -124,10 +124,9 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	debug.Log("file.Read", "Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
 	offset := req.Offset
 
-	lastSize := f.sizes[len(f.sizes)-1]
-	if offset > int64(lastSize) {
-		debug.Log("file.Read", "Read(%v): offset is greater than file size: %v > %v, node size %v",
-			f.node.Name, req.Offset, lastSize, f.node.Size)
+	if uint64(offset) > f.node.Size {
+		debug.Log("file.Read", "Read(%v): offset is greater than file size: %v > %v",
+			f.node.Name, req.Offset, f.node.Size)
 		return errors.New("offset greater than files size")
 	}
 
