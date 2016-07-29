@@ -130,6 +130,12 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 		return errors.New("offset greater than files size")
 	}
 
+	// handle special case: file is empty
+	if f.node.Size == 0 {
+		resp.Data = resp.Data[:0]
+		return nil
+	}
+
 	// Skip blobs before the offset
 	startContent := 0
 	for offset > int64(f.sizes[startContent]) {
