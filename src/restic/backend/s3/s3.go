@@ -97,7 +97,17 @@ func (be s3) Load(h backend.Handle, p []byte, off int64) (int, error) {
 	defer func() {
 		be.connChan <- struct{}{}
 	}()
-	return io.ReadFull(obj, p)
+
+	// This may not read the whole object, so ensure object
+	// is closed to avoid duplicate connections.
+	n, err := io.ReadFull(obj, p)
+	if err != nil {
+		obj.Close()
+	} else {
+		err = obj.Close()
+	}
+	return n, err
+
 }
 
 // Save stores data in the backend at the handle.
