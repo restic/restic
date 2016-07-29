@@ -4,6 +4,7 @@
 package fuse
 
 import (
+	"errors"
 	"sync"
 
 	"restic"
@@ -120,8 +121,20 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 }
 
 func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	debug.Log("file.Read", "Read(%v), file size %v", req.Size, f.node.Size)
+	debug.Log("file.Read", "Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
 	offset := req.Offset
+
+	if uint64(offset) > f.node.Size {
+		debug.Log("file.Read", "Read(%v): offset is greater than file size: %v > %v",
+			f.node.Name, req.Offset, f.node.Size)
+		return errors.New("offset greater than files size")
+	}
+
+	// handle special case: file is empty
+	if f.node.Size == 0 {
+		resp.Data = resp.Data[:0]
+		return nil
+	}
 
 	// Skip blobs before the offset
 	startContent := 0
