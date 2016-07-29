@@ -49,7 +49,7 @@ func NewCopyConditions() CopyConditions {
 }
 
 // SetMatchETag - set match etag.
-func (c CopyConditions) SetMatchETag(etag string) error {
+func (c *CopyConditions) SetMatchETag(etag string) error {
 	if etag == "" {
 		return ErrInvalidArgument("ETag cannot be empty.")
 	}
@@ -61,7 +61,7 @@ func (c CopyConditions) SetMatchETag(etag string) error {
 }
 
 // SetMatchETagExcept - set match etag except.
-func (c CopyConditions) SetMatchETagExcept(etag string) error {
+func (c *CopyConditions) SetMatchETagExcept(etag string) error {
 	if etag == "" {
 		return ErrInvalidArgument("ETag cannot be empty.")
 	}
@@ -73,7 +73,7 @@ func (c CopyConditions) SetMatchETagExcept(etag string) error {
 }
 
 // SetUnmodified - set unmodified time since.
-func (c CopyConditions) SetUnmodified(modTime time.Time) error {
+func (c *CopyConditions) SetUnmodified(modTime time.Time) error {
 	if modTime.IsZero() {
 		return ErrInvalidArgument("Modified since cannot be empty.")
 	}
@@ -85,7 +85,7 @@ func (c CopyConditions) SetUnmodified(modTime time.Time) error {
 }
 
 // SetModified - set modified time since.
-func (c CopyConditions) SetModified(modTime time.Time) error {
+func (c *CopyConditions) SetModified(modTime time.Time) error {
 	if modTime.IsZero() {
 		return ErrInvalidArgument("Modified since cannot be empty.")
 	}

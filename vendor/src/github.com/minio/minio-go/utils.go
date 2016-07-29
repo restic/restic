@@ -93,7 +93,7 @@ func getEndpointURL(endpoint string, secure bool) (*url.URL, error) {
 	}
 
 	// Validate incoming endpoint URL.
-	if err := isValidEndpointURL(endpointURL); err != nil {
+	if err := isValidEndpointURL(endpointURL.String()); err != nil {
 		return nil, err
 	}
 	return endpointURL, nil
@@ -153,12 +153,16 @@ func closeResponse(resp *http.Response) {
 }
 
 // isVirtualHostSupported - verifies if bucketName can be part of
-// virtual host. Currently only Amazon S3 and Google Cloud Storage would
-// support this.
-func isVirtualHostSupported(endpointURL *url.URL, bucketName string) bool {
+// virtual host. Currently only Amazon S3 and Google Cloud Storage
+// would support this.
+func isVirtualHostSupported(endpointURL string, bucketName string) bool {
+	url, err := url.Parse(endpointURL)
+	if err != nil {
+		return false
+	}
 	// bucketName can be valid but '.' in the hostname will fail SSL
 	// certificate validation. So do not use host-style for such buckets.
-	if endpointURL.Scheme == "https" && strings.Contains(bucketName, ".") {
+	if url.Scheme == "https" && strings.Contains(bucketName, ".") {
 		return false
 	}
 	// Return true for all other cases
@@ -166,58 +170,73 @@ func isVirtualHostSupported(endpointURL *url.URL, bucketName string) bool {
 }
 
 // Match if it is exactly Amazon S3 endpoint.
-func isAmazonEndpoint(endpointURL *url.URL) bool {
-	if endpointURL == nil {
-		return false
-	}
-	if endpointURL.Host == "s3.amazonaws.com" {
+func isAmazonEndpoint(endpointURL string) bool {
+	if isAmazonChinaEndpoint(endpointURL) {
 		return true
 	}
-	if isAmazonChinaEndpoint(endpointURL) {
+	url, err := url.Parse(endpointURL)
+	if err != nil {
+		return false
+	}
+	if url.Host == "s3.amazonaws.com" {
 		return true
 	}
 	return false
 }
 
 // Match if it is exactly Amazon S3 China endpoint.
-// Customers who wish to use the new Beijing Region are required to sign up for a separate set of account credentials unique to the China (Beijing) Region.
-// Customers with existing AWS credentials will not be able to access resources in the new Region, and vice versa."
+// Customers who wish to use the new Beijing Region are required
+// to sign up for a separate set of account credentials unique to
+// the China (Beijing) Region. Customers with existing AWS credentials
+// will not be able to access resources in the new Region, and vice versa.
 // For more info https://aws.amazon.com/about-aws/whats-new/2013/12/18/announcing-the-aws-china-beijing-region/
-func isAmazonChinaEndpoint(endpointURL *url.URL) bool {
-	if endpointURL == nil {
+func isAmazonChinaEndpoint(endpointURL string) bool {
+	if endpointURL == "" {
 		return false
 	}
-	if endpointURL.Host == "s3.cn-north-1.amazonaws.com.cn" {
+	url, err := url.Parse(endpointURL)
+	if err != nil {
+		return false
+	}
+	if url.Host == "s3.cn-north-1.amazonaws.com.cn" {
 		return true
 	}
 	return false
 }
 
 // Match if it is exactly Google cloud storage endpoint.
-func isGoogleEndpoint(endpointURL *url.URL) bool {
-	if endpointURL == nil {
+func isGoogleEndpoint(endpointURL string) bool {
+	if endpointURL == "" {
 		return false
 	}
-	if endpointURL.Host == "storage.googleapis.com" {
+	url, err := url.Parse(endpointURL)
+	if err != nil {
+		return false
+	}
+	if url.Host == "storage.googleapis.com" {
 		return true
 	}
 	return false
 }
 
 // Verify if input endpoint URL is valid.
-func isValidEndpointURL(endpointURL *url.URL) error {
-	if endpointURL == nil {
+func isValidEndpointURL(endpointURL string) error {
+	if endpointURL == "" {
 		return ErrInvalidArgument("Endpoint url cannot be empty.")
 	}
-	if endpointURL.Path != "/" && endpointURL.Path != "" {
+	url, err := url.Parse(endpointURL)
+	if err != nil {
 		return ErrInvalidArgument("Endpoint url cannot have fully qualified paths.")
 	}
-	if strings.Contains(endpointURL.Host, ".amazonaws.com") {
+	if url.Path != "/" && url.Path != "" {
+		return ErrInvalidArgument("Endpoint url cannot have fully qualified paths.")
+	}
+	if strings.Contains(endpointURL, ".amazonaws.com") {
 		if !isAmazonEndpoint(endpointURL) {
 			return ErrInvalidArgument("Amazon S3 endpoint should be 's3.amazonaws.com'.")
 		}
 	}
-	if strings.Contains(endpointURL.Host, ".googleapis.com") {
+	if strings.Contains(endpointURL, ".googleapis.com") {
 		if !isGoogleEndpoint(endpointURL) {
 			return ErrInvalidArgument("Google Cloud Storage endpoint should be 'storage.googleapis.com'.")
 		}

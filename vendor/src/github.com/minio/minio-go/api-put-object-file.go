@@ -17,8 +17,11 @@
 package minio
 
 import (
+	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"hash"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -176,10 +179,17 @@ func (c Client) putObjectMultipartFromFile(bucketName, objectName string, fileRe
 		// Get a section reader on a particular offset.
 		sectionReader := io.NewSectionReader(fileReader, totalUploadedSize, partSize)
 
-		// Calculates MD5 and SHA256 sum for a section reader.
-		var md5Sum, sha256Sum []byte
+		// Add hash algorithms that need to be calculated by computeHash()
+		// In case of a non-v4 signature or https connection, sha256 is not needed.
+		hashAlgos := make(map[string]hash.Hash)
+		hashSums := make(map[string][]byte)
+		hashAlgos["md5"] = md5.New()
+		if c.signature.isV4() && !c.secure {
+			hashAlgos["sha256"] = sha256.New()
+		}
+
 		var prtSize int64
-		md5Sum, sha256Sum, prtSize, err = c.computeHash(sectionReader)
+		prtSize, err = computeHash(hashAlgos, hashSums, sectionReader)
 		if err != nil {
 			return 0, err
 		}
@@ -191,14 +201,14 @@ func (c Client) putObjectMultipartFromFile(bucketName, objectName string, fileRe
 
 		// Verify if part should be uploaded.
 		if shouldUploadPart(objectPart{
-			ETag:       hex.EncodeToString(md5Sum),
+			ETag:       hex.EncodeToString(hashSums["md5"]),
 			PartNumber: partNumber,
 			Size:       prtSize,
 		}, partsInfo) {
 			// Proceed to upload the part.
 			var objPart objectPart
 			objPart, err = c.uploadPart(bucketName, objectName, uploadID, reader, partNumber,
-				md5Sum, sha256Sum, prtSize)
+				hashSums["md5"], hashSums["sha256"], prtSize)
 			if err != nil {
 				return totalUploadedSize, err
 			}

@@ -20,7 +20,7 @@ package minio
 
 // miniPartSize - minimum part size 5MiB per object after which
 // putObject behaves internally as multipart.
-const minPartSize = 1024 * 1024 * 5
+const minPartSize = 1024 * 1024 * 64
 
 // maxPartsCount - maximum number of parts for a single multipart session.
 const maxPartsCount = 10000

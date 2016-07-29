@@ -88,7 +88,10 @@ func (c Client) makeBucketRequest(bucketName string, location string) (*http.Req
 	// is the preferred method here. The final location of the
 	// 'bucket' is provided through XML LocationConstraint data with
 	// the request.
-	targetURL := *c.endpointURL
+	targetURL, err := url.Parse(c.endpointURL)
+	if err != nil {
+		return nil, err
+	}
 	targetURL.Path = "/" + bucketName + "/"
 
 	// get a new HTTP request for the method.
@@ -163,8 +166,8 @@ func (c Client) SetBucketPolicy(bucketName string, objectPrefix string, bucketPo
 	}
 	// For bucket policy set to 'none' we need to remove the policy.
 	if bucketPolicy == BucketPolicyNone && policy.Statements == nil {
-		// No policies to set, return success.
-		return nil
+		// No policy exists on the given prefix so return with ErrNoSuchBucketPolicy.
+		return ErrNoSuchBucketPolicy(fmt.Sprintf("No policy exists on %s/%s", bucketName, objectPrefix))
 	}
 	// Remove any previous policies at this path.
 	statements := removeBucketPolicyStatement(policy.Statements, bucketName, objectPrefix)
@@ -176,10 +179,19 @@ func (c Client) SetBucketPolicy(bucketName string, objectPrefix string, bucketPo
 	}
 	statements = append(statements, generatedStatements...)
 
-	// No change in the statements indicates an attempt of setting 'none' on a prefix
-	// which doesn't have a pre-existing policy.
+	// No change in the statements indicates either an attempt of setting 'none'
+	// on a prefix which doesn't have a pre-existing policy, or setting a policy
+	// on a prefix which already has the same policy.
 	if reflect.DeepEqual(policy.Statements, statements) {
-		return ErrNoSuchBucketPolicy(fmt.Sprintf("No policy exists on %s/%s", bucketName, objectPrefix))
+		// If policy being set is 'none' return an error, otherwise return nil to
+		// prevent the unnecessary request from being sent
+		var err error
+		if bucketPolicy == BucketPolicyNone {
+			err = ErrNoSuchBucketPolicy(fmt.Sprintf("No policy exists on %s/%s", bucketName, objectPrefix))
+		} else {
+			err = nil
+		}
+		return err
 	}
 
 	policy.Statements = statements
@@ -231,4 +243,73 @@ func (c Client) putBucketPolicy(bucketName string, policy BucketAccessPolicy) er
 		}
 	}
 	return nil
+}
+
+// Removes all policies on a bucket.
+func (c Client) removeBucketPolicy(bucketName string) error {
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return err
+	}
+	// Get resources properly escaped and lined up before
+	// using them in http request.
+	urlValues := make(url.Values)
+	urlValues.Set("policy", "")
+
+	// Execute DELETE on objectName.
+	resp, err := c.executeMethod("DELETE", requestMetadata{
+		bucketName:  bucketName,
+		queryValues: urlValues,
+	})
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetBucketNotification saves a new bucket notification.
+func (c Client) SetBucketNotification(bucketName string, bucketNotification BucketNotification) error {
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return err
+	}
+
+	// Get resources properly escaped and lined up before
+	// using them in http request.
+	urlValues := make(url.Values)
+	urlValues.Set("notification", "")
+
+	notifBytes, err := xml.Marshal(bucketNotification)
+	if err != nil {
+		return err
+	}
+
+	notifBuffer := bytes.NewReader(notifBytes)
+	reqMetadata := requestMetadata{
+		bucketName:         bucketName,
+		queryValues:        urlValues,
+		contentBody:        notifBuffer,
+		contentLength:      int64(len(notifBytes)),
+		contentMD5Bytes:    sumMD5(notifBytes),
+		contentSHA256Bytes: sum256(notifBytes),
+	}
+
+	// Execute PUT to upload a new bucket notification.
+	resp, err := c.executeMethod("PUT", reqMetadata)
+	defer closeResponse(resp)
+	if err != nil {
+		return err
+	}
+	if resp != nil {
+		if resp.StatusCode != http.StatusOK {
+			return httpRespToErrorResponse(resp, bucketName, "")
+		}
+	}
+	return nil
+}
+
+// DeleteBucketNotification - Remove bucket notification clears all previously specified config
+func (c Client) DeleteBucketNotification(bucketName string) error {
+	return c.SetBucketNotification(bucketName, BucketNotification{})
 }

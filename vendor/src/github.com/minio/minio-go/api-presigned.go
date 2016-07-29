@@ -22,12 +22,13 @@ import (
 	"time"
 )
 
-// supportedGetReqParams - supported request parameters for GET
-// presigned request.
+// supportedGetReqParams - supported request parameters for GET presigned request.
 var supportedGetReqParams = map[string]struct{}{
 	"response-expires":             {},
 	"response-content-type":        {},
 	"response-cache-control":       {},
+	"response-content-language":    {},
+	"response-content-encoding":    {},
 	"response-content-disposition": {},
 }
 
@@ -66,8 +67,7 @@ func (c Client) presignURL(method string, bucketName string, objectName string, 
 				return nil, ErrInvalidArgument(k + " unsupported request parameter for presigned GET.")
 			}
 		}
-		// Save the request parameters to be used in presigning for
-		// GET request.
+		// Save the request parameters to be used in presigning for GET request.
 		reqMetadata.queryValues = reqParams
 	}
 

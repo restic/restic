@@ -65,25 +65,18 @@ func preSignV2(req http.Request, accessKeyID, secretAccessKey string, expires in
 	if accessKeyID == "" || secretAccessKey == "" {
 		return &req
 	}
+
 	d := time.Now().UTC()
-	// Add date if not present.
-	if date := req.Header.Get("Date"); date == "" {
-		req.Header.Set("Date", d.Format(http.TimeFormat))
-	}
-
-	// Get encoded URL path.
-	path := encodeURL2Path(req.URL)
-	if len(req.URL.Query()) > 0 {
-		// Keep the usual queries unescaped for string to sign.
-		query, _ := url.QueryUnescape(queryEncode(req.URL.Query()))
-		path = path + "?" + query
-	}
-
 	// Find epoch expires when the request will expire.
 	epochExpires := d.Unix() + expires
 
-	// Get string to sign.
-	stringToSign := fmt.Sprintf("%s\n\n\n%d\n%s", req.Method, epochExpires, path)
+	// Add expires header if not present.
+	if expiresStr := req.Header.Get("Expires"); expiresStr == "" {
+		req.Header.Set("Expires", strconv.FormatInt(epochExpires, 10))
+	}
+
+	// Get presigned string to sign.
+	stringToSign := preStringifyHTTPReq(req)
 	hm := hmac.New(sha1.New, []byte(secretAccessKey))
 	hm.Write([]byte(stringToSign))
 
@@ -152,7 +145,7 @@ func signV2(req http.Request, accessKeyID, secretAccessKey string) *http.Request
 	}
 
 	// Calculate HMAC for secretAccessKey.
-	stringToSign := getStringToSignV2(req)
+	stringToSign := stringifyHTTPReq(req)
 	hm := hmac.New(sha1.New, []byte(secretAccessKey))
 	hm.Write([]byte(stringToSign))
 
@@ -174,30 +167,55 @@ func signV2(req http.Request, accessKeyID, secretAccessKey string) *http.Request
 // StringToSign = HTTP-Verb + "\n" +
 // 	 Content-Md5 + "\n" +
 //	 Content-Type + "\n" +
-//	 Date + "\n" +
+//	 Expires + "\n" +
 //	 CanonicalizedProtocolHeaders +
 //	 CanonicalizedResource;
-func getStringToSignV2(req http.Request) string {
+func preStringifyHTTPReq(req http.Request) string {
 	buf := new(bytes.Buffer)
 	// Write standard headers.
-	writeDefaultHeaders(buf, req)
+	writePreSignV2Headers(buf, req)
 	// Write canonicalized protocol headers if any.
 	writeCanonicalizedHeaders(buf, req)
 	// Write canonicalized Query resources if any.
-	writeCanonicalizedResource(buf, req)
+	isPreSign := true
+	writeCanonicalizedResource(buf, req, isPreSign)
 	return buf.String()
 }
 
-// writeDefaultHeader - write all default necessary headers
-func writeDefaultHeaders(buf *bytes.Buffer, req http.Request) {
-	buf.WriteString(req.Method)
-	buf.WriteByte('\n')
-	buf.WriteString(req.Header.Get("Content-Md5"))
-	buf.WriteByte('\n')
-	buf.WriteString(req.Header.Get("Content-Type"))
-	buf.WriteByte('\n')
-	buf.WriteString(req.Header.Get("Date"))
-	buf.WriteByte('\n')
+// writePreSignV2Headers - write preSign v2 required headers.
+func writePreSignV2Headers(buf *bytes.Buffer, req http.Request) {
+	buf.WriteString(req.Method + "\n")
+	buf.WriteString(req.Header.Get("Content-Md5") + "\n")
+	buf.WriteString(req.Header.Get("Content-Type") + "\n")
+	buf.WriteString(req.Header.Get("Expires") + "\n")
+}
+
+// From the Amazon docs:
+//
+// StringToSign = HTTP-Verb + "\n" +
+// 	 Content-Md5 + "\n" +
+//	 Content-Type + "\n" +
+//	 Date + "\n" +
+//	 CanonicalizedProtocolHeaders +
+//	 CanonicalizedResource;
+func stringifyHTTPReq(req http.Request) string {
+	buf := new(bytes.Buffer)
+	// Write standard headers.
+	writeSignV2Headers(buf, req)
+	// Write canonicalized protocol headers if any.
+	writeCanonicalizedHeaders(buf, req)
+	// Write canonicalized Query resources if any.
+	isPreSign := false
+	writeCanonicalizedResource(buf, req, isPreSign)
+	return buf.String()
+}
+
+// writeSignV2Headers - write signV2 required headers.
+func writeSignV2Headers(buf *bytes.Buffer, req http.Request) {
+	buf.WriteString(req.Method + "\n")
+	buf.WriteString(req.Header.Get("Content-Md5") + "\n")
+	buf.WriteString(req.Header.Get("Content-Type") + "\n")
+	buf.WriteString(req.Header.Get("Date") + "\n")
 }
 
 // writeCanonicalizedHeaders - write canonicalized headers.
@@ -245,12 +263,6 @@ var resourceList = []string{
 	"partNumber",
 	"policy",
 	"requestPayment",
-	"response-cache-control",
-	"response-content-disposition",
-	"response-content-encoding",
-	"response-content-language",
-	"response-content-type",
-	"response-expires",
 	"torrent",
 	"uploadId",
 	"uploads",
@@ -265,13 +277,22 @@ var resourceList = []string{
 // CanonicalizedResource = [ "/" + Bucket ] +
 // 	  <HTTP-Request-URI, from the protocol name up to the query string> +
 // 	  [ sub-resource, if present. For example "?acl", "?location", "?logging", or "?torrent"];
-func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request) {
+func writeCanonicalizedResource(buf *bytes.Buffer, req http.Request, isPreSign bool) {
 	// Save request URL.
 	requestURL := req.URL
 	// Get encoded URL path.
 	path := encodeURL2Path(requestURL)
+	if isPreSign {
+		// Get encoded URL path.
+		if len(requestURL.Query()) > 0 {
+			// Keep the usual queries unescaped for string to sign.
+			query, _ := url.QueryUnescape(queryEncode(requestURL.Query()))
+			path = path + "?" + query
+		}
+		buf.WriteString(path)
+		return
+	}
 	buf.WriteString(path)
-
 	if requestURL.RawQuery != "" {
 		var n int
 		vals, _ := url.ParseQuery(requestURL.RawQuery)

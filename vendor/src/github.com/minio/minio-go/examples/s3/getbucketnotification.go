@@ -38,9 +38,18 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	err = s3Client.RemoveBucketPolicy("my-bucketname", "my-objectprefix")
+	// s3Client.TraceOn(os.Stderr)
+
+	notifications, err := s3Client.GetBucketNotification("my-bucketname")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("Success")
+
+	log.Println("Bucket notification are successfully retrieved.")
+
+	for _, topicConfig := range notifications.TopicConfigs {
+		for _, e := range topicConfig.Events {
+			log.Println(e + " event is enabled.")
+		}
+	}
 }

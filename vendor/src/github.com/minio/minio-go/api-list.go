@@ -53,6 +53,179 @@ func (c Client) ListBuckets() ([]BucketInfo, error) {
 	return listAllMyBucketsResult.Buckets.Bucket, nil
 }
 
+/// Bucket Read Operations.
+
+// ListObjectsV2 lists all objects matching the objectPrefix from
+// the specified bucket. If recursion is enabled it would list
+// all subdirectories and all its contents.
+//
+// Your input parameters are just bucketName, objectPrefix, recursive
+// and a done channel for pro-actively closing the internal go
+// routine. If you enable recursive as 'true' this function will
+// return back all the objects in a given bucket name and object
+// prefix.
+//
+//   api := client.New(....)
+//   // Create a done channel.
+//   doneCh := make(chan struct{})
+//   defer close(doneCh)
+//   // Recurively list all objects in 'mytestbucket'
+//   recursive := true
+//   for message := range api.ListObjectsV2("mytestbucket", "starthere", recursive, doneCh) {
+//       fmt.Println(message)
+//   }
+//
+func (c Client) ListObjectsV2(bucketName, objectPrefix string, recursive bool, doneCh <-chan struct{}) <-chan ObjectInfo {
+	// Allocate new list objects channel.
+	objectStatCh := make(chan ObjectInfo, 1)
+	// Default listing is delimited at "/"
+	delimiter := "/"
+	if recursive {
+		// If recursive we do not delimit.
+		delimiter = ""
+	}
+	// Validate bucket name.
+	if err := isValidBucketName(bucketName); err != nil {
+		defer close(objectStatCh)
+		objectStatCh <- ObjectInfo{
+			Err: err,
+		}
+		return objectStatCh
+	}
+	// Validate incoming object prefix.
+	if err := isValidObjectPrefix(objectPrefix); err != nil {
+		defer close(objectStatCh)
+		objectStatCh <- ObjectInfo{
+			Err: err,
+		}
+		return objectStatCh
+	}
+
+	// Initiate list objects goroutine here.
+	go func(objectStatCh chan<- ObjectInfo) {
+		defer close(objectStatCh)
+		// Save continuationToken for next request.
+		var continuationToken string
+		for {
+			// Get list of objects a maximum of 1000 per request.
+			result, err := c.listObjectsV2Query(bucketName, objectPrefix, continuationToken, delimiter, 1000)
+			if err != nil {
+				objectStatCh <- ObjectInfo{
+					Err: err,
+				}
+				return
+			}
+
+			// If contents are available loop through and send over channel.
+			for _, object := range result.Contents {
+				// Save the marker.
+				select {
+				// Send object content.
+				case objectStatCh <- object:
+				// If receives done from the caller, return here.
+				case <-doneCh:
+					return
+				}
+			}
+
+			// Send all common prefixes if any.
+			// NOTE: prefixes are only present if the request is delimited.
+			for _, obj := range result.CommonPrefixes {
+				object := ObjectInfo{}
+				object.Key = obj.Prefix
+				object.Size = 0
+				select {
+				// Send object prefixes.
+				case objectStatCh <- object:
+				// If receives done from the caller, return here.
+				case <-doneCh:
+					return
+				}
+			}
+
+			// If continuation token present, save it for next request.
+			if result.NextContinuationToken != "" {
+				continuationToken = result.NextContinuationToken
+			}
+
+			// Listing ends result is not truncated, return right here.
+			if !result.IsTruncated {
+				return
+			}
+		}
+	}(objectStatCh)
+	return objectStatCh
+}
+
+// listObjectsV2Query - (List Objects V2) - List some or all (up to 1000) of the objects in a bucket.
+//
+// You can use the request parameters as selection criteria to return a subset of the objects in a bucket.
+// request parameters :-
+// ---------
+// ?continuation-token - Specifies the key to start with when listing objects in a bucket.
+// ?delimiter - A delimiter is a character you use to group keys.
+// ?prefix - Limits the response to keys that begin with the specified prefix.
+// ?max-keys - Sets the maximum number of keys returned in the response body.
+func (c Client) listObjectsV2Query(bucketName, objectPrefix, continuationToken, delimiter string, maxkeys int) (listBucketV2Result, error) {
+	// Validate bucket name.
+	if err := isValidBucketName(bucketName); err != nil {
+		return listBucketV2Result{}, err
+	}
+	// Validate object prefix.
+	if err := isValidObjectPrefix(objectPrefix); err != nil {
+		return listBucketV2Result{}, err
+	}
+	// Get resources properly escaped and lined up before
+	// using them in http request.
+	urlValues := make(url.Values)
+
+	// Always set list-type in ListObjects V2
+	urlValues.Set("list-type", "2")
+
+	// Set object prefix.
+	if objectPrefix != "" {
+		urlValues.Set("prefix", objectPrefix)
+	}
+	// Set continuation token
+	if continuationToken != "" {
+		urlValues.Set("continuation-token", continuationToken)
+	}
+	// Set delimiter.
+	if delimiter != "" {
+		urlValues.Set("delimiter", delimiter)
+	}
+
+	// maxkeys should default to 1000 or less.
+	if maxkeys == 0 || maxkeys > 1000 {
+		maxkeys = 1000
+	}
+	// Set max keys.
+	urlValues.Set("max-keys", fmt.Sprintf("%d", maxkeys))
+
+	// Execute GET on bucket to list objects.
+	resp, err := c.executeMethod("GET", requestMetadata{
+		bucketName:  bucketName,
+		queryValues: urlValues,
+	})
+	defer closeResponse(resp)
+	if err != nil {
+		return listBucketV2Result{}, err
+	}
+	if resp != nil {
+		if resp.StatusCode != http.StatusOK {
+			return listBucketV2Result{}, httpRespToErrorResponse(resp, bucketName, "")
+		}
+	}
+
+	// Decode listBuckets XML.
+	listBucketResult := listBucketV2Result{}
+	err = xmlDecoder(resp.Body, &listBucketResult)
+	if err != nil {
+		return listBucketResult, err
+	}
+	return listBucketResult, nil
+}
+
 // ListObjects - (List Objects) - List some objects or all recursively.
 //
 // ListObjects lists all objects matching the objectPrefix from
@@ -157,8 +330,6 @@ func (c Client) ListObjects(bucketName, objectPrefix string, recursive bool, don
 	}(objectStatCh)
 	return objectStatCh
 }
-
-/// Bucket Read Operations.
 
 // listObjects - (List Objects) - List some or all (up to 1000) of the objects in a bucket.
 //

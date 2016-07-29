@@ -38,7 +38,7 @@ func (c Client) CopyObject(bucketName string, objectName string, objectSource st
 	}
 
 	// Set copy source.
-	customHeaders.Set("x-amz-copy-source", objectSource)
+	customHeaders.Set("x-amz-copy-source", urlEncodePath(objectSource))
 
 	// Execute PUT on objectName.
 	resp, err := c.executeMethod("PUT", requestMetadata{

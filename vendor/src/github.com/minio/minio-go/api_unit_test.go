@@ -341,13 +341,13 @@ func TestPartSize(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error: ", err)
 	}
-	if totalPartsCount != 9987 {
+	if totalPartsCount != 9103 {
 		t.Fatalf("Error: expecting total parts count of 9987: got %v instead", totalPartsCount)
 	}
-	if partSize != 550502400 {
+	if partSize != 603979776 {
 		t.Fatalf("Error: expecting part size of 550502400: got %v instead", partSize)
 	}
-	if lastPartSize != 241172480 {
+	if lastPartSize != 134217728 {
 		t.Fatalf("Error: expecting last part size of 241172480: got %v instead", lastPartSize)
 	}
 	totalPartsCount, partSize, lastPartSize, err = optimalPartInfo(5000000000)
@@ -361,13 +361,13 @@ func TestPartSize(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-	if totalPartsCount != 9987 {
+	if totalPartsCount != 9103 {
 		t.Fatalf("Error: expecting total parts count of 9987: got %v instead", totalPartsCount)
 	}
-	if partSize != 550502400 {
+	if partSize != 603979776 {
 		t.Fatalf("Error: expecting part size of 550502400: got %v instead", partSize)
 	}
-	if lastPartSize != 241172480 {
+	if lastPartSize != 134217728 {
 		t.Fatalf("Error: expecting last part size of 241172480: got %v instead", lastPartSize)
 	}
 }

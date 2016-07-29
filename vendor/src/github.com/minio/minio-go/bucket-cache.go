@@ -147,7 +147,10 @@ func (c Client) getBucketLocationRequest(bucketName string) (*http.Request, erro
 	urlValues.Set("location", "")
 
 	// Set get bucket location always as path style.
-	targetURL := c.endpointURL
+	targetURL, err := url.Parse(c.endpointURL)
+	if err != nil {
+		return nil, err
+	}
 	targetURL.Path = path.Join(bucketName, "") + "/"
 	targetURL.RawQuery = urlValues.Encode()
 

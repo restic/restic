@@ -18,6 +18,9 @@ package minio
 
 import (
 	"bytes"
+	"crypto/md5"
+	"crypto/sha256"
+	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -193,11 +196,20 @@ func (c Client) putObjectSingle(bucketName, objectName string, reader io.Reader,
 	if size <= -1 {
 		size = maxSinglePutObjectSize
 	}
-	var md5Sum, sha256Sum []byte
+
+	// Add the appropriate hash algorithms that need to be calculated by hashCopyN
+	// In case of non-v4 signature request or HTTPS connection, sha256 is not needed.
+	hashAlgos := make(map[string]hash.Hash)
+	hashSums := make(map[string][]byte)
+	hashAlgos["md5"] = md5.New()
+	if c.signature.isV4() && !c.secure {
+		hashAlgos["sha256"] = sha256.New()
+	}
+
 	if size <= minPartSize {
 		// Initialize a new temporary buffer.
 		tmpBuffer := new(bytes.Buffer)
-		md5Sum, sha256Sum, size, err = c.hashCopyN(tmpBuffer, reader, size)
+		size, err = hashCopyN(hashAlgos, hashSums, tmpBuffer, reader, size)
 		reader = bytes.NewReader(tmpBuffer.Bytes())
 		tmpBuffer.Reset()
 	} else {
@@ -208,7 +220,7 @@ func (c Client) putObjectSingle(bucketName, objectName string, reader io.Reader,
 			return 0, err
 		}
 		defer tmpFile.Close()
-		md5Sum, sha256Sum, size, err = c.hashCopyN(tmpFile, reader, size)
+		size, err = hashCopyN(hashAlgos, hashSums, tmpFile, reader, size)
 		// Seek back to beginning of the temporary file.
 		if _, err = tmpFile.Seek(0, 0); err != nil {
 			return 0, err
@@ -222,7 +234,7 @@ func (c Client) putObjectSingle(bucketName, objectName string, reader io.Reader,
 		}
 	}
 	// Execute put object.
-	st, err := c.putObjectDo(bucketName, objectName, reader, md5Sum, sha256Sum, size, contentType)
+	st, err := c.putObjectDo(bucketName, objectName, reader, hashSums["md5"], hashSums["sha256"], size, contentType)
 	if err != nil {
 		return 0, err
 	}
