@@ -40,14 +40,10 @@ func main() {
 
 	// s3Client.TraceOn(os.Stderr)
 
-	// Description of policy input.
-	// minio.BucketPolicyNone - Remove any previously applied bucket policy at a prefix.
-	// minio.BucketPolicyReadOnly - Set read-only operations at a prefix.
-	// minio.BucketPolicyWriteOnly - Set write-only operations at a prefix.
-	// minio.BucketPolicyReadWrite - Set read-write operations at a prefix.
-	err = s3Client.SetBucketPolicy("my-bucketname", "my-objectprefix", minio.BucketPolicyReadWrite)
+	err = s3Client.DeleteBucketNotification("my-bucketname")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("Success")
+
+	log.Println("Bucket notification are successfully removed.")
 }

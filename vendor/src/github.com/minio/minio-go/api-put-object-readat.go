@@ -18,6 +18,9 @@ package minio
 
 import (
 	"bytes"
+	"crypto/md5"
+	"crypto/sha256"
+	"hash"
 	"io"
 	"io/ioutil"
 	"sort"
@@ -144,10 +147,17 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 		// Get a section reader on a particular offset.
 		sectionReader := io.NewSectionReader(reader, readOffset, missingPartSize)
 
-		// Calculates MD5 and SHA256 sum for a section reader.
-		var md5Sum, sha256Sum []byte
+		// Choose the needed hash algorithms to be calculated by hashCopyBuffer.
+		// Sha256 is avoided in non-v4 signature requests or HTTPS connections
+		hashSums := make(map[string][]byte)
+		hashAlgos := make(map[string]hash.Hash)
+		hashAlgos["md5"] = md5.New()
+		if c.signature.isV4() && !c.secure {
+			hashAlgos["sha256"] = sha256.New()
+		}
+
 		var prtSize int64
-		md5Sum, sha256Sum, prtSize, err = c.hashCopyBuffer(tmpBuffer, sectionReader, readAtBuffer)
+		prtSize, err = hashCopyBuffer(hashAlgos, hashSums, tmpBuffer, sectionReader, readAtBuffer)
 		if err != nil {
 			return 0, err
 		}
@@ -159,7 +169,7 @@ func (c Client) putObjectMultipartFromReadAt(bucketName, objectName string, read
 
 		// Proceed to upload the part.
 		var objPart objectPart
-		objPart, err = c.uploadPart(bucketName, objectName, uploadID, reader, partNumber, md5Sum, sha256Sum, prtSize)
+		objPart, err = c.uploadPart(bucketName, objectName, uploadID, reader, partNumber, hashSums["md5"], hashSums["sha256"], prtSize)
 		if err != nil {
 			// Reset the buffer upon any error.
 			tmpBuffer.Reset()

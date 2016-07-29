@@ -67,6 +67,10 @@ func (c Client) GetObject(bucketName, objectName string) (*Object, error) {
 			case req := <-reqCh:
 				// Offset changes fetch the new object at an Offset.
 				if req.DidOffsetChange {
+					if httpReader != nil {
+						// Close previously opened http reader.
+						httpReader.Close()
+					}
 					// Read from offset.
 					httpReader, _, err = c.getObject(bucketName, objectName, req.Offset, 0)
 					if err != nil {

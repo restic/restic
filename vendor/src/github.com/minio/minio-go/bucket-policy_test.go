@@ -140,6 +140,7 @@ func TestsetReadOnlyStatement(t *testing.T) {
 
 	expectedReadOnlyStatement := func(bucketName, objectPrefix string) []Statement {
 		bucketResourceStatement := &Statement{}
+		bucketListResourceStatement := &Statement{}
 		objectResourceStatement := &Statement{}
 		statements := []Statement{}
 
@@ -147,12 +148,23 @@ func TestsetReadOnlyStatement(t *testing.T) {
 		bucketResourceStatement.Principal.AWS = []string{"*"}
 		bucketResourceStatement.Resources = []string{fmt.Sprintf("%s%s", awsResourcePrefix, bucketName)}
 		bucketResourceStatement.Actions = readOnlyBucketActions
+		bucketListResourceStatement.Effect = "Allow"
+		bucketListResourceStatement.Principal.AWS = []string{"*"}
+		bucketListResourceStatement.Resources = []string{fmt.Sprintf("%s%s", awsResourcePrefix, bucketName)}
+		bucketListResourceStatement.Actions = []string{"s3:ListBucket"}
+		if objectPrefix != "" {
+			bucketListResourceStatement.Conditions = map[string]map[string]string{
+				"StringEquals": {
+					"s3:prefix": objectPrefix,
+				},
+			}
+		}
 		objectResourceStatement.Effect = "Allow"
 		objectResourceStatement.Principal.AWS = []string{"*"}
 		objectResourceStatement.Resources = []string{fmt.Sprintf("%s%s", awsResourcePrefix, bucketName+"/"+objectPrefix+"*")}
 		objectResourceStatement.Actions = readOnlyObjectActions
 		// Save the read only policy.
-		statements = append(statements, *bucketResourceStatement, *objectResourceStatement)
+		statements = append(statements, *bucketResourceStatement, *bucketListResourceStatement, *objectResourceStatement)
 		return statements
 	}
 
@@ -221,6 +233,7 @@ func TestsetReadWriteStatement(t *testing.T) {
 	// Obtain statements for read-write BucketPolicy.
 	expectedReadWriteStatement := func(bucketName, objectPrefix string) []Statement {
 		bucketResourceStatement := &Statement{}
+		bucketListResourceStatement := &Statement{}
 		objectResourceStatement := &Statement{}
 		statements := []Statement{}
 
@@ -228,12 +241,23 @@ func TestsetReadWriteStatement(t *testing.T) {
 		bucketResourceStatement.Principal.AWS = []string{"*"}
 		bucketResourceStatement.Resources = []string{fmt.Sprintf("%s%s", awsResourcePrefix, bucketName)}
 		bucketResourceStatement.Actions = readWriteBucketActions
+		bucketListResourceStatement.Effect = "Allow"
+		bucketListResourceStatement.Principal.AWS = []string{"*"}
+		bucketListResourceStatement.Resources = []string{fmt.Sprintf("%s%s", awsResourcePrefix, bucketName)}
+		bucketListResourceStatement.Actions = []string{"s3:ListBucket"}
+		if objectPrefix != "" {
+			bucketListResourceStatement.Conditions = map[string]map[string]string{
+				"StringEquals": {
+					"s3:prefix": objectPrefix,
+				},
+			}
+		}
 		objectResourceStatement.Effect = "Allow"
 		objectResourceStatement.Principal.AWS = []string{"*"}
 		objectResourceStatement.Resources = []string{fmt.Sprintf("%s%s", awsResourcePrefix, bucketName+"/"+objectPrefix+"*")}
 		objectResourceStatement.Actions = readWriteObjectActions
 		// Save the read write policy.
-		statements = append(statements, *bucketResourceStatement, *objectResourceStatement)
+		statements = append(statements, *bucketResourceStatement, *bucketListResourceStatement, *objectResourceStatement)
 		return statements
 	}
 
@@ -312,9 +336,9 @@ func TestUnMarshalBucketPolicy(t *testing.T) {
 // Setting these values to just a string and testing the unMarshalBucketPolicy
 func TestUnMarshalBucketPolicyUntyped(t *testing.T) {
 	obtainRaw := func(v interface{}, t *testing.T) []byte {
-		rawData, e := json.Marshal(v)
-		if e != nil {
-			t.Fatal(e.Error())
+		rawData, err := json.Marshal(v)
+		if err != nil {
+			t.Fatal(err)
 		}
 		return rawData
 	}
@@ -338,18 +362,24 @@ func TestUnMarshalBucketPolicyUntyped(t *testing.T) {
 	statements := setReadOnlyStatement("my-bucket", "Asia/")
 	expectedBucketPolicy := BucketAccessPolicy{Statements: statements}
 	accessPolicyUntyped := bucketAccessPolicyUntyped{}
-	accessPolicyUntyped.Statement = make([]untypedStatement, 2)
+	accessPolicyUntyped.Statement = make([]untypedStatement, len(statements))
 
 	accessPolicyUntyped.Statement[0].Effect = statements[0].Effect
-	accessPolicyUntyped.Statement[0].Principal.AWS = obtainRaw(statements[0].Principal.AWS, t)
+	accessPolicyUntyped.Statement[0].Principal.AWS = obtainRaw(statements[0].Principal.AWS[0], t)
 	accessPolicyUntyped.Statement[0].Action = obtainRaw(statements[0].Actions, t)
 	accessPolicyUntyped.Statement[0].Resource = obtainRaw(statements[0].Resources, t)
 
-	// Setting the values are strings.
 	accessPolicyUntyped.Statement[1].Effect = statements[1].Effect
 	accessPolicyUntyped.Statement[1].Principal.AWS = obtainRaw(statements[1].Principal.AWS[0], t)
-	accessPolicyUntyped.Statement[1].Action = obtainRaw(statements[1].Actions[0], t)
-	accessPolicyUntyped.Statement[1].Resource = obtainRaw(statements[1].Resources[0], t)
+	accessPolicyUntyped.Statement[1].Action = obtainRaw(statements[1].Actions, t)
+	accessPolicyUntyped.Statement[1].Resource = obtainRaw(statements[1].Resources, t)
+	accessPolicyUntyped.Statement[1].Condition = statements[1].Conditions
+
+	// Setting the values are strings.
+	accessPolicyUntyped.Statement[2].Effect = statements[2].Effect
+	accessPolicyUntyped.Statement[2].Principal.AWS = obtainRaw(statements[2].Principal.AWS[0], t)
+	accessPolicyUntyped.Statement[2].Action = obtainRaw(statements[2].Actions[0], t)
+	accessPolicyUntyped.Statement[2].Resource = obtainRaw(statements[2].Resources[0], t)
 
 	inputPolicyBytes := obtainRaw(accessPolicyUntyped, t)
 	actualAccessPolicy, err := unMarshalBucketPolicy(inputPolicyBytes)

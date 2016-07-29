@@ -24,6 +24,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 )
 
@@ -33,11 +34,14 @@ func TestMakeBucketRequest(t *testing.T) {
 	// Used for asserting with the actual request generated.
 	createExpectedRequest := func(c *Client, bucketName string, location string, req *http.Request) (*http.Request, error) {
 
-		targetURL := *c.endpointURL
+		targetURL, err := url.Parse(c.endpointURL)
+		if err != nil {
+			return nil, err
+		}
 		targetURL.Path = "/" + bucketName + "/"
 
 		// get a new HTTP request for the method.
-		req, err := http.NewRequest("PUT", targetURL.String(), nil)
+		req, err = http.NewRequest("PUT", targetURL.String(), nil)
 		if err != nil {
 			return nil, err
 		}

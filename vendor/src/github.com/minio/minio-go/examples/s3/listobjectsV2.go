@@ -1,7 +1,7 @@
 // +build ignore
 
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015, 2016 Minio, Inc.
+ * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2016 Minio, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
 	"github.com/minio/minio-go"
 )
 
 func main() {
-	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-	// dummy values, please replace them with original values.
+	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-prefixname
+	// are dummy values, please replace them with original values.
 
 	// Requests are always secure (HTTPS) by default. Set secure=false to enable insecure (HTTP) access.
 	// This boolean value is the last argument for New().
@@ -35,19 +35,23 @@ func main() {
 	// determined based on the Endpoint value.
 	s3Client, err := minio.New("s3.amazonaws.com", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
+		return
 	}
 
-	// s3Client.TraceOn(os.Stderr)
+	// Create a done channel to control 'ListObjects' go routine.
+	doneCh := make(chan struct{})
 
-	// Description of policy input.
-	// minio.BucketPolicyNone - Remove any previously applied bucket policy at a prefix.
-	// minio.BucketPolicyReadOnly - Set read-only operations at a prefix.
-	// minio.BucketPolicyWriteOnly - Set write-only operations at a prefix.
-	// minio.BucketPolicyReadWrite - Set read-write operations at a prefix.
-	err = s3Client.SetBucketPolicy("my-bucketname", "my-objectprefix", minio.BucketPolicyReadWrite)
-	if err != nil {
-		log.Fatalln(err)
+	// Indicate to our routine to exit cleanly upon return.
+	defer close(doneCh)
+
+	// List all objects from a bucket-name with a matching prefix.
+	for object := range s3Client.ListObjectsV2("my-bucketname", "my-prefixname", true, doneCh) {
+		if object.Err != nil {
+			fmt.Println(object.Err)
+			return
+		}
+		fmt.Println(object)
 	}
-	log.Println("Success")
+	return
 }

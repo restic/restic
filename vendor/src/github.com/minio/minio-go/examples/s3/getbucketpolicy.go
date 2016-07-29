@@ -40,13 +40,15 @@ func main() {
 
 	// s3Client.TraceOn(os.Stderr)
 
+	// Fetch the policy at 'my-objectprefix'.
 	policy, err := s3Client.GetBucketPolicy("my-bucketname", "my-objectprefix")
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	// Description of policy output.
 	// "none" -  The specified bucket does not have a bucket policy.
-	// "readonly" - Read only operatoins are allowed.
+	// "readonly" - Read only operations are allowed.
 	// "writeonly" - Write only operations are allowed.
 	// "readwrite" - both read and write operations are allowed, the bucket is public.
 	log.Println("Success - ", policy)

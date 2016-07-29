@@ -111,9 +111,9 @@ func TestIsValidEndpointURL(t *testing.T) {
 		// Flag indicating whether the test is expected to pass or not.
 		shouldPass bool
 	}{
-		{"", nil, true},
+		{"", fmt.Errorf("Endpoint url cannot be empty."), false},
 		{"/", nil, true},
-		{"https://s3.amazonaws.com", nil, true},
+		{"https://s3.am1;4205;0cazonaws.com", nil, true},
 		{"https://s3.cn-north-1.amazonaws.com.cn", nil, true},
 		{"https://s3.amazonaws.com/", nil, true},
 		{"https://storage.googleapis.com/", nil, true},
@@ -125,11 +125,7 @@ func TestIsValidEndpointURL(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		endPoint, e := url.Parse(testCase.url)
-		if e != nil {
-			t.Fatalf("Test %d: Fatal err \"%s\"", i+1, e.Error())
-		}
-		err := isValidEndpointURL(endPoint)
+		err := isValidEndpointURL(testCase.url)
 		if err != nil && testCase.shouldPass {
 			t.Errorf("Test %d: Expected to pass, but failed with: <ERROR> %s", i+1, err.Error())
 		}
@@ -187,11 +183,7 @@ func TestIsVirtualHostSupported(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		endPoint, e := url.Parse(testCase.url)
-		if e != nil {
-			t.Fatalf("Test %d: Fatal err \"%s\"", i+1, e.Error())
-		}
-		result := isVirtualHostSupported(endPoint, testCase.bucket)
+		result := isVirtualHostSupported(testCase.url, testCase.bucket)
 		if testCase.result != result {
 			t.Errorf("Test %d: Expected isVirtualHostSupported to be '%v' for input url \"%s\" and bucket \"%s\", but found it to be '%v' instead", i+1, testCase.result, testCase.url, testCase.bucket, result)
 		}
@@ -220,11 +212,7 @@ func TestIsAmazonEndpoint(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		endPoint, e := url.Parse(testCase.url)
-		if e != nil {
-			t.Fatalf("Test %d: Fatal err \"%s\"", i+1, e.Error())
-		}
-		result := isAmazonEndpoint(endPoint)
+		result := isAmazonEndpoint(testCase.url)
 		if testCase.result != result {
 			t.Errorf("Test %d: Expected isAmazonEndpoint to be '%v' for input \"%s\", but found it to be '%v' instead", i+1, testCase.result, testCase.url, result)
 		}
@@ -255,11 +243,7 @@ func TestIsAmazonChinaEndpoint(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		endPoint, e := url.Parse(testCase.url)
-		if e != nil {
-			t.Fatalf("Test %d: Fatal err \"%s\"", i+1, e.Error())
-		}
-		result := isAmazonChinaEndpoint(endPoint)
+		result := isAmazonChinaEndpoint(testCase.url)
 		if testCase.result != result {
 			t.Errorf("Test %d: Expected isAmazonEndpoint to be '%v' for input \"%s\", but found it to be '%v' instead", i+1, testCase.result, testCase.url, result)
 		}
@@ -288,11 +272,7 @@ func TestIsGoogleEndpoint(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		endPoint, e := url.Parse(testCase.url)
-		if e != nil {
-			t.Fatalf("Test %d: Fatal err \"%s\"", i+1, e.Error())
-		}
-		result := isGoogleEndpoint(endPoint)
+		result := isGoogleEndpoint(testCase.url)
 		if testCase.result != result {
 			t.Errorf("Test %d: Expected isGoogleEndpoint to be '%v' for input \"%s\", but found it to be '%v' instead", i+1, testCase.result, testCase.url, result)
 		}

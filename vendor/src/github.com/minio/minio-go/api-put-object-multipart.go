@@ -18,8 +18,11 @@ package minio
 
 import (
 	"bytes"
+	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/xml"
+	"hash"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -112,9 +115,18 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 	tmpBuffer := new(bytes.Buffer)
 
 	for partNumber <= totalPartsCount {
-		// Calculates MD5 and SHA256 sum while copying partSize bytes
-		// into tmpBuffer.
-		md5Sum, sha256Sum, prtSize, rErr := c.hashCopyN(tmpBuffer, reader, partSize)
+
+		// Choose hash algorithms to be calculated by hashCopyN, avoid sha256
+		// with non-v4 signature request or HTTPS connection
+		hashSums := make(map[string][]byte)
+		hashAlgos := make(map[string]hash.Hash)
+		hashAlgos["md5"] = md5.New()
+		if c.signature.isV4() && !c.secure {
+			hashAlgos["sha256"] = sha256.New()
+		}
+
+		// Calculates hash sums while copying partSize bytes into tmpBuffer.
+		prtSize, rErr := hashCopyN(hashAlgos, hashSums, tmpBuffer, reader, partSize)
 		if rErr != nil {
 			if rErr != io.EOF {
 				return 0, rErr
@@ -128,13 +140,13 @@ func (c Client) putObjectMultipartStream(bucketName, objectName string, reader i
 
 		// Verify if part should be uploaded.
 		if shouldUploadPart(objectPart{
-			ETag:       hex.EncodeToString(md5Sum),
+			ETag:       hex.EncodeToString(hashSums["md5"]),
 			PartNumber: partNumber,
 			Size:       prtSize,
 		}, partsInfo) {
 			// Proceed to upload the part.
 			var objPart objectPart
-			objPart, err = c.uploadPart(bucketName, objectName, uploadID, reader, partNumber, md5Sum, sha256Sum, prtSize)
+			objPart, err = c.uploadPart(bucketName, objectName, uploadID, reader, partNumber, hashSums["md5"], hashSums["sha256"], prtSize)
 			if err != nil {
 				// Reset the temporary buffer upon any error.
 				tmpBuffer.Reset()
@@ -351,11 +363,32 @@ func (c Client) completeMultipartUpload(bucketName, objectName, uploadID string,
 			return completeMultipartUploadResult{}, httpRespToErrorResponse(resp, bucketName, objectName)
 		}
 	}
+
+	// Read resp.Body into a []bytes to parse for Error response inside the body
+	var b []byte
+	b, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return completeMultipartUploadResult{}, err
+	}
 	// Decode completed multipart upload response on success.
 	completeMultipartUploadResult := completeMultipartUploadResult{}
-	err = xmlDecoder(resp.Body, &completeMultipartUploadResult)
+	err = xmlDecoder(bytes.NewReader(b), &completeMultipartUploadResult)
 	if err != nil {
+		// xml parsing failure due to presence an ill-formed xml fragment
 		return completeMultipartUploadResult, err
+	} else if completeMultipartUploadResult.Bucket == "" {
+		// xml's Decode method ignores well-formed xml that don't apply to the type of value supplied.
+		// In this case, it would leave completeMultipartUploadResult with the corresponding zero-values
+		// of the members.
+
+		// Decode completed multipart upload response on failure
+		completeMultipartUploadErr := ErrorResponse{}
+		err = xmlDecoder(bytes.NewReader(b), &completeMultipartUploadErr)
+		if err != nil {
+			// xml parsing failure due to presence an ill-formed xml fragment
+			return completeMultipartUploadResult, err
+		}
+		return completeMultipartUploadResult, completeMultipartUploadErr
 	}
 	return completeMultipartUploadResult, nil
 }
