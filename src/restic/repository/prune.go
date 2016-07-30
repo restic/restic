@@ -21,7 +21,7 @@ func Repack(repo *Repository, packs, keepBlobs backend.IDSet) (err error) {
 
 	buf := make([]byte, 0, maxPackSize)
 	for packID := range packs {
-		// load the complete blob
+		// load the complete pack
 		h := backend.Handle{Type: backend.Data, Name: packID.String()}
 
 		l, err := repo.Backend().Load(h, buf[:cap(buf)], 0)
