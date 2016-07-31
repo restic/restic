@@ -43,28 +43,50 @@ func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs ba
 	return blobs
 }
 
-const maxFileSize = 1500000
-const maxSeed = 100
+const (
+	maxFileSize = 1500000
+	maxSeed     = 20
+	maxNodes    = 32
+)
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
-func saveTree(t testing.TB, repo *repository.Repository, seed int64) backend.ID {
+func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) backend.ID {
+	t.Logf("create fake tree with seed %d, depth %d", seed, depth)
+
 	rnd := rand.NewSource(seed)
-	numNodes := int(rnd.Int63() % 64)
+	numNodes := int(rnd.Int63() % maxNodes)
 	t.Logf("create %v nodes", numNodes)
 
 	var tree Tree
 	for i := 0; i < numNodes; i++ {
-		seed := rnd.Int63() % maxSeed
-		size := rnd.Int63() % maxFileSize
 
-		node := &Node{
-			Name: fmt.Sprintf("file-%v", seed),
-			Type: "file",
-			Mode: 0644,
-			Size: uint64(size),
+		// randomly select the type of the node, either tree (p = 1/4) or file (p = 3/4).
+		if depth > 1 && rnd.Int63()%4 == 0 {
+			treeSeed := rnd.Int63() % maxSeed
+			id := saveTree(t, repo, treeSeed, depth-1)
+
+			node := &Node{
+				Name:    fmt.Sprintf("dir-%v", treeSeed),
+				Type:    "dir",
+				Mode:    0755,
+				Subtree: &id,
+			}
+
+			tree.Nodes = append(tree.Nodes, node)
+			continue
 		}
 
-		node.Content = saveFile(t, repo, fakeFile(t, seed, size))
+		fileSeed := rnd.Int63() % maxSeed
+		fileSize := rnd.Int63() % maxFileSize
+
+		node := &Node{
+			Name: fmt.Sprintf("file-%v", fileSeed),
+			Type: "file",
+			Mode: 0644,
+			Size: uint64(fileSize),
+		}
+
+		node.Content = saveFile(t, repo, fakeFile(t, fileSeed, fileSize))
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
@@ -78,8 +100,12 @@ func saveTree(t testing.TB, repo *repository.Repository, seed int64) backend.ID 
 
 // TestCreateSnapshot creates a snapshot filled with fake data. The
 // fake data is generated deterministically from the timestamp `at`, which is
-// also used as the snapshot's timestamp.
-func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time) backend.ID {
+// also used as the snapshot's timestamp. The tree's depth can be specified
+// with the parameter depth.
+func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time, depth int) backend.ID {
+	seed := at.Unix()
+	t.Logf("create fake snapshot at %s with seed %d", at, seed)
+
 	fakedir := fmt.Sprintf("fakedir-at-%v", at.Format("2006-01-02 15:04:05"))
 	snapshot, err := NewSnapshot([]string{fakedir})
 	if err != nil {
@@ -87,7 +113,7 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time)
 	}
 	snapshot.Time = at
 
-	treeID := saveTree(t, repo, at.UnixNano())
+	treeID := saveTree(t, repo, seed, depth)
 	snapshot.Tree = &treeID
 
 	id, err := repo.SaveJSONUnpacked(backend.Snapshot, snapshot)

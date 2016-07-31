@@ -10,14 +10,17 @@ import (
 
 var testSnapshotTime = time.Unix(1460289341, 207401672)
 
-const testCreateSnapshots = 3
+const (
+	testCreateSnapshots = 3
+	testDepth           = 2
+)
 
 func TestCreateSnapshot(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	for i := 0; i < testCreateSnapshots; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second))
+		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
 	}
 
 	snapshots, err := restic.LoadAllSnapshots(repo)
