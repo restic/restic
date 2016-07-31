@@ -1,11 +1,14 @@
-package repository
+package repository_test
 
 import (
 	"io"
 	"math/rand"
+	"restic"
 	"restic/backend"
 	"restic/pack"
+	"restic/repository"
 	"testing"
+	"time"
 )
 
 func randomSize(min, max int) int {
@@ -13,7 +16,7 @@ func randomSize(min, max int) int {
 }
 
 func random(t *testing.T, length int) []byte {
-	rd := NewRandReader(rand.New(rand.NewSource(int64(length))))
+	rd := repository.NewRandReader(rand.New(rand.NewSource(int64(length))))
 	buf := make([]byte, length)
 	_, err := io.ReadFull(rd, buf)
 	if err != nil {
@@ -23,7 +26,7 @@ func random(t *testing.T, length int) []byte {
 	return buf
 }
 
-func createRandomBlobs(t *testing.T, repo *Repository, blobs int, pData float32) {
+func createRandomBlobs(t *testing.T, repo *repository.Repository, blobs int, pData float32) {
 	for i := 0; i < blobs; i++ {
 		var (
 			tpe    pack.BlobType
@@ -57,7 +60,7 @@ func createRandomBlobs(t *testing.T, repo *Repository, blobs int, pData float32)
 
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
 // will be contained in the firstone ith probability p.
-func selectBlobs(t *testing.T, repo *Repository, p float32) (list1, list2 backend.IDSet) {
+func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, list2 backend.IDSet) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -82,7 +85,7 @@ func selectBlobs(t *testing.T, repo *Repository, p float32) (list1, list2 backen
 	return list1, list2
 }
 
-func listPacks(t *testing.T, repo *Repository) backend.IDSet {
+func listPacks(t *testing.T, repo *repository.Repository) backend.IDSet {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -94,7 +97,7 @@ func listPacks(t *testing.T, repo *Repository) backend.IDSet {
 	return list
 }
 
-func findPacksForBlobs(t *testing.T, repo *Repository, blobs backend.IDSet) backend.IDSet {
+func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs backend.IDSet) backend.IDSet {
 	packs := backend.NewIDSet()
 
 	idx := repo.Index()
@@ -110,34 +113,34 @@ func findPacksForBlobs(t *testing.T, repo *Repository, blobs backend.IDSet) back
 	return packs
 }
 
-func repack(t *testing.T, repo *Repository, packs, blobs backend.IDSet) {
-	err := Repack(repo, packs, blobs)
+func repack(t *testing.T, repo *repository.Repository, packs, blobs backend.IDSet) {
+	err := repository.Repack(repo, packs, blobs)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func saveIndex(t *testing.T, repo *Repository) {
+func saveIndex(t *testing.T, repo *repository.Repository) {
 	if err := repo.SaveIndex(); err != nil {
 		t.Fatalf("repo.SaveIndex() %v", err)
 	}
 }
 
-func rebuildIndex(t *testing.T, repo *Repository) {
-	if err := RebuildIndex(repo); err != nil {
+func rebuildIndex(t *testing.T, repo *repository.Repository) {
+	if err := repository.RebuildIndex(repo); err != nil {
 		t.Fatalf("error rebuilding index: %v", err)
 	}
 }
 
-func reloadIndex(t *testing.T, repo *Repository) {
-	repo.SetIndex(NewMasterIndex())
+func reloadIndex(t *testing.T, repo *repository.Repository) {
+	repo.SetIndex(repository.NewMasterIndex())
 	if err := repo.LoadIndex(); err != nil {
 		t.Fatalf("error loading new index: %v", err)
 	}
 }
 
 func TestRepack(t *testing.T) {
-	repo, cleanup := TestRepository(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	createRandomBlobs(t, repo, rand.Intn(400), 0.7)
@@ -187,5 +190,39 @@ func TestRepack(t *testing.T) {
 		if _, err := idx.Lookup(id); err == nil {
 			t.Errorf("blob %v still contained in the repo", id.Str())
 		}
+	}
+}
+
+const (
+	testSnapshots = 3
+	testDepth     = 2
+)
+
+var testTime = time.Unix(1469960361, 23)
+
+func TestFindUsedBlobs(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	var snapshots []*restic.Snapshot
+	for i := 0; i < testSnapshots; i++ {
+		sn := restic.TestCreateSnapshot(t, repo, testTime.Add(time.Duration(i)*time.Second), testDepth)
+		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
+		snapshots = append(snapshots, sn)
+	}
+
+	for _, sn := range snapshots {
+		usedBlobs, err := repository.FindUsedBlobs(repo, *sn.Tree)
+		if err != nil {
+			t.Errorf("FindUsedBlobs returned error: %v", err)
+			continue
+		}
+
+		if len(usedBlobs) == 0 {
+			t.Errorf("FindUsedBlobs returned an empty set")
+			continue
+		}
+
+		t.Logf("used blobs from snapshot %v (tree %v): %v", sn.ID().Str(), sn.Tree.Str(), usedBlobs)
 	}
 }
