@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"testing"
 
 	"restic/backend"
 	"restic/debug"
@@ -61,6 +62,22 @@ func CreateConfig() (Config, error) {
 
 	debug.Log("Repo.CreateConfig", "New config: %#v", cfg)
 	return cfg, nil
+}
+
+// TestCreateConfig creates a config for use within tests.
+func TestCreateConfig(t testing.TB, pol chunker.Pol) (cfg Config) {
+	cfg.ChunkerPolynomial = pol
+
+	newID := make([]byte, repositoryIDSize)
+	_, err := io.ReadFull(rand.Reader, newID)
+	if err != nil {
+		t.Fatalf("unable to create random ID: %v", err)
+	}
+
+	cfg.ID = hex.EncodeToString(newID)
+	cfg.Version = RepoVersion
+
+	return cfg
 }
 
 // LoadConfig returns loads, checks and returns the config for a repository.
