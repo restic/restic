@@ -21,6 +21,7 @@ func fakeFile(t testing.TB, seed, size int64) io.Reader {
 // saveFile reads from rd and saves the blobs in the repository. The list of
 // IDs is returned.
 func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs backend.IDs) {
+	blobs = backend.IDs{}
 	ch := chunker.New(rd, repo.Config.ChunkerPolynomial)
 
 	for {
@@ -30,7 +31,7 @@ func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs ba
 		}
 
 		if err != nil {
-			t.Fatalf("unabel to save chunk in repo: %v", err)
+			t.Fatalf("unable to save chunk in repo: %v", err)
 		}
 
 		id, err := repo.SaveAndEncrypt(pack.Data, chunk.Data, nil)
@@ -45,7 +46,7 @@ func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs ba
 
 const (
 	maxFileSize = 1500000
-	maxSeed     = 20
+	maxSeed     = 32
 	maxNodes    = 32
 )
 
@@ -77,7 +78,7 @@ func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) 
 		}
 
 		fileSeed := rnd.Int63() % maxSeed
-		fileSize := rnd.Int63() % maxFileSize
+		fileSize := (maxFileSize / maxSeed) * fileSeed
 
 		node := &Node{
 			Name: fmt.Sprintf("file-%v", fileSeed),
