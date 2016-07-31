@@ -13,9 +13,9 @@ func randomSize(min, max int) int {
 }
 
 func random(t *testing.T, length int) []byte {
-	src := rand.New(rand.NewSource(int64(length)))
+	rd := NewRandReader(rand.New(rand.NewSource(int64(length))))
 	buf := make([]byte, length)
-	_, err := io.ReadFull(src, buf)
+	_, err := io.ReadFull(rd, buf)
 	if err != nil {
 		t.Fatalf("unable to read %d random bytes: %v", length, err)
 	}
