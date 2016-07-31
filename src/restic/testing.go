@@ -100,7 +100,7 @@ func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) 
 // fake data is generated deterministically from the timestamp `at`, which is
 // also used as the snapshot's timestamp. The tree's depth can be specified
 // with the parameter depth.
-func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time, depth int) backend.ID {
+func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time, depth int) *Snapshot {
 	seed := at.Unix()
 	t.Logf("create fake snapshot at %s with seed %d", at, seed)
 
@@ -119,6 +119,8 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 		t.Fatal(err)
 	}
 
+	snapshot.id = &id
+
 	t.Logf("saved snapshot %v", id.Str())
 
 	err = repo.Flush()
@@ -131,5 +133,5 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 		t.Fatal(err)
 	}
 
-	return id
+	return snapshot
 }
