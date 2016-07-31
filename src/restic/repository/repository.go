@@ -416,6 +416,17 @@ func (r *Repository) Init(password string) error {
 		return errors.New("repository master key and config already initialized")
 	}
 
+	cfg, err := CreateConfig()
+	if err != nil {
+		return err
+	}
+
+	return r.init(password, cfg)
+}
+
+// init creates a new master key with the supplied password and uses it to save
+// the config into the repo.
+func (r *Repository) init(password string, cfg Config) error {
 	key, err := createMasterKey(r, password)
 	if err != nil {
 		return err
@@ -424,7 +435,8 @@ func (r *Repository) Init(password string) error {
 	r.key = key.master
 	r.packerManager.key = key.master
 	r.keyName = key.Name()
-	r.Config, err = CreateConfig(r)
+	r.Config = cfg
+	_, err = r.SaveJSONUnpacked(backend.Config, cfg)
 	return err
 }
 

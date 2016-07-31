@@ -7,9 +7,10 @@ import (
 	"errors"
 	"io"
 
-	"github.com/restic/chunker"
 	"restic/backend"
 	"restic/debug"
+
+	"github.com/restic/chunker"
 )
 
 // Config contains the configuration for a repository.
@@ -37,8 +38,8 @@ type JSONUnpackedLoader interface {
 }
 
 // CreateConfig creates a config file with a randomly selected polynomial and
-// ID and saves the config in the repository.
-func CreateConfig(r JSONUnpackedSaver) (Config, error) {
+// ID.
+func CreateConfig() (Config, error) {
 	var (
 		err error
 		cfg Config
@@ -59,9 +60,7 @@ func CreateConfig(r JSONUnpackedSaver) (Config, error) {
 	cfg.Version = RepoVersion
 
 	debug.Log("Repo.CreateConfig", "New config: %#v", cfg)
-
-	_, err = r.SaveJSONUnpacked(backend.Config, cfg)
-	return cfg, err
+	return cfg, nil
 }
 
 // LoadConfig returns loads, checks and returns the config for a repository.
