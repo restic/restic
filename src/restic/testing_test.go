@@ -45,30 +45,5 @@ func TestCreateSnapshot(t *testing.T) {
 		t.Fatalf("snapshot has zero tree ID")
 	}
 
-	chkr := checker.New(repo)
-
-	hints, errs := chkr.LoadIndex()
-	if len(errs) != 0 {
-		t.Fatalf("errors loading index: %v", errs)
-	}
-
-	if len(hints) != 0 {
-		t.Fatalf("errors loading index: %v", hints)
-	}
-
-	done := make(chan struct{})
-	defer close(done)
-	errChan := make(chan error)
-	go chkr.Structure(errChan, done)
-
-	for err := range errChan {
-		t.Error(err)
-	}
-
-	errChan = make(chan error)
-	go chkr.ReadData(nil, errChan, done)
-
-	for err := range errChan {
-		t.Error(err)
-	}
+	checker.TestCheckRepo(t, repo)
 }
