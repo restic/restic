@@ -52,11 +52,8 @@ const (
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
 func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) backend.ID {
-	t.Logf("create fake tree with seed %d, depth %d", seed, depth)
-
 	rnd := rand.NewSource(seed)
 	numNodes := int(rnd.Int63() % maxNodes)
-	t.Logf("create %v nodes", numNodes)
 
 	var tree Tree
 	for i := 0; i < numNodes; i++ {
