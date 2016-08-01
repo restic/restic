@@ -174,9 +174,3 @@ func RebuildIndex(repo *Repository) error {
 
 	return nil
 }
-
-// FindUsedBlobs traverses the tree ID and returns a set of all blobs
-// encountered.
-func FindUsedBlobs(repo *Repository, treeID backend.ID) (backend.IDSet, error) {
-	return nil, nil
-}

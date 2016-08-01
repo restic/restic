@@ -3,12 +3,10 @@ package repository_test
 import (
 	"io"
 	"math/rand"
-	"restic"
 	"restic/backend"
 	"restic/pack"
 	"restic/repository"
 	"testing"
-	"time"
 )
 
 func randomSize(min, max int) int {
@@ -190,39 +188,5 @@ func TestRepack(t *testing.T) {
 		if _, err := idx.Lookup(id); err == nil {
 			t.Errorf("blob %v still contained in the repo", id.Str())
 		}
-	}
-}
-
-const (
-	testSnapshots = 3
-	testDepth     = 2
-)
-
-var testTime = time.Unix(1469960361, 23)
-
-func TestFindUsedBlobs(t *testing.T) {
-	repo, cleanup := repository.TestRepository(t)
-	defer cleanup()
-
-	var snapshots []*restic.Snapshot
-	for i := 0; i < testSnapshots; i++ {
-		sn := restic.TestCreateSnapshot(t, repo, testTime.Add(time.Duration(i)*time.Second), testDepth)
-		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
-		snapshots = append(snapshots, sn)
-	}
-
-	for _, sn := range snapshots {
-		usedBlobs, err := repository.FindUsedBlobs(repo, *sn.Tree)
-		if err != nil {
-			t.Errorf("FindUsedBlobs returned error: %v", err)
-			continue
-		}
-
-		if len(usedBlobs) == 0 {
-			t.Errorf("FindUsedBlobs returned an empty set")
-			continue
-		}
-
-		t.Logf("used blobs from snapshot %v (tree %v): %v", sn.ID().Str(), sn.Tree.Str(), usedBlobs)
 	}
 }
