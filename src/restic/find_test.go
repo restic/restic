@@ -65,25 +65,26 @@ func saveIDSet(t testing.TB, filename string, s backend.IDSet) {
 var updateGoldenFiles = flag.Bool("update", false, "update golden files in testdata/")
 
 const (
-	testSnapshots = 3
-	testDepth     = 2
+	findTestSnapshots = 3
+	findTestDepth     = 2
 )
 
-var testTime = time.Unix(1469960361, 23)
+var findTestTime = time.Unix(1469960361, 23)
 
 func TestFindUsedBlobs(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	var snapshots []*Snapshot
-	for i := 0; i < testSnapshots; i++ {
-		sn := TestCreateSnapshot(t, repo, testTime.Add(time.Duration(i)*time.Second), testDepth)
+	for i := 0; i < findTestSnapshots; i++ {
+		sn := TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
 		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
 		snapshots = append(snapshots, sn)
 	}
 
 	for i, sn := range snapshots {
-		usedBlobs, err := FindUsedBlobs(repo, *sn.Tree)
+		usedBlobs := backend.NewIDSet()
+		err := FindUsedBlobs(repo, *sn.Tree, usedBlobs)
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
