@@ -60,6 +60,47 @@ func (s IDSet) Equals(other IDSet) bool {
 	return true
 }
 
+// Merge adds the blobs in other to the current set.
+func (s IDSet) Merge(other IDSet) {
+	for id := range other {
+		s.Insert(id)
+	}
+}
+
+// Intersect returns a new set containing the IDs that are present in both sets.
+func (s IDSet) Intersect(other IDSet) (result IDSet) {
+	result = NewIDSet()
+
+	set1 := s
+	set2 := other
+
+	// iterate over the smaller set
+	if len(set2) < len(set1) {
+		set1, set2 = set2, set1
+	}
+
+	for id := range set1 {
+		if set2.Has(id) {
+			result.Insert(id)
+		}
+	}
+
+	return result
+}
+
+// Sub returns a new set containing all IDs that are present in s but not in
+// other.
+func (s IDSet) Sub(other IDSet) (result IDSet) {
+	result = NewIDSet()
+	for id := range s {
+		if !other.Has(id) {
+			result.Insert(id)
+		}
+	}
+
+	return result
+}
+
 func (s IDSet) String() string {
 	str := s.List().String()
 	if len(str) < 2 {
