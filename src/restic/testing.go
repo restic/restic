@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -34,10 +35,14 @@ func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs ba
 			t.Fatalf("unable to save chunk in repo: %v", err)
 		}
 
-		id, err := repo.SaveAndEncrypt(pack.Data, chunk.Data, nil)
-		if err != nil {
-			t.Fatalf("error saving chunk: %v", err)
+		id := backend.Hash(chunk.Data)
+		if !repo.Index().Has(id) {
+			_, err := repo.SaveAndEncrypt(pack.Data, chunk.Data, &id)
+			if err != nil {
+				t.Fatalf("error saving chunk: %v", err)
+			}
 		}
+
 		blobs = append(blobs, id)
 	}
 
@@ -49,6 +54,23 @@ const (
 	maxSeed     = 32
 	maxNodes    = 32
 )
+
+func treeIsKnown(t testing.TB, repo *repository.Repository, tree *Tree) (bool, backend.ID) {
+	data, err := json.Marshal(tree)
+	if err != nil {
+		t.Fatalf("json.Marshal(tree) returned error: %v", err)
+		return false, backend.ID{}
+	}
+	data = append(data, '\n')
+
+	// check if tree has been saved before
+	id := backend.Hash(data)
+	if repo.Index().Has(id) {
+		return true, id
+	}
+
+	return false, id
+}
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
 func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) backend.ID {
@@ -86,6 +108,10 @@ func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) 
 
 		node.Content = saveFile(t, repo, fakeFile(t, fileSeed, fileSize))
 		tree.Nodes = append(tree.Nodes, node)
+	}
+
+	if known, id := treeIsKnown(t, repo, &tree); known {
+		return id
 	}
 
 	id, err := repo.SaveJSON(pack.Tree, tree)
