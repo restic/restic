@@ -387,9 +387,9 @@ The program can be built with debug support like this:
     $ go run build.go -tags debug
 
 Afterwards, extensive debug messages are written to the file in environment
-variable `RESTIC_DEBUG`, e.g.:
+variable `DEBUG_LOG`, e.g.:
 
-    $ RESTIC_DEBUG=/tmp/restic-debug.log restic backup ~/work
+    $ DEBUG_LOG=/tmp/restic-debug.log restic backup ~/work
 
 If you suspect that there is a bug, you can have a look at the debug log.
 Please be aware that the debug log might contain sensitive information such as
