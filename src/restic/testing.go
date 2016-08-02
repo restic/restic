@@ -19,11 +19,17 @@ func fakeFile(t testing.TB, seed, size int64) io.Reader {
 	return io.LimitReader(repository.NewRandReader(rand.New(rand.NewSource(seed))), size)
 }
 
+type fakeFileSystem struct {
+	t          testing.TB
+	repo       *repository.Repository
+	knownBlobs backend.IDSet
+}
+
 // saveFile reads from rd and saves the blobs in the repository. The list of
 // IDs is returned.
-func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs backend.IDs) {
+func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs backend.IDs) {
 	blobs = backend.IDs{}
-	ch := chunker.New(rd, repo.Config.ChunkerPolynomial)
+	ch := chunker.New(rd, fs.repo.Config.ChunkerPolynomial)
 
 	for {
 		chunk, err := ch.Next(getBuf())
@@ -32,15 +38,17 @@ func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs ba
 		}
 
 		if err != nil {
-			t.Fatalf("unable to save chunk in repo: %v", err)
+			fs.t.Fatalf("unable to save chunk in repo: %v", err)
 		}
 
 		id := backend.Hash(chunk.Data)
-		if !repo.Index().Has(id) {
-			_, err := repo.SaveAndEncrypt(pack.Data, chunk.Data, &id)
+		if !fs.blobIsKnown(id) {
+			_, err := fs.repo.SaveAndEncrypt(pack.Data, chunk.Data, &id)
 			if err != nil {
-				t.Fatalf("error saving chunk: %v", err)
+				fs.t.Fatalf("error saving chunk: %v", err)
 			}
+
+			fs.knownBlobs.Insert(id)
 		}
 
 		blobs = append(blobs, id)
@@ -55,25 +63,34 @@ const (
 	maxNodes    = 32
 )
 
-func treeIsKnown(t testing.TB, repo *repository.Repository, tree *Tree) (bool, backend.ID) {
+func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, backend.ID) {
 	data, err := json.Marshal(tree)
 	if err != nil {
-		t.Fatalf("json.Marshal(tree) returned error: %v", err)
+		fs.t.Fatalf("json.Marshal(tree) returned error: %v", err)
 		return false, backend.ID{}
 	}
 	data = append(data, '\n')
 
-	// check if tree has been saved before
 	id := backend.Hash(data)
-	if repo.Index().Has(id) {
-		return true, id
+	return fs.blobIsKnown(id), id
+
+}
+
+func (fs fakeFileSystem) blobIsKnown(id backend.ID) bool {
+	if fs.knownBlobs.Has(id) {
+		return true
 	}
 
-	return false, id
+	if fs.repo.Index().Has(id) {
+		return true
+	}
+
+	fs.knownBlobs.Insert(id)
+	return false
 }
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
-func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) backend.ID {
+func (fs fakeFileSystem) saveTree(seed int64, depth int) backend.ID {
 	rnd := rand.NewSource(seed)
 	numNodes := int(rnd.Int63() % maxNodes)
 
@@ -83,7 +100,7 @@ func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) 
 		// randomly select the type of the node, either tree (p = 1/4) or file (p = 3/4).
 		if depth > 1 && rnd.Int63()%4 == 0 {
 			treeSeed := rnd.Int63() % maxSeed
-			id := saveTree(t, repo, treeSeed, depth-1)
+			id := fs.saveTree(treeSeed, depth-1)
 
 			node := &Node{
 				Name:    fmt.Sprintf("dir-%v", treeSeed),
@@ -106,17 +123,17 @@ func saveTree(t testing.TB, repo *repository.Repository, seed int64, depth int) 
 			Size: uint64(fileSize),
 		}
 
-		node.Content = saveFile(t, repo, fakeFile(t, fileSeed, fileSize))
+		node.Content = fs.saveFile(fakeFile(fs.t, fileSeed, fileSize))
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
-	if known, id := treeIsKnown(t, repo, &tree); known {
+	if known, id := fs.treeIsKnown(&tree); known {
 		return id
 	}
 
-	id, err := repo.SaveJSON(pack.Tree, tree)
+	id, err := fs.repo.SaveJSON(pack.Tree, tree)
 	if err != nil {
-		t.Fatal(err)
+		fs.t.Fatal(err)
 	}
 
 	return id
@@ -137,7 +154,13 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 	}
 	snapshot.Time = at
 
-	treeID := saveTree(t, repo, seed, depth)
+	fs := fakeFileSystem{
+		t:          t,
+		repo:       repo,
+		knownBlobs: backend.NewIDSet(),
+	}
+
+	treeID := fs.saveTree(seed, depth)
 	snapshot.Tree = &treeID
 
 	id, err := repo.SaveJSONUnpacked(backend.Snapshot, snapshot)
