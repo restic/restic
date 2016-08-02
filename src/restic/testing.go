@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -86,21 +85,14 @@ func (rd *randReader) Read(p []byte) (int, error) {
 }
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
-func fakeFile(seed, size int64) io.Reader {
+func fakeFile(t testing.TB, seed, size int64) io.Reader {
 	return io.LimitReader(newRandReader(rand.New(rand.NewSource(seed))), size)
-}
-
-type fakeTree struct {
-	t          testing.TB
-	repo       *repository.Repository
-	knownBlobs backend.IDSet
 }
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
 // IDs is returned.
-func (f fakeTree) saveFile(rd io.Reader) (blobs backend.IDs) {
-	blobs = backend.IDs{}
-	ch := chunker.New(rd, f.repo.Config.ChunkerPolynomial)
+func saveFile(t testing.TB, repo *repository.Repository, rd io.Reader) (blobs backend.IDs) {
+	ch := chunker.New(rd, repo.Config.ChunkerPolynomial)
 
 	for {
 		chunk, err := ch.Next(getBuf())
@@ -109,92 +101,47 @@ func (f fakeTree) saveFile(rd io.Reader) (blobs backend.IDs) {
 		}
 
 		if err != nil {
-			f.t.Fatalf("unable to save chunk in repo: %v", err)
+			t.Fatalf("unabel to save chunk in repo: %v", err)
 		}
 
-		id := backend.Hash(chunk.Data)
-		if !f.knownBlobs.Has(id) {
-			_, err := f.repo.SaveAndEncrypt(pack.Data, chunk.Data, &id)
-			if err != nil {
-				f.t.Fatalf("error saving chunk: %v", err)
-			}
-			f.knownBlobs.Insert(id)
+		id, err := repo.SaveAndEncrypt(pack.Data, chunk.Data, nil)
+		if err != nil {
+			t.Fatalf("error saving chunk: %v", err)
 		}
-
 		blobs = append(blobs, id)
 	}
 
 	return blobs
 }
 
-const (
-	maxFileSize = 1500000
-	maxSeed     = 32
-	maxNodes    = 32
-)
+const maxFileSize = 1500000
+const maxSeed = 100
 
-func (f fakeTree) treeIsKnown(tree *Tree) (bool, backend.ID) {
-	data, err := json.Marshal(tree)
-	if err != nil {
-		f.t.Fatalf("json.Marshal(tree) returned error: %v", err)
-		return false, backend.ID{}
-	}
-	data = append(data, '\n')
-
-	// check if tree has been saved before
-	id := backend.Hash(data)
-	if f.knownBlobs.Has(id) {
-		return true, id
-	}
-
-	return false, id
-}
-
-// save stores a tree of fake files in the repo and returns the ID.
-func (f fakeTree) saveTree(seed int64, depth int) backend.ID {
+// saveTree saves a tree of fake files in the repo and returns the ID.
+func saveTree(t testing.TB, repo *repository.Repository, seed int64) backend.ID {
 	rnd := rand.NewSource(seed)
-	numNodes := int(rnd.Int63() % maxNodes)
+	numNodes := int(rnd.Int63() % 64)
+	t.Logf("create %v nodes", numNodes)
 
 	var tree Tree
 	for i := 0; i < numNodes; i++ {
-
-		// randomly select the type of the node, either tree (p = 1/4) or file (p = 3/4).
-		if depth > 1 && rnd.Int63()%4 == 0 {
-			treeSeed := rnd.Int63() % maxSeed
-			id := f.saveTree(treeSeed, depth-1)
-
-			node := &Node{
-				Name:    fmt.Sprintf("dir-%v", treeSeed),
-				Type:    "dir",
-				Mode:    0755,
-				Subtree: &id,
-			}
-
-			tree.Nodes = append(tree.Nodes, node)
-			continue
-		}
-
-		fileSeed := rnd.Int63() % maxSeed
-		fileSize := (maxFileSize / maxSeed) * fileSeed
+		seed := rnd.Int63() % maxSeed
+		size := rnd.Int63() % maxFileSize
 
 		node := &Node{
-			Name: fmt.Sprintf("file-%v", fileSeed),
+			Name: fmt.Sprintf("file-%v", seed),
 			Type: "file",
 			Mode: 0644,
-			Size: uint64(fileSize),
+			Size: uint64(size),
 		}
 
-		node.Content = f.saveFile(fakeFile(fileSeed, fileSize))
+		node.Content = saveFile(t, repo, fakeFile(t, seed, size))
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
-	if known, id := f.treeIsKnown(&tree); known {
-		return id
-	}
-
-	id, err := f.repo.SaveJSON(pack.Tree, tree)
+	id, err := repo.SaveJSON(pack.Tree, tree)
 	if err != nil {
-		f.t.Fatal(err)
+		t.Fatal(err)
 	}
 
 	return id
@@ -202,12 +149,8 @@ func (f fakeTree) saveTree(seed int64, depth int) backend.ID {
 
 // TestCreateSnapshot creates a snapshot filled with fake data. The
 // fake data is generated deterministically from the timestamp `at`, which is
-// also used as the snapshot's timestamp. The tree's depth can be specified
-// with the parameter depth.
-func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time, depth int) *Snapshot {
-	seed := at.Unix()
-	t.Logf("create fake snapshot at %s with seed %d", at, seed)
-
+// also used as the snapshot's timestamp.
+func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time) backend.ID {
 	fakedir := fmt.Sprintf("fakedir-at-%v", at.Format("2006-01-02 15:04:05"))
 	snapshot, err := NewSnapshot([]string{fakedir})
 	if err != nil {
@@ -215,21 +158,13 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 	}
 	snapshot.Time = at
 
-	f := fakeTree{
-		t:          t,
-		repo:       repo,
-		knownBlobs: backend.NewIDSet(),
-	}
-
-	treeID := f.saveTree(seed, depth)
+	treeID := saveTree(t, repo, at.UnixNano())
 	snapshot.Tree = &treeID
 
 	id, err := repo.SaveJSONUnpacked(backend.Snapshot, snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	snapshot.id = &id
 
 	t.Logf("saved snapshot %v", id.Str())
 
@@ -243,5 +178,5 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 		t.Fatal(err)
 	}
 
-	return snapshot
+	return id
 }

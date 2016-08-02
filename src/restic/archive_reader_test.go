@@ -63,7 +63,7 @@ func TestArchiveReader(t *testing.T) {
 	size := int64(rand.Intn(50*1024*1024) + 50*1024*1024)
 	t.Logf("seed is 0x%016x, size is %v", seed, size)
 
-	f := fakeFile(seed, size)
+	f := fakeFile(t, seed, size)
 
 	sn, id, err := ArchiveReader(repo, nil, f, "fakefile")
 	if err != nil {
@@ -76,7 +76,7 @@ func TestArchiveReader(t *testing.T) {
 
 	t.Logf("snapshot saved as %v, tree is %v", id.Str(), sn.Tree.Str())
 
-	checkSavedFile(t, repo, *sn.Tree, "fakefile", fakeFile(seed, size))
+	checkSavedFile(t, repo, *sn.Tree, "fakefile", fakeFile(t, seed, size))
 }
 
 func BenchmarkArchiveReader(t *testing.B) {
@@ -86,7 +86,7 @@ func BenchmarkArchiveReader(t *testing.B) {
 	const size = 50 * 1024 * 1024
 
 	buf := make([]byte, size)
-	_, err := io.ReadFull(fakeFile(23, size), buf)
+	_, err := io.ReadFull(fakeFile(t, 23, size), buf)
 	if err != nil {
 		t.Fatal(err)
 	}
