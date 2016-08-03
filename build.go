@@ -264,14 +264,13 @@ type Constants map[string]string
 func (cs Constants) LDFlags() string {
 	l := make([]string, 0, len(cs))
 
-	v := runtime.Version()
-	if strings.HasPrefix(v, "devel") || strings.HasPrefix(v, "go1.5") || strings.HasPrefix(v, "go1.6") || strings.HasPrefix(v, "go1.7") {
+	if runtime.Version() < "go1.5" {
 		for k, v := range cs {
-			l = append(l, fmt.Sprintf(`-X "%s=%s"`, k, v))
+			l = append(l, fmt.Sprintf(`-X %q %q`, k, v))
 		}
 	} else {
 		for k, v := range cs {
-			l = append(l, fmt.Sprintf(`-X %q %q`, k, v))
+			l = append(l, fmt.Sprintf(`-X "%s=%s"`, k, v))
 		}
 	}
 
