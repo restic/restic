@@ -21,32 +21,32 @@ func NewMasterIndex() *MasterIndex {
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Lookup(id backend.ID) (blob PackedBlob, err error) {
+func (mi *MasterIndex) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedBlob, err error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
-	debug.Log("MasterIndex.Lookup", "looking up id %v", id.Str())
+	debug.Log("MasterIndex.Lookup", "looking up id %v, tpe %v", id.Str(), tpe)
 
 	for _, idx := range mi.idx {
-		blob, err = idx.Lookup(id)
+		blobs, err = idx.Lookup(id, tpe)
 		if err == nil {
 			debug.Log("MasterIndex.Lookup",
-				"found id %v: %v", id.Str(), blob)
+				"found id %v: %v", id.Str(), blobs)
 			return
 		}
 	}
 
 	debug.Log("MasterIndex.Lookup", "id %v not found in any index", id.Str())
-	return PackedBlob{}, fmt.Errorf("id %v not found in any index", id)
+	return nil, fmt.Errorf("id %v not found in any index", id)
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) LookupSize(id backend.ID) (uint, error) {
+func (mi *MasterIndex) LookupSize(id backend.ID, tpe pack.BlobType) (uint, error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		length, err := idx.LookupSize(id)
+		length, err := idx.LookupSize(id, tpe)
 		if err == nil {
 			return length, nil
 		}
@@ -72,12 +72,12 @@ func (mi *MasterIndex) ListPack(id backend.ID) (list []PackedBlob) {
 }
 
 // Has queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Has(id backend.ID) bool {
+func (mi *MasterIndex) Has(id backend.ID, tpe pack.BlobType) bool {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		if idx.Has(id) {
+		if idx.Has(id, tpe) {
 			return true
 		}
 	}

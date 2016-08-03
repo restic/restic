@@ -17,8 +17,9 @@ type BlobType uint8
 
 // These are the blob types that can be stored in a pack.
 const (
-	Data BlobType = 0
-	Tree          = 1
+	Invalid BlobType = iota
+	Data
+	Tree
 )
 
 func (t BlobType) String() string {

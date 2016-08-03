@@ -22,7 +22,7 @@ func saveTreeJSON(repo *repository.Repository, item interface{}) (backend.ID, er
 
 	// check if tree has been saved before
 	id := backend.Hash(data)
-	if repo.Index().Has(id) {
+	if repo.Index().Has(id, pack.Tree) {
 		return id, nil
 	}
 
@@ -58,7 +58,7 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 
 		id := backend.Hash(chunk.Data)
 
-		if !repo.Index().Has(id) {
+		if !repo.Index().Has(id, pack.Data) {
 			_, err := repo.SaveAndEncrypt(pack.Data, chunk.Data, nil)
 			if err != nil {
 				return nil, backend.ID{}, err

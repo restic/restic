@@ -18,7 +18,7 @@ import (
 // Index holds a lookup table for id -> pack.
 type Index struct {
 	m    sync.Mutex
-	pack map[backend.ID][]indexEntry
+	pack map[pack.Handle][]indexEntry
 
 	final      bool       // set to true for all indexes read from the backend ("finalized")
 	id         backend.ID // set to the ID of the index when it's finalized
@@ -27,7 +27,6 @@ type Index struct {
 }
 
 type indexEntry struct {
-	tpe    pack.BlobType
 	packID backend.ID
 	offset uint
 	length uint
@@ -36,19 +35,19 @@ type indexEntry struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		pack:    make(map[backend.ID][]indexEntry),
+		pack:    make(map[pack.Handle][]indexEntry),
 		created: time.Now(),
 	}
 }
 
 func (idx *Index) store(blob PackedBlob) {
-	list := idx.pack[blob.ID]
-	idx.pack[blob.ID] = append(list, indexEntry{
-		tpe:    blob.Type,
+	newEntry := indexEntry{
 		packID: blob.PackID,
 		offset: blob.Offset,
 		length: blob.Length,
-	})
+	}
+	h := pack.Handle{ID: blob.ID, Type: blob.Type}
+	idx.pack[h] = append(idx.pack[h], newEntry)
 }
 
 // Final returns true iff the index is already written to the repository, it is
@@ -112,27 +111,35 @@ func (idx *Index) Store(blob PackedBlob) {
 }
 
 // Lookup queries the index for the blob ID and returns a PackedBlob.
-func (idx *Index) Lookup(id backend.ID) (pb PackedBlob, err error) {
+func (idx *Index) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedBlob, err error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	if packs, ok := idx.pack[id]; ok {
-		p := packs[0]
-		debug.Log("Index.Lookup", "id %v found in pack %v at %d, length %d",
-			id.Str(), p.packID.Str(), p.offset, p.length)
+	h := pack.Handle{ID: id, Type: tpe}
 
-		pb := PackedBlob{
-			Type:   p.tpe,
-			Length: p.length,
-			ID:     id,
-			Offset: p.offset,
-			PackID: p.packID,
+	if packs, ok := idx.pack[h]; ok {
+		blobs = make([]PackedBlob, 0, len(packs))
+
+		for _, p := range packs {
+			debug.Log("Index.Lookup", "id %v found in pack %v at %d, length %d",
+				id.Str(), p.packID.Str(), p.offset, p.length)
+
+			blob := PackedBlob{
+				Type:   tpe,
+				Length: p.length,
+				ID:     id,
+				Offset: p.offset,
+				PackID: p.packID,
+			}
+
+			blobs = append(blobs, blob)
 		}
-		return pb, nil
+
+		return blobs, nil
 	}
 
 	debug.Log("Index.Lookup", "id %v not found", id.Str())
-	return PackedBlob{}, fmt.Errorf("id %v not found in index", id)
+	return nil, fmt.Errorf("id %v not found in index", id)
 }
 
 // ListPack returns a list of blobs contained in a pack.
@@ -140,12 +147,12 @@ func (idx *Index) ListPack(id backend.ID) (list []PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	for blobID, packList := range idx.pack {
+	for h, packList := range idx.pack {
 		for _, entry := range packList {
 			if entry.packID == id {
 				list = append(list, PackedBlob{
-					ID:     blobID,
-					Type:   entry.tpe,
+					ID:     h.ID,
+					Type:   h.Type,
 					Length: entry.length,
 					Offset: entry.offset,
 					PackID: entry.packID,
@@ -158,8 +165,8 @@ func (idx *Index) ListPack(id backend.ID) (list []PackedBlob) {
 }
 
 // Has returns true iff the id is listed in the index.
-func (idx *Index) Has(id backend.ID) bool {
-	_, err := idx.Lookup(id)
+func (idx *Index) Has(id backend.ID, tpe pack.BlobType) bool {
+	_, err := idx.Lookup(id, tpe)
 	if err == nil {
 		return true
 	}
@@ -169,12 +176,13 @@ func (idx *Index) Has(id backend.ID) bool {
 
 // LookupSize returns the length of the cleartext content behind the
 // given id
-func (idx *Index) LookupSize(id backend.ID) (cleartextLength uint, err error) {
-	blob, err := idx.Lookup(id)
+func (idx *Index) LookupSize(id backend.ID, tpe pack.BlobType) (cleartextLength uint, err error) {
+	blobs, err := idx.Lookup(id, tpe)
 	if err != nil {
 		return 0, err
 	}
-	return blob.PlaintextLength(), nil
+
+	return blobs[0].PlaintextLength(), nil
 }
 
 // Supersedes returns the list of indexes this index supersedes, if any.
@@ -229,15 +237,15 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 			close(ch)
 		}()
 
-		for id, packs := range idx.pack {
+		for h, packs := range idx.pack {
 			for _, blob := range packs {
 				select {
 				case <-done:
 					return
 				case ch <- PackedBlob{
-					ID:     id,
+					ID:     h.ID,
+					Type:   h.Type,
 					Offset: blob.offset,
-					Type:   blob.tpe,
 					Length: blob.length,
 					PackID: blob.packID,
 				}:
@@ -270,13 +278,12 @@ func (idx *Index) Count(t pack.BlobType) (n uint) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	for id, list := range idx.pack {
-		for _, blob := range list {
-			if blob.tpe == t {
-				n++
-				debug.Log("Index.Count", "  blob %v counted: %v", id.Str(), blob)
-			}
+	for h, list := range idx.pack {
+		if h.Type != t {
+			continue
 		}
+
+		n += uint(len(list))
 	}
 
 	return
@@ -308,18 +315,18 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 	list := []*packJSON{}
 	packs := make(map[backend.ID]*packJSON)
 
-	for id, packedBlobs := range idx.pack {
+	for h, packedBlobs := range idx.pack {
 		for _, blob := range packedBlobs {
 			if blob.packID.IsNull() {
 				panic("null pack id")
 			}
 
-			debug.Log("Index.generatePackList", "handle blob %v", id.Str())
+			debug.Log("Index.generatePackList", "handle blob %v", h)
 
 			if blob.packID.IsNull() {
-				debug.Log("Index.generatePackList", "blob %q has no packID! (type %v, offset %v, length %v)",
-					id.Str(), blob.tpe, blob.offset, blob.length)
-				return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", id)
+				debug.Log("Index.generatePackList", "blob %v has no packID! (offset %v, length %v)",
+					h, blob.offset, blob.length)
+				return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", h)
 			}
 
 			// see if pack is already in map
@@ -335,8 +342,8 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 
 			// add blob
 			p.Blobs = append(p.Blobs, blobJSON{
-				ID:     id,
-				Type:   blob.tpe,
+				ID:     h.ID,
+				Type:   h.Type,
 				Offset: blob.offset,
 				Length: blob.length,
 			})

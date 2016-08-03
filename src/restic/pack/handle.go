@@ -12,11 +12,7 @@ type Handle struct {
 }
 
 func (h Handle) String() string {
-	name := h.ID.String()
-	if len(name) > 10 {
-		name = name[:10]
-	}
-	return fmt.Sprintf("<%s/%s>", h.Type, name)
+	return fmt.Sprintf("<%s/%s>", h.Type, h.ID.Str())
 }
 
 // Handles is an ordered list of Handles that implements sort.Interface.

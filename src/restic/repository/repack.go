@@ -13,7 +13,7 @@ import (
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Afterwards, the packs are removed. This operation requires
 // an exclusive lock on the repo.
-func Repack(repo *Repository, packs, keepBlobs backend.IDSet) (err error) {
+func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err error) {
 	debug.Log("Repack", "repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	buf := make([]byte, 0, maxPackSize)
@@ -41,7 +41,8 @@ func Repack(repo *Repository, packs, keepBlobs backend.IDSet) (err error) {
 		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), len(unpck.Entries))
 		var plaintext []byte
 		for _, entry := range unpck.Entries {
-			if !keepBlobs.Has(entry.ID) {
+			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			if !keepBlobs.Has(h) {
 				continue
 			}
 
@@ -63,7 +64,7 @@ func Repack(repo *Repository, packs, keepBlobs backend.IDSet) (err error) {
 
 			debug.Log("Repack", "  saved blob %v", entry.ID.Str())
 
-			keepBlobs.Delete(entry.ID)
+			keepBlobs.Delete(h)
 		}
 	}
 

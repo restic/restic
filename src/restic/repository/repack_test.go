@@ -58,12 +58,12 @@ func createRandomBlobs(t *testing.T, repo *repository.Repository, blobs int, pDa
 
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
 // will be contained in the firstone ith probability p.
-func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, list2 backend.IDSet) {
+func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, list2 pack.BlobSet) {
 	done := make(chan struct{})
 	defer close(done)
 
-	list1 = backend.NewIDSet()
-	list2 = backend.NewIDSet()
+	list1 = pack.NewBlobSet()
+	list2 = pack.NewBlobSet()
 
 	for id := range repo.List(backend.Data, done) {
 		entries, err := repo.ListPack(id)
@@ -73,9 +73,9 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 
 		for _, entry := range entries {
 			if rand.Float32() <= p {
-				list1.Insert(entry.ID)
+				list1.Insert(pack.Handle{ID: entry.ID, Type: entry.Type})
 			} else {
-				list2.Insert(entry.ID)
+				list2.Insert(pack.Handle{ID: entry.ID, Type: entry.Type})
 			}
 		}
 	}
@@ -95,23 +95,25 @@ func listPacks(t *testing.T, repo *repository.Repository) backend.IDSet {
 	return list
 }
 
-func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs backend.IDSet) backend.IDSet {
+func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs pack.BlobSet) backend.IDSet {
 	packs := backend.NewIDSet()
 
 	idx := repo.Index()
-	for id := range blobs {
-		pb, err := idx.Lookup(id)
+	for h := range blobs {
+		list, err := idx.Lookup(h.ID, h.Type)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		packs.Insert(pb.PackID)
+		for _, pb := range list {
+			packs.Insert(pb.PackID)
+		}
 	}
 
 	return packs
 }
 
-func repack(t *testing.T, repo *repository.Repository, packs, blobs backend.IDSet) {
+func repack(t *testing.T, repo *repository.Repository, packs backend.IDSet, blobs pack.BlobSet) {
 	err := repository.Repack(repo, packs, blobs)
 	if err != nil {
 		t.Fatal(err)
@@ -173,20 +175,29 @@ func TestRepack(t *testing.T) {
 	}
 
 	idx := repo.Index()
-	for id := range keepBlobs {
-		pb, err := idx.Lookup(id)
+
+	for h := range keepBlobs {
+		list, err := idx.Lookup(h.ID, h.Type)
 		if err != nil {
-			t.Errorf("unable to find blob %v in repo", id.Str())
+			t.Errorf("unable to find blob %v in repo", h.ID.Str())
+			continue
 		}
+
+		if len(list) != 1 {
+			t.Errorf("expected one pack in the list, got: %v", list)
+			continue
+		}
+
+		pb := list[0]
 
 		if removePacks.Has(pb.PackID) {
 			t.Errorf("lookup returned pack ID %v that should've been removed", pb.PackID)
 		}
 	}
 
-	for id := range removeBlobs {
-		if _, err := idx.Lookup(id); err == nil {
-			t.Errorf("blob %v still contained in the repo", id.Str())
+	for h := range removeBlobs {
+		if _, err := idx.Lookup(h.ID, h.Type); err == nil {
+			t.Errorf("blob %v still contained in the repo", h)
 		}
 	}
 }

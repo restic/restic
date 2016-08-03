@@ -72,7 +72,7 @@ func NewArchiver(repo *repository.Repository) *Archiver {
 // When the blob is not known, false is returned and the blob is added to the
 // list. This means that the caller false is returned to is responsible to save
 // the blob to the backend.
-func (arch *Archiver) isKnownBlob(id backend.ID) bool {
+func (arch *Archiver) isKnownBlob(id backend.ID, t pack.BlobType) bool {
 	arch.knownBlobs.Lock()
 	defer arch.knownBlobs.Unlock()
 
@@ -82,7 +82,7 @@ func (arch *Archiver) isKnownBlob(id backend.ID) bool {
 
 	arch.knownBlobs.Insert(id)
 
-	_, err := arch.repo.Index().Lookup(id)
+	_, err := arch.repo.Index().Lookup(id, t)
 	if err == nil {
 		return true
 	}
@@ -94,7 +94,7 @@ func (arch *Archiver) isKnownBlob(id backend.ID) bool {
 func (arch *Archiver) Save(t pack.BlobType, data []byte, id backend.ID) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
-	if arch.isKnownBlob(id) {
+	if arch.isKnownBlob(id, pack.Data) {
 		debug.Log("Archiver.Save", "blob %v is known\n", id.Str())
 		return nil
 	}
@@ -119,7 +119,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 
 	// check if tree has been saved before
 	id := backend.Hash(data)
-	if arch.isKnownBlob(id) {
+	if arch.isKnownBlob(id, pack.Tree) {
 		return id, nil
 	}
 

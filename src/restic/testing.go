@@ -42,7 +42,7 @@ func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs backend.IDs) {
 		}
 
 		id := backend.Hash(chunk.Data)
-		if !fs.blobIsKnown(id) {
+		if !fs.blobIsKnown(id, pack.Data) {
 			_, err := fs.repo.SaveAndEncrypt(pack.Data, chunk.Data, &id)
 			if err != nil {
 				fs.t.Fatalf("error saving chunk: %v", err)
@@ -72,16 +72,16 @@ func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, backend.ID) {
 	data = append(data, '\n')
 
 	id := backend.Hash(data)
-	return fs.blobIsKnown(id), id
+	return fs.blobIsKnown(id, pack.Tree), id
 
 }
 
-func (fs fakeFileSystem) blobIsKnown(id backend.ID) bool {
+func (fs fakeFileSystem) blobIsKnown(id backend.ID, t pack.BlobType) bool {
 	if fs.knownBlobs.Has(id) {
 		return true
 	}
 
-	if fs.repo.Index().Has(id) {
+	if fs.repo.Index().Has(id, t) {
 		return true
 	}
 
