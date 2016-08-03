@@ -26,7 +26,7 @@ func NewMockRepo(content map[backend.ID][]byte) *MockRepo {
 	return &MockRepo{blobs: content}
 }
 
-func (m *MockRepo) LookupBlobSize(id backend.ID) (uint, error) {
+func (m *MockRepo) LookupBlobSize(id backend.ID, t pack.BlobType) (uint, error) {
 	buf, ok := m.blobs[id]
 	if !ok {
 		return 0, errors.New("blob not found")
@@ -35,8 +35,8 @@ func (m *MockRepo) LookupBlobSize(id backend.ID) (uint, error) {
 	return uint(len(buf)), nil
 }
 
-func (m *MockRepo) LoadBlob(t pack.BlobType, id backend.ID, buf []byte) ([]byte, error) {
-	size, err := m.LookupBlobSize(id)
+func (m *MockRepo) LoadBlob(id backend.ID, t pack.BlobType, buf []byte) ([]byte, error) {
+	size, err := m.LookupBlobSize(id, t)
 	if err != nil {
 		return nil, err
 	}

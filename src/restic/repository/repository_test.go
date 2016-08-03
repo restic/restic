@@ -92,7 +92,7 @@ func TestSave(t *testing.T) {
 		// OK(t, repo.SaveIndex())
 
 		// read back
-		buf, err := repo.LoadBlob(pack.Data, id, make([]byte, size))
+		buf, err := repo.LoadBlob(id, pack.Data, make([]byte, size))
 		OK(t, err)
 
 		Assert(t, len(buf) == len(data),
@@ -124,7 +124,7 @@ func TestSaveFrom(t *testing.T) {
 		OK(t, repo.Flush())
 
 		// read back
-		buf, err := repo.LoadBlob(pack.Data, id, make([]byte, size))
+		buf, err := repo.LoadBlob(id, pack.Data, make([]byte, size))
 		OK(t, err)
 
 		Assert(t, len(buf) == len(data),

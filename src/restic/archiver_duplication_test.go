@@ -101,7 +101,7 @@ func testArchiverDuplication(t *testing.T) {
 
 				id := randomID()
 
-				if repo.Index().Has(id) {
+				if repo.Index().Has(id, pack.Data) {
 					continue
 				}
 

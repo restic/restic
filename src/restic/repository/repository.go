@@ -77,7 +77,7 @@ func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, erro
 // LoadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
-func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byte) ([]byte, error) {
+func (r *Repository) LoadBlob(id backend.ID, t pack.BlobType, plaintextBuf []byte) ([]byte, error) {
 	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
 
 	// lookup plaintext size of blob
@@ -167,7 +167,7 @@ func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interf
 // LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
 // data and afterwards call json.Unmarshal on the item.
 func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) (err error) {
-	buf, err := r.LoadBlob(t, id, nil)
+	buf, err := r.LoadBlob(id, t, nil)
 	if err != nil {
 		return err
 	}
