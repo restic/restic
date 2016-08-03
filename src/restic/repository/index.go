@@ -111,22 +111,6 @@ func (idx *Index) Store(blob PackedBlob) {
 	idx.store(blob)
 }
 
-// StoreBlobs saves information about the blobs to the index in one atomic transaction.
-func (idx *Index) StoreBlobs(blobs []PackedBlob) {
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	if idx.final {
-		panic("store new item in finalized index")
-	}
-
-	debug.Log("Index.StoreBlobs", "stored %d blobs", len(blobs))
-
-	for _, blob := range blobs {
-		idx.store(blob)
-	}
-}
-
 // Lookup queries the index for the blob ID and returns a PackedBlob.
 func (idx *Index) Lookup(id backend.ID) (pb PackedBlob, err error) {
 	idx.m.Lock()
@@ -191,22 +175,6 @@ func (idx *Index) LookupSize(id backend.ID) (cleartextLength uint, err error) {
 		return 0, err
 	}
 	return blob.PlaintextLength(), nil
-}
-
-// Merge loads all items from other into idx.
-func (idx *Index) Merge(other *Index) {
-	debug.Log("Index.Merge", "Merge index with %p", other)
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	for k, v := range other.pack {
-		if _, ok := idx.pack[k]; ok {
-			debug.Log("Index.Merge", "index already has key %v, updating", k.Str())
-		}
-
-		idx.pack[k] = v
-	}
-	debug.Log("Index.Merge", "done merging index")
 }
 
 // Supersedes returns the list of indexes this index supersedes, if any.
