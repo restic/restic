@@ -2,17 +2,23 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"runtime"
-
 	"github.com/jessevdk/go-flags"
+	"os"
 	"restic"
 	"restic/debug"
+	"runtime"
 )
 
 func init() {
 	// set GOMAXPROCS to number of CPUs
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	if runtime.Version() < "go1.5" {
+		gomaxprocs := os.Getenv("GOMAXPROCS")
+		debug.Log("restic", "read GOMAXPROCS from env variable, value: %s", gomaxprocs)
+		if gomaxprocs == "" {
+			runtime.GOMAXPROCS(runtime.NumCPU())
+		}
+	}
+
 }
 
 func main() {
