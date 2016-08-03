@@ -18,7 +18,7 @@ import (
 // Index holds a lookup table for id -> pack.
 type Index struct {
 	m    sync.Mutex
-	pack map[backend.ID]indexEntry
+	pack map[backend.ID][]indexEntry
 
 	final      bool       // set to true for all indexes read from the backend ("finalized")
 	id         backend.ID // set to the ID of the index when it's finalized
@@ -36,18 +36,19 @@ type indexEntry struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		pack:    make(map[backend.ID]indexEntry),
+		pack:    make(map[backend.ID][]indexEntry),
 		created: time.Now(),
 	}
 }
 
 func (idx *Index) store(blob PackedBlob) {
-	idx.pack[blob.ID] = indexEntry{
+	list := idx.pack[blob.ID]
+	idx.pack[blob.ID] = append(list, indexEntry{
 		tpe:    blob.Type,
 		packID: blob.PackID,
 		offset: blob.Offset,
 		length: blob.Length,
-	}
+	})
 }
 
 // Final returns true iff the index is already written to the repository, it is
@@ -131,7 +132,8 @@ func (idx *Index) Lookup(id backend.ID) (pb PackedBlob, err error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	if p, ok := idx.pack[id]; ok {
+	if packs, ok := idx.pack[id]; ok {
+		p := packs[0]
 		debug.Log("Index.Lookup", "id %v found in pack %v at %d, length %d",
 			id.Str(), p.packID.Str(), p.offset, p.length)
 
@@ -154,15 +156,17 @@ func (idx *Index) ListPack(id backend.ID) (list []PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	for blobID, entry := range idx.pack {
-		if entry.packID == id {
-			list = append(list, PackedBlob{
-				ID:     blobID,
-				Type:   entry.tpe,
-				Length: entry.length,
-				Offset: entry.offset,
-				PackID: entry.packID,
-			})
+	for blobID, packList := range idx.pack {
+		for _, entry := range packList {
+			if entry.packID == id {
+				list = append(list, PackedBlob{
+					ID:     blobID,
+					Type:   entry.tpe,
+					Length: entry.length,
+					Offset: entry.offset,
+					PackID: entry.packID,
+				})
+			}
 		}
 	}
 
@@ -257,17 +261,19 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 			close(ch)
 		}()
 
-		for id, blob := range idx.pack {
-			select {
-			case <-done:
-				return
-			case ch <- PackedBlob{
-				ID:     id,
-				Offset: blob.offset,
-				Type:   blob.tpe,
-				Length: blob.length,
-				PackID: blob.packID,
-			}:
+		for id, packs := range idx.pack {
+			for _, blob := range packs {
+				select {
+				case <-done:
+					return
+				case ch <- PackedBlob{
+					ID:     id,
+					Offset: blob.offset,
+					Type:   blob.tpe,
+					Length: blob.length,
+					PackID: blob.packID,
+				}:
+				}
 			}
 		}
 	}()
@@ -281,8 +287,10 @@ func (idx *Index) Packs() backend.IDSet {
 	defer idx.m.Unlock()
 
 	packs := backend.NewIDSet()
-	for _, entry := range idx.pack {
-		packs.Insert(entry.packID)
+	for _, list := range idx.pack {
+		for _, entry := range list {
+			packs.Insert(entry.packID)
+		}
 	}
 
 	return packs
@@ -294,10 +302,12 @@ func (idx *Index) Count(t pack.BlobType) (n uint) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	for id, blob := range idx.pack {
-		if blob.tpe == t {
-			n++
-			debug.Log("Index.Count", "  blob %v counted: %v", id.Str(), blob)
+	for id, list := range idx.pack {
+		for _, blob := range list {
+			if blob.tpe == t {
+				n++
+				debug.Log("Index.Count", "  blob %v counted: %v", id.Str(), blob)
+			}
 		}
 	}
 
@@ -330,37 +340,39 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 	list := []*packJSON{}
 	packs := make(map[backend.ID]*packJSON)
 
-	for id, blob := range idx.pack {
-		if blob.packID.IsNull() {
-			panic("null pack id")
+	for id, packedBlobs := range idx.pack {
+		for _, blob := range packedBlobs {
+			if blob.packID.IsNull() {
+				panic("null pack id")
+			}
+
+			debug.Log("Index.generatePackList", "handle blob %v", id.Str())
+
+			if blob.packID.IsNull() {
+				debug.Log("Index.generatePackList", "blob %q has no packID! (type %v, offset %v, length %v)",
+					id.Str(), blob.tpe, blob.offset, blob.length)
+				return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", id)
+			}
+
+			// see if pack is already in map
+			p, ok := packs[blob.packID]
+			if !ok {
+				// else create new pack
+				p = &packJSON{ID: blob.packID}
+
+				// and append it to the list and map
+				list = append(list, p)
+				packs[p.ID] = p
+			}
+
+			// add blob
+			p.Blobs = append(p.Blobs, blobJSON{
+				ID:     id,
+				Type:   blob.tpe,
+				Offset: blob.offset,
+				Length: blob.length,
+			})
 		}
-
-		debug.Log("Index.generatePackList", "handle blob %v", id.Str())
-
-		if blob.packID.IsNull() {
-			debug.Log("Index.generatePackList", "blob %q has no packID! (type %v, offset %v, length %v)",
-				id.Str(), blob.tpe, blob.offset, blob.length)
-			return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", id)
-		}
-
-		// see if pack is already in map
-		p, ok := packs[blob.packID]
-		if !ok {
-			// else create new pack
-			p = &packJSON{ID: blob.packID}
-
-			// and append it to the list and map
-			list = append(list, p)
-			packs[p.ID] = p
-		}
-
-		// add blob
-		p.Blobs = append(p.Blobs, blobJSON{
-			ID:     id,
-			Type:   blob.tpe,
-			Offset: blob.offset,
-			Length: blob.length,
-		})
 	}
 
 	debug.Log("Index.generatePackList", "done")
