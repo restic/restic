@@ -119,7 +119,7 @@ var entrySize = uint(binary.Size(BlobType(0)) + binary.Size(uint32(0)) + backend
 
 // headerEntry is used with encoding/binary to read and write header entries
 type headerEntry struct {
-	Type   BlobType
+	Type   uint8
 	Length uint32
 	ID     [backend.IDSize]byte
 }
@@ -177,9 +177,17 @@ func (p *Packer) Finalize() (uint, error) {
 func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
 	for _, b := range p.blobs {
 		entry := headerEntry{
-			Type:   b.Type,
 			Length: uint32(b.Length),
 			ID:     b.ID,
+		}
+
+		switch b.Type {
+		case Data:
+			entry.Type = 0
+		case Tree:
+			entry.Type = 1
+		default:
+			return 0, fmt.Errorf("invalid blob type %v", b.Type)
 		}
 
 		err := binary.Write(wr, binary.LittleEndian, entry)
@@ -277,12 +285,22 @@ func NewUnpacker(k *crypto.Key, rd io.ReadSeeker) (*Unpacker, error) {
 			return nil, err
 		}
 
-		entries = append(entries, Blob{
-			Type:   e.Type,
+		entry := Blob{
 			Length: uint(e.Length),
 			ID:     e.ID,
 			Offset: pos,
-		})
+		}
+
+		switch e.Type {
+		case 0:
+			entry.Type = Data
+		case 1:
+			entry.Type = Tree
+		default:
+			return nil, fmt.Errorf("invalid type %d", e.Type)
+		}
+
+		entries = append(entries, entry)
 
 		pos += uint(e.Length)
 	}
