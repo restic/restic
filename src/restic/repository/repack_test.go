@@ -13,7 +13,7 @@ func randomSize(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func random(t *testing.T, length int) []byte {
+func random(t testing.TB, length int) []byte {
 	rd := repository.NewRandReader(rand.New(rand.NewSource(int64(length))))
 	buf := make([]byte, length)
 	_, err := io.ReadFull(rd, buf)
@@ -24,7 +24,7 @@ func random(t *testing.T, length int) []byte {
 	return buf
 }
 
-func createRandomBlobs(t *testing.T, repo *repository.Repository, blobs int, pData float32) {
+func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pData float32) {
 	for i := 0; i < blobs; i++ {
 		var (
 			tpe    pack.BlobType
@@ -33,13 +33,21 @@ func createRandomBlobs(t *testing.T, repo *repository.Repository, blobs int, pDa
 
 		if rand.Float32() < pData {
 			tpe = pack.Data
-			length = randomSize(50*1024, 2*1024*1024) // 50KiB to 2MiB of data
+			length = randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
 		} else {
 			tpe = pack.Tree
-			length = randomSize(5*1024, 50*1024) // 5KiB to 50KiB
+			length = randomSize(1*1024, 20*1024) // 1KiB to 20KiB
 		}
 
-		_, err := repo.SaveAndEncrypt(tpe, random(t, length), nil)
+		buf := random(t, length)
+		id := backend.Hash(buf)
+
+		if repo.Index().Has(id, pack.Data) {
+			t.Errorf("duplicate blob %v/%v ignored", id, pack.Data)
+			continue
+		}
+
+		_, err := repo.SaveAndEncrypt(tpe, buf, &id)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
 		}
@@ -65,6 +73,8 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 	list1 = pack.NewBlobSet()
 	list2 = pack.NewBlobSet()
 
+	blobs := pack.NewBlobSet()
+
 	for id := range repo.List(backend.Data, done) {
 		entries, err := repo.ListPack(id)
 		if err != nil {
@@ -72,11 +82,19 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 		}
 
 		for _, entry := range entries {
+			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			if blobs.Has(h) {
+				t.Errorf("ignoring duplicate blob %v", h)
+				continue
+			}
+			blobs.Insert(h)
+
 			if rand.Float32() <= p {
 				list1.Insert(pack.Handle{ID: entry.ID, Type: entry.Type})
 			} else {
 				list2.Insert(pack.Handle{ID: entry.ID, Type: entry.Type})
 			}
+
 		}
 	}
 
@@ -143,7 +161,7 @@ func TestRepack(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	createRandomBlobs(t, repo, rand.Intn(400), 0.7)
+	createRandomBlobs(t, repo, 100, 0.7)
 
 	packsBefore := listPacks(t, repo)
 
