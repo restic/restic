@@ -23,10 +23,6 @@ func (h Handles) Len() int {
 }
 
 func (h Handles) Less(i, j int) bool {
-	if h[i].Type != h[j].Type {
-		return h[i].Type < h[j].Type
-	}
-
 	for k, b := range h[i].ID {
 		if b == h[j].ID[k] {
 			continue
@@ -39,7 +35,7 @@ func (h Handles) Less(i, j int) bool {
 		return false
 	}
 
-	return false
+	return h[i].Type < h[j].Type
 }
 
 func (h Handles) Swap(i, j int) {

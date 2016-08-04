@@ -2,6 +2,7 @@ package restic
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -10,51 +11,58 @@ import (
 	"testing"
 	"time"
 
-	"restic/backend"
+	"restic/pack"
 	"restic/repository"
 )
 
-func loadIDSet(t testing.TB, filename string) backend.IDSet {
+func loadIDSet(t testing.TB, filename string) pack.BlobSet {
 	f, err := os.Open(filename)
 	if err != nil {
 		t.Logf("unable to open golden file %v: %v", filename, err)
-		return backend.IDSet{}
+		return pack.NewBlobSet()
 	}
 
 	sc := bufio.NewScanner(f)
 
-	ids := backend.NewIDSet()
+	blobs := pack.NewBlobSet()
 	for sc.Scan() {
-		id, err := backend.ParseID(sc.Text())
+		var h pack.Handle
+		err := json.Unmarshal([]byte(sc.Text()), &h)
 		if err != nil {
-			t.Errorf("file %v contained invalid id: %v", filename, err)
+			t.Errorf("file %v contained invalid blob: %#v", filename, err)
+			continue
 		}
 
-		ids.Insert(id)
+		blobs.Insert(h)
 	}
 
 	if err = f.Close(); err != nil {
 		t.Errorf("closing file %v failed with error %v", filename, err)
 	}
 
-	return ids
+	return blobs
 }
 
-func saveIDSet(t testing.TB, filename string, s backend.IDSet) {
+func saveIDSet(t testing.TB, filename string, s pack.BlobSet) {
 	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		t.Fatalf("unable to update golden file %v: %v", filename, err)
 		return
 	}
 
-	var ids backend.IDs
-	for id := range s {
-		ids = append(ids, id)
+	var hs pack.Handles
+	for h := range s {
+		hs = append(hs, h)
 	}
 
-	sort.Sort(ids)
-	for _, id := range ids {
-		fmt.Fprintf(f, "%s\n", id)
+	sort.Sort(hs)
+
+	enc := json.NewEncoder(f)
+	for _, h := range hs {
+		err = enc.Encode(h)
+		if err != nil {
+			t.Fatalf("Encode() returned error: %v", err)
+		}
 	}
 
 	if err = f.Close(); err != nil {
@@ -83,7 +91,7 @@ func TestFindUsedBlobs(t *testing.T) {
 	}
 
 	for i, sn := range snapshots {
-		usedBlobs := backend.NewIDSet()
+		usedBlobs := pack.NewBlobSet()
 		err := FindUsedBlobs(repo, *sn.Tree, usedBlobs)
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
