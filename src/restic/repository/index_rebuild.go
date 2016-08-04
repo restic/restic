@@ -11,19 +11,20 @@ import (
 
 const rebuildIndexWorkers = 10
 
-type loadBlobsResult struct {
-	packID  backend.ID
-	entries []pack.Blob
+// LoadBlobsResult is returned in the channel from LoadBlobsFromAllPacks.
+type LoadBlobsResult struct {
+	PackID  backend.ID
+	Entries []pack.Blob
 }
 
-// loadBlobsFromAllPacks sends the contents of all packs to ch.
-func loadBlobsFromAllPacks(repo *Repository, ch chan<- worker.Job, done <-chan struct{}) {
+// ListAllPacks sends the contents of all packs to ch.
+func ListAllPacks(repo *Repository, ch chan<- worker.Job, done <-chan struct{}) {
 	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
 		packID := job.Data.(backend.ID)
 		entries, err := repo.ListPack(packID)
-		return loadBlobsResult{
-			packID:  packID,
-			entries: entries,
+		return LoadBlobsResult{
+			PackID:  packID,
+			Entries: entries,
 		}, err
 	}
 
@@ -31,10 +32,14 @@ func loadBlobsFromAllPacks(repo *Repository, ch chan<- worker.Job, done <-chan s
 	wp := worker.New(rebuildIndexWorkers, f, jobCh, ch)
 
 	go func() {
+		defer close(jobCh)
 		for id := range repo.List(backend.Data, done) {
-			jobCh <- worker.Job{Data: id}
+			select {
+			case jobCh <- worker.Job{Data: id}:
+			case <-done:
+				return
+			}
 		}
-		close(jobCh)
 	}()
 
 	wp.Wait()
@@ -50,7 +55,7 @@ func RebuildIndex(repo *Repository) error {
 	defer close(done)
 
 	ch := make(chan worker.Job)
-	go loadBlobsFromAllPacks(repo, ch, done)
+	go ListAllPacks(repo, ch, done)
 
 	idx := NewIndex()
 	for job := range ch {
@@ -61,15 +66,15 @@ func RebuildIndex(repo *Repository) error {
 			continue
 		}
 
-		res := job.Result.(loadBlobsResult)
+		res := job.Result.(LoadBlobsResult)
 
-		for _, entry := range res.entries {
+		for _, entry := range res.Entries {
 			pb := PackedBlob{
 				ID:     entry.ID,
 				Type:   entry.Type,
 				Length: entry.Length,
 				Offset: entry.Offset,
-				PackID: res.packID,
+				PackID: res.PackID,
 			}
 			idx.Store(pb)
 		}
