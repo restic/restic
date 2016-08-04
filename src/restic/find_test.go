@@ -92,7 +92,7 @@ func TestFindUsedBlobs(t *testing.T) {
 
 	for i, sn := range snapshots {
 		usedBlobs := pack.NewBlobSet()
-		err := FindUsedBlobs(repo, *sn.Tree, usedBlobs)
+		err := FindUsedBlobs(repo, *sn.Tree, usedBlobs, pack.NewBlobSet())
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
