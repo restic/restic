@@ -161,13 +161,14 @@ func (cmd CmdCat) Execute(args []string) error {
 		return err
 
 	case "blob":
-		blob, err := repo.Index().Lookup(id)
+		list, err := repo.Index().Lookup(id, pack.Data)
 		if err != nil {
 			return err
 		}
+		blob := list[0]
 
 		buf := make([]byte, blob.Length)
-		data, err := repo.LoadBlob(blob.Type, id, buf)
+		data, err := repo.LoadBlob(id, pack.Data, buf)
 		if err != nil {
 			return err
 		}
