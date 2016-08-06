@@ -184,3 +184,20 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 
 	return snapshot
 }
+
+// TestResetRepository removes all packs and indexes from the repository.
+func TestResetRepository(t testing.TB, repo *repository.Repository) {
+	done := make(chan struct{})
+	defer close(done)
+
+	for _, tpe := range []backend.Type{backend.Snapshot, backend.Index, backend.Data} {
+		for id := range repo.Backend().List(tpe, done) {
+			err := repo.Backend().Remove(tpe, id)
+			if err != nil {
+				t.Errorf("removing %v (%v) failed: %v", id[0:12], tpe, err)
+			}
+		}
+	}
+
+	repo.SetIndex(repository.NewMasterIndex())
+}
