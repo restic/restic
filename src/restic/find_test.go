@@ -85,7 +85,7 @@ func TestFindUsedBlobs(t *testing.T) {
 
 	var snapshots []*Snapshot
 	for i := 0; i < findTestSnapshots; i++ {
-		sn := TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth)
+		sn := TestCreateSnapshot(t, repo, findTestTime.Add(time.Duration(i)*time.Second), findTestDepth, 0)
 		t.Logf("snapshot %v saved, tree %v", sn.ID().Str(), sn.Tree.Str())
 		snapshots = append(snapshots, sn)
 	}

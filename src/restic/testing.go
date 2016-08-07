@@ -20,9 +20,10 @@ func fakeFile(t testing.TB, seed, size int64) io.Reader {
 }
 
 type fakeFileSystem struct {
-	t          testing.TB
-	repo       *repository.Repository
-	knownBlobs backend.IDSet
+	t           testing.TB
+	repo        *repository.Repository
+	knownBlobs  backend.IDSet
+	duplication float32
 }
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
@@ -77,6 +78,10 @@ func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, backend.ID) {
 }
 
 func (fs fakeFileSystem) blobIsKnown(id backend.ID, t pack.BlobType) bool {
+	if rand.Float32() < fs.duplication {
+		return false
+	}
+
 	if fs.knownBlobs.Has(id) {
 		return true
 	}
@@ -142,8 +147,9 @@ func (fs fakeFileSystem) saveTree(seed int64, depth int) backend.ID {
 // TestCreateSnapshot creates a snapshot filled with fake data. The
 // fake data is generated deterministically from the timestamp `at`, which is
 // also used as the snapshot's timestamp. The tree's depth can be specified
-// with the parameter depth.
-func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time, depth int) *Snapshot {
+// with the parameter depth. The parameter duplication is a probability that
+// the same blob will saved again.
+func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time, depth int, duplication float32) *Snapshot {
 	seed := at.Unix()
 	t.Logf("create fake snapshot at %s with seed %d", at, seed)
 
@@ -155,9 +161,10 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 	snapshot.Time = at
 
 	fs := fakeFileSystem{
-		t:          t,
-		repo:       repo,
-		knownBlobs: backend.NewIDSet(),
+		t:           t,
+		repo:        repo,
+		knownBlobs:  backend.NewIDSet(),
+		duplication: duplication,
 	}
 
 	treeID := fs.saveTree(seed, depth)

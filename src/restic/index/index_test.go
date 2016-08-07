@@ -15,11 +15,11 @@ var (
 	depth        = 3
 )
 
-func createFilledRepo(t testing.TB, snapshots int) (*repository.Repository, func()) {
+func createFilledRepo(t testing.TB, snapshots int, dup float32) (*repository.Repository, func()) {
 	repo, cleanup := repository.TestRepository(t)
 
 	for i := 0; i < 3; i++ {
-		restic.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(i)*time.Second), depth)
+		restic.TestCreateSnapshot(t, repo, snapshotTime.Add(time.Duration(i)*time.Second), depth, dup)
 	}
 
 	return repo, cleanup
@@ -34,7 +34,7 @@ func validateIndex(t testing.TB, repo *repository.Repository, idx *Index) {
 }
 
 func TestIndexNew(t *testing.T) {
-	repo, cleanup := createFilledRepo(t, 3)
+	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
 	idx, err := New(repo)
@@ -50,7 +50,7 @@ func TestIndexNew(t *testing.T) {
 }
 
 func TestIndexLoad(t *testing.T) {
-	repo, cleanup := createFilledRepo(t, 3)
+	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
 	loadIdx, err := Load(repo)
@@ -137,7 +137,7 @@ func openRepo(t testing.TB, dir, password string) *repository.Repository {
 }
 
 func BenchmarkIndexNew(b *testing.B) {
-	repo, cleanup := createFilledRepo(b, 3)
+	repo, cleanup := createFilledRepo(b, 3, 0)
 	defer cleanup()
 
 	b.ResetTimer()

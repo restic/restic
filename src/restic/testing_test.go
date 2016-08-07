@@ -20,7 +20,7 @@ func TestCreateSnapshot(t *testing.T) {
 	defer cleanup()
 
 	for i := 0; i < testCreateSnapshots; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth)
+		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
 	}
 
 	snapshots, err := restic.LoadAllSnapshots(repo)
@@ -55,7 +55,7 @@ func BenchmarkCreateSnapshot(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		restic.TestCreateSnapshot(b, repo, testSnapshotTime, testDepth)
+		restic.TestCreateSnapshot(b, repo, testSnapshotTime, testDepth, 0)
 		restic.TestResetRepository(b, repo)
 	}
 }
