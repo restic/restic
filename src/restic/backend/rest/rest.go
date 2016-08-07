@@ -82,11 +82,11 @@ func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err er
 			return 0, err
 		}
 
-		if off > -info.Size {
-			return 0, errors.New("offset before beginning of file")
+		if -off > info.Size {
+			off = 0
+		} else {
+			off = info.Size + off
 		}
-
-		off = info.Size + off
 	}
 
 	req, err := http.NewRequest("GET", restPath(b.url, h), nil)

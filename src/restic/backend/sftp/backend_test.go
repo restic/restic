@@ -51,6 +51,13 @@ func TestSftpBackendLoad(t *testing.T) {
 	test.TestLoad(t)
 }
 
+func TestSftpBackendLoadNegativeOffset(t *testing.T) {
+	if SkipMessage != "" {
+		t.Skip(SkipMessage)
+	}
+	test.TestLoadNegativeOffset(t)
+}
+
 func TestSftpBackendSave(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
