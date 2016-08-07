@@ -241,32 +241,55 @@ type Unpacker struct {
 	k       *crypto.Key
 }
 
+const preloadHeaderSize = 2048
+
 // NewUnpacker returns a pointer to Unpacker which can be used to read
 // individual Blobs from a pack.
 func NewUnpacker(k *crypto.Key, rd io.ReadSeeker) (*Unpacker, error) {
 	var err error
+
+	// read the last 2048 byte, this will mostly be enough for the header, so
+	// we do not need another round trip.
+	buf := make([]byte, preloadHeaderSize)
+	_, err = rd.Seek(-int64(len(buf)), 2)
+	if err != nil {
+		return nil, fmt.Errorf("seek to -%d failed: %v", len(buf), err)
+	}
+
+	_, err = io.ReadFull(rd, buf)
+	if err != nil {
+		return nil, fmt.Errorf("error reading last %d bytes: %v", len(buf), err)
+	}
+
+	hdrRd := io.ReadSeeker(bytes.NewReader(buf))
 	ls := binary.Size(uint32(0))
 
 	// reset to the end to read header length
-	_, err = rd.Seek(-int64(ls), 2)
+	_, err = hdrRd.Seek(-int64(ls), 2)
 	if err != nil {
 		return nil, fmt.Errorf("seeking to read header length failed: %v", err)
 	}
 
 	var length uint32
-	err = binary.Read(rd, binary.LittleEndian, &length)
+	err = binary.Read(hdrRd, binary.LittleEndian, &length)
 	if err != nil {
 		return nil, fmt.Errorf("reading header length failed: %v", err)
 	}
 
+	// if the header is longer than the preloaded buffer, use the original
+	// reader (and do another round trip)
+	if int(length) > preloadHeaderSize-ls {
+		hdrRd = rd
+	}
+
 	// reset to the beginning of the header
-	_, err = rd.Seek(-int64(ls)-int64(length), 2)
+	_, err = hdrRd.Seek(-int64(ls)-int64(length), 2)
 	if err != nil {
 		return nil, fmt.Errorf("seeking to read header length failed: %v", err)
 	}
 
 	// read header
-	hrd, err := crypto.DecryptFrom(k, io.LimitReader(rd, int64(length)))
+	hrd, err := crypto.DecryptFrom(k, io.LimitReader(hdrRd, int64(length)))
 	if err != nil {
 		return nil, err
 	}
