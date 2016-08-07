@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"restic/backend"
@@ -48,7 +47,7 @@ func newPack(t testing.TB, k *crypto.Key) ([]Buf, []byte, uint) {
 	return bufs, packData, p.Size()
 }
 
-func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReadSeeker, packSize uint) {
+func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, ldr pack.Loader, packSize uint) {
 	written := 0
 	for _, l := range lengths {
 		written += l
@@ -64,20 +63,24 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReadSeeker, pack
 	Equals(t, uint(written), packSize)
 
 	// read and parse it again
-	np, err := pack.NewUnpacker(k, rd)
+	np, err := pack.NewUnpacker(k, ldr)
 	OK(t, err)
 	Equals(t, len(np.Entries), len(bufs))
 
+	var buf []byte
 	for i, b := range bufs {
 		e := np.Entries[i]
 		Equals(t, b.id, e.ID)
 
-		brd, err := e.GetReader(rd)
+		if len(buf) < int(e.Length) {
+			buf = make([]byte, int(e.Length))
+		}
+		buf = buf[:int(e.Length)]
+		n, err := ldr.Load(buf, int64(e.Offset))
 		OK(t, err)
-		data, err := ioutil.ReadAll(brd)
-		OK(t, err)
+		buf = buf[:n]
 
-		Assert(t, bytes.Equal(b.data, data),
+		Assert(t, bytes.Equal(b.data, buf),
 			"data for blob %v doesn't match", i)
 	}
 }
@@ -88,7 +91,7 @@ func TestCreatePack(t *testing.T) {
 
 	bufs, packData, packSize := newPack(t, k)
 	Equals(t, uint(len(packData)), packSize)
-	verifyBlobs(t, bufs, k, bytes.NewReader(packData), packSize)
+	verifyBlobs(t, bufs, k, pack.BufferLoader(packData), packSize)
 }
 
 var blobTypeJSON = []struct {
@@ -125,6 +128,6 @@ func TestUnpackReadSeeker(t *testing.T) {
 
 	handle := backend.Handle{Type: backend.Data, Name: id.String()}
 	OK(t, b.Save(handle, packData))
-	rd := backend.NewReadSeeker(b, handle)
-	verifyBlobs(t, bufs, k, rd, packSize)
+	ldr := pack.BackendLoader{Backend: b, Handle: handle}
+	verifyBlobs(t, bufs, k, ldr, packSize)
 }

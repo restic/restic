@@ -11,10 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/juju/errors"
-	"github.com/pkg/sftp"
 	"restic/backend"
 	"restic/debug"
+
+	"github.com/juju/errors"
+	"github.com/pkg/sftp"
 )
 
 const (
@@ -304,11 +305,15 @@ func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 		}
 	}()
 
-	if off > 0 {
+	switch {
+	case off > 0:
 		_, err = f.Seek(off, 0)
-		if err != nil {
-			return 0, err
-		}
+	case off < 0:
+		_, err = f.Seek(off, 2)
+	}
+
+	if err != nil {
+		return 0, err
 	}
 
 	return io.ReadFull(f, p)

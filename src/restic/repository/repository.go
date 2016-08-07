@@ -547,9 +547,9 @@ func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 // ListPack returns the list of blobs saved in the pack id.
 func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, error) {
 	h := backend.Handle{Type: backend.Data, Name: id.String()}
-	rd := backend.NewReadSeeker(r.Backend(), h)
+	ldr := pack.BackendLoader{Backend: r.Backend(), Handle: h}
 
-	unpacker, err := pack.NewUnpacker(r.Key(), rd)
+	unpacker, err := pack.NewUnpacker(r.Key(), ldr)
 	if err != nil {
 		return nil, err
 	}

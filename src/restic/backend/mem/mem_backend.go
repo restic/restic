@@ -116,8 +116,13 @@ func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, err
 	}
 
 	buf := be.data[entry{h.Type, h.Name}]
-	if off > int64(len(buf)) {
+	switch {
+	case off > int64(len(buf)):
 		return 0, errors.New("offset beyond end of file")
+	case off < -int64(len(buf)):
+		return 0, errors.New("offset beyond beginning of file")
+	case off < 0:
+		off = int64(len(buf)) + off
 	}
 
 	buf = buf[off:]

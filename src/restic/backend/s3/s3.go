@@ -86,11 +86,15 @@ func (be s3) Load(h backend.Handle, p []byte, off int64) (int, error) {
 		return 0, err
 	}
 
-	if off > 0 {
+	switch {
+	case off > 0:
 		_, err = obj.Seek(off, 0)
-		if err != nil {
-			return 0, err
-		}
+	case off < 0:
+		_, err = obj.Seek(off, 2)
+	}
+
+	if err != nil {
+		return 0, err
 	}
 
 	<-be.connChan

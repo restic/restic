@@ -126,9 +126,9 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 		name := job.Data.(string)
 
 		h := backend.Handle{Type: backend.Data, Name: name}
-		rd := backend.NewReadSeeker(repo.Backend(), h)
+		ldr := pack.BackendLoader{Backend: repo.Backend(), Handle: h}
 
-		unpacker, err := pack.NewUnpacker(repo.Key(), rd)
+		unpacker, err := pack.NewUnpacker(repo.Key(), ldr)
 		if err != nil {
 			return nil, err
 		}
