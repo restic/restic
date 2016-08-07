@@ -241,6 +241,12 @@ func NewUnpacker(k *crypto.Key, ldr Loader) (*Unpacker, error) {
 	// we do not need another round trip.
 	buf := make([]byte, preloadHeaderSize)
 	n, err := ldr.Load(buf, -int64(len(buf)))
+
+	if err == io.ErrUnexpectedEOF {
+		err = nil
+		buf = buf[:n]
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("Load at -%d failed: %v", len(buf), err)
 	}

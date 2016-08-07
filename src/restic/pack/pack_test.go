@@ -16,14 +16,14 @@ import (
 	. "restic/test"
 )
 
-var lengths = []int{23, 31650, 25860, 10928, 13769, 19862, 5211, 127, 13690, 30231}
+var testLens = []int{23, 31650, 25860, 10928, 13769, 19862, 5211, 127, 13690, 30231}
 
 type Buf struct {
 	data []byte
 	id   backend.ID
 }
 
-func newPack(t testing.TB, k *crypto.Key) ([]Buf, []byte, uint) {
+func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	bufs := []Buf{}
 
 	for _, l := range lengths {
@@ -49,13 +49,13 @@ func newPack(t testing.TB, k *crypto.Key) ([]Buf, []byte, uint) {
 
 func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, ldr pack.Loader, packSize uint) {
 	written := 0
-	for _, l := range lengths {
-		written += l
+	for _, buf := range bufs {
+		written += len(buf.data)
 	}
 	// header length
 	written += binary.Size(uint32(0))
 	// header
-	written += len(lengths) * (binary.Size(pack.BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize)
+	written += len(bufs) * (binary.Size(pack.BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize)
 	// header crypto
 	written += crypto.Extension
 
@@ -89,7 +89,7 @@ func TestCreatePack(t *testing.T) {
 	// create random keys
 	k := crypto.NewRandomKey()
 
-	bufs, packData, packSize := newPack(t, k)
+	bufs, packData, packSize := newPack(t, k, testLens)
 	Equals(t, uint(len(packData)), packSize)
 	verifyBlobs(t, bufs, k, pack.BufferLoader(packData), packSize)
 }
@@ -121,7 +121,21 @@ func TestUnpackReadSeeker(t *testing.T) {
 	// create random keys
 	k := crypto.NewRandomKey()
 
-	bufs, packData, packSize := newPack(t, k)
+	bufs, packData, packSize := newPack(t, k, testLens)
+
+	b := mem.New()
+	id := backend.Hash(packData)
+
+	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	OK(t, b.Save(handle, packData))
+	ldr := pack.BackendLoader{Backend: b, Handle: handle}
+	verifyBlobs(t, bufs, k, ldr, packSize)
+}
+
+func TestShortPack(t *testing.T) {
+	k := crypto.NewRandomKey()
+
+	bufs, packData, packSize := newPack(t, k, []int{23})
 
 	b := mem.New()
 	id := backend.Hash(packData)
