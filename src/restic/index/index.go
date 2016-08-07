@@ -13,6 +13,7 @@ import (
 
 // Pack contains information about the contents of a pack.
 type Pack struct {
+	Size    int64
 	Entries []pack.Blob
 }
 
@@ -51,7 +52,7 @@ func New(repo *repository.Repository) (*Index, error) {
 		if _, ok := idx.Packs[packID]; ok {
 			return nil, fmt.Errorf("pack %v processed twice", packID.Str())
 		}
-		p := Pack{Entries: j.Entries}
+		p := Pack{Entries: j.Entries, Size: j.Size}
 		idx.Packs[packID] = p
 	}
 

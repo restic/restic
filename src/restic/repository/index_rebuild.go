@@ -14,6 +14,7 @@ const rebuildIndexWorkers = 10
 // ListAllPacksResult is returned in the channel from LoadBlobsFromAllPacks.
 type ListAllPacksResult struct {
 	PackID  backend.ID
+	Size    int64
 	Entries []pack.Blob
 }
 
@@ -21,9 +22,11 @@ type ListAllPacksResult struct {
 func ListAllPacks(repo *Repository, ch chan<- worker.Job, done <-chan struct{}) {
 	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
 		packID := job.Data.(backend.ID)
-		entries, err := repo.ListPack(packID)
+		entries, size, err := repo.ListPack(packID)
+
 		return ListAllPacksResult{
 			PackID:  packID,
+			Size:    size,
 			Entries: entries,
 		}, err
 	}

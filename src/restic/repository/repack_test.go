@@ -76,7 +76,7 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 	blobs := pack.NewBlobSet()
 
 	for id := range repo.List(backend.Data, done) {
-		entries, err := repo.ListPack(id)
+		entries, _, err := repo.ListPack(id)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
 		}

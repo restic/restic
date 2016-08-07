@@ -544,17 +544,24 @@ func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 	return outCh
 }
 
-// ListPack returns the list of blobs saved in the pack id.
-func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, error) {
+// ListPack returns the list of blobs saved in the pack id and the length of
+// the file as stored in the backend.
+func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, int64, error) {
 	h := backend.Handle{Type: backend.Data, Name: id.String()}
+
+	blobInfo, err := r.Backend().Stat(h)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	ldr := pack.BackendLoader{Backend: r.Backend(), Handle: h}
 
 	unpacker, err := pack.NewUnpacker(r.Key(), ldr)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return unpacker.Entries, nil
+	return unpacker.Entries, blobInfo.Size, nil
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error
