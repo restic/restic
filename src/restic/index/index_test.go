@@ -156,7 +156,7 @@ func BenchmarkIndexNew(b *testing.B) {
 }
 
 func TestIndexDuplicateBlobs(t *testing.T) {
-	repo, cleanup := createFilledRepo(t, 3, 0.05)
+	repo, cleanup := createFilledRepo(t, 3, 0.01)
 	defer cleanup()
 
 	idx, err := New(repo)
@@ -168,4 +168,11 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 	if len(dups) == 0 {
 		t.Errorf("no duplicate blobs found")
 	}
+	t.Logf("%d packs, %d unique blobs", len(idx.Packs), len(idx.Blobs))
+
+	packs := idx.PacksForBlobs(dups)
+	if len(packs) == 0 {
+		t.Errorf("no packs with duplicate blobs found")
+	}
+	t.Logf("%d packs with duplicate blobs", len(packs))
 }

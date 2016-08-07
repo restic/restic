@@ -17,14 +17,22 @@ type Pack struct {
 	Entries []pack.Blob
 }
 
+// Blob contains informaiton about a blob.
+type Blob struct {
+	Size  int64
+	Packs backend.IDSet
+}
+
 // Index contains information about blobs and packs stored in a repo.
 type Index struct {
 	Packs map[backend.ID]Pack
+	Blobs map[pack.Handle]Blob
 }
 
 func newIndex() *Index {
 	return &Index{
 		Packs: make(map[backend.ID]Pack),
+		Blobs: make(map[pack.Handle]Blob),
 	}
 }
 
@@ -49,9 +57,11 @@ func New(repo *repository.Repository) (*Index, error) {
 
 		debug.Log("Index.New", "pack %v contains %d blobs", packID.Str(), len(j.Entries))
 
-		if _, ok := idx.Packs[packID]; ok {
-			return nil, fmt.Errorf("pack %v processed twice", packID.Str())
+		err := idx.AddPack(packID, j.Size, j.Entries)
+		if err != nil {
+			return nil, err
 		}
+
 		p := Pack{Entries: j.Entries, Size: j.Size}
 		idx.Packs[packID] = p
 	}
@@ -100,6 +110,8 @@ func Load(repo *repository.Repository) (*Index, error) {
 	supersedes := make(map[backend.ID]backend.IDSet)
 	results := make(map[backend.ID]map[backend.ID]Pack)
 
+	index := newIndex()
+
 	for id := range repo.List(backend.Index, done) {
 		debug.Log("index.Load", "Load index %v", id.Str())
 		idx, err := loadIndexJSON(repo, id)
@@ -115,7 +127,7 @@ func Load(repo *repository.Repository) (*Index, error) {
 		}
 
 		for _, jpack := range idx.Packs {
-			P := Pack{}
+			entries := make([]pack.Blob, 0, len(jpack.Blobs))
 			for _, blob := range jpack.Blobs {
 				entry := pack.Blob{
 					ID:     blob.ID,
@@ -123,9 +135,12 @@ func Load(repo *repository.Repository) (*Index, error) {
 					Offset: blob.Offset,
 					Length: blob.Length,
 				}
-				P.Entries = append(P.Entries, entry)
+				entries = append(entries, entry)
 			}
-			res[jpack.ID] = P
+
+			if err = index.AddPack(jpack.ID, 0, entries); err != nil {
+				return nil, err
+			}
 		}
 
 		results[id] = res
@@ -138,31 +153,66 @@ func Load(repo *repository.Repository) (*Index, error) {
 		}
 	}
 
-	idx := newIndex()
-	for _, packs := range results {
-		for id, pack := range packs {
-			idx.Packs[id] = pack
-		}
+	return index, nil
+}
+
+// AddPack adds a pack to the index. If this pack is already in the index, an
+// error is returned.
+func (idx *Index) AddPack(id backend.ID, size int64, entries []pack.Blob) error {
+	if _, ok := idx.Packs[id]; ok {
+		return fmt.Errorf("pack %v already present in the index", id.Str())
 	}
 
-	return idx, nil
+	idx.Packs[id] = Pack{Size: size, Entries: entries}
+
+	for _, entry := range entries {
+		h := pack.Handle{ID: entry.ID, Type: entry.Type}
+		if _, ok := idx.Blobs[h]; !ok {
+			idx.Blobs[h] = Blob{
+				Size:  int64(entry.Length),
+				Packs: backend.NewIDSet(),
+			}
+		}
+
+		idx.Blobs[h].Packs.Insert(id)
+	}
+
+	return nil
 }
 
 // DuplicateBlobs returns a list of blobs that are stored more than once in the
 // repo.
-func (idx *Index) DuplicateBlobs() (dups map[pack.Handle]int) {
-	dups = make(map[pack.Handle]int)
+func (idx *Index) DuplicateBlobs() (dups pack.BlobSet) {
+	dups = pack.NewBlobSet()
 	seen := pack.NewBlobSet()
 
 	for _, p := range idx.Packs {
 		for _, entry := range p.Entries {
 			h := pack.Handle{ID: entry.ID, Type: entry.Type}
 			if seen.Has(h) {
-				dups[h]++
+				dups.Insert(h)
 			}
 			seen.Insert(h)
 		}
 	}
 
 	return dups
+}
+
+// PacksForBlobs returns the set of packs in which the blobs are contained.
+func (idx *Index) PacksForBlobs(blobs pack.BlobSet) (packs backend.IDSet) {
+	packs = backend.NewIDSet()
+
+	for h := range blobs {
+		blob, ok := idx.Blobs[h]
+		if !ok {
+			continue
+		}
+
+		for id := range blob.Packs {
+			packs.Insert(id)
+		}
+	}
+
+	return packs
 }
