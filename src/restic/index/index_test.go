@@ -2,6 +2,7 @@ package index
 
 import (
 	"restic"
+	"restic/backend"
 	"restic/backend/local"
 	"restic/repository"
 	"testing"
@@ -24,6 +25,14 @@ func createFilledRepo(t testing.TB, snapshots int) (*repository.Repository, func
 	return repo, cleanup
 }
 
+func validateIndex(t testing.TB, repo *repository.Repository, idx *Index) {
+	for id := range repo.List(backend.Data, nil) {
+		if _, ok := idx.Packs[id]; !ok {
+			t.Errorf("pack %v missing from index", id.Str())
+		}
+	}
+}
+
 func TestIndexNew(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3)
 	defer cleanup()
@@ -36,19 +45,79 @@ func TestIndexNew(t *testing.T) {
 	if idx == nil {
 		t.Fatalf("New() returned nil index")
 	}
+
+	validateIndex(t, repo, idx)
 }
 
 func TestIndexLoad(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3)
 	defer cleanup()
 
-	idx, err := Load(repo)
+	loadIdx, err := Load(repo)
 	if err != nil {
 		t.Fatalf("Load() returned error %v", err)
 	}
 
-	if idx == nil {
+	if loadIdx == nil {
 		t.Fatalf("Load() returned nil index")
+	}
+
+	validateIndex(t, repo, loadIdx)
+
+	newIdx, err := New(repo)
+	if err != nil {
+		t.Fatalf("New() returned error %v", err)
+	}
+
+	if len(loadIdx.Packs) != len(newIdx.Packs) {
+		t.Errorf("number of packs does not match: want %v, got %v",
+			len(loadIdx.Packs), len(newIdx.Packs))
+	}
+
+	validateIndex(t, repo, newIdx)
+
+	for packID, packNew := range newIdx.Packs {
+		packLoad, ok := loadIdx.Packs[packID]
+
+		if !ok {
+			t.Errorf("loaded index does not list pack %v", packID.Str())
+			continue
+		}
+
+		if len(packNew.Entries) != len(packLoad.Entries) {
+			t.Errorf("  number of entries in pack %v does not match: %d != %d\n  %v\n  %v",
+				packID.Str(), len(packNew.Entries), len(packLoad.Entries),
+				packNew.Entries, packLoad.Entries)
+			continue
+		}
+
+		for _, entryNew := range packNew.Entries {
+			found := false
+			for _, entryLoad := range packLoad.Entries {
+				if !entryLoad.ID.Equal(entryNew.ID) {
+					continue
+				}
+
+				if entryLoad.Type != entryNew.Type {
+					continue
+				}
+
+				if entryLoad.Offset != entryNew.Offset {
+					continue
+				}
+
+				if entryLoad.Length != entryNew.Length {
+					continue
+				}
+
+				found = true
+				break
+			}
+
+			if !found {
+				t.Errorf("blob not found in loaded index: %v", entryNew)
+			}
+		}
 	}
 }
 

@@ -18,12 +18,12 @@ type Pack struct {
 
 // Index contains information about blobs and packs stored in a repo.
 type Index struct {
-	Packs map[backend.ID]*Pack
+	Packs map[backend.ID]Pack
 }
 
 func newIndex() *Index {
 	return &Index{
-		Packs: make(map[backend.ID]*Pack),
+		Packs: make(map[backend.ID]Pack),
 	}
 }
 
@@ -51,7 +51,7 @@ func New(repo *repository.Repository) (*Index, error) {
 		if _, ok := idx.Packs[packID]; ok {
 			return nil, fmt.Errorf("pack %v processed twice", packID.Str())
 		}
-		p := &Pack{Entries: j.Entries}
+		p := Pack{Entries: j.Entries}
 		idx.Packs[packID] = p
 	}
 
@@ -78,7 +78,7 @@ type indexJSON struct {
 }
 
 func loadIndexJSON(repo *repository.Repository, id backend.ID) (*indexJSON, error) {
-	fmt.Printf("process index %v\n", id.Str())
+	debug.Log("index.loadIndexJSON", "process index %v\n", id.Str())
 
 	var idx indexJSON
 	err := repo.LoadJSONUnpacked(backend.Index, id, &idx)
@@ -116,12 +116,13 @@ func Load(repo *repository.Repository) (*Index, error) {
 		for _, jpack := range idx.Packs {
 			P := Pack{}
 			for _, blob := range jpack.Blobs {
-				P.Entries = append(P.Entries, pack.Blob{
+				entry := pack.Blob{
 					ID:     blob.ID,
 					Type:   blob.Type,
 					Offset: blob.Offset,
 					Length: blob.Length,
-				})
+				}
+				P.Entries = append(P.Entries, entry)
 			}
 			res[jpack.ID] = P
 		}
@@ -139,7 +140,7 @@ func Load(repo *repository.Repository) (*Index, error) {
 	idx := newIndex()
 	for _, packs := range results {
 		for id, pack := range packs {
-			idx.Packs[id] = &pack
+			idx.Packs[id] = pack
 		}
 	}
 
