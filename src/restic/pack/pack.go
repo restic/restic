@@ -67,6 +67,11 @@ type Blob struct {
 	Offset uint
 }
 
+func (b Blob) String() string {
+	return fmt.Sprintf("<Blob %v/%v len %v, off %v>",
+		b.ID.Str(), b.Type, b.Length, b.Offset)
+}
+
 // Packer is used to create a new Pack.
 type Packer struct {
 	blobs []Blob
