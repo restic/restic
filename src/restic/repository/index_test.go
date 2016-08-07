@@ -2,8 +2,6 @@ package repository_test
 
 import (
 	"bytes"
-	"crypto/rand"
-	"io"
 	"testing"
 
 	"restic/backend"
@@ -11,15 +9,6 @@ import (
 	"restic/repository"
 	. "restic/test"
 )
-
-func randomID() backend.ID {
-	id := backend.ID{}
-	_, err := io.ReadFull(rand.Reader, id[:])
-	if err != nil {
-		panic(err)
-	}
-	return id
-}
 
 func TestIndexSerialize(t *testing.T) {
 	type testEntry struct {
@@ -34,11 +23,11 @@ func TestIndexSerialize(t *testing.T) {
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
-		packID := randomID()
+		packID := backend.RandomID()
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
-			id := randomID()
+			id := backend.RandomID()
 			length := uint(i*100 + j)
 			idx.Store(repository.PackedBlob{
 				Type:   pack.Data,
@@ -104,11 +93,11 @@ func TestIndexSerialize(t *testing.T) {
 	// add more blobs to idx
 	newtests := []testEntry{}
 	for i := 0; i < 10; i++ {
-		packID := randomID()
+		packID := backend.RandomID()
 
 		pos := uint(0)
 		for j := 0; j < 10; j++ {
-			id := randomID()
+			id := backend.RandomID()
 			length := uint(i*100 + j)
 			idx.Store(repository.PackedBlob{
 				Type:   pack.Data,
@@ -138,7 +127,7 @@ func TestIndexSerialize(t *testing.T) {
 	Assert(t, idx.Final(),
 		"index not final after encoding")
 
-	id := randomID()
+	id := backend.RandomID()
 	OK(t, idx.SetID(id))
 	id2, err := idx.ID()
 	Assert(t, id2.Equal(id),
@@ -175,11 +164,11 @@ func TestIndexSize(t *testing.T) {
 	packs := 200
 	blobs := 100
 	for i := 0; i < packs; i++ {
-		packID := randomID()
+		packID := backend.RandomID()
 
 		pos := uint(0)
 		for j := 0; j < blobs; j++ {
-			id := randomID()
+			id := backend.RandomID()
 			length := uint(i*100 + j)
 			idx.Store(repository.PackedBlob{
 				Type:   pack.Data,
@@ -359,10 +348,10 @@ func TestIndexPacks(t *testing.T) {
 	packs := backend.NewIDSet()
 
 	for i := 0; i < 20; i++ {
-		packID := randomID()
+		packID := backend.RandomID()
 		idx.Store(repository.PackedBlob{
 			Type:   pack.Data,
-			ID:     randomID(),
+			ID:     backend.RandomID(),
 			PackID: packID,
 			Offset: 0,
 			Length: 23,
