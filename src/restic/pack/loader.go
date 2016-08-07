@@ -32,7 +32,7 @@ func (b BufferLoader) Load(p []byte, off int64) (int, error) {
 	case off > int64(len(b)):
 		return 0, errors.New("offset is larger than data")
 	case off < -int64(len(b)):
-		return 0, errors.New("offset starts before the beginning of the data")
+		off = 0
 	case off < 0:
 		off = int64(len(b)) + off
 	}
