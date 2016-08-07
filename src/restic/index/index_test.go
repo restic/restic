@@ -154,3 +154,18 @@ func BenchmarkIndexNew(b *testing.B) {
 		}
 	}
 }
+
+func TestIndexDuplicateBlobs(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0.05)
+	defer cleanup()
+
+	idx, err := New(repo)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dups := idx.DuplicateBlobs()
+	if len(dups) == 0 {
+		t.Errorf("no duplicate blobs found")
+	}
+}

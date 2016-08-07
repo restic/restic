@@ -147,3 +147,22 @@ func Load(repo *repository.Repository) (*Index, error) {
 
 	return idx, nil
 }
+
+// DuplicateBlobs returns a list of blobs that are stored more than once in the
+// repo.
+func (idx *Index) DuplicateBlobs() (dups map[pack.Handle]int) {
+	dups = make(map[pack.Handle]int)
+	seen := pack.NewBlobSet()
+
+	for _, p := range idx.Packs {
+		for _, entry := range p.Entries {
+			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			if seen.Has(h) {
+				dups[h]++
+			}
+			seen.Insert(h)
+		}
+	}
+
+	return dups
+}
