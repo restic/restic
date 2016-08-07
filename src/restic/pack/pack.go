@@ -67,17 +67,6 @@ type Blob struct {
 	Offset uint
 }
 
-// GetReader returns an io.Reader for the blob entry e.
-func (e Blob) GetReader(rd io.ReadSeeker) (io.Reader, error) {
-	// seek to the correct location
-	_, err := rd.Seek(int64(e.Offset), 0)
-	if err != nil {
-		return nil, err
-	}
-
-	return io.LimitReader(rd, int64(e.Length)), nil
-}
-
 // Packer is used to create a new Pack.
 type Packer struct {
 	blobs []Blob
