@@ -272,6 +272,7 @@ func TestLoad(t testing.TB) {
 		if l > len(d) {
 			if err != io.ErrUnexpectedEOF {
 				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
+				continue
 			}
 			err = nil
 			buf = buf[:len(d)]
@@ -340,6 +341,7 @@ func TestLoadNegativeOffset(t testing.TB) {
 		if len(buf) > -o {
 			if err != io.ErrUnexpectedEOF {
 				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), o)
+				continue
 			}
 			err = nil
 			buf = buf[:-o]
@@ -347,10 +349,12 @@ func TestLoadNegativeOffset(t testing.TB) {
 
 		if err != nil {
 			t.Errorf("Load(%d, %d) returned error: %v", len(buf), o, err)
+			continue
 		}
 
 		if n != len(buf) {
 			t.Errorf("Load(%d, %d) returned short read, only got %d bytes", len(buf), o, n)
+			continue
 		}
 
 		p := len(data) + o
