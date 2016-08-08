@@ -77,41 +77,75 @@ func (be *s3) Location() string {
 
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
-func (be s3) Load(h backend.Handle, p []byte, off int64) (int, error) {
+func (be s3) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+	var obj *minio.Object
+
 	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
 	path := be.s3path(h.Type, h.Name)
-	obj, err := be.client.GetObject(be.bucketname, path)
-	if err != nil {
-		debug.Log("s3.GetReader", "  err %v", err)
-		return 0, err
-	}
-
-	switch {
-	case off > 0:
-		_, err = obj.Seek(off, 0)
-	case off < 0:
-		_, err = obj.Seek(off, 2)
-	}
-
-	if err != nil {
-		return 0, err
-	}
 
 	<-be.connChan
 	defer func() {
 		be.connChan <- struct{}{}
 	}()
 
-	// This may not read the whole object, so ensure object
-	// is closed to avoid duplicate connections.
-	n, err := io.ReadFull(obj, p)
+	obj, err = be.client.GetObject(be.bucketname, path)
 	if err != nil {
-		obj.Close()
-	} else {
-		err = obj.Close()
+		debug.Log("s3.Load", "  err %v", err)
+		return 0, err
 	}
-	return n, err
 
+	// make sure that the object is closed properly.
+	defer func() {
+		e := obj.Close()
+		if err == nil {
+			err = e
+		}
+	}()
+
+	info, err := obj.Stat()
+	if err != nil {
+		return 0, err
+	}
+
+	// handle negative offsets
+	if off < 0 {
+		// if the negative offset is larger than the object itself, read from
+		// the beginning.
+		if -off > info.Size {
+			off = 0
+		} else {
+			// otherwise compute the offset from the end of the file.
+			off = info.Size + off
+		}
+	}
+
+	// return an error if the offset is beyond the end of the file
+	if off > info.Size {
+		return 0, io.EOF
+	}
+
+	var nextError error
+
+	// manually create an io.ErrUnexpectedEOF
+	if off+int64(len(p)) > info.Size {
+		newlen := info.Size - off
+		p = p[:newlen]
+
+		nextError = io.ErrUnexpectedEOF
+
+		debug.Log("s3.Load", "    capped buffer to %v byte", len(p))
+	}
+
+	n, err = obj.ReadAt(p, off)
+	if int64(n) == info.Size-off && err == io.EOF {
+		err = nil
+	}
+
+	if err == nil {
+		err = nextError
+	}
+
+	return n, err
 }
 
 // Save stores data in the backend at the handle.
@@ -120,7 +154,7 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 		return err
 	}
 
-	debug.Log("s3.Save", "%v bytes at %d", len(p), h)
+	debug.Log("s3.Save", "%v with %d bytes", h, len(p))
 
 	path := be.s3path(h.Type, h.Name)
 
