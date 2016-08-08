@@ -333,8 +333,6 @@ func TestLoadNegativeOffset(t testing.TB) {
 
 		buf := make([]byte, l)
 		n, err := b.Load(handle, buf, int64(o))
-		t.Logf("data %v, load(%v, %v) -> %v %v",
-			len(data), len(buf), o, n, err)
 
 		// if we requested data beyond the end of the file, require
 		// ErrUnexpectedEOF error
