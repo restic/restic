@@ -8,13 +8,15 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/juju/errors"
-	"github.com/pkg/sftp"
 	"restic/backend"
 	"restic/debug"
+
+	"github.com/juju/errors"
+	"github.com/pkg/sftp"
 )
 
 const (
@@ -250,9 +252,10 @@ func (r *SFTP) renameFile(oldname string, t backend.Type, name string) error {
 	return r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
 }
 
-// Join joins the given paths and cleans them afterwards.
+// Join joins the given paths and cleans them afterwards. This always uses
+// forward slashes, which is required by sftp.
 func Join(parts ...string) string {
-	return filepath.Clean(strings.Join(parts, "/"))
+	return path.Clean(path.Join(parts...))
 }
 
 // Construct path for given backend.Type and name.
