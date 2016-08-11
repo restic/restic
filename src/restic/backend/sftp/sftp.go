@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"restic/backend"
@@ -80,7 +79,8 @@ func paths(dir string) []string {
 
 // Open opens an sftp backend. When the command is started via
 // exec.Command, it is expected to speak sftp on stdin/stdout. The backend
-// is expected at the given path.
+// is expected at the given path. `dir` must be delimited by forward slashes
+// ("/"), which is required by sftp.
 func Open(dir string, program string, args ...string) (*SFTP, error) {
 	sftp, err := startClient(program, args...)
 	if err != nil {
@@ -120,7 +120,8 @@ func OpenWithConfig(cfg Config) (*SFTP, error) {
 }
 
 // Create creates all the necessary files and directories for a new sftp
-// backend at dir. Afterwards a new config blob should be created.
+// backend at dir. Afterwards a new config blob should be created. `dir` must
+// be delimited by forward slashes ("/"), which is required by sftp.
 func Create(dir string, program string, args ...string) (*SFTP, error) {
 	sftp, err := startClient(program, args...)
 	if err != nil {
@@ -201,7 +202,7 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 	}
 
 	// create parent directories
-	errMkdirAll := r.mkdirAll(filepath.Dir(dir), backend.Modes.Dir)
+	errMkdirAll := r.mkdirAll(path.Dir(dir), backend.Modes.Dir)
 
 	// create directory
 	errMkdir := r.c.Mkdir(dir)
@@ -227,7 +228,7 @@ func (r *SFTP) renameFile(oldname string, t backend.Type, name string) error {
 
 	// create directories if necessary
 	if t == backend.Data {
-		err := r.mkdirAll(filepath.Dir(filename), backend.Modes.Dir)
+		err := r.mkdirAll(path.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return err
 		}
@@ -342,7 +343,7 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 
 	err = r.renameFile(filename, h.Type, h.Name)
 	debug.Log("sftp.Save", "save %v: rename %v: %v",
-		h, filepath.Base(filename), err)
+		h, path.Base(filename), err)
 	if err != nil {
 		return fmt.Errorf("sftp: renameFile: %v", err)
 	}
