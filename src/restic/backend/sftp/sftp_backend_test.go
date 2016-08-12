@@ -10,7 +10,7 @@ import (
 	"restic/backend"
 	"restic/backend/sftp"
 	"restic/backend/test"
-	"restic/patchedos"
+	"restic/patched/os"
 
 	. "restic/test"
 )

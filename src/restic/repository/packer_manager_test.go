@@ -8,7 +8,7 @@ import (
 	"restic/backend/mem"
 	"restic/crypto"
 	"restic/pack"
-	"restic/patchedos"
+	"restic/patched/os"
 	"testing"
 )
 

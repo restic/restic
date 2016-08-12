@@ -7,7 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/juju/errors"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {

@@ -12,7 +12,7 @@ import (
 	"restic/debug"
 	"restic/pipe"
 	. "restic/test"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 func isFile(fi os.FileInfo) bool {

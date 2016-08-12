@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"restic/fuse"
-	"restic/patchedos"
+	"restic/patched/os"
 
 	systemFuse "bazil.org/fuse"
 	"bazil.org/fuse/fs"

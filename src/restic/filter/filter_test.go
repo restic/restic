@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"restic/filter"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 var matchTests = []struct {

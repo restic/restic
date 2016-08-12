@@ -4,7 +4,7 @@ package local
 
 import (
 	"os"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 // set file to readonly

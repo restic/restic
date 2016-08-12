@@ -17,7 +17,7 @@ import (
 	"restic/debug"
 	"restic/pack"
 	"restic/repository"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 // Node is a file, directory or other item in a backup.

@@ -19,7 +19,7 @@ import (
 	"restic/backend"
 	"restic/backend/local"
 	"restic/repository"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 // Assert fails the test if the condition is false.

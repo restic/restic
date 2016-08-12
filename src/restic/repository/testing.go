@@ -5,7 +5,7 @@ import (
 	"restic/backend"
 	"restic/backend/local"
 	"restic/backend/mem"
-	"restic/patchedos"
+	"restic/patched/os"
 	"testing"
 )
 

@@ -7,7 +7,7 @@ import (
 	"restic/backend"
 	"restic/backend/local"
 	"restic/backend/test"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 var tempBackendDir string

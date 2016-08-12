@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"golang.org/x/sys/unix"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 // Open opens a file for reading, without updating the atime and without caching data on read.

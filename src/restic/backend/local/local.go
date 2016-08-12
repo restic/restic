@@ -11,7 +11,7 @@ import (
 	"restic/backend"
 	"restic/debug"
 	"restic/fs"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 // Local is a backend in a local directory.

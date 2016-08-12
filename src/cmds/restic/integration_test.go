@@ -19,7 +19,7 @@ import (
 	"restic/debug"
 	"restic/filter"
 	"restic/repository"
-	"restic/patchedos"
+	"restic/patched/os"
 	. "restic/test"
 )
 

@@ -16,7 +16,7 @@ import (
 	"restic/pack"
 	"restic/pipe"
 	"restic/repository"
-	"restic/patchedos"
+	"restic/patched/filepath"
 
 	"github.com/restic/chunker"
 
@@ -781,7 +781,7 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *Progress) (Stat, error) {
 
 	for _, dir := range dirs {
 		debug.Log("Scan", "Start for %v", dir)
-		err := filepath.Walk(patchedos.Fixpath(dir), func(str string, fi os.FileInfo, err error) error {
+		err := patchedfilepath.Walk(dir, func(str string, fi os.FileInfo, err error) error {
 			// TODO: integrate error reporting
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error for %v: %v\n", str, err)

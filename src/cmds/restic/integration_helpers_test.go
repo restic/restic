@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"testing"
 
-	"restic/patchedos"
+	"restic/patched/os"
 
 	. "restic/test"
 )

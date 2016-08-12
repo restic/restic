@@ -4,7 +4,7 @@ package fs
 
 import (
 	"os"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 

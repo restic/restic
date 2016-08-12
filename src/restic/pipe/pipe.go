@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"restic/debug"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 type Result interface{}

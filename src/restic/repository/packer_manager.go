@@ -11,7 +11,7 @@ import (
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
-	"restic/patchedos"
+	"restic/patched/os"
 )
 
 // Saver implements saving data in a backend.

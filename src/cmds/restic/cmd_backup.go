@@ -10,7 +10,7 @@ import (
 	"restic/backend"
 	"restic/debug"
 	"restic/filter"
-	"restic/patchedos"
+	"restic/patched/os"
 	"strings"
 	"time"
 

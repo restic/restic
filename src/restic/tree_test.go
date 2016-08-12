@@ -9,7 +9,7 @@ import (
 
 	"restic"
 	"restic/pack"
-	"restic/patchedos"
+	"restic/patched/os"
 	. "restic/test"
 )
 

@@ -8,7 +8,7 @@ import (
 	"restic/backend"
 	"restic/debug"
 	"restic/repository"
-	"restic/patchedos"
+	"restic/patched/os"
 
 	"github.com/juju/errors"
 )
