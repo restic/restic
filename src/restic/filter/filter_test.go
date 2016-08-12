@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"compress/bzip2"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"

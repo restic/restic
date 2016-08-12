@@ -10,6 +10,7 @@ import (
 
 	"restic"
 	"restic/backend"
+	"restic/patchedos"
 	. "restic/test"
 )
 

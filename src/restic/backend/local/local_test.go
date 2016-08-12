@@ -3,11 +3,11 @@ package local_test
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 
 	"restic/backend"
 	"restic/backend/local"
 	"restic/backend/test"
+	"restic/patchedos"
 )
 
 var tempBackendDir string
