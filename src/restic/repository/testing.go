@@ -5,6 +5,7 @@ import (
 	"restic/backend"
 	"restic/backend/local"
 	"restic/backend/mem"
+	"restic/patchedos"
 	"testing"
 )
 
@@ -45,7 +46,7 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend) (r *Repository,
 func TestRepository(t testing.TB) (r *Repository, cleanup func()) {
 	dir := os.Getenv("RESTIC_TEST_REPO")
 	if dir != "" {
-		_, err := os.Stat(dir)
+		_, err := patchedos.Stat(dir)
 		if err != nil {
 			be, err := local.Create(dir)
 			if err != nil {

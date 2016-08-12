@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"restic/filter"
+	"restic/patchedos"
 )
 
 var matchTests = []struct {
@@ -178,7 +179,7 @@ func ExampleMatchList() {
 }
 
 func extractTestLines(t testing.TB) (lines []string) {
-	f, err := os.Open("testdata/libreoffice.txt.bz2")
+	f, err := patchedos.Open("testdata/libreoffice.txt.bz2")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -12,6 +12,7 @@ import (
 	"restic/backend"
 	"restic/debug"
 	"restic/repository"
+	"restic/patchedos"
 )
 
 // Cache is used to locally cache items from a repository.
@@ -43,7 +44,7 @@ func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error)
 	if err != nil {
 		return false, err
 	}
-	fd, err := os.Open(filename)
+	fd, err := patchedos.Open(filename)
 	defer fd.Close()
 
 	if err != nil {
@@ -70,12 +71,12 @@ func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCl
 	}
 
 	dirname := filepath.Dir(filename)
-	err = os.MkdirAll(dirname, 0700)
+	err = patchedos.MkdirAll(dirname, 0700)
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := os.Create(filename)
+	file, err := patchedos.Create(filename)
 	if err != nil {
 		debug.Log("Cache.Store", "error creating file %v: %v", filename, err)
 		return nil, err
@@ -93,7 +94,7 @@ func (c *Cache) Load(t backend.Type, subtype string, id backend.ID) (io.ReadClos
 		return nil, err
 	}
 
-	return os.Open(filename)
+	return patchedos.Open(filename)
 }
 
 func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
@@ -102,7 +103,7 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 		return err
 	}
 
-	err = os.Remove(filename)
+	err = patchedos.Remove(filename)
 	debug.Log("Cache.purge", "Remove file %v: %v", filename, err)
 
 	if err != nil && os.IsNotExist(err) {
@@ -157,7 +158,7 @@ func (c *Cache) list(t backend.Type) ([]cacheEntry, error) {
 		return nil, fmt.Errorf("cache not supported for type %v", t)
 	}
 
-	fd, err := os.Open(dir)
+	fd, err := patchedos.Open(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []cacheEntry{}, nil
@@ -228,10 +229,10 @@ func getWindowsCacheDir() (string, error) {
 		cachedir = os.TempDir()
 	}
 	cachedir = filepath.Join(cachedir, "restic")
-	fi, err := os.Stat(cachedir)
+	fi, err := patchedos.Stat(cachedir)
 
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(cachedir, 0700)
+		err = patchedos.MkdirAll(cachedir, 0700)
 		if err != nil {
 			return "", err
 		}
@@ -266,14 +267,14 @@ func getXDGCacheDir() (string, error) {
 		cachedir = filepath.Join(home, ".cache", "restic")
 	}
 
-	fi, err := os.Stat(cachedir)
+	fi, err := patchedos.Stat(cachedir)
 	if os.IsNotExist(err) {
-		err = os.MkdirAll(cachedir, 0700)
+		err = patchedos.MkdirAll(cachedir, 0700)
 		if err != nil {
 			return "", err
 		}
 
-		fi, err = os.Stat(cachedir)
+		fi, err = patchedos.Stat(cachedir)
 		debug.Log("getCacheDir", "create cache dir %v", cachedir)
 	}
 

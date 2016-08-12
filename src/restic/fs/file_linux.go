@@ -7,13 +7,14 @@ import (
 	"syscall"
 
 	"golang.org/x/sys/unix"
+	"restic/patchedos"
 )
 
 // Open opens a file for reading, without updating the atime and without caching data on read.
 func Open(name string) (File, error) {
-	file, err := os.OpenFile(name, os.O_RDONLY|syscall.O_NOATIME, 0)
+	file, err := patchedos.OpenFile(name, os.O_RDONLY|syscall.O_NOATIME, 0)
 	if os.IsPermission(err) {
-		file, err = os.OpenFile(name, os.O_RDONLY, 0)
+		file, err = patchedos.OpenFile(name, os.O_RDONLY, 0)
 	}
 	return &nonCachingFile{File: file}, err
 }

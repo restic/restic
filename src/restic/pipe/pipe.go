@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"restic/debug"
+	"restic/patchedos"
 )
 
 type Result interface{}
@@ -59,7 +60,7 @@ func (e Dir) Result() chan<- Result { return e.result }
 // a sorted list of directory entries.
 // taken from filepath/path.go
 func readDirNames(dirname string) ([]string, error) {
-	f, err := os.Open(dirname)
+	f, err := patchedos.Open(dirname)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +91,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		panic(err)
 	}
 
-	info, err := os.Lstat(dir)
+	info, err := patchedos.Lstat(dir)
 	if err != nil {
 		debug.Log("pipe.walk", "error for %v: %v, res %p", dir, err, res)
 		select {
@@ -135,7 +136,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 	for _, name := range names {
 		subpath := filepath.Join(dir, name)
 
-		fi, statErr := os.Lstat(subpath)
+		fi, statErr := patchedos.Lstat(subpath)
 		if !selectFunc(subpath, fi) {
 			debug.Log("pipe.walk", "file %v excluded by filter", subpath)
 			continue

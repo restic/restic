@@ -2,11 +2,15 @@
 
 package fs
 
-import "os"
+import (
+	"os"
+	"restic/patchedos"
+)
+
 
 // Open opens a file for reading.
 func Open(name string) (File, error) {
-	return os.OpenFile(name, os.O_RDONLY, 0)
+	return patchedos.OpenFile(name, os.O_RDONLY, 0)
 }
 
 // ClearCache syncs and then removes the file's content from the OS cache.

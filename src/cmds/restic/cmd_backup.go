@@ -10,6 +10,7 @@ import (
 	"restic/backend"
 	"restic/debug"
 	"restic/filter"
+	"restic/patchedos"
 	"strings"
 	"time"
 
@@ -221,7 +222,7 @@ func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
 // items exist at all.
 func filterExisting(items []string) (result []string, err error) {
 	for _, item := range items {
-		_, err := os.Lstat(item)
+		_, err := patchedos.Lstat(item)
 		if err != nil && os.IsNotExist(err) {
 			continue
 		}
@@ -334,7 +335,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	// add patterns from file
 	if cmd.ExcludeFile != "" {
-		file, err := os.Open(cmd.ExcludeFile)
+		file, err := patchedos.Open(cmd.ExcludeFile)
 		if err != nil {
 			cmd.global.Warnf("error reading exclude patterns: %v", err)
 			return nil

@@ -14,6 +14,7 @@ import (
 	"restic"
 	"restic/backend"
 	"restic/repository"
+	"restic/patchedos"
 	. "restic/test"
 )
 
@@ -27,7 +28,7 @@ const (
 // "snapshots" appears in the dir.
 func waitForMount(dir string) error {
 	for i := 0; i < mountWait; i++ {
-		f, err := os.Open(dir)
+		f, err := patchedos.Open(dir)
 		if err != nil {
 			return err
 		}
@@ -71,7 +72,7 @@ func TestMount(t *testing.T) {
 	}
 
 	checkSnapshots := func(repo *repository.Repository, mountpoint string, snapshotIDs []backend.ID) {
-		snapshotsDir, err := os.Open(filepath.Join(mountpoint, "snapshots"))
+		snapshotsDir, err := patchedos.Open(filepath.Join(mountpoint, "snapshots"))
 		OK(t, err)
 		namesInSnapshots, err := snapshotsDir.Readdirnames(-1)
 		OK(t, err)
@@ -115,7 +116,7 @@ func TestMount(t *testing.T) {
 		defer close(done)
 		OK(t, waitForMount(mountpoint))
 
-		mountpointDir, err := os.Open(mountpoint)
+		mountpointDir, err := patchedos.Open(mountpoint)
 		OK(t, err)
 		names, err := mountpointDir.Readdirnames(-1)
 		OK(t, err)
@@ -125,7 +126,7 @@ func TestMount(t *testing.T) {
 		checkSnapshots(repo, mountpoint, []backend.ID{})
 
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := os.Open(datafile)
+		fd, err := patchedos.Open(datafile)
 		if os.IsNotExist(err) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return

@@ -4,9 +4,10 @@ package local
 
 import (
 	"os"
+	"restic/patchedos"
 )
 
 // set file to readonly
 func setNewFileMode(f string, fi os.FileInfo) error {
-	return os.Chmod(f, fi.Mode()&os.FileMode(^uint32(0222)))
+	return patchedos.Chmod(f, fi.Mode()&os.FileMode(^uint32(0222)))
 }

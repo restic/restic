@@ -8,6 +8,7 @@ import (
 	"restic/backend"
 	"restic/debug"
 	"restic/repository"
+	"restic/patchedos"
 
 	"github.com/juju/errors"
 )
@@ -99,7 +100,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 		debug.Log("Restorer.restoreNodeTo", "create intermediate paths")
 
 		// Create parent directories and retry
-		err = os.MkdirAll(filepath.Dir(dstPath), 0700)
+		err = patchedos.MkdirAll(filepath.Dir(dstPath), 0700)
 		if err == nil || err == os.ErrExist {
 			err = node.CreateAt(dstPath, res.repo)
 		}

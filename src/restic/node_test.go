@@ -163,7 +163,7 @@ func TestNodeRestoreAt(t *testing.T) {
 			OK(t, test.RestoreTimestamps(nodePath))
 		}
 
-		fi, err := os.Lstat(nodePath)
+		fi, err := patchedos.Lstat(nodePath)
 		OK(t, err)
 
 		n2, err := restic.NodeFromFileInfo(nodePath, fi)
