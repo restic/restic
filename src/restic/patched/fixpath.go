@@ -1,14 +1,17 @@
 package patched
 
 import (
+	"path/filepath"
 	"runtime"
 )
 
 func Fixpath(name string) string {
 	if runtime.GOOS == "windows" {
-		return "\\\\?\\" + name
-	} else {
-		return name
+		abspath, err := filepath.Abs(name)
+		if err == nil {
+			return "\\\\?\\" + abspath
+		} 
 	}
+	return name
 }
 
