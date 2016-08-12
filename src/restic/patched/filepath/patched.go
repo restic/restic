@@ -9,5 +9,5 @@ import (
 // One reason is to able to patch around issues with windows long pathnames
 
 func Walk(root string, walkFn filepath.WalkFunc) error {
-	return filepath.Walk(patched.Fixpath(root), walkFn) 
+	return filepath.Walk(patched.Fixpath(root), walkFn)
 }

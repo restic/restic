@@ -11,8 +11,8 @@ import (
 
 	"restic/backend"
 	"restic/debug"
-	"restic/repository"
 	"restic/patched/os"
+	"restic/repository"
 )
 
 // Cache is used to locally cache items from a repository.

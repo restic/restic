@@ -10,8 +10,7 @@ func Fixpath(name string) string {
 		abspath, err := filepath.Abs(name)
 		if err == nil {
 			return "\\\\?\\" + abspath
-		} 
+		}
 	}
 	return name
 }
-

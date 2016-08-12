@@ -14,9 +14,9 @@ import (
 	"restic/debug"
 	"restic/fs"
 	"restic/pack"
+	"restic/patched/filepath"
 	"restic/pipe"
 	"restic/repository"
-	"restic/patched/filepath"
 
 	"github.com/restic/chunker"
 

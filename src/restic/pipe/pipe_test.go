@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"restic/debug"
+	"restic/patched/os"
 	"restic/pipe"
 	. "restic/test"
-	"restic/patched/os"
 )
 
 func isFile(fi os.FileInfo) bool {
