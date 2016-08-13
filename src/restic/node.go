@@ -15,8 +15,8 @@ import (
 	"github.com/juju/errors"
 	"restic/backend"
 	"restic/debug"
+	"restic/fs"
 	"restic/pack"
-	"restic/patched/os"
 	"restic/repository"
 )
 
@@ -158,7 +158,7 @@ func (node Node) restoreMetadata(path string) error {
 	}
 
 	if node.Type != "symlink" {
-		err = patchedos.Chmod(path, node.Mode)
+		err = fs.Chmod(path, node.Mode)
 		if err != nil {
 			return errors.Annotate(err, "Chmod")
 		}
@@ -197,7 +197,7 @@ func (node Node) RestoreTimestamps(path string) error {
 }
 
 func (node Node) createDirAt(path string) error {
-	err := patchedos.Mkdir(path, node.Mode)
+	err := fs.Mkdir(path, node.Mode)
 	if err != nil {
 		return errors.Annotate(err, "Mkdir")
 	}
@@ -206,7 +206,7 @@ func (node Node) createDirAt(path string) error {
 }
 
 func (node Node) createFileAt(path string, repo *repository.Repository) error {
-	f, err := patchedos.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
+	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 	defer f.Close()
 
 	if err != nil {
@@ -244,7 +244,7 @@ func (node Node) createSymlinkAt(path string) error {
 	if runtime.GOOS == "windows" {
 		return nil
 	}
-	err := patchedos.Symlink(node.LinkTarget, path)
+	err := fs.Symlink(node.LinkTarget, path)
 	if err != nil {
 		return errors.Annotate(err, "Symlink")
 	}
@@ -478,7 +478,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		node.Links = uint64(stat.nlink())
 	case "dir":
 	case "symlink":
-		node.LinkTarget, err = patchedos.Readlink(path)
+		node.LinkTarget, err = fs.Readlink(path)
 	case "dev":
 		node.Device = uint64(stat.rdev())
 	case "chardev":

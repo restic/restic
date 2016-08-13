@@ -7,11 +7,10 @@ import (
 	"unsafe"
 
 	"github.com/juju/errors"
-	"restic/patched/os"
 )
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
-	dir, err := patchedos.Open(filepath.Dir(path))
+	dir, err := fs.Open(filepath.Dir(path))
 	defer dir.Close()
 	if err != nil {
 		return err

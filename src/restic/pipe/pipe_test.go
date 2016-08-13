@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"restic/debug"
-	"restic/patched/os"
 	"restic/pipe"
 	. "restic/test"
 )
@@ -232,7 +231,7 @@ func TestPipelineWalker(t *testing.T) {
 }
 
 func createFile(filename, data string) error {
-	f, err := patchedos.Create(filename)
+	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
@@ -266,9 +265,9 @@ func TestPipeWalkerError(t *testing.T) {
 		{[]string{}, false},
 	}
 
-	OK(t, patchedos.Mkdir(filepath.Join(dir, "a"), 0755))
-	OK(t, patchedos.Mkdir(filepath.Join(dir, "b"), 0755))
-	OK(t, patchedos.Mkdir(filepath.Join(dir, "c"), 0755))
+	OK(t, os.Mkdir(filepath.Join(dir, "a"), 0755))
+	OK(t, os.Mkdir(filepath.Join(dir, "b"), 0755))
+	OK(t, os.Mkdir(filepath.Join(dir, "c"), 0755))
 
 	OK(t, createFile(filepath.Join(dir, "a", "file_a"), "file a"))
 	OK(t, createFile(filepath.Join(dir, "b", "file_b"), "file b"))
@@ -288,7 +287,7 @@ func TestPipeWalkerError(t *testing.T) {
 		t.Logf("in hook, removing test file %v", testdir)
 		ranHook = true
 
-		OK(t, patchedos.RemoveAll(testdir))
+		OK(t, os.RemoveAll(testdir))
 	})
 
 	done := make(chan struct{})
@@ -329,7 +328,7 @@ func TestPipeWalkerError(t *testing.T) {
 	close(done)
 
 	Assert(t, ranHook, "hook did not run")
-	OK(t, patchedos.RemoveAll(dir))
+	OK(t, os.RemoveAll(dir))
 }
 
 func BenchmarkPipelineWalker(b *testing.B) {

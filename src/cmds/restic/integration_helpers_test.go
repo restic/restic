@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"testing"
 
-	"restic/patched/os"
-
 	. "restic/test"
 )
 
@@ -205,9 +203,9 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 		testdata: filepath.Join(tempdir, "testdata"),
 	}
 
-	OK(t, patchedos.MkdirAll(env.testdata, 0700))
-	OK(t, patchedos.MkdirAll(env.cache, 0700))
-	OK(t, patchedos.MkdirAll(env.repo, 0700))
+	OK(t, os.MkdirAll(env.testdata, 0700))
+	OK(t, os.MkdirAll(env.cache, 0700))
+	OK(t, os.MkdirAll(env.repo, 0700))
 
 	f(&env, configureRestic(t, env.cache, env.repo))
 
@@ -221,10 +219,10 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 
 // removeFile resets the read-only flag and then deletes the file.
 func removeFile(fn string) error {
-	err := patchedos.Chmod(fn, 0666)
+	err := os.Chmod(fn, 0666)
 	if err != nil {
 		return err
 	}
 
-	return patchedos.Remove(fn)
+	return os.Remove(fn)
 }

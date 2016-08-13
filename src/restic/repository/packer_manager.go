@@ -10,8 +10,8 @@ import (
 	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
+	"restic/fs"
 	"restic/pack"
-	"restic/patched/os"
 )
 
 // Saver implements saving data in a backend.
@@ -94,7 +94,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	}
 
 	tmpfile := p.Writer().(*os.File)
-	f, err := patchedos.Open(tmpfile.Name())
+	f, err := fs.Open(tmpfile.Name())
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 
 	debug.Log("Repo.savePacker", "saved as %v", h)
 
-	err = patchedos.Remove(tmpfile.Name())
+	err = fs.Remove(tmpfile.Name())
 	if err != nil {
 		return err
 	}

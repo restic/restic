@@ -10,7 +10,6 @@ import (
 	"restic/backend"
 	"restic/backend/sftp"
 	"restic/backend/test"
-	"restic/patched/os"
 
 	. "restic/test"
 )
@@ -39,7 +38,7 @@ func init() {
 
 	for _, dir := range strings.Split(TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
-		_, err := patchedos.Stat(testpath)
+		_, err := os.Stat(testpath)
 		if !os.IsNotExist(err) {
 			sftpserver = testpath
 			break
@@ -74,7 +73,7 @@ func init() {
 		}
 
 		fmt.Printf("removing test backend at %v\n", tempBackendDir)
-		err := patchedos.RemoveAll(tempBackendDir)
+		err := os.RemoveAll(tempBackendDir)
 		tempBackendDir = ""
 		return err
 	}

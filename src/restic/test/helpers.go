@@ -18,7 +18,6 @@ import (
 
 	"restic/backend"
 	"restic/backend/local"
-	"restic/patched/os"
 	"restic/repository"
 )
 
@@ -157,7 +156,7 @@ func GenRandom(t testing.TB) []byte {
 
 // SetupTarTestFixture extracts the tarFile to outputDir.
 func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
-	input, err := patchedos.Open(tarFile)
+	input, err := os.Open(tarFile)
 	defer input.Close()
 	OK(t, err)
 
@@ -191,7 +190,7 @@ func WithTestEnvironment(t testing.TB, repoFixture string, f func(repodir string
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	OK(t, err)
 
-	fd, err := patchedos.Open(repoFixture)
+	fd, err := os.Open(repoFixture)
 	if err != nil {
 		panic(err)
 	}
@@ -231,11 +230,11 @@ func isFile(fi os.FileInfo) bool {
 func ResetReadOnly(t testing.TB, dir string) {
 	OK(t, filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
 		if fi.IsDir() {
-			return patchedos.Chmod(path, 0777)
+			return os.Chmod(path, 0777)
 		}
 
 		if isFile(fi) {
-			return patchedos.Chmod(path, 0666)
+			return os.Chmod(path, 0666)
 		}
 
 		return nil
@@ -243,8 +242,8 @@ func ResetReadOnly(t testing.TB, dir string) {
 }
 
 // RemoveAll recursively resets the read-only flag of all files and dirs and
-// afterwards uses patchedos.RemoveAll() to remove the path.
+// afterwards uses os.RemoveAll() to remove the path.
 func RemoveAll(t testing.TB, path string) {
 	ResetReadOnly(t, path)
-	OK(t, patchedos.RemoveAll(path))
+	OK(t, os.RemoveAll(path))
 }

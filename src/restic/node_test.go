@@ -10,7 +10,6 @@ import (
 
 	"restic"
 	"restic/backend"
-	"restic/patched/os"
 	. "restic/test"
 )
 
@@ -164,7 +163,7 @@ func TestNodeRestoreAt(t *testing.T) {
 			OK(t, test.RestoreTimestamps(nodePath))
 		}
 
-		fi, err := patchedos.Lstat(nodePath)
+		fi, err := os.Lstat(nodePath)
 		OK(t, err)
 
 		n2, err := restic.NodeFromFileInfo(nodePath, fi)

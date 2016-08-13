@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"compress/bzip2"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"restic/filter"
-	"restic/patched/os"
 )
 
 var matchTests = []struct {
@@ -178,7 +178,7 @@ func ExampleMatchList() {
 }
 
 func extractTestLines(t testing.TB) (lines []string) {
-	f, err := patchedos.Open("testdata/libreoffice.txt.bz2")
+	f, err := os.Open("testdata/libreoffice.txt.bz2")
 	if err != nil {
 		t.Fatal(err)
 	}

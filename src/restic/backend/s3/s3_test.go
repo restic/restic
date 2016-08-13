@@ -65,7 +65,7 @@ func init() {
 	// 	}
 
 	// 	fmt.Printf("removing test backend at %v\n", tempBackendDir)
-	// 	err := patchedos.RemoveAll(tempBackendDir)
+	// 	err := os.RemoveAll(tempBackendDir)
 	// 	tempBackendDir = ""
 	// 	return err
 	// }

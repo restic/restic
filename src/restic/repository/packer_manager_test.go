@@ -8,7 +8,6 @@ import (
 	"restic/backend/mem"
 	"restic/crypto"
 	"restic/pack"
-	"restic/patched/os"
 	"testing"
 )
 
@@ -49,7 +48,7 @@ func randomID(rd io.Reader) backend.ID {
 const maxBlobSize = 1 << 20
 
 func saveFile(t testing.TB, be Saver, filename string, n int) {
-	f, err := patchedos.Open(filename)
+	f, err := os.Open(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +71,7 @@ func saveFile(t testing.TB, be Saver, filename string, n int) {
 		t.Fatal(err)
 	}
 
-	err = patchedos.Remove(filename)
+	err = os.Remove(filename)
 	if err != nil {
 		t.Fatal(err)
 	}

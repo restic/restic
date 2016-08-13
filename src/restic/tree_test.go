@@ -9,7 +9,6 @@ import (
 
 	"restic"
 	"restic/pack"
-	"restic/patched/os"
 	. "restic/test"
 )
 
@@ -30,7 +29,7 @@ func createTempDir(t *testing.T) string {
 		file := filepath.Join(tempdir, test.name)
 		dir := filepath.Dir(file)
 		if dir != "." {
-			OK(t, patchedos.MkdirAll(dir, 0755))
+			OK(t, os.MkdirAll(dir, 0755))
 		}
 
 		f, err := os.Create(file)
@@ -80,7 +79,7 @@ func TestNodeMarshal(t *testing.T) {
 }
 
 func TestNodeComparison(t *testing.T) {
-	fi, err := patchedos.Lstat("tree_test.go")
+	fi, err := os.Lstat("tree_test.go")
 	OK(t, err)
 
 	node, err := restic.NodeFromFileInfo("foo", fi)

@@ -3,11 +3,11 @@ package local_test
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"restic/backend"
 	"restic/backend/local"
 	"restic/backend/test"
-	"restic/patched/os"
 )
 
 var tempBackendDir string
@@ -52,7 +52,7 @@ func init() {
 		}
 
 		fmt.Printf("removing test backend at %v\n", tempBackendDir)
-		err := patchedos.RemoveAll(tempBackendDir)
+		err := os.RemoveAll(tempBackendDir)
 		tempBackendDir = ""
 		return err
 	}

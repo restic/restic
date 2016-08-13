@@ -19,7 +19,6 @@ import (
 	"restic/debug"
 	"restic/filter"
 	"restic/repository"
-	"restic/patched/os"
 	. "restic/test"
 )
 
@@ -139,7 +138,7 @@ func cmdFind(t testing.TB, global GlobalOptions, pattern string) []string {
 func TestBackup(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := patchedos.Open(datafile)
+		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
@@ -201,7 +200,7 @@ func TestBackup(t *testing.T) {
 func TestBackupNonExistingFile(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := patchedos.Open(datafile)
+		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
@@ -229,7 +228,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 func TestBackupMissingFile1(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := patchedos.Open(datafile)
+		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
@@ -253,7 +252,7 @@ func TestBackupMissingFile1(t *testing.T) {
 			t.Logf("in hook, removing test file testdata/0/0/9/37")
 			ranHook = true
 
-			OK(t, patchedos.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
+			OK(t, os.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
 		})
 
 		cmdBackup(t, global, []string{env.testdata}, nil)
@@ -267,7 +266,7 @@ func TestBackupMissingFile1(t *testing.T) {
 func TestBackupMissingFile2(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := patchedos.Open(datafile)
+		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
@@ -291,7 +290,7 @@ func TestBackupMissingFile2(t *testing.T) {
 			t.Logf("in hook, removing test file testdata/0/0/9/37")
 			ranHook = true
 
-			OK(t, patchedos.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
+			OK(t, os.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
 		})
 
 		cmdBackup(t, global, []string{env.testdata}, nil)
@@ -305,7 +304,7 @@ func TestBackupMissingFile2(t *testing.T) {
 func TestBackupDirectoryError(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := patchedos.Open(datafile)
+		fd, err := os.Open(datafile)
 		if os.IsNotExist(err) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
@@ -333,7 +332,7 @@ func TestBackupDirectoryError(t *testing.T) {
 			t.Logf("in hook, removing test file %v", testdir)
 			ranHook = true
 
-			OK(t, patchedos.RemoveAll(testdir))
+			OK(t, os.RemoveAll(testdir))
 		})
 
 		cmdBackup(t, global, []string{filepath.Join(env.testdata, "0", "0")}, nil)
@@ -399,9 +398,9 @@ func TestBackupExclude(t *testing.T) {
 
 		for _, filename := range backupExcludeFilenames {
 			fp := filepath.Join(datadir, filename)
-			OK(t, patchedos.MkdirAll(filepath.Dir(fp), 0755))
+			OK(t, os.MkdirAll(filepath.Dir(fp), 0755))
 
-			f, err := patchedos.Create(fp)
+			f, err := os.Create(fp)
 			OK(t, err)
 
 			fmt.Fprintf(f, filename)
@@ -439,7 +438,7 @@ const (
 )
 
 func appendRandomData(filename string, bytes uint) error {
-	f, err := patchedos.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err)
 		return err

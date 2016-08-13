@@ -63,7 +63,7 @@ func errx(err error) {
 var funcRegex = regexp.MustCompile(`^func\s+Test(.+)\s*\(`)
 
 func findTestFunctions() (funcs []string) {
-	f, err := patchedos.Open(*testFile)
+	f, err := os.Open(*testFile)
 	errx(err)
 
 	sc := bufio.NewScanner(f)
