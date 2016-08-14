@@ -16,9 +16,24 @@ type Lister interface {
 
 // ListAllPacksResult is returned in the channel from LoadBlobsFromAllPacks.
 type ListAllPacksResult struct {
-	PackID  backend.ID
-	Size    int64
-	Entries []pack.Blob
+	packID  backend.ID
+	size    int64
+	entries []pack.Blob
+}
+
+// PackID returns the pack ID of this result.
+func (l ListAllPacksResult) PackID() backend.ID {
+	return l.packID
+}
+
+// Size ruturns the size of the pack.
+func (l ListAllPacksResult) Size() int64 {
+	return l.size
+}
+
+// Entries returns a list of all blobs saved in the pack.
+func (l ListAllPacksResult) Entries() []pack.Blob {
+	return l.entries
 }
 
 // ListAllPacks sends the contents of all packs to ch.
@@ -28,9 +43,9 @@ func ListAllPacks(repo Lister, ch chan<- worker.Job, done <-chan struct{}) {
 		entries, size, err := repo.ListPack(packID)
 
 		return ListAllPacksResult{
-			PackID:  packID,
-			Size:    size,
-			Entries: entries,
+			packID:  packID,
+			size:    size,
+			entries: entries,
 		}, err
 	}
 

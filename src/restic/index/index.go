@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"restic"
 	"restic/backend"
 	"restic/debug"
 	"restic/pack"
@@ -39,8 +40,14 @@ func newIndex() *Index {
 	}
 }
 
+type listAllPacksResult interface {
+	PackID() backend.ID
+	Entries() []pack.Blob
+	Size() int64
+}
+
 // New creates a new index for repo from scratch.
-func New(repo *repository.Repository) (*Index, error) {
+func New(repo restic.Repository) (*Index, error) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -56,16 +63,16 @@ func New(repo *repository.Repository) (*Index, error) {
 			continue
 		}
 
-		j := job.Result.(repository.ListAllPacksResult)
+		j := job.Result.(listAllPacksResult)
 
-		debug.Log("Index.New", "pack %v contains %d blobs", packID.Str(), len(j.Entries))
+		debug.Log("Index.New", "pack %v contains %d blobs", packID.Str(), len(j.Entries()))
 
-		err := idx.AddPack(packID, j.Size, j.Entries)
+		err := idx.AddPack(packID, j.Size(), j.Entries())
 		if err != nil {
 			return nil, err
 		}
 
-		p := Pack{Entries: j.Entries, Size: j.Size}
+		p := Pack{Entries: j.Entries(), Size: j.Size()}
 		idx.Packs[packID] = p
 	}
 
@@ -91,7 +98,7 @@ type indexJSON struct {
 	Packs      []*packJSON `json:"packs"`
 }
 
-func loadIndexJSON(repo *repository.Repository, id backend.ID) (*indexJSON, error) {
+func loadIndexJSON(repo restic.Repository, id backend.ID) (*indexJSON, error) {
 	debug.Log("index.loadIndexJSON", "process index %v\n", id.Str())
 
 	var idx indexJSON
@@ -104,7 +111,7 @@ func loadIndexJSON(repo *repository.Repository, id backend.ID) (*indexJSON, erro
 }
 
 // Load creates an index by loading all index files from the repo.
-func Load(repo *repository.Repository) (*Index, error) {
+func Load(repo restic.Repository) (*Index, error) {
 	debug.Log("index.Load", "loading indexes")
 
 	done := make(chan struct{})

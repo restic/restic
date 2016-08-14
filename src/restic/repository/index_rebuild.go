@@ -31,13 +31,13 @@ func RebuildIndex(repo *Repository) error {
 
 		res := job.Result.(ListAllPacksResult)
 
-		for _, entry := range res.Entries {
+		for _, entry := range res.Entries() {
 			pb := PackedBlob{
 				ID:     entry.ID,
 				Type:   entry.Type,
 				Length: entry.Length,
 				Offset: entry.Offset,
-				PackID: res.PackID,
+				PackID: res.PackID(),
 			}
 			idx.Store(pb)
 		}
