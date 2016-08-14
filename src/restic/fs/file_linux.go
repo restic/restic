@@ -4,6 +4,7 @@ package fs
 
 import (
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"golang.org/x/sys/unix"
