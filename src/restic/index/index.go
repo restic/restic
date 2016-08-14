@@ -2,6 +2,7 @@
 package index
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"restic/backend"
@@ -17,7 +18,7 @@ type Pack struct {
 	Entries []pack.Blob
 }
 
-// Blob contains informaiton about a blob.
+// Blob contains information about a blob.
 type Blob struct {
 	Size  int64
 	Packs backend.IDSet
@@ -25,14 +26,16 @@ type Blob struct {
 
 // Index contains information about blobs and packs stored in a repo.
 type Index struct {
-	Packs map[backend.ID]Pack
-	Blobs map[pack.Handle]Blob
+	Packs    map[backend.ID]Pack
+	Blobs    map[pack.Handle]Blob
+	IndexIDs backend.IDSet
 }
 
 func newIndex() *Index {
 	return &Index{
-		Packs: make(map[backend.ID]Pack),
-		Blobs: make(map[pack.Handle]Blob),
+		Packs:    make(map[backend.ID]Pack),
+		Blobs:    make(map[pack.Handle]Blob),
+		IndexIDs: backend.NewIDSet(),
 	}
 }
 
@@ -144,11 +147,16 @@ func Load(repo *repository.Repository) (*Index, error) {
 		}
 
 		results[id] = res
+		index.IndexIDs.Insert(id)
 	}
 
 	for superID, list := range supersedes {
 		for indexID := range list {
+			if _, ok := results[indexID]; !ok {
+				continue
+			}
 			debug.Log("index.Load", "  removing index %v, superseded by %v", indexID.Str(), superID.Str())
+			fmt.Fprintf(os.Stderr, "index %v can be removed, superseded by index %v\n", indexID.Str(), superID.Str())
 			delete(results, indexID)
 		}
 	}
@@ -215,4 +223,74 @@ func (idx *Index) PacksForBlobs(blobs pack.BlobSet) (packs backend.IDSet) {
 	}
 
 	return packs
+}
+
+// Location describes the location of a blob in a pack.
+type Location struct {
+	PackID backend.ID
+	pack.Blob
+}
+
+// ErrBlobNotFound is return by FindBlob when the blob could not be found in
+// the index.
+var ErrBlobNotFound = errors.New("blob not found in index")
+
+// FindBlob returns a list of packs and positions the blob can be found in.
+func (idx *Index) FindBlob(h pack.Handle) ([]Location, error) {
+	blob, ok := idx.Blobs[h]
+	if !ok {
+		return nil, ErrBlobNotFound
+	}
+
+	result := make([]Location, 0, len(blob.Packs))
+	for packID := range blob.Packs {
+		pack, ok := idx.Packs[packID]
+		if !ok {
+			return nil, fmt.Errorf("pack %v not found in index", packID.Str())
+		}
+
+		for _, entry := range pack.Entries {
+			if entry.Type != h.Type {
+				continue
+			}
+
+			if !entry.ID.Equal(h.ID) {
+				continue
+			}
+
+			loc := Location{PackID: packID, Blob: entry}
+			result = append(result, loc)
+		}
+	}
+
+	return result, nil
+}
+
+// Save writes a new index containing the given packs.
+func Save(repo *repository.Repository, packs map[backend.ID][]pack.Blob, supersedes backend.IDs) (backend.ID, error) {
+	idx := &indexJSON{
+		Supersedes: supersedes,
+		Packs:      make([]*packJSON, 0, len(packs)),
+	}
+
+	for packID, blobs := range packs {
+		b := make([]blobJSON, 0, len(blobs))
+		for _, blob := range blobs {
+			b = append(b, blobJSON{
+				ID:     blob.ID,
+				Type:   blob.Type,
+				Offset: blob.Offset,
+				Length: blob.Length,
+			})
+		}
+
+		p := &packJSON{
+			ID:    packID,
+			Blobs: b,
+		}
+
+		idx.Packs = append(idx.Packs, p)
+	}
+
+	return repo.SaveJSONUnpacked(backend.Index, idx)
 }

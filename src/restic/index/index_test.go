@@ -1,9 +1,11 @@
 package index
 
 import (
+	"math/rand"
 	"restic"
 	"restic/backend"
 	"restic/backend/local"
+	"restic/pack"
 	"restic/repository"
 	"testing"
 	"time"
@@ -175,4 +177,63 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 		t.Errorf("no packs with duplicate blobs found")
 	}
 	t.Logf("%d packs with duplicate blobs", len(packs))
+}
+
+func loadIndex(t testing.TB, repo *repository.Repository) *Index {
+	idx, err := Load(repo)
+	if err != nil {
+		t.Fatalf("Load() returned error %v", err)
+	}
+
+	return idx
+}
+
+func TestIndexSave(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0)
+	defer cleanup()
+
+	idx := loadIndex(t, repo)
+
+	packs := make(map[backend.ID][]pack.Blob)
+	for id := range idx.Packs {
+		if rand.Float32() < 0.5 {
+			packs[id] = idx.Packs[id].Entries
+		}
+	}
+
+	t.Logf("save %d/%d packs in a new index\n", len(packs), len(idx.Packs))
+
+	id, err := Save(repo, packs, idx.IndexIDs.List())
+	if err != nil {
+		t.Fatalf("unable to save new index: %v", err)
+	}
+
+	t.Logf("new index saved as %v", id.Str())
+
+	for id := range idx.IndexIDs {
+		t.Logf("remove index %v", id.Str())
+		err = repo.Backend().Remove(backend.Index, id.String())
+		if err != nil {
+			t.Errorf("error removing index %v: %v", id, err)
+		}
+	}
+
+	idx2 := loadIndex(t, repo)
+	t.Logf("load new index with %d packs", len(idx2.Packs))
+
+	if len(idx2.Packs) != len(packs) {
+		t.Errorf("wrong number of packs in new index, want %d, got %d", len(packs), len(idx2.Packs))
+	}
+
+	for id := range packs {
+		if _, ok := idx2.Packs[id]; !ok {
+			t.Errorf("pack %v is not contained in new index", id.Str())
+		}
+	}
+
+	for id := range idx2.Packs {
+		if _, ok := packs[id]; !ok {
+			t.Errorf("pack %v is not contained in new index", id.Str())
+		}
+	}
 }
