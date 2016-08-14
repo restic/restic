@@ -1,11 +1,12 @@
 package restic
 
 import (
-	"os"
 	"path/filepath"
 	"syscall"
 	"unsafe"
 
+	"restic/fs"
+	
 	"github.com/juju/errors"
 )
 
