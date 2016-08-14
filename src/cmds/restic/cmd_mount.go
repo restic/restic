@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"restic/fuse"
+	resticfs "restic/fs"
 
 	systemFuse "bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -55,9 +56,9 @@ func (cmd CmdMount) Execute(args []string) error {
 	}
 
 	mountpoint := args[0]
-	if _, err := fs.Stat(mountpoint); os.IsNotExist(err) {
+	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(err) {
 		cmd.global.Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
-		err = fs.Mkdir(mountpoint, os.ModeDir|0700)
+		err = resticfs.Mkdir(mountpoint, os.ModeDir|0700)
 		if err != nil {
 			return err
 		}
