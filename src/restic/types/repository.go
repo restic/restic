@@ -1,4 +1,4 @@
-package restic
+package types
 
 import (
 	"restic/backend"
