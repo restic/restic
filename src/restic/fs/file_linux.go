@@ -68,7 +68,7 @@ func ClearCache(file File) error {
 
 // Chmod changes the mode of the named file to mode.
 func Chmod(name string, mode os.FileMode) error {
-	return os.Chmod(fixpath(name), mode)
+	return os.Chmod(name, mode)
 }
 
 // Mkdir creates a new directory with the specified name and permission bits.
