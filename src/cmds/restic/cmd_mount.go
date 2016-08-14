@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"restic/fuse"
 	resticfs "restic/fs"
+	"restic/fuse"
 
 	systemFuse "bazil.org/fuse"
 	"bazil.org/fuse/fs"
