@@ -1,4 +1,4 @@
-package repository
+package list
 
 import (
 	"restic/backend"
@@ -14,35 +14,35 @@ type Lister interface {
 	ListPack(backend.ID) ([]pack.Blob, int64, error)
 }
 
-// ListAllPacksResult is returned in the channel from LoadBlobsFromAllPacks.
-type ListAllPacksResult struct {
+// Result is returned in the channel from LoadBlobsFromAllPacks.
+type Result struct {
 	packID  backend.ID
 	size    int64
 	entries []pack.Blob
 }
 
 // PackID returns the pack ID of this result.
-func (l ListAllPacksResult) PackID() backend.ID {
+func (l Result) PackID() backend.ID {
 	return l.packID
 }
 
 // Size ruturns the size of the pack.
-func (l ListAllPacksResult) Size() int64 {
+func (l Result) Size() int64 {
 	return l.size
 }
 
 // Entries returns a list of all blobs saved in the pack.
-func (l ListAllPacksResult) Entries() []pack.Blob {
+func (l Result) Entries() []pack.Blob {
 	return l.entries
 }
 
-// ListAllPacks sends the contents of all packs to ch.
-func ListAllPacks(repo Lister, ch chan<- worker.Job, done <-chan struct{}) {
+// AllPacks sends the contents of all packs to ch.
+func AllPacks(repo Lister, ch chan<- worker.Job, done <-chan struct{}) {
 	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
 		packID := job.Data.(backend.ID)
 		entries, size, err := repo.ListPack(packID)
 
-		return ListAllPacksResult{
+		return Result{
 			packID:  packID,
 			size:    size,
 			entries: entries,

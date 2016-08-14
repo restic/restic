@@ -8,8 +8,8 @@ import (
 	"restic"
 	"restic/backend"
 	"restic/debug"
+	"restic/list"
 	"restic/pack"
-	"restic/repository"
 	"restic/worker"
 )
 
@@ -40,19 +40,13 @@ func newIndex() *Index {
 	}
 }
 
-type listAllPacksResult interface {
-	PackID() backend.ID
-	Entries() []pack.Blob
-	Size() int64
-}
-
 // New creates a new index for repo from scratch.
 func New(repo restic.Repository) (*Index, error) {
 	done := make(chan struct{})
 	defer close(done)
 
 	ch := make(chan worker.Job)
-	go repository.ListAllPacks(repo, ch, done)
+	go list.AllPacks(repo, ch, done)
 
 	idx := newIndex()
 
@@ -63,7 +57,7 @@ func New(repo restic.Repository) (*Index, error) {
 			continue
 		}
 
-		j := job.Result.(listAllPacksResult)
+		j := job.Result.(list.Result)
 
 		debug.Log("Index.New", "pack %v contains %d blobs", packID.Str(), len(j.Entries()))
 
@@ -274,7 +268,7 @@ func (idx *Index) FindBlob(h pack.Handle) ([]Location, error) {
 }
 
 // Save writes a new index containing the given packs.
-func Save(repo *repository.Repository, packs map[backend.ID][]pack.Blob, supersedes backend.IDs) (backend.ID, error) {
+func Save(repo restic.Repository, packs map[backend.ID][]pack.Blob, supersedes backend.IDs) (backend.ID, error) {
 	idx := &indexJSON{
 		Supersedes: supersedes,
 		Packs:      make([]*packJSON, 0, len(packs)),

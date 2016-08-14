@@ -8,6 +8,7 @@ import (
 // Repository manages encrypted and packed data stored in a backend.
 type Repository interface {
 	LoadJSONUnpacked(backend.Type, backend.ID, interface{}) error
+	SaveJSONUnpacked(backend.Type, interface{}) (backend.ID, error)
 
 	Lister
 }

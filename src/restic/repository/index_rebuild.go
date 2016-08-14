@@ -5,6 +5,7 @@ import (
 	"os"
 	"restic/backend"
 	"restic/debug"
+	"restic/list"
 	"restic/worker"
 )
 
@@ -18,7 +19,7 @@ func RebuildIndex(repo *Repository) error {
 	defer close(done)
 
 	ch := make(chan worker.Job)
-	go ListAllPacks(repo, ch, done)
+	go list.AllPacks(repo, ch, done)
 
 	idx := NewIndex()
 	for job := range ch {
@@ -29,7 +30,7 @@ func RebuildIndex(repo *Repository) error {
 			continue
 		}
 
-		res := job.Result.(ListAllPacksResult)
+		res := job.Result.(list.Result)
 
 		for _, entry := range res.Entries() {
 			pb := PackedBlob{
