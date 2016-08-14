@@ -32,7 +32,8 @@ import (
 	"encoding/csv"
 	"io"
 	"log"
-	"os"
+
+	"restic/fs"
 )
 
 // lookup passwords in a htpasswd file
@@ -47,7 +48,7 @@ type HtpasswdFile struct {
 // file and returns them. If an error is encountered, it is returned, together
 // with a nil-Pointer for the HtpasswdFile.
 func NewHtpasswdFromFile(path string) (*HtpasswdFile, error) {
-	r, err := os.Open(path)
+	r, err := fs.Open(path)
 	if err != nil {
 		return nil, err
 	}

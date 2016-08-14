@@ -105,7 +105,7 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 		return 0, err
 	}
 
-	f, err := os.Open(filename(b.p, h.Type, h.Name))
+	f, err := fs.Open(filename(b.p, h.Type, h.Name))
 	if err != nil {
 		return 0, err
 	}
@@ -246,7 +246,7 @@ func isFile(fi os.FileInfo) bool {
 }
 
 func readdir(d string) (fileInfos []os.FileInfo, err error) {
-	f, e := os.Open(d)
+	f, e := fs.Open(d)
 	if e != nil {
 		return nil, e
 	}

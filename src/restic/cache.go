@@ -158,7 +158,7 @@ func (c *Cache) list(t backend.Type) ([]cacheEntry, error) {
 		return nil, fmt.Errorf("cache not supported for type %v", t)
 	}
 
-	fd, err := os.Open(dir)
+	fd, err := fs.Open(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []cacheEntry{}, nil

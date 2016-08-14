@@ -60,7 +60,7 @@ func (e Dir) Result() chan<- Result { return e.result }
 // a sorted list of directory entries.
 // taken from filepath/path.go
 func readDirNames(dirname string) ([]string, error) {
-	f, err := os.Open(dirname)
+	f, err := fs.Open(dirname)
 	if err != nil {
 		return nil, err
 	}
