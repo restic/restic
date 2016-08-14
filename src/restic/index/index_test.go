@@ -7,6 +7,7 @@ import (
 	"restic/backend/local"
 	"restic/pack"
 	"restic/repository"
+	. "restic/test"
 	"testing"
 	"time"
 )
@@ -235,5 +236,79 @@ func TestIndexSave(t *testing.T) {
 		if _, ok := packs[id]; !ok {
 			t.Errorf("pack %v is not contained in new index", id.Str())
 		}
+	}
+}
+
+// example index serialization from doc/Design.md
+var docExample = []byte(`
+{
+  "supersedes": [
+	"ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452"
+  ],
+  "packs": [
+	{
+	  "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
+	  "blobs": [
+		{
+		  "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+		  "type": "data",
+		  "offset": 0,
+		  "length": 25
+		},{
+		  "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+		  "type": "tree",
+		  "offset": 38,
+		  "length": 100
+		},
+		{
+		  "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
+		  "type": "data",
+		  "offset": 150,
+		  "length": 123
+		}
+	  ]
+	}
+  ]
+}
+`)
+
+func TestIndexLoadDocReference(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	id, err := repo.SaveUnpacked(backend.Index, docExample)
+	if err != nil {
+		t.Fatalf("SaveUnpacked() returned error %v", err)
+	}
+
+	t.Logf("index saved as %v", id.Str())
+
+	idx := loadIndex(t, repo)
+
+	blobID := ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66")
+	locs, err := idx.FindBlob(pack.Handle{ID: blobID, Type: pack.Data})
+	if err != nil {
+		t.Errorf("FindBlob() returned error %v", err)
+	}
+
+	if len(locs) != 1 {
+		t.Errorf("blob found %d times, expected just one", len(locs))
+	}
+
+	l := locs[0]
+	if !l.ID.Equal(blobID) {
+		t.Errorf("blob IDs are not equal: %v != %v", l.ID, blobID)
+	}
+
+	if l.Type != pack.Data {
+		t.Errorf("want type %v, got %v", pack.Data, l.Type)
+	}
+
+	if l.Offset != 150 {
+		t.Errorf("wrong offset, want %d, got %v", 150, l.Offset)
+	}
+
+	if l.Length != 123 {
+		t.Errorf("wrong length, want %d, got %v", 123, l.Length)
 	}
 }
