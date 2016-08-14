@@ -5,48 +5,8 @@ import (
 	"os"
 	"restic/backend"
 	"restic/debug"
-	"restic/pack"
 	"restic/worker"
 )
-
-const rebuildIndexWorkers = 10
-
-// ListAllPacksResult is returned in the channel from LoadBlobsFromAllPacks.
-type ListAllPacksResult struct {
-	PackID  backend.ID
-	Size    int64
-	Entries []pack.Blob
-}
-
-// ListAllPacks sends the contents of all packs to ch.
-func ListAllPacks(repo *Repository, ch chan<- worker.Job, done <-chan struct{}) {
-	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
-		packID := job.Data.(backend.ID)
-		entries, size, err := repo.ListPack(packID)
-
-		return ListAllPacksResult{
-			PackID:  packID,
-			Size:    size,
-			Entries: entries,
-		}, err
-	}
-
-	jobCh := make(chan worker.Job)
-	wp := worker.New(rebuildIndexWorkers, f, jobCh, ch)
-
-	go func() {
-		defer close(jobCh)
-		for id := range repo.List(backend.Data, done) {
-			select {
-			case jobCh <- worker.Job{Data: id}:
-			case <-done:
-				return
-			}
-		}
-	}()
-
-	wp.Wait()
-}
 
 // RebuildIndex lists all packs in the repo, writes a new index and removes all
 // old indexes. This operation should only be done with an exclusive lock in
