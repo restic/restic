@@ -44,11 +44,7 @@ func (id ID) String() string {
 const shortStr = 4
 
 // Str returns the shortened string version of id.
-func (id *ID) Str() string {
-	if id == nil {
-		return "[nil]"
-	}
-
+func (id ID) Str() string {
 	if id.IsNull() {
 		return "[null]"
 	}
