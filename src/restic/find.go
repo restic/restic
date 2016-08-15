@@ -6,8 +6,10 @@ import (
 	"restic/repository"
 )
 
-//  findUsedBlobs traverse the tree ID and adds all seen blobs to blobs.
-func findUsedBlobs(repo *repository.Repository, treeID backend.ID, blobs pack.BlobSet, seen pack.BlobSet) error {
+// FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
+// blobs) to the set blobs. The tree blobs in the `seen` BlobSet will not be visited
+// again.
+func FindUsedBlobs(repo *repository.Repository, treeID backend.ID, blobs pack.BlobSet, seen pack.BlobSet) error {
 	blobs.Insert(pack.Handle{ID: treeID, Type: pack.Tree})
 
 	tree, err := LoadTree(repo, treeID)
@@ -30,7 +32,7 @@ func findUsedBlobs(repo *repository.Repository, treeID backend.ID, blobs pack.Bl
 
 			seen.Insert(h)
 
-			err := findUsedBlobs(repo, subtreeID, blobs, seen)
+			err := FindUsedBlobs(repo, subtreeID, blobs, seen)
 			if err != nil {
 				return err
 			}
@@ -38,9 +40,4 @@ func findUsedBlobs(repo *repository.Repository, treeID backend.ID, blobs pack.Bl
 	}
 
 	return nil
-}
-
-// FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data blobs) to the set blobs.
-func FindUsedBlobs(repo *repository.Repository, treeID backend.ID, blobs pack.BlobSet) error {
-	return findUsedBlobs(repo, treeID, blobs, pack.NewBlobSet())
 }

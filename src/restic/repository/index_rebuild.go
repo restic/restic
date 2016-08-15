@@ -11,8 +11,8 @@ import (
 
 const rebuildIndexWorkers = 10
 
-// LoadBlobsResult is returned in the channel from LoadBlobsFromAllPacks.
-type LoadBlobsResult struct {
+// ListAllPacksResult is returned in the channel from LoadBlobsFromAllPacks.
+type ListAllPacksResult struct {
 	PackID  backend.ID
 	Entries []pack.Blob
 }
@@ -22,7 +22,7 @@ func ListAllPacks(repo *Repository, ch chan<- worker.Job, done <-chan struct{}) 
 	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
 		packID := job.Data.(backend.ID)
 		entries, err := repo.ListPack(packID)
-		return LoadBlobsResult{
+		return ListAllPacksResult{
 			PackID:  packID,
 			Entries: entries,
 		}, err
@@ -66,7 +66,7 @@ func RebuildIndex(repo *Repository) error {
 			continue
 		}
 
-		res := job.Result.(LoadBlobsResult)
+		res := job.Result.(ListAllPacksResult)
 
 		for _, entry := range res.Entries {
 			pb := PackedBlob{
