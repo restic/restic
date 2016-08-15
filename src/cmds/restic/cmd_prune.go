@@ -55,7 +55,6 @@ func newProgressMax(show bool, max uint64, description string) *restic.Progress 
 	}
 
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		p.OnUpdate(s, d, false)
 		fmt.Printf("\n")
 	}
 

@@ -152,6 +152,7 @@ func (p *Progress) Done() {
 
 	if p.OnDone != nil {
 		p.fnM.Lock()
+		p.OnUpdate(cur, time.Since(p.start), false)
 		p.OnDone(cur, time.Since(p.start), false)
 		p.fnM.Unlock()
 	}
