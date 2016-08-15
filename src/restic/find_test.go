@@ -116,3 +116,23 @@ func TestFindUsedBlobs(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkFindUsedBlobs(b *testing.B) {
+	repo, cleanup := repository.TestRepository(b)
+	defer cleanup()
+
+	sn := TestCreateSnapshot(b, repo, findTestTime, findTestDepth, 0)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		seen := pack.NewBlobSet()
+		blobs := pack.NewBlobSet()
+		err := FindUsedBlobs(repo, *sn.Tree, blobs, seen)
+		if err != nil {
+			b.Error(err)
+		}
+
+		b.Logf("found %v blobs", len(blobs))
+	}
+}
