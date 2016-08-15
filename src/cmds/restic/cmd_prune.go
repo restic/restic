@@ -180,21 +180,21 @@ func (cmd CmdPrune) Execute(args []string) error {
 		return err
 	}
 
-	id, err := idx.Save(repo)
+	var supersedes backend.IDs
+	for idxID := range repo.List(backend.Index, done) {
+		err := repo.Backend().Remove(backend.Index, idxID.String())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", idxID.Str(), err)
+		}
+
+		supersedes = append(supersedes, idxID)
+	}
+
+	id, err := idx.Save(repo, supersedes)
 	if err != nil {
 		return err
 	}
 	cmd.global.Verbosef("saved new index as %v\n", id.Str())
-
-	for oldIndex := range repo.List(backend.Index, done) {
-		if id.Equal(oldIndex) {
-			continue
-		}
-		err := repo.Backend().Remove(backend.Index, oldIndex.String())
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", oldIndex.Str(), err)
-		}
-	}
 
 	cmd.global.Verbosef("done\n")
 	return nil
