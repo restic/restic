@@ -40,7 +40,7 @@ func TestIndexNew(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
-	idx, err := New(repo)
+	idx, err := New(repo, nil)
 	if err != nil {
 		t.Fatalf("New() returned error %v", err)
 	}
@@ -56,7 +56,7 @@ func TestIndexLoad(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
-	loadIdx, err := Load(repo)
+	loadIdx, err := Load(repo, nil)
 	if err != nil {
 		t.Fatalf("Load() returned error %v", err)
 	}
@@ -67,7 +67,7 @@ func TestIndexLoad(t *testing.T) {
 
 	validateIndex(t, repo, loadIdx)
 
-	newIdx, err := New(repo)
+	newIdx, err := New(repo, nil)
 	if err != nil {
 		t.Fatalf("New() returned error %v", err)
 	}
@@ -146,7 +146,7 @@ func BenchmarkIndexNew(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		idx, err := New(repo)
+		idx, err := New(repo, nil)
 
 		if err != nil {
 			b.Fatalf("New() returned error %v", err)
@@ -162,7 +162,7 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0.01)
 	defer cleanup()
 
-	idx, err := New(repo)
+	idx, err := New(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 }
 
 func loadIndex(t testing.TB, repo *repository.Repository) *Index {
-	idx, err := Load(repo)
+	idx, err := Load(repo, nil)
 	if err != nil {
 		t.Fatalf("Load() returned error %v", err)
 	}
@@ -243,7 +243,7 @@ func TestIndexAddRemovePack(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
-	idx, err := Load(repo)
+	idx, err := Load(repo, nil)
 	if err != nil {
 		t.Fatalf("Load() returned error %v", err)
 	}

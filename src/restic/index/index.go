@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"restic"
 	"restic/backend"
 	"restic/debug"
 	"restic/list"
@@ -41,9 +42,12 @@ func newIndex() *Index {
 }
 
 // New creates a new index for repo from scratch.
-func New(repo types.Repository) (*Index, error) {
+func New(repo types.Repository, p *restic.Progress) (*Index, error) {
 	done := make(chan struct{})
 	defer close(done)
+
+	p.Start()
+	defer p.Done()
 
 	ch := make(chan worker.Job)
 	go list.AllPacks(repo, ch, done)
@@ -51,6 +55,8 @@ func New(repo types.Repository) (*Index, error) {
 	idx := newIndex()
 
 	for job := range ch {
+		p.Report(restic.Stat{Blobs: 1})
+
 		packID := job.Data.(backend.ID)
 		if job.Error != nil {
 			fmt.Fprintf(os.Stderr, "unable to list pack %v: %v\n", packID.Str(), job.Error)
@@ -105,8 +111,11 @@ func loadIndexJSON(repo types.Repository, id backend.ID) (*indexJSON, error) {
 }
 
 // Load creates an index by loading all index files from the repo.
-func Load(repo types.Repository) (*Index, error) {
+func Load(repo types.Repository, p *restic.Progress) (*Index, error) {
 	debug.Log("index.Load", "loading indexes")
+
+	p.Start()
+	defer p.Done()
 
 	done := make(chan struct{})
 	defer close(done)
@@ -117,6 +126,8 @@ func Load(repo types.Repository) (*Index, error) {
 	index := newIndex()
 
 	for id := range repo.List(backend.Index, done) {
+		p.Report(restic.Stat{Blobs: 1})
+
 		debug.Log("index.Load", "Load index %v", id.Str())
 		idx, err := loadIndexJSON(repo, id)
 		if err != nil {
