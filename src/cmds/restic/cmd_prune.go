@@ -82,18 +82,24 @@ func (cmd CmdPrune) Execute(args []string) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	cmd.global.Verbosef("building new index for repo\n")
-
-	idx, err := index.New(repo)
-	if err != nil {
-		return err
-	}
-
 	var stats struct {
 		blobs     int
 		packs     int
 		snapshots int
 		bytes     int64
+	}
+
+	cmd.global.Verbosef("counting files in repo\n")
+	for _ = range repo.List(backend.Data, done) {
+		stats.packs++
+	}
+
+	cmd.global.Verbosef("building new index for repo\n")
+
+	bar := newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "files")
+	idx, err := index.New(repo, bar)
+	if err != nil {
+		return err
 	}
 
 	for _, pack := range idx.Packs {
@@ -137,7 +143,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	usedBlobs := pack.NewBlobSet()
 	seenBlobs := pack.NewBlobSet()
 
-	bar := newProgressMax(cmd.global.ShowProgress(), uint64(len(snapshots)), "snapshots")
+	bar = newProgressMax(cmd.global.ShowProgress(), uint64(len(snapshots)), "snapshots")
 	bar.Start()
 	for _, sn := range snapshots {
 		debug.Log("CmdPrune.Execute", "process snapshot %v", sn.ID().Str())
@@ -175,7 +181,8 @@ func (cmd CmdPrune) Execute(args []string) error {
 
 	cmd.global.Verbosef("creating new index\n")
 
-	idx, err = index.New(repo)
+	bar = newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "files")
+	idx, err = index.New(repo, bar)
 	if err != nil {
 		return err
 	}
