@@ -1,9 +1,12 @@
 package repository
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"restic/backend"
+	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
 	"restic/worker"
@@ -11,38 +14,54 @@ import (
 
 // Repack takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
-// into a new pack. Afterwards, the packs are removed.
-func Repack(repo *Repository, packs, keepBlobs backend.IDSet) error {
+// into a new pack. Afterwards, the packs are removed. This operation requires
+// an exclusive lock on the repo.
+func Repack(repo *Repository, packs, keepBlobs backend.IDSet) (err error) {
 	debug.Log("Repack", "repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
-	var buf []byte
+	buf := make([]byte, 0, maxPackSize)
 	for packID := range packs {
-		list, err := repo.ListPack(packID)
+		// load the complete blob
+		h := backend.Handle{Type: backend.Data, Name: packID.String()}
+
+		l, err := repo.Backend().Load(h, buf[:cap(buf)], 0)
+		if err == io.ErrUnexpectedEOF {
+			err = nil
+			buf = buf[:l]
+		}
+
 		if err != nil {
 			return err
 		}
 
-		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), list)
+		debug.Log("Repack", "pack %v loaded (%d bytes)", packID.Str(), len(buf))
 
-		for _, blob := range list {
-			if !keepBlobs.Has(blob.ID) {
+		unpck, err := pack.NewUnpacker(repo.Key(), bytes.NewReader(buf))
+		if err != nil {
+			return err
+		}
+
+		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), len(unpck.Entries))
+		var plaintext []byte
+		for _, entry := range unpck.Entries {
+			if !keepBlobs.Has(entry.ID) {
 				continue
 			}
 
-			buf, err = repo.LoadBlob(blob.Type, blob.ID, buf)
-			if err != nil {
-				return err
-			}
-			debug.Log("Repack", "  loaded blob %v", blob.ID.Str())
-
-			_, err = repo.SaveAndEncrypt(blob.Type, buf, &blob.ID)
+			ciphertext := buf[entry.Offset : entry.Offset+entry.Length]
+			plaintext, err = crypto.Decrypt(repo.Key(), plaintext, ciphertext)
 			if err != nil {
 				return err
 			}
 
-			debug.Log("Repack", "  saved blob %v", blob.ID.Str())
+			_, err = repo.SaveAndEncrypt(entry.Type, plaintext, &entry.ID)
+			if err != nil {
+				return err
+			}
 
-			keepBlobs.Delete(blob.ID)
+			debug.Log("Repack", "  saved blob %v", entry.ID.Str())
+
+			keepBlobs.Delete(entry.ID)
 		}
 	}
 
