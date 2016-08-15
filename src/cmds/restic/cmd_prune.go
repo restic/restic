@@ -6,10 +6,9 @@ import (
 	"restic"
 	"restic/backend"
 	"restic/debug"
-	"restic/list"
+	"restic/index"
 	"restic/pack"
 	"restic/repository"
-	"restic/worker"
 	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -84,61 +83,49 @@ func (cmd CmdPrune) Execute(args []string) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	cmd.global.Verbosef("loading list of files from the repo\n")
+	cmd.global.Verbosef("building new index for repo\n")
+
+	idx, err := index.New(repo)
+	if err != nil {
+		return err
+	}
 
 	var stats struct {
 		blobs     int
 		packs     int
 		snapshots int
+		bytes     int64
 	}
 
-	packs := make(map[backend.ID]pack.BlobSet)
-	for packID := range repo.List(backend.Data, done) {
-		debug.Log("CmdPrune.Execute", "found %v", packID.Str())
-		packs[packID] = pack.NewBlobSet()
-		stats.packs++
+	for _, pack := range idx.Packs {
+		stats.bytes += pack.Size
 	}
+	cmd.global.Verbosef("repository contains %v packs (%v blobs) with %v bytes\n",
+		len(idx.Packs), len(idx.Blobs), formatBytes(uint64(stats.bytes)))
 
-	cmd.global.Verbosef("listing %v files\n", stats.packs)
-
-	blobCount := make(map[backend.ID]int)
+	blobCount := make(map[pack.Handle]int)
 	duplicateBlobs := 0
 	duplicateBytes := 0
-	rewritePacks := backend.NewIDSet()
 
-	ch := make(chan worker.Job)
-	go list.AllPacks(repo, ch, done)
-
-	bar := newProgressMax(cmd.global.ShowProgress(), uint64(len(packs)), "files")
-	bar.Start()
-	for job := range ch {
-		packID := job.Data.(backend.ID)
-		if job.Error != nil {
-			cmd.global.Warnf("unable to list pack %v: %v\n", packID.Str(), job.Error)
-			continue
-		}
-
-		j := job.Result.(list.Result)
-
-		debug.Log("CmdPrune.Execute", "pack %v contains %d blobs", packID.Str(), len(j.Entries()))
-		for _, pb := range j.Entries() {
-			packs[packID].Insert(pack.Handle{ID: pb.ID, Type: pb.Type})
+	// find duplicate blobs
+	for _, p := range idx.Packs {
+		for _, entry := range p.Entries {
 			stats.blobs++
-			blobCount[pb.ID]++
+			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			blobCount[h]++
 
-			if blobCount[pb.ID] > 1 {
+			if blobCount[h] > 1 {
 				duplicateBlobs++
-				duplicateBytes += int(pb.Length)
+				duplicateBytes += int(entry.Length)
 			}
 		}
-		bar.Report(restic.Stat{Blobs: 1})
 	}
-	bar.Done()
 
 	cmd.global.Verbosef("processed %d blobs: %d duplicate blobs, %d duplicate bytes\n",
 		stats.blobs, duplicateBlobs, duplicateBytes)
 	cmd.global.Verbosef("load all snapshots\n")
 
+	// find referenced blobs
 	snapshots, err := restic.LoadAllSnapshots(repo)
 	if err != nil {
 		return err
@@ -151,7 +138,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	usedBlobs := pack.NewBlobSet()
 	seenBlobs := pack.NewBlobSet()
 
-	bar = newProgressMax(cmd.global.ShowProgress(), uint64(len(snapshots)), "snapshots")
+	bar := newProgressMax(cmd.global.ShowProgress(), uint64(len(snapshots)), "snapshots")
 	bar.Start()
 	for _, sn := range snapshots {
 		debug.Log("CmdPrune.Execute", "process snapshot %v", sn.ID().Str())
@@ -168,15 +155,15 @@ func (cmd CmdPrune) Execute(args []string) error {
 
 	cmd.global.Verbosef("found %d of %d data blobs still in use\n", len(usedBlobs), stats.blobs)
 
-	for packID, blobSet := range packs {
-		for h := range blobSet {
-			if !usedBlobs.Has(h) {
-				rewritePacks.Insert(packID)
-			}
+	// find packs that need a rewrite
+	rewritePacks := backend.NewIDSet()
+	for h, blob := range idx.Blobs {
+		if !usedBlobs.Has(h) {
+			rewritePacks.Merge(blob.Packs)
+		}
 
-			if blobCount[h.ID] > 1 {
-				rewritePacks.Insert(packID)
-			}
+		if blobCount[h] > 1 {
+			rewritePacks.Merge(blob.Packs)
 		}
 	}
 
