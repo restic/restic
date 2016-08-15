@@ -239,6 +239,44 @@ func TestIndexSave(t *testing.T) {
 	}
 }
 
+func TestIndexAddRemovePack(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0)
+	defer cleanup()
+
+	idx, err := Load(repo)
+	if err != nil {
+		t.Fatalf("Load() returned error %v", err)
+	}
+
+	done := make(chan struct{})
+	defer close(done)
+
+	packID := <-repo.List(backend.Data, done)
+
+	t.Logf("selected pack %v", packID.Str())
+
+	blobs := idx.Packs[packID].Entries
+
+	idx.RemovePack(packID)
+
+	if _, ok := idx.Packs[packID]; ok {
+		t.Errorf("removed pack %v found in index.Packs", packID.Str())
+	}
+
+	for _, blob := range blobs {
+		h := pack.Handle{ID: blob.ID, Type: blob.Type}
+		_, err := idx.FindBlob(h)
+		if err == nil {
+			t.Errorf("removed blob %v found in index", h)
+		}
+
+		if _, ok := idx.Blobs[h]; ok {
+			t.Errorf("removed blob %v found in index.Blobs", h)
+		}
+	}
+
+}
+
 // example index serialization from doc/Design.md
 var docExample = []byte(`
 {

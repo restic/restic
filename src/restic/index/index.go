@@ -189,6 +189,26 @@ func (idx *Index) AddPack(id backend.ID, size int64, entries []pack.Blob) error 
 	return nil
 }
 
+// RemovePack deletes a pack from the index.
+func (idx *Index) RemovePack(id backend.ID) error {
+	if _, ok := idx.Packs[id]; !ok {
+		return fmt.Errorf("pack %v not found in the index", id.Str())
+	}
+
+	for _, blob := range idx.Packs[id].Entries {
+		h := pack.Handle{ID: blob.ID, Type: blob.Type}
+		idx.Blobs[h].Packs.Delete(id)
+
+		if len(idx.Blobs[h].Packs) == 0 {
+			delete(idx.Blobs, h)
+		}
+	}
+
+	delete(idx.Packs, id)
+
+	return nil
+}
+
 // DuplicateBlobs returns a list of blobs that are stored more than once in the
 // repo.
 func (idx *Index) DuplicateBlobs() (dups pack.BlobSet) {
