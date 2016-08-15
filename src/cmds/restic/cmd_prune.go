@@ -175,9 +175,25 @@ func (cmd CmdPrune) Execute(args []string) error {
 
 	cmd.global.Verbosef("creating new index\n")
 
-	err = repository.RebuildIndex(repo)
+	idx, err = index.New(repo)
 	if err != nil {
 		return err
+	}
+
+	id, err := idx.Save(repo)
+	if err != nil {
+		return err
+	}
+	cmd.global.Verbosef("saved new index as %v\n", id.Str())
+
+	for oldIndex := range repo.List(backend.Index, done) {
+		if id.Equal(oldIndex) {
+			continue
+		}
+		err := repo.Backend().Remove(backend.Index, oldIndex.String())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", oldIndex.Str(), err)
+		}
 	}
 
 	cmd.global.Verbosef("done\n")
