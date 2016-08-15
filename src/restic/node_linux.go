@@ -6,7 +6,7 @@ import (
 	"unsafe"
 
 	"restic/fs"
-	
+
 	"github.com/juju/errors"
 )
 
