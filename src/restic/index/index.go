@@ -287,6 +287,17 @@ func (idx *Index) FindBlob(h pack.Handle) ([]Location, error) {
 	return result, nil
 }
 
+// Save writes the complete index to the repo and includes all previously read
+// indexes to the Supersedes field.
+func (idx *Index) Save(repo types.Repository) (backend.ID, error) {
+	packs := make(map[backend.ID][]pack.Blob, len(idx.Packs))
+	for id, p := range idx.Packs {
+		packs[id] = p.Entries
+	}
+
+	return Save(repo, packs, idx.IndexIDs.List())
+}
+
 // Save writes a new index containing the given packs.
 func Save(repo types.Repository, packs map[backend.ID][]pack.Blob, supersedes backend.IDs) (backend.ID, error) {
 	idx := &indexJSON{
