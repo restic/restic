@@ -10,6 +10,7 @@ import (
 	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
+	"restic/fs"
 	"restic/pack"
 )
 
@@ -93,7 +94,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	}
 
 	tmpfile := p.Writer().(*os.File)
-	f, err := os.Open(tmpfile.Name())
+	f, err := fs.Open(tmpfile.Name())
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 
 	debug.Log("Repo.savePacker", "saved as %v", h)
 
-	err = os.Remove(tmpfile.Name())
+	err = fs.Remove(tmpfile.Name())
 	if err != nil {
 		return err
 	}

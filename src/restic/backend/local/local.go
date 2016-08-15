@@ -34,7 +34,7 @@ func paths(dir string) []string {
 func Open(dir string) (*Local, error) {
 	// test if all necessary dirs are there
 	for _, d := range paths(dir) {
-		if _, err := os.Stat(d); err != nil {
+		if _, err := fs.Stat(d); err != nil {
 			return nil, fmt.Errorf("%s does not exist", d)
 		}
 	}
@@ -46,14 +46,14 @@ func Open(dir string) (*Local, error) {
 // backend at dir. Afterwards a new config blob should be created.
 func Create(dir string) (*Local, error) {
 	// test if config file already exists
-	_, err := os.Lstat(filepath.Join(dir, backend.Paths.Config))
+	_, err := fs.Lstat(filepath.Join(dir, backend.Paths.Config))
 	if err == nil {
 		return nil, errors.New("config file already exists")
 	}
 
 	// create paths for data, refs and temp
 	for _, d := range paths(dir) {
-		err := os.MkdirAll(d, backend.Modes.Dir)
+		err := fs.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 		return 0, err
 	}
 
-	f, err := os.Open(filename(b.p, h.Type, h.Name))
+	f, err := fs.Open(filename(b.p, h.Type, h.Name))
 	if err != nil {
 		return 0, err
 	}
@@ -172,19 +172,19 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 	filename := filename(b.p, h.Type, h.Name)
 
 	// test if new path already exists
-	if _, err := os.Stat(filename); err == nil {
+	if _, err := fs.Stat(filename); err == nil {
 		return fmt.Errorf("Rename(): file %v already exists", filename)
 	}
 
 	// create directories if necessary, ignore errors
 	if h.Type == backend.Data {
-		err = os.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
+		err = fs.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return err
 		}
 	}
 
-	err = os.Rename(tmpfile, filename)
+	err = fs.Rename(tmpfile, filename)
 	debug.Log("local.Save", "save %v: rename %v -> %v: %v",
 		h, filepath.Base(tmpfile), filepath.Base(filename), err)
 
@@ -193,7 +193,7 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 	}
 
 	// set mode to read-only
-	fi, err := os.Stat(filename)
+	fi, err := fs.Stat(filename)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
 		return backend.BlobInfo{}, err
 	}
 
-	fi, err := os.Stat(filename(b.p, h.Type, h.Name))
+	fi, err := fs.Stat(filename(b.p, h.Type, h.Name))
 	if err != nil {
 		return backend.BlobInfo{}, err
 	}
@@ -217,7 +217,7 @@ func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
 
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(t backend.Type, name string) (bool, error) {
-	_, err := os.Stat(filename(b.p, t, name))
+	_, err := fs.Stat(filename(b.p, t, name))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
@@ -233,12 +233,12 @@ func (b *Local) Remove(t backend.Type, name string) error {
 	fn := filename(b.p, t, name)
 
 	// reset read-only flag
-	err := os.Chmod(fn, 0666)
+	err := fs.Chmod(fn, 0666)
 	if err != nil {
 		return err
 	}
 
-	return os.Remove(fn)
+	return fs.Remove(fn)
 }
 
 func isFile(fi os.FileInfo) bool {
@@ -246,7 +246,7 @@ func isFile(fi os.FileInfo) bool {
 }
 
 func readdir(d string) (fileInfos []os.FileInfo, err error) {
-	f, e := os.Open(d)
+	f, e := fs.Open(d)
 	if e != nil {
 		return nil, e
 	}
@@ -336,7 +336,7 @@ func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 
 // Delete removes the repository and all files.
 func (b *Local) Delete() error {
-	return os.RemoveAll(b.p)
+	return fs.RemoveAll(b.p)
 }
 
 // Close closes all open files.

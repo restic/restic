@@ -1,16 +1,17 @@
 package restic
 
 import (
-	"os"
 	"path/filepath"
 	"syscall"
 	"unsafe"
+
+	"restic/fs"
 
 	"github.com/juju/errors"
 )
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
-	dir, err := os.Open(filepath.Dir(path))
+	dir, err := fs.Open(filepath.Dir(path))
 	defer dir.Close()
 	if err != nil {
 		return err

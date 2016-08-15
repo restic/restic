@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"restic/fs"
 )
 
 // Context contains repository meta-data.
@@ -134,7 +136,7 @@ func GetBlob(c *Context) http.HandlerFunc {
 		dir := vars[1]
 		name := vars[2]
 		path := filepath.Join(c.path, dir, name)
-		file, err := os.Open(path)
+		file, err := fs.Open(path)
 		if err != nil {
 			http.Error(w, "404 not found", 404)
 			return
@@ -152,7 +154,7 @@ func SaveBlob(c *Context) http.HandlerFunc {
 		name := vars[2]
 		path := filepath.Join(c.path, dir, name)
 		tmp := path + "_tmp"
-		tf, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY, 0600)
+		tf, err := fs.OpenFile(tmp, os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			http.Error(w, "500 internal server error", 500)
 			return

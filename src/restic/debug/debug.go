@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"restic/fs"
 	"runtime"
 	"strconv"
 	"strings"
@@ -48,7 +49,7 @@ func initDebugLogger() {
 
 	fmt.Fprintf(os.Stderr, "debug log file %v\n", debugfile)
 
-	f, err := os.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
+	f, err := fs.OpenFile(debugfile, os.O_WRONLY|os.O_APPEND, 0600)
 
 	if err == nil {
 		_, err = f.Seek(2, 0)
@@ -59,7 +60,7 @@ func initDebugLogger() {
 	}
 
 	if err != nil && os.IsNotExist(err) {
-		f, err = os.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE, 0600)
+		f, err = fs.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE, 0600)
 	}
 
 	if err != nil {

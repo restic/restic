@@ -780,7 +780,7 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *Progress) (Stat, error) {
 
 	for _, dir := range dirs {
 		debug.Log("Scan", "Start for %v", dir)
-		err := filepath.Walk(dir, func(str string, fi os.FileInfo, err error) error {
+		err := fs.Walk(dir, func(str string, fi os.FileInfo, err error) error {
 			// TODO: integrate error reporting
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error for %v: %v\n", str, err)
