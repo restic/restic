@@ -51,6 +51,7 @@ func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs backend.IDs) {
 
 			fs.knownBlobs.Insert(id)
 		}
+		freeBuf(chunk.Data)
 
 		blobs = append(blobs, id)
 	}
