@@ -191,8 +191,7 @@ func (env *TravisEnvironment) Prepare() error {
 
 		msg("gox: OS/ARCH %v\n", env.goxOSArch)
 
-		v := runtime.Version()
-		if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
+		if runtime.Version() < "go1.5" {
 			err := run("gox", "-build-toolchain",
 				"-osarch", strings.Join(env.goxOSArch, " "))
 
