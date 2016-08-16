@@ -168,7 +168,7 @@ func (env *TravisEnvironment) Prepare() error {
 		}
 	}
 
-	if *runCrossCompile {
+	if *runCrossCompile && !(runtime.Version() < "go1.7") {
 		// only test cross compilation on linux with Travis
 		if err := run("go", "get", "github.com/mitchellh/gox"); err != nil {
 			return err
@@ -191,8 +191,7 @@ func (env *TravisEnvironment) Prepare() error {
 
 		msg("gox: OS/ARCH %v\n", env.goxOSArch)
 
-		v := runtime.Version()
-		if !strings.HasPrefix(v, "go1.5") && !strings.HasPrefix(v, "go1.6") {
+		if runtime.Version() < "go1.5" {
 			err := run("gox", "-build-toolchain",
 				"-osarch", strings.Join(env.goxOSArch, " "))
 
@@ -318,7 +317,7 @@ func (env *TravisEnvironment) RunTests() error {
 
 	env.env["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
 
-	if *runCrossCompile {
+	if *runCrossCompile && !(runtime.Version() < "go1.7") {
 		// compile for all target architectures with tags
 		for _, tags := range []string{"release", "debug"} {
 			runWithEnv(env.env, "gox", "-verbose",

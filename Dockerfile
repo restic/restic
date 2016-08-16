@@ -18,7 +18,7 @@
 
 FROM ubuntu:14.04
 
-ARG GOVERSION=1.6
+ARG GOVERSION=1.7
 ARG GOARCH=amd64
 
 # install dependencies

@@ -278,6 +278,10 @@ func (cs Constants) LDFlags() string {
 }
 
 func main() {
+	if runtime.Version() < "go1.6" {
+		fmt.Fprintf(os.Stderr, "old version of Go detected (%v), I'll try but no guarantees\n", runtime.Version())
+	}
+
 	buildTags := []string{}
 
 	skipNext := false
