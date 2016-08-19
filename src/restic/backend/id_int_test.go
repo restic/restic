@@ -8,4 +8,9 @@ func TestIDMethods(t *testing.T) {
 	if id.Str() != "[null]" {
 		t.Errorf("ID.Str() returned wrong value, want %v, got %v", "[null]", id.Str())
 	}
+
+	var pid *ID
+	if pid.Str() != "[nil]" {
+		t.Errorf("ID.Str() returned wrong value, want %v, got %v", "[nil]", pid.Str())
+	}
 }
