@@ -160,11 +160,14 @@ func (env *TravisEnvironment) Prepare() error {
 
 	if runtime.GOOS == "darwin" {
 		// install the libraries necessary for fuse
-		if err := run("brew", "update"); err != nil {
-			return err
-		}
-		if err := run("brew", "cask", "install", "osxfuse"); err != nil {
-			return err
+		for _, cmd := range [][]string{
+			{"brew", "update"},
+			{"brew", "tap", "caskroom/cask"},
+			{"brew", "cask", "install", "osxfuse"},
+		} {
+			if err := run(cmd[0], cmd[1:]...); err != nil {
+				return err
+			}
 		}
 	}
 
