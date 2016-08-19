@@ -326,18 +326,16 @@ credentials.
 Once the server is configured, the setup of the SFTP repository can simply be
 achieved by changing the URL scheme in the `init` command:
 
-    $ restic -r sftp://user@host//tmp/backup init
+    $ restic -r sftp:user@host:/tmp/backup init
     enter password for new backend:
     enter password again:
-    created restic backend f1c6108821 at sftp://user@host//tmp/backup
+    created restic backend f1c6108821 at sftp:user@host:/tmp/backup
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
-Yes, that's really two slash (`/`) characters after the host name, here the
-directory `/tmp/backup` on the server is meant. If you'd rather like to create
-a repository in the user's home directory on the server, use the location
-`sftp://user@host/foo/bar/repo`. In this case the directory is relative to the
-user's home directory: `foo/bar/repo`.
+You can also specify a relative (read: no slash (`/`) character at the
+beginning) directory, in this case the dir is relative to the remote user's
+home directory.
 
 # Create an Amazon S3 repository
 
@@ -348,15 +346,16 @@ Restic can backup data to any Amazon S3 bucket. However, in this case, changing 
 
 You can then easily initialize a repository that uses your Amazon S3 as a backend.
 
-    $ restic -r s3://s3.amazonaws.com/bucket_name init
+    $ restic -r s3:eu-central-1/bucket_name init
     enter password for new backend:
     enter password again:
-    created restic backend eefee03bbd at s3://s3.amazonaws.com/bucket_name
+    created restic backend eefee03bbd at s3:eu-central-1/bucket_name
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
-For an S3-compatible repository without TLS available, use the alternative URI
-protocol `s3:http://server:port/bucket_name`.
+Fro an s3-compatible server that is not Amazon (like Minio, see below), or is
+only available via HTTP, you can specify the URL to the server like this:
+`s3:http://server:port/bucket_name`.
 
 ## Create a Minio Server repository
 
