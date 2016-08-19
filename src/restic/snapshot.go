@@ -125,7 +125,7 @@ func SamePaths(expected, actual []string) bool {
 	return true
 }
 
-// Error when no snapshot is found for the given criteria
+// ErrNoSnapshotFound is returned when no snapshot for the given criteria could be found.
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory and source filters
