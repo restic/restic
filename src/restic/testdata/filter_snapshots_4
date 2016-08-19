@@ -1,0 +1,22 @@
+[
+  {
+    "time": "2016-01-01T07:08:03+01:00",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "bar",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-01T01:03:03+01:00",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "bar",
+    "username": "testuser"
+  }
+]

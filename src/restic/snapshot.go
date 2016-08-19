@@ -83,7 +83,8 @@ func LoadAllSnapshots(repo *repository.Repository) (snapshots []*Snapshot, err e
 }
 
 func (sn Snapshot) String() string {
-	return fmt.Sprintf("<Snapshot %s of %v at %s>", sn.id.Str(), sn.Paths, sn.Time)
+	return fmt.Sprintf("<Snapshot %s of %v at %s by %s@%s>",
+		sn.id.Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
 }
 
 // ID retuns the snapshot's ID.
