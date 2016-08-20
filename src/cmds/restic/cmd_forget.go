@@ -94,7 +94,20 @@ func (cmd CmdForget) Execute(args []string) error {
 		} else {
 			cmd.global.Verbosef("would removed snapshot %v\n", id.Str())
 		}
+	}
 
+	policy := restic.ExpirePolicy{
+		Last:    cmd.Last,
+		Hourly:  cmd.Hourly,
+		Daily:   cmd.Daily,
+		Weekly:  cmd.Weekly,
+		Monthly: cmd.Monthly,
+		Yearly:  cmd.Yearly,
+	}
+
+	if policy.Empty() {
+		cmd.global.Verbosef("no expire policy configured, exiting\n")
+		return nil
 	}
 
 	// then, load all remaining snapshots
@@ -116,15 +129,6 @@ func (cmd CmdForget) Execute(args []string) error {
 		list := snapshotGroups[k]
 		list = append(list, sn)
 		snapshotGroups[k] = list
-	}
-
-	policy := restic.ExpirePolicy{
-		Last:    cmd.Last,
-		Hourly:  cmd.Hourly,
-		Daily:   cmd.Daily,
-		Weekly:  cmd.Weekly,
-		Monthly: cmd.Monthly,
-		Yearly:  cmd.Yearly,
 	}
 
 	for key, snapshotGroup := range snapshotGroups {
