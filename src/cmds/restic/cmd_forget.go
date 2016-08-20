@@ -108,7 +108,6 @@ func (cmd CmdForget) Execute(args []string) error {
 	}
 
 	if policy.Empty() {
-		cmd.global.Verbosef("no expire policy configured, exiting\n")
 		return nil
 	}
 
