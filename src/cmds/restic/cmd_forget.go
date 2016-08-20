@@ -17,6 +17,8 @@ type CmdForget struct {
 	Monthly int `short:"m" long:"keep-monthly" description:"keep the last n monthly snapshots"`
 	Yearly  int `short:"y" long:"keep-yearly" description:"keep the last n yearly snapshots"`
 
+	Hostname string `long:"hostname" description:"only forget snapshots for the given hostname"`
+
 	DryRun bool `short:"n" long:"dry-run" description:"do not delete anything, just print what would be done"`
 
 	global *GlobalOptions
@@ -125,6 +127,10 @@ func (cmd CmdForget) Execute(args []string) error {
 	snapshotGroups := make(map[key]restic.Snapshots)
 
 	for _, sn := range snapshots {
+		if cmd.Hostname != "" && sn.Hostname != cmd.Hostname {
+			continue
+		}
+
 		k := key{Hostname: sn.Hostname, Dirs: strings.Join(sn.Paths, ":")}
 		list := snapshotGroups[k]
 		list = append(list, sn)
