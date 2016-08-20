@@ -185,6 +185,9 @@ func (cmd CmdPrune) Execute(args []string) error {
 
 	cmd.global.Verbosef("creating new index\n")
 
+	for _ = range repo.List(backend.Data, done) {
+		stats.packs++
+	}
 	bar = newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "files")
 	idx, err = index.New(repo, bar)
 	if err != nil {
