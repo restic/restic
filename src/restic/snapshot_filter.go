@@ -67,7 +67,13 @@ type ExpirePolicy struct {
 // Sum returns the maximum number of snapshots to be kept according to this
 // policy.
 func (e ExpirePolicy) Sum() int {
-	return e.Last + e.Daily + e.Weekly + e.Monthly + e.Yearly
+	return e.Last + e.Hourly + e.Daily + e.Weekly + e.Monthly + e.Yearly
+}
+
+// Empty returns true iff no policy has been configured (all values zero).
+func (e ExpirePolicy) Empty() bool {
+	empty := ExpirePolicy{}
+	return e == empty
 }
 
 // filter is used to split a list of snapshots into those to keep and those to
@@ -175,8 +181,7 @@ func (f *filter) finish() {
 func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 	sort.Sort(list)
 
-	empty := ExpirePolicy{}
-	if p == empty {
+	if p.Empty() {
 		return list, remove
 	}
 
