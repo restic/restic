@@ -22,7 +22,11 @@ type CmdPrune struct {
 func init() {
 	_, err := parser.AddCommand("prune",
 		"removes content from a repository",
-		"The prune command removes rendundant and unneeded data from the repository",
+		`
+The prune command removes rendundant and unneeded data from the repository.
+For removing snapshots, please see the 'forget' command, then afterwards run
+'prune'.
+`,
 		&CmdPrune{global: &globalOpts})
 	if err != nil {
 		panic(err)

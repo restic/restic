@@ -27,7 +27,13 @@ type CmdForget struct {
 func init() {
 	_, err := parser.AddCommand("forget",
 		"removes snapshots from a repository",
-		"The forget command removes snapshots according to a policy.",
+		`
+The forget command removes snapshots according to a policy. Please note
+that this command really only deletes the snapshot object in the repo, which
+is a reference to data stored there. In order to remove this (now
+unreferenced) data after 'forget' was run successfully, see the 'prune'
+command.
+`,
 		&CmdForget{global: &globalOpts})
 	if err != nil {
 		panic(err)
