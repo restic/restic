@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"io"
-	"path"
 	"restic"
 	"restic/backend"
+	"strings"
 )
 
 // CmdForget implements the 'forget' command.
@@ -125,7 +125,7 @@ func (cmd CmdForget) Execute(args []string) error {
 	snapshotGroups := make(map[key]restic.Snapshots)
 
 	for _, sn := range snapshots {
-		k := key{Hostname: sn.Hostname, Dirs: path.Join(sn.Paths...)}
+		k := key{Hostname: sn.Hostname, Dirs: strings.Join(sn.Paths, ":")}
 		list := snapshotGroups[k]
 		list = append(list, sn)
 		snapshotGroups[k] = list
