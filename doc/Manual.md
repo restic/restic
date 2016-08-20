@@ -381,6 +381,98 @@ Now you can easily initialize restic to use Minio server as backend with this co
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost. 
 
+# Removing old snapshots
+
+All backup space is finite, so restic allows removing old snapshots. This can
+be done either manually (by specifying a snapshot ID to remove) or by using a
+policy that describes which snapshots to forget. For all remove operations, two
+commands need to be called in sequence: `forget` to remove a snapshot and
+`prune` to actually remove the data that was referenced by the snapshot from
+the repository.
+
+## Remove a single snapshot
+
+The command `snapshots` can be used to list all snapshots in a repository like this:
+
+    $ restic -r /tmp/backup snapshots
+    enter password for repository:
+    ID        Date                 Host      Directory
+    ----------------------------------------------------------------------
+    40dc1520  2015-05-08 21:38:30  kasimir     /home/user/work
+    79766175  2015-05-08 21:40:19  kasimir     /home/user/work
+    bdbd3439  2015-05-08 21:45:17  luigi       /home/art
+    590c8fc8  2015-05-08 21:47:38  kazik       /srv
+    9f0bc19e  2015-05-08 21:46:11  luigi       /srv
+
+In order to remove the snapshot of `/home/art`, use the `forget` command and
+specify the snapshot ID on the command line:
+
+    $ restic -r /tmp/backup forget bdbd3439
+    enter password for repository:
+    removed snapshot d3f01f63
+
+Afterwards this snapshot is removed:
+
+    $ restic -r /tmp/backup snapshots
+    enter password for repository:
+    ID        Date                 Host      Directory
+    ----------------------------------------------------------------------
+    40dc1520  2015-05-08 21:38:30  kasimir     /home/user/work
+    79766175  2015-05-08 21:40:19  kasimir     /home/user/work
+    590c8fc8  2015-05-08 21:47:38  kazik       /srv
+    9f0bc19e  2015-05-08 21:46:11  luigi       /srv
+
+But the data that was referenced by files in this snapshot is still stored in
+the repository. To cleanup unreferenced data, the `prune` command must be run:
+
+    $ restic -r /tmp/backup prune
+    enter password for repository:
+
+    counting files in repo
+    building new index for repo
+    [0:00] 100.00%  22 / 22 files
+    repository contains 22 packs (8512 blobs) with 100.092 MiB bytes
+    processed 8512 blobs: 0 duplicate blobs, 0B duplicate
+    load all snapshots
+    find data that is still in use for 1 snapshots
+    [0:00] 100.00%  1 / 1 snapshots
+    found 8433 of 8512 data blobs still in use
+    will rewrite 3 packs
+    creating new index
+    [0:00] 86.36%  19 / 22 files
+    saved new index as 544a5084
+    done
+
+Afterwards the repository is smaller.
+
+## Removing snapshots according to a policy
+
+Removing snapshots manually is tedious and error-prone, therefore restic allows
+specifying which snapshots should be removed automatically according to a
+policy. You can specify how many hourly, daily, weekly, monthly and yearly
+snapshots to keep, any other snapshots are removed. The most important
+command-line parameter here is `--dry-run` which instructs restic to not remove
+anything but print which snapshots would be removed.
+
+When `forget` is run with a policy, restic loads the list of all snapshots,
+then groups these by host name and list of directories. The policy is then
+applied to each group of snapshots separately. This is a safety feature.
+
+The `forget` command accepts the following parameters:
+
+ * `--keep-last n` never delete the `n` last (most recent) snapshots
+ * `--keep-hourly n` for the last `n` hours in which a snapshot was made, keep
+   only the last snapshot for each hour.
+ * `--keep-daily n` for the last `n` days which have one or more snapshots, only
+   keep the last one for that day.
+ * `--keep-monthly n` for the last `n` months which have one or more snapshots, only
+   keep the last one for that month.
+ * `--keep-yearly n` for the last `n` years which have one or more snapshots, only
+   keep the last one for that year.
+
+Additionally, you can restrict removing snapshots to those which have a
+particular hostname with the `--hostname` parameter.
+
 # Debugging restic
 
 The program can be built with debug support like this:
