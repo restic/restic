@@ -194,6 +194,7 @@ var expireTests = []ExpirePolicy{
 	{Last: 15},
 	{Last: 99},
 	{Last: 200},
+	{Hourly: 20},
 	{Daily: 3},
 	{Daily: 10},
 	{Daily: 30},

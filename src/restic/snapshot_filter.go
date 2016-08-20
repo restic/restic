@@ -57,6 +57,7 @@ func FilterSnapshots(s Snapshots, f SnapshotFilter) (result Snapshots) {
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
 	Last    int // keep the last n snapshots
+	Hourly  int // keep the last n hourly snapshots
 	Daily   int // keep the last n daily snapshots
 	Weekly  int // keep the last n weekly snapshots
 	Monthly int // keep the last n monthly snapshots
@@ -79,6 +80,11 @@ type filter struct {
 
 func (f filter) String() string {
 	return fmt.Sprintf("<filter %d todo, %d keep, %d remove>", len(f.Unprocessed), len(f.Keep), len(f.Remove))
+}
+
+// ymdh returns an integer in the form YYYYMMDDHH.
+func ymdh(d time.Time) int {
+	return d.Year()*1000000 + int(d.Month())*10000 + d.Day()*100 + d.Hour()
 }
 
 // ymd returns an integer in the form YYYYMMDD.
@@ -185,6 +191,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 	}
 
 	f.keepLast(p.Last)
+	f.apply(ymdh, p.Hourly)
 	f.apply(ymd, p.Daily)
 	f.apply(yw, p.Weekly)
 	f.apply(ym, p.Monthly)
