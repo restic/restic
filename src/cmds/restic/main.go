@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -37,10 +38,11 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		debug.Log("main", "command returned error: %#v", err)
+		fmt.Fprintf(os.Stderr, "%+v\n", err)
 	}
 
-	if restic.IsAlreadyLocked(err) {
+	if restic.IsAlreadyLocked(errors.Cause(err)) {
 		fmt.Fprintf(os.Stderr, "\nthe `unlock` command can be used to remove stale locks\n")
 	}
 
