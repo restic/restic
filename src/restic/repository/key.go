@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,15 +16,9 @@ import (
 var (
 	// ErrNoKeyFound is returned when no key for the repository could be decrypted.
 	ErrNoKeyFound = errors.New("wrong password or no key found")
-)
 
-// TODO: figure out scrypt values on the fly depending on the current
-// hardware.
-const (
-	scryptN        = 65536
-	scryptR        = 8
-	scryptP        = 1
-	scryptSaltsize = 64
+	// ErrMaxKeysReached is returned when the maximum number of keys was checked and no key could be found.
+	ErrMaxKeysReached = errors.New("maximum number of keys reached")
 )
 
 // Key represents an encrypted master key for a repository.
@@ -47,6 +40,18 @@ type Key struct {
 	name string
 }
 
+// KDFParams tracks the parameters used for the KDF. If not set, it will be
+// calibrated on the first run of AddKey().
+var KDFParams *crypto.KDFParams
+
+var (
+	// KDFTimeout specifies the maximum runtime for the KDF.
+	KDFTimeout = 500 * time.Millisecond
+
+	// KDFMemory limits the memory the KDF is allowed to use.
+	KDFMemory = 60
+)
+
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
 func createMasterKey(s *Repository, password string) (*Key, error) {
@@ -67,7 +72,12 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	}
 
 	// derive user key
-	k.user, err = crypto.KDF(k.N, k.R, k.P, k.Salt, password)
+	params := crypto.KDFParams{
+		N: k.N,
+		R: k.R,
+		P: k.P,
+	}
+	k.user, err = crypto.KDF(params, k.Salt, password)
 	if err != nil {
 		return nil, err
 	}
@@ -94,18 +104,32 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	return k, nil
 }
 
-// SearchKey tries to decrypt all keys in the backend with the given password.
-// If none could be found, ErrNoKeyFound is returned.
-func SearchKey(s *Repository, password string) (*Key, error) {
-	// try all keys in repo
+// SearchKey tries to decrypt at most maxKeys keys in the backend with the
+// given password. If none could be found, ErrNoKeyFound is returned. When
+// maxKeys is reached, ErrMaxKeysReached is returned. When setting maxKeys to
+// zero, all keys in the repo are checked.
+func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
+	checked := 0
+
+	// try at most maxKeysForSearch keys in repo
 	done := make(chan struct{})
 	defer close(done)
 	for name := range s.Backend().List(backend.Key, done) {
+		if maxKeys > 0 && checked > maxKeys {
+			return nil, ErrMaxKeysReached
+		}
+
 		debug.Log("SearchKey", "trying key %v", name[:12])
 		key, err := OpenKey(s, name, password)
 		if err != nil {
 			debug.Log("SearchKey", "key %v returned error %v", name[:12], err)
-			continue
+
+			// ErrUnauthenticated means the password is wrong, try the next key
+			if err == crypto.ErrUnauthenticated {
+				continue
+			}
+
+			return nil, err
 		}
 
 		debug.Log("SearchKey", "successfully opened key %v", name[:12])
@@ -134,13 +158,24 @@ func LoadKey(s *Repository, name string) (k *Key, err error) {
 
 // AddKey adds a new key to an already existing repository.
 func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) {
+	// make sure we have valid KDF parameters
+	if KDFParams == nil {
+		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
+		if err != nil {
+			return nil, err
+		}
+
+		KDFParams = &p
+		debug.Log("repository.AddKey", "calibrated KDF parameters are %v", p)
+	}
+
 	// fill meta data about key
 	newkey := &Key{
 		Created: time.Now(),
 		KDF:     "scrypt",
-		N:       scryptN,
-		R:       scryptR,
-		P:       scryptP,
+		N:       KDFParams.N,
+		R:       KDFParams.R,
+		P:       KDFParams.P,
 	}
 
 	hn, err := os.Hostname()
@@ -154,14 +189,13 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	}
 
 	// generate random salt
-	newkey.Salt = make([]byte, scryptSaltsize)
-	n, err := rand.Read(newkey.Salt)
-	if n != scryptSaltsize || err != nil {
-		panic("unable to read enough random bytes for salt")
+	newkey.Salt, err = crypto.NewSalt()
+	if err != nil {
+		panic("unable to read enough random bytes for salt: " + err.Error())
 	}
 
 	// call KDF to derive user key
-	newkey.user, err = crypto.KDF(newkey.N, newkey.R, newkey.P, newkey.Salt, password)
+	newkey.user, err = crypto.KDF(*KDFParams, newkey.Salt, password)
 	if err != nil {
 		return nil, err
 	}

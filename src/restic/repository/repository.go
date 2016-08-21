@@ -405,9 +405,9 @@ func LoadIndex(repo *Repository, id backend.ID) (*Index, error) {
 }
 
 // SearchKey finds a key with the supplied password, afterwards the config is
-// read and parsed.
-func (r *Repository) SearchKey(password string) error {
-	key, err := SearchKey(r, password)
+// read and parsed. It tries at most maxKeys key files in the repo.
+func (r *Repository) SearchKey(password string, maxKeys int) error {
+	key, err := SearchKey(r, password, maxKeys)
 	if err != nil {
 		return err
 	}

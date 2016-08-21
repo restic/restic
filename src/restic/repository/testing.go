@@ -5,10 +5,24 @@ import (
 	"restic/backend"
 	"restic/backend/local"
 	"restic/backend/mem"
+	"restic/crypto"
 	"testing"
 
 	"github.com/restic/chunker"
 )
+
+// testKDFParams are the parameters for the KDF to be used during testing.
+var testKDFParams = crypto.KDFParams{
+	N: 128,
+	R: 1,
+	P: 1,
+}
+
+// TestUseLowSecurityKDFParameters configures low-security KDF parameters for testing.
+func TestUseLowSecurityKDFParameters(t testing.TB) {
+	t.Logf("using low-security KDF parameters for test")
+	KDFParams = &testKDFParams
+}
 
 // TestBackend returns a fully configured in-memory backend.
 func TestBackend(t testing.TB) (be backend.Backend, cleanup func()) {
@@ -22,8 +36,10 @@ const testChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
-// is used for the chunker.
+// is used for the chunker and low-security test parameters.
 func TestRepositoryWithBackend(t testing.TB, be backend.Backend) (r *Repository, cleanup func()) {
+	TestUseLowSecurityKDFParameters(t)
+
 	var beCleanup func()
 	if be == nil {
 		be, beCleanup = TestBackend(t)

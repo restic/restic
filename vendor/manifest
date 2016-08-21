@@ -8,6 +8,12 @@
 			"branch": "HEAD"
 		},
 		{
+			"importpath": "github.com/elithrar/simple-scrypt",
+			"repository": "https://github.com/elithrar/simple-scrypt",
+			"revision": "cbb1ebac08e2ca5495a43f4ef5555e61a7ec7677",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/jessevdk/go-flags",
 			"repository": "https://github.com/jessevdk/go-flags",
 			"revision": "1b89bf73cd2c3a911d7b2a279ab085c4a18cf539",

@@ -197,6 +197,8 @@ func (o GlobalOptions) ReadPasswordTwice(prompt1, prompt2 string) string {
 	return pw1
 }
 
+const maxKeys = 20
+
 // OpenRepository reads the password and opens the repository.
 func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 	if o.Repo == "" {
@@ -214,7 +216,7 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 		o.password = o.ReadPassword("enter password for repository: ")
 	}
 
-	err = s.SearchKey(o.password)
+	err = s.SearchKey(o.password, maxKeys)
 	if err != nil {
 		return nil, fmt.Errorf("unable to open repo: %v", err)
 	}

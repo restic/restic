@@ -239,6 +239,8 @@ func induceError(data []byte) {
 func TestCheckerModifiedData(t *testing.T) {
 	be := mem.New()
 
+	repository.TestUseLowSecurityKDFParameters(t)
+
 	repo := repository.New(be)
 	OK(t, repo.Init(TestPassword))
 
@@ -249,7 +251,7 @@ func TestCheckerModifiedData(t *testing.T) {
 
 	beError := &errorBackend{Backend: be}
 	checkRepo := repository.New(beError)
-	OK(t, checkRepo.SearchKey(TestPassword))
+	OK(t, checkRepo.SearchKey(TestPassword, 5))
 
 	chkr := checker.New(checkRepo)
 
