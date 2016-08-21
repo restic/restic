@@ -182,14 +182,25 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 }
 
 // Stat returns information about a blob.
-func (be s3) Stat(h backend.Handle) (backend.BlobInfo, error) {
+func (be s3) Stat(h backend.Handle) (bi backend.BlobInfo, err error) {
 	debug.Log("s3.Stat", "%v", h)
+
 	path := be.s3path(h.Type, h.Name)
-	obj, err := be.client.GetObject(be.bucketname, path)
+	var obj *minio.Object
+
+	obj, err = be.client.GetObject(be.bucketname, path)
 	if err != nil {
 		debug.Log("s3.Stat", "GetObject() err %v", err)
 		return backend.BlobInfo{}, err
 	}
+
+	// make sure that the object is closed properly.
+	defer func() {
+		e := obj.Close()
+		if err == nil {
+			err = e
+		}
+	}()
 
 	fi, err := obj.Stat()
 	if err != nil {
