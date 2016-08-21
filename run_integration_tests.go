@@ -3,7 +3,9 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -16,6 +18,12 @@ import (
 	"runtime"
 	"strings"
 )
+
+// ForbiddenImports are the packages from the stdlib that should not be used in
+// our code.
+var ForbiddenImports = map[string]bool{
+	"errors": true,
+}
 
 var runCrossCompile = flag.Bool("cross-compile", true, "run cross compilation tests")
 var minioServer = flag.String("minio", "", "path to the minio server binary")
@@ -345,7 +353,30 @@ func (env *TravisEnvironment) RunTests() error {
 		return err
 	}
 
-	return runGofmt()
+	if err = runGofmt(); err != nil {
+		return err
+	}
+
+	deps, err := findImports()
+	if err != nil {
+		return err
+	}
+
+	foundForbiddenImports := false
+	for name, imports := range deps {
+		for _, pkg := range imports {
+			if _, ok := ForbiddenImports[pkg]; ok {
+				fmt.Fprintf(os.Stderr, "========== package %v imports forbidden package %v\n", name, pkg)
+				foundForbiddenImports = true
+			}
+		}
+	}
+
+	if foundForbiddenImports {
+		return errors.New("CI: forbidden imports found")
+	}
+
+	return nil
 }
 
 // AppveyorEnvironment is the environment on Windows.
@@ -411,6 +442,46 @@ func updateEnv(env []string, override map[string]string) []string {
 	}
 
 	return newEnv
+}
+
+func findImports() (map[string][]string, error) {
+	res := make(map[string][]string)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("Getwd() returned error: %v", err)
+	}
+
+	gopath := cwd + ":" + filepath.Join(cwd, "vendor")
+
+	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .Imports " "}}`, "./src/...")
+	cmd.Env = updateEnv(os.Environ(), map[string]string{"GOPATH": gopath})
+	cmd.Stderr = os.Stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	sc := bufio.NewScanner(bytes.NewReader(output))
+	for sc.Scan() {
+		wordScanner := bufio.NewScanner(strings.NewReader(sc.Text()))
+		wordScanner.Split(bufio.ScanWords)
+
+		if !wordScanner.Scan() {
+			return nil, fmt.Errorf("package name not found in line: %s", output)
+		}
+		name := wordScanner.Text()
+		var deps []string
+
+		for wordScanner.Scan() {
+			deps = append(deps, wordScanner.Text())
+		}
+
+		res[name] = deps
+	}
+
+	return res, nil
 }
 
 func runGofmt() error {
