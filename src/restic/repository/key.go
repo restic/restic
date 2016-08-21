@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,15 +16,6 @@ import (
 var (
 	// ErrNoKeyFound is returned when no key for the repository could be decrypted.
 	ErrNoKeyFound = errors.New("wrong password or no key found")
-)
-
-// TODO: figure out scrypt values on the fly depending on the current
-// hardware.
-const (
-	scryptN        = 65536
-	scryptR        = 8
-	scryptP        = 1
-	scryptSaltsize = 64
 )
 
 // Key represents an encrypted master key for a repository.
@@ -47,6 +37,15 @@ type Key struct {
 	name string
 }
 
+// KDFParams tracks the parameters used for the KDF. If not set, it will be
+// calibrated on the first run of AddKey().
+var KDFParams *crypto.KDFParams
+
+var (
+	KDFTimeout = 500 * time.Millisecond // timeout for KDF
+	KDFMemory  = 60                     // max memory for KDF, in MiB
+)
+
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
 func createMasterKey(s *Repository, password string) (*Key, error) {
@@ -67,7 +66,12 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	}
 
 	// derive user key
-	k.user, err = crypto.KDF(k.N, k.R, k.P, k.Salt, password)
+	params := crypto.KDFParams{
+		N: k.N,
+		R: k.R,
+		P: k.P,
+	}
+	k.user, err = crypto.KDF(params, k.Salt, password)
 	if err != nil {
 		return nil, err
 	}
@@ -134,13 +138,24 @@ func LoadKey(s *Repository, name string) (k *Key, err error) {
 
 // AddKey adds a new key to an already existing repository.
 func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) {
+	// make sure we have valid KDF parameters
+	if KDFParams == nil {
+		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
+		if err != nil {
+			return nil, err
+		}
+
+		KDFParams = &p
+		debug.Log("repository.AddKey", "calibrated KDF parameters are %v", p)
+	}
+
 	// fill meta data about key
 	newkey := &Key{
 		Created: time.Now(),
 		KDF:     "scrypt",
-		N:       scryptN,
-		R:       scryptR,
-		P:       scryptP,
+		N:       KDFParams.N,
+		R:       KDFParams.R,
+		P:       KDFParams.P,
 	}
 
 	hn, err := os.Hostname()
@@ -154,14 +169,13 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	}
 
 	// generate random salt
-	newkey.Salt = make([]byte, scryptSaltsize)
-	n, err := rand.Read(newkey.Salt)
-	if n != scryptSaltsize || err != nil {
-		panic("unable to read enough random bytes for salt")
+	newkey.Salt, err = crypto.NewSalt()
+	if err != nil {
+		panic("unable to read enough random bytes for salt: " + err.Error())
 	}
 
 	// call KDF to derive user key
-	newkey.user, err = crypto.KDF(newkey.N, newkey.R, newkey.P, newkey.Salt, password)
+	newkey.user, err = crypto.KDF(*KDFParams, newkey.Salt, password)
 	if err != nil {
 		return nil, err
 	}
