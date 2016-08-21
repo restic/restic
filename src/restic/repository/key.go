@@ -45,8 +45,11 @@ type Key struct {
 var KDFParams *crypto.KDFParams
 
 var (
-	KDFTimeout = 500 * time.Millisecond // timeout for KDF
-	KDFMemory  = 60                     // max memory for KDF, in MiB
+	// KDFTimeout specifies the maximum runtime for the KDF.
+	KDFTimeout = 500 * time.Millisecond
+
+	// KDFMemory limits the memory the KDF is allowed to use.
+	KDFMemory = 60
 )
 
 // createMasterKey creates a new master key in the given backend and encrypts
