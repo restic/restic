@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"crypto/rand"
 	"io"
-	"io/ioutil"
 	"testing"
 
-	"github.com/restic/chunker"
 	"restic/crypto"
 	. "restic/test"
+
+	"github.com/restic/chunker"
 )
 
 const testLargeCrypto = false
@@ -128,25 +128,6 @@ func TestLargeEncrypt(t *testing.T) {
 	}
 }
 
-func BenchmarkEncryptWriter(b *testing.B) {
-	size := 8 << 20 // 8MiB
-
-	k := crypto.NewRandomKey()
-
-	b.ResetTimer()
-	b.SetBytes(int64(size))
-
-	for i := 0; i < b.N; i++ {
-		rd := RandomLimitReader(23, size)
-		wr := crypto.EncryptTo(k, ioutil.Discard)
-		n, err := io.Copy(wr, rd)
-		OK(b, err)
-		OK(b, wr.Close())
-		Assert(b, n == int64(size),
-			"not enough bytes writter: want %d, got %d", size, n)
-	}
-}
-
 func BenchmarkEncrypt(b *testing.B) {
 	size := 8 << 20 // 8MiB
 	data := make([]byte, size)
@@ -159,55 +140,6 @@ func BenchmarkEncrypt(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, err := crypto.Encrypt(k, buf, data)
-		OK(b, err)
-	}
-}
-
-func BenchmarkDecryptReader(b *testing.B) {
-	size := 8 << 20 // 8MiB
-	buf := Random(23, size)
-	k := crypto.NewRandomKey()
-
-	ciphertext := make([]byte, len(buf)+crypto.Extension)
-	_, err := crypto.Encrypt(k, ciphertext, buf)
-	OK(b, err)
-
-	rd := bytes.NewReader(ciphertext)
-
-	b.ResetTimer()
-	b.SetBytes(int64(size))
-
-	for i := 0; i < b.N; i++ {
-		rd.Seek(0, 0)
-		decRd, err := crypto.DecryptFrom(k, rd)
-		OK(b, err)
-
-		_, err = io.Copy(ioutil.Discard, decRd)
-		OK(b, err)
-	}
-}
-
-func BenchmarkEncryptDecryptReader(b *testing.B) {
-	k := crypto.NewRandomKey()
-
-	size := 8 << 20 // 8MiB
-
-	b.ResetTimer()
-	b.SetBytes(int64(size))
-
-	buf := bytes.NewBuffer(nil)
-	for i := 0; i < b.N; i++ {
-		rd := RandomLimitReader(23, size)
-		buf.Reset()
-		wr := crypto.EncryptTo(k, buf)
-		_, err := io.Copy(wr, rd)
-		OK(b, err)
-		OK(b, wr.Close())
-
-		r, err := crypto.DecryptFrom(k, buf)
-		OK(b, err)
-
-		_, err = io.Copy(ioutil.Discard, r)
 		OK(b, err)
 	}
 }
@@ -230,103 +162,5 @@ func BenchmarkDecrypt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		plaintext, err = crypto.Decrypt(k, plaintext, ciphertext)
 		OK(b, err)
-	}
-}
-
-func TestEncryptStreamWriter(t *testing.T) {
-	k := crypto.NewRandomKey()
-
-	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
-	if testLargeCrypto {
-		tests = append(tests, 7<<20+123)
-	}
-
-	for _, size := range tests {
-		data := Random(42, size)
-
-		ciphertext := bytes.NewBuffer(nil)
-		wr := crypto.EncryptTo(k, ciphertext)
-
-		_, err := io.Copy(wr, bytes.NewReader(data))
-		OK(t, err)
-		OK(t, wr.Close())
-
-		l := len(data) + crypto.Extension
-		Assert(t, len(ciphertext.Bytes()) == l,
-			"wrong ciphertext length: expected %d, got %d",
-			l, len(ciphertext.Bytes()))
-
-		// decrypt with default function
-		plaintext, err := crypto.Decrypt(k, []byte{}, ciphertext.Bytes())
-		OK(t, err)
-		Assert(t, bytes.Equal(data, plaintext),
-			"wrong plaintext after decryption: expected %02x, got %02x",
-			data, plaintext)
-	}
-}
-
-func TestDecryptStreamReader(t *testing.T) {
-	k := crypto.NewRandomKey()
-
-	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
-	if testLargeCrypto {
-		tests = append(tests, 7<<20+123)
-	}
-
-	for _, size := range tests {
-		data := Random(42, size)
-		var err error
-		ciphertext := make([]byte, size+crypto.Extension)
-
-		// encrypt with default function
-		ciphertext, err = crypto.Encrypt(k, ciphertext, data)
-		OK(t, err)
-		Assert(t, len(ciphertext) == len(data)+crypto.Extension,
-			"wrong number of bytes returned after encryption: expected %d, got %d",
-			len(data)+crypto.Extension, len(ciphertext))
-
-		rd, err := crypto.DecryptFrom(k, bytes.NewReader(ciphertext))
-		OK(t, err)
-
-		plaintext, err := ioutil.ReadAll(rd)
-		OK(t, err)
-
-		Assert(t, bytes.Equal(data, plaintext),
-			"wrong plaintext after decryption: expected %02x, got %02x",
-			data, plaintext)
-	}
-}
-
-func TestEncryptWriter(t *testing.T) {
-	k := crypto.NewRandomKey()
-
-	tests := []int{5, 23, 2<<18 + 23, 1 << 20}
-	if testLargeCrypto {
-		tests = append(tests, 7<<20+123)
-	}
-
-	for _, size := range tests {
-		data := Random(42, size)
-
-		buf := bytes.NewBuffer(nil)
-		wr := crypto.EncryptTo(k, buf)
-
-		_, err := io.Copy(wr, bytes.NewReader(data))
-		OK(t, err)
-		OK(t, wr.Close())
-
-		ciphertext := buf.Bytes()
-
-		l := len(data) + crypto.Extension
-		Assert(t, len(ciphertext) == l,
-			"wrong ciphertext length: expected %d, got %d",
-			l, len(ciphertext))
-
-		// decrypt with default function
-		plaintext, err := crypto.Decrypt(k, []byte{}, ciphertext)
-		OK(t, err)
-		Assert(t, bytes.Equal(data, plaintext),
-			"wrong plaintext after decryption: expected %02x, got %02x",
-			data, plaintext)
 	}
 }
