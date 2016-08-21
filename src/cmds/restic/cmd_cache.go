@@ -26,7 +26,7 @@ func (cmd CmdCache) Usage() string {
 
 func (cmd CmdCache) Execute(args []string) error {
 	// if len(args) == 0 || len(args) > 2 {
-	// 	return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
+	// 	return errors.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
 	// }
 
 	repo, err := cmd.global.OpenRepository()

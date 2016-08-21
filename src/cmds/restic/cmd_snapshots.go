@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"restic"
 	"restic/backend"
 )
@@ -70,7 +72,7 @@ func (cmd CmdSnapshots) Usage() string {
 
 func (cmd CmdSnapshots) Execute(args []string) error {
 	if len(args) != 0 {
-		return fmt.Errorf("wrong number of arguments, usage: %s", cmd.Usage())
+		return errors.Errorf("wrong number of arguments, usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

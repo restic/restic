@@ -178,7 +178,7 @@ func waitForResults(resultChannels [](<-chan saveResult)) ([]saveResult, error) 
 	}
 
 	if len(results) != len(resultChannels) {
-		return nil, fmt.Errorf("chunker returned %v chunks, but only %v blobs saved", len(resultChannels), len(results))
+		return nil, errors.Errorf("chunker returned %v chunks, but only %v blobs saved", len(resultChannels), len(results))
 	}
 
 	return results, nil
@@ -198,7 +198,7 @@ func updateNodeContent(node *Node, results []saveResult) error {
 	}
 
 	if bytes != node.Size {
-		return fmt.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
+		return errors.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
 	}
 
 	debug.Log("Archiver.SaveFile", "SaveFile(%q): %v blobs\n", node.path, len(results))

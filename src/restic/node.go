@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"runtime"
 
 	"restic/backend"
@@ -137,7 +139,7 @@ func (node *Node) CreateAt(path string, repo *repository.Repository) error {
 	case "socket":
 		return nil
 	default:
-		return fmt.Errorf("filetype %q not implemented!\n", node.Type)
+		return errors.Errorf("filetype %q not implemented!\n", node.Type)
 	}
 
 	err := node.restoreMetadata(path)
@@ -485,7 +487,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "fifo":
 	case "socket":
 	default:
-		err = fmt.Errorf("invalid node type %q", node.Type)
+		err = errors.Errorf("invalid node type %q", node.Type)
 	}
 
 	return err

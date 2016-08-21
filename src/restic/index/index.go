@@ -181,7 +181,7 @@ func Load(repo types.Repository, p *restic.Progress) (*Index, error) {
 // error is returned.
 func (idx *Index) AddPack(id backend.ID, size int64, entries []pack.Blob) error {
 	if _, ok := idx.Packs[id]; ok {
-		return fmt.Errorf("pack %v already present in the index", id.Str())
+		return errors.Errorf("pack %v already present in the index", id.Str())
 	}
 
 	idx.Packs[id] = Pack{Size: size, Entries: entries}
@@ -204,7 +204,7 @@ func (idx *Index) AddPack(id backend.ID, size int64, entries []pack.Blob) error 
 // RemovePack deletes a pack from the index.
 func (idx *Index) RemovePack(id backend.ID) error {
 	if _, ok := idx.Packs[id]; !ok {
-		return fmt.Errorf("pack %v not found in the index", id.Str())
+		return errors.Errorf("pack %v not found in the index", id.Str())
 	}
 
 	for _, blob := range idx.Packs[id].Entries {
@@ -279,7 +279,7 @@ func (idx *Index) FindBlob(h pack.Handle) ([]Location, error) {
 	for packID := range blob.Packs {
 		pack, ok := idx.Packs[packID]
 		if !ok {
-			return nil, fmt.Errorf("pack %v not found in index", packID.Str())
+			return nil, errors.Errorf("pack %v not found in index", packID.Str())
 		}
 
 		for _, entry := range pack.Entries {

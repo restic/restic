@@ -1,9 +1,10 @@
 package restic
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"
@@ -59,7 +60,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 
 		if node.Type == "dir" {
 			if node.Subtree == nil {
-				return fmt.Errorf("Dir without subtree in tree %v", treeID.Str())
+				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
 			subp := filepath.Join(dir, node.Name)

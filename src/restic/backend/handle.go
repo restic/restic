@@ -34,7 +34,7 @@ func (h Handle) Valid() error {
 	case Index:
 	case Config:
 	default:
-		return fmt.Errorf("invalid Type %q", h.Type)
+		return errors.Errorf("invalid Type %q", h.Type)
 	}
 
 	if h.Type == Config {

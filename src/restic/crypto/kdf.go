@@ -2,10 +2,10 @@ package crypto
 
 import (
 	"crypto/rand"
-	"fmt"
 	"time"
 
 	sscrypt "github.com/elithrar/simple-scrypt"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/scrypt"
 )
 
@@ -51,7 +51,7 @@ func Calibrate(timeout time.Duration, memory int) (KDFParams, error) {
 // using the supplied parameters N, R and P and the Salt.
 func KDF(p KDFParams, salt []byte, password string) (*Key, error) {
 	if len(salt) != saltLength {
-		return nil, fmt.Errorf("scrypt() called with invalid salt bytes (len %d)", len(salt))
+		return nil, errors.Errorf("scrypt() called with invalid salt bytes (len %d)", len(salt))
 	}
 
 	// make sure we have valid parameters
@@ -72,11 +72,11 @@ func KDF(p KDFParams, salt []byte, password string) (*Key, error) {
 	keybytes := macKeySize + aesKeySize
 	scryptKeys, err := scrypt.Key([]byte(password), salt, p.N, p.R, p.P, keybytes)
 	if err != nil {
-		return nil, fmt.Errorf("error deriving keys from password: %v", err)
+		return nil, errors.Errorf("error deriving keys from password: %v", err)
 	}
 
 	if len(scryptKeys) != keybytes {
-		return nil, fmt.Errorf("invalid numbers of bytes expanded from scrypt(): %d", len(scryptKeys))
+		return nil, errors.Errorf("invalid numbers of bytes expanded from scrypt(): %d", len(scryptKeys))
 	}
 
 	// first 32 byte of scrypt output is the encryption key

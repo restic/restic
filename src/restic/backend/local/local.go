@@ -1,7 +1,6 @@
 package local
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -36,7 +35,7 @@ func Open(dir string) (*Local, error) {
 	// test if all necessary dirs are there
 	for _, d := range paths(dir) {
 		if _, err := fs.Stat(d); err != nil {
-			return nil, fmt.Errorf("%s does not exist", d)
+			return nil, errors.Errorf("%s does not exist", d)
 		}
 	}
 
@@ -185,7 +184,7 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 
 	// test if new path already exists
 	if _, err := fs.Stat(filename); err == nil {
-		return fmt.Errorf("Rename(): file %v already exists", filename)
+		return errors.Errorf("Rename(): file %v already exists", filename)
 	}
 
 	// create directories if necessary, ignore errors

@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+
 	"restic"
 	"restic/backend"
 	"restic/repository"
@@ -72,7 +74,7 @@ func (cmd CmdLs) Usage() string {
 
 func (cmd CmdLs) Execute(args []string) error {
 	if len(args) < 1 || len(args) > 2 {
-		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
+		return errors.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

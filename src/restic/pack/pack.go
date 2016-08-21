@@ -182,7 +182,7 @@ func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
 		case Tree:
 			entry.Type = 1
 		default:
-			return 0, fmt.Errorf("invalid blob type %v", b.Type)
+			return 0, errors.Errorf("invalid blob type %v", b.Type)
 		}
 
 		err := binary.Write(wr, binary.LittleEndian, entry)
@@ -316,7 +316,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []Blob, err error)
 		case 1:
 			entry.Type = Tree
 		default:
-			return nil, fmt.Errorf("invalid type %d", e.Type)
+			return nil, errors.Errorf("invalid type %d", e.Type)
 		}
 
 		entries = append(entries, entry)

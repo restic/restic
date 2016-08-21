@@ -1,7 +1,6 @@
 package sftp
 
 import (
-	"fmt"
 	"net/url"
 	"path"
 	"strings"
@@ -35,7 +34,7 @@ func ParseConfig(s string) (interface{}, error) {
 		host = url.Host
 		dir = url.Path
 		if dir == "" {
-			return nil, fmt.Errorf("invalid backend %q, no directory specified", s)
+			return nil, errors.Errorf("invalid backend %q, no directory specified", s)
 		}
 
 		dir = dir[1:]

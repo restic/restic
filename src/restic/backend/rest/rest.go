@@ -113,7 +113,7 @@ func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err er
 		return 0, err
 	}
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
-		return 0, fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return 0, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	return io.ReadFull(resp.Body, p)
@@ -144,7 +144,7 @@ func (b *restBackend) Save(h backend.Handle, p []byte) (err error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	return nil
@@ -168,7 +168,7 @@ func (b *restBackend) Stat(h backend.Handle) (backend.BlobInfo, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return backend.BlobInfo{}, fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return backend.BlobInfo{}, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	if resp.ContentLength < 0 {

@@ -1,11 +1,12 @@
 package repository
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/crypto"
@@ -103,7 +104,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	m, err := io.ReadFull(f, data)
 
 	if uint(m) != n {
-		return fmt.Errorf("read wrong number of bytes from %v: want %v, got %v", tmpfile.Name(), n, m)
+		return errors.Errorf("read wrong number of bytes from %v: want %v, got %v", tmpfile.Name(), n, m)
 	}
 
 	if err = f.Close(); err != nil {

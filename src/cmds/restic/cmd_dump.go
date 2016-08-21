@@ -204,7 +204,7 @@ func (cmd CmdDump) DumpIndexes() error {
 
 func (cmd CmdDump) Execute(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
+		return errors.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

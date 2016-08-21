@@ -2,7 +2,6 @@ package checker
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"sync"
 
@@ -128,7 +127,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 		debug.Log("LoadIndex", "process index %v", res.ID)
 		idxID, err := backend.ParseID(res.ID)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("unable to parse as index ID: %v", res.ID))
+			errs = append(errs, errors.Errorf("unable to parse as index ID: %v", res.ID))
 			continue
 		}
 
@@ -283,7 +282,7 @@ func loadTreeFromSnapshot(repo *repository.Repository, id backend.ID) (backend.I
 
 	if sn.Tree == nil {
 		debug.Log("Checker.loadTreeFromSnapshot", "snapshot %v has no tree", id.Str())
-		return backend.ID{}, fmt.Errorf("snapshot %v has no tree", id)
+		return backend.ID{}, errors.Errorf("snapshot %v has no tree", id)
 	}
 
 	return *sn.Tree, nil
@@ -585,24 +584,24 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 		switch node.Type {
 		case "file":
 			if node.Content == nil {
-				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q has nil blob list", node.Name)})
+				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
 			}
 
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
-					errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("file %q blob %d has null ID", node.Name, b)})
+					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})
 					continue
 				}
 				blobs = append(blobs, blobID)
 			}
 		case "dir":
 			if node.Subtree == nil {
-				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("dir node %q has no subtree", node.Name)})
+				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q has no subtree", node.Name)})
 				continue
 			}
 
 			if node.Subtree.IsNull() {
-				errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("dir node %q subtree id is null", node.Name)})
+				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("dir node %q subtree id is null", node.Name)})
 				continue
 			}
 
@@ -610,7 +609,7 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 			// nothing to check
 
 		default:
-			errs = append(errs, Error{TreeID: id, Err: fmt.Errorf("node %q with invalid type %q", node.Name, node.Type)})
+			errs = append(errs, Error{TreeID: id, Err: errors.Errorf("node %q with invalid type %q", node.Name, node.Type)})
 		}
 
 		if node.Name == "" {
@@ -672,7 +671,7 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 	hash := backend.Hash(buf)
 	if !hash.Equal(id) {
 		debug.Log("Checker.checkPack", "Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
-		return fmt.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
+		return errors.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 	}
 
 	blobs, err := pack.List(r.Key(), bytes.NewReader(buf), int64(len(buf)))
@@ -688,20 +687,20 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 		plainBuf, err = crypto.Decrypt(r.Key(), plainBuf, buf[blob.Offset:blob.Offset+blob.Length])
 		if err != nil {
 			debug.Log("Checker.checkPack", "  error decrypting blob %v: %v", blob.ID.Str(), err)
-			errs = append(errs, fmt.Errorf("blob %v: %v", i, err))
+			errs = append(errs, errors.Errorf("blob %v: %v", i, err))
 			continue
 		}
 
 		hash := backend.Hash(plainBuf)
 		if !hash.Equal(blob.ID) {
 			debug.Log("Checker.checkPack", "  Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
-			errs = append(errs, fmt.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
+			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
 			continue
 		}
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("pack %v contains %v errors: %v", id.Str(), len(errs), errs)
+		return errors.Errorf("pack %v contains %v errors: %v", id.Str(), len(errs), errs)
 	}
 
 	return nil

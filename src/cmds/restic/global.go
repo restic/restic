@@ -263,7 +263,7 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 
 	err = s.SearchKey(o.password, maxKeys)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open repo: %v", err)
+		return nil, errors.Errorf("unable to open repo: %v", err)
 	}
 
 	return s, nil
@@ -301,7 +301,7 @@ func open(s string) (backend.Backend, error) {
 	}
 
 	debug.Log("open", "invalid repository location: %v", s)
-	return nil, fmt.Errorf("invalid scheme %q", loc.Scheme)
+	return nil, errors.Errorf("invalid scheme %q", loc.Scheme)
 }
 
 // Create the backend specified by URI.
@@ -336,5 +336,5 @@ func create(s string) (backend.Backend, error) {
 	}
 
 	debug.Log("open", "invalid repository scheme: %v", s)
-	return nil, fmt.Errorf("invalid scheme %q", loc.Scheme)
+	return nil, errors.Errorf("invalid scheme %q", loc.Scheme)
 }

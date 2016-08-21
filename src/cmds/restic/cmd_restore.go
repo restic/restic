@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"restic"
@@ -37,7 +35,7 @@ func (cmd CmdRestore) Usage() string {
 
 func (cmd CmdRestore) Execute(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
+		return errors.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
 	if cmd.Target == "" {

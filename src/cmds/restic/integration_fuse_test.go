@@ -4,12 +4,13 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic"
 	"restic/backend"
@@ -50,7 +51,7 @@ func waitForMount(dir string) error {
 		time.Sleep(mountSleep)
 	}
 
-	return fmt.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
+	return errors.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
 
 func cmdMount(t testing.TB, global GlobalOptions, dir string, ready, done chan struct{}) {

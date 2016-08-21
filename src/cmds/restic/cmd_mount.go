@@ -4,8 +4,9 @@
 package main
 
 import (
-	"fmt"
 	"os"
+
+	"github.com/pkg/errors"
 
 	resticfs "restic/fs"
 	"restic/fuse"
@@ -42,7 +43,7 @@ func (cmd CmdMount) Usage() string {
 
 func (cmd CmdMount) Execute(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
+		return errors.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

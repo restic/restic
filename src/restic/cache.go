@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -156,7 +155,7 @@ func (c *Cache) list(t backend.Type) ([]cacheEntry, error) {
 	case backend.Snapshot:
 		dir = filepath.Join(c.base, "snapshots")
 	default:
-		return nil, fmt.Errorf("cache not supported for type %v", t)
+		return nil, errors.Errorf("cache not supported for type %v", t)
 	}
 
 	fd, err := fs.Open(dir)
@@ -208,7 +207,7 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 		return filepath.Join(c.base, "snapshots", filename), nil
 	}
 
-	return "", fmt.Errorf("cache not supported for type %v", t)
+	return "", errors.Errorf("cache not supported for type %v", t)
 }
 
 func getCacheDir() (string, error) {
@@ -246,7 +245,7 @@ func getWindowsCacheDir() (string, error) {
 	}
 
 	if !fi.IsDir() {
-		return "", fmt.Errorf("cache dir %v is not a directory", cachedir)
+		return "", errors.Errorf("cache dir %v is not a directory", cachedir)
 	}
 	return cachedir, nil
 }
@@ -284,7 +283,7 @@ func getXDGCacheDir() (string, error) {
 	}
 
 	if !fi.IsDir() {
-		return "", fmt.Errorf("cache dir %v is not a directory", cachedir)
+		return "", errors.Errorf("cache dir %v is not a directory", cachedir)
 	}
 
 	return cachedir, nil

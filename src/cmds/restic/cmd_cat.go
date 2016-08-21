@@ -34,7 +34,7 @@ func (cmd CmdCat) Usage() string {
 
 func (cmd CmdCat) Execute(args []string) error {
 	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return fmt.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
+		return errors.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

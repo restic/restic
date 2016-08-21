@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
 	"restic/backend"
@@ -28,7 +26,7 @@ func (cmd CmdList) Usage() string {
 
 func (cmd CmdList) Execute(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("type not specified, Usage: %s", cmd.Usage())
+		return errors.Errorf("type not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

@@ -140,7 +140,7 @@ func (idx *Index) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedBlob, 
 	}
 
 	debug.Log("Index.Lookup", "id %v not found", id.Str())
-	return nil, fmt.Errorf("id %v not found in index", id)
+	return nil, errors.Errorf("id %v not found in index", id)
 }
 
 // ListPack returns a list of blobs contained in a pack.
@@ -327,7 +327,7 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 			if blob.packID.IsNull() {
 				debug.Log("Index.generatePackList", "blob %v has no packID! (offset %v, length %v)",
 					h, blob.offset, blob.length)
-				return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", h)
+				return nil, errors.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", h)
 			}
 
 			// see if pack is already in map

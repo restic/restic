@@ -141,7 +141,7 @@ func (r *Repository) LoadBlob(id backend.ID, t pack.BlobType, plaintextBuf []byt
 		return plaintextBuf, nil
 	}
 
-	return nil, fmt.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
+	return nil, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
 }
 
 // closeOrErr calls cl.Close() and sets err to the returned error value if
@@ -238,7 +238,7 @@ func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, er
 	enc := json.NewEncoder(wr)
 	err := enc.Encode(item)
 	if err != nil {
-		return backend.ID{}, fmt.Errorf("json.Encode: %v", err)
+		return backend.ID{}, errors.Errorf("json.Encode: %v", err)
 	}
 
 	buf = wr.Bytes()
@@ -251,7 +251,7 @@ func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 	debug.Log("Repo.SaveJSONUnpacked", "save new blob %v", t)
 	plaintext, err := json.Marshal(item)
 	if err != nil {
-		return backend.ID{}, fmt.Errorf("json.Encode: %v", err)
+		return backend.ID{}, errors.Errorf("json.Encode: %v", err)
 	}
 
 	return r.SaveUnpacked(t, plaintext)

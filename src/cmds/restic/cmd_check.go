@@ -105,7 +105,7 @@ func (cmd CmdCheck) Execute(args []string) error {
 		for _, err := range errs {
 			cmd.global.Warnf("error: %v\n", err)
 		}
-		return fmt.Errorf("LoadIndex returned errors")
+		return errors.Errorf("LoadIndex returned errors")
 	}
 
 	done := make(chan struct{})

@@ -141,7 +141,7 @@ func FindLatestSnapshot(repo *repository.Repository, targets []string, source st
 	for snapshotID := range repo.List(backend.Snapshot, make(chan struct{})) {
 		snapshot, err := LoadSnapshot(repo, snapshotID)
 		if err != nil {
-			return backend.ID{}, fmt.Errorf("Error listing snapshot: %v", err)
+			return backend.ID{}, errors.Errorf("Error listing snapshot: %v", err)
 		}
 		if snapshot.Time.After(latest) && SamePaths(snapshot.Paths, targets) && (source == "" || source == snapshot.Hostname) {
 			latest = snapshot.Time

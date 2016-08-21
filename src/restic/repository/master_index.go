@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"
@@ -37,7 +38,7 @@ func (mi *MasterIndex) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedB
 	}
 
 	debug.Log("MasterIndex.Lookup", "id %v not found in any index", id.Str())
-	return nil, fmt.Errorf("id %v not found in any index", id)
+	return nil, errors.Errorf("id %v not found in any index", id)
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
@@ -52,7 +53,7 @@ func (mi *MasterIndex) LookupSize(id backend.ID, tpe pack.BlobType) (uint, error
 		}
 	}
 
-	return 0, fmt.Errorf("id %v not found in any index", id)
+	return 0, errors.Errorf("id %v not found in any index", id)
 }
 
 // ListPack returns the list of blobs in a pack. The first matching index is
