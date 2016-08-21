@@ -157,6 +157,11 @@ func (cmd CmdCat) Execute(args []string) error {
 			return err
 		}
 
+		hash := backend.Hash(buf)
+		if !hash.Equal(id) {
+			fmt.Fprintf(cmd.global.stderr, "Warning: hash of data does not match ID, want\n  %v\ngot:\n  %v\n", id.String(), hash.String())
+		}
+
 		_, err = os.Stdout.Write(buf)
 		return err
 
