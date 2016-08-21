@@ -19,16 +19,6 @@ func Open(name string) (File, error) {
 	return &nonCachingFile{File: file}, err
 }
 
-// these constants should've been defined in x/sys/unix, but somehow aren't.
-const (
-	_POSIX_FADV_NORMAL = iota
-	_POSIX_FADV_RANDOM
-	_POSIX_FADV_SEQUENTIAL
-	_POSIX_FADV_WILLNEED
-	_POSIX_FADV_DONTNEED
-	_POSIX_FADV_NOREUSE
-)
-
 // nonCachingFile wraps an *os.File and calls fadvise() to instantly forget
 // data that has been read or written.
 type nonCachingFile struct {
@@ -40,7 +30,7 @@ func (f *nonCachingFile) Read(p []byte) (int, error) {
 	n, err := f.File.Read(p)
 
 	if n > 0 {
-		ferr := unix.Fadvise(int(f.File.Fd()), f.readOffset, int64(n), _POSIX_FADV_DONTNEED)
+		ferr := unix.Fadvise(int(f.File.Fd()), f.readOffset, int64(n), unix.FADV_DONTNEED)
 
 		f.readOffset += int64(n)
 
@@ -64,7 +54,7 @@ func ClearCache(file File) error {
 		return err
 	}
 
-	return unix.Fadvise(int(f.Fd()), 0, 0, _POSIX_FADV_DONTNEED)
+	return unix.Fadvise(int(f.Fd()), 0, 0, unix.FADV_DONTNEED)
 }
 
 // Chmod changes the mode of the named file to mode.
