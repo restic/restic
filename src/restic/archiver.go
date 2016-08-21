@@ -2,6 +2,7 @@ package restic
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,8 +19,6 @@ import (
 	"restic/repository"
 
 	"github.com/restic/chunker"
-
-	"github.com/juju/errors"
 )
 
 const (
@@ -230,7 +229,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		}
 
 		if err != nil {
-			return errors.Annotate(err, "SaveFile() chunker.Next()")
+			return err
 		}
 
 		resCh := make(chan saveResult, 1)

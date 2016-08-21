@@ -20,12 +20,6 @@
 			"branch": "HEAD"
 		},
 		{
-			"importpath": "github.com/juju/errors",
-			"repository": "https://github.com/juju/errors",
-			"revision": "4567a5e69fd3130ca0d89f69478e7ac025b67452",
-			"branch": "HEAD"
-		},
-		{
 			"importpath": "github.com/kr/fs",
 			"repository": "https://github.com/kr/fs",
 			"revision": "2788f0dbd16903de03cb8186e5c7d97b69ad387b",

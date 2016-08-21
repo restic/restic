@@ -17,8 +17,6 @@ import (
 	"restic/fs"
 	"restic/pack"
 	"restic/repository"
-
-	"github.com/juju/errors"
 )
 
 // Node is a file, directory or other item in a backup.
@@ -114,27 +112,27 @@ func (node *Node) CreateAt(path string, repo *repository.Repository) error {
 	switch node.Type {
 	case "dir":
 		if err := node.createDirAt(path); err != nil {
-			return errors.Annotate(err, "createDirAt")
+			return err
 		}
 	case "file":
 		if err := node.createFileAt(path, repo); err != nil {
-			return errors.Annotate(err, "createFileAt")
+			return err
 		}
 	case "symlink":
 		if err := node.createSymlinkAt(path); err != nil {
-			return errors.Annotate(err, "createSymlinkAt")
+			return err
 		}
 	case "dev":
 		if err := node.createDevAt(path); err != nil {
-			return errors.Annotate(err, "createDevAt")
+			return err
 		}
 	case "chardev":
 		if err := node.createCharDevAt(path); err != nil {
-			return errors.Annotate(err, "createCharDevAt")
+			return err
 		}
 	case "fifo":
 		if err := node.createFifoAt(path); err != nil {
-			return errors.Annotate(err, "createFifoAt")
+			return err
 		}
 	case "socket":
 		return nil
@@ -155,13 +153,13 @@ func (node Node) restoreMetadata(path string) error {
 
 	err = lchown(path, int(node.UID), int(node.GID))
 	if err != nil {
-		return errors.Annotate(err, "Lchown")
+		return err
 	}
 
 	if node.Type != "symlink" {
 		err = fs.Chmod(path, node.Mode)
 		if err != nil {
-			return errors.Annotate(err, "Chmod")
+			return err
 		}
 	}
 
@@ -191,7 +189,7 @@ func (node Node) RestoreTimestamps(path string) error {
 	}
 
 	if err := syscall.UtimesNano(path, utimes[:]); err != nil {
-		return errors.Annotate(err, "UtimesNano")
+		return err
 	}
 
 	return nil
@@ -200,7 +198,7 @@ func (node Node) RestoreTimestamps(path string) error {
 func (node Node) createDirAt(path string) error {
 	err := fs.Mkdir(path, node.Mode)
 	if err != nil {
-		return errors.Annotate(err, "Mkdir")
+		return err
 	}
 
 	return nil
@@ -211,7 +209,7 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 	defer f.Close()
 
 	if err != nil {
-		return errors.Annotate(err, "OpenFile")
+		return err
 	}
 
 	var buf []byte
@@ -228,12 +226,12 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 
 		buf, err := repo.LoadBlob(id, pack.Data, buf)
 		if err != nil {
-			return errors.Annotate(err, "Load")
+			return err
 		}
 
 		_, err = f.Write(buf)
 		if err != nil {
-			return errors.Annotate(err, "Write")
+			return err
 		}
 	}
 
@@ -247,7 +245,7 @@ func (node Node) createSymlinkAt(path string) error {
 	}
 	err := fs.Symlink(node.LinkTarget, path)
 	if err != nil {
-		return errors.Annotate(err, "Symlink")
+		return err
 	}
 
 	return nil
@@ -422,7 +420,7 @@ func (node *Node) fillUser(stat statT) error {
 
 	username, err := lookupUsername(strconv.Itoa(int(stat.uid())))
 	if err != nil {
-		return errors.Annotate(err, "fillUser")
+		return err
 	}
 
 	node.User = username
@@ -470,7 +468,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	var err error
 
 	if err = node.fillUser(stat); err != nil {
-		return errors.Annotate(err, "fillExtra")
+		return err
 	}
 
 	switch node.Type {

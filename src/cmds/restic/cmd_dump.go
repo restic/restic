@@ -14,8 +14,6 @@ import (
 	"restic/repository"
 
 	"restic/worker"
-
-	"github.com/juju/errors"
 )
 
 type CmdDump struct {

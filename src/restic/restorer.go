@@ -9,8 +9,6 @@ import (
 	"restic/debug"
 	"restic/fs"
 	"restic/repository"
-
-	"github.com/juju/errors"
 )
 
 // Restorer is used to restore a snapshot to a directory.
@@ -35,7 +33,7 @@ func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) 
 
 	r.sn, err = LoadSnapshot(repo, id)
 	if err != nil {
-		return nil, errors.Annotate(err, "load snapshot for restorer")
+		return nil, err
 	}
 
 	return r, nil
@@ -44,7 +42,7 @@ func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) 
 func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error {
 	tree, err := LoadTree(res.repo, treeID)
 	if err != nil {
-		return res.Error(dir, nil, errors.Annotate(err, "LoadTree"))
+		return res.Error(dir, nil, err)
 	}
 
 	for _, node := range tree.Nodes {
@@ -67,7 +65,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 			subp := filepath.Join(dir, node.Name)
 			err = res.restoreTo(dst, subp, *node.Subtree)
 			if err != nil {
-				err = res.Error(subp, node, errors.Annotate(err, "restore subtree"))
+				err = res.Error(subp, node, err)
 				if err != nil {
 					return err
 				}
@@ -96,7 +94,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 	}
 
 	// Did it fail because of ENOENT?
-	if err != nil && os.IsNotExist(errors.Cause(err)) {
+	if err != nil && os.IsNotExist(err) {
 		debug.Log("Restorer.restoreNodeTo", "create intermediate paths")
 
 		// Create parent directories and retry
@@ -108,7 +106,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 
 	if err != nil {
 		debug.Log("Restorer.restoreNodeTo", "error %v", err)
-		err = res.Error(dstPath, node, errors.Annotate(err, "create node"))
+		err = res.Error(dstPath, node, err)
 		if err != nil {
 			return err
 		}

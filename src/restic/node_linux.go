@@ -6,8 +6,6 @@ import (
 	"unsafe"
 
 	"restic/fs"
-
-	"github.com/juju/errors"
 )
 
 func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespec) error {
@@ -20,7 +18,7 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	err = utimesNanoAt(int(dir.Fd()), filepath.Base(path), utimes, AT_SYMLINK_NOFOLLOW)
 
 	if err != nil {
-		return errors.Annotate(err, "UtimesNanoAt")
+		return err
 	}
 
 	return nil
