@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -81,6 +82,16 @@ func restoreTerminal() {
 
 var globalOpts = GlobalOptions{stdout: os.Stdout, stderr: os.Stderr}
 var parser = flags.NewParser(&globalOpts, flags.HelpFlag|flags.PassDoubleDash)
+
+// Clear Line ASCII sequence is invalid on Windows so ignore it here
+func ClearLine() string {
+	if runtime.GOOS == "windows" {
+		// Ugly Workaround, write 79 Whitespaces and return
+		return "                                                                               \r"
+	} else {
+		return "\x1b[2K"
+	}
+}
 
 // Printf writes the message to the configured stdout stream.
 func (o GlobalOptions) Printf(format string, args ...interface{}) {

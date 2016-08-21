@@ -54,7 +54,7 @@ func (cmd CmdCheck) newReadProgress(todo restic.Stat) *restic.Progress {
 			}
 		}
 
-		fmt.Printf("\x1b[2K%s\r", status)
+		fmt.Printf("%s%s\r", ClearLine(), status)
 	}
 
 	readProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {

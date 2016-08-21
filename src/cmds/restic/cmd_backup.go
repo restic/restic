@@ -114,10 +114,10 @@ func (cmd CmdBackup) newScanProgress() *restic.Progress {
 
 	p := restic.NewProgress(time.Second)
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2K[%s] %d directories, %d files, %s\r", formatDuration(d), s.Dirs, s.Files, formatBytes(s.Bytes))
+		fmt.Printf("%s[%s] %d directories, %d files, %s\r", ClearLine(), formatDuration(d), s.Dirs, s.Files, formatBytes(s.Bytes))
 	}
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\x1b[2Kscanned %d directories, %d files in %s\n", s.Dirs, s.Files, formatDuration(d))
+		fmt.Printf("%sscanned %d directories, %d files in %s\n", ClearLine(), s.Dirs, s.Files, formatDuration(d))
 	}
 
 	return p
@@ -167,7 +167,7 @@ func (cmd CmdBackup) newArchiveProgress(todo restic.Stat) *restic.Progress {
 			}
 		}
 
-		fmt.Printf("\x1b[2K%s%s\r", status1, status2)
+		fmt.Printf("%s%s%s\r", ClearLine(), status1, status2)
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
@@ -208,7 +208,7 @@ func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
 			}
 		}
 
-		fmt.Printf("\x1b[2K%s\r", status1)
+		fmt.Printf("%s%s\r", ClearLine(), status1)
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
@@ -375,7 +375,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
 		// TODO: make ignoring errors configurable
-		cmd.global.Warnf("\x1b[2K\rerror for %s: %v\n", dir, err)
+		cmd.global.Warnf("%s\rerror for %s: %v\n", ClearLine(), dir, err)
 		return nil
 	}
 

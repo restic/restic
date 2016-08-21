@@ -55,7 +55,7 @@ func newProgressMax(show bool, max uint64, description string) *restic.Progress 
 			}
 		}
 
-		fmt.Printf("\x1b[2K%s\r", status)
+		fmt.Printf("%s%s\r", ClearLine(), status)
 	}
 
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
