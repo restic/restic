@@ -91,33 +91,19 @@ Creates a new bucket.
 
 __Parameters__
 
-
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-       <tr>
-       <td> <code> bucketName </code></td>
-       <td> <i> string </i>  </td>
-       <td> name of the bucket </td>
-       </tr>
-        <tr>
-            <td>
-           <code> location </code>
-            </td>
-            <td> <i> string </i>  </td>
-            <td> Default value is <i>us-east-1</i> <br/>
-
-Region valid values are: [ <i> us-west-1, us-west-2, eu-west-1, eu-central-1, ap-southeast-1, ap-northeast-1, ap-southeast-2, sa-east-1 </i> ].
-            </td>
-            </tr>
-               </tbody>
-</table>
+| Param  | Type  | Description  |
+|---|---|---|
+|`bucketName`  | _string_  | Name of the bucket. | 
+| `location`  |  _string_ | Default value is us-east-1 Region where the bucket is created. Valid values are listed below:|
+| | |us-east-1 |
+| | |us-west-1 |
+| | |us-west-2 |
+| | |eu-west-1 |
+| | | eu-central-1|
+| | | ap-southeast-1|
+| | | ap-northeast-1|
+| | | ap-southeast-2|
+| | | sa-east-1| 
 
 
 __Example__
@@ -139,30 +125,15 @@ fmt.Println("Successfully created mybucket.")
 
 Lists all buckets.
 
+| Param  | Type  | Description  |
+|---|---|---|
+|`bucketList`  | _[]BucketInfo_  | Lists bucket in following format shown below: | 
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-          <code>  bucketList </code>
-            </td>
-            <td> <i> []BucketInfo </i> </td>
-            <td>
-            <ul>Lists bucket in following format:
-            <li> <code>bucket.Name</code> <i>string</i>: bucket name.</li>
-            <li> <code>bucket.CreationDate</code> <i>time.Time</i> : date when bucket was created.</li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+
+| Param  | Type  | Description  |
+|---|---|---|
+|`bucket.Name`  | _string_  | bucket name. | 
+|`bucket.CreationDate`  | _time.Time_  | date when bucket was created. | 
 
 
  __Example__
@@ -250,32 +221,16 @@ __Parameters__
 
 __Return Value__
 
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`chan ObjectInfo`  | _chan ObjectInfo_ |Read channel for all the objects in the bucket, the object is of the format listed below: |
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-           <code> chan ObjectInfo </code>
-            </td>
-            <td> <i> chan ObjectInfo  </i> </td>
-            <td>
-            <ul>Read channel for all the objects in the bucket, the object is of the format:
-            <li> <code>objectInfo.Key</code> <i>string</i>: name of the object.</li>
-            <li> <code>objectInfo.Size</code> <i>int64</i>: size of the object.</li>
-            <li> <code>objectInfo.ETag</code> <i>string</i>: etag of the object. </li>
-            <li> <code>objectInfo.LastModified</code> <i>time.Time</i>: modified time stamp.</li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`objectInfo.Key`  | _string_ |name of the object. |
+|`objectInfo.Size`  | _int64_ |size of the object. |
+|`objectInfo.ETag`  | _string_ |etag of the object. |
+|`objectInfo.LastModified`  | _time.Time_ |modified time stamp. |
 
 
 ```go
@@ -317,32 +272,16 @@ __Parameters__
 
 __Return Value__
 
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`chan ObjectInfo`  | _chan ObjectInfo_ |Read channel for all the objects in the bucket, the object is of the format listed below: |
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-           <code> chan ObjectInfo </code>
-            </td>
-            <td> <i> chan ObjectInfo </i> </td>
-            <td>
-            <ul>Read channel for all the objects in the bucket, the object is of the format:
-            <li> <code>objectInfo.Key</code> string: name of the object.</li>
-            <li> <code>objectInfo.Size</code> int64: size of the object.</li>
-            <li> <code>objectInfo.ETag</code> string: etag of the object. </li>
-            <li> <code>objectInfo.LastModified</code> time.Time: modified time stamp.</li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`objectInfo.Key`  | _string_ |name of the object. |
+|`objectInfo.Size`  | _int64_ |size of the object. |
+|`objectInfo.ETag`  | _string_ |etag of the object. |
+|`objectInfo.LastModified`  | _time.Time_ |modified time stamp. |
 
 
 ```go
@@ -384,32 +323,17 @@ __Parameters__
 
 __Return Value__
 
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`chan ObjectMultipartInfo`  | _chan ObjectMultipartInfo_  |emits multipart objects of the format listed below: |
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-           <code> chan ObjectMultipartInfo </code>
-            </td>
-            <td> <i> chan ObjectMultipartInfo </i>  </td>
-            <td>
-            <ul>emits multipart objects of the format:
-            <li> <code>multiPartObjInfo.Key</code> <i>string</i>: name of the incomplete object.</li>
-            <li> <code>multiPartObjInfo.UploadID</code> <i>string</i>: upload ID of the incomplete object.</li>
-            <li> <code>multiPartObjInfo.Size</code> <i>int64</i>: size of the incompletely uploaded object.</li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+__Return Value__
 
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`multiPartObjInfo.Key`  | _string_  |name of the incomplete object. |
+|`multiPartObjInfo.UploadID` | _string_ |upload ID of the incomplete object.|
+|`multiPartObjInfo.Size` | _int64_ |size of the incompletely uploaded object.|
 
 __Example__
 
@@ -487,7 +411,6 @@ if _, err = io.Copy(localFile, object); err != nil {
 
 
 __Parameters__
-
 
 
 |Param   |Type   |Description   |
@@ -650,32 +573,17 @@ __Parameters__
 
 __Return Value__
 
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`objInfo`  | _ObjectInfo_  |object stat info for format listed below: |
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-          <code>  objInfo </code>
-            </td>
-            <td> <i> ObjectInfo </i>  </td>
-            <td>
-            <ul>object stat info for following format:
-            <li> <code>objInfo.Size</code> <i>int64</i>: size of the object.</li>
-            <li> <code>objInfo.ETag</code> <i>string</i>: etag of the object.</li>
-            <li> <code>objInfo.ContentType</code> <i>string</i>: Content-Type of the object.</li>
-            <li> <code>objInfo.LastModified</code> <i>time.Time</i>: modified time stamp</li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`objInfo.LastModified`  | _time.Time_  |modified time stamp. |
+|`objInfo.ETag` | _string_ |etag of the object.|
+|`objInfo.ContentType` | _string_ |Content-Type of the object.|
+|`objInfo.Size` | _int64_ |size of the object.|
 
 
   __Example__
@@ -860,14 +768,12 @@ POST your content from the command line using `curl`:
 
 
 ```go
-
 fmt.Printf("curl ")
 for k, v := range formData {
     fmt.Printf("-F %s=%s ", k, v)
 }
 fmt.Printf("-F file=@/etc/bash.bashrc ")
 fmt.Printf("%s\n", url)
-
 ```
 
 ## 5. Bucket policy/notification operations
@@ -880,41 +786,15 @@ Set access permissions on bucket or an object prefix.
 __Parameters__
 
 
-<table>
-    <thead>
-        <tr>
-            <th>Param</th>
-            <th>Type</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-    <tr>
-    <td> <code> bucketName </code> </td>
-    <td> <i> string </i> </td>
-    <td>name of the bucket</td>
-    </tr>
-    <tr>
-    <td> <code> objectPrefix </code> </td>
-    <td> <i> string </i> </td>
-    <td>name of the object prefix</td>
-    </tr>
-    <tr>
-            <td>
-           <code> policy </code>
-            </td>
-            <td> <i> BucketPolicy </i> </td>
-            <td>
-            <ul>policy can be <br/> 
-            <li> <i>BucketPolicyNone</i>,</li>
-            <li> <i>BucketPolicyReadOnly</i>,</li>
-            <li> <i>BucketPolicyReadWrite</i>,</li>
-            <li> <i>BucketPolicyWriteOnly</li>
-            </ul>
-            </td>
-            </tr>
-               </tbody>
-</table>
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`bucketName` | _string_  |name of the bucket.|
+|`objectPrefix` | _string_  |name of the object prefix.|
+|`policy` | _BucketPolicy_  |policy can be:|
+||  |BucketPolicyNone|
+| |  |BucketPolicyReadOnly|
+||   |BucketPolicyReadWrite|
+| | |BucketPolicyWriteOnly|
 
 
 __Return Values__
@@ -1034,19 +914,20 @@ __Example__
 topicArn := NewArn("aws", "s3", "us-east-1", "804605494417", "PhotoUpdate")
 
 topicConfig := NewNotificationConfig(topicArn)
-topicConfig.AddEvents(ObjectCreatedAll, ObjectRemovedAll)
-topicConfig.AddFilterSuffix(".jpg")
+topicConfig.AddEvents(minio.ObjectCreatedAll, minio.ObjectRemovedAll)
+lambdaConfig.AddFilterPrefix("photos/")
+lambdaConfig.AddFilterSuffix(".jpg")
 
 bucketNotification := BucketNotification{}
-bucetNotification.AddTopic(topicConfig)
+bucketNotification.AddTopic(topicConfig)
 err := c.SetBucketNotification(bucketName, bucketNotification)
 if err != nil {
 	fmt.Println("Cannot set the bucket notification: " + err)
 }
 ```
 
-<a name="DeleteBucketNotification"></a>
-### DeleteBucketNotification(bucketName string) error
+<a name="RemoveAllBucketNotification"></a>
+### RemoveAllBucketNotification(bucketName string) error
 
 Remove all configured bucket notifications on a bucket.
 
@@ -1068,32 +949,88 @@ __Example__
 
 
 ```go
-err := c.RemoveBucketNotification(bucketName)
+err := c.RemoveAllBucketNotification(bucketName)
 if err != nil {
 	fmt.Println("Cannot remove bucket notifications.")
 }
 ```
 
+<a name="ListenBucketNotification"></a>
+### ListenBucketNotification(bucketName string, accountArn Arn, doneCh chan<- struct{}) <-chan NotificationInfo
+
+ListenBucketNotification API receives bucket notification events through the
+notification channel. The returned notification channel has two fields
+'Records' and 'Err'.
+
+- 'Records' holds the notifications received from the server.
+- 'Err' indicates any error while processing the received notifications.
+
+NOTE: Notification channel is closed at the first occurrence of an error.
+
+__Parameters__
+
+
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`bucketName`  | _string_  | Bucket to listen notifications from.   |
+|`accountArn`  | _Arn_ | Unique account ID to listen notifications for.  |
+|`doneCh`  | _chan struct{}_ | A message on this channel ends the ListenBucketNotification loop.  |
+
+__Return Values__
+
+
+|Param   |Type   |Description   |
+|:---|:---| :---|
+|`chan NotificationInfo` | _chan_ | Read channel for all notificatons on bucket. |
+|`NotificationInfo` | _object_ | Notification object represents events info. |
+|`notificationInfo.Records` | _[]NotificationEvent_ | Collection of notification events. |
+|`notificationInfo.Err` | _error_ | Carries any error occurred during the operation. |
+
+
+__Example__
+
+
+```go
+
+// Create a done channel to control 'ListenBucketNotification' go routine.
+doneCh := make(chan struct{})
+
+// Indicate a background go-routine to exit cleanly upon return.
+defer close(doneCh)
+
+// Fetch the bucket location.
+location, err := minioClient.GetBucketLocation("YOUR-BUCKET")
+if err != nil {
+	log.Fatalln(err)
+}
+
+// Construct a new account Arn.
+accountArn := minio.NewArn("minio", "sns", location, "your-account-id", "listen")
+topicConfig := minio.NewNotificationConfig(accountArn)
+topicConfig.AddEvents(minio.ObjectCreatedAll, minio.ObjectRemovedAll)
+topicConfig.AddFilterPrefix("photos/")
+topicConfig.AddFilterSuffix(".jpg")
+
+// Now, set all previously created notification configs
+bucketNotification := minio.BucketNotification{}
+bucketNotification.AddTopic(topicConfig)
+err = s3Client.SetBucketNotification("YOUR-BUCKET", bucketNotification)
+if err != nil {
+	log.Fatalln("Error: " + err.Error())
+}
+log.Println("Success")
+
+// Listen for bucket notifications on "mybucket" filtered by accountArn "arn:minio:sns:<location>:<your-account-id>:listen".
+for notificationInfo := range s3Client.ListenBucketNotification("mybucket", accountArn, doneCh) {
+       if notificationInfo.Err != nil {
+               fmt.Println(notificationInfo.Err)
+                return
+       }
+       fmt.Println(notificationInfo)
+}
+```
 
 ## 6. Explore Further
 
 - [Build your own Go Music Player App example](https://docs.minio.io/docs/go-music-player-app)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

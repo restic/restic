@@ -97,7 +97,7 @@ func TestHttpRespToErrorResponse(t *testing.T) {
 	}
 
 	// Generate http response with empty body.
-	// Set the StatusCode to the arugment supplied.
+	// Set the StatusCode to the argument supplied.
 	// Sets common headers.
 	genEmptyBodyResponse := func(statusCode int) *http.Response {
 		resp := &http.Response{}

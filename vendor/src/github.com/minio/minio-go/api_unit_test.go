@@ -26,6 +26,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/minio/minio-go/pkg/policy"
 )
 
 type customReader struct{}
@@ -325,7 +327,7 @@ func TestBucketPolicyTypes(t *testing.T) {
 		"invalid":   false,
 	}
 	for bucketPolicy, ok := range want {
-		if BucketPolicy(bucketPolicy).isValidBucketPolicy() != ok {
+		if policy.BucketPolicy(bucketPolicy).IsValidBucketPolicy() != ok {
 			t.Fatal("Error")
 		}
 	}

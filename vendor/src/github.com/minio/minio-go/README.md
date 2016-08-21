@@ -1,11 +1,12 @@
 # Minio Golang Library for Amazon S3 Compatible Cloud Storage [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Minio/minio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 The Minio Golang Client SDK provides simple APIs to access any Amazon S3 compatible object storage server. 
 
-**List of supported cloud storage providers.** 
+**Supported cloud storage providers:** 
 
 - AWS Signature Version 4
    - Amazon S3
    - Minio
+
 
 - AWS Signature Version 2
    - Google Cloud Storage (Compatibility Mode)
@@ -13,9 +14,9 @@ The Minio Golang Client SDK provides simple APIs to access any Amazon S3 compati
    - Ceph Object Gateway
    - Riak CS
 
-This quickstart guide will show you how to install the client SDK and execute an example Golang program. For a complete list of APIs and examples, please take a look at the [Golang Client API Reference](https://docs.minio.io/docs/golang-client-api-reference) documentation.
+This quickstart guide will show you how to install the Minio client SDK, connect to Minio, and provide a walkthrough of a simple file uploader. For a complete list of APIs and examples, please take a look at the [Golang Client API Reference](https://docs.minio.io/docs/golang-client-api-reference).
 
-This document assumes that you have a working [Golang](https://docs.minio.io/docs/how-to-install-golang) setup in place.
+This document assumes that you have a working [Golang setup](https://docs.minio.io/docs/how-to-install-golang).
 
 
 ## Download from Github
@@ -27,16 +28,16 @@ $ go get -u github.com/minio/minio-go
 ```
 ## Initialize Minio Client
 
-You need four items in order to connect to Minio object storage server.
+You need four items to connect to Minio object storage server.
 
 
 
-| Params  | Description| 
+| Parameter  | Description| 
 | :---         |     :---     |
 | endpoint   | URL to object storage service.   | 
-| accessKeyID | Access key is like user ID that uniquely identifies your account. |   
+| accessKeyID | Access key is the user ID that uniquely identifies your account. |   
 | secretAccessKey | Secret key is the password to your account. |
-|secure | Set this value to 'true' to enable secure (HTTPS) access. |
+| secure | Set this value to 'true' to enable secure (HTTPS) access. |
 
 
 ```go
@@ -44,22 +45,24 @@ You need four items in order to connect to Minio object storage server.
 package main
 
 import (
-  "fmt"
-
-  "github.com/minio/minio-go"
+	"github.com/minio/minio-go"
+	"log"
 )
 
 func main() {
-        // Use a secure connection.
-        ssl := true
+	endpoint := "play.minio.io:9000"
+	accessKeyID := "Q3AM3UQ867SPQQA43P2F"
+	secretAccessKey := "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
+	useSSL := true
 
-        // Initialize minio client object.
-        minioClient, err := minio.New("play.minio.io:9000", "Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG", ssl)
-        if err != nil {
-                fmt.Println(err)
-                return
-        }
-}
+	// Initialize minio client object.
+	minioClient, err := minio.New(endpoint, accessKeyID, secretAccessKey, useSSL)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("%v", minioClient) // minioClient is now setup
+
 
 ```
 
@@ -75,41 +78,54 @@ We will use the Minio server running at [https://play.minio.io:9000](https://pla
 #### FileUploader.go
 
 ```go
-
 package main
 
-import "fmt"
 import (
-        "log"
-
-        "github.com/minio/minio-go"
+	"github.com/minio/minio-go"
+	"log"
 )
 
 func main() {
-        // Use a secure connection.
-        ssl := true
+	endpoint := "play.minio.io:9000"
+	accessKeyID := "Q3AM3UQ867SPQQA43P2F"
+	secretAccessKey := "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG"
+	useSSL := true
 
-        // Initialize minio client object.
-        minioClient, err := minio.New("play.minio.io:9000", "Q3AM3UQ867SPQQA43P2F", "zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG", ssl)
-        if err != nil {
-                log.Fatalln(err)
-        }
-  
-        // Make a new bucket called mymusic.
-        err = minioClient.MakeBucket("mymusic", "us-east-1")
-        if err != nil {
-                log.Fatalln(err)
-        }
-        fmt.Println("Successfully created mymusic")
-  
-        // Upload the zip file with FPutObject.
-        n, err := minioClient.FPutObject("mymusic", "golden-oldies.zip", "/tmp/golden-oldies.zip", "application/zip")
-        if err != nil {
-                log.Fatalln(err)
-        }
-        log.Printf("Successfully uploaded golden-oldies.zip of size %d\n", n)
+	// Initialize minio client object.
+	minioClient, err := minio.New(endpoint, accessKeyID, secretAccessKey, useSSL)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	// Make a new bucked called mymusic.
+	bucketName := "mymusic"
+	location := "us-east-1"
+
+	err = minioClient.MakeBucket(bucketName, location)
+	if err != nil {
+		// Check to see if we already own this bucket (which happens if you run this twice)
+		exists, err := minioClient.BucketExists(bucketName)
+		if err == nil && exists {
+			log.Printf("We already own %s\n", bucketName)
+		} else {
+			log.Fatalln(err)
+		}
+	}
+	log.Printf("Successfully created %s\n", bucketName)
+
+	// Upload the zip file
+	objectName := "golden-oldies.zip"
+	filePath := "/tmp/golden-oldies.zip"
+	contentType := "application/zip"
+
+	// Upload the zip file with FPutObject
+	n, err := minioClient.FPutObject(bucketName, objectName, filePath, contentType)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Printf("Successfully uploaded %s of size %d\n", objectName, n)
 }
-
 ```
 
 #### Run FileUploader
@@ -117,8 +133,8 @@ func main() {
 ```sh
 
 $ go run file-uploader.go
-$ Successfully created mymusic 
-$ Successfully uploaded golden-oldies.zip of size 17MiB
+2016/08/13 17:03:28 Successfully created mymusic 
+2016/08/13 17:03:40 Successfully uploaded golden-oldies.zip of size 16253413
 
 $ mc ls play/mymusic/
 [2016-05-27 16:02:16 PDT]  17MiB golden-oldies.zip
@@ -150,7 +166,8 @@ The full API Reference is available here.
 
 * [`SetBucketNotification`](https://docs.minio.io/docs/golang-client-api-reference#SetBucketNotification)
 * [`GetBucketNotification`](https://docs.minio.io/docs/golang-client-api-reference#GetBucketNotification)
-* [`DeleteBucketNotification`](https://docs.minio.io/docs/golang-client-api-reference#DeleteBucketNotification)
+* [`RemoveAllBucketNotification`](https://docs.minio.io/docs/golang-client-api-reference#RemoveAllBucketNotification)
+* [`ListenBucketNotification`](https://docs.minio.io/docs/golang-client-api-reference#ListenBucketNotification) (Minio Extension)
 
 ### API Reference : File Object Operations
 
@@ -194,7 +211,7 @@ The full API Reference is available here.
 * [setbucketnotification.go](https://github.com/minio/minio-go/blob/master/examples/s3/setbucketnotification.go)
 * [getbucketnotification.go](https://github.com/minio/minio-go/blob/master/examples/s3/getbucketnotification.go)
 * [deletebucketnotification.go](https://github.com/minio/minio-go/blob/master/examples/s3/deletebucketnotification.go)
- 
+* [listenbucketnotification.go](https://github.com/minio/minio-go/blob/master/examples/minio/listenbucketnotification.go) (Minio Extension)
 
 #### Full Examples : File Object Operations
 

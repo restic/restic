@@ -24,10 +24,10 @@ import (
 )
 
 // BucketExists verify if bucket exists and you have permission to access it.
-func (c Client) BucketExists(bucketName string) error {
+func (c Client) BucketExists(bucketName string) (bool, error) {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
-		return err
+		return false, err
 	}
 
 	// Execute HEAD on bucketName.
@@ -36,14 +36,17 @@ func (c Client) BucketExists(bucketName string) error {
 	})
 	defer closeResponse(resp)
 	if err != nil {
-		return err
+		if ToErrorResponse(err).Code == "NoSuchBucket" {
+			return false, nil
+		}
+		return false, err
 	}
 	if resp != nil {
 		if resp.StatusCode != http.StatusOK {
-			return httpRespToErrorResponse(resp, bucketName, "")
+			return false, httpRespToErrorResponse(resp, bucketName, "")
 		}
 	}
-	return nil
+	return true, nil
 }
 
 // StatObject verifies if object exists and you have permission to access.
