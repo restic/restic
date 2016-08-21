@@ -323,11 +323,14 @@ func (env *TravisEnvironment) RunTests() error {
 	if *runCrossCompile && !(runtime.Version() < "go1.7") {
 		// compile for all target architectures with tags
 		for _, tags := range []string{"release", "debug"} {
-			runWithEnv(env.env, "gox", "-verbose",
+			err := runWithEnv(env.env, "gox", "-verbose",
 				"-osarch", strings.Join(env.goxOSArch, " "),
 				"-tags", tags,
 				"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
 				"cmds/restic")
+			if err != nil {
+				return err
+			}
 		}
 	}
 
