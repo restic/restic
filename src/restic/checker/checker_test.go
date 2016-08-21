@@ -239,6 +239,8 @@ func induceError(data []byte) {
 func TestCheckerModifiedData(t *testing.T) {
 	be := mem.New()
 
+	repository.TestUseLowSecurityKDFParameters(t)
+
 	repo := repository.New(be)
 	OK(t, repo.Init(TestPassword))
 

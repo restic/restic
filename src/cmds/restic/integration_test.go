@@ -40,6 +40,8 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) backend.IDs {
 }
 
 func cmdInit(t testing.TB, global GlobalOptions) {
+	repository.TestUseLowSecurityKDFParameters(t)
+
 	cmd := &CmdInit{global: &global}
 	OK(t, cmd.Execute(nil))
 
