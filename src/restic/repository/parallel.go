@@ -83,7 +83,7 @@ func ParallelWorkFuncParseID(f ParallelIDWorkFunc) ParallelWorkFunc {
 		id, err := backend.ParseID(s)
 		if err != nil {
 			debug.Log("repository.ParallelWorkFuncParseID", "invalid ID %q: %v", id, err)
-			return nil
+			return err
 		}
 
 		return f(id, done)

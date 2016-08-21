@@ -98,9 +98,12 @@ func dirname(base string, t backend.Type, name string) string {
 	return filepath.Join(base, n)
 }
 
-// Load returns the data stored in the backend for h at the given offset
-// and saves it in p. Load has the same semantics as io.ReaderAt.
+// Load returns the data stored in the backend for h at the given offset and
+// saves it in p. Load has the same semantics as io.ReaderAt, with one
+// exception: when off is lower than zero, it is treated as an offset relative
+// to the end of the file.
 func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+	debug.Log("backend.local.Load", "Load %v, length %v at %v", h, len(p), off)
 	if err := h.Valid(); err != nil {
 		return 0, err
 	}
@@ -117,11 +120,15 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 		}
 	}()
 
-	if off > 0 {
+	switch {
+	case off > 0:
 		_, err = f.Seek(off, 0)
-		if err != nil {
-			return 0, err
-		}
+	case off < 0:
+		_, err = f.Seek(off, 2)
+	}
+
+	if err != nil {
+		return 0, err
 	}
 
 	return io.ReadFull(f, p)
@@ -162,6 +169,7 @@ func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 
 // Save stores data in the backend at the handle.
 func (b *Local) Save(h backend.Handle, p []byte) (err error) {
+	debug.Log("backend.local.Save", "Save %v, length %v", h, len(p))
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -203,6 +211,7 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 
 // Stat returns information about a blob.
 func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
+	debug.Log("backend.local.Stat", "Stat %v", h)
 	if err := h.Valid(); err != nil {
 		return backend.BlobInfo{}, err
 	}
@@ -217,6 +226,7 @@ func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
 
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(t backend.Type, name string) (bool, error) {
+	debug.Log("backend.local.Test", "Test %v %v", t, name)
 	_, err := fs.Stat(filename(b.p, t, name))
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -230,6 +240,7 @@ func (b *Local) Test(t backend.Type, name string) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(t backend.Type, name string) error {
+	debug.Log("backend.local.Remove", "Remove %v %v", t, name)
 	fn := filename(b.p, t, name)
 
 	// reset read-only flag
@@ -304,6 +315,7 @@ func listDirs(dir string) (filenames []string, err error) {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
+	debug.Log("backend.local.List", "List %v", t)
 	lister := listDir
 	if t == backend.Data {
 		lister = listDirs
@@ -336,11 +348,13 @@ func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
 
 // Delete removes the repository and all files.
 func (b *Local) Delete() error {
+	debug.Log("backend.local.Delete", "Delete()")
 	return fs.RemoveAll(b.p)
 }
 
 // Close closes all open files.
 func (b *Local) Close() error {
+	debug.Log("backend.local.Close", "Close()")
 	// this does not need to do anything, all open files are closed within the
 	// same function.
 	return nil

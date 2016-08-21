@@ -83,7 +83,8 @@ func LoadAllSnapshots(repo *repository.Repository) (snapshots []*Snapshot, err e
 }
 
 func (sn Snapshot) String() string {
-	return fmt.Sprintf("<Snapshot %s of %v at %s>", sn.id.Str(), sn.Paths, sn.Time)
+	return fmt.Sprintf("<Snapshot %s of %v at %s by %s@%s>",
+		sn.id.Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
 }
 
 // ID retuns the snapshot's ID.
@@ -125,7 +126,7 @@ func SamePaths(expected, actual []string) bool {
 	return true
 }
 
-// Error when no snapshot is found for the given criteria
+// ErrNoSnapshotFound is returned when no snapshot for the given criteria could be found.
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory and source filters

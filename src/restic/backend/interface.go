@@ -31,7 +31,9 @@ type Backend interface {
 	Lister
 
 	// Load returns the data stored in the backend for h at the given offset
-	// and saves it in p. Load has the same semantics as io.ReaderAt.
+	// and saves it in p. Load has the same semantics as io.ReaderAt, except
+	// that a negative offset is also allowed. In this case it references a
+	// position relative to the end of the file (similar to Seek()).
 	Load(h Handle, p []byte, off int64) (int, error)
 
 	// Save stores the data in the backend under the given handle.

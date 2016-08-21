@@ -188,7 +188,7 @@ var staleTimeout = 30 * time.Minute
 // older than 30 minutes or if it was created on the current machine and the
 // process isn't alive any more.
 func (l *Lock) Stale() bool {
-	debug.Log("Lock.Stale", "testing if lock %v for process %d is stale", l.lockID.Str(), l.PID)
+	debug.Log("Lock.Stale", "testing if lock %v for process %d is stale", l, l.PID)
 	if time.Now().Sub(l.Time) > staleTimeout {
 		debug.Log("Lock.Stale", "lock is stale, timestamp is too old: %v\n", l.Time)
 		return true

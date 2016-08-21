@@ -32,8 +32,10 @@ func TestConfig(t *testing.T) {
 		return backend.ID{}, nil
 	}
 
-	cfg1, err := repository.CreateConfig(saver(save))
+	cfg1, err := repository.CreateConfig()
 	OK(t, err)
+
+	_, err = saver(save).SaveJSONUnpacked(backend.Config, cfg1)
 
 	load := func(tpe backend.Type, id backend.ID, arg interface{}) error {
 		Assert(t, tpe == backend.Config,

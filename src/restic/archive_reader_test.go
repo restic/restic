@@ -13,7 +13,7 @@ import (
 )
 
 func loadBlob(t *testing.T, repo *repository.Repository, id backend.ID, buf []byte) []byte {
-	buf, err := repo.LoadBlob(pack.Data, id, buf)
+	buf, err := repo.LoadBlob(id, pack.Data, buf)
 	if err != nil {
 		t.Fatalf("LoadBlob(%v) returned error %v", id, err)
 	}

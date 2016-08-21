@@ -2,8 +2,6 @@ package repository_test
 
 import (
 	"bytes"
-	"crypto/rand"
-	"io"
 	"testing"
 
 	"restic/backend"
@@ -11,15 +9,6 @@ import (
 	"restic/repository"
 	. "restic/test"
 )
-
-func randomID() backend.ID {
-	id := backend.ID{}
-	_, err := io.ReadFull(rand.Reader, id[:])
-	if err != nil {
-		panic(err)
-	}
-	return id
-}
 
 func TestIndexSerialize(t *testing.T) {
 	type testEntry struct {
@@ -34,11 +23,11 @@ func TestIndexSerialize(t *testing.T) {
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
-		packID := randomID()
+		packID := backend.RandomID()
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
-			id := randomID()
+			id := backend.RandomID()
 			length := uint(i*100 + j)
 			idx.Store(repository.PackedBlob{
 				Type:   pack.Data,
@@ -74,16 +63,26 @@ func TestIndexSerialize(t *testing.T) {
 	OK(t, err)
 
 	for _, testBlob := range tests {
-		result, err := idx.Lookup(testBlob.id)
+		list, err := idx.Lookup(testBlob.id, testBlob.tpe)
 		OK(t, err)
+
+		if len(list) != 1 {
+			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list), list)
+		}
+		result := list[0]
 
 		Equals(t, testBlob.pack, result.PackID)
 		Equals(t, testBlob.tpe, result.Type)
 		Equals(t, testBlob.offset, result.Offset)
 		Equals(t, testBlob.length, result.Length)
 
-		result2, err := idx2.Lookup(testBlob.id)
+		list2, err := idx2.Lookup(testBlob.id, testBlob.tpe)
 		OK(t, err)
+
+		if len(list2) != 1 {
+			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list2), list2)
+		}
+		result2 := list2[0]
 
 		Equals(t, testBlob.pack, result2.PackID)
 		Equals(t, testBlob.tpe, result2.Type)
@@ -94,11 +93,11 @@ func TestIndexSerialize(t *testing.T) {
 	// add more blobs to idx
 	newtests := []testEntry{}
 	for i := 0; i < 10; i++ {
-		packID := randomID()
+		packID := backend.RandomID()
 
 		pos := uint(0)
 		for j := 0; j < 10; j++ {
-			id := randomID()
+			id := backend.RandomID()
 			length := uint(i*100 + j)
 			idx.Store(repository.PackedBlob{
 				Type:   pack.Data,
@@ -128,7 +127,7 @@ func TestIndexSerialize(t *testing.T) {
 	Assert(t, idx.Final(),
 		"index not final after encoding")
 
-	id := randomID()
+	id := backend.RandomID()
 	OK(t, idx.SetID(id))
 	id2, err := idx.ID()
 	Assert(t, id2.Equal(id),
@@ -143,8 +142,14 @@ func TestIndexSerialize(t *testing.T) {
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
-		blob, err := idx3.Lookup(testBlob.id)
+		list, err := idx3.Lookup(testBlob.id, testBlob.tpe)
 		OK(t, err)
+
+		if len(list) != 1 {
+			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list), list)
+		}
+
+		blob := list[0]
 
 		Equals(t, testBlob.pack, blob.PackID)
 		Equals(t, testBlob.tpe, blob.Type)
@@ -159,11 +164,11 @@ func TestIndexSize(t *testing.T) {
 	packs := 200
 	blobs := 100
 	for i := 0; i < packs; i++ {
-		packID := randomID()
+		packID := backend.RandomID()
 
 		pos := uint(0)
 		for j := 0; j < blobs; j++ {
-			id := randomID()
+			id := backend.RandomID()
 			length := uint(i*100 + j)
 			idx.Store(repository.PackedBlob{
 				Type:   pack.Data,
@@ -265,13 +270,13 @@ var exampleTests = []struct {
 
 var exampleLookupTest = struct {
 	packID backend.ID
-	blobs  backend.IDSet
+	blobs  map[backend.ID]pack.BlobType
 }{
 	ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-	backend.IDSet{
-		ParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"): struct{}{},
-		ParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"): struct{}{},
-		ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"): struct{}{},
+	map[backend.ID]pack.BlobType{
+		ParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"): pack.Data,
+		ParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"): pack.Tree,
+		ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"): pack.Data,
 	},
 }
 
@@ -282,8 +287,15 @@ func TestIndexUnserialize(t *testing.T) {
 	OK(t, err)
 
 	for _, test := range exampleTests {
-		blob, err := idx.Lookup(test.id)
+		list, err := idx.Lookup(test.id, test.tpe)
 		OK(t, err)
+
+		if len(list) != 1 {
+			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
+		}
+		blob := list[0]
+
+		t.Logf("looking for blob %v/%v, got %v", test.tpe, test.id.Str(), blob)
 
 		Equals(t, test.packID, blob.PackID)
 		Equals(t, test.tpe, blob.Type)
@@ -299,8 +311,12 @@ func TestIndexUnserialize(t *testing.T) {
 	}
 
 	for _, blob := range blobs {
-		if !exampleLookupTest.blobs.Has(blob.ID) {
+		b, ok := exampleLookupTest.blobs[blob.ID]
+		if !ok {
 			t.Errorf("unexpected blob %v found", blob.ID.Str())
+		}
+		if blob.Type != b {
+			t.Errorf("unexpected type for blob %v: want %v, got %v", blob.ID.Str(), b, blob.Type)
 		}
 	}
 }
@@ -310,8 +326,13 @@ func TestIndexUnserializeOld(t *testing.T) {
 	OK(t, err)
 
 	for _, test := range exampleTests {
-		blob, err := idx.Lookup(test.id)
+		list, err := idx.Lookup(test.id, test.tpe)
 		OK(t, err)
+
+		if len(list) != 1 {
+			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
+		}
+		blob := list[0]
 
 		Equals(t, test.packID, blob.PackID)
 		Equals(t, test.tpe, blob.Type)
@@ -327,10 +348,10 @@ func TestIndexPacks(t *testing.T) {
 	packs := backend.NewIDSet()
 
 	for i := 0; i < 20; i++ {
-		packID := randomID()
+		packID := backend.RandomID()
 		idx.Store(repository.PackedBlob{
 			Type:   pack.Data,
-			ID:     randomID(),
+			ID:     backend.RandomID(),
 			PackID: packID,
 			Offset: 0,
 			Length: 23,

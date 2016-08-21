@@ -48,7 +48,7 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 	return err
 }
 
-func printSnapshots(repo *repository.Repository, wr io.Writer) error {
+func debugPrintSnapshots(repo *repository.Repository, wr io.Writer) error {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -126,9 +126,9 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 		name := job.Data.(string)
 
 		h := backend.Handle{Type: backend.Data, Name: name}
-		rd := backend.NewReadSeeker(repo.Backend(), h)
+		ldr := pack.BackendLoader{Backend: repo.Backend(), Handle: h}
 
-		unpacker, err := pack.NewUnpacker(repo.Key(), rd)
+		unpacker, err := pack.NewUnpacker(repo.Key(), ldr)
 		if err != nil {
 			return nil, err
 		}
@@ -226,14 +226,14 @@ func (cmd CmdDump) Execute(args []string) error {
 	case "indexes":
 		return cmd.DumpIndexes()
 	case "snapshots":
-		return printSnapshots(repo, os.Stdout)
+		return debugPrintSnapshots(repo, os.Stdout)
 	case "trees":
 		return printTrees(repo, os.Stdout)
 	case "packs":
 		return printPacks(repo, os.Stdout)
 	case "all":
 		fmt.Printf("snapshots:\n")
-		err := printSnapshots(repo, os.Stdout)
+		err := debugPrintSnapshots(repo, os.Stdout)
 		if err != nil {
 			return err
 		}

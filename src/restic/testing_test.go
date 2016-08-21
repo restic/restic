@@ -10,14 +10,17 @@ import (
 
 var testSnapshotTime = time.Unix(1460289341, 207401672)
 
-const testCreateSnapshots = 3
+const (
+	testCreateSnapshots = 3
+	testDepth           = 2
+)
 
 func TestCreateSnapshot(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	for i := 0; i < testCreateSnapshots; i++ {
-		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second))
+		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
 	}
 
 	snapshots, err := restic.LoadAllSnapshots(repo)
@@ -42,30 +45,17 @@ func TestCreateSnapshot(t *testing.T) {
 		t.Fatalf("snapshot has zero tree ID")
 	}
 
-	chkr := checker.New(repo)
+	checker.TestCheckRepo(t, repo)
+}
 
-	hints, errs := chkr.LoadIndex()
-	if len(errs) != 0 {
-		t.Fatalf("errors loading index: %v", errs)
-	}
+func BenchmarkCreateSnapshot(b *testing.B) {
+	repo, cleanup := repository.TestRepository(b)
+	defer cleanup()
 
-	if len(hints) != 0 {
-		t.Fatalf("errors loading index: %v", hints)
-	}
+	b.ResetTimer()
 
-	done := make(chan struct{})
-	defer close(done)
-	errChan := make(chan error)
-	go chkr.Structure(errChan, done)
-
-	for err := range errChan {
-		t.Error(err)
-	}
-
-	errChan = make(chan error)
-	go chkr.ReadData(nil, errChan, done)
-
-	for err := range errChan {
-		t.Error(err)
+	for i := 0; i < b.N; i++ {
+		restic.TestCreateSnapshot(b, repo, testSnapshotTime, testDepth, 0)
+		restic.TestResetRepository(b, repo)
 	}
 }

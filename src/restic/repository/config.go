@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"testing"
 
-	"github.com/restic/chunker"
 	"restic/backend"
 	"restic/debug"
+
+	"github.com/restic/chunker"
 )
 
 // Config contains the configuration for a repository.
@@ -37,8 +39,8 @@ type JSONUnpackedLoader interface {
 }
 
 // CreateConfig creates a config file with a randomly selected polynomial and
-// ID and saves the config in the repository.
-func CreateConfig(r JSONUnpackedSaver) (Config, error) {
+// ID.
+func CreateConfig() (Config, error) {
 	var (
 		err error
 		cfg Config
@@ -59,9 +61,23 @@ func CreateConfig(r JSONUnpackedSaver) (Config, error) {
 	cfg.Version = RepoVersion
 
 	debug.Log("Repo.CreateConfig", "New config: %#v", cfg)
+	return cfg, nil
+}
 
-	_, err = r.SaveJSONUnpacked(backend.Config, cfg)
-	return cfg, err
+// TestCreateConfig creates a config for use within tests.
+func TestCreateConfig(t testing.TB, pol chunker.Pol) (cfg Config) {
+	cfg.ChunkerPolynomial = pol
+
+	newID := make([]byte, repositoryIDSize)
+	_, err := io.ReadFull(rand.Reader, newID)
+	if err != nil {
+		t.Fatalf("unable to create random ID: %v", err)
+	}
+
+	cfg.ID = hex.EncodeToString(newID)
+	cfg.Version = RepoVersion
+
+	return cfg
 }
 
 // LoadConfig returns loads, checks and returns the config for a repository.

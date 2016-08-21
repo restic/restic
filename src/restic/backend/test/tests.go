@@ -220,9 +220,60 @@ func TestLoad(t testing.TB) {
 		buf := make([]byte, l)
 		n, err := b.Load(handle, buf, int64(o))
 
-		// if we requested data beyond the end of the file, ignore
+		// if we requested data beyond the end of the file, require
 		// ErrUnexpectedEOF error
-		if l > len(d) && err == io.ErrUnexpectedEOF {
+		if l > len(d) {
+			if err != io.ErrUnexpectedEOF {
+				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
+			}
+			err = nil
+			buf = buf[:len(d)]
+		}
+
+		if err != nil {
+			t.Errorf("Load(%d, %d): unexpected error: %v", len(buf), int64(o), err)
+			continue
+		}
+
+		if n != len(buf) {
+			t.Errorf("Load(%d, %d): wrong length returned, want %d, got %d",
+				len(buf), int64(o), len(buf), n)
+			continue
+		}
+
+		buf = buf[:n]
+		if !bytes.Equal(buf, d) {
+			t.Errorf("Load(%d, %d) returned wrong bytes", len(buf), int64(o))
+			continue
+		}
+	}
+
+	// test with negative offset
+	for i := 0; i < 50; i++ {
+		l := rand.Intn(length + 2000)
+		o := rand.Intn(length + 2000)
+
+		d := data
+		if o < len(d) {
+			d = d[len(d)-o:]
+		} else {
+			o = 0
+		}
+
+		if l > 0 && l < len(d) {
+			d = d[:l]
+		}
+
+		buf := make([]byte, l)
+		n, err := b.Load(handle, buf, -int64(o))
+
+		// if we requested data beyond the end of the file, require
+		// ErrUnexpectedEOF error
+		if l > len(d) {
+			if err != io.ErrUnexpectedEOF {
+				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
+				continue
+			}
 			err = nil
 			buf = buf[:len(d)]
 		}
@@ -254,6 +305,62 @@ func TestLoad(t testing.TB) {
 
 	if err != io.ErrUnexpectedEOF {
 		t.Errorf("wrong error returned for larger buffer: want io.ErrUnexpectedEOF, got %#v", err)
+	}
+
+	OK(t, b.Remove(backend.Data, id.String()))
+}
+
+// TestLoadNegativeOffset tests the backend's Load function with negative offsets.
+func TestLoadNegativeOffset(t testing.TB) {
+	b := open(t)
+	defer close(t)
+
+	length := rand.Intn(1<<24) + 2000
+
+	data := Random(23, length)
+	id := backend.Hash(data)
+
+	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	err := b.Save(handle, data)
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	// test normal reads
+	for i := 0; i < 50; i++ {
+		l := rand.Intn(length + 2000)
+		o := -rand.Intn(length + 2000)
+
+		buf := make([]byte, l)
+		n, err := b.Load(handle, buf, int64(o))
+
+		// if we requested data beyond the end of the file, require
+		// ErrUnexpectedEOF error
+		if len(buf) > -o {
+			if err != io.ErrUnexpectedEOF {
+				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), o)
+				continue
+			}
+			err = nil
+			buf = buf[:-o]
+		}
+
+		if err != nil {
+			t.Errorf("Load(%d, %d) returned error: %v", len(buf), o, err)
+			continue
+		}
+
+		if n != len(buf) {
+			t.Errorf("Load(%d, %d) returned short read, only got %d bytes", len(buf), o, n)
+			continue
+		}
+
+		p := len(data) + o
+		if !bytes.Equal(buf, data[p:p+len(buf)]) {
+			t.Errorf("Load(%d, %d) returned wrong bytes", len(buf), o)
+			continue
+		}
+
 	}
 
 	OK(t, b.Remove(backend.Data, id.String()))

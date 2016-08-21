@@ -77,56 +77,70 @@ func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, erro
 // LoadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
-func (r *Repository) LoadBlob(t pack.BlobType, id backend.ID, plaintextBuf []byte) ([]byte, error) {
+func (r *Repository) LoadBlob(id backend.ID, t pack.BlobType, plaintextBuf []byte) ([]byte, error) {
 	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
-	// lookup pack
-	blob, err := r.idx.Lookup(id)
+
+	// lookup plaintext size of blob
+	size, err := r.idx.LookupSize(id, t)
+	if err != nil {
+		return nil, err
+	}
+
+	// make sure the plaintext buffer is large enough, extend otherwise
+	plaintextBufSize := uint(cap(plaintextBuf))
+	if size > plaintextBufSize {
+		debug.Log("Repo.LoadBlob", "need to expand buffer: want %d bytes, got %d",
+			size, plaintextBufSize)
+		plaintextBuf = make([]byte, size)
+	}
+
+	// lookup packs
+	blobs, err := r.idx.Lookup(id, t)
 	if err != nil {
 		debug.Log("Repo.LoadBlob", "id %v not found in index: %v", id.Str(), err)
 		return nil, err
 	}
 
-	plaintextBufSize := uint(cap(plaintextBuf))
-	if blob.PlaintextLength() > plaintextBufSize {
-		debug.Log("Repo.LoadBlob", "need to expand buffer: want %d bytes, got %d",
-			blob.PlaintextLength(), plaintextBufSize)
-		plaintextBuf = make([]byte, blob.PlaintextLength())
+	for _, blob := range blobs {
+		debug.Log("Repo.LoadBlob", "id %v found: %v", id.Str(), blob)
+
+		if blob.Type != t {
+			debug.Log("Repo.LoadBlob", "blob %v has wrong block type, want %v", blob, t)
+		}
+
+		// load blob from pack
+		h := backend.Handle{Type: backend.Data, Name: blob.PackID.String()}
+		ciphertextBuf := make([]byte, blob.Length)
+		n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
+		if err != nil {
+			debug.Log("Repo.LoadBlob", "error loading blob %v: %v", blob, err)
+			fmt.Fprintf(os.Stderr, "error loading blob %v: %v", id, err)
+			continue
+		}
+
+		if uint(n) != blob.Length {
+			debug.Log("Repo.LoadBlob", "error loading blob %v: wrong length returned, want %d, got %d",
+				blob.Length, uint(n))
+			continue
+		}
+
+		// decrypt
+		plaintextBuf, err = r.decryptTo(plaintextBuf, ciphertextBuf)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "decrypting blob %v failed: %v", id, err)
+			continue
+		}
+
+		// check hash
+		if !backend.Hash(plaintextBuf).Equal(id) {
+			fmt.Fprintf(os.Stderr, "blob %v returned invalid hash", id)
+			continue
+		}
+
+		return plaintextBuf, nil
 	}
 
-	if blob.Type != t {
-		debug.Log("Repo.LoadBlob", "wrong type returned for %v: wanted %v, got %v", id.Str(), t, blob.Type)
-		return nil, fmt.Errorf("blob has wrong type %v (wanted: %v)", blob.Type, t)
-	}
-
-	debug.Log("Repo.LoadBlob", "id %v found: %v", id.Str(), blob)
-
-	// load blob from pack
-	h := backend.Handle{Type: backend.Data, Name: blob.PackID.String()}
-	ciphertextBuf := make([]byte, blob.Length)
-	n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
-	if err != nil {
-		debug.Log("Repo.LoadBlob", "error loading blob %v: %v", blob, err)
-		return nil, err
-	}
-
-	if uint(n) != blob.Length {
-		debug.Log("Repo.LoadBlob", "error loading blob %v: wrong length returned, want %d, got %d",
-			blob.Length, uint(n))
-		return nil, errors.New("wrong length returned")
-	}
-
-	// decrypt
-	plaintextBuf, err = r.decryptTo(plaintextBuf, ciphertextBuf)
-	if err != nil {
-		return nil, err
-	}
-
-	// check hash
-	if !backend.Hash(plaintextBuf).Equal(id) {
-		return nil, errors.New("invalid data returned")
-	}
-
-	return plaintextBuf, nil
+	return nil, fmt.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
 }
 
 // closeOrErr calls cl.Close() and sets err to the returned error value if
@@ -153,7 +167,7 @@ func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interf
 // LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
 // data and afterwards call json.Unmarshal on the item.
 func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) (err error) {
-	buf, err := r.LoadBlob(t, id, nil)
+	buf, err := r.LoadBlob(id, t, nil)
 	if err != nil {
 		return err
 	}
@@ -162,8 +176,8 @@ func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface
 }
 
 // LookupBlobSize returns the size of blob id.
-func (r *Repository) LookupBlobSize(id backend.ID) (uint, error) {
-	return r.idx.LookupSize(id)
+func (r *Repository) LookupBlobSize(id backend.ID, tpe pack.BlobType) (uint, error) {
+	return r.idx.LookupSize(id, tpe)
 }
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
@@ -416,6 +430,17 @@ func (r *Repository) Init(password string) error {
 		return errors.New("repository master key and config already initialized")
 	}
 
+	cfg, err := CreateConfig()
+	if err != nil {
+		return err
+	}
+
+	return r.init(password, cfg)
+}
+
+// init creates a new master key with the supplied password and uses it to save
+// the config into the repo.
+func (r *Repository) init(password string, cfg Config) error {
 	key, err := createMasterKey(r, password)
 	if err != nil {
 		return err
@@ -424,7 +449,8 @@ func (r *Repository) Init(password string) error {
 	r.key = key.master
 	r.packerManager.key = key.master
 	r.keyName = key.Name()
-	r.Config, err = CreateConfig(r)
+	r.Config = cfg
+	_, err = r.SaveJSONUnpacked(backend.Config, cfg)
 	return err
 }
 
@@ -518,17 +544,24 @@ func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 	return outCh
 }
 
-// ListPack returns the list of blobs saved in the pack id.
-func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, error) {
+// ListPack returns the list of blobs saved in the pack id and the length of
+// the file as stored in the backend.
+func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, int64, error) {
 	h := backend.Handle{Type: backend.Data, Name: id.String()}
-	rd := backend.NewReadSeeker(r.Backend(), h)
 
-	unpacker, err := pack.NewUnpacker(r.Key(), rd)
+	blobInfo, err := r.Backend().Stat(h)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return unpacker.Entries, nil
+	ldr := pack.BackendLoader{Backend: r.Backend(), Handle: h}
+
+	unpacker, err := pack.NewUnpacker(r.Key(), ldr)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return unpacker.Entries, blobInfo.Size, nil
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error

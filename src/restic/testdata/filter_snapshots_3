@@ -1,0 +1,162 @@
+[
+  {
+    "time": "2016-01-18T12:02:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-12T21:08:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-07T10:02:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-06T08:02:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-05T09:02:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-04T16:23:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-04T12:30:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-04T12:28:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-04T12:24:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-04T12:23:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-04T11:23:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-04T10:23:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-03T07:02:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-01T07:08:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "bar",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-01T01:03:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "bar",
+    "username": "testuser"
+  },
+  {
+    "time": "2016-01-01T01:02:03Z",
+    "tree": null,
+    "paths": [
+      "/usr",
+      "/bin"
+    ],
+    "hostname": "foo",
+    "username": "testuser"
+  }
+]

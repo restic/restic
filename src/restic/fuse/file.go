@@ -27,8 +27,8 @@ var _ = fs.HandleReleaser(&file{})
 // BlobLoader is an abstracted repository with a reduced set of methods used
 // for fuse operations.
 type BlobLoader interface {
-	LookupBlobSize(backend.ID) (uint, error)
-	LoadBlob(pack.BlobType, backend.ID, []byte) ([]byte, error)
+	LookupBlobSize(backend.ID, pack.BlobType) (uint, error)
+	LoadBlob(backend.ID, pack.BlobType, []byte) ([]byte, error)
 }
 
 type file struct {
@@ -53,7 +53,7 @@ func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error
 	var bytes uint64
 	sizes := make([]uint, len(node.Content))
 	for i, id := range node.Content {
-		size, err := repo.LookupBlobSize(id)
+		size, err := repo.LookupBlobSize(id, pack.Data)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +110,7 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 		buf = make([]byte, f.sizes[i])
 	}
 
-	blob, err = f.repo.LoadBlob(pack.Data, f.node.Content[i], buf)
+	blob, err = f.repo.LoadBlob(f.node.Content[i], pack.Data, buf)
 	if err != nil {
 		debug.Log("file.getBlobAt", "LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err

@@ -1,7 +1,6 @@
 package checker
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"sync"
@@ -677,7 +676,7 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 		return fmt.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 	}
 
-	unpacker, err := pack.NewUnpacker(r.Key(), bytes.NewReader(buf))
+	unpacker, err := pack.NewUnpacker(r.Key(), pack.BufferLoader(buf))
 	if err != nil {
 		return err
 	}
