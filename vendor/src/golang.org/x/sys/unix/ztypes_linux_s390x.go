@@ -1,6 +1,6 @@
-// +build ppc64,linux
+// +build s390x,linux
 // Created by cgo -godefs - DO NOT EDIT
-// cgo -godefs types_linux.go
+// cgo -godefs -- -fsigned-char types_linux.go
 
 package unix
 
@@ -32,13 +32,13 @@ type Timeval struct {
 
 type Timex struct {
 	Modes     uint32
-	Pad_cgo_0 [4]byte
+	_         [4]byte
 	Offset    int64
 	Freq      int64
 	Maxerror  int64
 	Esterror  int64
 	Status    int32
-	Pad_cgo_1 [4]byte
+	_         [4]byte
 	Constant  int64
 	Precision int64
 	Tolerance int64
@@ -47,14 +47,14 @@ type Timex struct {
 	Ppsfreq   int64
 	Jitter    int64
 	Shift     int32
-	Pad_cgo_2 [4]byte
+	_         [4]byte
 	Stabil    int64
 	Jitcnt    int64
 	Calcnt    int64
 	Errcnt    int64
 	Stbcnt    int64
 	Tai       int32
-	Pad_cgo_3 [44]byte
+	_         [44]byte
 }
 
 type Time_t int64
@@ -98,61 +98,60 @@ type Rlimit struct {
 type _Gid_t uint32
 
 type Stat_t struct {
-	Dev                uint64
-	Ino                uint64
-	Nlink              uint64
-	Mode               uint32
-	Uid                uint32
-	Gid                uint32
-	X__pad2            int32
-	Rdev               uint64
-	Size               int64
-	Blksize            int64
-	Blocks             int64
-	Atim               Timespec
-	Mtim               Timespec
-	Ctim               Timespec
-	X__glibc_reserved4 uint64
-	X__glibc_reserved5 uint64
-	X__glibc_reserved6 uint64
+	Dev     uint64
+	Ino     uint64
+	Nlink   uint64
+	Mode    uint32
+	Uid     uint32
+	Gid     uint32
+	_       int32
+	Rdev    uint64
+	Size    int64
+	Atim    Timespec
+	Mtim    Timespec
+	Ctim    Timespec
+	Blksize int64
+	Blocks  int64
+	_       [3]int64
 }
 
 type Statfs_t struct {
-	Type    int64
-	Bsize   int64
+	Type    uint32
+	Bsize   uint32
 	Blocks  uint64
 	Bfree   uint64
 	Bavail  uint64
 	Files   uint64
 	Ffree   uint64
 	Fsid    Fsid
-	Namelen int64
-	Frsize  int64
-	Flags   int64
-	Spare   [4]int64
+	Namelen uint32
+	Frsize  uint32
+	Flags   uint32
+	Spare   [4]uint32
+	_       [4]byte
 }
 
 type Dirent struct {
-	Ino       uint64
-	Off       int64
-	Reclen    uint16
-	Type      uint8
-	Name      [256]uint8
-	Pad_cgo_0 [5]byte
+	Ino    uint64
+	Off    int64
+	Reclen uint16
+	Type   uint8
+	Name   [256]int8
+	_      [5]byte
 }
 
 type Fsid struct {
-	X__val [2]int32
+	_ [2]int32
 }
 
 type Flock_t struct {
-	Type      int16
-	Whence    int16
-	Pad_cgo_0 [4]byte
-	Start     int64
-	Len       int64
-	Pid       int32
-	Pad_cgo_1 [4]byte
+	Type   int16
+	Whence int16
+	_      [4]byte
+	Start  int64
+	Len    int64
+	Pid    int32
+	_      [4]byte
 }
 
 const (
@@ -160,8 +159,8 @@ const (
 	FADV_RANDOM     = 0x1
 	FADV_SEQUENTIAL = 0x2
 	FADV_WILLNEED   = 0x3
-	FADV_DONTNEED   = 0x4
-	FADV_NOREUSE    = 0x5
+	FADV_DONTNEED   = 0x6
+	FADV_NOREUSE    = 0x7
 )
 
 type RawSockaddrInet4 struct {
@@ -209,12 +208,12 @@ type RawSockaddrHCI struct {
 
 type RawSockaddr struct {
 	Family uint16
-	Data   [14]uint8
+	Data   [14]int8
 }
 
 type RawSockaddrAny struct {
 	Addr RawSockaddr
-	Pad  [96]uint8
+	Pad  [96]int8
 }
 
 type _Socklen uint32
@@ -248,20 +247,19 @@ type IPv6Mreq struct {
 type Msghdr struct {
 	Name       *byte
 	Namelen    uint32
-	Pad_cgo_0  [4]byte
+	_          [4]byte
 	Iov        *Iovec
 	Iovlen     uint64
 	Control    *byte
 	Controllen uint64
 	Flags      int32
-	Pad_cgo_1  [4]byte
+	_          [4]byte
 }
 
 type Cmsghdr struct {
-	Len          uint64
-	Level        int32
-	Type         int32
-	X__cmsg_data [0]uint8
+	Len   uint64
+	Level int32
+	Type  int32
 }
 
 type Inet4Pktinfo struct {
@@ -297,7 +295,7 @@ type TCPInfo struct {
 	Probes         uint8
 	Backoff        uint8
 	Options        uint8
-	Pad_cgo_0      [2]byte
+	_              [2]byte
 	Rto            uint32
 	Ato            uint32
 	Snd_mss        uint32
@@ -376,7 +374,7 @@ const (
 	IFLA_LINKINFO       = 0x12
 	IFLA_NET_NS_PID     = 0x13
 	IFLA_IFALIAS        = 0x14
-	IFLA_MAX            = 0x23
+	IFLA_MAX            = 0x27
 	RT_SCOPE_UNIVERSE   = 0x0
 	RT_SCOPE_SITE       = 0xc8
 	RT_SCOPE_LINK       = 0xfd
@@ -468,12 +466,12 @@ type RtAttr struct {
 }
 
 type IfInfomsg struct {
-	Family     uint8
-	X__ifi_pad uint8
-	Type       uint16
-	Index      int32
-	Flags      uint32
-	Change     uint32
+	Family uint8
+	_      uint8
+	Type   uint16
+	Index  int32
+	Flags  uint32
+	Change uint32
 }
 
 type IfAddrmsg struct {
@@ -516,9 +514,9 @@ type SockFilter struct {
 }
 
 type SockFprog struct {
-	Len       uint16
-	Pad_cgo_0 [6]byte
-	Filter    *SockFilter
+	Len    uint16
+	_      [6]byte
+	Filter *SockFilter
 }
 
 type InotifyEvent struct {
@@ -526,25 +524,42 @@ type InotifyEvent struct {
 	Mask   uint32
 	Cookie uint32
 	Len    uint32
-	Name   [0]uint8
 }
 
 const SizeofInotifyEvent = 0x10
 
 type PtraceRegs struct {
-	Gpr       [32]uint64
-	Nip       uint64
-	Msr       uint64
-	Orig_gpr3 uint64
-	Ctr       uint64
-	Link      uint64
-	Xer       uint64
-	Ccr       uint64
-	Softe     uint64
-	Trap      uint64
-	Dar       uint64
-	Dsisr     uint64
-	Result    uint64
+	Psw                      PtracePsw
+	Gprs                     [16]uint64
+	Acrs                     [16]uint32
+	Orig_gpr2                uint64
+	Fp_regs                  PtraceFpregs
+	Per_info                 PtracePer
+	Ieee_instruction_pointer uint64
+}
+
+type PtracePsw struct {
+	Mask uint64
+	Addr uint64
+}
+
+type PtraceFpregs struct {
+	Fpc  uint32
+	_    [4]byte
+	Fprs [16]float64
+}
+
+type PtracePer struct {
+	_             [0]uint64
+	_             [24]byte
+	_             [8]byte
+	Starting_addr uint64
+	Ending_addr   uint64
+	Perc_atmid    uint16
+	_             [6]byte
+	Address       uint64
+	Access_id     uint8
+	_             [7]byte
 }
 
 type FdSet struct {
@@ -562,37 +577,37 @@ type Sysinfo_t struct {
 	Freeswap  uint64
 	Procs     uint16
 	Pad       uint16
-	Pad_cgo_0 [4]byte
+	_         [4]byte
 	Totalhigh uint64
 	Freehigh  uint64
 	Unit      uint32
-	X_f       [0]uint8
-	Pad_cgo_1 [4]byte
+	_         [0]int8
+	_         [4]byte
 }
 
 type Utsname struct {
-	Sysname    [65]uint8
-	Nodename   [65]uint8
-	Release    [65]uint8
-	Version    [65]uint8
-	Machine    [65]uint8
-	Domainname [65]uint8
+	Sysname    [65]int8
+	Nodename   [65]int8
+	Release    [65]int8
+	Version    [65]int8
+	Machine    [65]int8
+	Domainname [65]int8
 }
 
 type Ustat_t struct {
-	Tfree     int32
-	Pad_cgo_0 [4]byte
-	Tinode    uint64
-	Fname     [6]uint8
-	Fpack     [6]uint8
-	Pad_cgo_1 [4]byte
+	Tfree  int32
+	_      [4]byte
+	Tinode uint64
+	Fname  [6]int8
+	Fpack  [6]int8
+	_      [4]byte
 }
 
 type EpollEvent struct {
-	Events  uint32
-	X_padFd int32
-	Fd      int32
-	Pad     int32
+	Events uint32
+	_      int32
+	Fd     int32
+	Pad    int32
 }
 
 const (
@@ -627,8 +642,8 @@ type Termios struct {
 	Oflag  uint32
 	Cflag  uint32
 	Lflag  uint32
-	Cc     [19]uint8
 	Line   uint8
+	Cc     [19]uint8
 	Ispeed uint32
 	Ospeed uint32
 }
