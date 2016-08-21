@@ -83,14 +83,15 @@ func restoreTerminal() {
 var globalOpts = GlobalOptions{stdout: os.Stdout, stderr: os.Stderr}
 var parser = flags.NewParser(&globalOpts, flags.HelpFlag|flags.PassDoubleDash)
 
-// Clear Line ASCII sequence is invalid on Windows so ignore it here
+// ClearLine creates a platform dependent string to clear the current
+// line, so it can be overwritten. ANSI sequences are not supported on
+// current windows cmd shell.
 func ClearLine() string {
 	if runtime.GOOS == "windows" {
 		// Ugly Workaround, write 79 Whitespaces and return
 		return "                                                                               \r"
-	} else {
-		return "\x1b[2K"
 	}
+	return "\x1b[2K"
 }
 
 // Printf writes the message to the configured stdout stream.
