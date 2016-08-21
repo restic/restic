@@ -4,7 +4,6 @@ import (
 	"math/rand"
 	"restic"
 	"restic/backend"
-	"restic/backend/local"
 	"restic/pack"
 	"restic/repository"
 	. "restic/test"
@@ -122,21 +121,6 @@ func TestIndexLoad(t *testing.T) {
 			}
 		}
 	}
-}
-
-func openRepo(t testing.TB, dir, password string) *repository.Repository {
-	b, err := local.Open(dir)
-	if err != nil {
-		t.Fatalf("open backend %v failed: %v", dir, err)
-	}
-
-	r := repository.New(b)
-	err = r.SearchKey(password)
-	if err != nil {
-		t.Fatalf("unable to open repo with password: %v", err)
-	}
-
-	return r
 }
 
 func BenchmarkIndexNew(b *testing.B) {
