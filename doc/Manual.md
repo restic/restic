@@ -464,6 +464,8 @@ The `forget` command accepts the following parameters:
    only the last snapshot for each hour.
  * `--keep-daily n` for the last `n` days which have one or more snapshots, only
    keep the last one for that day.
+ * `--keep-weekly n` for the last `n` weeks which have one or more snapshots, only
+   keep the last one for that week.
  * `--keep-monthly n` for the last `n` months which have one or more snapshots, only
    keep the last one for that month.
  * `--keep-yearly n` for the last `n` years which have one or more snapshots, only
@@ -471,6 +473,17 @@ The `forget` command accepts the following parameters:
 
 Additionally, you can restrict removing snapshots to those which have a
 particular hostname with the `--hostname` parameter.
+
+All the `--keep-*` options above only count hours/days/weeks/months/years which
+have a snapshot, so those without a snapshot are ignored.
+
+Let's explain this with an example: Suppose you have only made a backup on each
+Sunday for 12 weeks. Then `forget --keep-daily 4` will keep the last four snapshots
+for the last four Sundays, but remove the rest. Only counting the days which
+have a backup and ignore the ones without is a safety feature: it prevents
+restic from removing many snapshots when no new ones are created. If it was
+implemented otherwise, running `forget --keep-daily 4` on a Friday would remove
+all snapshots!
 
 # Debugging restic
 
