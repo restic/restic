@@ -249,7 +249,7 @@ func TestCheckerModifiedData(t *testing.T) {
 
 	beError := &errorBackend{Backend: be}
 	checkRepo := repository.New(beError)
-	OK(t, checkRepo.SearchKey(TestPassword))
+	OK(t, checkRepo.SearchKey(TestPassword, 5))
 
 	chkr := checker.New(checkRepo)
 
