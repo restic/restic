@@ -1,11 +1,12 @@
 package pipe
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/pkg/errors"
 
 	"restic/debug"
 	"restic/fs"

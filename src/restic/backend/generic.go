@@ -1,6 +1,6 @@
 package backend
 
-import "errors"
+import "github.com/pkg/errors"
 
 // ErrNoIDPrefixFound is returned by Find() when no ID for the given prefix
 // could be found.

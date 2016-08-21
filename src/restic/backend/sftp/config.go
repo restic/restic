@@ -1,11 +1,12 @@
 package sftp
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Config collects all information required to connect to an sftp server.

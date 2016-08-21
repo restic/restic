@@ -5,7 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
+
+	"github.com/pkg/errors"
 )
 
 // Hash returns the ID for data.

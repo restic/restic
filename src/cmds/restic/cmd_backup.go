@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"restic/fs"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/ssh/terminal"
 )

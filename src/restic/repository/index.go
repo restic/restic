@@ -3,11 +3,12 @@ package repository
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/crypto"

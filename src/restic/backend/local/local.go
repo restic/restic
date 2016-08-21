@@ -1,12 +1,13 @@
 package local
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"

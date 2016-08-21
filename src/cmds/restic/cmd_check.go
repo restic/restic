@@ -1,10 +1,11 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/ssh/terminal"
 

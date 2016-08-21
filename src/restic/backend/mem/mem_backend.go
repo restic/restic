@@ -1,9 +1,10 @@
 package mem
 
 import (
-	"errors"
 	"io"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"

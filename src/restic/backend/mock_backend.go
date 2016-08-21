@@ -1,6 +1,6 @@
 package backend
 
-import "errors"
+import "github.com/pkg/errors"
 
 // MockBackend implements a backend whose functions can be specified. This
 // should only be used for tests.

@@ -1,9 +1,10 @@
 package rest
 
 import (
-	"errors"
 	"net/url"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Config contains all configuration necessary to connect to a REST server.

@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/jessevdk/go-flags"
 	"os"
 	"restic"
 	"restic/debug"
 	"runtime"
+
+	"github.com/jessevdk/go-flags"
 )
 
 func init() {

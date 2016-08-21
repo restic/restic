@@ -3,10 +3,11 @@ package pack
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/crypto"

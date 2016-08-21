@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"

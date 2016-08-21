@@ -1,13 +1,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"runtime"
 	"strings"
 	"syscall"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/backend/local"

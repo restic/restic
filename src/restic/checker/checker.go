@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"restic"
 	"restic/backend"
 	"restic/crypto"

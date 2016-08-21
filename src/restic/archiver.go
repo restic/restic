@@ -2,7 +2,6 @@ package restic
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"

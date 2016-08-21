@@ -2,11 +2,12 @@ package repository
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/user"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/crypto"

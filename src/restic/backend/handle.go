@@ -1,8 +1,9 @@
 package backend
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 // Handle is used to store and access data in a backend.

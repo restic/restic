@@ -4,8 +4,9 @@
 package fuse
 
 import (
-	"errors"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	"restic"
 	"restic/backend"

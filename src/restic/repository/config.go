@@ -4,9 +4,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"io"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"

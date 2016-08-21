@@ -1,10 +1,11 @@
 package s3
 
 import (
-	"errors"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Config contains all configuration necessary to connect to an s3 compatible

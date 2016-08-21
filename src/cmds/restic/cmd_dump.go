@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
+
 	"restic"
 	"restic/backend"
 	"restic/pack"

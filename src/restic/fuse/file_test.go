@@ -5,10 +5,11 @@ package fuse
 
 import (
 	"bytes"
-	"errors"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"bazil.org/fuse"
 

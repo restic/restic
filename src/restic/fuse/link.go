@@ -4,11 +4,12 @@
 package fuse
 
 import (
+	"restic"
+	"restic/repository"
+
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"golang.org/x/net/context"
-	"restic"
-	"restic/repository"
 )
 
 // Statically ensure that *file implements the given interface

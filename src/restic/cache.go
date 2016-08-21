@@ -1,13 +1,14 @@
 package restic
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"

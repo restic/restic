@@ -2,7 +2,6 @@
 package index
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"restic"
@@ -12,6 +11,8 @@ import (
 	"restic/pack"
 	"restic/types"
 	"restic/worker"
+
+	"github.com/pkg/errors"
 )
 
 // Pack contains information about the contents of a pack.

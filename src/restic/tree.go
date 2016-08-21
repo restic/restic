@@ -1,9 +1,10 @@
 package restic
 
 import (
-	"errors"
 	"fmt"
 	"sort"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"

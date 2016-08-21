@@ -1,7 +1,7 @@
 package test_test
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/backend/mem"

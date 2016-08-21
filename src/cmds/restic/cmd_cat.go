@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"restic"
 	"restic/backend"

@@ -1,8 +1,9 @@
 package local
 
 import (
-	"errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // ParseConfig parses a local backend config.

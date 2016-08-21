@@ -2,9 +2,10 @@ package s3
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/minio/minio-go"
 
