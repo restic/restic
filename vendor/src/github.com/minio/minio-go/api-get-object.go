@@ -243,8 +243,8 @@ func (o *Object) ReadAt(b []byte, offset int64) (n int, err error) {
 		return 0, o.prevErr
 	}
 
-	// If offset is negative and offset is greater than or equal to
-	// object size we return EOF.
+	// if offset is greater than or equal to object size we return io.EOF.
+	// If offset is negative then we return io.EOF.
 	if offset < 0 || offset >= o.objectInfo.Size {
 		return 0, io.EOF
 	}
@@ -353,7 +353,12 @@ func (o *Object) Seek(offset int64, whence int) (n int64, err error) {
 		if o.objectInfo.Size+offset < 0 {
 			return 0, ErrInvalidArgument(fmt.Sprintf("Seeking at negative offset not allowed for %d", whence))
 		}
-		o.currOffset += offset
+		o.currOffset = o.objectInfo.Size + offset
+	}
+	// Reset the saved error since we successfully seeked, let the Read
+	// and ReadAt decide.
+	if o.prevErr == io.EOF {
+		o.prevErr = nil
 	}
 	// Return the effective offset.
 	return o.currOffset, nil

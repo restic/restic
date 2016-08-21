@@ -20,35 +20,44 @@ import (
 	"encoding/xml"
 )
 
-// S3 notification events
-type Event string
+// NotificationEventType is a S3 notification event associated to the bucket notification configuration
+type NotificationEventType string
 
+// The role of all event types are described in :
+// 	http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html#notification-how-to-event-types-and-destinations
 const (
-	ObjectCreatedAll                     Event = "s3:ObjectCreated:*"
-	ObjectCreatePut                            = "s3:ObjectCreated:Put"
-	ObjectCreatedPost                          = "s3:ObjectCreated:Post"
-	ObjectCreatedCopy                          = "s3:ObjectCreated:Copy"
-	ObjectCreatedCompleteMultipartUpload       = "sh:ObjectCreated:CompleteMultipartUpload"
-	ObjectRemovedAll                           = "s3:ObjectRemoved:*"
-	ObjectRemovedDelete                        = "s3:ObjectRemoved:Delete"
-	ObjectRemovedDeleteMarkerCreated           = "s3:ObjectRemoved:DeleteMarkerCreated"
-	ObjectReducedRedundancyLostObject          = "s3:ReducedRedundancyLostObject"
+	ObjectCreatedAll                     NotificationEventType = "s3:ObjectCreated:*"
+	ObjectCreatePut                                            = "s3:ObjectCreated:Put"
+	ObjectCreatedPost                                          = "s3:ObjectCreated:Post"
+	ObjectCreatedCopy                                          = "s3:ObjectCreated:Copy"
+	ObjectCreatedCompleteMultipartUpload                       = "sh:ObjectCreated:CompleteMultipartUpload"
+	ObjectRemovedAll                                           = "s3:ObjectRemoved:*"
+	ObjectRemovedDelete                                        = "s3:ObjectRemoved:Delete"
+	ObjectRemovedDeleteMarkerCreated                           = "s3:ObjectRemoved:DeleteMarkerCreated"
+	ObjectReducedRedundancyLostObject                          = "s3:ReducedRedundancyLostObject"
 )
 
+// FilterRule - child of S3Key, a tag in the notification xml which
+// carries suffix/prefix filters
 type FilterRule struct {
 	Name  string `xml:"Name"`
 	Value string `xml:"Value"`
 }
 
+// S3Key - child of Filter, a tag in the notification xml which
+// carries suffix/prefix filters
 type S3Key struct {
 	FilterRules []FilterRule `xml:"FilterRule,omitempty"`
 }
 
+// Filter - a tag in the notification xml structure which carries
+// suffix/prefix filters
 type Filter struct {
 	S3Key S3Key `xml:"S3Key,omitempty"`
 }
 
-// Arn - holds ARN information that will be sent to the web service
+// Arn - holds ARN information that will be sent to the web service,
+// ARN desciption can be found in http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
 type Arn struct {
 	Partition string
 	Service   string
@@ -57,6 +66,7 @@ type Arn struct {
 	Resource  string
 }
 
+// NewArn creates new ARN based on the given partition, service, region, account id and resource
 func NewArn(partition, service, region, accountID, resource string) Arn {
 	return Arn{Partition: partition,
 		Service:   service,
@@ -65,6 +75,7 @@ func NewArn(partition, service, region, accountID, resource string) Arn {
 		Resource:  resource}
 }
 
+// Return the string format of the ARN
 func (arn Arn) String() string {
 	return "arn:" + arn.Partition + ":" + arn.Service + ":" + arn.Region + ":" + arn.AccountID + ":" + arn.Resource
 }
@@ -72,45 +83,67 @@ func (arn Arn) String() string {
 // NotificationConfig - represents one single notification configuration
 // such as topic, queue or lambda configuration.
 type NotificationConfig struct {
-	Id     string  `xml:"Id,omitempty"`
-	Arn    Arn     `xml:"-"`
-	Events []Event `xml:"Event"`
-	Filter *Filter `xml:"Filter,omitempty"`
+	Id     string                  `xml:"Id,omitempty"`
+	Arn    Arn                     `xml:"-"`
+	Events []NotificationEventType `xml:"Event"`
+	Filter *Filter                 `xml:"Filter,omitempty"`
 }
 
+// NewNotificationConfig creates one notification config and sets the given ARN
 func NewNotificationConfig(arn Arn) NotificationConfig {
 	return NotificationConfig{Arn: arn}
 }
 
-func (t *NotificationConfig) AddEvents(events ...Event) {
+// AddEvents adds one event to the current notification config
+func (t *NotificationConfig) AddEvents(events ...NotificationEventType) {
 	t.Events = append(t.Events, events...)
 }
 
+// AddFilterSuffix sets the suffix configuration to the current notification config
 func (t *NotificationConfig) AddFilterSuffix(suffix string) {
 	if t.Filter == nil {
 		t.Filter = &Filter{}
 	}
-	t.Filter.S3Key.FilterRules = append(t.Filter.S3Key.FilterRules, FilterRule{Name: "suffix", Value: suffix})
+	newFilterRule := FilterRule{Name: "suffix", Value: suffix}
+	// Replace any suffix rule if existing and add to the list otherwise
+	for index := range t.Filter.S3Key.FilterRules {
+		if t.Filter.S3Key.FilterRules[index].Name == "suffix" {
+			t.Filter.S3Key.FilterRules[index] = newFilterRule
+			return
+		}
+	}
+	t.Filter.S3Key.FilterRules = append(t.Filter.S3Key.FilterRules, newFilterRule)
 }
 
+// AddFilterPrefix sets the prefix configuration to the current notification config
 func (t *NotificationConfig) AddFilterPrefix(prefix string) {
 	if t.Filter == nil {
 		t.Filter = &Filter{}
 	}
-	t.Filter.S3Key.FilterRules = append(t.Filter.S3Key.FilterRules, FilterRule{Name: "prefix", Value: prefix})
+	newFilterRule := FilterRule{Name: "prefix", Value: prefix}
+	// Replace any prefix rule if existing and add to the list otherwise
+	for index := range t.Filter.S3Key.FilterRules {
+		if t.Filter.S3Key.FilterRules[index].Name == "prefix" {
+			t.Filter.S3Key.FilterRules[index] = newFilterRule
+			return
+		}
+	}
+	t.Filter.S3Key.FilterRules = append(t.Filter.S3Key.FilterRules, newFilterRule)
 }
 
-// Topic notification config
+// TopicConfig carries one single topic notification configuration
 type TopicConfig struct {
 	NotificationConfig
 	Topic string `xml:"Topic"`
 }
 
+// QueueConfig carries one single queue notification configuration
 type QueueConfig struct {
 	NotificationConfig
 	Queue string `xml:"Queue"`
 }
 
+// LambdaConfig carries one single cloudfunction notification configuration
 type LambdaConfig struct {
 	NotificationConfig
 	Lambda string `xml:"CloudFunction"`
@@ -124,17 +157,53 @@ type BucketNotification struct {
 	QueueConfigs  []QueueConfig  `xml:"QueueConfiguration"`
 }
 
+// AddTopic adds a given topic config to the general bucket notification config
 func (b *BucketNotification) AddTopic(topicConfig NotificationConfig) {
-	config := TopicConfig{NotificationConfig: topicConfig, Topic: topicConfig.Arn.String()}
-	b.TopicConfigs = append(b.TopicConfigs, config)
+	newTopicConfig := TopicConfig{NotificationConfig: topicConfig, Topic: topicConfig.Arn.String()}
+	b.TopicConfigs = append(b.TopicConfigs, newTopicConfig)
 }
 
+// AddQueue adds a given queue config to the general bucket notification config
 func (b *BucketNotification) AddQueue(queueConfig NotificationConfig) {
-	config := QueueConfig{NotificationConfig: queueConfig, Queue: queueConfig.Arn.String()}
-	b.QueueConfigs = append(b.QueueConfigs, config)
+	newQueueConfig := QueueConfig{NotificationConfig: queueConfig, Queue: queueConfig.Arn.String()}
+	b.QueueConfigs = append(b.QueueConfigs, newQueueConfig)
 }
 
+// AddLambda adds a given lambda config to the general bucket notification config
 func (b *BucketNotification) AddLambda(lambdaConfig NotificationConfig) {
-	config := LambdaConfig{NotificationConfig: lambdaConfig, Lambda: lambdaConfig.Arn.String()}
-	b.LambdaConfigs = append(b.LambdaConfigs, config)
+	newLambdaConfig := LambdaConfig{NotificationConfig: lambdaConfig, Lambda: lambdaConfig.Arn.String()}
+	b.LambdaConfigs = append(b.LambdaConfigs, newLambdaConfig)
+}
+
+// RemoveTopicByArn removes all topic configurations that match the exact specified ARN
+func (b *BucketNotification) RemoveTopicByArn(arn Arn) {
+	var topics []TopicConfig
+	for _, topic := range b.TopicConfigs {
+		if topic.Topic != arn.String() {
+			topics = append(topics, topic)
+		}
+	}
+	b.TopicConfigs = topics
+}
+
+// RemoveQueueByArn removes all queue configurations that match the exact specified ARN
+func (b *BucketNotification) RemoveQueueByArn(arn Arn) {
+	var queues []QueueConfig
+	for _, queue := range b.QueueConfigs {
+		if queue.Queue != arn.String() {
+			queues = append(queues, queue)
+		}
+	}
+	b.QueueConfigs = queues
+}
+
+// RemoveLambdaByArn removes all lambda configurations that match the exact specified ARN
+func (b *BucketNotification) RemoveLambdaByArn(arn Arn) {
+	var lambdas []LambdaConfig
+	for _, lambda := range b.LambdaConfigs {
+		if lambda.Lambda != arn.String() {
+			lambdas = append(lambdas, lambda)
+		}
+	}
+	b.LambdaConfigs = lambdas
 }

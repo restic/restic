@@ -26,7 +26,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"reflect"
+
+	"github.com/minio/minio-go/pkg/policy"
 )
 
 /// Bucket operations
@@ -149,7 +150,7 @@ func (c Client) makeBucketRequest(bucketName string, location string) (*http.Req
 //  readonly - anonymous get access for everyone at a given object prefix.
 //  readwrite - anonymous list/put/delete access to a given object prefix.
 //  writeonly - anonymous put/delete access to a given object prefix.
-func (c Client) SetBucketPolicy(bucketName string, objectPrefix string, bucketPolicy BucketPolicy) error {
+func (c Client) SetBucketPolicy(bucketName string, objectPrefix string, bucketPolicy policy.BucketPolicy) error {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return err
@@ -157,57 +158,35 @@ func (c Client) SetBucketPolicy(bucketName string, objectPrefix string, bucketPo
 	if err := isValidObjectPrefix(objectPrefix); err != nil {
 		return err
 	}
-	if !bucketPolicy.isValidBucketPolicy() {
+	if !bucketPolicy.IsValidBucketPolicy() {
 		return ErrInvalidArgument(fmt.Sprintf("Invalid bucket policy provided. %s", bucketPolicy))
 	}
-	policy, err := c.getBucketPolicy(bucketName, objectPrefix)
+	policyInfo, err := c.getBucketPolicy(bucketName, objectPrefix)
 	if err != nil {
 		return err
 	}
-	// For bucket policy set to 'none' we need to remove the policy.
-	if bucketPolicy == BucketPolicyNone && policy.Statements == nil {
-		// No policy exists on the given prefix so return with ErrNoSuchBucketPolicy.
-		return ErrNoSuchBucketPolicy(fmt.Sprintf("No policy exists on %s/%s", bucketName, objectPrefix))
-	}
-	// Remove any previous policies at this path.
-	statements := removeBucketPolicyStatement(policy.Statements, bucketName, objectPrefix)
 
-	// generating []Statement for the given bucketPolicy.
-	generatedStatements, err := generatePolicyStatement(bucketPolicy, bucketName, objectPrefix)
-	if err != nil {
-		return err
-	}
-	statements = append(statements, generatedStatements...)
-
-	// No change in the statements indicates either an attempt of setting 'none'
-	// on a prefix which doesn't have a pre-existing policy, or setting a policy
-	// on a prefix which already has the same policy.
-	if reflect.DeepEqual(policy.Statements, statements) {
-		// If policy being set is 'none' return an error, otherwise return nil to
-		// prevent the unnecessary request from being sent
-		var err error
-		if bucketPolicy == BucketPolicyNone {
-			err = ErrNoSuchBucketPolicy(fmt.Sprintf("No policy exists on %s/%s", bucketName, objectPrefix))
-		} else {
-			err = nil
-		}
-		return err
+	if bucketPolicy == policy.BucketPolicyNone && policyInfo.Statements == nil {
+		// As the request is for removing policy and the bucket
+		// has empty policy statements, just return success.
+		return nil
 	}
 
-	policy.Statements = statements
+	policyInfo.Statements = policy.SetPolicy(policyInfo.Statements, bucketPolicy, bucketName, objectPrefix)
+
 	// Save the updated policies.
-	return c.putBucketPolicy(bucketName, policy)
+	return c.putBucketPolicy(bucketName, policyInfo)
 }
 
 // Saves a new bucket policy.
-func (c Client) putBucketPolicy(bucketName string, policy BucketAccessPolicy) error {
+func (c Client) putBucketPolicy(bucketName string, policyInfo policy.BucketAccessPolicy) error {
 	// Input validation.
 	if err := isValidBucketName(bucketName); err != nil {
 		return err
 	}
 
 	// If there are no policy statements, we should remove entire policy.
-	if len(policy.Statements) == 0 {
+	if len(policyInfo.Statements) == 0 {
 		return c.removeBucketPolicy(bucketName)
 	}
 
@@ -216,7 +195,7 @@ func (c Client) putBucketPolicy(bucketName string, policy BucketAccessPolicy) er
 	urlValues := make(url.Values)
 	urlValues.Set("policy", "")
 
-	policyBytes, err := json.Marshal(&policy)
+	policyBytes, err := json.Marshal(&policyInfo)
 	if err != nil {
 		return err
 	}
@@ -309,7 +288,7 @@ func (c Client) SetBucketNotification(bucketName string, bucketNotification Buck
 	return nil
 }
 
-// DeleteBucketNotification - Remove bucket notification clears all previously specified config
-func (c Client) DeleteBucketNotification(bucketName string) error {
+// RemoveAllBucketNotification - Remove bucket notification clears all previously specified config
+func (c Client) RemoveAllBucketNotification(bucketName string) error {
 	return c.SetBucketNotification(bucketName, BucketNotification{})
 }

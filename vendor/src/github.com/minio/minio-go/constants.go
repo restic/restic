@@ -40,3 +40,7 @@ const maxMultipartPutObjectSize = 1024 * 1024 * 1024 * 1024 * 5
 // optimalReadBufferSize - optimal buffer 5MiB used for reading
 // through Read operation.
 const optimalReadBufferSize = 1024 * 1024 * 5
+
+// unsignedPayload - value to be set to X-Amz-Content-Sha256 header when
+// we don't want to sign the request payload
+const unsignedPayload = "UNSIGNED-PAYLOAD"

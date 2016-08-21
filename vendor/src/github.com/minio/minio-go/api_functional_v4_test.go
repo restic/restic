@@ -20,6 +20,7 @@ import (
 	"bytes"
 	crand "crypto/rand"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -28,6 +29,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/minio/minio-go/pkg/policy"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz01234569"
@@ -304,6 +307,107 @@ func TestListPartiallyUploaded(t *testing.T) {
 	err = c.RemoveBucket(bucketName)
 	if err != nil {
 		t.Fatal("Error:", err)
+	}
+}
+
+// Test get object seeker from the end, using whence set to '2'.
+func TestGetOjectSeekEnd(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping functional tests for short runs")
+	}
+
+	// Seed random based on current time.
+	rand.Seed(time.Now().Unix())
+
+	// Instantiate new minio client object.
+	c, err := New(
+		"s3.amazonaws.com",
+		os.Getenv("ACCESS_KEY"),
+		os.Getenv("SECRET_KEY"),
+		true,
+	)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Enable tracing, write to stderr.
+	// c.TraceOn(os.Stderr)
+
+	// Set user agent.
+	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
+
+	// Generate a new random bucket name.
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+
+	// Make a new bucket.
+	err = c.MakeBucket(bucketName, "us-east-1")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName)
+	}
+
+	// Generate data more than 32K
+	buf := make([]byte, rand.Intn(1<<20)+32*1024)
+
+	_, err = io.ReadFull(crand.Reader, buf)
+	if err != nil {
+		t.Fatal("Error:", err)
+	}
+
+	// Save the data
+	objectName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	n, err := c.PutObject(bucketName, objectName, bytes.NewReader(buf), "binary/octet-stream")
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+
+	if n != int64(len(buf)) {
+		t.Fatalf("Error: number of bytes does not match, want %v, got %v\n", len(buf), n)
+	}
+
+	// Read the data back
+	r, err := c.GetObject(bucketName, objectName)
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+
+	st, err := r.Stat()
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+	if st.Size != int64(len(buf)) {
+		t.Fatalf("Error: number of bytes in stat does not match, want %v, got %v\n",
+			len(buf), st.Size)
+	}
+
+	pos, err := r.Seek(-100, 2)
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+	if pos != st.Size-100 {
+		t.Fatalf("Expected %d, got %d instead", pos, st.Size-100)
+	}
+	buf2 := make([]byte, 100)
+	m, err := io.ReadFull(r, buf2)
+	if err != nil {
+		t.Fatal("Error: reading through io.ReadFull", err, bucketName, objectName)
+	}
+	if m != len(buf2) {
+		t.Fatalf("Expected %d bytes, got %d", len(buf2), m)
+	}
+	hexBuf1 := fmt.Sprintf("%02x", buf[len(buf)-100:])
+	hexBuf2 := fmt.Sprintf("%02x", buf2[:m])
+	if hexBuf1 != hexBuf2 {
+		t.Fatalf("Expected %s, got %s instead", hexBuf1, hexBuf2)
+	}
+	pos, err = r.Seek(-100, 2)
+	if err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
+	}
+	if pos != st.Size-100 {
+		t.Fatalf("Expected %d, got %d instead", pos, st.Size-100)
+	}
+	if err = r.Close(); err != nil {
+		t.Fatal("Error:", err, bucketName, objectName)
 	}
 }
 
@@ -973,8 +1077,8 @@ func TestGetObjectReadSeekFunctional(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-	if n != 0 {
-		t.Fatalf("Error: number of bytes seeked back does not match, want 0, got %v\n", n)
+	if n != st.Size-offset {
+		t.Fatalf("Error: number of bytes seeked back does not match, want %d, got %v\n", st.Size-offset, n)
 	}
 
 	var buffer1 bytes.Buffer
@@ -983,7 +1087,7 @@ func TestGetObjectReadSeekFunctional(t *testing.T) {
 			t.Fatal("Error:", err)
 		}
 	}
-	if !bytes.Equal(buf, buffer1.Bytes()) {
+	if !bytes.Equal(buf[len(buf)-int(offset):], buffer1.Bytes()) {
 		t.Fatal("Error: Incorrect read bytes v/s original buffer.")
 	}
 
@@ -1458,13 +1562,23 @@ func TestBucketNotification(t *testing.T) {
 	bucketName := os.Getenv("NOTIFY_BUCKET")
 
 	topicArn := NewArn("aws", os.Getenv("NOTIFY_SERVICE"), os.Getenv("NOTIFY_REGION"), os.Getenv("NOTIFY_ACCOUNTID"), os.Getenv("NOTIFY_RESOURCE"))
+	queueArn := NewArn("aws", "dummy-service", "dummy-region", "dummy-accountid", "dummy-resource")
 
 	topicConfig := NewNotificationConfig(topicArn)
 	topicConfig.AddEvents(ObjectCreatedAll, ObjectRemovedAll)
 	topicConfig.AddFilterSuffix("jpg")
 
+	queueConfig := NewNotificationConfig(queueArn)
+	queueConfig.AddEvents(ObjectCreatedAll)
+	queueConfig.AddFilterPrefix("photos/")
+
 	bNotification := BucketNotification{}
 	bNotification.AddTopic(topicConfig)
+
+	// Add and remove a queue config
+	bNotification.AddQueue(queueConfig)
+	bNotification.RemoveQueueByArn(queueArn)
+
 	err = c.SetBucketNotification(bucketName, bNotification)
 	if err != nil {
 		t.Fatal("Error: ", err)
@@ -1483,7 +1597,7 @@ func TestBucketNotification(t *testing.T) {
 		t.Fatal("Error: cannot get the suffix")
 	}
 
-	err = c.DeleteBucketNotification(bucketName)
+	err = c.RemoveAllBucketNotification(bucketName)
 	if err != nil {
 		t.Fatal("Error: cannot delete bucket notification")
 	}
@@ -1539,57 +1653,61 @@ func TestFunctional(t *testing.T) {
 	file.Close()
 
 	// Verify if bucket exits and you have access.
-	err = c.BucketExists(bucketName)
+	var exists bool
+	exists, err = c.BucketExists(bucketName)
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
+	if !exists {
+		t.Fatal("Error: could not find ", bucketName)
+	}
 
 	// Asserting the default bucket policy.
-	policy, err := c.GetBucketPolicy(bucketName, "")
+	policyAccess, err := c.GetBucketPolicy(bucketName, "")
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-	if policy != "none" {
+	if policyAccess != "none" {
 		t.Fatalf("Default bucket policy incorrect")
 	}
 	// Set the bucket policy to 'public readonly'.
-	err = c.SetBucketPolicy(bucketName, "", BucketPolicyReadOnly)
+	err = c.SetBucketPolicy(bucketName, "", policy.BucketPolicyReadOnly)
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
 	// should return policy `readonly`.
-	policy, err = c.GetBucketPolicy(bucketName, "")
+	policyAccess, err = c.GetBucketPolicy(bucketName, "")
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-	if policy != "readonly" {
+	if policyAccess != "readonly" {
 		t.Fatalf("Expected bucket policy to be readonly")
 	}
 
 	// Make the bucket 'public writeonly'.
-	err = c.SetBucketPolicy(bucketName, "", BucketPolicyWriteOnly)
+	err = c.SetBucketPolicy(bucketName, "", policy.BucketPolicyWriteOnly)
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
 	// should return policy `writeonly`.
-	policy, err = c.GetBucketPolicy(bucketName, "")
+	policyAccess, err = c.GetBucketPolicy(bucketName, "")
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-	if policy != "writeonly" {
+	if policyAccess != "writeonly" {
 		t.Fatalf("Expected bucket policy to be writeonly")
 	}
 	// Make the bucket 'public read/write'.
-	err = c.SetBucketPolicy(bucketName, "", BucketPolicyReadWrite)
+	err = c.SetBucketPolicy(bucketName, "", policy.BucketPolicyReadWrite)
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
 	// should return policy `readwrite`.
-	policy, err = c.GetBucketPolicy(bucketName, "")
+	policyAccess, err = c.GetBucketPolicy(bucketName, "")
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-	if policy != "readwrite" {
+	if policyAccess != "readwrite" {
 		t.Fatalf("Expected bucket policy to be readwrite")
 	}
 	// List all buckets.

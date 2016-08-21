@@ -113,7 +113,7 @@ func getHashedPayload(req http.Request) string {
 	hashedPayload := req.Header.Get("X-Amz-Content-Sha256")
 	if hashedPayload == "" {
 		// Presign does not have a payload, use S3 recommended value.
-		hashedPayload = "UNSIGNED-PAYLOAD"
+		hashedPayload = unsignedPayload
 	}
 	return hashedPayload
 }

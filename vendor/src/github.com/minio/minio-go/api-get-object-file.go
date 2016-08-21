@@ -48,7 +48,7 @@ func (c Client) FGetObject(bucketName, objectName, filePath string) error {
 		}
 	}
 
-	// Extract top level direcotry.
+	// Extract top level directory.
 	objectDir, _ := filepath.Split(filePath)
 	if objectDir != "" {
 		// Create any missing top level directories.

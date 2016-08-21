@@ -28,6 +28,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/minio/minio-go/pkg/policy"
 )
 
 // Tests bucket re-create errors.
@@ -709,8 +711,8 @@ func TestGetObjectReadSeekFunctionalV2(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error:", err)
 	}
-	if n != 0 {
-		t.Fatalf("Error: number of bytes seeked back does not match, want 0, got %v\n", n)
+	if n != st.Size-offset {
+		t.Fatalf("Error: number of bytes seeked back does not match, want %d, got %v\n", st.Size-offset, n)
 	}
 
 	var buffer1 bytes.Buffer
@@ -719,7 +721,7 @@ func TestGetObjectReadSeekFunctionalV2(t *testing.T) {
 			t.Fatal("Error:", err)
 		}
 	}
-	if !bytes.Equal(buf, buffer1.Bytes()) {
+	if !bytes.Equal(buf[len(buf)-int(offset):], buffer1.Bytes()) {
 		t.Fatal("Error: Incorrect read bytes v/s original buffer.")
 	}
 
@@ -1067,13 +1069,17 @@ func TestFunctionalV2(t *testing.T) {
 	file.Close()
 
 	// Verify if bucket exits and you have access.
-	err = c.BucketExists(bucketName)
+	var exists bool
+	exists, err = c.BucketExists(bucketName)
 	if err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
+	if !exists {
+		t.Fatal("Error: could not find ", bucketName)
+	}
 
 	// Make the bucket 'public read/write'.
-	err = c.SetBucketPolicy(bucketName, "", BucketPolicyReadWrite)
+	err = c.SetBucketPolicy(bucketName, "", policy.BucketPolicyReadWrite)
 	if err != nil {
 		t.Fatal("Error:", err)
 	}

@@ -316,7 +316,7 @@ func TestProcessBucketLocationResponse(t *testing.T) {
 		}
 		if err == nil && testCase.shouldPass {
 			if !reflect.DeepEqual(testCase.expectedResult, actualResult) {
-				t.Errorf("Test %d: The expected BucketPolicy doesnt match the actual BucketPolicy", i+1)
+				t.Errorf("Test %d: The expected BucketPolicy doesn't match the actual BucketPolicy", i+1)
 			}
 		}
 	}

@@ -40,7 +40,7 @@ func main() {
 
 	// s3Client.TraceOn(os.Stderr)
 
-	err = s3Client.DeleteBucketNotification("my-bucketname")
+	err = s3Client.RemoveAllBucketNotification("my-bucketname")
 	if err != nil {
 		log.Fatalln(err)
 	}

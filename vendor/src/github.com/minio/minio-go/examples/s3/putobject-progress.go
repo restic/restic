@@ -21,8 +21,8 @@ package main
 import (
 	"log"
 
+	"github.com/cheggaaa/pb"
 	"github.com/minio/minio-go"
-	"github.com/minio/pb"
 )
 
 func main() {
