@@ -88,8 +88,11 @@ var parser = flags.NewParser(&globalOpts, flags.HelpFlag|flags.PassDoubleDash)
 // current windows cmd shell.
 func ClearLine() string {
 	if runtime.GOOS == "windows" {
-		// Ugly Workaround, write 79 Whitespaces and return
-		return "                                                                               \r"
+		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+		if err == nil {
+			return strings.Repeat(" ", w-1) + "\r"
+		}
+		return ""
 	}
 	return "\x1b[2K"
 }
