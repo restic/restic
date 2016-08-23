@@ -235,7 +235,10 @@ type Unpacker struct {
 	k       *crypto.Key
 }
 
-const preloadHeaderSize = 2048
+const (
+	preloadHeaderSize = 2048
+	maxHeaderSize     = 16 * 1024 * 1024
+)
 
 // NewUnpacker returns a pointer to Unpacker which can be used to read
 // individual Blobs from a pack.
@@ -264,6 +267,10 @@ func NewUnpacker(k *crypto.Key, ldr Loader) (*Unpacker, error) {
 	length := int(binary.LittleEndian.Uint32(buf[p : p+bs]))
 	buf = buf[:p]
 
+	if length > maxHeaderSize {
+		return nil, fmt.Errorf("header too large (%d bytes)", length)
+	}
+
 	// if the header is longer than the preloaded buffer, call the loader again.
 	if length > len(buf) {
 		buf = make([]byte, length)
@@ -271,7 +278,10 @@ func NewUnpacker(k *crypto.Key, ldr Loader) (*Unpacker, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Load at -%d failed: %v", len(buf), err)
 		}
-		buf = buf[:n]
+
+		if n != len(buf) {
+			return nil, fmt.Errorf("not enough header bytes read: wanted %v, got %v", len(buf), n)
+		}
 	}
 
 	buf = buf[len(buf)-length:]
