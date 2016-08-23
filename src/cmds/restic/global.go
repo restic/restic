@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -81,6 +82,20 @@ func restoreTerminal() {
 
 var globalOpts = GlobalOptions{stdout: os.Stdout, stderr: os.Stderr}
 var parser = flags.NewParser(&globalOpts, flags.HelpFlag|flags.PassDoubleDash)
+
+// ClearLine creates a platform dependent string to clear the current
+// line, so it can be overwritten. ANSI sequences are not supported on
+// current windows cmd shell.
+func ClearLine() string {
+	if runtime.GOOS == "windows" {
+		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+		if err == nil {
+			return strings.Repeat(" ", w-1) + "\r"
+		}
+		return ""
+	}
+	return "\x1b[2K"
+}
 
 // Printf writes the message to the configured stdout stream.
 func (o GlobalOptions) Printf(format string, args ...interface{}) {
