@@ -228,22 +228,13 @@ func (p *Packer) String() string {
 	return fmt.Sprintf("<Packer %d blobs, %d bytes>", len(p.blobs), p.bytes)
 }
 
-// Unpacker is used to read individual blobs from a pack.
-type Unpacker struct {
-	rd      io.ReadSeeker
-	Entries []Blob
-	k       *crypto.Key
-}
-
 const (
 	preloadHeaderSize = 2048
 	maxHeaderSize     = 16 * 1024 * 1024
 )
 
-// NewUnpacker returns a pointer to Unpacker which can be used to read
-// individual Blobs from a pack.
-func NewUnpacker(k *crypto.Key, ldr Loader) (*Unpacker, error) {
-	var err error
+// List returns the list of entries found in a pack file.
+func List(k *crypto.Key, ldr Loader) (entries []Blob, err error) {
 
 	// read the last 2048 byte, this will mostly be enough for the header, so
 	// we do not need another round trip.
@@ -294,8 +285,6 @@ func NewUnpacker(k *crypto.Key, ldr Loader) (*Unpacker, error) {
 
 	rd := bytes.NewReader(hdr)
 
-	var entries []Blob
-
 	pos := uint(0)
 	for {
 		e := headerEntry{}
@@ -328,11 +317,5 @@ func NewUnpacker(k *crypto.Key, ldr Loader) (*Unpacker, error) {
 		pos += uint(e.Length)
 	}
 
-	up := &Unpacker{
-		rd:      rd,
-		k:       k,
-		Entries: entries,
-	}
-
-	return up, nil
+	return entries, nil
 }

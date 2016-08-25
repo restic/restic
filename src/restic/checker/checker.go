@@ -676,13 +676,13 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 		return fmt.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 	}
 
-	unpacker, err := pack.NewUnpacker(r.Key(), pack.BufferLoader(buf))
+	blobs, err := pack.List(r.Key(), pack.BufferLoader(buf))
 	if err != nil {
 		return err
 	}
 
 	var errs []error
-	for i, blob := range unpacker.Entries {
+	for i, blob := range blobs {
 		debug.Log("Checker.checkPack", "  check blob %d: %v", i, blob.ID.Str())
 
 		plainBuf := make([]byte, blob.Length)

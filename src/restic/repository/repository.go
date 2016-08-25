@@ -556,12 +556,12 @@ func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, int64, error) {
 
 	ldr := pack.BackendLoader{Backend: r.Backend(), Handle: h}
 
-	unpacker, err := pack.NewUnpacker(r.Key(), ldr)
+	blobs, err := pack.List(r.Key(), ldr)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	return unpacker.Entries, blobInfo.Size, nil
+	return blobs, blobInfo.Size, nil
 }
 
 // Delete calls backend.Delete() if implemented, and returns an error

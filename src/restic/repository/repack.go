@@ -32,14 +32,14 @@ func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err 
 
 		debug.Log("Repack", "pack %v loaded (%d bytes)", packID.Str(), len(buf))
 
-		unpck, err := pack.NewUnpacker(repo.Key(), pack.BufferLoader(buf))
+		blobs, err := pack.List(repo.Key(), pack.BufferLoader(buf))
 		if err != nil {
 			return err
 		}
 
-		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), len(unpck.Entries))
+		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), len(blobs))
 		var plaintext []byte
-		for _, entry := range unpck.Entries {
+		for _, entry := range blobs {
 			h := pack.Handle{ID: entry.ID, Type: entry.Type}
 			if !keepBlobs.Has(h) {
 				continue

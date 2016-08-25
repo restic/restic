@@ -63,13 +63,13 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, ldr pack.Loader, packS
 	Equals(t, uint(written), packSize)
 
 	// read and parse it again
-	np, err := pack.NewUnpacker(k, ldr)
+	entries, err := pack.List(k, ldr)
 	OK(t, err)
-	Equals(t, len(np.Entries), len(bufs))
+	Equals(t, len(entries), len(bufs))
 
 	var buf []byte
 	for i, b := range bufs {
-		e := np.Entries[i]
+		e := entries[i]
 		Equals(t, b.id, e.ID)
 
 		if len(buf) < int(e.Length) {
