@@ -169,6 +169,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	for h, blob := range idx.Blobs {
 		if !usedBlobs.Has(h) {
 			rewritePacks.Merge(blob.Packs)
+			continue
 		}
 
 		if blobCount[h] > 1 {
@@ -176,11 +177,38 @@ func (cmd CmdPrune) Execute(args []string) error {
 		}
 	}
 
-	cmd.global.Verbosef("will rewrite %d packs\n", len(rewritePacks))
+	// find packs that are unneeded
+	removePacks := backend.NewIDSet()
+nextPack:
+	for packID, p := range idx.Packs {
+		for _, blob := range p.Entries {
+			h := pack.Handle{ID: blob.ID, Type: blob.Type}
+			if usedBlobs.Has(h) {
+				continue nextPack
+			}
+		}
+
+		removePacks.Insert(packID)
+
+		if !rewritePacks.Has(packID) {
+			return fmt.Errorf("pack %v is unneeded, but not contained in rewritePacks", packID.Str())
+		}
+
+		rewritePacks.Delete(packID)
+	}
+
+	cmd.global.Verbosef("will delete %d packs and rewrite %d packs\n", len(removePacks), len(rewritePacks))
 
 	err = repository.Repack(repo, rewritePacks, usedBlobs)
 	if err != nil {
 		return err
+	}
+
+	for packID := range removePacks {
+		err = repo.Backend().Remove(backend.Data, packID.String())
+		if err != nil {
+			cmd.global.Warnf("unable to remove file %v from the repository\n", packID.Str())
+		}
 	}
 
 	cmd.global.Verbosef("creating new index\n")
