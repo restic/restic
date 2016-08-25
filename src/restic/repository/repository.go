@@ -554,9 +554,7 @@ func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, int64, error) {
 		return nil, 0, err
 	}
 
-	ldr := pack.BackendLoader{Backend: r.Backend(), Handle: h}
-
-	blobs, err := pack.List(r.Key(), ldr)
+	blobs, err := pack.List(r.Key(), backend.ReaderAt(r.Backend(), h), blobInfo.Size)
 	if err != nil {
 		return nil, 0, err
 	}

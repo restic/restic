@@ -47,7 +47,7 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	return bufs, packData, p.Size()
 }
 
-func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, ldr pack.Loader, packSize uint) {
+func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSize uint) {
 	written := 0
 	for _, buf := range bufs {
 		written += len(buf.data)
@@ -63,7 +63,7 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, ldr pack.Loader, packS
 	Equals(t, uint(written), packSize)
 
 	// read and parse it again
-	entries, err := pack.List(k, ldr)
+	entries, err := pack.List(k, rd, int64(packSize))
 	OK(t, err)
 	Equals(t, len(entries), len(bufs))
 
@@ -76,7 +76,7 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, ldr pack.Loader, packS
 			buf = make([]byte, int(e.Length))
 		}
 		buf = buf[:int(e.Length)]
-		n, err := ldr.Load(buf, int64(e.Offset))
+		n, err := rd.ReadAt(buf, int64(e.Offset))
 		OK(t, err)
 		buf = buf[:n]
 
@@ -91,7 +91,7 @@ func TestCreatePack(t *testing.T) {
 
 	bufs, packData, packSize := newPack(t, k, testLens)
 	Equals(t, uint(len(packData)), packSize)
-	verifyBlobs(t, bufs, k, pack.BufferLoader(packData), packSize)
+	verifyBlobs(t, bufs, k, bytes.NewReader(packData), packSize)
 }
 
 var blobTypeJSON = []struct {
@@ -128,8 +128,7 @@ func TestUnpackReadSeeker(t *testing.T) {
 
 	handle := backend.Handle{Type: backend.Data, Name: id.String()}
 	OK(t, b.Save(handle, packData))
-	ldr := pack.BackendLoader{Backend: b, Handle: handle}
-	verifyBlobs(t, bufs, k, ldr, packSize)
+	verifyBlobs(t, bufs, k, backend.ReaderAt(b, handle), packSize)
 }
 
 func TestShortPack(t *testing.T) {
@@ -142,6 +141,5 @@ func TestShortPack(t *testing.T) {
 
 	handle := backend.Handle{Type: backend.Data, Name: id.String()}
 	OK(t, b.Save(handle, packData))
-	ldr := pack.BackendLoader{Backend: b, Handle: handle}
-	verifyBlobs(t, bufs, k, ldr, packSize)
+	verifyBlobs(t, bufs, k, backend.ReaderAt(b, handle), packSize)
 }

@@ -126,14 +126,18 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 		name := job.Data.(string)
 
 		h := backend.Handle{Type: backend.Data, Name: name}
-		ldr := pack.BackendLoader{Backend: repo.Backend(), Handle: h}
 
-		unpacker, err := pack.NewUnpacker(repo.Key(), ldr)
+		blobInfo, err := repo.Backend().Stat(h)
 		if err != nil {
 			return nil, err
 		}
 
-		return unpacker.Entries, nil
+		blobs, err := pack.List(repo.Key(), backend.ReaderAt(repo.Backend(), h), blobInfo.Size)
+		if err != nil {
+			return nil, err
+		}
+
+		return blobs, nil
 	}
 
 	jobCh := make(chan worker.Job)

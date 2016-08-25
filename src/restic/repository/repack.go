@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"io"
 	"restic/backend"
 	"restic/crypto"
@@ -32,7 +33,7 @@ func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err 
 
 		debug.Log("Repack", "pack %v loaded (%d bytes)", packID.Str(), len(buf))
 
-		blobs, err := pack.List(repo.Key(), pack.BufferLoader(buf))
+		blobs, err := pack.List(repo.Key(), bytes.NewReader(buf), int64(len(buf)))
 		if err != nil {
 			return err
 		}

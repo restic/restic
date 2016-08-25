@@ -228,67 +228,73 @@ func (p *Packer) String() string {
 	return fmt.Sprintf("<Packer %d blobs, %d bytes>", len(p.blobs), p.bytes)
 }
 
-const (
-	preloadHeaderSize = 2048
-	maxHeaderSize     = 16 * 1024 * 1024
-)
+// readHeaderLength returns the header length read from the end of the file
+// encoded in little endian.
+func readHeaderLength(rd io.ReaderAt, size int64) (uint32, error) {
+	off := size - int64(binary.Size(uint32(0)))
+
+	buf := make([]byte, binary.Size(uint32(0)))
+	n, err := rd.ReadAt(buf, off)
+	if err != nil {
+		return 0, err
+	}
+
+	if n != len(buf) {
+		return 0, errors.New("not enough bytes read")
+	}
+
+	return binary.LittleEndian.Uint32(buf), nil
+}
+
+const maxHeaderSize = 16 * 1024 * 1024
+
+// readHeader reads the header at the end of rd. size is the length of the
+// whole data accessible in rd.
+func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
+	hl, err := readHeaderLength(rd, size)
+	if err != nil {
+		return nil, err
+	}
+
+	if int64(hl) > size-int64(binary.Size(hl)) {
+		return nil, errors.New("header is larger than file")
+	}
+
+	if int64(hl) > maxHeaderSize {
+		return nil, errors.New("header is larger than maxHeaderSize")
+	}
+
+	buf := make([]byte, int(hl))
+	n, err := rd.ReadAt(buf, size-int64(hl)-int64(binary.Size(hl)))
+	if err != nil {
+		return nil, err
+	}
+
+	if n != len(buf) {
+		return nil, errors.New("not enough bytes read")
+	}
+
+	return buf, nil
+}
 
 // List returns the list of entries found in a pack file.
-func List(k *crypto.Key, ldr Loader) (entries []Blob, err error) {
-
-	// read the last 2048 byte, this will mostly be enough for the header, so
-	// we do not need another round trip.
-	buf := make([]byte, preloadHeaderSize)
-	n, err := ldr.Load(buf, -int64(len(buf)))
-
-	if err == io.ErrUnexpectedEOF {
-		err = nil
-		buf = buf[:n]
-	}
-
+func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []Blob, err error) {
+	buf, err := readHeader(rd, size)
 	if err != nil {
-		return nil, fmt.Errorf("Load at -%d failed: %v", len(buf), err)
-	}
-	buf = buf[:n]
-
-	bs := binary.Size(uint32(0))
-	p := len(buf) - bs
-
-	// read the length from the end of the buffer
-	length := int(binary.LittleEndian.Uint32(buf[p : p+bs]))
-	buf = buf[:p]
-
-	if length > maxHeaderSize {
-		return nil, fmt.Errorf("header too large (%d bytes)", length)
+		return nil, err
 	}
 
-	// if the header is longer than the preloaded buffer, call the loader again.
-	if length > len(buf) {
-		buf = make([]byte, length)
-		n, err := ldr.Load(buf, -int64(len(buf)+bs))
-		if err != nil {
-			return nil, fmt.Errorf("Load at -%d failed: %v", len(buf), err)
-		}
-
-		if n != len(buf) {
-			return nil, fmt.Errorf("not enough header bytes read: wanted %v, got %v", len(buf), n)
-		}
-	}
-
-	buf = buf[len(buf)-length:]
-
-	// read header
 	hdr, err := crypto.Decrypt(k, buf, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	rd := bytes.NewReader(hdr)
+	hdrRd := bytes.NewReader(hdr)
 
 	pos := uint(0)
 	for {
 		e := headerEntry{}
-		err = binary.Read(rd, binary.LittleEndian, &e)
+		err = binary.Read(hdrRd, binary.LittleEndian, &e)
 		if err == io.EOF {
 			break
 		}
