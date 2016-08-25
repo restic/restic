@@ -24,6 +24,7 @@ import (
 
 var version = "compiled manually"
 var compiledAt = "unknown time"
+var isTerminal = terminal.IsTerminal(int(os.Stdout.Fd()))
 
 // GlobalOptions holds all those options that can be set for every command.
 type GlobalOptions struct {
@@ -60,11 +61,11 @@ func checkErrno(err error) error {
 // restoreTerminal installs a cleanup handler that restores the previous
 // terminal state on exit.
 func restoreTerminal() {
-	fd := int(os.Stdout.Fd())
-	if !terminal.IsTerminal(fd) {
+	if !isTerminal {
 		return
 	}
 
+	fd := int(os.Stdout.Fd())
 	state, err := terminal.GetState(fd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to get terminal state: %v\n", err)
@@ -116,17 +117,38 @@ func (o GlobalOptions) Verbosef(format string, args ...interface{}) {
 }
 
 // ShowProgress returns true iff the progress status should be written, i.e.
-// the quiet flag is not set and the output is a terminal.
+// the quiet flag is not set.
 func (o GlobalOptions) ShowProgress() bool {
 	if o.Quiet {
 		return false
 	}
 
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		return false
+	return true
+}
+
+// PrintProgress wraps fmt.Printf to handle the difference in writing progress
+// information to terminals and non-terminal stdout
+func PrintProgress(format string, args ...interface{}) {
+	var (
+		message         string
+		carriageControl string
+	)
+	message = fmt.Sprintf(format, args...)
+
+	if !(strings.HasSuffix(message, "\r") || strings.HasSuffix(message, "\n")) {
+		if isTerminal {
+			carriageControl = "\r"
+		} else {
+			carriageControl = "\n"
+		}
+		message = fmt.Sprintf("%s%s", message, carriageControl)
 	}
 
-	return true
+	if isTerminal {
+		message = fmt.Sprintf("%s%s", ClearLine(), message)
+	}
+
+	fmt.Print(message)
 }
 
 // Warnf writes the message to the configured stderr stream.
@@ -183,7 +205,7 @@ func (o GlobalOptions) ReadPassword(prompt string) string {
 		err      error
 	)
 
-	if terminal.IsTerminal(int(os.Stdin.Fd())) {
+	if isTerminal {
 		password, err = readPasswordTerminal(os.Stdin, os.Stderr, prompt)
 	} else {
 		password, err = readPassword(os.Stdin)

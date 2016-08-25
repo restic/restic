@@ -2,11 +2,16 @@ package restic
 
 import (
 	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
+	"os"
 	"sync"
 	"time"
 )
 
 const minTickerTime = time.Second / 60
+
+var isTerminal = terminal.IsTerminal(int(os.Stdout.Fd()))
+var forceUpdateProgress = make(chan bool)
 
 type Progress struct {
 	OnStart  func()
@@ -42,7 +47,14 @@ type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 // called when new data arrives or at least every d interval. The function
 // OnDone is called when Done() is called. Both functions are called
 // synchronously and can use shared state.
-func NewProgress(d time.Duration) *Progress {
+func NewProgress() *Progress {
+	var d time.Duration
+	if !isTerminal {
+		// TODO: make the duration for non-terminal progress (user) configurable
+		d = time.Duration(10) * time.Second
+	} else {
+		d = time.Second
+	}
 	return &Progress{d: d}
 }
 
@@ -96,7 +108,7 @@ func (p *Progress) Report(s Stat) {
 	p.cur.Add(s)
 	cur := p.cur
 	needUpdate := false
-	if time.Since(p.lastUpdate) > minTickerTime {
+	if isTerminal && time.Since(p.lastUpdate) > minTickerTime {
 		p.lastUpdate = time.Now()
 		needUpdate = true
 	}
@@ -123,13 +135,19 @@ func (p *Progress) reporter() {
 		return
 	}
 
+	updateProgress := func() {
+		p.curM.Lock()
+		cur := p.cur
+		p.curM.Unlock()
+		p.updateProgress(cur, true)
+	}
+
 	for {
 		select {
 		case <-p.c.C:
-			p.curM.Lock()
-			cur := p.cur
-			p.curM.Unlock()
-			p.updateProgress(cur, true)
+			updateProgress()
+		case <-forceUpdateProgress:
+			updateProgress()
 		case <-p.cancel:
 			p.c.Stop()
 			return

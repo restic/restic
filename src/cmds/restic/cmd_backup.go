@@ -112,12 +112,12 @@ func (cmd CmdBackup) newScanProgress() *restic.Progress {
 		return nil
 	}
 
-	p := restic.NewProgress(time.Second)
+	p := restic.NewProgress()
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("%s[%s] %d directories, %d files, %s\r", ClearLine(), formatDuration(d), s.Dirs, s.Files, formatBytes(s.Bytes))
+		PrintProgress("[%s] %d directories, %d files, %s", formatDuration(d), s.Dirs, s.Files, formatBytes(s.Bytes))
 	}
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("%sscanned %d directories, %d files in %s\n", ClearLine(), s.Dirs, s.Files, formatDuration(d))
+		PrintProgress("scanned %d directories, %d files in %s\n", s.Dirs, s.Files, formatDuration(d))
 	}
 
 	return p
@@ -128,7 +128,7 @@ func (cmd CmdBackup) newArchiveProgress(todo restic.Stat) *restic.Progress {
 		return nil
 	}
 
-	archiveProgress := restic.NewProgress(time.Second)
+	archiveProgress := restic.NewProgress()
 
 	var bps, eta uint64
 	itemsTodo := todo.Files + todo.Dirs
@@ -167,7 +167,7 @@ func (cmd CmdBackup) newArchiveProgress(todo restic.Stat) *restic.Progress {
 			}
 		}
 
-		fmt.Printf("%s%s%s\r", ClearLine(), status1, status2)
+		PrintProgress("%s%s", status1, status2)
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
@@ -182,7 +182,7 @@ func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
 		return nil
 	}
 
-	archiveProgress := restic.NewProgress(time.Second)
+	archiveProgress := restic.NewProgress()
 
 	var bps uint64
 
@@ -208,7 +208,7 @@ func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
 			}
 		}
 
-		fmt.Printf("%s%s\r", ClearLine(), status1)
+		PrintProgress("%s%s", status1)
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
