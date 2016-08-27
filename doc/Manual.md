@@ -89,6 +89,14 @@ them, e.g. for the `backup` command:
           -f, --force    Force re-reading the target. Overrides the "parent" flag
           -e, --exclude= Exclude a pattern (can be specified multiple times)
 
+Subcommand that support showing progress information such as `backup`, `check` and `prune` will do so unless
+the quiet flag `-q` or `--quiet` is set. When running from a non-interactive console progress reporting will
+be limited to once every 10 seconds to not fill your logs.
+
+Additionally on Unix systems if `restic` receives a SIGUSR signal the current progress will written to the
+standard output so you can check up on the status at will.
+
+
 # Initialize a repository
 
 First, we need to create a "repository". This is the place where your backups

@@ -38,7 +38,7 @@ func (cmd CmdCheck) newReadProgress(todo restic.Stat) *restic.Progress {
 		return nil
 	}
 
-	readProgress := restic.NewProgress(time.Second)
+	readProgress := restic.NewProgress()
 
 	readProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 		status := fmt.Sprintf("[%s] %s  %d / %d items",
@@ -54,7 +54,7 @@ func (cmd CmdCheck) newReadProgress(todo restic.Stat) *restic.Progress {
 			}
 		}
 
-		fmt.Printf("%s%s\r", ClearLine(), status)
+		PrintProgress("%s", status)
 	}
 
 	readProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
