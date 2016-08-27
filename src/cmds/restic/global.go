@@ -24,7 +24,6 @@ import (
 
 var version = "compiled manually"
 var compiledAt = "unknown time"
-var isTerminal = terminal.IsTerminal(int(os.Stdout.Fd()))
 
 // GlobalOptions holds all those options that can be set for every command.
 type GlobalOptions struct {
@@ -58,10 +57,18 @@ func checkErrno(err error) error {
 	return err
 }
 
+func stdinIsTerminal() bool {
+	return terminal.IsTerminal(int(os.Stdin.Fd()))
+}
+
+func stdoutIsTerminal() bool {
+	return terminal.IsTerminal(int(os.Stdout.Fd()))
+}
+
 // restoreTerminal installs a cleanup handler that restores the previous
 // terminal state on exit.
 func restoreTerminal() {
-	if !isTerminal {
+	if !stdoutIsTerminal() {
 		return
 	}
 
@@ -136,7 +143,7 @@ func PrintProgress(format string, args ...interface{}) {
 	message = fmt.Sprintf(format, args...)
 
 	if !(strings.HasSuffix(message, "\r") || strings.HasSuffix(message, "\n")) {
-		if isTerminal {
+		if stdoutIsTerminal() {
 			carriageControl = "\r"
 		} else {
 			carriageControl = "\n"
@@ -144,7 +151,7 @@ func PrintProgress(format string, args ...interface{}) {
 		message = fmt.Sprintf("%s%s", message, carriageControl)
 	}
 
-	if isTerminal {
+	if stdoutIsTerminal() {
 		message = fmt.Sprintf("%s%s", ClearLine(), message)
 	}
 
@@ -205,7 +212,7 @@ func (o GlobalOptions) ReadPassword(prompt string) string {
 		err      error
 	)
 
-	if isTerminal {
+	if stdinIsTerminal() {
 		password, err = readPasswordTerminal(os.Stdin, os.Stderr, prompt)
 	} else {
 		password, err = readPassword(os.Stdin)
