@@ -100,7 +100,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 
 	cmd.global.Verbosef("building new index for repo\n")
 
-	bar := newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "files")
+	bar := newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "packs")
 	idx, err := index.New(repo, bar)
 	if err != nil {
 		return err
@@ -213,10 +213,11 @@ nextPack:
 
 	cmd.global.Verbosef("creating new index\n")
 
+	stats.packs = 0
 	for _ = range repo.List(backend.Data, done) {
 		stats.packs++
 	}
-	bar = newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "files")
+	bar = newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "packs")
 	idx, err = index.New(repo, bar)
 	if err != nil {
 		return err
