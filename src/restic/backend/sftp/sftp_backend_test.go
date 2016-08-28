@@ -50,13 +50,15 @@ func init() {
 		return
 	}
 
+	args := []string{"-e"}
+
 	test.CreateFn = func() (backend.Backend, error) {
 		err := createTempdir()
 		if err != nil {
 			return nil, err
 		}
 
-		return sftp.Create(tempBackendDir, sftpserver)
+		return sftp.Create(tempBackendDir, sftpserver, args...)
 	}
 
 	test.OpenFn = func() (backend.Backend, error) {
@@ -64,7 +66,7 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return sftp.Open(tempBackendDir, sftpserver)
+		return sftp.Open(tempBackendDir, sftpserver, args...)
 	}
 
 	test.CleanupFn = func() error {
