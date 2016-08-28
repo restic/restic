@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -44,22 +43,22 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	// get stdin and stdout
 	wr, err := cmd.StdinPipe()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	rd, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// start the process
 	if err := cmd.Start(); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// open the SFTP session
 	client, err := sftp.NewClientPipe(rd, wr)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return &SFTP{c: client, cmd: cmd}, nil
@@ -329,6 +328,10 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 	}
 
 	filename, tmpfile, err := r.tempFile()
+	if err != nil {
+		return err
+	}
+
 	debug.Log("sftp.Save", "save %v (%d bytes) to %v", h, len(p), filename)
 
 	n, err := tmpfile.Write(p)

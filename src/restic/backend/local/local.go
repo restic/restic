@@ -176,6 +176,9 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 
 	tmpfile, err := writeToTempfile(filepath.Join(b.p, backend.Paths.Temp), p)
 	debug.Log("local.Save", "saved %v (%d bytes) to %v", h, len(p), tmpfile)
+	if err != nil {
+		return err
+	}
 
 	filename := filename(b.p, h.Type, h.Name)
 
