@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -84,37 +85,61 @@ func (w delayedWriter) Close() error {
 	return nil
 }
 
+// netPipe provides a pair of io.ReadWriteClosers connected to each other.
+// The functions is identical to os.Pipe with the exception that netPipe
+// provides the Read/Close guarentees that os.File derrived pipes do not.
+func netPipe(t testing.TB) (io.ReadWriteCloser, io.ReadWriteCloser) {
+	type result struct {
+		net.Conn
+		error
+	}
+
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ch := make(chan result, 1)
+	go func() {
+		conn, err := l.Accept()
+		ch <- result{conn, err}
+		err = l.Close()
+		if err != nil {
+			t.Error(err)
+		}
+	}()
+	c1, err := net.Dial("tcp", l.Addr().String())
+	if err != nil {
+		l.Close() // might cause another in the listening goroutine, but too bad
+		t.Fatal(err)
+	}
+	r := <-ch
+	if r.error != nil {
+		t.Fatal(err)
+	}
+	return c1, r.Conn
+}
+
 func testClientGoSvr(t testing.TB, readonly bool, delay time.Duration) (*Client, *exec.Cmd) {
-	txPipeRd, txPipeWr, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	rxPipeRd, rxPipeWr, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
+	c1, c2 := netPipe(t)
 
 	options := []ServerOption{WithDebug(os.Stderr)}
 	if readonly {
 		options = append(options, ReadOnly())
 	}
 
-	server, err := NewServer(
-		txPipeRd,
-		rxPipeWr,
-		options...,
-	)
+	server, err := NewServer(c1, options...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	go server.Serve()
 
-	var ctx io.WriteCloser = txPipeWr
+	var ctx io.WriteCloser = c2
 	if delay > NO_DELAY {
 		ctx = newDelayedWriter(ctx, delay)
 	}
 
-	client, err := NewClientPipe(rxPipeRd, ctx)
+	client, err := NewClientPipe(c2, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -462,6 +487,66 @@ func TestClientFileStat(t *testing.T) {
 
 	if !sameFile(want, got) {
 		t.Fatalf("Lstat(%q): want %#v, got %#v", f.Name(), want, got)
+	}
+}
+
+func TestClientStatLink(t *testing.T) {
+	sftp, cmd := testClient(t, READONLY, NO_DELAY)
+	defer cmd.Wait()
+	defer sftp.Close()
+
+	f, err := ioutil.TempFile("", "sftptest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(f.Name())
+
+	realName := f.Name()
+	linkName := f.Name() + ".softlink"
+
+	// create a symlink that points at sftptest
+	if err := os.Symlink(realName, linkName); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(linkName)
+
+	// compare Lstat of links
+	wantLstat, err := os.Lstat(linkName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantStat, err := os.Stat(linkName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	gotLstat, err := sftp.Lstat(linkName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotStat, err := sftp.Stat(linkName)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// check that stat is not lstat from os package
+	if sameFile(wantLstat, wantStat) {
+		t.Fatalf("Lstat / Stat(%q): both %#v %#v", f.Name(), wantLstat, wantStat)
+	}
+
+	// compare Lstat of links
+	if !sameFile(wantLstat, gotLstat) {
+		t.Fatalf("Lstat(%q): want %#v, got %#v", f.Name(), wantLstat, gotLstat)
+	}
+
+	// compare Stat of links
+	if !sameFile(wantStat, gotStat) {
+		t.Fatalf("Stat(%q): want %#v, got %#v", f.Name(), wantStat, gotStat)
+	}
+
+	// check that stat is not lstat
+	if sameFile(gotLstat, gotStat) {
+		t.Fatalf("Lstat / Stat(%q): both %#v %#v", f.Name(), gotLstat, gotStat)
 	}
 }
 
@@ -1075,10 +1160,6 @@ func TestClientWrite(t *testing.T) {
 }
 
 // taken from github.com/kr/fs/walk_test.go
-
-type PathTest struct {
-	path, result string
-}
 
 type Node struct {
 	name    string

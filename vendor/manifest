@@ -40,8 +40,8 @@
 		{
 			"importpath": "github.com/pkg/sftp",
 			"repository": "https://github.com/pkg/sftp",
-			"revision": "e84cc8c755ca39b7b64f510fe1fffc1b51f210a5",
-			"branch": "HEAD"
+			"revision": "a71e8f580e3b622ebff585309160b1cc549ef4d2",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/restic/chunker",

@@ -118,11 +118,20 @@ func main() {
 			}
 		}(requests)
 
+		serverOptions := []sftp.ServerOption{
+			sftp.WithDebug(debugStream),
+		}
+
+		if readOnly {
+			serverOptions = append(serverOptions, sftp.ReadOnly())
+			fmt.Fprintf(debugStream, "Read-only server\n")
+		} else {
+			fmt.Fprintf(debugStream, "Read write server\n")
+		}
+
 		server, err := sftp.NewServer(
 			channel,
-			channel,
-			sftp.WithDebug(debugStream),
-			sftp.ReadOnly(),
+			serverOptions...,
 		)
 		if err != nil {
 			log.Fatal(err)

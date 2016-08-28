@@ -1,16 +1,20 @@
 package sftp
 
 import (
+	"bytes"
 	"encoding"
-	"errors"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
+
+	"github.com/pkg/errors"
 )
 
 var (
-	errShortPacket = errors.New("packet too short")
+	errShortPacket           = errors.New("packet too short")
+	errUnknownExtendedPacket = errors.New("unknown extended packet")
 )
 
 const (
@@ -114,7 +118,7 @@ func unmarshalStringSafe(b []byte) (string, []byte, error) {
 func sendPacket(w io.Writer, m encoding.BinaryMarshaler) error {
 	bb, err := m.MarshalBinary()
 	if err != nil {
-		return fmt.Errorf("marshal2(%#v): binary marshaller failed", err)
+		return errors.Errorf("binary marshaller failed: %v", err)
 	}
 	if debugDumpTxPacketBytes {
 		debug("send packet: %s %d bytes %x", fxp(bb[0]), len(bb), bb[1:])
@@ -125,17 +129,13 @@ func sendPacket(w io.Writer, m encoding.BinaryMarshaler) error {
 	hdr := []byte{byte(l >> 24), byte(l >> 16), byte(l >> 8), byte(l)}
 	_, err = w.Write(hdr)
 	if err != nil {
-		return err
+		return errors.Errorf("failed to send packet header: %v", err)
 	}
 	_, err = w.Write(bb)
-	return err
-}
-
-func (svr *Server) sendPacket(m encoding.BinaryMarshaler) error {
-	// any responder can call sendPacket(); actual socket access must be serialized
-	svr.outMutex.Lock()
-	defer svr.outMutex.Unlock()
-	return sendPacket(svr.out, m)
+	if err != nil {
+		return errors.Errorf("failed to send packet body: %v", err)
+	}
+	return nil
 }
 
 func recvPacket(r io.Reader) (uint8, []byte, error) {
@@ -259,10 +259,7 @@ func unmarshalIDString(b []byte, id *uint32, str *string) error {
 		return err
 	}
 	*str, b, err = unmarshalStringSafe(b)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 type sshFxpReaddirPacket struct {
@@ -318,7 +315,7 @@ type sshFxpStatPacket struct {
 func (p sshFxpStatPacket) id() uint32 { return p.ID }
 
 func (p sshFxpStatPacket) MarshalBinary() ([]byte, error) {
-	return marshalIDString(ssh_FXP_LSTAT, p.ID, p.Path)
+	return marshalIDString(ssh_FXP_STAT, p.ID, p.Path)
 }
 
 func (p *sshFxpStatPacket) UnmarshalBinary(b []byte) error {
@@ -837,4 +834,68 @@ func (p *StatVFS) TotalSpace() uint64 {
 // FreeSpace calculates the amount of free space in a filesystem.
 func (p *StatVFS) FreeSpace() uint64 {
 	return p.Frsize * p.Bfree
+}
+
+// Convert to ssh_FXP_EXTENDED_REPLY packet binary format
+func (p *StatVFS) MarshalBinary() ([]byte, error) {
+	var buf bytes.Buffer
+	buf.Write([]byte{ssh_FXP_EXTENDED_REPLY})
+	err := binary.Write(&buf, binary.BigEndian, p)
+	return buf.Bytes(), err
+}
+
+type sshFxpExtendedPacket struct {
+	ID              uint32
+	ExtendedRequest string
+	SpecificPacket  interface {
+		serverRespondablePacket
+		readonly() bool
+	}
+}
+
+func (p sshFxpExtendedPacket) id() uint32     { return p.ID }
+func (p sshFxpExtendedPacket) readonly() bool { return p.SpecificPacket.readonly() }
+
+func (p sshFxpExtendedPacket) respond(svr *Server) error {
+	return p.SpecificPacket.respond(svr)
+}
+
+func (p *sshFxpExtendedPacket) UnmarshalBinary(b []byte) error {
+	var err error
+	bOrig := b
+	if p.ID, b, err = unmarshalUint32Safe(b); err != nil {
+		return err
+	} else if p.ExtendedRequest, b, err = unmarshalStringSafe(b); err != nil {
+		return err
+	}
+
+	// specific unmarshalling
+	switch p.ExtendedRequest {
+	case "statvfs@openssh.com":
+		p.SpecificPacket = &sshFxpExtendedPacketStatVFS{}
+	default:
+		return errUnknownExtendedPacket
+	}
+
+	return p.SpecificPacket.UnmarshalBinary(bOrig)
+}
+
+type sshFxpExtendedPacketStatVFS struct {
+	ID              uint32
+	ExtendedRequest string
+	Path            string
+}
+
+func (p sshFxpExtendedPacketStatVFS) id() uint32     { return p.ID }
+func (p sshFxpExtendedPacketStatVFS) readonly() bool { return true }
+func (p *sshFxpExtendedPacketStatVFS) UnmarshalBinary(b []byte) error {
+	var err error
+	if p.ID, b, err = unmarshalUint32Safe(b); err != nil {
+		return err
+	} else if p.ExtendedRequest, b, err = unmarshalStringSafe(b); err != nil {
+		return err
+	} else if p.Path, b, err = unmarshalStringSafe(b); err != nil {
+		return err
+	}
+	return nil
 }
