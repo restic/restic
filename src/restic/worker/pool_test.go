@@ -3,7 +3,6 @@ package worker_test
 import (
 	"errors"
 	"testing"
-	"time"
 
 	"restic/worker"
 )
@@ -87,62 +86,5 @@ func TestPoolErrors(t *testing.T) {
 		if m != n*n {
 			t.Errorf("wrong value for job %d returned: want %d, got %d", n, n*n, m)
 		}
-	}
-}
-
-var errCancelled = errors.New("cancelled")
-
-type Job struct {
-	suc chan struct{}
-}
-
-func TestPoolCancel(t *testing.T) {
-	barrier := make(chan struct{})
-
-	sendTime := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
-		j := job.Data.(Job)
-
-		<-barrier
-
-		select {
-		case j.suc <- struct{}{}:
-			return time.Now(), nil
-		case <-done:
-			return nil, errCancelled
-		}
-	}
-
-	jobCh, resCh, p := newBufferedPool(20, concurrency, sendTime)
-
-	suc := make(chan struct{})
-	for i := 0; i < 20; i++ {
-		jobCh <- worker.Job{Data: Job{suc: suc}}
-	}
-
-	close(barrier)
-	for i := 0; i < 10; i++ {
-		<-suc
-	}
-	p.Cancel()
-	p.Wait()
-
-	foundResult := false
-	foundCancelError := false
-	for res := range resCh {
-		if res.Error == nil {
-			foundResult = true
-		}
-
-		if res.Error == errCancelled {
-			foundCancelError = true
-		}
-	}
-
-	if !foundResult {
-		t.Error("did not find one expected result")
-	}
-
-	if !foundCancelError {
-		t.Error("did not find one expected cancel error")
 	}
 }
