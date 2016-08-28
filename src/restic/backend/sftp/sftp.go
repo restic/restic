@@ -1,6 +1,7 @@
 package sftp
 
 import (
+	"bufio"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -36,8 +37,18 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	// command.  This assumes that passwordless login is correctly configured.
 	cmd := exec.Command(program, args...)
 
-	// send errors from ssh to stderr
-	cmd.Stderr = os.Stderr
+	// prefix the errors with the program name
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		sc := bufio.NewScanner(stderr)
+		for sc.Scan() {
+			fmt.Fprintf(os.Stderr, "subprocess %v: %v\n", program, sc.Text())
+		}
+	}()
 
 	// ignore signals sent to the parent (e.g. SIGINT)
 	cmd.SysProcAttr = ignoreSigIntProcAttr()
@@ -68,7 +79,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	// open the SFTP session
 	client, err := sftp.NewClientPipe(rd, wr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to start the sftp session, error: %v", err)
 	}
 
 	return &SFTP{c: client, cmd: cmd, result: ch}, nil
@@ -107,6 +118,7 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 	debug.Log("sftp.Open", "open backend with program %v, %v at %v", program, args, dir)
 	sftp, err := startClient(program, args...)
 	if err != nil {
+		debug.Log("sftp.Open", "unable to start program: %v", err)
 		return nil, err
 	}
 
