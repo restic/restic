@@ -99,7 +99,7 @@ type Job struct {
 func TestPoolCancel(t *testing.T) {
 	barrier := make(chan struct{})
 
-	wait := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
+	sendTime := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
 		j := job.Data.(Job)
 
 		<-barrier
@@ -112,7 +112,7 @@ func TestPoolCancel(t *testing.T) {
 		}
 	}
 
-	jobCh, resCh, p := newBufferedPool(20, concurrency, wait)
+	jobCh, resCh, p := newBufferedPool(20, concurrency, sendTime)
 
 	suc := make(chan struct{})
 	for i := 0; i < 20; i++ {
@@ -120,7 +120,9 @@ func TestPoolCancel(t *testing.T) {
 	}
 
 	close(barrier)
-	<-suc
+	for i := 0; i < 10; i++ {
+		<-suc
+	}
 	p.Cancel()
 	p.Wait()
 
