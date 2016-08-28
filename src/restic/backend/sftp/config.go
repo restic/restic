@@ -2,6 +2,7 @@ package sftp
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"path"
 	"strings"
@@ -31,7 +32,12 @@ func ParseConfig(s string) (interface{}, error) {
 			user = url.User.Username()
 		}
 		host = url.Host
-		dir = url.Path[1:]
+		dir = url.Path
+		if dir == "" {
+			return nil, fmt.Errorf("invalid backend %q, no directory specified", s)
+		}
+
+		dir = dir[1:]
 	case strings.HasPrefix(s, "sftp:"):
 		// parse the sftp:user@host:path format, which means we'll get
 		// "user@host:path" in s
