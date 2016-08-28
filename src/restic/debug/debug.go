@@ -146,7 +146,7 @@ func Log(tag string, f string, args ...interface{}) {
 	current := time.Now()
 	opts.last[process{tag, goroutine}] = current
 
-	if f[len(f)-1] != '\n' {
+	if len(f) == 0 || f[len(f)-1] != '\n' {
 		f += "\n"
 	}
 
