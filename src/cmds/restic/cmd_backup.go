@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -232,7 +230,7 @@ func filterExisting(items []string) (result []string, err error) {
 	}
 
 	if len(result) == 0 {
-		return nil, errors.New("all target directories/files do not exist")
+		return nil, restic.Fatal("all target directories/files do not exist")
 	}
 
 	return
@@ -240,7 +238,7 @@ func filterExisting(items []string) (result []string, err error) {
 
 func (cmd CmdBackup) readFromStdin(args []string) error {
 	if len(args) != 0 {
-		return errors.Errorf("when reading from stdin, no additional files can be specified")
+		return restic.Fatalf("when reading from stdin, no additional files can be specified")
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -274,7 +272,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 	}
 
 	if len(args) == 0 {
-		return errors.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
+		return restic.Fatalf("wrong number of parameters, Usage: %s", cmd.Usage())
 	}
 
 	target := make([]string, 0, len(args))
@@ -312,7 +310,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 	if !cmd.Force && cmd.Parent != "" {
 		id, err := restic.FindSnapshot(repo, cmd.Parent)
 		if err != nil {
-			return errors.Errorf("invalid id %q: %v", cmd.Parent, err)
+			return restic.Fatalf("invalid id %q: %v", cmd.Parent, err)
 		}
 
 		parentSnapshotID = &id

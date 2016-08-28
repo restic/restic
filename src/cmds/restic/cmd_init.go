@@ -1,8 +1,7 @@
 package main
 
 import (
-	"github.com/pkg/errors"
-
+	"restic"
 	"restic/repository"
 )
 
@@ -12,7 +11,7 @@ type CmdInit struct {
 
 func (cmd CmdInit) Execute(args []string) error {
 	if cmd.global.Repo == "" {
-		return errors.New("Please specify repository location (-r)")
+		return restic.Fatal("Please specify repository location (-r)")
 	}
 
 	be, err := create(cmd.global.Repo)

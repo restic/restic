@@ -8,8 +8,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
-
 	"restic"
 	"restic/backend"
 	"restic/pack"
@@ -204,7 +202,7 @@ func (cmd CmdDump) DumpIndexes() error {
 
 func (cmd CmdDump) Execute(args []string) error {
 	if len(args) != 1 {
-		return errors.Errorf("type not specified, Usage: %s", cmd.Usage())
+		return restic.Fatalf("type not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -257,6 +255,6 @@ func (cmd CmdDump) Execute(args []string) error {
 
 		return nil
 	default:
-		return errors.Errorf("no such type %q", tpe)
+		return restic.Fatalf("no such type %q", tpe)
 	}
 }

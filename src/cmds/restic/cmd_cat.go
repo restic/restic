@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
-
 	"restic"
 	"restic/backend"
 	"restic/debug"
@@ -34,7 +32,7 @@ func (cmd CmdCat) Usage() string {
 
 func (cmd CmdCat) Execute(args []string) error {
 	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return errors.Errorf("type or ID not specified, Usage: %s", cmd.Usage())
+		return restic.Fatalf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -184,7 +182,7 @@ func (cmd CmdCat) Execute(args []string) error {
 			return err
 		}
 
-		return errors.New("blob not found")
+		return restic.Fatal("blob not found")
 
 	case "tree":
 		debug.Log("cat", "cat tree %v", id.Str())
@@ -205,6 +203,6 @@ func (cmd CmdCat) Execute(args []string) error {
 		return nil
 
 	default:
-		return errors.New("invalid type")
+		return restic.Fatal("invalid type")
 	}
 }

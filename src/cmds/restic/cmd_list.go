@@ -1,8 +1,7 @@
 package main
 
 import (
-	"github.com/pkg/errors"
-
+	"restic"
 	"restic/backend"
 )
 
@@ -26,7 +25,7 @@ func (cmd CmdList) Usage() string {
 
 func (cmd CmdList) Execute(args []string) error {
 	if len(args) != 1 {
-		return errors.Errorf("type not specified, Usage: %s", cmd.Usage())
+		return restic.Fatalf("type not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -68,7 +67,7 @@ func (cmd CmdList) Execute(args []string) error {
 	case "locks":
 		t = backend.Lock
 	default:
-		return errors.New("invalid type")
+		return restic.Fatal("invalid type")
 	}
 
 	for id := range repo.List(t, nil) {

@@ -37,13 +37,15 @@ func main() {
 		os.Exit(0)
 	}
 
-	if err != nil {
-		debug.Log("main", "command returned error: %#v", err)
-		fmt.Fprintf(os.Stderr, "%+v\n", err)
-	}
+	debug.Log("main", "command returned error: %#v", err)
 
-	if restic.IsAlreadyLocked(errors.Cause(err)) {
-		fmt.Fprintf(os.Stderr, "\nthe `unlock` command can be used to remove stale locks\n")
+	switch {
+	case restic.IsAlreadyLocked(errors.Cause(err)):
+		fmt.Fprintf(os.Stderr, "%v\nthe `unlock` command can be used to remove stale locks\n", err)
+	case restic.IsFatal(errors.Cause(err)):
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	case err != nil:
+		fmt.Fprintf(os.Stderr, "%+v\n", err)
 	}
 
 	RunCleanupHandlers()

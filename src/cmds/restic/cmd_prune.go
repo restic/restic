@@ -11,8 +11,6 @@ import (
 	"restic/repository"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -193,7 +191,7 @@ nextPack:
 		removePacks.Insert(packID)
 
 		if !rewritePacks.Has(packID) {
-			return errors.Errorf("pack %v is unneeded, but not contained in rewritePacks", packID.Str())
+			return restic.Fatalf("pack %v is unneeded, but not contained in rewritePacks", packID.Str())
 		}
 
 		rewritePacks.Delete(packID)
