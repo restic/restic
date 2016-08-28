@@ -166,20 +166,24 @@ func (cmd CmdCat) Execute(args []string) error {
 		return err
 
 	case "blob":
-		list, err := repo.Index().Lookup(id, pack.Data)
-		if err != nil {
+		for _, t := range []pack.BlobType{pack.Data, pack.Tree} {
+			list, err := repo.Index().Lookup(id, t)
+			if err != nil {
+				continue
+			}
+			blob := list[0]
+
+			buf := make([]byte, blob.Length)
+			data, err := repo.LoadBlob(id, t, buf)
+			if err != nil {
+				return err
+			}
+
+			_, err = os.Stdout.Write(data)
 			return err
 		}
-		blob := list[0]
 
-		buf := make([]byte, blob.Length)
-		data, err := repo.LoadBlob(id, pack.Data, buf)
-		if err != nil {
-			return err
-		}
-
-		_, err = os.Stdout.Write(data)
-		return err
+		return errors.New("blob not found")
 
 	case "tree":
 		debug.Log("cat", "cat tree %v", id.Str())
