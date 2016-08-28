@@ -104,6 +104,7 @@ func (r *SFTP) clientError() error {
 // is expected at the given path. `dir` must be delimited by forward slashes
 // ("/"), which is required by sftp.
 func Open(dir string, program string, args ...string) (*SFTP, error) {
+	debug.Log("sftp.Open", "open backend with program %v, %v at %v", program, args, dir)
 	sftp, err := startClient(program, args...)
 	if err != nil {
 		return nil, err
@@ -138,6 +139,7 @@ func buildSSHCommand(cfg Config) []string {
 // OpenWithConfig opens an sftp backend as described by the config by running
 // "ssh" with the appropiate arguments.
 func OpenWithConfig(cfg Config) (*SFTP, error) {
+	debug.Log("sftp.OpenWithConfig", "open with config %v", cfg)
 	return Open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
 }
 
@@ -311,6 +313,7 @@ func (r *SFTP) dirname(t backend.Type, name string) string {
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+	debug.Log("sftp.Load", "load %v, %d bytes, offset %v", h, len(p), off)
 	if err := r.clientError(); err != nil {
 		return 0, err
 	}
@@ -347,6 +350,7 @@ func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 
 // Save stores data in the backend at the handle.
 func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
+	debug.Log("sftp.Save", "save %v bytes to %v", h, len(p))
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -388,6 +392,7 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 
 // Stat returns information about a blob.
 func (r *SFTP) Stat(h backend.Handle) (backend.BlobInfo, error) {
+	debug.Log("sftp.Stat", "stat %v", h)
 	if err := r.clientError(); err != nil {
 		return backend.BlobInfo{}, err
 	}
@@ -406,6 +411,7 @@ func (r *SFTP) Stat(h backend.Handle) (backend.BlobInfo, error) {
 
 // Test returns true if a blob of the given type and name exists in the backend.
 func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
+	debug.Log("sftp.Test", "type %v, name %v", t, name)
 	if err := r.clientError(); err != nil {
 		return false, err
 	}
@@ -424,6 +430,7 @@ func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
 
 // Remove removes the content stored at name.
 func (r *SFTP) Remove(t backend.Type, name string) error {
+	debug.Log("sftp.Remove", "type %v, name %v", t, name)
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -435,6 +442,7 @@ func (r *SFTP) Remove(t backend.Type, name string) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
+	debug.Log("sftp.List", "list all %v", t)
 	ch := make(chan string)
 
 	go func() {
@@ -503,6 +511,7 @@ var closeTimeout = 2 * time.Second
 
 // Close closes the sftp connection and terminates the underlying command.
 func (r *SFTP) Close() error {
+	debug.Log("sftp.Close", "")
 	if r == nil {
 		return nil
 	}
