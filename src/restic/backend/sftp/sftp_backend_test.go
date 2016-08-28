@@ -1,7 +1,6 @@
 package sftp_test
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -28,7 +27,6 @@ func createTempdir() error {
 		return err
 	}
 
-	fmt.Printf("created new test backend at %v\n", tempdir)
 	tempBackendDir = tempdir
 	return nil
 }
@@ -74,7 +72,6 @@ func init() {
 			return nil
 		}
 
-		fmt.Printf("removing test backend at %v\n", tempBackendDir)
 		err := os.RemoveAll(tempBackendDir)
 		tempBackendDir = ""
 		return err
