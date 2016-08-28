@@ -74,3 +74,17 @@ func TestParseConfig(t *testing.T) {
 		}
 	}
 }
+
+var configTestsInvalid = []string{
+	"sftp://host:dir",
+}
+
+func TestParseConfigInvalid(t *testing.T) {
+	for i, test := range configTestsInvalid {
+		_, err := ParseConfig(test)
+		if err == nil {
+			t.Errorf("test %d: invalid config %s did not return an error", i, test)
+			continue
+		}
+	}
+}

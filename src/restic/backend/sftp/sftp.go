@@ -1,6 +1,7 @@
 package sftp
 
 import (
+	"bufio"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"restic/backend"
 	"restic/debug"
@@ -26,7 +28,8 @@ type SFTP struct {
 	c *sftp.Client
 	p string
 
-	cmd *exec.Cmd
+	cmd    *exec.Cmd
+	result <-chan error
 }
 
 func startClient(program string, args ...string) (*SFTP, error) {
@@ -34,8 +37,18 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	// command.  This assumes that passwordless login is correctly configured.
 	cmd := exec.Command(program, args...)
 
-	// send errors from ssh to stderr
-	cmd.Stderr = os.Stderr
+	// prefix the errors with the program name
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		sc := bufio.NewScanner(stderr)
+		for sc.Scan() {
+			fmt.Fprintf(os.Stderr, "subprocess %v: %v\n", program, sc.Text())
+		}
+	}()
 
 	// ignore signals sent to the parent (e.g. SIGINT)
 	cmd.SysProcAttr = ignoreSigIntProcAttr()
@@ -55,13 +68,21 @@ func startClient(program string, args ...string) (*SFTP, error) {
 		return nil, err
 	}
 
+	// wait in a different goroutine
+	ch := make(chan error, 1)
+	go func() {
+		err := cmd.Wait()
+		debug.Log("sftp.Wait", "ssh command exited, err %v", err)
+		ch <- err
+	}()
+
 	// open the SFTP session
 	client, err := sftp.NewClientPipe(rd, wr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to start the sftp session, error: %v", err)
 	}
 
-	return &SFTP{c: client, cmd: cmd}, nil
+	return &SFTP{c: client, cmd: cmd, result: ch}, nil
 }
 
 func paths(dir string) []string {
@@ -76,13 +97,28 @@ func paths(dir string) []string {
 	}
 }
 
+// clientError returns an error if the client has exited. Otherwise, nil is
+// returned immediately.
+func (r *SFTP) clientError() error {
+	select {
+	case err := <-r.result:
+		debug.Log("sftp.clientError", "client has exited with err %v", err)
+		return err
+	default:
+	}
+
+	return nil
+}
+
 // Open opens an sftp backend. When the command is started via
 // exec.Command, it is expected to speak sftp on stdin/stdout. The backend
 // is expected at the given path. `dir` must be delimited by forward slashes
 // ("/"), which is required by sftp.
 func Open(dir string, program string, args ...string) (*SFTP, error) {
+	debug.Log("sftp.Open", "open backend with program %v, %v at %v", program, args, dir)
 	sftp, err := startClient(program, args...)
 	if err != nil {
+		debug.Log("sftp.Open", "unable to start program: %v", err)
 		return nil, err
 	}
 
@@ -115,6 +151,7 @@ func buildSSHCommand(cfg Config) []string {
 // OpenWithConfig opens an sftp backend as described by the config by running
 // "ssh" with the appropiate arguments.
 func OpenWithConfig(cfg Config) (*SFTP, error) {
+	debug.Log("sftp.OpenWithConfig", "open with config %v", cfg)
 	return Open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
 }
 
@@ -122,6 +159,7 @@ func OpenWithConfig(cfg Config) (*SFTP, error) {
 // backend at dir. Afterwards a new config blob should be created. `dir` must
 // be delimited by forward slashes ("/"), which is required by sftp.
 func Create(dir string, program string, args ...string) (*SFTP, error) {
+	debug.Log("sftp.Create", "%v %v", program, args)
 	sftp, err := startClient(program, args...)
 	if err != nil {
 		return nil, err
@@ -141,12 +179,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 		}
 	}
 
-	err = sftp.c.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	err = sftp.cmd.Wait()
+	err = sftp.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -158,6 +191,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 // CreateWithConfig creates an sftp backend as described by the config by running
 // "ssh" with the appropiate arguments.
 func CreateWithConfig(cfg Config) (*SFTP, error) {
+	debug.Log("sftp.CreateWithConfig", "config %v", cfg)
 	return Create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
 }
 
@@ -291,6 +325,11 @@ func (r *SFTP) dirname(t backend.Type, name string) string {
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+	debug.Log("sftp.Load", "load %v, %d bytes, offset %v", h, len(p), off)
+	if err := r.clientError(); err != nil {
+		return 0, err
+	}
+
 	if err := h.Valid(); err != nil {
 		return 0, err
 	}
@@ -323,6 +362,11 @@ func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 
 // Save stores data in the backend at the handle.
 func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
+	debug.Log("sftp.Save", "save %v bytes to %v", h, len(p))
+	if err := r.clientError(); err != nil {
+		return err
+	}
+
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -360,6 +404,11 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 
 // Stat returns information about a blob.
 func (r *SFTP) Stat(h backend.Handle) (backend.BlobInfo, error) {
+	debug.Log("sftp.Stat", "stat %v", h)
+	if err := r.clientError(); err != nil {
+		return backend.BlobInfo{}, err
+	}
+
 	if err := h.Valid(); err != nil {
 		return backend.BlobInfo{}, err
 	}
@@ -374,6 +423,11 @@ func (r *SFTP) Stat(h backend.Handle) (backend.BlobInfo, error) {
 
 // Test returns true if a blob of the given type and name exists in the backend.
 func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
+	debug.Log("sftp.Test", "type %v, name %v", t, name)
+	if err := r.clientError(); err != nil {
+		return false, err
+	}
+
 	_, err := r.c.Lstat(r.filename(t, name))
 	if os.IsNotExist(err) {
 		return false, nil
@@ -388,6 +442,11 @@ func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
 
 // Remove removes the content stored at name.
 func (r *SFTP) Remove(t backend.Type, name string) error {
+	debug.Log("sftp.Remove", "type %v, name %v", t, name)
+	if err := r.clientError(); err != nil {
+		return err
+	}
+
 	return r.c.Remove(r.filename(t, name))
 }
 
@@ -395,6 +454,7 @@ func (r *SFTP) Remove(t backend.Type, name string) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
+	debug.Log("sftp.List", "list all %v", t)
 	ch := make(chan string)
 
 	go func() {
@@ -459,8 +519,11 @@ func (r *SFTP) List(t backend.Type, done <-chan struct{}) <-chan string {
 
 }
 
+var closeTimeout = 2 * time.Second
+
 // Close closes the sftp connection and terminates the underlying command.
 func (r *SFTP) Close() error {
+	debug.Log("sftp.Close", "")
 	if r == nil {
 		return nil
 	}
@@ -468,9 +531,18 @@ func (r *SFTP) Close() error {
 	err := r.c.Close()
 	debug.Log("sftp.Close", "Close returned error %v", err)
 
+	// wait for closeTimeout before killing the process
+	select {
+	case err := <-r.result:
+		return err
+	case <-time.After(closeTimeout):
+	}
+
 	if err := r.cmd.Process.Kill(); err != nil {
 		return err
 	}
 
-	return r.cmd.Wait()
+	// get the error, but ignore it
+	<-r.result
+	return nil
 }

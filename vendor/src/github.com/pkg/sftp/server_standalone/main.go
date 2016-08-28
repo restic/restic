@@ -6,6 +6,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 
@@ -16,10 +17,12 @@ func main() {
 	var (
 		readOnly    bool
 		debugStderr bool
+		debugLevel  string
 	)
 
 	flag.BoolVar(&readOnly, "R", false, "read-only server")
 	flag.BoolVar(&debugStderr, "e", false, "debug to stderr")
+	flag.StringVar(&debugLevel, "l", "none", "debug level (ignored)")
 	flag.Parse()
 
 	debugStream := ioutil.Discard
@@ -28,8 +31,12 @@ func main() {
 	}
 
 	svr, _ := sftp.NewServer(
-		os.Stdin,
-		os.Stdout,
+		struct {
+			io.Reader
+			io.WriteCloser
+		}{os.Stdin,
+			os.Stdout,
+		},
 		sftp.WithDebug(debugStream),
 		sftp.ReadOnly(),
 	)
