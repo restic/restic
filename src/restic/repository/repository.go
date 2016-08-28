@@ -102,6 +102,7 @@ func (r *Repository) LoadBlob(id backend.ID, t pack.BlobType, plaintextBuf []byt
 		return nil, err
 	}
 
+	var lastError error
 	for _, blob := range blobs {
 		debug.Log("Repo.LoadBlob", "id %v found: %v", id.Str(), blob)
 
@@ -115,30 +116,35 @@ func (r *Repository) LoadBlob(id backend.ID, t pack.BlobType, plaintextBuf []byt
 		n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
 		if err != nil {
 			debug.Log("Repo.LoadBlob", "error loading blob %v: %v", blob, err)
-			fmt.Fprintf(os.Stderr, "error loading blob %v: %v", id, err)
+			lastError = err
 			continue
 		}
 
 		if uint(n) != blob.Length {
-			debug.Log("Repo.LoadBlob", "error loading blob %v: wrong length returned, want %d, got %d",
-				blob.Length, uint(n))
+			lastError = errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d",
+				id.Str(), blob.Length, uint(n))
+			debug.Log("Repo.LoadBlob", "lastError: %v", lastError)
 			continue
 		}
 
 		// decrypt
 		plaintextBuf, err = r.decryptTo(plaintextBuf, ciphertextBuf)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "decrypting blob %v failed: %v", id, err)
+			lastError = errors.Errorf("decrypting blob %v failed: %v", id, err)
 			continue
 		}
 
 		// check hash
 		if !backend.Hash(plaintextBuf).Equal(id) {
-			fmt.Fprintf(os.Stderr, "blob %v returned invalid hash", id)
+			lastError = errors.Errorf("blob %v returned invalid hash", id)
 			continue
 		}
 
 		return plaintextBuf, nil
+	}
+
+	if lastError != nil {
+		return nil, lastError
 	}
 
 	return nil, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
