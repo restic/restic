@@ -225,7 +225,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 
 	for {
 		chunk, err := chnker.Next(getBuf())
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 

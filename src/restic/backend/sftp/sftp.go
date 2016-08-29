@@ -429,7 +429,7 @@ func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
 	}
 
 	_, err := r.c.Lstat(r.filename(t, name))
-	if os.IsNotExist(err) {
+	if os.IsNotExist(errors.Cause(err)) {
 		return false, nil
 	}
 

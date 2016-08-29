@@ -125,7 +125,7 @@ func (be s3) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 
 	// return an error if the offset is beyond the end of the file
 	if off > info.Size {
-		return 0, io.EOF
+		return 0, errors.Wrap(io.EOF, "")
 	}
 
 	var nextError error
@@ -141,7 +141,7 @@ func (be s3) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	}
 
 	n, err = obj.ReadAt(p, off)
-	if int64(n) == info.Size-off && err == io.EOF {
+	if int64(n) == info.Size-off && errors.Cause(err) == io.EOF {
 		err = nil
 	}
 

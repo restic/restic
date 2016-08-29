@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 type process struct {
@@ -59,7 +61,7 @@ func initDebugLogger() {
 		}
 	}
 
-	if err != nil && os.IsNotExist(err) {
+	if err != nil && os.IsNotExist(errors.Cause(err)) {
 		f, err = fs.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE, 0600)
 	}
 

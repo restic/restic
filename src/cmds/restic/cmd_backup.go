@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -222,7 +224,7 @@ func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
 func filterExisting(items []string) (result []string, err error) {
 	for _, item := range items {
 		_, err := fs.Lstat(item)
-		if err != nil && os.IsNotExist(err) {
+		if err != nil && os.IsNotExist(errors.Cause(err)) {
 			continue
 		}
 

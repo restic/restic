@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"restic"
 	"restic/backend"
 	"restic/repository"
@@ -125,7 +127,7 @@ func TestMount(t *testing.T) {
 
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
 		}

@@ -95,7 +95,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 	}
 
 	// Did it fail because of ENOENT?
-	if err != nil && os.IsNotExist(err) {
+	if err != nil && os.IsNotExist(errors.Cause(err)) {
 		debug.Log("Restorer.restoreNodeTo", "create intermediate paths")
 
 		// Create parent directories and retry

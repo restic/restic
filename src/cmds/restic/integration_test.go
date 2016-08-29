@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"restic/backend"
 	"restic/debug"
 	"restic/filter"
@@ -142,7 +144,7 @@ func TestBackup(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
 		}
@@ -204,7 +206,7 @@ func TestBackupNonExistingFile(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
 		}
@@ -232,7 +234,7 @@ func TestBackupMissingFile1(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
 		}
@@ -270,7 +272,7 @@ func TestBackupMissingFile2(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
 		}
@@ -308,7 +310,7 @@ func TestBackupDirectoryError(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			t.Skipf("unable to find data file %q, skipping", datafile)
 			return
 		}
@@ -625,7 +627,7 @@ func TestRestoreFilter(t *testing.T) {
 				if ok, _ := filter.Match(pat, filepath.Base(test.name)); !ok {
 					OK(t, err)
 				} else {
-					Assert(t, os.IsNotExist(err),
+					Assert(t, os.IsNotExist(errors.Cause(err)),
 						"expected %v to not exist in restore step %v, but it exists, err %v", test.name, i+1, err)
 				}
 			}
@@ -673,15 +675,15 @@ func TestRestoreLatest(t *testing.T) {
 
 		cmdRestoreLatest(t, global, filepath.Join(env.base, "restore1"), []string{filepath.Dir(p1)}, "")
 		OK(t, testFileSize(p1rAbs, int64(102)))
-		if _, err := os.Stat(p2rAbs); os.IsNotExist(err) {
-			Assert(t, os.IsNotExist(err),
+		if _, err := os.Stat(p2rAbs); os.IsNotExist(errors.Cause(err)) {
+			Assert(t, os.IsNotExist(errors.Cause(err)),
 				"expected %v to not exist in restore, but it exists, err %v", p2rAbs, err)
 		}
 
 		cmdRestoreLatest(t, global, filepath.Join(env.base, "restore2"), []string{filepath.Dir(p2)}, "")
 		OK(t, testFileSize(p2rAbs, int64(103)))
-		if _, err := os.Stat(p1rAbs); os.IsNotExist(err) {
-			Assert(t, os.IsNotExist(err),
+		if _, err := os.Stat(p1rAbs); os.IsNotExist(errors.Cause(err)) {
+			Assert(t, os.IsNotExist(errors.Cause(err)),
 				"expected %v to not exist in restore, but it exists, err %v", p1rAbs, err)
 		}
 

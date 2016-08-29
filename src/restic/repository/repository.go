@@ -403,7 +403,7 @@ func LoadIndex(repo *Repository, id backend.ID) (*Index, error) {
 		return idx, nil
 	}
 
-	if err == ErrOldIndexFormat {
+	if errors.Cause(err) == ErrOldIndexFormat {
 		fmt.Fprintf(os.Stderr, "index %v has old format\n", id.Str())
 		return LoadIndexWithDecoder(repo, id, DecodeOldIndex)
 	}

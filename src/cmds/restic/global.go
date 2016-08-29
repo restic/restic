@@ -19,6 +19,7 @@ import (
 	"restic/repository"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -183,7 +184,7 @@ func readPassword(in io.Reader) (password string, err error) {
 	n, err := io.ReadFull(in, buf)
 	buf = buf[:n]
 
-	if err != nil && err != io.ErrUnexpectedEOF {
+	if err != nil && errors.Cause(err) != io.ErrUnexpectedEOF {
 		return "", err
 	}
 

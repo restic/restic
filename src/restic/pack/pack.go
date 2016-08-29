@@ -296,7 +296,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []Blob, err error)
 	for {
 		e := headerEntry{}
 		err = binary.Read(hdrRd, binary.LittleEndian, &e)
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 

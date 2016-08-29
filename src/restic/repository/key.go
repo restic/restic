@@ -126,7 +126,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 			debug.Log("SearchKey", "key %v returned error %v", name[:12], err)
 
 			// ErrUnauthenticated means the password is wrong, try the next key
-			if err == crypto.ErrUnauthenticated {
+			if errors.Cause(err) == crypto.ErrUnauthenticated {
 				continue
 			}
 

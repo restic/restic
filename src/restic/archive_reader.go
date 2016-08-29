@@ -9,6 +9,7 @@ import (
 	"restic/repository"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/restic/chunker"
 )
 
@@ -48,7 +49,7 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 
 	for {
 		chunk, err := chnker.Next(getBuf())
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 

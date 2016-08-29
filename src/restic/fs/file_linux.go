@@ -6,13 +6,15 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/pkg/errors"
+
 	"golang.org/x/sys/unix"
 )
 
 // Open opens a file for reading, without updating the atime and without caching data on read.
 func Open(name string) (File, error) {
 	file, err := os.OpenFile(name, os.O_RDONLY|syscall.O_NOATIME, 0)
-	if os.IsPermission(err) {
+	if os.IsPermission(errors.Cause(err)) {
 		file, err = os.OpenFile(name, os.O_RDONLY, 0)
 	}
 	return &nonCachingFile{File: file}, err

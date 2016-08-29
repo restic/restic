@@ -7,6 +7,8 @@ import (
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
+
+	"github.com/pkg/errors"
 )
 
 // Repack takes a list of packs together with a list of blobs contained in
@@ -22,7 +24,7 @@ func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err 
 		h := backend.Handle{Type: backend.Data, Name: packID.String()}
 
 		l, err := repo.Backend().Load(h, buf[:cap(buf)], 0)
-		if err == io.ErrUnexpectedEOF {
+		if errors.Cause(err) == io.ErrUnexpectedEOF {
 			err = nil
 			buf = buf[:l]
 		}

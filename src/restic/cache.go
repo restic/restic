@@ -48,7 +48,7 @@ func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error)
 	defer fd.Close()
 
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			debug.Log("Cache.Has", "test for file %v: not cached", filename)
 			return false, nil
 		}
@@ -106,7 +106,7 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 	err = fs.Remove(filename)
 	debug.Log("Cache.purge", "Remove file %v: %v", filename, err)
 
-	if err != nil && os.IsNotExist(err) {
+	if err != nil && os.IsNotExist(errors.Cause(err)) {
 		return nil
 	}
 
@@ -160,7 +160,7 @@ func (c *Cache) list(t backend.Type) ([]cacheEntry, error) {
 
 	fd, err := fs.Open(dir)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			return []cacheEntry{}, nil
 		}
 		return nil, err
@@ -231,7 +231,7 @@ func getWindowsCacheDir() (string, error) {
 	cachedir = filepath.Join(cachedir, "restic")
 	fi, err := fs.Stat(cachedir)
 
-	if os.IsNotExist(err) {
+	if os.IsNotExist(errors.Cause(err)) {
 		err = fs.MkdirAll(cachedir, 0700)
 		if err != nil {
 			return "", err
@@ -268,7 +268,7 @@ func getXDGCacheDir() (string, error) {
 	}
 
 	fi, err := fs.Stat(cachedir)
-	if os.IsNotExist(err) {
+	if os.IsNotExist(errors.Cause(err)) {
 		err = fs.MkdirAll(cachedir, 0700)
 		if err != nil {
 			return "", err

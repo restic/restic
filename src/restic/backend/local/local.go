@@ -232,7 +232,7 @@ func (b *Local) Test(t backend.Type, name string) (bool, error) {
 	debug.Log("backend.local.Test", "Test %v %v", t, name)
 	_, err := fs.Stat(filename(b.p, t, name))
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			return false, nil
 		}
 		return false, err
