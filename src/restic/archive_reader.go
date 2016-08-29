@@ -17,7 +17,7 @@ import (
 func saveTreeJSON(repo *repository.Repository, item interface{}) (backend.ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
-		return backend.ID{}, err
+		return backend.ID{}, errors.Wrap(err, "")
 	}
 	data = append(data, '\n')
 
@@ -54,7 +54,7 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 		}
 
 		if err != nil {
-			return nil, backend.ID{}, err
+			return nil, backend.ID{}, errors.Wrap(err, "chunker.Next()")
 		}
 
 		id := backend.Hash(chunk.Data)

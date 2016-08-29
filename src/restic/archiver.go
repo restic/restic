@@ -113,7 +113,7 @@ func (arch *Archiver) Save(t pack.BlobType, data []byte, id backend.ID) error {
 func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
-		return backend.ID{}, err
+		return backend.ID{}, errors.Wrap(err, "Marshal")
 	}
 	data = append(data, '\n')
 
@@ -129,7 +129,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 func (arch *Archiver) reloadFileIfChanged(node *Node, file fs.File) (*Node, error) {
 	fi, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Stat")
 	}
 
 	if fi.ModTime() == node.ModTime {
@@ -212,7 +212,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 	file, err := fs.Open(node.path)
 	defer file.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Open")
 	}
 
 	node, err = arch.reloadFileIfChanged(node, file)
@@ -230,7 +230,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		}
 
 		if err != nil {
-			return err
+			return errors.Wrap(err, "chunker.Next")
 		}
 
 		resCh := make(chan saveResult, 1)
@@ -819,7 +819,7 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *Progress) (Stat, error) {
 
 		debug.Log("Scan", "Done for %v, err: %v", dir, err)
 		if err != nil {
-			return Stat{}, err
+			return Stat{}, errors.Wrap(err, "fs.Walk")
 		}
 	}
 

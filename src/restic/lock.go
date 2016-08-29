@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"restic/backend"
 	"restic/debug"
 	"restic/repository"
@@ -47,7 +49,7 @@ func (e ErrAlreadyLocked) Error() string {
 
 // IsAlreadyLocked returns true iff err is an instance of ErrAlreadyLocked.
 func IsAlreadyLocked(err error) bool {
-	if _, ok := err.(ErrAlreadyLocked); ok {
+	if _, ok := errors.Cause(err).(ErrAlreadyLocked); ok {
 		return true
 	}
 
@@ -189,7 +191,7 @@ var staleTimeout = 30 * time.Minute
 // process isn't alive any more.
 func (l *Lock) Stale() bool {
 	debug.Log("Lock.Stale", "testing if lock %v for process %d is stale", l, l.PID)
-	if time.Now().Sub(l.Time) > staleTimeout {
+	if time.Since(l.Time) > staleTimeout {
 		debug.Log("Lock.Stale", "lock is stale, timestamp is too old: %v\n", l.Time)
 		return true
 	}

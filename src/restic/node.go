@@ -155,13 +155,13 @@ func (node Node) restoreMetadata(path string) error {
 
 	err = lchown(path, int(node.UID), int(node.GID))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Lchown")
 	}
 
 	if node.Type != "symlink" {
 		err = fs.Chmod(path, node.Mode)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Chmod")
 		}
 	}
 
@@ -183,15 +183,11 @@ func (node Node) RestoreTimestamps(path string) error {
 	}
 
 	if node.Type == "symlink" {
-		if err := node.restoreSymlinkTimestamps(path, utimes); err != nil {
-			return err
-		}
-
-		return nil
+		return node.restoreSymlinkTimestamps(path, utimes)
 	}
 
 	if err := syscall.UtimesNano(path, utimes[:]); err != nil {
-		return err
+		return errors.Wrap(err, "UtimesNano")
 	}
 
 	return nil
@@ -200,7 +196,7 @@ func (node Node) RestoreTimestamps(path string) error {
 func (node Node) createDirAt(path string) error {
 	err := fs.Mkdir(path, node.Mode)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Mkdir")
 	}
 
 	return nil
@@ -211,7 +207,7 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 	defer f.Close()
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "OpenFile")
 	}
 
 	var buf []byte
@@ -233,7 +229,7 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 
 		_, err = f.Write(buf)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Write")
 		}
 	}
 
@@ -247,7 +243,7 @@ func (node Node) createSymlinkAt(path string) error {
 	}
 	err := fs.Symlink(node.LinkTarget, path)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Symlink")
 	}
 
 	return nil
@@ -280,11 +276,11 @@ func (node *Node) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, nj)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Unmarshal")
 	}
 
 	nj.Name, err = strconv.Unquote(`"` + nj.Name + `"`)
-	return err
+	return errors.Wrap(err, "Unquote")
 }
 
 func (node Node) Equals(other Node) bool {
@@ -480,6 +476,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "dir":
 	case "symlink":
 		node.LinkTarget, err = fs.Readlink(path)
+		err = errors.Wrap(err, "Readlink")
 	case "dev":
 		node.Device = uint64(stat.rdev())
 	case "chardev":

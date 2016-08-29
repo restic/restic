@@ -5,6 +5,8 @@ import (
 	"syscall"
 	"unsafe"
 
+	"github.com/pkg/errors"
+
 	"restic/fs"
 )
 
@@ -12,13 +14,13 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	dir, err := fs.Open(filepath.Dir(path))
 	defer dir.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Open")
 	}
 
 	err = utimesNanoAt(int(dir.Fd()), filepath.Base(path), utimes, AT_SYMLINK_NOFOLLOW)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "UtimesNanoAt")
 	}
 
 	return nil

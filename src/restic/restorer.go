@@ -100,7 +100,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 
 		// Create parent directories and retry
 		err = fs.MkdirAll(filepath.Dir(dstPath), 0700)
-		if err == nil || err == os.ErrExist {
+		if err == nil || os.IsExist(errors.Cause(err)) {
 			err = node.CreateAt(dstPath, res.repo)
 		}
 	}
