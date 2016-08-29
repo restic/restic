@@ -13,7 +13,7 @@ import (
 func LoadAll(be Backend, h Handle, buf []byte) ([]byte, error) {
 	fi, err := be.Stat(h)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Stat")
 	}
 
 	if fi.Size > int64(len(buf)) {

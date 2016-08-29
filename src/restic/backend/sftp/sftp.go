@@ -41,7 +41,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	// prefix the errors with the program name
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cmd.StderrPipe")
 	}
 
 	go func() {
@@ -57,16 +57,16 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	// get stdin and stdout
 	wr, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cmd.StdinPipe")
 	}
 	rd, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cmd.StdoutPipe")
 	}
 
 	// start the process
 	if err := cmd.Start(); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cmd.Start")
 	}
 
 	// wait in a different goroutine
@@ -74,7 +74,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	go func() {
 		err := cmd.Wait()
 		debug.Log("sftp.Wait", "ssh command exited, err %v", err)
-		ch <- err
+		ch <- errors.Wrap(err, "cmd.Wait")
 	}()
 
 	// open the SFTP session
@@ -182,7 +182,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 
 	err = sftp.Close()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Close")
 	}
 
 	// open backend
@@ -274,16 +274,17 @@ func (r *SFTP) renameFile(oldname string, t backend.Type, name string) error {
 
 	err := r.c.Rename(oldname, filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Rename")
 	}
 
 	// set mode to read-only
 	fi, err := r.c.Lstat(filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Lstat")
 	}
 
-	return r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
+	err = r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
+	return errors.Wrap(err, "Chmod")
 }
 
 // Join joins the given paths and cleans them afterwards. This always uses
@@ -336,13 +337,13 @@ func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 
 	f, err := r.c.Open(r.filename(h.Type, h.Name))
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Open")
 	}
 
 	defer func() {
 		e := f.Close()
 		if err == nil && e != nil {
-			err = e
+			err = errors.Wrap(e, "Close")
 		}
 	}()
 
@@ -354,7 +355,7 @@ func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	}
 
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Seek")
 	}
 
 	return io.ReadFull(f, p)
@@ -380,7 +381,7 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 
 	n, err := tmpfile.Write(p)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Write")
 	}
 
 	if n != len(p) {
@@ -389,17 +390,13 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 
 	err = tmpfile.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Close")
 	}
 
 	err = r.renameFile(filename, h.Type, h.Name)
 	debug.Log("sftp.Save", "save %v: rename %v: %v",
 		h, path.Base(filename), err)
-	if err != nil {
-		return errors.Errorf("sftp: renameFile: %v", err)
-	}
-
-	return nil
+	return err
 }
 
 // Stat returns information about a blob.
@@ -415,7 +412,7 @@ func (r *SFTP) Stat(h backend.Handle) (backend.BlobInfo, error) {
 
 	fi, err := r.c.Lstat(r.filename(h.Type, h.Name))
 	if err != nil {
-		return backend.BlobInfo{}, err
+		return backend.BlobInfo{}, errors.Wrap(err, "Lstat")
 	}
 
 	return backend.BlobInfo{Size: fi.Size()}, nil
@@ -434,7 +431,7 @@ func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
 	}
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "Lstat")
 	}
 
 	return true, nil

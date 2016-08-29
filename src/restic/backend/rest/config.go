@@ -22,7 +22,7 @@ func ParseConfig(s string) (interface{}, error) {
 	u, err := url.Parse(s)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "url.Parse")
 	}
 
 	cfg := Config{URL: u}

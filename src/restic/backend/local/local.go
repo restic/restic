@@ -35,7 +35,7 @@ func Open(dir string) (*Local, error) {
 	// test if all necessary dirs are there
 	for _, d := range paths(dir) {
 		if _, err := fs.Stat(d); err != nil {
-			return nil, errors.Errorf("%s does not exist", d)
+			return nil, errors.Wrap(err, "Open")
 		}
 	}
 
@@ -55,7 +55,7 @@ func Create(dir string) (*Local, error) {
 	for _, d := range paths(dir) {
 		err := fs.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "MkdirAll")
 		}
 	}
 
@@ -110,13 +110,13 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 
 	f, err := fs.Open(filename(b.p, h.Type, h.Name))
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Open")
 	}
 
 	defer func() {
 		e := f.Close()
 		if err == nil && e != nil {
-			err = e
+			err = errors.Wrap(e, "Close")
 		}
 	}()
 
@@ -128,7 +128,7 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	}
 
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Seek")
 	}
 
 	return io.ReadFull(f, p)
@@ -138,12 +138,12 @@ func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 	tmpfile, err := ioutil.TempFile(tempdir, "temp-")
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "TempFile")
 	}
 
 	n, err := tmpfile.Write(p)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Write")
 	}
 
 	if n != len(p) {
@@ -151,17 +151,17 @@ func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 	}
 
 	if err = tmpfile.Sync(); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Syncn")
 	}
 
 	err = fs.ClearCache(tmpfile)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "ClearCache")
 	}
 
 	err = tmpfile.Close()
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Close")
 	}
 
 	return tmpfile.Name(), nil
@@ -191,7 +191,7 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 	if h.Type == backend.Data {
 		err = fs.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "MkdirAll")
 		}
 	}
 
@@ -200,13 +200,13 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 		h, filepath.Base(tmpfile), filepath.Base(filename), err)
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Rename")
 	}
 
 	// set mode to read-only
 	fi, err := fs.Stat(filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Stat")
 	}
 
 	return setNewFileMode(filename, fi)
@@ -221,7 +221,7 @@ func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
 
 	fi, err := fs.Stat(filename(b.p, h.Type, h.Name))
 	if err != nil {
-		return backend.BlobInfo{}, err
+		return backend.BlobInfo{}, errors.Wrap(err, "Stat")
 	}
 
 	return backend.BlobInfo{Size: fi.Size()}, nil
@@ -235,7 +235,7 @@ func (b *Local) Test(t backend.Type, name string) (bool, error) {
 		if os.IsNotExist(errors.Cause(err)) {
 			return false, nil
 		}
-		return false, err
+		return false, errors.Wrap(err, "Stat")
 	}
 
 	return true, nil
@@ -249,7 +249,7 @@ func (b *Local) Remove(t backend.Type, name string) error {
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Chmod")
 	}
 
 	return fs.Remove(fn)
@@ -262,13 +262,13 @@ func isFile(fi os.FileInfo) bool {
 func readdir(d string) (fileInfos []os.FileInfo, err error) {
 	f, e := fs.Open(d)
 	if e != nil {
-		return nil, e
+		return nil, errors.Wrap(e, "Open")
 	}
 
 	defer func() {
 		e := f.Close()
 		if err == nil {
-			err = e
+			err = errors.Wrap(e, "Close")
 		}
 	}()
 
