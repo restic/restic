@@ -37,7 +37,7 @@ func Calibrate(timeout time.Duration, memory int) (KDFParams, error) {
 
 	params, err := sscrypt.Calibrate(timeout, memory, defaultParams)
 	if err != nil {
-		return DefaultKDFParams, err
+		return DefaultKDFParams, errors.Wrap(err, "scrypt.Calibrate")
 	}
 
 	return KDFParams{
@@ -64,7 +64,7 @@ func KDF(p KDFParams, salt []byte, password string) (*Key, error) {
 	}
 
 	if err := params.Check(); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Check")
 	}
 
 	derKeys := &Key{}
@@ -72,7 +72,7 @@ func KDF(p KDFParams, salt []byte, password string) (*Key, error) {
 	keybytes := macKeySize + aesKeySize
 	scryptKeys, err := scrypt.Key([]byte(password), salt, p.N, p.R, p.P, keybytes)
 	if err != nil {
-		return nil, errors.Errorf("error deriving keys from password: %v", err)
+		return nil, errors.Wrap(err, "scrypt.Key")
 	}
 
 	if len(scryptKeys) != keybytes {

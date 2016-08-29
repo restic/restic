@@ -71,7 +71,7 @@ func (r *packerManager) findPacker(size uint) (packer *pack.Packer, err error) {
 	debug.Log("Repo.findPacker", "create new pack for %d bytes", size)
 	tmpfile, err := ioutil.TempFile("", "restic-temp-pack-")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "ioutil.TempFile")
 	}
 
 	return pack.NewPacker(r.key, tmpfile), nil
@@ -97,18 +97,21 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	tmpfile := p.Writer().(*os.File)
 	f, err := fs.Open(tmpfile.Name())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Open")
 	}
 
 	data := make([]byte, n)
 	m, err := io.ReadFull(f, data)
+	if err != nil {
+		return errors.Wrap(err, "ReadFul")
+	}
 
 	if uint(m) != n {
 		return errors.Errorf("read wrong number of bytes from %v: want %v, got %v", tmpfile.Name(), n, m)
 	}
 
 	if err = f.Close(); err != nil {
-		return err
+		return errors.Wrap(err, "Close")
 	}
 
 	id := backend.Hash(data)
@@ -124,7 +127,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 
 	err = fs.Remove(tmpfile.Name())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Remove")
 	}
 
 	// update blobs in the index

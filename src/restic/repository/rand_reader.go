@@ -3,6 +3,8 @@ package repository
 import (
 	"io"
 	"math/rand"
+
+	"github.com/pkg/errors"
 )
 
 // RandReader allows reading from a rand.Rand.
@@ -56,7 +58,7 @@ func (rd *RandReader) Read(p []byte) (int, error) {
 	n, err := rd.read(p[:l])
 	pos += n
 	if err != nil {
-		return pos, err
+		return pos, errors.Wrap(err, "Read")
 	}
 	p = p[n:]
 
@@ -64,7 +66,7 @@ func (rd *RandReader) Read(p []byte) (int, error) {
 	rd.buf = rd.buf[:7]
 	n, err = rd.read(rd.buf)
 	if err != nil {
-		return pos, err
+		return pos, errors.Wrap(err, "Read")
 	}
 
 	// copy the remaining bytes from the buffer to p

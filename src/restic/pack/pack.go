@@ -107,7 +107,7 @@ func (p *Packer) Add(t BlobType, id backend.ID, data []byte) (int, error) {
 	p.bytes += uint(n)
 	p.blobs = append(p.blobs, c)
 
-	return n, err
+	return n, errors.Wrap(err, "Write")
 }
 
 var entrySize = uint(binary.Size(BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize)
@@ -142,7 +142,7 @@ func (p *Packer) Finalize() (uint, error) {
 	// append the header
 	n, err := p.wr.Write(encryptedHeader)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Write")
 	}
 
 	hdrBytes := bytesHeader + crypto.Extension
@@ -155,7 +155,7 @@ func (p *Packer) Finalize() (uint, error) {
 	// write length
 	err = binary.Write(p.wr, binary.LittleEndian, uint32(uint(len(p.blobs))*entrySize+crypto.Extension))
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "binary.Write")
 	}
 	bytesWritten += uint(binary.Size(uint32(0)))
 
@@ -187,7 +187,7 @@ func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
 
 		err := binary.Write(wr, binary.LittleEndian, entry)
 		if err != nil {
-			return bytesWritten, err
+			return bytesWritten, errors.Wrap(err, "binary.Write")
 		}
 
 		bytesWritten += entrySize
@@ -237,7 +237,7 @@ func readHeaderLength(rd io.ReaderAt, size int64) (uint32, error) {
 	buf := make([]byte, binary.Size(uint32(0)))
 	n, err := rd.ReadAt(buf, off)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "ReadAt")
 	}
 
 	if n != len(buf) {
@@ -268,7 +268,7 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 	buf := make([]byte, int(hl))
 	n, err := rd.ReadAt(buf, size-int64(hl)-int64(binary.Size(hl)))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "ReadAt")
 	}
 
 	if n != len(buf) {
@@ -301,7 +301,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []Blob, err error)
 		}
 
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "binary.Read")
 		}
 
 		entry := Blob{

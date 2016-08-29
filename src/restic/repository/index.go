@@ -456,7 +456,7 @@ func (idx *Index) Dump(w io.Writer) error {
 
 	_, err = w.Write(append(buf, '\n'))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Write")
 	}
 
 	debug.Log("Index.Dump", "done")
@@ -492,7 +492,7 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 			err = ErrOldIndexFormat
 		}
 
-		return nil, err
+		return nil, errors.Wrap(err, "Decode")
 	}
 
 	idx = NewIndex()
@@ -511,7 +511,7 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 	idx.final = true
 
 	debug.Log("Index.DecodeIndex", "done")
-	return idx, err
+	return idx, nil
 }
 
 // DecodeOldIndex loads and unserializes an index in the old format from rd.
@@ -523,7 +523,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	err = dec.Decode(&list)
 	if err != nil {
 		debug.Log("Index.DecodeOldIndex", "Error %#v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "Decode")
 	}
 
 	idx = NewIndex()
@@ -541,7 +541,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	idx.final = true
 
 	debug.Log("Index.DecodeOldIndex", "done")
-	return idx, err
+	return idx, nil
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.

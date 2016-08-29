@@ -168,7 +168,7 @@ func (m *MACKey) UnmarshalJSON(data []byte) error {
 	j := jsonMACKey{}
 	err := json.Unmarshal(data, &j)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Unmarshal")
 	}
 	copy(m.K[:], j.K)
 	copy(m.R[:], j.R)
@@ -206,7 +206,7 @@ func (k *EncryptionKey) UnmarshalJSON(data []byte) error {
 	d := make([]byte, aesKeySize)
 	err := json.Unmarshal(data, &d)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Unmarshal")
 	}
 	copy(k[:], d)
 

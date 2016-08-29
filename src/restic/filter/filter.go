@@ -85,7 +85,7 @@ func match(patterns, strs []string) (matched bool, err error) {
 			for i := len(patterns) - 1; i >= 0; i-- {
 				ok, err := filepath.Match(patterns[i], strs[offset+i])
 				if err != nil {
-					return false, err
+					return false, errors.Wrap(err, "Match")
 				}
 
 				if !ok {

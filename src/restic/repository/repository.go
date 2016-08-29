@@ -257,7 +257,7 @@ func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 	debug.Log("Repo.SaveJSONUnpacked", "save new blob %v", t)
 	plaintext, err := json.Marshal(item)
 	if err != nil {
-		return backend.ID{}, errors.Errorf("json.Encode: %v", err)
+		return backend.ID{}, errors.Wrap(err, "json.Marshal")
 	}
 
 	return r.SaveUnpacked(t, plaintext)
