@@ -4,8 +4,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
+	"restic"
+
+	"github.com/pkg/errors"
 
 	resticfs "restic/fs"
 	"restic/fuse"
@@ -42,7 +44,7 @@ func (cmd CmdMount) Usage() string {
 
 func (cmd CmdMount) Execute(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("wrong number of parameters, Usage: %s", cmd.Usage())
+		return restic.Fatalf("wrong number of parameters, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -56,7 +58,7 @@ func (cmd CmdMount) Execute(args []string) error {
 	}
 
 	mountpoint := args[0]
-	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(err) {
+	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(errors.Cause(err)) {
 		cmd.global.Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
 		err = resticfs.Mkdir(mountpoint, os.ModeDir|0700)
 		if err != nil {

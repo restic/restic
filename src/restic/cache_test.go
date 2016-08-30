@@ -18,6 +18,9 @@ func TestCache(t *testing.T) {
 
 	// archive some files, this should automatically cache all blobs from the snapshot
 	_, _, err = arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// TODO: test caching index
 }

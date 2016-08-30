@@ -1,8 +1,9 @@
 package backend
 
 import (
-	"errors"
 	"fmt"
+
+	"github.com/pkg/errors"
 )
 
 // Handle is used to store and access data in a backend.
@@ -33,7 +34,7 @@ func (h Handle) Valid() error {
 	case Index:
 	case Config:
 	default:
-		return fmt.Errorf("invalid Type %q", h.Type)
+		return errors.Errorf("invalid Type %q", h.Type)
 	}
 
 	if h.Type == Config {

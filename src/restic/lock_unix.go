@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/pkg/errors"
+
 	"restic/debug"
 )
 
@@ -16,11 +18,11 @@ func uidGidInt(u user.User) (uid, gid uint32, err error) {
 	var ui, gi int64
 	ui, err = strconv.ParseInt(u.Uid, 10, 32)
 	if err != nil {
-		return
+		return uid, gid, errors.Wrap(err, "ParseInt")
 	}
 	gi, err = strconv.ParseInt(u.Gid, 10, 32)
 	if err != nil {
-		return
+		return uid, gid, errors.Wrap(err, "ParseInt")
 	}
 	uid = uint32(ui)
 	gid = uint32(gi)

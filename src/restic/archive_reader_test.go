@@ -48,6 +48,9 @@ func checkSavedFile(t *testing.T, repo *repository.Repository, treeID backend.ID
 
 		buf2 = buf2[:len(buf)]
 		_, err = io.ReadFull(rd, buf2)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		if !bytes.Equal(buf, buf2) {
 			t.Fatalf("blob %d (%v) is wrong", i, id.Str())

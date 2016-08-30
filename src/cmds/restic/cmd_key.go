@@ -1,8 +1,8 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"restic"
 
 	"restic/backend"
 	"restic/repository"
@@ -69,7 +69,7 @@ func (cmd CmdKey) getNewPassword() string {
 func (cmd CmdKey) addKey(repo *repository.Repository) error {
 	id, err := repository.AddKey(repo, cmd.getNewPassword(), repo.Key())
 	if err != nil {
-		return fmt.Errorf("creating new key failed: %v\n", err)
+		return restic.Fatalf("creating new key failed: %v\n", err)
 	}
 
 	cmd.global.Verbosef("saved new key as %s\n", id)
@@ -79,7 +79,7 @@ func (cmd CmdKey) addKey(repo *repository.Repository) error {
 
 func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 	if name == repo.KeyName() {
-		return errors.New("refusing to remove key currently used to access repository")
+		return restic.Fatal("refusing to remove key currently used to access repository")
 	}
 
 	err := repo.Backend().Remove(backend.Key, name)
@@ -94,7 +94,7 @@ func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 func (cmd CmdKey) changePassword(repo *repository.Repository) error {
 	id, err := repository.AddKey(repo, cmd.getNewPassword(), repo.Key())
 	if err != nil {
-		return fmt.Errorf("creating new key failed: %v\n", err)
+		return restic.Fatalf("creating new key failed: %v\n", err)
 	}
 
 	err = repo.Backend().Remove(backend.Key, repo.KeyName())
@@ -113,7 +113,7 @@ func (cmd CmdKey) Usage() string {
 
 func (cmd CmdKey) Execute(args []string) error {
 	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) {
-		return fmt.Errorf("wrong number of arguments, Usage: %s", cmd.Usage())
+		return restic.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

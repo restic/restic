@@ -4,9 +4,10 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"io"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"
@@ -48,13 +49,13 @@ func CreateConfig() (Config, error) {
 
 	cfg.ChunkerPolynomial, err = chunker.RandomPolynomial()
 	if err != nil {
-		return Config{}, err
+		return Config{}, errors.Wrap(err, "chunker.RandomPolynomial")
 	}
 
 	newID := make([]byte, repositoryIDSize)
 	_, err = io.ReadFull(rand.Reader, newID)
 	if err != nil {
-		return Config{}, err
+		return Config{}, errors.Wrap(err, "io.ReadFull")
 	}
 
 	cfg.ID = hex.EncodeToString(newID)

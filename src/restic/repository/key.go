@@ -2,11 +2,12 @@ package repository
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/user"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/crypto"
@@ -79,7 +80,7 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	}
 	k.user, err = crypto.KDF(params, k.Salt, password)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "crypto.KDF")
 	}
 
 	// decrypt master keys
@@ -93,7 +94,7 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	err = json.Unmarshal(buf, k.master)
 	if err != nil {
 		debug.Log("OpenKey", "Unmarshal() returned error %v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "Unmarshal")
 	}
 	k.name = name
 
@@ -125,7 +126,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 			debug.Log("SearchKey", "key %v returned error %v", name[:12], err)
 
 			// ErrUnauthenticated means the password is wrong, try the next key
-			if err == crypto.ErrUnauthenticated {
+			if errors.Cause(err) == crypto.ErrUnauthenticated {
 				continue
 			}
 
@@ -150,7 +151,7 @@ func LoadKey(s *Repository, name string) (k *Key, err error) {
 	k = &Key{}
 	err = json.Unmarshal(data, k)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Unmarshal")
 	}
 
 	return k, nil
@@ -162,7 +163,7 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	if KDFParams == nil {
 		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "Calibrate")
 		}
 
 		KDFParams = &p
@@ -211,7 +212,7 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	// encrypt master keys (as json) with user key
 	buf, err := json.Marshal(newkey.master)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Marshal")
 	}
 
 	newkey.Data, err = crypto.Encrypt(newkey.user, nil, buf)
@@ -219,7 +220,7 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	// dump as json
 	buf, err = json.Marshal(newkey)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Marshal")
 	}
 
 	// store in repository and return

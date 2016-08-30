@@ -1,13 +1,13 @@
 package restic
 
 import (
-	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"
@@ -48,13 +48,13 @@ func (c *Cache) Has(t backend.Type, subtype string, id backend.ID) (bool, error)
 	defer fd.Close()
 
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			debug.Log("Cache.Has", "test for file %v: not cached", filename)
 			return false, nil
 		}
 
 		debug.Log("Cache.Has", "test for file %v: error %v", filename, err)
-		return false, err
+		return false, errors.Wrap(err, "Open")
 	}
 
 	debug.Log("Cache.Has", "test for file %v: is cached", filename)
@@ -73,13 +73,13 @@ func (c *Cache) Store(t backend.Type, subtype string, id backend.ID) (io.WriteCl
 	dirname := filepath.Dir(filename)
 	err = fs.MkdirAll(dirname, 0700)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "MkdirAll")
 	}
 
 	file, err := fs.Create(filename)
 	if err != nil {
 		debug.Log("Cache.Store", "error creating file %v: %v", filename, err)
-		return nil, err
+		return nil, errors.Wrap(err, "Create")
 	}
 
 	debug.Log("Cache.Store", "created file %v", filename)
@@ -106,11 +106,11 @@ func (c *Cache) purge(t backend.Type, subtype string, id backend.ID) error {
 	err = fs.Remove(filename)
 	debug.Log("Cache.purge", "Remove file %v: %v", filename, err)
 
-	if err != nil && os.IsNotExist(err) {
+	if err != nil && os.IsNotExist(errors.Cause(err)) {
 		return nil
 	}
 
-	return err
+	return errors.Wrap(err, "Remove")
 }
 
 // Clear removes information from the cache that isn't present in the repository any more.
@@ -155,21 +155,21 @@ func (c *Cache) list(t backend.Type) ([]cacheEntry, error) {
 	case backend.Snapshot:
 		dir = filepath.Join(c.base, "snapshots")
 	default:
-		return nil, fmt.Errorf("cache not supported for type %v", t)
+		return nil, errors.Errorf("cache not supported for type %v", t)
 	}
 
 	fd, err := fs.Open(dir)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if os.IsNotExist(errors.Cause(err)) {
 			return []cacheEntry{}, nil
 		}
-		return nil, err
+		return nil, errors.Wrap(err, "Open")
 	}
 	defer fd.Close()
 
 	fis, err := fd.Readdir(-1)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Readdir")
 	}
 
 	entries := make([]cacheEntry, 0, len(fis))
@@ -207,7 +207,7 @@ func (c *Cache) filename(t backend.Type, subtype string, id backend.ID) (string,
 		return filepath.Join(c.base, "snapshots", filename), nil
 	}
 
-	return "", fmt.Errorf("cache not supported for type %v", t)
+	return "", errors.Errorf("cache not supported for type %v", t)
 }
 
 func getCacheDir() (string, error) {
@@ -231,21 +231,21 @@ func getWindowsCacheDir() (string, error) {
 	cachedir = filepath.Join(cachedir, "restic")
 	fi, err := fs.Stat(cachedir)
 
-	if os.IsNotExist(err) {
+	if os.IsNotExist(errors.Cause(err)) {
 		err = fs.MkdirAll(cachedir, 0700)
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, "MkdirAll")
 		}
 
 		return cachedir, nil
 	}
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Stat")
 	}
 
 	if !fi.IsDir() {
-		return "", fmt.Errorf("cache dir %v is not a directory", cachedir)
+		return "", errors.Errorf("cache dir %v is not a directory", cachedir)
 	}
 	return cachedir, nil
 }
@@ -268,10 +268,10 @@ func getXDGCacheDir() (string, error) {
 	}
 
 	fi, err := fs.Stat(cachedir)
-	if os.IsNotExist(err) {
+	if os.IsNotExist(errors.Cause(err)) {
 		err = fs.MkdirAll(cachedir, 0700)
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, "MkdirAll")
 		}
 
 		fi, err = fs.Stat(cachedir)
@@ -279,11 +279,11 @@ func getXDGCacheDir() (string, error) {
 	}
 
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Stat")
 	}
 
 	if !fi.IsDir() {
-		return "", fmt.Errorf("cache dir %v is not a directory", cachedir)
+		return "", errors.Errorf("cache dir %v is not a directory", cachedir)
 	}
 
 	return cachedir, nil

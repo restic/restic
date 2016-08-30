@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"restic/backend"
 	"restic/debug"
 	"restic/fs"
@@ -18,8 +20,6 @@ import (
 	"restic/repository"
 
 	"github.com/restic/chunker"
-
-	"github.com/juju/errors"
 )
 
 const (
@@ -113,7 +113,7 @@ func (arch *Archiver) Save(t pack.BlobType, data []byte, id backend.ID) error {
 func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
-		return backend.ID{}, err
+		return backend.ID{}, errors.Wrap(err, "Marshal")
 	}
 	data = append(data, '\n')
 
@@ -129,7 +129,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
 func (arch *Archiver) reloadFileIfChanged(node *Node, file fs.File) (*Node, error) {
 	fi, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Stat")
 	}
 
 	if fi.ModTime() == node.ModTime {
@@ -178,7 +178,7 @@ func waitForResults(resultChannels [](<-chan saveResult)) ([]saveResult, error) 
 	}
 
 	if len(results) != len(resultChannels) {
-		return nil, fmt.Errorf("chunker returned %v chunks, but only %v blobs saved", len(resultChannels), len(results))
+		return nil, errors.Errorf("chunker returned %v chunks, but only %v blobs saved", len(resultChannels), len(results))
 	}
 
 	return results, nil
@@ -198,7 +198,7 @@ func updateNodeContent(node *Node, results []saveResult) error {
 	}
 
 	if bytes != node.Size {
-		return fmt.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
+		return errors.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.path, bytes, node.Size)
 	}
 
 	debug.Log("Archiver.SaveFile", "SaveFile(%q): %v blobs\n", node.path, len(results))
@@ -212,7 +212,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 	file, err := fs.Open(node.path)
 	defer file.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Open")
 	}
 
 	node, err = arch.reloadFileIfChanged(node, file)
@@ -225,12 +225,12 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 
 	for {
 		chunk, err := chnker.Next(getBuf())
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 
 		if err != nil {
-			return errors.Annotate(err, "SaveFile() chunker.Next()")
+			return errors.Wrap(err, "chunker.Next")
 		}
 
 		resCh := make(chan saveResult, 1)
@@ -819,7 +819,7 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *Progress) (Stat, error) {
 
 		debug.Log("Scan", "Done for %v, err: %v", dir, err)
 		if err != nil {
-			return Stat{}, err
+			return Stat{}, errors.Wrap(err, "fs.Walk")
 		}
 	}
 

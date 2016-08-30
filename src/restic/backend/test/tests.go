@@ -10,6 +10,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/pkg/errors"
+
 	"restic/backend"
 	. "restic/test"
 )
@@ -223,7 +225,7 @@ func TestLoad(t testing.TB) {
 		// if we requested data beyond the end of the file, require
 		// ErrUnexpectedEOF error
 		if l > len(d) {
-			if err != io.ErrUnexpectedEOF {
+			if errors.Cause(err) != io.ErrUnexpectedEOF {
 				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
 			}
 			err = nil
@@ -270,7 +272,7 @@ func TestLoad(t testing.TB) {
 		// if we requested data beyond the end of the file, require
 		// ErrUnexpectedEOF error
 		if l > len(d) {
-			if err != io.ErrUnexpectedEOF {
+			if errors.Cause(err) != io.ErrUnexpectedEOF {
 				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
 				continue
 			}
@@ -303,7 +305,7 @@ func TestLoad(t testing.TB) {
 		t.Errorf("wrong length for larger buffer returned, want %d, got %d", length, n)
 	}
 
-	if err != io.ErrUnexpectedEOF {
+	if errors.Cause(err) != io.ErrUnexpectedEOF {
 		t.Errorf("wrong error returned for larger buffer: want io.ErrUnexpectedEOF, got %#v", err)
 	}
 
@@ -337,7 +339,7 @@ func TestLoadNegativeOffset(t testing.TB) {
 		// if we requested data beyond the end of the file, require
 		// ErrUnexpectedEOF error
 		if len(buf) > -o {
-			if err != io.ErrUnexpectedEOF {
+			if errors.Cause(err) != io.ErrUnexpectedEOF {
 				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), o)
 				continue
 			}

@@ -1,10 +1,11 @@
 package repository_test
 
 import (
-	"errors"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/repository"

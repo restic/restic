@@ -1,11 +1,12 @@
 package pipe
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"github.com/pkg/errors"
 
 	"restic/debug"
 	"restic/fs"
@@ -62,12 +63,12 @@ func (e Dir) Result() chan<- Result { return e.result }
 func readDirNames(dirname string) ([]string, error) {
 	f, err := fs.Open(dirname)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Open")
 	}
 	names, err := f.Readdirnames(-1)
 	f.Close()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Readdirnames")
 	}
 	sort.Strings(names)
 	return names, nil
@@ -93,6 +94,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 
 	info, err := fs.Lstat(dir)
 	if err != nil {
+		err = errors.Wrap(err, "Lstat")
 		debug.Log("pipe.walk", "error for %v: %v, res %p", dir, err, res)
 		select {
 		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
@@ -146,6 +148,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		entries = append(entries, ch)
 
 		if statErr != nil {
+			statErr = errors.Wrap(statErr, "Lstat")
 			debug.Log("pipe.walk", "sending file job for %v, err %v, res %p", subpath, err, res)
 			select {
 			case jobs <- Entry{info: fi, error: statErr, basedir: basedir, path: filepath.Join(relpath, name), result: ch}:

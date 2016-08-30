@@ -3,11 +3,12 @@ package repository
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/crypto"
@@ -139,7 +140,7 @@ func (idx *Index) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedBlob, 
 	}
 
 	debug.Log("Index.Lookup", "id %v not found", id.Str())
-	return nil, fmt.Errorf("id %v not found in index", id)
+	return nil, errors.Errorf("id %v not found in index", id)
 }
 
 // ListPack returns a list of blobs contained in a pack.
@@ -326,7 +327,7 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 			if blob.packID.IsNull() {
 				debug.Log("Index.generatePackList", "blob %v has no packID! (offset %v, length %v)",
 					h, blob.offset, blob.length)
-				return nil, fmt.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", h)
+				return nil, errors.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", h)
 			}
 
 			// see if pack is already in map
@@ -455,7 +456,7 @@ func (idx *Index) Dump(w io.Writer) error {
 
 	_, err = w.Write(append(buf, '\n'))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Write")
 	}
 
 	debug.Log("Index.Dump", "done")
@@ -491,7 +492,7 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 			err = ErrOldIndexFormat
 		}
 
-		return nil, err
+		return nil, errors.Wrap(err, "Decode")
 	}
 
 	idx = NewIndex()
@@ -510,7 +511,7 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 	idx.final = true
 
 	debug.Log("Index.DecodeIndex", "done")
-	return idx, err
+	return idx, nil
 }
 
 // DecodeOldIndex loads and unserializes an index in the old format from rd.
@@ -522,7 +523,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	err = dec.Decode(&list)
 	if err != nil {
 		debug.Log("Index.DecodeOldIndex", "Error %#v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "Decode")
 	}
 
 	idx = NewIndex()
@@ -540,7 +541,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	idx.final = true
 
 	debug.Log("Index.DecodeOldIndex", "done")
-	return idx, err
+	return idx, nil
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.

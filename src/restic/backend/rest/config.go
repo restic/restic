@@ -1,9 +1,10 @@
 package rest
 
 import (
-	"errors"
 	"net/url"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Config contains all configuration necessary to connect to a REST server.
@@ -21,7 +22,7 @@ func ParseConfig(s string) (interface{}, error) {
 	u, err := url.Parse(s)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "url.Parse")
 	}
 
 	cfg := Config{URL: u}

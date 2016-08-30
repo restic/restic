@@ -2,9 +2,10 @@ package s3
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/minio/minio-go"
 
@@ -29,7 +30,7 @@ func Open(cfg Config) (backend.Backend, error) {
 
 	client, err := minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "minio.New")
 	}
 
 	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix}
@@ -38,14 +39,14 @@ func Open(cfg Config) (backend.Backend, error) {
 	ok, err := client.BucketExists(cfg.Bucket)
 	if err != nil {
 		debug.Log("s3.Open", "BucketExists(%v) returned err %v, trying to create the bucket", cfg.Bucket, err)
-		return nil, err
+		return nil, errors.Wrap(err, "client.BucketExists")
 	}
 
 	if !ok {
 		// create new bucket with default ACL in default region
 		err = client.MakeBucket(cfg.Bucket, "")
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "client.MakeBucket")
 		}
 	}
 
@@ -94,20 +95,20 @@ func (be s3) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	obj, err = be.client.GetObject(be.bucketname, path)
 	if err != nil {
 		debug.Log("s3.Load", "  err %v", err)
-		return 0, err
+		return 0, errors.Wrap(err, "client.GetObject")
 	}
 
 	// make sure that the object is closed properly.
 	defer func() {
 		e := obj.Close()
 		if err == nil {
-			err = e
+			err = errors.Wrap(e, "Close")
 		}
 	}()
 
 	info, err := obj.Stat()
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "obj.Stat")
 	}
 
 	// handle negative offsets
@@ -124,7 +125,7 @@ func (be s3) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 
 	// return an error if the offset is beyond the end of the file
 	if off > info.Size {
-		return 0, io.EOF
+		return 0, errors.Wrap(io.EOF, "")
 	}
 
 	var nextError error
@@ -140,7 +141,7 @@ func (be s3) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	}
 
 	n, err = obj.ReadAt(p, off)
-	if int64(n) == info.Size-off && err == io.EOF {
+	if int64(n) == info.Size-off && errors.Cause(err) == io.EOF {
 		err = nil
 	}
 
@@ -178,7 +179,7 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 	n, err := be.client.PutObject(be.bucketname, path, bytes.NewReader(p), "binary/octet-stream")
 	debug.Log("s3.Save", "%v -> %v bytes, err %#v", path, n, err)
 
-	return err
+	return errors.Wrap(err, "client.PutObject")
 }
 
 // Stat returns information about a blob.
@@ -191,21 +192,21 @@ func (be s3) Stat(h backend.Handle) (bi backend.BlobInfo, err error) {
 	obj, err = be.client.GetObject(be.bucketname, path)
 	if err != nil {
 		debug.Log("s3.Stat", "GetObject() err %v", err)
-		return backend.BlobInfo{}, err
+		return backend.BlobInfo{}, errors.Wrap(err, "client.GetObject")
 	}
 
 	// make sure that the object is closed properly.
 	defer func() {
 		e := obj.Close()
 		if err == nil {
-			err = e
+			err = errors.Wrap(e, "Close")
 		}
 	}()
 
 	fi, err := obj.Stat()
 	if err != nil {
 		debug.Log("s3.Stat", "Stat() err %v", err)
-		return backend.BlobInfo{}, err
+		return backend.BlobInfo{}, errors.Wrap(err, "Stat")
 	}
 
 	return backend.BlobInfo{Size: fi.Size}, nil
@@ -229,7 +230,7 @@ func (be *s3) Remove(t backend.Type, name string) error {
 	path := be.s3path(t, name)
 	err := be.client.RemoveObject(be.bucketname, path)
 	debug.Log("s3.Remove", "%v %v -> err %v", t, name, err)
-	return err
+	return errors.Wrap(err, "client.RemoveObject")
 }
 
 // List returns a channel that yields all names of blobs of type t. A

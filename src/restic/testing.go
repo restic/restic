@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/restic/chunker"
 )
 
@@ -34,7 +35,7 @@ func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs backend.IDs) {
 
 	for {
 		chunk, err := ch.Next(getBuf())
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 

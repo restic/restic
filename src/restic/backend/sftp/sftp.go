@@ -12,10 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"restic/backend"
 	"restic/debug"
 
-	"github.com/juju/errors"
 	"github.com/pkg/sftp"
 )
 
@@ -40,7 +41,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	// prefix the errors with the program name
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cmd.StderrPipe")
 	}
 
 	go func() {
@@ -56,16 +57,16 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	// get stdin and stdout
 	wr, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cmd.StdinPipe")
 	}
 	rd, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cmd.StdoutPipe")
 	}
 
 	// start the process
 	if err := cmd.Start(); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "cmd.Start")
 	}
 
 	// wait in a different goroutine
@@ -73,13 +74,13 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	go func() {
 		err := cmd.Wait()
 		debug.Log("sftp.Wait", "ssh command exited, err %v", err)
-		ch <- err
+		ch <- errors.Wrap(err, "cmd.Wait")
 	}()
 
 	// open the SFTP session
 	client, err := sftp.NewClientPipe(rd, wr)
 	if err != nil {
-		return nil, fmt.Errorf("unable to start the sftp session, error: %v", err)
+		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
 	}
 
 	return &SFTP{c: client, cmd: cmd, result: ch}, nil
@@ -125,7 +126,7 @@ func Open(dir string, program string, args ...string) (*SFTP, error) {
 	// test if all necessary dirs and files are there
 	for _, d := range paths(dir) {
 		if _, err := sftp.c.Lstat(d); err != nil {
-			return nil, fmt.Errorf("%s does not exist", d)
+			return nil, errors.Errorf("%s does not exist", d)
 		}
 	}
 
@@ -181,7 +182,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 
 	err = sftp.Close()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Close")
 	}
 
 	// open backend
@@ -206,9 +207,8 @@ func (r *SFTP) tempFile() (string, *sftp.File, error) {
 	buf := make([]byte, tempfileRandomSuffixLength)
 	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {
-		return "", nil, errors.Annotatef(err,
-			"unable to read %d random bytes for tempfile name",
-			tempfileRandomSuffixLength)
+		return "", nil, errors.Errorf("unable to read %d random bytes for tempfile name: %v",
+			tempfileRandomSuffixLength, err)
 	}
 
 	// construct tempfile name
@@ -217,7 +217,7 @@ func (r *SFTP) tempFile() (string, *sftp.File, error) {
 	// create file in temp dir
 	f, err := r.c.Create(name)
 	if err != nil {
-		return "", nil, errors.Annotatef(err, "creating tempfile %q failed", name)
+		return "", nil, errors.Errorf("creating tempfile %q failed: %v", name, err)
 	}
 
 	return name, f, nil
@@ -231,7 +231,7 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 			return nil
 		}
 
-		return fmt.Errorf("mkdirAll(%s): entry exists but is not a directory", dir)
+		return errors.Errorf("mkdirAll(%s): entry exists but is not a directory", dir)
 	}
 
 	// create parent directories
@@ -244,11 +244,11 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 	fi, err = r.c.Lstat(dir)
 	if err != nil {
 		// return previous errors
-		return fmt.Errorf("mkdirAll(%s): unable to create directories: %v, %v", dir, errMkdirAll, errMkdir)
+		return errors.Errorf("mkdirAll(%s): unable to create directories: %v, %v", dir, errMkdirAll, errMkdir)
 	}
 
 	if !fi.IsDir() {
-		return fmt.Errorf("mkdirAll(%s): entry exists but is not a directory", dir)
+		return errors.Errorf("mkdirAll(%s): entry exists but is not a directory", dir)
 	}
 
 	// set mode
@@ -269,21 +269,22 @@ func (r *SFTP) renameFile(oldname string, t backend.Type, name string) error {
 
 	// test if new file exists
 	if _, err := r.c.Lstat(filename); err == nil {
-		return fmt.Errorf("Close(): file %v already exists", filename)
+		return errors.Errorf("Close(): file %v already exists", filename)
 	}
 
 	err := r.c.Rename(oldname, filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Rename")
 	}
 
 	// set mode to read-only
 	fi, err := r.c.Lstat(filename)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Lstat")
 	}
 
-	return r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
+	err = r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
+	return errors.Wrap(err, "Chmod")
 }
 
 // Join joins the given paths and cleans them afterwards. This always uses
@@ -336,13 +337,13 @@ func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 
 	f, err := r.c.Open(r.filename(h.Type, h.Name))
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Open")
 	}
 
 	defer func() {
 		e := f.Close()
 		if err == nil && e != nil {
-			err = e
+			err = errors.Wrap(e, "Close")
 		}
 	}()
 
@@ -354,7 +355,7 @@ func (r *SFTP) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 	}
 
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Seek")
 	}
 
 	return io.ReadFull(f, p)
@@ -380,7 +381,7 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 
 	n, err := tmpfile.Write(p)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Write")
 	}
 
 	if n != len(p) {
@@ -389,17 +390,13 @@ func (r *SFTP) Save(h backend.Handle, p []byte) (err error) {
 
 	err = tmpfile.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Close")
 	}
 
 	err = r.renameFile(filename, h.Type, h.Name)
 	debug.Log("sftp.Save", "save %v: rename %v: %v",
 		h, path.Base(filename), err)
-	if err != nil {
-		return fmt.Errorf("sftp: renameFile: %v", err)
-	}
-
-	return nil
+	return err
 }
 
 // Stat returns information about a blob.
@@ -415,7 +412,7 @@ func (r *SFTP) Stat(h backend.Handle) (backend.BlobInfo, error) {
 
 	fi, err := r.c.Lstat(r.filename(h.Type, h.Name))
 	if err != nil {
-		return backend.BlobInfo{}, err
+		return backend.BlobInfo{}, errors.Wrap(err, "Lstat")
 	}
 
 	return backend.BlobInfo{Size: fi.Size()}, nil
@@ -429,12 +426,12 @@ func (r *SFTP) Test(t backend.Type, name string) (bool, error) {
 	}
 
 	_, err := r.c.Lstat(r.filename(t, name))
-	if os.IsNotExist(err) {
+	if os.IsNotExist(errors.Cause(err)) {
 		return false, nil
 	}
 
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "Lstat")
 	}
 
 	return true, nil

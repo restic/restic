@@ -1,16 +1,15 @@
 package restic
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/debug"
 	"restic/fs"
 	"restic/repository"
-
-	"github.com/juju/errors"
 )
 
 // Restorer is used to restore a snapshot to a directory.
@@ -35,7 +34,7 @@ func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) 
 
 	r.sn, err = LoadSnapshot(repo, id)
 	if err != nil {
-		return nil, errors.Annotate(err, "load snapshot for restorer")
+		return nil, err
 	}
 
 	return r, nil
@@ -44,7 +43,7 @@ func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) 
 func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error {
 	tree, err := LoadTree(res.repo, treeID)
 	if err != nil {
-		return res.Error(dir, nil, errors.Annotate(err, "LoadTree"))
+		return res.Error(dir, nil, err)
 	}
 
 	for _, node := range tree.Nodes {
@@ -61,13 +60,13 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error 
 
 		if node.Type == "dir" {
 			if node.Subtree == nil {
-				return fmt.Errorf("Dir without subtree in tree %v", treeID.Str())
+				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
 			subp := filepath.Join(dir, node.Name)
 			err = res.restoreTo(dst, subp, *node.Subtree)
 			if err != nil {
-				err = res.Error(subp, node, errors.Annotate(err, "restore subtree"))
+				err = res.Error(subp, node, err)
 				if err != nil {
 					return err
 				}
@@ -101,14 +100,14 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 
 		// Create parent directories and retry
 		err = fs.MkdirAll(filepath.Dir(dstPath), 0700)
-		if err == nil || err == os.ErrExist {
+		if err == nil || os.IsExist(errors.Cause(err)) {
 			err = node.CreateAt(dstPath, res.repo)
 		}
 	}
 
 	if err != nil {
 		debug.Log("Restorer.restoreNodeTo", "error %v", err)
-		err = res.Error(dstPath, node, errors.Annotate(err, "create node"))
+		err = res.Error(dstPath, node, err)
 		if err != nil {
 			return err
 		}

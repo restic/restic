@@ -2,12 +2,13 @@ package restic_test
 
 import (
 	"crypto/rand"
-	"errors"
 	"io"
 	mrand "math/rand"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"restic"
 	"restic/backend"

@@ -3,13 +3,14 @@ package rest
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 )
@@ -79,7 +80,7 @@ func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err er
 	if off < 0 {
 		info, err := b.Stat(h)
 		if err != nil {
-			return 0, err
+			return 0, errors.Wrap(err, "Stat")
 		}
 
 		if -off > info.Size {
@@ -91,7 +92,7 @@ func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err er
 
 	req, err := http.NewRequest("GET", restPath(b.url, h), nil)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "http.NewRequest")
 	}
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", off, off+int64(len(p))))
 	<-b.connChan
@@ -103,16 +104,16 @@ func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err er
 			e := resp.Body.Close()
 
 			if err == nil {
-				err = e
+				err = errors.Wrap(e, "Close")
 			}
 		}()
 	}
 
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "client.Do")
 	}
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
-		return 0, fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return 0, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	return io.ReadFull(resp.Body, p)
@@ -133,17 +134,17 @@ func (b *restBackend) Save(h backend.Handle, p []byte) (err error) {
 			e := resp.Body.Close()
 
 			if err == nil {
-				err = e
+				err = errors.Wrap(e, "Close")
 			}
 		}()
 	}
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "client.Post")
 	}
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	return nil
@@ -159,15 +160,15 @@ func (b *restBackend) Stat(h backend.Handle) (backend.BlobInfo, error) {
 	resp, err := b.client.Head(restPath(b.url, h))
 	b.connChan <- struct{}{}
 	if err != nil {
-		return backend.BlobInfo{}, err
+		return backend.BlobInfo{}, errors.Wrap(err, "client.Head")
 	}
 
 	if err = resp.Body.Close(); err != nil {
-		return backend.BlobInfo{}, err
+		return backend.BlobInfo{}, errors.Wrap(err, "Close")
 	}
 
 	if resp.StatusCode != 200 {
-		return backend.BlobInfo{}, fmt.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return backend.BlobInfo{}, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	if resp.ContentLength < 0 {
@@ -200,14 +201,14 @@ func (b *restBackend) Remove(t backend.Type, name string) error {
 
 	req, err := http.NewRequest("DELETE", restPath(b.url, h), nil)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "http.NewRequest")
 	}
 	<-b.connChan
 	resp, err := b.client.Do(req)
 	b.connChan <- struct{}{}
 
 	if err != nil {
-		return err
+		return errors.Wrap(err, "client.Do")
 	}
 
 	if resp.StatusCode != 200 {

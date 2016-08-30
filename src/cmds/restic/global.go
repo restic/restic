@@ -1,10 +1,10 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
+	"restic"
 	"runtime"
 	"strings"
 	"syscall"
@@ -19,6 +19,7 @@ import (
 	"restic/repository"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -183,7 +184,7 @@ func readPassword(in io.Reader) (password string, err error) {
 	n, err := io.ReadFull(in, buf)
 	buf = buf[:n]
 
-	if err != nil && err != io.ErrUnexpectedEOF {
+	if err != nil && errors.Cause(err) != io.ErrUnexpectedEOF {
 		return "", err
 	}
 
@@ -246,7 +247,7 @@ const maxKeys = 20
 // OpenRepository reads the password and opens the repository.
 func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 	if o.Repo == "" {
-		return nil, errors.New("Please specify repository location (-r)")
+		return nil, restic.Fatal("Please specify repository location (-r)")
 	}
 
 	be, err := open(o.Repo)
@@ -262,7 +263,7 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 
 	err = s.SearchKey(o.password, maxKeys)
 	if err != nil {
-		return nil, fmt.Errorf("unable to open repo: %v", err)
+		return nil, restic.Fatalf("unable to open repo: %v", err)
 	}
 
 	return s, nil
@@ -300,7 +301,7 @@ func open(s string) (backend.Backend, error) {
 	}
 
 	debug.Log("open", "invalid repository location: %v", s)
-	return nil, fmt.Errorf("invalid scheme %q", loc.Scheme)
+	return nil, restic.Fatalf("invalid scheme %q", loc.Scheme)
 }
 
 // Create the backend specified by URI.
@@ -335,5 +336,5 @@ func create(s string) (backend.Backend, error) {
 	}
 
 	debug.Log("open", "invalid repository scheme: %v", s)
-	return nil, fmt.Errorf("invalid scheme %q", loc.Scheme)
+	return nil, restic.Fatalf("invalid scheme %q", loc.Scheme)
 }

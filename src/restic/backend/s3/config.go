@@ -1,10 +1,11 @@
 package s3
 
 import (
-	"errors"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Config contains all configuration necessary to connect to an s3 compatible
@@ -31,7 +32,7 @@ func ParseConfig(s string) (interface{}, error) {
 		// bucket name and prefix
 		url, err := url.Parse(s[3:])
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "url.Parse")
 		}
 
 		if url.Path == "" {

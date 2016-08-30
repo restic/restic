@@ -1,10 +1,11 @@
 package rest_test
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"restic/backend"
 	"restic/backend/rest"

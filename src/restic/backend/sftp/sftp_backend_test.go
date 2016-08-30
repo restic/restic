@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"restic/backend"
 	"restic/backend/sftp"
 	"restic/backend/test"
@@ -37,7 +39,7 @@ func init() {
 	for _, dir := range strings.Split(TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
 		_, err := os.Stat(testpath)
-		if !os.IsNotExist(err) {
+		if !os.IsNotExist(errors.Cause(err)) {
 			sftpserver = testpath
 			break
 		}

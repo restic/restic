@@ -14,6 +14,7 @@ import (
 	"restic/repository"
 	. "restic/test"
 
+	"github.com/pkg/errors"
 	"github.com/restic/chunker"
 )
 
@@ -31,7 +32,7 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 	for {
 		chunk, err := ch.Next(buf)
 
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 
@@ -69,7 +70,7 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) 
 
 	for {
 		chunk, err := ch.Next(buf)
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 
@@ -292,7 +293,7 @@ func getRandomData(seed int, size int) []chunker.Chunk {
 
 	for {
 		c, err := chunker.Next(nil)
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 		chunks = append(chunks, c)

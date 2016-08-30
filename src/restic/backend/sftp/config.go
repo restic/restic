@@ -1,11 +1,11 @@
 package sftp
 
 import (
-	"errors"
-	"fmt"
 	"net/url"
 	"path"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Config collects all information required to connect to an sftp server.
@@ -26,7 +26,7 @@ func ParseConfig(s string) (interface{}, error) {
 		// parse the "sftp://user@host/path" url format
 		url, err := url.Parse(s)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "url.Parse")
 		}
 		if url.User != nil {
 			user = url.User.Username()
@@ -34,7 +34,7 @@ func ParseConfig(s string) (interface{}, error) {
 		host = url.Host
 		dir = url.Path
 		if dir == "" {
-			return nil, fmt.Errorf("invalid backend %q, no directory specified", s)
+			return nil, errors.Errorf("invalid backend %q, no directory specified", s)
 		}
 
 		dir = dir[1:]

@@ -5,7 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
+
+	"github.com/pkg/errors"
 )
 
 // Hash returns the ID for data.
@@ -24,7 +25,7 @@ func ParseID(s string) (ID, error) {
 	b, err := hex.DecodeString(s)
 
 	if err != nil {
-		return ID{}, err
+		return ID{}, errors.Wrap(err, "hex.DecodeString")
 	}
 
 	if len(b) != IDSize {
@@ -72,7 +73,7 @@ func (id ID) Equal(other ID) bool {
 func (id ID) EqualString(other string) (bool, error) {
 	s, err := hex.DecodeString(other)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "hex.DecodeString")
 	}
 
 	id2 := ID{}
@@ -96,12 +97,12 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 	var s string
 	err := json.Unmarshal(b, &s)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Unmarshal")
 	}
 
 	_, err = hex.Decode(id[:], []byte(s))
 	if err != nil {
-		return err
+		return errors.Wrap(err, "hex.Decode")
 	}
 
 	return nil

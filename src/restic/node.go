@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"runtime"
 
 	"restic/backend"
@@ -17,8 +19,6 @@ import (
 	"restic/fs"
 	"restic/pack"
 	"restic/repository"
-
-	"github.com/juju/errors"
 )
 
 // Node is a file, directory or other item in a backup.
@@ -114,32 +114,32 @@ func (node *Node) CreateAt(path string, repo *repository.Repository) error {
 	switch node.Type {
 	case "dir":
 		if err := node.createDirAt(path); err != nil {
-			return errors.Annotate(err, "createDirAt")
+			return err
 		}
 	case "file":
 		if err := node.createFileAt(path, repo); err != nil {
-			return errors.Annotate(err, "createFileAt")
+			return err
 		}
 	case "symlink":
 		if err := node.createSymlinkAt(path); err != nil {
-			return errors.Annotate(err, "createSymlinkAt")
+			return err
 		}
 	case "dev":
 		if err := node.createDevAt(path); err != nil {
-			return errors.Annotate(err, "createDevAt")
+			return err
 		}
 	case "chardev":
 		if err := node.createCharDevAt(path); err != nil {
-			return errors.Annotate(err, "createCharDevAt")
+			return err
 		}
 	case "fifo":
 		if err := node.createFifoAt(path); err != nil {
-			return errors.Annotate(err, "createFifoAt")
+			return err
 		}
 	case "socket":
 		return nil
 	default:
-		return fmt.Errorf("filetype %q not implemented!\n", node.Type)
+		return errors.Errorf("filetype %q not implemented!\n", node.Type)
 	}
 
 	err := node.restoreMetadata(path)
@@ -155,13 +155,13 @@ func (node Node) restoreMetadata(path string) error {
 
 	err = lchown(path, int(node.UID), int(node.GID))
 	if err != nil {
-		return errors.Annotate(err, "Lchown")
+		return errors.Wrap(err, "Lchown")
 	}
 
 	if node.Type != "symlink" {
 		err = fs.Chmod(path, node.Mode)
 		if err != nil {
-			return errors.Annotate(err, "Chmod")
+			return errors.Wrap(err, "Chmod")
 		}
 	}
 
@@ -183,15 +183,11 @@ func (node Node) RestoreTimestamps(path string) error {
 	}
 
 	if node.Type == "symlink" {
-		if err := node.restoreSymlinkTimestamps(path, utimes); err != nil {
-			return err
-		}
-
-		return nil
+		return node.restoreSymlinkTimestamps(path, utimes)
 	}
 
 	if err := syscall.UtimesNano(path, utimes[:]); err != nil {
-		return errors.Annotate(err, "UtimesNano")
+		return errors.Wrap(err, "UtimesNano")
 	}
 
 	return nil
@@ -200,7 +196,7 @@ func (node Node) RestoreTimestamps(path string) error {
 func (node Node) createDirAt(path string) error {
 	err := fs.Mkdir(path, node.Mode)
 	if err != nil {
-		return errors.Annotate(err, "Mkdir")
+		return errors.Wrap(err, "Mkdir")
 	}
 
 	return nil
@@ -211,7 +207,7 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 	defer f.Close()
 
 	if err != nil {
-		return errors.Annotate(err, "OpenFile")
+		return errors.Wrap(err, "OpenFile")
 	}
 
 	var buf []byte
@@ -228,12 +224,12 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 
 		buf, err := repo.LoadBlob(id, pack.Data, buf)
 		if err != nil {
-			return errors.Annotate(err, "Load")
+			return err
 		}
 
 		_, err = f.Write(buf)
 		if err != nil {
-			return errors.Annotate(err, "Write")
+			return errors.Wrap(err, "Write")
 		}
 	}
 
@@ -247,7 +243,7 @@ func (node Node) createSymlinkAt(path string) error {
 	}
 	err := fs.Symlink(node.LinkTarget, path)
 	if err != nil {
-		return errors.Annotate(err, "Symlink")
+		return errors.Wrap(err, "Symlink")
 	}
 
 	return nil
@@ -280,11 +276,11 @@ func (node *Node) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, nj)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Unmarshal")
 	}
 
 	nj.Name, err = strconv.Unquote(`"` + nj.Name + `"`)
-	return err
+	return errors.Wrap(err, "Unquote")
 }
 
 func (node Node) Equals(other Node) bool {
@@ -422,7 +418,7 @@ func (node *Node) fillUser(stat statT) error {
 
 	username, err := lookupUsername(strconv.Itoa(int(stat.uid())))
 	if err != nil {
-		return errors.Annotate(err, "fillUser")
+		return err
 	}
 
 	node.User = username
@@ -470,7 +466,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	var err error
 
 	if err = node.fillUser(stat); err != nil {
-		return errors.Annotate(err, "fillExtra")
+		return err
 	}
 
 	switch node.Type {
@@ -480,6 +476,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "dir":
 	case "symlink":
 		node.LinkTarget, err = fs.Readlink(path)
+		err = errors.Wrap(err, "Readlink")
 	case "dev":
 		node.Device = uint64(stat.rdev())
 	case "chardev":
@@ -487,7 +484,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "fifo":
 	case "socket":
 	default:
-		err = fmt.Errorf("invalid node type %q", node.Type)
+		err = errors.Errorf("invalid node type %q", node.Type)
 	}
 
 	return err

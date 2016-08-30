@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -66,7 +65,7 @@ func (cmd CmdCheck) newReadProgress(todo restic.Stat) *restic.Progress {
 
 func (cmd CmdCheck) Execute(args []string) error {
 	if len(args) != 0 {
-		return errors.New("check has no arguments")
+		return restic.Fatal("check has no arguments")
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -104,7 +103,7 @@ func (cmd CmdCheck) Execute(args []string) error {
 		for _, err := range errs {
 			cmd.global.Warnf("error: %v\n", err)
 		}
-		return fmt.Errorf("LoadIndex returned errors")
+		return restic.Fatal("LoadIndex returned errors")
 	}
 
 	done := make(chan struct{})
@@ -159,7 +158,7 @@ func (cmd CmdCheck) Execute(args []string) error {
 	}
 
 	if errorsFound {
-		return errors.New("repository contains errors")
+		return restic.Fatal("repository contains errors")
 	}
 	return nil
 }
