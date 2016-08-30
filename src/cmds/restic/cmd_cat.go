@@ -53,7 +53,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		id, err = backend.ParseID(args[1])
 		if err != nil {
 			if tpe != "snapshot" {
-				return err
+				return restic.Fatalf("unable to parse ID: %v\n", err)
 			}
 
 			// find snapshot id with prefix
