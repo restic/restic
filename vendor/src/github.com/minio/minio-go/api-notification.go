@@ -134,7 +134,15 @@ func (c Client) ListenBucketNotification(bucketName string, accountArn Arn, done
 			return
 		}
 
-		// Continuously run and listen on bucket notification.
+		// Check ARN partition to verify if listening bucket is supported
+		if accountArn.Partition != "minio" {
+			notificationInfoCh <- NotificationInfo{
+				Err: ErrAPINotSupported("Listening bucket notification is specific only to `minio` partitions"),
+			}
+			return
+		}
+
+		// Continously run and listen on bucket notification.
 		for {
 			urlValues := make(url.Values)
 			urlValues.Set("notificationARN", accountArn.String())

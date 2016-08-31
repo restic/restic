@@ -233,3 +233,13 @@ func ErrNoSuchBucketPolicy(message string) error {
 		RequestID: "minio",
 	}
 }
+
+// ErrAPINotSupported - API not supported response
+// The specified API call is not supported
+func ErrAPINotSupported(message string) error {
+	return ErrorResponse{
+		Code:      "APINotSupported",
+		Message:   message,
+		RequestID: "minio",
+	}
+}

@@ -911,7 +911,7 @@ __Example__
 
 
 ```go
-topicArn := NewArn("aws", "s3", "us-east-1", "804605494417", "PhotoUpdate")
+topicArn := NewArn("aws", "sns", "us-east-1", "804605494417", "PhotoUpdate")
 
 topicConfig := NewNotificationConfig(topicArn)
 topicConfig.AddEvents(minio.ObjectCreatedAll, minio.ObjectRemovedAll)
