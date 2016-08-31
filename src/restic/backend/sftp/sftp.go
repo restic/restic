@@ -34,6 +34,8 @@ type SFTP struct {
 	result <-chan error
 }
 
+var _ restic.Backend = &SFTP{}
+
 func startClient(program string, args ...string) (*SFTP, error) {
 	// Connect to a remote host and request the sftp subsystem via the 'ssh'
 	// command.  This assumes that passwordless login is correctly configured.
@@ -401,22 +403,22 @@ func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
 }
 
 // Stat returns information about a blob.
-func (r *SFTP) Stat(h restic.Handle) (backend.BlobInfo, error) {
+func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
 	debug.Log("sftp.Stat", "stat %v", h)
 	if err := r.clientError(); err != nil {
-		return backend.BlobInfo{}, err
+		return restic.FileInfo{}, err
 	}
 
 	if err := h.Valid(); err != nil {
-		return backend.BlobInfo{}, err
+		return restic.FileInfo{}, err
 	}
 
 	fi, err := r.c.Lstat(r.filename(h.FileType, h.Name))
 	if err != nil {
-		return backend.BlobInfo{}, errors.Wrap(err, "Lstat")
+		return restic.FileInfo{}, errors.Wrap(err, "Lstat")
 	}
 
-	return backend.BlobInfo{Size: fi.Size()}, nil
+	return restic.FileInfo{Size: fi.Size()}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.

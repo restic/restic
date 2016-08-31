@@ -33,6 +33,11 @@ type Repository interface {
 	Flush() error
 }
 
+// Deleter removes all data stored in a backend/repo.
+type Deleter interface {
+	Delete() error
+}
+
 // Lister allows listing files in a backend.
 type Lister interface {
 	List(FileType, <-chan struct{}) <-chan string

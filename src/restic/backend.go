@@ -31,9 +31,6 @@ type Backend interface {
 	// arbitrary order. A goroutine is started for this. If the channel done is
 	// closed, sending stops.
 	List(t FileType, done <-chan struct{}) <-chan string
-
-	// Delete the complete repository.
-	Delete() error
 }
 
 // FileInfo is returned by Stat() and contains information about a file in the

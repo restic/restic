@@ -1,6 +1,10 @@
 package backend
 
-import "github.com/pkg/errors"
+import (
+	"restic"
+
+	"github.com/pkg/errors"
+)
 
 // ErrNoIDPrefixFound is returned by Find() when no ID for the given prefix
 // could be found.
@@ -13,7 +17,7 @@ var ErrMultipleIDMatches = errors.New("multiple IDs with prefix found")
 // Find loads the list of all blobs of type t and searches for names which
 // start with prefix. If none is found, nil and ErrNoIDPrefixFound is returned.
 // If more than one is found, nil and ErrMultipleIDMatches is returned.
-func Find(be Lister, t Type, prefix string) (string, error) {
+func Find(be restic.Lister, t restic.FileType, prefix string) (string, error) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -41,7 +45,7 @@ const minPrefixLength = 8
 
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all names of type t are unique.
-func PrefixLength(be Lister, t Type) (int, error) {
+func PrefixLength(be restic.Lister, t restic.FileType) (int, error) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -53,7 +57,7 @@ func PrefixLength(be Lister, t Type) (int, error) {
 
 	// select prefixes of length l, test if the last one is the same as the current one
 outer:
-	for l := minPrefixLength; l < IDSize; l++ {
+	for l := minPrefixLength; l < restic.IDSize; l++ {
 		var last string
 
 		for _, name := range list {
@@ -66,5 +70,5 @@ outer:
 		return l, nil
 	}
 
-	return IDSize, nil
+	return restic.IDSize, nil
 }

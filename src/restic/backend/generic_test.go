@@ -16,7 +16,7 @@ func (m mockBackend) List(t restic.FileType, done <-chan struct{}) <-chan string
 	return m.list(t, done)
 }
 
-var samples = backend.IDs{
+var samples = restic.IDs{
 	ParseID("20bdc1402a6fc9b633aaffffffffffffffffffffffffffffffffffffffffffff"),
 	ParseID("20bdc1402a6fc9b633ccd578c4a92d0f4ef1a457fa2e16c596bc73fb409d6cc0"),
 	ParseID("20bdc1402a6fc9b633ffffffffffffffffffffffffffffffffffffffffffffff"),

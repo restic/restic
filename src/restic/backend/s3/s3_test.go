@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"restic"
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/backend/s3"
 	"restic/backend/test"
 	. "restic/test"
@@ -38,7 +38,7 @@ func init() {
 		cfg.UseHTTP = true
 	}
 
-	test.CreateFn = func() (backend.Backend, error) {
+	test.CreateFn = func() (restic.Backend, error) {
 		be, err := s3.Open(cfg)
 		if err != nil {
 			return nil, err
@@ -56,7 +56,7 @@ func init() {
 		return be, nil
 	}
 
-	test.OpenFn = func() (backend.Backend, error) {
+	test.OpenFn = func() (restic.Backend, error) {
 		return s3.Open(cfg)
 	}
 

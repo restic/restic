@@ -54,7 +54,7 @@ type restBackend struct {
 }
 
 // Open opens the REST backend with the given config.
-func Open(cfg Config) (backend.Backend, error) {
+func Open(cfg Config) (restic.Backend, error) {
 	connChan := make(chan struct{}, connLimit)
 	for i := 0; i < connLimit; i++ {
 		connChan <- struct{}{}
@@ -152,31 +152,31 @@ func (b *restBackend) Save(h restic.Handle, p []byte) (err error) {
 }
 
 // Stat returns information about a blob.
-func (b *restBackend) Stat(h restic.Handle) (backend.BlobInfo, error) {
+func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 	if err := h.Valid(); err != nil {
-		return backend.BlobInfo{}, err
+		return restic.FileInfo{}, err
 	}
 
 	<-b.connChan
 	resp, err := b.client.Head(restPath(b.url, h))
 	b.connChan <- struct{}{}
 	if err != nil {
-		return backend.BlobInfo{}, errors.Wrap(err, "client.Head")
+		return restic.FileInfo{}, errors.Wrap(err, "client.Head")
 	}
 
 	if err = resp.Body.Close(); err != nil {
-		return backend.BlobInfo{}, errors.Wrap(err, "Close")
+		return restic.FileInfo{}, errors.Wrap(err, "Close")
 	}
 
 	if resp.StatusCode != 200 {
-		return backend.BlobInfo{}, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return restic.FileInfo{}, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
 
 	if resp.ContentLength < 0 {
-		return backend.BlobInfo{}, errors.New("negative content length")
+		return restic.FileInfo{}, errors.New("negative content length")
 	}
 
-	bi := backend.BlobInfo{
+	bi := restic.FileInfo{
 		Size: resp.ContentLength,
 	}
 

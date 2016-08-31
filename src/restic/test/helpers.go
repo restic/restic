@@ -11,12 +11,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"restic"
 	"runtime"
 	"testing"
 
 	mrand "math/rand"
 
-	"restic/backend"
 	"restic/backend/local"
 	"restic/repository"
 )
@@ -63,9 +63,9 @@ func Equals(tb testing.TB, exp, act interface{}) {
 	}
 }
 
-// ParseID parses s as a backend.ID and panics if that fails.
-func ParseID(s string) backend.ID {
-	id, err := backend.ParseID(s)
+// ParseID parses s as a restic.ID and panics if that fails.
+func ParseID(s string) restic.ID {
+	id, err := restic.ParseID(s)
 	if err != nil {
 		panic(err)
 	}

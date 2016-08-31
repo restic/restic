@@ -12,7 +12,6 @@ import (
 	"bazil.org/fuse/fs"
 
 	"restic"
-	"restic/backend"
 	"restic/debug"
 	"restic/repository"
 
@@ -21,7 +20,7 @@ import (
 
 type SnapshotWithId struct {
 	*restic.Snapshot
-	backend.ID
+	restic.ID
 }
 
 // These lines statically ensure that a *SnapshotsDir implement the given

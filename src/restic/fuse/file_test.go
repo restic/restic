@@ -14,20 +14,18 @@ import (
 	"bazil.org/fuse"
 
 	"restic"
-	"restic/backend"
-	"restic/pack"
 	. "restic/test"
 )
 
 type MockRepo struct {
-	blobs map[backend.ID][]byte
+	blobs map[restic.ID][]byte
 }
 
-func NewMockRepo(content map[backend.ID][]byte) *MockRepo {
+func NewMockRepo(content map[restic.ID][]byte) *MockRepo {
 	return &MockRepo{blobs: content}
 }
 
-func (m *MockRepo) LookupBlobSize(id backend.ID, t pack.BlobType) (uint, error) {
+func (m *MockRepo) LookupBlobSize(id restic.ID, t restic.BlobType) (uint, error) {
 	buf, ok := m.blobs[id]
 	if !ok {
 		return 0, errors.New("blob not found")
@@ -36,7 +34,7 @@ func (m *MockRepo) LookupBlobSize(id backend.ID, t pack.BlobType) (uint, error) 
 	return uint(len(buf)), nil
 }
 
-func (m *MockRepo) LoadBlob(id backend.ID, t pack.BlobType, buf []byte) ([]byte, error) {
+func (m *MockRepo) LoadBlob(id restic.ID, t restic.BlobType, buf []byte) ([]byte, error) {
 	size, err := m.LookupBlobSize(id, t)
 	if err != nil {
 		return nil, err
@@ -68,12 +66,12 @@ var testContentLengths = []uint{
 }
 var testMaxFileSize uint
 
-func genTestContent() map[backend.ID][]byte {
-	m := make(map[backend.ID][]byte)
+func genTestContent() map[restic.ID][]byte {
+	m := make(map[restic.ID][]byte)
 
 	for _, length := range testContentLengths {
 		buf := Random(int(length), int(length))
-		id := backend.Hash(buf)
+		id := restic.Hash(buf)
 		m[id] = buf
 		testMaxFileSize += length
 	}
@@ -111,7 +109,7 @@ func TestFuseFile(t *testing.T) {
 
 	memfile := make([]byte, 0, maxBufSize)
 
-	var ids backend.IDs
+	var ids restic.IDs
 	for id, buf := range repo.blobs {
 		ids = append(ids, id)
 		memfile = append(memfile, buf...)

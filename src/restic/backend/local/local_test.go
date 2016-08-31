@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"restic"
 
-	"restic/backend"
 	"restic/backend/local"
 	"restic/backend/test"
 )
@@ -30,7 +30,7 @@ func createTempdir() error {
 }
 
 func init() {
-	test.CreateFn = func() (backend.Backend, error) {
+	test.CreateFn = func() (restic.Backend, error) {
 		err := createTempdir()
 		if err != nil {
 			return nil, err
@@ -38,7 +38,7 @@ func init() {
 		return local.Create(tempBackendDir)
 	}
 
-	test.OpenFn = func() (backend.Backend, error) {
+	test.OpenFn = func() (restic.Backend, error) {
 		err := createTempdir()
 		if err != nil {
 			return nil, err

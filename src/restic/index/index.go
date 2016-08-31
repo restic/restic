@@ -9,7 +9,6 @@ import (
 	"restic/debug"
 	"restic/list"
 	"restic/pack"
-	"restic/types"
 	"restic/worker"
 
 	"github.com/pkg/errors"
@@ -43,7 +42,7 @@ func newIndex() *Index {
 }
 
 // New creates a new index for repo from scratch.
-func New(repo types.Repository, p *restic.Progress) (*Index, error) {
+func New(repo restic.Repository, p *restic.Progress) (*Index, error) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -99,7 +98,7 @@ type indexJSON struct {
 	Packs      []*packJSON `json:"packs"`
 }
 
-func loadIndexJSON(repo types.Repository, id backend.ID) (*indexJSON, error) {
+func loadIndexJSON(repo restic.Repository, id backend.ID) (*indexJSON, error) {
 	debug.Log("index.loadIndexJSON", "process index %v\n", id.Str())
 
 	var idx indexJSON
@@ -112,7 +111,7 @@ func loadIndexJSON(repo types.Repository, id backend.ID) (*indexJSON, error) {
 }
 
 // Load creates an index by loading all index files from the repo.
-func Load(repo types.Repository, p *restic.Progress) (*Index, error) {
+func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
 	debug.Log("index.Load", "loading indexes")
 
 	p.Start()
@@ -300,7 +299,7 @@ func (idx *Index) FindBlob(h pack.Handle) ([]Location, error) {
 }
 
 // Save writes the complete index to the repo.
-func (idx *Index) Save(repo types.Repository, supersedes backend.IDs) (backend.ID, error) {
+func (idx *Index) Save(repo restic.Repository, supersedes backend.IDs) (backend.ID, error) {
 	packs := make(map[backend.ID][]pack.Blob, len(idx.Packs))
 	for id, p := range idx.Packs {
 		packs[id] = p.Entries
@@ -310,7 +309,7 @@ func (idx *Index) Save(repo types.Repository, supersedes backend.IDs) (backend.I
 }
 
 // Save writes a new index containing the given packs.
-func Save(repo types.Repository, packs map[backend.ID][]pack.Blob, supersedes backend.IDs) (backend.ID, error) {
+func Save(repo restic.Repository, packs map[backend.ID][]pack.Blob, supersedes backend.IDs) (backend.ID, error) {
 	idx := &indexJSON{
 		Supersedes: supersedes,
 		Packs:      make([]*packJSON, 0, len(packs)),

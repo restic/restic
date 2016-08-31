@@ -38,6 +38,7 @@ func New(be restic.Backend) *Repository {
 	return repo
 }
 
+// Config returns the repository configuration.
 func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
@@ -577,7 +578,7 @@ func (r *Repository) ListPack(id restic.ID) ([]restic.Blob, int64, error) {
 // Delete calls backend.Delete() if implemented, and returns an error
 // otherwise.
 func (r *Repository) Delete() error {
-	if b, ok := r.be.(backend.Deleter); ok {
+	if b, ok := r.be.(restic.Deleter); ok {
 		return b.Delete()
 	}
 
