@@ -3,7 +3,8 @@ package restic
 import (
 	"path/filepath"
 	"syscall"
-	"unsafe"
+
+	"golang.org/x/sys/unix"
 
 	"github.com/pkg/errors"
 
@@ -17,36 +18,18 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 		return errors.Wrap(err, "Open")
 	}
 
-	err = utimesNanoAt(int(dir.Fd()), filepath.Base(path), utimes, AT_SYMLINK_NOFOLLOW)
+	times := []unix.Timespec{
+		{Sec: utimes[0].Sec, Nsec: utimes[0].Nsec},
+		{Sec: utimes[1].Sec, Nsec: utimes[1].Nsec},
+	}
+
+	err = unix.UtimesNanoAt(int(dir.Fd()), filepath.Base(path), times, unix.AT_SYMLINK_NOFOLLOW)
 
 	if err != nil {
 		return errors.Wrap(err, "UtimesNanoAt")
 	}
 
 	return nil
-}
-
-// very lowlevel below
-
-const AT_SYMLINK_NOFOLLOW = 0x100
-
-func utimensat(dirfd int, path string, times *[2]syscall.Timespec, flags int) (err error) {
-	var _p0 *byte
-	_p0, err = syscall.BytePtrFromString(path)
-	if err != nil {
-		return
-	}
-	_, _, e1 := syscall.Syscall6(syscall.SYS_UTIMENSAT, uintptr(dirfd), uintptr(unsafe.Pointer(_p0)), uintptr(unsafe.Pointer(times)), uintptr(flags), 0, 0)
-	if e1 != 0 {
-		err = e1
-	}
-	return
-}
-
-//sys	utimensat(dirfd int, path string, times *[2]Timespec, flags int) (err error)
-
-func utimesNanoAt(dirfd int, path string, ts [2]syscall.Timespec, flags int) (err error) {
-	return utimensat(dirfd, path, (*[2]syscall.Timespec)(unsafe.Pointer(&ts[0])), flags)
 }
 
 func (s statUnix) atim() syscall.Timespec { return s.Atim }
