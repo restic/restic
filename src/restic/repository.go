@@ -1,11 +1,15 @@
 package restic
 
+import "restic/crypto"
+
 // Repository stores data in a backend. It provides high-level functions and
 // transparently encrypts/decrypts data.
 type Repository interface {
 
 	// Backend returns the backend used by the repository
 	Backend() Backend
+
+	Key() *crypto.Key
 
 	SetIndex(Index)
 
@@ -24,6 +28,7 @@ type Repository interface {
 	LoadJSONPack(BlobType, ID, interface{}) error
 	LoadJSONUnpacked(FileType, ID, interface{}) error
 	LoadBlob(ID, BlobType, []byte) ([]byte, error)
+	LoadAndDecrypt(FileType, ID) ([]byte, error)
 
 	LookupBlobSize(ID, BlobType) (uint, error)
 
@@ -47,4 +52,5 @@ type Lister interface {
 type Index interface {
 	Has(ID, BlobType) bool
 	Lookup(ID, BlobType) ([]PackedBlob, error)
+	Count(BlobType) uint
 }

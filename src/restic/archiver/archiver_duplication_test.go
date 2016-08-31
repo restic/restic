@@ -11,9 +11,8 @@ import (
 	"github.com/pkg/errors"
 
 	"restic"
-	"restic/backend"
+	"restic/archiver"
 	"restic/mock"
-	"restic/pack"
 	"restic/repository"
 )
 
@@ -21,14 +20,14 @@ const parallelSaves = 50
 const testSaveIndexTime = 100 * time.Millisecond
 const testTimeout = 2 * time.Second
 
-var DupID backend.ID
+var DupID restic.ID
 
-func randomID() backend.ID {
+func randomID() restic.ID {
 	if mrand.Float32() < 0.5 {
 		return DupID
 	}
 
-	id := backend.ID{}
+	id := restic.ID{}
 	_, err := io.ReadFull(rand.Reader, id[:])
 	if err != nil {
 		panic(err)
@@ -52,8 +51,8 @@ func forgetfulBackend() restic.Backend {
 		return nil
 	}
 
-	be.StatFn = func(h restic.Handle) (restic.BlobInfo, error) {
-		return restic.BlobInfo{}, errors.New("not found")
+	be.StatFn = func(h restic.Handle) (restic.FileInfo, error) {
+		return restic.FileInfo{}, errors.New("not found")
 	}
 
 	be.RemoveFn = func(t restic.FileType, name string) error {
@@ -86,7 +85,7 @@ func testArchiverDuplication(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	arch := restic.NewArchiver(repo)
+	arch := archiver.New(repo)
 
 	wg := &sync.WaitGroup{}
 	done := make(chan struct{})

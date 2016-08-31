@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"restic"
-	"restic/backend"
+	"restic/archiver"
 	"restic/backend/mem"
 	"restic/checker"
 	"restic/repository"
@@ -147,7 +147,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 		snID := "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"
 		OK(t, repo.Backend().Remove(restic.SnapshotFile, snID))
 
-		unusedBlobsBySnapshot := backend.IDs{
+		unusedBlobsBySnapshot := restic.IDs{
 			ParseID("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849"),
 			ParseID("988a272ab9768182abfd1fe7d7a7b68967825f0b861d3b36156795832c772235"),
 			ParseID("c01952de4d91da1b1b80bc6e06eaa4ec21523f4853b69dc8231708b9b7ec62d8"),
@@ -212,7 +212,7 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 
 // errorBackend randomly modifies data after reading.
 type errorBackend struct {
-	backend.Backend
+	restic.Backend
 	ProduceErrors bool
 }
 
@@ -244,7 +244,7 @@ func TestCheckerModifiedData(t *testing.T) {
 	repo := repository.New(be)
 	OK(t, repo.Init(TestPassword))
 
-	arch := restic.NewArchiver(repo)
+	arch := archiver.New(repo)
 	_, id, err := arch.Snapshot(nil, []string{"."}, nil)
 	OK(t, err)
 	t.Logf("archived as %v", id.Str())

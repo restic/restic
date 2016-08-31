@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"restic"
-	"restic/pack"
 	"restic/repository"
 	. "restic/test"
 )
@@ -36,7 +35,7 @@ func TestSaveJSON(t *testing.T) {
 		data = append(data, '\n')
 		h := sha256.Sum256(data)
 
-		id, err := repo.SaveJSON(pack.Tree, obj)
+		id, err := repo.SaveJSON(restic.TreeBlob, obj)
 		OK(t, err)
 
 		Assert(t, h == id,
@@ -59,7 +58,7 @@ func BenchmarkSaveJSON(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		id, err := repo.SaveJSON(pack.Tree, obj)
+		id, err := repo.SaveJSON(restic.TreeBlob, obj)
 		OK(t, err)
 
 		Assert(t, h == id,
@@ -82,7 +81,7 @@ func TestSave(t *testing.T) {
 		id := restic.Hash(data)
 
 		// save
-		sid, err := repo.SaveAndEncrypt(pack.Data, data, nil)
+		sid, err := repo.SaveAndEncrypt(restic.DataBlob, data, nil)
 		OK(t, err)
 
 		Equals(t, id, sid)
@@ -91,7 +90,7 @@ func TestSave(t *testing.T) {
 		// OK(t, repo.SaveIndex())
 
 		// read back
-		buf, err := repo.LoadBlob(id, pack.Data, make([]byte, size))
+		buf, err := repo.LoadBlob(id, restic.DataBlob, make([]byte, size))
 		OK(t, err)
 
 		Assert(t, len(buf) == len(data),
@@ -116,14 +115,14 @@ func TestSaveFrom(t *testing.T) {
 		id := restic.Hash(data)
 
 		// save
-		id2, err := repo.SaveAndEncrypt(pack.Data, data, &id)
+		id2, err := repo.SaveAndEncrypt(restic.DataBlob, data, &id)
 		OK(t, err)
 		Equals(t, id, id2)
 
 		OK(t, repo.Flush())
 
 		// read back
-		buf, err := repo.LoadBlob(id, pack.Data, make([]byte, size))
+		buf, err := repo.LoadBlob(id, restic.DataBlob, make([]byte, size))
 		OK(t, err)
 
 		Assert(t, len(buf) == len(data),
@@ -153,7 +152,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		// save
-		_, err = repo.SaveAndEncrypt(pack.Data, data, &id)
+		_, err = repo.SaveAndEncrypt(restic.DataBlob, data, &id)
 		OK(t, err)
 	}
 }
@@ -171,7 +170,7 @@ func TestLoadJSONPack(t *testing.T) {
 	OK(t, repo.Flush())
 
 	tree := restic.NewTree()
-	err := repo.LoadJSONPack(pack.Tree, *sn.Tree, &tree)
+	err := repo.LoadJSONPack(restic.TreeBlob, *sn.Tree, &tree)
 	OK(t, err)
 }
 
@@ -192,7 +191,7 @@ func BenchmarkLoadJSONPack(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		err := repo.LoadJSONPack(pack.Tree, *sn.Tree, &tree)
+		err := repo.LoadJSONPack(restic.TreeBlob, *sn.Tree, &tree)
 		OK(t, err)
 	}
 }
@@ -253,7 +252,7 @@ func saveRandomDataBlobs(t testing.TB, repo *repository.Repository, num int, siz
 		_, err := io.ReadFull(rand.Reader, buf)
 		OK(t, err)
 
-		_, err = repo.SaveAndEncrypt(pack.Data, buf, nil)
+		_, err = repo.SaveAndEncrypt(restic.DataBlob, buf, nil)
 		OK(t, err)
 	}
 }

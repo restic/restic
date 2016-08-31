@@ -3,8 +3,6 @@ package index
 import (
 	"math/rand"
 	"restic"
-	"restic/backend"
-	"restic/pack"
 	"restic/repository"
 	. "restic/test"
 	"testing"
@@ -179,7 +177,7 @@ func TestIndexSave(t *testing.T) {
 
 	idx := loadIndex(t, repo)
 
-	packs := make(map[backend.ID][]pack.Blob)
+	packs := make(map[restic.ID][]restic.Blob)
 	for id := range idx.Packs {
 		if rand.Float32() < 0.5 {
 			packs[id] = idx.Packs[id].Entries
@@ -248,7 +246,7 @@ func TestIndexAddRemovePack(t *testing.T) {
 	}
 
 	for _, blob := range blobs {
-		h := pack.Handle{ID: blob.ID, Type: blob.Type}
+		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 		_, err := idx.FindBlob(h)
 		if err == nil {
 			t.Errorf("removed blob %v found in index", h)
@@ -308,7 +306,7 @@ func TestIndexLoadDocReference(t *testing.T) {
 	idx := loadIndex(t, repo)
 
 	blobID := ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66")
-	locs, err := idx.FindBlob(pack.Handle{ID: blobID, Type: pack.Data})
+	locs, err := idx.FindBlob(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
 	if err != nil {
 		t.Errorf("FindBlob() returned error %v", err)
 	}
@@ -322,8 +320,8 @@ func TestIndexLoadDocReference(t *testing.T) {
 		t.Errorf("blob IDs are not equal: %v != %v", l.ID, blobID)
 	}
 
-	if l.Type != pack.Data {
-		t.Errorf("want type %v, got %v", pack.Data, l.Type)
+	if l.Type != restic.DataBlob {
+		t.Errorf("want type %v, got %v", restic.DataBlob, l.Type)
 	}
 
 	if l.Offset != 150 {

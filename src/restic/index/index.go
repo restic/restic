@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"os"
 	"restic"
-	"restic/backend"
 	"restic/debug"
 	"restic/list"
-	"restic/pack"
 	"restic/worker"
 
 	"github.com/pkg/errors"
@@ -17,27 +15,27 @@ import (
 // Pack contains information about the contents of a pack.
 type Pack struct {
 	Size    int64
-	Entries []pack.Blob
+	Entries []restic.Blob
 }
 
 // Blob contains information about a blob.
 type Blob struct {
 	Size  int64
-	Packs backend.IDSet
+	Packs restic.IDSet
 }
 
 // Index contains information about blobs and packs stored in a repo.
 type Index struct {
-	Packs    map[backend.ID]Pack
-	Blobs    map[pack.Handle]Blob
-	IndexIDs backend.IDSet
+	Packs    map[restic.ID]Pack
+	Blobs    map[restic.BlobHandle]Blob
+	IndexIDs restic.IDSet
 }
 
 func newIndex() *Index {
 	return &Index{
-		Packs:    make(map[backend.ID]Pack),
-		Blobs:    make(map[pack.Handle]Blob),
-		IndexIDs: backend.NewIDSet(),
+		Packs:    make(map[restic.ID]Pack),
+		Blobs:    make(map[restic.BlobHandle]Blob),
+		IndexIDs: restic.NewIDSet(),
 	}
 }
 
@@ -57,7 +55,7 @@ func New(repo restic.Repository, p *restic.Progress) (*Index, error) {
 	for job := range ch {
 		p.Report(restic.Stat{Blobs: 1})
 
-		packID := job.Data.(backend.ID)
+		packID := job.Data.(restic.ID)
 		if job.Error != nil {
 			fmt.Fprintf(os.Stderr, "unable to list pack %v: %v\n", packID.Str(), job.Error)
 			continue
@@ -82,23 +80,23 @@ func New(repo restic.Repository, p *restic.Progress) (*Index, error) {
 const loadIndexParallelism = 20
 
 type packJSON struct {
-	ID    backend.ID `json:"id"`
+	ID    restic.ID  `json:"id"`
 	Blobs []blobJSON `json:"blobs"`
 }
 
 type blobJSON struct {
-	ID     backend.ID    `json:"id"`
-	Type   pack.BlobType `json:"type"`
-	Offset uint          `json:"offset"`
-	Length uint          `json:"length"`
+	ID     restic.ID       `json:"id"`
+	Type   restic.BlobType `json:"type"`
+	Offset uint            `json:"offset"`
+	Length uint            `json:"length"`
 }
 
 type indexJSON struct {
-	Supersedes backend.IDs `json:"supersedes,omitempty"`
+	Supersedes restic.IDs  `json:"supersedes,omitempty"`
 	Packs      []*packJSON `json:"packs"`
 }
 
-func loadIndexJSON(repo restic.Repository, id backend.ID) (*indexJSON, error) {
+func loadIndexJSON(repo restic.Repository, id restic.ID) (*indexJSON, error) {
 	debug.Log("index.loadIndexJSON", "process index %v\n", id.Str())
 
 	var idx indexJSON
@@ -120,8 +118,8 @@ func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
 	done := make(chan struct{})
 	defer close(done)
 
-	supersedes := make(map[backend.ID]backend.IDSet)
-	results := make(map[backend.ID]map[backend.ID]Pack)
+	supersedes := make(map[restic.ID]restic.IDSet)
+	results := make(map[restic.ID]map[restic.ID]Pack)
 
 	index := newIndex()
 
@@ -134,17 +132,17 @@ func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
 			return nil, err
 		}
 
-		res := make(map[backend.ID]Pack)
-		supersedes[id] = backend.NewIDSet()
+		res := make(map[restic.ID]Pack)
+		supersedes[id] = restic.NewIDSet()
 		for _, sid := range idx.Supersedes {
 			debug.Log("index.Load", "  index %v supersedes %v", id.Str(), sid)
 			supersedes[id].Insert(sid)
 		}
 
 		for _, jpack := range idx.Packs {
-			entries := make([]pack.Blob, 0, len(jpack.Blobs))
+			entries := make([]restic.Blob, 0, len(jpack.Blobs))
 			for _, blob := range jpack.Blobs {
-				entry := pack.Blob{
+				entry := restic.Blob{
 					ID:     blob.ID,
 					Type:   blob.Type,
 					Offset: blob.Offset,
@@ -178,7 +176,7 @@ func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
 
 // AddPack adds a pack to the index. If this pack is already in the index, an
 // error is returned.
-func (idx *Index) AddPack(id backend.ID, size int64, entries []pack.Blob) error {
+func (idx *Index) AddPack(id restic.ID, size int64, entries []restic.Blob) error {
 	if _, ok := idx.Packs[id]; ok {
 		return errors.Errorf("pack %v already present in the index", id.Str())
 	}
@@ -186,11 +184,11 @@ func (idx *Index) AddPack(id backend.ID, size int64, entries []pack.Blob) error 
 	idx.Packs[id] = Pack{Size: size, Entries: entries}
 
 	for _, entry := range entries {
-		h := pack.Handle{ID: entry.ID, Type: entry.Type}
+		h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 		if _, ok := idx.Blobs[h]; !ok {
 			idx.Blobs[h] = Blob{
 				Size:  int64(entry.Length),
-				Packs: backend.NewIDSet(),
+				Packs: restic.NewIDSet(),
 			}
 		}
 
@@ -201,13 +199,13 @@ func (idx *Index) AddPack(id backend.ID, size int64, entries []pack.Blob) error 
 }
 
 // RemovePack deletes a pack from the index.
-func (idx *Index) RemovePack(id backend.ID) error {
+func (idx *Index) RemovePack(id restic.ID) error {
 	if _, ok := idx.Packs[id]; !ok {
 		return errors.Errorf("pack %v not found in the index", id.Str())
 	}
 
 	for _, blob := range idx.Packs[id].Entries {
-		h := pack.Handle{ID: blob.ID, Type: blob.Type}
+		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 		idx.Blobs[h].Packs.Delete(id)
 
 		if len(idx.Blobs[h].Packs) == 0 {
@@ -222,13 +220,13 @@ func (idx *Index) RemovePack(id backend.ID) error {
 
 // DuplicateBlobs returns a list of blobs that are stored more than once in the
 // repo.
-func (idx *Index) DuplicateBlobs() (dups pack.BlobSet) {
-	dups = pack.NewBlobSet()
-	seen := pack.NewBlobSet()
+func (idx *Index) DuplicateBlobs() (dups restic.BlobSet) {
+	dups = restic.NewBlobSet()
+	seen := restic.NewBlobSet()
 
 	for _, p := range idx.Packs {
 		for _, entry := range p.Entries {
-			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 			if seen.Has(h) {
 				dups.Insert(h)
 			}
@@ -240,8 +238,8 @@ func (idx *Index) DuplicateBlobs() (dups pack.BlobSet) {
 }
 
 // PacksForBlobs returns the set of packs in which the blobs are contained.
-func (idx *Index) PacksForBlobs(blobs pack.BlobSet) (packs backend.IDSet) {
-	packs = backend.NewIDSet()
+func (idx *Index) PacksForBlobs(blobs restic.BlobSet) (packs restic.IDSet) {
+	packs = restic.NewIDSet()
 
 	for h := range blobs {
 		blob, ok := idx.Blobs[h]
@@ -259,8 +257,8 @@ func (idx *Index) PacksForBlobs(blobs pack.BlobSet) (packs backend.IDSet) {
 
 // Location describes the location of a blob in a pack.
 type Location struct {
-	PackID backend.ID
-	pack.Blob
+	PackID restic.ID
+	restic.Blob
 }
 
 // ErrBlobNotFound is return by FindBlob when the blob could not be found in
@@ -268,7 +266,7 @@ type Location struct {
 var ErrBlobNotFound = errors.New("blob not found in index")
 
 // FindBlob returns a list of packs and positions the blob can be found in.
-func (idx *Index) FindBlob(h pack.Handle) ([]Location, error) {
+func (idx *Index) FindBlob(h restic.BlobHandle) ([]Location, error) {
 	blob, ok := idx.Blobs[h]
 	if !ok {
 		return nil, ErrBlobNotFound
@@ -299,8 +297,8 @@ func (idx *Index) FindBlob(h pack.Handle) ([]Location, error) {
 }
 
 // Save writes the complete index to the repo.
-func (idx *Index) Save(repo restic.Repository, supersedes backend.IDs) (backend.ID, error) {
-	packs := make(map[backend.ID][]pack.Blob, len(idx.Packs))
+func (idx *Index) Save(repo restic.Repository, supersedes restic.IDs) (restic.ID, error) {
+	packs := make(map[restic.ID][]restic.Blob, len(idx.Packs))
 	for id, p := range idx.Packs {
 		packs[id] = p.Entries
 	}
@@ -309,7 +307,7 @@ func (idx *Index) Save(repo restic.Repository, supersedes backend.IDs) (backend.
 }
 
 // Save writes a new index containing the given packs.
-func Save(repo restic.Repository, packs map[backend.ID][]pack.Blob, supersedes backend.IDs) (backend.ID, error) {
+func Save(repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes restic.IDs) (restic.ID, error) {
 	idx := &indexJSON{
 		Supersedes: supersedes,
 		Packs:      make([]*packJSON, 0, len(packs)),

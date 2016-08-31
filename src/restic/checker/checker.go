@@ -32,11 +32,11 @@ type Checker struct {
 
 	masterIndex *repository.MasterIndex
 
-	repo *repository.Repository
+	repo restic.Repository
 }
 
 // New returns a new checker which runs on repo.
-func New(repo *repository.Repository) *Checker {
+func New(repo restic.Repository) *Checker {
 	c := &Checker{
 		packs:       restic.NewIDSet(),
 		blobs:       restic.NewIDSet(),
@@ -180,7 +180,7 @@ func (e PackError) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
-func packIDTester(repo *repository.Repository, inChan <-chan restic.ID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
+func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
 	debug.Log("Checker.testPackID", "worker start")
 	defer debug.Log("Checker.testPackID", "worker done")
 
@@ -273,7 +273,7 @@ func (e Error) Error() string {
 	return e.Err.Error()
 }
 
-func loadTreeFromSnapshot(repo *repository.Repository, id restic.ID) (restic.ID, error) {
+func loadTreeFromSnapshot(repo restic.Repository, id restic.ID) (restic.ID, error) {
 	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {
 		debug.Log("Checker.loadTreeFromSnapshot", "error loading snapshot %v: %v", id.Str(), err)
@@ -289,7 +289,7 @@ func loadTreeFromSnapshot(repo *repository.Repository, id restic.ID) (restic.ID,
 }
 
 // loadSnapshotTreeIDs loads all snapshots from backend and returns the tree IDs.
-func loadSnapshotTreeIDs(repo *repository.Repository) (restic.IDs, []error) {
+func loadSnapshotTreeIDs(repo restic.Repository) (restic.IDs, []error) {
 	var trees struct {
 		IDs restic.IDs
 		sync.Mutex
@@ -349,7 +349,7 @@ type treeJob struct {
 }
 
 // loadTreeWorker loads trees from repo and sends them to out.
-func loadTreeWorker(repo *repository.Repository,
+func loadTreeWorker(repo restic.Repository,
 	in <-chan restic.ID, out chan<- treeJob,
 	done <-chan struct{}, wg *sync.WaitGroup) {
 
@@ -660,7 +660,7 @@ func (c *Checker) CountPacks() uint64 {
 }
 
 // checkPack reads a pack and checks the integrity of all blobs.
-func checkPack(r *repository.Repository, id restic.ID) error {
+func checkPack(r restic.Repository, id restic.ID) error {
 	debug.Log("Checker.checkPack", "checking pack %v", id.Str())
 	h := restic.Handle{FileType: restic.DataFile, Name: id.String()}
 	buf, err := backend.LoadAll(r.Backend(), h, nil)

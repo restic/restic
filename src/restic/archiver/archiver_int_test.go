@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"os"
+	"restic"
 	"testing"
 
 	"restic/pipe"

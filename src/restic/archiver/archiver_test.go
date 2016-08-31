@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"restic"
-	"restic/backend"
+	"restic/archiver"
 	"restic/checker"
 	"restic/crypto"
-	"restic/pack"
 	. "restic/test"
 
 	"github.com/pkg/errors"
@@ -101,7 +100,7 @@ func archiveDirectory(b testing.TB) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
-	arch := restic.NewArchiver(repo)
+	arch := archiver.New(repo)
 
 	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
 	OK(b, err)
@@ -191,48 +190,6 @@ func TestArchiveDedup(t *testing.T) {
 	archiveWithDedup(t)
 }
 
-func BenchmarkLoadTree(t *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
-
-	if BenchArchiveDirectory == "" {
-		t.Skip("benchdir not set, skipping TestArchiverDedup")
-	}
-
-	// archive a few files
-	arch := restic.NewArchiver(repo)
-	sn, _, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
-	OK(t, err)
-	t.Logf("archived snapshot %v", sn.ID())
-
-	list := make([]backend.ID, 0, 10)
-	done := make(chan struct{})
-
-	for _, idx := range repo.Index().All() {
-		for blob := range idx.Each(done) {
-			if blob.Type != restic.TreeBlob {
-				continue
-			}
-
-			list = append(list, blob.ID)
-			if len(list) == cap(list) {
-				close(done)
-				break
-			}
-		}
-	}
-
-	// start benchmark
-	t.ResetTimer()
-
-	for i := 0; i < t.N; i++ {
-		for _, id := range list {
-			_, err := restic.LoadTree(repo, id)
-			OK(t, err)
-		}
-	}
-}
-
 // Saves several identical chunks concurrently and later checks that there are no
 // unreferenced packs in the repository. See also #292 and #358.
 func TestParallelSaveWithDuplication(t *testing.T) {
@@ -248,7 +205,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 	dataSizeMb := 128
 	duplication := 7
 
-	arch := restic.NewArchiver(repo)
+	arch := archiver.New(repo)
 	chunks := getRandomData(seed, dataSizeMb*1024*1024)
 
 	errChannels := [](<-chan error){}
@@ -265,7 +222,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 			go func(c chunker.Chunk, errChan chan<- error) {
 				barrier <- struct{}{}
 
-				id := backend.Hash(c.Data)
+				id := restic.Hash(c.Data)
 				time.Sleep(time.Duration(id[0]))
 				err := arch.Save(restic.DataBlob, c.Data, id)
 				<-barrier
@@ -301,7 +258,7 @@ func getRandomData(seed int, size int) []chunker.Chunk {
 	return chunks
 }
 
-func createAndInitChecker(t *testing.T, repo Repository) *checker.Checker {
+func createAndInitChecker(t *testing.T, repo restic.Repository) *checker.Checker {
 	chkr := checker.New(repo)
 
 	hints, errs := chkr.LoadIndex()

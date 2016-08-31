@@ -7,7 +7,6 @@ import (
 	"restic"
 	"restic/backend/mem"
 	"restic/crypto"
-	"restic/pack"
 	"testing"
 )
 
@@ -64,7 +63,7 @@ func saveFile(t testing.TB, be Saver, filename string, n int) {
 		t.Fatal(err)
 	}
 
-	h := restic.Handle{Type: restic.DataFile, Name: restic.Hash(data).String()}
+	h := restic.Handle{FileType: restic.DataFile, Name: restic.Hash(data).String()}
 
 	err = be.Save(h, data)
 	if err != nil {
@@ -95,7 +94,7 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 			t.Fatal(err)
 		}
 
-		n, err := packer.Add(pack.Data, id, buf)
+		n, err := packer.Add(restic.DataBlob, id, buf)
 		if n != l {
 			t.Errorf("Add() returned invalid number of bytes: want %v, got %v", n, l)
 		}

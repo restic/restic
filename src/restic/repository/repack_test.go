@@ -4,7 +4,6 @@ import (
 	"io"
 	"math/rand"
 	"restic"
-	"restic/pack"
 	"restic/repository"
 	"testing"
 )
@@ -32,18 +31,18 @@ func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pDa
 		)
 
 		if rand.Float32() < pData {
-			tpe = pack.Data
+			tpe = restic.DataBlob
 			length = randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
 		} else {
-			tpe = pack.Tree
+			tpe = restic.TreeBlob
 			length = randomSize(1*1024, 20*1024) // 1KiB to 20KiB
 		}
 
 		buf := random(t, length)
 		id := restic.Hash(buf)
 
-		if repo.Index().Has(id, pack.Data) {
-			t.Errorf("duplicate blob %v/%v ignored", id, pack.Data)
+		if repo.Index().Has(id, restic.DataBlob) {
+			t.Errorf("duplicate blob %v/%v ignored", id, restic.DataBlob)
 			continue
 		}
 
@@ -66,14 +65,14 @@ func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pDa
 
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
 // will be contained in the firstone ith probability p.
-func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, list2 pack.BlobSet) {
+func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, list2 restic.BlobSet) {
 	done := make(chan struct{})
 	defer close(done)
 
-	list1 = pack.NewBlobSet()
-	list2 = pack.NewBlobSet()
+	list1 = restic.NewBlobSet()
+	list2 = restic.NewBlobSet()
 
-	blobs := pack.NewBlobSet()
+	blobs := restic.NewBlobSet()
 
 	for id := range repo.List(restic.DataFile, done) {
 		entries, _, err := repo.ListPack(id)
@@ -82,7 +81,7 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 		}
 
 		for _, entry := range entries {
-			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 			if blobs.Has(h) {
 				t.Errorf("ignoring duplicate blob %v", h)
 				continue
@@ -90,9 +89,9 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 			blobs.Insert(h)
 
 			if rand.Float32() <= p {
-				list1.Insert(pack.Handle{ID: entry.ID, Type: entry.Type})
+				list1.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
 			} else {
-				list2.Insert(pack.Handle{ID: entry.ID, Type: entry.Type})
+				list2.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
 			}
 
 		}
@@ -113,7 +112,7 @@ func listPacks(t *testing.T, repo *repository.Repository) restic.IDSet {
 	return list
 }
 
-func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs pack.BlobSet) restic.IDSet {
+func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs restic.BlobSet) restic.IDSet {
 	packs := restic.NewIDSet()
 
 	idx := repo.Index()
@@ -131,7 +130,7 @@ func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs pack.Blo
 	return packs
 }
 
-func repack(t *testing.T, repo *repository.Repository, packs restic.IDSet, blobs pack.BlobSet) {
+func repack(t *testing.T, repo *repository.Repository, packs restic.IDSet, blobs restic.BlobSet) {
 	err := repository.Repack(repo, packs, blobs)
 	if err != nil {
 		t.Fatal(err)
