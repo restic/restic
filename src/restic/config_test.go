@@ -1,10 +1,9 @@
-package repository_test
+package restic_test
 
 import (
 	"restic"
 	"testing"
 
-	"restic/repository"
 	. "restic/test"
 )
 
@@ -21,18 +20,18 @@ func (l loader) LoadJSONUnpacked(t restic.FileType, id restic.ID, arg interface{
 }
 
 func TestConfig(t *testing.T) {
-	resultConfig := repository.Config{}
+	resultConfig := restic.Config{}
 	save := func(tpe restic.FileType, arg interface{}) (restic.ID, error) {
 		Assert(t, tpe == restic.ConfigFile,
 			"wrong backend type: got %v, wanted %v",
 			tpe, restic.ConfigFile)
 
-		cfg := arg.(repository.Config)
+		cfg := arg.(restic.Config)
 		resultConfig = cfg
 		return restic.ID{}, nil
 	}
 
-	cfg1, err := repository.CreateConfig()
+	cfg1, err := restic.CreateConfig()
 	OK(t, err)
 
 	_, err = saver(save).SaveJSONUnpacked(restic.ConfigFile, cfg1)
@@ -42,12 +41,12 @@ func TestConfig(t *testing.T) {
 			"wrong backend type: got %v, wanted %v",
 			tpe, restic.ConfigFile)
 
-		cfg := arg.(*repository.Config)
+		cfg := arg.(*restic.Config)
 		*cfg = resultConfig
 		return nil
 	}
 
-	cfg2, err := repository.LoadConfig(loader(load))
+	cfg2, err := restic.LoadConfig(loader(load))
 	OK(t, err)
 
 	Assert(t, cfg1 == cfg2,

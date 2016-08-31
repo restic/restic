@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"restic"
-	"restic/backend"
+	"restic/archiver"
 	"restic/pipe"
 	"restic/repository"
 	. "restic/test"
@@ -22,7 +22,7 @@ func TestWalkTree(t *testing.T) {
 	OK(t, err)
 
 	// archive a few files
-	arch := restic.NewArchiver(repo)
+	arch := archiver.New(repo)
 	sn, _, err := arch.Snapshot(nil, dirs, nil)
 	OK(t, err)
 
@@ -94,7 +94,7 @@ type delayRepo struct {
 	delay time.Duration
 }
 
-func (d delayRepo) LoadJSONPack(t BlobType, id backend.ID, dst interface{}) error {
+func (d delayRepo) LoadJSONPack(t restic.BlobType, id restic.ID, dst interface{}) error {
 	time.Sleep(d.delay)
 	return d.repo.LoadJSONPack(t, id, dst)
 }
@@ -1344,7 +1344,7 @@ func TestDelayedWalkTree(t *testing.T) {
 		repo := OpenLocalRepo(t, repodir)
 		OK(t, repo.LoadIndex())
 
-		root, err := backend.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
+		root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
 		OK(t, err)
 
 		dr := delayRepo{repo, 100 * time.Millisecond}
@@ -1373,7 +1373,7 @@ func BenchmarkDelayedWalkTree(t *testing.B) {
 		repo := OpenLocalRepo(t, repodir)
 		OK(t, repo.LoadIndex())
 
-		root, err := backend.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
+		root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
 		OK(t, err)
 
 		dr := delayRepo{repo, 10 * time.Millisecond}

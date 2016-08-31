@@ -1,11 +1,10 @@
-package repository
+package restic
 
 import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"restic"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -31,12 +30,12 @@ const RepoVersion = 1
 
 // JSONUnpackedSaver saves unpacked JSON.
 type JSONUnpackedSaver interface {
-	SaveJSONUnpacked(restic.FileType, interface{}) (restic.ID, error)
+	SaveJSONUnpacked(FileType, interface{}) (ID, error)
 }
 
 // JSONUnpackedLoader loads unpacked JSON.
 type JSONUnpackedLoader interface {
-	LoadJSONUnpacked(restic.FileType, restic.ID, interface{}) error
+	LoadJSONUnpacked(FileType, ID, interface{}) error
 }
 
 // CreateConfig creates a config file with a randomly selected polynomial and
@@ -87,7 +86,7 @@ func LoadConfig(r JSONUnpackedLoader) (Config, error) {
 		cfg Config
 	)
 
-	err := r.LoadJSONUnpacked(restic.ConfigFile, restic.ID{}, &cfg)
+	err := r.LoadJSONUnpacked(ConfigFile, ID{}, &cfg)
 	if err != nil {
 		return Config{}, err
 	}

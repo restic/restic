@@ -15,13 +15,13 @@ import (
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Afterwards, the packs are removed. This operation requires
 // an exclusive lock on the repo.
-func Repack(repo *Repository, packs restic.IDSet, keepBlobs pack.BlobSet) (err error) {
+func Repack(repo *Repository, packs restic.IDSet, keepBlobs restic.BlobSet) (err error) {
 	debug.Log("Repack", "repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	buf := make([]byte, 0, maxPackSize)
 	for packID := range packs {
 		// load the complete pack
-		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
+		h := restic.Handle{FileType: restic.DataFile, Name: packID.String()}
 
 		l, err := repo.Backend().Load(h, buf[:cap(buf)], 0)
 		if errors.Cause(err) == io.ErrUnexpectedEOF {
@@ -43,7 +43,7 @@ func Repack(repo *Repository, packs restic.IDSet, keepBlobs pack.BlobSet) (err e
 		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), len(blobs))
 		var plaintext []byte
 		for _, entry := range blobs {
-			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 			if !keepBlobs.Has(h) {
 				continue
 			}

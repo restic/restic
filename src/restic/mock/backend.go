@@ -11,7 +11,7 @@ type Backend struct {
 	CloseFn    func() error
 	LoadFn     func(h restic.Handle, p []byte, off int64) (int, error)
 	SaveFn     func(h restic.Handle, p []byte) error
-	StatFn     func(h restic.Handle) (restic.BlobInfo, error)
+	StatFn     func(h restic.Handle) (restic.FileInfo, error)
 	ListFn     func(restic.FileType, <-chan struct{}) <-chan string
 	RemoveFn   func(restic.FileType, string) error
 	TestFn     func(restic.FileType, string) (bool, error)
@@ -56,9 +56,9 @@ func (m *Backend) Save(h restic.Handle, p []byte) error {
 }
 
 // Stat an object in the backend.
-func (m *Backend) Stat(h restic.Handle) (restic.BlobInfo, error) {
+func (m *Backend) Stat(h restic.Handle) (restic.FileInfo, error) {
 	if m.StatFn == nil {
-		return restic.BlobInfo{}, errors.New("not implemented")
+		return restic.FileInfo{}, errors.New("not implemented")
 	}
 
 	return m.StatFn(h)

@@ -115,7 +115,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	}
 
 	id := restic.Hash(data)
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	h := restic.Handle{FileType: restic.DataFile, Name: id.String()}
 
 	err = r.be.Save(h, data)
 	if err != nil {
@@ -133,12 +133,14 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), id.Str())
-		r.idx.Current().Store(PackedBlob{
-			Type:   b.Type,
-			ID:     b.ID,
+		r.idx.Current().Store(restic.PackedBlob{
+			Blob: restic.Blob{
+				Type:   b.Type,
+				ID:     b.ID,
+				Offset: b.Offset,
+				Length: uint(b.Length),
+			},
 			PackID: id,
-			Offset: b.Offset,
-			Length: uint(b.Length),
 		})
 	}
 

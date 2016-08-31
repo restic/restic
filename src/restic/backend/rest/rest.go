@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"restic"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -18,27 +19,27 @@ import (
 const connLimit = 10
 
 // restPath returns the path to the given resource.
-func restPath(url *url.URL, h backend.Handle) string {
+func restPath(url *url.URL, h restic.Handle) string {
 	u := *url
 
 	var dir string
 
-	switch h.Type {
-	case backend.Config:
+	switch h.FileType {
+	case restic.ConfigFile:
 		dir = ""
 		h.Name = "config"
-	case backend.Data:
+	case restic.DataFile:
 		dir = backend.Paths.Data
-	case backend.Snapshot:
+	case restic.SnapshotFile:
 		dir = backend.Paths.Snapshots
-	case backend.Index:
+	case restic.IndexFile:
 		dir = backend.Paths.Index
-	case backend.Lock:
+	case restic.LockFile:
 		dir = backend.Paths.Locks
-	case backend.Key:
+	case restic.KeyFile:
 		dir = backend.Paths.Keys
 	default:
-		dir = string(h.Type)
+		dir = string(h.FileType)
 	}
 
 	u.Path = path.Join(url.Path, dir, h.Name)
@@ -71,7 +72,7 @@ func (b *restBackend) Location() string {
 
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
-func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+func (b *restBackend) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	if err := h.Valid(); err != nil {
 		return 0, err
 	}
@@ -120,7 +121,7 @@ func (b *restBackend) Load(h backend.Handle, p []byte, off int64) (n int, err er
 }
 
 // Save stores data in the backend at the handle.
-func (b *restBackend) Save(h backend.Handle, p []byte) (err error) {
+func (b *restBackend) Save(h restic.Handle, p []byte) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -151,7 +152,7 @@ func (b *restBackend) Save(h backend.Handle, p []byte) (err error) {
 }
 
 // Stat returns information about a blob.
-func (b *restBackend) Stat(h backend.Handle) (backend.BlobInfo, error) {
+func (b *restBackend) Stat(h restic.Handle) (backend.BlobInfo, error) {
 	if err := h.Valid(); err != nil {
 		return backend.BlobInfo{}, err
 	}
@@ -183,8 +184,8 @@ func (b *restBackend) Stat(h backend.Handle) (backend.BlobInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *restBackend) Test(t backend.Type, name string) (bool, error) {
-	_, err := b.Stat(backend.Handle{Type: t, Name: name})
+func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
+	_, err := b.Stat(restic.Handle{FileType: t, Name: name})
 	if err != nil {
 		return false, nil
 	}
@@ -193,8 +194,8 @@ func (b *restBackend) Test(t backend.Type, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *restBackend) Remove(t backend.Type, name string) error {
-	h := backend.Handle{Type: t, Name: name}
+func (b *restBackend) Remove(t restic.FileType, name string) error {
+	h := restic.Handle{FileType: t, Name: name}
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -221,10 +222,10 @@ func (b *restBackend) Remove(t backend.Type, name string) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (b *restBackend) List(t backend.Type, done <-chan struct{}) <-chan string {
+func (b *restBackend) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
-	url := restPath(b.url, backend.Handle{Type: t})
+	url := restPath(b.url, restic.Handle{FileType: t})
 	if !strings.HasSuffix(url, "/") {
 		url += "/"
 	}

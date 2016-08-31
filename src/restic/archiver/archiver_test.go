@@ -1,4 +1,4 @@
-package restic_test
+package archiver_test
 
 import (
 	"bytes"
@@ -146,9 +146,9 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
-	cnt.before.packs = repo.Count(backend.Data)
-	cnt.before.dataBlobs = repo.Index().Count(pack.Data)
-	cnt.before.treeBlobs = repo.Index().Count(pack.Tree)
+	cnt.before.packs = repo.Count(restic.DataFile)
+	cnt.before.dataBlobs = repo.Index().Count(restic.DataBlob)
+	cnt.before.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
 		cnt.before.packs, cnt.before.dataBlobs, cnt.before.treeBlobs)
 
@@ -157,9 +157,9 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats again
-	cnt.after.packs = repo.Count(backend.Data)
-	cnt.after.dataBlobs = repo.Index().Count(pack.Data)
-	cnt.after.treeBlobs = repo.Index().Count(pack.Tree)
+	cnt.after.packs = repo.Count(restic.DataFile)
+	cnt.after.dataBlobs = repo.Index().Count(restic.DataBlob)
+	cnt.after.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
 		cnt.after.packs, cnt.after.dataBlobs, cnt.after.treeBlobs)
 
@@ -174,9 +174,9 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats again
-	cnt.after2.packs = repo.Count(backend.Data)
-	cnt.after2.dataBlobs = repo.Index().Count(pack.Data)
-	cnt.after2.treeBlobs = repo.Index().Count(pack.Tree)
+	cnt.after2.packs = repo.Count(restic.DataFile)
+	cnt.after2.dataBlobs = repo.Index().Count(restic.DataBlob)
+	cnt.after2.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
 		cnt.after2.packs, cnt.after2.dataBlobs, cnt.after2.treeBlobs)
 
@@ -210,7 +210,7 @@ func BenchmarkLoadTree(t *testing.B) {
 
 	for _, idx := range repo.Index().All() {
 		for blob := range idx.Each(done) {
-			if blob.Type != pack.Tree {
+			if blob.Type != restic.TreeBlob {
 				continue
 			}
 
@@ -267,7 +267,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 
 				id := backend.Hash(c.Data)
 				time.Sleep(time.Duration(id[0]))
-				err := arch.Save(pack.Data, c.Data, id)
+				err := arch.Save(restic.DataBlob, c.Data, id)
 				<-barrier
 				errChan <- err
 			}(c, errChan)

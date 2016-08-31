@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"restic"
-	"restic/backend"
 	. "restic/test"
 )
 
@@ -75,7 +74,7 @@ var nodeTests = []restic.Node{
 	restic.Node{
 		Name:       "testFile",
 		FileType:   "file",
-		Content:    []backend.ID{},
+		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0604,
@@ -86,7 +85,7 @@ var nodeTests = []restic.Node{
 	restic.Node{
 		Name:       "testSuidFile",
 		FileType:   "file",
-		Content:    []backend.ID{},
+		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0755 | os.ModeSetuid,
@@ -97,7 +96,7 @@ var nodeTests = []restic.Node{
 	restic.Node{
 		Name:       "testSuidFile2",
 		FileType:   "file",
-		Content:    []backend.ID{},
+		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0755 | os.ModeSetgid,
@@ -108,7 +107,7 @@ var nodeTests = []restic.Node{
 	restic.Node{
 		Name:       "testSticky",
 		FileType:   "file",
-		Content:    []backend.ID{},
+		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
 		Mode:       0755 | os.ModeSticky,

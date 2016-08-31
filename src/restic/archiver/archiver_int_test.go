@@ -1,4 +1,4 @@
-package restic
+package archiver
 
 import (
 	"os"

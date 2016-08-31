@@ -1,6 +1,7 @@
 package backend_test
 
 import (
+	"restic"
 	"testing"
 
 	"restic/backend"
@@ -8,10 +9,10 @@ import (
 )
 
 type mockBackend struct {
-	list func(backend.Type, <-chan struct{}) <-chan string
+	list func(restic.FileType, <-chan struct{}) <-chan string
 }
 
-func (m mockBackend) List(t backend.Type, done <-chan struct{}) <-chan string {
+func (m mockBackend) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	return m.list(t, done)
 }
 
@@ -30,7 +31,7 @@ func TestPrefixLength(t *testing.T) {
 	list := samples
 
 	m := mockBackend{}
-	m.list = func(t backend.Type, done <-chan struct{}) <-chan string {
+	m.list = func(t restic.FileType, done <-chan struct{}) <-chan string {
 		ch := make(chan string)
 		go func() {
 			defer close(ch)
@@ -45,17 +46,17 @@ func TestPrefixLength(t *testing.T) {
 		return ch
 	}
 
-	l, err := backend.PrefixLength(m, backend.Snapshot)
+	l, err := backend.PrefixLength(m, restic.SnapshotFile)
 	OK(t, err)
 	Equals(t, 19, l)
 
 	list = samples[:3]
-	l, err = backend.PrefixLength(m, backend.Snapshot)
+	l, err = backend.PrefixLength(m, restic.SnapshotFile)
 	OK(t, err)
 	Equals(t, 19, l)
 
 	list = samples[3:]
-	l, err = backend.PrefixLength(m, backend.Snapshot)
+	l, err = backend.PrefixLength(m, restic.SnapshotFile)
 	OK(t, err)
 	Equals(t, 8, l)
 }

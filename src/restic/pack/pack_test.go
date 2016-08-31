@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"io"
+	"restic"
 	"testing"
 
 	"restic/backend"
@@ -126,9 +127,9 @@ func TestUnpackReadSeeker(t *testing.T) {
 	b := mem.New()
 	id := backend.Hash(packData)
 
-	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	OK(t, b.Save(handle, packData))
-	verifyBlobs(t, bufs, k, backend.ReaderAt(b, handle), packSize)
+	verifyBlobs(t, bufs, k, restic.ReaderAt(b, handle), packSize)
 }
 
 func TestShortPack(t *testing.T) {
@@ -139,7 +140,7 @@ func TestShortPack(t *testing.T) {
 	b := mem.New()
 	id := backend.Hash(packData)
 
-	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	OK(t, b.Save(handle, packData))
 	verifyBlobs(t, bufs, k, backend.ReaderAt(b, handle), packSize)
 }

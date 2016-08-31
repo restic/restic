@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"restic"
 
 	"github.com/pkg/errors"
 
@@ -37,7 +38,7 @@ func init() {
 			return nil, err
 		}
 
-		exists, err := be.Test(backend.Config, "")
+		exists, err := be.Test(restic.ConfigFile, "")
 		if err != nil {
 			return nil, err
 		}

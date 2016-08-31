@@ -1,7 +1,5 @@
 package restic
 
-import "github.com/restic/chunker"
-
 // Repository stores data in a backend. It provides high-level functions and
 // transparently encrypts/decrypts data.
 type Repository interface {
@@ -9,12 +7,13 @@ type Repository interface {
 	// Backend returns the backend used by the repository
 	Backend() Backend
 
-	SetIndex(interface{})
+	SetIndex(Index)
 
 	Index() Index
 	SaveFullIndex() error
 
 	SaveJSON(BlobType, interface{}) (ID, error)
+	SaveUnpacked(FileType, []byte) (ID, error)
 
 	Config() Config
 
@@ -34,13 +33,13 @@ type Repository interface {
 	Flush() error
 }
 
+// Lister allows listing files in a backend.
+type Lister interface {
+	List(FileType, <-chan struct{}) <-chan string
+}
+
 // Index keeps track of the blobs are stored within files.
 type Index interface {
 	Has(ID, BlobType) bool
 	Lookup(ID, BlobType) ([]PackedBlob, error)
-}
-
-// Config stores information about the repository.
-type Config interface {
-	ChunkerPolynomial() chunker.Pol
 }

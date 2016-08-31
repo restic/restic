@@ -47,7 +47,7 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r *Repository, 
 
 	r = New(be)
 
-	cfg := TestCreateConfig(t, testChunkerPol)
+	cfg := restic.TestCreateConfig(t, testChunkerPol)
 	err := r.init(TestPassword, cfg)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)

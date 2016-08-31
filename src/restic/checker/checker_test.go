@@ -17,7 +17,7 @@ import (
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")
 
-func list(repo *repository.Repository, t backend.Type) (IDs []string) {
+func list(repo *repository.Repository, t restic.FileType) (IDs []string) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -83,7 +83,7 @@ func TestMissingPack(t *testing.T) {
 		repo := OpenLocalRepo(t, repodir)
 
 		packID := "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6"
-		OK(t, repo.Backend().Remove(backend.Data, packID))
+		OK(t, repo.Backend().Remove(restic.DataFile, packID))
 
 		chkr := checker.New(repo)
 		hints, errs := chkr.LoadIndex()
@@ -115,7 +115,7 @@ func TestUnreferencedPack(t *testing.T) {
 		// index 3f1a only references pack 60e0
 		indexID := "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44"
 		packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
-		OK(t, repo.Backend().Remove(backend.Index, indexID))
+		OK(t, repo.Backend().Remove(restic.IndexFile, indexID))
 
 		chkr := checker.New(repo)
 		hints, errs := chkr.LoadIndex()
@@ -145,7 +145,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 		repo := OpenLocalRepo(t, repodir)
 
 		snID := "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"
-		OK(t, repo.Backend().Remove(backend.Snapshot, snID))
+		OK(t, repo.Backend().Remove(restic.SnapshotFile, snID))
 
 		unusedBlobsBySnapshot := backend.IDs{
 			ParseID("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849"),
@@ -216,7 +216,7 @@ type errorBackend struct {
 	ProduceErrors bool
 }
 
-func (b errorBackend) Load(h backend.Handle, p []byte, off int64) (int, error) {
+func (b errorBackend) Load(h restic.Handle, p []byte, off int64) (int, error) {
 	fmt.Printf("load %v\n", h)
 	n, err := b.Backend.Load(h, p, off)
 

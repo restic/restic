@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"reflect"
+	"restic"
 	"sort"
 	"testing"
 
@@ -118,7 +119,7 @@ func TestCreateWithConfig(t testing.TB) {
 	defer close(t)
 
 	// save a config
-	store(t, b, backend.Config, []byte("test config"))
+	store(t, b, restic.ConfigFile, []byte("test config"))
 
 	// now create the backend again, this must fail
 	_, err := CreateFn()
@@ -127,7 +128,7 @@ func TestCreateWithConfig(t testing.TB) {
 	}
 
 	// remove config
-	err = b.Remove(backend.Config, "")
+	err = b.Remove(restic.ConfigFile, "")
 	if err != nil {
 		t.Fatalf("unexpected error removing config: %v", err)
 	}
@@ -152,12 +153,12 @@ func TestConfig(t testing.TB) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := backend.LoadAll(b, backend.Handle{Type: backend.Config}, nil)
+	_, err := backend.LoadAll(b, restic.Handle{Type: restic.ConfigFile}, nil)
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 
-	err = b.Save(backend.Handle{Type: backend.Config}, []byte(testString))
+	err = b.Save(restic.Handle{Type: restic.ConfigFile}, []byte(testString))
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
 	}
@@ -165,7 +166,7 @@ func TestConfig(t testing.TB) {
 	// try accessing the config with different names, should all return the
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
-		h := backend.Handle{Type: backend.Config, Name: name}
+		h := restic.Handle{Type: restic.ConfigFile, Name: name}
 		buf, err := backend.LoadAll(b, h, nil)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %v", name, err)
@@ -182,12 +183,12 @@ func TestLoad(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
-	_, err := b.Load(backend.Handle{}, nil, 0)
+	_, err := b.Load(restic.Handle{}, nil, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
 
-	_, err = b.Load(backend.Handle{Type: backend.Data, Name: "foobar"}, nil, 0)
+	_, err = b.Load(restic.Handle{Type: restic.DataFile, Name: "foobar"}, nil, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
@@ -197,7 +198,7 @@ func TestLoad(t testing.TB) {
 	data := Random(23, length)
 	id := backend.Hash(data)
 
-	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	err = b.Save(handle, data)
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
@@ -309,7 +310,7 @@ func TestLoad(t testing.TB) {
 		t.Errorf("wrong error returned for larger buffer: want io.ErrUnexpectedEOF, got %#v", err)
 	}
 
-	OK(t, b.Remove(backend.Data, id.String()))
+	OK(t, b.Remove(restic.DataFile, id.String()))
 }
 
 // TestLoadNegativeOffset tests the backend's Load function with negative offsets.
@@ -322,7 +323,7 @@ func TestLoadNegativeOffset(t testing.TB) {
 	data := Random(23, length)
 	id := backend.Hash(data)
 
-	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	err := b.Save(handle, data)
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
@@ -365,7 +366,7 @@ func TestLoadNegativeOffset(t testing.TB) {
 
 	}
 
-	OK(t, b.Remove(backend.Data, id.String()))
+	OK(t, b.Remove(restic.DataFile, id.String()))
 }
 
 // TestSave tests saving data in the backend.
@@ -380,8 +381,8 @@ func TestSave(t testing.TB) {
 		// use the first 32 byte as the ID
 		copy(id[:], data)
 
-		h := backend.Handle{
-			Type: backend.Data,
+		h := restic.Handle{
+			Type: restic.DataFile,
 			Name: fmt.Sprintf("%s-%d", id, i),
 		}
 		err := b.Save(h, data)
@@ -429,7 +430,7 @@ func TestSaveFilenames(t testing.TB) {
 	defer close(t)
 
 	for i, test := range filenameTests {
-		h := backend.Handle{Name: test.name, Type: backend.Data}
+		h := restic.Handle{Name: test.name, Type: restic.DataFile}
 		err := b.Save(h, []byte(test.data))
 		if err != nil {
 			t.Errorf("test %d failed: Save() returned %v", i, err)
@@ -464,9 +465,9 @@ var testStrings = []struct {
 	{"4e54d2c721cbdb730f01b10b62dec622962b36966ec685880effa63d71c808f2", "foo/../../baz"},
 }
 
-func store(t testing.TB, b backend.Backend, tpe backend.Type, data []byte) {
+func store(t testing.TB, b backend.Backend, tpe restic.FileType, data []byte) {
 	id := backend.Hash(data)
-	err := b.Save(backend.Handle{Name: id.String(), Type: tpe}, data)
+	err := b.Save(restic.Handle{Name: id.String(), Type: tpe}, data)
 	OK(t, err)
 }
 
@@ -483,9 +484,9 @@ func TestBackend(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
-	for _, tpe := range []backend.Type{
-		backend.Data, backend.Key, backend.Lock,
-		backend.Snapshot, backend.Index,
+	for _, tpe := range []restic.FileType{
+		restic.DataFile, restic.KeyFile, restic.LockFile,
+		restic.SnapshotFile, restic.IndexFile,
 	} {
 		// detect non-existing files
 		for _, test := range testStrings {
@@ -498,7 +499,7 @@ func TestBackend(t testing.TB) {
 			Assert(t, !ret, "blob was found to exist before creating")
 
 			// try to stat a not existing blob
-			h := backend.Handle{Type: tpe, Name: id.String()}
+			h := restic.Handle{Type: tpe, Name: id.String()}
 			_, err = b.Stat(h)
 			Assert(t, err != nil, "blob data could be extracted before creation")
 
@@ -517,7 +518,7 @@ func TestBackend(t testing.TB) {
 			store(t, b, tpe, []byte(test.data))
 
 			// test Load()
-			h := backend.Handle{Type: tpe, Name: test.id}
+			h := restic.Handle{Type: tpe, Name: test.id}
 			buf, err := backend.LoadAll(b, h, nil)
 			OK(t, err)
 			Equals(t, test.data, string(buf))
@@ -538,7 +539,7 @@ func TestBackend(t testing.TB) {
 		test := testStrings[0]
 
 		// create blob
-		err := b.Save(backend.Handle{Type: tpe, Name: test.id}, []byte(test.data))
+		err := b.Save(restic.Handle{Type: tpe, Name: test.id}, []byte(test.data))
 		Assert(t, err != nil, "expected error, got %v", err)
 
 		// remove and recreate
@@ -551,7 +552,7 @@ func TestBackend(t testing.TB) {
 		Assert(t, ok == false, "removed blob still present")
 
 		// create blob
-		err = b.Save(backend.Handle{Type: tpe, Name: test.id}, []byte(test.data))
+		err = b.Save(restic.Handle{Type: tpe, Name: test.id}, []byte(test.data))
 		OK(t, err)
 
 		// list items

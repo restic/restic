@@ -1,4 +1,4 @@
-package restic_test
+package archiver_test
 
 import (
 	"crypto/rand"
@@ -103,13 +103,13 @@ func testArchiverDuplication(t *testing.T) {
 
 				id := randomID()
 
-				if repo.Index().Has(id, pack.Data) {
+				if repo.Index().Has(id, restic.DataBlob) {
 					continue
 				}
 
 				buf := make([]byte, 50)
 
-				err := arch.Save(pack.Data, buf, id)
+				err := arch.Save(restic.DataBlob, buf, id)
 				if err != nil {
 					t.Fatal(err)
 				}

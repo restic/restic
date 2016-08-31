@@ -20,10 +20,10 @@ func TestLoadAll(t *testing.T) {
 		data := Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := backend.Hash(data)
-		err := b.Save(backend.Handle{Name: id.String(), Type: backend.Data}, data)
+		err := b.Save(restic.Handle{Name: id.String(), Type: restic.DataFile}, data)
 		OK(t, err)
 
-		buf, err := backend.LoadAll(b, backend.Handle{Type: backend.Data, Name: id.String()}, nil)
+		buf, err := backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()}, nil)
 		OK(t, err)
 
 		if len(buf) != len(data) {
@@ -45,11 +45,11 @@ func TestLoadSmallBuffer(t *testing.T) {
 		data := Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := backend.Hash(data)
-		err := b.Save(backend.Handle{Name: id.String(), Type: backend.Data}, data)
+		err := b.Save(restic.Handle{Name: id.String(), Type: restic.DataFile}, data)
 		OK(t, err)
 
 		buf := make([]byte, len(data)-23)
-		buf, err = backend.LoadAll(b, backend.Handle{Type: backend.Data, Name: id.String()}, buf)
+		buf, err = backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()}, buf)
 		OK(t, err)
 
 		if len(buf) != len(data) {
@@ -71,11 +71,11 @@ func TestLoadLargeBuffer(t *testing.T) {
 		data := Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := backend.Hash(data)
-		err := b.Save(backend.Handle{Name: id.String(), Type: backend.Data}, data)
+		err := b.Save(restic.Handle{Name: id.String(), Type: restic.DataFile}, data)
 		OK(t, err)
 
 		buf := make([]byte, len(data)+100)
-		buf, err = backend.LoadAll(b, backend.Handle{Type: backend.Data, Name: id.String()}, buf)
+		buf, err = backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()}, buf)
 		OK(t, err)
 
 		if len(buf) != len(data) {

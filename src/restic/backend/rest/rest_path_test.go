@@ -2,36 +2,36 @@ package rest
 
 import (
 	"net/url"
-	"restic/backend"
+	"restic"
 	"testing"
 )
 
 var restPathTests = []struct {
-	Handle backend.Handle
+	Handle restic.Handle
 	URL    *url.URL
 	Result string
 }{
 	{
 		URL: parseURL("https://hostname.foo"),
-		Handle: backend.Handle{
-			Type: backend.Data,
-			Name: "foobar",
+		Handle: restic.Handle{
+			FileType: restic.DataFile,
+			Name:     "foobar",
 		},
 		Result: "https://hostname.foo/data/foobar",
 	},
 	{
 		URL: parseURL("https://hostname.foo:1234/prefix/repo"),
-		Handle: backend.Handle{
-			Type: backend.Lock,
-			Name: "foobar",
+		Handle: restic.Handle{
+			FileType: restic.LockFile,
+			Name:     "foobar",
 		},
 		Result: "https://hostname.foo:1234/prefix/repo/locks/foobar",
 	},
 	{
 		URL: parseURL("https://hostname.foo:1234/prefix/repo"),
-		Handle: backend.Handle{
-			Type: backend.Config,
-			Name: "foobar",
+		Handle: restic.Handle{
+			FileType: restic.ConfigFile,
+			Name:     "foobar",
 		},
 		Result: "https://hostname.foo:1234/prefix/repo/config",
 	},

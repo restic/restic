@@ -28,7 +28,7 @@ func createFilledRepo(t testing.TB, snapshots int, dup float32) (*repository.Rep
 }
 
 func validateIndex(t testing.TB, repo *repository.Repository, idx *Index) {
-	for id := range repo.List(backend.Data, nil) {
+	for id := range repo.List(restic.DataFile, nil) {
 		if _, ok := idx.Packs[id]; !ok {
 			t.Errorf("pack %v missing from index", id.Str())
 		}
@@ -197,7 +197,7 @@ func TestIndexSave(t *testing.T) {
 
 	for id := range idx.IndexIDs {
 		t.Logf("remove index %v", id.Str())
-		err = repo.Backend().Remove(backend.Index, id.String())
+		err = repo.Backend().Remove(restic.IndexFile, id.String())
 		if err != nil {
 			t.Errorf("error removing index %v: %v", id, err)
 		}
@@ -235,7 +235,7 @@ func TestIndexAddRemovePack(t *testing.T) {
 	done := make(chan struct{})
 	defer close(done)
 
-	packID := <-repo.List(backend.Data, done)
+	packID := <-repo.List(restic.DataFile, done)
 
 	t.Logf("selected pack %v", packID.Str())
 
@@ -298,7 +298,7 @@ func TestIndexLoadDocReference(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	id, err := repo.SaveUnpacked(backend.Index, docExample)
+	id, err := repo.SaveUnpacked(restic.IndexFile, docExample)
 	if err != nil {
 		t.Fatalf("SaveUnpacked() returned error %v", err)
 	}

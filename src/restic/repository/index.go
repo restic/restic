@@ -3,7 +3,6 @@ package repository
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"restic"
 	"sync"
@@ -40,7 +39,7 @@ func NewIndex() *Index {
 	}
 }
 
-func (idx *Index) store(blob PackedBlob) {
+func (idx *Index) store(blob restic.PackedBlob) {
 	newEntry := indexEntry{
 		packID: blob.PackID,
 		offset: blob.Offset,
@@ -97,7 +96,7 @@ var IndexFull = func(idx *Index) bool {
 
 // Store remembers the id and pack in the index. An existing entry will be
 // silently overwritten.
-func (idx *Index) Store(blob PackedBlob) {
+func (idx *Index) Store(blob restic.PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -110,25 +109,27 @@ func (idx *Index) Store(blob PackedBlob) {
 	idx.store(blob)
 }
 
-// Lookup queries the index for the blob ID and returns a PackedBlob.
-func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []PackedBlob, err error) {
+// Lookup queries the index for the blob ID and returns a restic.PackedBlob.
+func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, err error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
 	h := restic.BlobHandle{ID: id, Type: tpe}
 
 	if packs, ok := idx.pack[h]; ok {
-		blobs = make([]PackedBlob, 0, len(packs))
+		blobs = make([]restic.PackedBlob, 0, len(packs))
 
 		for _, p := range packs {
 			debug.Log("Index.Lookup", "id %v found in pack %v at %d, length %d",
 				id.Str(), p.packID.Str(), p.offset, p.length)
 
-			blob := PackedBlob{
-				Type:   tpe,
-				Length: p.length,
-				ID:     id,
-				Offset: p.offset,
+			blob := restic.PackedBlob{
+				Blob: restic.Blob{
+					Type:   tpe,
+					Length: p.length,
+					ID:     id,
+					Offset: p.offset,
+				},
 				PackID: p.packID,
 			}
 
@@ -143,18 +144,20 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []PackedBlob,
 }
 
 // ListPack returns a list of blobs contained in a pack.
-func (idx *Index) ListPack(id restic.ID) (list []PackedBlob) {
+func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
 	for h, packList := range idx.pack {
 		for _, entry := range packList {
 			if entry.packID == id {
-				list = append(list, PackedBlob{
-					ID:     h.ID,
-					Type:   h.Type,
-					Length: entry.length,
-					Offset: entry.offset,
+				list = append(list, restic.PackedBlob{
+					Blob: restic.Blob{
+						ID:     h.ID,
+						Type:   h.Type,
+						Length: entry.length,
+						Offset: entry.offset,
+					},
 					PackID: entry.packID,
 				})
 			}
@@ -182,7 +185,7 @@ func (idx *Index) LookupSize(id restic.ID, tpe restic.BlobType) (cleartextLength
 		return 0, err
 	}
 
-	return blobs[0].PlaintextLength(), nil
+	return blobs[0].Length - crypto.Extension, nil
 }
 
 // Supersedes returns the list of indexes this index supersedes, if any.
@@ -204,32 +207,13 @@ func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 	return nil
 }
 
-// PackedBlob is a blob already saved within a pack.
-type PackedBlob struct {
-	Type   restic.BlobType
-	Length uint
-	ID     restic.ID
-	Offset uint
-	PackID restic.ID
-}
-
-func (pb PackedBlob) String() string {
-	return fmt.Sprintf("<PackedBlob %v type %v in pack %v: len %v, offset %v",
-		pb.ID.Str(), pb.Type, pb.PackID.Str(), pb.Length, pb.Offset)
-}
-
-// PlaintextLength returns the number of bytes the blob's plaintext occupies.
-func (pb PackedBlob) PlaintextLength() uint {
-	return pb.Length - crypto.Extension
-}
-
 // Each returns a channel that yields all blobs known to the index. If done is
 // closed, the background goroutine terminates. This blocks any modification of
 // the index.
-func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
+func (idx *Index) Each(done chan struct{}) <-chan restic.PackedBlob {
 	idx.m.Lock()
 
-	ch := make(chan PackedBlob)
+	ch := make(chan restic.PackedBlob)
 
 	go func() {
 		defer idx.m.Unlock()
@@ -242,11 +226,13 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 				select {
 				case <-done:
 					return
-				case ch <- PackedBlob{
-					ID:     h.ID,
-					Type:   h.Type,
-					Offset: blob.offset,
-					Length: blob.length,
+				case ch <- restic.PackedBlob{
+					Blob: restic.Blob{
+						ID:     h.ID,
+						Type:   h.Type,
+						Offset: blob.offset,
+						Length: blob.length,
+					},
 					PackID: blob.packID,
 				}:
 				}
@@ -497,11 +483,13 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 	idx = NewIndex()
 	for _, pack := range idxJSON.Packs {
 		for _, blob := range pack.Blobs {
-			idx.store(PackedBlob{
-				Type:   blob.Type,
-				ID:     blob.ID,
-				Offset: blob.Offset,
-				Length: blob.Length,
+			idx.store(restic.PackedBlob{
+				Blob: restic.Blob{
+					Type:   blob.Type,
+					ID:     blob.ID,
+					Offset: blob.Offset,
+					Length: blob.Length,
+				},
 				PackID: pack.ID,
 			})
 		}
@@ -528,12 +516,14 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	idx = NewIndex()
 	for _, pack := range list {
 		for _, blob := range pack.Blobs {
-			idx.store(PackedBlob{
-				Type:   blob.Type,
-				ID:     blob.ID,
+			idx.store(restic.PackedBlob{
+				Blob: restic.Blob{
+					Type:   blob.Type,
+					ID:     blob.ID,
+					Offset: blob.Offset,
+					Length: blob.Length,
+				},
 				PackID: pack.ID,
-				Offset: blob.Offset,
-				Length: blob.Length,
 			})
 		}
 	}

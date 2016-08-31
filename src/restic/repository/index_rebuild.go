@@ -33,11 +33,8 @@ func RebuildIndex(repo restic.Repository) error {
 		res := job.Result.(list.Result)
 
 		for _, entry := range res.Entries() {
-			pb := PackedBlob{
-				ID:     entry.ID,
-				Type:   entry.Type,
-				Length: entry.Length,
-				Offset: entry.Offset,
+			pb := restic.PackedBlob{
+				Blob:   entry,
 				PackID: res.PackID(),
 			}
 			idx.Store(pb)

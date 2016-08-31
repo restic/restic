@@ -1,19 +1,18 @@
-package restic
+package archiver
 
 import (
 	"bytes"
 	"io"
 	"math/rand"
-	"restic/backend"
-	"restic/pack"
+	"restic"
 	"restic/repository"
 	"testing"
 
 	"github.com/restic/chunker"
 )
 
-func loadBlob(t *testing.T, repo *repository.Repository, id backend.ID, buf []byte) []byte {
-	buf, err := repo.LoadBlob(id, pack.Data, buf)
+func loadBlob(t *testing.T, repo *repository.Repository, id restic.ID, buf []byte) []byte {
+	buf, err := repo.LoadBlob(id, restic.DataBlob, buf)
 	if err != nil {
 		t.Fatalf("LoadBlob(%v) returned error %v", id, err)
 	}
@@ -21,8 +20,8 @@ func loadBlob(t *testing.T, repo *repository.Repository, id backend.ID, buf []by
 	return buf
 }
 
-func checkSavedFile(t *testing.T, repo *repository.Repository, treeID backend.ID, name string, rd io.Reader) {
-	tree, err := LoadTree(repo, treeID)
+func checkSavedFile(t *testing.T, repo *repository.Repository, treeID restic.ID, name string, rd io.Reader) {
+	tree, err := restic.LoadTree(repo, treeID)
 	if err != nil {
 		t.Fatalf("LoadTree() returned error %v", err)
 	}
@@ -56,6 +55,11 @@ func checkSavedFile(t *testing.T, repo *repository.Repository, treeID backend.ID
 			t.Fatalf("blob %d (%v) is wrong", i, id.Str())
 		}
 	}
+}
+
+// fakeFile returns a reader which yields deterministic pseudo-random data.
+func fakeFile(t testing.TB, seed, size int64) io.Reader {
+	return io.LimitReader(restic.NewRandReader(rand.New(rand.NewSource(seed))), size)
 }
 
 func TestArchiveReader(t *testing.T) {

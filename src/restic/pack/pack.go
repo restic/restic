@@ -10,26 +10,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/crypto"
 )
 
-// Blob is a blob within a pack.
-type Blob struct {
-	Type   restic.BlobType
-	Length uint
-	ID     restic.ID
-	Offset uint
-}
-
-func (b Blob) String() string {
-	return fmt.Sprintf("<Blob %v/%v len %v, off %v>",
-		b.ID.Str(), b.Type, b.Length, b.Offset)
-}
-
 // Packer is used to create a new Pack.
 type Packer struct {
-	blobs []Blob
+	blobs []restic.Blob
 
 	bytes uint
 	k     *crypto.Key
@@ -53,7 +39,7 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte) (int, error) 
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	c := Blob{Type: t, ID: id}
+	c := restic.Blob{Type: t, ID: id}
 
 	n, err := p.wr.Write(data)
 	c.Length = uint(n)
@@ -64,13 +50,13 @@ func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte) (int, error) 
 	return n, errors.Wrap(err, "Write")
 }
 
-var entrySize = uint(binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize)
+var entrySize = uint(binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + restic.IDSize)
 
 // headerEntry is used with encoding/binary to read and write header entries
 type headerEntry struct {
 	Type   uint8
 	Length uint32
-	ID     [backend.IDSize]byte
+	ID     [restic.IDSize]byte
 }
 
 // Finalize writes the header for all added blobs and finalizes the pack.
@@ -167,7 +153,7 @@ func (p *Packer) Count() int {
 }
 
 // Blobs returns the slice of blobs that have been written.
-func (p *Packer) Blobs() []Blob {
+func (p *Packer) Blobs() []restic.Blob {
 	p.m.Lock()
 	defer p.m.Unlock()
 
@@ -233,7 +219,7 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 }
 
 // List returns the list of entries found in a pack file.
-func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []Blob, err error) {
+func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err error) {
 	buf, err := readHeader(rd, size)
 	if err != nil {
 		return nil, err
@@ -258,7 +244,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []Blob, err error)
 			return nil, errors.Wrap(err, "binary.Read")
 		}
 
-		entry := Blob{
+		entry := restic.Blob{
 			Length: uint(e.Length),
 			ID:     e.ID,
 			Offset: pos,

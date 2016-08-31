@@ -65,7 +65,7 @@ func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
 	sn.Lock()
 	defer sn.Unlock()
 
-	for id := range sn.repo.List(backend.Snapshot, ctx.Done()) {
+	for id := range sn.repo.List(restic.SnapshotFile, ctx.Done()) {
 		snapshot, err := restic.LoadSnapshot(sn.repo, id)
 		if err != nil {
 			return err

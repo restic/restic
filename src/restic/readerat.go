@@ -1,4 +1,4 @@
-package backend
+package restic
 
 import (
 	"io"

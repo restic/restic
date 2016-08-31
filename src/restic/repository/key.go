@@ -116,7 +116,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 	// try at most maxKeysForSearch keys in repo
 	done := make(chan struct{})
 	defer close(done)
-	for name := range s.Backend().List(backend.Key, done) {
+	for name := range s.Backend().List(restic.KeyFile, done) {
 		if maxKeys > 0 && checked > maxKeys {
 			return nil, ErrMaxKeysReached
 		}
@@ -226,8 +226,8 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 
 	// store in repository and return
 	h := restic.Handle{
-		Type: backend.Key,
-		Name: restic.Hash(buf).String(),
+		FileType: restic.KeyFile,
+		Name:     restic.Hash(buf).String(),
 	}
 
 	err = s.be.Save(h, buf)

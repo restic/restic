@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"restic/debug"
-	"restic/pack"
 )
 
 // MasterIndex is a collection of indexes and IDs of chunks that are in the process of being saved.
@@ -22,7 +21,7 @@ func NewMasterIndex() *MasterIndex {
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []PackedBlob, err error) {
+func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, err error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -58,7 +57,7 @@ func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, erro
 
 // ListPack returns the list of blobs in a pack. The first matching index is
 // returned, or nil if no index contains information about the pack id.
-func (mi *MasterIndex) ListPack(id restic.ID) (list []PackedBlob) {
+func (mi *MasterIndex) ListPack(id restic.ID) (list []restic.PackedBlob) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 

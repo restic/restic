@@ -29,7 +29,7 @@ type fakeFileSystem struct {
 // IDs is returned.
 func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
 	blobs = IDs{}
-	ch := chunker.New(rd, fs.repo.Config().ChunkerPolynomial())
+	ch := chunker.New(rd, fs.repo.Config().ChunkerPolynomial)
 
 	for {
 		chunk, err := ch.Next(getBuf())

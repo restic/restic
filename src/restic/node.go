@@ -42,7 +42,7 @@ type Node struct {
 
 	tree *Tree
 
-	path string
+	Path string `json:"-"`
 	err  error
 }
 
@@ -67,7 +67,7 @@ func (node Node) Tree() *Tree {
 func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	mask := os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky
 	node := &Node{
-		path:    path,
+		Path:    path,
 		Name:    fi.Name(),
 		Mode:    fi.Mode() & mask,
 		ModTime: fi.ModTime(),
@@ -370,15 +370,15 @@ func (node Node) sameContent(other Node) bool {
 	return true
 }
 
-func (node *Node) isNewer(path string, fi os.FileInfo) bool {
+func (node *Node) IsNewer(path string, fi os.FileInfo) bool {
 	if node.FileType != "file" {
-		debug.Log("node.isNewer", "node %v is newer: not file", path)
+		debug.Log("node.IsNewer", "node %v is newer: not file", path)
 		return true
 	}
 
 	tpe := nodeTypeFromFileInfo(fi)
 	if node.Name != fi.Name() || node.FileType != tpe {
-		debug.Log("node.isNewer", "node %v is newer: name or type changed", path)
+		debug.Log("node.IsNewer", "node %v is newer: name or type changed", path)
 		return true
 	}
 
@@ -388,7 +388,7 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 	if !ok {
 		if node.ModTime != fi.ModTime() ||
 			node.Size != size {
-			debug.Log("node.isNewer", "node %v is newer: timestamp or size changed", path)
+			debug.Log("node.IsNewer", "node %v is newer: timestamp or size changed", path)
 			return true
 		}
 		return false
@@ -400,11 +400,11 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 		node.ChangeTime != changeTime(extendedStat) ||
 		node.Inode != uint64(inode) ||
 		node.Size != size {
-		debug.Log("node.isNewer", "node %v is newer: timestamp, size or inode changed", path)
+		debug.Log("node.IsNewer", "node %v is newer: timestamp, size or inode changed", path)
 		return true
 	}
 
-	debug.Log("node.isNewer", "node %v is not newer", path)
+	debug.Log("node.IsNewer", "node %v is not newer", path)
 	return false
 }
 

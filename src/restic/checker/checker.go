@@ -21,14 +21,14 @@ import (
 // A Checker only tests for internal errors within the data structures of the
 // repository (e.g. missing blobs), and needs a valid Repository to work on.
 type Checker struct {
-	packs    backend.IDSet
-	blobs    backend.IDSet
+	packs    restic.IDSet
+	blobs    restic.IDSet
 	blobRefs struct {
 		sync.Mutex
-		M map[backend.ID]uint
+		M map[restic.ID]uint
 	}
-	indexes       map[backend.ID]*repository.Index
-	orphanedPacks backend.IDs
+	indexes       map[restic.ID]*repository.Index
+	orphanedPacks restic.IDs
 
 	masterIndex *repository.MasterIndex
 
@@ -38,14 +38,14 @@ type Checker struct {
 // New returns a new checker which runs on repo.
 func New(repo *repository.Repository) *Checker {
 	c := &Checker{
-		packs:       backend.NewIDSet(),
-		blobs:       backend.NewIDSet(),
+		packs:       restic.NewIDSet(),
+		blobs:       restic.NewIDSet(),
 		masterIndex: repository.NewMasterIndex(),
-		indexes:     make(map[backend.ID]*repository.Index),
+		indexes:     make(map[restic.ID]*repository.Index),
 		repo:        repo,
 	}
 
-	c.blobRefs.M = make(map[backend.ID]uint)
+	c.blobRefs.M = make(map[restic.ID]uint)
 
 	return c
 }
@@ -54,8 +54,8 @@ const defaultParallelism = 40
 
 // ErrDuplicatePacks is returned when a pack is found in more than one index.
 type ErrDuplicatePacks struct {
-	PackID  backend.ID
-	Indexes backend.IDSet
+	PackID  restic.ID
+	Indexes restic.IDSet
 }
 
 func (e ErrDuplicatePacks) Error() string {
@@ -65,7 +65,7 @@ func (e ErrDuplicatePacks) Error() string {
 // ErrOldIndexFormat is returned when an index with the old format is
 // found.
 type ErrOldIndexFormat struct {
-	backend.ID
+	restic.ID
 }
 
 func (err ErrOldIndexFormat) Error() string {
@@ -82,7 +82,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 
 	indexCh := make(chan indexRes)
 
-	worker := func(id backend.ID, done <-chan struct{}) error {
+	worker := func(id restic.ID, done <-chan struct{}) error {
 		debug.Log("LoadIndex", "worker got index %v", id)
 		idx, err := repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeIndex)
 		if errors.Cause(err) == repository.ErrOldIndexFormat {
@@ -108,7 +108,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	go func() {
 		defer close(indexCh)
 		debug.Log("LoadIndex", "start loading indexes in parallel")
-		perr = repository.FilesInParallel(c.repo.Backend(), backend.Index, defaultParallelism,
+		perr = repository.FilesInParallel(c.repo.Backend(), restic.IndexFile, defaultParallelism,
 			repository.ParallelWorkFuncParseID(worker))
 		debug.Log("LoadIndex", "loading indexes finished, error: %v", perr)
 	}()
@@ -121,11 +121,11 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 		return hints, errs
 	}
 
-	packToIndex := make(map[backend.ID]backend.IDSet)
+	packToIndex := make(map[restic.ID]restic.IDSet)
 
 	for res := range indexCh {
 		debug.Log("LoadIndex", "process index %v", res.ID)
-		idxID, err := backend.ParseID(res.ID)
+		idxID, err := restic.ParseID(res.ID)
 		if err != nil {
 			errs = append(errs, errors.Errorf("unable to parse as index ID: %v", res.ID))
 			continue
@@ -143,7 +143,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 			cnt++
 
 			if _, ok := packToIndex[blob.PackID]; !ok {
-				packToIndex[blob.PackID] = backend.NewIDSet()
+				packToIndex[blob.PackID] = restic.NewIDSet()
 			}
 			packToIndex[blob.PackID].Insert(idxID)
 		}
@@ -171,7 +171,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 
 // PackError describes an error with a specific pack.
 type PackError struct {
-	ID       backend.ID
+	ID       restic.ID
 	Orphaned bool
 	Err      error
 }
@@ -180,14 +180,14 @@ func (e PackError) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
-func packIDTester(repo *repository.Repository, inChan <-chan backend.ID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
+func packIDTester(repo *repository.Repository, inChan <-chan restic.ID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
 	debug.Log("Checker.testPackID", "worker start")
 	defer debug.Log("Checker.testPackID", "worker done")
 
 	defer wg.Done()
 
 	for id := range inChan {
-		ok, err := repo.Backend().Test(backend.Data, id.String())
+		ok, err := repo.Backend().Test(restic.DataFile, id.String())
 		if err != nil {
 			err = PackError{ID: id, Err: err}
 		} else {
@@ -218,11 +218,11 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	defer close(errChan)
 
 	debug.Log("Checker.Packs", "checking for %d packs", len(c.packs))
-	seenPacks := backend.NewIDSet()
+	seenPacks := restic.NewIDSet()
 
 	var workerWG sync.WaitGroup
 
-	IDChan := make(chan backend.ID)
+	IDChan := make(chan restic.ID)
 	for i := 0; i < defaultParallelism; i++ {
 		workerWG.Add(1)
 		go packIDTester(c.repo, IDChan, errChan, &workerWG, done)
@@ -238,7 +238,7 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	workerWG.Wait()
 	debug.Log("Checker.Packs", "workers terminated")
 
-	for id := range c.repo.List(backend.Data, done) {
+	for id := range c.repo.List(restic.DataFile, done) {
 		debug.Log("Checker.Packs", "check data blob %v", id.Str())
 		if !seenPacks.Has(id) {
 			c.orphanedPacks = append(c.orphanedPacks, id)
@@ -253,8 +253,8 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 
 // Error is an error that occurred while checking a repository.
 type Error struct {
-	TreeID backend.ID
-	BlobID backend.ID
+	TreeID restic.ID
+	BlobID restic.ID
 	Err    error
 }
 
@@ -273,25 +273,25 @@ func (e Error) Error() string {
 	return e.Err.Error()
 }
 
-func loadTreeFromSnapshot(repo *repository.Repository, id backend.ID) (backend.ID, error) {
+func loadTreeFromSnapshot(repo *repository.Repository, id restic.ID) (restic.ID, error) {
 	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {
 		debug.Log("Checker.loadTreeFromSnapshot", "error loading snapshot %v: %v", id.Str(), err)
-		return backend.ID{}, err
+		return restic.ID{}, err
 	}
 
 	if sn.Tree == nil {
 		debug.Log("Checker.loadTreeFromSnapshot", "snapshot %v has no tree", id.Str())
-		return backend.ID{}, errors.Errorf("snapshot %v has no tree", id)
+		return restic.ID{}, errors.Errorf("snapshot %v has no tree", id)
 	}
 
 	return *sn.Tree, nil
 }
 
 // loadSnapshotTreeIDs loads all snapshots from backend and returns the tree IDs.
-func loadSnapshotTreeIDs(repo *repository.Repository) (backend.IDs, []error) {
+func loadSnapshotTreeIDs(repo *repository.Repository) (restic.IDs, []error) {
 	var trees struct {
-		IDs backend.IDs
+		IDs restic.IDs
 		sync.Mutex
 	}
 
@@ -301,7 +301,7 @@ func loadSnapshotTreeIDs(repo *repository.Repository) (backend.IDs, []error) {
 	}
 
 	snapshotWorker := func(strID string, done <-chan struct{}) error {
-		id, err := backend.ParseID(strID)
+		id, err := restic.ParseID(strID)
 		if err != nil {
 			return err
 		}
@@ -324,7 +324,7 @@ func loadSnapshotTreeIDs(repo *repository.Repository) (backend.IDs, []error) {
 		return nil
 	}
 
-	err := repository.FilesInParallel(repo.Backend(), backend.Snapshot, defaultParallelism, snapshotWorker)
+	err := repository.FilesInParallel(repo.Backend(), restic.SnapshotFile, defaultParallelism, snapshotWorker)
 	if err != nil {
 		errs.errs = append(errs.errs, err)
 	}
@@ -334,7 +334,7 @@ func loadSnapshotTreeIDs(repo *repository.Repository) (backend.IDs, []error) {
 
 // TreeError collects several errors that occurred while processing a tree.
 type TreeError struct {
-	ID     backend.ID
+	ID     restic.ID
 	Errors []error
 }
 
@@ -343,14 +343,14 @@ func (e TreeError) Error() string {
 }
 
 type treeJob struct {
-	backend.ID
+	restic.ID
 	error
 	*restic.Tree
 }
 
 // loadTreeWorker loads trees from repo and sends them to out.
 func loadTreeWorker(repo *repository.Repository,
-	in <-chan backend.ID, out chan<- treeJob,
+	in <-chan restic.ID, out chan<- treeJob,
 	done <-chan struct{}, wg *sync.WaitGroup) {
 
 	defer func() {
@@ -454,7 +454,7 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-ch
 	}
 }
 
-func filterTrees(backlog backend.IDs, loaderChan chan<- backend.ID, in <-chan treeJob, out chan<- treeJob, done <-chan struct{}) {
+func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob, done <-chan struct{}) {
 	defer func() {
 		debug.Log("checker.filterTrees", "closing output channels")
 		close(loaderChan)
@@ -466,7 +466,7 @@ func filterTrees(backlog backend.IDs, loaderChan chan<- backend.ID, in <-chan tr
 		outCh                   = out
 		loadCh                  = loaderChan
 		job                     treeJob
-		nextTreeID              backend.ID
+		nextTreeID              restic.ID
 		outstandingLoadTreeJobs = 0
 	)
 
@@ -559,7 +559,7 @@ func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
 		}
 	}
 
-	treeIDChan := make(chan backend.ID)
+	treeIDChan := make(chan restic.ID)
 	treeJobChan1 := make(chan treeJob)
 	treeJobChan2 := make(chan treeJob)
 
@@ -575,10 +575,10 @@ func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
 	wg.Wait()
 }
 
-func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
+func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 	debug.Log("Checker.checkTree", "checking tree %v", id.Str())
 
-	var blobs []backend.ID
+	var blobs []restic.ID
 
 	for _, node := range tree.Nodes {
 		switch node.FileType {
@@ -634,7 +634,7 @@ func (c *Checker) checkTree(id backend.ID, tree *restic.Tree) (errs []error) {
 }
 
 // UnusedBlobs returns all blobs that have never been referenced.
-func (c *Checker) UnusedBlobs() (blobs backend.IDs) {
+func (c *Checker) UnusedBlobs() (blobs restic.IDs) {
 	c.blobRefs.Lock()
 	defer c.blobRefs.Unlock()
 
@@ -650,7 +650,7 @@ func (c *Checker) UnusedBlobs() (blobs backend.IDs) {
 }
 
 // OrphanedPacks returns a slice of unused packs (only available after Packs() was run).
-func (c *Checker) OrphanedPacks() backend.IDs {
+func (c *Checker) OrphanedPacks() restic.IDs {
 	return c.orphanedPacks
 }
 
@@ -660,15 +660,15 @@ func (c *Checker) CountPacks() uint64 {
 }
 
 // checkPack reads a pack and checks the integrity of all blobs.
-func checkPack(r *repository.Repository, id backend.ID) error {
+func checkPack(r *repository.Repository, id restic.ID) error {
 	debug.Log("Checker.checkPack", "checking pack %v", id.Str())
-	h := backend.Handle{Type: backend.Data, Name: id.String()}
+	h := restic.Handle{FileType: restic.DataFile, Name: id.String()}
 	buf, err := backend.LoadAll(r.Backend(), h, nil)
 	if err != nil {
 		return err
 	}
 
-	hash := backend.Hash(buf)
+	hash := restic.Hash(buf)
 	if !hash.Equal(id) {
 		debug.Log("Checker.checkPack", "Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 		return errors.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
@@ -691,7 +691,7 @@ func checkPack(r *repository.Repository, id backend.ID) error {
 			continue
 		}
 
-		hash := backend.Hash(plainBuf)
+		hash := restic.Hash(plainBuf)
 		if !hash.Equal(blob.ID) {
 			debug.Log("Checker.checkPack", "  Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
 			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
@@ -713,10 +713,10 @@ func (c *Checker) ReadData(p *restic.Progress, errChan chan<- error, done <-chan
 	p.Start()
 	defer p.Done()
 
-	worker := func(wg *sync.WaitGroup, in <-chan backend.ID) {
+	worker := func(wg *sync.WaitGroup, in <-chan restic.ID) {
 		defer wg.Done()
 		for {
-			var id backend.ID
+			var id restic.ID
 			var ok bool
 
 			select {
@@ -742,7 +742,7 @@ func (c *Checker) ReadData(p *restic.Progress, errChan chan<- error, done <-chan
 		}
 	}
 
-	ch := c.repo.List(backend.Data, done)
+	ch := c.repo.List(restic.DataFile, done)
 
 	var wg sync.WaitGroup
 	for i := 0; i < defaultParallelism; i++ {

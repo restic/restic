@@ -103,7 +103,7 @@ func loadIndexJSON(repo types.Repository, id backend.ID) (*indexJSON, error) {
 	debug.Log("index.loadIndexJSON", "process index %v\n", id.Str())
 
 	var idx indexJSON
-	err := repo.LoadJSONUnpacked(backend.Index, id, &idx)
+	err := repo.LoadJSONUnpacked(restic.IndexFile, id, &idx)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func Load(repo types.Repository, p *restic.Progress) (*Index, error) {
 
 	index := newIndex()
 
-	for id := range repo.List(backend.Index, done) {
+	for id := range repo.List(restic.IndexFile, done) {
 		p.Report(restic.Stat{Blobs: 1})
 
 		debug.Log("index.Load", "Load index %v", id.Str())
@@ -335,5 +335,5 @@ func Save(repo types.Repository, packs map[backend.ID][]pack.Blob, supersedes ba
 		idx.Packs = append(idx.Packs, p)
 	}
 
-	return repo.SaveJSONUnpacked(backend.Index, idx)
+	return repo.SaveJSONUnpacked(restic.IndexFile, idx)
 }

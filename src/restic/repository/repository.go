@@ -19,7 +19,7 @@ import (
 // Repository is used to access a repository in a backend.
 type Repository struct {
 	be      restic.Backend
-	Config  Config
+	cfg     restic.Config
 	key     *crypto.Key
 	keyName string
 	idx     *MasterIndex
@@ -38,17 +38,21 @@ func New(be restic.Backend) *Repository {
 	return repo
 }
 
+func (r *Repository) Config() restic.Config {
+	return r.cfg
+}
+
 // Find loads the list of all blobs of type t and searches for names which start
 // with prefix. If none is found, nil and ErrNoIDPrefixFound is returned. If
 // more than one is found, nil and ErrMultipleIDMatches is returned.
 func (r *Repository) Find(t restic.FileType, prefix string) (string, error) {
-	return backend.Find(r.be, t, prefix)
+	return restic.Find(r.be, t, prefix)
 }
 
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
 func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
-	return backend.PrefixLength(r.be, t)
+	return restic.PrefixLength(r.be, t)
 }
 
 // LoadAndDecrypt loads and decrypts data identified by t and id from the
@@ -56,7 +60,7 @@ func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
 func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
-	h := restic.Handle{Type: t, Name: id.String()}
+	h := restic.Handle{FileType: t, Name: id.String()}
 	buf, err := backend.LoadAll(r.be, h, nil)
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
@@ -112,7 +116,7 @@ func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		}
 
 		// load blob from pack
-		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
+		h := restic.Handle{FileType: restic.DataFile, Name: blob.PackID.String()}
 		ciphertextBuf := make([]byte, blob.Length)
 		n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
 		if err != nil {
@@ -274,7 +278,7 @@ func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, er
 	}
 
 	id = restic.Hash(ciphertext)
-	h := restic.Handle{Type: t, Name: id.String()}
+	h := restic.Handle{FileType: t, Name: id.String()}
 
 	err = r.be.Save(h, ciphertext)
 	if err != nil {
@@ -309,13 +313,13 @@ func (r *Repository) Backend() restic.Backend {
 }
 
 // Index returns the currently used MasterIndex.
-func (r *Repository) Index() *MasterIndex {
+func (r *Repository) Index() restic.Index {
 	return r.idx
 }
 
 // SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i *MasterIndex) {
-	r.idx = i
+func (r *Repository) SetIndex(i restic.Index) {
+	r.idx = i.(*MasterIndex)
 }
 
 // SaveIndex saves an index in the repository.
@@ -423,7 +427,7 @@ func (r *Repository) SearchKey(password string, maxKeys int) error {
 	r.key = key.master
 	r.packerManager.key = key.master
 	r.keyName = key.Name()
-	r.Config, err = LoadConfig(r)
+	r.cfg, err = restic.LoadConfig(r)
 	return err
 }
 
@@ -438,7 +442,7 @@ func (r *Repository) Init(password string) error {
 		return errors.New("repository master key and config already initialized")
 	}
 
-	cfg, err := CreateConfig()
+	cfg, err := restic.CreateConfig()
 	if err != nil {
 		return err
 	}
@@ -448,7 +452,7 @@ func (r *Repository) Init(password string) error {
 
 // init creates a new master key with the supplied password and uses it to save
 // the config into the repo.
-func (r *Repository) init(password string, cfg Config) error {
+func (r *Repository) init(password string, cfg restic.Config) error {
 	key, err := createMasterKey(r, password)
 	if err != nil {
 		return err
@@ -457,7 +461,7 @@ func (r *Repository) init(password string, cfg Config) error {
 	r.key = key.master
 	r.packerManager.key = key.master
 	r.keyName = key.Name()
-	r.Config = cfg
+	r.cfg = cfg
 	_, err = r.SaveJSONUnpacked(restic.ConfigFile, cfg)
 	return err
 }
@@ -528,7 +532,7 @@ func (r *Repository) list(t restic.FileType, done <-chan struct{}, out chan<- re
 				// input channel closed, we're done
 				return
 			}
-			id, err = backend.ParseID(strID)
+			id, err = restic.ParseID(strID)
 			if err != nil {
 				// ignore invalid IDs
 				continue
@@ -554,15 +558,15 @@ func (r *Repository) List(t restic.FileType, done <-chan struct{}) <-chan restic
 
 // ListPack returns the list of blobs saved in the pack id and the length of
 // the file as stored in the backend.
-func (r *Repository) ListPack(id restic.ID) ([]pack.Blob, int64, error) {
-	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+func (r *Repository) ListPack(id restic.ID) ([]restic.Blob, int64, error) {
+	h := restic.Handle{FileType: restic.DataFile, Name: id.String()}
 
 	blobInfo, err := r.Backend().Stat(h)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	blobs, err := pack.List(r.Key(), backend.ReaderAt(r.Backend(), h), blobInfo.Size)
+	blobs, err := pack.List(r.Key(), restic.ReaderAt(r.Backend(), h), blobInfo.Size)
 	if err != nil {
 		return nil, 0, err
 	}
