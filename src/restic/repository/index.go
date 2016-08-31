@@ -13,13 +13,12 @@ import (
 
 	"restic/crypto"
 	"restic/debug"
-	"restic/pack"
 )
 
 // Index holds a lookup table for id -> pack.
 type Index struct {
 	m    sync.Mutex
-	pack map[pack.Handle][]indexEntry
+	pack map[restic.BlobHandle][]indexEntry
 
 	final      bool      // set to true for all indexes read from the backend ("finalized")
 	id         restic.ID // set to the ID of the index when it's finalized
@@ -36,7 +35,7 @@ type indexEntry struct {
 // NewIndex returns a new index.
 func NewIndex() *Index {
 	return &Index{
-		pack:    make(map[pack.Handle][]indexEntry),
+		pack:    make(map[restic.BlobHandle][]indexEntry),
 		created: time.Now(),
 	}
 }
@@ -47,7 +46,7 @@ func (idx *Index) store(blob PackedBlob) {
 		offset: blob.Offset,
 		length: blob.Length,
 	}
-	h := pack.Handle{ID: blob.ID, Type: blob.Type}
+	h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 	idx.pack[h] = append(idx.pack[h], newEntry)
 }
 
@@ -112,11 +111,11 @@ func (idx *Index) Store(blob PackedBlob) {
 }
 
 // Lookup queries the index for the blob ID and returns a PackedBlob.
-func (idx *Index) Lookup(id restic.ID, tpe pack.BlobType) (blobs []PackedBlob, err error) {
+func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []PackedBlob, err error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	h := pack.Handle{ID: id, Type: tpe}
+	h := restic.BlobHandle{ID: id, Type: tpe}
 
 	if packs, ok := idx.pack[h]; ok {
 		blobs = make([]PackedBlob, 0, len(packs))
@@ -166,7 +165,7 @@ func (idx *Index) ListPack(id restic.ID) (list []PackedBlob) {
 }
 
 // Has returns true iff the id is listed in the index.
-func (idx *Index) Has(id restic.ID, tpe pack.BlobType) bool {
+func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
 	_, err := idx.Lookup(id, tpe)
 	if err == nil {
 		return true
@@ -177,7 +176,7 @@ func (idx *Index) Has(id restic.ID, tpe pack.BlobType) bool {
 
 // LookupSize returns the length of the cleartext content behind the
 // given id
-func (idx *Index) LookupSize(id restic.ID, tpe pack.BlobType) (cleartextLength uint, err error) {
+func (idx *Index) LookupSize(id restic.ID, tpe restic.BlobType) (cleartextLength uint, err error) {
 	blobs, err := idx.Lookup(id, tpe)
 	if err != nil {
 		return 0, err
@@ -207,7 +206,7 @@ func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 
 // PackedBlob is a blob already saved within a pack.
 type PackedBlob struct {
-	Type   pack.BlobType
+	Type   restic.BlobType
 	Length uint
 	ID     restic.ID
 	Offset uint
@@ -274,7 +273,7 @@ func (idx *Index) Packs() restic.IDSet {
 }
 
 // Count returns the number of blobs of type t in the index.
-func (idx *Index) Count(t pack.BlobType) (n uint) {
+func (idx *Index) Count(t restic.BlobType) (n uint) {
 	debug.Log("Index.Count", "counting blobs of type %v", t)
 	idx.m.Lock()
 	defer idx.m.Unlock()
@@ -305,10 +304,10 @@ type packJSON struct {
 }
 
 type blobJSON struct {
-	ID     restic.ID     `json:"id"`
-	Type   pack.BlobType `json:"type"`
-	Offset uint          `json:"offset"`
-	Length uint          `json:"length"`
+	ID     restic.ID       `json:"id"`
+	Type   restic.BlobType `json:"type"`
+	Offset uint            `json:"offset"`
+	Length uint            `json:"length"`
 }
 
 // generatePackList returns a list of packs.

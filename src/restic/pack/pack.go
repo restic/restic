@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"restic"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -13,58 +14,11 @@ import (
 	"restic/crypto"
 )
 
-// BlobType specifies what a blob stored in a pack is.
-type BlobType uint8
-
-// These are the blob types that can be stored in a pack.
-const (
-	Invalid BlobType = iota
-	Data
-	Tree
-)
-
-func (t BlobType) String() string {
-	switch t {
-	case Data:
-		return "data"
-	case Tree:
-		return "tree"
-	}
-
-	return fmt.Sprintf("<BlobType %d>", t)
-}
-
-// MarshalJSON encodes the BlobType into JSON.
-func (t BlobType) MarshalJSON() ([]byte, error) {
-	switch t {
-	case Data:
-		return []byte(`"data"`), nil
-	case Tree:
-		return []byte(`"tree"`), nil
-	}
-
-	return nil, errors.New("unknown blob type")
-}
-
-// UnmarshalJSON decodes the BlobType from JSON.
-func (t *BlobType) UnmarshalJSON(buf []byte) error {
-	switch string(buf) {
-	case `"data"`:
-		*t = Data
-	case `"tree"`:
-		*t = Tree
-	default:
-		return errors.New("unknown blob type")
-	}
-
-	return nil
-}
-
 // Blob is a blob within a pack.
 type Blob struct {
-	Type   BlobType
+	Type   restic.BlobType
 	Length uint
-	ID     backend.ID
+	ID     restic.ID
 	Offset uint
 }
 
@@ -95,7 +49,7 @@ func NewPacker(k *crypto.Key, wr io.Writer) *Packer {
 
 // Add saves the data read from rd as a new blob to the packer. Returned is the
 // number of bytes written to the pack.
-func (p *Packer) Add(t BlobType, id backend.ID, data []byte) (int, error) {
+func (p *Packer) Add(t restic.BlobType, id restic.ID, data []byte) (int, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
@@ -110,7 +64,7 @@ func (p *Packer) Add(t BlobType, id backend.ID, data []byte) (int, error) {
 	return n, errors.Wrap(err, "Write")
 }
 
-var entrySize = uint(binary.Size(BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize)
+var entrySize = uint(binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize)
 
 // headerEntry is used with encoding/binary to read and write header entries
 type headerEntry struct {
@@ -177,9 +131,9 @@ func (p *Packer) writeHeader(wr io.Writer) (bytesWritten uint, err error) {
 		}
 
 		switch b.Type {
-		case Data:
+		case restic.DataBlob:
 			entry.Type = 0
-		case Tree:
+		case restic.TreeBlob:
 			entry.Type = 1
 		default:
 			return 0, errors.Errorf("invalid blob type %v", b.Type)
@@ -312,9 +266,9 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []Blob, err error)
 
 		switch e.Type {
 		case 0:
-			entry.Type = Data
+			entry.Type = restic.DataBlob
 		case 1:
-			entry.Type = Tree
+			entry.Type = restic.TreeBlob
 		default:
 			return nil, errors.Errorf("invalid type %d", e.Type)
 		}

@@ -1,10 +1,6 @@
 package restic
 
-import (
-	"restic/pack"
-
-	"github.com/restic/chunker"
-)
+import "github.com/restic/chunker"
 
 // Repository stores data in a backend. It provides high-level functions and
 // transparently encrypts/decrypts data.
@@ -18,38 +14,33 @@ type Repository interface {
 	Index() Index
 	SaveFullIndex() error
 
-	SaveJSON(pack.BlobType, interface{}) (ID, error)
+	SaveJSON(BlobType, interface{}) (ID, error)
 
 	Config() Config
 
-	SaveAndEncrypt(pack.BlobType, []byte, *ID) (ID, error)
+	SaveAndEncrypt(BlobType, []byte, *ID) (ID, error)
 	SaveJSONUnpacked(FileType, interface{}) (ID, error)
 	SaveIndex() error
 
-	LoadJSONPack(pack.BlobType, ID, interface{}) error
+	LoadJSONPack(BlobType, ID, interface{}) error
 	LoadJSONUnpacked(FileType, ID, interface{}) error
-	LoadBlob(ID, pack.BlobType, []byte) ([]byte, error)
+	LoadBlob(ID, BlobType, []byte) ([]byte, error)
 
-	LookupBlobSize(ID, pack.BlobType) (uint, error)
+	LookupBlobSize(ID, BlobType) (uint, error)
 
 	List(FileType, <-chan struct{}) <-chan ID
+	ListPack(ID) ([]Blob, int64, error)
 
 	Flush() error
 }
 
+// Index keeps track of the blobs are stored within files.
 type Index interface {
-	Has(ID, pack.BlobType) bool
-	Lookup(ID, pack.BlobType) ([]PackedBlob, error)
+	Has(ID, BlobType) bool
+	Lookup(ID, BlobType) ([]PackedBlob, error)
 }
 
+// Config stores information about the repository.
 type Config interface {
 	ChunkerPolynomial() chunker.Pol
-}
-
-type PackedBlob interface {
-	Type() pack.BlobType
-	Length() uint
-	ID() ID
-	Offset() uint
-	PackID() ID
 }

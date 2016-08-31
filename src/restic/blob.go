@@ -5,44 +5,18 @@ import (
 	"fmt"
 )
 
+// Blob is one part of a file or a tree.
 type Blob struct {
-	ID          *ID    `json:"id,omitempty"`
-	Size        uint64 `json:"size,omitempty"`
-	Storage     *ID    `json:"sid,omitempty"`   // encrypted ID
-	StorageSize uint64 `json:"ssize,omitempty"` // encrypted Size
+	Type   BlobType
+	Length uint
+	ID     ID
+	Offset uint
 }
 
-type Blobs []Blob
-
-func (b Blob) Valid() bool {
-	if b.ID == nil || b.Storage == nil || b.StorageSize == 0 {
-		return false
-	}
-
-	return true
-}
-
-func (b Blob) String() string {
-	return fmt.Sprintf("Blob<%s (%d) -> %s (%d)>",
-		b.ID.Str(), b.Size,
-		b.Storage.Str(), b.StorageSize)
-}
-
-// Compare compares two blobs by comparing the ID and the size. It returns -1,
-// 0, or 1.
-func (b Blob) Compare(other Blob) int {
-	if res := b.ID.Compare(*other.ID); res != 0 {
-		return res
-	}
-
-	if b.Size < other.Size {
-		return -1
-	}
-	if b.Size > other.Size {
-		return 1
-	}
-
-	return 0
+// PackedBlob is a blob stored within a file.
+type PackedBlob struct {
+	Blob
+	PackID ID
 }
 
 // BlobHandle identifies a blob of a given type.
@@ -100,4 +74,39 @@ func (t *BlobType) UnmarshalJSON(buf []byte) error {
 	}
 
 	return nil
+}
+
+// BlobHandles is an ordered list of BlobHandles that implements sort.Interface.
+type BlobHandles []BlobHandle
+
+func (h BlobHandles) Len() int {
+	return len(h)
+}
+
+func (h BlobHandles) Less(i, j int) bool {
+	for k, b := range h[i].ID {
+		if b == h[j].ID[k] {
+			continue
+		}
+
+		if b < h[j].ID[k] {
+			return true
+		}
+
+		return false
+	}
+
+	return h[i].Type < h[j].Type
+}
+
+func (h BlobHandles) Swap(i, j int) {
+	h[i], h[j] = h[j], h[i]
+}
+
+func (h BlobHandles) String() string {
+	elements := make([]string, 0, len(h))
+	for _, e := range h {
+		elements = append(elements, e.String())
+	}
+	return fmt.Sprintf("%v", elements)
 }

@@ -12,22 +12,21 @@ import (
 	"testing"
 	"time"
 
-	"restic/pack"
 	"restic/repository"
 )
 
-func loadIDSet(t testing.TB, filename string) pack.BlobSet {
+func loadIDSet(t testing.TB, filename string) BlobSet {
 	f, err := os.Open(filename)
 	if err != nil {
 		t.Logf("unable to open golden file %v: %v", filename, err)
-		return pack.NewBlobSet()
+		return NewBlobSet()
 	}
 
 	sc := bufio.NewScanner(f)
 
-	blobs := pack.NewBlobSet()
+	blobs := NewBlobSet()
 	for sc.Scan() {
-		var h pack.Handle
+		var h Handle
 		err := json.Unmarshal([]byte(sc.Text()), &h)
 		if err != nil {
 			t.Errorf("file %v contained invalid blob: %#v", filename, err)
@@ -44,14 +43,14 @@ func loadIDSet(t testing.TB, filename string) pack.BlobSet {
 	return blobs
 }
 
-func saveIDSet(t testing.TB, filename string, s pack.BlobSet) {
+func saveIDSet(t testing.TB, filename string, s BlobSet) {
 	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		t.Fatalf("unable to update golden file %v: %v", filename, err)
 		return
 	}
 
-	var hs pack.Handles
+	var hs Handles
 	for h := range s {
 		hs = append(hs, h)
 	}
@@ -92,8 +91,8 @@ func TestFindUsedBlobs(t *testing.T) {
 	}
 
 	for i, sn := range snapshots {
-		usedBlobs := pack.NewBlobSet()
-		err := restic.FindUsedBlobs(repo, *sn.Tree, usedBlobs, pack.NewBlobSet())
+		usedBlobs := NewBlobSet()
+		err := restic.FindUsedBlobs(repo, *sn.Tree, usedBlobs, NewBlobSet())
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
@@ -127,8 +126,8 @@ func BenchmarkFindUsedBlobs(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		seen := pack.NewBlobSet()
-		blobs := pack.NewBlobSet()
+		seen := NewBlobSet()
+		blobs := NewBlobSet()
 		err := restic.FindUsedBlobs(repo, *sn.Tree, blobs, seen)
 		if err != nil {
 			b.Error(err)

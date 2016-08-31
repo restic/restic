@@ -79,7 +79,7 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 // LoadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
-func (r *Repository) LoadBlob(id restic.ID, t pack.BlobType, plaintextBuf []byte) ([]byte, error) {
+func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []byte) ([]byte, error) {
 	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
 
 	// lookup plaintext size of blob
@@ -174,7 +174,7 @@ func (r *Repository) LoadJSONUnpacked(t restic.FileType, id restic.ID, item inte
 
 // LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
 // data and afterwards call json.Unmarshal on the item.
-func (r *Repository) LoadJSONPack(t pack.BlobType, id restic.ID, item interface{}) (err error) {
+func (r *Repository) LoadJSONPack(t restic.BlobType, id restic.ID, item interface{}) (err error) {
 	buf, err := r.LoadBlob(id, t, nil)
 	if err != nil {
 		return err
@@ -184,13 +184,13 @@ func (r *Repository) LoadJSONPack(t pack.BlobType, id restic.ID, item interface{
 }
 
 // LookupBlobSize returns the size of blob id.
-func (r *Repository) LookupBlobSize(id restic.ID, tpe pack.BlobType) (uint, error) {
+func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, error) {
 	return r.idx.LookupSize(id, tpe)
 }
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
-func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *restic.ID) (restic.ID, error) {
+func (r *Repository) SaveAndEncrypt(t restic.BlobType, data []byte, id *restic.ID) (restic.ID, error) {
 	if id == nil {
 		// compute plaintext hash
 		hashedID := restic.Hash(data)
@@ -235,7 +235,7 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *restic.ID)
 
 // SaveJSON serialises item as JSON and encrypts and saves it in a pack in the
 // backend as type t.
-func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (restic.ID, error) {
+func (r *Repository) SaveJSON(t restic.BlobType, item interface{}) (restic.ID, error) {
 	debug.Log("Repo.SaveJSON", "save %v blob", t)
 	buf := getBuf()[:0]
 	defer freeBuf(buf)
@@ -319,7 +319,7 @@ func (r *Repository) SetIndex(i *MasterIndex) {
 }
 
 // SaveIndex saves an index in the repository.
-func SaveIndex(repo *Repository, index *Index) (restic.ID, error) {
+func SaveIndex(repo restic.Repository, index *Index) (restic.ID, error) {
 	buf := bytes.NewBuffer(nil)
 
 	err := index.Finalize(buf)

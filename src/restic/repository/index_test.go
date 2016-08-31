@@ -15,7 +15,7 @@ func TestIndexSerialize(t *testing.T) {
 	type testEntry struct {
 		id             restic.ID
 		pack           restic.ID
-		tpe            pack.BlobType
+		tpe            restic.BlobType
 		offset, length uint
 	}
 	tests := []testEntry{}
@@ -251,7 +251,7 @@ var docOldExample = []byte(`
 
 var exampleTests = []struct {
 	id, packID     restic.ID
-	tpe            pack.BlobType
+	tpe            restic.BlobType
 	offset, length uint
 }{
 	{
@@ -271,10 +271,10 @@ var exampleTests = []struct {
 
 var exampleLookupTest = struct {
 	packID restic.ID
-	blobs  map[restic.ID]pack.BlobType
+	blobs  map[restic.ID]restic.BlobType
 }{
 	ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-	map[restic.ID]pack.BlobType{
+	map[restic.ID]restic.BlobType{
 		ParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"): pack.Data,
 		ParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"): pack.Tree,
 		ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"): pack.Data,

@@ -22,7 +22,7 @@ func NewMasterIndex() *MasterIndex {
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Lookup(id restic.ID, tpe pack.BlobType) (blobs []PackedBlob, err error) {
+func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []PackedBlob, err error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -42,7 +42,7 @@ func (mi *MasterIndex) Lookup(id restic.ID, tpe pack.BlobType) (blobs []PackedBl
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) LookupSize(id restic.ID, tpe pack.BlobType) (uint, error) {
+func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -73,7 +73,7 @@ func (mi *MasterIndex) ListPack(id restic.ID) (list []PackedBlob) {
 }
 
 // Has queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Has(id restic.ID, tpe pack.BlobType) bool {
+func (mi *MasterIndex) Has(id restic.ID, tpe restic.BlobType) bool {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -87,7 +87,7 @@ func (mi *MasterIndex) Has(id restic.ID, tpe pack.BlobType) bool {
 }
 
 // Count returns the number of blobs of type t in the index.
-func (mi *MasterIndex) Count(t pack.BlobType) (n uint) {
+func (mi *MasterIndex) Count(t restic.BlobType) (n uint) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 

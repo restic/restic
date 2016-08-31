@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"restic/debug"
-	"restic/pack"
 )
 
 // WalkTreeJob is a job sent from the tree walker.
@@ -166,7 +165,7 @@ func WalkTree(repo TreeLoader, id ID, done chan struct{}, jobCh chan<- WalkTreeJ
 
 	load := func(id ID) (*Tree, error) {
 		tree := &Tree{}
-		err := repo.LoadJSONPack(pack.Tree, id, tree)
+		err := repo.LoadJSONPack(TreeBlob, id, tree)
 		if err != nil {
 			return nil, err
 		}

@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
-	"restic/backend"
 )
 
 // Snapshot is the state of a resource at one point in time.
@@ -154,17 +152,4 @@ func FindLatestSnapshot(repo Repository, targets []string, source string) (ID, e
 	}
 
 	return latestID, nil
-}
-
-// FindSnapshot takes a string and tries to find a snapshot whose ID matches
-// the string as closely as possible.
-func FindSnapshot(repo Repository, s string) (ID, error) {
-
-	// find snapshot id with prefix
-	name, err := backend.Find(repo.Backend(), SnapshotFile, s)
-	if err != nil {
-		return ID{}, err
-	}
-
-	return ParseID(name)
 }

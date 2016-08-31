@@ -9,7 +9,6 @@ import (
 
 	"restic"
 	"restic/backend"
-	"restic/pack"
 	"restic/pipe"
 	"restic/repository"
 	. "restic/test"
@@ -95,7 +94,7 @@ type delayRepo struct {
 	delay time.Duration
 }
 
-func (d delayRepo) LoadJSONPack(t pack.BlobType, id backend.ID, dst interface{}) error {
+func (d delayRepo) LoadJSONPack(t BlobType, id backend.ID, dst interface{}) error {
 	time.Sleep(d.delay)
 	return d.repo.LoadJSONPack(t, id, dst)
 }

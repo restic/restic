@@ -27,7 +27,7 @@ func random(t testing.TB, length int) []byte {
 func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pData float32) {
 	for i := 0; i < blobs; i++ {
 		var (
-			tpe    pack.BlobType
+			tpe    restic.BlobType
 			length int
 		)
 

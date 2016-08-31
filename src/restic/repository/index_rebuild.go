@@ -12,7 +12,7 @@ import (
 // RebuildIndex lists all packs in the repo, writes a new index and removes all
 // old indexes. This operation should only be done with an exclusive lock in
 // place.
-func RebuildIndex(repo *Repository) error {
+func RebuildIndex(repo restic.Repository) error {
 	debug.Log("RebuildIndex", "start rebuilding index")
 
 	done := make(chan struct{})

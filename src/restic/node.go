@@ -16,7 +16,6 @@ import (
 
 	"restic/debug"
 	"restic/fs"
-	"restic/pack"
 )
 
 // Node is a file, directory or other item in a backup.
@@ -43,9 +42,8 @@ type Node struct {
 
 	tree *Tree
 
-	path  string
-	err   error
-	blobs Blobs
+	path string
+	err  error
 }
 
 func (node Node) String() string {
@@ -210,7 +208,7 @@ func (node Node) createFileAt(path string, repo Repository) error {
 
 	var buf []byte
 	for _, id := range node.Content {
-		size, err := repo.LookupBlobSize(id, pack.Data)
+		size, err := repo.LookupBlobSize(id, DataBlob)
 		if err != nil {
 			return err
 		}
@@ -220,7 +218,7 @@ func (node Node) createFileAt(path string, repo Repository) error {
 			buf = make([]byte, size)
 		}
 
-		buf, err := repo.LoadBlob(id, pack.Data, buf)
+		buf, err := repo.LoadBlob(id, DataBlob, buf)
 		if err != nil {
 			return err
 		}

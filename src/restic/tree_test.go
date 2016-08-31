@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"restic"
-	"restic/pack"
 	. "restic/test"
 )
 
@@ -98,7 +97,7 @@ func TestLoadTree(t *testing.T) {
 
 	// save tree
 	tree := restic.NewTree()
-	id, err := repo.SaveJSON(pack.Tree, tree)
+	id, err := repo.SaveJSON(TreeBlob, tree)
 	OK(t, err)
 
 	// save packs

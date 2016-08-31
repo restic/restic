@@ -2,6 +2,7 @@ package restic
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -10,6 +11,8 @@ import (
 	"testing"
 	"time"
 )
+
+var updateGoldenFiles = flag.Bool("update", false, "update golden files in testdata/")
 
 func parseTime(s string) time.Time {
 	t, err := time.Parse("2006-01-02 15:04:05", s)

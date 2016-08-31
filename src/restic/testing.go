@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"restic/pack"
 	"testing"
 	"time"
 
@@ -43,8 +42,8 @@ func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
 		}
 
 		id := Hash(chunk.Data)
-		if !fs.blobIsKnown(id, pack.Data) {
-			_, err := fs.repo.SaveAndEncrypt(pack.Data, chunk.Data, &id)
+		if !fs.blobIsKnown(id, DataBlob) {
+			_, err := fs.repo.SaveAndEncrypt(DataBlob, chunk.Data, &id)
 			if err != nil {
 				fs.t.Fatalf("error saving chunk: %v", err)
 			}
@@ -74,11 +73,11 @@ func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, ID) {
 	data = append(data, '\n')
 
 	id := Hash(data)
-	return fs.blobIsKnown(id, pack.Tree), id
+	return fs.blobIsKnown(id, TreeBlob), id
 
 }
 
-func (fs fakeFileSystem) blobIsKnown(id ID, t pack.BlobType) bool {
+func (fs fakeFileSystem) blobIsKnown(id ID, t BlobType) bool {
 	if rand.Float32() < fs.duplication {
 		return false
 	}
@@ -137,7 +136,7 @@ func (fs fakeFileSystem) saveTree(seed int64, depth int) ID {
 		return id
 	}
 
-	id, err := fs.repo.SaveJSON(pack.Tree, tree)
+	id, err := fs.repo.SaveJSON(TreeBlob, tree)
 	if err != nil {
 		fs.t.Fatal(err)
 	}

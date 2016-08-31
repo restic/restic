@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"restic/debug"
-	"restic/pack"
 )
 
 type Tree struct {
@@ -30,12 +29,12 @@ func (t Tree) String() string {
 }
 
 type TreeLoader interface {
-	LoadJSONPack(pack.BlobType, ID, interface{}) error
+	LoadJSONPack(BlobType, ID, interface{}) error
 }
 
 func LoadTree(repo TreeLoader, id ID) (*Tree, error) {
 	tree := &Tree{}
-	err := repo.LoadJSONPack(pack.Tree, id, tree)
+	err := repo.LoadJSONPack(TreeBlob, id, tree)
 	if err != nil {
 		return nil, err
 	}
