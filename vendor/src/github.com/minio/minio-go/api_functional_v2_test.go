@@ -59,7 +59,7 @@ func TestMakeBucketErrorV2(t *testing.T) {
 	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket in 'eu-west-1'.
 	if err = c.MakeBucket(bucketName, "eu-west-1"); err != nil {
@@ -105,7 +105,7 @@ func TestGetObjectClosedTwiceV2(t *testing.T) {
 	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket.
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -122,7 +122,7 @@ func TestGetObjectClosedTwiceV2(t *testing.T) {
 	}
 
 	// Save the data
-	objectName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	objectName := randString(60, rand.NewSource(time.Now().UnixNano()), "")
 	n, err := c.PutObject(bucketName, objectName, bytes.NewReader(buf), "binary/octet-stream")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName, objectName)
@@ -190,7 +190,7 @@ func TestRemovePartiallyUploadedV2(t *testing.T) {
 	// c.TraceOn(os.Stderr)
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// make a new bucket.
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -257,7 +257,7 @@ func TestResumablePutObjectV2(t *testing.T) {
 	// c.TraceOn(os.Stderr)
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket.
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -368,7 +368,7 @@ func TestFPutObjectV2(t *testing.T) {
 	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket.
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -516,7 +516,7 @@ func TestResumableFPutObjectV2(t *testing.T) {
 	// c.TraceOn(os.Stderr)
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// make a new bucket.
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -593,7 +593,7 @@ func TestMakeBucketRegionsV2(t *testing.T) {
 	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket in 'eu-central-1'.
 	if err = c.MakeBucket(bucketName, "eu-west-1"); err != nil {
@@ -644,7 +644,7 @@ func TestGetObjectReadSeekFunctionalV2(t *testing.T) {
 	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket.
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -661,7 +661,7 @@ func TestGetObjectReadSeekFunctionalV2(t *testing.T) {
 	}
 
 	// Save the data
-	objectName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	objectName := randString(60, rand.NewSource(time.Now().UnixNano()), "")
 	n, err := c.PutObject(bucketName, objectName, bytes.NewReader(buf), "binary/octet-stream")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName, objectName)
@@ -782,7 +782,7 @@ func TestGetObjectReadAtFunctionalV2(t *testing.T) {
 	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket.
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -799,7 +799,7 @@ func TestGetObjectReadAtFunctionalV2(t *testing.T) {
 	}
 
 	// Save the data
-	objectName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	objectName := randString(60, rand.NewSource(time.Now().UnixNano()), "")
 	n, err := c.PutObject(bucketName, objectName, bytes.NewReader(buf), "binary/octet-stream")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName, objectName)
@@ -923,7 +923,7 @@ func TestCopyObjectV2(t *testing.T) {
 	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket in 'us-east-1' (source bucket).
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -946,7 +946,7 @@ func TestCopyObjectV2(t *testing.T) {
 	}
 
 	// Save the data
-	objectName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	objectName := randString(60, rand.NewSource(time.Now().UnixNano()), "")
 	n, err := c.PutObject(bucketName, objectName, bytes.NewReader(buf), "binary/octet-stream")
 	if err != nil {
 		t.Fatal("Error:", err, bucketName, objectName)
@@ -1045,7 +1045,7 @@ func TestFunctionalV2(t *testing.T) {
 	c.SetAppInfo("Minio-go-FunctionalTest", "0.1.0")
 
 	// Generate a new random bucket name.
-	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	bucketName := randString(60, rand.NewSource(time.Now().UnixNano()), "minio-go-test")
 
 	// Make a new bucket.
 	err = c.MakeBucket(bucketName, "us-east-1")
@@ -1054,7 +1054,7 @@ func TestFunctionalV2(t *testing.T) {
 	}
 
 	// Generate a random file name.
-	fileName := randString(60, rand.NewSource(time.Now().UnixNano()))
+	fileName := randString(60, rand.NewSource(time.Now().UnixNano()), "")
 	file, err := os.Create(fileName)
 	if err != nil {
 		t.Fatal("Error:", err)

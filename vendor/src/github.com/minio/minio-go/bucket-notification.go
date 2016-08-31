@@ -18,6 +18,7 @@ package minio
 
 import (
 	"encoding/xml"
+	"reflect"
 )
 
 // NotificationEventType is a S3 notification event associated to the bucket notification configuration
@@ -160,18 +161,36 @@ type BucketNotification struct {
 // AddTopic adds a given topic config to the general bucket notification config
 func (b *BucketNotification) AddTopic(topicConfig NotificationConfig) {
 	newTopicConfig := TopicConfig{NotificationConfig: topicConfig, Topic: topicConfig.Arn.String()}
+	for _, n := range b.TopicConfigs {
+		if reflect.DeepEqual(n, newTopicConfig) {
+			// Avoid adding duplicated entry
+			return
+		}
+	}
 	b.TopicConfigs = append(b.TopicConfigs, newTopicConfig)
 }
 
 // AddQueue adds a given queue config to the general bucket notification config
 func (b *BucketNotification) AddQueue(queueConfig NotificationConfig) {
 	newQueueConfig := QueueConfig{NotificationConfig: queueConfig, Queue: queueConfig.Arn.String()}
+	for _, n := range b.QueueConfigs {
+		if reflect.DeepEqual(n, newQueueConfig) {
+			// Avoid adding duplicated entry
+			return
+		}
+	}
 	b.QueueConfigs = append(b.QueueConfigs, newQueueConfig)
 }
 
 // AddLambda adds a given lambda config to the general bucket notification config
 func (b *BucketNotification) AddLambda(lambdaConfig NotificationConfig) {
 	newLambdaConfig := LambdaConfig{NotificationConfig: lambdaConfig, Lambda: lambdaConfig.Arn.String()}
+	for _, n := range b.LambdaConfigs {
+		if reflect.DeepEqual(n, newLambdaConfig) {
+			// Avoid adding duplicated entry
+			return
+		}
+	}
 	b.LambdaConfigs = append(b.LambdaConfigs, newLambdaConfig)
 }
 
