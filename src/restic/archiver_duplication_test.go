@@ -12,6 +12,7 @@ import (
 
 	"restic"
 	"restic/backend"
+	"restic/mock"
 	"restic/pack"
 	"restic/repository"
 )
@@ -36,30 +37,30 @@ func randomID() backend.ID {
 }
 
 // forgetfulBackend returns a backend that forgets everything.
-func forgetfulBackend() backend.Backend {
-	be := &backend.MockBackend{}
+func forgetfulBackend() restic.Backend {
+	be := &mock.Backend{}
 
-	be.TestFn = func(t backend.Type, name string) (bool, error) {
+	be.TestFn = func(t restic.FileType, name string) (bool, error) {
 		return false, nil
 	}
 
-	be.LoadFn = func(h backend.Handle, p []byte, off int64) (int, error) {
+	be.LoadFn = func(h restic.Handle, p []byte, off int64) (int, error) {
 		return 0, errors.New("not found")
 	}
 
-	be.SaveFn = func(h backend.Handle, p []byte) error {
+	be.SaveFn = func(h restic.Handle, p []byte) error {
 		return nil
 	}
 
-	be.StatFn = func(h backend.Handle) (backend.BlobInfo, error) {
-		return backend.BlobInfo{}, errors.New("not found")
+	be.StatFn = func(h restic.Handle) (restic.BlobInfo, error) {
+		return restic.BlobInfo{}, errors.New("not found")
 	}
 
-	be.RemoveFn = func(t backend.Type, name string) error {
+	be.RemoveFn = func(t restic.FileType, name string) error {
 		return nil
 	}
 
-	be.ListFn = func(t backend.Type, done <-chan struct{}) <-chan string {
+	be.ListFn = func(t restic.FileType, done <-chan struct{}) <-chan string {
 		ch := make(chan string)
 		close(ch)
 		return ch

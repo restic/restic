@@ -307,7 +307,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 			}
 
 			// otherwise read file normally
-			if node.Type == "file" && len(node.Content) == 0 {
+			if node.FileType == "file" && len(node.Content) == 0 {
 				debug.Log("Archiver.fileWorker", "   read and save %v, content: %v", e.Path(), node.Content)
 				err = arch.SaveFile(p, node)
 				if err != nil {
@@ -374,7 +374,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *Progress, done <-chan str
 				node := res.(*Node)
 				tree.Insert(node)
 
-				if node.Type == "dir" {
+				if node.FileType == "dir" {
 					debug.Log("Archiver.dirWorker", "got tree node for %s: %v", node.path, node.Subtree)
 
 					if node.Subtree.IsNull() {

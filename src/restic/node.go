@@ -24,7 +24,7 @@ import (
 // Node is a file, directory or other item in a backup.
 type Node struct {
 	Name       string       `json:"name"`
-	Type       string       `json:"type"`
+	FileType   string       `json:"type"`
 	Mode       os.FileMode  `json:"mode,omitempty"`
 	ModTime    time.Time    `json:"mtime,omitempty"`
 	AccessTime time.Time    `json:"atime,omitempty"`
@@ -51,7 +51,7 @@ type Node struct {
 }
 
 func (node Node) String() string {
-	switch node.Type {
+	switch node.FileType {
 	case "file":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
 			node.Mode, node.UID, node.GID, node.Size, node.ModTime, node.Name)
@@ -60,7 +60,7 @@ func (node Node) String() string {
 			node.Mode|os.ModeDir, node.UID, node.GID, node.Size, node.ModTime, node.Name)
 	}
 
-	return fmt.Sprintf("<Node(%s) %s>", node.Type, node.Name)
+	return fmt.Sprintf("<Node(%s) %s>", node.FileType, node.Name)
 }
 
 func (node Node) Tree() *Tree {
@@ -77,8 +77,8 @@ func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 		ModTime: fi.ModTime(),
 	}
 
-	node.Type = nodeTypeFromFileInfo(fi)
-	if node.Type == "file" {
+	node.FileType = nodeTypeFromFileInfo(fi)
+	if node.FileType == "file" {
 		node.Size = uint64(fi.Size())
 	}
 
@@ -111,7 +111,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 func (node *Node) CreateAt(path string, repo *repository.Repository) error {
 	debug.Log("Node.CreateAt", "create node %v at %v", node.Name, path)
 
-	switch node.Type {
+	switch node.FileType {
 	case "dir":
 		if err := node.createDirAt(path); err != nil {
 			return err
@@ -139,7 +139,7 @@ func (node *Node) CreateAt(path string, repo *repository.Repository) error {
 	case "socket":
 		return nil
 	default:
-		return errors.Errorf("filetype %q not implemented!\n", node.Type)
+		return errors.Errorf("filetype %q not implemented!\n", node.FileType)
 	}
 
 	err := node.restoreMetadata(path)
@@ -158,14 +158,14 @@ func (node Node) restoreMetadata(path string) error {
 		return errors.Wrap(err, "Lchown")
 	}
 
-	if node.Type != "symlink" {
+	if node.FileType != "symlink" {
 		err = fs.Chmod(path, node.Mode)
 		if err != nil {
 			return errors.Wrap(err, "Chmod")
 		}
 	}
 
-	if node.Type != "dir" {
+	if node.FileType != "dir" {
 		err = node.RestoreTimestamps(path)
 		if err != nil {
 			debug.Log("Node.restoreMetadata", "error restoring timestamps for dir %v: %v", path, err)
@@ -182,7 +182,7 @@ func (node Node) RestoreTimestamps(path string) error {
 		syscall.NsecToTimespec(node.ModTime.UnixNano()),
 	}
 
-	if node.Type == "symlink" {
+	if node.FileType == "symlink" {
 		return node.restoreSymlinkTimestamps(path, utimes)
 	}
 
@@ -287,7 +287,7 @@ func (node Node) Equals(other Node) bool {
 	if node.Name != other.Name {
 		return false
 	}
-	if node.Type != other.Type {
+	if node.FileType != other.FileType {
 		return false
 	}
 	if node.Mode != other.Mode {
@@ -375,13 +375,13 @@ func (node Node) sameContent(other Node) bool {
 }
 
 func (node *Node) isNewer(path string, fi os.FileInfo) bool {
-	if node.Type != "file" {
+	if node.FileType != "file" {
 		debug.Log("node.isNewer", "node %v is newer: not file", path)
 		return true
 	}
 
 	tpe := nodeTypeFromFileInfo(fi)
-	if node.Name != fi.Name() || node.Type != tpe {
+	if node.Name != fi.Name() || node.FileType != tpe {
 		debug.Log("node.isNewer", "node %v is newer: name or type changed", path)
 		return true
 	}
@@ -469,7 +469,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		return err
 	}
 
-	switch node.Type {
+	switch node.FileType {
 	case "file":
 		node.Size = uint64(stat.size())
 		node.Links = uint64(stat.nlink())
@@ -484,7 +484,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "fifo":
 	case "socket":
 	default:
-		err = errors.Errorf("invalid node type %q", node.Type)
+		err = errors.Errorf("invalid node type %q", node.FileType)
 	}
 
 	return err

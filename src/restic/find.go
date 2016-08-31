@@ -18,7 +18,7 @@ func FindUsedBlobs(repo *repository.Repository, treeID backend.ID, blobs pack.Bl
 	}
 
 	for _, node := range tree.Nodes {
-		switch node.Type {
+		switch node.FileType {
 		case "file":
 			for _, blob := range node.Content {
 				blobs.Insert(pack.Handle{ID: blob, Type: pack.Data})

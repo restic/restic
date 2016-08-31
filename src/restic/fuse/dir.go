@@ -51,7 +51,7 @@ func newDir(repo *repository.Repository, node *restic.Node, ownerIsRoot bool) (*
 // replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
 // Otherwise, the node is returned.
 func replaceSpecialNodes(repo *repository.Repository, node *restic.Node) ([]*restic.Node, error) {
-	if node.Type != "dir" || node.Subtree == nil {
+	if node.FileType != "dir" || node.Subtree == nil {
 		return []*restic.Node{node}, nil
 	}
 
@@ -124,7 +124,7 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 
 	for _, node := range d.items {
 		var typ fuse.DirentType
-		switch node.Type {
+		switch node.FileType {
 		case "dir":
 			typ = fuse.DT_Dir
 		case "file":
@@ -150,7 +150,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		debug.Log("dir.Lookup", "  Lookup(%v) -> not found", name)
 		return nil, fuse.ENOENT
 	}
-	switch node.Type {
+	switch node.FileType {
 	case "dir":
 		return newDir(d.repo, node, d.ownerIsRoot)
 	case "file":
@@ -158,7 +158,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	case "symlink":
 		return newLink(d.repo, node, d.ownerIsRoot)
 	default:
-		debug.Log("dir.Lookup", "  node %v has unknown type %v", name, node.Type)
+		debug.Log("dir.Lookup", "  node %v has unknown type %v", name, node.FileType)
 		return nil, fuse.ENOENT
 	}
 }

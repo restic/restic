@@ -83,7 +83,7 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 				Name:       name,
 				AccessTime: time.Now(),
 				ModTime:    time.Now(),
-				Type:       "file",
+				FileType:   "file",
 				Mode:       0644,
 				Size:       fileSize,
 				UID:        sn.UID,
