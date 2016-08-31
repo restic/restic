@@ -210,3 +210,13 @@ func TestResetRepository(t testing.TB, repo Repository) {
 
 	repo.SetIndex(repository.NewMasterIndex())
 }
+
+// TestParseID parses s as a backend.ID and panics if that fails.
+func TestParseID(s string) ID {
+	id, err := ParseID(s)
+	if err != nil {
+		panic(err)
+	}
+
+	return id
+}
