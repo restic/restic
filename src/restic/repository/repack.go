@@ -3,7 +3,7 @@ package repository
 import (
 	"bytes"
 	"io"
-	"restic/backend"
+	"restic"
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
@@ -15,13 +15,13 @@ import (
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Afterwards, the packs are removed. This operation requires
 // an exclusive lock on the repo.
-func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err error) {
+func Repack(repo *Repository, packs restic.IDSet, keepBlobs pack.BlobSet) (err error) {
 	debug.Log("Repack", "repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	buf := make([]byte, 0, maxPackSize)
 	for packID := range packs {
 		// load the complete pack
-		h := backend.Handle{Type: backend.Data, Name: packID.String()}
+		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
 
 		l, err := repo.Backend().Load(h, buf[:cap(buf)], 0)
 		if errors.Cause(err) == io.ErrUnexpectedEOF {
@@ -75,7 +75,7 @@ func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err 
 	}
 
 	for packID := range packs {
-		err := repo.Backend().Remove(backend.Data, packID.String())
+		err := repo.Backend().Remove(restic.DataFile, packID.String())
 		if err != nil {
 			debug.Log("Repack", "error removing pack %v: %v", packID.Str(), err)
 			return err

@@ -1,13 +1,12 @@
 package restic
 
 import (
+	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
-	"restic/backend"
 	"restic/pack"
-	"restic/repository"
 	"testing"
 	"time"
 
@@ -17,21 +16,21 @@ import (
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.
 func fakeFile(t testing.TB, seed, size int64) io.Reader {
-	return io.LimitReader(repository.NewRandReader(rand.New(rand.NewSource(seed))), size)
+	return io.LimitReader(NewRandReader(rand.New(rand.NewSource(seed))), size)
 }
 
 type fakeFileSystem struct {
 	t           testing.TB
-	repo        *repository.Repository
-	knownBlobs  backend.IDSet
+	repo        Repository
+	knownBlobs  IDSet
 	duplication float32
 }
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
 // IDs is returned.
-func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs backend.IDs) {
-	blobs = backend.IDs{}
-	ch := chunker.New(rd, fs.repo.Config.ChunkerPolynomial)
+func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
+	blobs = IDs{}
+	ch := chunker.New(rd, fs.repo.Config().ChunkerPolynomial())
 
 	for {
 		chunk, err := ch.Next(getBuf())
@@ -43,7 +42,7 @@ func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs backend.IDs) {
 			fs.t.Fatalf("unable to save chunk in repo: %v", err)
 		}
 
-		id := backend.Hash(chunk.Data)
+		id := Hash(chunk.Data)
 		if !fs.blobIsKnown(id, pack.Data) {
 			_, err := fs.repo.SaveAndEncrypt(pack.Data, chunk.Data, &id)
 			if err != nil {
@@ -66,20 +65,20 @@ const (
 	maxNodes    = 32
 )
 
-func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, backend.ID) {
+func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, ID) {
 	data, err := json.Marshal(tree)
 	if err != nil {
 		fs.t.Fatalf("json.Marshal(tree) returned error: %v", err)
-		return false, backend.ID{}
+		return false, ID{}
 	}
 	data = append(data, '\n')
 
-	id := backend.Hash(data)
+	id := Hash(data)
 	return fs.blobIsKnown(id, pack.Tree), id
 
 }
 
-func (fs fakeFileSystem) blobIsKnown(id backend.ID, t pack.BlobType) bool {
+func (fs fakeFileSystem) blobIsKnown(id ID, t pack.BlobType) bool {
 	if rand.Float32() < fs.duplication {
 		return false
 	}
@@ -97,7 +96,7 @@ func (fs fakeFileSystem) blobIsKnown(id backend.ID, t pack.BlobType) bool {
 }
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
-func (fs fakeFileSystem) saveTree(seed int64, depth int) backend.ID {
+func (fs fakeFileSystem) saveTree(seed int64, depth int) ID {
 	rnd := rand.NewSource(seed)
 	numNodes := int(rnd.Int63() % maxNodes)
 
@@ -151,7 +150,7 @@ func (fs fakeFileSystem) saveTree(seed int64, depth int) backend.ID {
 // also used as the snapshot's timestamp. The tree's depth can be specified
 // with the parameter depth. The parameter duplication is a probability that
 // the same blob will saved again.
-func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time, depth int, duplication float32) *Snapshot {
+func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, duplication float32) *Snapshot {
 	seed := at.Unix()
 	t.Logf("create fake snapshot at %s with seed %d", at, seed)
 
@@ -165,14 +164,14 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 	fs := fakeFileSystem{
 		t:           t,
 		repo:        repo,
-		knownBlobs:  backend.NewIDSet(),
+		knownBlobs:  NewIDSet(),
 		duplication: duplication,
 	}
 
 	treeID := fs.saveTree(seed, depth)
 	snapshot.Tree = &treeID
 
-	id, err := repo.SaveJSONUnpacked(backend.Snapshot, snapshot)
+	id, err := repo.SaveJSONUnpacked(SnapshotFile, snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,29 +193,23 @@ func TestCreateSnapshot(t testing.TB, repo *repository.Repository, at time.Time,
 	return snapshot
 }
 
-// TestResetRepository removes all packs and indexes from the repository.
-func TestResetRepository(t testing.TB, repo Repository) {
-	done := make(chan struct{})
-	defer close(done)
-
-	for _, tpe := range []FileType{SnapshotFile, IndexFile, DataFile} {
-		for id := range repo.Backend().List(tpe, done) {
-			err := repo.Backend().Remove(tpe, id)
-			if err != nil {
-				t.Errorf("removing %v (%v) failed: %v", id[0:12], tpe, err)
-			}
-		}
-	}
-
-	repo.SetIndex(repository.NewMasterIndex())
-}
-
-// TestParseID parses s as a backend.ID and panics if that fails.
+// TestParseID parses s as a ID and panics if that fails.
 func TestParseID(s string) ID {
 	id, err := ParseID(s)
 	if err != nil {
 		panic(err)
 	}
 
+	return id
+}
+
+// TestRandomID retuns a randomly generated ID. When reading from rand fails,
+// the function panics.
+func TestRandomID() ID {
+	id := ID{}
+	_, err := io.ReadFull(crand.Reader, id[:])
+	if err != nil {
+		panic(err)
+	}
 	return id
 }

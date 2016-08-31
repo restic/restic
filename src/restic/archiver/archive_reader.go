@@ -3,10 +3,8 @@ package restic
 import (
 	"encoding/json"
 	"io"
-	"restic/backend"
 	"restic/debug"
 	"restic/pack"
-	"restic/repository"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,15 +12,15 @@ import (
 )
 
 // saveTreeJSON stores a tree in the repository.
-func saveTreeJSON(repo *repository.Repository, item interface{}) (backend.ID, error) {
+func saveTreeJSON(repo Repository, item interface{}) (ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
-		return backend.ID{}, errors.Wrap(err, "")
+		return ID{}, errors.Wrap(err, "")
 	}
 	data = append(data, '\n')
 
 	// check if tree has been saved before
-	id := backend.Hash(data)
+	id := Hash(data)
 	if repo.Index().Has(id, pack.Tree) {
 		return id, nil
 	}
@@ -32,19 +30,19 @@ func saveTreeJSON(repo *repository.Repository, item interface{}) (backend.ID, er
 
 // ArchiveReader reads from the reader and archives the data. Returned is the
 // resulting snapshot and its ID.
-func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name string) (*Snapshot, backend.ID, error) {
+func ArchiveReader(repo Repository, p *Progress, rd io.Reader, name string) (*Snapshot, ID, error) {
 	debug.Log("ArchiveReader", "start archiving %s", name)
 	sn, err := NewSnapshot([]string{name})
 	if err != nil {
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 
 	p.Start()
 	defer p.Done()
 
-	chnker := chunker.New(rd, repo.Config.ChunkerPolynomial)
+	chnker := chunker.New(rd, repo.Config().ChunkerPolynomial())
 
-	var ids backend.IDs
+	var ids IDs
 	var fileSize uint64
 
 	for {
@@ -54,15 +52,15 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 		}
 
 		if err != nil {
-			return nil, backend.ID{}, errors.Wrap(err, "chunker.Next()")
+			return nil, ID{}, errors.Wrap(err, "chunker.Next()")
 		}
 
-		id := backend.Hash(chunk.Data)
+		id := Hash(chunk.Data)
 
 		if !repo.Index().Has(id, pack.Data) {
 			_, err := repo.SaveAndEncrypt(pack.Data, chunk.Data, nil)
 			if err != nil {
-				return nil, backend.ID{}, err
+				return nil, ID{}, err
 			}
 			debug.Log("ArchiveReader", "saved blob %v (%d bytes)\n", id.Str(), chunk.Length)
 		} else {
@@ -96,14 +94,14 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 
 	treeID, err := saveTreeJSON(repo, tree)
 	if err != nil {
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 	sn.Tree = &treeID
 	debug.Log("ArchiveReader", "tree saved as %v", treeID.Str())
 
-	id, err := repo.SaveJSONUnpacked(backend.Snapshot, sn)
+	id, err := repo.SaveJSONUnpacked(SnapshotFile, sn)
 	if err != nil {
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 
 	sn.id = &id
@@ -111,12 +109,12 @@ func ArchiveReader(repo *repository.Repository, p *Progress, rd io.Reader, name 
 
 	err = repo.Flush()
 	if err != nil {
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 
 	err = repo.SaveIndex()
 	if err != nil {
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 
 	return sn, id, nil

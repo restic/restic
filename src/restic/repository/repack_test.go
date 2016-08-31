@@ -3,7 +3,7 @@ package repository_test
 import (
 	"io"
 	"math/rand"
-	"restic/backend"
+	"restic"
 	"restic/pack"
 	"restic/repository"
 	"testing"
@@ -14,7 +14,7 @@ func randomSize(min, max int) int {
 }
 
 func random(t testing.TB, length int) []byte {
-	rd := repository.NewRandReader(rand.New(rand.NewSource(int64(length))))
+	rd := restic.NewRandReader(rand.New(rand.NewSource(int64(length))))
 	buf := make([]byte, length)
 	_, err := io.ReadFull(rd, buf)
 	if err != nil {
@@ -40,7 +40,7 @@ func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pDa
 		}
 
 		buf := random(t, length)
-		id := backend.Hash(buf)
+		id := restic.Hash(buf)
 
 		if repo.Index().Has(id, pack.Data) {
 			t.Errorf("duplicate blob %v/%v ignored", id, pack.Data)
@@ -75,7 +75,7 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 
 	blobs := pack.NewBlobSet()
 
-	for id := range repo.List(backend.Data, done) {
+	for id := range repo.List(restic.DataFile, done) {
 		entries, _, err := repo.ListPack(id)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
@@ -101,20 +101,20 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 	return list1, list2
 }
 
-func listPacks(t *testing.T, repo *repository.Repository) backend.IDSet {
+func listPacks(t *testing.T, repo *repository.Repository) restic.IDSet {
 	done := make(chan struct{})
 	defer close(done)
 
-	list := backend.NewIDSet()
-	for id := range repo.List(backend.Data, done) {
+	list := restic.NewIDSet()
+	for id := range repo.List(restic.DataFile, done) {
 		list.Insert(id)
 	}
 
 	return list
 }
 
-func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs pack.BlobSet) backend.IDSet {
-	packs := backend.NewIDSet()
+func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs pack.BlobSet) restic.IDSet {
+	packs := restic.NewIDSet()
 
 	idx := repo.Index()
 	for h := range blobs {
@@ -131,7 +131,7 @@ func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs pack.Blo
 	return packs
 }
 
-func repack(t *testing.T, repo *repository.Repository, packs backend.IDSet, blobs pack.BlobSet) {
+func repack(t *testing.T, repo *repository.Repository, packs restic.IDSet, blobs pack.BlobSet) {
 	err := repository.Repack(repo, packs, blobs)
 	if err != nil {
 		t.Fatal(err)

@@ -4,7 +4,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"restic/backend"
+	"restic"
 	"restic/backend/mem"
 	"restic/crypto"
 	"restic/pack"
@@ -36,8 +36,8 @@ func (r *randReader) Read(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func randomID(rd io.Reader) backend.ID {
-	id := backend.ID{}
+func randomID(rd io.Reader) restic.ID {
+	id := restic.ID{}
 	_, err := io.ReadFull(rd, id[:])
 	if err != nil {
 		panic(err)
@@ -64,7 +64,7 @@ func saveFile(t testing.TB, be Saver, filename string, n int) {
 		t.Fatal(err)
 	}
 
-	h := backend.Handle{Type: backend.Data, Name: backend.Hash(data).String()}
+	h := restic.Handle{Type: restic.DataFile, Name: restic.Hash(data).String()}
 
 	err = be.Save(h, data)
 	if err != nil {
@@ -137,7 +137,7 @@ func flushRemainingPacks(t testing.TB, rnd *randReader, be Saver, pm *packerMana
 
 type fakeBackend struct{}
 
-func (f *fakeBackend) Save(h backend.Handle, data []byte) error {
+func (f *fakeBackend) Save(h restic.Handle, data []byte) error {
 	return nil
 }
 

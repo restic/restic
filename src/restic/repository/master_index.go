@@ -1,11 +1,11 @@
 package repository
 
 import (
+	"restic"
 	"sync"
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/pack"
 )
@@ -22,7 +22,7 @@ func NewMasterIndex() *MasterIndex {
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedBlob, err error) {
+func (mi *MasterIndex) Lookup(id restic.ID, tpe pack.BlobType) (blobs []PackedBlob, err error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -42,7 +42,7 @@ func (mi *MasterIndex) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedB
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) LookupSize(id backend.ID, tpe pack.BlobType) (uint, error) {
+func (mi *MasterIndex) LookupSize(id restic.ID, tpe pack.BlobType) (uint, error) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -58,7 +58,7 @@ func (mi *MasterIndex) LookupSize(id backend.ID, tpe pack.BlobType) (uint, error
 
 // ListPack returns the list of blobs in a pack. The first matching index is
 // returned, or nil if no index contains information about the pack id.
-func (mi *MasterIndex) ListPack(id backend.ID) (list []PackedBlob) {
+func (mi *MasterIndex) ListPack(id restic.ID) (list []PackedBlob) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -73,7 +73,7 @@ func (mi *MasterIndex) ListPack(id backend.ID) (list []PackedBlob) {
 }
 
 // Has queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Has(id backend.ID, tpe pack.BlobType) bool {
+func (mi *MasterIndex) Has(id restic.ID, tpe pack.BlobType) bool {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
@@ -197,7 +197,7 @@ func (mi *MasterIndex) All() []*Index {
 // RebuildIndex combines all known indexes to a new index, leaving out any
 // packs whose ID is contained in packBlacklist. The new index contains the IDs
 // of all known indexes in the "supersedes" field.
-func (mi *MasterIndex) RebuildIndex(packBlacklist backend.IDSet) (*Index, error) {
+func (mi *MasterIndex) RebuildIndex(packBlacklist restic.IDSet) (*Index, error) {
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 

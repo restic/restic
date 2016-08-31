@@ -3,7 +3,7 @@ package repository
 import (
 	"fmt"
 	"os"
-	"restic/backend"
+	"restic"
 	"restic/debug"
 	"restic/list"
 	"restic/worker"
@@ -23,7 +23,7 @@ func RebuildIndex(repo *Repository) error {
 
 	idx := NewIndex()
 	for job := range ch {
-		id := job.Data.(backend.ID)
+		id := job.Data.(restic.ID)
 
 		if job.Error != nil {
 			fmt.Fprintf(os.Stderr, "error for pack %v: %v\n", id, job.Error)
@@ -44,8 +44,8 @@ func RebuildIndex(repo *Repository) error {
 		}
 	}
 
-	oldIndexes := backend.NewIDSet()
-	for id := range repo.List(backend.Index, done) {
+	oldIndexes := restic.NewIDSet()
+	for id := range repo.List(restic.IndexFile, done) {
 		idx.AddToSupersedes(id)
 		oldIndexes.Insert(id)
 	}
@@ -58,7 +58,7 @@ func RebuildIndex(repo *Repository) error {
 	debug.Log("RebuildIndex.RebuildIndex", "new index saved as %v", id.Str())
 
 	for indexID := range oldIndexes {
-		err := repo.Backend().Remove(backend.Index, indexID.String())
+		err := repo.Backend().Remove(restic.IndexFile, indexID.String())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", indexID.Str(), err)
 		}

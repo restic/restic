@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"restic"
-	"restic/backend"
-	"restic/repository"
 	. "restic/test"
 )
 
@@ -92,18 +90,18 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	OK(t, elock.Unlock())
 }
 
-func createFakeLock(repo *repository.Repository, t time.Time, pid int) (backend.ID, error) {
+func createFakeLock(repo restic.Repository, t time.Time, pid int) (restic.ID, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
-		return backend.ID{}, err
+		return restic.ID{}, err
 	}
 
 	newLock := &restic.Lock{Time: t, PID: pid, Hostname: hostname}
-	return repo.SaveJSONUnpacked(backend.Lock, &newLock)
+	return repo.SaveJSONUnpacked(restic.LockFile, &newLock)
 }
 
-func removeLock(repo *repository.Repository, id backend.ID) error {
-	return repo.Backend().Remove(backend.Lock, id.String())
+func removeLock(repo restic.Repository, id restic.ID) error {
+	return repo.Backend().Remove(restic.LockFile, id.String())
 }
 
 var staleLockTests = []struct {
@@ -162,8 +160,8 @@ func TestLockStale(t *testing.T) {
 	}
 }
 
-func lockExists(repo *repository.Repository, t testing.TB, id backend.ID) bool {
-	exists, err := repo.Backend().Test(backend.Lock, id.String())
+func lockExists(repo restic.Repository, t testing.TB, id restic.ID) bool {
+	exists, err := repo.Backend().Test(restic.LockFile, id.String())
 	OK(t, err)
 
 	return exists
@@ -224,8 +222,8 @@ func TestLockRefresh(t *testing.T) {
 	lock, err := restic.NewLock(repo)
 	OK(t, err)
 
-	var lockID *backend.ID
-	for id := range repo.List(backend.Lock, nil) {
+	var lockID *restic.ID
+	for id := range repo.List(restic.LockFile, nil) {
 		if lockID != nil {
 			t.Error("more than one lock found")
 		}
@@ -234,8 +232,8 @@ func TestLockRefresh(t *testing.T) {
 
 	OK(t, lock.Refresh())
 
-	var lockID2 *backend.ID
-	for id := range repo.List(backend.Lock, nil) {
+	var lockID2 *restic.ID
+	for id := range repo.List(restic.LockFile, nil) {
 		if lockID2 != nil {
 			t.Error("more than one lock found")
 		}

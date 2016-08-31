@@ -11,9 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/debug"
-	"restic/repository"
 )
 
 // Lock represents a process locking the repository for an operation.
@@ -33,8 +31,8 @@ type Lock struct {
 	UID       uint32    `json:"uid,omitempty"`
 	GID       uint32    `json:"gid,omitempty"`
 
-	repo   *repository.Repository
-	lockID *backend.ID
+	repo   Repository
+	lockID *ID
 }
 
 // ErrAlreadyLocked is returned when NewLock or NewExclusiveLock are unable to
@@ -59,20 +57,20 @@ func IsAlreadyLocked(err error) bool {
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, ErrAlreadyLocked is
 // returned.
-func NewLock(repo *repository.Repository) (*Lock, error) {
+func NewLock(repo Repository) (*Lock, error) {
 	return newLock(repo, false)
 }
 
 // NewExclusiveLock returns a new, exclusive lock for the repository. If
 // another lock (normal and exclusive) is already held by another process,
 // ErrAlreadyLocked is returned.
-func NewExclusiveLock(repo *repository.Repository) (*Lock, error) {
+func NewExclusiveLock(repo Repository) (*Lock, error) {
 	return newLock(repo, true)
 }
 
 const waitBeforeLockCheck = 200 * time.Millisecond
 
-func newLock(repo *repository.Repository, excl bool) (*Lock, error) {
+func newLock(repo Repository, excl bool) (*Lock, error) {
 	lock := &Lock{
 		Time:      time.Now(),
 		PID:       os.Getpid(),
@@ -128,7 +126,7 @@ func (l *Lock) fillUserInfo() error {
 // non-exclusive lock is to be created, an error is only returned when an
 // exclusive lock is found.
 func (l *Lock) checkForOtherLocks() error {
-	return eachLock(l.repo, func(id backend.ID, lock *Lock, err error) error {
+	return eachLock(l.repo, func(id ID, lock *Lock, err error) error {
 		if l.lockID != nil && id.Equal(*l.lockID) {
 			return nil
 		}
@@ -150,11 +148,11 @@ func (l *Lock) checkForOtherLocks() error {
 	})
 }
 
-func eachLock(repo *repository.Repository, f func(backend.ID, *Lock, error) error) error {
+func eachLock(repo Repository, f func(ID, *Lock, error) error) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	for id := range repo.List(backend.Lock, done) {
+	for id := range repo.List(LockFile, done) {
 		lock, err := LoadLock(repo, id)
 		err = f(id, lock, err)
 		if err != nil {
@@ -166,10 +164,10 @@ func eachLock(repo *repository.Repository, f func(backend.ID, *Lock, error) erro
 }
 
 // createLock acquires the lock by creating a file in the repository.
-func (l *Lock) createLock() (backend.ID, error) {
-	id, err := l.repo.SaveJSONUnpacked(backend.Lock, l)
+func (l *Lock) createLock() (ID, error) {
+	id, err := l.repo.SaveJSONUnpacked(LockFile, l)
 	if err != nil {
-		return backend.ID{}, err
+		return ID{}, err
 	}
 
 	return id, nil
@@ -181,7 +179,7 @@ func (l *Lock) Unlock() error {
 		return nil
 	}
 
-	return l.repo.Backend().Remove(backend.Lock, l.lockID.String())
+	return l.repo.Backend().Remove(LockFile, l.lockID.String())
 }
 
 var staleTimeout = 30 * time.Minute
@@ -229,7 +227,7 @@ func (l *Lock) Refresh() error {
 		return err
 	}
 
-	err = l.repo.Backend().Remove(backend.Lock, l.lockID.String())
+	err = l.repo.Backend().Remove(LockFile, l.lockID.String())
 	if err != nil {
 		return err
 	}
@@ -269,9 +267,9 @@ func init() {
 }
 
 // LoadLock loads and unserializes a lock from a repository.
-func LoadLock(repo *repository.Repository, id backend.ID) (*Lock, error) {
+func LoadLock(repo Repository, id ID) (*Lock, error) {
 	lock := &Lock{}
-	if err := repo.LoadJSONUnpacked(backend.Lock, id, lock); err != nil {
+	if err := repo.LoadJSONUnpacked(LockFile, id, lock); err != nil {
 		return nil, err
 	}
 	lock.lockID = &id
@@ -280,15 +278,15 @@ func LoadLock(repo *repository.Repository, id backend.ID) (*Lock, error) {
 }
 
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
-func RemoveStaleLocks(repo *repository.Repository) error {
-	return eachLock(repo, func(id backend.ID, lock *Lock, err error) error {
+func RemoveStaleLocks(repo Repository) error {
+	return eachLock(repo, func(id ID, lock *Lock, err error) error {
 		// ignore locks that cannot be loaded
 		if err != nil {
 			return nil
 		}
 
 		if lock.Stale() {
-			return repo.Backend().Remove(backend.Lock, id.String())
+			return repo.Backend().Remove(LockFile, id.String())
 		}
 
 		return nil
@@ -296,8 +294,8 @@ func RemoveStaleLocks(repo *repository.Repository) error {
 }
 
 // RemoveAllLocks removes all locks forcefully.
-func RemoveAllLocks(repo *repository.Repository) error {
-	return eachLock(repo, func(id backend.ID, lock *Lock, err error) error {
-		return repo.Backend().Remove(backend.Lock, id.String())
+func RemoveAllLocks(repo Repository) error {
+	return eachLock(repo, func(id ID, lock *Lock, err error) error {
+		return repo.Backend().Remove(LockFile, id.String())
 	})
 }

@@ -10,22 +10,21 @@ import (
 	"github.com/pkg/errors"
 
 	"restic/backend"
-	"restic/repository"
 )
 
 // Snapshot is the state of a resource at one point in time.
 type Snapshot struct {
-	Time     time.Time   `json:"time"`
-	Parent   *backend.ID `json:"parent,omitempty"`
-	Tree     *backend.ID `json:"tree"`
-	Paths    []string    `json:"paths"`
-	Hostname string      `json:"hostname,omitempty"`
-	Username string      `json:"username,omitempty"`
-	UID      uint32      `json:"uid,omitempty"`
-	GID      uint32      `json:"gid,omitempty"`
-	Excludes []string    `json:"excludes,omitempty"`
+	Time     time.Time `json:"time"`
+	Parent   *ID       `json:"parent,omitempty"`
+	Tree     *ID       `json:"tree"`
+	Paths    []string  `json:"paths"`
+	Hostname string    `json:"hostname,omitempty"`
+	Username string    `json:"username,omitempty"`
+	UID      uint32    `json:"uid,omitempty"`
+	GID      uint32    `json:"gid,omitempty"`
+	Excludes []string  `json:"excludes,omitempty"`
 
-	id *backend.ID // plaintext ID, used during restore
+	id *ID // plaintext ID, used during restore
 }
 
 // NewSnapshot returns an initialized snapshot struct for the current user and
@@ -56,9 +55,9 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 }
 
 // LoadSnapshot loads the snapshot with the id and returns it.
-func LoadSnapshot(repo *repository.Repository, id backend.ID) (*Snapshot, error) {
+func LoadSnapshot(repo Repository, id ID) (*Snapshot, error) {
 	sn := &Snapshot{id: &id}
-	err := repo.LoadJSONUnpacked(backend.Snapshot, id, sn)
+	err := repo.LoadJSONUnpacked(SnapshotFile, id, sn)
 	if err != nil {
 		return nil, err
 	}
@@ -67,11 +66,11 @@ func LoadSnapshot(repo *repository.Repository, id backend.ID) (*Snapshot, error)
 }
 
 // LoadAllSnapshots returns a list of all snapshots in the repo.
-func LoadAllSnapshots(repo *repository.Repository) (snapshots []*Snapshot, err error) {
+func LoadAllSnapshots(repo Repository) (snapshots []*Snapshot, err error) {
 	done := make(chan struct{})
 	defer close(done)
 
-	for id := range repo.List(backend.Snapshot, done) {
+	for id := range repo.List(SnapshotFile, done) {
 		sn, err := LoadSnapshot(repo, id)
 		if err != nil {
 			return nil, err
@@ -89,7 +88,7 @@ func (sn Snapshot) String() string {
 }
 
 // ID retuns the snapshot's ID.
-func (sn Snapshot) ID() *backend.ID {
+func (sn Snapshot) ID() *ID {
 	return sn.id
 }
 
@@ -131,17 +130,17 @@ func SamePaths(expected, actual []string) bool {
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory and source filters
-func FindLatestSnapshot(repo *repository.Repository, targets []string, source string) (backend.ID, error) {
+func FindLatestSnapshot(repo Repository, targets []string, source string) (ID, error) {
 	var (
 		latest   time.Time
-		latestID backend.ID
+		latestID ID
 		found    bool
 	)
 
-	for snapshotID := range repo.List(backend.Snapshot, make(chan struct{})) {
+	for snapshotID := range repo.List(SnapshotFile, make(chan struct{})) {
 		snapshot, err := LoadSnapshot(repo, snapshotID)
 		if err != nil {
-			return backend.ID{}, errors.Errorf("Error listing snapshot: %v", err)
+			return ID{}, errors.Errorf("Error listing snapshot: %v", err)
 		}
 		if snapshot.Time.After(latest) && SamePaths(snapshot.Paths, targets) && (source == "" || source == snapshot.Hostname) {
 			latest = snapshot.Time
@@ -151,7 +150,7 @@ func FindLatestSnapshot(repo *repository.Repository, targets []string, source st
 	}
 
 	if !found {
-		return backend.ID{}, ErrNoSnapshotFound
+		return ID{}, ErrNoSnapshotFound
 	}
 
 	return latestID, nil
@@ -159,13 +158,13 @@ func FindLatestSnapshot(repo *repository.Repository, targets []string, source st
 
 // FindSnapshot takes a string and tries to find a snapshot whose ID matches
 // the string as closely as possible.
-func FindSnapshot(repo *repository.Repository, s string) (backend.ID, error) {
+func FindSnapshot(repo Repository, s string) (ID, error) {
 
 	// find snapshot id with prefix
-	name, err := backend.Find(repo.Backend(), backend.Snapshot, s)
+	name, err := backend.Find(repo.Backend(), SnapshotFile, s)
 	if err != nil {
-		return backend.ID{}, err
+		return ID{}, err
 	}
 
-	return backend.ParseID(name)
+	return ParseID(name)
 }

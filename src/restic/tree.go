@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/pack"
 )
@@ -31,10 +30,10 @@ func (t Tree) String() string {
 }
 
 type TreeLoader interface {
-	LoadJSONPack(pack.BlobType, backend.ID, interface{}) error
+	LoadJSONPack(pack.BlobType, ID, interface{}) error
 }
 
-func LoadTree(repo TreeLoader, id backend.ID) (*Tree, error) {
+func LoadTree(repo TreeLoader, id ID) (*Tree, error) {
 	tree := &Tree{}
 	err := repo.LoadJSONPack(pack.Tree, id, tree)
 	if err != nil {
@@ -95,7 +94,7 @@ func (t Tree) Find(name string) (*Node, error) {
 }
 
 // Subtrees returns a slice of all subtree IDs of the tree.
-func (t Tree) Subtrees() (trees backend.IDs) {
+func (t Tree) Subtrees() (trees IDs) {
 	for _, node := range t.Nodes {
 		if node.FileType == "dir" && node.Subtree != nil {
 			trees = append(trees, *node.Subtree)

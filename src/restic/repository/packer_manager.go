@@ -4,11 +4,11 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"restic"
 	"sync"
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
 	"restic/fs"
@@ -17,7 +17,7 @@ import (
 
 // Saver implements saving data in a backend.
 type Saver interface {
-	Save(h backend.Handle, jp []byte) error
+	Save(h restic.Handle, jp []byte) error
 }
 
 // packerManager keeps a list of open packs and creates new on demand.
@@ -114,8 +114,8 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 		return errors.Wrap(err, "Close")
 	}
 
-	id := backend.Hash(data)
-	h := backend.Handle{Type: backend.Data, Name: id.String()}
+	id := restic.Hash(data)
+	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
 	err = r.be.Save(h, data)
 	if err != nil {

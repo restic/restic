@@ -11,7 +11,6 @@ import (
 	"restic/checker"
 	"restic/crypto"
 	"restic/pack"
-	"restic/repository"
 	. "restic/test"
 
 	"github.com/pkg/errors"
@@ -302,7 +301,7 @@ func getRandomData(seed int, size int) []chunker.Chunk {
 	return chunks
 }
 
-func createAndInitChecker(t *testing.T, repo *repository.Repository) *checker.Checker {
+func createAndInitChecker(t *testing.T, repo Repository) *checker.Checker {
 	chkr := checker.New(repo)
 
 	hints, errs := chkr.LoadIndex()

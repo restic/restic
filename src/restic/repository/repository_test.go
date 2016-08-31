@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"restic"
-	"restic/backend"
 	"restic/pack"
 	"restic/repository"
 	. "restic/test"
@@ -80,7 +79,7 @@ func TestSave(t *testing.T) {
 		_, err := io.ReadFull(rand.Reader, data)
 		OK(t, err)
 
-		id := backend.Hash(data)
+		id := restic.Hash(data)
 
 		// save
 		sid, err := repo.SaveAndEncrypt(pack.Data, data, nil)
@@ -114,7 +113,7 @@ func TestSaveFrom(t *testing.T) {
 		_, err := io.ReadFull(rand.Reader, data)
 		OK(t, err)
 
-		id := backend.Hash(data)
+		id := restic.Hash(data)
 
 		// save
 		id2, err := repo.SaveAndEncrypt(pack.Data, data, &id)
@@ -147,7 +146,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 	_, err := io.ReadFull(rand.Reader, data)
 	OK(t, err)
 
-	id := backend.ID(sha256.Sum256(data))
+	id := restic.ID(sha256.Sum256(data))
 
 	t.ResetTimer()
 	t.SetBytes(int64(size))
@@ -211,13 +210,13 @@ func TestLoadJSONUnpacked(t *testing.T) {
 	sn.Hostname = "foobar"
 	sn.Username = "test!"
 
-	id, err := repo.SaveJSONUnpacked(backend.Snapshot, &sn)
+	id, err := repo.SaveJSONUnpacked(restic.SnapshotFile, &sn)
 	OK(t, err)
 
 	var sn2 restic.Snapshot
 
 	// restore
-	err = repo.LoadJSONUnpacked(backend.Snapshot, id, &sn2)
+	err = repo.LoadJSONUnpacked(restic.SnapshotFile, id, &sn2)
 	OK(t, err)
 
 	Equals(t, sn.Hostname, sn2.Hostname)
@@ -286,19 +285,19 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 	OK(t, repo.SaveIndex())
 
 	type packEntry struct {
-		id      backend.ID
+		id      restic.ID
 		indexes []*repository.Index
 	}
 
-	packEntries := make(map[backend.ID]map[backend.ID]struct{})
+	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 
-	for id := range repo.List(backend.Index, nil) {
+	for id := range repo.List(restic.IndexFile, nil) {
 		idx, err := repository.LoadIndex(repo, id)
 		OK(t, err)
 
 		for pb := range idx.Each(nil) {
 			if _, ok := packEntries[pb.PackID]; !ok {
-				packEntries[pb.PackID] = make(map[backend.ID]struct{})
+				packEntries[pb.PackID] = make(map[restic.ID]struct{})
 			}
 
 			packEntries[pb.PackID][id] = struct{}{}

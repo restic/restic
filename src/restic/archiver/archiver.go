@@ -12,12 +12,10 @@ import (
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/fs"
 	"restic/pack"
 	"restic/pipe"
-	"restic/repository"
 
 	"github.com/restic/chunker"
 )
@@ -32,9 +30,9 @@ var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
 // Archiver is used to backup a set of directories.
 type Archiver struct {
-	repo       *repository.Repository
+	repo       Repository
 	knownBlobs struct {
-		backend.IDSet
+		IDSet
 		sync.Mutex
 	}
 
@@ -46,15 +44,15 @@ type Archiver struct {
 }
 
 // NewArchiver returns a new archiver.
-func NewArchiver(repo *repository.Repository) *Archiver {
+func NewArchiver(repo Repository) *Archiver {
 	arch := &Archiver{
 		repo:      repo,
 		blobToken: make(chan struct{}, maxConcurrentBlobs),
 		knownBlobs: struct {
-			backend.IDSet
+			IDSet
 			sync.Mutex
 		}{
-			IDSet: backend.NewIDSet(),
+			IDSet: NewIDSet(),
 		},
 	}
 
@@ -72,7 +70,7 @@ func NewArchiver(repo *repository.Repository) *Archiver {
 // When the blob is not known, false is returned and the blob is added to the
 // list. This means that the caller false is returned to is responsible to save
 // the blob to the backend.
-func (arch *Archiver) isKnownBlob(id backend.ID, t pack.BlobType) bool {
+func (arch *Archiver) isKnownBlob(id ID, t pack.BlobType) bool {
 	arch.knownBlobs.Lock()
 	defer arch.knownBlobs.Unlock()
 
@@ -91,7 +89,7 @@ func (arch *Archiver) isKnownBlob(id backend.ID, t pack.BlobType) bool {
 }
 
 // Save stores a blob read from rd in the repository.
-func (arch *Archiver) Save(t pack.BlobType, data []byte, id backend.ID) error {
+func (arch *Archiver) Save(t pack.BlobType, data []byte, id ID) error {
 	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
 
 	if arch.isKnownBlob(id, pack.Data) {
@@ -110,15 +108,15 @@ func (arch *Archiver) Save(t pack.BlobType, data []byte, id backend.ID) error {
 }
 
 // SaveTreeJSON stores a tree in the repository.
-func (arch *Archiver) SaveTreeJSON(item interface{}) (backend.ID, error) {
+func (arch *Archiver) SaveTreeJSON(item interface{}) (ID, error) {
 	data, err := json.Marshal(item)
 	if err != nil {
-		return backend.ID{}, errors.Wrap(err, "Marshal")
+		return ID{}, errors.Wrap(err, "Marshal")
 	}
 	data = append(data, '\n')
 
 	// check if tree has been saved before
-	id := backend.Hash(data)
+	id := Hash(data)
 	if arch.isKnownBlob(id, pack.Tree) {
 		return id, nil
 	}
@@ -151,14 +149,14 @@ func (arch *Archiver) reloadFileIfChanged(node *Node, file fs.File) (*Node, erro
 }
 
 type saveResult struct {
-	id    backend.ID
+	id    ID
 	bytes uint64
 }
 
 func (arch *Archiver) saveChunk(chunk chunker.Chunk, p *Progress, token struct{}, file fs.File, resultChannel chan<- saveResult) {
 	defer freeBuf(chunk.Data)
 
-	id := backend.Hash(chunk.Data)
+	id := Hash(chunk.Data)
 	err := arch.Save(pack.Data, chunk.Data, id)
 	// TODO handle error
 	if err != nil {
@@ -188,7 +186,7 @@ func updateNodeContent(node *Node, results []saveResult) error {
 	debug.Log("Archiver.Save", "checking size for file %s", node.path)
 
 	var bytes uint64
-	node.Content = make([]backend.ID, len(results))
+	node.Content = make([]ID, len(results))
 
 	for i, b := range results {
 		node.Content[i] = b.id
@@ -220,7 +218,7 @@ func (arch *Archiver) SaveFile(p *Progress, node *Node) error {
 		return err
 	}
 
-	chnker := chunker.New(file, arch.repo.Config.ChunkerPolynomial)
+	chnker := chunker.New(file, arch.repo.Config().ChunkerPolynomial())
 	resultChannels := [](<-chan saveResult){}
 
 	for {
@@ -290,7 +288,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *Progress, done <-chan st
 				// check if all content is still available in the repository
 				contentMissing := false
 				for _, blob := range oldNode.blobs {
-					if ok, err := arch.repo.Backend().Test(backend.Data, blob.Storage.String()); !ok || err != nil {
+					if ok, err := arch.repo.Backend().Test(DataFile, blob.Storage.String()); !ok || err != nil {
 						debug.Log("Archiver.fileWorker", "   %v not using old data, %v (%v) is missing", e.Path(), blob.ID.Str(), blob.Storage.Str())
 						contentMissing = true
 						break
@@ -635,7 +633,7 @@ func (p baseNameSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 // Snapshot creates a snapshot of the given paths. If parentID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
-func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID) (*Snapshot, backend.ID, error) {
+func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *ID) (*Snapshot, ID, error) {
 	paths = unique(paths)
 	sort.Sort(baseNameSlice(paths))
 
@@ -653,7 +651,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID
 	// create new snapshot
 	sn, err := NewSnapshot(paths)
 	if err != nil {
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 	sn.Excludes = arch.Excludes
 
@@ -666,7 +664,7 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID
 		// load parent snapshot
 		parent, err := LoadSnapshot(arch.repo, *parentID)
 		if err != nil {
-			return nil, backend.ID{}, err
+			return nil, ID{}, err
 		}
 
 		// start walker on old tree
@@ -735,9 +733,9 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID
 	sn.Tree = root.Subtree
 
 	// save snapshot
-	id, err := arch.repo.SaveJSONUnpacked(backend.Snapshot, sn)
+	id, err := arch.repo.SaveJSONUnpacked(SnapshotFile, sn)
 	if err != nil {
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 
 	// store ID in snapshot struct
@@ -747,14 +745,14 @@ func (arch *Archiver) Snapshot(p *Progress, paths []string, parentID *backend.ID
 	// flush repository
 	err = arch.repo.Flush()
 	if err != nil {
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 
 	// save index
 	err = arch.repo.SaveIndex()
 	if err != nil {
 		debug.Log("Archiver.Snapshot", "error saving index: %v", err)
-		return nil, backend.ID{}, err
+		return nil, ID{}, err
 	}
 
 	debug.Log("Archiver.Snapshot", "saved indexes")

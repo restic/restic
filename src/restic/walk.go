@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/pack"
 )
@@ -35,7 +34,7 @@ func NewTreeWalker(ch chan<- loadTreeJob, out chan<- WalkTreeJob) *TreeWalker {
 
 // Walk starts walking the tree given by id. When the channel done is closed,
 // processing stops.
-func (tw *TreeWalker) Walk(path string, id backend.ID, done chan struct{}) {
+func (tw *TreeWalker) Walk(path string, id ID, done chan struct{}) {
 	debug.Log("TreeWalker.Walk", "starting on tree %v for %v", id.Str(), path)
 	defer debug.Log("TreeWalker.Walk", "done walking tree %v for %v", id.Str(), path)
 
@@ -119,11 +118,11 @@ type loadTreeResult struct {
 }
 
 type loadTreeJob struct {
-	id  backend.ID
+	id  ID
 	res chan<- loadTreeResult
 }
 
-type treeLoader func(backend.ID) (*Tree, error)
+type treeLoader func(ID) (*Tree, error)
 
 func loadTreeWorker(wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader, done <-chan struct{}) {
 	debug.Log("loadTreeWorker", "start")
@@ -162,10 +161,10 @@ const loadTreeWorkers = 10
 // WalkTree walks the tree specified by id recursively and sends a job for each
 // file and directory it finds. When the channel done is closed, processing
 // stops.
-func WalkTree(repo TreeLoader, id backend.ID, done chan struct{}, jobCh chan<- WalkTreeJob) {
+func WalkTree(repo TreeLoader, id ID, done chan struct{}, jobCh chan<- WalkTreeJob) {
 	debug.Log("WalkTree", "start on %v, start workers", id.Str())
 
-	load := func(id backend.ID) (*Tree, error) {
+	load := func(id ID) (*Tree, error) {
 		tree := &Tree{}
 		err := repo.LoadJSONPack(pack.Tree, id, tree)
 		if err != nil {

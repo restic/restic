@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"restic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -142,7 +143,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 
 // LoadKey loads a key from the backend.
 func LoadKey(s *Repository, name string) (k *Key, err error) {
-	h := backend.Handle{Type: backend.Key, Name: name}
+	h := restic.Handle{Type: backend.Key, Name: name}
 	data, err := backend.LoadAll(s.be, h, nil)
 	if err != nil {
 		return nil, err
@@ -224,9 +225,9 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	}
 
 	// store in repository and return
-	h := backend.Handle{
+	h := restic.Handle{
 		Type: backend.Key,
-		Name: backend.Hash(buf).String(),
+		Name: restic.Hash(buf).String(),
 	}
 
 	err = s.be.Save(h, buf)

@@ -6,6 +6,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+// FileType is the type of a file in the backend.
+type FileType string
+
+// These are the different data types a backend can store.
+const (
+	DataFile     FileType = "data"
+	KeyFile               = "key"
+	LockFile              = "lock"
+	SnapshotFile          = "snapshot"
+	IndexFile             = "index"
+	ConfigFile            = "config"
+)
+
 // Handle is used to store and access data in a backend.
 type Handle struct {
 	FileType FileType

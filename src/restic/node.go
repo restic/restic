@@ -14,32 +14,30 @@ import (
 
 	"runtime"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/fs"
 	"restic/pack"
-	"restic/repository"
 )
 
 // Node is a file, directory or other item in a backup.
 type Node struct {
-	Name       string       `json:"name"`
-	FileType   string       `json:"type"`
-	Mode       os.FileMode  `json:"mode,omitempty"`
-	ModTime    time.Time    `json:"mtime,omitempty"`
-	AccessTime time.Time    `json:"atime,omitempty"`
-	ChangeTime time.Time    `json:"ctime,omitempty"`
-	UID        uint32       `json:"uid"`
-	GID        uint32       `json:"gid"`
-	User       string       `json:"user,omitempty"`
-	Group      string       `json:"group,omitempty"`
-	Inode      uint64       `json:"inode,omitempty"`
-	Size       uint64       `json:"size,omitempty"`
-	Links      uint64       `json:"links,omitempty"`
-	LinkTarget string       `json:"linktarget,omitempty"`
-	Device     uint64       `json:"device,omitempty"`
-	Content    []backend.ID `json:"content"`
-	Subtree    *backend.ID  `json:"subtree,omitempty"`
+	Name       string      `json:"name"`
+	FileType   string      `json:"type"`
+	Mode       os.FileMode `json:"mode,omitempty"`
+	ModTime    time.Time   `json:"mtime,omitempty"`
+	AccessTime time.Time   `json:"atime,omitempty"`
+	ChangeTime time.Time   `json:"ctime,omitempty"`
+	UID        uint32      `json:"uid"`
+	GID        uint32      `json:"gid"`
+	User       string      `json:"user,omitempty"`
+	Group      string      `json:"group,omitempty"`
+	Inode      uint64      `json:"inode,omitempty"`
+	Size       uint64      `json:"size,omitempty"`
+	Links      uint64      `json:"links,omitempty"`
+	LinkTarget string      `json:"linktarget,omitempty"`
+	Device     uint64      `json:"device,omitempty"`
+	Content    IDs         `json:"content"`
+	Subtree    *ID         `json:"subtree,omitempty"`
 
 	Error string `json:"error,omitempty"`
 
@@ -47,7 +45,7 @@ type Node struct {
 
 	path  string
 	err   error
-	blobs repository.Blobs
+	blobs Blobs
 }
 
 func (node Node) String() string {
@@ -108,7 +106,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 }
 
 // CreateAt creates the node at the given path and restores all the meta data.
-func (node *Node) CreateAt(path string, repo *repository.Repository) error {
+func (node *Node) CreateAt(path string, repo Repository) error {
 	debug.Log("Node.CreateAt", "create node %v at %v", node.Name, path)
 
 	switch node.FileType {
@@ -202,7 +200,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(path string, repo *repository.Repository) error {
+func (node Node) createFileAt(path string, repo Repository) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 	defer f.Close()
 

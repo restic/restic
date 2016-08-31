@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"restic"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
@@ -21,14 +21,14 @@ type Index struct {
 	m    sync.Mutex
 	pack map[pack.Handle][]indexEntry
 
-	final      bool       // set to true for all indexes read from the backend ("finalized")
-	id         backend.ID // set to the ID of the index when it's finalized
-	supersedes backend.IDs
+	final      bool      // set to true for all indexes read from the backend ("finalized")
+	id         restic.ID // set to the ID of the index when it's finalized
+	supersedes restic.IDs
 	created    time.Time
 }
 
 type indexEntry struct {
-	packID backend.ID
+	packID restic.ID
 	offset uint
 	length uint
 }
@@ -112,7 +112,7 @@ func (idx *Index) Store(blob PackedBlob) {
 }
 
 // Lookup queries the index for the blob ID and returns a PackedBlob.
-func (idx *Index) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedBlob, err error) {
+func (idx *Index) Lookup(id restic.ID, tpe pack.BlobType) (blobs []PackedBlob, err error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -144,7 +144,7 @@ func (idx *Index) Lookup(id backend.ID, tpe pack.BlobType) (blobs []PackedBlob, 
 }
 
 // ListPack returns a list of blobs contained in a pack.
-func (idx *Index) ListPack(id backend.ID) (list []PackedBlob) {
+func (idx *Index) ListPack(id restic.ID) (list []PackedBlob) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -166,7 +166,7 @@ func (idx *Index) ListPack(id backend.ID) (list []PackedBlob) {
 }
 
 // Has returns true iff the id is listed in the index.
-func (idx *Index) Has(id backend.ID, tpe pack.BlobType) bool {
+func (idx *Index) Has(id restic.ID, tpe pack.BlobType) bool {
 	_, err := idx.Lookup(id, tpe)
 	if err == nil {
 		return true
@@ -177,7 +177,7 @@ func (idx *Index) Has(id backend.ID, tpe pack.BlobType) bool {
 
 // LookupSize returns the length of the cleartext content behind the
 // given id
-func (idx *Index) LookupSize(id backend.ID, tpe pack.BlobType) (cleartextLength uint, err error) {
+func (idx *Index) LookupSize(id restic.ID, tpe pack.BlobType) (cleartextLength uint, err error) {
 	blobs, err := idx.Lookup(id, tpe)
 	if err != nil {
 		return 0, err
@@ -187,13 +187,13 @@ func (idx *Index) LookupSize(id backend.ID, tpe pack.BlobType) (cleartextLength 
 }
 
 // Supersedes returns the list of indexes this index supersedes, if any.
-func (idx *Index) Supersedes() backend.IDs {
+func (idx *Index) Supersedes() restic.IDs {
 	return idx.supersedes
 }
 
 // AddToSupersedes adds the ids to the list of indexes superseded by this
 // index. If the index has already been finalized, an error is returned.
-func (idx *Index) AddToSupersedes(ids ...backend.ID) error {
+func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -209,9 +209,9 @@ func (idx *Index) AddToSupersedes(ids ...backend.ID) error {
 type PackedBlob struct {
 	Type   pack.BlobType
 	Length uint
-	ID     backend.ID
+	ID     restic.ID
 	Offset uint
-	PackID backend.ID
+	PackID restic.ID
 }
 
 func (pb PackedBlob) String() string {
@@ -259,11 +259,11 @@ func (idx *Index) Each(done chan struct{}) <-chan PackedBlob {
 }
 
 // Packs returns all packs in this index
-func (idx *Index) Packs() backend.IDSet {
+func (idx *Index) Packs() restic.IDSet {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	packs := backend.NewIDSet()
+	packs := restic.NewIDSet()
 	for _, list := range idx.pack {
 		for _, entry := range list {
 			packs.Insert(entry.packID)
@@ -300,12 +300,12 @@ func (idx *Index) Length() uint {
 }
 
 type packJSON struct {
-	ID    backend.ID `json:"id"`
+	ID    restic.ID  `json:"id"`
 	Blobs []blobJSON `json:"blobs"`
 }
 
 type blobJSON struct {
-	ID     backend.ID    `json:"id"`
+	ID     restic.ID     `json:"id"`
 	Type   pack.BlobType `json:"type"`
 	Offset uint          `json:"offset"`
 	Length uint          `json:"length"`
@@ -314,7 +314,7 @@ type blobJSON struct {
 // generatePackList returns a list of packs.
 func (idx *Index) generatePackList() ([]*packJSON, error) {
 	list := []*packJSON{}
-	packs := make(map[backend.ID]*packJSON)
+	packs := make(map[restic.ID]*packJSON)
 
 	for h, packedBlobs := range idx.pack {
 		for _, blob := range packedBlobs {
@@ -357,7 +357,7 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 }
 
 type jsonIndex struct {
-	Supersedes backend.IDs `json:"supersedes,omitempty"`
+	Supersedes restic.IDs  `json:"supersedes,omitempty"`
 	Packs      []*packJSON `json:"packs"`
 }
 
@@ -402,12 +402,12 @@ func (idx *Index) Finalize(w io.Writer) error {
 
 // ID returns the ID of the index, if available. If the index is not yet
 // finalized, an error is returned.
-func (idx *Index) ID() (backend.ID, error) {
+func (idx *Index) ID() (restic.ID, error) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
 	if !idx.final {
-		return backend.ID{}, errors.New("index not finalized")
+		return restic.ID{}, errors.New("index not finalized")
 	}
 
 	return idx.id, nil
@@ -415,7 +415,7 @@ func (idx *Index) ID() (backend.ID, error) {
 
 // SetID sets the ID the index has been written to. This requires that
 // Finalize() has been called before, otherwise an error is returned.
-func (idx *Index) SetID(id backend.ID) error {
+func (idx *Index) SetID(id restic.ID) error {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -545,10 +545,10 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(repo *Repository, id backend.ID, fn func(io.Reader) (*Index, error)) (idx *Index, err error) {
+func LoadIndexWithDecoder(repo *Repository, id restic.ID, fn func(io.Reader) (*Index, error)) (idx *Index, err error) {
 	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
 
-	buf, err := repo.LoadAndDecrypt(backend.Index, id)
+	buf, err := repo.LoadAndDecrypt(restic.IndexFile, id)
 	if err != nil {
 		return nil, err
 	}
@@ -568,7 +568,7 @@ func LoadIndexWithDecoder(repo *Repository, id backend.ID, fn func(io.Reader) (*
 // format (if necessary). When the conversion is succcessful, the old index
 // is removed. Returned is either the old id (if no conversion was needed) or
 // the new id.
-func ConvertIndex(repo *Repository, id backend.ID) (backend.ID, error) {
+func ConvertIndex(repo *Repository, id restic.ID) (restic.ID, error) {
 	debug.Log("ConvertIndex", "checking index %v", id.Str())
 
 	idx, err := LoadIndexWithDecoder(repo, id, DecodeOldIndex)
@@ -578,7 +578,7 @@ func ConvertIndex(repo *Repository, id backend.ID) (backend.ID, error) {
 	}
 
 	buf := bytes.NewBuffer(nil)
-	idx.supersedes = backend.IDs{id}
+	idx.supersedes = restic.IDs{id}
 
 	err = idx.Encode(buf)
 	if err != nil {
@@ -586,5 +586,5 @@ func ConvertIndex(repo *Repository, id backend.ID) (backend.ID, error) {
 		return id, err
 	}
 
-	return repo.SaveUnpacked(backend.Index, buf.Bytes())
+	return repo.SaveUnpacked(restic.IndexFile, buf.Bytes())
 }

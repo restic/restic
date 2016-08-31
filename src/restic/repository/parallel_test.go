@@ -2,12 +2,12 @@ package repository_test
 
 import (
 	"math/rand"
+	"restic"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/repository"
 	. "restic/test"
 )
@@ -73,7 +73,7 @@ var lister = testIDs{
 	"34dd044c228727f2226a0c9c06a3e5ceb5e30e31cb7854f8fa1cde846b395a58",
 }
 
-func (tests testIDs) List(t backend.Type, done <-chan struct{}) <-chan string {
+func (tests testIDs) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
 	go func() {
@@ -100,7 +100,7 @@ func TestFilesInParallel(t *testing.T) {
 	}
 
 	for n := uint(1); n < 5; n++ {
-		err := repository.FilesInParallel(lister, backend.Data, n*100, f)
+		err := repository.FilesInParallel(lister, restic.DataFile, n*100, f)
 		OK(t, err)
 	}
 }
@@ -120,7 +120,7 @@ func TestFilesInParallelWithError(t *testing.T) {
 	}
 
 	for n := uint(1); n < 5; n++ {
-		err := repository.FilesInParallel(lister, backend.Data, n*100, f)
+		err := repository.FilesInParallel(lister, restic.DataFile, n*100, f)
 		Equals(t, errTest, err)
 	}
 }

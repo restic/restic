@@ -1,4 +1,4 @@
-package restic
+package restic_test
 
 import (
 	"bufio"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"restic"
 	"sort"
 	"testing"
 	"time"
@@ -92,7 +93,7 @@ func TestFindUsedBlobs(t *testing.T) {
 
 	for i, sn := range snapshots {
 		usedBlobs := pack.NewBlobSet()
-		err := FindUsedBlobs(repo, *sn.Tree, usedBlobs, pack.NewBlobSet())
+		err := restic.FindUsedBlobs(repo, *sn.Tree, usedBlobs, pack.NewBlobSet())
 		if err != nil {
 			t.Errorf("FindUsedBlobs returned error: %v", err)
 			continue
@@ -128,7 +129,7 @@ func BenchmarkFindUsedBlobs(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		seen := pack.NewBlobSet()
 		blobs := pack.NewBlobSet()
-		err := FindUsedBlobs(repo, *sn.Tree, blobs, seen)
+		err := restic.FindUsedBlobs(repo, *sn.Tree, blobs, seen)
 		if err != nil {
 			b.Error(err)
 		}

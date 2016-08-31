@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"bytes"
+	"restic"
 	"testing"
 
 	"restic/backend"
@@ -12,8 +13,8 @@ import (
 
 func TestIndexSerialize(t *testing.T) {
 	type testEntry struct {
-		id             backend.ID
-		pack           backend.ID
+		id             restic.ID
+		pack           restic.ID
 		tpe            pack.BlobType
 		offset, length uint
 	}
@@ -249,7 +250,7 @@ var docOldExample = []byte(`
 `)
 
 var exampleTests = []struct {
-	id, packID     backend.ID
+	id, packID     restic.ID
 	tpe            pack.BlobType
 	offset, length uint
 }{
@@ -269,11 +270,11 @@ var exampleTests = []struct {
 }
 
 var exampleLookupTest = struct {
-	packID backend.ID
-	blobs  map[backend.ID]pack.BlobType
+	packID restic.ID
+	blobs  map[restic.ID]pack.BlobType
 }{
 	ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-	map[backend.ID]pack.BlobType{
+	map[restic.ID]pack.BlobType{
 		ParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"): pack.Data,
 		ParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"): pack.Tree,
 		ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"): pack.Data,
@@ -281,7 +282,7 @@ var exampleLookupTest = struct {
 }
 
 func TestIndexUnserialize(t *testing.T) {
-	oldIdx := backend.IDs{ParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
+	oldIdx := restic.IDs{ParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
 	idx, err := repository.DecodeIndex(bytes.NewReader(docExample))
 	OK(t, err)
@@ -345,7 +346,7 @@ func TestIndexUnserializeOld(t *testing.T) {
 
 func TestIndexPacks(t *testing.T) {
 	idx := repository.NewIndex()
-	packs := backend.NewIDSet()
+	packs := restic.NewIDSet()
 
 	for i := 0; i < 20; i++ {
 		packID := backend.RandomID()
