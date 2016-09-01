@@ -18,7 +18,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/filter"
 	"restic/repository"
@@ -30,7 +29,7 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 	sc := bufio.NewScanner(rd)
 
 	for sc.Scan() {
-		id, err := backend.ParseID(sc.Text())
+		id, err := restic.ParseID(sc.Text())
 		if err != nil {
 			t.Logf("parse id %v: %v", sc.Text(), err)
 			continue
@@ -811,11 +810,11 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 
 var optimizeTests = []struct {
 	testFilename string
-	snapshots    backend.IDSet
+	snapshots    restic.IDSet
 }{
 	{
 		filepath.Join("..", "..", "restic", "checker", "testdata", "checker-test-repo.tar.gz"),
-		backend.NewIDSet(ParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")),
+		restic.NewIDSet(ParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")),
 	},
 	{
 		filepath.Join("testdata", "old-index-repo.tar.gz"),
@@ -823,7 +822,7 @@ var optimizeTests = []struct {
 	},
 	{
 		filepath.Join("testdata", "old-index-repo.tar.gz"),
-		backend.NewIDSet(
+		restic.NewIDSet(
 			ParseID("f7d83db709977178c9d1a09e4009355e534cde1a135b8186b8b118a3fc4fcd41"),
 			ParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"),
 		),

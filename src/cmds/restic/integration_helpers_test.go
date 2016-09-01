@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"testing"
 
+	"restic/repository"
 	. "restic/test"
 )
 
@@ -192,6 +193,8 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 	if !RunIntegrationTest {
 		t.Skip("integration tests disabled")
 	}
+
+	repository.TestUseLowSecurityKDFParameters(t)
 
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	OK(t, err)

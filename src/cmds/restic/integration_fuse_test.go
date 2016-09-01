@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	"restic"
-	"restic/backend"
 	"restic/repository"
 	. "restic/test"
 )
