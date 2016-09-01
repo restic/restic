@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"restic"
-	"restic/backend"
+	"restic/archiver"
 	"restic/debug"
 	"restic/filter"
 	"restic/fs"
@@ -259,7 +259,7 @@ func (cmd CmdBackup) readFromStdin(args []string) error {
 		return err
 	}
 
-	_, id, err := restic.ArchiveReader(repo, cmd.newArchiveStdinProgress(), os.Stdin, cmd.StdinFilename)
+	_, id, err := archiver.ArchiveReader(repo, cmd.newArchiveStdinProgress(), os.Stdin, cmd.StdinFilename)
 	if err != nil {
 		return err
 	}
@@ -306,7 +306,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	var parentSnapshotID *backend.ID
+	var parentSnapshotID *restic.ID
 
 	// Force using a parent
 	if !cmd.Force && cmd.Parent != "" {
@@ -365,12 +365,12 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return !matched
 	}
 
-	stat, err := restic.Scan(target, selectFilter, cmd.newScanProgress())
+	stat, err := archiver.Scan(target, selectFilter, cmd.newScanProgress())
 	if err != nil {
 		return err
 	}
 
-	arch := restic.NewArchiver(repo)
+	arch := archiver.New(repo)
 	arch.Excludes = cmd.Excludes
 	arch.SelectFilter = selectFilter
 

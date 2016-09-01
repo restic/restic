@@ -1,9 +1,6 @@
 package main
 
-import (
-	"restic"
-	"restic/backend"
-)
+import "restic"
 
 type CmdList struct {
 	global *GlobalOptions
@@ -41,31 +38,32 @@ func (cmd CmdList) Execute(args []string) error {
 		}
 	}
 
-	var t backend.Type
+	var t restic.FileType
 	switch args[0] {
-	case "blobs":
-		err = repo.LoadIndex()
-		if err != nil {
-			return err
-		}
+	// case "blobs":
+	// 	restic.Lister
+	// 	err = repo.LoadIndex()
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		for _, idx := range repo.Index().All() {
-			for blob := range idx.Each(nil) {
-				cmd.global.Printf("%s\n", blob.ID)
-			}
-		}
+	// 	for _, idx := range repo.Index().All() {
+	// 		for blob := range idx.Each(nil) {
+	// 			cmd.global.Printf("%s\n", blob.ID)
+	// 		}
+	// 	}
 
-		return nil
+	// 	return nil
 	case "packs":
-		t = backend.Data
+		t = restic.DataFile
 	case "index":
-		t = backend.Index
+		t = restic.IndexFile
 	case "snapshots":
-		t = backend.Snapshot
+		t = restic.SnapshotFile
 	case "keys":
-		t = backend.Key
+		t = restic.KeyFile
 	case "locks":
-		t = backend.Lock
+		t = restic.LockFile
 	default:
 		return restic.Fatal("invalid type")
 	}

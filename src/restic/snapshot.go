@@ -153,3 +153,16 @@ func FindLatestSnapshot(repo Repository, targets []string, source string) (ID, e
 
 	return latestID, nil
 }
+
+// FindSnapshot takes a string and tries to find a snapshot whose ID matches
+// the string as closely as possible.
+func FindSnapshot(repo Repository, s string) (ID, error) {
+
+	// find snapshot id with prefix
+	name, err := Find(repo.Backend(), SnapshotFile, s)
+	if err != nil {
+		return ID{}, err
+	}
+
+	return ParseID(name)
+}

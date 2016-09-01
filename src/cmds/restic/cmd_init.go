@@ -32,7 +32,7 @@ func (cmd CmdInit) Execute(args []string) error {
 		cmd.global.Exitf(1, "creating key in backend at %s failed: %v\n", cmd.global.Repo, err)
 	}
 
-	cmd.global.Verbosef("created restic backend %v at %s\n", s.Config.ID[:10], cmd.global.Repo)
+	cmd.global.Verbosef("created restic backend %v at %s\n", s.Config().ID[:10], cmd.global.Repo)
 	cmd.global.Verbosef("\n")
 	cmd.global.Verbosef("Please note that knowledge of your password is required to access\n")
 	cmd.global.Verbosef("the repository. Losing your password means that your data is\n")

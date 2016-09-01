@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"os"
 	"restic"
-	"restic/backend"
 	"restic/debug"
 	"restic/index"
-	"restic/pack"
 	"restic/repository"
 	"time"
 
@@ -94,7 +92,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	}
 
 	cmd.global.Verbosef("counting files in repo\n")
-	for _ = range repo.List(backend.Data, done) {
+	for _ = range repo.List(restic.DataFile, done) {
 		stats.packs++
 	}
 
@@ -112,7 +110,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	cmd.global.Verbosef("repository contains %v packs (%v blobs) with %v bytes\n",
 		len(idx.Packs), len(idx.Blobs), formatBytes(uint64(stats.bytes)))
 
-	blobCount := make(map[pack.Handle]int)
+	blobCount := make(map[restic.BlobHandle]int)
 	duplicateBlobs := 0
 	duplicateBytes := 0
 
@@ -120,7 +118,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	for _, p := range idx.Packs {
 		for _, entry := range p.Entries {
 			stats.blobs++
-			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 			blobCount[h]++
 
 			if blobCount[h] > 1 {
@@ -144,8 +142,8 @@ func (cmd CmdPrune) Execute(args []string) error {
 
 	cmd.global.Verbosef("find data that is still in use for %d snapshots\n", stats.snapshots)
 
-	usedBlobs := pack.NewBlobSet()
-	seenBlobs := pack.NewBlobSet()
+	usedBlobs := restic.NewBlobSet()
+	seenBlobs := restic.NewBlobSet()
 
 	bar = newProgressMax(cmd.global.ShowProgress(), uint64(len(snapshots)), "snapshots")
 	bar.Start()
@@ -165,7 +163,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	cmd.global.Verbosef("found %d of %d data blobs still in use\n", len(usedBlobs), stats.blobs)
 
 	// find packs that need a rewrite
-	rewritePacks := backend.NewIDSet()
+	rewritePacks := restic.NewIDSet()
 	for h, blob := range idx.Blobs {
 		if !usedBlobs.Has(h) {
 			rewritePacks.Merge(blob.Packs)
@@ -178,11 +176,11 @@ func (cmd CmdPrune) Execute(args []string) error {
 	}
 
 	// find packs that are unneeded
-	removePacks := backend.NewIDSet()
+	removePacks := restic.NewIDSet()
 nextPack:
 	for packID, p := range idx.Packs {
 		for _, blob := range p.Entries {
-			h := pack.Handle{ID: blob.ID, Type: blob.Type}
+			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 			if usedBlobs.Has(h) {
 				continue nextPack
 			}
@@ -205,7 +203,7 @@ nextPack:
 	}
 
 	for packID := range removePacks {
-		err = repo.Backend().Remove(backend.Data, packID.String())
+		err = repo.Backend().Remove(restic.DataFile, packID.String())
 		if err != nil {
 			cmd.global.Warnf("unable to remove file %v from the repository\n", packID.Str())
 		}
@@ -214,7 +212,7 @@ nextPack:
 	cmd.global.Verbosef("creating new index\n")
 
 	stats.packs = 0
-	for _ = range repo.List(backend.Data, done) {
+	for _ = range repo.List(restic.DataFile, done) {
 		stats.packs++
 	}
 	bar = newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "packs")
@@ -223,9 +221,9 @@ nextPack:
 		return err
 	}
 
-	var supersedes backend.IDs
-	for idxID := range repo.List(backend.Index, done) {
-		err := repo.Backend().Remove(backend.Index, idxID.String())
+	var supersedes restic.IDs
+	for idxID := range repo.List(restic.IndexFile, done) {
+		err := repo.Backend().Remove(restic.IndexFile, idxID.String())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", idxID.Str(), err)
 		}

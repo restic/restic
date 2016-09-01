@@ -25,8 +25,8 @@ import (
 	. "restic/test"
 )
 
-func parseIDsFromReader(t testing.TB, rd io.Reader) backend.IDs {
-	IDs := backend.IDs{}
+func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
+	IDs := restic.IDs{}
 	sc := bufio.NewScanner(rd)
 
 	for sc.Scan() {
@@ -51,11 +51,11 @@ func cmdInit(t testing.TB, global GlobalOptions) {
 	t.Logf("repository initialized at %v", global.Repo)
 }
 
-func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID *backend.ID) {
+func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID *restic.ID) {
 	cmdBackupExcludes(t, global, target, parentID, nil)
 }
 
-func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID *backend.ID, excludes []string) {
+func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID *restic.ID, excludes []string) {
 	cmd := &CmdBackup{global: &global, Excludes: excludes}
 	if parentID != nil {
 		cmd.Parent = parentID.String()
@@ -66,19 +66,19 @@ func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, pare
 	OK(t, cmd.Execute(target))
 }
 
-func cmdList(t testing.TB, global GlobalOptions, tpe string) backend.IDs {
+func cmdList(t testing.TB, global GlobalOptions, tpe string) restic.IDs {
 	cmd := &CmdList{global: &global}
 	return executeAndParseIDs(t, cmd, tpe)
 }
 
-func executeAndParseIDs(t testing.TB, cmd *CmdList, args ...string) backend.IDs {
+func executeAndParseIDs(t testing.TB, cmd *CmdList, args ...string) restic.IDs {
 	buf := bytes.NewBuffer(nil)
 	cmd.global.stdout = buf
 	OK(t, cmd.Execute(args))
 	return parseIDsFromReader(t, buf)
 }
 
-func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID) {
+func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID) {
 	cmdRestoreExcludes(t, global, dir, snapshotID, nil)
 }
 
@@ -87,12 +87,12 @@ func cmdRestoreLatest(t testing.TB, global GlobalOptions, dir string, paths []st
 	OK(t, cmd.Execute([]string{"latest"}))
 }
 
-func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, excludes []string) {
+func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
 	cmd := &CmdRestore{global: &global, Target: dir, Exclude: excludes}
 	OK(t, cmd.Execute([]string{snapshotID.String()}))
 }
 
-func cmdRestoreIncludes(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, includes []string) {
+func cmdRestoreIncludes(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
 	cmd := &CmdRestore{global: &global, Target: dir, Include: includes}
 	OK(t, cmd.Execute([]string{snapshotID.String()}))
 }

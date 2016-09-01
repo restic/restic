@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"restic"
-	"restic/backend"
 	"restic/repository"
 )
 
@@ -31,7 +30,7 @@ func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
 		return filepath.Join(prefix, n.Name)
 	}
 
-	switch n.Type {
+	switch n.FileType {
 	case "file":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
 			n.Mode, n.UID, n.GID, n.Size, n.ModTime, filepath.Join(prefix, n.Name))
@@ -42,11 +41,11 @@ func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
 		return fmt.Sprintf("%s %5d %5d %6d %s %s -> %s",
 			n.Mode|os.ModeSymlink, n.UID, n.GID, n.Size, n.ModTime, filepath.Join(prefix, n.Name), n.LinkTarget)
 	default:
-		return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
+		return fmt.Sprintf("<Node(%s) %s>", n.FileType, n.Name)
 	}
 }
 
-func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id backend.ID) error {
+func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id restic.ID) error {
 	tree, err := restic.LoadTree(repo, id)
 	if err != nil {
 		return err
@@ -55,7 +54,7 @@ func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id backen
 	for _, entry := range tree.Nodes {
 		cmd.global.Printf(cmd.printNode(prefix, entry) + "\n")
 
-		if entry.Type == "dir" && entry.Subtree != nil {
+		if entry.FileType == "dir" && entry.Subtree != nil {
 			err = cmd.printTree(filepath.Join(prefix, entry.Name), repo, *entry.Subtree)
 			if err != nil {
 				return err

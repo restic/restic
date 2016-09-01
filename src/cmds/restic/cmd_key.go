@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"restic"
 
-	"restic/backend"
 	"restic/repository"
 )
 
@@ -28,7 +27,7 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
-	plen, err := s.PrefixLength(backend.Key)
+	plen, err := s.PrefixLength(restic.KeyFile)
 	if err != nil {
 		return err
 	}
@@ -36,7 +35,7 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	for id := range s.List(backend.Key, done) {
+	for id := range s.List(restic.KeyFile, done) {
 		k, err := repository.LoadKey(s, id.String())
 		if err != nil {
 			cmd.global.Warnf("LoadKey() failed: %v\n", err)
@@ -82,7 +81,7 @@ func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 		return restic.Fatal("refusing to remove key currently used to access repository")
 	}
 
-	err := repo.Backend().Remove(backend.Key, name)
+	err := repo.Backend().Remove(restic.KeyFile, name)
 	if err != nil {
 		return err
 	}
@@ -97,7 +96,7 @@ func (cmd CmdKey) changePassword(repo *repository.Repository) error {
 		return restic.Fatalf("creating new key failed: %v\n", err)
 	}
 
-	err = repo.Backend().Remove(backend.Key, repo.KeyName())
+	err = repo.Backend().Remove(restic.KeyFile, repo.KeyName())
 	if err != nil {
 		return err
 	}
@@ -145,7 +144,7 @@ func (cmd CmdKey) Execute(args []string) error {
 			return err
 		}
 
-		id, err := backend.Find(repo.Backend(), backend.Key, args[1])
+		id, err := restic.Find(repo.Backend(), restic.KeyFile, args[1])
 		if err != nil {
 			return err
 		}

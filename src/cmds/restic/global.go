@@ -9,7 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"restic/backend"
 	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
@@ -270,7 +269,7 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 }
 
 // Open the backend specified by a location config.
-func open(s string) (backend.Backend, error) {
+func open(s string) (restic.Backend, error) {
 	debug.Log("open", "parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
@@ -305,7 +304,7 @@ func open(s string) (backend.Backend, error) {
 }
 
 // Create the backend specified by URI.
-func create(s string) (backend.Backend, error) {
+func create(s string) (restic.Backend, error) {
 	debug.Log("open", "parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {

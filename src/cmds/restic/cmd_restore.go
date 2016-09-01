@@ -2,7 +2,6 @@ package main
 
 import (
 	"restic"
-	"restic/backend"
 	"restic/debug"
 	"restic/filter"
 )
@@ -66,7 +65,7 @@ func (cmd CmdRestore) Execute(args []string) error {
 		return err
 	}
 
-	var id backend.ID
+	var id restic.ID
 
 	if snapshotIDString == "latest" {
 		id, err = restic.FindLatestSnapshot(repo, cmd.Paths, cmd.Host)
