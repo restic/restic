@@ -55,7 +55,7 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSi
 	// header length
 	written += binary.Size(uint32(0))
 	// header
-	written += len(bufs) * (binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + restic.IDSize)
+	written += len(bufs) * (binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + len(restic.ID{}))
 	// header crypto
 	written += crypto.Extension
 

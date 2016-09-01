@@ -2,9 +2,11 @@ package restic
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 
 	"github.com/pkg/errors"
 )
@@ -14,11 +16,11 @@ func Hash(data []byte) ID {
 	return sha256.Sum256(data)
 }
 
-// IDSize contains the size of an ID, in bytes.
-const IDSize = sha256.Size
+// idSize contains the size of an ID, in bytes.
+const idSize = sha256.Size
 
 // ID references content within a repository.
-type ID [IDSize]byte
+type ID [idSize]byte
 
 // ParseID converts the given string to an ID.
 func ParseID(s string) (ID, error) {
@@ -28,7 +30,7 @@ func ParseID(s string) (ID, error) {
 		return ID{}, errors.Wrap(err, "hex.DecodeString")
 	}
 
-	if len(b) != IDSize {
+	if len(b) != idSize {
 		return ID{}, errors.New("invalid length for hash")
 	}
 
@@ -40,6 +42,17 @@ func ParseID(s string) (ID, error) {
 
 func (id ID) String() string {
 	return hex.EncodeToString(id[:])
+}
+
+// NewRandomID retuns a randomly generated ID. When reading from rand fails,
+// the function panics.
+func NewRandomID() ID {
+	id := ID{}
+	_, err := io.ReadFull(rand.Reader, id[:])
+	if err != nil {
+		panic(err)
+	}
+	return id
 }
 
 const shortStr = 4

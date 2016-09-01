@@ -22,11 +22,11 @@ func TestIndexSerialize(t *testing.T) {
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
-		packID := restic.TestRandomID()
+		packID := restic.NewRandomID()
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
-			id := restic.TestRandomID()
+			id := restic.NewRandomID()
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
@@ -94,11 +94,11 @@ func TestIndexSerialize(t *testing.T) {
 	// add more blobs to idx
 	newtests := []testEntry{}
 	for i := 0; i < 10; i++ {
-		packID := restic.TestRandomID()
+		packID := restic.NewRandomID()
 
 		pos := uint(0)
 		for j := 0; j < 10; j++ {
-			id := restic.TestRandomID()
+			id := restic.NewRandomID()
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
@@ -130,7 +130,7 @@ func TestIndexSerialize(t *testing.T) {
 	Assert(t, idx.Final(),
 		"index not final after encoding")
 
-	id := restic.TestRandomID()
+	id := restic.NewRandomID()
 	OK(t, idx.SetID(id))
 	id2, err := idx.ID()
 	Assert(t, id2.Equal(id),
@@ -167,11 +167,11 @@ func TestIndexSize(t *testing.T) {
 	packs := 200
 	blobs := 100
 	for i := 0; i < packs; i++ {
-		packID := restic.TestRandomID()
+		packID := restic.NewRandomID()
 
 		pos := uint(0)
 		for j := 0; j < blobs; j++ {
-			id := restic.TestRandomID()
+			id := restic.NewRandomID()
 			length := uint(i*100 + j)
 			idx.Store(restic.PackedBlob{
 				Blob: restic.Blob{
@@ -353,11 +353,11 @@ func TestIndexPacks(t *testing.T) {
 	packs := restic.NewIDSet()
 
 	for i := 0; i < 20; i++ {
-		packID := restic.TestRandomID()
+		packID := restic.NewRandomID()
 		idx.Store(restic.PackedBlob{
 			Blob: restic.Blob{
 				Type:   restic.DataBlob,
-				ID:     restic.TestRandomID(),
+				ID:     restic.NewRandomID(),
 				Offset: 0,
 				Length: 23,
 			},

@@ -1,7 +1,6 @@
 package restic
 
 import (
-	crand "crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -199,16 +198,5 @@ func TestParseID(s string) ID {
 		panic(err)
 	}
 
-	return id
-}
-
-// TestRandomID retuns a randomly generated ID. When reading from rand fails,
-// the function panics.
-func TestRandomID() ID {
-	id := ID{}
-	_, err := io.ReadFull(crand.Reader, id[:])
-	if err != nil {
-		panic(err)
-	}
 	return id
 }

@@ -52,8 +52,9 @@ func PrefixLength(be Lister, t FileType) (int, error) {
 	}
 
 	// select prefixes of length l, test if the last one is the same as the current one
+	id := ID{}
 outer:
-	for l := minPrefixLength; l < IDSize; l++ {
+	for l := minPrefixLength; l < len(id); l++ {
 		var last string
 
 		for _, name := range list {
@@ -66,5 +67,5 @@ outer:
 		return l, nil
 	}
 
-	return IDSize, nil
+	return len(id), nil
 }

@@ -1,10 +1,6 @@
 package restic
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
-	"io"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -20,9 +16,6 @@ type Config struct {
 	ID                string      `json:"id"`
 	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
 }
-
-// repositoryIDSize is the length of the ID chosen at random for a new repository.
-const repositoryIDSize = sha256.Size
 
 // RepoVersion is the version that is written to the config when a repository
 // is newly created with Init().
@@ -51,13 +44,7 @@ func CreateConfig() (Config, error) {
 		return Config{}, errors.Wrap(err, "chunker.RandomPolynomial")
 	}
 
-	newID := make([]byte, repositoryIDSize)
-	_, err = io.ReadFull(rand.Reader, newID)
-	if err != nil {
-		return Config{}, errors.Wrap(err, "io.ReadFull")
-	}
-
-	cfg.ID = hex.EncodeToString(newID)
+	cfg.ID = NewRandomID().String()
 	cfg.Version = RepoVersion
 
 	debug.Log("Repo.CreateConfig", "New config: %#v", cfg)
@@ -68,13 +55,7 @@ func CreateConfig() (Config, error) {
 func TestCreateConfig(t testing.TB, pol chunker.Pol) (cfg Config) {
 	cfg.ChunkerPolynomial = pol
 
-	newID := make([]byte, repositoryIDSize)
-	_, err := io.ReadFull(rand.Reader, newID)
-	if err != nil {
-		t.Fatalf("unable to create random ID: %v", err)
-	}
-
-	cfg.ID = hex.EncodeToString(newID)
+	cfg.ID = NewRandomID().String()
 	cfg.Version = RepoVersion
 
 	return cfg
