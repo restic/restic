@@ -40,20 +40,6 @@ func (cmd CmdList) Execute(args []string) error {
 
 	var t restic.FileType
 	switch args[0] {
-	// case "blobs":
-	// 	restic.Lister
-	// 	err = repo.LoadIndex()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	for _, idx := range repo.Index().All() {
-	// 		for blob := range idx.Each(nil) {
-	// 			cmd.global.Printf("%s\n", blob.ID)
-	// 		}
-	// 	}
-
-	// 	return nil
 	case "packs":
 		t = restic.DataFile
 	case "index":

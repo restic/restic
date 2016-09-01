@@ -67,37 +67,6 @@ func debugPrintSnapshots(repo *repository.Repository, wr io.Writer) error {
 	return nil
 }
 
-// func printTrees(repo *repository.Repository, wr io.Writer) error {
-// 	done := make(chan struct{})
-// 	defer close(done)
-
-// 	trees := []restic.ID{}
-
-// 	for _, idx := range repo.Index().All() {
-// 		for blob := range idx.Each(nil) {
-// 			if blob.Type != pack.Tree {
-// 				continue
-// 			}
-
-// 			trees = append(trees, blob.ID)
-// 		}
-// 	}
-
-// 	for _, id := range trees {
-// 		tree, err := restic.LoadTree(repo, id)
-// 		if err != nil {
-// 			fmt.Fprintf(os.Stderr, "LoadTree(%v): %v", id.Str(), err)
-// 			continue
-// 		}
-
-// 		fmt.Fprintf(wr, "tree_id: %v\n", id)
-
-// 		prettyPrintJSON(wr, tree)
-// 	}
-
-// 	return nil
-// }
-
 const dumpPackWorkers = 10
 
 // Pack is the struct used in printPacks.
@@ -228,8 +197,6 @@ func (cmd CmdDump) Execute(args []string) error {
 		return cmd.DumpIndexes()
 	case "snapshots":
 		return debugPrintSnapshots(repo, os.Stdout)
-	// case "trees":
-	// 	return printTrees(repo, os.Stdout)
 	case "packs":
 		return printPacks(repo, os.Stdout)
 	case "all":
@@ -238,13 +205,6 @@ func (cmd CmdDump) Execute(args []string) error {
 		if err != nil {
 			return err
 		}
-
-		// fmt.Printf("\ntrees:\n")
-
-		// err = printTrees(repo, os.Stdout)
-		// if err != nil {
-		// 	return err
-		// }
 
 		fmt.Printf("\nindexes:\n")
 		err = cmd.DumpIndexes()
