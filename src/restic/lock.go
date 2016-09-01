@@ -7,6 +7,7 @@ import (
 	"os/user"
 	"sync"
 	"syscall"
+	"testing"
 	"time"
 
 	"github.com/pkg/errors"
@@ -68,7 +69,13 @@ func NewExclusiveLock(repo Repository) (*Lock, error) {
 	return newLock(repo, true)
 }
 
-const waitBeforeLockCheck = 200 * time.Millisecond
+var waitBeforeLockCheck = 200 * time.Millisecond
+
+// TestSetLockTimeout can be used to reduce the lock wait timeout for tests.
+func TestSetLockTimeout(t testing.TB, d time.Duration) {
+	t.Logf("setting lock timeout to %v", d)
+	waitBeforeLockCheck = d
+}
 
 func newLock(repo Repository, excl bool) (*Lock, error) {
 	lock := &Lock{

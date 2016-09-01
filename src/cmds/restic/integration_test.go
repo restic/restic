@@ -43,6 +43,7 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 
 func cmdInit(t testing.TB, global GlobalOptions) {
 	repository.TestUseLowSecurityKDFParameters(t)
+	restic.TestSetLockTimeout(t, 0)
 
 	cmd := &CmdInit{global: &global}
 	OK(t, cmd.Execute(nil))
