@@ -91,7 +91,7 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
 		name := job.Data.(string)
 
-		h := restic.Handle{FileType: restic.DataFile, Name: name}
+		h := restic.Handle{Type: restic.DataFile, Name: name}
 
 		blobInfo, err := repo.Backend().Stat(h)
 		if err != nil {
