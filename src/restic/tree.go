@@ -9,15 +9,12 @@ import (
 	"restic/debug"
 )
 
+// Tree is an ordered list of nodes.
 type Tree struct {
 	Nodes []*Node `json:"nodes"`
 }
 
-var (
-	ErrNodeNotFound      = errors.New("named node not found")
-	ErrNodeAlreadyInTree = errors.New("node already present")
-)
-
+// NewTree creates a new tree object.
 func NewTree() *Tree {
 	return &Tree{
 		Nodes: []*Node{},
@@ -61,10 +58,11 @@ func (t Tree) Equals(other *Tree) bool {
 	return true
 }
 
+// Insert adds a new node at the correct place in the tree.
 func (t *Tree) Insert(node *Node) error {
 	pos, _, err := t.binarySearch(node.Name)
 	if err == nil {
-		return ErrNodeAlreadyInTree
+		return errors.New("node already present")
 	}
 
 	// https://code.google.com/p/go-wiki/wiki/SliceTricks
@@ -84,7 +82,7 @@ func (t Tree) binarySearch(name string) (int, *Node, error) {
 		return pos, t.Nodes[pos], nil
 	}
 
-	return pos, nil, ErrNodeNotFound
+	return pos, nil, errors.New("named node not found")
 }
 
 func (t Tree) Find(name string) (*Node, error) {
