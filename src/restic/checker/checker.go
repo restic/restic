@@ -581,7 +581,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 	var blobs []restic.ID
 
 	for _, node := range tree.Nodes {
-		switch node.FileType {
+		switch node.Type {
 		case "file":
 			if node.Content == nil {
 				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
@@ -609,7 +609,7 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 			// nothing to check
 
 		default:
-			errs = append(errs, Error{TreeID: id, Err: errors.Errorf("node %q with invalid type %q", node.Name, node.FileType)})
+			errs = append(errs, Error{TreeID: id, Err: errors.Errorf("node %q with invalid type %q", node.Name, node.Type)})
 		}
 
 		if node.Name == "" {

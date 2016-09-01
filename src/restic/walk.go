@@ -71,7 +71,7 @@ func (tw *TreeWalker) walk(path string, tree *Tree, done chan struct{}) {
 	// load all subtrees in parallel
 	results := make([]<-chan loadTreeResult, len(tree.Nodes))
 	for i, node := range tree.Nodes {
-		if node.FileType == "dir" {
+		if node.Type == "dir" {
 			resCh := make(chan loadTreeResult, 1)
 			tw.ch <- loadTreeJob{
 				id:  *node.Subtree,
@@ -86,7 +86,7 @@ func (tw *TreeWalker) walk(path string, tree *Tree, done chan struct{}) {
 		p := filepath.Join(path, node.Name)
 		var job WalkTreeJob
 
-		if node.FileType == "dir" {
+		if node.Type == "dir" {
 			if results[i] == nil {
 				panic("result chan should not be nil")
 			}

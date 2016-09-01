@@ -73,7 +73,7 @@ func parseTime(s string) time.Time {
 var nodeTests = []restic.Node{
 	restic.Node{
 		Name:       "testFile",
-		FileType:   "file",
+		Type:       "file",
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -84,7 +84,7 @@ var nodeTests = []restic.Node{
 	},
 	restic.Node{
 		Name:       "testSuidFile",
-		FileType:   "file",
+		Type:       "file",
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -95,7 +95,7 @@ var nodeTests = []restic.Node{
 	},
 	restic.Node{
 		Name:       "testSuidFile2",
-		FileType:   "file",
+		Type:       "file",
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -106,7 +106,7 @@ var nodeTests = []restic.Node{
 	},
 	restic.Node{
 		Name:       "testSticky",
-		FileType:   "file",
+		Type:       "file",
 		Content:    restic.IDs{},
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -117,7 +117,7 @@ var nodeTests = []restic.Node{
 	},
 	restic.Node{
 		Name:       "testDir",
-		FileType:   "dir",
+		Type:       "dir",
 		Subtree:    nil,
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -128,7 +128,7 @@ var nodeTests = []restic.Node{
 	},
 	restic.Node{
 		Name:       "testSymlink",
-		FileType:   "symlink",
+		Type:       "symlink",
 		LinkTarget: "invalid",
 		UID:        uint32(os.Getuid()),
 		GID:        uint32(os.Getgid()),
@@ -155,10 +155,10 @@ func TestNodeRestoreAt(t *testing.T) {
 		nodePath := filepath.Join(tempdir, test.Name)
 		OK(t, test.CreateAt(nodePath, nil))
 
-		if test.FileType == "symlink" && runtime.GOOS == "windows" {
+		if test.Type == "symlink" && runtime.GOOS == "windows" {
 			continue
 		}
-		if test.FileType == "dir" {
+		if test.Type == "dir" {
 			OK(t, test.RestoreTimestamps(nodePath))
 		}
 
@@ -169,25 +169,25 @@ func TestNodeRestoreAt(t *testing.T) {
 		OK(t, err)
 
 		Assert(t, test.Name == n2.Name,
-			"%v: name doesn't match (%v != %v)", test.FileType, test.Name, n2.Name)
-		Assert(t, test.FileType == n2.FileType,
-			"%v: type doesn't match (%v != %v)", test.FileType, test.FileType, n2.FileType)
+			"%v: name doesn't match (%v != %v)", test.Type, test.Name, n2.Name)
+		Assert(t, test.Type == n2.Type,
+			"%v: type doesn't match (%v != %v)", test.Type, test.Type, n2.Type)
 		Assert(t, test.Size == n2.Size,
 			"%v: size doesn't match (%v != %v)", test.Size, test.Size, n2.Size)
 
 		if runtime.GOOS != "windows" {
 			Assert(t, test.UID == n2.UID,
-				"%v: UID doesn't match (%v != %v)", test.FileType, test.UID, n2.UID)
+				"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
 			Assert(t, test.GID == n2.GID,
-				"%v: GID doesn't match (%v != %v)", test.FileType, test.GID, n2.GID)
-			if test.FileType != "symlink" {
+				"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
+			if test.Type != "symlink" {
 				Assert(t, test.Mode == n2.Mode,
-					"%v: mode doesn't match (0%o != 0%o)", test.FileType, test.Mode, n2.Mode)
+					"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
 			}
 		}
 
-		AssertFsTimeEqual(t, "AccessTime", test.FileType, test.AccessTime, n2.AccessTime)
-		AssertFsTimeEqual(t, "ModTime", test.FileType, test.ModTime, n2.ModTime)
+		AssertFsTimeEqual(t, "AccessTime", test.Type, test.AccessTime, n2.AccessTime)
+		AssertFsTimeEqual(t, "ModTime", test.Type, test.ModTime, n2.ModTime)
 	}
 }
 

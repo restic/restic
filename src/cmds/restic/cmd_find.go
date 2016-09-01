@@ -91,7 +91,7 @@ func (c CmdFind) findInTree(repo *repository.Repository, id restic.ID, path stri
 			debug.Log("restic.find", "    pattern does not match\n")
 		}
 
-		if node.FileType == "dir" {
+		if node.Type == "dir" {
 			subdirResults, err := c.findInTree(repo, *node.Subtree, filepath.Join(path, node.Name))
 			if err != nil {
 				return nil, err

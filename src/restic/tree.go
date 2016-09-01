@@ -95,7 +95,7 @@ func (t Tree) Find(name string) (*Node, error) {
 // Subtrees returns a slice of all subtree IDs of the tree.
 func (t Tree) Subtrees() (trees IDs) {
 	for _, node := range t.Nodes {
-		if node.FileType == "dir" && node.Subtree != nil {
+		if node.Type == "dir" && node.Subtree != nil {
 			trees = append(trees, *node.Subtree)
 		}
 	}

@@ -30,7 +30,7 @@ func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
 		return filepath.Join(prefix, n.Name)
 	}
 
-	switch n.FileType {
+	switch n.Type {
 	case "file":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
 			n.Mode, n.UID, n.GID, n.Size, n.ModTime, filepath.Join(prefix, n.Name))
@@ -41,7 +41,7 @@ func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
 		return fmt.Sprintf("%s %5d %5d %6d %s %s -> %s",
 			n.Mode|os.ModeSymlink, n.UID, n.GID, n.Size, n.ModTime, filepath.Join(prefix, n.Name), n.LinkTarget)
 	default:
-		return fmt.Sprintf("<Node(%s) %s>", n.FileType, n.Name)
+		return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
 	}
 }
 
@@ -54,7 +54,7 @@ func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id restic
 	for _, entry := range tree.Nodes {
 		cmd.global.Printf(cmd.printNode(prefix, entry) + "\n")
 
-		if entry.FileType == "dir" && entry.Subtree != nil {
+		if entry.Type == "dir" && entry.Subtree != nil {
 			err = cmd.printTree(filepath.Join(prefix, entry.Name), repo, *entry.Subtree)
 			if err != nil {
 				return err

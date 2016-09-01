@@ -108,10 +108,10 @@ func (fs fakeFileSystem) saveTree(seed int64, depth int) ID {
 			id := fs.saveTree(treeSeed, depth-1)
 
 			node := &Node{
-				Name:     fmt.Sprintf("dir-%v", treeSeed),
-				FileType: "dir",
-				Mode:     0755,
-				Subtree:  &id,
+				Name:    fmt.Sprintf("dir-%v", treeSeed),
+				Type:    "dir",
+				Mode:    0755,
+				Subtree: &id,
 			}
 
 			tree.Nodes = append(tree.Nodes, node)
@@ -122,10 +122,10 @@ func (fs fakeFileSystem) saveTree(seed int64, depth int) ID {
 		fileSize := (maxFileSize / maxSeed) * fileSeed
 
 		node := &Node{
-			Name:     fmt.Sprintf("file-%v", fileSeed),
-			FileType: "file",
-			Mode:     0644,
-			Size:     uint64(fileSize),
+			Name: fmt.Sprintf("file-%v", fileSeed),
+			Type: "file",
+			Mode: 0644,
+			Size: uint64(fileSize),
 		}
 
 		node.Content = fs.saveFile(fakeFile(fs.t, fileSeed, fileSize))

@@ -12,7 +12,7 @@ func FindUsedBlobs(repo Repository, treeID ID, blobs BlobSet, seen BlobSet) erro
 	}
 
 	for _, node := range tree.Nodes {
-		switch node.FileType {
+		switch node.Type {
 		case "file":
 			for _, blob := range node.Content {
 				blobs.Insert(BlobHandle{ID: blob, Type: DataBlob})

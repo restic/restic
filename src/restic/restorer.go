@@ -56,7 +56,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
 			}
 		}
 
-		if node.FileType == "dir" {
+		if node.Type == "dir" {
 			if node.Subtree == nil {
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}

@@ -81,7 +81,7 @@ func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, nam
 				Name:       name,
 				AccessTime: time.Now(),
 				ModTime:    time.Now(),
-				FileType:   "file",
+				Type:       "file",
 				Mode:       0644,
 				Size:       fileSize,
 				UID:        sn.UID,
