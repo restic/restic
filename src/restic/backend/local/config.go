@@ -3,7 +3,7 @@ package local
 import (
 	"strings"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // ParseConfig parses a local backend config.

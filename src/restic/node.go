@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"runtime"
 

@@ -1,6 +1,9 @@
 package main
 
-import "restic"
+import (
+	"restic"
+	"restic/errors"
+)
 
 type CmdList struct {
 	global *GlobalOptions
@@ -22,7 +25,7 @@ func (cmd CmdList) Usage() string {
 
 func (cmd CmdList) Execute(args []string) error {
 	if len(args) != 1 {
-		return restic.Fatalf("type not specified, Usage: %s", cmd.Usage())
+		return errors.Fatalf("type not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -51,7 +54,7 @@ func (cmd CmdList) Execute(args []string) error {
 	case "locks":
 		t = restic.LockFile
 	default:
-		return restic.Fatal("invalid type")
+		return errors.Fatal("invalid type")
 	}
 
 	for id := range repo.List(t, nil) {

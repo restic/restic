@@ -5,8 +5,8 @@ import (
 	"time"
 
 	sscrypt "github.com/elithrar/simple-scrypt"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/scrypt"
+	"restic/errors"
 )
 
 const saltLength = 64

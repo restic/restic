@@ -3,7 +3,7 @@ package mem_test
 import (
 	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend/mem"
 	"restic/backend/test"

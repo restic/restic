@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/repository"
 	. "restic/test"

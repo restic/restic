@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"restic/errors"
 	"sort"
 	"strings"
 
@@ -69,7 +70,7 @@ func (cmd CmdSnapshots) Usage() string {
 
 func (cmd CmdSnapshots) Execute(args []string) error {
 	if len(args) != 0 {
-		return restic.Fatalf("wrong number of arguments, usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of arguments, usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

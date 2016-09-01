@@ -9,7 +9,7 @@ import (
 	"restic/list"
 	"restic/worker"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // Pack contains information about the contents of a pack.

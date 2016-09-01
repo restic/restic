@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/debug"
 	"restic/fs"

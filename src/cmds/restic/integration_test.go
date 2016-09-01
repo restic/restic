@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/debug"
 	"restic/filter"
@@ -582,7 +582,7 @@ func testFileSize(filename string, size int64) error {
 	}
 
 	if fi.Size() != size {
-		return restic.Fatalf("wrong file size for %v: expected %v, got %v", filename, size, fi.Size())
+		return errors.Fatalf("wrong file size for %v: expected %v, got %v", filename, size, fi.Size())
 	}
 
 	return nil

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend"
 	"restic/debug"

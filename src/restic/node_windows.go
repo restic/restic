@@ -3,7 +3,7 @@ package restic
 import (
 	"syscall"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // mknod() creates a filesystem node (file, device

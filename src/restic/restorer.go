@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/debug"
 	"restic/fs"

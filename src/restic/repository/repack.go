@@ -8,7 +8,7 @@ import (
 	"restic/debug"
 	"restic/pack"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // Repack takes a list of packs together with a list of blobs contained in

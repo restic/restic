@@ -6,7 +6,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"golang.org/x/sys/unix"
 )

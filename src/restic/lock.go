@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/debug"
 )

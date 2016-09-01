@@ -3,6 +3,7 @@ package main
 import (
 	"restic"
 	"restic/debug"
+	"restic/errors"
 	"restic/filter"
 )
 
@@ -32,15 +33,15 @@ func (cmd CmdRestore) Usage() string {
 
 func (cmd CmdRestore) Execute(args []string) error {
 	if len(args) != 1 {
-		return restic.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
 	if cmd.Target == "" {
-		return restic.Fatal("please specify a directory to restore to (--target)")
+		return errors.Fatal("please specify a directory to restore to (--target)")
 	}
 
 	if len(cmd.Exclude) > 0 && len(cmd.Include) > 0 {
-		return restic.Fatal("exclude and include patterns are mutually exclusive")
+		return errors.Fatal("exclude and include patterns are mutually exclusive")
 	}
 
 	snapshotIDString := args[0]

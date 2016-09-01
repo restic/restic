@@ -4,7 +4,7 @@ import (
 	"io"
 	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // LoadAll reads all data stored in the backend for the handle. The buffer buf

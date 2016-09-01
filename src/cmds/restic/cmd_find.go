@@ -6,6 +6,7 @@ import (
 
 	"restic"
 	"restic/debug"
+	"restic/errors"
 	"restic/repository"
 )
 
@@ -55,7 +56,7 @@ func parseTime(str string) (time.Time, error) {
 		}
 	}
 
-	return time.Time{}, restic.Fatalf("unable to parse time: %q", str)
+	return time.Time{}, errors.Fatalf("unable to parse time: %q", str)
 }
 
 func (c CmdFind) findInTree(repo *repository.Repository, id restic.ID, path string) ([]findResult, error) {
@@ -135,7 +136,7 @@ func (CmdFind) Usage() string {
 
 func (c CmdFind) Execute(args []string) error {
 	if len(args) != 1 {
-		return restic.Fatalf("wrong number of arguments, Usage: %s", c.Usage())
+		return errors.Fatalf("wrong number of arguments, Usage: %s", c.Usage())
 	}
 
 	var err error
@@ -175,7 +176,7 @@ func (c CmdFind) Execute(args []string) error {
 	if c.Snapshot != "" {
 		snapshotID, err := restic.FindSnapshot(repo, c.Snapshot)
 		if err != nil {
-			return restic.Fatalf("invalid id %q: %v", args[1], err)
+			return errors.Fatalf("invalid id %q: %v", args[1], err)
 		}
 
 		return c.findInSnapshot(repo, snapshotID)

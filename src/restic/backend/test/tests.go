@@ -11,7 +11,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend"
 	. "restic/test"

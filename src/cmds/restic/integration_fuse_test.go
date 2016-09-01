@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic"
 	"restic/repository"
@@ -50,7 +50,7 @@ func waitForMount(dir string) error {
 		time.Sleep(mountSleep)
 	}
 
-	return restic.Fatalf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
+	return errors.Fatalf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
 
 func cmdMount(t testing.TB, global GlobalOptions, dir string, ready, done chan struct{}) {

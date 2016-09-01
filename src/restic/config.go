@@ -3,7 +3,7 @@ package restic
 import (
 	"testing"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/debug"
 

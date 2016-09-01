@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend"
 	"restic/debug"

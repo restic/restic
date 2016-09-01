@@ -8,6 +8,7 @@ import (
 	"restic"
 	"restic/backend"
 	"restic/debug"
+	"restic/errors"
 	"restic/repository"
 )
 
@@ -31,7 +32,7 @@ func (cmd CmdCat) Usage() string {
 
 func (cmd CmdCat) Execute(args []string) error {
 	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return restic.Fatalf("type or ID not specified, Usage: %s", cmd.Usage())
+		return errors.Fatalf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -52,7 +53,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		id, err = restic.ParseID(args[1])
 		if err != nil {
 			if tpe != "snapshot" {
-				return restic.Fatalf("unable to parse ID: %v\n", err)
+				return errors.Fatalf("unable to parse ID: %v\n", err)
 			}
 
 			// find snapshot id with prefix
@@ -181,7 +182,7 @@ func (cmd CmdCat) Execute(args []string) error {
 			return err
 		}
 
-		return restic.Fatal("blob not found")
+		return errors.Fatal("blob not found")
 
 	case "tree":
 		debug.Log("cat", "cat tree %v", id.Str())
@@ -202,6 +203,6 @@ func (cmd CmdCat) Execute(args []string) error {
 		return nil
 
 	default:
-		return restic.Fatal("invalid type")
+		return errors.Fatal("invalid type")
 	}
 }

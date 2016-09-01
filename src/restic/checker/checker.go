@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic"
 	"restic/backend"

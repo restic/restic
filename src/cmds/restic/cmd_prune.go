@@ -5,6 +5,7 @@ import (
 	"os"
 	"restic"
 	"restic/debug"
+	"restic/errors"
 	"restic/index"
 	"restic/repository"
 	"time"
@@ -189,7 +190,7 @@ nextPack:
 		removePacks.Insert(packID)
 
 		if !rewritePacks.Has(packID) {
-			return restic.Fatalf("pack %v is unneeded, but not contained in rewritePacks", packID.Str())
+			return errors.Fatalf("pack %v is unneeded, but not contained in rewritePacks", packID.Str())
 		}
 
 		rewritePacks.Delete(packID)

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic"
 	"restic/archiver"

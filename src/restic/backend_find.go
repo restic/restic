@@ -1,6 +1,6 @@
 package restic
 
-import "github.com/pkg/errors"
+import "restic/errors"
 
 // ErrNoIDPrefixFound is returned by Find() when no ID for the given prefix
 // could be found.

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/debug"
 )

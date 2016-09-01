@@ -11,7 +11,7 @@ import (
 	"restic"
 	"strings"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend"
 )

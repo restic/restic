@@ -1,4 +1,4 @@
-package restic
+package errors
 
 import "fmt"
 

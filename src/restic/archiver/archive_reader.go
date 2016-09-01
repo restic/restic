@@ -7,8 +7,8 @@ import (
 	"restic/debug"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/restic/chunker"
+	"restic/errors"
 )
 
 // saveTreeJSON stores a tree in the repository.

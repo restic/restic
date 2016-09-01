@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // Hash returns the ID for data.

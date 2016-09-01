@@ -4,7 +4,7 @@ import (
 	"io"
 	"math/rand"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // RandReader allows reading from a rand.Rand.

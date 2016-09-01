@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // Snapshot is the state of a resource at one point in time.

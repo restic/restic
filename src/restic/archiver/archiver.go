@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/debug"
 	"restic/fs"

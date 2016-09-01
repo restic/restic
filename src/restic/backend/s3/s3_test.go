@@ -6,7 +6,7 @@ import (
 	"os"
 	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend/s3"
 	"restic/backend/test"

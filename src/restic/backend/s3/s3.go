@@ -6,7 +6,7 @@ import (
 	"restic"
 	"strings"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"github.com/minio/minio-go"
 

@@ -7,7 +7,7 @@ import (
 	"restic"
 	"sync"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/crypto"
 	"restic/debug"

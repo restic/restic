@@ -6,7 +6,7 @@ package fuse
 import (
 	"sync"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic"
 	"restic/debug"

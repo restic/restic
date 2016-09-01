@@ -3,7 +3,7 @@ package mock
 import (
 	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // Backend implements a mock backend.

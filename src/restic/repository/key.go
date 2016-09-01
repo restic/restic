@@ -8,7 +8,7 @@ import (
 	"restic"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend"
 	"restic/crypto"

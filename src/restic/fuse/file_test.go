@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"bazil.org/fuse"
 

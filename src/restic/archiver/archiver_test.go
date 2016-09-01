@@ -12,8 +12,8 @@ import (
 	"restic/crypto"
 	. "restic/test"
 
-	"github.com/pkg/errors"
 	"github.com/restic/chunker"
+	"restic/errors"
 )
 
 var testPol = chunker.Pol(0x3DA3358B4DC173)
