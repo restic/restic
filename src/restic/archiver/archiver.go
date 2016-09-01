@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"restic/errors"
+	"restic/walk"
 
 	"restic/debug"
 	"restic/fs"
@@ -421,7 +422,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 }
 
 type archivePipe struct {
-	Old <-chan restic.WalkTreeJob
+	Old <-chan walk.TreeJob
 	New <-chan pipe.Job
 }
 
@@ -456,7 +457,7 @@ func copyJobs(done <-chan struct{}, in <-chan pipe.Job, out chan<- pipe.Job) {
 
 type archiveJob struct {
 	hasOld bool
-	old    restic.WalkTreeJob
+	old    walk.TreeJob
 	new    pipe.Job
 }
 
@@ -470,7 +471,7 @@ func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 	var (
 		loadOld, loadNew bool = true, true
 		ok               bool
-		oldJob           restic.WalkTreeJob
+		oldJob           walk.TreeJob
 		newJob           pipe.Job
 	)
 
@@ -667,12 +668,12 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths []string, parentID *res
 		}
 
 		// start walker on old tree
-		ch := make(chan restic.WalkTreeJob)
-		go restic.WalkTree(arch.repo, *parent.Tree, done, ch)
+		ch := make(chan walk.TreeJob)
+		go walk.Tree(arch.repo, *parent.Tree, done, ch)
 		jobs.Old = ch
 	} else {
 		// use closed channel
-		ch := make(chan restic.WalkTreeJob)
+		ch := make(chan walk.TreeJob)
 		close(ch)
 		jobs.Old = ch
 	}

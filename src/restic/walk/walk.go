@@ -1,39 +1,40 @@
-package restic
+package walk
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"restic"
 	"sync"
 
 	"restic/debug"
 )
 
-// WalkTreeJob is a job sent from the tree walker.
-type WalkTreeJob struct {
+// TreeJob is a job sent from the tree walker.
+type TreeJob struct {
 	Path  string
 	Error error
 
-	Node *Node
-	Tree *Tree
+	Node *restic.Node
+	Tree *restic.Tree
 }
 
 // TreeWalker traverses a tree in the repository depth-first and sends a job
 // for each item (file or dir) that it encounters.
 type TreeWalker struct {
 	ch  chan<- loadTreeJob
-	out chan<- WalkTreeJob
+	out chan<- TreeJob
 }
 
 // NewTreeWalker uses ch to load trees from the repository and sends jobs to
 // out.
-func NewTreeWalker(ch chan<- loadTreeJob, out chan<- WalkTreeJob) *TreeWalker {
+func NewTreeWalker(ch chan<- loadTreeJob, out chan<- TreeJob) *TreeWalker {
 	return &TreeWalker{ch: ch, out: out}
 }
 
 // Walk starts walking the tree given by id. When the channel done is closed,
 // processing stops.
-func (tw *TreeWalker) Walk(path string, id ID, done chan struct{}) {
+func (tw *TreeWalker) Walk(path string, id restic.ID, done chan struct{}) {
 	debug.Log("TreeWalker.Walk", "starting on tree %v for %v", id.Str(), path)
 	defer debug.Log("TreeWalker.Walk", "done walking tree %v for %v", id.Str(), path)
 
@@ -46,7 +47,7 @@ func (tw *TreeWalker) Walk(path string, id ID, done chan struct{}) {
 	res := <-resCh
 	if res.err != nil {
 		select {
-		case tw.out <- WalkTreeJob{Path: path, Error: res.err}:
+		case tw.out <- TreeJob{Path: path, Error: res.err}:
 		case <-done:
 			return
 		}
@@ -56,13 +57,13 @@ func (tw *TreeWalker) Walk(path string, id ID, done chan struct{}) {
 	tw.walk(path, res.tree, done)
 
 	select {
-	case tw.out <- WalkTreeJob{Path: path, Tree: res.tree}:
+	case tw.out <- TreeJob{Path: path, Tree: res.tree}:
 	case <-done:
 		return
 	}
 }
 
-func (tw *TreeWalker) walk(path string, tree *Tree, done chan struct{}) {
+func (tw *TreeWalker) walk(path string, tree *restic.Tree, done chan struct{}) {
 	debug.Log("TreeWalker.walk", "start on %q", path)
 	defer debug.Log("TreeWalker.walk", "done for %q", path)
 
@@ -84,7 +85,7 @@ func (tw *TreeWalker) walk(path string, tree *Tree, done chan struct{}) {
 
 	for i, node := range tree.Nodes {
 		p := filepath.Join(path, node.Name)
-		var job WalkTreeJob
+		var job TreeJob
 
 		if node.Type == "dir" {
 			if results[i] == nil {
@@ -98,9 +99,9 @@ func (tw *TreeWalker) walk(path string, tree *Tree, done chan struct{}) {
 				fmt.Fprintf(os.Stderr, "error loading tree: %v\n", res.err)
 			}
 
-			job = WalkTreeJob{Path: p, Tree: res.tree, Error: res.err}
+			job = TreeJob{Path: p, Tree: res.tree, Error: res.err}
 		} else {
-			job = WalkTreeJob{Path: p, Node: node}
+			job = TreeJob{Path: p, Node: node}
 		}
 
 		select {
@@ -112,16 +113,16 @@ func (tw *TreeWalker) walk(path string, tree *Tree, done chan struct{}) {
 }
 
 type loadTreeResult struct {
-	tree *Tree
+	tree *restic.Tree
 	err  error
 }
 
 type loadTreeJob struct {
-	id  ID
+	id  restic.ID
 	res chan<- loadTreeResult
 }
 
-type treeLoader func(ID) (*Tree, error)
+type treeLoader func(restic.ID) (*restic.Tree, error)
 
 func loadTreeWorker(wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader, done <-chan struct{}) {
 	debug.Log("loadTreeWorker", "start")
@@ -157,15 +158,15 @@ func loadTreeWorker(wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader, 
 
 const loadTreeWorkers = 10
 
-// WalkTree walks the tree specified by id recursively and sends a job for each
+// Tree walks the tree specified by id recursively and sends a job for each
 // file and directory it finds. When the channel done is closed, processing
 // stops.
-func WalkTree(repo TreeLoader, id ID, done chan struct{}, jobCh chan<- WalkTreeJob) {
+func Tree(repo restic.TreeLoader, id restic.ID, done chan struct{}, jobCh chan<- TreeJob) {
 	debug.Log("WalkTree", "start on %v, start workers", id.Str())
 
-	load := func(id ID) (*Tree, error) {
-		tree := &Tree{}
-		err := repo.LoadJSONPack(TreeBlob, id, tree)
+	load := func(id restic.ID) (*restic.Tree, error) {
+		tree := &restic.Tree{}
+		err := repo.LoadJSONPack(restic.TreeBlob, id, tree)
 		if err != nil {
 			return nil, err
 		}

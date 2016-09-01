@@ -1,4 +1,4 @@
-package restic_test
+package walk_test
 
 import (
 	"os"
@@ -12,6 +12,7 @@ import (
 	"restic/pipe"
 	"restic/repository"
 	. "restic/test"
+	"restic/walk"
 )
 
 func TestWalkTree(t *testing.T) {
@@ -32,8 +33,8 @@ func TestWalkTree(t *testing.T) {
 	done := make(chan struct{})
 
 	// start tree walker
-	treeJobs := make(chan restic.WalkTreeJob)
-	go restic.WalkTree(repo, *sn.Tree, done, treeJobs)
+	treeJobs := make(chan walk.TreeJob)
+	go walk.Tree(repo, *sn.Tree, done, treeJobs)
 
 	// start filesystem walker
 	fsJobs := make(chan pipe.Job)
@@ -1350,8 +1351,8 @@ func TestDelayedWalkTree(t *testing.T) {
 		dr := delayRepo{repo, 100 * time.Millisecond}
 
 		// start tree walker
-		treeJobs := make(chan restic.WalkTreeJob)
-		go restic.WalkTree(dr, root, nil, treeJobs)
+		treeJobs := make(chan walk.TreeJob)
+		go walk.Tree(dr, root, nil, treeJobs)
 
 		i := 0
 		for job := range treeJobs {
@@ -1382,8 +1383,8 @@ func BenchmarkDelayedWalkTree(t *testing.B) {
 
 		for i := 0; i < t.N; i++ {
 			// start tree walker
-			treeJobs := make(chan restic.WalkTreeJob)
-			go restic.WalkTree(dr, root, nil, treeJobs)
+			treeJobs := make(chan walk.TreeJob)
+			go walk.Tree(dr, root, nil, treeJobs)
 
 			for _ = range treeJobs {
 			}
