@@ -15,20 +15,9 @@ type Repository interface {
 
 	Index() Index
 	SaveFullIndex() error
-
-	SaveJSON(BlobType, interface{}) (ID, error)
-	SaveUnpacked(FileType, []byte) (ID, error)
-
-	Config() Config
-
-	SaveAndEncrypt(BlobType, []byte, *ID) (ID, error)
-	SaveJSONUnpacked(FileType, interface{}) (ID, error)
 	SaveIndex() error
 
-	LoadJSONPack(BlobType, ID, interface{}) error
-	LoadJSONUnpacked(FileType, ID, interface{}) error
-	LoadBlob(ID, BlobType, []byte) ([]byte, error)
-	LoadAndDecrypt(FileType, ID) ([]byte, error)
+	Config() Config
 
 	LookupBlobSize(ID, BlobType) (uint, error)
 
@@ -36,6 +25,16 @@ type Repository interface {
 	ListPack(ID) ([]Blob, int64, error)
 
 	Flush() error
+
+	SaveJSON(BlobType, interface{}) (ID, error)
+	SaveUnpacked(FileType, []byte) (ID, error)
+	SaveAndEncrypt(BlobType, []byte, *ID) (ID, error)
+	SaveJSONUnpacked(FileType, interface{}) (ID, error)
+
+	LoadJSONPack(BlobType, ID, interface{}) error
+	LoadJSONUnpacked(FileType, ID, interface{}) error
+	LoadBlob(ID, BlobType, []byte) ([]byte, error)
+	LoadAndDecrypt(FileType, ID) ([]byte, error)
 }
 
 // Deleter removes all data stored in a backend/repo.
