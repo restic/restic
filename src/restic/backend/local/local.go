@@ -111,7 +111,7 @@ func (b *Local) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 		return 0, err
 	}
 
-	f, err := fs.Open(filename(b.p, h.FileType, h.Name))
+	f, err := fs.Open(filename(b.p, h.Type, h.Name))
 	if err != nil {
 		return 0, errors.Wrap(err, "Open")
 	}
@@ -183,7 +183,7 @@ func (b *Local) Save(h restic.Handle, p []byte) (err error) {
 		return err
 	}
 
-	filename := filename(b.p, h.FileType, h.Name)
+	filename := filename(b.p, h.Type, h.Name)
 
 	// test if new path already exists
 	if _, err := fs.Stat(filename); err == nil {
@@ -191,7 +191,7 @@ func (b *Local) Save(h restic.Handle, p []byte) (err error) {
 	}
 
 	// create directories if necessary, ignore errors
-	if h.FileType == restic.DataFile {
+	if h.Type == restic.DataFile {
 		err = fs.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return errors.Wrap(err, "MkdirAll")
@@ -222,7 +222,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	fi, err := fs.Stat(filename(b.p, h.FileType, h.Name))
+	fi, err := fs.Stat(filename(b.p, h.Type, h.Name))
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}

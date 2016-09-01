@@ -98,7 +98,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		return nil
 	case "key":
-		h := restic.Handle{FileType: restic.KeyFile, Name: id.String()}
+		h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
 		buf, err := backend.LoadAll(repo.Backend(), h, nil)
 		if err != nil {
 			return err
@@ -149,7 +149,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	switch tpe {
 	case "pack":
-		h := restic.Handle{FileType: restic.DataFile, Name: id.String()}
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 		buf, err := backend.LoadAll(repo.Backend(), h, nil)
 		if err != nil {
 			return err

@@ -7,11 +7,11 @@ var handleTests = []struct {
 	valid bool
 }{
 	{Handle{Name: "foo"}, false},
-	{Handle{FileType: "foobar"}, false},
-	{Handle{FileType: ConfigFile, Name: ""}, true},
-	{Handle{FileType: DataFile, Name: ""}, false},
-	{Handle{FileType: "", Name: "x"}, false},
-	{Handle{FileType: LockFile, Name: "010203040506"}, true},
+	{Handle{Type: "foobar"}, false},
+	{Handle{Type: ConfigFile, Name: ""}, true},
+	{Handle{Type: DataFile, Name: ""}, false},
+	{Handle{Type: "", Name: "x"}, false},
+	{Handle{Type: LockFile, Name: "010203040506"}, true},
 }
 
 func TestHandleValid(t *testing.T) {

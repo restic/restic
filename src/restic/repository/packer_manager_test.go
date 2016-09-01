@@ -63,7 +63,7 @@ func saveFile(t testing.TB, be Saver, filename string, n int) {
 		t.Fatal(err)
 	}
 
-	h := restic.Handle{FileType: restic.DataFile, Name: restic.Hash(data).String()}
+	h := restic.Handle{Type: restic.DataFile, Name: restic.Hash(data).String()}
 
 	err = be.Save(h, data)
 	if err != nil {

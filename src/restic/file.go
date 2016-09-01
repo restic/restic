@@ -21,8 +21,8 @@ const (
 
 // Handle is used to store and access data in a backend.
 type Handle struct {
-	FileType FileType
-	Name     string
+	Type FileType
+	Name string
 }
 
 func (h Handle) String() string {
@@ -30,16 +30,16 @@ func (h Handle) String() string {
 	if len(name) > 10 {
 		name = name[:10]
 	}
-	return fmt.Sprintf("<%s/%s>", h.FileType, name)
+	return fmt.Sprintf("<%s/%s>", h.Type, name)
 }
 
 // Valid returns an error if h is not valid.
 func (h Handle) Valid() error {
-	if h.FileType == "" {
+	if h.Type == "" {
 		return errors.New("type is empty")
 	}
 
-	switch h.FileType {
+	switch h.Type {
 	case DataFile:
 	case KeyFile:
 	case LockFile:
@@ -47,10 +47,10 @@ func (h Handle) Valid() error {
 	case IndexFile:
 	case ConfigFile:
 	default:
-		return errors.Errorf("invalid Type %q", h.FileType)
+		return errors.Errorf("invalid Type %q", h.Type)
 	}
 
-	if h.FileType == ConfigFile {
+	if h.Type == ConfigFile {
 		return nil
 	}
 

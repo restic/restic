@@ -61,7 +61,7 @@ func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
 func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
-	h := restic.Handle{FileType: t, Name: id.String()}
+	h := restic.Handle{Type: t, Name: id.String()}
 	buf, err := backend.LoadAll(r.be, h, nil)
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
@@ -117,7 +117,7 @@ func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		}
 
 		// load blob from pack
-		h := restic.Handle{FileType: restic.DataFile, Name: blob.PackID.String()}
+		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
 		ciphertextBuf := make([]byte, blob.Length)
 		n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
 		if err != nil {
@@ -279,7 +279,7 @@ func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, er
 	}
 
 	id = restic.Hash(ciphertext)
-	h := restic.Handle{FileType: t, Name: id.String()}
+	h := restic.Handle{Type: t, Name: id.String()}
 
 	err = r.be.Save(h, ciphertext)
 	if err != nil {
@@ -560,7 +560,7 @@ func (r *Repository) List(t restic.FileType, done <-chan struct{}) <-chan restic
 // ListPack returns the list of blobs saved in the pack id and the length of
 // the file as stored in the backend.
 func (r *Repository) ListPack(id restic.ID) ([]restic.Blob, int64, error) {
-	h := restic.Handle{FileType: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
 	blobInfo, err := r.Backend().Stat(h)
 	if err != nil {

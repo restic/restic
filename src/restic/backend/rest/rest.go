@@ -24,7 +24,7 @@ func restPath(url *url.URL, h restic.Handle) string {
 
 	var dir string
 
-	switch h.FileType {
+	switch h.Type {
 	case restic.ConfigFile:
 		dir = ""
 		h.Name = "config"
@@ -39,7 +39,7 @@ func restPath(url *url.URL, h restic.Handle) string {
 	case restic.KeyFile:
 		dir = backend.Paths.Keys
 	default:
-		dir = string(h.FileType)
+		dir = string(h.Type)
 	}
 
 	u.Path = path.Join(url.Path, dir, h.Name)
@@ -185,7 +185,7 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
-	_, err := b.Stat(restic.Handle{FileType: t, Name: name})
+	_, err := b.Stat(restic.Handle{Type: t, Name: name})
 	if err != nil {
 		return false, nil
 	}
@@ -195,7 +195,7 @@ func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (b *restBackend) Remove(t restic.FileType, name string) error {
-	h := restic.Handle{FileType: t, Name: name}
+	h := restic.Handle{Type: t, Name: name}
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func (b *restBackend) Remove(t restic.FileType, name string) error {
 func (b *restBackend) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
-	url := restPath(b.url, restic.Handle{FileType: t})
+	url := restPath(b.url, restic.Handle{Type: t})
 	if !strings.HasSuffix(url, "/") {
 		url += "/"
 	}

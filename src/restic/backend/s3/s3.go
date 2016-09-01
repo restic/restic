@@ -85,7 +85,7 @@ func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	var obj *minio.Object
 
 	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
-	path := be.s3path(h.FileType, h.Name)
+	path := be.s3path(h.Type, h.Name)
 
 	<-be.connChan
 	defer func() {
@@ -160,7 +160,7 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 
 	debug.Log("s3.Save", "%v with %d bytes", h, len(p))
 
-	path := be.s3path(h.FileType, h.Name)
+	path := be.s3path(h.Type, h.Name)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, path)
@@ -186,7 +186,7 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("s3.Stat", "%v", h)
 
-	path := be.s3path(h.FileType, h.Name)
+	path := be.s3path(h.Type, h.Name)
 	var obj *minio.Object
 
 	obj, err = be.client.GetObject(be.bucketname, path)

@@ -338,7 +338,7 @@ func (r *SFTP) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 		return 0, err
 	}
 
-	f, err := r.c.Open(r.filename(h.FileType, h.Name))
+	f, err := r.c.Open(r.filename(h.Type, h.Name))
 	if err != nil {
 		return 0, errors.Wrap(err, "Open")
 	}
@@ -396,7 +396,7 @@ func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
 		return errors.Wrap(err, "Close")
 	}
 
-	err = r.renameFile(filename, h.FileType, h.Name)
+	err = r.renameFile(filename, h.Type, h.Name)
 	debug.Log("sftp.Save", "save %v: rename %v: %v",
 		h, path.Base(filename), err)
 	return err
@@ -413,7 +413,7 @@ func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	fi, err := r.c.Lstat(r.filename(h.FileType, h.Name))
+	fi, err := r.c.Lstat(r.filename(h.Type, h.Name))
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Lstat")
 	}

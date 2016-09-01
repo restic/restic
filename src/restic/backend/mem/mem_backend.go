@@ -61,17 +61,17 @@ func (be *MemoryBackend) Load(h restic.Handle, p []byte, off int64) (int, error)
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	if h.FileType == restic.ConfigFile {
+	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
 
 	debug.Log("MemoryBackend.Load", "get %v offset %v len %v", h, off, len(p))
 
-	if _, ok := be.data[entry{h.FileType, h.Name}]; !ok {
+	if _, ok := be.data[entry{h.Type, h.Name}]; !ok {
 		return 0, errors.New("no such data")
 	}
 
-	buf := be.data[entry{h.FileType, h.Name}]
+	buf := be.data[entry{h.Type, h.Name}]
 	switch {
 	case off > int64(len(buf)):
 		return 0, errors.New("offset beyond end of file")
@@ -101,18 +101,18 @@ func (be *MemoryBackend) Save(h restic.Handle, p []byte) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	if h.FileType == restic.ConfigFile {
+	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
 
-	if _, ok := be.data[entry{h.FileType, h.Name}]; ok {
+	if _, ok := be.data[entry{h.Type, h.Name}]; ok {
 		return errors.New("file already exists")
 	}
 
 	debug.Log("MemoryBackend.Save", "save %v bytes at %v", len(p), h)
 	buf := make([]byte, len(p))
 	copy(buf, p)
-	be.data[entry{h.FileType, h.Name}] = buf
+	be.data[entry{h.Type, h.Name}] = buf
 
 	return nil
 }
@@ -126,13 +126,13 @@ func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	if h.FileType == restic.ConfigFile {
+	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
 
 	debug.Log("MemoryBackend.Stat", "stat %v", h)
 
-	e, ok := be.data[entry{h.FileType, h.Name}]
+	e, ok := be.data[entry{h.Type, h.Name}]
 	if !ok {
 		return restic.FileInfo{}, errors.New("no such data")
 	}

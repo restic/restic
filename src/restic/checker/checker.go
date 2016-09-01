@@ -662,7 +662,7 @@ func (c *Checker) CountPacks() uint64 {
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(r restic.Repository, id restic.ID) error {
 	debug.Log("Checker.checkPack", "checking pack %v", id.Str())
-	h := restic.Handle{FileType: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	buf, err := backend.LoadAll(r.Backend(), h, nil)
 	if err != nil {
 		return err

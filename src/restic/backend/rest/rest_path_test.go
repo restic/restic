@@ -14,24 +14,24 @@ var restPathTests = []struct {
 	{
 		URL: parseURL("https://hostname.foo"),
 		Handle: restic.Handle{
-			FileType: restic.DataFile,
-			Name:     "foobar",
+			Type: restic.DataFile,
+			Name: "foobar",
 		},
 		Result: "https://hostname.foo/data/foobar",
 	},
 	{
 		URL: parseURL("https://hostname.foo:1234/prefix/repo"),
 		Handle: restic.Handle{
-			FileType: restic.LockFile,
-			Name:     "foobar",
+			Type: restic.LockFile,
+			Name: "foobar",
 		},
 		Result: "https://hostname.foo:1234/prefix/repo/locks/foobar",
 	},
 	{
 		URL: parseURL("https://hostname.foo:1234/prefix/repo"),
 		Handle: restic.Handle{
-			FileType: restic.ConfigFile,
-			Name:     "foobar",
+			Type: restic.ConfigFile,
+			Name: "foobar",
 		},
 		Result: "https://hostname.foo:1234/prefix/repo/config",
 	},

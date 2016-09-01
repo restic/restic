@@ -115,7 +115,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	}
 
 	id := restic.Hash(data)
-	h := restic.Handle{FileType: restic.DataFile, Name: id.String()}
+	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
 	err = r.be.Save(h, data)
 	if err != nil {

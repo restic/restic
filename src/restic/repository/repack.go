@@ -21,7 +21,7 @@ func Repack(repo *Repository, packs restic.IDSet, keepBlobs restic.BlobSet) (err
 	buf := make([]byte, 0, maxPackSize)
 	for packID := range packs {
 		// load the complete pack
-		h := restic.Handle{FileType: restic.DataFile, Name: packID.String()}
+		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
 
 		l, err := repo.Backend().Load(h, buf[:cap(buf)], 0)
 		if errors.Cause(err) == io.ErrUnexpectedEOF {
