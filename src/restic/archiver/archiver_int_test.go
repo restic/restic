@@ -2,10 +2,10 @@ package archiver
 
 import (
 	"os"
-	"restic"
 	"testing"
 
 	"restic/pipe"
+	"restic/walk"
 )
 
 var treeJobs = []string{
@@ -83,12 +83,12 @@ func (j testPipeJob) Error() error               { return j.err }
 func (j testPipeJob) Info() os.FileInfo          { return j.fi }
 func (j testPipeJob) Result() chan<- pipe.Result { return j.res }
 
-func testTreeWalker(done <-chan struct{}, out chan<- restic.WalkTreeJob) {
+func testTreeWalker(done <-chan struct{}, out chan<- walk.TreeJob) {
 	for _, e := range treeJobs {
 		select {
 		case <-done:
 			return
-		case out <- restic.WalkTreeJob{Path: e}:
+		case out <- walk.TreeJob{Path: e}:
 		}
 	}
 
@@ -110,7 +110,7 @@ func testPipeWalker(done <-chan struct{}, out chan<- pipe.Job) {
 func TestArchivePipe(t *testing.T) {
 	done := make(chan struct{})
 
-	treeCh := make(chan restic.WalkTreeJob)
+	treeCh := make(chan walk.TreeJob)
 	pipeCh := make(chan pipe.Job)
 
 	go testTreeWalker(done, treeCh)
