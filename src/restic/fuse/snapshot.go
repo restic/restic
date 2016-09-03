@@ -94,7 +94,7 @@ func (sn *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	ret := make([]fuse.Dirent, 0)
 	for _, snapshot := range sn.knownSnapshots {
 		ret = append(ret, fuse.Dirent{
-			Inode: inodeFromBackendId(snapshot.ID),
+			Inode: inodeFromBackendID(snapshot.ID),
 			Type:  fuse.DT_Dir,
 			Name:  snapshot.Time.Format(time.RFC3339),
 		})

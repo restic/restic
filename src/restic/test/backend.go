@@ -85,6 +85,7 @@ func TeardownRepo(repo restic.Repository) {
 	}
 }
 
+// SnapshotDir creates a new snapshot of path.
 func SnapshotDir(t testing.TB, repo restic.Repository, path string, parent *restic.ID) *restic.Snapshot {
 	arch := archiver.New(repo)
 	sn, _, err := arch.Snapshot(nil, []string{path}, parent)

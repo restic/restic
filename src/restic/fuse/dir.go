@@ -97,7 +97,7 @@ func newDirFromSnapshot(repo restic.Repository, snapshot SnapshotWithId, ownerIs
 			Mode:       os.ModeDir | 0555,
 		},
 		items:       items,
-		inode:       inodeFromBackendId(snapshot.ID),
+		inode:       inodeFromBackendID(snapshot.ID),
 		ownerIsRoot: ownerIsRoot,
 	}, nil
 }

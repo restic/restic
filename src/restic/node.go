@@ -59,6 +59,7 @@ func (node Node) String() string {
 	return fmt.Sprintf("<Node(%s) %s>", node.Type, node.Name)
 }
 
+// Tree returns this node's tree object.
 func (node Node) Tree() *Tree {
 	return node.tree
 }
@@ -371,6 +372,7 @@ func (node Node) sameContent(other Node) bool {
 	return true
 }
 
+// IsNewer returns true of the file has been updated since the last Stat().
 func (node *Node) IsNewer(path string, fi os.FileInfo) bool {
 	if node.Type != "file" {
 		debug.Log("node.IsNewer", "node %v is newer: not file", path)
