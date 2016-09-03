@@ -83,36 +83,36 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 	return plain[:n], nil
 }
 
-// LoadBlob tries to load and decrypt content identified by t and id from a
+// loadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
-func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []byte) ([]byte, error) {
-	debug.Log("Repo.LoadBlob", "load %v with id %v (buf %d)", t, id.Str(), len(plaintextBuf))
+func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []byte) (int, error) {
+	debug.Log("Repo.loadBlob", "load %v with id %v (buf %d)", t, id.Str(), len(plaintextBuf))
 
 	// lookup plaintext size of blob
 	size, err := r.idx.LookupSize(id, t)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// make sure the plaintext buffer is large enough, extend otherwise
 	if len(plaintextBuf) < int(size) {
-		return nil, errors.Errorf("buffer is too small: %d < %d", len(plaintextBuf), size)
+		return 0, errors.Errorf("buffer is too small: %d < %d", len(plaintextBuf), size)
 	}
 
 	// lookup packs
 	blobs, err := r.idx.Lookup(id, t)
 	if err != nil {
-		debug.Log("Repo.LoadBlob", "id %v not found in index: %v", id.Str(), err)
-		return nil, err
+		debug.Log("Repo.loadBlob", "id %v not found in index: %v", id.Str(), err)
+		return 0, err
 	}
 
 	var lastError error
 	for _, blob := range blobs {
-		debug.Log("Repo.LoadBlob", "id %v found: %v", id.Str(), blob)
+		debug.Log("Repo.loadBlob", "id %v found: %v", id.Str(), blob)
 
 		if blob.Type != t {
-			debug.Log("Repo.LoadBlob", "blob %v has wrong block type, want %v", blob, t)
+			debug.Log("Repo.loadBlob", "blob %v has wrong block type, want %v", blob, t)
 		}
 
 		// load blob from pack
@@ -120,7 +120,7 @@ func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		ciphertextBuf := make([]byte, blob.Length)
 		n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
 		if err != nil {
-			debug.Log("Repo.LoadBlob", "error loading blob %v: %v", blob, err)
+			debug.Log("Repo.loadBlob", "error loading blob %v: %v", blob, err)
 			lastError = err
 			continue
 		}
@@ -128,7 +128,7 @@ func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		if uint(n) != blob.Length {
 			lastError = errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d",
 				id.Str(), blob.Length, uint(n))
-			debug.Log("Repo.LoadBlob", "lastError: %v", lastError)
+			debug.Log("Repo.loadBlob", "lastError: %v", lastError)
 			continue
 		}
 
@@ -146,14 +146,14 @@ func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 			continue
 		}
 
-		return plaintextBuf, nil
+		return len(plaintextBuf), nil
 	}
 
 	if lastError != nil {
-		return nil, lastError
+		return 0, lastError
 	}
 
-	return nil, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
+	return 0, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
 }
 
 // closeOrErr calls cl.Close() and sets err to the returned error value if
@@ -170,17 +170,6 @@ func closeOrErr(cl io.Closer, err *error) {
 // the item.
 func (r *Repository) LoadJSONUnpacked(t restic.FileType, id restic.ID, item interface{}) (err error) {
 	buf, err := r.LoadAndDecrypt(t, id)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(buf, item)
-}
-
-// LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
-// data and afterwards call json.Unmarshal on the item.
-func (r *Repository) LoadJSONPack(t restic.BlobType, id restic.ID, item interface{}) (err error) {
-	buf, err := r.LoadBlob(id, t, nil)
 	if err != nil {
 		return err
 	}
@@ -588,10 +577,11 @@ func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
 	debug.Log("repo.LoadTree", "size is %d, create buffer", size)
 	buf := make([]byte, size)
 
-	buf, err = r.LoadBlob(id, restic.TreeBlob, buf)
+	n, err := r.loadBlob(id, restic.TreeBlob, buf)
 	if err != nil {
 		return nil, err
 	}
+	buf = buf[:n]
 
 	t := &restic.Tree{}
 	err = json.Unmarshal(buf, t)
@@ -614,10 +604,11 @@ func (r *Repository) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
 		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), size)
 	}
 
-	buf, err = r.LoadBlob(id, restic.DataBlob, buf)
+	n, err := r.loadBlob(id, restic.DataBlob, buf)
 	if err != nil {
 		return 0, err
 	}
+	buf = buf[:n]
 
 	debug.Log("repo.LoadDataBlob", "loaded %d bytes into buf %p", len(buf), buf)
 

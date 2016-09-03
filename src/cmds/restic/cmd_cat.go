@@ -173,12 +173,13 @@ func (cmd CmdCat) Execute(args []string) error {
 			blob := list[0]
 
 			buf := make([]byte, blob.Length)
-			data, err := repo.LoadBlob(id, t, buf)
+			n, err := repo.LoadDataBlob(id, buf)
 			if err != nil {
 				return err
 			}
+			buf = buf[:n]
 
-			_, err = os.Stdout.Write(data)
+			_, err = os.Stdout.Write(buf)
 			return err
 		}
 
@@ -186,8 +187,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	case "tree":
 		debug.Log("cat", "cat tree %v", id.Str())
-		tree := restic.NewTree()
-		err = repo.LoadJSONPack(restic.TreeBlob, id, tree)
+		tree, err := repo.LoadTree(id)
 		if err != nil {
 			debug.Log("cat", "unable to load tree %v: %v", id.Str(), err)
 			return err
