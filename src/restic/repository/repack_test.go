@@ -46,7 +46,7 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 			continue
 		}
 
-		_, err := repo.SaveAndEncrypt(tpe, buf, &id)
+		_, err := repo.SaveBlob(tpe, buf, id)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
 		}

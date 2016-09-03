@@ -98,7 +98,7 @@ func (arch *Archiver) Save(t restic.BlobType, data []byte, id restic.ID) error {
 		return nil
 	}
 
-	_, err := arch.repo.SaveAndEncrypt(t, data, &id)
+	_, err := arch.repo.SaveBlob(t, data, id)
 	if err != nil {
 		debug.Log("Archiver.Save", "Save(%v, %v): error %v\n", t, id.Str(), err)
 		return err

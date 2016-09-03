@@ -29,7 +29,6 @@ type Repository interface {
 
 	SaveJSON(BlobType, interface{}) (ID, error)
 	SaveUnpacked(FileType, []byte) (ID, error)
-	SaveAndEncrypt(BlobType, []byte, *ID) (ID, error)
 	SaveJSONUnpacked(FileType, interface{}) (ID, error)
 
 	LoadJSONUnpacked(FileType, ID, interface{}) error
@@ -37,6 +36,8 @@ type Repository interface {
 
 	LoadTree(id ID) (*Tree, error)
 	LoadDataBlob(id ID, buf []byte) (int, error)
+
+	SaveBlob(BlobType, []byte, ID) (ID, error)
 }
 
 // Deleter removes all data stored in a backend/repo.

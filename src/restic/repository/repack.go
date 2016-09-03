@@ -64,7 +64,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 			}
 			plaintext = plaintext[:n]
 
-			_, err = repo.SaveAndEncrypt(entry.Type, plaintext, &entry.ID)
+			_, err = repo.SaveBlob(entry.Type, plaintext, entry.ID)
 			if err != nil {
 				return err
 			}

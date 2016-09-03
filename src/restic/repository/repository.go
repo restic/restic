@@ -614,3 +614,13 @@ func (r *Repository) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
 
 	return len(buf), err
 }
+
+// SaveBlob saves a blob of type t into the repository. If id is the null id, it
+// will be computed and returned.
+func (r *Repository) SaveBlob(t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
+	var i *restic.ID
+	if !id.IsNull() {
+		i = &id
+	}
+	return r.SaveAndEncrypt(t, buf, i)
+}

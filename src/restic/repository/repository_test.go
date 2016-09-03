@@ -81,7 +81,7 @@ func TestSave(t *testing.T) {
 		id := restic.Hash(data)
 
 		// save
-		sid, err := repo.SaveAndEncrypt(restic.DataBlob, data, nil)
+		sid, err := repo.SaveBlob(restic.DataBlob, data, restic.ID{})
 		OK(t, err)
 
 		Equals(t, id, sid)
@@ -117,7 +117,7 @@ func TestSaveFrom(t *testing.T) {
 		id := restic.Hash(data)
 
 		// save
-		id2, err := repo.SaveAndEncrypt(restic.DataBlob, data, &id)
+		id2, err := repo.SaveBlob(restic.DataBlob, data, id)
 		OK(t, err)
 		Equals(t, id, id2)
 
@@ -156,7 +156,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 
 	for i := 0; i < t.N; i++ {
 		// save
-		_, err = repo.SaveAndEncrypt(restic.DataBlob, data, &id)
+		_, err = repo.SaveBlob(restic.DataBlob, data, id)
 		OK(t, err)
 	}
 }
@@ -253,7 +253,7 @@ func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax 
 		_, err := io.ReadFull(rand.Reader, buf)
 		OK(t, err)
 
-		_, err = repo.SaveAndEncrypt(restic.DataBlob, buf, nil)
+		_, err = repo.SaveBlob(restic.DataBlob, buf, restic.ID{})
 		OK(t, err)
 	}
 }

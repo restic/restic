@@ -7,8 +7,9 @@ import (
 	"restic/debug"
 	"time"
 
-	"github.com/restic/chunker"
 	"restic/errors"
+
+	"github.com/restic/chunker"
 )
 
 // saveTreeJSON stores a tree in the repository.
@@ -58,7 +59,7 @@ func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, nam
 		id := restic.Hash(chunk.Data)
 
 		if !repo.Index().Has(id, restic.DataBlob) {
-			_, err := repo.SaveAndEncrypt(restic.DataBlob, chunk.Data, nil)
+			_, err := repo.SaveBlob(restic.DataBlob, chunk.Data, id)
 			if err != nil {
 				return nil, restic.ID{}, err
 			}

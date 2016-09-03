@@ -43,7 +43,7 @@ func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
 
 		id := Hash(chunk.Data)
 		if !fs.blobIsKnown(id, DataBlob) {
-			_, err := fs.repo.SaveAndEncrypt(DataBlob, chunk.Data, &id)
+			_, err := fs.repo.SaveBlob(DataBlob, chunk.Data, id)
 			if err != nil {
 				fs.t.Fatalf("error saving chunk: %v", err)
 			}
