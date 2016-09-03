@@ -150,6 +150,25 @@ func TestPolDiv(t *testing.T) {
 	}
 }
 
+func TestPolDeg(t *testing.T) {
+	var x Pol
+	if x.Deg() != -1 {
+		t.Errorf("deg(0) is not -1: %v", x.Deg())
+	}
+
+	x = 1
+	if x.Deg() != 0 {
+		t.Errorf("deg(1) is not 0: %v", x.Deg())
+	}
+
+	for i := 0; i < 64; i++ {
+		x = 1 << uint(i)
+		if x.Deg() != i {
+			t.Errorf("deg(1<<%d) is not %d: %v", i, i, x.Deg())
+		}
+	}
+}
+
 var polModTests = []struct {
 	x, y Pol
 	res  Pol

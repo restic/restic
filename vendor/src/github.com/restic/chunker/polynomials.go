@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 )
 
@@ -64,18 +65,40 @@ func (x Pol) Deg() int {
 		return -1
 	}
 
-	var mask Pol = (1 << 63)
-	for i := 63; i >= 0; i-- {
-		// test if bit i is set
-		if x&mask > 0 {
-			// this is the degree of x
-			return i
-		}
-		mask >>= 1
+	// see https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
+
+	r := 0
+	if uint64(x)&0xffffffff00000000 > 0 {
+		x >>= 32
+		r |= 32
 	}
 
-	// fall-through, return -1
-	return -1
+	if uint64(x)&0xffff0000 > 0 {
+		x >>= 16
+		r |= 16
+	}
+
+	if uint64(x)&0xff00 > 0 {
+		x >>= 8
+		r |= 8
+	}
+
+	if uint64(x)&0xf0 > 0 {
+		x >>= 4
+		r |= 4
+	}
+
+	if uint64(x)&0xc > 0 {
+		x >>= 2
+		r |= 2
+	}
+
+	if uint64(x)&0x2 > 0 {
+		x >>= 1
+		r |= 1
+	}
+
+	return r
 }
 
 // String returns the coefficients in hex.
@@ -154,17 +177,25 @@ func (x Pol) Mod(d Pol) Pol {
 // randPolMaxTries.
 const randPolMaxTries = 1e6
 
-// RandomPolynomial returns a new random irreducible polynomial of degree 53
-// (largest prime number below 64-8). There are (2^53-2/53) irreducible
-// polynomials of degree 53 in F_2[X], c.f. Michael O. Rabin (1981):
-// "Fingerprinting by Random Polynomials", page 4. If no polynomial could be
-// found in one million tries, an error is returned.
+// RandomPolynomial returns a new random irreducible polynomial
+// of degree 53 using the default System CSPRNG as source.
+// It is equivalent to calling DerivePolynomial(rand.Reader).
 func RandomPolynomial() (Pol, error) {
+	return DerivePolynomial(rand.Reader)
+}
+
+// DerivePolynomial returns an irreducible polynomial of degree 53
+// (largest prime number below 64-8) by reading bytes from source.
+// There are (2^53-2/53) irreducible polynomials of degree 53 in
+// F_2[X], c.f. Michael O. Rabin (1981): "Fingerprinting by Random
+// Polynomials", page 4. If no polynomial could be found in one
+// million tries, an error is returned.
+func DerivePolynomial(source io.Reader) (Pol, error) {
 	for i := 0; i < randPolMaxTries; i++ {
 		var f Pol
 
-		// choose polynomial at random
-		err := binary.Read(rand.Reader, binary.LittleEndian, &f)
+		// choose polynomial at (pseudo)random
+		err := binary.Read(source, binary.LittleEndian, &f)
 		if err != nil {
 			return 0, err
 		}
