@@ -156,17 +156,21 @@ func loadTreeWorker(wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader, 
 	}
 }
 
+// TreeLoader loads tree objects.
+type TreeLoader interface {
+	LoadTree(restic.ID) (*restic.Tree, error)
+}
+
 const loadTreeWorkers = 10
 
 // Tree walks the tree specified by id recursively and sends a job for each
 // file and directory it finds. When the channel done is closed, processing
 // stops.
-func Tree(repo restic.TreeLoader, id restic.ID, done chan struct{}, jobCh chan<- TreeJob) {
+func Tree(repo TreeLoader, id restic.ID, done chan struct{}, jobCh chan<- TreeJob) {
 	debug.Log("WalkTree", "start on %v, start workers", id.Str())
 
 	load := func(id restic.ID) (*restic.Tree, error) {
-		tree := &restic.Tree{}
-		err := repo.LoadJSONPack(restic.TreeBlob, id, tree)
+		tree, err := repo.LoadTree(id)
 		if err != nil {
 			return nil, err
 		}

@@ -104,7 +104,7 @@ func TestLoadTree(t *testing.T) {
 	OK(t, repo.Flush())
 
 	// load tree again
-	tree2, err := restic.LoadTree(repo, id)
+	tree2, err := repo.LoadTree(id)
 	OK(t, err)
 
 	Assert(t, tree.Equals(tree2),

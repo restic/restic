@@ -376,7 +376,7 @@ func loadTreeWorker(repo restic.Repository,
 			}
 			debug.Log("checker.loadTreeWorker", "load tree %v", treeID.Str())
 
-			tree, err := restic.LoadTree(repo, treeID)
+			tree, err := repo.LoadTree(treeID)
 			debug.Log("checker.loadTreeWorker", "load tree %v (%v) returned err: %v", tree, treeID.Str(), err)
 			job = treeJob{ID: treeID, error: err, Tree: tree}
 			outCh = out

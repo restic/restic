@@ -589,3 +589,45 @@ func (r *Repository) Delete() error {
 func (r *Repository) Close() error {
 	return r.be.Close()
 }
+
+// LoadTree loads a tree from the repository.
+func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
+	size, err := r.idx.LookupSize(id, restic.TreeBlob)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := make([]byte, size)
+
+	buf, err = r.LoadBlob(id, restic.TreeBlob, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	t := &restic.Tree{}
+	err = json.Unmarshal(buf, t)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+// LoadDataBlob loads a data blob from the repository to the buffer.
+func (r *Repository) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
+	size, err := r.idx.LookupSize(id, restic.DataBlob)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(buf) < int(size) {
+		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), size)
+	}
+
+	buf, err = r.LoadBlob(id, restic.DataBlob, buf)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(buf), err
+}

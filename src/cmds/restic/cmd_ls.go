@@ -47,7 +47,7 @@ func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
 }
 
 func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id restic.ID) error {
-	tree, err := restic.LoadTree(repo, id)
+	tree, err := repo.LoadTree(id)
 	if err != nil {
 		return err
 	}

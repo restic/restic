@@ -25,20 +25,6 @@ func (t Tree) String() string {
 	return fmt.Sprintf("Tree<%d nodes>", len(t.Nodes))
 }
 
-type TreeLoader interface {
-	LoadJSONPack(BlobType, ID, interface{}) error
-}
-
-func LoadTree(repo TreeLoader, id ID) (*Tree, error) {
-	tree := &Tree{}
-	err := repo.LoadJSONPack(TreeBlob, id, tree)
-	if err != nil {
-		return nil, err
-	}
-
-	return tree, nil
-}
-
 // Equals returns true if t and other have exactly the same nodes.
 func (t Tree) Equals(other *Tree) bool {
 	if len(t.Nodes) != len(other.Nodes) {
@@ -85,6 +71,7 @@ func (t Tree) binarySearch(name string) (int, *Node, error) {
 	return pos, nil, errors.New("named node not found")
 }
 
+// Find returns a node with the given name.
 func (t Tree) Find(name string) (*Node, error) {
 	_, node, err := t.binarySearch(name)
 	return node, err

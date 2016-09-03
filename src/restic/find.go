@@ -6,7 +6,7 @@ package restic
 func FindUsedBlobs(repo Repository, treeID ID, blobs BlobSet, seen BlobSet) error {
 	blobs.Insert(BlobHandle{ID: treeID, Type: TreeBlob})
 
-	tree, err := LoadTree(repo, treeID)
+	tree, err := repo.LoadTree(treeID)
 	if err != nil {
 		return err
 	}

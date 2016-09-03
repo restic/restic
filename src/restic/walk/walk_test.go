@@ -95,9 +95,9 @@ type delayRepo struct {
 	delay time.Duration
 }
 
-func (d delayRepo) LoadJSONPack(t restic.BlobType, id restic.ID, dst interface{}) error {
+func (d delayRepo) LoadTree(id restic.ID) (*restic.Tree, error) {
 	time.Sleep(d.delay)
-	return d.repo.LoadJSONPack(t, id, dst)
+	return d.repo.LoadTree(id)
 }
 
 var repoFixture = filepath.Join("testdata", "walktree-test-repo.tar.gz")

@@ -31,10 +31,11 @@ type Repository interface {
 	SaveAndEncrypt(BlobType, []byte, *ID) (ID, error)
 	SaveJSONUnpacked(FileType, interface{}) (ID, error)
 
-	LoadJSONPack(BlobType, ID, interface{}) error
 	LoadJSONUnpacked(FileType, ID, interface{}) error
-	LoadBlob(ID, BlobType, []byte) ([]byte, error)
 	LoadAndDecrypt(FileType, ID) ([]byte, error)
+
+	LoadTree(id ID) (*Tree, error)
+	LoadDataBlob(id ID, buf []byte) (int, error)
 }
 
 // Deleter removes all data stored in a backend/repo.

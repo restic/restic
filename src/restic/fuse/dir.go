@@ -29,7 +29,7 @@ type dir struct {
 
 func newDir(repo *repository.Repository, node *restic.Node, ownerIsRoot bool) (*dir, error) {
 	debug.Log("newDir", "new dir for %v (%v)", node.Name, node.Subtree.Str())
-	tree, err := restic.LoadTree(repo, *node.Subtree)
+	tree, err := repo.LoadTree(*node.Subtree)
 	if err != nil {
 		debug.Log("newDir", "  error loading tree %v: %v", node.Subtree.Str(), err)
 		return nil, err
@@ -59,7 +59,7 @@ func replaceSpecialNodes(repo *repository.Repository, node *restic.Node) ([]*res
 		return []*restic.Node{node}, nil
 	}
 
-	tree, err := restic.LoadTree(repo, *node.Subtree)
+	tree, err := repo.LoadTree(*node.Subtree)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func replaceSpecialNodes(repo *repository.Repository, node *restic.Node) ([]*res
 
 func newDirFromSnapshot(repo *repository.Repository, snapshot SnapshotWithId, ownerIsRoot bool) (*dir, error) {
 	debug.Log("newDirFromSnapshot", "new dir for snapshot %v (%v)", snapshot.ID.Str(), snapshot.Tree.Str())
-	tree, err := restic.LoadTree(repo, *snapshot.Tree)
+	tree, err := repo.LoadTree(*snapshot.Tree)
 	if err != nil {
 		debug.Log("newDirFromSnapshot", "  loadTree(%v) failed: %v", snapshot.ID.Str(), err)
 		return nil, err

@@ -21,7 +21,7 @@ func loadBlob(t *testing.T, repo *repository.Repository, id restic.ID, buf []byt
 }
 
 func checkSavedFile(t *testing.T, repo *repository.Repository, treeID restic.ID, name string, rd io.Reader) {
-	tree, err := restic.LoadTree(repo, treeID)
+	tree, err := repo.LoadTree(treeID)
 	if err != nil {
 		t.Fatalf("LoadTree() returned error %v", err)
 	}

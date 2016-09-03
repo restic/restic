@@ -39,7 +39,7 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 }
 
 func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
-	tree, err := LoadTree(res.repo, treeID)
+	tree, err := res.repo.LoadTree(treeID)
 	if err != nil {
 		return res.Error(dir, nil, err)
 	}

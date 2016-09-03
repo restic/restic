@@ -61,7 +61,7 @@ func parseTime(str string) (time.Time, error) {
 
 func (c CmdFind) findInTree(repo *repository.Repository, id restic.ID, path string) ([]findResult, error) {
 	debug.Log("restic.find", "checking tree %v\n", id)
-	tree, err := restic.LoadTree(repo, id)
+	tree, err := repo.LoadTree(id)
 	if err != nil {
 		return nil, err
 	}
