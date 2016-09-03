@@ -34,3 +34,4 @@ script:
 
 after_success:
   - GOPATH=$PWD:$PWD/vendor goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN"
+  - bash <(curl -s https://codecov.io/bash) -f all.cov
