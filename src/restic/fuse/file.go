@@ -116,7 +116,7 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 	}
 	f.blobs[i] = buf[:n]
 
-	return blob, nil
+	return buf[:n], nil
 }
 
 func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {

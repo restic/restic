@@ -87,7 +87,7 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
 func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []byte) (int, error) {
-	debug.Log("Repo.loadBlob", "load %v with id %v (buf %d)", t, id.Str(), len(plaintextBuf))
+	debug.Log("Repo.loadBlob", "load %v with id %v (buf %p, len %d)", t, id.Str(), plaintextBuf, len(plaintextBuf))
 
 	// lookup plaintext size of blob
 	size, err := r.idx.LookupSize(id, t)
