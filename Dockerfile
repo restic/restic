@@ -45,7 +45,6 @@ RUN mkdir -p $HOME/restic
 # pre-install tools, this speeds up running the tests itself
 RUN go get github.com/constabulary/gb/...
 RUN go get golang.org/x/tools/cmd/cover
-RUN go get github.com/mattn/goveralls
 RUN go get github.com/mitchellh/gox
 RUN go get github.com/pierrre/gotestcover
 RUN mkdir $HOME/bin \

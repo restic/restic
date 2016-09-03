@@ -150,7 +150,6 @@ func (env *TravisEnvironment) Prepare() error {
 
 	for _, pkg := range []string{
 		"golang.org/x/tools/cmd/cover",
-		"github.com/mattn/goveralls",
 		"github.com/pierrre/gotestcover",
 	} {
 		err := run("go", "get", pkg)
