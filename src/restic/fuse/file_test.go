@@ -40,7 +40,7 @@ func (m *MockRepo) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
 		return 0, err
 	}
 
-	if uint(cap(buf)) < size {
+	if uint(len(buf)) < size {
 		return 0, errors.New("buffer too small")
 	}
 
@@ -81,7 +81,7 @@ func genTestContent() map[restic.ID][]byte {
 
 const maxBufSize = 20 * 1024 * 1024
 
-func testRead(t *testing.T, f *file, offset, length int, data []byte) []byte {
+func testRead(t *testing.T, f *file, offset, length int, data []byte) {
 	ctx := MockContext{}
 
 	req := &fuse.ReadRequest{
@@ -92,8 +92,6 @@ func testRead(t *testing.T, f *file, offset, length int, data []byte) []byte {
 		Data: make([]byte, length),
 	}
 	OK(t, f.Read(ctx, req, resp))
-
-	return resp.Data
 }
 
 var offsetReadsTests = []struct {
@@ -135,8 +133,9 @@ func TestFuseFile(t *testing.T) {
 
 	for i, test := range offsetReadsTests {
 		b := memfile[test.offset : test.offset+test.length]
-		res := testRead(t, f, test.offset, test.length, b)
-		if !bytes.Equal(b, res) {
+		buf := make([]byte, test.length)
+		testRead(t, f, test.offset, test.length, buf)
+		if !bytes.Equal(b, buf) {
 			t.Errorf("test %d failed, wrong data returned", i)
 		}
 	}
@@ -150,8 +149,9 @@ func TestFuseFile(t *testing.T) {
 		}
 
 		b := memfile[offset : offset+length]
-		res := testRead(t, f, offset, length, b)
-		if !bytes.Equal(b, res) {
+		buf := make([]byte, length)
+		testRead(t, f, offset, length, buf)
+		if !bytes.Equal(b, buf) {
 			t.Errorf("test %d failed (offset %d, length %d), wrong data returned", i, offset, length)
 		}
 	}

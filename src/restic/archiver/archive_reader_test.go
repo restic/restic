@@ -7,17 +7,15 @@ import (
 	"restic"
 	"restic/repository"
 	"testing"
-
-	"github.com/restic/chunker"
 )
 
-func loadBlob(t *testing.T, repo restic.Repository, id restic.ID, buf []byte) []byte {
+func loadBlob(t *testing.T, repo restic.Repository, id restic.ID, buf []byte) int {
 	n, err := repo.LoadDataBlob(id, buf)
 	if err != nil {
 		t.Fatalf("LoadBlob(%v) returned error %v", id, err)
 	}
 
-	return buf[:n]
+	return n
 }
 
 func checkSavedFile(t *testing.T, repo restic.Repository, treeID restic.ID, name string, rd io.Reader) {
@@ -40,12 +38,19 @@ func checkSavedFile(t *testing.T, repo restic.Repository, treeID restic.ID, name
 	}
 
 	// check blobs
-	buf := make([]byte, chunker.MaxSize)
-	buf2 := make([]byte, chunker.MaxSize)
 	for i, id := range node.Content {
-		buf = loadBlob(t, repo, id, buf)
+		size, err := repo.LookupBlobSize(id, restic.DataBlob)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		buf2 = buf2[:len(buf)]
+		buf := make([]byte, int(size))
+		n := loadBlob(t, repo, id, buf)
+		if n != len(buf) {
+			t.Errorf("wrong number of bytes read, want %d, got %d", len(buf), n)
+		}
+
+		buf2 := make([]byte, int(size))
 		_, err = io.ReadFull(rd, buf2)
 		if err != nil {
 			t.Fatal(err)
