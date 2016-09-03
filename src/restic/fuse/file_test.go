@@ -34,19 +34,19 @@ func (m *MockRepo) LookupBlobSize(id restic.ID, t restic.BlobType) (uint, error)
 	return uint(len(buf)), nil
 }
 
-func (m *MockRepo) LoadBlob(id restic.ID, t restic.BlobType, buf []byte) ([]byte, error) {
-	size, err := m.LookupBlobSize(id, t)
+func (m *MockRepo) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
+	size, err := m.LookupBlobSize(id, restic.DataBlob)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	if uint(cap(buf)) < size {
-		return nil, errors.New("buffer too small")
+		return 0, errors.New("buffer too small")
 	}
 
 	buf = buf[:size]
 	copy(buf, m.blobs[id])
-	return buf, nil
+	return int(size), nil
 }
 
 type MockContext struct{}

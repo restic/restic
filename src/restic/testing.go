@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/chunker"
 	"restic/errors"
+
+	"github.com/restic/chunker"
 )
 
 // fakeFile returns a reader which yields deterministic pseudo-random data.

@@ -15,7 +15,7 @@ import (
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Afterwards, the packs are removed. This operation requires
 // an exclusive lock on the repo.
-func Repack(repo *Repository, packs restic.IDSet, keepBlobs restic.BlobSet) (err error) {
+func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet) (err error) {
 	debug.Log("Repack", "repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	buf := make([]byte, 0, maxPackSize)
@@ -48,16 +48,21 @@ func Repack(repo *Repository, packs restic.IDSet, keepBlobs restic.BlobSet) (err
 				continue
 			}
 
-			ciphertext := buf[entry.Offset : entry.Offset+entry.Length]
+			debug.Log("Repack", "  process blob %v", h)
 
-			if cap(plaintext) < len(ciphertext) {
+			ciphertext := buf[entry.Offset : entry.Offset+entry.Length]
+			plaintext = plaintext[:len(plaintext)]
+			if len(plaintext) < len(ciphertext) {
 				plaintext = make([]byte, len(ciphertext))
 			}
 
-			plaintext, err = crypto.Decrypt(repo.Key(), plaintext, ciphertext)
+			debug.Log("Repack", "  ciphertext %d, plaintext %d", len(plaintext), len(ciphertext))
+
+			n, err := crypto.Decrypt(repo.Key(), plaintext, ciphertext)
 			if err != nil {
 				return err
 			}
+			plaintext = plaintext[:n]
 
 			_, err = repo.SaveAndEncrypt(entry.Type, plaintext, &entry.ID)
 			if err != nil {

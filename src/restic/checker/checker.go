@@ -684,12 +684,13 @@ func checkPack(r restic.Repository, id restic.ID) error {
 		debug.Log("Checker.checkPack", "  check blob %d: %v", i, blob.ID.Str())
 
 		plainBuf := make([]byte, blob.Length)
-		plainBuf, err = crypto.Decrypt(r.Key(), plainBuf, buf[blob.Offset:blob.Offset+blob.Length])
+		n, err := crypto.Decrypt(r.Key(), plainBuf, buf[blob.Offset:blob.Offset+blob.Length])
 		if err != nil {
 			debug.Log("Checker.checkPack", "  error decrypting blob %v: %v", blob.ID.Str(), err)
 			errs = append(errs, errors.Errorf("blob %v: %v", i, err))
 			continue
 		}
+		plainBuf = plainBuf[:n]
 
 		hash := restic.Hash(plainBuf)
 		if !hash.Equal(blob.ID) {

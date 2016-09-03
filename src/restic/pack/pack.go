@@ -225,12 +225,13 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 		return nil, err
 	}
 
-	hdr, err := crypto.Decrypt(k, buf, buf)
+	n, err := crypto.Decrypt(k, buf, buf)
 	if err != nil {
 		return nil, err
 	}
+	buf = buf[:n]
 
-	hdrRd := bytes.NewReader(hdr)
+	hdrRd := bytes.NewReader(buf)
 
 	pos := uint(0)
 	for {

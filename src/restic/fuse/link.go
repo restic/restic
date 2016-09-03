@@ -5,7 +5,6 @@ package fuse
 
 import (
 	"restic"
-	"restic/repository"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -20,7 +19,7 @@ type link struct {
 	ownerIsRoot bool
 }
 
-func newLink(repo *repository.Repository, node *restic.Node, ownerIsRoot bool) (*link, error) {
+func newLink(repo restic.Repository, node *restic.Node, ownerIsRoot bool) (*link, error) {
 	return &link{node: node, ownerIsRoot: ownerIsRoot}, nil
 }
 

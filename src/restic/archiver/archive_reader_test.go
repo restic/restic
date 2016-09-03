@@ -11,16 +11,16 @@ import (
 	"github.com/restic/chunker"
 )
 
-func loadBlob(t *testing.T, repo *repository.Repository, id restic.ID, buf []byte) []byte {
-	buf, err := repo.LoadBlob(id, restic.DataBlob, buf)
+func loadBlob(t *testing.T, repo restic.Repository, id restic.ID, buf []byte) []byte {
+	n, err := repo.LoadDataBlob(id, buf)
 	if err != nil {
 		t.Fatalf("LoadBlob(%v) returned error %v", id, err)
 	}
 
-	return buf
+	return buf[:n]
 }
 
-func checkSavedFile(t *testing.T, repo *repository.Repository, treeID restic.ID, name string, rd io.Reader) {
+func checkSavedFile(t *testing.T, repo restic.Repository, treeID restic.ID, name string, rd io.Reader) {
 	tree, err := repo.LoadTree(treeID)
 	if err != nil {
 		t.Fatalf("LoadTree() returned error %v", err)

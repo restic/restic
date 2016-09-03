@@ -23,7 +23,7 @@ func random(t testing.TB, length int) []byte {
 	return buf
 }
 
-func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pData float32) {
+func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData float32) {
 	for i := 0; i < blobs; i++ {
 		var (
 			tpe    restic.BlobType
@@ -65,7 +65,7 @@ func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pDa
 
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
 // will be contained in the firstone ith probability p.
-func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, list2 restic.BlobSet) {
+func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 restic.BlobSet) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -100,7 +100,7 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 	return list1, list2
 }
 
-func listPacks(t *testing.T, repo *repository.Repository) restic.IDSet {
+func listPacks(t *testing.T, repo restic.Repository) restic.IDSet {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -112,7 +112,7 @@ func listPacks(t *testing.T, repo *repository.Repository) restic.IDSet {
 	return list
 }
 
-func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs restic.BlobSet) restic.IDSet {
+func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSet) restic.IDSet {
 	packs := restic.NewIDSet()
 
 	idx := repo.Index()
@@ -130,26 +130,26 @@ func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs restic.B
 	return packs
 }
 
-func repack(t *testing.T, repo *repository.Repository, packs restic.IDSet, blobs restic.BlobSet) {
+func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs restic.BlobSet) {
 	err := repository.Repack(repo, packs, blobs)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func saveIndex(t *testing.T, repo *repository.Repository) {
+func saveIndex(t *testing.T, repo restic.Repository) {
 	if err := repo.SaveIndex(); err != nil {
 		t.Fatalf("repo.SaveIndex() %v", err)
 	}
 }
 
-func rebuildIndex(t *testing.T, repo *repository.Repository) {
+func rebuildIndex(t *testing.T, repo restic.Repository) {
 	if err := repository.RebuildIndex(repo); err != nil {
 		t.Fatalf("error rebuilding index: %v", err)
 	}
 }
 
-func reloadIndex(t *testing.T, repo *repository.Repository) {
+func reloadIndex(t *testing.T, repo restic.Repository) {
 	repo.SetIndex(repository.NewMasterIndex())
 	if err := repo.LoadIndex(); err != nil {
 		t.Fatalf("error loading new index: %v", err)

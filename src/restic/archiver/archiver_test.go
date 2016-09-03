@@ -12,8 +12,9 @@ import (
 	"restic/crypto"
 	. "restic/test"
 
-	"github.com/restic/chunker"
 	"restic/errors"
+
+	"github.com/restic/chunker"
 )
 
 var testPol = chunker.Pol(0x3DA3358B4DC173)
@@ -126,6 +127,14 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 	}
 }
 
+func countPacks(repo restic.Repository, t restic.FileType) (n uint) {
+	for _ = range repo.Backend().List(t, nil) {
+		n++
+	}
+
+	return n
+}
+
 func archiveWithDedup(t testing.TB) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
@@ -145,7 +154,7 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
-	cnt.before.packs = repo.Count(restic.DataFile)
+	cnt.before.packs = countPacks(repo, restic.DataFile)
 	cnt.before.dataBlobs = repo.Index().Count(restic.DataBlob)
 	cnt.before.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
@@ -156,7 +165,7 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats again
-	cnt.after.packs = repo.Count(restic.DataFile)
+	cnt.after.packs = countPacks(repo, restic.DataFile)
 	cnt.after.dataBlobs = repo.Index().Count(restic.DataBlob)
 	cnt.after.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",
@@ -173,7 +182,7 @@ func archiveWithDedup(t testing.TB) {
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats again
-	cnt.after2.packs = repo.Count(restic.DataFile)
+	cnt.after2.packs = countPacks(repo, restic.DataFile)
 	cnt.after2.dataBlobs = repo.Index().Count(restic.DataBlob)
 	cnt.after2.treeBlobs = repo.Index().Count(restic.TreeBlob)
 	t.Logf("packs %v, data blobs %v, tree blobs %v",

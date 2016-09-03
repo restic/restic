@@ -49,7 +49,7 @@ func getBoolVar(name string, defaultValue bool) bool {
 	return defaultValue
 }
 
-func SetupRepo() *repository.Repository {
+func SetupRepo() restic.Repository {
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	if err != nil {
 		panic(err)
@@ -70,27 +70,29 @@ func SetupRepo() *repository.Repository {
 	return repo
 }
 
-func TeardownRepo(repo *repository.Repository) {
+func TeardownRepo(repo restic.Repository) {
 	if !TestCleanupTempDirs {
 		l := repo.Backend().(*local.Local)
 		fmt.Printf("leaving local backend at %s\n", l.Location())
 		return
 	}
 
-	err := repo.Delete()
-	if err != nil {
-		panic(err)
+	if r, ok := repo.(restic.Deleter); ok {
+		err := r.Delete()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
-func SnapshotDir(t testing.TB, repo *repository.Repository, path string, parent *restic.ID) *restic.Snapshot {
+func SnapshotDir(t testing.TB, repo restic.Repository, path string, parent *restic.ID) *restic.Snapshot {
 	arch := archiver.New(repo)
 	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
 	OK(t, err)
 	return sn
 }
 
-func WithRepo(t testing.TB, f func(*repository.Repository)) {
+func WithRepo(t testing.TB, f func(restic.Repository)) {
 	repo := SetupRepo()
 	f(repo)
 	TeardownRepo(repo)

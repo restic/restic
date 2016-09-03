@@ -32,8 +32,10 @@ func TestEncryptDecrypt(t *testing.T) {
 			"ciphertext length does not match: want %d, got %d",
 			len(data)+crypto.Extension, len(ciphertext))
 
-		plaintext, err := crypto.Decrypt(k, nil, ciphertext)
+		plaintext := make([]byte, len(ciphertext))
+		n, err := crypto.Decrypt(k, plaintext, ciphertext)
 		OK(t, err)
+		plaintext = plaintext[:n]
 		Assert(t, len(plaintext) == len(data),
 			"plaintext length does not match: want %d, got %d",
 			len(data), len(plaintext))
@@ -58,8 +60,10 @@ func TestSmallBuffer(t *testing.T) {
 		cap(ciphertext))
 
 	// check for the correct plaintext
-	plaintext, err := crypto.Decrypt(k, nil, ciphertext)
+	plaintext := make([]byte, len(ciphertext))
+	n, err := crypto.Decrypt(k, plaintext, ciphertext)
 	OK(t, err)
+	plaintext = plaintext[:n]
 	Assert(t, bytes.Equal(plaintext, data),
 		"wrong plaintext returned")
 }
@@ -78,8 +82,9 @@ func TestSameBuffer(t *testing.T) {
 	OK(t, err)
 
 	// use the same buffer for decryption
-	ciphertext, err = crypto.Decrypt(k, ciphertext, ciphertext)
+	n, err := crypto.Decrypt(k, ciphertext, ciphertext)
 	OK(t, err)
+	ciphertext = ciphertext[:n]
 	Assert(t, bytes.Equal(ciphertext, data),
 		"wrong plaintext returned")
 }
@@ -97,9 +102,9 @@ func TestCornerCases(t *testing.T) {
 		len(c))
 
 	// this should decrypt to nil
-	p, err := crypto.Decrypt(k, nil, c)
+	n, err := crypto.Decrypt(k, nil, c)
 	OK(t, err)
-	Equals(t, []byte(nil), p)
+	Equals(t, 0, n)
 
 	// test encryption for same slice, this should return an error
 	_, err = crypto.Encrypt(k, c, c)
@@ -160,7 +165,7 @@ func BenchmarkDecrypt(b *testing.B) {
 	b.SetBytes(int64(size))
 
 	for i := 0; i < b.N; i++ {
-		plaintext, err = crypto.Decrypt(k, plaintext, ciphertext)
+		_, err = crypto.Decrypt(k, plaintext, ciphertext)
 		OK(b, err)
 	}
 }

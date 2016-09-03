@@ -13,7 +13,6 @@ import (
 
 	"restic"
 	"restic/debug"
-	"restic/repository"
 
 	"golang.org/x/net/context"
 )
@@ -30,7 +29,7 @@ var _ = fs.HandleReadDirAller(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 
 type SnapshotsDir struct {
-	repo        *repository.Repository
+	repo        restic.Repository
 	ownerIsRoot bool
 
 	// knownSnapshots maps snapshot timestamp to the snapshot
@@ -38,7 +37,7 @@ type SnapshotsDir struct {
 	knownSnapshots map[string]SnapshotWithId
 }
 
-func NewSnapshotsDir(repo *repository.Repository, ownerIsRoot bool) *SnapshotsDir {
+func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool) *SnapshotsDir {
 	debug.Log("NewSnapshotsDir", "fuse mount initiated")
 	return &SnapshotsDir{
 		repo:           repo,

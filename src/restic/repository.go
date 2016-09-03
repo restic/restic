@@ -16,6 +16,7 @@ type Repository interface {
 	Index() Index
 	SaveFullIndex() error
 	SaveIndex() error
+	LoadIndex() error
 
 	Config() Config
 

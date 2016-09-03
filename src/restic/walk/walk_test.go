@@ -10,7 +10,6 @@ import (
 	"restic"
 	"restic/archiver"
 	"restic/pipe"
-	"restic/repository"
 	. "restic/test"
 	"restic/walk"
 )
@@ -91,7 +90,7 @@ func TestWalkTree(t *testing.T) {
 }
 
 type delayRepo struct {
-	repo  *repository.Repository
+	repo  restic.Repository
 	delay time.Duration
 }
 

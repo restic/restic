@@ -15,7 +15,7 @@ var (
 	depth        = 3
 )
 
-func createFilledRepo(t testing.TB, snapshots int, dup float32) (*repository.Repository, func()) {
+func createFilledRepo(t testing.TB, snapshots int, dup float32) (restic.Repository, func()) {
 	repo, cleanup := repository.TestRepository(t)
 
 	for i := 0; i < 3; i++ {
@@ -25,7 +25,7 @@ func createFilledRepo(t testing.TB, snapshots int, dup float32) (*repository.Rep
 	return repo, cleanup
 }
 
-func validateIndex(t testing.TB, repo *repository.Repository, idx *Index) {
+func validateIndex(t testing.TB, repo restic.Repository, idx *Index) {
 	for id := range repo.List(restic.DataFile, nil) {
 		if _, ok := idx.Packs[id]; !ok {
 			t.Errorf("pack %v missing from index", id.Str())
@@ -162,7 +162,7 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 	t.Logf("%d packs with duplicate blobs", len(packs))
 }
 
-func loadIndex(t testing.TB, repo *repository.Repository) *Index {
+func loadIndex(t testing.TB, repo restic.Repository) *Index {
 	idx, err := Load(repo, nil)
 	if err != nil {
 		t.Fatalf("Load() returned error %v", err)

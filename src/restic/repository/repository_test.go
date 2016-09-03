@@ -90,8 +90,10 @@ func TestSave(t *testing.T) {
 		// OK(t, repo.SaveIndex())
 
 		// read back
-		buf, err := repo.LoadBlob(id, restic.DataBlob, make([]byte, size))
+		buf := make([]byte, size)
+		n, err := repo.LoadDataBlob(id, buf)
 		OK(t, err)
+		Equals(t, len(buf), n)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -122,8 +124,10 @@ func TestSaveFrom(t *testing.T) {
 		OK(t, repo.Flush())
 
 		// read back
-		buf, err := repo.LoadBlob(id, restic.DataBlob, make([]byte, size))
+		buf := make([]byte, size)
+		n, err := repo.LoadDataBlob(id, buf)
 		OK(t, err)
+		Equals(t, len(buf), n)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -157,7 +161,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 	}
 }
 
-func TestLoadJSONPack(t *testing.T) {
+func TestLoadTree(t *testing.T) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
@@ -169,12 +173,11 @@ func TestLoadJSONPack(t *testing.T) {
 	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
 	OK(t, repo.Flush())
 
-	tree := restic.NewTree()
-	err := repo.LoadJSONPack(restic.TreeBlob, *sn.Tree, &tree)
+	_, err := repo.LoadTree(*sn.Tree)
 	OK(t, err)
 }
 
-func BenchmarkLoadJSONPack(t *testing.B) {
+func BenchmarkLoadTree(t *testing.B) {
 	repo := SetupRepo()
 	defer TeardownRepo(repo)
 
@@ -185,13 +188,11 @@ func BenchmarkLoadJSONPack(t *testing.B) {
 	// archive a few files
 	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
 	OK(t, repo.Flush())
-
-	tree := restic.NewTree()
 
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		err := repo.LoadJSONPack(restic.TreeBlob, *sn.Tree, &tree)
+		_, err := repo.LoadTree(*sn.Tree)
 		OK(t, err)
 	}
 }
@@ -244,7 +245,7 @@ func BenchmarkLoadIndex(b *testing.B) {
 }
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
-func saveRandomDataBlobs(t testing.TB, repo *repository.Repository, num int, sizeMax int) {
+func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
 	for i := 0; i < num; i++ {
 		size := mrand.Int() % sizeMax
 

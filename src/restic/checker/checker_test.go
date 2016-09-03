@@ -17,7 +17,7 @@ import (
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")
 
-func list(repo *repository.Repository, t restic.FileType) (IDs []string) {
+func list(repo restic.Repository, t restic.FileType) (IDs []string) {
 	done := make(chan struct{})
 	defer close(done)
 

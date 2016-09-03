@@ -85,10 +85,12 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	}
 
 	// decrypt master keys
-	buf, err := crypto.Decrypt(k.user, []byte{}, k.Data)
+	buf := make([]byte, len(k.Data))
+	n, err := crypto.Decrypt(k.user, buf, k.Data)
 	if err != nil {
 		return nil, err
 	}
+	buf = buf[:n]
 
 	// restore json
 	k.master = &crypto.Key{}

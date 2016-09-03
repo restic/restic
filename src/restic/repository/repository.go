@@ -72,20 +72,22 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 		return nil, errors.New("invalid data returned")
 	}
 
+	plain := make([]byte, len(buf))
+
 	// decrypt
-	plain, err := r.Decrypt(buf)
+	n, err := r.decryptTo(plain, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	return plain, nil
+	return plain[:n], nil
 }
 
 // LoadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
 func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []byte) ([]byte, error) {
-	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
+	debug.Log("Repo.LoadBlob", "load %v with id %v (buf %d)", t, id.Str(), len(plaintextBuf))
 
 	// lookup plaintext size of blob
 	size, err := r.idx.LookupSize(id, t)
@@ -94,11 +96,8 @@ func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 	}
 
 	// make sure the plaintext buffer is large enough, extend otherwise
-	plaintextBufSize := uint(cap(plaintextBuf))
-	if size > plaintextBufSize {
-		debug.Log("Repo.LoadBlob", "need to expand buffer: want %d bytes, got %d",
-			size, plaintextBufSize)
-		plaintextBuf = make([]byte, size)
+	if len(plaintextBuf) < int(size) {
+		return nil, errors.Errorf("buffer is too small: %d < %d", len(plaintextBuf), size)
 	}
 
 	// lookup packs
@@ -134,11 +133,12 @@ func (r *Repository) LoadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		}
 
 		// decrypt
-		plaintextBuf, err = r.decryptTo(plaintextBuf, ciphertextBuf)
+		n, err = r.decryptTo(plaintextBuf, ciphertextBuf)
 		if err != nil {
 			lastError = errors.Errorf("decrypting blob %v failed: %v", id, err)
 			continue
 		}
+		plaintextBuf = plaintextBuf[:n]
 
 		// check hash
 		if !restic.Hash(plaintextBuf).Equal(id) {
@@ -403,7 +403,7 @@ func (r *Repository) LoadIndex() error {
 }
 
 // LoadIndex loads the index id from backend and returns it.
-func LoadIndex(repo *Repository, id restic.ID) (*Index, error) {
+func LoadIndex(repo restic.Repository, id restic.ID) (*Index, error) {
 	idx, err := LoadIndexWithDecoder(repo, id, DecodeIndex)
 	if err == nil {
 		return idx, nil
@@ -467,19 +467,14 @@ func (r *Repository) init(password string, cfg restic.Config) error {
 	return err
 }
 
-// Decrypt authenticates and decrypts ciphertext and returns the plaintext.
-func (r *Repository) Decrypt(ciphertext []byte) ([]byte, error) {
-	return r.decryptTo(nil, ciphertext)
-}
-
 // decrypt authenticates and decrypts ciphertext and stores the result in
 // plaintext.
-func (r *Repository) decryptTo(plaintext, ciphertext []byte) ([]byte, error) {
+func (r *Repository) decryptTo(plaintext, ciphertext []byte) (int, error) {
 	if r.key == nil {
-		return nil, errors.New("key for repository not set")
+		return 0, errors.New("key for repository not set")
 	}
 
-	return crypto.Decrypt(r.key, nil, ciphertext)
+	return crypto.Decrypt(r.key, plaintext, ciphertext)
 }
 
 // Encrypt encrypts and authenticates the plaintext and saves the result in
@@ -500,15 +495,6 @@ func (r *Repository) Key() *crypto.Key {
 // KeyName returns the name of the current key in the backend.
 func (r *Repository) KeyName() string {
 	return r.keyName
-}
-
-// Count returns the number of blobs of a given type in the backend.
-func (r *Repository) Count(t restic.FileType) (n uint) {
-	for _ = range r.be.List(t, nil) {
-		n++
-	}
-
-	return
 }
 
 func (r *Repository) list(t restic.FileType, done <-chan struct{}, out chan<- restic.ID) {
@@ -592,14 +578,17 @@ func (r *Repository) Close() error {
 
 // LoadTree loads a tree from the repository.
 func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
+	debug.Log("repo.LoadTree", "load tree %v", id.Str())
+
 	size, err := r.idx.LookupSize(id, restic.TreeBlob)
 	if err != nil {
 		return nil, err
 	}
 
+	debug.Log("repo.LoadTree", "size is %d, create buffer", size)
 	buf := make([]byte, size)
 
-	buf, err = r.LoadBlob(id, restic.TreeBlob, nil)
+	buf, err = r.LoadBlob(id, restic.TreeBlob, buf)
 	if err != nil {
 		return nil, err
 	}
@@ -615,6 +604,7 @@ func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
 
 // LoadDataBlob loads a data blob from the repository to the buffer.
 func (r *Repository) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
+	debug.Log("repo.LoadDataBlob", "load blob %v into buf %p", id.Str(), buf)
 	size, err := r.idx.LookupSize(id, restic.DataBlob)
 	if err != nil {
 		return 0, err
@@ -628,6 +618,8 @@ func (r *Repository) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	debug.Log("repo.LoadDataBlob", "loaded %d bytes into buf %p", len(buf), buf)
 
 	return len(buf), err
 }
