@@ -175,6 +175,9 @@ func TestChunkerWithRandomPolynomial(t *testing.T) {
 
 	// make sure that first chunk is different
 	c, err := ch.Next(nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
 	if c.Cut == chunks1[0].CutFP {
 		t.Fatal("Cut point is the same")
