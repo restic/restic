@@ -34,8 +34,8 @@ func (m *MockRepo) LookupBlobSize(id restic.ID, t restic.BlobType) (uint, error)
 	return uint(len(buf)), nil
 }
 
-func (m *MockRepo) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
-	size, err := m.LookupBlobSize(id, restic.DataBlob)
+func (m *MockRepo) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int, error) {
+	size, err := m.LookupBlobSize(id, t)
 	if err != nil {
 		return 0, err
 	}

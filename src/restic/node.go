@@ -219,7 +219,7 @@ func (node Node) createFileAt(path string, repo Repository) error {
 			buf = make([]byte, size)
 		}
 
-		n, err := repo.LoadDataBlob(id, buf)
+		n, err := repo.LoadBlob(DataBlob, id, buf)
 		if err != nil {
 			return err
 		}

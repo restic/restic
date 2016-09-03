@@ -34,8 +34,8 @@ type Repository interface {
 	LoadJSONUnpacked(FileType, ID, interface{}) error
 	LoadAndDecrypt(FileType, ID) ([]byte, error)
 
-	LoadTree(id ID) (*Tree, error)
-	LoadDataBlob(id ID, buf []byte) (int, error)
+	LoadTree(ID) (*Tree, error)
+	LoadBlob(BlobType, ID, []byte) (int, error)
 
 	SaveBlob(BlobType, []byte, ID) (ID, error)
 }

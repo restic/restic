@@ -592,10 +592,10 @@ func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
 	return t, nil
 }
 
-// LoadDataBlob loads a data blob from the repository to the buffer.
-func (r *Repository) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
-	debug.Log("repo.LoadDataBlob", "load blob %v into buf %p", id.Str(), buf)
-	size, err := r.idx.LookupSize(id, restic.DataBlob)
+// LoadBlob loads a blob of type t from the repository to the buffer.
+func (r *Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int, error) {
+	debug.Log("repo.LoadBlob", "load blob %v into buf %p", id.Str(), buf)
+	size, err := r.idx.LookupSize(id, t)
 	if err != nil {
 		return 0, err
 	}
@@ -604,13 +604,13 @@ func (r *Repository) LoadDataBlob(id restic.ID, buf []byte) (int, error) {
 		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), size)
 	}
 
-	n, err := r.loadBlob(id, restic.DataBlob, buf)
+	n, err := r.loadBlob(id, t, buf)
 	if err != nil {
 		return 0, err
 	}
 	buf = buf[:n]
 
-	debug.Log("repo.LoadDataBlob", "loaded %d bytes into buf %p", len(buf), buf)
+	debug.Log("repo.LoadBlob", "loaded %d bytes into buf %p", len(buf), buf)
 
 	return len(buf), err
 }

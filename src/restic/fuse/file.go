@@ -27,7 +27,7 @@ var _ = fs.HandleReleaser(&file{})
 // for fuse operations.
 type BlobLoader interface {
 	LookupBlobSize(restic.ID, restic.BlobType) (uint, error)
-	LoadDataBlob(restic.ID, []byte) (int, error)
+	LoadBlob(restic.BlobType, restic.ID, []byte) (int, error)
 }
 
 type file struct {
@@ -109,7 +109,7 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 		buf = make([]byte, f.sizes[i])
 	}
 
-	n, err := f.repo.LoadDataBlob(f.node.Content[i], buf)
+	n, err := f.repo.LoadBlob(restic.DataBlob, f.node.Content[i], buf)
 	if err != nil {
 		debug.Log("file.getBlobAt", "LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err

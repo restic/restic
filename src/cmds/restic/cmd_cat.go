@@ -173,7 +173,7 @@ func (cmd CmdCat) Execute(args []string) error {
 			blob := list[0]
 
 			buf := make([]byte, blob.Length)
-			n, err := repo.LoadDataBlob(id, buf)
+			n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 			if err != nil {
 				return err
 			}

@@ -10,7 +10,7 @@ import (
 )
 
 func loadBlob(t *testing.T, repo restic.Repository, id restic.ID, buf []byte) int {
-	n, err := repo.LoadDataBlob(id, buf)
+	n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 	if err != nil {
 		t.Fatalf("LoadBlob(%v) returned error %v", id, err)
 	}
