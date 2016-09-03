@@ -122,7 +122,7 @@ func (arch *Archiver) SaveTreeJSON(item interface{}) (restic.ID, error) {
 		return id, nil
 	}
 
-	return arch.repo.SaveJSON(restic.TreeBlob, item)
+	return arch.repo.SaveBlob(restic.TreeBlob, data, id)
 }
 
 func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*restic.Node, error) {

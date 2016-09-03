@@ -1,7 +1,6 @@
 package archiver
 
 import (
-	"encoding/json"
 	"io"
 	"restic"
 	"restic/debug"
@@ -11,23 +10,6 @@ import (
 
 	"github.com/restic/chunker"
 )
-
-// saveTreeJSON stores a tree in the repository.
-func saveTreeJSON(repo restic.Repository, item interface{}) (restic.ID, error) {
-	data, err := json.Marshal(item)
-	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "")
-	}
-	data = append(data, '\n')
-
-	// check if tree has been saved before
-	id := restic.Hash(data)
-	if repo.Index().Has(id, restic.TreeBlob) {
-		return id, nil
-	}
-
-	return repo.SaveJSON(restic.TreeBlob, item)
-}
 
 // ArchiveReader reads from the reader and archives the data. Returned is the
 // resulting snapshot and its ID.
@@ -93,7 +75,7 @@ func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, nam
 		},
 	}
 
-	treeID, err := saveTreeJSON(repo, tree)
+	treeID, err := repo.SaveTree(tree)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

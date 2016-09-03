@@ -97,7 +97,7 @@ func TestLoadTree(t *testing.T) {
 
 	// save tree
 	tree := restic.NewTree()
-	id, err := repo.SaveJSON(restic.TreeBlob, tree)
+	id, err := repo.SaveTree(tree)
 	OK(t, err)
 
 	// save packs

@@ -27,17 +27,17 @@ type Repository interface {
 
 	Flush() error
 
-	SaveJSON(BlobType, interface{}) (ID, error)
 	SaveUnpacked(FileType, []byte) (ID, error)
 	SaveJSONUnpacked(FileType, interface{}) (ID, error)
 
 	LoadJSONUnpacked(FileType, ID, interface{}) error
 	LoadAndDecrypt(FileType, ID) ([]byte, error)
 
-	LoadTree(ID) (*Tree, error)
 	LoadBlob(BlobType, ID, []byte) (int, error)
-
 	SaveBlob(BlobType, []byte, ID) (ID, error)
+
+	LoadTree(ID) (*Tree, error)
+	SaveTree(t *Tree) (ID, error)
 }
 
 // Deleter removes all data stored in a backend/repo.

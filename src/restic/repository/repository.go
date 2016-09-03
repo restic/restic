@@ -227,25 +227,6 @@ func (r *Repository) SaveAndEncrypt(t restic.BlobType, data []byte, id *restic.I
 	return *id, r.savePacker(packer)
 }
 
-// SaveJSON serialises item as JSON and encrypts and saves it in a pack in the
-// backend as type t.
-func (r *Repository) SaveJSON(t restic.BlobType, item interface{}) (restic.ID, error) {
-	debug.Log("Repo.SaveJSON", "save %v blob", t)
-	buf := getBuf()[:0]
-	defer freeBuf(buf)
-
-	wr := bytes.NewBuffer(buf)
-
-	enc := json.NewEncoder(wr)
-	err := enc.Encode(item)
-	if err != nil {
-		return restic.ID{}, errors.Errorf("json.Encode: %v", err)
-	}
-
-	buf = wr.Bytes()
-	return r.SaveAndEncrypt(t, buf, nil)
-}
-
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
 func (r *Repository) SaveJSONUnpacked(t restic.FileType, item interface{}) (restic.ID, error) {
@@ -565,33 +546,6 @@ func (r *Repository) Close() error {
 	return r.be.Close()
 }
 
-// LoadTree loads a tree from the repository.
-func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
-	debug.Log("repo.LoadTree", "load tree %v", id.Str())
-
-	size, err := r.idx.LookupSize(id, restic.TreeBlob)
-	if err != nil {
-		return nil, err
-	}
-
-	debug.Log("repo.LoadTree", "size is %d, create buffer", size)
-	buf := make([]byte, size)
-
-	n, err := r.loadBlob(id, restic.TreeBlob, buf)
-	if err != nil {
-		return nil, err
-	}
-	buf = buf[:n]
-
-	t := &restic.Tree{}
-	err = json.Unmarshal(buf, t)
-	if err != nil {
-		return nil, err
-	}
-
-	return t, nil
-}
-
 // LoadBlob loads a blob of type t from the repository to the buffer.
 func (r *Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int, error) {
 	debug.Log("repo.LoadBlob", "load blob %v into buf %p", id.Str(), buf)
@@ -623,4 +577,53 @@ func (r *Repository) SaveBlob(t restic.BlobType, buf []byte, id restic.ID) (rest
 		i = &id
 	}
 	return r.SaveAndEncrypt(t, buf, i)
+}
+
+// LoadTree loads a tree from the repository.
+func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
+	debug.Log("repo.LoadTree", "load tree %v", id.Str())
+
+	size, err := r.idx.LookupSize(id, restic.TreeBlob)
+	if err != nil {
+		return nil, err
+	}
+
+	debug.Log("repo.LoadTree", "size is %d, create buffer", size)
+	buf := make([]byte, size)
+
+	n, err := r.loadBlob(id, restic.TreeBlob, buf)
+	if err != nil {
+		return nil, err
+	}
+	buf = buf[:n]
+
+	t := &restic.Tree{}
+	err = json.Unmarshal(buf, t)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+// SaveTree stores a tree into the repository and returns the ID. The ID is
+// checked against the index. The tree is only stored when the index does not
+// contain the ID.
+func (r *Repository) SaveTree(t *restic.Tree) (restic.ID, error) {
+	buf, err := json.Marshal(t)
+	if err != nil {
+		return restic.ID{}, errors.Wrap(err, "MarshalJSON")
+	}
+
+	// append a newline so that the data is always consistent (json.Encoder
+	// adds a newline after each object)
+	buf = append(buf, '\n')
+
+	id := restic.Hash(buf)
+	if r.idx.Has(id, restic.TreeBlob) {
+		return id, nil
+	}
+
+	_, err = r.SaveBlob(restic.TreeBlob, buf, id)
+	return id, err
 }

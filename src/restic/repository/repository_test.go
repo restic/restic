@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/json"
 	"io"
 	mrand "math/rand"
 	"path/filepath"
@@ -14,58 +13,6 @@ import (
 	"restic/repository"
 	. "restic/test"
 )
-
-type testJSONStruct struct {
-	Foo uint32
-	Bar string
-	Baz []byte
-}
-
-var repoTests = []testJSONStruct{
-	testJSONStruct{Foo: 23, Bar: "Teststring", Baz: []byte("xx")},
-}
-
-func TestSaveJSON(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
-
-	for _, obj := range repoTests {
-		data, err := json.Marshal(obj)
-		OK(t, err)
-		data = append(data, '\n')
-		h := sha256.Sum256(data)
-
-		id, err := repo.SaveJSON(restic.TreeBlob, obj)
-		OK(t, err)
-
-		Assert(t, h == id,
-			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
-			h, id)
-	}
-}
-
-func BenchmarkSaveJSON(t *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
-
-	obj := repoTests[0]
-
-	data, err := json.Marshal(obj)
-	OK(t, err)
-	data = append(data, '\n')
-	h := sha256.Sum256(data)
-
-	t.ResetTimer()
-
-	for i := 0; i < t.N; i++ {
-		id, err := repo.SaveJSON(restic.TreeBlob, obj)
-		OK(t, err)
-
-		Assert(t, h == id,
-			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
-			h, id)
-	}
-}
 
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 

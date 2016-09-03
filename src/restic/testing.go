@@ -64,17 +64,16 @@ const (
 	maxNodes    = 32
 )
 
-func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, ID) {
+func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {
 	data, err := json.Marshal(tree)
 	if err != nil {
 		fs.t.Fatalf("json.Marshal(tree) returned error: %v", err)
-		return false, ID{}
+		return false, nil, ID{}
 	}
 	data = append(data, '\n')
 
 	id := Hash(data)
-	return fs.blobIsKnown(id, TreeBlob), id
-
+	return fs.blobIsKnown(id, TreeBlob), data, id
 }
 
 func (fs fakeFileSystem) blobIsKnown(id ID, t BlobType) bool {
@@ -132,11 +131,12 @@ func (fs fakeFileSystem) saveTree(seed int64, depth int) ID {
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
-	if known, id := fs.treeIsKnown(&tree); known {
+	known, buf, id := fs.treeIsKnown(&tree)
+	if known {
 		return id
 	}
 
-	id, err := fs.repo.SaveJSON(TreeBlob, tree)
+	_, err := fs.repo.SaveBlob(TreeBlob, buf, id)
 	if err != nil {
 		fs.t.Fatal(err)
 	}
