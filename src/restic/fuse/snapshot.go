@@ -37,6 +37,7 @@ type SnapshotsDir struct {
 	knownSnapshots map[string]SnapshotWithId
 }
 
+// NewSnapshotsDir returns a new dir object for the snapshots.
 func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool) *SnapshotsDir {
 	debug.Log("NewSnapshotsDir", "fuse mount initiated")
 	return &SnapshotsDir{

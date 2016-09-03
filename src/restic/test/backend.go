@@ -49,6 +49,7 @@ func getBoolVar(name string, defaultValue bool) bool {
 	return defaultValue
 }
 
+// SetupRepo returns a repo setup in a temp dir.
 func SetupRepo() restic.Repository {
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	if err != nil {
@@ -70,6 +71,7 @@ func SetupRepo() restic.Repository {
 	return repo
 }
 
+// TeardownRepo removes a repository created by SetupRepo.
 func TeardownRepo(repo restic.Repository) {
 	if !TestCleanupTempDirs {
 		l := repo.Backend().(*local.Local)
@@ -93,6 +95,7 @@ func SnapshotDir(t testing.TB, repo restic.Repository, path string, parent *rest
 	return sn
 }
 
+// WithRepo runs the function t with a repository that is removed after f returns.
 func WithRepo(t testing.TB, f func(restic.Repository)) {
 	repo := SetupRepo()
 	f(repo)
