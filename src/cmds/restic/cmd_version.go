@@ -18,8 +18,8 @@ func init() {
 }
 
 func (cmd CmdVersion) Execute(args []string) error {
-	fmt.Printf("restic %s\ncompiled at %s with %v\n",
-		version, compiledAt, runtime.Version())
+	fmt.Printf("restic %s\ncompiled at %s with %v on %v/%v\n",
+		version, compiledAt, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 
 	return nil
 }
