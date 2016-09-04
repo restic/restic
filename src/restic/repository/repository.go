@@ -322,7 +322,17 @@ func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, er
 		return restic.ID{}, err
 	}
 
-	debug.Log("Repo.SaveJSONUnpacked", "blob %v saved", h)
+	// store file in the cache
+	if r.cache != nil && (t == restic.IndexFile || t == restic.SnapshotFile) {
+		h := restic.Handle{Name: id.String(), Type: t}
+		err := r.cache.PutFile(h, p)
+		if err != nil {
+			return restic.ID{}, err
+		}
+		debug.Log("Repo.Save", "updated file %v in cache", h)
+	}
+
+	debug.Log("Repo.SaveJSONUnpacked", "file %v saved", h)
 	return id, nil
 }
 
