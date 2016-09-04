@@ -1,12 +1,13 @@
 package cache
 
 import (
+	"math/rand"
 	"restic"
 	"restic/test"
 	"testing"
 )
 
-func TestCache(t *testing.T) {
+func TestNew(t *testing.T) {
 	c, cleanup := TestNewCache(t)
 	defer cleanup()
 
@@ -71,5 +72,72 @@ func TestCacheBufsize(t *testing.T) {
 
 		test.Assert(t, !ok, "ok is true for wrong buffer size %v", i)
 		test.Assert(t, err != nil, "error is nil, although buffer size is wrong")
+	}
+}
+
+type blobIndex struct {
+	blobs restic.BlobSet
+}
+
+func (idx blobIndex) Has(id restic.ID, t restic.BlobType) bool {
+	_, ok := idx.blobs[restic.BlobHandle{ID: id, Type: t}]
+	return ok
+}
+
+func TestUpdateBlobs(t *testing.T) {
+	c, cleanup := TestNewCache(t)
+	defer cleanup()
+
+	blobs := restic.NewBlobSet()
+
+	buf := test.Random(23, 15*1024)
+	for i := 0; i < 100; i++ {
+		id := restic.NewRandomID()
+		h := restic.BlobHandle{ID: id, Type: restic.TreeBlob}
+		err := c.PutBlob(h, buf)
+		test.OK(t, err)
+		blobs.Insert(h)
+	}
+
+	// use an index with all blobs, this must not remove anything
+	idx := blobIndex{blobs: blobs}
+	test.OK(t, c.UpdateBlobs(idx))
+
+	for h := range blobs {
+		if !c.HasBlob(h) {
+			t.Errorf("blob %v was removed\n", h)
+		}
+	}
+
+	// next, remove about 20% of the blobs
+	keepBlobs := restic.NewBlobSet()
+	for h := range blobs {
+		if rand.Float32() <= 0.8 {
+			keepBlobs.Insert(h)
+		}
+	}
+	idx = blobIndex{blobs: keepBlobs}
+	test.OK(t, c.UpdateBlobs(idx))
+
+	for h := range blobs {
+		if keepBlobs.Has(h) {
+			if !c.HasBlob(h) {
+				t.Errorf("blob %v was removed\n", h)
+			}
+			continue
+		}
+
+		if c.HasBlob(h) {
+			t.Errorf("blob %v was kept although it should've been removed", h)
+		}
+	}
+
+	// remove the remaining blobs
+	idx = blobIndex{blobs: restic.NewBlobSet()}
+	test.OK(t, c.UpdateBlobs(idx))
+	for h := range blobs {
+		if c.HasBlob(h) {
+			t.Errorf("blob %v was not removed\n", h)
+		}
 	}
 }

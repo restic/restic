@@ -24,6 +24,8 @@ type Repository struct {
 	keyName string
 	idx     *MasterIndex
 
+	cache restic.Cache
+
 	*packerManager
 }
 
@@ -102,9 +104,23 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 
 	// lookup packs
 	blobs, err := r.idx.Lookup(id, t)
-	if err != nil {
+	if err != nil || len(blobs) == 0 {
 		debug.Log("Repo.loadBlob", "id %v not found in index: %v", id.Str(), err)
 		return 0, err
+	}
+
+	// try to get the blob from the cache for tree blobs
+	h := restic.BlobHandle{ID: id, Type: t}
+	if t == restic.TreeBlob && r.cache != nil && r.cache.HasBlob(h) {
+		ok, err := r.cache.GetBlob(h, plaintextBuf)
+		if err != nil {
+			return 0, err
+		}
+
+		if ok {
+			debug.Log("Repo.loadBlob", "loaded blob %v from cache", h)
+			return int(size), nil
+		}
 	}
 
 	var lastError error
@@ -144,6 +160,16 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		if !restic.Hash(plaintextBuf).Equal(id) {
 			lastError = errors.Errorf("blob %v returned invalid hash", id)
 			continue
+		}
+
+		// store blob in the cache
+		if t == restic.TreeBlob && r.cache != nil {
+			h := restic.BlobHandle{ID: id, Type: t}
+			err = r.cache.PutBlob(h, plaintextBuf)
+			if err != nil {
+				return 0, err
+			}
+			debug.Log("Repo.loadBlob", "updated blob %v in cache", h)
 		}
 
 		return len(plaintextBuf), nil
@@ -189,6 +215,16 @@ func (r *Repository) SaveAndEncrypt(t restic.BlobType, data []byte, id *restic.I
 		// compute plaintext hash
 		hashedID := restic.Hash(data)
 		id = &hashedID
+	}
+
+	// store blob in the cache
+	if t == restic.TreeBlob && r.cache != nil {
+		h := restic.BlobHandle{ID: *id, Type: t}
+		err := r.cache.PutBlob(h, data)
+		if err != nil {
+			return restic.ID{}, err
+		}
+		debug.Log("Repo.Save", "updated blob %v in cache", h)
 	}
 
 	debug.Log("Repo.Save", "save id %v (%v, %d bytes)", id.Str(), t, len(data))
@@ -293,6 +329,11 @@ func (r *Repository) SetIndex(i restic.Index) {
 	r.idx = i.(*MasterIndex)
 }
 
+// UseCache uses the cache c.
+func (r *Repository) UseCache(c restic.Cache) {
+	r.cache = c
+}
+
 // SaveIndex saves an index in the repository.
 func SaveIndex(repo restic.Repository, index *Index) (restic.ID, error) {
 	buf := bytes.NewBuffer(nil)
@@ -367,6 +408,11 @@ func (r *Repository) LoadIndex() error {
 
 	if err := <-errCh; err != nil {
 		return err
+	}
+
+	// update cache
+	if r.cache != nil {
+		r.cache.UpdateBlobs(r.idx)
 	}
 
 	return nil

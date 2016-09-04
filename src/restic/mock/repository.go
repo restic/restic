@@ -13,6 +13,8 @@ type Repository struct {
 
 	SetIndexFn func(restic.Index)
 
+	UseCacheFn func(restic.Cache)
+
 	IndexFn         func() restic.Index
 	SaveFullIndexFn func() error
 	SaveIndexFn     func() error
@@ -53,6 +55,11 @@ func (repo Repository) Key() *crypto.Key {
 // SetIndex is a stub method.
 func (repo Repository) SetIndex(idx restic.Index) {
 	repo.SetIndexFn(idx)
+}
+
+// UseCache is a stub method.
+func (repo Repository) UseCache(cache restic.Cache) {
+	repo.UseCacheFn(cache)
 }
 
 // Index is a stub method.

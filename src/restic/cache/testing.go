@@ -12,7 +12,8 @@ func TestNewCache(t testing.TB) (restic.Cache, func()) {
 	tempdir, cleanup := test.TempDir(t)
 
 	cachedir := filepath.Join(tempdir, "cache")
-	c := NewCache(cachedir)
+	c, err := New(cachedir, "test")
+	test.OK(t, err)
 
 	return c, cleanup
 }
