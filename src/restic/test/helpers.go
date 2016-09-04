@@ -1,4 +1,4 @@
-package test_helper
+package test
 
 import (
 	"compress/bzip2"
@@ -16,9 +16,6 @@ import (
 	"testing"
 
 	mrand "math/rand"
-
-	"restic/backend/local"
-	"restic/repository"
 )
 
 // Assert fails the test if the condition is false.
@@ -184,40 +181,28 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 	OK(t, cmd.Run())
 }
 
-// WithTestEnvironment creates a test environment, extracts the repository
-// fixture and and calls f with the repository dir.
-func WithTestEnvironment(t testing.TB, repoFixture string, f func(repodir string)) {
+// Env creates a test environment and extracts the repository fixture.
+// Returned is the repo path and a cleanup function.
+func Env(t testing.TB, repoFixture string) (repodir string, cleanup func()) {
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	OK(t, err)
 
 	fd, err := os.Open(repoFixture)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	OK(t, fd.Close())
 
 	SetupTarTestFixture(t, tempdir, repoFixture)
 
-	f(filepath.Join(tempdir, "repo"))
+	return filepath.Join(tempdir, "repo"), func() {
+		if !TestCleanupTempDirs {
+			t.Logf("leaving temporary directory %v used for test", tempdir)
+			return
+		}
 
-	if !TestCleanupTempDirs {
-		t.Logf("leaving temporary directory %v used for test", tempdir)
-		return
+		RemoveAll(t, tempdir)
 	}
-
-	RemoveAll(t, tempdir)
-}
-
-// OpenLocalRepo opens the local repository located at dir.
-func OpenLocalRepo(t testing.TB, dir string) restic.Repository {
-	be, err := local.Open(dir)
-	OK(t, err)
-
-	repo := repository.New(be)
-	err = repo.SearchKey(TestPassword, 10)
-	OK(t, err)
-
-	return repo
 }
 
 func isFile(fi os.FileInfo) bool {

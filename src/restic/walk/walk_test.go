@@ -1341,53 +1341,55 @@ var walktreeTestItems = []string{
 }
 
 func TestDelayedWalkTree(t *testing.T) {
-	WithTestEnvironment(t, repoFixture, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
-		OK(t, repo.LoadIndex())
+	repodir, cleanup := Env(t, repoFixture)
+	defer cleanup()
 
-		root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
-		OK(t, err)
+	repo := repository.TestOpenLocal(t, repodir)
+	OK(t, repo.LoadIndex())
 
-		dr := delayRepo{repo, 100 * time.Millisecond}
+	root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
+	OK(t, err)
 
+	dr := delayRepo{repo, 100 * time.Millisecond}
+
+	// start tree walker
+	treeJobs := make(chan walk.TreeJob)
+	go walk.Tree(dr, root, nil, treeJobs)
+
+	i := 0
+	for job := range treeJobs {
+		expectedPath := filepath.Join(strings.Split(walktreeTestItems[i], "/")...)
+		if job.Path != expectedPath {
+			t.Fatalf("expected path %q (%v), got %q", walktreeTestItems[i], i, job.Path)
+		}
+		i++
+	}
+
+	if i != len(walktreeTestItems) {
+		t.Fatalf("got %d items, expected %v", i, len(walktreeTestItems))
+	}
+}
+
+func BenchmarkDelayedWalkTree(t *testing.B) {
+	repodir, cleanup := Env(t, repoFixture)
+	defer cleanup()
+
+	repo := repository.TestOpenLocal(t, repodir)
+	OK(t, repo.LoadIndex())
+
+	root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
+	OK(t, err)
+
+	dr := delayRepo{repo, 10 * time.Millisecond}
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
 		// start tree walker
 		treeJobs := make(chan walk.TreeJob)
 		go walk.Tree(dr, root, nil, treeJobs)
 
-		i := 0
-		for job := range treeJobs {
-			expectedPath := filepath.Join(strings.Split(walktreeTestItems[i], "/")...)
-			if job.Path != expectedPath {
-				t.Fatalf("expected path %q (%v), got %q", walktreeTestItems[i], i, job.Path)
-			}
-			i++
+		for _ = range treeJobs {
 		}
-
-		if i != len(walktreeTestItems) {
-			t.Fatalf("got %d items, expected %v", i, len(walktreeTestItems))
-		}
-	})
-}
-
-func BenchmarkDelayedWalkTree(t *testing.B) {
-	WithTestEnvironment(t, repoFixture, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
-		OK(t, repo.LoadIndex())
-
-		root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
-		OK(t, err)
-
-		dr := delayRepo{repo, 10 * time.Millisecond}
-
-		t.ResetTimer()
-
-		for i := 0; i < t.N; i++ {
-			// start tree walker
-			treeJobs := make(chan walk.TreeJob)
-			go walk.Tree(dr, root, nil, treeJobs)
-
-			for _ = range treeJobs {
-			}
-		}
-	})
+	}
 }

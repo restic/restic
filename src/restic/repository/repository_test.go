@@ -174,22 +174,24 @@ func TestLoadJSONUnpacked(t *testing.T) {
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
-	WithTestEnvironment(t, repoFixture, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
-		OK(t, repo.LoadIndex())
-	})
+	repodir, cleanup := Env(t, repoFixture)
+	defer cleanup()
+
+	repo := repository.TestOpenLocal(t, repodir)
+	OK(t, repo.LoadIndex())
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
-	WithTestEnvironment(b, repoFixture, func(repodir string) {
-		repo := OpenLocalRepo(b, repodir)
-		b.ResetTimer()
+	repodir, cleanup := Env(b, repoFixture)
+	defer cleanup()
 
-		for i := 0; i < b.N; i++ {
-			repo.SetIndex(repository.NewMasterIndex())
-			OK(b, repo.LoadIndex())
-		}
-	})
+	repo := repository.TestOpenLocal(b, repodir)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		repo.SetIndex(repository.NewMasterIndex())
+		OK(b, repo.LoadIndex())
+	}
 }
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
