@@ -441,7 +441,14 @@ func (r *Repository) LoadIndex() error {
 
 	// update cache
 	if r.cache != nil {
-		r.cache.UpdateBlobs(r.idx)
+		err := r.cache.UpdateBlobs(r.idx)
+		if err != nil {
+			return err
+		}
+		err = r.cache.UpdateFiles(r.Backend())
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
