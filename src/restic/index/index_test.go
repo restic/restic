@@ -4,7 +4,6 @@ import (
 	"math/rand"
 	"restic"
 	"restic/repository"
-	. "restic/test"
 	"testing"
 	"time"
 )
@@ -305,7 +304,7 @@ func TestIndexLoadDocReference(t *testing.T) {
 
 	idx := loadIndex(t, repo)
 
-	blobID := ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66")
+	blobID := restic.TestParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66")
 	locs, err := idx.FindBlob(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
 	if err != nil {
 		t.Errorf("FindBlob() returned error %v", err)

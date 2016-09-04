@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"restic"
 	"runtime"
 	"testing"
 
@@ -58,16 +57,6 @@ func Equals(tb testing.TB, exp, act interface{}) {
 		fmt.Printf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
 		tb.FailNow()
 	}
-}
-
-// ParseID parses s as a restic.ID and panics if that fails.
-func ParseID(s string) restic.ID {
-	id, err := restic.ParseID(s)
-	if err != nil {
-		panic(err)
-	}
-
-	return id
 }
 
 // Random returns size bytes of pseudo-random data derived from the seed.
