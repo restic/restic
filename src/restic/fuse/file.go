@@ -6,12 +6,10 @@ package fuse
 import (
 	"sync"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic"
-	"restic/backend"
 	"restic/debug"
-	"restic/pack"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -28,8 +26,8 @@ var _ = fs.HandleReleaser(&file{})
 // BlobLoader is an abstracted repository with a reduced set of methods used
 // for fuse operations.
 type BlobLoader interface {
-	LookupBlobSize(backend.ID, pack.BlobType) (uint, error)
-	LoadBlob(backend.ID, pack.BlobType, []byte) ([]byte, error)
+	LookupBlobSize(restic.ID, restic.BlobType) (uint, error)
+	LoadBlob(restic.BlobType, restic.ID, []byte) (int, error)
 }
 
 type file struct {
@@ -54,7 +52,7 @@ func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error
 	var bytes uint64
 	sizes := make([]uint, len(node.Content))
 	for i, id := range node.Content {
-		size, err := repo.LookupBlobSize(id, pack.Data)
+		size, err := repo.LookupBlobSize(id, restic.DataBlob)
 		if err != nil {
 			return nil, err
 		}
@@ -111,14 +109,14 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 		buf = make([]byte, f.sizes[i])
 	}
 
-	blob, err = f.repo.LoadBlob(f.node.Content[i], pack.Data, buf)
+	n, err := f.repo.LoadBlob(restic.DataBlob, f.node.Content[i], buf)
 	if err != nil {
 		debug.Log("file.getBlobAt", "LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err
 	}
-	f.blobs[i] = blob
+	f.blobs[i] = buf[:n]
 
-	return blob, nil
+	return buf[:n], nil
 }
 
 func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {

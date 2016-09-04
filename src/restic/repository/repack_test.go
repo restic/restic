@@ -3,8 +3,7 @@ package repository_test
 import (
 	"io"
 	"math/rand"
-	"restic/backend"
-	"restic/pack"
+	"restic"
 	"restic/repository"
 	"testing"
 )
@@ -14,7 +13,7 @@ func randomSize(min, max int) int {
 }
 
 func random(t testing.TB, length int) []byte {
-	rd := repository.NewRandReader(rand.New(rand.NewSource(int64(length))))
+	rd := restic.NewRandReader(rand.New(rand.NewSource(int64(length))))
 	buf := make([]byte, length)
 	_, err := io.ReadFull(rd, buf)
 	if err != nil {
@@ -24,30 +23,30 @@ func random(t testing.TB, length int) []byte {
 	return buf
 }
 
-func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pData float32) {
+func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData float32) {
 	for i := 0; i < blobs; i++ {
 		var (
-			tpe    pack.BlobType
+			tpe    restic.BlobType
 			length int
 		)
 
 		if rand.Float32() < pData {
-			tpe = pack.Data
+			tpe = restic.DataBlob
 			length = randomSize(10*1024, 1024*1024) // 10KiB to 1MiB of data
 		} else {
-			tpe = pack.Tree
+			tpe = restic.TreeBlob
 			length = randomSize(1*1024, 20*1024) // 1KiB to 20KiB
 		}
 
 		buf := random(t, length)
-		id := backend.Hash(buf)
+		id := restic.Hash(buf)
 
-		if repo.Index().Has(id, pack.Data) {
-			t.Errorf("duplicate blob %v/%v ignored", id, pack.Data)
+		if repo.Index().Has(id, restic.DataBlob) {
+			t.Errorf("duplicate blob %v/%v ignored", id, restic.DataBlob)
 			continue
 		}
 
-		_, err := repo.SaveAndEncrypt(tpe, buf, &id)
+		_, err := repo.SaveBlob(tpe, buf, id)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
 		}
@@ -66,23 +65,23 @@ func createRandomBlobs(t testing.TB, repo *repository.Repository, blobs int, pDa
 
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
 // will be contained in the firstone ith probability p.
-func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, list2 pack.BlobSet) {
+func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 restic.BlobSet) {
 	done := make(chan struct{})
 	defer close(done)
 
-	list1 = pack.NewBlobSet()
-	list2 = pack.NewBlobSet()
+	list1 = restic.NewBlobSet()
+	list2 = restic.NewBlobSet()
 
-	blobs := pack.NewBlobSet()
+	blobs := restic.NewBlobSet()
 
-	for id := range repo.List(backend.Data, done) {
+	for id := range repo.List(restic.DataFile, done) {
 		entries, _, err := repo.ListPack(id)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
 		}
 
 		for _, entry := range entries {
-			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 			if blobs.Has(h) {
 				t.Errorf("ignoring duplicate blob %v", h)
 				continue
@@ -90,9 +89,9 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 			blobs.Insert(h)
 
 			if rand.Float32() <= p {
-				list1.Insert(pack.Handle{ID: entry.ID, Type: entry.Type})
+				list1.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
 			} else {
-				list2.Insert(pack.Handle{ID: entry.ID, Type: entry.Type})
+				list2.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
 			}
 
 		}
@@ -101,20 +100,20 @@ func selectBlobs(t *testing.T, repo *repository.Repository, p float32) (list1, l
 	return list1, list2
 }
 
-func listPacks(t *testing.T, repo *repository.Repository) backend.IDSet {
+func listPacks(t *testing.T, repo restic.Repository) restic.IDSet {
 	done := make(chan struct{})
 	defer close(done)
 
-	list := backend.NewIDSet()
-	for id := range repo.List(backend.Data, done) {
+	list := restic.NewIDSet()
+	for id := range repo.List(restic.DataFile, done) {
 		list.Insert(id)
 	}
 
 	return list
 }
 
-func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs pack.BlobSet) backend.IDSet {
-	packs := backend.NewIDSet()
+func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSet) restic.IDSet {
+	packs := restic.NewIDSet()
 
 	idx := repo.Index()
 	for h := range blobs {
@@ -131,26 +130,26 @@ func findPacksForBlobs(t *testing.T, repo *repository.Repository, blobs pack.Blo
 	return packs
 }
 
-func repack(t *testing.T, repo *repository.Repository, packs backend.IDSet, blobs pack.BlobSet) {
+func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs restic.BlobSet) {
 	err := repository.Repack(repo, packs, blobs)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func saveIndex(t *testing.T, repo *repository.Repository) {
+func saveIndex(t *testing.T, repo restic.Repository) {
 	if err := repo.SaveIndex(); err != nil {
 		t.Fatalf("repo.SaveIndex() %v", err)
 	}
 }
 
-func rebuildIndex(t *testing.T, repo *repository.Repository) {
+func rebuildIndex(t *testing.T, repo restic.Repository) {
 	if err := repository.RebuildIndex(repo); err != nil {
 		t.Fatalf("error rebuilding index: %v", err)
 	}
 }
 
-func reloadIndex(t *testing.T, repo *repository.Repository) {
+func reloadIndex(t *testing.T, repo restic.Repository) {
 	repo.SetIndex(repository.NewMasterIndex())
 	if err := repo.LoadIndex(); err != nil {
 		t.Fatalf("error loading new index: %v", err)

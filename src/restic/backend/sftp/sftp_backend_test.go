@@ -4,11 +4,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"restic"
 	"strings"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
-	"restic/backend"
 	"restic/backend/sftp"
 	"restic/backend/test"
 
@@ -52,7 +52,7 @@ func init() {
 
 	args := []string{"-e"}
 
-	test.CreateFn = func() (backend.Backend, error) {
+	test.CreateFn = func() (restic.Backend, error) {
 		err := createTempdir()
 		if err != nil {
 			return nil, err
@@ -61,7 +61,7 @@ func init() {
 		return sftp.Create(tempBackendDir, sftpserver, args...)
 	}
 
-	test.OpenFn = func() (backend.Backend, error) {
+	test.OpenFn = func() (restic.Backend, error) {
 		err := createTempdir()
 		if err != nil {
 			return nil, err

@@ -1,12 +1,12 @@
 package checker
 
 import (
-	"restic/repository"
+	"restic"
 	"testing"
 )
 
 // TestCheckRepo runs the checker on repo.
-func TestCheckRepo(t testing.TB, repo *repository.Repository) {
+func TestCheckRepo(t testing.TB, repo restic.Repository) {
 	chkr := New(repo)
 
 	hints, errs := chkr.LoadIndex()

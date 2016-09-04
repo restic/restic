@@ -1,23 +1,22 @@
 package checker_test
 
 import (
-	"fmt"
 	"math/rand"
 	"path/filepath"
 	"sort"
 	"testing"
 
 	"restic"
-	"restic/backend"
+	"restic/archiver"
 	"restic/backend/mem"
 	"restic/checker"
 	"restic/repository"
-	. "restic/test"
+	"restic/test"
 )
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")
 
-func list(repo *repository.Repository, t backend.Type) (IDs []string) {
+func list(repo restic.Repository, t restic.FileType) (IDs []string) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -60,164 +59,167 @@ func checkData(chkr *checker.Checker) []error {
 }
 
 func TestCheckRepo(t *testing.T) {
-	WithTestEnvironment(t, checkerTestData, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
+	repodir, cleanup := test.Env(t, checkerTestData)
+	defer cleanup()
 
-		chkr := checker.New(repo)
-		hints, errs := chkr.LoadIndex()
-		if len(errs) > 0 {
-			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-		}
+	repo := repository.TestOpenLocal(t, repodir)
 
-		if len(hints) > 0 {
-			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-		}
+	chkr := checker.New(repo)
+	hints, errs := chkr.LoadIndex()
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
 
-		OKs(t, checkPacks(chkr))
-		OKs(t, checkStruct(chkr))
-	})
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+
+	test.OKs(t, checkPacks(chkr))
+	test.OKs(t, checkStruct(chkr))
 }
 
 func TestMissingPack(t *testing.T) {
-	WithTestEnvironment(t, checkerTestData, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
+	repodir, cleanup := test.Env(t, checkerTestData)
+	defer cleanup()
 
-		packID := "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6"
-		OK(t, repo.Backend().Remove(backend.Data, packID))
+	repo := repository.TestOpenLocal(t, repodir)
 
-		chkr := checker.New(repo)
-		hints, errs := chkr.LoadIndex()
-		if len(errs) > 0 {
-			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-		}
+	packID := "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6"
+	test.OK(t, repo.Backend().Remove(restic.DataFile, packID))
 
-		if len(hints) > 0 {
-			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-		}
+	chkr := checker.New(repo)
+	hints, errs := chkr.LoadIndex()
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
 
-		errs = checkPacks(chkr)
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
 
-		Assert(t, len(errs) == 1,
-			"expected exactly one error, got %v", len(errs))
+	errs = checkPacks(chkr)
 
-		if err, ok := errs[0].(checker.PackError); ok {
-			Equals(t, packID, err.ID.String())
-		} else {
-			t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
-		}
-	})
+	test.Assert(t, len(errs) == 1,
+		"expected exactly one error, got %v", len(errs))
+
+	if err, ok := errs[0].(checker.PackError); ok {
+		test.Equals(t, packID, err.ID.String())
+	} else {
+		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
+	}
 }
 
 func TestUnreferencedPack(t *testing.T) {
-	WithTestEnvironment(t, checkerTestData, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
+	repodir, cleanup := test.Env(t, checkerTestData)
+	defer cleanup()
 
-		// index 3f1a only references pack 60e0
-		indexID := "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44"
-		packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
-		OK(t, repo.Backend().Remove(backend.Index, indexID))
+	repo := repository.TestOpenLocal(t, repodir)
 
-		chkr := checker.New(repo)
-		hints, errs := chkr.LoadIndex()
-		if len(errs) > 0 {
-			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-		}
+	// index 3f1a only references pack 60e0
+	indexID := "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44"
+	packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
+	test.OK(t, repo.Backend().Remove(restic.IndexFile, indexID))
 
-		if len(hints) > 0 {
-			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-		}
+	chkr := checker.New(repo)
+	hints, errs := chkr.LoadIndex()
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
 
-		errs = checkPacks(chkr)
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
 
-		Assert(t, len(errs) == 1,
-			"expected exactly one error, got %v", len(errs))
+	errs = checkPacks(chkr)
 
-		if err, ok := errs[0].(checker.PackError); ok {
-			Equals(t, packID, err.ID.String())
-		} else {
-			t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
-		}
-	})
+	test.Assert(t, len(errs) == 1,
+		"expected exactly one error, got %v", len(errs))
+
+	if err, ok := errs[0].(checker.PackError); ok {
+		test.Equals(t, packID, err.ID.String())
+	} else {
+		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
+	}
 }
 
 func TestUnreferencedBlobs(t *testing.T) {
-	WithTestEnvironment(t, checkerTestData, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
+	repodir, cleanup := test.Env(t, checkerTestData)
+	defer cleanup()
 
-		snID := "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"
-		OK(t, repo.Backend().Remove(backend.Snapshot, snID))
+	repo := repository.TestOpenLocal(t, repodir)
 
-		unusedBlobsBySnapshot := backend.IDs{
-			ParseID("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849"),
-			ParseID("988a272ab9768182abfd1fe7d7a7b68967825f0b861d3b36156795832c772235"),
-			ParseID("c01952de4d91da1b1b80bc6e06eaa4ec21523f4853b69dc8231708b9b7ec62d8"),
-			ParseID("bec3a53d7dc737f9a9bee68b107ec9e8ad722019f649b34d474b9982c3a3fec7"),
-			ParseID("2a6f01e5e92d8343c4c6b78b51c5a4dc9c39d42c04e26088c7614b13d8d0559d"),
-			ParseID("18b51b327df9391732ba7aaf841a4885f350d8a557b2da8352c9acf8898e3f10"),
-		}
+	snID := "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"
+	test.OK(t, repo.Backend().Remove(restic.SnapshotFile, snID))
 
-		sort.Sort(unusedBlobsBySnapshot)
+	unusedBlobsBySnapshot := restic.IDs{
+		restic.TestParseID("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849"),
+		restic.TestParseID("988a272ab9768182abfd1fe7d7a7b68967825f0b861d3b36156795832c772235"),
+		restic.TestParseID("c01952de4d91da1b1b80bc6e06eaa4ec21523f4853b69dc8231708b9b7ec62d8"),
+		restic.TestParseID("bec3a53d7dc737f9a9bee68b107ec9e8ad722019f649b34d474b9982c3a3fec7"),
+		restic.TestParseID("2a6f01e5e92d8343c4c6b78b51c5a4dc9c39d42c04e26088c7614b13d8d0559d"),
+		restic.TestParseID("18b51b327df9391732ba7aaf841a4885f350d8a557b2da8352c9acf8898e3f10"),
+	}
 
-		chkr := checker.New(repo)
-		hints, errs := chkr.LoadIndex()
-		if len(errs) > 0 {
-			t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
-		}
+	sort.Sort(unusedBlobsBySnapshot)
 
-		if len(hints) > 0 {
-			t.Errorf("expected no hints, got %v: %v", len(hints), hints)
-		}
+	chkr := checker.New(repo)
+	hints, errs := chkr.LoadIndex()
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
 
-		OKs(t, checkPacks(chkr))
-		OKs(t, checkStruct(chkr))
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
 
-		blobs := chkr.UnusedBlobs()
-		sort.Sort(blobs)
+	test.OKs(t, checkPacks(chkr))
+	test.OKs(t, checkStruct(chkr))
 
-		Equals(t, unusedBlobsBySnapshot, blobs)
-	})
+	blobs := chkr.UnusedBlobs()
+	sort.Sort(blobs)
+
+	test.Equals(t, unusedBlobsBySnapshot, blobs)
 }
 
 var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 
 func TestDuplicatePacksInIndex(t *testing.T) {
-	WithTestEnvironment(t, checkerDuplicateIndexTestData, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
+	repodir, cleanup := test.Env(t, checkerDuplicateIndexTestData)
+	defer cleanup()
 
-		chkr := checker.New(repo)
-		hints, errs := chkr.LoadIndex()
-		if len(hints) == 0 {
-			t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
+	repo := repository.TestOpenLocal(t, repodir)
+
+	chkr := checker.New(repo)
+	hints, errs := chkr.LoadIndex()
+	if len(hints) == 0 {
+		t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
+	}
+
+	found := false
+	for _, hint := range hints {
+		if _, ok := hint.(checker.ErrDuplicatePacks); ok {
+			found = true
+		} else {
+			t.Errorf("got unexpected hint: %v", hint)
 		}
+	}
 
-		found := false
-		for _, hint := range hints {
-			if _, ok := hint.(checker.ErrDuplicatePacks); ok {
-				found = true
-			} else {
-				t.Errorf("got unexpected hint: %v", hint)
-			}
-		}
+	if !found {
+		t.Fatalf("did not find hint ErrDuplicatePacks")
+	}
 
-		if !found {
-			t.Fatalf("did not find hint ErrDuplicatePacks")
-		}
-
-		if len(errs) > 0 {
-			t.Errorf("expected no errors, got %v: %v", len(errs), errs)
-		}
-
-	})
+	if len(errs) > 0 {
+		t.Errorf("expected no errors, got %v: %v", len(errs), errs)
+	}
 }
 
 // errorBackend randomly modifies data after reading.
 type errorBackend struct {
-	backend.Backend
+	restic.Backend
 	ProduceErrors bool
 }
 
-func (b errorBackend) Load(h backend.Handle, p []byte, off int64) (int, error) {
-	fmt.Printf("load %v\n", h)
+func (b errorBackend) Load(h restic.Handle, p []byte, off int64) (int, error) {
 	n, err := b.Backend.Load(h, p, off)
 
 	if b.ProduceErrors {
@@ -242,16 +244,16 @@ func TestCheckerModifiedData(t *testing.T) {
 	repository.TestUseLowSecurityKDFParameters(t)
 
 	repo := repository.New(be)
-	OK(t, repo.Init(TestPassword))
+	test.OK(t, repo.Init(test.TestPassword))
 
-	arch := restic.NewArchiver(repo)
+	arch := archiver.New(repo)
 	_, id, err := arch.Snapshot(nil, []string{"."}, nil)
-	OK(t, err)
+	test.OK(t, err)
 	t.Logf("archived as %v", id.Str())
 
 	beError := &errorBackend{Backend: be}
 	checkRepo := repository.New(beError)
-	OK(t, checkRepo.SearchKey(TestPassword, 5))
+	test.OK(t, checkRepo.SearchKey(test.TestPassword, 5))
 
 	chkr := checker.New(checkRepo)
 

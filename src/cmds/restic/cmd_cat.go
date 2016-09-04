@@ -8,7 +8,7 @@ import (
 	"restic"
 	"restic/backend"
 	"restic/debug"
-	"restic/pack"
+	"restic/errors"
 	"restic/repository"
 )
 
@@ -32,7 +32,7 @@ func (cmd CmdCat) Usage() string {
 
 func (cmd CmdCat) Execute(args []string) error {
 	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return restic.Fatalf("type or ID not specified, Usage: %s", cmd.Usage())
+		return errors.Fatalf("type or ID not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -48,12 +48,12 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	tpe := args[0]
 
-	var id backend.ID
+	var id restic.ID
 	if tpe != "masterkey" && tpe != "config" {
-		id, err = backend.ParseID(args[1])
+		id, err = restic.ParseID(args[1])
 		if err != nil {
 			if tpe != "snapshot" {
-				return restic.Fatalf("unable to parse ID: %v\n", err)
+				return errors.Fatalf("unable to parse ID: %v\n", err)
 			}
 
 			// find snapshot id with prefix
@@ -67,7 +67,7 @@ func (cmd CmdCat) Execute(args []string) error {
 	// handle all types that don't need an index
 	switch tpe {
 	case "config":
-		buf, err := json.MarshalIndent(repo.Config, "", "  ")
+		buf, err := json.MarshalIndent(repo.Config(), "", "  ")
 		if err != nil {
 			return err
 		}
@@ -75,7 +75,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "index":
-		buf, err := repo.LoadAndDecrypt(backend.Index, id)
+		buf, err := repo.LoadAndDecrypt(restic.IndexFile, id)
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	case "snapshot":
 		sn := &restic.Snapshot{}
-		err = repo.LoadJSONUnpacked(backend.Snapshot, id, sn)
+		err = repo.LoadJSONUnpacked(restic.SnapshotFile, id, sn)
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		return nil
 	case "key":
-		h := backend.Handle{Type: backend.Key, Name: id.String()}
+		h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
 		buf, err := backend.LoadAll(repo.Backend(), h, nil)
 		if err != nil {
 			return err
@@ -150,13 +150,13 @@ func (cmd CmdCat) Execute(args []string) error {
 
 	switch tpe {
 	case "pack":
-		h := backend.Handle{Type: backend.Data, Name: id.String()}
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 		buf, err := backend.LoadAll(repo.Backend(), h, nil)
 		if err != nil {
 			return err
 		}
 
-		hash := backend.Hash(buf)
+		hash := restic.Hash(buf)
 		if !hash.Equal(id) {
 			fmt.Fprintf(cmd.global.stderr, "Warning: hash of data does not match ID, want\n  %v\ngot:\n  %v\n", id.String(), hash.String())
 		}
@@ -165,7 +165,7 @@ func (cmd CmdCat) Execute(args []string) error {
 		return err
 
 	case "blob":
-		for _, t := range []pack.BlobType{pack.Data, pack.Tree} {
+		for _, t := range []restic.BlobType{restic.DataBlob, restic.TreeBlob} {
 			list, err := repo.Index().Lookup(id, t)
 			if err != nil {
 				continue
@@ -173,21 +173,21 @@ func (cmd CmdCat) Execute(args []string) error {
 			blob := list[0]
 
 			buf := make([]byte, blob.Length)
-			data, err := repo.LoadBlob(id, t, buf)
+			n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 			if err != nil {
 				return err
 			}
+			buf = buf[:n]
 
-			_, err = os.Stdout.Write(data)
+			_, err = os.Stdout.Write(buf)
 			return err
 		}
 
-		return restic.Fatal("blob not found")
+		return errors.Fatal("blob not found")
 
 	case "tree":
 		debug.Log("cat", "cat tree %v", id.Str())
-		tree := restic.NewTree()
-		err = repo.LoadJSONPack(pack.Tree, id, tree)
+		tree, err := repo.LoadTree(id)
 		if err != nil {
 			debug.Log("cat", "unable to load tree %v: %v", id.Str(), err)
 			return err
@@ -203,6 +203,6 @@ func (cmd CmdCat) Execute(args []string) error {
 		return nil
 
 	default:
-		return restic.Fatal("invalid type")
+		return errors.Fatal("invalid type")
 	}
 }

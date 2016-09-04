@@ -12,16 +12,14 @@ import (
 	"bazil.org/fuse/fs"
 
 	"restic"
-	"restic/backend"
 	"restic/debug"
-	"restic/repository"
 
 	"golang.org/x/net/context"
 )
 
 type SnapshotWithId struct {
 	*restic.Snapshot
-	backend.ID
+	restic.ID
 }
 
 // These lines statically ensure that a *SnapshotsDir implement the given
@@ -31,7 +29,7 @@ var _ = fs.HandleReadDirAller(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 
 type SnapshotsDir struct {
-	repo        *repository.Repository
+	repo        restic.Repository
 	ownerIsRoot bool
 
 	// knownSnapshots maps snapshot timestamp to the snapshot
@@ -39,7 +37,8 @@ type SnapshotsDir struct {
 	knownSnapshots map[string]SnapshotWithId
 }
 
-func NewSnapshotsDir(repo *repository.Repository, ownerIsRoot bool) *SnapshotsDir {
+// NewSnapshotsDir returns a new dir object for the snapshots.
+func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool) *SnapshotsDir {
 	debug.Log("NewSnapshotsDir", "fuse mount initiated")
 	return &SnapshotsDir{
 		repo:           repo,
@@ -65,7 +64,7 @@ func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
 	sn.Lock()
 	defer sn.Unlock()
 
-	for id := range sn.repo.List(backend.Snapshot, ctx.Done()) {
+	for id := range sn.repo.List(restic.SnapshotFile, ctx.Done()) {
 		snapshot, err := restic.LoadSnapshot(sn.repo, id)
 		if err != nil {
 			return err
@@ -96,7 +95,7 @@ func (sn *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	ret := make([]fuse.Dirent, 0)
 	for _, snapshot := range sn.knownSnapshots {
 		ret = append(ret, fuse.Dirent{
-			Inode: inodeFromBackendId(snapshot.ID),
+			Inode: inodeFromBackendID(snapshot.ID),
 			Type:  fuse.DT_Dir,
 			Name:  snapshot.Time.Format(time.RFC3339),
 		})

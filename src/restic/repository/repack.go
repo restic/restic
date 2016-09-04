@@ -3,25 +3,25 @@ package repository
 import (
 	"bytes"
 	"io"
-	"restic/backend"
+	"restic"
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // Repack takes a list of packs together with a list of blobs contained in
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Afterwards, the packs are removed. This operation requires
 // an exclusive lock on the repo.
-func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err error) {
+func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet) (err error) {
 	debug.Log("Repack", "repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	buf := make([]byte, 0, maxPackSize)
 	for packID := range packs {
 		// load the complete pack
-		h := backend.Handle{Type: backend.Data, Name: packID.String()}
+		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
 
 		l, err := repo.Backend().Load(h, buf[:cap(buf)], 0)
 		if errors.Cause(err) == io.ErrUnexpectedEOF {
@@ -43,23 +43,28 @@ func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err 
 		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), len(blobs))
 		var plaintext []byte
 		for _, entry := range blobs {
-			h := pack.Handle{ID: entry.ID, Type: entry.Type}
+			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 			if !keepBlobs.Has(h) {
 				continue
 			}
 
-			ciphertext := buf[entry.Offset : entry.Offset+entry.Length]
+			debug.Log("Repack", "  process blob %v", h)
 
-			if cap(plaintext) < len(ciphertext) {
+			ciphertext := buf[entry.Offset : entry.Offset+entry.Length]
+			plaintext = plaintext[:len(plaintext)]
+			if len(plaintext) < len(ciphertext) {
 				plaintext = make([]byte, len(ciphertext))
 			}
 
-			plaintext, err = crypto.Decrypt(repo.Key(), plaintext, ciphertext)
+			debug.Log("Repack", "  ciphertext %d, plaintext %d", len(plaintext), len(ciphertext))
+
+			n, err := crypto.Decrypt(repo.Key(), plaintext, ciphertext)
 			if err != nil {
 				return err
 			}
+			plaintext = plaintext[:n]
 
-			_, err = repo.SaveAndEncrypt(entry.Type, plaintext, &entry.ID)
+			_, err = repo.SaveBlob(entry.Type, plaintext, entry.ID)
 			if err != nil {
 				return err
 			}
@@ -75,7 +80,7 @@ func Repack(repo *Repository, packs backend.IDSet, keepBlobs pack.BlobSet) (err 
 	}
 
 	for packID := range packs {
-		err := repo.Backend().Remove(backend.Data, packID.String())
+		err := repo.Backend().Remove(restic.DataFile, packID.String())
 		if err != nil {
 			debug.Log("Repack", "error removing pack %v: %v", packID.Str(), err)
 			return err

@@ -2,28 +2,29 @@ package mem
 
 import (
 	"io"
+	"restic"
 	"sync"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
-	"restic/backend"
 	"restic/debug"
 )
 
 type entry struct {
-	Type backend.Type
+	Type restic.FileType
 	Name string
 }
 
 type memMap map[entry][]byte
+
+// make sure that MemoryBackend implements backend.Backend
+var _ restic.Backend = &MemoryBackend{}
 
 // MemoryBackend is a mock backend that uses a map for storing all data in
 // memory. This should only be used for tests.
 type MemoryBackend struct {
 	data memMap
 	m    sync.Mutex
-
-	backend.MockBackend
 }
 
 // New returns a new backend that saves all data in a map in memory.
@@ -32,60 +33,13 @@ func New() *MemoryBackend {
 		data: make(memMap),
 	}
 
-	be.MockBackend.TestFn = func(t backend.Type, name string) (bool, error) {
-		return memTest(be, t, name)
-	}
-
-	be.MockBackend.LoadFn = func(h backend.Handle, p []byte, off int64) (int, error) {
-		return memLoad(be, h, p, off)
-	}
-
-	be.MockBackend.SaveFn = func(h backend.Handle, p []byte) error {
-		return memSave(be, h, p)
-	}
-
-	be.MockBackend.StatFn = func(h backend.Handle) (backend.BlobInfo, error) {
-		return memStat(be, h)
-	}
-
-	be.MockBackend.RemoveFn = func(t backend.Type, name string) error {
-		return memRemove(be, t, name)
-	}
-
-	be.MockBackend.ListFn = func(t backend.Type, done <-chan struct{}) <-chan string {
-		return memList(be, t, done)
-	}
-
-	be.MockBackend.DeleteFn = func() error {
-		be.m.Lock()
-		defer be.m.Unlock()
-
-		be.data = make(memMap)
-		return nil
-	}
-
-	be.MockBackend.LocationFn = func() string {
-		return "Memory Backend"
-	}
-
 	debug.Log("MemoryBackend.New", "created new memory backend")
 
 	return be
 }
 
-func (be *MemoryBackend) insert(t backend.Type, name string, data []byte) error {
-	be.m.Lock()
-	defer be.m.Unlock()
-
-	if _, ok := be.data[entry{t, name}]; ok {
-		return errors.New("already present")
-	}
-
-	be.data[entry{t, name}] = data
-	return nil
-}
-
-func memTest(be *MemoryBackend, t backend.Type, name string) (bool, error) {
+// Test returns whether a file exists.
+func (be *MemoryBackend) Test(t restic.FileType, name string) (bool, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -98,7 +52,8 @@ func memTest(be *MemoryBackend, t backend.Type, name string) (bool, error) {
 	return false, nil
 }
 
-func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, error) {
+// Load reads data from the backend.
+func (be *MemoryBackend) Load(h restic.Handle, p []byte, off int64) (int, error) {
 	if err := h.Valid(); err != nil {
 		return 0, err
 	}
@@ -106,7 +61,7 @@ func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, err
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	if h.Type == backend.Config {
+	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
 
@@ -137,7 +92,8 @@ func memLoad(be *MemoryBackend, h backend.Handle, p []byte, off int64) (int, err
 	return n, nil
 }
 
-func memSave(be *MemoryBackend, h backend.Handle, p []byte) error {
+// Save adds new Data to the backend.
+func (be *MemoryBackend) Save(h restic.Handle, p []byte) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -145,7 +101,7 @@ func memSave(be *MemoryBackend, h backend.Handle, p []byte) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	if h.Type == backend.Config {
+	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
 
@@ -161,15 +117,16 @@ func memSave(be *MemoryBackend, h backend.Handle, p []byte) error {
 	return nil
 }
 
-func memStat(be *MemoryBackend, h backend.Handle) (backend.BlobInfo, error) {
+// Stat returns information about a file in the backend.
+func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
 	if err := h.Valid(); err != nil {
-		return backend.BlobInfo{}, err
+		return restic.FileInfo{}, err
 	}
 
-	if h.Type == backend.Config {
+	if h.Type == restic.ConfigFile {
 		h.Name = ""
 	}
 
@@ -177,13 +134,14 @@ func memStat(be *MemoryBackend, h backend.Handle) (backend.BlobInfo, error) {
 
 	e, ok := be.data[entry{h.Type, h.Name}]
 	if !ok {
-		return backend.BlobInfo{}, errors.New("no such data")
+		return restic.FileInfo{}, errors.New("no such data")
 	}
 
-	return backend.BlobInfo{Size: int64(len(e))}, nil
+	return restic.FileInfo{Size: int64(len(e))}, nil
 }
 
-func memRemove(be *MemoryBackend, t backend.Type, name string) error {
+// Remove deletes a file from the backend.
+func (be *MemoryBackend) Remove(t restic.FileType, name string) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -198,7 +156,8 @@ func memRemove(be *MemoryBackend, t backend.Type, name string) error {
 	return nil
 }
 
-func memList(be *MemoryBackend, t backend.Type, done <-chan struct{}) <-chan string {
+// List returns a channel which yields entries from the backend.
+func (be *MemoryBackend) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -226,4 +185,23 @@ func memList(be *MemoryBackend, t backend.Type, done <-chan struct{}) <-chan str
 	}()
 
 	return ch
+}
+
+// Location returns the location of the backend (RAM).
+func (be *MemoryBackend) Location() string {
+	return "RAM"
+}
+
+// Delete removes all data in the backend.
+func (be *MemoryBackend) Delete() error {
+	be.m.Lock()
+	defer be.m.Unlock()
+
+	be.data = make(memMap)
+	return nil
+}
+
+// Close closes the backend.
+func (be *MemoryBackend) Close() error {
+	return nil
 }

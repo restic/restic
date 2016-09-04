@@ -3,10 +3,7 @@ package index
 import (
 	"math/rand"
 	"restic"
-	"restic/backend"
-	"restic/pack"
 	"restic/repository"
-	. "restic/test"
 	"testing"
 	"time"
 )
@@ -17,7 +14,7 @@ var (
 	depth        = 3
 )
 
-func createFilledRepo(t testing.TB, snapshots int, dup float32) (*repository.Repository, func()) {
+func createFilledRepo(t testing.TB, snapshots int, dup float32) (restic.Repository, func()) {
 	repo, cleanup := repository.TestRepository(t)
 
 	for i := 0; i < 3; i++ {
@@ -27,8 +24,8 @@ func createFilledRepo(t testing.TB, snapshots int, dup float32) (*repository.Rep
 	return repo, cleanup
 }
 
-func validateIndex(t testing.TB, repo *repository.Repository, idx *Index) {
-	for id := range repo.List(backend.Data, nil) {
+func validateIndex(t testing.TB, repo restic.Repository, idx *Index) {
+	for id := range repo.List(restic.DataFile, nil) {
 		if _, ok := idx.Packs[id]; !ok {
 			t.Errorf("pack %v missing from index", id.Str())
 		}
@@ -164,7 +161,7 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 	t.Logf("%d packs with duplicate blobs", len(packs))
 }
 
-func loadIndex(t testing.TB, repo *repository.Repository) *Index {
+func loadIndex(t testing.TB, repo restic.Repository) *Index {
 	idx, err := Load(repo, nil)
 	if err != nil {
 		t.Fatalf("Load() returned error %v", err)
@@ -179,7 +176,7 @@ func TestIndexSave(t *testing.T) {
 
 	idx := loadIndex(t, repo)
 
-	packs := make(map[backend.ID][]pack.Blob)
+	packs := make(map[restic.ID][]restic.Blob)
 	for id := range idx.Packs {
 		if rand.Float32() < 0.5 {
 			packs[id] = idx.Packs[id].Entries
@@ -197,7 +194,7 @@ func TestIndexSave(t *testing.T) {
 
 	for id := range idx.IndexIDs {
 		t.Logf("remove index %v", id.Str())
-		err = repo.Backend().Remove(backend.Index, id.String())
+		err = repo.Backend().Remove(restic.IndexFile, id.String())
 		if err != nil {
 			t.Errorf("error removing index %v: %v", id, err)
 		}
@@ -235,7 +232,7 @@ func TestIndexAddRemovePack(t *testing.T) {
 	done := make(chan struct{})
 	defer close(done)
 
-	packID := <-repo.List(backend.Data, done)
+	packID := <-repo.List(restic.DataFile, done)
 
 	t.Logf("selected pack %v", packID.Str())
 
@@ -248,7 +245,7 @@ func TestIndexAddRemovePack(t *testing.T) {
 	}
 
 	for _, blob := range blobs {
-		h := pack.Handle{ID: blob.ID, Type: blob.Type}
+		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 		_, err := idx.FindBlob(h)
 		if err == nil {
 			t.Errorf("removed blob %v found in index", h)
@@ -298,7 +295,7 @@ func TestIndexLoadDocReference(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	id, err := repo.SaveUnpacked(backend.Index, docExample)
+	id, err := repo.SaveUnpacked(restic.IndexFile, docExample)
 	if err != nil {
 		t.Fatalf("SaveUnpacked() returned error %v", err)
 	}
@@ -307,8 +304,8 @@ func TestIndexLoadDocReference(t *testing.T) {
 
 	idx := loadIndex(t, repo)
 
-	blobID := ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66")
-	locs, err := idx.FindBlob(pack.Handle{ID: blobID, Type: pack.Data})
+	blobID := restic.TestParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66")
+	locs, err := idx.FindBlob(restic.BlobHandle{ID: blobID, Type: restic.DataBlob})
 	if err != nil {
 		t.Errorf("FindBlob() returned error %v", err)
 	}
@@ -322,8 +319,8 @@ func TestIndexLoadDocReference(t *testing.T) {
 		t.Errorf("blob IDs are not equal: %v != %v", l.ID, blobID)
 	}
 
-	if l.Type != pack.Data {
-		t.Errorf("want type %v, got %v", pack.Data, l.Type)
+	if l.Type != restic.DataBlob {
+		t.Errorf("want type %v, got %v", restic.DataBlob, l.Type)
 	}
 
 	if l.Offset != 150 {

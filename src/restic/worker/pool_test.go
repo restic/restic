@@ -3,7 +3,7 @@ package worker_test
 import (
 	"testing"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/worker"
 )

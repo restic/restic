@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"restic"
-	"restic/pack"
+	"restic/repository"
 	. "restic/test"
 )
 
@@ -93,19 +93,19 @@ func TestNodeComparison(t *testing.T) {
 }
 
 func TestLoadTree(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	// save tree
 	tree := restic.NewTree()
-	id, err := repo.SaveJSON(pack.Tree, tree)
+	id, err := repo.SaveTree(tree)
 	OK(t, err)
 
 	// save packs
 	OK(t, repo.Flush())
 
 	// load tree again
-	tree2, err := restic.LoadTree(repo, id)
+	tree2, err := repo.LoadTree(id)
 	OK(t, err)
 
 	Assert(t, tree.Equals(tree2),

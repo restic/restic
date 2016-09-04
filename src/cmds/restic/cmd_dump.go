@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"restic"
-	"restic/backend"
+	"restic/errors"
 	"restic/pack"
 	"restic/repository"
 
@@ -50,7 +50,7 @@ func debugPrintSnapshots(repo *repository.Repository, wr io.Writer) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	for id := range repo.List(backend.Snapshot, done) {
+	for id := range repo.List(restic.SnapshotFile, done) {
 		snapshot, err := restic.LoadSnapshot(repo, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "LoadSnapshot(%v): %v", id.Str(), err)
@@ -68,37 +68,6 @@ func debugPrintSnapshots(repo *repository.Repository, wr io.Writer) error {
 	return nil
 }
 
-func printTrees(repo *repository.Repository, wr io.Writer) error {
-	done := make(chan struct{})
-	defer close(done)
-
-	trees := []backend.ID{}
-
-	for _, idx := range repo.Index().All() {
-		for blob := range idx.Each(nil) {
-			if blob.Type != pack.Tree {
-				continue
-			}
-
-			trees = append(trees, blob.ID)
-		}
-	}
-
-	for _, id := range trees {
-		tree, err := restic.LoadTree(repo, id)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "LoadTree(%v): %v", id.Str(), err)
-			continue
-		}
-
-		fmt.Fprintf(wr, "tree_id: %v\n", id)
-
-		prettyPrintJSON(wr, tree)
-	}
-
-	return nil
-}
-
 const dumpPackWorkers = 10
 
 // Pack is the struct used in printPacks.
@@ -110,10 +79,10 @@ type Pack struct {
 
 // Blob is the struct used in printPacks.
 type Blob struct {
-	Type   pack.BlobType `json:"type"`
-	Length uint          `json:"length"`
-	ID     backend.ID    `json:"id"`
-	Offset uint          `json:"offset"`
+	Type   restic.BlobType `json:"type"`
+	Length uint            `json:"length"`
+	ID     restic.ID       `json:"id"`
+	Offset uint            `json:"offset"`
 }
 
 func printPacks(repo *repository.Repository, wr io.Writer) error {
@@ -123,14 +92,14 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
 		name := job.Data.(string)
 
-		h := backend.Handle{Type: backend.Data, Name: name}
+		h := restic.Handle{Type: restic.DataFile, Name: name}
 
 		blobInfo, err := repo.Backend().Stat(h)
 		if err != nil {
 			return nil, err
 		}
 
-		blobs, err := pack.List(repo.Key(), backend.ReaderAt(repo.Backend(), h), blobInfo.Size)
+		blobs, err := pack.List(repo.Key(), restic.ReaderAt(repo.Backend(), h), blobInfo.Size)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +112,7 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 	wp := worker.New(dumpPackWorkers, f, jobCh, resCh)
 
 	go func() {
-		for name := range repo.Backend().List(backend.Data, done) {
+		for name := range repo.Backend().List(restic.DataFile, done) {
 			jobCh <- worker.Job{Data: name}
 		}
 		close(jobCh)
@@ -157,7 +126,7 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 			continue
 		}
 
-		entries := job.Result.([]pack.Blob)
+		entries := job.Result.([]restic.Blob)
 		p := Pack{
 			Name:  name,
 			Blobs: make([]Blob, len(entries)),
@@ -183,7 +152,7 @@ func (cmd CmdDump) DumpIndexes() error {
 	done := make(chan struct{})
 	defer close(done)
 
-	for id := range cmd.repo.List(backend.Index, done) {
+	for id := range cmd.repo.List(restic.IndexFile, done) {
 		fmt.Printf("index_id: %v\n", id)
 
 		idx, err := repository.LoadIndex(cmd.repo, id)
@@ -202,7 +171,7 @@ func (cmd CmdDump) DumpIndexes() error {
 
 func (cmd CmdDump) Execute(args []string) error {
 	if len(args) != 1 {
-		return restic.Fatalf("type not specified, Usage: %s", cmd.Usage())
+		return errors.Fatalf("type not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -229,20 +198,11 @@ func (cmd CmdDump) Execute(args []string) error {
 		return cmd.DumpIndexes()
 	case "snapshots":
 		return debugPrintSnapshots(repo, os.Stdout)
-	case "trees":
-		return printTrees(repo, os.Stdout)
 	case "packs":
 		return printPacks(repo, os.Stdout)
 	case "all":
 		fmt.Printf("snapshots:\n")
 		err := debugPrintSnapshots(repo, os.Stdout)
-		if err != nil {
-			return err
-		}
-
-		fmt.Printf("\ntrees:\n")
-
-		err = printTrees(repo, os.Stdout)
 		if err != nil {
 			return err
 		}
@@ -255,6 +215,6 @@ func (cmd CmdDump) Execute(args []string) error {
 
 		return nil
 	default:
-		return restic.Fatalf("no such type %q", tpe)
+		return errors.Fatalf("no such type %q", tpe)
 	}
 }

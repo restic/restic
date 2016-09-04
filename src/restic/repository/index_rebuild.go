@@ -3,7 +3,7 @@ package repository
 import (
 	"fmt"
 	"os"
-	"restic/backend"
+	"restic"
 	"restic/debug"
 	"restic/list"
 	"restic/worker"
@@ -12,7 +12,7 @@ import (
 // RebuildIndex lists all packs in the repo, writes a new index and removes all
 // old indexes. This operation should only be done with an exclusive lock in
 // place.
-func RebuildIndex(repo *Repository) error {
+func RebuildIndex(repo restic.Repository) error {
 	debug.Log("RebuildIndex", "start rebuilding index")
 
 	done := make(chan struct{})
@@ -23,7 +23,7 @@ func RebuildIndex(repo *Repository) error {
 
 	idx := NewIndex()
 	for job := range ch {
-		id := job.Data.(backend.ID)
+		id := job.Data.(restic.ID)
 
 		if job.Error != nil {
 			fmt.Fprintf(os.Stderr, "error for pack %v: %v\n", id, job.Error)
@@ -33,19 +33,16 @@ func RebuildIndex(repo *Repository) error {
 		res := job.Result.(list.Result)
 
 		for _, entry := range res.Entries() {
-			pb := PackedBlob{
-				ID:     entry.ID,
-				Type:   entry.Type,
-				Length: entry.Length,
-				Offset: entry.Offset,
+			pb := restic.PackedBlob{
+				Blob:   entry,
 				PackID: res.PackID(),
 			}
 			idx.Store(pb)
 		}
 	}
 
-	oldIndexes := backend.NewIDSet()
-	for id := range repo.List(backend.Index, done) {
+	oldIndexes := restic.NewIDSet()
+	for id := range repo.List(restic.IndexFile, done) {
 		idx.AddToSupersedes(id)
 		oldIndexes.Insert(id)
 	}
@@ -58,7 +55,7 @@ func RebuildIndex(repo *Repository) error {
 	debug.Log("RebuildIndex.RebuildIndex", "new index saved as %v", id.Str())
 
 	for indexID := range oldIndexes {
-		err := repo.Backend().Remove(backend.Index, indexID.String())
+		err := repo.Backend().Remove(restic.IndexFile, indexID.String())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", indexID.Str(), err)
 		}

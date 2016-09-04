@@ -10,44 +10,40 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"runtime"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/fs"
-	"restic/pack"
-	"restic/repository"
 )
 
 // Node is a file, directory or other item in a backup.
 type Node struct {
-	Name       string       `json:"name"`
-	Type       string       `json:"type"`
-	Mode       os.FileMode  `json:"mode,omitempty"`
-	ModTime    time.Time    `json:"mtime,omitempty"`
-	AccessTime time.Time    `json:"atime,omitempty"`
-	ChangeTime time.Time    `json:"ctime,omitempty"`
-	UID        uint32       `json:"uid"`
-	GID        uint32       `json:"gid"`
-	User       string       `json:"user,omitempty"`
-	Group      string       `json:"group,omitempty"`
-	Inode      uint64       `json:"inode,omitempty"`
-	Size       uint64       `json:"size,omitempty"`
-	Links      uint64       `json:"links,omitempty"`
-	LinkTarget string       `json:"linktarget,omitempty"`
-	Device     uint64       `json:"device,omitempty"`
-	Content    []backend.ID `json:"content"`
-	Subtree    *backend.ID  `json:"subtree,omitempty"`
+	Name       string      `json:"name"`
+	Type       string      `json:"type"`
+	Mode       os.FileMode `json:"mode,omitempty"`
+	ModTime    time.Time   `json:"mtime,omitempty"`
+	AccessTime time.Time   `json:"atime,omitempty"`
+	ChangeTime time.Time   `json:"ctime,omitempty"`
+	UID        uint32      `json:"uid"`
+	GID        uint32      `json:"gid"`
+	User       string      `json:"user,omitempty"`
+	Group      string      `json:"group,omitempty"`
+	Inode      uint64      `json:"inode,omitempty"`
+	Size       uint64      `json:"size,omitempty"`
+	Links      uint64      `json:"links,omitempty"`
+	LinkTarget string      `json:"linktarget,omitempty"`
+	Device     uint64      `json:"device,omitempty"`
+	Content    IDs         `json:"content"`
+	Subtree    *ID         `json:"subtree,omitempty"`
 
 	Error string `json:"error,omitempty"`
 
 	tree *Tree
 
-	path  string
-	err   error
-	blobs repository.Blobs
+	Path string `json:"-"`
+	err  error
 }
 
 func (node Node) String() string {
@@ -63,6 +59,7 @@ func (node Node) String() string {
 	return fmt.Sprintf("<Node(%s) %s>", node.Type, node.Name)
 }
 
+// Tree returns this node's tree object.
 func (node Node) Tree() *Tree {
 	return node.tree
 }
@@ -71,7 +68,7 @@ func (node Node) Tree() *Tree {
 func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	mask := os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky
 	node := &Node{
-		path:    path,
+		Path:    path,
 		Name:    fi.Name(),
 		Mode:    fi.Mode() & mask,
 		ModTime: fi.ModTime(),
@@ -108,7 +105,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 }
 
 // CreateAt creates the node at the given path and restores all the meta data.
-func (node *Node) CreateAt(path string, repo *repository.Repository) error {
+func (node *Node) CreateAt(path string, repo Repository) error {
 	debug.Log("Node.CreateAt", "create node %v at %v", node.Name, path)
 
 	switch node.Type {
@@ -202,7 +199,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(path string, repo *repository.Repository) error {
+func (node Node) createFileAt(path string, repo Repository) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 	defer f.Close()
 
@@ -212,7 +209,7 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 
 	var buf []byte
 	for _, id := range node.Content {
-		size, err := repo.LookupBlobSize(id, pack.Data)
+		size, err := repo.LookupBlobSize(id, DataBlob)
 		if err != nil {
 			return err
 		}
@@ -222,10 +219,11 @@ func (node Node) createFileAt(path string, repo *repository.Repository) error {
 			buf = make([]byte, size)
 		}
 
-		buf, err := repo.LoadBlob(id, pack.Data, buf)
+		n, err := repo.LoadBlob(DataBlob, id, buf)
 		if err != nil {
 			return err
 		}
+		buf = buf[:n]
 
 		_, err = f.Write(buf)
 		if err != nil {
@@ -374,15 +372,16 @@ func (node Node) sameContent(other Node) bool {
 	return true
 }
 
-func (node *Node) isNewer(path string, fi os.FileInfo) bool {
+// IsNewer returns true of the file has been updated since the last Stat().
+func (node *Node) IsNewer(path string, fi os.FileInfo) bool {
 	if node.Type != "file" {
-		debug.Log("node.isNewer", "node %v is newer: not file", path)
+		debug.Log("node.IsNewer", "node %v is newer: not file", path)
 		return true
 	}
 
 	tpe := nodeTypeFromFileInfo(fi)
 	if node.Name != fi.Name() || node.Type != tpe {
-		debug.Log("node.isNewer", "node %v is newer: name or type changed", path)
+		debug.Log("node.IsNewer", "node %v is newer: name or type changed", path)
 		return true
 	}
 
@@ -392,7 +391,7 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 	if !ok {
 		if node.ModTime != fi.ModTime() ||
 			node.Size != size {
-			debug.Log("node.isNewer", "node %v is newer: timestamp or size changed", path)
+			debug.Log("node.IsNewer", "node %v is newer: timestamp or size changed", path)
 			return true
 		}
 		return false
@@ -404,11 +403,11 @@ func (node *Node) isNewer(path string, fi os.FileInfo) bool {
 		node.ChangeTime != changeTime(extendedStat) ||
 		node.Inode != uint64(inode) ||
 		node.Size != size {
-		debug.Log("node.isNewer", "node %v is newer: timestamp, size or inode changed", path)
+		debug.Log("node.IsNewer", "node %v is newer: timestamp, size or inode changed", path)
 		return true
 	}
 
-	debug.Log("node.isNewer", "node %v is not newer", path)
+	debug.Log("node.IsNewer", "node %v is not newer", path)
 	return false
 }
 

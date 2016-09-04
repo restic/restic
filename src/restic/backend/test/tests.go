@@ -7,28 +7,29 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"reflect"
+	"restic"
 	"sort"
 	"testing"
 
-	"github.com/pkg/errors"
+	"restic/errors"
+	"restic/test"
 
 	"restic/backend"
-	. "restic/test"
 )
 
 // CreateFn is a function that creates a temporary repository for the tests.
-var CreateFn func() (backend.Backend, error)
+var CreateFn func() (restic.Backend, error)
 
 // OpenFn is a function that opens a previously created temporary repository.
-var OpenFn func() (backend.Backend, error)
+var OpenFn func() (restic.Backend, error)
 
 // CleanupFn removes temporary files and directories created during the tests.
 var CleanupFn func() error
 
-var but backend.Backend // backendUnderTest
+var but restic.Backend // backendUnderTest
 var butInitialized bool
 
-func open(t testing.TB) backend.Backend {
+func open(t testing.TB) restic.Backend {
 	if OpenFn == nil {
 		t.Fatal("OpenFn not set")
 	}
@@ -118,7 +119,7 @@ func TestCreateWithConfig(t testing.TB) {
 	defer close(t)
 
 	// save a config
-	store(t, b, backend.Config, []byte("test config"))
+	store(t, b, restic.ConfigFile, []byte("test config"))
 
 	// now create the backend again, this must fail
 	_, err := CreateFn()
@@ -127,7 +128,7 @@ func TestCreateWithConfig(t testing.TB) {
 	}
 
 	// remove config
-	err = b.Remove(backend.Config, "")
+	err = b.Remove(restic.ConfigFile, "")
 	if err != nil {
 		t.Fatalf("unexpected error removing config: %v", err)
 	}
@@ -152,12 +153,12 @@ func TestConfig(t testing.TB) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := backend.LoadAll(b, backend.Handle{Type: backend.Config}, nil)
+	_, err := backend.LoadAll(b, restic.Handle{Type: restic.ConfigFile}, nil)
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 
-	err = b.Save(backend.Handle{Type: backend.Config}, []byte(testString))
+	err = b.Save(restic.Handle{Type: restic.ConfigFile}, []byte(testString))
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
 	}
@@ -165,7 +166,7 @@ func TestConfig(t testing.TB) {
 	// try accessing the config with different names, should all return the
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
-		h := backend.Handle{Type: backend.Config, Name: name}
+		h := restic.Handle{Type: restic.ConfigFile, Name: name}
 		buf, err := backend.LoadAll(b, h, nil)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %v", name, err)
@@ -182,22 +183,22 @@ func TestLoad(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
-	_, err := b.Load(backend.Handle{}, nil, 0)
+	_, err := b.Load(restic.Handle{}, nil, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
 
-	_, err = b.Load(backend.Handle{Type: backend.Data, Name: "foobar"}, nil, 0)
+	_, err = b.Load(restic.Handle{Type: restic.DataFile, Name: "foobar"}, nil, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
 
 	length := rand.Intn(1<<24) + 2000
 
-	data := Random(23, length)
-	id := backend.Hash(data)
+	data := test.Random(23, length)
+	id := restic.Hash(data)
 
-	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	err = b.Save(handle, data)
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
@@ -309,7 +310,7 @@ func TestLoad(t testing.TB) {
 		t.Errorf("wrong error returned for larger buffer: want io.ErrUnexpectedEOF, got %#v", err)
 	}
 
-	OK(t, b.Remove(backend.Data, id.String()))
+	test.OK(t, b.Remove(restic.DataFile, id.String()))
 }
 
 // TestLoadNegativeOffset tests the backend's Load function with negative offsets.
@@ -319,10 +320,10 @@ func TestLoadNegativeOffset(t testing.TB) {
 
 	length := rand.Intn(1<<24) + 2000
 
-	data := Random(23, length)
-	id := backend.Hash(data)
+	data := test.Random(23, length)
+	id := restic.Hash(data)
 
-	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	err := b.Save(handle, data)
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
@@ -365,30 +366,30 @@ func TestLoadNegativeOffset(t testing.TB) {
 
 	}
 
-	OK(t, b.Remove(backend.Data, id.String()))
+	test.OK(t, b.Remove(restic.DataFile, id.String()))
 }
 
 // TestSave tests saving data in the backend.
 func TestSave(t testing.TB) {
 	b := open(t)
 	defer close(t)
-	var id backend.ID
+	var id restic.ID
 
 	for i := 0; i < 10; i++ {
 		length := rand.Intn(1<<23) + 200000
-		data := Random(23, length)
+		data := test.Random(23, length)
 		// use the first 32 byte as the ID
 		copy(id[:], data)
 
-		h := backend.Handle{
-			Type: backend.Data,
+		h := restic.Handle{
+			Type: restic.DataFile,
 			Name: fmt.Sprintf("%s-%d", id, i),
 		}
 		err := b.Save(h, data)
-		OK(t, err)
+		test.OK(t, err)
 
 		buf, err := backend.LoadAll(b, h, nil)
-		OK(t, err)
+		test.OK(t, err)
 		if len(buf) != len(data) {
 			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
 		}
@@ -398,7 +399,7 @@ func TestSave(t testing.TB) {
 		}
 
 		fi, err := b.Stat(h)
-		OK(t, err)
+		test.OK(t, err)
 
 		if fi.Size != int64(len(data)) {
 			t.Fatalf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
@@ -429,7 +430,7 @@ func TestSaveFilenames(t testing.TB) {
 	defer close(t)
 
 	for i, test := range filenameTests {
-		h := backend.Handle{Name: test.name, Type: backend.Data}
+		h := restic.Handle{Name: test.name, Type: restic.DataFile}
 		err := b.Save(h, []byte(test.data))
 		if err != nil {
 			t.Errorf("test %d failed: Save() returned %v", i, err)
@@ -464,17 +465,17 @@ var testStrings = []struct {
 	{"4e54d2c721cbdb730f01b10b62dec622962b36966ec685880effa63d71c808f2", "foo/../../baz"},
 }
 
-func store(t testing.TB, b backend.Backend, tpe backend.Type, data []byte) {
-	id := backend.Hash(data)
-	err := b.Save(backend.Handle{Name: id.String(), Type: tpe}, data)
-	OK(t, err)
+func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) {
+	id := restic.Hash(data)
+	err := b.Save(restic.Handle{Name: id.String(), Type: tpe}, data)
+	test.OK(t, err)
 }
 
 func read(t testing.TB, rd io.Reader, expectedData []byte) {
 	buf, err := ioutil.ReadAll(rd)
-	OK(t, err)
+	test.OK(t, err)
 	if expectedData != nil {
-		Equals(t, expectedData, buf)
+		test.Equals(t, expectedData, buf)
 	}
 }
 
@@ -483,90 +484,90 @@ func TestBackend(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
-	for _, tpe := range []backend.Type{
-		backend.Data, backend.Key, backend.Lock,
-		backend.Snapshot, backend.Index,
+	for _, tpe := range []restic.FileType{
+		restic.DataFile, restic.KeyFile, restic.LockFile,
+		restic.SnapshotFile, restic.IndexFile,
 	} {
 		// detect non-existing files
-		for _, test := range testStrings {
-			id, err := backend.ParseID(test.id)
-			OK(t, err)
+		for _, ts := range testStrings {
+			id, err := restic.ParseID(ts.id)
+			test.OK(t, err)
 
 			// test if blob is already in repository
 			ret, err := b.Test(tpe, id.String())
-			OK(t, err)
-			Assert(t, !ret, "blob was found to exist before creating")
+			test.OK(t, err)
+			test.Assert(t, !ret, "blob was found to exist before creating")
 
 			// try to stat a not existing blob
-			h := backend.Handle{Type: tpe, Name: id.String()}
+			h := restic.Handle{Type: tpe, Name: id.String()}
 			_, err = b.Stat(h)
-			Assert(t, err != nil, "blob data could be extracted before creation")
+			test.Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
 			_, err = b.Load(h, nil, 0)
-			Assert(t, err != nil, "blob reader could be obtained before creation")
+			test.Assert(t, err != nil, "blob reader could be obtained before creation")
 
 			// try to get string out, should fail
 			ret, err = b.Test(tpe, id.String())
-			OK(t, err)
-			Assert(t, !ret, "id %q was found (but should not have)", test.id)
+			test.OK(t, err)
+			test.Assert(t, !ret, "id %q was found (but should not have)", ts.id)
 		}
 
 		// add files
-		for _, test := range testStrings {
-			store(t, b, tpe, []byte(test.data))
+		for _, ts := range testStrings {
+			store(t, b, tpe, []byte(ts.data))
 
 			// test Load()
-			h := backend.Handle{Type: tpe, Name: test.id}
+			h := restic.Handle{Type: tpe, Name: ts.id}
 			buf, err := backend.LoadAll(b, h, nil)
-			OK(t, err)
-			Equals(t, test.data, string(buf))
+			test.OK(t, err)
+			test.Equals(t, ts.data, string(buf))
 
 			// try to read it out with an offset and a length
 			start := 1
-			end := len(test.data) - 2
+			end := len(ts.data) - 2
 			length := end - start
 
 			buf2 := make([]byte, length)
 			n, err := b.Load(h, buf2, int64(start))
-			OK(t, err)
-			Equals(t, length, n)
-			Equals(t, test.data[start:end], string(buf2))
+			test.OK(t, err)
+			test.Equals(t, length, n)
+			test.Equals(t, ts.data[start:end], string(buf2))
 		}
 
 		// test adding the first file again
-		test := testStrings[0]
+		ts := testStrings[0]
 
 		// create blob
-		err := b.Save(backend.Handle{Type: tpe, Name: test.id}, []byte(test.data))
-		Assert(t, err != nil, "expected error, got %v", err)
+		err := b.Save(restic.Handle{Type: tpe, Name: ts.id}, []byte(ts.data))
+		test.Assert(t, err != nil, "expected error, got %v", err)
 
 		// remove and recreate
-		err = b.Remove(tpe, test.id)
-		OK(t, err)
+		err = b.Remove(tpe, ts.id)
+		test.OK(t, err)
 
 		// test that the blob is gone
-		ok, err := b.Test(tpe, test.id)
-		OK(t, err)
-		Assert(t, ok == false, "removed blob still present")
+		ok, err := b.Test(tpe, ts.id)
+		test.OK(t, err)
+		test.Assert(t, ok == false, "removed blob still present")
 
 		// create blob
-		err = b.Save(backend.Handle{Type: tpe, Name: test.id}, []byte(test.data))
-		OK(t, err)
+		err = b.Save(restic.Handle{Type: tpe, Name: ts.id}, []byte(ts.data))
+		test.OK(t, err)
 
 		// list items
-		IDs := backend.IDs{}
+		IDs := restic.IDs{}
 
-		for _, test := range testStrings {
-			id, err := backend.ParseID(test.id)
-			OK(t, err)
+		for _, ts := range testStrings {
+			id, err := restic.ParseID(ts.id)
+			test.OK(t, err)
 			IDs = append(IDs, id)
 		}
 
-		list := backend.IDs{}
+		list := restic.IDs{}
 
 		for s := range b.List(tpe, nil) {
-			list = append(list, ParseID(s))
+			list = append(list, restic.TestParseID(s))
 		}
 
 		if len(IDs) != len(list) {
@@ -581,19 +582,19 @@ func TestBackend(t testing.TB) {
 		}
 
 		// remove content if requested
-		if TestCleanupTempDirs {
-			for _, test := range testStrings {
-				id, err := backend.ParseID(test.id)
-				OK(t, err)
+		if test.TestCleanupTempDirs {
+			for _, ts := range testStrings {
+				id, err := restic.ParseID(ts.id)
+				test.OK(t, err)
 
 				found, err := b.Test(tpe, id.String())
-				OK(t, err)
+				test.OK(t, err)
 
-				OK(t, b.Remove(tpe, id.String()))
+				test.OK(t, b.Remove(tpe, id.String()))
 
 				found, err = b.Test(tpe, id.String())
-				OK(t, err)
-				Assert(t, !found, fmt.Sprintf("id %q not found after removal", id))
+				test.OK(t, err)
+				test.Assert(t, !found, fmt.Sprintf("id %q not found after removal", id))
 			}
 		}
 	}
@@ -604,7 +605,7 @@ func TestDelete(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
-	be, ok := b.(backend.Deleter)
+	be, ok := b.(restic.Deleter)
 	if !ok {
 		return
 	}
@@ -622,7 +623,7 @@ func TestCleanup(t testing.TB) {
 		return
 	}
 
-	if !TestCleanupTempDirs {
+	if !test.TestCleanupTempDirs {
 		t.Logf("not cleaning up backend")
 		return
 	}

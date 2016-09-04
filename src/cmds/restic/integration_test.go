@@ -16,21 +16,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/filter"
 	"restic/repository"
 	. "restic/test"
 )
 
-func parseIDsFromReader(t testing.TB, rd io.Reader) backend.IDs {
-	IDs := backend.IDs{}
+func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
+	IDs := restic.IDs{}
 	sc := bufio.NewScanner(rd)
 
 	for sc.Scan() {
-		id, err := backend.ParseID(sc.Text())
+		id, err := restic.ParseID(sc.Text())
 		if err != nil {
 			t.Logf("parse id %v: %v", sc.Text(), err)
 			continue
@@ -44,6 +43,7 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) backend.IDs {
 
 func cmdInit(t testing.TB, global GlobalOptions) {
 	repository.TestUseLowSecurityKDFParameters(t)
+	restic.TestSetLockTimeout(t, 0)
 
 	cmd := &CmdInit{global: &global}
 	OK(t, cmd.Execute(nil))
@@ -51,11 +51,11 @@ func cmdInit(t testing.TB, global GlobalOptions) {
 	t.Logf("repository initialized at %v", global.Repo)
 }
 
-func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID *backend.ID) {
+func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID *restic.ID) {
 	cmdBackupExcludes(t, global, target, parentID, nil)
 }
 
-func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID *backend.ID, excludes []string) {
+func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID *restic.ID, excludes []string) {
 	cmd := &CmdBackup{global: &global, Excludes: excludes}
 	if parentID != nil {
 		cmd.Parent = parentID.String()
@@ -66,19 +66,19 @@ func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, pare
 	OK(t, cmd.Execute(target))
 }
 
-func cmdList(t testing.TB, global GlobalOptions, tpe string) backend.IDs {
+func cmdList(t testing.TB, global GlobalOptions, tpe string) restic.IDs {
 	cmd := &CmdList{global: &global}
 	return executeAndParseIDs(t, cmd, tpe)
 }
 
-func executeAndParseIDs(t testing.TB, cmd *CmdList, args ...string) backend.IDs {
+func executeAndParseIDs(t testing.TB, cmd *CmdList, args ...string) restic.IDs {
 	buf := bytes.NewBuffer(nil)
 	cmd.global.stdout = buf
 	OK(t, cmd.Execute(args))
 	return parseIDsFromReader(t, buf)
 }
 
-func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID) {
+func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID) {
 	cmdRestoreExcludes(t, global, dir, snapshotID, nil)
 }
 
@@ -87,12 +87,12 @@ func cmdRestoreLatest(t testing.TB, global GlobalOptions, dir string, paths []st
 	OK(t, cmd.Execute([]string{"latest"}))
 }
 
-func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, excludes []string) {
+func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
 	cmd := &CmdRestore{global: &global, Target: dir, Exclude: excludes}
 	OK(t, cmd.Execute([]string{snapshotID.String()}))
 }
 
-func cmdRestoreIncludes(t testing.TB, global GlobalOptions, dir string, snapshotID backend.ID, includes []string) {
+func cmdRestoreIncludes(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
 	cmd := &CmdRestore{global: &global, Target: dir, Include: includes}
 	OK(t, cmd.Execute([]string{snapshotID.String()}))
 }
@@ -582,7 +582,7 @@ func testFileSize(filename string, size int64) error {
 	}
 
 	if fi.Size() != size {
-		return restic.Fatalf("wrong file size for %v: expected %v, got %v", filename, size, fi.Size())
+		return errors.Fatalf("wrong file size for %v: expected %v, got %v", filename, size, fi.Size())
 	}
 
 	return nil
@@ -811,11 +811,11 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 
 var optimizeTests = []struct {
 	testFilename string
-	snapshots    backend.IDSet
+	snapshots    restic.IDSet
 }{
 	{
 		filepath.Join("..", "..", "restic", "checker", "testdata", "checker-test-repo.tar.gz"),
-		backend.NewIDSet(ParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")),
+		restic.NewIDSet(restic.TestParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")),
 	},
 	{
 		filepath.Join("testdata", "old-index-repo.tar.gz"),
@@ -823,9 +823,9 @@ var optimizeTests = []struct {
 	},
 	{
 		filepath.Join("testdata", "old-index-repo.tar.gz"),
-		backend.NewIDSet(
-			ParseID("f7d83db709977178c9d1a09e4009355e534cde1a135b8186b8b118a3fc4fcd41"),
-			ParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"),
+		restic.NewIDSet(
+			restic.TestParseID("f7d83db709977178c9d1a09e4009355e534cde1a135b8186b8b118a3fc4fcd41"),
+			restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"),
 		),
 	},
 }

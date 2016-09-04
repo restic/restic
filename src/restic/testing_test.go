@@ -47,15 +47,3 @@ func TestCreateSnapshot(t *testing.T) {
 
 	checker.TestCheckRepo(t, repo)
 }
-
-func BenchmarkCreateSnapshot(b *testing.B) {
-	repo, cleanup := repository.TestRepository(b)
-	defer cleanup()
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		restic.TestCreateSnapshot(b, repo, testSnapshotTime, testDepth, 0)
-		restic.TestResetRepository(b, repo)
-	}
-}

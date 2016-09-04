@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend"
 	"restic/crypto"
@@ -17,8 +18,8 @@ import (
 
 // Repository is used to access a repository in a backend.
 type Repository struct {
-	be      backend.Backend
-	Config  Config
+	be      restic.Backend
+	cfg     restic.Config
 	key     *crypto.Key
 	keyName string
 	idx     *MasterIndex
@@ -27,7 +28,7 @@ type Repository struct {
 }
 
 // New returns a new repository with backend be.
-func New(be backend.Backend) *Repository {
+func New(be restic.Backend) *Repository {
 	repo := &Repository{
 		be:            be,
 		idx:           NewMasterIndex(),
@@ -37,85 +38,89 @@ func New(be backend.Backend) *Repository {
 	return repo
 }
 
+// Config returns the repository configuration.
+func (r *Repository) Config() restic.Config {
+	return r.cfg
+}
+
 // Find loads the list of all blobs of type t and searches for names which start
 // with prefix. If none is found, nil and ErrNoIDPrefixFound is returned. If
 // more than one is found, nil and ErrMultipleIDMatches is returned.
-func (r *Repository) Find(t backend.Type, prefix string) (string, error) {
-	return backend.Find(r.be, t, prefix)
+func (r *Repository) Find(t restic.FileType, prefix string) (string, error) {
+	return restic.Find(r.be, t, prefix)
 }
 
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
-func (r *Repository) PrefixLength(t backend.Type) (int, error) {
-	return backend.PrefixLength(r.be, t)
+func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
+	return restic.PrefixLength(r.be, t)
 }
 
 // LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
-func (r *Repository) LoadAndDecrypt(t backend.Type, id backend.ID) ([]byte, error) {
+func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, error) {
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
-	h := backend.Handle{Type: t, Name: id.String()}
+	h := restic.Handle{Type: t, Name: id.String()}
 	buf, err := backend.LoadAll(r.be, h, nil)
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
 		return nil, err
 	}
 
-	if t != backend.Config && !backend.Hash(buf).Equal(id) {
+	if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
 		return nil, errors.New("invalid data returned")
 	}
 
+	plain := make([]byte, len(buf))
+
 	// decrypt
-	plain, err := r.Decrypt(buf)
+	n, err := r.decryptTo(plain, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	return plain, nil
+	return plain[:n], nil
 }
 
-// LoadBlob tries to load and decrypt content identified by t and id from a
+// loadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
-func (r *Repository) LoadBlob(id backend.ID, t pack.BlobType, plaintextBuf []byte) ([]byte, error) {
-	debug.Log("Repo.LoadBlob", "load %v with id %v", t, id.Str())
+func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []byte) (int, error) {
+	debug.Log("Repo.loadBlob", "load %v with id %v (buf %p, len %d)", t, id.Str(), plaintextBuf, len(plaintextBuf))
 
 	// lookup plaintext size of blob
 	size, err := r.idx.LookupSize(id, t)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// make sure the plaintext buffer is large enough, extend otherwise
-	plaintextBufSize := uint(cap(plaintextBuf))
-	if size > plaintextBufSize {
-		debug.Log("Repo.LoadBlob", "need to expand buffer: want %d bytes, got %d",
-			size, plaintextBufSize)
-		plaintextBuf = make([]byte, size)
+	if len(plaintextBuf) < int(size) {
+		return 0, errors.Errorf("buffer is too small: %d < %d", len(plaintextBuf), size)
 	}
 
 	// lookup packs
 	blobs, err := r.idx.Lookup(id, t)
 	if err != nil {
-		debug.Log("Repo.LoadBlob", "id %v not found in index: %v", id.Str(), err)
-		return nil, err
+		debug.Log("Repo.loadBlob", "id %v not found in index: %v", id.Str(), err)
+		return 0, err
 	}
 
 	var lastError error
 	for _, blob := range blobs {
-		debug.Log("Repo.LoadBlob", "id %v found: %v", id.Str(), blob)
+		debug.Log("Repo.loadBlob", "id %v found: %v", id.Str(), blob)
 
 		if blob.Type != t {
-			debug.Log("Repo.LoadBlob", "blob %v has wrong block type, want %v", blob, t)
+			debug.Log("Repo.loadBlob", "blob %v has wrong block type, want %v", blob, t)
 		}
 
 		// load blob from pack
-		h := backend.Handle{Type: backend.Data, Name: blob.PackID.String()}
+		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
 		ciphertextBuf := make([]byte, blob.Length)
 		n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
 		if err != nil {
-			debug.Log("Repo.LoadBlob", "error loading blob %v: %v", blob, err)
+			debug.Log("Repo.loadBlob", "error loading blob %v: %v", blob, err)
 			lastError = err
 			continue
 		}
@@ -123,31 +128,32 @@ func (r *Repository) LoadBlob(id backend.ID, t pack.BlobType, plaintextBuf []byt
 		if uint(n) != blob.Length {
 			lastError = errors.Errorf("error loading blob %v: wrong length returned, want %d, got %d",
 				id.Str(), blob.Length, uint(n))
-			debug.Log("Repo.LoadBlob", "lastError: %v", lastError)
+			debug.Log("Repo.loadBlob", "lastError: %v", lastError)
 			continue
 		}
 
 		// decrypt
-		plaintextBuf, err = r.decryptTo(plaintextBuf, ciphertextBuf)
+		n, err = r.decryptTo(plaintextBuf, ciphertextBuf)
 		if err != nil {
 			lastError = errors.Errorf("decrypting blob %v failed: %v", id, err)
 			continue
 		}
+		plaintextBuf = plaintextBuf[:n]
 
 		// check hash
-		if !backend.Hash(plaintextBuf).Equal(id) {
+		if !restic.Hash(plaintextBuf).Equal(id) {
 			lastError = errors.Errorf("blob %v returned invalid hash", id)
 			continue
 		}
 
-		return plaintextBuf, nil
+		return len(plaintextBuf), nil
 	}
 
 	if lastError != nil {
-		return nil, lastError
+		return 0, lastError
 	}
 
-	return nil, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
+	return 0, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
 }
 
 // closeOrErr calls cl.Close() and sets err to the returned error value if
@@ -162,7 +168,7 @@ func closeOrErr(cl io.Closer, err *error) {
 
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
 // the item.
-func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interface{}) (err error) {
+func (r *Repository) LoadJSONUnpacked(t restic.FileType, id restic.ID, item interface{}) (err error) {
 	buf, err := r.LoadAndDecrypt(t, id)
 	if err != nil {
 		return err
@@ -171,28 +177,17 @@ func (r *Repository) LoadJSONUnpacked(t backend.Type, id backend.ID, item interf
 	return json.Unmarshal(buf, item)
 }
 
-// LoadJSONPack calls LoadBlob() to load a blob from the backend, decrypt the
-// data and afterwards call json.Unmarshal on the item.
-func (r *Repository) LoadJSONPack(t pack.BlobType, id backend.ID, item interface{}) (err error) {
-	buf, err := r.LoadBlob(id, t, nil)
-	if err != nil {
-		return err
-	}
-
-	return json.Unmarshal(buf, item)
-}
-
 // LookupBlobSize returns the size of blob id.
-func (r *Repository) LookupBlobSize(id backend.ID, tpe pack.BlobType) (uint, error) {
+func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, error) {
 	return r.idx.LookupSize(id, tpe)
 }
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
-func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID) (backend.ID, error) {
+func (r *Repository) SaveAndEncrypt(t restic.BlobType, data []byte, id *restic.ID) (restic.ID, error) {
 	if id == nil {
 		// compute plaintext hash
-		hashedID := backend.Hash(data)
+		hashedID := restic.Hash(data)
 		id = &hashedID
 	}
 
@@ -205,19 +200,19 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 	// encrypt blob
 	ciphertext, err := r.Encrypt(ciphertext, data)
 	if err != nil {
-		return backend.ID{}, err
+		return restic.ID{}, err
 	}
 
 	// find suitable packer and add blob
 	packer, err := r.findPacker(uint(len(ciphertext)))
 	if err != nil {
-		return backend.ID{}, err
+		return restic.ID{}, err
 	}
 
 	// save ciphertext
 	_, err = packer.Add(t, *id, ciphertext)
 	if err != nil {
-		return backend.ID{}, err
+		return restic.ID{}, err
 	}
 
 	// if the pack is not full enough and there are less than maxPackers
@@ -232,32 +227,13 @@ func (r *Repository) SaveAndEncrypt(t pack.BlobType, data []byte, id *backend.ID
 	return *id, r.savePacker(packer)
 }
 
-// SaveJSON serialises item as JSON and encrypts and saves it in a pack in the
-// backend as type t.
-func (r *Repository) SaveJSON(t pack.BlobType, item interface{}) (backend.ID, error) {
-	debug.Log("Repo.SaveJSON", "save %v blob", t)
-	buf := getBuf()[:0]
-	defer freeBuf(buf)
-
-	wr := bytes.NewBuffer(buf)
-
-	enc := json.NewEncoder(wr)
-	err := enc.Encode(item)
-	if err != nil {
-		return backend.ID{}, errors.Errorf("json.Encode: %v", err)
-	}
-
-	buf = wr.Bytes()
-	return r.SaveAndEncrypt(t, buf, nil)
-}
-
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
-func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend.ID, error) {
+func (r *Repository) SaveJSONUnpacked(t restic.FileType, item interface{}) (restic.ID, error) {
 	debug.Log("Repo.SaveJSONUnpacked", "save new blob %v", t)
 	plaintext, err := json.Marshal(item)
 	if err != nil {
-		return backend.ID{}, errors.Wrap(err, "json.Marshal")
+		return restic.ID{}, errors.Wrap(err, "json.Marshal")
 	}
 
 	return r.SaveUnpacked(t, plaintext)
@@ -265,20 +241,20 @@ func (r *Repository) SaveJSONUnpacked(t backend.Type, item interface{}) (backend
 
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
-func (r *Repository) SaveUnpacked(t backend.Type, p []byte) (id backend.ID, err error) {
+func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, err error) {
 	ciphertext := make([]byte, len(p)+crypto.Extension)
 	ciphertext, err = r.Encrypt(ciphertext, p)
 	if err != nil {
-		return backend.ID{}, err
+		return restic.ID{}, err
 	}
 
-	id = backend.Hash(ciphertext)
-	h := backend.Handle{Type: t, Name: id.String()}
+	id = restic.Hash(ciphertext)
+	h := restic.Handle{Type: t, Name: id.String()}
 
 	err = r.be.Save(h, ciphertext)
 	if err != nil {
 		debug.Log("Repo.SaveJSONUnpacked", "error saving blob %v: %v", h, err)
-		return backend.ID{}, err
+		return restic.ID{}, err
 	}
 
 	debug.Log("Repo.SaveJSONUnpacked", "blob %v saved", h)
@@ -303,30 +279,30 @@ func (r *Repository) Flush() error {
 }
 
 // Backend returns the backend for the repository.
-func (r *Repository) Backend() backend.Backend {
+func (r *Repository) Backend() restic.Backend {
 	return r.be
 }
 
 // Index returns the currently used MasterIndex.
-func (r *Repository) Index() *MasterIndex {
+func (r *Repository) Index() restic.Index {
 	return r.idx
 }
 
 // SetIndex instructs the repository to use the given index.
-func (r *Repository) SetIndex(i *MasterIndex) {
-	r.idx = i
+func (r *Repository) SetIndex(i restic.Index) {
+	r.idx = i.(*MasterIndex)
 }
 
 // SaveIndex saves an index in the repository.
-func SaveIndex(repo *Repository, index *Index) (backend.ID, error) {
+func SaveIndex(repo restic.Repository, index *Index) (restic.ID, error) {
 	buf := bytes.NewBuffer(nil)
 
 	err := index.Finalize(buf)
 	if err != nil {
-		return backend.ID{}, err
+		return restic.ID{}, err
 	}
 
-	return repo.SaveUnpacked(backend.Index, buf.Bytes())
+	return repo.SaveUnpacked(restic.IndexFile, buf.Bytes())
 }
 
 // saveIndex saves all indexes in the backend.
@@ -365,7 +341,7 @@ func (r *Repository) LoadIndex() error {
 	errCh := make(chan error, 1)
 	indexes := make(chan *Index)
 
-	worker := func(id backend.ID, done <-chan struct{}) error {
+	worker := func(id restic.ID, done <-chan struct{}) error {
 		idx, err := LoadIndex(r, id)
 		if err != nil {
 			return err
@@ -381,7 +357,7 @@ func (r *Repository) LoadIndex() error {
 
 	go func() {
 		defer close(indexes)
-		errCh <- FilesInParallel(r.be, backend.Index, loadIndexParallelism,
+		errCh <- FilesInParallel(r.be, restic.IndexFile, loadIndexParallelism,
 			ParallelWorkFuncParseID(worker))
 	}()
 
@@ -397,7 +373,7 @@ func (r *Repository) LoadIndex() error {
 }
 
 // LoadIndex loads the index id from backend and returns it.
-func LoadIndex(repo *Repository, id backend.ID) (*Index, error) {
+func LoadIndex(repo restic.Repository, id restic.ID) (*Index, error) {
 	idx, err := LoadIndexWithDecoder(repo, id, DecodeIndex)
 	if err == nil {
 		return idx, nil
@@ -422,14 +398,14 @@ func (r *Repository) SearchKey(password string, maxKeys int) error {
 	r.key = key.master
 	r.packerManager.key = key.master
 	r.keyName = key.Name()
-	r.Config, err = LoadConfig(r)
+	r.cfg, err = restic.LoadConfig(r)
 	return err
 }
 
 // Init creates a new master key with the supplied password, initializes and
 // saves the repository config.
 func (r *Repository) Init(password string) error {
-	has, err := r.be.Test(backend.Config, "")
+	has, err := r.be.Test(restic.ConfigFile, "")
 	if err != nil {
 		return err
 	}
@@ -437,7 +413,7 @@ func (r *Repository) Init(password string) error {
 		return errors.New("repository master key and config already initialized")
 	}
 
-	cfg, err := CreateConfig()
+	cfg, err := restic.CreateConfig()
 	if err != nil {
 		return err
 	}
@@ -447,7 +423,7 @@ func (r *Repository) Init(password string) error {
 
 // init creates a new master key with the supplied password and uses it to save
 // the config into the repo.
-func (r *Repository) init(password string, cfg Config) error {
+func (r *Repository) init(password string, cfg restic.Config) error {
 	key, err := createMasterKey(r, password)
 	if err != nil {
 		return err
@@ -456,24 +432,19 @@ func (r *Repository) init(password string, cfg Config) error {
 	r.key = key.master
 	r.packerManager.key = key.master
 	r.keyName = key.Name()
-	r.Config = cfg
-	_, err = r.SaveJSONUnpacked(backend.Config, cfg)
+	r.cfg = cfg
+	_, err = r.SaveJSONUnpacked(restic.ConfigFile, cfg)
 	return err
-}
-
-// Decrypt authenticates and decrypts ciphertext and returns the plaintext.
-func (r *Repository) Decrypt(ciphertext []byte) ([]byte, error) {
-	return r.decryptTo(nil, ciphertext)
 }
 
 // decrypt authenticates and decrypts ciphertext and stores the result in
 // plaintext.
-func (r *Repository) decryptTo(plaintext, ciphertext []byte) ([]byte, error) {
+func (r *Repository) decryptTo(plaintext, ciphertext []byte) (int, error) {
 	if r.key == nil {
-		return nil, errors.New("key for repository not set")
+		return 0, errors.New("key for repository not set")
 	}
 
-	return crypto.Decrypt(r.key, nil, ciphertext)
+	return crypto.Decrypt(r.key, plaintext, ciphertext)
 }
 
 // Encrypt encrypts and authenticates the plaintext and saves the result in
@@ -496,25 +467,16 @@ func (r *Repository) KeyName() string {
 	return r.keyName
 }
 
-// Count returns the number of blobs of a given type in the backend.
-func (r *Repository) Count(t backend.Type) (n uint) {
-	for _ = range r.be.List(t, nil) {
-		n++
-	}
-
-	return
-}
-
-func (r *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backend.ID) {
+func (r *Repository) list(t restic.FileType, done <-chan struct{}, out chan<- restic.ID) {
 	defer close(out)
 	in := r.be.List(t, done)
 
 	var (
 		// disable sending on the outCh until we received a job
-		outCh chan<- backend.ID
+		outCh chan<- restic.ID
 		// enable receiving from in
 		inCh = in
-		id   backend.ID
+		id   restic.ID
 		err  error
 	)
 
@@ -527,7 +489,7 @@ func (r *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backe
 				// input channel closed, we're done
 				return
 			}
-			id, err = backend.ParseID(strID)
+			id, err = restic.ParseID(strID)
 			if err != nil {
 				// ignore invalid IDs
 				continue
@@ -543,8 +505,8 @@ func (r *Repository) list(t backend.Type, done <-chan struct{}, out chan<- backe
 }
 
 // List returns a channel that yields all IDs of type t in the backend.
-func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.ID {
-	outCh := make(chan backend.ID)
+func (r *Repository) List(t restic.FileType, done <-chan struct{}) <-chan restic.ID {
+	outCh := make(chan restic.ID)
 
 	go r.list(t, done, outCh)
 
@@ -553,15 +515,15 @@ func (r *Repository) List(t backend.Type, done <-chan struct{}) <-chan backend.I
 
 // ListPack returns the list of blobs saved in the pack id and the length of
 // the file as stored in the backend.
-func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, int64, error) {
-	h := backend.Handle{Type: backend.Data, Name: id.String()}
+func (r *Repository) ListPack(id restic.ID) ([]restic.Blob, int64, error) {
+	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
 	blobInfo, err := r.Backend().Stat(h)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	blobs, err := pack.List(r.Key(), backend.ReaderAt(r.Backend(), h), blobInfo.Size)
+	blobs, err := pack.List(r.Key(), restic.ReaderAt(r.Backend(), h), blobInfo.Size)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -572,7 +534,7 @@ func (r *Repository) ListPack(id backend.ID) ([]pack.Blob, int64, error) {
 // Delete calls backend.Delete() if implemented, and returns an error
 // otherwise.
 func (r *Repository) Delete() error {
-	if b, ok := r.be.(backend.Deleter); ok {
+	if b, ok := r.be.(restic.Deleter); ok {
 		return b.Delete()
 	}
 
@@ -582,4 +544,86 @@ func (r *Repository) Delete() error {
 // Close closes the repository by closing the backend.
 func (r *Repository) Close() error {
 	return r.be.Close()
+}
+
+// LoadBlob loads a blob of type t from the repository to the buffer.
+func (r *Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int, error) {
+	debug.Log("repo.LoadBlob", "load blob %v into buf %p", id.Str(), buf)
+	size, err := r.idx.LookupSize(id, t)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(buf) < int(size) {
+		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), size)
+	}
+
+	n, err := r.loadBlob(id, t, buf)
+	if err != nil {
+		return 0, err
+	}
+	buf = buf[:n]
+
+	debug.Log("repo.LoadBlob", "loaded %d bytes into buf %p", len(buf), buf)
+
+	return len(buf), err
+}
+
+// SaveBlob saves a blob of type t into the repository. If id is the null id, it
+// will be computed and returned.
+func (r *Repository) SaveBlob(t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
+	var i *restic.ID
+	if !id.IsNull() {
+		i = &id
+	}
+	return r.SaveAndEncrypt(t, buf, i)
+}
+
+// LoadTree loads a tree from the repository.
+func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
+	debug.Log("repo.LoadTree", "load tree %v", id.Str())
+
+	size, err := r.idx.LookupSize(id, restic.TreeBlob)
+	if err != nil {
+		return nil, err
+	}
+
+	debug.Log("repo.LoadTree", "size is %d, create buffer", size)
+	buf := make([]byte, size)
+
+	n, err := r.loadBlob(id, restic.TreeBlob, buf)
+	if err != nil {
+		return nil, err
+	}
+	buf = buf[:n]
+
+	t := &restic.Tree{}
+	err = json.Unmarshal(buf, t)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+// SaveTree stores a tree into the repository and returns the ID. The ID is
+// checked against the index. The tree is only stored when the index does not
+// contain the ID.
+func (r *Repository) SaveTree(t *restic.Tree) (restic.ID, error) {
+	buf, err := json.Marshal(t)
+	if err != nil {
+		return restic.ID{}, errors.Wrap(err, "MarshalJSON")
+	}
+
+	// append a newline so that the data is always consistent (json.Encoder
+	// adds a newline after each object)
+	buf = append(buf, '\n')
+
+	id := restic.Hash(buf)
+	if r.idx.Has(id, restic.TreeBlob) {
+		return id, nil
+	}
+
+	_, err = r.SaveBlob(restic.TreeBlob, buf, id)
+	return id, err
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"restic"
-	"restic/backend"
+	"restic/errors"
 )
 
 type CmdList struct {
@@ -25,7 +25,7 @@ func (cmd CmdList) Usage() string {
 
 func (cmd CmdList) Execute(args []string) error {
 	if len(args) != 1 {
-		return restic.Fatalf("type not specified, Usage: %s", cmd.Usage())
+		return errors.Fatalf("type not specified, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -41,33 +41,20 @@ func (cmd CmdList) Execute(args []string) error {
 		}
 	}
 
-	var t backend.Type
+	var t restic.FileType
 	switch args[0] {
-	case "blobs":
-		err = repo.LoadIndex()
-		if err != nil {
-			return err
-		}
-
-		for _, idx := range repo.Index().All() {
-			for blob := range idx.Each(nil) {
-				cmd.global.Printf("%s\n", blob.ID)
-			}
-		}
-
-		return nil
 	case "packs":
-		t = backend.Data
+		t = restic.DataFile
 	case "index":
-		t = backend.Index
+		t = restic.IndexFile
 	case "snapshots":
-		t = backend.Snapshot
+		t = restic.SnapshotFile
 	case "keys":
-		t = backend.Key
+		t = restic.KeyFile
 	case "locks":
-		t = backend.Lock
+		t = restic.LockFile
 	default:
-		return restic.Fatal("invalid type")
+		return errors.Fatal("invalid type")
 	}
 
 	for id := range repo.List(t, nil) {

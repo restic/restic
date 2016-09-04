@@ -3,13 +3,13 @@ package s3
 import (
 	"bytes"
 	"io"
+	"restic"
 	"strings"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"github.com/minio/minio-go"
 
-	"restic/backend"
 	"restic/debug"
 )
 
@@ -25,7 +25,7 @@ type s3 struct {
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
-func Open(cfg Config) (backend.Backend, error) {
+func Open(cfg Config) (restic.Backend, error) {
 	debug.Log("s3.Open", "open, config %#v", cfg)
 
 	client, err := minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
@@ -53,7 +53,7 @@ func Open(cfg Config) (backend.Backend, error) {
 	return be, nil
 }
 
-func (be *s3) s3path(t backend.Type, name string) string {
+func (be *s3) s3path(t restic.FileType, name string) string {
 	var path string
 
 	if be.prefix != "" {
@@ -61,7 +61,7 @@ func (be *s3) s3path(t backend.Type, name string) string {
 	}
 	path += string(t)
 
-	if t == backend.Config {
+	if t == restic.ConfigFile {
 		return path
 	}
 	return path + "/" + name
@@ -81,7 +81,7 @@ func (be *s3) Location() string {
 
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
-func (be s3) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	var obj *minio.Object
 
 	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
@@ -153,7 +153,7 @@ func (be s3) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
 }
 
 // Save stores data in the backend at the handle.
-func (be s3) Save(h backend.Handle, p []byte) (err error) {
+func (be s3) Save(h restic.Handle, p []byte) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func (be s3) Save(h backend.Handle, p []byte) (err error) {
 }
 
 // Stat returns information about a blob.
-func (be s3) Stat(h backend.Handle) (bi backend.BlobInfo, err error) {
+func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("s3.Stat", "%v", h)
 
 	path := be.s3path(h.Type, h.Name)
@@ -192,7 +192,7 @@ func (be s3) Stat(h backend.Handle) (bi backend.BlobInfo, err error) {
 	obj, err = be.client.GetObject(be.bucketname, path)
 	if err != nil {
 		debug.Log("s3.Stat", "GetObject() err %v", err)
-		return backend.BlobInfo{}, errors.Wrap(err, "client.GetObject")
+		return restic.FileInfo{}, errors.Wrap(err, "client.GetObject")
 	}
 
 	// make sure that the object is closed properly.
@@ -206,14 +206,14 @@ func (be s3) Stat(h backend.Handle) (bi backend.BlobInfo, err error) {
 	fi, err := obj.Stat()
 	if err != nil {
 		debug.Log("s3.Stat", "Stat() err %v", err)
-		return backend.BlobInfo{}, errors.Wrap(err, "Stat")
+		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 
-	return backend.BlobInfo{Size: fi.Size}, nil
+	return restic.FileInfo{Size: fi.Size}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *s3) Test(t backend.Type, name string) (bool, error) {
+func (be *s3) Test(t restic.FileType, name string) (bool, error) {
 	found := false
 	path := be.s3path(t, name)
 	_, err := be.client.StatObject(be.bucketname, path)
@@ -226,7 +226,7 @@ func (be *s3) Test(t backend.Type, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *s3) Remove(t backend.Type, name string) error {
+func (be *s3) Remove(t restic.FileType, name string) error {
 	path := be.s3path(t, name)
 	err := be.client.RemoveObject(be.bucketname, path)
 	debug.Log("s3.Remove", "%v %v -> err %v", t, name, err)
@@ -236,7 +236,7 @@ func (be *s3) Remove(t backend.Type, name string) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (be *s3) List(t backend.Type, done <-chan struct{}) <-chan string {
+func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	debug.Log("s3.List", "listing %v", t)
 	ch := make(chan string)
 
@@ -264,11 +264,11 @@ func (be *s3) List(t backend.Type, done <-chan struct{}) <-chan string {
 }
 
 // Remove keys for a specified backend type.
-func (be *s3) removeKeys(t backend.Type) error {
+func (be *s3) removeKeys(t restic.FileType) error {
 	done := make(chan struct{})
 	defer close(done)
-	for key := range be.List(backend.Data, done) {
-		err := be.Remove(backend.Data, key)
+	for key := range be.List(restic.DataFile, done) {
+		err := be.Remove(restic.DataFile, key)
 		if err != nil {
 			return err
 		}
@@ -279,12 +279,12 @@ func (be *s3) removeKeys(t backend.Type) error {
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
 func (be *s3) Delete() error {
-	alltypes := []backend.Type{
-		backend.Data,
-		backend.Key,
-		backend.Lock,
-		backend.Snapshot,
-		backend.Index}
+	alltypes := []restic.FileType{
+		restic.DataFile,
+		restic.KeyFile,
+		restic.LockFile,
+		restic.SnapshotFile,
+		restic.IndexFile}
 
 	for _, t := range alltypes {
 		err := be.removeKeys(t)
@@ -293,7 +293,7 @@ func (be *s3) Delete() error {
 		}
 	}
 
-	return be.Remove(backend.Config, "")
+	return be.Remove(restic.ConfigFile, "")
 }
 
 // Close does nothing

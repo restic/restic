@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/fs"
 )

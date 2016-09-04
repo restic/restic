@@ -1,18 +1,12 @@
 package restic
 
-import (
-	"restic/backend"
-	"restic/pack"
-	"restic/repository"
-)
-
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
 // blobs) to the set blobs. The tree blobs in the `seen` BlobSet will not be visited
 // again.
-func FindUsedBlobs(repo *repository.Repository, treeID backend.ID, blobs pack.BlobSet, seen pack.BlobSet) error {
-	blobs.Insert(pack.Handle{ID: treeID, Type: pack.Tree})
+func FindUsedBlobs(repo Repository, treeID ID, blobs BlobSet, seen BlobSet) error {
+	blobs.Insert(BlobHandle{ID: treeID, Type: TreeBlob})
 
-	tree, err := LoadTree(repo, treeID)
+	tree, err := repo.LoadTree(treeID)
 	if err != nil {
 		return err
 	}
@@ -21,11 +15,11 @@ func FindUsedBlobs(repo *repository.Repository, treeID backend.ID, blobs pack.Bl
 		switch node.Type {
 		case "file":
 			for _, blob := range node.Content {
-				blobs.Insert(pack.Handle{ID: blob, Type: pack.Data})
+				blobs.Insert(BlobHandle{ID: blob, Type: DataBlob})
 			}
 		case "dir":
 			subtreeID := *node.Subtree
-			h := pack.Handle{ID: subtreeID, Type: pack.Tree}
+			h := BlobHandle{ID: subtreeID, Type: TreeBlob}
 			if seen.Has(h) {
 				continue
 			}

@@ -9,6 +9,7 @@ import (
 
 	"restic"
 	"restic/checker"
+	"restic/errors"
 )
 
 type CmdCheck struct {
@@ -65,7 +66,7 @@ func (cmd CmdCheck) newReadProgress(todo restic.Stat) *restic.Progress {
 
 func (cmd CmdCheck) Execute(args []string) error {
 	if len(args) != 0 {
-		return restic.Fatal("check has no arguments")
+		return errors.Fatal("check has no arguments")
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -103,7 +104,7 @@ func (cmd CmdCheck) Execute(args []string) error {
 		for _, err := range errs {
 			cmd.global.Warnf("error: %v\n", err)
 		}
-		return restic.Fatal("LoadIndex returned errors")
+		return errors.Fatal("LoadIndex returned errors")
 	}
 
 	done := make(chan struct{})
@@ -158,7 +159,7 @@ func (cmd CmdCheck) Execute(args []string) error {
 	}
 
 	if errorsFound {
-		return restic.Fatal("repository contains errors")
+		return errors.Fatal("repository contains errors")
 	}
 	return nil
 }

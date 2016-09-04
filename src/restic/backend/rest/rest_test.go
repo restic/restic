@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
-	"restic/backend"
 	"restic/backend/rest"
 	"restic/backend/test"
 	. "restic/test"
@@ -31,13 +31,13 @@ func init() {
 		URL: url,
 	}
 
-	test.CreateFn = func() (backend.Backend, error) {
+	test.CreateFn = func() (restic.Backend, error) {
 		be, err := rest.Open(cfg)
 		if err != nil {
 			return nil, err
 		}
 
-		exists, err := be.Test(backend.Config, "")
+		exists, err := be.Test(restic.ConfigFile, "")
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +49,7 @@ func init() {
 		return be, nil
 	}
 
-	test.OpenFn = func() (backend.Backend, error) {
+	test.OpenFn = func() (restic.Backend, error) {
 		return rest.Open(cfg)
 	}
 }

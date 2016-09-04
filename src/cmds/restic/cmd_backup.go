@@ -6,14 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"restic"
-	"restic/backend"
+	"restic/archiver"
 	"restic/debug"
 	"restic/filter"
 	"restic/fs"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -232,7 +232,7 @@ func filterExisting(items []string) (result []string, err error) {
 	}
 
 	if len(result) == 0 {
-		return nil, restic.Fatal("all target directories/files do not exist")
+		return nil, errors.Fatal("all target directories/files do not exist")
 	}
 
 	return
@@ -240,7 +240,7 @@ func filterExisting(items []string) (result []string, err error) {
 
 func (cmd CmdBackup) readFromStdin(args []string) error {
 	if len(args) != 0 {
-		return restic.Fatalf("when reading from stdin, no additional files can be specified")
+		return errors.Fatalf("when reading from stdin, no additional files can be specified")
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -259,7 +259,7 @@ func (cmd CmdBackup) readFromStdin(args []string) error {
 		return err
 	}
 
-	_, id, err := restic.ArchiveReader(repo, cmd.newArchiveStdinProgress(), os.Stdin, cmd.StdinFilename)
+	_, id, err := archiver.ArchiveReader(repo, cmd.newArchiveStdinProgress(), os.Stdin, cmd.StdinFilename)
 	if err != nil {
 		return err
 	}
@@ -274,7 +274,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 	}
 
 	if len(args) == 0 {
-		return restic.Fatalf("wrong number of parameters, Usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of parameters, Usage: %s", cmd.Usage())
 	}
 
 	target := make([]string, 0, len(args))
@@ -306,13 +306,13 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return err
 	}
 
-	var parentSnapshotID *backend.ID
+	var parentSnapshotID *restic.ID
 
 	// Force using a parent
 	if !cmd.Force && cmd.Parent != "" {
 		id, err := restic.FindSnapshot(repo, cmd.Parent)
 		if err != nil {
-			return restic.Fatalf("invalid id %q: %v", cmd.Parent, err)
+			return errors.Fatalf("invalid id %q: %v", cmd.Parent, err)
 		}
 
 		parentSnapshotID = &id
@@ -365,12 +365,12 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return !matched
 	}
 
-	stat, err := restic.Scan(target, selectFilter, cmd.newScanProgress())
+	stat, err := archiver.Scan(target, selectFilter, cmd.newScanProgress())
 	if err != nil {
 		return err
 	}
 
-	arch := restic.NewArchiver(repo)
+	arch := archiver.New(repo)
 	arch.Excludes = cmd.Excludes
 	arch.SelectFilter = selectFilter
 

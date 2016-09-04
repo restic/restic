@@ -100,15 +100,17 @@ func TestCrypto(t *testing.T) {
 		}
 
 		// decrypt message
-		_, err = Decrypt(k, []byte{}, msg)
+		buf := make([]byte, len(tv.plaintext))
+		n, err := Decrypt(k, buf, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
+		buf = buf[:n]
 
 		// change mac, this must fail
 		msg[len(msg)-8] ^= 0x23
 
-		if _, err = Decrypt(k, []byte{}, msg); err != ErrUnauthenticated {
+		if _, err = Decrypt(k, buf, msg); err != ErrUnauthenticated {
 			t.Fatal("wrong MAC value not detected")
 		}
 
@@ -118,15 +120,17 @@ func TestCrypto(t *testing.T) {
 		// tamper with message, this must fail
 		msg[16+5] ^= 0x85
 
-		if _, err = Decrypt(k, []byte{}, msg); err != ErrUnauthenticated {
+		if _, err = Decrypt(k, buf, msg); err != ErrUnauthenticated {
 			t.Fatal("tampered message not detected")
 		}
 
 		// test decryption
-		p, err := Decrypt(k, []byte{}, tv.ciphertext)
+		p := make([]byte, len(tv.ciphertext))
+		n, err = Decrypt(k, p, tv.ciphertext)
 		if err != nil {
 			t.Fatal(err)
 		}
+		p = p[:n]
 
 		if !bytes.Equal(p, tv.plaintext) {
 			t.Fatalf("wrong plaintext: expected %q but got %q\n", tv.plaintext, p)

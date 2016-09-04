@@ -5,8 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend"
 	"restic/debug"
@@ -17,6 +18,8 @@ import (
 type Local struct {
 	p string
 }
+
+var _ restic.Backend = &Local{}
 
 func paths(dir string) []string {
 	return []string{
@@ -69,8 +72,8 @@ func (b *Local) Location() string {
 }
 
 // Construct path for given Type and name.
-func filename(base string, t backend.Type, name string) string {
-	if t == backend.Config {
+func filename(base string, t restic.FileType, name string) string {
+	if t == restic.ConfigFile {
 		return filepath.Join(base, "config")
 	}
 
@@ -78,21 +81,21 @@ func filename(base string, t backend.Type, name string) string {
 }
 
 // Construct directory for given Type.
-func dirname(base string, t backend.Type, name string) string {
+func dirname(base string, t restic.FileType, name string) string {
 	var n string
 	switch t {
-	case backend.Data:
+	case restic.DataFile:
 		n = backend.Paths.Data
 		if len(name) > 2 {
 			n = filepath.Join(n, name[:2])
 		}
-	case backend.Snapshot:
+	case restic.SnapshotFile:
 		n = backend.Paths.Snapshots
-	case backend.Index:
+	case restic.IndexFile:
 		n = backend.Paths.Index
-	case backend.Lock:
+	case restic.LockFile:
 		n = backend.Paths.Locks
-	case backend.Key:
+	case restic.KeyFile:
 		n = backend.Paths.Keys
 	}
 	return filepath.Join(base, n)
@@ -102,7 +105,7 @@ func dirname(base string, t backend.Type, name string) string {
 // saves it in p. Load has the same semantics as io.ReaderAt, with one
 // exception: when off is lower than zero, it is treated as an offset relative
 // to the end of the file.
-func (b *Local) Load(h backend.Handle, p []byte, off int64) (n int, err error) {
+func (b *Local) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	debug.Log("backend.local.Load", "Load %v, length %v at %v", h, len(p), off)
 	if err := h.Valid(); err != nil {
 		return 0, err
@@ -168,7 +171,7 @@ func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 }
 
 // Save stores data in the backend at the handle.
-func (b *Local) Save(h backend.Handle, p []byte) (err error) {
+func (b *Local) Save(h restic.Handle, p []byte) (err error) {
 	debug.Log("backend.local.Save", "Save %v, length %v", h, len(p))
 	if err := h.Valid(); err != nil {
 		return err
@@ -188,7 +191,7 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 	}
 
 	// create directories if necessary, ignore errors
-	if h.Type == backend.Data {
+	if h.Type == restic.DataFile {
 		err = fs.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return errors.Wrap(err, "MkdirAll")
@@ -213,22 +216,22 @@ func (b *Local) Save(h backend.Handle, p []byte) (err error) {
 }
 
 // Stat returns information about a blob.
-func (b *Local) Stat(h backend.Handle) (backend.BlobInfo, error) {
+func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 	debug.Log("backend.local.Stat", "Stat %v", h)
 	if err := h.Valid(); err != nil {
-		return backend.BlobInfo{}, err
+		return restic.FileInfo{}, err
 	}
 
 	fi, err := fs.Stat(filename(b.p, h.Type, h.Name))
 	if err != nil {
-		return backend.BlobInfo{}, errors.Wrap(err, "Stat")
+		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 
-	return backend.BlobInfo{Size: fi.Size()}, nil
+	return restic.FileInfo{Size: fi.Size()}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *Local) Test(t backend.Type, name string) (bool, error) {
+func (b *Local) Test(t restic.FileType, name string) (bool, error) {
 	debug.Log("backend.local.Test", "Test %v %v", t, name)
 	_, err := fs.Stat(filename(b.p, t, name))
 	if err != nil {
@@ -242,7 +245,7 @@ func (b *Local) Test(t backend.Type, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *Local) Remove(t backend.Type, name string) error {
+func (b *Local) Remove(t restic.FileType, name string) error {
 	debug.Log("backend.local.Remove", "Remove %v %v", t, name)
 	fn := filename(b.p, t, name)
 
@@ -317,10 +320,10 @@ func listDirs(dir string) (filenames []string, err error) {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (b *Local) List(t backend.Type, done <-chan struct{}) <-chan string {
+func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	debug.Log("backend.local.List", "List %v", t)
 	lister := listDir
-	if t == backend.Data {
+	if t == restic.DataFile {
 		lister = listDirs
 	}
 

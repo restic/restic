@@ -7,9 +7,9 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"io"
+	"restic"
 	"testing"
 
-	"restic/backend"
 	"restic/backend/mem"
 	"restic/crypto"
 	"restic/pack"
@@ -20,7 +20,7 @@ var testLens = []int{23, 31650, 25860, 10928, 13769, 19862, 5211, 127, 13690, 30
 
 type Buf struct {
 	data []byte
-	id   backend.ID
+	id   restic.ID
 }
 
 func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
@@ -37,7 +37,7 @@ func newPack(t testing.TB, k *crypto.Key, lengths []int) ([]Buf, []byte, uint) {
 	// pack blobs
 	p := pack.NewPacker(k, nil)
 	for _, b := range bufs {
-		p.Add(pack.Tree, b.id, b.data)
+		p.Add(restic.TreeBlob, b.id, b.data)
 	}
 
 	_, err := p.Finalize()
@@ -55,7 +55,7 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSi
 	// header length
 	written += binary.Size(uint32(0))
 	// header
-	written += len(bufs) * (binary.Size(pack.BlobType(0)) + binary.Size(uint32(0)) + backend.IDSize)
+	written += len(bufs) * (binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + len(restic.ID{}))
 	// header crypto
 	written += crypto.Extension
 
@@ -95,11 +95,11 @@ func TestCreatePack(t *testing.T) {
 }
 
 var blobTypeJSON = []struct {
-	t   pack.BlobType
+	t   restic.BlobType
 	res string
 }{
-	{pack.Data, `"data"`},
-	{pack.Tree, `"tree"`},
+	{restic.DataBlob, `"data"`},
+	{restic.TreeBlob, `"tree"`},
 }
 
 func TestBlobTypeJSON(t *testing.T) {
@@ -110,7 +110,7 @@ func TestBlobTypeJSON(t *testing.T) {
 		Equals(t, test.res, string(buf))
 
 		// test unserialize
-		var v pack.BlobType
+		var v restic.BlobType
 		err = json.Unmarshal([]byte(test.res), &v)
 		OK(t, err)
 		Equals(t, test.t, v)
@@ -124,11 +124,11 @@ func TestUnpackReadSeeker(t *testing.T) {
 	bufs, packData, packSize := newPack(t, k, testLens)
 
 	b := mem.New()
-	id := backend.Hash(packData)
+	id := restic.Hash(packData)
 
-	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	OK(t, b.Save(handle, packData))
-	verifyBlobs(t, bufs, k, backend.ReaderAt(b, handle), packSize)
+	verifyBlobs(t, bufs, k, restic.ReaderAt(b, handle), packSize)
 }
 
 func TestShortPack(t *testing.T) {
@@ -137,9 +137,9 @@ func TestShortPack(t *testing.T) {
 	bufs, packData, packSize := newPack(t, k, []int{23})
 
 	b := mem.New()
-	id := backend.Hash(packData)
+	id := restic.Hash(packData)
 
-	handle := backend.Handle{Type: backend.Data, Name: id.String()}
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	OK(t, b.Save(handle, packData))
-	verifyBlobs(t, bufs, k, backend.ReaderAt(b, handle), packSize)
+	verifyBlobs(t, bufs, k, restic.ReaderAt(b, handle), packSize)
 }

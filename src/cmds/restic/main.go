@@ -7,8 +7,9 @@ import (
 	"restic/debug"
 	"runtime"
 
+	"restic/errors"
+
 	"github.com/jessevdk/go-flags"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -42,7 +43,7 @@ func main() {
 	switch {
 	case restic.IsAlreadyLocked(errors.Cause(err)):
 		fmt.Fprintf(os.Stderr, "%v\nthe `unlock` command can be used to remove stale locks\n", err)
-	case restic.IsFatal(errors.Cause(err)):
+	case errors.IsFatal(errors.Cause(err)):
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 	case err != nil:
 		fmt.Fprintf(os.Stderr, "%+v\n", err)

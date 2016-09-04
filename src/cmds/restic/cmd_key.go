@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"restic"
 
-	"restic/backend"
+	"restic/errors"
 	"restic/repository"
 )
 
@@ -28,7 +28,7 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
-	plen, err := s.PrefixLength(backend.Key)
+	plen, err := s.PrefixLength(restic.KeyFile)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	for id := range s.List(backend.Key, done) {
+	for id := range s.List(restic.KeyFile, done) {
 		k, err := repository.LoadKey(s, id.String())
 		if err != nil {
 			cmd.global.Warnf("LoadKey() failed: %v\n", err)
@@ -69,7 +69,7 @@ func (cmd CmdKey) getNewPassword() string {
 func (cmd CmdKey) addKey(repo *repository.Repository) error {
 	id, err := repository.AddKey(repo, cmd.getNewPassword(), repo.Key())
 	if err != nil {
-		return restic.Fatalf("creating new key failed: %v\n", err)
+		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
 	cmd.global.Verbosef("saved new key as %s\n", id)
@@ -79,10 +79,10 @@ func (cmd CmdKey) addKey(repo *repository.Repository) error {
 
 func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 	if name == repo.KeyName() {
-		return restic.Fatal("refusing to remove key currently used to access repository")
+		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
 
-	err := repo.Backend().Remove(backend.Key, name)
+	err := repo.Backend().Remove(restic.KeyFile, name)
 	if err != nil {
 		return err
 	}
@@ -94,10 +94,10 @@ func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 func (cmd CmdKey) changePassword(repo *repository.Repository) error {
 	id, err := repository.AddKey(repo, cmd.getNewPassword(), repo.Key())
 	if err != nil {
-		return restic.Fatalf("creating new key failed: %v\n", err)
+		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
-	err = repo.Backend().Remove(backend.Key, repo.KeyName())
+	err = repo.Backend().Remove(restic.KeyFile, repo.KeyName())
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (cmd CmdKey) Usage() string {
 
 func (cmd CmdKey) Execute(args []string) error {
 	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) {
-		return restic.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -145,7 +145,7 @@ func (cmd CmdKey) Execute(args []string) error {
 			return err
 		}
 
-		id, err := backend.Find(repo.Backend(), backend.Key, args[1])
+		id, err := restic.Find(repo.Backend(), restic.KeyFile, args[1])
 		if err != nil {
 			return err
 		}

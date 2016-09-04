@@ -10,10 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic"
-	"restic/backend"
 	"restic/repository"
 	. "restic/test"
 )
@@ -51,7 +50,7 @@ func waitForMount(dir string) error {
 		time.Sleep(mountSleep)
 	}
 
-	return restic.Fatalf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
+	return errors.Fatalf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
 
 func cmdMount(t testing.TB, global GlobalOptions, dir string, ready, done chan struct{}) {
@@ -71,7 +70,7 @@ func TestMount(t *testing.T) {
 		t.Skip("Skipping fuse tests")
 	}
 
-	checkSnapshots := func(repo *repository.Repository, mountpoint string, snapshotIDs []backend.ID) {
+	checkSnapshots := func(repo *repository.Repository, mountpoint string, snapshotIDs []restic.ID) {
 		snapshotsDir, err := os.Open(filepath.Join(mountpoint, "snapshots"))
 		OK(t, err)
 		namesInSnapshots, err := snapshotsDir.Readdirnames(-1)
@@ -123,7 +122,7 @@ func TestMount(t *testing.T) {
 		Assert(t, len(names) == 1 && names[0] == "snapshots", `The fuse virtual directory "snapshots" doesn't exist`)
 		OK(t, mountpointDir.Close())
 
-		checkSnapshots(repo, mountpoint, []backend.ID{})
+		checkSnapshots(repo, mountpoint, []restic.ID{})
 
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)

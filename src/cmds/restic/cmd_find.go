@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"restic"
-	"restic/backend"
 	"restic/debug"
+	"restic/errors"
 	"restic/repository"
 )
 
@@ -56,12 +56,12 @@ func parseTime(str string) (time.Time, error) {
 		}
 	}
 
-	return time.Time{}, restic.Fatalf("unable to parse time: %q", str)
+	return time.Time{}, errors.Fatalf("unable to parse time: %q", str)
 }
 
-func (c CmdFind) findInTree(repo *repository.Repository, id backend.ID, path string) ([]findResult, error) {
+func (c CmdFind) findInTree(repo *repository.Repository, id restic.ID, path string) ([]findResult, error) {
 	debug.Log("restic.find", "checking tree %v\n", id)
-	tree, err := restic.LoadTree(repo, id)
+	tree, err := repo.LoadTree(id)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (c CmdFind) findInTree(repo *repository.Repository, id backend.ID, path str
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(repo *repository.Repository, id backend.ID) error {
+func (c CmdFind) findInSnapshot(repo *repository.Repository, id restic.ID) error {
 	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", id.Str(), c.oldest, c.newest)
 
 	sn, err := restic.LoadSnapshot(repo, id)
@@ -136,7 +136,7 @@ func (CmdFind) Usage() string {
 
 func (c CmdFind) Execute(args []string) error {
 	if len(args) != 1 {
-		return restic.Fatalf("wrong number of arguments, Usage: %s", c.Usage())
+		return errors.Fatalf("wrong number of arguments, Usage: %s", c.Usage())
 	}
 
 	var err error
@@ -176,7 +176,7 @@ func (c CmdFind) Execute(args []string) error {
 	if c.Snapshot != "" {
 		snapshotID, err := restic.FindSnapshot(repo, c.Snapshot)
 		if err != nil {
-			return restic.Fatalf("invalid id %q: %v", args[1], err)
+			return errors.Fatalf("invalid id %q: %v", args[1], err)
 		}
 
 		return c.findInSnapshot(repo, snapshotID)
@@ -184,7 +184,7 @@ func (c CmdFind) Execute(args []string) error {
 
 	done := make(chan struct{})
 	defer close(done)
-	for snapshotID := range repo.List(backend.Snapshot, done) {
+	for snapshotID := range repo.List(restic.SnapshotFile, done) {
 		err := c.findInSnapshot(repo, snapshotID)
 
 		if err != nil {

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 	"os/user"
+	"restic"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"restic/backend"
 	"restic/crypto"
@@ -84,10 +85,12 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	}
 
 	// decrypt master keys
-	buf, err := crypto.Decrypt(k.user, []byte{}, k.Data)
+	buf := make([]byte, len(k.Data))
+	n, err := crypto.Decrypt(k.user, buf, k.Data)
 	if err != nil {
 		return nil, err
 	}
+	buf = buf[:n]
 
 	// restore json
 	k.master = &crypto.Key{}
@@ -115,7 +118,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 	// try at most maxKeysForSearch keys in repo
 	done := make(chan struct{})
 	defer close(done)
-	for name := range s.Backend().List(backend.Key, done) {
+	for name := range s.Backend().List(restic.KeyFile, done) {
 		if maxKeys > 0 && checked > maxKeys {
 			return nil, ErrMaxKeysReached
 		}
@@ -142,7 +145,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 
 // LoadKey loads a key from the backend.
 func LoadKey(s *Repository, name string) (k *Key, err error) {
-	h := backend.Handle{Type: backend.Key, Name: name}
+	h := restic.Handle{Type: restic.KeyFile, Name: name}
 	data, err := backend.LoadAll(s.be, h, nil)
 	if err != nil {
 		return nil, err
@@ -224,9 +227,9 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 	}
 
 	// store in repository and return
-	h := backend.Handle{
-		Type: backend.Key,
-		Name: backend.Hash(buf).String(),
+	h := restic.Handle{
+		Type: restic.KeyFile,
+		Name: restic.Hash(buf).String(),
 	}
 
 	err = s.be.Save(h, buf)

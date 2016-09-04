@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"restic"
-	"restic/backend"
 	"strings"
 )
 
@@ -93,7 +92,7 @@ func (cmd CmdForget) Execute(args []string) error {
 		}
 
 		if !cmd.DryRun {
-			err = repo.Backend().Remove(backend.Snapshot, id.String())
+			err = repo.Backend().Remove(restic.SnapshotFile, id.String())
 			if err != nil {
 				return err
 			}
@@ -156,7 +155,7 @@ func (cmd CmdForget) Execute(args []string) error {
 
 		if !cmd.DryRun {
 			for _, sn := range remove {
-				err = repo.Backend().Remove(backend.Snapshot, sn.ID().String())
+				err = repo.Backend().Remove(restic.SnapshotFile, sn.ID().String())
 				if err != nil {
 					return err
 				}

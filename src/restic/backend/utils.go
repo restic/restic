@@ -2,15 +2,16 @@ package backend
 
 import (
 	"io"
+	"restic"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // LoadAll reads all data stored in the backend for the handle. The buffer buf
 // is resized to accomodate all data in the blob. Errors returned by be.Load()
 // are passed on, except io.ErrUnexpectedEOF is silenced and nil returned
 // instead, since it means this function is working properly.
-func LoadAll(be Backend, h Handle, buf []byte) ([]byte, error) {
+func LoadAll(be restic.Backend, h restic.Handle, buf []byte) ([]byte, error) {
 	fi, err := be.Stat(h)
 	if err != nil {
 		return nil, errors.Wrap(err, "Stat")

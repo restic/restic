@@ -4,11 +4,11 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"restic"
 	"sync"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
-	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
 	"restic/fs"
@@ -17,7 +17,7 @@ import (
 
 // Saver implements saving data in a backend.
 type Saver interface {
-	Save(h backend.Handle, jp []byte) error
+	Save(h restic.Handle, jp []byte) error
 }
 
 // packerManager keeps a list of open packs and creates new on demand.
@@ -114,8 +114,8 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 		return errors.Wrap(err, "Close")
 	}
 
-	id := backend.Hash(data)
-	h := backend.Handle{Type: backend.Data, Name: id.String()}
+	id := restic.Hash(data)
+	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
 	err = r.be.Save(h, data)
 	if err != nil {
@@ -133,12 +133,14 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), id.Str())
-		r.idx.Current().Store(PackedBlob{
-			Type:   b.Type,
-			ID:     b.ID,
+		r.idx.Current().Store(restic.PackedBlob{
+			Blob: restic.Blob{
+				Type:   b.Type,
+				ID:     b.ID,
+				Offset: b.Offset,
+				Length: uint(b.Length),
+			},
 			PackID: id,
-			Offset: b.Offset,
-			Length: uint(b.Length),
 		})
 	}
 

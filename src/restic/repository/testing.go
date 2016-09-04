@@ -2,10 +2,11 @@ package repository
 
 import (
 	"os"
-	"restic/backend"
+	"restic"
 	"restic/backend/local"
 	"restic/backend/mem"
 	"restic/crypto"
+	"restic/test"
 	"testing"
 
 	"github.com/restic/chunker"
@@ -25,19 +26,16 @@ func TestUseLowSecurityKDFParameters(t testing.TB) {
 }
 
 // TestBackend returns a fully configured in-memory backend.
-func TestBackend(t testing.TB) (be backend.Backend, cleanup func()) {
+func TestBackend(t testing.TB) (be restic.Backend, cleanup func()) {
 	return mem.New(), func() {}
 }
-
-// TestPassword is used for all repositories created by the Test* functions.
-const TestPassword = "geheim"
 
 const testChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 
 // TestRepositoryWithBackend returns a repository initialized with a test
 // password. If be is nil, an in-memory backend is used. A constant polynomial
 // is used for the chunker and low-security test parameters.
-func TestRepositoryWithBackend(t testing.TB, be backend.Backend) (r *Repository, cleanup func()) {
+func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Repository, cleanup func()) {
 	TestUseLowSecurityKDFParameters(t)
 
 	var beCleanup func()
@@ -45,15 +43,15 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend) (r *Repository,
 		be, beCleanup = TestBackend(t)
 	}
 
-	r = New(be)
+	repo := New(be)
 
-	cfg := TestCreateConfig(t, testChunkerPol)
-	err := r.init(TestPassword, cfg)
+	cfg := restic.TestCreateConfig(t, testChunkerPol)
+	err := repo.init(test.TestPassword, cfg)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)
 	}
 
-	return r, func() {
+	return repo, func() {
 		if beCleanup != nil {
 			beCleanup()
 		}
@@ -64,7 +62,7 @@ func TestRepositoryWithBackend(t testing.TB, be backend.Backend) (r *Repository,
 // in-memory backend. When the environment variable RESTIC_TEST_REPO is set to
 // a non-existing directory, a local backend is created there and this is used
 // instead. The directory is not removed, but left there for inspection.
-func TestRepository(t testing.TB) (r *Repository, cleanup func()) {
+func TestRepository(t testing.TB) (r restic.Repository, cleanup func()) {
 	dir := os.Getenv("RESTIC_TEST_REPO")
 	if dir != "" {
 		_, err := os.Stat(dir)
@@ -82,4 +80,20 @@ func TestRepository(t testing.TB) (r *Repository, cleanup func()) {
 	}
 
 	return TestRepositoryWithBackend(t, nil)
+}
+
+// TestOpenLocal opens a local repository.
+func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
+	be, err := local.Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	repo := New(be)
+	err = repo.SearchKey(test.TestPassword, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return repo
 }

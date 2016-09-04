@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // Config collects all information required to connect to an sftp server.

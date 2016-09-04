@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
 	"golang.org/x/crypto/poly1305"
 )
@@ -274,14 +274,20 @@ func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
 // Decrypt verifies and decrypts the ciphertext. Ciphertext must be in the form
 // IV || Ciphertext || MAC. plaintext and ciphertext may point to (exactly) the
 // same slice.
-func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error) {
+func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) (int, error) {
 	if !ks.Valid() {
-		return nil, errors.New("invalid key")
+		return 0, errors.New("invalid key")
 	}
 
 	// check for plausible length
 	if len(ciphertextWithMac) < ivSize+macSize {
 		panic("trying to decrypt invalid data: ciphertext too small")
+	}
+
+	// check buffer length for plaintext
+	plaintextLength := len(ciphertextWithMac) - ivSize - macSize
+	if len(plaintext) < plaintextLength {
+		return 0, errors.Errorf("plaintext buffer too small, %d < %d", len(plaintext), plaintextLength)
 	}
 
 	// extract mac
@@ -290,15 +296,14 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error
 
 	// verify mac
 	if !poly1305Verify(ciphertextWithIV[ivSize:], ciphertextWithIV[:ivSize], &ks.MAC, mac) {
-		return nil, ErrUnauthenticated
+		return 0, ErrUnauthenticated
 	}
 
 	// extract iv
 	iv, ciphertext := ciphertextWithIV[:ivSize], ciphertextWithIV[ivSize:]
 
-	if cap(plaintext) < len(ciphertext) {
-		// extend plaintext
-		plaintext = append(plaintext, make([]byte, len(ciphertext)-cap(plaintext))...)
+	if len(ciphertext) != plaintextLength {
+		return 0, errors.Errorf("plaintext and ciphertext lengths do not match: %d != %d", len(ciphertext), plaintextLength)
 	}
 
 	// decrypt data
@@ -312,7 +317,7 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) ([]byte, error
 	plaintext = plaintext[:len(ciphertext)]
 	e.XORKeyStream(plaintext, ciphertext)
 
-	return plaintext, nil
+	return plaintextLength, nil
 }
 
 // Valid tests if the key is valid.

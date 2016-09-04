@@ -4,86 +4,32 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/json"
 	"io"
 	mrand "math/rand"
 	"path/filepath"
 	"testing"
 
 	"restic"
-	"restic/backend"
-	"restic/pack"
+	"restic/archiver"
 	"restic/repository"
 	. "restic/test"
 )
 
-type testJSONStruct struct {
-	Foo uint32
-	Bar string
-	Baz []byte
-}
-
-var repoTests = []testJSONStruct{
-	testJSONStruct{Foo: 23, Bar: "Teststring", Baz: []byte("xx")},
-}
-
-func TestSaveJSON(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
-
-	for _, obj := range repoTests {
-		data, err := json.Marshal(obj)
-		OK(t, err)
-		data = append(data, '\n')
-		h := sha256.Sum256(data)
-
-		id, err := repo.SaveJSON(pack.Tree, obj)
-		OK(t, err)
-
-		Assert(t, h == id,
-			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
-			h, id)
-	}
-}
-
-func BenchmarkSaveJSON(t *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
-
-	obj := repoTests[0]
-
-	data, err := json.Marshal(obj)
-	OK(t, err)
-	data = append(data, '\n')
-	h := sha256.Sum256(data)
-
-	t.ResetTimer()
-
-	for i := 0; i < t.N; i++ {
-		id, err := repo.SaveJSON(pack.Tree, obj)
-		OK(t, err)
-
-		Assert(t, h == id,
-			"TestSaveJSON: wrong plaintext ID: expected %02x, got %02x",
-			h, id)
-	}
-}
-
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
 func TestSave(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
 		_, err := io.ReadFull(rand.Reader, data)
 		OK(t, err)
 
-		id := backend.Hash(data)
+		id := restic.Hash(data)
 
 		// save
-		sid, err := repo.SaveAndEncrypt(pack.Data, data, nil)
+		sid, err := repo.SaveBlob(restic.DataBlob, data, restic.ID{})
 		OK(t, err)
 
 		Equals(t, id, sid)
@@ -92,8 +38,10 @@ func TestSave(t *testing.T) {
 		// OK(t, repo.SaveIndex())
 
 		// read back
-		buf, err := repo.LoadBlob(id, pack.Data, make([]byte, size))
+		buf := make([]byte, size)
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 		OK(t, err)
+		Equals(t, len(buf), n)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -106,26 +54,28 @@ func TestSave(t *testing.T) {
 }
 
 func TestSaveFrom(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
 		_, err := io.ReadFull(rand.Reader, data)
 		OK(t, err)
 
-		id := backend.Hash(data)
+		id := restic.Hash(data)
 
 		// save
-		id2, err := repo.SaveAndEncrypt(pack.Data, data, &id)
+		id2, err := repo.SaveBlob(restic.DataBlob, data, id)
 		OK(t, err)
 		Equals(t, id, id2)
 
 		OK(t, repo.Flush())
 
 		// read back
-		buf, err := repo.LoadBlob(id, pack.Data, make([]byte, size))
+		buf := make([]byte, size)
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 		OK(t, err)
+		Equals(t, len(buf), n)
 
 		Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
@@ -138,8 +88,8 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveAndEncrypt(t *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	size := 4 << 20 // 4MiB
 
@@ -147,60 +97,57 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 	_, err := io.ReadFull(rand.Reader, data)
 	OK(t, err)
 
-	id := backend.ID(sha256.Sum256(data))
+	id := restic.ID(sha256.Sum256(data))
 
 	t.ResetTimer()
 	t.SetBytes(int64(size))
 
 	for i := 0; i < t.N; i++ {
 		// save
-		_, err = repo.SaveAndEncrypt(pack.Data, data, &id)
+		_, err = repo.SaveBlob(restic.DataBlob, data, id)
 		OK(t, err)
 	}
 }
 
-func TestLoadJSONPack(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+func TestLoadTree(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
-	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
+	sn := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
 	OK(t, repo.Flush())
 
-	tree := restic.NewTree()
-	err := repo.LoadJSONPack(pack.Tree, *sn.Tree, &tree)
+	_, err := repo.LoadTree(*sn.Tree)
 	OK(t, err)
 }
 
-func BenchmarkLoadJSONPack(t *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+func BenchmarkLoadTree(t *testing.B) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
-	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
+	sn := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
 	OK(t, repo.Flush())
-
-	tree := restic.NewTree()
 
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		err := repo.LoadJSONPack(pack.Tree, *sn.Tree, &tree)
+		_, err := repo.LoadTree(*sn.Tree)
 		OK(t, err)
 	}
 }
 
 func TestLoadJSONUnpacked(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
@@ -211,13 +158,13 @@ func TestLoadJSONUnpacked(t *testing.T) {
 	sn.Hostname = "foobar"
 	sn.Username = "test!"
 
-	id, err := repo.SaveJSONUnpacked(backend.Snapshot, &sn)
+	id, err := repo.SaveJSONUnpacked(restic.SnapshotFile, &sn)
 	OK(t, err)
 
 	var sn2 restic.Snapshot
 
 	// restore
-	err = repo.LoadJSONUnpacked(backend.Snapshot, id, &sn2)
+	err = repo.LoadJSONUnpacked(restic.SnapshotFile, id, &sn2)
 	OK(t, err)
 
 	Equals(t, sn.Hostname, sn2.Hostname)
@@ -227,26 +174,28 @@ func TestLoadJSONUnpacked(t *testing.T) {
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
-	WithTestEnvironment(t, repoFixture, func(repodir string) {
-		repo := OpenLocalRepo(t, repodir)
-		OK(t, repo.LoadIndex())
-	})
+	repodir, cleanup := Env(t, repoFixture)
+	defer cleanup()
+
+	repo := repository.TestOpenLocal(t, repodir)
+	OK(t, repo.LoadIndex())
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
-	WithTestEnvironment(b, repoFixture, func(repodir string) {
-		repo := OpenLocalRepo(b, repodir)
-		b.ResetTimer()
+	repodir, cleanup := Env(b, repoFixture)
+	defer cleanup()
 
-		for i := 0; i < b.N; i++ {
-			repo.SetIndex(repository.NewMasterIndex())
-			OK(b, repo.LoadIndex())
-		}
-	})
+	repo := repository.TestOpenLocal(b, repodir)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		repo.SetIndex(repository.NewMasterIndex())
+		OK(b, repo.LoadIndex())
+	}
 }
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
-func saveRandomDataBlobs(t testing.TB, repo *repository.Repository, num int, sizeMax int) {
+func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
 	for i := 0; i < num; i++ {
 		size := mrand.Int() % sizeMax
 
@@ -254,14 +203,14 @@ func saveRandomDataBlobs(t testing.TB, repo *repository.Repository, num int, siz
 		_, err := io.ReadFull(rand.Reader, buf)
 		OK(t, err)
 
-		_, err = repo.SaveAndEncrypt(pack.Data, buf, nil)
+		_, err = repo.SaveBlob(restic.DataBlob, buf, restic.ID{})
 		OK(t, err)
 	}
 }
 
 func TestRepositoryIncrementalIndex(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	repository.IndexFull = func(*repository.Index) bool { return true }
 
@@ -286,19 +235,19 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 	OK(t, repo.SaveIndex())
 
 	type packEntry struct {
-		id      backend.ID
+		id      restic.ID
 		indexes []*repository.Index
 	}
 
-	packEntries := make(map[backend.ID]map[backend.ID]struct{})
+	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 
-	for id := range repo.List(backend.Index, nil) {
+	for id := range repo.List(restic.IndexFile, nil) {
 		idx, err := repository.LoadIndex(repo, id)
 		OK(t, err)
 
 		for pb := range idx.Each(nil) {
 			if _, ok := packEntries[pb.PackID]; !ok {
-				packEntries[pb.PackID] = make(map[backend.ID]struct{})
+				packEntries[pb.PackID] = make(map[restic.ID]struct{})
 			}
 
 			packEntries[pb.PackID][id] = struct{}{}

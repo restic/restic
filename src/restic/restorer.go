@@ -4,17 +4,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
-	"restic/backend"
 	"restic/debug"
 	"restic/fs"
-	"restic/repository"
 )
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo *repository.Repository
+	repo Repository
 	sn   *Snapshot
 
 	Error        func(dir string, node *Node, err error) error
@@ -24,7 +22,7 @@ type Restorer struct {
 var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
 
 // NewRestorer creates a restorer preloaded with the content from the snapshot id.
-func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) {
+func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 	r := &Restorer{
 		repo: repo, Error: restorerAbortOnAllErrors,
 		SelectFilter: func(string, string, *Node) bool { return true },
@@ -40,8 +38,8 @@ func NewRestorer(repo *repository.Repository, id backend.ID) (*Restorer, error) 
 	return r, nil
 }
 
-func (res *Restorer) restoreTo(dst string, dir string, treeID backend.ID) error {
-	tree, err := LoadTree(res.repo, treeID)
+func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
+	tree, err := res.repo.LoadTree(treeID)
 	if err != nil {
 		return res.Error(dir, nil, err)
 	}

@@ -2,19 +2,18 @@ package repository_test
 
 import (
 	"bytes"
+	"restic"
 	"testing"
 
-	"restic/backend"
-	"restic/pack"
 	"restic/repository"
 	. "restic/test"
 )
 
 func TestIndexSerialize(t *testing.T) {
 	type testEntry struct {
-		id             backend.ID
-		pack           backend.ID
-		tpe            pack.BlobType
+		id             restic.ID
+		pack           restic.ID
+		tpe            restic.BlobType
 		offset, length uint
 	}
 	tests := []testEntry{}
@@ -23,24 +22,26 @@ func TestIndexSerialize(t *testing.T) {
 
 	// create 50 packs with 20 blobs each
 	for i := 0; i < 50; i++ {
-		packID := backend.RandomID()
+		packID := restic.NewRandomID()
 
 		pos := uint(0)
 		for j := 0; j < 20; j++ {
-			id := backend.RandomID()
+			id := restic.NewRandomID()
 			length := uint(i*100 + j)
-			idx.Store(repository.PackedBlob{
-				Type:   pack.Data,
-				ID:     id,
+			idx.Store(restic.PackedBlob{
+				Blob: restic.Blob{
+					Type:   restic.DataBlob,
+					ID:     id,
+					Offset: pos,
+					Length: length,
+				},
 				PackID: packID,
-				Offset: pos,
-				Length: length,
 			})
 
 			tests = append(tests, testEntry{
 				id:     id,
 				pack:   packID,
-				tpe:    pack.Data,
+				tpe:    restic.DataBlob,
 				offset: pos,
 				length: length,
 			})
@@ -93,24 +94,26 @@ func TestIndexSerialize(t *testing.T) {
 	// add more blobs to idx
 	newtests := []testEntry{}
 	for i := 0; i < 10; i++ {
-		packID := backend.RandomID()
+		packID := restic.NewRandomID()
 
 		pos := uint(0)
 		for j := 0; j < 10; j++ {
-			id := backend.RandomID()
+			id := restic.NewRandomID()
 			length := uint(i*100 + j)
-			idx.Store(repository.PackedBlob{
-				Type:   pack.Data,
-				ID:     id,
+			idx.Store(restic.PackedBlob{
+				Blob: restic.Blob{
+					Type:   restic.DataBlob,
+					ID:     id,
+					Offset: pos,
+					Length: length,
+				},
 				PackID: packID,
-				Offset: pos,
-				Length: length,
 			})
 
 			newtests = append(newtests, testEntry{
 				id:     id,
 				pack:   packID,
-				tpe:    pack.Data,
+				tpe:    restic.DataBlob,
 				offset: pos,
 				length: length,
 			})
@@ -127,7 +130,7 @@ func TestIndexSerialize(t *testing.T) {
 	Assert(t, idx.Final(),
 		"index not final after encoding")
 
-	id := backend.RandomID()
+	id := restic.NewRandomID()
 	OK(t, idx.SetID(id))
 	id2, err := idx.ID()
 	Assert(t, id2.Equal(id),
@@ -164,18 +167,20 @@ func TestIndexSize(t *testing.T) {
 	packs := 200
 	blobs := 100
 	for i := 0; i < packs; i++ {
-		packID := backend.RandomID()
+		packID := restic.NewRandomID()
 
 		pos := uint(0)
 		for j := 0; j < blobs; j++ {
-			id := backend.RandomID()
+			id := restic.NewRandomID()
 			length := uint(i*100 + j)
-			idx.Store(repository.PackedBlob{
-				Type:   pack.Data,
-				ID:     id,
+			idx.Store(restic.PackedBlob{
+				Blob: restic.Blob{
+					Type:   restic.DataBlob,
+					ID:     id,
+					Offset: pos,
+					Length: length,
+				},
 				PackID: packID,
-				Offset: pos,
-				Length: length,
 			})
 
 			pos += length
@@ -249,39 +254,39 @@ var docOldExample = []byte(`
 `)
 
 var exampleTests = []struct {
-	id, packID     backend.ID
-	tpe            pack.BlobType
+	id, packID     restic.ID
+	tpe            restic.BlobType
 	offset, length uint
 }{
 	{
-		ParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"),
-		ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-		pack.Data, 0, 25,
+		restic.TestParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"),
+		restic.TestParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
+		restic.DataBlob, 0, 25,
 	}, {
-		ParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"),
-		ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-		pack.Tree, 38, 100,
+		restic.TestParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"),
+		restic.TestParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
+		restic.TreeBlob, 38, 100,
 	}, {
-		ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"),
-		ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-		pack.Data, 150, 123,
+		restic.TestParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"),
+		restic.TestParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
+		restic.DataBlob, 150, 123,
 	},
 }
 
 var exampleLookupTest = struct {
-	packID backend.ID
-	blobs  map[backend.ID]pack.BlobType
+	packID restic.ID
+	blobs  map[restic.ID]restic.BlobType
 }{
-	ParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
-	map[backend.ID]pack.BlobType{
-		ParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"): pack.Data,
-		ParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"): pack.Tree,
-		ParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"): pack.Data,
+	restic.TestParseID("73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c"),
+	map[restic.ID]restic.BlobType{
+		restic.TestParseID("3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce"): restic.DataBlob,
+		restic.TestParseID("9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae"): restic.TreeBlob,
+		restic.TestParseID("d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66"): restic.DataBlob,
 	},
 }
 
 func TestIndexUnserialize(t *testing.T) {
-	oldIdx := backend.IDs{ParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
+	oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
 	idx, err := repository.DecodeIndex(bytes.NewReader(docExample))
 	OK(t, err)
@@ -345,16 +350,18 @@ func TestIndexUnserializeOld(t *testing.T) {
 
 func TestIndexPacks(t *testing.T) {
 	idx := repository.NewIndex()
-	packs := backend.NewIDSet()
+	packs := restic.NewIDSet()
 
 	for i := 0; i < 20; i++ {
-		packID := backend.RandomID()
-		idx.Store(repository.PackedBlob{
-			Type:   pack.Data,
-			ID:     backend.RandomID(),
+		packID := restic.NewRandomID()
+		idx.Store(restic.PackedBlob{
+			Blob: restic.Blob{
+				Type:   restic.DataBlob,
+				ID:     restic.NewRandomID(),
+				Offset: 0,
+				Length: 23,
+			},
 			PackID: packID,
-			Offset: 0,
-			Length: 23,
 		})
 
 		packs.Insert(packID)

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"restic/errors"
 	"sort"
 	"strings"
 
 	"restic"
-	"restic/backend"
 )
 
 type Table struct {
@@ -70,7 +70,7 @@ func (cmd CmdSnapshots) Usage() string {
 
 func (cmd CmdSnapshots) Execute(args []string) error {
 	if len(args) != 0 {
-		return restic.Fatalf("wrong number of arguments, usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of arguments, usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -92,7 +92,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 	defer close(done)
 
 	list := []*restic.Snapshot{}
-	for id := range repo.List(backend.Snapshot, done) {
+	for id := range repo.List(restic.SnapshotFile, done) {
 		sn, err := restic.LoadSnapshot(repo, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
@@ -115,7 +115,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 
 	}
 
-	plen, err := repo.PrefixLength(backend.Snapshot)
+	plen, err := repo.PrefixLength(restic.SnapshotFile)
 	if err != nil {
 		return err
 	}

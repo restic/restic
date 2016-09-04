@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"restic"
-	"restic/backend"
+	"restic/errors"
 	"restic/repository"
 )
 
@@ -46,8 +46,8 @@ func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
 	}
 }
 
-func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id backend.ID) error {
-	tree, err := restic.LoadTree(repo, id)
+func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id restic.ID) error {
+	tree, err := repo.LoadTree(id)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (cmd CmdLs) Usage() string {
 
 func (cmd CmdLs) Execute(args []string) error {
 	if len(args) < 1 || len(args) > 2 {
-		return restic.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
 	}
 
 	repo, err := cmd.global.OpenRepository()

@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 type process struct {

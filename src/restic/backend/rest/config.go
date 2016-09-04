@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 )
 
 // Config contains all configuration necessary to connect to a REST server.

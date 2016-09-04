@@ -4,22 +4,17 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/pkg/errors"
+	"restic/errors"
 
-	"restic/backend"
 	"restic/debug"
-	"restic/pack"
 )
 
+// Tree is an ordered list of nodes.
 type Tree struct {
 	Nodes []*Node `json:"nodes"`
 }
 
-var (
-	ErrNodeNotFound      = errors.New("named node not found")
-	ErrNodeAlreadyInTree = errors.New("node already present")
-)
-
+// NewTree creates a new tree object.
 func NewTree() *Tree {
 	return &Tree{
 		Nodes: []*Node{},
@@ -28,20 +23,6 @@ func NewTree() *Tree {
 
 func (t Tree) String() string {
 	return fmt.Sprintf("Tree<%d nodes>", len(t.Nodes))
-}
-
-type TreeLoader interface {
-	LoadJSONPack(pack.BlobType, backend.ID, interface{}) error
-}
-
-func LoadTree(repo TreeLoader, id backend.ID) (*Tree, error) {
-	tree := &Tree{}
-	err := repo.LoadJSONPack(pack.Tree, id, tree)
-	if err != nil {
-		return nil, err
-	}
-
-	return tree, nil
 }
 
 // Equals returns true if t and other have exactly the same nodes.
@@ -63,10 +44,11 @@ func (t Tree) Equals(other *Tree) bool {
 	return true
 }
 
+// Insert adds a new node at the correct place in the tree.
 func (t *Tree) Insert(node *Node) error {
 	pos, _, err := t.binarySearch(node.Name)
 	if err == nil {
-		return ErrNodeAlreadyInTree
+		return errors.New("node already present")
 	}
 
 	// https://code.google.com/p/go-wiki/wiki/SliceTricks
@@ -86,16 +68,17 @@ func (t Tree) binarySearch(name string) (int, *Node, error) {
 		return pos, t.Nodes[pos], nil
 	}
 
-	return pos, nil, ErrNodeNotFound
+	return pos, nil, errors.New("named node not found")
 }
 
+// Find returns a node with the given name.
 func (t Tree) Find(name string) (*Node, error) {
 	_, node, err := t.binarySearch(name)
 	return node, err
 }
 
 // Subtrees returns a slice of all subtree IDs of the tree.
-func (t Tree) Subtrees() (trees backend.IDs) {
+func (t Tree) Subtrees() (trees IDs) {
 	for _, node := range t.Nodes {
 		if node.Type == "dir" && node.Subtree != nil {
 			trees = append(trees, *node.Subtree)
