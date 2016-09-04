@@ -14,7 +14,8 @@ import (
 
 // Cache is a local cache implementation.
 type Cache struct {
-	dir string
+	blobdir string
+	filedir string
 }
 
 // make sure that Cache implement restic.Cache
@@ -75,20 +76,15 @@ func New(dir, repoID string) (cache restic.Cache, err error) {
 
 	dir = filepath.Join(dir, repoID)
 
-	return &Cache{dir: dir}, nil
+	c := &Cache{
+		blobdir: filepath.Join(dir, "blob"),
+		filedir: filepath.Join(dir, "file"),
+	}
+
+	return c, nil
 }
 
-func fn(dir string, h restic.BlobHandle) string {
-	id := h.ID.String()
-	subdir := id[:2]
-	return filepath.Join(dir, h.Type.String(), subdir, id)
-}
-
-// GetBlob returns a blob from the cache. If the blob is not in the cache, ok
-// is set to false.
-func (c *Cache) GetBlob(h restic.BlobHandle, buf []byte) (ok bool, err error) {
-	filename := fn(c.dir, h)
-
+func (c *Cache) get(filename string, buf []byte) (ok bool, err error) {
 	fi, err := os.Stat(filename)
 	if os.IsNotExist(errors.Cause(err)) {
 		return false, nil
@@ -142,9 +138,22 @@ func createDirs(filename string) error {
 	return nil
 }
 
+func (c *Cache) blobFn(h restic.BlobHandle) string {
+	id := h.ID.String()
+	subdir := id[:2]
+	return filepath.Join(c.blobdir, h.Type.String(), subdir, id)
+}
+
+// GetBlob returns a blob from the cache. If the blob is not in the cache, ok
+// is set to false.
+func (c *Cache) GetBlob(h restic.BlobHandle, buf []byte) (ok bool, err error) {
+	filename := c.blobFn(h)
+	return c.get(filename, buf)
+}
+
 // PutBlob saves a blob in the cache.
 func (c *Cache) PutBlob(h restic.BlobHandle, buf []byte) error {
-	filename := fn(c.dir, h)
+	filename := c.blobFn(h)
 
 	if err := createDirs(filename); err != nil {
 		return err
@@ -156,7 +165,7 @@ func (c *Cache) PutBlob(h restic.BlobHandle, buf []byte) error {
 // DeleteBlob removes a blob from the cache. If it isn't included in the cache,
 // a nil error is returned.
 func (c *Cache) DeleteBlob(h restic.BlobHandle) error {
-	err := os.Remove(fn(c.dir, h))
+	err := os.Remove(c.blobFn(h))
 	if err != nil && os.IsNotExist(errors.Cause(err)) {
 		err = nil
 	}
@@ -165,7 +174,7 @@ func (c *Cache) DeleteBlob(h restic.BlobHandle) error {
 
 // HasBlob check whether the cache has a particular blob.
 func (c *Cache) HasBlob(h restic.BlobHandle) bool {
-	_, err := os.Stat(fn(c.dir, h))
+	_, err := os.Stat(c.blobFn(h))
 	if err != nil {
 		return false
 	}
@@ -173,33 +182,45 @@ func (c *Cache) HasBlob(h restic.BlobHandle) bool {
 	return true
 }
 
-func (c *Cache) updateBlobs(idx restic.BlobIndex, t restic.BlobType) (err error) {
-	dir := filepath.Dir(fn(c.dir, restic.BlobHandle{Type: t}))
+func isFile(fi os.FileInfo) bool {
+	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
+}
 
-	var d *os.File
-	d, err = os.Open(dir)
-	if err != nil && os.IsNotExist(errors.Cause(err)) {
-		return nil
-	}
-
-	if err != nil {
-		return errors.Wrap(err, "Open")
-	}
-
-	defer func() {
-		e := d.Close()
-		if err == nil {
-			err = errors.Wrap(e, "Close")
+func listDir(dir string) (entries []string, err error) {
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if info == nil {
+			return nil
 		}
-	}()
 
-	entries, err := d.Readdirnames(-1)
+		if isFile(info) {
+			p, err := filepath.Rel(dir, path)
+			if err != nil {
+				return errors.Wrap(err, "filepath.Rel")
+			}
+			entries = append(entries, p)
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return errors.Wrap(err, "Readdirnames")
+		return nil, errors.Wrap(err, "Walk")
+	}
+
+	return entries, nil
+}
+
+func (c *Cache) updateBlobs(idx restic.BlobIndex, t restic.BlobType) (err error) {
+	basedir := filepath.Join(c.blobdir, t.String())
+
+	entries, err := listDir(basedir)
+	if err != nil {
+		return err
 	}
 
 	debug.Log("Cache.UpdateBlobs", "checking %v/%d entries", t, len(entries))
-	for _, name := range entries {
+	for _, path := range entries {
+		name := filepath.Base(path)
 		id, err := restic.ParseID(name)
 		if err != nil {
 			debug.Log("Cache.UpdateBlobs", "  cache entry %q does not parse as id: %v", name, err)
@@ -208,8 +229,7 @@ func (c *Cache) updateBlobs(idx restic.BlobIndex, t restic.BlobType) (err error)
 
 		if !idx.Has(id, t) {
 			debug.Log("Cache.UpdateBlobs", "  remove %v/%v", t, name)
-
-			err = os.Remove(filepath.Join(dir, name))
+			err = os.Remove(c.blobFn(restic.BlobHandle{Type: t, ID: id}))
 			if err != nil {
 				return errors.Wrap(err, "Remove")
 			}
@@ -228,4 +248,98 @@ func (c *Cache) UpdateBlobs(idx restic.BlobIndex) (err error) {
 	}
 
 	return c.updateBlobs(idx, restic.DataBlob)
+}
+
+func (c *Cache) fileFn(h restic.Handle) string {
+	id := h.Name
+	subdir := id[:2]
+	return filepath.Join(c.filedir, h.Type.String(), subdir, id)
+}
+
+// GetFile returns a file from the cache. If the file is not in the cache, ok
+// is set to false.
+func (c *Cache) GetFile(h restic.Handle, buf []byte) (ok bool, err error) {
+	filename := c.fileFn(h)
+	return c.get(filename, buf)
+}
+
+var allowedFileTypes = map[restic.FileType]struct{}{
+	restic.SnapshotFile: struct{}{},
+	restic.IndexFile:    struct{}{},
+}
+
+// PutFile saves a file in the cache.
+func (c *Cache) PutFile(h restic.Handle, buf []byte) error {
+	if _, ok := allowedFileTypes[h.Type]; !ok {
+		return errors.Errorf("filetype %v not allowed for cache", h.Type)
+	}
+
+	filename := c.fileFn(h)
+
+	if err := createDirs(filename); err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(filename, buf, 0600)
+}
+
+// DeleteFile removes a file from the cache. If it isn't included in the cache,
+// a nil error is returned.
+func (c *Cache) DeleteFile(h restic.Handle) error {
+	err := os.Remove(c.fileFn(h))
+	if err != nil && os.IsNotExist(errors.Cause(err)) {
+		err = nil
+	}
+	return err
+}
+
+// HasFile check whether the cache has a particular file.
+func (c *Cache) HasFile(h restic.Handle) bool {
+	_, err := os.Stat(c.fileFn(h))
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func (c *Cache) updateFiles(idx restic.FileIndex, t restic.FileType) (err error) {
+	entries, err := listDir(filepath.Join(c.filedir, t.String()))
+	if err != nil {
+		return err
+	}
+
+	debug.Log("Cache.UpdateFiles", "checking %v/%d entries", t, len(entries))
+	for _, path := range entries {
+		name := filepath.Base(path)
+		ok, err := idx.Test(t, name)
+		if err != nil {
+			return errors.Wrap(err, "Test")
+		}
+
+		if !ok {
+			debug.Log("Cache.UpdateFiles", "  remove %v/%v", t, name)
+
+			h := restic.Handle{Name: name, Type: t}
+			err = os.Remove(c.fileFn(h))
+			if err != nil {
+				return errors.Wrap(err, "Remove")
+			}
+		}
+	}
+
+	return nil
+}
+
+// UpdateFiles takes an index and removes files from the local cache which are
+// not in the repo any more.
+func (c *Cache) UpdateFiles(idx restic.FileIndex) (err error) {
+	for t := range allowedFileTypes {
+		err = c.updateFiles(idx, t)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -141,3 +141,71 @@ func TestUpdateBlobs(t *testing.T) {
 		}
 	}
 }
+
+type fileIndex struct {
+	files map[restic.Handle]struct{}
+}
+
+func (idx fileIndex) Test(t restic.FileType, name string) (bool, error) {
+	h := restic.Handle{Type: t, Name: name}
+	_, ok := idx.files[h]
+	return ok, nil
+}
+
+func TestUpdateFiles(t *testing.T) {
+	c, cleanup := TestNewCache(t)
+	defer cleanup()
+
+	files := make(map[restic.Handle]struct{})
+
+	buf := test.Random(23, 15*1024)
+	for i := 0; i < 10; i++ {
+		id := restic.NewRandomID()
+		h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
+		err := c.PutFile(h, buf)
+		test.OK(t, err)
+		files[h] = struct{}{}
+	}
+
+	// use an index with all files, this must not remove anything
+	idx := fileIndex{files: files}
+	test.OK(t, c.UpdateFiles(idx))
+
+	for h := range files {
+		if !c.HasFile(h) {
+			t.Errorf("file %v was removed\n", h)
+		}
+	}
+
+	// next, remove about 20% of the files
+	keepFiles := make(map[restic.Handle]struct{})
+	for h := range files {
+		if rand.Float32() <= 0.8 {
+			keepFiles[h] = struct{}{}
+		}
+	}
+	idx = fileIndex{files: keepFiles}
+	test.OK(t, c.UpdateFiles(idx))
+
+	for h := range files {
+		if _, ok := keepFiles[h]; ok {
+			if !c.HasFile(h) {
+				t.Errorf("file %v was removed\n", h)
+			}
+			continue
+		}
+
+		if c.HasFile(h) {
+			t.Errorf("file %v was kept although it should've been removed", h)
+		}
+	}
+
+	// remove the remaining files
+	idx = fileIndex{files: make(map[restic.Handle]struct{})}
+	test.OK(t, c.UpdateFiles(idx))
+	for h := range files {
+		if c.HasFile(h) {
+			t.Errorf("file %v was not removed\n", h)
+		}
+	}
+}

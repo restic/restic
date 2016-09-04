@@ -9,6 +9,10 @@ import (
 // FileType is the type of a file in the backend.
 type FileType string
 
+func (f FileType) String() string {
+	return string(f)
+}
+
 // These are the different data types a backend can store.
 const (
 	DataFile     FileType = "data"
