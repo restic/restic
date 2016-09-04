@@ -92,8 +92,8 @@ func TestNodeComparison(t *testing.T) {
 }
 
 func TestLoadTree(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	// save tree
 	tree := restic.NewTree()

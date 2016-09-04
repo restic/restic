@@ -47,8 +47,8 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 }
 
 func BenchmarkChunkEncrypt(b *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(b)
+	defer cleanup()
 
 	data := Random(23, 10<<20) // 10MiB
 	rd := bytes.NewReader(data)
@@ -79,8 +79,8 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) 
 }
 
 func BenchmarkChunkEncryptParallel(b *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(b)
+	defer cleanup()
 
 	data := Random(23, 10<<20) // 10MiB
 
@@ -98,8 +98,8 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 }
 
 func archiveDirectory(b testing.TB) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(b)
+	defer cleanup()
 
 	arch := archiver.New(repo)
 
@@ -136,8 +136,8 @@ func countPacks(repo restic.Repository, t restic.FileType) (n uint) {
 }
 
 func archiveWithDedup(t testing.TB) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiverDedup")
@@ -150,7 +150,7 @@ func archiveWithDedup(t testing.TB) {
 	}
 
 	// archive a few files
-	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
+	sn := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
@@ -161,7 +161,7 @@ func archiveWithDedup(t testing.TB) {
 		cnt.before.packs, cnt.before.dataBlobs, cnt.before.treeBlobs)
 
 	// archive the same files again, without parent snapshot
-	sn2 := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
+	sn2 := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats again
@@ -178,7 +178,7 @@ func archiveWithDedup(t testing.TB) {
 	}
 
 	// archive the same files again, with a parent snapshot
-	sn3 := SnapshotDir(t, repo, BenchArchiveDirectory, sn2.ID())
+	sn3 := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, sn2.ID())
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats again
@@ -208,8 +208,8 @@ func TestParallelSaveWithDuplication(t *testing.T) {
 }
 
 func testParallelSaveWithDuplication(t *testing.T, seed int) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	dataSizeMb := 128
 	duplication := 7

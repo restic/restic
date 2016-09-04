@@ -10,8 +10,8 @@ import (
 )
 
 func TestLock(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	lock, err := restic.NewLock(repo)
 	OK(t, err)
@@ -20,8 +20,8 @@ func TestLock(t *testing.T) {
 }
 
 func TestDoubleUnlock(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	lock, err := restic.NewLock(repo)
 	OK(t, err)
@@ -34,8 +34,8 @@ func TestDoubleUnlock(t *testing.T) {
 }
 
 func TestMultipleLock(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	lock1, err := restic.NewLock(repo)
 	OK(t, err)
@@ -48,8 +48,8 @@ func TestMultipleLock(t *testing.T) {
 }
 
 func TestLockExclusive(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	elock, err := restic.NewExclusiveLock(repo)
 	OK(t, err)
@@ -57,8 +57,8 @@ func TestLockExclusive(t *testing.T) {
 }
 
 func TestLockOnExclusiveLockedRepo(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	elock, err := restic.NewExclusiveLock(repo)
 	OK(t, err)
@@ -74,8 +74,8 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 }
 
 func TestExclusiveLockOnLockedRepo(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	elock, err := restic.NewLock(repo)
 	OK(t, err)
@@ -168,8 +168,8 @@ func lockExists(repo restic.Repository, t testing.TB, id restic.ID) bool {
 }
 
 func TestLockWithStaleLock(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
 	OK(t, err)
@@ -193,8 +193,8 @@ func TestLockWithStaleLock(t *testing.T) {
 }
 
 func TestRemoveAllLocks(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
 	OK(t, err)
@@ -216,8 +216,8 @@ func TestRemoveAllLocks(t *testing.T) {
 }
 
 func TestLockRefresh(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	lock, err := restic.NewLock(repo)
 	OK(t, err)

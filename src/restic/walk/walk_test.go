@@ -15,8 +15,8 @@ import (
 )
 
 func TestWalkTree(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	dirs, err := filepath.Glob(TestWalkerPath)
 	OK(t, err)

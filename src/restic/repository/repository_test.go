@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"restic"
+	"restic/archiver"
 	"restic/repository"
 	. "restic/test"
 )
@@ -17,8 +18,8 @@ import (
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
 func TestSave(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -53,8 +54,8 @@ func TestSave(t *testing.T) {
 }
 
 func TestSaveFrom(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
@@ -87,8 +88,8 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveAndEncrypt(t *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	size := 4 << 20 // 4MiB
 
@@ -109,15 +110,15 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 }
 
 func TestLoadTree(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
-	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
+	sn := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
 	OK(t, repo.Flush())
 
 	_, err := repo.LoadTree(*sn.Tree)
@@ -125,15 +126,15 @@ func TestLoadTree(t *testing.T) {
 }
 
 func BenchmarkLoadTree(t *testing.B) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
-	sn := SnapshotDir(t, repo, BenchArchiveDirectory, nil)
+	sn := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
 	OK(t, repo.Flush())
 
 	t.ResetTimer()
@@ -145,8 +146,8 @@ func BenchmarkLoadTree(t *testing.B) {
 }
 
 func TestLoadJSONUnpacked(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
@@ -206,8 +207,8 @@ func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax 
 }
 
 func TestRepositoryIncrementalIndex(t *testing.T) {
-	repo := SetupRepo()
-	defer TeardownRepo(repo)
+	repo, cleanup := SetupRepo(t)
+	defer cleanup()
 
 	repository.IndexFull = func(*repository.Index) bool { return true }
 

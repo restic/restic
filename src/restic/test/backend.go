@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"restic"
-	"restic/archiver"
 	"restic/backend/local"
 	"restic/repository"
 )
@@ -50,54 +49,38 @@ func getBoolVar(name string, defaultValue bool) bool {
 }
 
 // SetupRepo returns a repo setup in a temp dir.
-func SetupRepo() restic.Repository {
+func SetupRepo(t testing.TB) (repo restic.Repository, cleanup func()) {
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
 	// create repository below temp dir
 	b, err := local.Create(filepath.Join(tempdir, "repo"))
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 
-	repo := repository.New(b)
-	err = repo.Init(TestPassword)
+	r := repository.New(b)
+	err = r.Init(TestPassword)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
+	repo = r
+	cleanup = func() {
+		if !TestCleanupTempDirs {
+			l := repo.Backend().(*local.Local)
+			fmt.Printf("leaving local backend at %s\n", l.Location())
+			return
+		}
 
-	return repo
-}
-
-// TeardownRepo removes a repository created by SetupRepo.
-func TeardownRepo(repo restic.Repository) {
-	if !TestCleanupTempDirs {
-		l := repo.Backend().(*local.Local)
-		fmt.Printf("leaving local backend at %s\n", l.Location())
-		return
-	}
-
-	if r, ok := repo.(restic.Deleter); ok {
-		err := r.Delete()
-		if err != nil {
-			panic(err)
+		if r, ok := repo.(restic.Deleter); ok {
+			err := r.Delete()
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
 	}
-}
 
-// SnapshotDir creates a new snapshot of path.
-func SnapshotDir(t testing.TB, repo restic.Repository, path string, parent *restic.ID) *restic.Snapshot {
-	arch := archiver.New(repo)
-	sn, _, err := arch.Snapshot(nil, []string{path}, parent)
-	OK(t, err)
-	return sn
-}
-
-// WithRepo runs the function t with a repository that is removed after f returns.
-func WithRepo(t testing.TB, f func(restic.Repository)) {
-	repo := SetupRepo()
-	f(repo)
-	TeardownRepo(repo)
+	return repo, cleanup
 }
