@@ -2,14 +2,7 @@ package test_helper
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"testing"
-
-	"restic"
-	"restic/backend/local"
-	"restic/repository"
 )
 
 var (
@@ -46,41 +39,4 @@ func getBoolVar(name string, defaultValue bool) bool {
 	}
 
 	return defaultValue
-}
-
-// SetupRepo returns a repo setup in a temp dir.
-func SetupRepo(t testing.TB) (repo restic.Repository, cleanup func()) {
-	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// create repository below temp dir
-	b, err := local.Create(filepath.Join(tempdir, "repo"))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	r := repository.New(b)
-	err = r.Init(TestPassword)
-	if err != nil {
-		t.Fatal(err)
-	}
-	repo = r
-	cleanup = func() {
-		if !TestCleanupTempDirs {
-			l := repo.Backend().(*local.Local)
-			fmt.Printf("leaving local backend at %s\n", l.Location())
-			return
-		}
-
-		if r, ok := repo.(restic.Deleter); ok {
-			err := r.Delete()
-			if err != nil {
-				t.Fatal(err)
-			}
-		}
-	}
-
-	return repo, cleanup
 }

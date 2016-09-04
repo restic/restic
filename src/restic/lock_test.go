@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"restic"
+	"restic/repository"
 	. "restic/test"
 )
 
 func TestLock(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	lock, err := restic.NewLock(repo)
@@ -20,7 +21,7 @@ func TestLock(t *testing.T) {
 }
 
 func TestDoubleUnlock(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	lock, err := restic.NewLock(repo)
@@ -34,7 +35,7 @@ func TestDoubleUnlock(t *testing.T) {
 }
 
 func TestMultipleLock(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	lock1, err := restic.NewLock(repo)
@@ -48,7 +49,7 @@ func TestMultipleLock(t *testing.T) {
 }
 
 func TestLockExclusive(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	elock, err := restic.NewExclusiveLock(repo)
@@ -57,7 +58,7 @@ func TestLockExclusive(t *testing.T) {
 }
 
 func TestLockOnExclusiveLockedRepo(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	elock, err := restic.NewExclusiveLock(repo)
@@ -74,7 +75,7 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 }
 
 func TestExclusiveLockOnLockedRepo(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	elock, err := restic.NewLock(repo)
@@ -168,7 +169,7 @@ func lockExists(repo restic.Repository, t testing.TB, id restic.ID) bool {
 }
 
 func TestLockWithStaleLock(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
@@ -193,7 +194,7 @@ func TestLockWithStaleLock(t *testing.T) {
 }
 
 func TestRemoveAllLocks(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
@@ -216,7 +217,7 @@ func TestRemoveAllLocks(t *testing.T) {
 }
 
 func TestLockRefresh(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	lock, err := restic.NewLock(repo)

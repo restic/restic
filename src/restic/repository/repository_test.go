@@ -18,7 +18,7 @@ import (
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
 func TestSave(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	for _, size := range testSizes {
@@ -54,7 +54,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestSaveFrom(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	for _, size := range testSizes {
@@ -88,7 +88,7 @@ func TestSaveFrom(t *testing.T) {
 }
 
 func BenchmarkSaveAndEncrypt(t *testing.B) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	size := 4 << 20 // 4MiB
@@ -110,7 +110,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 }
 
 func TestLoadTree(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
@@ -126,7 +126,7 @@ func TestLoadTree(t *testing.T) {
 }
 
 func BenchmarkLoadTree(t *testing.B) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
@@ -146,7 +146,7 @@ func BenchmarkLoadTree(t *testing.B) {
 }
 
 func TestLoadJSONUnpacked(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
@@ -207,7 +207,7 @@ func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax 
 }
 
 func TestRepositoryIncrementalIndex(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	repository.IndexFull = func(*repository.Index) bool { return true }

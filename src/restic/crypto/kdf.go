@@ -4,9 +4,10 @@ import (
 	"crypto/rand"
 	"time"
 
+	"restic/errors"
+
 	sscrypt "github.com/elithrar/simple-scrypt"
 	"golang.org/x/crypto/scrypt"
-	"restic/errors"
 )
 
 const saltLength = 64

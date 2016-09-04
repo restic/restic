@@ -10,6 +10,7 @@ import (
 	"restic/archiver"
 	"restic/checker"
 	"restic/crypto"
+	"restic/repository"
 	. "restic/test"
 
 	"restic/errors"
@@ -47,7 +48,7 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 }
 
 func BenchmarkChunkEncrypt(b *testing.B) {
-	repo, cleanup := SetupRepo(b)
+	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
 	data := Random(23, 10<<20) // 10MiB
@@ -79,7 +80,7 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) 
 }
 
 func BenchmarkChunkEncryptParallel(b *testing.B) {
-	repo, cleanup := SetupRepo(b)
+	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
 	data := Random(23, 10<<20) // 10MiB
@@ -98,7 +99,7 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 }
 
 func archiveDirectory(b testing.TB) {
-	repo, cleanup := SetupRepo(b)
+	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
 	arch := archiver.New(repo)
@@ -136,7 +137,7 @@ func countPacks(repo restic.Repository, t restic.FileType) (n uint) {
 }
 
 func archiveWithDedup(t testing.TB) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	if BenchArchiveDirectory == "" {
@@ -208,7 +209,7 @@ func TestParallelSaveWithDuplication(t *testing.T) {
 }
 
 func testParallelSaveWithDuplication(t *testing.T, seed int) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	dataSizeMb := 128

@@ -10,12 +10,13 @@ import (
 	"restic"
 	"restic/archiver"
 	"restic/pipe"
+	"restic/repository"
 	. "restic/test"
 	"restic/walk"
 )
 
 func TestWalkTree(t *testing.T) {
-	repo, cleanup := SetupRepo(t)
+	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	dirs, err := filepath.Glob(TestWalkerPath)
