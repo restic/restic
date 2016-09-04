@@ -64,6 +64,25 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 	debug.Log("Repo.Load", "load %v with id %v", t, id.Str())
 
 	h := restic.Handle{Type: t, Name: id.String()}
+	info, err := r.Backend().Stat(h)
+	if err != nil {
+		debug.Log("Repo.Load", "stat(%v): %v", h, err)
+		return nil, err
+	}
+
+	if r.cache != nil && r.cache.HasFile(h) {
+		buf := make([]byte, int(info.Size)-crypto.Extension)
+		ok, err := r.cache.GetFile(h, buf)
+		if err != nil {
+			return nil, err
+		}
+
+		if ok {
+			debug.Log("Repo.Load", "load %v from cache", h)
+			return buf, nil
+		}
+	}
+
 	buf, err := backend.LoadAll(r.be, h, nil)
 	if err != nil {
 		debug.Log("Repo.Load", "error loading %v: %v", id.Str(), err)
@@ -82,7 +101,17 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 		return nil, err
 	}
 
-	return plain[:n], nil
+	plain = plain[:n]
+
+	if r.cache != nil && (t == restic.IndexFile || t == restic.SnapshotFile) {
+		debug.Log("Repo.Load", "add %v to cache", h)
+		err = r.cache.PutFile(h, plain)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return plain, nil
 }
 
 // loadBlob tries to load and decrypt content identified by t and id from a
