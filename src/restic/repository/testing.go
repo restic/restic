@@ -6,6 +6,7 @@ import (
 	"restic/backend/local"
 	"restic/backend/mem"
 	"restic/crypto"
+	"restic/test"
 	"testing"
 
 	"github.com/restic/chunker"
@@ -29,9 +30,6 @@ func TestBackend(t testing.TB) (be restic.Backend, cleanup func()) {
 	return mem.New(), func() {}
 }
 
-// TestPassword is used for all repositories created by the Test* functions.
-const TestPassword = "geheim"
-
 const testChunkerPol = chunker.Pol(0x3DA3358B4DC173)
 
 // TestRepositoryWithBackend returns a repository initialized with a test
@@ -48,7 +46,7 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Reposi
 	repo := New(be)
 
 	cfg := restic.TestCreateConfig(t, testChunkerPol)
-	err := repo.init(TestPassword, cfg)
+	err := repo.init(test.TestPassword, cfg)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)
 	}
@@ -92,7 +90,7 @@ func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
 	}
 
 	repo := New(be)
-	err = repo.SearchKey(TestPassword, 10)
+	err = repo.SearchKey(test.TestPassword, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
