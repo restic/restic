@@ -205,7 +205,7 @@ the fuse mounting option (see below) to mount the repository and read the file.
 By default, the file name `stdin` is used, a different name can be specified
 with `--stdin-filename`, e.g. like this:
 
-    $ mysqldump [...] | restic -r /tmp/backup backup --stdin --stdin-filenam production.sql
+    $ mysqldump [...] | restic -r /tmp/backup backup --stdin --stdin-filename production.sql
 
 # List all snapshots
 
