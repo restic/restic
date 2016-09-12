@@ -116,7 +116,8 @@ Remembering your password is important! If you lose it, you won't be able to
 access data stored in the repository.
 
 For automated backups, restic accepts the repository location in the
-environment variable `RESTIC_REPOSITORY` and also the password in the variable
+environment variable `RESTIC_REPOSITORY`. The password can be read from a file
+(via the option `--password-file`) or the environment variable
 `RESTIC_PASSWORD`.
 
 ## Password prompt on Windows

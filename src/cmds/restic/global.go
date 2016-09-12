@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"restic"
 	"runtime"
@@ -28,11 +29,12 @@ var compiledAt = "unknown time"
 
 // GlobalOptions holds all those options that can be set for every command.
 type GlobalOptions struct {
-	Repo     string   `short:"r" long:"repo"                      description:"Repository directory to backup to/restore from"`
-	CacheDir string   `          long:"cache-dir"                 description:"Directory to use as a local cache"`
-	Quiet    bool     `short:"q" long:"quiet"     default:"false" description:"Do not output comprehensive progress report"`
-	NoLock   bool     `          long:"no-lock"   default:"false" description:"Do not lock the repo, this allows some operations on read-only repos."`
-	Options  []string `short:"o" long:"option"                    description:"Specify options in the form 'foo.key=value'"`
+	Repo         string   `short:"r" long:"repo"                      description:"Repository directory to backup to/restore from"`
+	PasswordFile string   `short:"p" long:"password-file"             description:"Read the repository password from a file"`
+	CacheDir     string   `          long:"cache-dir"                 description:"Directory to use as a local cache"`
+	Quiet        bool     `short:"q" long:"quiet"     default:"false" description:"Do not output comprehensive progress report"`
+	NoLock       bool     `          long:"no-lock"   default:"false" description:"Do not lock the repo, this allows some operations on read-only repos."`
+	Options      []string `short:"o" long:"option"                    description:"Specify options in the form 'foo.key=value'"`
 
 	password string
 	stdout   io.Writer
@@ -185,7 +187,7 @@ func readPassword(in io.Reader) (password string, err error) {
 	buf = buf[:n]
 
 	if err != nil && errors.Cause(err) != io.ErrUnexpectedEOF {
-		return "", err
+		return "", errors.Wrap(err, "ReadFull")
 	}
 
 	return strings.TrimRight(string(buf), "\r\n"), nil
@@ -199,15 +201,25 @@ func readPasswordTerminal(in *os.File, out io.Writer, prompt string) (password s
 	buf, err := terminal.ReadPassword(int(in.Fd()))
 	fmt.Fprintln(out)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "ReadPassword")
 	}
 
 	password = string(buf)
 	return password, nil
 }
 
-// ReadPassword reads the password from stdin.
-func (o GlobalOptions) ReadPassword(prompt string) string {
+// ReadPassword reads the password from a password file, the environment
+// variable RESTIC_PASSWORD or prompts the user.
+func (o GlobalOptions) ReadPassword(prompt string) (string, error) {
+	if o.PasswordFile != "" {
+		s, err := ioutil.ReadFile(o.PasswordFile)
+		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
+	}
+
+	if pwd := os.Getenv("RESTIC_PASSWORD"); pwd != "" {
+		return pwd, nil
+	}
+
 	var (
 		password string
 		err      error
@@ -220,26 +232,33 @@ func (o GlobalOptions) ReadPassword(prompt string) string {
 	}
 
 	if err != nil {
-		o.Exitf(2, "unable to read password: %v", err)
+		return "", errors.Wrap(err, "unable to read password")
 	}
 
 	if len(password) == 0 {
-		o.Exitf(1, "an empty password is not a password")
+		return "", errors.Fatal("an empty password is not a password")
 	}
 
-	return password
+	return password, nil
 }
 
 // ReadPasswordTwice calls ReadPassword two times and returns an error when the
 // passwords don't match.
-func (o GlobalOptions) ReadPasswordTwice(prompt1, prompt2 string) string {
-	pw1 := o.ReadPassword(prompt1)
-	pw2 := o.ReadPassword(prompt2)
-	if pw1 != pw2 {
-		o.Exitf(1, "passwords do not match")
+func (o GlobalOptions) ReadPasswordTwice(prompt1, prompt2 string) (string, error) {
+	pw1, err := o.ReadPassword(prompt1)
+	if err != nil {
+		return "", err
+	}
+	pw2, err := o.ReadPassword(prompt2)
+	if err != nil {
+		return "", err
 	}
 
-	return pw1
+	if pw1 != pw2 {
+		return "", errors.Fatal("passwords do not match")
+	}
+
+	return pw1, nil
 }
 
 const maxKeys = 20
@@ -258,7 +277,10 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 	s := repository.New(be)
 
 	if o.password == "" {
-		o.password = o.ReadPassword("enter password for repository: ")
+		o.password, err = o.ReadPassword("enter password for repository: ")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = s.SearchKey(o.password, maxKeys)

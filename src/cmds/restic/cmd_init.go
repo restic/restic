@@ -20,9 +20,12 @@ func (cmd CmdInit) Execute(args []string) error {
 	}
 
 	if cmd.global.password == "" {
-		cmd.global.password = cmd.global.ReadPasswordTwice(
+		cmd.global.password, err = cmd.global.ReadPasswordTwice(
 			"enter password for new backend: ",
 			"enter password again: ")
+		if err != nil {
+			return err
+		}
 	}
 
 	s := repository.New(be)
