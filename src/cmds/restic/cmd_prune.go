@@ -161,7 +161,8 @@ func (cmd CmdPrune) Execute(args []string) error {
 	}
 	bar.Done()
 
-	cmd.global.Verbosef("found %d of %d data blobs still in use\n", len(usedBlobs), stats.blobs)
+	cmd.global.Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
+		len(usedBlobs), stats.blobs, stats.blobs-len(usedBlobs))
 
 	// find packs that need a rewrite
 	rewritePacks := restic.NewIDSet()
@@ -176,15 +177,25 @@ func (cmd CmdPrune) Execute(args []string) error {
 		}
 	}
 
+	removeBytes := 0
+
 	// find packs that are unneeded
 	removePacks := restic.NewIDSet()
-nextPack:
 	for packID, p := range idx.Packs {
+
+		hasActiveBlob := false
 		for _, blob := range p.Entries {
 			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 			if usedBlobs.Has(h) {
-				continue nextPack
+				hasActiveBlob = true
+				continue
 			}
+
+			removeBytes += int(blob.Length)
+		}
+
+		if hasActiveBlob {
+			continue
 		}
 
 		removePacks.Insert(packID)
@@ -196,7 +207,8 @@ nextPack:
 		rewritePacks.Delete(packID)
 	}
 
-	cmd.global.Verbosef("will delete %d packs and rewrite %d packs\n", len(removePacks), len(rewritePacks))
+	cmd.global.Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
+		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
 	err = repository.Repack(repo, rewritePacks, usedBlobs)
 	if err != nil {
