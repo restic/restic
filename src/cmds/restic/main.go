@@ -28,7 +28,6 @@ func main() {
 	// defer profile.Start(profile.MemProfileRate(100000), profile.ProfilePath(".")).Stop()
 	// defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
 	globalOpts.Repo = os.Getenv("RESTIC_REPOSITORY")
-	globalOpts.password = os.Getenv("RESTIC_PASSWORD")
 
 	debug.Log("restic", "main %#v", os.Args)
 

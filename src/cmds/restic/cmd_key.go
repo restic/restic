@@ -56,9 +56,9 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	return tab.Write(cmd.global.stdout)
 }
 
-func (cmd CmdKey) getNewPassword() string {
+func (cmd CmdKey) getNewPassword() (string, error) {
 	if cmd.newPassword != "" {
-		return cmd.newPassword
+		return cmd.newPassword, nil
 	}
 
 	return cmd.global.ReadPasswordTwice(
@@ -67,7 +67,12 @@ func (cmd CmdKey) getNewPassword() string {
 }
 
 func (cmd CmdKey) addKey(repo *repository.Repository) error {
-	id, err := repository.AddKey(repo, cmd.getNewPassword(), repo.Key())
+	pw, err := cmd.getNewPassword()
+	if err != nil {
+		return err
+	}
+
+	id, err := repository.AddKey(repo, pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -92,7 +97,12 @@ func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 }
 
 func (cmd CmdKey) changePassword(repo *repository.Repository) error {
-	id, err := repository.AddKey(repo, cmd.getNewPassword(), repo.Key())
+	pw, err := cmd.getNewPassword()
+	if err != nil {
+		return err
+	}
+
+	id, err := repository.AddKey(repo, pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
