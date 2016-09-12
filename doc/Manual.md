@@ -45,24 +45,32 @@ Usage help is available:
       restic [OPTIONS] <command>
 
     Application Options:
-      -r, --repo= Repository directory to backup to/restore from
+      -r, --repo=      Repository directory to backup to/restore from
+          --cache-dir= Directory to use as a local cache
+      -q, --quiet      Do not output comprehensive progress report (false)
+          --no-lock    Do not lock the repo, this allows some operations on read-only repos. (false)
+      -o, --option=    Specify options in the form 'foo.key=value'
 
     Help Options:
-      -h, --help  Show this help message
+      -h, --help       Show this help message
 
     Available commands:
-      backup     save file/directory
-      cache      manage cache
-      cat        dump something
-      find       find a file/directory
-      fsck       check the repository
-      init       create repository
-      key        manage keys
-      list       lists data
-      ls         list files
-      restore    restore a snapshot
-      snapshots  show snapshots
-      version    display version
+      backup         save file/directory
+      cat            dump something
+      check          check the repository
+      find           find a file/directory
+      forget         removes snapshots from a repository
+      init           create repository
+      key            manage keys
+      list           lists data
+      ls             list files
+      mount          mount a repository
+      prune          removes content from a repository
+      rebuild-index  rebuild the index
+      restore        restore a snapshot
+      snapshots      show snapshots
+      unlock         remove locks
+      version        display version
 
 Similar to programs such as `git`, restic has a number of sub-commands. You can
 see these commands in the listing above. Each sub-command may have own
