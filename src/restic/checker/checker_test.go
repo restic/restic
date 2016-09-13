@@ -247,7 +247,7 @@ func TestCheckerModifiedData(t *testing.T) {
 	test.OK(t, repo.Init(test.TestPassword))
 
 	arch := archiver.New(repo)
-	_, id, err := arch.Snapshot(nil, []string{"."}, nil)
+	_, id, err := arch.Snapshot(nil, []string{"."}, nil, nil)
 	test.OK(t, err)
 	t.Logf("archived as %v", id.Str())
 

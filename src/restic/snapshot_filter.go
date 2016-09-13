@@ -34,21 +34,6 @@ type SnapshotFilter struct {
 	Tags     []string
 }
 
-func hasTags(have, want []string) bool {
-nextTag:
-	for _, tag := range want {
-		for _, snTag := range have {
-			if tag == snTag {
-				continue nextTag
-			}
-		}
-
-		return false
-	}
-
-	return true
-}
-
 // FilterSnapshots returns the snapshots from s which match the filter f.
 func FilterSnapshots(s Snapshots, f SnapshotFilter) (result Snapshots) {
 	for _, snap := range s {
@@ -64,7 +49,7 @@ func FilterSnapshots(s Snapshots, f SnapshotFilter) (result Snapshots) {
 			continue
 		}
 
-		if !hasTags(snap.Tags, f.Tags) {
+		if !snap.HasTags(f.Tags) {
 			continue
 		}
 

@@ -104,7 +104,7 @@ func archiveDirectory(b testing.TB) {
 
 	arch := archiver.New(repo)
 
-	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil)
+	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil, nil)
 	OK(b, err)
 
 	b.Logf("snapshot archived as %v", id)

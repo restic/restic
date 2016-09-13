@@ -104,6 +104,22 @@ func (sn *Snapshot) fillUserInfo() error {
 	return err
 }
 
+// HasTags returns true if the snapshot has all the tags.
+func (sn *Snapshot) HasTags(tags []string) bool {
+nextTag:
+	for _, tag := range tags {
+		for _, snTag := range sn.Tags {
+			if tag == snTag {
+				continue nextTag
+			}
+		}
+
+		return false
+	}
+
+	return true
+}
+
 // SamePaths compares the Snapshot's paths and provided paths are exactly the same
 func SamePaths(expected, actual []string) bool {
 	if expected == nil || actual == nil {

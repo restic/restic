@@ -77,7 +77,7 @@ func TestArchiveReader(t *testing.T) {
 
 	f := fakeFile(t, seed, size)
 
-	sn, id, err := ArchiveReader(repo, nil, f, "fakefile")
+	sn, id, err := ArchiveReader(repo, nil, f, "fakefile", []string{"test"})
 	if err != nil {
 		t.Fatalf("ArchiveReader() returned error %v", err)
 	}
@@ -107,7 +107,7 @@ func BenchmarkArchiveReader(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, _, err := ArchiveReader(repo, nil, bytes.NewReader(buf), "fakefile")
+		_, _, err := ArchiveReader(repo, nil, bytes.NewReader(buf), "fakefile", []string{"test"})
 		if err != nil {
 			t.Fatal(err)
 		}

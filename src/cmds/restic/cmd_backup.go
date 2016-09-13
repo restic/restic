@@ -25,6 +25,7 @@ type CmdBackup struct {
 	ExcludeFile   string   `long:"exclude-file"                      description:"Read exclude-patterns from file"`
 	Stdin         bool     `long:"stdin"                             description:"read backup data from stdin"`
 	StdinFilename string   `long:"stdin-filename"    default:"stdin" description:"file name to use when reading from stdin"`
+	Tags          []string `long:"tag"                               description:"Add a tag (can be specified multiple times)"`
 
 	global *GlobalOptions
 }
@@ -259,7 +260,7 @@ func (cmd CmdBackup) readFromStdin(args []string) error {
 		return err
 	}
 
-	_, id, err := archiver.ArchiveReader(repo, cmd.newArchiveStdinProgress(), os.Stdin, cmd.StdinFilename)
+	_, id, err := archiver.ArchiveReader(repo, cmd.newArchiveStdinProgress(), os.Stdin, cmd.StdinFilename, cmd.Tags)
 	if err != nil {
 		return err
 	}
@@ -380,7 +381,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return nil
 	}
 
-	_, id, err := arch.Snapshot(cmd.newArchiveProgress(stat), target, parentSnapshotID)
+	_, id, err := arch.Snapshot(cmd.newArchiveProgress(stat), target, cmd.Tags, parentSnapshotID)
 	if err != nil {
 		return err
 	}
