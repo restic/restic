@@ -10,6 +10,6 @@ import (
 func TestNewSnapshot(t *testing.T) {
 	paths := []string{"/home/foobar"}
 
-	_, err := restic.NewSnapshot(paths)
+	_, err := restic.NewSnapshot(paths, nil)
 	OK(t, err)
 }

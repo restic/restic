@@ -21,13 +21,14 @@ type Snapshot struct {
 	UID      uint32    `json:"uid,omitempty"`
 	GID      uint32    `json:"gid,omitempty"`
 	Excludes []string  `json:"excludes,omitempty"`
+	Tags     []string  `json:"tags,omitempty"`
 
 	id *ID // plaintext ID, used during restore
 }
 
 // NewSnapshot returns an initialized snapshot struct for the current user and
 // time.
-func NewSnapshot(paths []string) (*Snapshot, error) {
+func NewSnapshot(paths []string, tags []string) (*Snapshot, error) {
 	for i, path := range paths {
 		if p, err := filepath.Abs(path); err != nil {
 			paths[i] = p
@@ -37,6 +38,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 	sn := &Snapshot{
 		Paths: paths,
 		Time:  time.Now(),
+		Tags:  tags,
 	}
 
 	hn, err := os.Hostname()

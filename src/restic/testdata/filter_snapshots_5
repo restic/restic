@@ -7,7 +7,10 @@
       "/sbin"
     ],
     "hostname": "foo",
-    "username": "root"
+    "username": "root",
+    "tags": [
+      "fox"
+    ]
   },
   {
     "time": "2016-01-08T20:02:03Z",
@@ -17,6 +20,9 @@
       "/sbin"
     ],
     "hostname": "foo",
-    "username": "root"
+    "username": "root",
+    "tags": [
+      "foo"
+    ]
   }
 ]
