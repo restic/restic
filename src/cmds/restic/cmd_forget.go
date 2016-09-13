@@ -9,12 +9,14 @@ import (
 
 // CmdForget implements the 'forget' command.
 type CmdForget struct {
-	Last    int `short:"l" long:"keep-last" description:"keep the last n snapshots"`
+	Last    int `short:"l" long:"keep-last"   description:"keep the last n snapshots"`
 	Hourly  int `short:"H" long:"keep-hourly" description:"keep the last n hourly snapshots"`
-	Daily   int `short:"d" long:"keep-daily" description:"keep the last n daily snapshots"`
+	Daily   int `short:"d" long:"keep-daily"  description:"keep the last n daily snapshots"`
 	Weekly  int `short:"w" long:"keep-weekly" description:"keep the last n weekly snapshots"`
-	Monthly int `short:"m" long:"keep-monthly" description:"keep the last n monthly snapshots"`
+	Monthly int `short:"m" long:"keep-monthly"description:"keep the last n monthly snapshots"`
 	Yearly  int `short:"y" long:"keep-yearly" description:"keep the last n yearly snapshots"`
+
+	KeepTags []string `long:"keep-tag"    description:"alwaps keep snapshots with this tag (can be specified multiple times)"`
 
 	Hostname string   `long:"hostname" description:"only forget snapshots for the given hostname"`
 	Tags     []string `long:"tag"      description:"only forget snapshots with the tag (can be specified multiple times)"`
@@ -111,6 +113,7 @@ func (cmd CmdForget) Execute(args []string) error {
 		Weekly:  cmd.Weekly,
 		Monthly: cmd.Monthly,
 		Yearly:  cmd.Yearly,
+		Tags:    cmd.KeepTags,
 	}
 
 	if policy.Empty() {
