@@ -210,7 +210,7 @@ func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
 			}
 		}
 
-		PrintProgress("%s%s", status1)
+		PrintProgress("%s", status1)
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
