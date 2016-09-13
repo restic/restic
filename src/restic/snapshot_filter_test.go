@@ -239,7 +239,7 @@ func TestApplyPolicy(t *testing.T) {
 			t.Logf("test %d:   forget snapshot at %v %s\n", i, sn.Time, sn.Tags)
 		}
 
-		goldenFilename := filepath.Join("testdata", fmt.Sprintf("expired_snapshots_%d", i))
+		goldenFilename := filepath.Join("testdata", fmt.Sprintf("policy_keep_snapshots_%d", i))
 
 		if *updateGoldenFiles {
 			buf, err := json.MarshalIndent(keep, "", "  ")
