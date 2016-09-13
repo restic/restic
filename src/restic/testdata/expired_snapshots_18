@@ -8,7 +8,23 @@
     ]
   },
   {
+    "time": "2014-11-12T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo"
+    ]
+  },
+  {
     "time": "2014-11-10T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo"
+    ]
+  },
+  {
+    "time": "2014-11-08T10:20:30Z",
     "tree": null,
     "paths": null,
     "tags": [
@@ -24,7 +40,23 @@
     ]
   },
   {
+    "time": "2014-10-20T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo"
+    ]
+  },
+  {
     "time": "2014-10-11T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo"
+    ]
+  },
+  {
+    "time": "2014-10-10T10:20:30Z",
     "tree": null,
     "paths": null,
     "tags": [
@@ -40,6 +72,14 @@
     ]
   },
   {
+    "time": "2014-10-08T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo"
+    ]
+  },
+  {
     "time": "2014-10-06T10:20:30Z",
     "tree": null,
     "paths": null,
@@ -48,7 +88,23 @@
     ]
   },
   {
+    "time": "2014-10-05T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo"
+    ]
+  },
+  {
     "time": "2014-10-02T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo"
+    ]
+  },
+  {
+    "time": "2014-10-01T10:20:30Z",
     "tree": null,
     "paths": null,
     "tags": [
