@@ -16,7 +16,8 @@ type CmdForget struct {
 	Monthly int `short:"m" long:"keep-monthly" description:"keep the last n monthly snapshots"`
 	Yearly  int `short:"y" long:"keep-yearly" description:"keep the last n yearly snapshots"`
 
-	Hostname string `long:"hostname" description:"only forget snapshots for the given hostname"`
+	Hostname string   `long:"hostname" description:"only forget snapshots for the given hostname"`
+	Tags     []string `long:"tag"      description:"only forget snapshots with the tag (can be specified multiple times)"`
 
 	DryRun bool `short:"n" long:"dry-run" description:"do not delete anything, just print what would be done"`
 
@@ -132,6 +133,10 @@ func (cmd CmdForget) Execute(args []string) error {
 
 	for _, sn := range snapshots {
 		if cmd.Hostname != "" && sn.Hostname != cmd.Hostname {
+			continue
+		}
+
+		if !sn.HasTags(cmd.Tags) {
 			continue
 		}
 
