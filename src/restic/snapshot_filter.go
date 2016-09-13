@@ -177,11 +177,15 @@ func (f *filter) keepTags(tags []string) {
 		return
 	}
 
+	unprocessed := f.Unprocessed[:0]
 	for _, sn := range f.Unprocessed {
 		if sn.HasTags(tags) {
 			f.Keep = append(f.Keep, sn)
+			continue
 		}
+		unprocessed = append(unprocessed, sn)
 	}
+	f.Unprocessed = unprocessed
 }
 
 // keepLast marks the last n snapshots as to be kept.

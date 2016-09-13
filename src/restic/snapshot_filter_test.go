@@ -233,10 +233,10 @@ func TestApplyPolicy(t *testing.T) {
 		}
 
 		for _, sn := range keep {
-			t.Logf("test %d:     keep snapshot at %v\n", i, sn.Time)
+			t.Logf("test %d:     keep snapshot at %v %s\n", i, sn.Time, sn.Tags)
 		}
 		for _, sn := range remove {
-			t.Logf("test %d:   forget snapshot at %v\n", i, sn.Time)
+			t.Logf("test %d:   forget snapshot at %v %s\n", i, sn.Time, sn.Tags)
 		}
 
 		goldenFilename := filepath.Join("testdata", fmt.Sprintf("expired_snapshots_%d", i))
