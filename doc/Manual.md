@@ -84,18 +84,24 @@ them, e.g. for the `backup` command:
     The backup command creates a snapshot of a file or directory
 
     Application Options:
-      -r, --repo=        Repository directory to backup to/restore from
-          --cache-dir=   Directory to use as a local cache
-      -q, --quiet        Do not output comprehensive progress report (false)
-          --no-lock      Do not lock the repo, this allows some operations on read-only repos. (false)
+      -r, --repo=               Repository directory to backup to/restore from (/tmp/repo)
+      -p, --password-file=      Read the repository password from a file
+          --cache-dir=          Directory to use as a local cache
+      -q, --quiet               Do not output comprehensive progress report (false)
+          --no-lock             Do not lock the repo, this allows some operations on read-only repos. (false)
+      -o, --option=             Specify options in the form 'foo.key=value'
 
     Help Options:
-      -h, --help         Show this help message
+      -h, --help                Show this help message
 
     [backup command options]
-          -p, --parent=  use this parent snapshot (default: last snapshot in repo that has the same target)
-          -f, --force    Force re-reading the target. Overrides the "parent" flag
-          -e, --exclude= Exclude a pattern (can be specified multiple times)
+          -p, --parent=         use this parent snapshot (default: last snapshot in repo that has the same target)
+          -f, --force           Force re-reading the target. Overrides the "parent" flag
+          -e, --exclude=        Exclude a pattern (can be specified multiple times)
+              --exclude-file=   Read exclude-patterns from file
+              --stdin           read backup data from stdin
+              --stdin-filename= file name to use when reading from stdin (stdin)
+              --tag=            Add a tag (can be specified multiple times)
 
 Subcommand that support showing progress information such as `backup`, `check` and `prune` will do so unless
 the quiet flag `-q` or `--quiet` is set. When running from a non-interactive console progress reporting will
@@ -216,37 +222,47 @@ with `--stdin-filename`, e.g. like this:
 
     $ mysqldump [...] | restic -r /tmp/backup backup --stdin --stdin-filename production.sql
 
+## Tags
+
+Snapshots can have one or more tags, short strings which add identifying
+information. Just specify the tags for a snapshot with `--tag`:
+
+    $ restic -r /tmp/backup backup --tag projectX ~/shared/work/web
+    [...]
+
+The tags can later be used to keep (or forget) snapshots.
+
 # List all snapshots
 
 Now, you can list all the snapshots stored in the repository:
 
     $ restic -r /tmp/backup snapshots
     enter password for repository:
-    ID        Date                 Host      Directory
+    ID        Date                 Host    Tags   Directory
     ----------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir     /home/user/work
-    79766175  2015-05-08 21:40:19  kasimir     /home/user/work
-    bdbd3439  2015-05-08 21:45:17  luigi       /home/art
-    590c8fc8  2015-05-08 21:47:38  kazik       /srv
-    9f0bc19e  2015-05-08 21:46:11  luigi       /srv
+    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work
+    79766175  2015-05-08 21:40:19  kasimir        /home/user/work
+    bdbd3439  2015-05-08 21:45:17  luigi          /home/art
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv
 
 You can filter the listing by directory path:
 
     $ restic -r /tmp/backup snapshots --path="/srv"
     enter password for repository:
-    ID        Date                 Host      Directory
+    ID        Date                 Host    Tags   Directory
     ----------------------------------------------------------------------
-    590c8fc8  2015-05-08 21:47:38  kazik       /srv
-    9f0bc19e  2015-05-08 21:46:11  luigi       /srv
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv
 
 Or filter by host:
 
     $ restic -r /tmp/backup snapshots --host luigi
     enter password for repository:
-    ID        Date                 Host      Directory
+    ID        Date                 Host    Tags   Directory
     ----------------------------------------------------------------------
-    bdbd3439  2015-05-08 21:45:17  luigi       /home/art
-    9f0bc19e  2015-05-08 21:46:11  luigi       /srv
+    bdbd3439  2015-05-08 21:45:17  luigi          /home/art
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv
 
 Combining filters is also possible.    
 
@@ -412,13 +428,13 @@ The command `snapshots` can be used to list all snapshots in a repository like t
 
     $ restic -r /tmp/backup snapshots
     enter password for repository:
-    ID        Date                 Host      Directory
+    ID        Date                 Host      Tags  Directory
     ----------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir     /home/user/work
-    79766175  2015-05-08 21:40:19  kasimir     /home/user/work
-    bdbd3439  2015-05-08 21:45:17  luigi       /home/art
-    590c8fc8  2015-05-08 21:47:38  kazik       /srv
-    9f0bc19e  2015-05-08 21:46:11  luigi       /srv
+    40dc1520  2015-05-08 21:38:30  kasimir         /home/user/work
+    79766175  2015-05-08 21:40:19  kasimir         /home/user/work
+    bdbd3439  2015-05-08 21:45:17  luigi           /home/art
+    590c8fc8  2015-05-08 21:47:38  kazik           /srv
+    9f0bc19e  2015-05-08 21:46:11  luigi           /srv
 
 In order to remove the snapshot of `/home/art`, use the `forget` command and
 specify the snapshot ID on the command line:
@@ -431,12 +447,12 @@ Afterwards this snapshot is removed:
 
     $ restic -r /tmp/backup snapshots
     enter password for repository:
-    ID        Date                 Host      Directory
+    ID        Date                 Host     Tags  Directory
     ----------------------------------------------------------------------
-    40dc1520  2015-05-08 21:38:30  kasimir     /home/user/work
-    79766175  2015-05-08 21:40:19  kasimir     /home/user/work
-    590c8fc8  2015-05-08 21:47:38  kazik       /srv
-    9f0bc19e  2015-05-08 21:46:11  luigi       /srv
+    40dc1520  2015-05-08 21:38:30  kasimir        /home/user/work
+    79766175  2015-05-08 21:40:19  kasimir        /home/user/work
+    590c8fc8  2015-05-08 21:47:38  kazik          /srv
+    9f0bc19e  2015-05-08 21:46:11  luigi          /srv
 
 But the data that was referenced by files in this snapshot is still stored in
 the repository. To cleanup unreferenced data, the `prune` command must be run:
@@ -487,9 +503,13 @@ The `forget` command accepts the following parameters:
    keep the last one for that month.
  * `--keep-yearly n` for the last `n` years which have one or more snapshots, only
    keep the last one for that year.
+ * `--keep-tag` keep all snapshots which have all tags specified by this option
+   (can be specified multiple times).
 
 Additionally, you can restrict removing snapshots to those which have a
-particular hostname with the `--hostname` parameter.
+particular hostname with the `--hostname` parameter, or tags with the `--tag`
+option. When multiple tags are specified, only the snapshots which have all the
+tags are considered.
 
 All the `--keep-*` options above only count hours/days/weeks/months/years which
 have a snapshot, so those without a snapshot are ignored.
