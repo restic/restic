@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -85,8 +84,8 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 	}
 
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Host", "Directory")
-	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %s", "ID", "Date", "Host", "Tags", "Directory")
+	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %s"
 
 	done := make(chan struct{})
 	defer close(done)
@@ -115,22 +114,35 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 
 	}
 
-	plen, err := repo.PrefixLength(restic.SnapshotFile)
-	if err != nil {
-		return err
-	}
-
 	for _, sn := range list {
 		if len(sn.Paths) == 0 {
 			continue
 		}
-		id := sn.ID()
-		tab.Rows = append(tab.Rows, []interface{}{hex.EncodeToString(id[:plen/2]), sn.Time.Format(TimeFormat), sn.Hostname, sn.Paths[0]})
 
-		if len(sn.Paths) > 1 {
-			for _, path := range sn.Paths[1:] {
-				tab.Rows = append(tab.Rows, []interface{}{"", "", "", path})
+		firstTag := ""
+		if len(sn.Tags) > 0 {
+			firstTag = sn.Tags[0]
+		}
+
+		tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, firstTag, sn.Paths[0]})
+
+		rows := len(sn.Paths)
+		if len(sn.Tags) > rows {
+			rows = len(sn.Tags)
+		}
+
+		for i := 1; i < rows; i++ {
+			path := ""
+			if len(sn.Paths) > i {
+				path = sn.Paths[i]
 			}
+
+			tag := ""
+			if len(sn.Tags) > i {
+				tag = sn.Tags[i]
+			}
+
+			tab.Rows = append(tab.Rows, []interface{}{"", "", "", tag, path})
 		}
 	}
 

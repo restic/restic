@@ -31,6 +31,7 @@ type SnapshotFilter struct {
 	Hostname string
 	Username string
 	Paths    []string
+	Tags     []string
 }
 
 // FilterSnapshots returns the snapshots from s which match the filter f.
@@ -48,6 +49,10 @@ func FilterSnapshots(s Snapshots, f SnapshotFilter) (result Snapshots) {
 			continue
 		}
 
+		if !snap.HasTags(f.Tags) {
+			continue
+		}
+
 		result = append(result, snap)
 	}
 
@@ -56,12 +61,13 @@ func FilterSnapshots(s Snapshots, f SnapshotFilter) (result Snapshots) {
 
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
-	Last    int // keep the last n snapshots
-	Hourly  int // keep the last n hourly snapshots
-	Daily   int // keep the last n daily snapshots
-	Weekly  int // keep the last n weekly snapshots
-	Monthly int // keep the last n monthly snapshots
-	Yearly  int // keep the last n yearly snapshots
+	Last    int      // keep the last n snapshots
+	Hourly  int      // keep the last n hourly snapshots
+	Daily   int      // keep the last n daily snapshots
+	Weekly  int      // keep the last n weekly snapshots
+	Monthly int      // keep the last n monthly snapshots
+	Yearly  int      // keep the last n yearly snapshots
+	Tags    []string // keep all snapshots with these tags
 }
 
 // Sum returns the maximum number of snapshots to be kept according to this
@@ -72,8 +78,12 @@ func (e ExpirePolicy) Sum() int {
 
 // Empty returns true iff no policy has been configured (all values zero).
 func (e ExpirePolicy) Empty() bool {
+	if len(e.Tags) != 0 {
+		return false
+	}
+
 	empty := ExpirePolicy{}
-	return e == empty
+	return reflect.DeepEqual(e, empty)
 }
 
 // filter is used to split a list of snapshots into those to keep and those to
@@ -161,6 +171,23 @@ func (f *filter) apply(fn func(time.Time) int, max int) {
 	}
 }
 
+// keepTags marks the snapshots which have all tags as to be kept.
+func (f *filter) keepTags(tags []string) {
+	if len(tags) == 0 {
+		return
+	}
+
+	unprocessed := f.Unprocessed[:0]
+	for _, sn := range f.Unprocessed {
+		if sn.HasTags(tags) {
+			f.Keep = append(f.Keep, sn)
+			continue
+		}
+		unprocessed = append(unprocessed, sn)
+	}
+	f.Unprocessed = unprocessed
+}
+
 // keepLast marks the last n snapshots as to be kept.
 func (f *filter) keepLast(n int) {
 	if n > len(f.Unprocessed) {
@@ -195,6 +222,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		Keep:        Snapshots{},
 	}
 
+	f.keepTags(p.Tags)
 	f.keepLast(p.Last)
 	f.apply(ymdh, p.Hourly)
 	f.apply(ymd, p.Daily)

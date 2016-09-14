@@ -22,25 +22,25 @@ func parseTimeUTC(s string) time.Time {
 }
 
 var testFilterSnapshots = restic.Snapshots{
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-01 01:02:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "bar", Username: "testuser", Time: parseTimeUTC("2016-01-01 01:03:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-03 07:02:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "bar", Username: "testuser", Time: parseTimeUTC("2016-01-01 07:08:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 10:23:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 11:23:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:23:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:24:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:28:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:30:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 16:23:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-05 09:02:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-06 08:02:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-07 10:02:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "root", Time: parseTimeUTC("2016-01-08 20:02:03"), Paths: []string{"/usr", "/sbin"}},
-	{Hostname: "foo", Username: "root", Time: parseTimeUTC("2016-01-09 21:02:03"), Paths: []string{"/usr", "/sbin"}},
-	{Hostname: "bar", Username: "root", Time: parseTimeUTC("2016-01-12 21:02:03"), Paths: []string{"/usr", "/sbin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-12 21:08:03"), Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-18 12:02:03"), Paths: []string{"/usr", "/bin"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-01 01:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
+	{Hostname: "bar", Username: "testuser", Time: parseTimeUTC("2016-01-01 01:03:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-03 07:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
+	{Hostname: "bar", Username: "testuser", Time: parseTimeUTC("2016-01-01 07:08:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 10:23:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 11:23:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:23:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:24:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"test"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:28:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"test"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:30:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"test", "foo", "bar"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 16:23:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"test", "test2"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-05 09:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-06 08:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"fox"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-07 10:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"fox"}},
+	{Hostname: "foo", Username: "root", Time: parseTimeUTC("2016-01-08 20:02:03"), Paths: []string{"/usr", "/sbin"}, Tags: []string{"foo"}},
+	{Hostname: "foo", Username: "root", Time: parseTimeUTC("2016-01-09 21:02:03"), Paths: []string{"/usr", "/sbin"}, Tags: []string{"fox"}},
+	{Hostname: "bar", Username: "root", Time: parseTimeUTC("2016-01-12 21:02:03"), Paths: []string{"/usr", "/sbin"}, Tags: []string{"foo"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-12 21:08:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"bar"}},
+	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-18 12:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"bar"}},
 }
 
 var filterTests = []restic.SnapshotFilter{
@@ -50,6 +50,10 @@ var filterTests = []restic.SnapshotFilter{
 	{Paths: []string{"/usr", "/bin"}},
 	{Hostname: "bar", Paths: []string{"/usr", "/bin"}},
 	{Hostname: "foo", Username: "root", Paths: []string{"/usr", "/sbin"}},
+	{Tags: []string{"foo"}},
+	{Tags: []string{"fox"}, Username: "root"},
+	{Tags: []string{"foo", "test"}},
+	{Tags: []string{"foo", "test2"}},
 }
 
 func TestFilterSnapshots(t *testing.T) {
@@ -108,20 +112,20 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2014-08-20 10:20:30")},
 	{Time: parseTimeUTC("2014-08-21 10:20:30")},
 	{Time: parseTimeUTC("2014-08-22 10:20:30")},
-	{Time: parseTimeUTC("2014-10-01 10:20:30")},
-	{Time: parseTimeUTC("2014-10-02 10:20:30")},
-	{Time: parseTimeUTC("2014-10-05 10:20:30")},
-	{Time: parseTimeUTC("2014-10-06 10:20:30")},
-	{Time: parseTimeUTC("2014-10-08 10:20:30")},
-	{Time: parseTimeUTC("2014-10-09 10:20:30")},
-	{Time: parseTimeUTC("2014-10-10 10:20:30")},
-	{Time: parseTimeUTC("2014-10-11 10:20:30")},
-	{Time: parseTimeUTC("2014-10-20 10:20:30")},
-	{Time: parseTimeUTC("2014-10-22 10:20:30")},
-	{Time: parseTimeUTC("2014-11-08 10:20:30")},
-	{Time: parseTimeUTC("2014-11-10 10:20:30")},
-	{Time: parseTimeUTC("2014-11-12 10:20:30")},
-	{Time: parseTimeUTC("2014-11-13 10:20:30")},
+	{Time: parseTimeUTC("2014-10-01 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-02 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-05 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-06 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-08 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-09 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-10 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-11 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-20 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-10-22 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-11-08 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-11-10 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-11-12 10:20:30"), Tags: []string{"foo"}},
+	{Time: parseTimeUTC("2014-11-13 10:20:30"), Tags: []string{"foo"}},
 	{Time: parseTimeUTC("2014-11-13 10:20:30")},
 	{Time: parseTimeUTC("2014-11-15 10:20:30")},
 	{Time: parseTimeUTC("2014-11-18 10:20:30")},
@@ -208,6 +212,7 @@ var expireTests = []restic.ExpirePolicy{
 	{Daily: 2, Weekly: 2, Monthly: 6},
 	{Yearly: 10},
 	{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10},
+	{Tags: []string{"foo"}},
 }
 
 func TestApplyPolicy(t *testing.T) {
@@ -228,13 +233,13 @@ func TestApplyPolicy(t *testing.T) {
 		}
 
 		for _, sn := range keep {
-			t.Logf("test %d:     keep snapshot at %v\n", i, sn.Time)
+			t.Logf("test %d:     keep snapshot at %v %s\n", i, sn.Time, sn.Tags)
 		}
 		for _, sn := range remove {
-			t.Logf("test %d:   forget snapshot at %v\n", i, sn.Time)
+			t.Logf("test %d:   forget snapshot at %v %s\n", i, sn.Time, sn.Tags)
 		}
 
-		goldenFilename := filepath.Join("testdata", fmt.Sprintf("expired_snapshots_%d", i))
+		goldenFilename := filepath.Join("testdata", fmt.Sprintf("policy_keep_snapshots_%d", i))
 
 		if *updateGoldenFiles {
 			buf, err := json.MarshalIndent(keep, "", "  ")

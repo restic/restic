@@ -11,18 +11,5 @@
     "tags": [
       "fox"
     ]
-  },
-  {
-    "time": "2016-01-08T20:02:03Z",
-    "tree": null,
-    "paths": [
-      "/usr",
-      "/sbin"
-    ],
-    "hostname": "foo",
-    "username": "root",
-    "tags": [
-      "foo"
-    ]
   }
 ]

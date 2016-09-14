@@ -9,14 +9,17 @@ import (
 
 // CmdForget implements the 'forget' command.
 type CmdForget struct {
-	Last    int `short:"l" long:"keep-last" description:"keep the last n snapshots"`
+	Last    int `short:"l" long:"keep-last"   description:"keep the last n snapshots"`
 	Hourly  int `short:"H" long:"keep-hourly" description:"keep the last n hourly snapshots"`
-	Daily   int `short:"d" long:"keep-daily" description:"keep the last n daily snapshots"`
+	Daily   int `short:"d" long:"keep-daily"  description:"keep the last n daily snapshots"`
 	Weekly  int `short:"w" long:"keep-weekly" description:"keep the last n weekly snapshots"`
-	Monthly int `short:"m" long:"keep-monthly" description:"keep the last n monthly snapshots"`
+	Monthly int `short:"m" long:"keep-monthly"description:"keep the last n monthly snapshots"`
 	Yearly  int `short:"y" long:"keep-yearly" description:"keep the last n yearly snapshots"`
 
-	Hostname string `long:"hostname" description:"only forget snapshots for the given hostname"`
+	KeepTags []string `long:"keep-tag"    description:"alwaps keep snapshots with this tag (can be specified multiple times)"`
+
+	Hostname string   `long:"hostname" description:"only forget snapshots for the given hostname"`
+	Tags     []string `long:"tag"      description:"only forget snapshots with the tag (can be specified multiple times)"`
 
 	DryRun bool `short:"n" long:"dry-run" description:"do not delete anything, just print what would be done"`
 
@@ -46,20 +49,38 @@ func (cmd CmdForget) Usage() string {
 
 func printSnapshots(w io.Writer, snapshots restic.Snapshots) {
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %s", "ID", "Date", "Host", "Directory")
-	tab.RowFormat = "%-8s  %-19s  %-10s  %s"
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %s", "ID", "Date", "Host", "Tags", "Directory")
+	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %s"
 
 	for _, sn := range snapshots {
 		if len(sn.Paths) == 0 {
 			continue
 		}
-		id := sn.ID()
-		tab.Rows = append(tab.Rows, []interface{}{id.Str(), sn.Time.Format(TimeFormat), sn.Hostname, sn.Paths[0]})
 
-		if len(sn.Paths) > 1 {
-			for _, path := range sn.Paths[1:] {
-				tab.Rows = append(tab.Rows, []interface{}{"", "", "", path})
+		firstTag := ""
+		if len(sn.Tags) > 0 {
+			firstTag = sn.Tags[0]
+		}
+
+		tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, firstTag, sn.Paths[0]})
+
+		rows := len(sn.Paths)
+		if len(sn.Tags) > rows {
+			rows = len(sn.Tags)
+		}
+
+		for i := 1; i < rows; i++ {
+			path := ""
+			if len(sn.Paths) > i {
+				path = sn.Paths[i]
 			}
+
+			tag := ""
+			if len(sn.Tags) > i {
+				tag = sn.Tags[i]
+			}
+
+			tab.Rows = append(tab.Rows, []interface{}{"", "", "", tag, path})
 		}
 	}
 
@@ -110,6 +131,7 @@ func (cmd CmdForget) Execute(args []string) error {
 		Weekly:  cmd.Weekly,
 		Monthly: cmd.Monthly,
 		Yearly:  cmd.Yearly,
+		Tags:    cmd.KeepTags,
 	}
 
 	if policy.Empty() {
@@ -132,6 +154,10 @@ func (cmd CmdForget) Execute(args []string) error {
 
 	for _, sn := range snapshots {
 		if cmd.Hostname != "" && sn.Hostname != cmd.Hostname {
+			continue
+		}
+
+		if !sn.HasTags(cmd.Tags) {
 			continue
 		}
 

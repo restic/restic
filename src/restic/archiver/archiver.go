@@ -633,7 +633,7 @@ func (p baseNameSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 // Snapshot creates a snapshot of the given paths. If parentrestic.ID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
-func (arch *Archiver) Snapshot(p *restic.Progress, paths []string, parentID *restic.ID) (*restic.Snapshot, restic.ID, error) {
+func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentID *restic.ID) (*restic.Snapshot, restic.ID, error) {
 	paths = unique(paths)
 	sort.Sort(baseNameSlice(paths))
 
@@ -649,7 +649,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths []string, parentID *res
 	defer p.Done()
 
 	// create new snapshot
-	sn, err := restic.NewSnapshot(paths)
+	sn, err := restic.NewSnapshot(paths, tags)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

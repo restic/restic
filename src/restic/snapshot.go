@@ -21,13 +21,14 @@ type Snapshot struct {
 	UID      uint32    `json:"uid,omitempty"`
 	GID      uint32    `json:"gid,omitempty"`
 	Excludes []string  `json:"excludes,omitempty"`
+	Tags     []string  `json:"tags,omitempty"`
 
 	id *ID // plaintext ID, used during restore
 }
 
 // NewSnapshot returns an initialized snapshot struct for the current user and
 // time.
-func NewSnapshot(paths []string) (*Snapshot, error) {
+func NewSnapshot(paths []string, tags []string) (*Snapshot, error) {
 	for i, path := range paths {
 		if p, err := filepath.Abs(path); err != nil {
 			paths[i] = p
@@ -37,6 +38,7 @@ func NewSnapshot(paths []string) (*Snapshot, error) {
 	sn := &Snapshot{
 		Paths: paths,
 		Time:  time.Now(),
+		Tags:  tags,
 	}
 
 	hn, err := os.Hostname()
@@ -100,6 +102,22 @@ func (sn *Snapshot) fillUserInfo() error {
 	// set userid and groupid
 	sn.UID, sn.GID, err = uidGidInt(*usr)
 	return err
+}
+
+// HasTags returns true if the snapshot has all the tags.
+func (sn *Snapshot) HasTags(tags []string) bool {
+nextTag:
+	for _, tag := range tags {
+		for _, snTag := range sn.Tags {
+			if tag == snTag {
+				continue nextTag
+			}
+		}
+
+		return false
+	}
+
+	return true
 }
 
 // SamePaths compares the Snapshot's paths and provided paths are exactly the same

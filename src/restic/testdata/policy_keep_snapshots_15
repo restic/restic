@@ -47,6 +47,9 @@
   {
     "time": "2014-10-22T10:20:30Z",
     "tree": null,
-    "paths": null
+    "paths": null,
+    "tags": [
+      "foo"
+    ]
   }
 ]

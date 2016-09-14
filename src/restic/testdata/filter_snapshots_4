@@ -7,7 +7,10 @@
       "/bin"
     ],
     "hostname": "bar",
-    "username": "testuser"
+    "username": "testuser",
+    "tags": [
+      "foo"
+    ]
   },
   {
     "time": "2016-01-01T01:03:03Z",
@@ -17,6 +20,9 @@
       "/bin"
     ],
     "hostname": "bar",
-    "username": "testuser"
+    "username": "testuser",
+    "tags": [
+      "foo"
+    ]
   }
 ]
