@@ -165,19 +165,6 @@ func (env *TravisEnvironment) Prepare() error {
 		return err
 	}
 
-	if runtime.GOOS == "darwin" {
-		// install the libraries necessary for fuse
-		for _, cmd := range [][]string{
-			{"brew", "update"},
-			{"brew", "tap", "caskroom/cask"},
-			{"brew", "cask", "install", "osxfuse"},
-		} {
-			if err := run(cmd[0], cmd[1:]...); err != nil {
-				return err
-			}
-		}
-	}
-
 	if *runCrossCompile && !(runtime.Version() < "go1.7") {
 		// only test cross compilation on linux with Travis
 		if err := run("go", "get", "github.com/mitchellh/gox"); err != nil {
@@ -314,8 +301,8 @@ func StartBackgroundCommand(env map[string]string, cmd string, args ...string) (
 
 // RunTests starts the tests for Travis.
 func (env *TravisEnvironment) RunTests() error {
-	// run fuse tests on darwin
-	if runtime.GOOS != "darwin" {
+	// do not run fuse tests on darwin
+	if runtime.GOOS == "darwin" {
 		msg("skip fuse integration tests on %v\n", runtime.GOOS)
 		os.Setenv("RESTIC_TEST_FUSE", "0")
 	}

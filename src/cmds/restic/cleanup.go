@@ -32,6 +32,9 @@ func AddCleanupHandler(f func() error) {
 	cleanupHandlers.Lock()
 	defer cleanupHandlers.Unlock()
 
+	// reset the done flag for integration tests
+	cleanupHandlers.done = false
+
 	cleanupHandlers.list = append(cleanupHandlers.list, f)
 }
 
@@ -51,6 +54,7 @@ func RunCleanupHandlers() {
 			fmt.Fprintf(stderr, "error in cleanup handler: %v\n", err)
 		}
 	}
+	cleanupHandlers.list = nil
 }
 
 // CleanupHandler handles the SIGINT signal.

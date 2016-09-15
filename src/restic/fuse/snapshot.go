@@ -4,6 +4,7 @@
 package fuse
 
 import (
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -65,11 +66,24 @@ func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
 	defer sn.Unlock()
 
 	for id := range sn.repo.List(restic.SnapshotFile, ctx.Done()) {
+		debug.Log("SnapshotsDir.List", "found snapshot id %v", id.Str())
 		snapshot, err := restic.LoadSnapshot(sn.repo, id)
 		if err != nil {
 			return err
 		}
-		sn.knownSnapshots[snapshot.Time.Format(time.RFC3339)] = SnapshotWithId{snapshot, id}
+
+		timestamp := snapshot.Time.Format(time.RFC3339)
+
+		for i := 1; ; i++ {
+			if _, ok := sn.knownSnapshots[timestamp]; !ok {
+				break
+			}
+
+			timestamp = fmt.Sprintf("%s-%d", snapshot.Time.Format(time.RFC3339), i)
+		}
+
+		debug.Log("SnapshotsDir.List", "  add %v as dir %v", id.Str(), timestamp)
+		sn.knownSnapshots[timestamp] = SnapshotWithId{snapshot, id}
 	}
 	return nil
 }
