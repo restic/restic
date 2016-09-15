@@ -41,11 +41,12 @@ PermitRootLogin no
 StrictModes no
 RSAAuthentication yes
 PubkeyAuthentication yes
-AuthorizedKeysFile	{{.Dir}}/id_user.pub
+AuthorizedKeysFile	{{.Dir}}/authorized_keys
 TrustedUserCAKeys {{.Dir}}/id_ecdsa.pub
 IgnoreRhosts yes
 RhostsRSAAuthentication no
 HostbasedAuthentication no
+PubkeyAcceptedKeyTypes=*
 `
 
 var configTmpl = template.Must(template.New("").Parse(sshd_config))
@@ -248,6 +249,12 @@ func newServer(t *testing.T) *server {
 		writeFile(filepath.Join(dir, filename), v)
 		writeFile(filepath.Join(dir, filename+".pub"), ssh.MarshalAuthorizedKey(testPublicKeys[k]))
 	}
+
+	var authkeys bytes.Buffer
+	for k, _ := range testdata.PEMBytes {
+		authkeys.Write(ssh.MarshalAuthorizedKey(testPublicKeys[k]))
+	}
+	writeFile(filepath.Join(dir, "authorized_keys"), authkeys.Bytes())
 
 	return &server{
 		t:          t,

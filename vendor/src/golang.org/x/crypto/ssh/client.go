@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 // Client implements a traditional SSH client that supports shells,
@@ -96,14 +97,8 @@ func (c *connection) clientHandshake(dialAddress string, config *ClientConfig) e
 	c.transport = newClientTransport(
 		newTransport(c.sshConn.conn, config.Rand, true /* is client */),
 		c.clientVersion, c.serverVersion, config, dialAddress, c.sshConn.RemoteAddr())
-	if err := c.transport.requestKeyChange(); err != nil {
+	if err := c.transport.requestInitialKeyChange(); err != nil {
 		return err
-	}
-
-	if packet, err := c.transport.readPacket(); err != nil {
-		return err
-	} else if packet[0] != msgNewKeys {
-		return unexpectedMessageError(msgNewKeys, packet[0])
 	}
 
 	// We just did the key change, so the session ID is established.
@@ -169,7 +164,7 @@ func (c *Client) handleChannelOpens(in <-chan NewChannel) {
 // to incoming channels and requests, use net.Dial with NewClientConn
 // instead.
 func Dial(network, addr string, config *ClientConfig) (*Client, error) {
-	conn, err := net.Dial(network, addr)
+	conn, err := net.DialTimeout(network, addr, config.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -203,4 +198,16 @@ type ClientConfig struct {
 	// ClientVersion contains the version identification string that will
 	// be used for the connection. If empty, a reasonable default is used.
 	ClientVersion string
+
+	// HostKeyAlgorithms lists the key types that the client will
+	// accept from the server as host key, in order of
+	// preference. If empty, a reasonable default is used. Any
+	// string returned from PublicKey.Type method may be used, or
+	// any of the CertAlgoXxxx and KeyAlgoXxxx constants.
+	HostKeyAlgorithms []string
+
+	// Timeout is the maximum amount of time for the TCP connection to establish.
+	//
+	// A Timeout of zero means no timeout.
+	Timeout time.Duration
 }

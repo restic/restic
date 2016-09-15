@@ -172,6 +172,40 @@ func TestUnmarshalShortKexInitPacket(t *testing.T) {
 	}
 }
 
+func TestMarshalMultiTag(t *testing.T) {
+	var res struct {
+		A uint32 `sshtype:"1|2"`
+	}
+
+	good1 := struct {
+		A uint32 `sshtype:"1"`
+	}{
+		1,
+	}
+	good2 := struct {
+		A uint32 `sshtype:"2"`
+	}{
+		1,
+	}
+
+	if e := Unmarshal(Marshal(good1), &res); e != nil {
+		t.Errorf("error unmarshaling multipart tag: %v", e)
+	}
+
+	if e := Unmarshal(Marshal(good2), &res); e != nil {
+		t.Errorf("error unmarshaling multipart tag: %v", e)
+	}
+
+	bad1 := struct {
+		A uint32 `sshtype:"3"`
+	}{
+		1,
+	}
+	if e := Unmarshal(Marshal(bad1), &res); e == nil {
+		t.Errorf("bad struct unmarshaled without error")
+	}
+}
+
 func randomBytes(out []byte, rand *rand.Rand) {
 	for i := 0; i < len(out); i++ {
 		out[i] = byte(rand.Int31())
