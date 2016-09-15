@@ -62,7 +62,7 @@ type kstatfs struct {
 	Bsize   uint32
 	Namelen uint32
 	Frsize  uint32
-	Padding uint32
+	_       uint32
 	Spare   [6]uint32
 }
 
@@ -159,9 +159,13 @@ const (
 	OpenWriteOnly OpenFlags = syscall.O_WRONLY
 	OpenReadWrite OpenFlags = syscall.O_RDWR
 
+	// File was opened in append-only mode, all writes will go to end
+	// of file. OS X does not provide this information.
 	OpenAppend    OpenFlags = syscall.O_APPEND
 	OpenCreate    OpenFlags = syscall.O_CREAT
+	OpenDirectory OpenFlags = syscall.O_DIRECTORY
 	OpenExclusive OpenFlags = syscall.O_EXCL
+	OpenNonblock  OpenFlags = syscall.O_NONBLOCK
 	OpenSync      OpenFlags = syscall.O_SYNC
 	OpenTruncate  OpenFlags = syscall.O_TRUNC
 )
@@ -213,11 +217,13 @@ func accModeName(flags OpenFlags) string {
 }
 
 var openFlagNames = []flagName{
-	{uint32(OpenCreate), "OpenCreate"},
-	{uint32(OpenExclusive), "OpenExclusive"},
-	{uint32(OpenTruncate), "OpenTruncate"},
 	{uint32(OpenAppend), "OpenAppend"},
+	{uint32(OpenCreate), "OpenCreate"},
+	{uint32(OpenDirectory), "OpenDirectory"},
+	{uint32(OpenExclusive), "OpenExclusive"},
+	{uint32(OpenNonblock), "OpenNonblock"},
 	{uint32(OpenSync), "OpenSync"},
+	{uint32(OpenTruncate), "OpenTruncate"},
 }
 
 // The OpenResponseFlags are returned in the OpenResponse.
@@ -248,12 +254,13 @@ var openResponseFlagNames = []flagName{
 type InitFlags uint32
 
 const (
-	InitAsyncRead       InitFlags = 1 << 0
-	InitPosixLocks      InitFlags = 1 << 1
-	InitFileOps         InitFlags = 1 << 2
-	InitAtomicTrunc     InitFlags = 1 << 3
-	InitExportSupport   InitFlags = 1 << 4
-	InitBigWrites       InitFlags = 1 << 5
+	InitAsyncRead     InitFlags = 1 << 0
+	InitPosixLocks    InitFlags = 1 << 1
+	InitFileOps       InitFlags = 1 << 2
+	InitAtomicTrunc   InitFlags = 1 << 3
+	InitExportSupport InitFlags = 1 << 4
+	InitBigWrites     InitFlags = 1 << 5
+	// Do not mask file access modes with umask. Not supported on OS X.
 	InitDontMask        InitFlags = 1 << 6
 	InitSpliceWrite     InitFlags = 1 << 7
 	InitSpliceMove      InitFlags = 1 << 8
@@ -412,14 +419,14 @@ type forgetIn struct {
 
 type getattrIn struct {
 	GetattrFlags uint32
-	dummy        uint32
+	_            uint32
 	Fh           uint64
 }
 
 type attrOut struct {
 	AttrValid     uint64 // Cache timeout for the attributes
 	AttrValidNsec uint32
-	Dummy         uint32
+	_             uint32
 	Attr          attr
 }
 
@@ -441,10 +448,10 @@ type getxtimesOut struct {
 }
 
 type mknodIn struct {
-	Mode    uint32
-	Rdev    uint32
-	Umask   uint32
-	padding uint32
+	Mode  uint32
+	Rdev  uint32
+	Umask uint32
+	_     uint32
 	// "filename\x00" follows.
 }
 
@@ -482,6 +489,7 @@ type exchangeIn struct {
 	Olddir  uint64
 	Newdir  uint64
 	Options uint64
+	// "oldname\x00newname\x00" follows
 }
 
 type linkIn struct {
@@ -490,7 +498,7 @@ type linkIn struct {
 
 type setattrInCommon struct {
 	Valid     uint32
-	Padding   uint32
+	_         uint32
 	Fh        uint64
 	Size      uint64
 	LockOwner uint64 // unused on OS X?
@@ -515,14 +523,14 @@ type openIn struct {
 type openOut struct {
 	Fh        uint64
 	OpenFlags uint32
-	Padding   uint32
+	_         uint32
 }
 
 type createIn struct {
-	Flags   uint32
-	Mode    uint32
-	Umask   uint32
-	padding uint32
+	Flags uint32
+	Mode  uint32
+	Umask uint32
+	_     uint32
 }
 
 func createInSize(p Protocol) uintptr {
@@ -544,7 +552,7 @@ type releaseIn struct {
 type flushIn struct {
 	Fh         uint64
 	FlushFlags uint32
-	Padding    uint32
+	_          uint32
 	LockOwner  uint64
 }
 
@@ -555,7 +563,7 @@ type readIn struct {
 	ReadFlags uint32
 	LockOwner uint64
 	Flags     uint32
-	padding   uint32
+	_         uint32
 }
 
 func readInSize(p Protocol) uintptr {
@@ -590,7 +598,7 @@ type writeIn struct {
 	WriteFlags uint32
 	LockOwner  uint64
 	Flags      uint32
-	padding    uint32
+	_          uint32
 }
 
 func writeInSize(p Protocol) uintptr {
@@ -603,8 +611,8 @@ func writeInSize(p Protocol) uintptr {
 }
 
 type writeOut struct {
-	Size    uint32
-	Padding uint32
+	Size uint32
+	_    uint32
 }
 
 // The WriteFlags are passed in WriteRequest.
@@ -634,7 +642,7 @@ type statfsOut struct {
 type fsyncIn struct {
 	Fh         uint64
 	FsyncFlags uint32
-	Padding    uint32
+	_          uint32
 }
 
 type setxattrInCommon struct {
@@ -647,8 +655,8 @@ func (setxattrInCommon) position() uint32 {
 }
 
 type getxattrInCommon struct {
-	Size    uint32
-	Padding uint32
+	Size uint32
+	_    uint32
 }
 
 func (getxattrInCommon) position() uint32 {
@@ -656,8 +664,8 @@ func (getxattrInCommon) position() uint32 {
 }
 
 type getxattrOut struct {
-	Size    uint32
-	Padding uint32
+	Size uint32
+	_    uint32
 }
 
 type lkIn struct {
@@ -665,7 +673,7 @@ type lkIn struct {
 	Owner   uint64
 	Lk      fileLock
 	LkFlags uint32
-	padding uint32
+	_       uint32
 }
 
 func lkInSize(p Protocol) uintptr {
@@ -682,8 +690,8 @@ type lkOut struct {
 }
 
 type accessIn struct {
-	Mask    uint32
-	Padding uint32
+	Mask uint32
+	_    uint32
 }
 
 type initIn struct {
@@ -711,7 +719,7 @@ type interruptIn struct {
 type bmapIn struct {
 	Block     uint64
 	BlockSize uint32
-	Padding   uint32
+	_         uint32
 }
 
 type bmapOut struct {
@@ -719,14 +727,14 @@ type bmapOut struct {
 }
 
 type inHeader struct {
-	Len     uint32
-	Opcode  uint32
-	Unique  uint64
-	Nodeid  uint64
-	Uid     uint32
-	Gid     uint32
-	Pid     uint32
-	Padding uint32
+	Len    uint32
+	Opcode uint32
+	Unique uint64
+	Nodeid uint64
+	Uid    uint32
+	Gid    uint32
+	Pid    uint32
+	_      uint32
 }
 
 const inHeaderSize = int(unsafe.Sizeof(inHeader{}))
@@ -762,5 +770,5 @@ type notifyInvalInodeOut struct {
 type notifyInvalEntryOut struct {
 	Parent  uint64
 	Namelen uint32
-	padding uint32
+	_       uint32
 }

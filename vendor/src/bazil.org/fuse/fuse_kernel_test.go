@@ -7,7 +7,7 @@ import (
 	"bazil.org/fuse"
 )
 
-func TestOpenFlagsAccmodeMask(t *testing.T) {
+func TestOpenFlagsAccmodeMaskReadWrite(t *testing.T) {
 	var f = fuse.OpenFlags(os.O_RDWR | os.O_SYNC)
 	if g, e := f&fuse.OpenAccessModeMask, fuse.OpenReadWrite; g != e {
 		t.Fatalf("OpenAccessModeMask behaves wrong: %v: %o != %o", f, g, e)
@@ -19,6 +19,38 @@ func TestOpenFlagsAccmodeMask(t *testing.T) {
 		t.Fatalf("IsWriteOnly is wrong: %v", f)
 	}
 	if !f.IsReadWrite() {
+		t.Fatalf("IsReadWrite is wrong: %v", f)
+	}
+}
+
+func TestOpenFlagsAccmodeMaskReadOnly(t *testing.T) {
+	var f = fuse.OpenFlags(os.O_RDONLY | os.O_SYNC)
+	if g, e := f&fuse.OpenAccessModeMask, fuse.OpenReadOnly; g != e {
+		t.Fatalf("OpenAccessModeMask behaves wrong: %v: %o != %o", f, g, e)
+	}
+	if !f.IsReadOnly() {
+		t.Fatalf("IsReadOnly is wrong: %v", f)
+	}
+	if f.IsWriteOnly() {
+		t.Fatalf("IsWriteOnly is wrong: %v", f)
+	}
+	if f.IsReadWrite() {
+		t.Fatalf("IsReadWrite is wrong: %v", f)
+	}
+}
+
+func TestOpenFlagsAccmodeMaskWriteOnly(t *testing.T) {
+	var f = fuse.OpenFlags(os.O_WRONLY | os.O_SYNC)
+	if g, e := f&fuse.OpenAccessModeMask, fuse.OpenWriteOnly; g != e {
+		t.Fatalf("OpenAccessModeMask behaves wrong: %v: %o != %o", f, g, e)
+	}
+	if f.IsReadOnly() {
+		t.Fatalf("IsReadOnly is wrong: %v", f)
+	}
+	if !f.IsWriteOnly() {
+		t.Fatalf("IsWriteOnly is wrong: %v", f)
+	}
+	if f.IsReadWrite() {
 		t.Fatalf("IsReadWrite is wrong: %v", f)
 	}
 }

@@ -1,35 +1,58 @@
 package fuse
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 )
 
-func lineLogger(wg *sync.WaitGroup, prefix string, r io.ReadCloser) {
-	defer wg.Done()
-
-	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		switch line := scanner.Text(); line {
-		case `fusermount: failed to open /etc/fuse.conf: Permission denied`:
+func handleFusermountStderr(errCh chan<- error) func(line string) (ignore bool) {
+	return func(line string) (ignore bool) {
+		if line == `fusermount: failed to open /etc/fuse.conf: Permission denied` {
 			// Silence this particular message, it occurs way too
 			// commonly and isn't very relevant to whether the mount
 			// succeeds or not.
-			continue
-		default:
-			log.Printf("%s: %s", prefix, line)
+			return true
+		}
+
+		const (
+			noMountpointPrefix = `fusermount: failed to access mountpoint `
+			noMountpointSuffix = `: No such file or directory`
+		)
+		if strings.HasPrefix(line, noMountpointPrefix) && strings.HasSuffix(line, noMountpointSuffix) {
+			// re-extract it from the error message in case some layer
+			// changed the path
+			mountpoint := line[len(noMountpointPrefix) : len(line)-len(noMountpointSuffix)]
+			err := &MountpointDoesNotExistError{
+				Path: mountpoint,
+			}
+			select {
+			case errCh <- err:
+				return true
+			default:
+				// not the first error; fall back to logging it
+				return false
+			}
+		}
+
+		return false
+	}
+}
+
+// isBoringFusermountError returns whether the Wait error is
+// uninteresting; exit status 1 is.
+func isBoringFusermountError(err error) bool {
+	if err, ok := err.(*exec.ExitError); ok && err.Exited() {
+		if status, ok := err.Sys().(syscall.WaitStatus); ok && status.ExitStatus() == 1 {
+			return true
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		log.Printf("%s, error reading: %v", prefix, err)
-	}
+	return false
 }
 
 func mount(dir string, conf *mountConfig, ready chan<- struct{}, errp *error) (fusefd *os.File, err error) {
@@ -70,11 +93,26 @@ func mount(dir string, conf *mountConfig, ready chan<- struct{}, errp *error) (f
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("fusermount: %v", err)
 	}
+	helperErrCh := make(chan error, 1)
 	wg.Add(2)
-	go lineLogger(&wg, "mount helper output", stdout)
-	go lineLogger(&wg, "mount helper error", stderr)
+	go lineLogger(&wg, "mount helper output", neverIgnoreLine, stdout)
+	go lineLogger(&wg, "mount helper error", handleFusermountStderr(helperErrCh), stderr)
 	wg.Wait()
 	if err := cmd.Wait(); err != nil {
+		// see if we have a better error to report
+		select {
+		case helperErr := <-helperErrCh:
+			// log the Wait error if it's not what we expected
+			if !isBoringFusermountError(err) {
+				log.Printf("mount helper failed: %v", err)
+			}
+			// and now return what we grabbed from stderr as the real
+			// error
+			return nil, helperErr
+		default:
+			// nope, fall back to generic message
+		}
+
 		return nil, fmt.Errorf("fusermount: %v", err)
 	}
 

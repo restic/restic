@@ -12,9 +12,10 @@ func dummyOption(conf *mountConfig) error {
 // mountConfig holds the configuration for a mount operation.
 // Use it by passing MountOption values to Mount.
 type mountConfig struct {
-	options      map[string]string
-	maxReadahead uint32
-	initFlags    InitFlags
+	options          map[string]string
+	maxReadahead     uint32
+	initFlags        InitFlags
+	osxfuseLocations []OSXFUSEPaths
 }
 
 func escapeComma(s string) string {
@@ -82,6 +83,63 @@ func VolumeName(name string) MountOption {
 	return volumeName(name)
 }
 
+// NoAppleDouble makes OSXFUSE disallow files with names used by OS X
+// to store extended attributes on file systems that do not support
+// them natively.
+//
+// Such file names are:
+//
+//     ._*
+//     .DS_Store
+//
+// OS X only.  Others ignore this option.
+func NoAppleDouble() MountOption {
+	return noAppleDouble
+}
+
+// NoAppleXattr makes OSXFUSE disallow extended attributes with the
+// prefix "com.apple.". This disables persistent Finder state and
+// other such information.
+//
+// OS X only.  Others ignore this option.
+func NoAppleXattr() MountOption {
+	return noAppleXattr
+}
+
+// ExclCreate causes O_EXCL flag to be set for only "truly" exclusive creates,
+// i.e. create calls for which the initiator explicitly set the O_EXCL flag.
+//
+// OSXFUSE expects all create calls to return EEXIST in case the file
+// already exists, regardless of whether O_EXCL was specified or not.
+// To ensure this behavior, it normally sets OpenExclusive for all
+// Create calls, regardless of whether the original call had it set.
+// For distributed filesystems, that may force every file create to be
+// a distributed consensus action, causing undesirable delays.
+//
+// This option makes the FUSE filesystem see the original flag value,
+// and better decide when to ensure global consensus.
+//
+// Note that returning EEXIST on existing file create is still
+// expected with OSXFUSE, regardless of the presence of the
+// OpenExclusive flag.
+//
+// For more information, see
+// https://github.com/osxfuse/osxfuse/issues/209
+//
+// OS X only. Others ignore this options.
+// Requires OSXFUSE 3.4.1 or newer.
+func ExclCreate() MountOption {
+	return exclCreate
+}
+
+// DaemonTimeout sets the time in seconds between a request and a reply before
+// the FUSE mount is declared dead.
+//
+// OS X and FreeBSD only. Others ignore this option.
+func DaemonTimeout(name string) MountOption {
+	return daemonTimeout(name)
+}
+
 var ErrCannotCombineAllowOtherAndAllowRoot = errors.New("cannot combine AllowOther and AllowRoot")
 
 // AllowOther allows other users to access the file system.
@@ -108,6 +166,24 @@ func AllowRoot() MountOption {
 			return ErrCannotCombineAllowOtherAndAllowRoot
 		}
 		conf.options["allow_root"] = ""
+		return nil
+	}
+}
+
+// AllowDev enables interpreting character or block special devices on the
+// filesystem.
+func AllowDev() MountOption {
+	return func(conf *mountConfig) error {
+		conf.options["dev"] = ""
+		return nil
+	}
+}
+
+// AllowSUID allows set-user-identifier or set-group-identifier bits to take
+// effect.
+func AllowSUID() MountOption {
+	return func(conf *mountConfig) error {
+		conf.options["suid"] = ""
 		return nil
 	}
 }
@@ -165,6 +241,70 @@ func AsyncRead() MountOption {
 func WritebackCache() MountOption {
 	return func(conf *mountConfig) error {
 		conf.initFlags |= InitWritebackCache
+		return nil
+	}
+}
+
+// OSXFUSEPaths describes the paths used by an installed OSXFUSE
+// version. See OSXFUSELocationV3 for typical values.
+type OSXFUSEPaths struct {
+	// Prefix for the device file. At mount time, an incrementing
+	// number is suffixed until a free FUSE device is found.
+	DevicePrefix string
+	// Path of the load helper, used to load the kernel extension if
+	// no device files are found.
+	Load string
+	// Path of the mount helper, used for the actual mount operation.
+	Mount string
+	// Environment variable used to pass the path to the executable
+	// calling the mount helper.
+	DaemonVar string
+}
+
+// Default paths for OSXFUSE. See OSXFUSELocations.
+var (
+	OSXFUSELocationV3 = OSXFUSEPaths{
+		DevicePrefix: "/dev/osxfuse",
+		Load:         "/Library/Filesystems/osxfuse.fs/Contents/Resources/load_osxfuse",
+		Mount:        "/Library/Filesystems/osxfuse.fs/Contents/Resources/mount_osxfuse",
+		DaemonVar:    "MOUNT_OSXFUSE_DAEMON_PATH",
+	}
+	OSXFUSELocationV2 = OSXFUSEPaths{
+		DevicePrefix: "/dev/osxfuse",
+		Load:         "/Library/Filesystems/osxfusefs.fs/Support/load_osxfusefs",
+		Mount:        "/Library/Filesystems/osxfusefs.fs/Support/mount_osxfusefs",
+		DaemonVar:    "MOUNT_FUSEFS_DAEMON_PATH",
+	}
+)
+
+// OSXFUSELocations sets where to look for OSXFUSE files. The
+// arguments are all the possible locations. The previous locations
+// are replaced.
+//
+// Without this option, OSXFUSELocationV3 and OSXFUSELocationV2 are
+// used.
+//
+// OS X only. Others ignore this option.
+func OSXFUSELocations(paths ...OSXFUSEPaths) MountOption {
+	return func(conf *mountConfig) error {
+		if len(paths) == 0 {
+			return errors.New("must specify at least one location for OSXFUSELocations")
+		}
+		// replace previous values, but make a copy so there's no
+		// worries about caller mutating their slice
+		conf.osxfuseLocations = append(conf.osxfuseLocations[:0], paths...)
+		return nil
+	}
+}
+
+// AllowNonEmptyMount allows the mounting over a non-empty directory.
+//
+// The files in it will be shadowed by the freshly created mount. By
+// default these mounts are rejected to prevent accidental covering up
+// of data, which could for example prevent automatic backup.
+func AllowNonEmptyMount() MountOption {
+	return func(conf *mountConfig) error {
+		conf.options["nonempty"] = ""
 		return nil
 	}
 }

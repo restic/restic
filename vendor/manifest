@@ -4,8 +4,8 @@
 		{
 			"importpath": "bazil.org/fuse",
 			"repository": "https://github.com/bazil/fuse",
-			"revision": "18419ee53958df28fcfc9490fe6123bd59e237bb",
-			"branch": "HEAD"
+			"revision": "371fbbdaa8987b715bdd21d6adc4c9b20155f748",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/elithrar/simple-scrypt",
