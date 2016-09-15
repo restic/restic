@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"restic/errors"
-
 	"restic"
 	"restic/repository"
 	. "restic/test"
@@ -23,46 +21,55 @@ const (
 	mountTestSubdir = "snapshots"
 )
 
+func snapshotsDirExists(t testing.TB, dir string) bool {
+	f, err := os.Open(filepath.Join(dir, mountTestSubdir))
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if err := f.Close(); err != nil {
+		t.Error(err)
+	}
+
+	return true
+}
+
 // waitForMount blocks (max mountWait * mountSleep) until the subdir
 // "snapshots" appears in the dir.
-func waitForMount(dir string) error {
+func waitForMount(t testing.TB, dir string) {
 	for i := 0; i < mountWait; i++ {
-		f, err := os.Open(dir)
-		if err != nil {
-			return err
-		}
-
-		names, err := f.Readdirnames(-1)
-		if err != nil {
-			return err
-		}
-
-		if err = f.Close(); err != nil {
-			return err
-		}
-
-		for _, name := range names {
-			if name == mountTestSubdir {
-				return nil
-			}
+		if snapshotsDirExists(t, dir) {
+			t.Log("mounted directory is ready")
+			return
 		}
 
 		time.Sleep(mountSleep)
 	}
 
-	return errors.Fatalf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
+	t.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
 
-func cmdMount(t testing.TB, global GlobalOptions, dir string, ready, done chan struct{}) {
-	defer func() {
-		ready <- struct{}{}
-	}()
+func mount(t testing.TB, global GlobalOptions, dir string) {
+	cmd := &CmdMount{global: &global}
+	OK(t, cmd.Mount(dir))
+}
 
-	cmd := &CmdMount{global: &global, ready: ready, done: done}
-	OK(t, cmd.Execute([]string{dir}))
-	if TestCleanupTempDirs {
-		RemoveAll(t, dir)
-	}
+func umount(t testing.TB, global GlobalOptions, dir string) {
+	cmd := &CmdMount{global: &global}
+	OK(t, cmd.Umount(dir))
+}
+
+func listSnapshots(t testing.TB, dir string) []string {
+	snapshotsDir, err := os.Open(filepath.Join(dir, "snapshots"))
+	OK(t, err)
+	names, err := snapshotsDir.Readdirnames(-1)
+	OK(t, err)
+	OK(t, snapshotsDir.Close())
+	return names
 }
 
 func TestMount(t *testing.T) {
@@ -70,34 +77,43 @@ func TestMount(t *testing.T) {
 		t.Skip("Skipping fuse tests")
 	}
 
-	checkSnapshots := func(repo *repository.Repository, mountpoint string, snapshotIDs []restic.ID) {
-		snapshotsDir, err := os.Open(filepath.Join(mountpoint, "snapshots"))
-		OK(t, err)
-		namesInSnapshots, err := snapshotsDir.Readdirnames(-1)
-		OK(t, err)
-		Assert(t,
-			len(namesInSnapshots) == len(snapshotIDs),
-			"Invalid number of snapshots: expected %d, got %d", len(snapshotIDs), len(namesInSnapshots))
-
-		namesMap := make(map[string]bool)
-		for _, name := range namesInSnapshots {
-			namesMap[name] = false
-		}
-
-		for _, id := range snapshotIDs {
-			snapshot, err := restic.LoadSnapshot(repo, id)
-			OK(t, err)
-			_, ok := namesMap[snapshot.Time.Format(time.RFC3339)]
-			Assert(t, ok, "Snapshot %s isn't present in fuse dir", snapshot.Time.Format(time.RFC3339))
-			namesMap[snapshot.Time.Format(time.RFC3339)] = true
-		}
-		for name, present := range namesMap {
-			Assert(t, present, "Directory %s is present in fuse dir but is not a snapshot", name)
-		}
-		OK(t, snapshotsDir.Close())
-	}
-
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+		checkSnapshots := func(repo *repository.Repository, mountpoint string, snapshotIDs restic.IDs) {
+			t.Logf("checking for %d snapshots: %v", len(snapshotIDs), snapshotIDs)
+			go mount(t, global, mountpoint)
+			waitForMount(t, mountpoint)
+			defer umount(t, global, mountpoint)
+
+			if !snapshotsDirExists(t, mountpoint) {
+				t.Fatal(`virtual directory "snapshots" doesn't exist`)
+			}
+
+			ids := listSnapshots(t, env.repo)
+			t.Logf("found %v snapshots in repo: %v", len(ids), ids)
+
+			namesInSnapshots := listSnapshots(t, mountpoint)
+			t.Logf("found %v snapshots in fuse mount: %v", len(namesInSnapshots), namesInSnapshots)
+			Assert(t,
+				len(namesInSnapshots) == len(snapshotIDs),
+				"Invalid number of snapshots: expected %d, got %d", len(snapshotIDs), len(namesInSnapshots))
+
+			namesMap := make(map[string]bool)
+			for _, name := range namesInSnapshots {
+				namesMap[name] = false
+			}
+
+			for _, id := range snapshotIDs {
+				snapshot, err := restic.LoadSnapshot(repo, id)
+				OK(t, err)
+				_, ok := namesMap[snapshot.Time.Format(time.RFC3339)]
+				Assert(t, ok, "Snapshot %s isn't present in fuse dir", snapshot.Time.Format(time.RFC3339))
+				namesMap[snapshot.Time.Format(time.RFC3339)] = true
+			}
+			for name, present := range namesMap {
+				Assert(t, present, "Directory %s is present in fuse dir but is not a snapshot", name)
+			}
+		}
+
 		cmdInit(t, global)
 		repo, err := global.OpenRepository()
 		OK(t, err)
@@ -108,32 +124,9 @@ func TestMount(t *testing.T) {
 		// We remove the mountpoint now to check that cmdMount creates it
 		RemoveAll(t, mountpoint)
 
-		ready := make(chan struct{}, 2)
-		done := make(chan struct{})
-		go cmdMount(t, global, mountpoint, ready, done)
-		<-ready
-		defer close(done)
-		OK(t, waitForMount(mountpoint))
-
-		mountpointDir, err := os.Open(mountpoint)
-		OK(t, err)
-		names, err := mountpointDir.Readdirnames(-1)
-		OK(t, err)
-		Assert(t, len(names) == 1 && names[0] == "snapshots", `The fuse virtual directory "snapshots" doesn't exist`)
-		OK(t, mountpointDir.Close())
-
 		checkSnapshots(repo, mountpoint, []restic.ID{})
 
-		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		fd, err := os.Open(datafile)
-		if os.IsNotExist(errors.Cause(err)) {
-			t.Skipf("unable to find data file %q, skipping", datafile)
-			return
-		}
-		OK(t, err)
-		OK(t, fd.Close())
-
-		SetupTarTestFixture(t, env.testdata, datafile)
+		SetupTarTestFixture(t, env.testdata, filepath.Join("testdata", "backup-data.tar.gz"))
 
 		// first backup
 		cmdBackup(t, global, []string{env.testdata}, nil)
