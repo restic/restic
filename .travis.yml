@@ -17,6 +17,8 @@ matrix:
   exclude:
     - os: osx
       go: 1.6.3
+    - os: linux
+      go: 1.7.1
   include:
     - os: linux
       go: 1.7.1
