@@ -59,7 +59,7 @@
 		{
 			"importpath": "golang.org/x/crypto/poly1305",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "1777f3ba8c1fed80fcaec3317e3aaa4f627764d2",
+			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
 			"branch": "master",
 			"path": "/poly1305"
 		},
