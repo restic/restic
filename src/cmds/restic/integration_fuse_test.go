@@ -60,7 +60,18 @@ func mount(t testing.TB, global GlobalOptions, dir string) {
 
 func umount(t testing.TB, global GlobalOptions, dir string) {
 	cmd := &CmdMount{global: &global}
-	OK(t, cmd.Umount(dir))
+
+	var err error
+	for i := 0; i < mountWait; i++ {
+		if err = cmd.Umount(dir); err == nil {
+			t.Logf("directory %v umounted", dir)
+			return
+		}
+
+		time.Sleep(mountSleep)
+	}
+
+	t.Errorf("unable to umount dir %v, last error was: %v", dir, err)
 }
 
 func listSnapshots(t testing.TB, dir string) []string {
