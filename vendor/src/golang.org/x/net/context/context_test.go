@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// +build !go1.7
+
 package context
 
 import (
@@ -375,7 +377,7 @@ func TestAllocs(t *testing.T) {
 				<-c.Done()
 			},
 			limit:      8,
-			gccgoLimit: 15,
+			gccgoLimit: 16,
 		},
 		{
 			desc: "WithCancel(bg)",
@@ -401,7 +403,7 @@ func TestAllocs(t *testing.T) {
 		limit := test.limit
 		if runtime.Compiler == "gccgo" {
 			// gccgo does not yet do escape analysis.
-			// TOOD(iant): Remove this when gccgo does do escape analysis.
+			// TODO(iant): Remove this when gccgo does do escape analysis.
 			limit = test.gccgoLimit
 		}
 		if n := testing.AllocsPerRun(100, test.f); n > limit {
@@ -536,7 +538,7 @@ func testLayers(t *testing.T, seed int64, testTimeout bool) {
 	if testTimeout {
 		select {
 		case <-ctx.Done():
-		case <-time.After(timeout + timeout/10):
+		case <-time.After(timeout + 100*time.Millisecond):
 			errorf("ctx should have timed out")
 		}
 		checkValues("after timeout")

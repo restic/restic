@@ -80,8 +80,8 @@
 		{
 			"importpath": "golang.org/x/net/context",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "7654728e381988afd88e58cabfd6363a5ea91810",
-			"branch": "HEAD",
+			"revision": "de35ec43e7a9aabd6a9c54d2898220ea7e44de7d",
+			"branch": "master",
 			"path": "/context"
 		},
 		{
