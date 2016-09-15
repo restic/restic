@@ -35,6 +35,8 @@ Additional features specific to Windows:
     Options with long names (/verbose)
     Windows-style options with arguments use a colon as the delimiter
     Modify generated help message with Windows-style / options
+    Windows style options can be disabled at build time using the "forceposix"
+    build tag
 
 
 Basic usage
@@ -84,7 +86,9 @@ The following is a list of tags for struct fields supported by go-flags:
                       displayed in generated man pages (optional)
     no-flag:          if non-empty this field is ignored as an option (optional)
 
-    optional:       whether an argument of the option is optional (optional)
+    optional:       whether an argument of the option is optional. When an
+                    argument is optional it can only be specified using
+                    --option=argument (optional)
     optional-value: the value of an optional option when the option occurs
                     without an argument. This tag can be specified multiple
                     times in the case of maps or slices (optional)
@@ -104,6 +108,9 @@ The following is a list of tags for struct fields supported by go-flags:
                     slices and maps (optional)
     value-name:     the name of the argument value (to be shown in the help)
                     (optional)
+    choice:         limits the values for an option to a set of values.
+                    This tag can be specified mltiple times (optional)
+    hidden:         the option is not visible in the help or man page.
 
     base: a base (radix) used to convert strings to integer values, the
           default base is 10 (i.e. decimal) (optional)
@@ -133,11 +140,16 @@ The following is a list of tags for struct fields supported by go-flags:
                           then all remaining arguments will be added to it.
                           Positional arguments are optional by default,
                           unless the "required" tag is specified together
-                          with the "positional-args" tag (optional)
+                          with the "positional-args" tag. The "required" tag
+                          can also be set on the individual rest argument
+                          fields, to require only the first N positional
+                          arguments. If the "required" tag is set on the
+                          rest arguments slice, then its value determines
+                          the minimum amount of rest arguments that needs to
+                          be provided (e.g. `required:"2"`) (optional)
     positional-arg-name:  used on a field in a positional argument struct; name
                           of the positional argument placeholder to be shown in
                           the help (optional)
-
 
 Either the `short:` tag or the `long:` must be specified to make the field eligible as an
 option.

@@ -32,8 +32,8 @@ type GlobalOptions struct {
 	Repo         string   `short:"r" long:"repo"                      description:"Repository directory to backup to/restore from"`
 	PasswordFile string   `short:"p" long:"password-file"             description:"Read the repository password from a file"`
 	CacheDir     string   `          long:"cache-dir"                 description:"Directory to use as a local cache"`
-	Quiet        bool     `short:"q" long:"quiet"     default:"false" description:"Do not output comprehensive progress report"`
-	NoLock       bool     `          long:"no-lock"   default:"false" description:"Do not lock the repo, this allows some operations on read-only repos."`
+	Quiet        bool     `short:"q" long:"quiet"                     description:"Do not output comprehensive progress report"`
+	NoLock       bool     `          long:"no-lock"                   description:"Do not lock the repo, this allows some operations on read-only repos."`
 	Options      []string `short:"o" long:"option"                    description:"Specify options in the form 'foo.key=value'"`
 
 	password string

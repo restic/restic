@@ -165,6 +165,7 @@ func TestMountOptionDefaultPermissions(t *testing.T) {
 		t.Skip("FreeBSD does not support DefaultPermissions")
 	}
 	t.Parallel()
+
 	mnt, err := fstestutil.MountedT(t,
 		fstestutil.SimpleFS{
 			&fstestutil.ChildMap{"child": unwritableFile{}},
@@ -172,7 +173,6 @@ func TestMountOptionDefaultPermissions(t *testing.T) {
 		nil,
 		fuse.DefaultPermissions(),
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,12 +203,12 @@ func (createrDir) Create(ctx context.Context, req *fuse.CreateRequest, resp *fus
 
 func TestMountOptionReadOnly(t *testing.T) {
 	t.Parallel()
+
 	mnt, err := fstestutil.MountedT(t,
 		fstestutil.SimpleFS{createrDir{}},
 		nil,
 		fuse.ReadOnly(),
 	)
-
 	if err != nil {
 		t.Fatal(err)
 	}

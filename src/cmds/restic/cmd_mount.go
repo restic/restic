@@ -17,7 +17,7 @@ import (
 )
 
 type CmdMount struct {
-	Root bool `long:"owner-root" description:"use 'root' as the owner of files and dirs" default:"false"`
+	Root bool `long:"owner-root" description:"use 'root' as the owner of files and dirs"`
 
 	global *GlobalOptions
 }

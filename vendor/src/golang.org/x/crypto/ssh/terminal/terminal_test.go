@@ -6,6 +6,7 @@ package terminal
 
 import (
 	"io"
+	"os"
 	"testing"
 )
 
@@ -265,5 +266,26 @@ func TestTerminalSetSize(t *testing.T) {
 		if string(c.received) != "Password: \r\n" {
 			t.Errorf("failed to set the temporary prompt expected %q, got %q", "Password: ", c.received)
 		}
+	}
+}
+
+func TestMakeRawState(t *testing.T) {
+	fd := int(os.Stdout.Fd())
+	if !IsTerminal(fd) {
+		t.Skip("stdout is not a terminal; skipping test")
+	}
+
+	st, err := GetState(fd)
+	if err != nil {
+		t.Fatalf("failed to get terminal state from GetState: %s", err)
+	}
+	defer Restore(fd, st)
+	raw, err := MakeRaw(fd)
+	if err != nil {
+		t.Fatalf("failed to get terminal state from MakeRaw: %s", err)
+	}
+
+	if *st != *raw {
+		t.Errorf("states do not match; was %v, expected %v", raw, st)
 	}
 }

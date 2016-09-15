@@ -43,8 +43,6 @@ type Completer interface {
 
 type completion struct {
 	parser *Parser
-
-	ShowDescriptions bool
 }
 
 // Filename is a string alias which provides filename completion.
@@ -79,7 +77,7 @@ func (c *completion) completeOptionNames(names map[string]*Option, prefix string
 	n := make([]Completion, 0, len(names))
 
 	for k, opt := range names {
-		if strings.HasPrefix(k, match) {
+		if strings.HasPrefix(k, match) && !opt.Hidden {
 			n = append(n, Completion{
 				Item:        prefix + k,
 				Description: opt.Description,
@@ -275,19 +273,17 @@ func (c *completion) complete(args []string) []Completion {
 	return ret
 }
 
-func (c *completion) execute(args []string) {
-	ret := c.complete(args)
-
-	if c.ShowDescriptions && len(ret) > 1 {
+func (c *completion) print(items []Completion, showDescriptions bool) {
+	if showDescriptions && len(items) > 1 {
 		maxl := 0
 
-		for _, v := range ret {
+		for _, v := range items {
 			if len(v.Item) > maxl {
 				maxl = len(v.Item)
 			}
 		}
 
-		for _, v := range ret {
+		for _, v := range items {
 			fmt.Printf("%s", v.Item)
 
 			if len(v.Description) > 0 {
@@ -297,7 +293,7 @@ func (c *completion) execute(args []string) {
 			fmt.Printf("\n")
 		}
 	} else {
-		for _, v := range ret {
+		for _, v := range items {
 			fmt.Println(v.Item)
 		}
 	}

@@ -382,3 +382,28 @@ func (r *Removexattrs) RecordedRemovexattr() fuse.RemovexattrRequest {
 	}
 	return *(val.(*fuse.RemovexattrRequest))
 }
+
+// Creates records a Create request and its fields.
+type Creates struct {
+	rec RequestRecorder
+}
+
+var _ = fs.NodeCreater(&Creates{})
+
+// Create records the request and returns an error. Most callers should
+// wrap this call in a function that returns a more useful result.
+func (r *Creates) Create(ctx context.Context, req *fuse.CreateRequest, resp *fuse.CreateResponse) (fs.Node, fs.Handle, error) {
+	tmp := *req
+	r.rec.RecordRequest(&tmp)
+	return nil, nil, fuse.EIO
+}
+
+// RecordedCreate returns information about the Create request.
+// If no request was seen, returns a zero value.
+func (r *Creates) RecordedCreate() fuse.CreateRequest {
+	val := r.rec.Recorded()
+	if val == nil {
+		return fuse.CreateRequest{}
+	}
+	return *(val.(*fuse.CreateRequest))
+}

@@ -76,7 +76,7 @@ func memPipe() (a, b packetConn) {
 	return &t1, &t2
 }
 
-func TestmemPipe(t *testing.T) {
+func TestMemPipe(t *testing.T) {
 	a, b := memPipe()
 	if err := a.writePacket([]byte{42}); err != nil {
 		t.Fatalf("writePacket: %v", err)

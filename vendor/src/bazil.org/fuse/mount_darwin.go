@@ -1,22 +1,25 @@
 package fuse
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 )
 
-var errNoAvail = errors.New("no available fuse devices")
+var (
+	errNoAvail   = errors.New("no available fuse devices")
+	errNotLoaded = errors.New("osxfuse is not loaded")
+)
 
-var errNotLoaded = errors.New("osxfusefs is not loaded")
-
-func loadOSXFUSE() error {
-	cmd := exec.Command("/Library/Filesystems/osxfusefs.fs/Support/load_osxfusefs")
+func loadOSXFUSE(bin string) error {
+	cmd := exec.Command(bin)
 	cmd.Dir = "/"
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -24,11 +27,11 @@ func loadOSXFUSE() error {
 	return err
 }
 
-func openOSXFUSEDev() (*os.File, error) {
+func openOSXFUSEDev(devPrefix string) (*os.File, error) {
 	var f *os.File
 	var err error
 	for i := uint64(0); ; i++ {
-		path := "/dev/osxfuse" + strconv.FormatUint(i, 10)
+		path := devPrefix + strconv.FormatUint(i, 10)
 		f, err = os.OpenFile(path, os.O_RDWR, 0000)
 		if os.IsNotExist(err) {
 			if i == 0 {
@@ -52,9 +55,42 @@ func openOSXFUSEDev() (*os.File, error) {
 	}
 }
 
-func callMount(dir string, conf *mountConfig, f *os.File, ready chan<- struct{}, errp *error) error {
-	bin := "/Library/Filesystems/osxfusefs.fs/Support/mount_osxfusefs"
+func handleMountOSXFUSE(helperName string, errCh chan<- error) func(line string) (ignore bool) {
+	var noMountpointPrefix = helperName + `: `
+	const noMountpointSuffix = `: No such file or directory`
+	return func(line string) (ignore bool) {
+		if strings.HasPrefix(line, noMountpointPrefix) && strings.HasSuffix(line, noMountpointSuffix) {
+			// re-extract it from the error message in case some layer
+			// changed the path
+			mountpoint := line[len(noMountpointPrefix) : len(line)-len(noMountpointSuffix)]
+			err := &MountpointDoesNotExistError{
+				Path: mountpoint,
+			}
+			select {
+			case errCh <- err:
+				return true
+			default:
+				// not the first error; fall back to logging it
+				return false
+			}
+		}
 
+		return false
+	}
+}
+
+// isBoringMountOSXFUSEError returns whether the Wait error is
+// uninteresting; exit status 64 is.
+func isBoringMountOSXFUSEError(err error) bool {
+	if err, ok := err.(*exec.ExitError); ok && err.Exited() {
+		if status, ok := err.Sys().(syscall.WaitStatus); ok && status.ExitStatus() == 64 {
+			return true
+		}
+	}
+	return false
+}
+
+func callMount(bin string, daemonVar string, dir string, conf *mountConfig, f *os.File, ready chan<- struct{}, errp *error) error {
 	for k, v := range conf.options {
 		if strings.Contains(k, ",") || strings.Contains(v, ",") {
 			// Silly limitation but the mount helper does not
@@ -77,50 +113,96 @@ func callMount(dir string, conf *mountConfig, f *os.File, ready chan<- struct{},
 	)
 	cmd.ExtraFiles = []*os.File{f}
 	cmd.Env = os.Environ()
+	// OSXFUSE <3.3.0
 	cmd.Env = append(cmd.Env, "MOUNT_FUSEFS_CALL_BY_LIB=")
-	// TODO this is used for fs typenames etc, let app influence it
-	cmd.Env = append(cmd.Env, "MOUNT_FUSEFS_DAEMON_PATH="+bin)
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	cmd.Stderr = &buf
+	// OSXFUSE >=3.3.0
+	cmd.Env = append(cmd.Env, "MOUNT_OSXFUSE_CALL_BY_LIB=")
 
-	err := cmd.Start()
-	if err != nil {
-		return err
+	daemon := os.Args[0]
+	if daemonVar != "" {
+		cmd.Env = append(cmd.Env, daemonVar+"="+daemon)
 	}
+
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("setting up mount_osxfusefs stderr: %v", err)
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("setting up mount_osxfusefs stderr: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("mount_osxfusefs: %v", err)
+	}
+	helperErrCh := make(chan error, 1)
 	go func() {
-		err := cmd.Wait()
-		if err != nil {
-			if buf.Len() > 0 {
-				output := buf.Bytes()
-				output = bytes.TrimRight(output, "\n")
-				msg := err.Error() + ": " + string(output)
-				err = errors.New(msg)
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go lineLogger(&wg, "mount helper output", neverIgnoreLine, stdout)
+		helperName := path.Base(bin)
+		go lineLogger(&wg, "mount helper error", handleMountOSXFUSE(helperName, helperErrCh), stderr)
+		wg.Wait()
+		if err := cmd.Wait(); err != nil {
+			// see if we have a better error to report
+			select {
+			case helperErr := <-helperErrCh:
+				// log the Wait error if it's not what we expected
+				if !isBoringMountOSXFUSEError(err) {
+					log.Printf("mount helper failed: %v", err)
+				}
+				// and now return what we grabbed from stderr as the real
+				// error
+				*errp = helperErr
+				close(ready)
+				return
+			default:
+				// nope, fall back to generic message
 			}
+
+			*errp = fmt.Errorf("mount_osxfusefs: %v", err)
+			close(ready)
+			return
 		}
-		*errp = err
+
+		*errp = nil
 		close(ready)
 	}()
-	return err
+	return nil
 }
 
 func mount(dir string, conf *mountConfig, ready chan<- struct{}, errp *error) (*os.File, error) {
-	f, err := openOSXFUSEDev()
-	if err == errNotLoaded {
-		err = loadOSXFUSE()
+	locations := conf.osxfuseLocations
+	if locations == nil {
+		locations = []OSXFUSEPaths{
+			OSXFUSELocationV3,
+			OSXFUSELocationV2,
+		}
+	}
+	for _, loc := range locations {
+		if _, err := os.Stat(loc.Mount); os.IsNotExist(err) {
+			// try the other locations
+			continue
+		}
+
+		f, err := openOSXFUSEDev(loc.DevicePrefix)
+		if err == errNotLoaded {
+			err = loadOSXFUSE(loc.Load)
+			if err != nil {
+				return nil, err
+			}
+			// try again
+			f, err = openOSXFUSEDev(loc.DevicePrefix)
+		}
 		if err != nil {
 			return nil, err
 		}
-		// try again
-		f, err = openOSXFUSEDev()
+		err = callMount(loc.Mount, loc.DaemonVar, dir, conf, f, ready, errp)
+		if err != nil {
+			f.Close()
+			return nil, err
+		}
+		return f, nil
 	}
-	if err != nil {
-		return nil, err
-	}
-	err = callMount(dir, conf, f, ready, errp)
-	if err != nil {
-		f.Close()
-		return nil, err
-	}
-	return f, nil
+	return nil, ErrOSXFUSENotFound
 }

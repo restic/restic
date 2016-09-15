@@ -50,13 +50,15 @@ func (mnt *Mount) Close() {
 	os.Remove(mnt.Dir)
 }
 
-// Mounted mounts the fuse.Server at a temporary directory.
+// MountedFunc mounts a filesystem at a temporary directory. The
+// filesystem used is constructed by calling a function, to allow
+// storing fuse.Conn and fs.Server in the FS.
 //
 // It also waits until the filesystem is known to be visible (OS X
 // workaround).
 //
 // After successful return, caller must clean up by calling Close.
-func Mounted(filesys fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Mount, error) {
+func MountedFunc(fn func(*Mount) fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Mount, error) {
 	dir, err := ioutil.TempDir("", "fusetest")
 	if err != nil {
 		return nil, err
@@ -75,6 +77,7 @@ func Mounted(filesys fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Moun
 		Error:  serveErr,
 		done:   done,
 	}
+	filesys := fn(mnt)
 	go func() {
 		defer close(done)
 		serveErr <- server.Serve(filesys)
@@ -95,14 +98,25 @@ func Mounted(filesys fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Moun
 	}
 }
 
-// MountedT mounts the filesystem at a temporary directory,
+// Mounted mounts the fuse.Server at a temporary directory.
+//
+// It also waits until the filesystem is known to be visible (OS X
+// workaround).
+//
+// After successful return, caller must clean up by calling Close.
+func Mounted(filesys fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Mount, error) {
+	fn := func(*Mount) fs.FS { return filesys }
+	return MountedFunc(fn, conf, options...)
+}
+
+// MountedFuncT mounts a filesystem at a temporary directory,
 // directing it's debug log to the testing logger.
 //
-// See Mounted for usage.
+// See MountedFunc for usage.
 //
 // The debug log is not enabled by default. Use `-fuse.debug` or call
 // DebugByDefault to enable.
-func MountedT(t testing.TB, filesys fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Mount, error) {
+func MountedFuncT(t testing.TB, fn func(*Mount) fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Mount, error) {
 	if conf == nil {
 		conf = &fs.Config{}
 	}
@@ -111,5 +125,17 @@ func MountedT(t testing.TB, filesys fs.FS, conf *fs.Config, options ...fuse.Moun
 			t.Logf("FUSE: %s", msg)
 		}
 	}
-	return Mounted(filesys, conf, options...)
+	return MountedFunc(fn, conf, options...)
+}
+
+// MountedT mounts the filesystem at a temporary directory,
+// directing it's debug log to the testing logger.
+//
+// See Mounted for usage.
+//
+// The debug log is not enabled by default. Use `-fuse.debug` or call
+// DebugByDefault to enable.
+func MountedT(t testing.TB, filesys fs.FS, conf *fs.Config, options ...fuse.MountOption) (*Mount, error) {
+	fn := func(*Mount) fs.FS { return filesys }
+	return MountedFuncT(t, fn, conf, options...)
 }

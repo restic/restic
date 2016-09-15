@@ -62,7 +62,7 @@ func (r *keyring) Remove(key ssh.PublicKey) error {
 		if bytes.Equal(r.keys[i].signer.PublicKey().Marshal(), want) {
 			found = true
 			r.keys[i] = r.keys[len(r.keys)-1]
-			r.keys = r.keys[len(r.keys)-1:]
+			r.keys = r.keys[:len(r.keys)-1]
 			continue
 		} else {
 			i++
@@ -125,27 +125,28 @@ func (r *keyring) List() ([]*Key, error) {
 }
 
 // Insert adds a private key to the keyring. If a certificate
-// is given, that certificate is added as public key.
-func (r *keyring) Add(priv interface{}, cert *ssh.Certificate, comment string) error {
+// is given, that certificate is added as public key. Note that
+// any constraints given are ignored.
+func (r *keyring) Add(key AddedKey) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.locked {
 		return errLocked
 	}
-	signer, err := ssh.NewSignerFromKey(priv)
+	signer, err := ssh.NewSignerFromKey(key.PrivateKey)
 
 	if err != nil {
 		return err
 	}
 
-	if cert != nil {
+	if cert := key.Certificate; cert != nil {
 		signer, err = ssh.NewCertSigner(cert, signer)
 		if err != nil {
 			return err
 		}
 	}
 
-	r.keys = append(r.keys, privKey{signer, comment})
+	r.keys = append(r.keys, privKey{signer, key.Comment})
 
 	return nil
 }

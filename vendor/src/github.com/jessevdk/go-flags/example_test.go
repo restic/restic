@@ -41,7 +41,7 @@ func Example() {
 
 		// Example of positional arguments
 		Args struct {
-			Id   string
+			ID   string
 			Num  int
 			Rest []string
 		} `positional-args:"yes" required:"yes"`
@@ -92,7 +92,7 @@ func Example() {
 	fmt.Printf("PtrSlice: [%v %v]\n", *opts.PtrSlice[0], *opts.PtrSlice[1])
 	fmt.Printf("IntMap: [a:%v b:%v]\n", opts.IntMap["a"], opts.IntMap["b"])
 	fmt.Printf("Filename: %v\n", opts.Filename)
-	fmt.Printf("Args.Id: %s\n", opts.Args.Id)
+	fmt.Printf("Args.ID: %s\n", opts.Args.ID)
 	fmt.Printf("Args.Num: %d\n", opts.Args.Num)
 	fmt.Printf("Args.Rest: %v\n", opts.Args.Rest)
 
@@ -104,7 +104,7 @@ func Example() {
 	// PtrSlice: [hello world]
 	// IntMap: [a:1 b:5]
 	// Filename: hello.go
-	// Args.Id: id
+	// Args.ID: id
 	// Args.Num: 10
 	// Args.Rest: [remaining1 remaining2]
 }

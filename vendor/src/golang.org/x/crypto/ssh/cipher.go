@@ -7,6 +7,7 @@ package ssh
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/des"
 	"crypto/rc4"
 	"crypto/subtle"
 	"encoding/binary"
@@ -115,9 +116,15 @@ var cipherModes = map[string]*streamCipherMode{
 	// should invest a cleaner way to do this.
 	gcmCipherID: {16, 12, 0, nil},
 
-	// insecure cipher, see http://www.isg.rhul.ac.uk/~kp/SandPfinal.pdf
-	// uncomment below to enable it.
-	// aes128cbcID: {16, aes.BlockSize, 0, nil},
+	// CBC mode is insecure and so is not included in the default config.
+	// (See http://www.isg.rhul.ac.uk/~kp/SandPfinal.pdf). If absolutely
+	// needed, it's possible to specify a custom Config to enable it.
+	// You should expect that an active attacker can recover plaintext if
+	// you do.
+	aes128cbcID: {16, aes.BlockSize, 0, nil},
+
+	// 3des-cbc is insecure and is disabled by default.
+	tripledescbcID: {24, des.BlockSize, 0, nil},
 }
 
 // prefixLen is the length of the packet prefix that contains the packet length
@@ -365,12 +372,7 @@ type cbcCipher struct {
 	oracleCamouflage uint32
 }
 
-func newAESCBCCipher(iv, key, macKey []byte, algs directionAlgorithms) (packetCipher, error) {
-	c, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
+func newCBCCipher(c cipher.Block, iv, key, macKey []byte, algs directionAlgorithms) (packetCipher, error) {
 	cbc := &cbcCipher{
 		mac:        macModes[algs.MAC].new(macKey),
 		decrypter:  cipher.NewCBCDecrypter(c, iv),
@@ -379,6 +381,34 @@ func newAESCBCCipher(iv, key, macKey []byte, algs directionAlgorithms) (packetCi
 	}
 	if cbc.mac != nil {
 		cbc.macSize = uint32(cbc.mac.Size())
+	}
+
+	return cbc, nil
+}
+
+func newAESCBCCipher(iv, key, macKey []byte, algs directionAlgorithms) (packetCipher, error) {
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	cbc, err := newCBCCipher(c, iv, key, macKey, algs)
+	if err != nil {
+		return nil, err
+	}
+
+	return cbc, nil
+}
+
+func newTripleDESCBCCipher(iv, key, macKey []byte, algs directionAlgorithms) (packetCipher, error) {
+	c, err := des.NewTripleDESCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	cbc, err := newCBCCipher(c, iv, key, macKey, algs)
+	if err != nil {
+		return nil, err
 	}
 
 	return cbc, nil

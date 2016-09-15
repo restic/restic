@@ -13,18 +13,18 @@ import (
 	"golang.org/x/net/context"
 )
 
-var Usage = func() {
+func usage() {
 	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 	fmt.Fprintf(os.Stderr, "  %s MOUNTPOINT\n", os.Args[0])
 	flag.PrintDefaults()
 }
 
 func main() {
-	flag.Usage = Usage
+	flag.Usage = usage
 	flag.Parse()
 
 	if flag.NArg() != 1 {
-		Usage()
+		usage()
 		os.Exit(2)
 	}
 	mountpoint := flag.Arg(0)
