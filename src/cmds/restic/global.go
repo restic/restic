@@ -14,6 +14,7 @@ import (
 	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
+	"restic/cache"
 	"restic/debug"
 	"restic/location"
 	"restic/repository"
@@ -287,6 +288,13 @@ func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
 	if err != nil {
 		return nil, errors.Fatalf("unable to open repo: %v", err)
 	}
+
+	cache, err := cache.New(o.CacheDir, s.Config().ID)
+	if err != nil {
+		return nil, err
+	}
+
+	s.UseCache(cache)
 
 	return s, nil
 }

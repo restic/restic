@@ -11,6 +11,8 @@ type Repository interface {
 
 	Key() *crypto.Key
 
+	UseCache(Cache)
+
 	SetIndex(Index)
 
 	Index() Index
