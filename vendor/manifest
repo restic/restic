@@ -66,8 +66,8 @@
 		{
 			"importpath": "golang.org/x/crypto/scrypt",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "cc04154d65fb9296747569b107cfd05380b1ea3e",
-			"branch": "HEAD",
+			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"branch": "master",
 			"path": "/scrypt"
 		},
 		{
