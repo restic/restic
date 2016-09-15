@@ -21,6 +21,8 @@ type helpOptions struct {
 	EnvDefault1       string            `long:"env-default1" default:"Some value" env:"ENV_DEFAULT" description:"Test env-default1 value"`
 	EnvDefault2       string            `long:"env-default2" env:"ENV_DEFAULT" description:"Test env-default2 value"`
 	OptionWithArgName string            `long:"opt-with-arg-name" value-name:"something" description:"Option with named argument"`
+	OptionWithChoices string            `long:"opt-with-choices" value-name:"choice" choice:"dog" choice:"cat" description:"Option with choices"`
+	Hidden            string            `long:"hidden" description:"Hidden option" hidden:"yes"`
 
 	OnlyIni string `ini-name:"only-ini" description:"Option only available in ini"`
 
@@ -29,8 +31,13 @@ type helpOptions struct {
 		IntMap      map[string]int `long:"intmap" default:"a:1" description:"A map from string to int" ini-name:"int-map"`
 	} `group:"Other Options"`
 
+	HiddenGroup struct {
+		InsideHiddenGroup string `long:"inside-hidden-group" description:"Inside hidden group"`
+	} `group:"Hidden group" hidden:"yes"`
+
 	Group struct {
-		Opt string `long:"opt" description:"This is a subgroup option"`
+		Opt               string `long:"opt" description:"This is a subgroup option"`
+		HiddenInsideGroup string `long:"hidden-inside-group" description:"Hidden inside group" hidden:"yes"`
 
 		Group struct {
 			Opt string `long:"opt" description:"This is a subsubgroup option"`
@@ -41,9 +48,14 @@ type helpOptions struct {
 		ExtraVerbose []bool `long:"extra-verbose" description:"Use for extra verbosity"`
 	} `command:"command" alias:"cm" alias:"cmd" description:"A command"`
 
+	HiddenCommand struct {
+		ExtraVerbose []bool `long:"extra-verbose" description:"Use for extra verbosity"`
+	} `command:"hidden-command" description:"A hidden command" hidden:"yes"`
+
 	Args struct {
-		Filename string `positional-arg-name:"filename" description:"A filename"`
-		Number   int    `positional-arg-name:"num" description:"A number"`
+		Filename     string  `positional-arg-name:"filename" description:"A filename with a long description to trigger line wrapping"`
+		Number       int     `positional-arg-name:"num" description:"A number"`
+		HiddenInHelp float32 `positional-arg-name:"hidden-in-help" required:"yes"`
 	} `positional-args:"yes"`
 }
 
@@ -73,76 +85,91 @@ func TestHelp(t *testing.T) {
 
 		if runtime.GOOS == "windows" {
 			expected = `Usage:
-  TestHelp [OPTIONS] [filename] [num] <command>
+  TestHelp [OPTIONS] [filename] [num] [hidden-in-help] <command>
+
 
 Application Options:
-  /v, /verbose                         Show verbose debug information
-  /c:                                  Call phone number
-      /ptrslice:                       A slice of pointers to string
+  /v, /verbose                              Show verbose debug information
+  /c:                                       Call phone number
+      /ptrslice:                            A slice of pointers to string
       /empty-description
-      /default:                        Test default value ("Some\nvalue")
-      /default-array:                  Test default array value (Some value, "Other\tvalue")
-      /default-map:                    Testdefault map value (some:value, another:value)
-      /env-default1:                   Test env-default1 value (Some value) [%ENV_DEFAULT%]
-      /env-default2:                   Test env-default2 value [%ENV_DEFAULT%]
-      /opt-with-arg-name:something     Option with named argument
+      /default:                             Test default value (default:
+                                            "Some\nvalue")
+      /default-array:                       Test default array value (default:
+                                            Some value, "Other\tvalue")
+      /default-map:                         Testdefault map value (default:
+                                            some:value, another:value)
+      /env-default1:                        Test env-default1 value (default:
+                                            Some value) [%ENV_DEFAULT%]
+      /env-default2:                        Test env-default2 value
+                                            [%ENV_DEFAULT%]
+      /opt-with-arg-name:something          Option with named argument
+      /opt-with-choices:choice[dog|cat]     Option with choices
 
 Other Options:
-  /s:                                  A slice of strings (some, value)
-      /intmap:                         A map from string to int (a:1)
+  /s:                                       A slice of strings (default: some,
+                                            value)
+      /intmap:                              A map from string to int (default:
+                                            a:1)
 
 Subgroup:
-      /sip.opt:                        This is a subgroup option
+      /sip.opt:                             This is a subgroup option
 
 Subsubgroup:
-      /sip.sap.opt:                    This is a subsubgroup option
+      /sip.sap.opt:                         This is a subsubgroup option
 
 Help Options:
-  /?                                   Show this help message
-  /h, /help                            Show this help message
+  /?                                        Show this help message
+  /h, /help                                 Show this help message
 
 Arguments:
-  filename:                            A filename
-  num:                                 A number
+  filename:                                 A filename
+  num:                                      A number
 
 Available commands:
   command  A command (aliases: cm, cmd)
 `
 		} else {
 			expected = `Usage:
-  TestHelp [OPTIONS] [filename] [num] <command>
+  TestHelp [OPTIONS] [filename] [num] [hidden-in-help] <command>
 
 Application Options:
-  -v, --verbose                        Show verbose debug information
-  -c=                                  Call phone number
-      --ptrslice=                      A slice of pointers to string
+  -v, --verbose                             Show verbose debug information
+  -c=                                       Call phone number
+      --ptrslice=                           A slice of pointers to string
       --empty-description
-      --default=                       Test default value ("Some\nvalue")
-      --default-array=                 Test default array value (Some value,
-                                       "Other\tvalue")
-      --default-map=                   Testdefault map value (some:value,
-                                       another:value)
-      --env-default1=                  Test env-default1 value (Some value)
-                                       [$ENV_DEFAULT]
-      --env-default2=                  Test env-default2 value [$ENV_DEFAULT]
-      --opt-with-arg-name=something    Option with named argument
+      --default=                            Test default value (default:
+                                            "Some\nvalue")
+      --default-array=                      Test default array value (default:
+                                            Some value, "Other\tvalue")
+      --default-map=                        Testdefault map value (default:
+                                            some:value, another:value)
+      --env-default1=                       Test env-default1 value (default:
+                                            Some value) [$ENV_DEFAULT]
+      --env-default2=                       Test env-default2 value
+                                            [$ENV_DEFAULT]
+      --opt-with-arg-name=something         Option with named argument
+      --opt-with-choices=choice[dog|cat]    Option with choices
 
 Other Options:
-  -s=                                  A slice of strings (some, value)
-      --intmap=                        A map from string to int (a:1)
+  -s=                                       A slice of strings (default: some,
+                                            value)
+      --intmap=                             A map from string to int (default:
+                                            a:1)
 
 Subgroup:
-      --sip.opt=                       This is a subgroup option
+      --sip.opt=                            This is a subgroup option
 
 Subsubgroup:
-      --sip.sap.opt=                   This is a subsubgroup option
+      --sip.sap.opt=                        This is a subsubgroup option
 
 Help Options:
-  -h, --help                           Show this help message
+  -h, --help                                Show this help message
 
 Arguments:
-  filename:                            A filename
-  num:                                 A number
+  filename:                                 A filename with a long description
+                                            to trigger line wrapping
+  num:                                      A number
 
 Available commands:
   command  A command (aliases: cm, cmd)
@@ -189,6 +216,8 @@ TestMan \- Test manpage generation
 .SH DESCRIPTION
 This is a somewhat \fBlonger\fP description of what this does
 .SH OPTIONS
+.SS Application Options
+The application options
 .TP
 \fB\fB\-v\fR, \fB\-\-verbose\fR\fP
 Show verbose debug information
@@ -219,14 +248,20 @@ Test env-default2 value
 \fB\fB\-\-opt-with-arg-name\fR \fIsomething\fR\fP
 Option with named argument
 .TP
+\fB\fB\-\-opt-with-choices\fR \fIchoice\fR\fP
+Option with choices
+.SS Other Options
+.TP
 \fB\fB\-s\fR <default: \fI"some", "value"\fR>\fP
 A slice of strings
 .TP
 \fB\fB\-\-intmap\fR <default: \fI"a:1"\fR>\fP
 A map from string to int
+.SS Subgroup
 .TP
 \fB\fB\-\-sip.opt\fR\fP
 This is a subgroup option
+.SS Subsubgroup
 .TP
 \fB\fB\-\-sip.sap.opt\fR\fP
 This is a subsubgroup option
@@ -237,7 +272,7 @@ A command
 Longer \fBcommand\fP description
 
 \fBUsage\fP: TestMan [OPTIONS] command [command-OPTIONS]
-
+.TP
 
 \fBAliases\fP: cm, cmd
 
@@ -297,4 +332,137 @@ Help Options:
 
 		assertDiff(t, e.Message, expected, "help message")
 	}
+}
+
+func TestHelpDefaults(t *testing.T) {
+	var expected string
+
+	if runtime.GOOS == "windows" {
+		expected = `Usage:
+  TestHelpDefaults [OPTIONS]
+
+Application Options:
+      /with-default:               With default (default: default-value)
+      /without-default:            Without default
+      /with-programmatic-default:  With programmatic default (default:
+                                   default-value)
+
+Help Options:
+  /?                               Show this help message
+  /h, /help                        Show this help message
+`
+	} else {
+		expected = `Usage:
+  TestHelpDefaults [OPTIONS]
+
+Application Options:
+      --with-default=              With default (default: default-value)
+      --without-default=           Without default
+      --with-programmatic-default= With programmatic default (default:
+                                   default-value)
+
+Help Options:
+  -h, --help                       Show this help message
+`
+	}
+
+	tests := []struct {
+		Args   []string
+		Output string
+	}{
+		{
+			Args:   []string{"-h"},
+			Output: expected,
+		},
+		{
+			Args:   []string{"--with-default", "other-value", "--with-programmatic-default", "other-value", "-h"},
+			Output: expected,
+		},
+	}
+
+	for _, test := range tests {
+		var opts struct {
+			WithDefault             string `long:"with-default" default:"default-value" description:"With default"`
+			WithoutDefault          string `long:"without-default" description:"Without default"`
+			WithProgrammaticDefault string `long:"with-programmatic-default" description:"With programmatic default"`
+		}
+
+		opts.WithProgrammaticDefault = "default-value"
+
+		p := NewNamedParser("TestHelpDefaults", HelpFlag)
+		p.AddGroup("Application Options", "The application options", &opts)
+
+		_, err := p.ParseArgs(test.Args)
+
+		if err == nil {
+			t.Fatalf("Expected help error")
+		}
+
+		if e, ok := err.(*Error); !ok {
+			t.Fatalf("Expected flags.Error, but got %T", err)
+		} else {
+			if e.Type != ErrHelp {
+				t.Errorf("Expected flags.ErrHelp type, but got %s", e.Type)
+			}
+
+			assertDiff(t, e.Message, test.Output, "help message")
+		}
+	}
+}
+
+func TestHelpRestArgs(t *testing.T) {
+	opts := struct {
+		Verbose bool `short:"v"`
+	}{}
+
+	p := NewNamedParser("TestHelpDefaults", HelpFlag)
+	p.AddGroup("Application Options", "The application options", &opts)
+
+	retargs, err := p.ParseArgs([]string{"-h", "-v", "rest"})
+
+	if err == nil {
+		t.Fatalf("Expected help error")
+	}
+
+	assertStringArray(t, retargs, []string{"-v", "rest"})
+}
+
+func TestWrapText(t *testing.T) {
+	s := "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+
+	got := wrapText(s, 60, "      ")
+	expected := `Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+      sed do eiusmod tempor incididunt ut labore et dolore magna
+      aliqua. Ut enim ad minim veniam, quis nostrud exercitation
+      ullamco laboris nisi ut aliquip ex ea commodo consequat.
+      Duis aute irure dolor in reprehenderit in voluptate velit
+      esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
+      occaecat cupidatat non proident, sunt in culpa qui officia
+      deserunt mollit anim id est laborum.`
+
+	assertDiff(t, got, expected, "wrapped text")
+}
+
+func TestWrapParagraph(t *testing.T) {
+	s := "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\n\n"
+	s += "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\n"
+	s += "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.\n\n"
+	s += "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n"
+
+	got := wrapText(s, 60, "      ")
+	expected := `Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+      sed do eiusmod tempor incididunt ut labore et dolore magna
+      aliqua.
+
+      Ut enim ad minim veniam, quis nostrud exercitation ullamco
+      laboris nisi ut aliquip ex ea commodo consequat.
+
+      Duis aute irure dolor in reprehenderit in voluptate velit
+      esse cillum dolore eu fugiat nulla pariatur.
+
+      Excepteur sint occaecat cupidatat non proident, sunt in
+      culpa qui officia deserunt mollit anim id est laborum.
+`
+
+	assertDiff(t, got, expected, "wrapped paragraph")
 }

@@ -1,3 +1,5 @@
+// +build !forceposix
+
 package flags
 
 import (

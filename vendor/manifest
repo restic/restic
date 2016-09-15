@@ -16,8 +16,8 @@
 		{
 			"importpath": "github.com/jessevdk/go-flags",
 			"repository": "https://github.com/jessevdk/go-flags",
-			"revision": "1b89bf73cd2c3a911d7b2a279ab085c4a18cf539",
-			"branch": "HEAD"
+			"revision": "4cc2832a6e6d1d3b815e2b9d544b2a4dfb3ce8fa",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/kr/fs",

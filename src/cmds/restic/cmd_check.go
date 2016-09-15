@@ -13,8 +13,8 @@ import (
 )
 
 type CmdCheck struct {
-	ReadData    bool `long:"read-data"    default:"false" description:"Read data blobs"`
-	CheckUnused bool `long:"check-unused" default:"false" description:"Check for unused blobs"`
+	ReadData    bool `long:"read-data"                    description:"Read data blobs"`
+	CheckUnused bool `long:"check-unused"                 description:"Check for unused blobs"`
 
 	global *GlobalOptions
 }
