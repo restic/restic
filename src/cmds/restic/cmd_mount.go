@@ -20,7 +20,6 @@ type CmdMount struct {
 
 	global *GlobalOptions
 	ready  chan struct{}
-	done   chan struct{}
 }
 
 func init() {
@@ -29,8 +28,7 @@ func init() {
 		"The mount command mounts a repository read-only to a given directory",
 		&CmdMount{
 			global: &globalOpts,
-			ready:  make(chan struct{}, 1),
-			done:   make(chan struct{}),
+			ready:  make(chan struct{}),
 		})
 	if err != nil {
 		panic(err)
@@ -80,30 +78,20 @@ func (cmd CmdMount) Execute(args []string) error {
 	cmd.global.Printf("Don't forget to umount after quitting!\n")
 
 	AddCleanupHandler(func() error {
-		return systemFuse.Unmount(mountpoint)
-	})
-
-	cmd.ready <- struct{}{}
-
-	errServe := make(chan error)
-	go func() {
-		err = fs.Serve(c, &root)
-		if err != nil {
-			errServe <- err
-		}
-
-		<-c.Ready
-		errServe <- c.MountError
-	}()
-
-	select {
-	case err := <-errServe:
-		return err
-	case <-cmd.done:
 		err := systemFuse.Unmount(mountpoint)
 		if err != nil {
-			cmd.global.Printf("Error umounting: %s\n", err)
+			cmd.global.Warnf("unable to umount (maybe already umounted?): %v\n", err)
 		}
-		return c.Close()
+		return nil
+	})
+
+	close(cmd.ready)
+
+	err = fs.Serve(c, &root)
+	if err != nil {
+		return err
 	}
+
+	<-c.Ready
+	return c.MountError
 }
