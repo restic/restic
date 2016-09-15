@@ -50,6 +50,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "golang.org/x/crypto/curve25519",
+			"repository": "https://go.googlesource.com/crypto",
+			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"branch": "master",
+			"path": "/curve25519"
+		},
+		{
 			"importpath": "golang.org/x/crypto/pbkdf2",
 			"repository": "https://go.googlesource.com/crypto",
 			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
