@@ -3,16 +3,27 @@ sudo: false
 
 go:
   - 1.6.3
-  - 1.7
+  - 1.7.1
 
 os:
   - linux
   - osx
 
+env:
+  matrix:
+    RESTIC_TEST_FUSE=0
+
 matrix:
   exclude:
     - os: osx
       go: 1.6.3
+  include:
+    - os: linux
+      go: 1.7.1
+      sudo: true
+      env:
+        RESTIC_TEST_FUSE=1
+
 
 notifications:
   irc:
