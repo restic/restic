@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"restic"
 	"restic/backend"
 	"restic/debug"
@@ -12,30 +14,27 @@ import (
 	"restic/repository"
 )
 
-type CmdCat struct {
-	global *GlobalOptions
+var cmdCat = &cobra.Command{
+	Use:   "cat [flags] [pack|blob|tree|snapshot|key|masterkey|config|lock] ID",
+	Short: "print internal objects to stdout",
+	Long: `
+The "cat" command is used to print internal objects to stdout.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runCat(globalOptions, args)
+	},
 }
 
 func init() {
-	_, err := parser.AddCommand("cat",
-		"dump something",
-		"The cat command dumps data structures or data from a repository",
-		&CmdCat{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdCat)
 }
 
-func (cmd CmdCat) Usage() string {
-	return "[pack|blob|tree|snapshot|key|masterkey|config|lock] ID"
-}
-
-func (cmd CmdCat) Execute(args []string) error {
+func runCat(gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return errors.Fatalf("type or ID not specified, Usage: %s", cmd.Usage())
+		return errors.Fatalf("type or ID not specified")
 	}
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
@@ -158,7 +157,7 @@ func (cmd CmdCat) Execute(args []string) error {
 
 		hash := restic.Hash(buf)
 		if !hash.Equal(id) {
-			fmt.Fprintf(cmd.global.stderr, "Warning: hash of data does not match ID, want\n  %v\ngot:\n  %v\n", id.String(), hash.String())
+			fmt.Fprintf(stderr, "Warning: hash of data does not match ID, want\n  %v\ngot:\n  %v\n", id.String(), hash.String())
 		}
 
 		_, err = os.Stdout.Write(buf)

@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"restic"
 	"restic/errors"
 	"restic/pack"
@@ -16,24 +18,19 @@ import (
 	"restic/worker"
 )
 
-type CmdDump struct {
-	global *GlobalOptions
-
-	repo *repository.Repository
+var cmdDump = &cobra.Command{
+	Use:   "dump [indexes|snapshots|trees|all|packs]",
+	Short: "dump data structures",
+	Long: `
+The "dump" command dumps data structures from a repository as JSON objects. It
+is used for debugging purposes only.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runDump(globalOptions, args)
+	},
 }
 
 func init() {
-	_, err := parser.AddCommand("dump",
-		"dump data structures",
-		"The dump command dumps data structures from a repository as JSON documents",
-		&CmdDump{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (cmd CmdDump) Usage() string {
-	return "[indexes|snapshots|trees|all|packs]"
+	cmdRoot.AddCommand(cmdDump)
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
@@ -148,14 +145,14 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 	return nil
 }
 
-func (cmd CmdDump) DumpIndexes() error {
+func dumpIndexes(repo restic.Repository) error {
 	done := make(chan struct{})
 	defer close(done)
 
-	for id := range cmd.repo.List(restic.IndexFile, done) {
+	for id := range repo.List(restic.IndexFile, done) {
 		fmt.Printf("index_id: %v\n", id)
 
-		idx, err := repository.LoadIndex(cmd.repo, id)
+		idx, err := repository.LoadIndex(repo, id)
 		if err != nil {
 			return err
 		}
@@ -169,21 +166,22 @@ func (cmd CmdDump) DumpIndexes() error {
 	return nil
 }
 
-func (cmd CmdDump) Execute(args []string) error {
+func runDump(gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
-		return errors.Fatalf("type not specified, Usage: %s", cmd.Usage())
+		return errors.Fatalf("type not specified")
 	}
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
-	cmd.repo = repo
 
-	lock, err := lockRepo(repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if !gopts.NoLock {
+		lock, err := lockRepo(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = repo.LoadIndex()
@@ -195,7 +193,7 @@ func (cmd CmdDump) Execute(args []string) error {
 
 	switch tpe {
 	case "indexes":
-		return cmd.DumpIndexes()
+		return dumpIndexes(repo)
 	case "snapshots":
 		return debugPrintSnapshots(repo, os.Stdout)
 	case "packs":
@@ -208,7 +206,7 @@ func (cmd CmdDump) Execute(args []string) error {
 		}
 
 		fmt.Printf("\nindexes:\n")
-		err = cmd.DumpIndexes()
+		err = dumpIndexes(repo)
 		if err != nil {
 			return err
 		}

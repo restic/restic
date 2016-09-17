@@ -10,6 +10,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/spf13/cobra"
+
 	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
@@ -20,28 +22,48 @@ import (
 
 	"restic/errors"
 
-	"github.com/jessevdk/go-flags"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
 var version = "compiled manually"
 var compiledAt = "unknown time"
 
-// GlobalOptions holds all those options that can be set for every command.
+func parseEnvironment(cmd *cobra.Command, args []string) {
+	repo := os.Getenv("RESTIC_REPOSITORY")
+	if repo != "" {
+		globalOptions.Repo = repo
+	}
+
+	pw := os.Getenv("RESTIC_PASSWORD")
+	if pw != "" {
+		globalOptions.password = pw
+	}
+}
+
+// GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
-	Repo         string   `short:"r" long:"repo"                      description:"Repository directory to backup to/restore from"`
-	PasswordFile string   `short:"p" long:"password-file"             description:"Read the repository password from a file"`
-	CacheDir     string   `          long:"cache-dir"                 description:"Directory to use as a local cache"`
-	Quiet        bool     `short:"q" long:"quiet"                     description:"Do not output comprehensive progress report"`
-	NoLock       bool     `          long:"no-lock"                   description:"Do not lock the repo, this allows some operations on read-only repos."`
-	Options      []string `short:"o" long:"option"                    description:"Specify options in the form 'foo.key=value'"`
+	Repo         string
+	PasswordFile string
+	Quiet        bool
+	NoLock       bool
 
 	password string
 	stdout   io.Writer
 	stderr   io.Writer
 }
 
+var globalOptions = GlobalOptions{
+	stdout: os.Stdout,
+	stderr: os.Stderr,
+}
+
 func init() {
+	f := cmdRoot.PersistentFlags()
+	f.StringVarP(&globalOptions.Repo, "repo", "r", "", "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
+	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", "", "read the repository password from a file")
+	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not outputcomprehensive progress report")
+	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
+
 	restoreTerminal()
 }
 
@@ -91,9 +113,6 @@ func restoreTerminal() {
 	})
 }
 
-var globalOpts = GlobalOptions{stdout: os.Stdout, stderr: os.Stderr}
-var parser = flags.NewParser(&globalOpts, flags.HelpFlag|flags.PassDoubleDash)
-
 // ClearLine creates a platform dependent string to clear the current
 // line, so it can be overwritten. ANSI sequences are not supported on
 // current windows cmd shell.
@@ -109,8 +128,8 @@ func ClearLine() string {
 }
 
 // Printf writes the message to the configured stdout stream.
-func (o GlobalOptions) Printf(format string, args ...interface{}) {
-	_, err := fmt.Fprintf(o.stdout, format, args...)
+func Printf(format string, args ...interface{}) {
+	_, err := fmt.Fprintf(globalOptions.stdout, format, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
 		os.Exit(100)
@@ -118,22 +137,12 @@ func (o GlobalOptions) Printf(format string, args ...interface{}) {
 }
 
 // Verbosef calls Printf to write the message when the verbose flag is set.
-func (o GlobalOptions) Verbosef(format string, args ...interface{}) {
-	if o.Quiet {
+func Verbosef(format string, args ...interface{}) {
+	if globalOptions.Quiet {
 		return
 	}
 
-	o.Printf(format, args...)
-}
-
-// ShowProgress returns true iff the progress status should be written, i.e.
-// the quiet flag is not set.
-func (o GlobalOptions) ShowProgress() bool {
-	if o.Quiet {
-		return false
-	}
-
-	return true
+	Printf(format, args...)
 }
 
 // PrintProgress wraps fmt.Printf to handle the difference in writing progress
@@ -162,8 +171,8 @@ func PrintProgress(format string, args ...interface{}) {
 }
 
 // Warnf writes the message to the configured stderr stream.
-func (o GlobalOptions) Warnf(format string, args ...interface{}) {
-	_, err := fmt.Fprintf(o.stderr, format, args...)
+func Warnf(format string, args ...interface{}) {
+	_, err := fmt.Fprintf(globalOptions.stderr, format, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stderr: %v\n", err)
 		os.Exit(100)
@@ -171,12 +180,12 @@ func (o GlobalOptions) Warnf(format string, args ...interface{}) {
 }
 
 // Exitf uses Warnf to write the message and then calls os.Exit(exitcode).
-func (o GlobalOptions) Exitf(exitcode int, format string, args ...interface{}) {
+func Exitf(exitcode int, format string, args ...interface{}) {
 	if format[len(format)-1] != '\n' {
 		format += "\n"
 	}
 
-	o.Warnf(format, args...)
+	Warnf(format, args...)
 	os.Exit(exitcode)
 }
 
@@ -210,9 +219,9 @@ func readPasswordTerminal(in *os.File, out io.Writer, prompt string) (password s
 
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user.
-func (o GlobalOptions) ReadPassword(prompt string) (string, error) {
-	if o.PasswordFile != "" {
-		s, err := ioutil.ReadFile(o.PasswordFile)
+func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
+	if opts.PasswordFile != "" {
+		s, err := ioutil.ReadFile(opts.PasswordFile)
 		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 	}
 
@@ -244,12 +253,12 @@ func (o GlobalOptions) ReadPassword(prompt string) (string, error) {
 
 // ReadPasswordTwice calls ReadPassword two times and returns an error when the
 // passwords don't match.
-func (o GlobalOptions) ReadPasswordTwice(prompt1, prompt2 string) (string, error) {
-	pw1, err := o.ReadPassword(prompt1)
+func ReadPasswordTwice(gopts GlobalOptions, prompt1, prompt2 string) (string, error) {
+	pw1, err := ReadPassword(gopts, prompt1)
 	if err != nil {
 		return "", err
 	}
-	pw2, err := o.ReadPassword(prompt2)
+	pw2, err := ReadPassword(gopts, prompt2)
 	if err != nil {
 		return "", err
 	}
@@ -264,26 +273,26 @@ func (o GlobalOptions) ReadPasswordTwice(prompt1, prompt2 string) (string, error
 const maxKeys = 20
 
 // OpenRepository reads the password and opens the repository.
-func (o GlobalOptions) OpenRepository() (*repository.Repository, error) {
-	if o.Repo == "" {
+func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
+	if opts.Repo == "" {
 		return nil, errors.Fatal("Please specify repository location (-r)")
 	}
 
-	be, err := open(o.Repo)
+	be, err := open(opts.Repo)
 	if err != nil {
 		return nil, err
 	}
 
 	s := repository.New(be)
 
-	if o.password == "" {
-		o.password, err = o.ReadPassword("enter password for repository: ")
+	if opts.password == "" {
+		opts.password, err = ReadPassword(opts, "enter password for repository: ")
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err = s.SearchKey(o.password, maxKeys)
+	err = s.SearchKey(opts.password, maxKeys)
 	if err != nil {
 		return nil, errors.Fatalf("unable to open repo: %v", err)
 	}

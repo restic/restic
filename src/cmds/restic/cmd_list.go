@@ -3,37 +3,36 @@ package main
 import (
 	"restic"
 	"restic/errors"
+
+	"github.com/spf13/cobra"
 )
 
-type CmdList struct {
-	global *GlobalOptions
+var cmdList = &cobra.Command{
+	Use:   "list [blobs|packs|index|snapshots|keys|locks]",
+	Short: "list items in the repository",
+	Long: `
+
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runList(globalOptions, args)
+	},
 }
 
 func init() {
-	_, err := parser.AddCommand("list",
-		"lists data",
-		"The list command lists structures or data of a repository",
-		&CmdList{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdList)
 }
 
-func (cmd CmdList) Usage() string {
-	return "[blobs|packs|index|snapshots|keys|locks]"
-}
-
-func (cmd CmdList) Execute(args []string) error {
+func runList(opts GlobalOptions, args []string) error {
 	if len(args) != 1 {
-		return errors.Fatalf("type not specified, Usage: %s", cmd.Usage())
+		return errors.Fatalf("type not specified")
 	}
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(opts)
 	if err != nil {
 		return err
 	}
 
-	if !cmd.global.NoLock {
+	if !opts.NoLock {
 		lock, err := lockRepo(repo)
 		defer unlockRepo(lock)
 		if err != nil {
@@ -58,7 +57,7 @@ func (cmd CmdList) Execute(args []string) error {
 	}
 
 	for id := range repo.List(t, nil) {
-		cmd.global.Printf("%s\n", id)
+		Printf("%s\n", id)
 	}
 
 	return nil

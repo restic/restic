@@ -5,29 +5,34 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/cobra"
+
 	"restic"
 	"restic/errors"
 	"restic/repository"
 )
 
-type CmdLs struct {
-	Long bool `short:"l" long:"long" description:"Use a long listing format showing size and mode"`
-
-	global *GlobalOptions
+var cmdLs = &cobra.Command{
+	Use:   "ls [flags] snapshot-ID",
+	Short: "list files in a snapshot",
+	Long: `
+The "ls" command allows listing files and directories in a snapshot.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runLs(globalOptions, args)
+	},
 }
+
+var listLong bool
 
 func init() {
-	_, err := parser.AddCommand("ls",
-		"list files",
-		"The ls command lists all files and directories in a snapshot",
-		&CmdLs{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdLs)
+
+	cmdLs.Flags().BoolVarP(&listLong, "long", "l", false, "use a long listing format showing size and mode")
 }
 
-func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
-	if !cmd.Long {
+func printNode(prefix string, n *restic.Node) string {
+	if !listLong {
 		return filepath.Join(prefix, n.Name)
 	}
 
@@ -46,17 +51,17 @@ func (cmd CmdLs) printNode(prefix string, n *restic.Node) string {
 	}
 }
 
-func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id restic.ID) error {
+func printTree(prefix string, repo *repository.Repository, id restic.ID) error {
 	tree, err := repo.LoadTree(id)
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range tree.Nodes {
-		cmd.global.Printf(cmd.printNode(prefix, entry) + "\n")
+		Printf(printNode(prefix, entry) + "\n")
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			err = cmd.printTree(filepath.Join(prefix, entry.Name), repo, *entry.Subtree)
+			err = printTree(filepath.Join(prefix, entry.Name), repo, *entry.Subtree)
 			if err != nil {
 				return err
 			}
@@ -66,16 +71,12 @@ func (cmd CmdLs) printTree(prefix string, repo *repository.Repository, id restic
 	return nil
 }
 
-func (cmd CmdLs) Usage() string {
-	return "snapshot-ID [DIR]"
-}
-
-func (cmd CmdLs) Execute(args []string) error {
+func runLs(gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || len(args) > 2 {
-		return errors.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
+		return errors.Fatalf("no snapshot ID given")
 	}
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,7 @@ func (cmd CmdLs) Execute(args []string) error {
 		return err
 	}
 
-	cmd.global.Verbosef("snapshot of %v at %s:\n", sn.Paths, sn.Time)
+	Verbosef("snapshot of %v at %s:\n", sn.Paths, sn.Time)
 
-	return cmd.printTree("", repo, *sn.Tree)
+	return printTree("", repo, *sn.Tree)
 }

@@ -1,29 +1,32 @@
 package main
 
-import "restic/repository"
+import (
+	"restic/repository"
 
-type CmdRebuildIndex struct {
-	global *GlobalOptions
+	"github.com/spf13/cobra"
+)
 
-	repo *repository.Repository
+var cmdRebuildIndex = &cobra.Command{
+	Use:   "rebuild-index [flags]",
+	Short: "build a new index file",
+	Long: `
+The "rebuild-index" command creates a new index by combining the index files
+into a new one.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runRebuildIndex(globalOptions)
+	},
 }
 
 func init() {
-	_, err := parser.AddCommand("rebuild-index",
-		"rebuild the index",
-		"The rebuild-index command builds a new index",
-		&CmdRebuildIndex{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdRebuildIndex)
 }
 
-func (cmd CmdRebuildIndex) Execute(args []string) error {
-	repo, err := cmd.global.OpenRepository()
+func runRebuildIndex(gopts GlobalOptions) error {
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
-	cmd.repo = repo
 
 	lock, err := lockRepoExclusive(repo)
 	defer unlockRepo(lock)

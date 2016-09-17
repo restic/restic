@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"golang.org/x/crypto/ssh/terminal"
 
 	"restic"
@@ -12,29 +14,36 @@ import (
 	"restic/errors"
 )
 
-type CmdCheck struct {
-	ReadData    bool `long:"read-data"                    description:"Read data blobs"`
-	CheckUnused bool `long:"check-unused"                 description:"Check for unused blobs"`
-
-	global *GlobalOptions
+var cmdCheck = &cobra.Command{
+	Use:   "check [flags]",
+	Short: "check the repository for errors",
+	Long: `
+The "check" command tests the repository for errors and reports any errors it
+finds. It can also be used to read all data and therefore simulate a restore.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runCheck(checkOptions, globalOptions, args)
+	},
 }
+
+// CheckOptions bundle all options for the 'check' command.
+type CheckOptions struct {
+	ReadData    bool
+	CheckUnused bool
+}
+
+var checkOptions CheckOptions
 
 func init() {
-	_, err := parser.AddCommand("check",
-		"check the repository",
-		"The check command check the integrity and consistency of the repository",
-		&CmdCheck{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdCheck)
+
+	f := cmdCheck.Flags()
+	f.BoolVar(&checkOptions.ReadData, "read-data", false, "Read all data blobs")
+	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "Find unused blobs")
 }
 
-func (cmd CmdCheck) Usage() string {
-	return "[check-options]"
-}
-
-func (cmd CmdCheck) newReadProgress(todo restic.Stat) *restic.Progress {
-	if !cmd.global.ShowProgress() {
+func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
+	if gopts.Quiet {
 		return nil
 	}
 
@@ -64,18 +73,18 @@ func (cmd CmdCheck) newReadProgress(todo restic.Stat) *restic.Progress {
 	return readProgress
 }
 
-func (cmd CmdCheck) Execute(args []string) error {
+func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
 		return errors.Fatal("check has no arguments")
 	}
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
 
-	if !cmd.global.NoLock {
-		cmd.global.Verbosef("Create exclusive lock for repository\n")
+	if !gopts.NoLock {
+		Verbosef("Create exclusive lock for repository\n")
 		lock, err := lockRepoExclusive(repo)
 		defer unlockRepo(lock)
 		if err != nil {
@@ -85,24 +94,24 @@ func (cmd CmdCheck) Execute(args []string) error {
 
 	chkr := checker.New(repo)
 
-	cmd.global.Verbosef("Load indexes\n")
+	Verbosef("Load indexes\n")
 	hints, errs := chkr.LoadIndex()
 
 	dupFound := false
 	for _, hint := range hints {
-		cmd.global.Printf("%v\n", hint)
+		Printf("%v\n", hint)
 		if _, ok := hint.(checker.ErrDuplicatePacks); ok {
 			dupFound = true
 		}
 	}
 
 	if dupFound {
-		cmd.global.Printf("\nrun `restic rebuild-index' to correct this\n")
+		Printf("\nrun `restic rebuild-index' to correct this\n")
 	}
 
 	if len(errs) > 0 {
 		for _, err := range errs {
-			cmd.global.Warnf("error: %v\n", err)
+			Warnf("error: %v\n", err)
 		}
 		return errors.Fatal("LoadIndex returned errors")
 	}
@@ -113,7 +122,7 @@ func (cmd CmdCheck) Execute(args []string) error {
 	errorsFound := false
 	errChan := make(chan error)
 
-	cmd.global.Verbosef("Check all packs\n")
+	Verbosef("Check all packs\n")
 	go chkr.Packs(errChan, done)
 
 	for err := range errChan {
@@ -121,7 +130,7 @@ func (cmd CmdCheck) Execute(args []string) error {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 	}
 
-	cmd.global.Verbosef("Check snapshots, trees and blobs\n")
+	Verbosef("Check snapshots, trees and blobs\n")
 	errChan = make(chan error)
 	go chkr.Structure(errChan, done)
 
@@ -137,17 +146,17 @@ func (cmd CmdCheck) Execute(args []string) error {
 		}
 	}
 
-	if cmd.CheckUnused {
+	if opts.CheckUnused {
 		for _, id := range chkr.UnusedBlobs() {
-			cmd.global.Verbosef("unused blob %v\n", id.Str())
+			Verbosef("unused blob %v\n", id.Str())
 			errorsFound = true
 		}
 	}
 
-	if cmd.ReadData {
-		cmd.global.Verbosef("Read all data\n")
+	if opts.ReadData {
+		Verbosef("Read all data\n")
 
-		p := cmd.newReadProgress(restic.Stat{Blobs: chkr.CountPacks()})
+		p := newReadProgress(gopts, restic.Stat{Blobs: chkr.CountPacks()})
 		errChan := make(chan error)
 
 		go chkr.ReadData(p, errChan, done)

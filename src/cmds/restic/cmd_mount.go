@@ -6,6 +6,8 @@ package main
 import (
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"restic/debug"
 	"restic/errors"
 
@@ -16,33 +18,36 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-type CmdMount struct {
-	Root bool `long:"owner-root" description:"use 'root' as the owner of files and dirs"`
-
-	global *GlobalOptions
+var cmdMount = &cobra.Command{
+	Use:   "mount [flags] mountpoint",
+	Short: "mount the repository",
+	Long: `
+The "mount" command mounts the repository via fuse to a directory. This is a
+read-only mount.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runMount(mountOptions, globalOptions, args)
+	},
 }
+
+// MountOptions collects all options for the mount command.
+type MountOptions struct {
+	OwnerRoot bool
+}
+
+var mountOptions MountOptions
 
 func init() {
-	_, err := parser.AddCommand("mount",
-		"mount a repository",
-		"The mount command mounts a repository read-only to a given directory",
-		&CmdMount{
-			global: &globalOpts,
-		})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdMount)
+
+	cmdMount.Flags().BoolVar(&mountOptions.OwnerRoot, "owner-root", false, "use 'root' as the owner of files and dirs")
 }
 
-func (cmd CmdMount) Usage() string {
-	return "MOUNTPOINT"
-}
-
-func (cmd CmdMount) Mount(mountpoint string) error {
+func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	debug.Log("mount", "start mount")
 	defer debug.Log("mount", "finish mount")
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
@@ -53,7 +58,7 @@ func (cmd CmdMount) Mount(mountpoint string) error {
 	}
 
 	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(errors.Cause(err)) {
-		cmd.global.Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
+		Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
 		err = resticfs.Mkdir(mountpoint, os.ModeDir|0700)
 		if err != nil {
 			return err
@@ -68,8 +73,11 @@ func (cmd CmdMount) Mount(mountpoint string) error {
 		return err
 	}
 
+	Printf("Now serving the repository at %s\n", mountpoint)
+	Printf("Don't forget to umount after quitting!\n")
+
 	root := fs.Tree{}
-	root.Add("snapshots", fuse.NewSnapshotsDir(repo, cmd.Root))
+	root.Add("snapshots", fuse.NewSnapshotsDir(repo, opts.OwnerRoot))
 
 	debug.Log("mount", "serving mount at %v", mountpoint)
 	err = fs.Serve(c, &root)
@@ -81,28 +89,25 @@ func (cmd CmdMount) Mount(mountpoint string) error {
 	return c.MountError
 }
 
-func (cmd CmdMount) Umount(mountpoint string) error {
+func umount(mountpoint string) error {
 	return systemFuse.Unmount(mountpoint)
 }
 
-func (cmd CmdMount) Execute(args []string) error {
+func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
-		return errors.Fatalf("wrong number of parameters, Usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of parameters")
 	}
 
 	mountpoint := args[0]
 
 	AddCleanupHandler(func() error {
 		debug.Log("mount", "running umount cleanup handler for mount at %v", mountpoint)
-		err := cmd.Umount(mountpoint)
+		err := umount(mountpoint)
 		if err != nil {
-			cmd.global.Warnf("unable to umount (maybe already umounted?): %v\n", err)
+			Warnf("unable to umount (maybe already umounted?): %v\n", err)
 		}
 		return nil
 	})
 
-	cmd.global.Printf("Now serving the repository at %s\n", mountpoint)
-	cmd.global.Printf("Don't forget to umount after quitting!\n")
-
-	return cmd.Mount(mountpoint)
+	return mount(opts, gopts, mountpoint)
 }

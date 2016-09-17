@@ -41,107 +41,126 @@ func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {
 	return IDs
 }
 
-func cmdInit(t testing.TB, global GlobalOptions) {
+func testRunInit(t testing.TB, opts GlobalOptions) {
 	repository.TestUseLowSecurityKDFParameters(t)
 	restic.TestSetLockTimeout(t, 0)
 
-	cmd := &CmdInit{global: &global}
-	OK(t, cmd.Execute(nil))
-
-	t.Logf("repository initialized at %v", global.Repo)
+	OK(t, runInit(opts, nil))
+	t.Logf("repository initialized at %v", opts.Repo)
 }
 
-func cmdBackup(t testing.TB, global GlobalOptions, target []string, parentID *restic.ID) {
-	cmdBackupExcludes(t, global, target, parentID, nil)
-}
-
-func cmdBackupExcludes(t testing.TB, global GlobalOptions, target []string, parentID *restic.ID, excludes []string) {
-	cmd := &CmdBackup{global: &global, Excludes: excludes}
-	if parentID != nil {
-		cmd.Parent = parentID.String()
-	}
-
+func testRunBackup(t testing.TB, target []string, opts BackupOptions, gopts GlobalOptions) {
 	t.Logf("backing up %v", target)
-
-	OK(t, cmd.Execute(target))
+	OK(t, runBackup(opts, gopts, target))
 }
 
-func cmdList(t testing.TB, global GlobalOptions, tpe string) restic.IDs {
-	cmd := &CmdList{global: &global}
-	return executeAndParseIDs(t, cmd, tpe)
-}
-
-func executeAndParseIDs(t testing.TB, cmd *CmdList, args ...string) restic.IDs {
+func testRunList(t testing.TB, tpe string, opts GlobalOptions) restic.IDs {
 	buf := bytes.NewBuffer(nil)
-	cmd.global.stdout = buf
-	OK(t, cmd.Execute(args))
+	globalOptions.stdout = buf
+	defer func() {
+		globalOptions.stdout = os.Stdout
+	}()
+
+	OK(t, runList(opts, []string{tpe}))
 	return parseIDsFromReader(t, buf)
 }
 
-func cmdRestore(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID) {
-	cmdRestoreExcludes(t, global, dir, snapshotID, nil)
+func testRunRestore(t testing.TB, opts GlobalOptions, dir string, snapshotID restic.ID) {
+	testRunRestoreExcludes(t, opts, dir, snapshotID, nil)
 }
 
-func cmdRestoreLatest(t testing.TB, global GlobalOptions, dir string, paths []string, host string) {
-	cmd := &CmdRestore{global: &global, Target: dir, Host: host, Paths: paths}
-	OK(t, cmd.Execute([]string{"latest"}))
+func testRunRestoreLatest(t testing.TB, gopts GlobalOptions, dir string, paths []string, host string) {
+	opts := RestoreOptions{
+		Target: dir,
+		Host:   host,
+		Paths:  paths,
+	}
+
+	OK(t, runRestore(opts, gopts, []string{"latest"}))
 }
 
-func cmdRestoreExcludes(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
-	cmd := &CmdRestore{global: &global, Target: dir, Exclude: excludes}
-	OK(t, cmd.Execute([]string{snapshotID.String()}))
+func testRunRestoreExcludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, excludes []string) {
+	opts := RestoreOptions{
+		Target:  dir,
+		Exclude: excludes,
+	}
+
+	OK(t, runRestore(opts, gopts, []string{snapshotID.String()}))
 }
 
-func cmdRestoreIncludes(t testing.TB, global GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
-	cmd := &CmdRestore{global: &global, Target: dir, Include: includes}
-	OK(t, cmd.Execute([]string{snapshotID.String()}))
+func testRunRestoreIncludes(t testing.TB, gopts GlobalOptions, dir string, snapshotID restic.ID, includes []string) {
+	opts := RestoreOptions{
+		Target:  dir,
+		Include: includes,
+	}
+
+	OK(t, runRestore(opts, gopts, []string{snapshotID.String()}))
 }
 
-func cmdCheck(t testing.TB, global GlobalOptions) {
-	cmd := &CmdCheck{
-		global:      &global,
+func testRunCheck(t testing.TB, gopts GlobalOptions) {
+	opts := CheckOptions{
 		ReadData:    true,
 		CheckUnused: true,
 	}
-	OK(t, cmd.Execute(nil))
+	OK(t, runCheck(opts, gopts, nil))
 }
 
-func cmdCheckOutput(t testing.TB, global GlobalOptions) string {
+func testRunCheckOutput(gopts GlobalOptions) (string, error) {
 	buf := bytes.NewBuffer(nil)
-	global.stdout = buf
-	cmd := &CmdCheck{global: &global, ReadData: true}
-	OK(t, cmd.Execute(nil))
-	return string(buf.Bytes())
+
+	globalOptions.stdout = buf
+	defer func() {
+		globalOptions.stdout = os.Stdout
+	}()
+
+	opts := CheckOptions{
+		ReadData: true,
+	}
+
+	err := runCheck(opts, gopts, nil)
+	return string(buf.Bytes()), err
 }
 
-func cmdRebuildIndex(t testing.TB, global GlobalOptions) {
-	global.stdout = ioutil.Discard
-	cmd := &CmdRebuildIndex{global: &global}
-	OK(t, cmd.Execute(nil))
+func testRunRebuildIndex(t testing.TB, gopts GlobalOptions) {
+	globalOptions.stdout = ioutil.Discard
+	defer func() {
+		globalOptions.stdout = os.Stdout
+	}()
+
+	OK(t, runRebuildIndex(gopts))
 }
 
-func cmdLs(t testing.TB, global GlobalOptions, snapshotID string) []string {
-	var buf bytes.Buffer
-	global.stdout = &buf
+func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
+	buf := bytes.NewBuffer(nil)
+	globalOptions.stdout = buf
+	quiet := globalOptions.Quiet
+	globalOptions.Quiet = true
+	defer func() {
+		globalOptions.stdout = os.Stdout
+		globalOptions.Quiet = quiet
+	}()
 
-	cmd := &CmdLs{global: &global}
-	OK(t, cmd.Execute([]string{snapshotID}))
+	OK(t, runLs(gopts, []string{snapshotID}))
 
 	return strings.Split(string(buf.Bytes()), "\n")
 }
 
-func cmdFind(t testing.TB, global GlobalOptions, pattern string) []string {
-	var buf bytes.Buffer
-	global.stdout = &buf
+func testRunFind(t testing.TB, gopts GlobalOptions, pattern string) []string {
+	buf := bytes.NewBuffer(nil)
+	globalOptions.stdout = buf
+	defer func() {
+		globalOptions.stdout = os.Stdout
+	}()
 
-	cmd := &CmdFind{global: &global}
-	OK(t, cmd.Execute([]string{pattern}))
+	opts := FindOptions{}
+
+	OK(t, runFind(opts, gopts, []string{pattern}))
 
 	return strings.Split(string(buf.Bytes()), "\n")
 }
 
 func TestBackup(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(errors.Cause(err)) {
@@ -151,22 +170,23 @@ func TestBackup(t *testing.T) {
 		OK(t, err)
 		OK(t, fd.Close())
 
-		cmdInit(t, global)
+		testRunInit(t, gopts)
 
 		SetupTarTestFixture(t, env.testdata, datafile)
+		opts := BackupOptions{}
 
 		// first backup
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		snapshotIDs := cmdList(t, global, "snapshots")
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		snapshotIDs := testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshotIDs) == 1,
 			"expected one snapshot, got %v", snapshotIDs)
 
-		cmdCheck(t, global)
+		testRunCheck(t, gopts)
 		stat1 := dirStats(env.repo)
 
 		// second backup, implicit incremental
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		snapshotIDs = cmdList(t, global, "snapshots")
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		snapshotIDs = testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshotIDs) == 2,
 			"expected two snapshots, got %v", snapshotIDs)
 
@@ -176,10 +196,11 @@ func TestBackup(t *testing.T) {
 		}
 		t.Logf("repository grown by %d bytes", stat2.size-stat1.size)
 
-		cmdCheck(t, global)
+		testRunCheck(t, gopts)
 		// third backup, explicit incremental
-		cmdBackup(t, global, []string{env.testdata}, &snapshotIDs[0])
-		snapshotIDs = cmdList(t, global, "snapshots")
+		opts.Parent = snapshotIDs[0].String()
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		snapshotIDs = testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshotIDs) == 3,
 			"expected three snapshots, got %v", snapshotIDs)
 
@@ -193,17 +214,17 @@ func TestBackup(t *testing.T) {
 		for i, snapshotID := range snapshotIDs {
 			restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
 			t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
-			cmdRestore(t, global, restoredir, snapshotIDs[0])
+			testRunRestore(t, gopts, restoredir, snapshotIDs[0])
 			Assert(t, directoriesEqualContents(env.testdata, filepath.Join(restoredir, "testdata")),
 				"directories are not equal")
 		}
 
-		cmdCheck(t, global)
+		testRunCheck(t, gopts)
 	})
 }
 
 func TestBackupNonExistingFile(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(errors.Cause(err)) {
@@ -215,9 +236,11 @@ func TestBackupNonExistingFile(t *testing.T) {
 
 		SetupTarTestFixture(t, env.testdata, datafile)
 
-		cmdInit(t, global)
-
-		global.stderr = ioutil.Discard
+		testRunInit(t, gopts)
+		globalOptions.stderr = ioutil.Discard
+		defer func() {
+			globalOptions.stderr = os.Stderr
+		}()
 
 		p := filepath.Join(env.testdata, "0", "0")
 		dirs := []string{
@@ -226,12 +249,15 @@ func TestBackupNonExistingFile(t *testing.T) {
 			filepath.Join(p, "nonexisting"),
 			filepath.Join(p, "5"),
 		}
-		cmdBackup(t, global, dirs, nil)
+
+		opts := BackupOptions{}
+
+		testRunBackup(t, dirs, opts, gopts)
 	})
 }
 
 func TestBackupMissingFile1(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(errors.Cause(err)) {
@@ -243,9 +269,12 @@ func TestBackupMissingFile1(t *testing.T) {
 
 		SetupTarTestFixture(t, env.testdata, datafile)
 
-		cmdInit(t, global)
+		testRunInit(t, gopts)
+		globalOptions.stderr = ioutil.Discard
+		defer func() {
+			globalOptions.stderr = os.Stderr
+		}()
 
-		global.stderr = ioutil.Discard
 		ranHook := false
 		debug.Hook("pipe.walk1", func(context interface{}) {
 			pathname := context.(string)
@@ -260,8 +289,10 @@ func TestBackupMissingFile1(t *testing.T) {
 			OK(t, os.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
 		})
 
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		cmdCheck(t, global)
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
 
 		Assert(t, ranHook, "hook did not run")
 		debug.RemoveHook("pipe.walk1")
@@ -269,7 +300,7 @@ func TestBackupMissingFile1(t *testing.T) {
 }
 
 func TestBackupMissingFile2(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(errors.Cause(err)) {
@@ -281,9 +312,13 @@ func TestBackupMissingFile2(t *testing.T) {
 
 		SetupTarTestFixture(t, env.testdata, datafile)
 
-		cmdInit(t, global)
+		testRunInit(t, gopts)
 
-		global.stderr = ioutil.Discard
+		globalOptions.stderr = ioutil.Discard
+		defer func() {
+			globalOptions.stderr = os.Stderr
+		}()
+
 		ranHook := false
 		debug.Hook("pipe.walk2", func(context interface{}) {
 			pathname := context.(string)
@@ -298,8 +333,10 @@ func TestBackupMissingFile2(t *testing.T) {
 			OK(t, os.Remove(filepath.Join(env.testdata, "0", "0", "9", "37")))
 		})
 
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		cmdCheck(t, global)
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
 
 		Assert(t, ranHook, "hook did not run")
 		debug.RemoveHook("pipe.walk2")
@@ -307,7 +344,7 @@ func TestBackupMissingFile2(t *testing.T) {
 }
 
 func TestBackupDirectoryError(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
 		fd, err := os.Open(datafile)
 		if os.IsNotExist(errors.Cause(err)) {
@@ -319,9 +356,13 @@ func TestBackupDirectoryError(t *testing.T) {
 
 		SetupTarTestFixture(t, env.testdata, datafile)
 
-		cmdInit(t, global)
+		testRunInit(t, gopts)
 
-		global.stderr = ioutil.Discard
+		globalOptions.stderr = ioutil.Discard
+		defer func() {
+			globalOptions.stderr = os.Stderr
+		}()
+
 		ranHook := false
 
 		testdir := filepath.Join(env.testdata, "0", "0", "9")
@@ -340,17 +381,17 @@ func TestBackupDirectoryError(t *testing.T) {
 			OK(t, os.RemoveAll(testdir))
 		})
 
-		cmdBackup(t, global, []string{filepath.Join(env.testdata, "0", "0")}, nil)
-		cmdCheck(t, global)
+		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0")}, BackupOptions{}, gopts)
+		testRunCheck(t, gopts)
 
 		Assert(t, ranHook, "hook did not run")
 		debug.RemoveHook("pipe.walk2")
 
-		snapshots := cmdList(t, global, "snapshots")
+		snapshots := testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshots) > 0,
 			"no snapshots found in repo (%v)", datafile)
 
-		files := cmdLs(t, global, snapshots[0].String())
+		files := testRunLs(t, gopts, snapshots[0].String())
 
 		Assert(t, len(files) > 1, "snapshot is empty")
 	})
@@ -366,8 +407,8 @@ func includes(haystack []string, needle string) bool {
 	return false
 }
 
-func loadSnapshotMap(t testing.TB, global GlobalOptions) map[string]struct{} {
-	snapshotIDs := cmdList(t, global, "snapshots")
+func loadSnapshotMap(t testing.TB, gopts GlobalOptions) map[string]struct{} {
+	snapshotIDs := testRunList(t, "snapshots", gopts)
 
 	m := make(map[string]struct{})
 	for _, id := range snapshotIDs {
@@ -396,8 +437,8 @@ var backupExcludeFilenames = []string{
 }
 
 func TestBackupExclude(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		cmdInit(t, global)
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		testRunInit(t, gopts)
 
 		datadir := filepath.Join(env.base, "testdata")
 
@@ -414,21 +455,25 @@ func TestBackupExclude(t *testing.T) {
 
 		snapshots := make(map[string]struct{})
 
-		cmdBackup(t, global, []string{datadir}, nil)
-		snapshots, snapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, global))
-		files := cmdLs(t, global, snapshotID)
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{datadir}, opts, gopts)
+		snapshots, snapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
+		files := testRunLs(t, gopts, snapshotID)
 		Assert(t, includes(files, filepath.Join("testdata", "foo.tar.gz")),
 			"expected file %q in first snapshot, but it's not included", "foo.tar.gz")
 
-		cmdBackupExcludes(t, global, []string{datadir}, nil, []string{"*.tar.gz"})
-		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, global))
-		files = cmdLs(t, global, snapshotID)
+		opts.Excludes = []string{"*.tar.gz"}
+		testRunBackup(t, []string{datadir}, opts, gopts)
+		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
+		files = testRunLs(t, gopts, snapshotID)
 		Assert(t, !includes(files, filepath.Join("testdata", "foo.tar.gz")),
 			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
 
-		cmdBackupExcludes(t, global, []string{datadir}, nil, []string{"*.tar.gz", "private/secret"})
-		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, global))
-		files = cmdLs(t, global, snapshotID)
+		opts.Excludes = []string{"*.tar.gz", "private/secret"}
+		testRunBackup(t, []string{datadir}, opts, gopts)
+		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
+		files = testRunLs(t, gopts, snapshotID)
 		Assert(t, !includes(files, filepath.Join("testdata", "foo.tar.gz")),
 			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
 		Assert(t, !includes(files, filepath.Join("testdata", "private", "secret", "passwords.txt")),
@@ -465,22 +510,24 @@ func appendRandomData(filename string, bytes uint) error {
 }
 
 func TestIncrementalBackup(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		cmdInit(t, global)
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		testRunInit(t, gopts)
 
 		datadir := filepath.Join(env.base, "testdata")
 		testfile := filepath.Join(datadir, "testfile")
 
 		OK(t, appendRandomData(testfile, incrementalFirstWrite))
 
-		cmdBackup(t, global, []string{datadir}, nil)
-		cmdCheck(t, global)
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{datadir}, opts, gopts)
+		testRunCheck(t, gopts)
 		stat1 := dirStats(env.repo)
 
 		OK(t, appendRandomData(testfile, incrementalSecondWrite))
 
-		cmdBackup(t, global, []string{datadir}, nil)
-		cmdCheck(t, global)
+		testRunBackup(t, []string{datadir}, opts, gopts)
+		testRunCheck(t, gopts)
 		stat2 := dirStats(env.repo)
 		if stat2.size-stat1.size > incrementalFirstWrite {
 			t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
@@ -489,8 +536,8 @@ func TestIncrementalBackup(t *testing.T) {
 
 		OK(t, appendRandomData(testfile, incrementalThirdWrite))
 
-		cmdBackup(t, global, []string{datadir}, nil)
-		cmdCheck(t, global)
+		testRunBackup(t, []string{datadir}, opts, gopts)
+		testRunCheck(t, gopts)
 		stat3 := dirStats(env.repo)
 		if stat3.size-stat2.size > incrementalFirstWrite {
 			t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
@@ -499,24 +546,17 @@ func TestIncrementalBackup(t *testing.T) {
 	})
 }
 
-func cmdKey(t testing.TB, global GlobalOptions, args ...string) string {
-	var buf bytes.Buffer
+func testRunKeyListOtherIDs(t testing.TB, gopts GlobalOptions) []string {
+	buf := bytes.NewBuffer(nil)
 
-	global.stdout = &buf
-	cmd := &CmdKey{global: &global}
-	OK(t, cmd.Execute(args))
+	globalOptions.stdout = buf
+	defer func() {
+		globalOptions.stdout = os.Stdout
+	}()
 
-	return buf.String()
-}
+	OK(t, runKey(gopts, []string{"list"}))
 
-func cmdKeyListOtherIDs(t testing.TB, global GlobalOptions) []string {
-	var buf bytes.Buffer
-
-	global.stdout = &buf
-	cmd := &CmdKey{global: &global}
-	OK(t, cmd.Execute([]string{"list"}))
-
-	scanner := bufio.NewScanner(&buf)
+	scanner := bufio.NewScanner(buf)
 	exp := regexp.MustCompile(`^ ([a-f0-9]+) `)
 
 	IDs := []string{}
@@ -529,21 +569,28 @@ func cmdKeyListOtherIDs(t testing.TB, global GlobalOptions) []string {
 	return IDs
 }
 
-func cmdKeyAddNewKey(t testing.TB, global GlobalOptions, newPassword string) {
-	cmd := &CmdKey{global: &global, newPassword: newPassword}
-	OK(t, cmd.Execute([]string{"add"}))
+func testRunKeyAddNewKey(t testing.TB, newPassword string, gopts GlobalOptions) {
+	testKeyNewPassword = newPassword
+	defer func() {
+		testKeyNewPassword = ""
+	}()
+
+	OK(t, runKey(gopts, []string{"add"}))
 }
 
-func cmdKeyPasswd(t testing.TB, global GlobalOptions, newPassword string) {
-	cmd := &CmdKey{global: &global, newPassword: newPassword}
-	OK(t, cmd.Execute([]string{"passwd"}))
+func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
+	testKeyNewPassword = newPassword
+	defer func() {
+		testKeyNewPassword = ""
+	}()
+
+	OK(t, runKey(gopts, []string{"passwd"}))
 }
 
-func cmdKeyRemove(t testing.TB, global GlobalOptions, IDs []string) {
-	cmd := &CmdKey{global: &global}
+func testRunKeyRemove(t testing.TB, gopts GlobalOptions, IDs []string) {
 	t.Logf("remove %d keys: %q\n", len(IDs), IDs)
 	for _, id := range IDs {
-		OK(t, cmd.Execute([]string{"rm", id}))
+		OK(t, runKey(gopts, []string{"rm", id}))
 	}
 }
 
@@ -553,25 +600,24 @@ func TestKeyAddRemove(t *testing.T) {
 		"raicneirvOjEfEigonOmLasOd",
 	}
 
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		cmdInit(t, global)
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		testRunInit(t, gopts)
 
-		cmdKeyPasswd(t, global, "geheim2")
-		global.password = "geheim2"
-		t.Logf("changed password to %q", global.password)
+		testRunKeyPasswd(t, "geheim2", gopts)
+		gopts.password = "geheim2"
+		t.Logf("changed password to %q", gopts.password)
 
 		for _, newPassword := range passwordList {
-			cmdKeyAddNewKey(t, global, newPassword)
+			testRunKeyAddNewKey(t, newPassword, gopts)
 			t.Logf("added new password %q", newPassword)
-			global.password = newPassword
-			cmdKeyRemove(t, global, cmdKeyListOtherIDs(t, global))
+			gopts.password = newPassword
+			testRunKeyRemove(t, gopts, testRunKeyListOtherIDs(t, gopts))
 		}
 
-		global.password = passwordList[len(passwordList)-1]
-		t.Logf("testing access with last password %q\n", global.password)
-		cmdKey(t, global, "list")
-
-		cmdCheck(t, global)
+		gopts.password = passwordList[len(passwordList)-1]
+		t.Logf("testing access with last password %q\n", gopts.password)
+		OK(t, runKey(gopts, []string{"list"}))
+		testRunCheck(t, gopts)
 	})
 }
 
@@ -599,8 +645,8 @@ func TestRestoreFilter(t *testing.T) {
 		{"subdir1/subdir2/testfile4.c", 102},
 	}
 
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		cmdInit(t, global)
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		testRunInit(t, gopts)
 
 		for _, test := range testfiles {
 			p := filepath.Join(env.testdata, test.name)
@@ -608,20 +654,22 @@ func TestRestoreFilter(t *testing.T) {
 			OK(t, appendRandomData(p, test.size))
 		}
 
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		cmdCheck(t, global)
+		opts := BackupOptions{}
 
-		snapshotID := cmdList(t, global, "snapshots")[0]
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+
+		snapshotID := testRunList(t, "snapshots", gopts)[0]
 
 		// no restore filter should restore all files
-		cmdRestore(t, global, filepath.Join(env.base, "restore0"), snapshotID)
+		testRunRestore(t, gopts, filepath.Join(env.base, "restore0"), snapshotID)
 		for _, test := range testfiles {
 			OK(t, testFileSize(filepath.Join(env.base, "restore0", "testdata", test.name), int64(test.size)))
 		}
 
 		for i, pat := range []string{"*.c", "*.exe", "*", "*file3*"} {
 			base := filepath.Join(env.base, fmt.Sprintf("restore%d", i+1))
-			cmdRestoreExcludes(t, global, base, snapshotID, []string{pat})
+			testRunRestoreExcludes(t, gopts, base, snapshotID, []string{pat})
 			for _, test := range testfiles {
 				err := testFileSize(filepath.Join(base, "testdata", test.name), int64(test.size))
 				if ok, _ := filter.Match(pat, filepath.Base(test.name)); !ok {
@@ -638,49 +686,51 @@ func TestRestoreFilter(t *testing.T) {
 
 func TestRestoreLatest(t *testing.T) {
 
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		cmdInit(t, global)
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		testRunInit(t, gopts)
 
 		p := filepath.Join(env.testdata, "testfile.c")
 		OK(t, os.MkdirAll(filepath.Dir(p), 0755))
 		OK(t, appendRandomData(p, 100))
 
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		cmdCheck(t, global)
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
 
 		os.Remove(p)
 		OK(t, appendRandomData(p, 101))
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		cmdCheck(t, global)
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
 
 		// Restore latest without any filters
-		cmdRestoreLatest(t, global, filepath.Join(env.base, "restore0"), nil, "")
+		testRunRestoreLatest(t, gopts, filepath.Join(env.base, "restore0"), nil, "")
 		OK(t, testFileSize(filepath.Join(env.base, "restore0", "testdata", "testfile.c"), int64(101)))
 
 		// Setup test files in different directories backed up in different snapshots
 		p1 := filepath.Join(env.testdata, "p1/testfile.c")
 		OK(t, os.MkdirAll(filepath.Dir(p1), 0755))
 		OK(t, appendRandomData(p1, 102))
-		cmdBackup(t, global, []string{filepath.Dir(p1)}, nil)
-		cmdCheck(t, global)
+		testRunBackup(t, []string{filepath.Dir(p1)}, opts, gopts)
+		testRunCheck(t, gopts)
 
 		p2 := filepath.Join(env.testdata, "p2/testfile.c")
 		OK(t, os.MkdirAll(filepath.Dir(p2), 0755))
 		OK(t, appendRandomData(p2, 103))
-		cmdBackup(t, global, []string{filepath.Dir(p2)}, nil)
-		cmdCheck(t, global)
+		testRunBackup(t, []string{filepath.Dir(p2)}, opts, gopts)
+		testRunCheck(t, gopts)
 
 		p1rAbs := filepath.Join(env.base, "restore1", "p1/testfile.c")
 		p2rAbs := filepath.Join(env.base, "restore2", "p2/testfile.c")
 
-		cmdRestoreLatest(t, global, filepath.Join(env.base, "restore1"), []string{filepath.Dir(p1)}, "")
+		testRunRestoreLatest(t, gopts, filepath.Join(env.base, "restore1"), []string{filepath.Dir(p1)}, "")
 		OK(t, testFileSize(p1rAbs, int64(102)))
 		if _, err := os.Stat(p2rAbs); os.IsNotExist(errors.Cause(err)) {
 			Assert(t, os.IsNotExist(errors.Cause(err)),
 				"expected %v to not exist in restore, but it exists, err %v", p2rAbs, err)
 		}
 
-		cmdRestoreLatest(t, global, filepath.Join(env.base, "restore2"), []string{filepath.Dir(p2)}, "")
+		testRunRestoreLatest(t, gopts, filepath.Join(env.base, "restore2"), []string{filepath.Dir(p2)}, "")
 		OK(t, testFileSize(p2rAbs, int64(103)))
 		if _, err := os.Stat(p1rAbs); os.IsNotExist(errors.Cause(err)) {
 			Assert(t, os.IsNotExist(errors.Cause(err)),
@@ -691,20 +741,24 @@ func TestRestoreLatest(t *testing.T) {
 }
 
 func TestRestoreWithPermissionFailure(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "repo-restore-permissions-test.tar.gz")
 		SetupTarTestFixture(t, env.base, datafile)
 
-		snapshots := cmdList(t, global, "snapshots")
+		snapshots := testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshots) > 0,
 			"no snapshots found in repo (%v)", datafile)
 
-		global.stderr = ioutil.Discard
-		cmdRestore(t, global, filepath.Join(env.base, "restore"), snapshots[0])
+		globalOptions.stderr = ioutil.Discard
+		defer func() {
+			globalOptions.stderr = os.Stderr
+		}()
+
+		testRunRestore(t, gopts, filepath.Join(env.base, "restore"), snapshots[0])
 
 		// make sure that all files have been restored, regardeless of any
 		// permission errors
-		files := cmdLs(t, global, snapshots[0].String())
+		files := testRunLs(t, gopts, snapshots[0].String())
 		for _, filename := range files {
 			fi, err := os.Lstat(filepath.Join(env.base, "restore", filename))
 			OK(t, err)
@@ -725,23 +779,25 @@ func setZeroModTime(filename string) error {
 }
 
 func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-		cmdInit(t, global)
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		testRunInit(t, gopts)
 
 		p := filepath.Join(env.testdata, "subdir1", "subdir2", "subdir3", "file.ext")
 		OK(t, os.MkdirAll(filepath.Dir(p), 0755))
 		OK(t, appendRandomData(p, 200))
 		OK(t, setZeroModTime(filepath.Join(env.testdata, "subdir1", "subdir2")))
 
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		cmdCheck(t, global)
+		opts := BackupOptions{}
 
-		snapshotID := cmdList(t, global, "snapshots")[0]
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+
+		snapshotID := testRunList(t, "snapshots", gopts)[0]
 
 		// restore with filter "*.ext", this should restore "file.ext", but
 		// since the directories are ignored and only created because of
 		// "file.ext", no meta data should be restored for them.
-		cmdRestoreIncludes(t, global, filepath.Join(env.base, "restore0"), snapshotID, []string{"*.ext"})
+		testRunRestoreIncludes(t, gopts, filepath.Join(env.base, "restore0"), snapshotID, []string{"*.ext"})
 
 		f1 := filepath.Join(env.base, "restore0", "testdata", "subdir1", "subdir2")
 		fi, err := os.Stat(f1)
@@ -751,7 +807,7 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 			"meta data of intermediate directory has been restore although it was ignored")
 
 		// restore with filter "*", this should restore meta data on everything.
-		cmdRestoreIncludes(t, global, filepath.Join(env.base, "restore1"), snapshotID, []string{"*"})
+		testRunRestoreIncludes(t, gopts, filepath.Join(env.base, "restore1"), snapshotID, []string{"*"})
 
 		f2 := filepath.Join(env.base, "restore1", "testdata", "subdir1", "subdir2")
 		fi, err = os.Stat(f2)
@@ -763,43 +819,54 @@ func TestRestoreNoMetadataOnIgnoredIntermediateDirs(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
-		cmdInit(t, global)
+		testRunInit(t, gopts)
 		SetupTarTestFixture(t, env.testdata, datafile)
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		cmdCheck(t, global)
 
-		results := cmdFind(t, global, "unexistingfile")
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+
+		results := testRunFind(t, gopts, "unexistingfile")
 		Assert(t, len(results) != 0, "unexisting file found in repo (%v)", datafile)
 
-		results = cmdFind(t, global, "testfile")
+		results = testRunFind(t, gopts, "testfile")
 		Assert(t, len(results) != 1, "file not found in repo (%v)", datafile)
 
-		results = cmdFind(t, global, "test")
+		results = testRunFind(t, gopts, "test")
 		Assert(t, len(results) < 2, "less than two file found in repo (%v)", datafile)
 	})
 }
 
 func TestRebuildIndex(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("..", "..", "restic", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 		SetupTarTestFixture(t, env.base, datafile)
 
-		out := cmdCheckOutput(t, global)
+		out, err := testRunCheckOutput(gopts)
 		if !strings.Contains(out, "contained in several indexes") {
 			t.Fatalf("did not find checker hint for packs in several indexes")
+		}
+
+		if err != nil {
+			t.Fatalf("expected no error from checker for test repository, got %v", err)
 		}
 
 		if !strings.Contains(out, "restic rebuild-index") {
 			t.Fatalf("did not find hint for rebuild-index comman")
 		}
 
-		cmdRebuildIndex(t, global)
+		testRunRebuildIndex(t, gopts)
 
-		out = cmdCheckOutput(t, global)
+		out, err = testRunCheckOutput(gopts)
 		if len(out) != 0 {
 			t.Fatalf("expected no output from the checker, got: %v", out)
+		}
+
+		if err != nil {
+			t.Fatalf("expected no error from checker after rebuild-index, got: %v", err)
 		}
 	})
 }
@@ -810,7 +877,7 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 }
 
 func TestCheckRestoreNoLock(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "small-repo.tar.gz")
 		SetupTarTestFixture(t, env.base, datafile)
 
@@ -822,14 +889,15 @@ func TestCheckRestoreNoLock(t *testing.T) {
 		})
 		OK(t, err)
 
-		global.NoLock = true
-		cmdCheck(t, global)
+		gopts.NoLock = true
 
-		snapshotIDs := cmdList(t, global, "snapshots")
+		testRunCheck(t, gopts)
+
+		snapshotIDs := testRunList(t, "snapshots", gopts)
 		if len(snapshotIDs) == 0 {
 			t.Fatalf("found no snapshots")
 		}
 
-		cmdRestore(t, global, filepath.Join(env.base, "restore"), snapshotIDs[0])
+		testRunRestore(t, gopts, filepath.Join(env.base, "restore"), snapshotIDs[0])
 	})
 }

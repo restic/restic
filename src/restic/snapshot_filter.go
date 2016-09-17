@@ -82,7 +82,7 @@ func (e ExpirePolicy) Empty() bool {
 		return false
 	}
 
-	empty := ExpirePolicy{}
+	empty := ExpirePolicy{Tags: e.Tags}
 	return reflect.DeepEqual(e, empty)
 }
 
