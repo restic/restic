@@ -109,8 +109,8 @@ func (arch *Archiver) Save(t restic.BlobType, data []byte, id restic.ID) error {
 }
 
 // SaveTreeJSON stores a tree in the repository.
-func (arch *Archiver) SaveTreeJSON(item interface{}) (restic.ID, error) {
-	data, err := json.Marshal(item)
+func (arch *Archiver) SaveTreeJSON(tree *restic.Tree) (restic.ID, error) {
+	data, err := json.Marshal(tree)
 	if err != nil {
 		return restic.ID{}, errors.Wrap(err, "Marshal")
 	}
