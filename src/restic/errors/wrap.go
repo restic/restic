@@ -7,17 +7,14 @@ func Cause(err error) error {
 	return errors.Cause(err)
 }
 
-// New creates a new error based on message.
-func New(message string) error {
-	return errors.New(message)
-}
+// New creates a new error based on message. Wrapped so that this package does
+// not appear in the stack trace.
+var New = errors.New
 
-// Errorf creates an error based on a format string and values.
-func Errorf(format string, args ...interface{}) error {
-	return errors.Errorf(format, args...)
-}
+// Errorf creates an error based on a format string and values. Wrapped so that
+// this package does not appear in the stack trace.
+var Errorf = errors.Errorf
 
-// Wrap wraps an error retrieved from outside of restic.
-func Wrap(err error, message string) error {
-	return errors.Wrap(err, message)
-}
+// Wrap wraps an error retrieved from outside of restic. Wrapped so that this
+// package does not appear in the stack trace.
+var Wrap = errors.Wrap
