@@ -296,7 +296,7 @@ func open(s string) (restic.Backend, error) {
 	debug.Log("open", "parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
-		return nil, err
+		return nil, errors.Fatalf("parsing repository location failed: %v", err)
 	}
 
 	var be restic.Backend
