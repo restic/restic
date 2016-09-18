@@ -206,6 +206,13 @@ see [`filepath.Match`](https://golang.org/pkg/path/filepath/#Match) for syntax.
 Additionally `**` exludes arbitrary subdirectories.  
 Environment-variables in exclude-files are expanded with [`os.ExpandEnv`](https://golang.org/pkg/os/#ExpandEnv).
 
+By specifying the option `--one-file-system` you can instruct restic to only
+backup files from the file systems the initially specified files or directories
+reside on. For example, calling restic like this won't backup `/sys` or
+`/dev` on a Linux system:
+
+    $ restic -r /tmp/backup backup --one-file-system /
+
 ## Reading data from stdin
 
 Sometimes it can be nice to directly save the output of a program, e.g.
