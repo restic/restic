@@ -19,13 +19,14 @@ import (
 )
 
 type CmdBackup struct {
-	Parent        string   `short:"p" long:"parent"                  description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
-	Force         bool     `short:"f" long:"force"                   description:"Force re-reading the target. Overrides the \"parent\" flag"`
-	Excludes      []string `short:"e" long:"exclude"                 description:"Exclude a pattern (can be specified multiple times)"`
-	ExcludeFile   string   `long:"exclude-file"                      description:"Read exclude-patterns from file"`
-	Stdin         bool     `long:"stdin"                             description:"read backup data from stdin"`
-	StdinFilename string   `long:"stdin-filename"    default:"stdin" description:"file name to use when reading from stdin"`
-	Tags          []string `long:"tag"                               description:"Add a tag (can be specified multiple times)"`
+	Parent         string   `short:"p" long:"parent"                    description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
+	Force          bool     `short:"f" long:"force"                     description:"Force re-reading the target. Overrides the \"parent\" flag"`
+	Excludes       []string `short:"e" long:"exclude"                   description:"Exclude a pattern (can be specified multiple times)"`
+	ExcludeOtherFS bool     `short:"x" long:"one-file-system"           description:"Exclude other file systems"`
+	ExcludeFile    string   `long:"exclude-file"                        description:"Read exclude-patterns from file"`
+	Stdin          bool     `long:"stdin"                               description:"read backup data from stdin"`
+	StdinFilename  string   `long:"stdin-filename"    default:"stdin"   description:"file name to use when reading from stdin"`
+	Tags           []string `long:"tag"                                 description:"Add a tag (can be specified multiple times)"`
 
 	global *GlobalOptions
 }
@@ -239,6 +240,27 @@ func filterExisting(items []string) (result []string, err error) {
 	return
 }
 
+// gatherDevices returns the set of unique device ids of the files and/or
+// directory paths listed in "items".
+func gatherDevices(items []string) (deviceMap map[uint64]struct{}, err error) {
+	deviceMap = make(map[uint64]struct{})
+	for _, item := range items {
+		fi, err := fs.Lstat(item)
+		if err != nil {
+			return nil, err
+		}
+		id, err := fs.DeviceID(fi)
+		if err != nil {
+			return nil, err
+		}
+		deviceMap[id] = struct{}{}
+	}
+	if len(deviceMap) == 0 {
+		return nil, errors.New("zero allowed devices")
+	}
+	return deviceMap, nil
+}
+
 func (cmd CmdBackup) readFromStdin(args []string) error {
 	if len(args) != 0 {
 		return errors.Fatalf("when reading from stdin, no additional files can be specified")
@@ -289,6 +311,16 @@ func (cmd CmdBackup) Execute(args []string) error {
 	target, err := filterExisting(target)
 	if err != nil {
 		return err
+	}
+
+	// allowed devices
+	var allowedDevs map[uint64]struct{}
+	if cmd.ExcludeOtherFS {
+		allowedDevs, err = gatherDevices(target)
+		if err != nil {
+			return err
+		}
+		debug.Log("backup.Execute", "allowed devices: %v\n", allowedDevs)
 	}
 
 	repo, err := cmd.global.OpenRepository()
@@ -361,9 +393,26 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 		if matched {
 			debug.Log("backup.Execute", "path %q excluded by a filter", item)
+			return false
 		}
 
-		return !matched
+		if !cmd.ExcludeOtherFS {
+			return true
+		}
+
+		id, err := fs.DeviceID(fi)
+		if err != nil {
+			// This should never happen because gatherDevices() would have
+			// errored out earlier. If it still does that's a reason to panic.
+			panic(err)
+		}
+		_, found := allowedDevs[id]
+		if !found {
+			debug.Log("backup.Execute", "path %q on disallowed device %d", item, id)
+			return false
+		}
+
+		return true
 	}
 
 	stat, err := archiver.Scan(target, selectFilter, cmd.newScanProgress())
