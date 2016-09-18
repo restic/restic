@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -116,10 +117,28 @@ func TestMount(t *testing.T) {
 			for _, id := range snapshotIDs {
 				snapshot, err := restic.LoadSnapshot(repo, id)
 				OK(t, err)
-				_, ok := namesMap[snapshot.Time.Format(time.RFC3339)]
-				Assert(t, ok, "Snapshot %s isn't present in fuse dir", snapshot.Time.Format(time.RFC3339))
-				namesMap[snapshot.Time.Format(time.RFC3339)] = true
+
+				ts := snapshot.Time.Format(time.RFC3339)
+				present, ok := namesMap[ts]
+				if !ok {
+					t.Errorf("Snapshot %v (%q) isn't present in fuse dir", id.Str(), ts)
+				}
+
+				for i := 1; present; i++ {
+					ts = fmt.Sprintf("%s-%d", snapshot.Time.Format(time.RFC3339), i)
+					present, ok = namesMap[ts]
+					if !ok {
+						t.Errorf("Snapshot %v (%q) isn't present in fuse dir", id.Str(), ts)
+					}
+
+					if !present {
+						break
+					}
+				}
+
+				namesMap[ts] = true
 			}
+
 			for name, present := range namesMap {
 				Assert(t, present, "Directory %s is present in fuse dir but is not a snapshot", name)
 			}
