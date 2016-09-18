@@ -299,13 +299,15 @@ func open(s string) (restic.Backend, error) {
 		return nil, err
 	}
 
+	var be restic.Backend
+
 	switch loc.Scheme {
 	case "local":
 		debug.Log("open", "opening local repository at %#v", loc.Config)
-		return local.Open(loc.Config.(string))
+		be, err = local.Open(loc.Config.(string))
 	case "sftp":
 		debug.Log("open", "opening sftp repository at %#v", loc.Config)
-		return sftp.OpenWithConfig(loc.Config.(sftp.Config))
+		be, err = sftp.OpenWithConfig(loc.Config.(sftp.Config))
 	case "s3":
 		cfg := loc.Config.(s3.Config)
 		if cfg.KeyID == "" {
@@ -317,13 +319,18 @@ func open(s string) (restic.Backend, error) {
 		}
 
 		debug.Log("open", "opening s3 repository at %#v", cfg)
-		return s3.Open(cfg)
+		be, err = s3.Open(cfg)
 	case "rest":
-		return rest.Open(loc.Config.(rest.Config))
+		be, err = rest.Open(loc.Config.(rest.Config))
+	default:
+		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
 	}
 
-	debug.Log("open", "invalid repository location: %v", s)
-	return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)
+	if err != nil {
+		return nil, errors.Fatalf("unable to open repo at %v: %v", s, err)
+	}
+
+	return be, nil
 }
 
 // Create the backend specified by URI.
