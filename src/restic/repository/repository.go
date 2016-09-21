@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"restic"
 
@@ -154,16 +153,6 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 	}
 
 	return 0, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
-}
-
-// closeOrErr calls cl.Close() and sets err to the returned error value if
-// itself is not yet set.
-func closeOrErr(cl io.Closer, err *error) {
-	e := cl.Close()
-	if *err != nil {
-		return
-	}
-	*err = e
 }
 
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on

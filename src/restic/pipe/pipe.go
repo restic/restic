@@ -74,12 +74,6 @@ func readDirNames(dirname string) ([]string, error) {
 	return names, nil
 }
 
-func isDir(fi os.FileInfo) bool {
-	return fi.IsDir()
-}
-
-var errCancelled = errors.New("walk cancelled")
-
 // SelectFunc returns true for all items that should be included (files and
 // dirs). If false is returned, files are ignored and dirs are not even walked.
 type SelectFunc func(item string, fi os.FileInfo) bool

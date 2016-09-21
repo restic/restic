@@ -10,7 +10,6 @@ import (
 
 var (
 	snapshotTime = time.Unix(1470492820, 207401672)
-	snapshots    = 3
 	depth        = 3
 )
 

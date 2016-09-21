@@ -346,8 +346,6 @@ type jsonIndex struct {
 	Packs      []*packJSON `json:"packs"`
 }
 
-type jsonOldIndex []*packJSON
-
 // Encode writes the JSON serialization of the index to the writer w.
 func (idx *Index) Encode(w io.Writer) error {
 	debug.Log("Index.Encode", "encoding index")

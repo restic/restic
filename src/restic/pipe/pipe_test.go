@@ -14,10 +14,6 @@ import (
 	. "restic/test"
 )
 
-func isFile(fi os.FileInfo) bool {
-	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
-}
-
 type stats struct {
 	dirs, files int
 }

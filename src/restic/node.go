@@ -43,7 +43,6 @@ type Node struct {
 	tree *Tree
 
 	Path string `json:"-"`
-	err  error
 }
 
 func (node Node) String() string {
