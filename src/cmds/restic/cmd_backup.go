@@ -95,17 +95,6 @@ func formatDuration(d time.Duration) string {
 	return formatSeconds(sec)
 }
 
-func printTree2(indent int, t *restic.Tree) {
-	for _, node := range t.Nodes {
-		if node.Tree() != nil {
-			fmt.Printf("%s%s/\n", strings.Repeat("  ", indent), node.Name)
-			printTree2(indent+1, node.Tree())
-		} else {
-			fmt.Printf("%s%s\n", strings.Repeat("  ", indent), node.Name)
-		}
-	}
-}
-
 func (cmd CmdBackup) Usage() string {
 	return "DIR/FILE [DIR/FILE] [...]"
 }

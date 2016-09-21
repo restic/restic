@@ -94,11 +94,6 @@ func (p *Pool) runWorker(numWorker int) {
 	}
 }
 
-// Cancel signals termination to all worker goroutines.
-func (p *Pool) Cancel() {
-	close(p.done)
-}
-
 // Wait waits for all worker goroutines to terminate, afterwards the output
 // channel is closed.
 func (p *Pool) Wait() {

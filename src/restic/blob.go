@@ -46,6 +46,8 @@ func (t BlobType) String() string {
 		return "data"
 	case TreeBlob:
 		return "tree"
+	case InvalidBlob:
+		return "invalid"
 	}
 
 	return fmt.Sprintf("<BlobType %d>", t)

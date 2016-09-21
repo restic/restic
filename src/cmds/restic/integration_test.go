@@ -809,27 +809,6 @@ func TestRebuildIndexAlwaysFull(t *testing.T) {
 	TestRebuildIndex(t)
 }
 
-var optimizeTests = []struct {
-	testFilename string
-	snapshots    restic.IDSet
-}{
-	{
-		filepath.Join("..", "..", "restic", "checker", "testdata", "checker-test-repo.tar.gz"),
-		restic.NewIDSet(restic.TestParseID("a13c11e582b77a693dd75ab4e3a3ba96538a056594a4b9076e4cacebe6e06d43")),
-	},
-	{
-		filepath.Join("testdata", "old-index-repo.tar.gz"),
-		nil,
-	},
-	{
-		filepath.Join("testdata", "old-index-repo.tar.gz"),
-		restic.NewIDSet(
-			restic.TestParseID("f7d83db709977178c9d1a09e4009355e534cde1a135b8186b8b118a3fc4fcd41"),
-			restic.TestParseID("51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"),
-		),
-	},
-}
-
 func TestCheckRestoreNoLock(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
 		datafile := filepath.Join("testdata", "small-repo.tar.gz")

@@ -42,13 +42,6 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
-// Find loads the list of all blobs of type t and searches for names which start
-// with prefix. If none is found, nil and ErrNoIDPrefixFound is returned. If
-// more than one is found, nil and ErrMultipleIDMatches is returned.
-func (r *Repository) Find(t restic.FileType, prefix string) (string, error) {
-	return restic.Find(r.be, t, prefix)
-}
-
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
 func (r *Repository) PrefixLength(t restic.FileType) (int, error) {

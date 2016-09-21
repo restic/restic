@@ -649,11 +649,6 @@ func (c *Checker) UnusedBlobs() (blobs restic.IDs) {
 	return blobs
 }
 
-// OrphanedPacks returns a slice of unused packs (only available after Packs() was run).
-func (c *Checker) OrphanedPacks() restic.IDs {
-	return c.orphanedPacks
-}
-
 // CountPacks returns the number of packs in the repository.
 func (c *Checker) CountPacks() uint64 {
 	return uint64(len(c.packs))
