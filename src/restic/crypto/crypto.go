@@ -26,10 +26,6 @@ const (
 var (
 	// ErrUnauthenticated is returned when ciphertext verification has failed.
 	ErrUnauthenticated = errors.New("ciphertext verification failed")
-
-	// ErrBufferTooSmall is returned when the destination slice is too small
-	// for the ciphertext.
-	ErrBufferTooSmall = errors.New("destination buffer too small")
 )
 
 // Key holds encryption and message authentication keys for a repository. It is stored

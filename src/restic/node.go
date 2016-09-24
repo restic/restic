@@ -40,10 +40,7 @@ type Node struct {
 
 	Error string `json:"error,omitempty"`
 
-	tree *Tree
-
 	Path string `json:"-"`
-	err  error
 }
 
 func (node Node) String() string {
@@ -57,11 +54,6 @@ func (node Node) String() string {
 	}
 
 	return fmt.Sprintf("<Node(%s) %s>", node.Type, node.Name)
-}
-
-// Tree returns this node's tree object.
-func (node Node) Tree() *Tree {
-	return node.tree
 }
 
 // NodeFromFileInfo returns a new node from the given path and FileInfo.

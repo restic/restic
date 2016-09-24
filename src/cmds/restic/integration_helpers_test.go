@@ -178,15 +178,6 @@ func configureRestic(t testing.TB, cache, repo string) GlobalOptions {
 	}
 }
 
-func cleanupTempdir(t testing.TB, tempdir string) {
-	if !TestCleanupTempDirs {
-		t.Logf("leaving temporary directory %v used for test", tempdir)
-		return
-	}
-
-	RemoveAll(t, tempdir)
-}
-
 // withTestEnvironment creates a test environment and calls f with it. After f has
 // returned, the temporary directory is removed.
 func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) {
@@ -218,14 +209,4 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 	}
 
 	RemoveAll(t, tempdir)
-}
-
-// removeFile resets the read-only flag and then deletes the file.
-func removeFile(fn string) error {
-	err := os.Chmod(fn, 0666)
-	if err != nil {
-		return err
-	}
-
-	return os.Remove(fn)
 }

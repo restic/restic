@@ -21,11 +21,6 @@ type Config struct {
 // is newly created with Init().
 const RepoVersion = 1
 
-// JSONUnpackedSaver saves unpacked JSON.
-type JSONUnpackedSaver interface {
-	SaveJSONUnpacked(FileType, interface{}) (ID, error)
-}
-
 // JSONUnpackedLoader loads unpacked JSON.
 type JSONUnpackedLoader interface {
 	LoadJSONUnpacked(FileType, ID, interface{}) error

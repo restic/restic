@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"reflect"
 	"restic"
@@ -469,14 +468,6 @@ func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) {
 	id := restic.Hash(data)
 	err := b.Save(restic.Handle{Name: id.String(), Type: tpe}, data)
 	test.OK(t, err)
-}
-
-func read(t testing.TB, rd io.Reader, expectedData []byte) {
-	buf, err := ioutil.ReadAll(rd)
-	test.OK(t, err)
-	if expectedData != nil {
-		test.Equals(t, expectedData, buf)
-	}
 }
 
 // TestBackend tests all functions of the backend.

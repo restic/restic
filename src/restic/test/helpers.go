@@ -3,7 +3,6 @@ package test
 import (
 	"compress/bzip2"
 	"compress/gzip"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -88,56 +87,6 @@ func Random(seed, count int) []byte {
 	}
 
 	return p
-}
-
-type rndReader struct {
-	src *mrand.Rand
-}
-
-func (r *rndReader) Read(p []byte) (int, error) {
-	for i := 0; i < len(p); i += 8 {
-		val := r.src.Int63()
-		var data = []byte{
-			byte((val >> 0) & 0xff),
-			byte((val >> 8) & 0xff),
-			byte((val >> 16) & 0xff),
-			byte((val >> 24) & 0xff),
-			byte((val >> 32) & 0xff),
-			byte((val >> 40) & 0xff),
-			byte((val >> 48) & 0xff),
-			byte((val >> 56) & 0xff),
-		}
-
-		for j := range data {
-			cur := i + j
-			if len(p) >= cur {
-				break
-			}
-			p[cur] = data[j]
-		}
-	}
-
-	return len(p), nil
-}
-
-// RandomReader returns a reader that returns deterministic pseudo-random data
-// derived from the seed.
-func RandomReader(seed int) io.Reader {
-	return &rndReader{src: mrand.New(mrand.NewSource(int64(seed)))}
-}
-
-// RandomLimitReader returns a reader that returns size bytes of deterministic
-// pseudo-random data derived from the seed.
-func RandomLimitReader(seed, size int) io.Reader {
-	return io.LimitReader(RandomReader(seed), int64(size))
-}
-
-// GenRandom returns a []byte filled with up to 1000 random bytes.
-func GenRandom(t testing.TB) []byte {
-	buf := make([]byte, mrand.Intn(1000))
-	_, err := io.ReadFull(rand.Reader, buf)
-	OK(t, err)
-	return buf
 }
 
 // SetupTarTestFixture extracts the tarFile to outputDir.

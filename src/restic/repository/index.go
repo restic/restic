@@ -275,15 +275,6 @@ func (idx *Index) Count(t restic.BlobType) (n uint) {
 	return
 }
 
-// Length returns the number of entries in the Index.
-func (idx *Index) Length() uint {
-	debug.Log("Index.Count", "counting blobs")
-	idx.m.Lock()
-	defer idx.m.Unlock()
-
-	return uint(len(idx.pack))
-}
-
 type packJSON struct {
 	ID    restic.ID  `json:"id"`
 	Blobs []blobJSON `json:"blobs"`
@@ -345,8 +336,6 @@ type jsonIndex struct {
 	Supersedes restic.IDs  `json:"supersedes,omitempty"`
 	Packs      []*packJSON `json:"packs"`
 }
-
-type jsonOldIndex []*packJSON
 
 // Encode writes the JSON serialization of the index to the writer w.
 func (idx *Index) Encode(w io.Writer) error {
@@ -551,29 +540,4 @@ func LoadIndexWithDecoder(repo restic.Repository, id restic.ID, fn func(io.Reade
 	idx.id = id
 
 	return idx, nil
-}
-
-// ConvertIndex loads the given index from the repo and converts them to the new
-// format (if necessary). When the conversion is succcessful, the old index
-// is removed. Returned is either the old id (if no conversion was needed) or
-// the new id.
-func ConvertIndex(repo *Repository, id restic.ID) (restic.ID, error) {
-	debug.Log("ConvertIndex", "checking index %v", id.Str())
-
-	idx, err := LoadIndexWithDecoder(repo, id, DecodeOldIndex)
-	if err != nil {
-		debug.Log("ConvertIndex", "LoadIndexWithDecoder(%v) returned error: %v", id.Str(), err)
-		return id, err
-	}
-
-	buf := bytes.NewBuffer(nil)
-	idx.supersedes = restic.IDs{id}
-
-	err = idx.Encode(buf)
-	if err != nil {
-		debug.Log("ConvertIndex", "oldIdx.Encode() returned error: %v", err)
-		return id, err
-	}
-
-	return repo.SaveUnpacked(restic.IndexFile, buf.Bytes())
 }

@@ -16,17 +16,6 @@ import (
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")
 
-func list(repo restic.Repository, t restic.FileType) (IDs []string) {
-	done := make(chan struct{})
-	defer close(done)
-
-	for id := range repo.List(t, done) {
-		IDs = append(IDs, id.String())
-	}
-
-	return IDs
-}
-
 func collectErrors(f func(chan<- error, <-chan struct{})) (errs []error) {
 	done := make(chan struct{})
 	defer close(done)

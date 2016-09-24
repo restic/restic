@@ -234,11 +234,6 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 	// save final index
 	OK(t, repo.SaveIndex())
 
-	type packEntry struct {
-		id      restic.ID
-		indexes []*repository.Index
-	}
-
 	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 
 	for id := range repo.List(restic.IndexFile, nil) {

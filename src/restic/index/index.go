@@ -77,8 +77,6 @@ func New(repo restic.Repository, p *restic.Progress) (*Index, error) {
 	return idx, nil
 }
 
-const loadIndexParallelism = 20
-
 type packJSON struct {
 	ID    restic.ID  `json:"id"`
 	Blobs []blobJSON `json:"blobs"`

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"restic"
 
@@ -41,13 +40,6 @@ func New(be restic.Backend) *Repository {
 // Config returns the repository configuration.
 func (r *Repository) Config() restic.Config {
 	return r.cfg
-}
-
-// Find loads the list of all blobs of type t and searches for names which start
-// with prefix. If none is found, nil and ErrNoIDPrefixFound is returned. If
-// more than one is found, nil and ErrMultipleIDMatches is returned.
-func (r *Repository) Find(t restic.FileType, prefix string) (string, error) {
-	return restic.Find(r.be, t, prefix)
 }
 
 // PrefixLength returns the number of bytes required so that all prefixes of
@@ -154,16 +146,6 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 	}
 
 	return 0, errors.Errorf("loading blob %v from %v packs failed", id.Str(), len(blobs))
-}
-
-// closeOrErr calls cl.Close() and sets err to the returned error value if
-// itself is not yet set.
-func closeOrErr(cl io.Closer, err *error) {
-	e := cl.Close()
-	if *err != nil {
-		return
-	}
-	*err = e
 }
 
 // LoadJSONUnpacked decrypts the data and afterwards calls json.Unmarshal on
