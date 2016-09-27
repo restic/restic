@@ -195,15 +195,15 @@ var staleTimeout = 30 * time.Minute
 // older than 30 minutes or if it was created on the current machine and the
 // process isn't alive any more.
 func (l *Lock) Stale() bool {
-	debug.Log("Lock.Stale", "testing if lock %v for process %d is stale", l, l.PID)
+	debug.Log("testing if lock %v for process %d is stale", l, l.PID)
 	if time.Since(l.Time) > staleTimeout {
-		debug.Log("Lock.Stale", "lock is stale, timestamp is too old: %v\n", l.Time)
+		debug.Log("lock is stale, timestamp is too old: %v\n", l.Time)
 		return true
 	}
 
 	hn, err := os.Hostname()
 	if err != nil {
-		debug.Log("Lock.Stale", "unable to find current hostnanme: %v", err)
+		debug.Log("unable to find current hostnanme: %v", err)
 		// since we cannot find the current hostname, assume that the lock is
 		// not stale.
 		return false
@@ -217,18 +217,18 @@ func (l *Lock) Stale() bool {
 	// check if we can reach the process retaining the lock
 	exists := l.processExists()
 	if !exists {
-		debug.Log("Lock.Stale", "could not reach process, %d, lock is probably stale\n", l.PID)
+		debug.Log("could not reach process, %d, lock is probably stale\n", l.PID)
 		return true
 	}
 
-	debug.Log("Lock.Stale", "lock not stale\n")
+	debug.Log("lock not stale\n")
 	return false
 }
 
 // Refresh refreshes the lock by creating a new file in the backend with a new
 // timestamp. Afterwards the old lock is removed.
 func (l *Lock) Refresh() error {
-	debug.Log("Lock.Refresh", "refreshing lock %v", l.lockID.Str())
+	debug.Log("refreshing lock %v", l.lockID.Str())
 	id, err := l.createLock()
 	if err != nil {
 		return err
@@ -239,7 +239,7 @@ func (l *Lock) Refresh() error {
 		return err
 	}
 
-	debug.Log("Lock.Refresh", "new lock ID %v", id.Str())
+	debug.Log("new lock ID %v", id.Str())
 	l.lockID = &id
 
 	return nil
@@ -263,7 +263,7 @@ func init() {
 			c := make(chan os.Signal)
 			signal.Notify(c, syscall.SIGHUP)
 			for s := range c {
-				debug.Log("lock.ignoreSIGHUP", "Signal received: %v\n", s)
+				debug.Log("Signal received: %v\n", s)
 			}
 		}()
 	})

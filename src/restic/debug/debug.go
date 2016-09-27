@@ -189,7 +189,7 @@ func checkFilter(filter map[string]bool, key string) bool {
 var maxPosLen = 10
 
 // Log prints a message to the debug log (if debug is enabled).
-func Log(x string, f string, args ...interface{}) {
+func Log(f string, args ...interface{}) {
 	opts.m.Lock()
 	defer opts.m.Unlock()
 

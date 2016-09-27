@@ -33,7 +33,7 @@ func New() *MemoryBackend {
 		data: make(memMap),
 	}
 
-	debug.Log("MemoryBackend.New", "created new memory backend")
+	debug.Log("created new memory backend")
 
 	return be
 }
@@ -43,7 +43,7 @@ func (be *MemoryBackend) Test(t restic.FileType, name string) (bool, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	debug.Log("MemoryBackend.Test", "test %v %v", t, name)
+	debug.Log("test %v %v", t, name)
 
 	if _, ok := be.data[entry{t, name}]; ok {
 		return true, nil
@@ -65,7 +65,7 @@ func (be *MemoryBackend) Load(h restic.Handle, p []byte, off int64) (int, error)
 		h.Name = ""
 	}
 
-	debug.Log("MemoryBackend.Load", "get %v offset %v len %v", h, off, len(p))
+	debug.Log("get %v offset %v len %v", h, off, len(p))
 
 	if _, ok := be.data[entry{h.Type, h.Name}]; !ok {
 		return 0, errors.New("no such data")
@@ -109,7 +109,7 @@ func (be *MemoryBackend) Save(h restic.Handle, p []byte) error {
 		return errors.New("file already exists")
 	}
 
-	debug.Log("MemoryBackend.Save", "save %v bytes at %v", len(p), h)
+	debug.Log("save %v bytes at %v", len(p), h)
 	buf := make([]byte, len(p))
 	copy(buf, p)
 	be.data[entry{h.Type, h.Name}] = buf
@@ -130,7 +130,7 @@ func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 		h.Name = ""
 	}
 
-	debug.Log("MemoryBackend.Stat", "stat %v", h)
+	debug.Log("stat %v", h)
 
 	e, ok := be.data[entry{h.Type, h.Name}]
 	if !ok {
@@ -145,7 +145,7 @@ func (be *MemoryBackend) Remove(t restic.FileType, name string) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	debug.Log("MemoryBackend.Remove", "get %v %v", t, name)
+	debug.Log("get %v %v", t, name)
 
 	if _, ok := be.data[entry{t, name}]; !ok {
 		return errors.New("no such data")
@@ -171,7 +171,7 @@ func (be *MemoryBackend) List(t restic.FileType, done <-chan struct{}) <-chan st
 		ids = append(ids, entry.Name)
 	}
 
-	debug.Log("MemoryBackend.List", "list %v: %v", t, ids)
+	debug.Log("list %v: %v", t, ids)
 
 	go func() {
 		defer close(ch)

@@ -39,7 +39,7 @@ func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, 
 
 	globalLocks.Lock()
 	if globalLocks.cancelRefresh == nil {
-		debug.Log("main.lockRepository", "start goroutine for lock refresh")
+		debug.Log("start goroutine for lock refresh")
 		globalLocks.cancelRefresh = make(chan struct{})
 		globalLocks.refreshWG = sync.WaitGroup{}
 		globalLocks.refreshWG.Add(1)
@@ -55,7 +55,7 @@ func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, 
 var refreshInterval = 5 * time.Minute
 
 func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
-	debug.Log("main.refreshLocks", "start")
+	debug.Log("start")
 	defer func() {
 		wg.Done()
 		globalLocks.Lock()
@@ -68,10 +68,10 @@ func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
 	for {
 		select {
 		case <-done:
-			debug.Log("main.refreshLocks", "terminate")
+			debug.Log("terminate")
 			return
 		case <-ticker.C:
-			debug.Log("main.refreshLocks", "refreshing locks")
+			debug.Log("refreshing locks")
 			globalLocks.Lock()
 			for _, lock := range globalLocks.locks {
 				err := lock.Refresh()
@@ -88,9 +88,9 @@ func unlockRepo(lock *restic.Lock) error {
 	globalLocks.Lock()
 	defer globalLocks.Unlock()
 
-	debug.Log("unlockRepo", "unlocking repository")
+	debug.Log("unlocking repository")
 	if err := lock.Unlock(); err != nil {
-		debug.Log("unlockRepo", "error while unlocking: %v", err)
+		debug.Log("error while unlocking: %v", err)
 		return err
 	}
 
@@ -108,13 +108,13 @@ func unlockAll() error {
 	globalLocks.Lock()
 	defer globalLocks.Unlock()
 
-	debug.Log("unlockAll", "unlocking %d locks", len(globalLocks.locks))
+	debug.Log("unlocking %d locks", len(globalLocks.locks))
 	for _, lock := range globalLocks.locks {
 		if err := lock.Unlock(); err != nil {
-			debug.Log("unlockAll", "error while unlocking: %v", err)
+			debug.Log("error while unlocking: %v", err)
 			return err
 		}
-		debug.Log("unlockAll", "successfully removed lock")
+		debug.Log("successfully removed lock")
 	}
 
 	return nil

@@ -48,7 +48,7 @@ var blobPool = sync.Pool{
 }
 
 func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error) {
-	debug.Log("newFile", "create new file for %v with %d blobs", node.Name, len(node.Content))
+	debug.Log("create new file for %v with %d blobs", node.Name, len(node.Content))
 	var bytes uint64
 	sizes := make([]uint, len(node.Content))
 	for i, id := range node.Content {
@@ -62,7 +62,7 @@ func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error
 	}
 
 	if bytes != node.Size {
-		debug.Log("newFile", "sizes do not match: node.Size %v != size %v, using real size", node.Size, bytes)
+		debug.Log("sizes do not match: node.Size %v != size %v, using real size", node.Size, bytes)
 		node.Size = bytes
 	}
 
@@ -76,7 +76,7 @@ func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error
 }
 
 func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
-	debug.Log("file.Attr", "Attr(%v)", f.node.Name)
+	debug.Log("Attr(%v)", f.node.Name)
 	a.Inode = f.node.Inode
 	a.Mode = f.node.Mode
 	a.Size = f.node.Size
@@ -94,7 +94,7 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (f *file) getBlobAt(i int) (blob []byte, err error) {
-	debug.Log("file.getBlobAt", "getBlobAt(%v, %v)", f.node.Name, i)
+	debug.Log("getBlobAt(%v, %v)", f.node.Name, i)
 	if f.blobs[i] != nil {
 		return f.blobs[i], nil
 	}
@@ -111,7 +111,7 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 
 	n, err := f.repo.LoadBlob(restic.DataBlob, f.node.Content[i], buf)
 	if err != nil {
-		debug.Log("file.getBlobAt", "LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
+		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err
 	}
 	f.blobs[i] = buf[:n]
@@ -120,11 +120,11 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 }
 
 func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	debug.Log("file.Read", "Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
+	debug.Log("Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
 	offset := req.Offset
 
 	if uint64(offset) > f.node.Size {
-		debug.Log("file.Read", "Read(%v): offset is greater than file size: %v > %v",
+		debug.Log("Read(%v): offset is greater than file size: %v > %v",
 			f.node.Name, req.Offset, f.node.Size)
 		return errors.New("offset greater than files size")
 	}

@@ -47,7 +47,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
 	for _, node := range tree.Nodes {
 		selectedForRestore := res.SelectFilter(filepath.Join(dir, node.Name),
 			filepath.Join(dst, dir, node.Name), node)
-		debug.Log("Restorer.restoreNodeTo", "SelectForRestore returned %v", selectedForRestore)
+		debug.Log("SelectForRestore returned %v", selectedForRestore)
 
 		if selectedForRestore {
 			err := res.restoreNodeTo(node, dir, dst)
@@ -84,17 +84,17 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
 }
 
 func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
-	debug.Log("Restorer.restoreNodeTo", "node %v, dir %v, dst %v", node.Name, dir, dst)
+	debug.Log("node %v, dir %v, dst %v", node.Name, dir, dst)
 	dstPath := filepath.Join(dst, dir, node.Name)
 
 	err := node.CreateAt(dstPath, res.repo)
 	if err != nil {
-		debug.Log("Restorer.restoreNodeTo", "node.CreateAt(%s) error %v", dstPath, err)
+		debug.Log("node.CreateAt(%s) error %v", dstPath, err)
 	}
 
 	// Did it fail because of ENOENT?
 	if err != nil && os.IsNotExist(errors.Cause(err)) {
-		debug.Log("Restorer.restoreNodeTo", "create intermediate paths")
+		debug.Log("create intermediate paths")
 
 		// Create parent directories and retry
 		err = fs.MkdirAll(filepath.Dir(dstPath), 0700)
@@ -104,14 +104,14 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 	}
 
 	if err != nil {
-		debug.Log("Restorer.restoreNodeTo", "error %v", err)
+		debug.Log("error %v", err)
 		err = res.Error(dstPath, node, err)
 		if err != nil {
 			return err
 		}
 	}
 
-	debug.Log("Restorer.restoreNodeTo", "successfully restored %v", node.Name)
+	debug.Log("successfully restored %v", node.Name)
 
 	return nil
 }

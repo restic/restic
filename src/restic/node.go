@@ -98,7 +98,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 
 // CreateAt creates the node at the given path and restores all the meta data.
 func (node *Node) CreateAt(path string, repo Repository) error {
-	debug.Log("Node.CreateAt", "create node %v at %v", node.Name, path)
+	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
 	case "dir":
@@ -133,7 +133,7 @@ func (node *Node) CreateAt(path string, repo Repository) error {
 
 	err := node.restoreMetadata(path)
 	if err != nil {
-		debug.Log("Node.CreateAt", "restoreMetadata(%s) error %v", path, err)
+		debug.Log("restoreMetadata(%s) error %v", path, err)
 	}
 
 	return err
@@ -157,7 +157,7 @@ func (node Node) restoreMetadata(path string) error {
 	if node.Type != "dir" {
 		err = node.RestoreTimestamps(path)
 		if err != nil {
-			debug.Log("Node.restoreMetadata", "error restoring timestamps for dir %v: %v", path, err)
+			debug.Log("error restoring timestamps for dir %v: %v", path, err)
 			return err
 		}
 	}
@@ -385,13 +385,13 @@ func (node Node) sameContent(other Node) bool {
 // IsNewer returns true of the file has been updated since the last Stat().
 func (node *Node) IsNewer(path string, fi os.FileInfo) bool {
 	if node.Type != "file" {
-		debug.Log("node.IsNewer", "node %v is newer: not file", path)
+		debug.Log("node %v is newer: not file", path)
 		return true
 	}
 
 	tpe := nodeTypeFromFileInfo(fi)
 	if node.Name != fi.Name() || node.Type != tpe {
-		debug.Log("node.IsNewer", "node %v is newer: name or type changed", path)
+		debug.Log("node %v is newer: name or type changed", path)
 		return true
 	}
 
@@ -401,7 +401,7 @@ func (node *Node) IsNewer(path string, fi os.FileInfo) bool {
 	if !ok {
 		if node.ModTime != fi.ModTime() ||
 			node.Size != size {
-			debug.Log("node.IsNewer", "node %v is newer: timestamp or size changed", path)
+			debug.Log("node %v is newer: timestamp or size changed", path)
 			return true
 		}
 		return false
@@ -413,11 +413,11 @@ func (node *Node) IsNewer(path string, fi os.FileInfo) bool {
 		node.ChangeTime != changeTime(extendedStat) ||
 		node.Inode != uint64(inode) ||
 		node.Size != size {
-		debug.Log("node.IsNewer", "node %v is newer: timestamp, size or inode changed", path)
+		debug.Log("node %v is newer: timestamp, size or inode changed", path)
 		return true
 	}
 
-	debug.Log("node.IsNewer", "node %v is not newer", path)
+	debug.Log("node %v is not newer", path)
 	return false
 }
 

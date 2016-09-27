@@ -35,8 +35,8 @@ func NewTreeWalker(ch chan<- loadTreeJob, out chan<- TreeJob) *TreeWalker {
 // Walk starts walking the tree given by id. When the channel done is closed,
 // processing stops.
 func (tw *TreeWalker) Walk(path string, id restic.ID, done chan struct{}) {
-	debug.Log("TreeWalker.Walk", "starting on tree %v for %v", id.Str(), path)
-	defer debug.Log("TreeWalker.Walk", "done walking tree %v for %v", id.Str(), path)
+	debug.Log("starting on tree %v for %v", id.Str(), path)
+	defer debug.Log("done walking tree %v for %v", id.Str(), path)
 
 	resCh := make(chan loadTreeResult, 1)
 	tw.ch <- loadTreeJob{
@@ -64,10 +64,10 @@ func (tw *TreeWalker) Walk(path string, id restic.ID, done chan struct{}) {
 }
 
 func (tw *TreeWalker) walk(path string, tree *restic.Tree, done chan struct{}) {
-	debug.Log("TreeWalker.walk", "start on %q", path)
-	defer debug.Log("TreeWalker.walk", "done for %q", path)
+	debug.Log("start on %q", path)
+	defer debug.Log("done for %q", path)
 
-	debug.Log("TreeWalker.walk", "tree %#v", tree)
+	debug.Log("tree %#v", tree)
 
 	// load all subtrees in parallel
 	results := make([]<-chan loadTreeResult, len(tree.Nodes))
@@ -125,31 +125,31 @@ type loadTreeJob struct {
 type treeLoader func(restic.ID) (*restic.Tree, error)
 
 func loadTreeWorker(wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader, done <-chan struct{}) {
-	debug.Log("loadTreeWorker", "start")
-	defer debug.Log("loadTreeWorker", "exit")
+	debug.Log("start")
+	defer debug.Log("exit")
 	defer wg.Done()
 
 	for {
 		select {
 		case <-done:
-			debug.Log("loadTreeWorker", "done channel closed")
+			debug.Log("done channel closed")
 			return
 		case job, ok := <-in:
 			if !ok {
-				debug.Log("loadTreeWorker", "input channel closed, exiting")
+				debug.Log("input channel closed, exiting")
 				return
 			}
 
-			debug.Log("loadTreeWorker", "received job to load tree %v", job.id.Str())
+			debug.Log("received job to load tree %v", job.id.Str())
 			tree, err := load(job.id)
 
-			debug.Log("loadTreeWorker", "tree %v loaded, error %v", job.id.Str(), err)
+			debug.Log("tree %v loaded, error %v", job.id.Str(), err)
 
 			select {
 			case job.res <- loadTreeResult{tree, err}:
-				debug.Log("loadTreeWorker", "job result sent")
+				debug.Log("job result sent")
 			case <-done:
-				debug.Log("loadTreeWorker", "done channel closed before result could be sent")
+				debug.Log("done channel closed before result could be sent")
 				return
 			}
 		}
@@ -167,7 +167,7 @@ const loadTreeWorkers = 10
 // file and directory it finds. When the channel done is closed, processing
 // stops.
 func Tree(repo TreeLoader, id restic.ID, done chan struct{}, jobCh chan<- TreeJob) {
-	debug.Log("WalkTree", "start on %v, start workers", id.Str())
+	debug.Log("start on %v, start workers", id.Str())
 
 	load := func(id restic.ID) (*restic.Tree, error) {
 		tree, err := repo.LoadTree(id)
@@ -192,5 +192,5 @@ func Tree(repo TreeLoader, id restic.ID, done chan struct{}, jobCh chan<- TreeJo
 	close(ch)
 	wg.Wait()
 
-	debug.Log("WalkTree", "done")
+	debug.Log("done")
 }

@@ -79,7 +79,7 @@ func readDirNames(dirname string) ([]string, error) {
 type SelectFunc func(item string, fi os.FileInfo) bool
 
 func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs chan<- Job, res chan<- Result) (excluded bool) {
-	debug.Log("pipe.walk", "start on %q, basedir %q", dir, basedir)
+	debug.Log("start on %q, basedir %q", dir, basedir)
 
 	relpath, err := filepath.Rel(basedir, dir)
 	if err != nil {
@@ -89,7 +89,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 	info, err := fs.Lstat(dir)
 	if err != nil {
 		err = errors.Wrap(err, "Lstat")
-		debug.Log("pipe.walk", "error for %v: %v, res %p", dir, err, res)
+		debug.Log("error for %v: %v, res %p", dir, err, res)
 		select {
 		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
 		case <-done:
@@ -98,13 +98,13 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 	}
 
 	if !selectFunc(dir, info) {
-		debug.Log("pipe.walk", "file %v excluded by filter, res %p", dir, res)
+		debug.Log("file %v excluded by filter, res %p", dir, res)
 		excluded = true
 		return
 	}
 
 	if !info.IsDir() {
-		debug.Log("pipe.walk", "sending file job for %v, res %p", dir, res)
+		debug.Log("sending file job for %v, res %p", dir, res)
 		select {
 		case jobs <- Entry{info: info, basedir: basedir, path: relpath, result: res}:
 		case <-done:
@@ -115,7 +115,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 	debug.RunHook("pipe.readdirnames", dir)
 	names, err := readDirNames(dir)
 	if err != nil {
-		debug.Log("pipe.walk", "Readdirnames(%v) returned error: %v, res %p", dir, err, res)
+		debug.Log("Readdirnames(%v) returned error: %v, res %p", dir, err, res)
 		select {
 		case <-done:
 		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
@@ -134,7 +134,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 
 		fi, statErr := fs.Lstat(subpath)
 		if !selectFunc(subpath, fi) {
-			debug.Log("pipe.walk", "file %v excluded by filter", subpath)
+			debug.Log("file %v excluded by filter", subpath)
 			continue
 		}
 
@@ -143,7 +143,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 
 		if statErr != nil {
 			statErr = errors.Wrap(statErr, "Lstat")
-			debug.Log("pipe.walk", "sending file job for %v, err %v, res %p", subpath, err, res)
+			debug.Log("sending file job for %v, err %v, res %p", subpath, err, res)
 			select {
 			case jobs <- Entry{info: fi, error: statErr, basedir: basedir, path: filepath.Join(relpath, name), result: ch}:
 			case <-done:
@@ -159,7 +159,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		walk(basedir, subpath, selectFunc, done, jobs, ch)
 	}
 
-	debug.Log("pipe.walk", "sending dirjob for %q, basedir %q, res %p", dir, basedir, res)
+	debug.Log("sending dirjob for %q, basedir %q, res %p", dir, basedir, res)
 	select {
 	case jobs <- Dir{basedir: basedir, path: relpath, info: info, Entries: entries, result: res}:
 	case <-done:
@@ -198,48 +198,48 @@ func Walk(walkPaths []string, selectFunc SelectFunc, done chan struct{}, jobs ch
 		ps, err := cleanupPath(p)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Readdirnames(%v): %v, skipping\n", p, err)
-			debug.Log("pipe.Walk", "Readdirnames(%v) returned error: %v, skipping", p, err)
+			debug.Log("Readdirnames(%v) returned error: %v, skipping", p, err)
 			continue
 		}
 
 		paths = append(paths, ps...)
 	}
 
-	debug.Log("pipe.Walk", "start on %v", paths)
+	debug.Log("start on %v", paths)
 	defer func() {
-		debug.Log("pipe.Walk", "output channel closed")
+		debug.Log("output channel closed")
 		close(jobs)
 	}()
 
 	entries := make([]<-chan Result, 0, len(paths))
 	for _, path := range paths {
-		debug.Log("pipe.Walk", "start walker for %v", path)
+		debug.Log("start walker for %v", path)
 		ch := make(chan Result, 1)
 		excluded := walk(filepath.Dir(path), path, selectFunc, done, jobs, ch)
 
 		if excluded {
-			debug.Log("pipe.Walk", "walker for %v done, it was excluded by the filter", path)
+			debug.Log("walker for %v done, it was excluded by the filter", path)
 			continue
 		}
 
 		entries = append(entries, ch)
-		debug.Log("pipe.Walk", "walker for %v done", path)
+		debug.Log("walker for %v done", path)
 	}
 
-	debug.Log("pipe.Walk", "sending root node, res %p", res)
+	debug.Log("sending root node, res %p", res)
 	select {
 	case <-done:
 		return
 	case jobs <- Dir{Entries: entries, result: res}:
 	}
 
-	debug.Log("pipe.Walk", "walker done")
+	debug.Log("walker done")
 }
 
 // Split feeds all elements read from inChan to dirChan and entChan.
 func Split(inChan <-chan Job, dirChan chan<- Dir, entChan chan<- Entry) {
-	debug.Log("pipe.Split", "start")
-	defer debug.Log("pipe.Split", "done")
+	debug.Log("start")
+	defer debug.Log("done")
 
 	inCh := inChan
 	dirCh := dirChan

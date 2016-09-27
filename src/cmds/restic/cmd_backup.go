@@ -270,7 +270,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		if err != nil {
 			return err
 		}
-		debug.Log("backup.Execute", "allowed devices: %v\n", allowedDevs)
+		debug.Log("allowed devices: %v\n", allowedDevs)
 	}
 
 	repo, err := OpenRepository(gopts)
@@ -342,7 +342,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		if matched {
-			debug.Log("backup.Execute", "path %q excluded by a filter", item)
+			debug.Log("path %q excluded by a filter", item)
 			return false
 		}
 
@@ -358,7 +358,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		}
 		_, found := allowedDevs[id]
 		if !found {
-			debug.Log("backup.Execute", "path %q on disallowed device %d", item, id)
+			debug.Log("path %q on disallowed device %d", item, id)
 			return false
 		}
 

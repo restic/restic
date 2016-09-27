@@ -76,7 +76,7 @@ func parseTime(str string) (time.Time, error) {
 }
 
 func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, path string) ([]findResult, error) {
-	debug.Log("restic.find", "checking tree %v\n", id)
+	debug.Log("checking tree %v\n", id)
 	tree, err := repo.LoadTree(id)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, path
 
 	results := []findResult{}
 	for _, node := range tree.Nodes {
-		debug.Log("restic.find", "  testing entry %q\n", node.Name)
+		debug.Log("  testing entry %q\n", node.Name)
 
 		m, err := filepath.Match(pat.pattern, node.Name)
 		if err != nil {
@@ -92,20 +92,20 @@ func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, path
 		}
 
 		if m {
-			debug.Log("restic.find", "    pattern matches\n")
+			debug.Log("    pattern matches\n")
 			if !pat.oldest.IsZero() && node.ModTime.Before(pat.oldest) {
-				debug.Log("restic.find", "    ModTime is older than %s\n", pat.oldest)
+				debug.Log("    ModTime is older than %s\n", pat.oldest)
 				continue
 			}
 
 			if !pat.newest.IsZero() && node.ModTime.After(pat.newest) {
-				debug.Log("restic.find", "    ModTime is newer than %s\n", pat.newest)
+				debug.Log("    ModTime is newer than %s\n", pat.newest)
 				continue
 			}
 
 			results = append(results, findResult{node: node, path: path})
 		} else {
-			debug.Log("restic.find", "    pattern does not match\n")
+			debug.Log("    pattern does not match\n")
 		}
 
 		if node.Type == "dir" {
@@ -122,7 +122,7 @@ func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, path
 }
 
 func findInSnapshot(repo *repository.Repository, pat findPattern, id restic.ID) error {
-	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", id.Str(), pat.oldest, pat.newest)
+	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", id.Str(), pat.oldest, pat.newest)
 
 	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {

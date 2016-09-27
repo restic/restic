@@ -28,15 +28,15 @@ func (t Tree) String() string {
 // Equals returns true if t and other have exactly the same nodes.
 func (t Tree) Equals(other *Tree) bool {
 	if len(t.Nodes) != len(other.Nodes) {
-		debug.Log("Tree.Equals", "tree.Equals(): trees have different number of nodes")
+		debug.Log("tree.Equals(): trees have different number of nodes")
 		return false
 	}
 
 	for i := 0; i < len(t.Nodes); i++ {
 		if !t.Nodes[i].Equals(*other.Nodes[i]) {
-			debug.Log("Tree.Equals", "tree.Equals(): node %d is different:", i)
-			debug.Log("Tree.Equals", "  %#v", t.Nodes[i])
-			debug.Log("Tree.Equals", "  %#v", other.Nodes[i])
+			debug.Log("tree.Equals(): node %d is different:", i)
+			debug.Log("  %#v", t.Nodes[i])
+			debug.Log("  %#v", other.Nodes[i])
 			return false
 		}
 	}

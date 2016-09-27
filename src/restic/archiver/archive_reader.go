@@ -14,7 +14,7 @@ import (
 // ArchiveReader reads from the reader and archives the data. Returned is the
 // resulting snapshot and its ID.
 func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, name string, tags []string) (*restic.Snapshot, restic.ID, error) {
-	debug.Log("ArchiveReader", "start archiving %s", name)
+	debug.Log("start archiving %s", name)
 	sn, err := restic.NewSnapshot([]string{name}, tags)
 	if err != nil {
 		return nil, restic.ID{}, err
@@ -45,9 +45,9 @@ func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, nam
 			if err != nil {
 				return nil, restic.ID{}, err
 			}
-			debug.Log("ArchiveReader", "saved blob %v (%d bytes)\n", id.Str(), chunk.Length)
+			debug.Log("saved blob %v (%d bytes)\n", id.Str(), chunk.Length)
 		} else {
-			debug.Log("ArchiveReader", "blob %v already saved in the repo\n", id.Str())
+			debug.Log("blob %v already saved in the repo\n", id.Str())
 		}
 
 		freeBuf(chunk.Data)
@@ -80,14 +80,14 @@ func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, nam
 		return nil, restic.ID{}, err
 	}
 	sn.Tree = &treeID
-	debug.Log("ArchiveReader", "tree saved as %v", treeID.Str())
+	debug.Log("tree saved as %v", treeID.Str())
 
 	id, err := repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
 
-	debug.Log("ArchiveReader", "snapshot saved as %v", id.Str())
+	debug.Log("snapshot saved as %v", id.Str())
 
 	err = repo.Flush()
 	if err != nil {

@@ -74,7 +74,7 @@ func (err ErrOldIndexFormat) Error() string {
 
 // LoadIndex loads all index files.
 func (c *Checker) LoadIndex() (hints []error, errs []error) {
-	debug.Log("LoadIndex", "Start")
+	debug.Log("Start")
 	type indexRes struct {
 		Index *repository.Index
 		ID    string
@@ -83,10 +83,10 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	indexCh := make(chan indexRes)
 
 	worker := func(id restic.ID, done <-chan struct{}) error {
-		debug.Log("LoadIndex", "worker got index %v", id)
+		debug.Log("worker got index %v", id)
 		idx, err := repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeIndex)
 		if errors.Cause(err) == repository.ErrOldIndexFormat {
-			debug.Log("LoadIndex", "index %v has old format", id.Str())
+			debug.Log("index %v has old format", id.Str())
 			hints = append(hints, ErrOldIndexFormat{id})
 
 			idx, err = repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeOldIndex)
@@ -107,10 +107,10 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	var perr error
 	go func() {
 		defer close(indexCh)
-		debug.Log("LoadIndex", "start loading indexes in parallel")
+		debug.Log("start loading indexes in parallel")
 		perr = repository.FilesInParallel(c.repo.Backend(), restic.IndexFile, defaultParallelism,
 			repository.ParallelWorkFuncParseID(worker))
-		debug.Log("LoadIndex", "loading indexes finished, error: %v", perr)
+		debug.Log("loading indexes finished, error: %v", perr)
 	}()
 
 	done := make(chan struct{})
@@ -124,7 +124,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	packToIndex := make(map[restic.ID]restic.IDSet)
 
 	for res := range indexCh {
-		debug.Log("LoadIndex", "process index %v", res.ID)
+		debug.Log("process index %v", res.ID)
 		idxID, err := restic.ParseID(res.ID)
 		if err != nil {
 			errs = append(errs, errors.Errorf("unable to parse as index ID: %v", res.ID))
@@ -134,7 +134,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 		c.indexes[idxID] = res.Index
 		c.masterIndex.Insert(res.Index)
 
-		debug.Log("LoadIndex", "process blobs")
+		debug.Log("process blobs")
 		cnt := 0
 		for blob := range res.Index.Each(done) {
 			c.packs.Insert(blob.PackID)
@@ -148,14 +148,14 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 			packToIndex[blob.PackID].Insert(idxID)
 		}
 
-		debug.Log("LoadIndex", "%d blobs processed", cnt)
+		debug.Log("%d blobs processed", cnt)
 	}
 
-	debug.Log("LoadIndex", "done, error %v", perr)
+	debug.Log("done, error %v", perr)
 
-	debug.Log("LoadIndex", "checking for duplicate packs")
+	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
-		debug.Log("LoadIndex", "  check pack %v: contained in %d indexes", packID.Str(), len(packToIndex[packID]))
+		debug.Log("  check pack %v: contained in %d indexes", packID.Str(), len(packToIndex[packID]))
 		if len(packToIndex[packID]) > 1 {
 			hints = append(hints, ErrDuplicatePacks{
 				PackID:  packID,
@@ -181,8 +181,8 @@ func (e PackError) Error() string {
 }
 
 func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
-	debug.Log("Checker.testPackID", "worker start")
-	defer debug.Log("Checker.testPackID", "worker done")
+	debug.Log("worker start")
+	defer debug.Log("worker done")
 
 	defer wg.Done()
 
@@ -197,7 +197,7 @@ func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<
 		}
 
 		if err != nil {
-			debug.Log("Checker.testPackID", "error checking for pack %s: %v", id.Str(), err)
+			debug.Log("error checking for pack %s: %v", id.Str(), err)
 			select {
 			case <-done:
 				return
@@ -207,7 +207,7 @@ func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<
 			continue
 		}
 
-		debug.Log("Checker.testPackID", "pack %s exists", id.Str())
+		debug.Log("pack %s exists", id.Str())
 	}
 }
 
@@ -217,7 +217,7 @@ func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<
 func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	defer close(errChan)
 
-	debug.Log("Checker.Packs", "checking for %d packs", len(c.packs))
+	debug.Log("checking for %d packs", len(c.packs))
 	seenPacks := restic.NewIDSet()
 
 	var workerWG sync.WaitGroup
@@ -234,12 +234,12 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	}
 	close(IDChan)
 
-	debug.Log("Checker.Packs", "waiting for %d workers to terminate", defaultParallelism)
+	debug.Log("waiting for %d workers to terminate", defaultParallelism)
 	workerWG.Wait()
-	debug.Log("Checker.Packs", "workers terminated")
+	debug.Log("workers terminated")
 
 	for id := range c.repo.List(restic.DataFile, done) {
-		debug.Log("Checker.Packs", "check data blob %v", id.Str())
+		debug.Log("check data blob %v", id.Str())
 		if !seenPacks.Has(id) {
 			c.orphanedPacks = append(c.orphanedPacks, id)
 			select {
@@ -276,12 +276,12 @@ func (e Error) Error() string {
 func loadTreeFromSnapshot(repo restic.Repository, id restic.ID) (restic.ID, error) {
 	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {
-		debug.Log("Checker.loadTreeFromSnapshot", "error loading snapshot %v: %v", id.Str(), err)
+		debug.Log("error loading snapshot %v: %v", id.Str(), err)
 		return restic.ID{}, err
 	}
 
 	if sn.Tree == nil {
-		debug.Log("Checker.loadTreeFromSnapshot", "snapshot %v has no tree", id.Str())
+		debug.Log("snapshot %v has no tree", id.Str())
 		return restic.ID{}, errors.Errorf("snapshot %v has no tree", id)
 	}
 
@@ -306,7 +306,7 @@ func loadSnapshotTreeIDs(repo restic.Repository) (restic.IDs, []error) {
 			return err
 		}
 
-		debug.Log("Checker.Snaphots", "load snapshot %v", id.Str())
+		debug.Log("load snapshot %v", id.Str())
 
 		treeID, err := loadTreeFromSnapshot(repo, id)
 		if err != nil {
@@ -316,7 +316,7 @@ func loadSnapshotTreeIDs(repo restic.Repository) (restic.IDs, []error) {
 			return nil
 		}
 
-		debug.Log("Checker.Snaphots", "snapshot %v has tree %v", id.Str(), treeID.Str())
+		debug.Log("snapshot %v has tree %v", id.Str(), treeID.Str())
 		trees.Lock()
 		trees.IDs = append(trees.IDs, treeID)
 		trees.Unlock()
@@ -354,7 +354,7 @@ func loadTreeWorker(repo restic.Repository,
 	done <-chan struct{}, wg *sync.WaitGroup) {
 
 	defer func() {
-		debug.Log("checker.loadTreeWorker", "exiting")
+		debug.Log("exiting")
 		wg.Done()
 	}()
 
@@ -374,16 +374,16 @@ func loadTreeWorker(repo restic.Repository,
 			if !ok {
 				return
 			}
-			debug.Log("checker.loadTreeWorker", "load tree %v", treeID.Str())
+			debug.Log("load tree %v", treeID.Str())
 
 			tree, err := repo.LoadTree(treeID)
-			debug.Log("checker.loadTreeWorker", "load tree %v (%v) returned err: %v", tree, treeID.Str(), err)
+			debug.Log("load tree %v (%v) returned err: %v", tree, treeID.Str(), err)
 			job = treeJob{ID: treeID, error: err, Tree: tree}
 			outCh = out
 			inCh = nil
 
 		case outCh <- job:
-			debug.Log("checker.loadTreeWorker", "sent tree %v", job.ID.Str())
+			debug.Log("sent tree %v", job.ID.Str())
 			outCh = nil
 			inCh = in
 		}
@@ -393,7 +393,7 @@ func loadTreeWorker(repo restic.Repository,
 // checkTreeWorker checks the trees received and sends out errors to errChan.
 func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-chan struct{}, wg *sync.WaitGroup) {
 	defer func() {
-		debug.Log("checker.checkTreeWorker", "exiting")
+		debug.Log("exiting")
 		wg.Done()
 	}()
 
@@ -407,12 +407,12 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-ch
 	for {
 		select {
 		case <-done:
-			debug.Log("checker.checkTreeWorker", "done channel closed, exiting")
+			debug.Log("done channel closed, exiting")
 			return
 
 		case job, ok := <-inCh:
 			if !ok {
-				debug.Log("checker.checkTreeWorker", "input channel closed, exiting")
+				debug.Log("input channel closed, exiting")
 				return
 			}
 
@@ -423,14 +423,14 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-ch
 				alreadyChecked = true
 			}
 			c.blobRefs.M[id]++
-			debug.Log("checker.checkTreeWorker", "tree %v refcount %d", job.ID.Str(), c.blobRefs.M[id])
+			debug.Log("tree %v refcount %d", job.ID.Str(), c.blobRefs.M[id])
 			c.blobRefs.Unlock()
 
 			if alreadyChecked {
 				continue
 			}
 
-			debug.Log("checker.checkTreeWorker", "check tree %v (tree %v, err %v)", job.ID.Str(), job.Tree, job.error)
+			debug.Log("check tree %v (tree %v, err %v)", job.ID.Str(), job.Tree, job.error)
 
 			var errs []error
 			if job.error != nil {
@@ -440,14 +440,14 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-ch
 			}
 
 			if len(errs) > 0 {
-				debug.Log("checker.checkTreeWorker", "checked tree %v: %v errors", job.ID.Str(), len(errs))
+				debug.Log("checked tree %v: %v errors", job.ID.Str(), len(errs))
 				treeError = TreeError{ID: job.ID, Errors: errs}
 				outCh = out
 				inCh = nil
 			}
 
 		case outCh <- treeError:
-			debug.Log("checker.checkTreeWorker", "tree %v: sent %d errors", treeError.ID, len(treeError.Errors))
+			debug.Log("tree %v: sent %d errors", treeError.ID, len(treeError.Errors))
 			outCh = nil
 			inCh = in
 		}
@@ -456,7 +456,7 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-ch
 
 func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob, done <-chan struct{}) {
 	defer func() {
-		debug.Log("checker.filterTrees", "closing output channels")
+		debug.Log("closing output channels")
 		close(loaderChan)
 		close(out)
 	}()
@@ -480,7 +480,7 @@ func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan tree
 		}
 
 		if loadCh == nil && outCh == nil && outstandingLoadTreeJobs == 0 {
-			debug.Log("checker.filterTrees", "backlog is empty, all channels nil, exiting")
+			debug.Log("backlog is empty, all channels nil, exiting")
 			return
 		}
 
@@ -494,7 +494,7 @@ func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan tree
 
 		case j, ok := <-inCh:
 			if !ok {
-				debug.Log("checker.filterTrees", "input channel closed")
+				debug.Log("input channel closed")
 				inCh = nil
 				in = nil
 				continue
@@ -502,23 +502,23 @@ func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan tree
 
 			outstandingLoadTreeJobs--
 
-			debug.Log("checker.filterTrees", "input job tree %v", j.ID.Str())
+			debug.Log("input job tree %v", j.ID.Str())
 
 			var err error
 
 			if j.error != nil {
-				debug.Log("checker.filterTrees", "received job with error: %v (tree %v, ID %v)", j.error, j.Tree, j.ID.Str())
+				debug.Log("received job with error: %v (tree %v, ID %v)", j.error, j.Tree, j.ID.Str())
 			} else if j.Tree == nil {
-				debug.Log("checker.filterTrees", "received job with nil tree pointer: %v (ID %v)", j.error, j.ID.Str())
+				debug.Log("received job with nil tree pointer: %v (ID %v)", j.error, j.ID.Str())
 				err = errors.New("tree is nil and error is nil")
 			} else {
-				debug.Log("checker.filterTrees", "subtrees for tree %v: %v", j.ID.Str(), j.Tree.Subtrees())
+				debug.Log("subtrees for tree %v: %v", j.ID.Str(), j.Tree.Subtrees())
 				for _, id := range j.Tree.Subtrees() {
 					if id.IsNull() {
 						// We do not need to raise this error here, it is
 						// checked when the tree is checked. Just make sure
 						// that we do not add any null IDs to the backlog.
-						debug.Log("checker.filterTrees", "tree %v has nil subtree", j.ID.Str())
+						debug.Log("tree %v has nil subtree", j.ID.Str())
 						continue
 					}
 					backlog = append(backlog, id)
@@ -535,7 +535,7 @@ func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan tree
 			inCh = nil
 
 		case outCh <- job:
-			debug.Log("checker.FilterTrees", "tree sent to check: %v", job.ID.Str())
+			debug.Log("tree sent to check: %v", job.ID.Str())
 			outCh = nil
 			inCh = in
 		}
@@ -549,7 +549,7 @@ func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
 	defer close(errChan)
 
 	trees, errs := loadSnapshotTreeIDs(c.repo)
-	debug.Log("checker.Structure", "need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
+	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
 
 	for _, err := range errs {
 		select {
@@ -576,7 +576,7 @@ func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
 }
 
 func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
-	debug.Log("Checker.checkTree", "checking tree %v", id.Str())
+	debug.Log("checking tree %v", id.Str())
 
 	var blobs []restic.ID
 
@@ -620,11 +620,11 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 	for _, blobID := range blobs {
 		c.blobRefs.Lock()
 		c.blobRefs.M[blobID]++
-		debug.Log("Checker.checkTree", "blob %v refcount %d", blobID.Str(), c.blobRefs.M[blobID])
+		debug.Log("blob %v refcount %d", blobID.Str(), c.blobRefs.M[blobID])
 		c.blobRefs.Unlock()
 
 		if !c.blobs.Has(blobID) {
-			debug.Log("Checker.trees", "tree %v references blob %v which isn't contained in index", id.Str(), blobID.Str())
+			debug.Log("tree %v references blob %v which isn't contained in index", id.Str(), blobID.Str())
 
 			errs = append(errs, Error{TreeID: id, BlobID: blobID, Err: errors.New("not found in index")})
 		}
@@ -638,10 +638,10 @@ func (c *Checker) UnusedBlobs() (blobs restic.IDs) {
 	c.blobRefs.Lock()
 	defer c.blobRefs.Unlock()
 
-	debug.Log("Checker.UnusedBlobs", "checking %d blobs", len(c.blobs))
+	debug.Log("checking %d blobs", len(c.blobs))
 	for id := range c.blobs {
 		if c.blobRefs.M[id] == 0 {
-			debug.Log("Checker.UnusedBlobs", "blob %v not referenced", id.Str())
+			debug.Log("blob %v not referenced", id.Str())
 			blobs = append(blobs, id)
 		}
 	}
@@ -656,7 +656,7 @@ func (c *Checker) CountPacks() uint64 {
 
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(r restic.Repository, id restic.ID) error {
-	debug.Log("Checker.checkPack", "checking pack %v", id.Str())
+	debug.Log("checking pack %v", id.Str())
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	buf, err := backend.LoadAll(r.Backend(), h, nil)
 	if err != nil {
@@ -665,7 +665,7 @@ func checkPack(r restic.Repository, id restic.ID) error {
 
 	hash := restic.Hash(buf)
 	if !hash.Equal(id) {
-		debug.Log("Checker.checkPack", "Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
+		debug.Log("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 		return errors.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 	}
 
@@ -676,12 +676,12 @@ func checkPack(r restic.Repository, id restic.ID) error {
 
 	var errs []error
 	for i, blob := range blobs {
-		debug.Log("Checker.checkPack", "  check blob %d: %v", i, blob.ID.Str())
+		debug.Log("  check blob %d: %v", i, blob.ID.Str())
 
 		plainBuf := make([]byte, blob.Length)
 		n, err := crypto.Decrypt(r.Key(), plainBuf, buf[blob.Offset:blob.Offset+blob.Length])
 		if err != nil {
-			debug.Log("Checker.checkPack", "  error decrypting blob %v: %v", blob.ID.Str(), err)
+			debug.Log("  error decrypting blob %v: %v", blob.ID.Str(), err)
 			errs = append(errs, errors.Errorf("blob %v: %v", i, err))
 			continue
 		}
@@ -689,7 +689,7 @@ func checkPack(r restic.Repository, id restic.ID) error {
 
 		hash := restic.Hash(plainBuf)
 		if !hash.Equal(blob.ID) {
-			debug.Log("Checker.checkPack", "  Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
+			debug.Log("  Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
 			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
 			continue
 		}

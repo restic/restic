@@ -25,7 +25,7 @@ func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
-	debug.Log("MasterIndex.Lookup", "looking up id %v, tpe %v", id.Str(), tpe)
+	debug.Log("looking up id %v, tpe %v", id.Str(), tpe)
 
 	for _, idx := range mi.idx {
 		blobs, err = idx.Lookup(id, tpe)
@@ -36,7 +36,7 @@ func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic
 		}
 	}
 
-	debug.Log("MasterIndex.Lookup", "id %v not found in any index", id.Str())
+	debug.Log("id %v not found in any index", id.Str())
 	return nil, errors.Errorf("id %v not found in any index", id)
 }
 
@@ -155,7 +155,7 @@ func (mi *MasterIndex) NotFinalIndexes() []*Index {
 		}
 	}
 
-	debug.Log("MasterIndex.NotFinalIndexes", "return %d indexes", len(list))
+	debug.Log("return %d indexes", len(list))
 	return list
 }
 
@@ -166,22 +166,22 @@ func (mi *MasterIndex) FullIndexes() []*Index {
 
 	var list []*Index
 
-	debug.Log("MasterIndex.FullIndexes", "checking %d indexes", len(mi.idx))
+	debug.Log("checking %d indexes", len(mi.idx))
 	for _, idx := range mi.idx {
 		if idx.Final() {
-			debug.Log("MasterIndex.FullIndexes", "index %p is final", idx)
+			debug.Log("index %p is final", idx)
 			continue
 		}
 
 		if IndexFull(idx) {
-			debug.Log("MasterIndex.FullIndexes", "index %p is full", idx)
+			debug.Log("index %p is full", idx)
 			list = append(list, idx)
 		} else {
-			debug.Log("MasterIndex.FullIndexes", "index %p not full", idx)
+			debug.Log("index %p not full", idx)
 		}
 	}
 
-	debug.Log("MasterIndex.FullIndexes", "return %d indexes", len(list))
+	debug.Log("return %d indexes", len(list))
 	return list
 }
 
@@ -200,14 +200,14 @@ func (mi *MasterIndex) RebuildIndex(packBlacklist restic.IDSet) (*Index, error) 
 	mi.idxMutex.Lock()
 	defer mi.idxMutex.Unlock()
 
-	debug.Log("MasterIndex.RebuildIndex", "start rebuilding index of %d indexes, pack blacklist: %v", len(mi.idx), packBlacklist)
+	debug.Log("start rebuilding index of %d indexes, pack blacklist: %v", len(mi.idx), packBlacklist)
 
 	newIndex := NewIndex()
 	done := make(chan struct{})
 	defer close(done)
 
 	for i, idx := range mi.idx {
-		debug.Log("MasterIndex.RebuildIndex", "adding index %d", i)
+		debug.Log("adding index %d", i)
 
 		for pb := range idx.Each(done) {
 			if packBlacklist.Has(pb.PackID) {
@@ -218,17 +218,17 @@ func (mi *MasterIndex) RebuildIndex(packBlacklist restic.IDSet) (*Index, error) 
 		}
 
 		if !idx.Final() {
-			debug.Log("MasterIndex.RebuildIndex", "index %d isn't final, don't add to supersedes field", i)
+			debug.Log("index %d isn't final, don't add to supersedes field", i)
 			continue
 		}
 
 		id, err := idx.ID()
 		if err != nil {
-			debug.Log("MasterIndex.RebuildIndex", "index %d does not have an ID: %v", err)
+			debug.Log("index %d does not have an ID: %v", err)
 			return nil, err
 		}
 
-		debug.Log("MasterIndex.RebuildIndex", "adding index id %v to supersedes field", id.Str())
+		debug.Log("adding index id %v to supersedes field", id.Str())
 
 		err = newIndex.AddToSupersedes(id)
 		if err != nil {

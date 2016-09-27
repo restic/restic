@@ -42,7 +42,7 @@ func CreateConfig() (Config, error) {
 	cfg.ID = NewRandomID().String()
 	cfg.Version = RepoVersion
 
-	debug.Log("Repo.CreateConfig", "New config: %#v", cfg)
+	debug.Log("New config: %#v", cfg)
 	return cfg, nil
 }
 

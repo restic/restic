@@ -16,7 +16,7 @@ import (
 // into a new pack. Afterwards, the packs are removed. This operation requires
 // an exclusive lock on the repo.
 func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet) (err error) {
-	debug.Log("Repack", "repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
+	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	buf := make([]byte, 0, maxPackSize)
 	for packID := range packs {
@@ -33,14 +33,14 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 			return err
 		}
 
-		debug.Log("Repack", "pack %v loaded (%d bytes)", packID.Str(), len(buf))
+		debug.Log("pack %v loaded (%d bytes)", packID.Str(), len(buf))
 
 		blobs, err := pack.List(repo.Key(), bytes.NewReader(buf), int64(len(buf)))
 		if err != nil {
 			return err
 		}
 
-		debug.Log("Repack", "processing pack %v, blobs: %v", packID.Str(), len(blobs))
+		debug.Log("processing pack %v, blobs: %v", packID.Str(), len(blobs))
 		var plaintext []byte
 		for _, entry := range blobs {
 			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
@@ -48,7 +48,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 				continue
 			}
 
-			debug.Log("Repack", "  process blob %v", h)
+			debug.Log("  process blob %v", h)
 
 			ciphertext := buf[entry.Offset : entry.Offset+entry.Length]
 			plaintext = plaintext[:len(plaintext)]
@@ -56,7 +56,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 				plaintext = make([]byte, len(ciphertext))
 			}
 
-			debug.Log("Repack", "  ciphertext %d, plaintext %d", len(plaintext), len(ciphertext))
+			debug.Log("  ciphertext %d, plaintext %d", len(plaintext), len(ciphertext))
 
 			n, err := crypto.Decrypt(repo.Key(), plaintext, ciphertext)
 			if err != nil {
@@ -69,7 +69,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 				return err
 			}
 
-			debug.Log("Repack", "  saved blob %v", entry.ID.Str())
+			debug.Log("  saved blob %v", entry.ID.Str())
 
 			keepBlobs.Delete(h)
 		}
@@ -82,10 +82,10 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 	for packID := range packs {
 		err := repo.Backend().Remove(restic.DataFile, packID.String())
 		if err != nil {
-			debug.Log("Repack", "error removing pack %v: %v", packID.Str(), err)
+			debug.Log("error removing pack %v: %v", packID.Str(), err)
 			return err
 		}
-		debug.Log("Repack", "removed pack %v", packID.Str())
+		debug.Log("removed pack %v", packID.Str())
 	}
 
 	return nil

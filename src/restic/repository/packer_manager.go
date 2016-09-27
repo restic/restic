@@ -56,10 +56,10 @@ func (r *packerManager) findPacker(size uint) (packer *pack.Packer, err error) {
 
 	// search for a suitable packer
 	if len(r.packs) > 0 {
-		debug.Log("Repo.findPacker", "searching packer for %d bytes\n", size)
+		debug.Log("searching packer for %d bytes\n", size)
 		for i, p := range r.packs {
 			if p.Size()+size < maxPackSize {
-				debug.Log("Repo.findPacker", "found packer %v", p)
+				debug.Log("found packer %v", p)
 				// remove from list
 				r.packs = append(r.packs[:i], r.packs[i+1:]...)
 				return p, nil
@@ -68,7 +68,7 @@ func (r *packerManager) findPacker(size uint) (packer *pack.Packer, err error) {
 	}
 
 	// no suitable packer found, return new
-	debug.Log("Repo.findPacker", "create new pack for %d bytes", size)
+	debug.Log("create new pack for %d bytes", size)
 	tmpfile, err := ioutil.TempFile("", "restic-temp-pack-")
 	if err != nil {
 		return nil, errors.Wrap(err, "ioutil.TempFile")
@@ -83,12 +83,12 @@ func (r *packerManager) insertPacker(p *pack.Packer) {
 	defer r.pm.Unlock()
 
 	r.packs = append(r.packs, p)
-	debug.Log("Repo.insertPacker", "%d packers\n", len(r.packs))
+	debug.Log("%d packers\n", len(r.packs))
 }
 
 // savePacker stores p in the backend.
 func (r *Repository) savePacker(p *pack.Packer) error {
-	debug.Log("Repo.savePacker", "save packer with %d blobs\n", p.Count())
+	debug.Log("save packer with %d blobs\n", p.Count())
 	n, err := p.Finalize()
 	if err != nil {
 		return err
@@ -119,11 +119,11 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 
 	err = r.be.Save(h, data)
 	if err != nil {
-		debug.Log("Repo.savePacker", "Save(%v) error: %v", h, err)
+		debug.Log("Save(%v) error: %v", h, err)
 		return err
 	}
 
-	debug.Log("Repo.savePacker", "saved as %v", h)
+	debug.Log("saved as %v", h)
 
 	err = fs.Remove(tmpfile.Name())
 	if err != nil {
@@ -132,7 +132,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 
 	// update blobs in the index
 	for _, b := range p.Blobs() {
-		debug.Log("Repo.savePacker", "  updating blob %v to pack %v", b.ID.Str(), id.Str())
+		debug.Log("  updating blob %v to pack %v", b.ID.Str(), id.Str())
 		r.idx.Current().Store(restic.PackedBlob{
 			Blob: restic.Blob{
 				Type:   b.Type,
