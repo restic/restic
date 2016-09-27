@@ -251,10 +251,6 @@ func (l Lock) String() string {
 		l.Time.Format("2006-01-02 15:04:05"), time.Since(l.Time),
 		l.lockID.Str())
 
-	if l.Stale() {
-		text += " (stale)"
-	}
-
 	return text
 }
 
