@@ -19,13 +19,14 @@ import (
 )
 
 type process struct {
-	tag       string
+	fn        string
 	goroutine int
 }
 
 var opts struct {
 	logger *log.Logger
-	tags   map[string]bool
+	funcs  map[string]bool
+	files  map[string]bool
 	last   map[process]time.Time
 	m      sync.Mutex
 }
@@ -73,23 +74,16 @@ func initDebugLogger() {
 	opts.logger = log.New(f, "", log.LstdFlags)
 }
 
-func initDebugTags() {
-	opts.tags = make(map[string]bool)
-	opts.last = make(map[process]time.Time)
+func parseFilter(envname string, pad func(string) string) map[string]bool {
+	filter := make(map[string]bool)
 
-	// defaults
-	opts.tags["break"] = true
-
-	// initialize tags
-	env := os.Getenv("DEBUG_TAGS")
-	if len(env) == 0 {
-		return
+	env := os.Getenv(envname)
+	if env == "" {
+		return filter
 	}
 
-	tags := []string{}
-
-	for _, tag := range strings.Split(env, ",") {
-		t := strings.TrimSpace(tag)
+	for _, fn := range strings.Split(env, ",") {
+		t := pad(strings.TrimSpace(fn))
 		val := true
 		if t[0] == '-' {
 			val = false
@@ -106,11 +100,45 @@ func initDebugTags() {
 			os.Exit(5)
 		}
 
-		opts.tags[t] = val
-		tags = append(tags, tag)
+		filter[t] = val
 	}
 
-	fmt.Fprintf(os.Stderr, "debug log enabled for: %v\n", tags)
+	return filter
+}
+
+func padFunc(s string) string {
+	if s == "all" {
+		return s
+	}
+
+	if !strings.Contains(s, "/") {
+		s = "*/" + s
+	}
+
+	return s
+}
+
+func padFile(s string) string {
+	if s == "all" {
+		return s
+	}
+
+	if !strings.Contains(s, "/") {
+		s = "*/" + s
+	}
+
+	if !strings.Contains(s, ":") {
+		s = s + ":*"
+	}
+
+	return s
+}
+
+func initDebugTags() {
+	opts.last = make(map[process]time.Time)
+
+	opts.funcs = parseFilter("DEBUG_FUNCS", padFunc)
+	opts.files = parseFilter("DEBUG_FILES", padFile)
 }
 
 // taken from https://github.com/VividCortex/trace
@@ -124,40 +152,68 @@ func goroutineNum() int {
 }
 
 // taken from https://github.com/VividCortex/trace
-func getPosition(goroutine int) string {
-	_, file, line, ok := runtime.Caller(2)
+func getPosition() (fn, dir, file string, line int) {
+	pc, file, line, ok := runtime.Caller(2)
 	if !ok {
-		return ""
+		return "", "", "", 0
 	}
 
-	return fmt.Sprintf("%3d %s:%d", goroutine, filepath.Base(file), line)
+	dirname, filename := filepath.Base(filepath.Dir(file)), filepath.Base(file)
+
+	Func := runtime.FuncForPC(pc)
+
+	return Func.Name(), dirname, filename, line
 }
 
-var maxTagLen = 10
+func checkFilter(filter map[string]bool, key string) bool {
+	// check if key is enabled directly
+	if v, ok := filter[key]; ok {
+		return v
+	}
 
-func Log(tag string, f string, args ...interface{}) {
+	// check for globbing
+	for k, v := range filter {
+		if m, _ := path.Match(k, key); m {
+			return v
+		}
+	}
+
+	// check if tag "all" is enabled
+	if v, ok := filter["all"]; ok && v {
+		return true
+	}
+
+	return false
+}
+
+var maxPosLen = 10
+
+// Log prints a message to the debug log (if debug is enabled).
+func Log(x string, f string, args ...interface{}) {
 	opts.m.Lock()
 	defer opts.m.Unlock()
 
+	fn, dir, file, line := getPosition()
 	goroutine := goroutineNum()
 
-	last, ok := opts.last[process{tag, goroutine}]
+	last, ok := opts.last[process{fn, goroutine}]
 	if !ok {
 		last = time.Now()
 	}
 	current := time.Now()
-	opts.last[process{tag, goroutine}] = current
+	opts.last[process{fn, goroutine}] = current
 
 	if len(f) == 0 || f[len(f)-1] != '\n' {
 		f += "\n"
 	}
 
-	if len(tag) > maxTagLen {
-		maxTagLen = len(tag)
+	pos := fmt.Sprintf("%s/%s:%d", dir, file, line)
+	if len(pos) > maxPosLen {
+		maxPosLen = len(pos)
 	}
 
-	formatStringTag := "%2.3f [%" + strconv.FormatInt(int64(maxTagLen), 10) + "s]"
-	formatString := fmt.Sprintf(formatStringTag+" %s %s", current.Sub(last).Seconds(), tag, getPosition(goroutine), f)
+	formatStringTag := "%2.3f [%" + strconv.FormatInt(int64(maxPosLen), 10) + "s]"
+	formatString := fmt.Sprintf(formatStringTag+" %s", current.Sub(last).Seconds(), pos, f)
 
 	dbgprint := func() {
 		fmt.Fprintf(os.Stderr, formatString, args...)
@@ -167,26 +223,12 @@ func Log(tag string, f string, args ...interface{}) {
 		opts.logger.Printf(formatString, args...)
 	}
 
-	// check if tag is enabled directly
-	if v, ok := opts.tags[tag]; ok {
-		if v {
-			dbgprint()
-		}
+	if checkFilter(opts.files, fmt.Sprintf("%s/%s:%d", dir, file, line)) {
+		dbgprint()
 		return
 	}
 
-	// check for globbing
-	for k, v := range opts.tags {
-		if m, _ := path.Match(k, tag); m {
-			if v {
-				dbgprint()
-			}
-			return
-		}
-	}
-
-	// check if tag "all" is enabled
-	if v, ok := opts.tags["all"]; ok && v {
+	if checkFilter(opts.funcs, fn) {
 		dbgprint()
 	}
 }
