@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Table contains data for a table to be printed.
 type Table struct {
 	Header string
 	Rows   [][]interface{}
@@ -13,12 +14,14 @@ type Table struct {
 	RowFormat string
 }
 
+// NewTable initializes a new Table.
 func NewTable() Table {
 	return Table{
 		Rows: [][]interface{}{},
 	}
 }
 
+// Write prints the table to w.
 func (t Table) Write(w io.Writer) error {
 	_, err := fmt.Fprintln(w, t.Header)
 	if err != nil {
@@ -39,4 +42,5 @@ func (t Table) Write(w io.Writer) error {
 	return nil
 }
 
+// TimeFormat is the format used for all timestamps printed by restic.
 const TimeFormat = "2006-01-02 15:04:05"
