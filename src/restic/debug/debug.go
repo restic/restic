@@ -10,25 +10,15 @@ import (
 	"path/filepath"
 	"restic/fs"
 	"runtime"
-	"strconv"
 	"strings"
-	"sync"
-	"time"
 
 	"restic/errors"
 )
-
-type process struct {
-	fn        string
-	goroutine int
-}
 
 var opts struct {
 	logger *log.Logger
 	funcs  map[string]bool
 	files  map[string]bool
-	last   map[process]time.Time
-	m      sync.Mutex
 }
 
 // make sure that all the initialization happens before the init() functions
@@ -111,10 +101,6 @@ func padFunc(s string) string {
 		return s
 	}
 
-	if !strings.Contains(s, "/") {
-		s = "*/" + s
-	}
-
 	return s
 }
 
@@ -135,8 +121,6 @@ func padFile(s string) string {
 }
 
 func initDebugTags() {
-	opts.last = make(map[process]time.Time)
-
 	opts.funcs = parseFilter("DEBUG_FUNCS", padFunc)
 	opts.files = parseFilter("DEBUG_FILES", padFile)
 }
@@ -162,7 +146,7 @@ func getPosition() (fn, dir, file string, line int) {
 
 	Func := runtime.FuncForPC(pc)
 
-	return Func.Name(), dirname, filename, line
+	return path.Base(Func.Name()), dirname, filename, line
 }
 
 func checkFilter(filter map[string]bool, key string) bool {
@@ -186,34 +170,18 @@ func checkFilter(filter map[string]bool, key string) bool {
 	return false
 }
 
-var maxPosLen = 10
-
 // Log prints a message to the debug log (if debug is enabled).
 func Log(f string, args ...interface{}) {
-	opts.m.Lock()
-	defer opts.m.Unlock()
-
 	fn, dir, file, line := getPosition()
 	goroutine := goroutineNum()
-
-	last, ok := opts.last[process{fn, goroutine}]
-	if !ok {
-		last = time.Now()
-	}
-	current := time.Now()
-	opts.last[process{fn, goroutine}] = current
 
 	if len(f) == 0 || f[len(f)-1] != '\n' {
 		f += "\n"
 	}
 
 	pos := fmt.Sprintf("%s/%s:%d", dir, file, line)
-	if len(pos) > maxPosLen {
-		maxPosLen = len(pos)
-	}
 
-	formatStringTag := "%2.3f [%" + strconv.FormatInt(int64(maxPosLen), 10) + "s]"
-	formatString := fmt.Sprintf(formatStringTag+" %s", current.Sub(last).Seconds(), pos, f)
+	formatString := fmt.Sprintf("%s\t%s\t%d\t%s", pos, fn, goroutine, f)
 
 	dbgprint := func() {
 		fmt.Fprintf(os.Stderr, formatString, args...)
