@@ -15,7 +15,7 @@ func init() {
 	signal.Notify(c, syscall.SIGUSR1)
 	go func() {
 		for s := range c {
-			debug.Log("progress.handleSIGUSR1", "Signal received: %v\n", s)
+			debug.Log("Signal received: %v\n", s)
 			forceUpdateProgress <- true
 		}
 	}()

@@ -302,7 +302,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 // Open the backend specified by a location config.
 func open(s string) (restic.Backend, error) {
-	debug.Log("open", "parsing location %v", s)
+	debug.Log("parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
 		return nil, errors.Fatalf("parsing repository location failed: %v", err)
@@ -312,10 +312,10 @@ func open(s string) (restic.Backend, error) {
 
 	switch loc.Scheme {
 	case "local":
-		debug.Log("open", "opening local repository at %#v", loc.Config)
+		debug.Log("opening local repository at %#v", loc.Config)
 		be, err = local.Open(loc.Config.(string))
 	case "sftp":
-		debug.Log("open", "opening sftp repository at %#v", loc.Config)
+		debug.Log("opening sftp repository at %#v", loc.Config)
 		be, err = sftp.OpenWithConfig(loc.Config.(sftp.Config))
 	case "s3":
 		cfg := loc.Config.(s3.Config)
@@ -327,7 +327,7 @@ func open(s string) (restic.Backend, error) {
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		}
 
-		debug.Log("open", "opening s3 repository at %#v", cfg)
+		debug.Log("opening s3 repository at %#v", cfg)
 		be, err = s3.Open(cfg)
 	case "rest":
 		be, err = rest.Open(loc.Config.(rest.Config))
@@ -344,7 +344,7 @@ func open(s string) (restic.Backend, error) {
 
 // Create the backend specified by URI.
 func create(s string) (restic.Backend, error) {
-	debug.Log("open", "parsing location %v", s)
+	debug.Log("parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
 		return nil, err
@@ -352,10 +352,10 @@ func create(s string) (restic.Backend, error) {
 
 	switch loc.Scheme {
 	case "local":
-		debug.Log("open", "create local repository at %#v", loc.Config)
+		debug.Log("create local repository at %#v", loc.Config)
 		return local.Create(loc.Config.(string))
 	case "sftp":
-		debug.Log("open", "create sftp repository at %#v", loc.Config)
+		debug.Log("create sftp repository at %#v", loc.Config)
 		return sftp.CreateWithConfig(loc.Config.(sftp.Config))
 	case "s3":
 		cfg := loc.Config.(s3.Config)
@@ -367,12 +367,12 @@ func create(s string) (restic.Backend, error) {
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		}
 
-		debug.Log("open", "create s3 repository at %#v", loc.Config)
+		debug.Log("create s3 repository at %#v", loc.Config)
 		return s3.Open(cfg)
 	case "rest":
 		return rest.Open(loc.Config.(rest.Config))
 	}
 
-	debug.Log("open", "invalid repository scheme: %v", s)
+	debug.Log("invalid repository scheme: %v", s)
 	return nil, errors.Fatalf("invalid scheme %q", loc.Scheme)
 }

@@ -91,20 +91,20 @@ func (arch *Archiver) isKnownBlob(id restic.ID, t restic.BlobType) bool {
 
 // Save stores a blob read from rd in the repository.
 func (arch *Archiver) Save(t restic.BlobType, data []byte, id restic.ID) error {
-	debug.Log("Archiver.Save", "Save(%v, %v)\n", t, id.Str())
+	debug.Log("Save(%v, %v)\n", t, id.Str())
 
 	if arch.isKnownBlob(id, restic.DataBlob) {
-		debug.Log("Archiver.Save", "blob %v is known\n", id.Str())
+		debug.Log("blob %v is known\n", id.Str())
 		return nil
 	}
 
 	_, err := arch.repo.SaveBlob(t, data, id)
 	if err != nil {
-		debug.Log("Archiver.Save", "Save(%v, %v): error %v\n", t, id.Str(), err)
+		debug.Log("Save(%v, %v): error %v\n", t, id.Str(), err)
 		return err
 	}
 
-	debug.Log("Archiver.Save", "Save(%v, %v): new blob\n", t, id.Str())
+	debug.Log("Save(%v, %v): new blob\n", t, id.Str())
 	return nil
 }
 
@@ -142,7 +142,7 @@ func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*res
 
 	node, err = restic.NodeFromFileInfo(node.Path, fi)
 	if err != nil {
-		debug.Log("Archiver.SaveFile", "restic.NodeFromFileInfo returned error for %v: %v", node.Path, err)
+		debug.Log("restic.NodeFromFileInfo returned error for %v: %v", node.Path, err)
 		return nil, err
 	}
 
@@ -184,7 +184,7 @@ func waitForResults(resultChannels [](<-chan saveResult)) ([]saveResult, error) 
 }
 
 func updateNodeContent(node *restic.Node, results []saveResult) error {
-	debug.Log("Archiver.Save", "checking size for file %s", node.Path)
+	debug.Log("checking size for file %s", node.Path)
 
 	var bytes uint64
 	node.Content = make([]restic.ID, len(results))
@@ -193,14 +193,14 @@ func updateNodeContent(node *restic.Node, results []saveResult) error {
 		node.Content[i] = b.id
 		bytes += b.bytes
 
-		debug.Log("Archiver.Save", "  adding blob %s, %d bytes", b.id.Str(), b.bytes)
+		debug.Log("  adding blob %s, %d bytes", b.id.Str(), b.bytes)
 	}
 
 	if bytes != node.Size {
 		return errors.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.Path, bytes, node.Size)
 	}
 
-	debug.Log("Archiver.SaveFile", "SaveFile(%q): %v blobs\n", node.Path, len(results))
+	debug.Log("SaveFile(%q): %v blobs\n", node.Path, len(results))
 
 	return nil
 }
@@ -248,7 +248,7 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) error {
 
 func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-chan struct{}, entCh <-chan pipe.Entry) {
 	defer func() {
-		debug.Log("Archiver.fileWorker", "done")
+		debug.Log("done")
 		wg.Done()
 	}()
 	for {
@@ -259,11 +259,11 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 				return
 			}
 
-			debug.Log("Archiver.fileWorker", "got job %v", e)
+			debug.Log("got job %v", e)
 
 			// check for errors
 			if e.Error() != nil {
-				debug.Log("Archiver.fileWorker", "job %v has errors: %v", e.Path(), e.Error())
+				debug.Log("job %v has errors: %v", e.Path(), e.Error())
 				// TODO: integrate error reporting
 				fmt.Fprintf(os.Stderr, "error for %v: %v\n", e.Path(), e.Error())
 				// ignore this file
@@ -275,7 +275,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 			node, err := restic.NodeFromFileInfo(e.Fullpath(), e.Info())
 			if err != nil {
 				// TODO: integrate error reporting
-				debug.Log("Archiver.fileWorker", "restic.NodeFromFileInfo returned error for %v: %v", node.Path, err)
+				debug.Log("restic.NodeFromFileInfo returned error for %v: %v", node.Path, err)
 				e.Result() <- nil
 				p.Report(restic.Stat{Errors: 1})
 				continue
@@ -283,14 +283,14 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 
 			// try to use old node, if present
 			if e.Node != nil {
-				debug.Log("Archiver.fileWorker", "   %v use old data", e.Path())
+				debug.Log("   %v use old data", e.Path())
 
 				oldNode := e.Node.(*restic.Node)
 				// check if all content is still available in the repository
 				contentMissing := false
 				for _, blob := range oldNode.Content {
 					if !arch.repo.Index().Has(blob, restic.DataBlob) {
-						debug.Log("Archiver.fileWorker", "   %v not using old data, %v is missing", e.Path(), blob.Str())
+						debug.Log("   %v not using old data, %v is missing", e.Path(), blob.Str())
 						contentMissing = true
 						break
 					}
@@ -298,15 +298,15 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 
 				if !contentMissing {
 					node.Content = oldNode.Content
-					debug.Log("Archiver.fileWorker", "   %v content is complete", e.Path())
+					debug.Log("   %v content is complete", e.Path())
 				}
 			} else {
-				debug.Log("Archiver.fileWorker", "   %v no old data", e.Path())
+				debug.Log("   %v no old data", e.Path())
 			}
 
 			// otherwise read file normally
 			if node.Type == "file" && len(node.Content) == 0 {
-				debug.Log("Archiver.fileWorker", "   read and save %v, content: %v", e.Path(), node.Content)
+				debug.Log("   read and save %v, content: %v", e.Path(), node.Content)
 				err = arch.SaveFile(p, node)
 				if err != nil {
 					// TODO: integrate error reporting
@@ -321,7 +321,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 				p.Report(restic.Stat{Bytes: node.Size})
 			}
 
-			debug.Log("Archiver.fileWorker", "   processed %v, %d blobs", e.Path(), len(node.Content))
+			debug.Log("   processed %v, %d blobs", e.Path(), len(node.Content))
 			e.Result() <- node
 			p.Report(restic.Stat{Files: 1})
 		case <-done:
@@ -332,9 +332,9 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 }
 
 func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-chan struct{}, dirCh <-chan pipe.Dir) {
-	debug.Log("Archiver.dirWorker", "start")
+	debug.Log("start")
 	defer func() {
-		debug.Log("Archiver.dirWorker", "done")
+		debug.Log("done")
 		wg.Done()
 	}()
 	for {
@@ -344,7 +344,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 				// channel is closed
 				return
 			}
-			debug.Log("Archiver.dirWorker", "save dir %v (%d entries), error %v\n", dir.Path(), len(dir.Entries), dir.Error())
+			debug.Log("save dir %v (%d entries), error %v\n", dir.Path(), len(dir.Entries), dir.Error())
 
 			// ignore dir nodes with errors
 			if dir.Error() != nil {
@@ -358,13 +358,13 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 
 			// wait for all content
 			for _, ch := range dir.Entries {
-				debug.Log("Archiver.dirWorker", "receiving result from %v", ch)
+				debug.Log("receiving result from %v", ch)
 				res := <-ch
 
 				// if we get a nil pointer here, an error has happened while
 				// processing this entry. Ignore it for now.
 				if res == nil {
-					debug.Log("Archiver.dirWorker", "got nil result?")
+					debug.Log("got nil result?")
 					continue
 				}
 
@@ -373,7 +373,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 				tree.Insert(node)
 
 				if node.Type == "dir" {
-					debug.Log("Archiver.dirWorker", "got tree node for %s: %v", node.Path, node.Subtree)
+					debug.Log("got tree node for %s: %v", node.Path, node.Subtree)
 
 					if node.Subtree.IsNull() {
 						panic("invalid null subtree restic.ID")
@@ -401,14 +401,14 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 			if err != nil {
 				panic(err)
 			}
-			debug.Log("Archiver.dirWorker", "save tree for %s: %v", dir.Path(), id.Str())
+			debug.Log("save tree for %s: %v", dir.Path(), id.Str())
 			if id.IsNull() {
 				panic("invalid null subtree restic.ID return from SaveTreeJSON()")
 			}
 
 			node.Subtree = &id
 
-			debug.Log("Archiver.dirWorker", "sending result to %v", dir.Result())
+			debug.Log("sending result to %v", dir.Result())
 
 			dir.Result() <- node
 			if dir.Path() != "" {
@@ -443,7 +443,7 @@ func copyJobs(done <-chan struct{}, in <-chan pipe.Job, out chan<- pipe.Job) {
 		case job, ok = <-inCh:
 			if !ok {
 				// input channel closed, we're done
-				debug.Log("copyJobs", "input channel closed, we're done")
+				debug.Log("input channel closed, we're done")
 				return
 			}
 			inCh = nil
@@ -464,10 +464,10 @@ type archiveJob struct {
 func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 	defer func() {
 		close(out)
-		debug.Log("ArchivePipe.compare", "done")
+		debug.Log("done")
 	}()
 
-	debug.Log("ArchivePipe.compare", "start")
+	debug.Log("start")
 	var (
 		loadOld, loadNew bool = true, true
 		ok               bool
@@ -480,7 +480,7 @@ func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 			oldJob, ok = <-a.Old
 			// if the old channel is closed, just pass through the new jobs
 			if !ok {
-				debug.Log("ArchivePipe.compare", "old channel is closed, copy from new channel")
+				debug.Log("old channel is closed, copy from new channel")
 
 				// handle remaining newJob
 				if !loadNew {
@@ -498,15 +498,15 @@ func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 			newJob, ok = <-a.New
 			// if the new channel is closed, there are no more files in the current snapshot, return
 			if !ok {
-				debug.Log("ArchivePipe.compare", "new channel is closed, we're done")
+				debug.Log("new channel is closed, we're done")
 				return
 			}
 
 			loadNew = false
 		}
 
-		debug.Log("ArchivePipe.compare", "old job: %v", oldJob.Path)
-		debug.Log("ArchivePipe.compare", "new job: %v", newJob.Path())
+		debug.Log("old job: %v", oldJob.Path)
+		debug.Log("new job: %v", newJob.Path())
 
 		// at this point we have received an old job as well as a new job, compare paths
 		file1 := oldJob.Path
@@ -516,7 +516,7 @@ func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 		dir2 := filepath.Dir(file2)
 
 		if file1 == file2 {
-			debug.Log("ArchivePipe.compare", "    same filename %q", file1)
+			debug.Log("    same filename %q", file1)
 
 			// send job
 			out <- archiveJob{hasOld: true, old: oldJob, new: newJob}.Copy()
@@ -524,19 +524,19 @@ func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 			loadNew = true
 			continue
 		} else if dir1 < dir2 {
-			debug.Log("ArchivePipe.compare", "    %q < %q, file %q added", dir1, dir2, file2)
+			debug.Log("    %q < %q, file %q added", dir1, dir2, file2)
 			// file is new, send new job and load new
 			loadNew = true
 			out <- archiveJob{new: newJob}.Copy()
 			continue
 		} else if dir1 == dir2 {
 			if file1 < file2 {
-				debug.Log("ArchivePipe.compare", "    %q < %q, file %q removed", file1, file2, file1)
+				debug.Log("    %q < %q, file %q removed", file1, file2, file1)
 				// file has been removed, load new old
 				loadOld = true
 				continue
 			} else {
-				debug.Log("ArchivePipe.compare", "    %q > %q, file %q added", file1, file2, file2)
+				debug.Log("    %q > %q, file %q added", file1, file2, file2)
 				// file is new, send new job and load new
 				loadNew = true
 				out <- archiveJob{new: newJob}.Copy()
@@ -544,7 +544,7 @@ func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 			}
 		}
 
-		debug.Log("ArchivePipe.compare", "    %q > %q, file %q removed", file1, file2, file1)
+		debug.Log("    %q > %q, file %q removed", file1, file2, file1)
 		// file has been removed, throw away old job and load new
 		loadOld = true
 	}
@@ -557,7 +557,7 @@ func (j archiveJob) Copy() pipe.Job {
 
 	// handle files
 	if isRegularFile(j.new.Info()) {
-		debug.Log("archiveJob.Copy", "   job %v is file", j.new.Path())
+		debug.Log("   job %v is file", j.new.Path())
 
 		// if type has changed, return new job directly
 		if j.old.Node == nil {
@@ -566,11 +566,11 @@ func (j archiveJob) Copy() pipe.Job {
 
 		// if file is newer, return the new job
 		if j.old.Node.IsNewer(j.new.Fullpath(), j.new.Info()) {
-			debug.Log("archiveJob.Copy", "   job %v is newer", j.new.Path())
+			debug.Log("   job %v is newer", j.new.Path())
 			return j.new
 		}
 
-		debug.Log("archiveJob.Copy", "   job %v add old data", j.new.Path())
+		debug.Log("   job %v add old data", j.new.Path())
 		// otherwise annotate job with old data
 		e := j.new.(pipe.Entry)
 		e.Node = j.old.Node
@@ -595,10 +595,10 @@ func (arch *Archiver) saveIndexes(wg *sync.WaitGroup, done <-chan struct{}) {
 		case <-done:
 			return
 		case <-ticker.C:
-			debug.Log("Archiver.saveIndexes", "saving full indexes")
+			debug.Log("saving full indexes")
 			err := arch.repo.SaveFullIndex()
 			if err != nil {
-				debug.Log("Archiver.saveIndexes", "save indexes returned an error: %v", err)
+				debug.Log("save indexes returned an error: %v", err)
 				fmt.Fprintf(os.Stderr, "error saving preliminary index: %v\n", err)
 			}
 		}
@@ -637,7 +637,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 	paths = unique(paths)
 	sort.Sort(baseNameSlice(paths))
 
-	debug.Log("Archiver.Snapshot", "start for %v", paths)
+	debug.Log("start for %v", paths)
 
 	debug.RunHook("Archiver.Snapshot", nil)
 
@@ -683,7 +683,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 	resCh := make(chan pipe.Result, 1)
 	go func() {
 		pipe.Walk(paths, arch.SelectFilter, done, pipeCh, resCh)
-		debug.Log("Archiver.Snapshot", "pipe.Walk done")
+		debug.Log("pipe.Walk done")
 	}()
 	jobs.New = pipeCh
 
@@ -698,7 +698,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 	wg.Add(1)
 	go func() {
 		pipe.Split(ch, dirCh, entCh)
-		debug.Log("Archiver.Snapshot", "split done")
+		debug.Log("split done")
 		close(dirCh)
 		close(entCh)
 		wg.Done()
@@ -718,18 +718,18 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 	go arch.saveIndexes(&wgIndexSaver, stopIndexSaver)
 
 	// wait for all workers to terminate
-	debug.Log("Archiver.Snapshot", "wait for workers")
+	debug.Log("wait for workers")
 	wg.Wait()
 
 	// stop index saver
 	close(stopIndexSaver)
 	wgIndexSaver.Wait()
 
-	debug.Log("Archiver.Snapshot", "workers terminated")
+	debug.Log("workers terminated")
 
 	// receive the top-level tree
 	root := (<-resCh).(*restic.Node)
-	debug.Log("Archiver.Snapshot", "root node received: %v", root.Subtree.Str())
+	debug.Log("root node received: %v", root.Subtree.Str())
 	sn.Tree = root.Subtree
 
 	// save snapshot
@@ -738,7 +738,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 		return nil, restic.ID{}, err
 	}
 
-	debug.Log("Archiver.Snapshot", "saved snapshot %v", id.Str())
+	debug.Log("saved snapshot %v", id.Str())
 
 	// flush repository
 	err = arch.repo.Flush()
@@ -749,11 +749,11 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 	// save index
 	err = arch.repo.SaveIndex()
 	if err != nil {
-		debug.Log("Archiver.Snapshot", "error saving index: %v", err)
+		debug.Log("error saving index: %v", err)
 		return nil, restic.ID{}, err
 	}
 
-	debug.Log("Archiver.Snapshot", "saved indexes")
+	debug.Log("saved indexes")
 
 	return sn, id, nil
 }
@@ -775,7 +775,7 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *restic.Progress) (restic.Sta
 	var stat restic.Stat
 
 	for _, dir := range dirs {
-		debug.Log("Scan", "Start for %v", dir)
+		debug.Log("Start for %v", dir)
 		err := fs.Walk(dir, func(str string, fi os.FileInfo, err error) error {
 			// TODO: integrate error reporting
 			if err != nil {
@@ -788,7 +788,7 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *restic.Progress) (restic.Sta
 			}
 
 			if !filter(str, fi) {
-				debug.Log("Scan.Walk", "path %v excluded", str)
+				debug.Log("path %v excluded", str)
 				if fi.IsDir() {
 					return filepath.SkipDir
 				}
@@ -813,7 +813,7 @@ func Scan(dirs []string, filter pipe.SelectFunc, p *restic.Progress) (restic.Sta
 			return nil
 		})
 
-		debug.Log("Scan", "Done for %v, err: %v", dir, err)
+		debug.Log("Done for %v, err: %v", dir, err)
 		if err != nil {
 			return restic.Stat{}, errors.Wrap(err, "fs.Walk")
 		}

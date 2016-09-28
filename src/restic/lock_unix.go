@@ -35,15 +35,15 @@ func uidGidInt(u user.User) (uid, gid uint32, err error) {
 func (l Lock) processExists() bool {
 	proc, err := os.FindProcess(l.PID)
 	if err != nil {
-		debug.Log("Lock.Stale", "error searching for process %d: %v\n", l.PID, err)
+		debug.Log("error searching for process %d: %v\n", l.PID, err)
 		return false
 	}
 	defer proc.Release()
 
-	debug.Log("Lock.Stale", "sending SIGHUP to process %d\n", l.PID)
+	debug.Log("sending SIGHUP to process %d\n", l.PID)
 	err = proc.Signal(syscall.SIGHUP)
 	if err != nil {
-		debug.Log("Lock.Stale", "signal error: %v, lock is probably stale\n", err)
+		debug.Log("signal error: %v, lock is probably stale\n", err)
 		return false
 	}
 	return true

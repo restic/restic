@@ -147,14 +147,14 @@ func runPrune(gopts GlobalOptions) error {
 	bar = newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
 	bar.Start()
 	for _, sn := range snapshots {
-		debug.Log("CmdPrune.Execute", "process snapshot %v", sn.ID().Str())
+		debug.Log("process snapshot %v", sn.ID().Str())
 
 		err = restic.FindUsedBlobs(repo, *sn.Tree, usedBlobs, seenBlobs)
 		if err != nil {
 			return err
 		}
 
-		debug.Log("CmdPrune.Execute", "found %v blobs for snapshot %v", sn.ID().Str())
+		debug.Log("found %v blobs for snapshot %v", sn.ID().Str())
 		bar.Report(restic.Stat{Blobs: 1})
 	}
 	bar.Done()

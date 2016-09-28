@@ -26,7 +26,7 @@ type s3 struct {
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
 func Open(cfg Config) (restic.Backend, error) {
-	debug.Log("s3.Open", "open, config %#v", cfg)
+	debug.Log("open, config %#v", cfg)
 
 	client, err := minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
 	if err != nil {
@@ -38,7 +38,7 @@ func Open(cfg Config) (restic.Backend, error) {
 
 	ok, err := client.BucketExists(cfg.Bucket)
 	if err != nil {
-		debug.Log("s3.Open", "BucketExists(%v) returned err %v, trying to create the bucket", cfg.Bucket, err)
+		debug.Log("BucketExists(%v) returned err %v, trying to create the bucket", cfg.Bucket, err)
 		return nil, errors.Wrap(err, "client.BucketExists")
 	}
 
@@ -84,7 +84,7 @@ func (be *s3) Location() string {
 func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	var obj *minio.Object
 
-	debug.Log("s3.Load", "%v, offset %v, len %v", h, off, len(p))
+	debug.Log("%v, offset %v, len %v", h, off, len(p))
 	path := be.s3path(h.Type, h.Name)
 
 	<-be.connChan
@@ -94,7 +94,7 @@ func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 
 	obj, err = be.client.GetObject(be.bucketname, path)
 	if err != nil {
-		debug.Log("s3.Load", "  err %v", err)
+		debug.Log("  err %v", err)
 		return 0, errors.Wrap(err, "client.GetObject")
 	}
 
@@ -137,7 +137,7 @@ func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 
 		nextError = io.ErrUnexpectedEOF
 
-		debug.Log("s3.Load", "    capped buffer to %v byte", len(p))
+		debug.Log("    capped buffer to %v byte", len(p))
 	}
 
 	n, err = obj.ReadAt(p, off)
@@ -158,14 +158,14 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 		return err
 	}
 
-	debug.Log("s3.Save", "%v with %d bytes", h, len(p))
+	debug.Log("%v with %d bytes", h, len(p))
 
 	path := be.s3path(h.Type, h.Name)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, path)
 	if err == nil {
-		debug.Log("s3.blob.Finalize()", "%v already exists", h)
+		debug.Log("%v already exists", h)
 		return errors.New("key already exists")
 	}
 
@@ -174,24 +174,24 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 		be.connChan <- struct{}{}
 	}()
 
-	debug.Log("s3.Save", "PutObject(%v, %v, %v, %v)",
+	debug.Log("PutObject(%v, %v, %v, %v)",
 		be.bucketname, path, int64(len(p)), "binary/octet-stream")
 	n, err := be.client.PutObject(be.bucketname, path, bytes.NewReader(p), "binary/octet-stream")
-	debug.Log("s3.Save", "%v -> %v bytes, err %#v", path, n, err)
+	debug.Log("%v -> %v bytes, err %#v", path, n, err)
 
 	return errors.Wrap(err, "client.PutObject")
 }
 
 // Stat returns information about a blob.
 func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
-	debug.Log("s3.Stat", "%v", h)
+	debug.Log("%v", h)
 
 	path := be.s3path(h.Type, h.Name)
 	var obj *minio.Object
 
 	obj, err = be.client.GetObject(be.bucketname, path)
 	if err != nil {
-		debug.Log("s3.Stat", "GetObject() err %v", err)
+		debug.Log("GetObject() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "client.GetObject")
 	}
 
@@ -205,7 +205,7 @@ func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 
 	fi, err := obj.Stat()
 	if err != nil {
-		debug.Log("s3.Stat", "Stat() err %v", err)
+		debug.Log("Stat() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 
@@ -229,7 +229,7 @@ func (be *s3) Test(t restic.FileType, name string) (bool, error) {
 func (be *s3) Remove(t restic.FileType, name string) error {
 	path := be.s3path(t, name)
 	err := be.client.RemoveObject(be.bucketname, path)
-	debug.Log("s3.Remove", "%v %v -> err %v", t, name, err)
+	debug.Log("%v %v -> err %v", t, name, err)
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
@@ -237,7 +237,7 @@ func (be *s3) Remove(t restic.FileType, name string) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
-	debug.Log("s3.List", "listing %v", t)
+	debug.Log("listing %v", t)
 	ch := make(chan string)
 
 	prefix := be.s3path(t, "")

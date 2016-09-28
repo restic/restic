@@ -70,27 +70,27 @@ var IndexFull = func(idx *Index) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
-	debug.Log("Index.Full", "checking whether index %p is full", idx)
+	debug.Log("checking whether index %p is full", idx)
 
 	packs := len(idx.pack)
 	age := time.Now().Sub(idx.created)
 
 	if age > indexMaxAge {
-		debug.Log("Index.Full", "index %p is old enough", idx, age)
+		debug.Log("index %p is old enough", idx, age)
 		return true
 	}
 
 	if packs < indexMinBlobs || age < indexMinAge {
-		debug.Log("Index.Full", "index %p only has %d packs or is too young (%v)", idx, packs, age)
+		debug.Log("index %p only has %d packs or is too young (%v)", idx, packs, age)
 		return false
 	}
 
 	if packs > indexMaxBlobs {
-		debug.Log("Index.Full", "index %p has %d packs", idx, packs)
+		debug.Log("index %p has %d packs", idx, packs)
 		return true
 	}
 
-	debug.Log("Index.Full", "index %p is not full", idx)
+	debug.Log("index %p is not full", idx)
 	return false
 }
 
@@ -104,7 +104,7 @@ func (idx *Index) Store(blob restic.PackedBlob) {
 		panic("store new item in finalized index")
 	}
 
-	debug.Log("Index.Store", "%v", blob)
+	debug.Log("%v", blob)
 
 	idx.store(blob)
 }
@@ -120,7 +120,7 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 		blobs = make([]restic.PackedBlob, 0, len(packs))
 
 		for _, p := range packs {
-			debug.Log("Index.Lookup", "id %v found in pack %v at %d, length %d",
+			debug.Log("id %v found in pack %v at %d, length %d",
 				id.Str(), p.packID.Str(), p.offset, p.length)
 
 			blob := restic.PackedBlob{
@@ -139,7 +139,7 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 		return blobs, nil
 	}
 
-	debug.Log("Index.Lookup", "id %v not found", id.Str())
+	debug.Log("id %v not found", id.Str())
 	return nil, errors.Errorf("id %v not found in index", id)
 }
 
@@ -260,7 +260,7 @@ func (idx *Index) Packs() restic.IDSet {
 
 // Count returns the number of blobs of type t in the index.
 func (idx *Index) Count(t restic.BlobType) (n uint) {
-	debug.Log("Index.Count", "counting blobs of type %v", t)
+	debug.Log("counting blobs of type %v", t)
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -298,10 +298,10 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 				panic("null pack id")
 			}
 
-			debug.Log("Index.generatePackList", "handle blob %v", h)
+			debug.Log("handle blob %v", h)
 
 			if blob.packID.IsNull() {
-				debug.Log("Index.generatePackList", "blob %v has no packID! (offset %v, length %v)",
+				debug.Log("blob %v has no packID! (offset %v, length %v)",
 					h, blob.offset, blob.length)
 				return nil, errors.Errorf("unable to serialize index: pack for blob %v hasn't been written yet", h)
 			}
@@ -327,7 +327,7 @@ func (idx *Index) generatePackList() ([]*packJSON, error) {
 		}
 	}
 
-	debug.Log("Index.generatePackList", "done")
+	debug.Log("done")
 
 	return list, nil
 }
@@ -339,7 +339,7 @@ type jsonIndex struct {
 
 // Encode writes the JSON serialization of the index to the writer w.
 func (idx *Index) Encode(w io.Writer) error {
-	debug.Log("Index.Encode", "encoding index")
+	debug.Log("encoding index")
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -348,7 +348,7 @@ func (idx *Index) Encode(w io.Writer) error {
 
 // encode writes the JSON serialization of the index to the writer w.
 func (idx *Index) encode(w io.Writer) error {
-	debug.Log("Index.encode", "encoding index")
+	debug.Log("encoding index")
 
 	list, err := idx.generatePackList()
 	if err != nil {
@@ -365,7 +365,7 @@ func (idx *Index) encode(w io.Writer) error {
 
 // Finalize sets the index to final and writes the JSON serialization to w.
 func (idx *Index) Finalize(w io.Writer) error {
-	debug.Log("Index.Encode", "encoding index")
+	debug.Log("encoding index")
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -401,7 +401,7 @@ func (idx *Index) SetID(id restic.ID) error {
 		return errors.New("ID already set")
 	}
 
-	debug.Log("Index.SetID", "ID set to %v", id.Str())
+	debug.Log("ID set to %v", id.Str())
 	idx.id = id
 
 	return nil
@@ -409,7 +409,7 @@ func (idx *Index) SetID(id restic.ID) error {
 
 // Dump writes the pretty-printed JSON representation of the index to w.
 func (idx *Index) Dump(w io.Writer) error {
-	debug.Log("Index.Dump", "dumping index")
+	debug.Log("dumping index")
 	idx.m.Lock()
 	defer idx.m.Unlock()
 
@@ -433,7 +433,7 @@ func (idx *Index) Dump(w io.Writer) error {
 		return errors.Wrap(err, "Write")
 	}
 
-	debug.Log("Index.Dump", "done")
+	debug.Log("done")
 
 	return nil
 }
@@ -453,16 +453,16 @@ var ErrOldIndexFormat = errors.New("index has old format")
 
 // DecodeIndex loads and unserializes an index from rd.
 func DecodeIndex(rd io.Reader) (idx *Index, err error) {
-	debug.Log("Index.DecodeIndex", "Start decoding index")
+	debug.Log("Start decoding index")
 	idxJSON := jsonIndex{}
 
 	dec := json.NewDecoder(rd)
 	err = dec.Decode(&idxJSON)
 	if err != nil {
-		debug.Log("Index.DecodeIndex", "Error %v", err)
+		debug.Log("Error %v", err)
 
 		if isErrOldIndex(err) {
-			debug.Log("Index.DecodeIndex", "index is probably old format, trying that")
+			debug.Log("index is probably old format, trying that")
 			err = ErrOldIndexFormat
 		}
 
@@ -486,19 +486,19 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 	idx.supersedes = idxJSON.Supersedes
 	idx.final = true
 
-	debug.Log("Index.DecodeIndex", "done")
+	debug.Log("done")
 	return idx, nil
 }
 
 // DecodeOldIndex loads and unserializes an index in the old format from rd.
 func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
-	debug.Log("Index.DecodeOldIndex", "Start decoding old index")
+	debug.Log("Start decoding old index")
 	list := []*packJSON{}
 
 	dec := json.NewDecoder(rd)
 	err = dec.Decode(&list)
 	if err != nil {
-		debug.Log("Index.DecodeOldIndex", "Error %#v", err)
+		debug.Log("Error %#v", err)
 		return nil, errors.Wrap(err, "Decode")
 	}
 
@@ -518,13 +518,13 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 	}
 	idx.final = true
 
-	debug.Log("Index.DecodeOldIndex", "done")
+	debug.Log("done")
 	return idx, nil
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
 func LoadIndexWithDecoder(repo restic.Repository, id restic.ID, fn func(io.Reader) (*Index, error)) (idx *Index, err error) {
-	debug.Log("LoadIndexWithDecoder", "Loading index %v", id.Str())
+	debug.Log("Loading index %v", id.Str())
 
 	buf, err := repo.LoadAndDecrypt(restic.IndexFile, id)
 	if err != nil {
@@ -533,7 +533,7 @@ func LoadIndexWithDecoder(repo restic.Repository, id restic.ID, fn func(io.Reade
 
 	idx, err = fn(bytes.NewReader(buf))
 	if err != nil {
-		debug.Log("LoadIndexWithDecoder", "error while decoding index %v: %v", id, err)
+		debug.Log("error while decoding index %v: %v", id, err)
 		return nil, err
 	}
 

@@ -29,7 +29,7 @@ func init() {
 	// set GOMAXPROCS to number of CPUs
 	if runtime.Version() < "go1.5" {
 		gomaxprocs := os.Getenv("GOMAXPROCS")
-		debug.Log("restic", "read GOMAXPROCS from env variable, value: %s", gomaxprocs)
+		debug.Log("read GOMAXPROCS from env variable, value: %s", gomaxprocs)
 		if gomaxprocs == "" {
 			runtime.GOMAXPROCS(runtime.NumCPU())
 		}
@@ -37,7 +37,7 @@ func init() {
 }
 
 func main() {
-	debug.Log("restic", "main %#v", os.Args)
+	debug.Log("main %#v", os.Args)
 	err := cmdRoot.Execute()
 
 	switch {

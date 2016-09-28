@@ -544,6 +544,28 @@ If you suspect that there is a bug, you can have a look at the debug log.
 Please be aware that the debug log might contain sensitive information such as
 file and directory names.
 
+The debug log will always contain all log messages restic generates. You can
+also instruct restic to print some or all debug messages to stderr. These can
+also be limited to e.g. a list of source files or a list of patterns for
+function names. The patterns are globbing patterns (see the documentation for
+[`path.Glob`](https://golang.org/pkg/path/#Glob)), multiple patterns are
+separated by commas. Patterns are case sensitive.
+
+Printing all log messages to the console can be achieved by setting the file
+filter to `*`:
+
+    $ DEBUG_FILES=* restic check
+
+If you want restic to just print all debug log messages from the files
+`main.go` and `lock.go`, set the environment variable `DEBUG_FILES` like this: 
+
+    $ DEBUG_FILES=main.go,lock.go restic check
+
+The following command line instructs restic to only print debug statements
+originating in functions that match the pattern `*unlock*` (case sensitive):
+
+    $ DEBUG_FUNCS=*unlock* restic check
+
 # Under the hood: Browse repository objects
 
 Internally, a repository stores data of several different types described in the [design documentation](https://github.com/restic/restic/blob/master/doc/Design.md). You can `list` objects such as blobs, packs, index, snapshots, keys or locks with the following command:

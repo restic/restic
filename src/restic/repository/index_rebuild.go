@@ -13,7 +13,7 @@ import (
 // old indexes. This operation should only be done with an exclusive lock in
 // place.
 func RebuildIndex(repo restic.Repository) error {
-	debug.Log("RebuildIndex", "start rebuilding index")
+	debug.Log("start rebuilding index")
 
 	done := make(chan struct{})
 	defer close(done)
@@ -49,10 +49,10 @@ func RebuildIndex(repo restic.Repository) error {
 
 	id, err := SaveIndex(repo, idx)
 	if err != nil {
-		debug.Log("RebuildIndex.RebuildIndex", "error saving index: %v", err)
+		debug.Log("error saving index: %v", err)
 		return err
 	}
-	debug.Log("RebuildIndex.RebuildIndex", "new index saved as %v", id.Str())
+	debug.Log("new index saved as %v", id.Str())
 
 	for indexID := range oldIndexes {
 		err := repo.Backend().Remove(restic.IndexFile, indexID.String())

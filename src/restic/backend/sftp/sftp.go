@@ -76,7 +76,7 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	ch := make(chan error, 1)
 	go func() {
 		err := cmd.Wait()
-		debug.Log("sftp.Wait", "ssh command exited, err %v", err)
+		debug.Log("ssh command exited, err %v", err)
 		ch <- errors.Wrap(err, "cmd.Wait")
 	}()
 
@@ -106,7 +106,7 @@ func paths(dir string) []string {
 func (r *SFTP) clientError() error {
 	select {
 	case err := <-r.result:
-		debug.Log("sftp.clientError", "client has exited with err %v", err)
+		debug.Log("client has exited with err %v", err)
 		return err
 	default:
 	}
@@ -119,10 +119,10 @@ func (r *SFTP) clientError() error {
 // is expected at the given path. `dir` must be delimited by forward slashes
 // ("/"), which is required by sftp.
 func Open(dir string, program string, args ...string) (*SFTP, error) {
-	debug.Log("sftp.Open", "open backend with program %v, %v at %v", program, args, dir)
+	debug.Log("open backend with program %v, %v at %v", program, args, dir)
 	sftp, err := startClient(program, args...)
 	if err != nil {
-		debug.Log("sftp.Open", "unable to start program: %v", err)
+		debug.Log("unable to start program: %v", err)
 		return nil, err
 	}
 
@@ -155,7 +155,7 @@ func buildSSHCommand(cfg Config) []string {
 // OpenWithConfig opens an sftp backend as described by the config by running
 // "ssh" with the appropiate arguments.
 func OpenWithConfig(cfg Config) (*SFTP, error) {
-	debug.Log("sftp.OpenWithConfig", "open with config %v", cfg)
+	debug.Log("open with config %v", cfg)
 	return Open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
 }
 
@@ -163,7 +163,7 @@ func OpenWithConfig(cfg Config) (*SFTP, error) {
 // backend at dir. Afterwards a new config blob should be created. `dir` must
 // be delimited by forward slashes ("/"), which is required by sftp.
 func Create(dir string, program string, args ...string) (*SFTP, error) {
-	debug.Log("sftp.Create", "%v %v", program, args)
+	debug.Log("%v %v", program, args)
 	sftp, err := startClient(program, args...)
 	if err != nil {
 		return nil, err
@@ -195,7 +195,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 // CreateWithConfig creates an sftp backend as described by the config by running
 // "ssh" with the appropiate arguments.
 func CreateWithConfig(cfg Config) (*SFTP, error) {
-	debug.Log("sftp.CreateWithConfig", "config %v", cfg)
+	debug.Log("config %v", cfg)
 	return Create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
 }
 
@@ -329,7 +329,7 @@ func (r *SFTP) dirname(t restic.FileType, name string) string {
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (r *SFTP) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	debug.Log("sftp.Load", "load %v, %d bytes, offset %v", h, len(p), off)
+	debug.Log("load %v, %d bytes, offset %v", h, len(p), off)
 	if err := r.clientError(); err != nil {
 		return 0, err
 	}
@@ -366,7 +366,7 @@ func (r *SFTP) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 
 // Save stores data in the backend at the handle.
 func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
-	debug.Log("sftp.Save", "save %v bytes to %v", h, len(p))
+	debug.Log("save %v bytes to %v", h, len(p))
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -380,7 +380,7 @@ func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
 		return err
 	}
 
-	debug.Log("sftp.Save", "save %v (%d bytes) to %v", h, len(p), filename)
+	debug.Log("save %v (%d bytes) to %v", h, len(p), filename)
 
 	n, err := tmpfile.Write(p)
 	if err != nil {
@@ -397,14 +397,14 @@ func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
 	}
 
 	err = r.renameFile(filename, h.Type, h.Name)
-	debug.Log("sftp.Save", "save %v: rename %v: %v",
+	debug.Log("save %v: rename %v: %v",
 		h, path.Base(filename), err)
 	return err
 }
 
 // Stat returns information about a blob.
 func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("sftp.Stat", "stat %v", h)
+	debug.Log("stat %v", h)
 	if err := r.clientError(); err != nil {
 		return restic.FileInfo{}, err
 	}
@@ -423,7 +423,7 @@ func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
 
 // Test returns true if a blob of the given type and name exists in the backend.
 func (r *SFTP) Test(t restic.FileType, name string) (bool, error) {
-	debug.Log("sftp.Test", "type %v, name %v", t, name)
+	debug.Log("type %v, name %v", t, name)
 	if err := r.clientError(); err != nil {
 		return false, err
 	}
@@ -442,7 +442,7 @@ func (r *SFTP) Test(t restic.FileType, name string) (bool, error) {
 
 // Remove removes the content stored at name.
 func (r *SFTP) Remove(t restic.FileType, name string) error {
-	debug.Log("sftp.Remove", "type %v, name %v", t, name)
+	debug.Log("type %v, name %v", t, name)
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -454,7 +454,7 @@ func (r *SFTP) Remove(t restic.FileType, name string) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
-	debug.Log("sftp.List", "list all %v", t)
+	debug.Log("list all %v", t)
 	ch := make(chan string)
 
 	go func() {
@@ -523,13 +523,13 @@ var closeTimeout = 2 * time.Second
 
 // Close closes the sftp connection and terminates the underlying command.
 func (r *SFTP) Close() error {
-	debug.Log("sftp.Close", "")
+	debug.Log("")
 	if r == nil {
 		return nil
 	}
 
 	err := r.c.Close()
-	debug.Log("sftp.Close", "Close returned error %v", err)
+	debug.Log("Close returned error %v", err)
 
 	// wait for closeTimeout before killing the process
 	select {

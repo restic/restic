@@ -63,7 +63,7 @@ func New(repo restic.Repository, p *restic.Progress) (*Index, error) {
 
 		j := job.Result.(list.Result)
 
-		debug.Log("Index.New", "pack %v contains %d blobs", packID.Str(), len(j.Entries()))
+		debug.Log("pack %v contains %d blobs", packID.Str(), len(j.Entries()))
 
 		err := idx.AddPack(packID, j.Size(), j.Entries())
 		if err != nil {
@@ -95,7 +95,7 @@ type indexJSON struct {
 }
 
 func loadIndexJSON(repo restic.Repository, id restic.ID) (*indexJSON, error) {
-	debug.Log("index.loadIndexJSON", "process index %v\n", id.Str())
+	debug.Log("process index %v\n", id.Str())
 
 	var idx indexJSON
 	err := repo.LoadJSONUnpacked(restic.IndexFile, id, &idx)
@@ -108,7 +108,7 @@ func loadIndexJSON(repo restic.Repository, id restic.ID) (*indexJSON, error) {
 
 // Load creates an index by loading all index files from the repo.
 func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
-	debug.Log("index.Load", "loading indexes")
+	debug.Log("loading indexes")
 
 	p.Start()
 	defer p.Done()
@@ -124,7 +124,7 @@ func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
 	for id := range repo.List(restic.IndexFile, done) {
 		p.Report(restic.Stat{Blobs: 1})
 
-		debug.Log("index.Load", "Load index %v", id.Str())
+		debug.Log("Load index %v", id.Str())
 		idx, err := loadIndexJSON(repo, id)
 		if err != nil {
 			return nil, err
@@ -133,7 +133,7 @@ func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
 		res := make(map[restic.ID]Pack)
 		supersedes[id] = restic.NewIDSet()
 		for _, sid := range idx.Supersedes {
-			debug.Log("index.Load", "  index %v supersedes %v", id.Str(), sid)
+			debug.Log("  index %v supersedes %v", id.Str(), sid)
 			supersedes[id].Insert(sid)
 		}
 
@@ -163,7 +163,7 @@ func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
 			if _, ok := results[indexID]; !ok {
 				continue
 			}
-			debug.Log("index.Load", "  removing index %v, superseded by %v", indexID.Str(), superID.Str())
+			debug.Log("  removing index %v, superseded by %v", indexID.Str(), superID.Str())
 			fmt.Fprintf(os.Stderr, "index %v can be removed, superseded by index %v\n", indexID.Str(), superID.Str())
 			delete(results, indexID)
 		}

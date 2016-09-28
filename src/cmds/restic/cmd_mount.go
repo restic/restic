@@ -44,8 +44,8 @@ func init() {
 }
 
 func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
-	debug.Log("mount", "start mount")
-	defer debug.Log("mount", "finish mount")
+	debug.Log("start mount")
+	defer debug.Log("finish mount")
 
 	repo, err := OpenRepository(gopts)
 	if err != nil {
@@ -79,7 +79,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	root := fs.Tree{}
 	root.Add("snapshots", fuse.NewSnapshotsDir(repo, opts.OwnerRoot))
 
-	debug.Log("mount", "serving mount at %v", mountpoint)
+	debug.Log("serving mount at %v", mountpoint)
 	err = fs.Serve(c, &root)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	mountpoint := args[0]
 
 	AddCleanupHandler(func() error {
-		debug.Log("mount", "running umount cleanup handler for mount at %v", mountpoint)
+		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
 		err := umount(mountpoint)
 		if err != nil {
 			Warnf("unable to umount (maybe already umounted?): %v\n", err)

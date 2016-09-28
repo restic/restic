@@ -82,7 +82,7 @@ func ParallelWorkFuncParseID(f ParallelIDWorkFunc) ParallelWorkFunc {
 	return func(s string, done <-chan struct{}) error {
 		id, err := restic.ParseID(s)
 		if err != nil {
-			debug.Log("repository.ParallelWorkFuncParseID", "invalid ID %q: %v", id, err)
+			debug.Log("invalid ID %q: %v", id, err)
 			return err
 		}
 

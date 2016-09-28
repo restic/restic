@@ -2,4 +2,5 @@
 
 package debug
 
-func Log(tag string, fmt string, args ...interface{}) {}
+// Log prints a message to the debug log (if debug is enabled).
+func Log(fmt string, args ...interface{}) {}

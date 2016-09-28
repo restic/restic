@@ -60,7 +60,7 @@ func RunCleanupHandlers() {
 // CleanupHandler handles the SIGINT signal.
 func CleanupHandler(c <-chan os.Signal) {
 	for s := range c {
-		debug.Log("CleanupHandler", "signal %v received, cleaning up", s)
+		debug.Log("signal %v received, cleaning up", s)
 		fmt.Printf("%sInterrupt received, cleaning up\n", ClearLine())
 		RunCleanupHandlers()
 		fmt.Println("exiting")

@@ -64,7 +64,7 @@ func createMasterKey(s *Repository, password string) (*Key, error) {
 func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	k, err := LoadKey(s, name)
 	if err != nil {
-		debug.Log("OpenKey", "LoadKey(%v) returned error %v", name[:12], err)
+		debug.Log("LoadKey(%v) returned error %v", name[:12], err)
 		return nil, err
 	}
 
@@ -96,7 +96,7 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 	k.master = &crypto.Key{}
 	err = json.Unmarshal(buf, k.master)
 	if err != nil {
-		debug.Log("OpenKey", "Unmarshal() returned error %v", err)
+		debug.Log("Unmarshal() returned error %v", err)
 		return nil, errors.Wrap(err, "Unmarshal")
 	}
 	k.name = name
@@ -123,10 +123,10 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 			return nil, ErrMaxKeysReached
 		}
 
-		debug.Log("SearchKey", "trying key %v", name[:12])
+		debug.Log("trying key %v", name[:12])
 		key, err := OpenKey(s, name, password)
 		if err != nil {
-			debug.Log("SearchKey", "key %v returned error %v", name[:12], err)
+			debug.Log("key %v returned error %v", name[:12], err)
 
 			// ErrUnauthenticated means the password is wrong, try the next key
 			if errors.Cause(err) == crypto.ErrUnauthenticated {
@@ -136,7 +136,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 			return nil, err
 		}
 
-		debug.Log("SearchKey", "successfully opened key %v", name[:12])
+		debug.Log("successfully opened key %v", name[:12])
 		return key, nil
 	}
 
@@ -170,7 +170,7 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 		}
 
 		KDFParams = &p
-		debug.Log("repository.AddKey", "calibrated KDF parameters are %v", p)
+		debug.Log("calibrated KDF parameters are %v", p)
 	}
 
 	// fill meta data about key

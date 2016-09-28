@@ -62,7 +62,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	snapshotIDString := args[0]
 
-	debug.Log("restore", "restore %v to %v", snapshotIDString, opts.Target)
+	debug.Log("restore %v to %v", snapshotIDString, opts.Target)
 
 	repo, err := OpenRepository(gopts)
 	if err != nil {

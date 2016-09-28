@@ -106,7 +106,7 @@ func dirname(base string, t restic.FileType, name string) string {
 // exception: when off is lower than zero, it is treated as an offset relative
 // to the end of the file.
 func (b *Local) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	debug.Log("backend.local.Load", "Load %v, length %v at %v", h, len(p), off)
+	debug.Log("Load %v, length %v at %v", h, len(p), off)
 	if err := h.Valid(); err != nil {
 		return 0, err
 	}
@@ -172,13 +172,13 @@ func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 
 // Save stores data in the backend at the handle.
 func (b *Local) Save(h restic.Handle, p []byte) (err error) {
-	debug.Log("backend.local.Save", "Save %v, length %v", h, len(p))
+	debug.Log("Save %v, length %v", h, len(p))
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
 	tmpfile, err := writeToTempfile(filepath.Join(b.p, backend.Paths.Temp), p)
-	debug.Log("local.Save", "saved %v (%d bytes) to %v", h, len(p), tmpfile)
+	debug.Log("saved %v (%d bytes) to %v", h, len(p), tmpfile)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (b *Local) Save(h restic.Handle, p []byte) (err error) {
 	}
 
 	err = fs.Rename(tmpfile, filename)
-	debug.Log("local.Save", "save %v: rename %v -> %v: %v",
+	debug.Log("save %v: rename %v -> %v: %v",
 		h, filepath.Base(tmpfile), filepath.Base(filename), err)
 
 	if err != nil {
@@ -217,7 +217,7 @@ func (b *Local) Save(h restic.Handle, p []byte) (err error) {
 
 // Stat returns information about a blob.
 func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("backend.local.Stat", "Stat %v", h)
+	debug.Log("Stat %v", h)
 	if err := h.Valid(); err != nil {
 		return restic.FileInfo{}, err
 	}
@@ -232,7 +232,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(t restic.FileType, name string) (bool, error) {
-	debug.Log("backend.local.Test", "Test %v %v", t, name)
+	debug.Log("Test %v %v", t, name)
 	_, err := fs.Stat(filename(b.p, t, name))
 	if err != nil {
 		if os.IsNotExist(errors.Cause(err)) {
@@ -246,7 +246,7 @@ func (b *Local) Test(t restic.FileType, name string) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(t restic.FileType, name string) error {
-	debug.Log("backend.local.Remove", "Remove %v %v", t, name)
+	debug.Log("Remove %v %v", t, name)
 	fn := filename(b.p, t, name)
 
 	// reset read-only flag
@@ -321,7 +321,7 @@ func listDirs(dir string) (filenames []string, err error) {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
-	debug.Log("backend.local.List", "List %v", t)
+	debug.Log("List %v", t)
 	lister := listDir
 	if t == restic.DataFile {
 		lister = listDirs
@@ -354,13 +354,13 @@ func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 
 // Delete removes the repository and all files.
 func (b *Local) Delete() error {
-	debug.Log("backend.local.Delete", "Delete()")
+	debug.Log("Delete()")
 	return fs.RemoveAll(b.p)
 }
 
 // Close closes all open files.
 func (b *Local) Close() error {
-	debug.Log("backend.local.Close", "Close()")
+	debug.Log("Close()")
 	// this does not need to do anything, all open files are closed within the
 	// same function.
 	return nil
