@@ -7,10 +7,23 @@ import (
 	"restic/debug"
 	"runtime"
 
-	"restic/errors"
+	"github.com/spf13/cobra"
 
-	"github.com/jessevdk/go-flags"
+	"restic/errors"
 )
+
+// cmdRoot is the base command when no other command has been specified.
+var cmdRoot = &cobra.Command{
+	Use:   "restic",
+	Short: "backup and restore files",
+	Long: `
+restic is a backup program which allows saving multiple revisions of files and
+directories in an encrypted repository stored on different backends.
+`,
+	SilenceErrors:    true,
+	SilenceUsage:     true,
+	PersistentPreRun: parseEnvironment,
+}
 
 func init() {
 	// set GOMAXPROCS to number of CPUs
@@ -21,23 +34,11 @@ func init() {
 			runtime.GOMAXPROCS(runtime.NumCPU())
 		}
 	}
-
 }
 
 func main() {
-	// defer profile.Start(profile.MemProfileRate(100000), profile.ProfilePath(".")).Stop()
-	// defer profile.Start(profile.CPUProfile, profile.ProfilePath(".")).Stop()
-	globalOpts.Repo = os.Getenv("RESTIC_REPOSITORY")
-
 	debug.Log("restic", "main %#v", os.Args)
-
-	_, err := parser.Parse()
-	if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
-		parser.WriteHelp(os.Stdout)
-		os.Exit(0)
-	}
-
-	debug.Log("main", "command returned error: %#v", err)
+	err := cmdRoot.Execute()
 
 	switch {
 	case restic.IsAlreadyLocked(errors.Cause(err)):

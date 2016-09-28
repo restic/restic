@@ -10,26 +10,25 @@ import (
 	"restic/repository"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-// CmdPrune implements the 'prune' command.
-type CmdPrune struct {
-	global *GlobalOptions
+var cmdPrune = &cobra.Command{
+	Use:   "prune [flags]",
+	Short: "remove unneeded data from the repository",
+	Long: `
+The "prune" command checks the repository and removes data that is not
+referenced and therefore not needed any more.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runPrune(globalOptions)
+	},
 }
 
 func init() {
-	_, err := parser.AddCommand("prune",
-		"removes content from a repository",
-		`
-The prune command removes rendundant and unneeded data from the repository.
-For removing snapshots, please see the 'forget' command, then afterwards run
-'prune'.
-`,
-		&CmdPrune{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdPrune)
 }
 
 // newProgressMax returns a progress that counts blobs.
@@ -64,9 +63,8 @@ func newProgressMax(show bool, max uint64, description string) *restic.Progress 
 	return p
 }
 
-// Execute runs the 'prune' command.
-func (cmd CmdPrune) Execute(args []string) error {
-	repo, err := cmd.global.OpenRepository()
+func runPrune(gopts GlobalOptions) error {
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
@@ -92,14 +90,14 @@ func (cmd CmdPrune) Execute(args []string) error {
 		bytes     int64
 	}
 
-	cmd.global.Verbosef("counting files in repo\n")
+	Verbosef("counting files in repo\n")
 	for _ = range repo.List(restic.DataFile, done) {
 		stats.packs++
 	}
 
-	cmd.global.Verbosef("building new index for repo\n")
+	Verbosef("building new index for repo\n")
 
-	bar := newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "packs")
+	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
 	idx, err := index.New(repo, bar)
 	if err != nil {
 		return err
@@ -108,7 +106,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	for _, pack := range idx.Packs {
 		stats.bytes += pack.Size
 	}
-	cmd.global.Verbosef("repository contains %v packs (%v blobs) with %v bytes\n",
+	Verbosef("repository contains %v packs (%v blobs) with %v bytes\n",
 		len(idx.Packs), len(idx.Blobs), formatBytes(uint64(stats.bytes)))
 
 	blobCount := make(map[restic.BlobHandle]int)
@@ -129,9 +127,9 @@ func (cmd CmdPrune) Execute(args []string) error {
 		}
 	}
 
-	cmd.global.Verbosef("processed %d blobs: %d duplicate blobs, %v duplicate\n",
+	Verbosef("processed %d blobs: %d duplicate blobs, %v duplicate\n",
 		stats.blobs, duplicateBlobs, formatBytes(uint64(duplicateBytes)))
-	cmd.global.Verbosef("load all snapshots\n")
+	Verbosef("load all snapshots\n")
 
 	// find referenced blobs
 	snapshots, err := restic.LoadAllSnapshots(repo)
@@ -141,12 +139,12 @@ func (cmd CmdPrune) Execute(args []string) error {
 
 	stats.snapshots = len(snapshots)
 
-	cmd.global.Verbosef("find data that is still in use for %d snapshots\n", stats.snapshots)
+	Verbosef("find data that is still in use for %d snapshots\n", stats.snapshots)
 
 	usedBlobs := restic.NewBlobSet()
 	seenBlobs := restic.NewBlobSet()
 
-	bar = newProgressMax(cmd.global.ShowProgress(), uint64(len(snapshots)), "snapshots")
+	bar = newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
 	bar.Start()
 	for _, sn := range snapshots {
 		debug.Log("CmdPrune.Execute", "process snapshot %v", sn.ID().Str())
@@ -161,7 +159,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 	}
 	bar.Done()
 
-	cmd.global.Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
+	Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
 		len(usedBlobs), stats.blobs, stats.blobs-len(usedBlobs))
 
 	// find packs that need a rewrite
@@ -207,7 +205,7 @@ func (cmd CmdPrune) Execute(args []string) error {
 		rewritePacks.Delete(packID)
 	}
 
-	cmd.global.Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
+	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
 		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
 	err = repository.Repack(repo, rewritePacks, usedBlobs)
@@ -218,17 +216,17 @@ func (cmd CmdPrune) Execute(args []string) error {
 	for packID := range removePacks {
 		err = repo.Backend().Remove(restic.DataFile, packID.String())
 		if err != nil {
-			cmd.global.Warnf("unable to remove file %v from the repository\n", packID.Str())
+			Warnf("unable to remove file %v from the repository\n", packID.Str())
 		}
 	}
 
-	cmd.global.Verbosef("creating new index\n")
+	Verbosef("creating new index\n")
 
 	stats.packs = 0
 	for _ = range repo.List(restic.DataFile, done) {
 		stats.packs++
 	}
-	bar = newProgressMax(cmd.global.ShowProgress(), uint64(stats.packs), "packs")
+	bar = newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
 	idx, err = index.New(repo, bar)
 	if err != nil {
 		return err
@@ -248,8 +246,8 @@ func (cmd CmdPrune) Execute(args []string) error {
 	if err != nil {
 		return err
 	}
-	cmd.global.Verbosef("saved new index as %v\n", id.Str())
+	Verbosef("saved new index as %v\n", id.Str())
 
-	cmd.global.Verbosef("done\n")
+	Verbosef("done\n")
 	return nil
 }

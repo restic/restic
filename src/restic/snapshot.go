@@ -122,7 +122,7 @@ nextTag:
 
 // SamePaths compares the Snapshot's paths and provided paths are exactly the same
 func SamePaths(expected, actual []string) bool {
-	if expected == nil || actual == nil {
+	if len(expected) == 0 || len(actual) == 0 {
 		return true
 	}
 

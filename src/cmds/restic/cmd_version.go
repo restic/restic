@@ -3,23 +3,23 @@ package main
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/spf13/cobra"
 )
 
-type CmdVersion struct{}
-
-func init() {
-	_, err := parser.AddCommand("version",
-		"display version",
-		"The version command displays detailed information about the version",
-		&CmdVersion{})
-	if err != nil {
-		panic(err)
-	}
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print version information",
+	Long: `
+The "version" command prints detailed information about the build environment
+and the version of this software.
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("restic %s\ncompiled at %s with %v on %v/%v\n",
+			version, compiledAt, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	},
 }
 
-func (cmd CmdVersion) Execute(args []string) error {
-	fmt.Printf("restic %s\ncompiled at %s with %v on %v/%v\n",
-		version, compiledAt, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-
-	return nil
+func init() {
+	cmdRoot.AddCommand(versionCmd)
 }

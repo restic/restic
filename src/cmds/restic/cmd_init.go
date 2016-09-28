@@ -3,24 +3,37 @@ package main
 import (
 	"restic/errors"
 	"restic/repository"
+
+	"github.com/spf13/cobra"
 )
 
-type CmdInit struct {
-	global *GlobalOptions
+var cmdInit = &cobra.Command{
+	Use:   "init",
+	Short: "initialize a new repository",
+	Long: `
+The "init" command initializes a new repository.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runInit(globalOptions, args)
+	},
 }
 
-func (cmd CmdInit) Execute(args []string) error {
-	if cmd.global.Repo == "" {
+func init() {
+	cmdRoot.AddCommand(cmdInit)
+}
+
+func runInit(gopts GlobalOptions, args []string) error {
+	if gopts.Repo == "" {
 		return errors.Fatal("Please specify repository location (-r)")
 	}
 
-	be, err := create(cmd.global.Repo)
+	be, err := create(gopts.Repo)
 	if err != nil {
-		cmd.global.Exitf(1, "creating backend at %s failed: %v\n", cmd.global.Repo, err)
+		return errors.Fatalf("create backend at %s failed: %v\n", gopts.Repo, err)
 	}
 
-	if cmd.global.password == "" {
-		cmd.global.password, err = cmd.global.ReadPasswordTwice(
+	if gopts.password == "" {
+		gopts.password, err = ReadPasswordTwice(gopts,
 			"enter password for new backend: ",
 			"enter password again: ")
 		if err != nil {
@@ -30,26 +43,16 @@ func (cmd CmdInit) Execute(args []string) error {
 
 	s := repository.New(be)
 
-	err = s.Init(cmd.global.password)
+	err = s.Init(gopts.password)
 	if err != nil {
-		cmd.global.Exitf(1, "creating key in backend at %s failed: %v\n", cmd.global.Repo, err)
+		return errors.Fatalf("create key in backend at %s failed: %v\n", gopts.Repo, err)
 	}
 
-	cmd.global.Verbosef("created restic backend %v at %s\n", s.Config().ID[:10], cmd.global.Repo)
-	cmd.global.Verbosef("\n")
-	cmd.global.Verbosef("Please note that knowledge of your password is required to access\n")
-	cmd.global.Verbosef("the repository. Losing your password means that your data is\n")
-	cmd.global.Verbosef("irrecoverably lost.\n")
+	Verbosef("created restic backend %v at %s\n", s.Config().ID[:10], gopts.Repo)
+	Verbosef("\n")
+	Verbosef("Please note that knowledge of your password is required to access\n")
+	Verbosef("the repository. Losing your password means that your data is\n")
+	Verbosef("irrecoverably lost.\n")
 
 	return nil
-}
-
-func init() {
-	_, err := parser.AddCommand("init",
-		"create repository",
-		"The init command creates a new repository",
-		&CmdInit{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
 }

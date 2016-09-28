@@ -6,101 +6,66 @@ import (
 	"os"
 	"path/filepath"
 	"restic"
-	"restic/archiver"
-	"restic/debug"
-	"restic/filter"
-	"restic/fs"
 	"strings"
 	"time"
 
-	"restic/errors"
-
 	"golang.org/x/crypto/ssh/terminal"
+
+	"github.com/spf13/cobra"
+
+	"restic/archiver"
+	"restic/debug"
+	"restic/errors"
+	"restic/filter"
+	"restic/fs"
 )
 
-type CmdBackup struct {
-	Parent         string   `short:"p" long:"parent"                    description:"use this parent snapshot (default: last snapshot in repo that has the same target)"`
-	Force          bool     `short:"f" long:"force"                     description:"Force re-reading the target. Overrides the \"parent\" flag"`
-	Excludes       []string `short:"e" long:"exclude"                   description:"Exclude a pattern (can be specified multiple times)"`
-	ExcludeOtherFS bool     `short:"x" long:"one-file-system"           description:"Exclude other file systems"`
-	ExcludeFile    string   `long:"exclude-file"                        description:"Read exclude-patterns from file"`
-	Stdin          bool     `long:"stdin"                               description:"read backup data from stdin"`
-	StdinFilename  string   `long:"stdin-filename"    default:"stdin"   description:"file name to use when reading from stdin"`
-	Tags           []string `long:"tag"                                 description:"Add a tag (can be specified multiple times)"`
+var cmdBackup = &cobra.Command{
+	Use:   "backup [flags] FILE/DIR [FILE/DIR] ...",
+	Short: "create a new backup of files and/or directories",
+	Long: `
+The "backup" command creates a new snapshot and saves the files and directories
+given as the arguments.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if backupOptions.Stdin {
+			return readBackupFromStdin(backupOptions, globalOptions, args)
+		}
 
-	global *GlobalOptions
+		return runBackup(backupOptions, globalOptions, args)
+	},
 }
+
+// BackupOptions bundles all options for the backup command.
+type BackupOptions struct {
+	Parent         string
+	Force          bool
+	Excludes       []string
+	ExcludeFile    string
+	ExcludeOtherFS bool
+	Stdin          bool
+	StdinFilename  string
+	Tags           []string
+}
+
+var backupOptions BackupOptions
 
 func init() {
-	_, err := parser.AddCommand("backup",
-		"save file/directory",
-		"The backup command creates a snapshot of a file or directory",
-		&CmdBackup{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdBackup)
+
+	f := cmdBackup.Flags()
+	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)")
+	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories. Overrides the "parent" flag`)
+	f.StringSliceVarP(&backupOptions.Excludes, "exclude", "e", []string{}, "exclude a pattern (can be specified multiple times)")
+	f.StringVar(&backupOptions.ExcludeFile, "exclude-file", "", "read exclude patterns from a file")
+	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "Exclude other file systems")
+	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
+	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "", "file name to use when reading from stdin")
+	f.StringSliceVar(&backupOptions.Tags, "tag", []string{}, "add a tag for the new snapshot (can be specified multiple times)")
 }
 
-func formatBytes(c uint64) string {
-	b := float64(c)
-
-	switch {
-	case c > 1<<40:
-		return fmt.Sprintf("%.3f TiB", b/(1<<40))
-	case c > 1<<30:
-		return fmt.Sprintf("%.3f GiB", b/(1<<30))
-	case c > 1<<20:
-		return fmt.Sprintf("%.3f MiB", b/(1<<20))
-	case c > 1<<10:
-		return fmt.Sprintf("%.3f KiB", b/(1<<10))
-	default:
-		return fmt.Sprintf("%dB", c)
-	}
-}
-
-func formatSeconds(sec uint64) string {
-	hours := sec / 3600
-	sec -= hours * 3600
-	min := sec / 60
-	sec -= min * 60
-	if hours > 0 {
-		return fmt.Sprintf("%d:%02d:%02d", hours, min, sec)
-	}
-
-	return fmt.Sprintf("%d:%02d", min, sec)
-}
-
-func formatPercent(numerator uint64, denominator uint64) string {
-	if denominator == 0 {
-		return ""
-	}
-
-	percent := 100.0 * float64(numerator) / float64(denominator)
-
-	if percent > 100 {
-		percent = 100
-	}
-
-	return fmt.Sprintf("%3.2f%%", percent)
-}
-
-func formatRate(bytes uint64, duration time.Duration) string {
-	sec := float64(duration) / float64(time.Second)
-	rate := float64(bytes) / sec / (1 << 20)
-	return fmt.Sprintf("%.2fMiB/s", rate)
-}
-
-func formatDuration(d time.Duration) string {
-	sec := uint64(d / time.Second)
-	return formatSeconds(sec)
-}
-
-func (cmd CmdBackup) Usage() string {
-	return "DIR/FILE [DIR/FILE] [...]"
-}
-
-func (cmd CmdBackup) newScanProgress() *restic.Progress {
-	if !cmd.global.ShowProgress() {
+func newScanProgress(gopts GlobalOptions) *restic.Progress {
+	if gopts.Quiet {
 		return nil
 	}
 
@@ -115,8 +80,8 @@ func (cmd CmdBackup) newScanProgress() *restic.Progress {
 	return p
 }
 
-func (cmd CmdBackup) newArchiveProgress(todo restic.Stat) *restic.Progress {
-	if !cmd.global.ShowProgress() {
+func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
+	if gopts.Quiet {
 		return nil
 	}
 
@@ -169,8 +134,8 @@ func (cmd CmdBackup) newArchiveProgress(todo restic.Stat) *restic.Progress {
 	return archiveProgress
 }
 
-func (cmd CmdBackup) newArchiveStdinProgress() *restic.Progress {
-	if !cmd.global.ShowProgress() {
+func newArchiveStdinProgress(gopts GlobalOptions) *restic.Progress {
+	if gopts.Quiet {
 		return nil
 	}
 
@@ -250,12 +215,12 @@ func gatherDevices(items []string) (deviceMap map[uint64]struct{}, err error) {
 	return deviceMap, nil
 }
 
-func (cmd CmdBackup) readFromStdin(args []string) error {
+func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
 		return errors.Fatalf("when reading from stdin, no additional files can be specified")
 	}
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
@@ -271,7 +236,7 @@ func (cmd CmdBackup) readFromStdin(args []string) error {
 		return err
 	}
 
-	_, id, err := archiver.ArchiveReader(repo, cmd.newArchiveStdinProgress(), os.Stdin, cmd.StdinFilename, cmd.Tags)
+	_, id, err := archiver.ArchiveReader(repo, newArchiveStdinProgress(gopts), os.Stdin, opts.StdinFilename, opts.Tags)
 	if err != nil {
 		return err
 	}
@@ -280,13 +245,9 @@ func (cmd CmdBackup) readFromStdin(args []string) error {
 	return nil
 }
 
-func (cmd CmdBackup) Execute(args []string) error {
-	if cmd.Stdin {
-		return cmd.readFromStdin(args)
-	}
-
+func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
-		return errors.Fatalf("wrong number of parameters, Usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of parameters")
 	}
 
 	target := make([]string, 0, len(args))
@@ -304,7 +265,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 
 	// allowed devices
 	var allowedDevs map[uint64]struct{}
-	if cmd.ExcludeOtherFS {
+	if opts.ExcludeOtherFS {
 		allowedDevs, err = gatherDevices(target)
 		if err != nil {
 			return err
@@ -312,7 +273,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 		debug.Log("backup.Execute", "allowed devices: %v\n", allowedDevs)
 	}
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
@@ -331,17 +292,17 @@ func (cmd CmdBackup) Execute(args []string) error {
 	var parentSnapshotID *restic.ID
 
 	// Force using a parent
-	if !cmd.Force && cmd.Parent != "" {
-		id, err := restic.FindSnapshot(repo, cmd.Parent)
+	if !opts.Force && opts.Parent != "" {
+		id, err := restic.FindSnapshot(repo, opts.Parent)
 		if err != nil {
-			return errors.Fatalf("invalid id %q: %v", cmd.Parent, err)
+			return errors.Fatalf("invalid id %q: %v", opts.Parent, err)
 		}
 
 		parentSnapshotID = &id
 	}
 
 	// Find last snapshot to set it as parent, if not already set
-	if !cmd.Force && parentSnapshotID == nil {
+	if !opts.Force && parentSnapshotID == nil {
 		id, err := restic.FindLatestSnapshot(repo, target, "")
 		if err == nil {
 			parentSnapshotID = &id
@@ -351,16 +312,16 @@ func (cmd CmdBackup) Execute(args []string) error {
 	}
 
 	if parentSnapshotID != nil {
-		cmd.global.Verbosef("using parent snapshot %v\n", parentSnapshotID.Str())
+		Verbosef("using parent snapshot %v\n", parentSnapshotID.Str())
 	}
 
-	cmd.global.Verbosef("scan %v\n", target)
+	Verbosef("scan %v\n", target)
 
 	// add patterns from file
-	if cmd.ExcludeFile != "" {
-		file, err := fs.Open(cmd.ExcludeFile)
+	if opts.ExcludeFile != "" {
+		file, err := fs.Open(opts.ExcludeFile)
 		if err != nil {
-			cmd.global.Warnf("error reading exclude patterns: %v", err)
+			Warnf("error reading exclude patterns: %v", err)
 			return nil
 		}
 
@@ -369,15 +330,15 @@ func (cmd CmdBackup) Execute(args []string) error {
 			line := scanner.Text()
 			if !strings.HasPrefix(line, "#") {
 				line = os.ExpandEnv(line)
-				cmd.Excludes = append(cmd.Excludes, line)
+				opts.Excludes = append(opts.Excludes, line)
 			}
 		}
 	}
 
 	selectFilter := func(item string, fi os.FileInfo) bool {
-		matched, err := filter.List(cmd.Excludes, item)
+		matched, err := filter.List(opts.Excludes, item)
 		if err != nil {
-			cmd.global.Warnf("error for exclude pattern: %v", err)
+			Warnf("error for exclude pattern: %v", err)
 		}
 
 		if matched {
@@ -385,7 +346,7 @@ func (cmd CmdBackup) Execute(args []string) error {
 			return false
 		}
 
-		if !cmd.ExcludeOtherFS {
+		if !opts.ExcludeOtherFS {
 			return true
 		}
 
@@ -404,27 +365,27 @@ func (cmd CmdBackup) Execute(args []string) error {
 		return true
 	}
 
-	stat, err := archiver.Scan(target, selectFilter, cmd.newScanProgress())
+	stat, err := archiver.Scan(target, selectFilter, newScanProgress(gopts))
 	if err != nil {
 		return err
 	}
 
 	arch := archiver.New(repo)
-	arch.Excludes = cmd.Excludes
+	arch.Excludes = opts.Excludes
 	arch.SelectFilter = selectFilter
 
 	arch.Error = func(dir string, fi os.FileInfo, err error) error {
 		// TODO: make ignoring errors configurable
-		cmd.global.Warnf("%s\rerror for %s: %v\n", ClearLine(), dir, err)
+		Warnf("%s\rerror for %s: %v\n", ClearLine(), dir, err)
 		return nil
 	}
 
-	_, id, err := arch.Snapshot(cmd.newArchiveProgress(stat), target, cmd.Tags, parentSnapshotID)
+	_, id, err := arch.Snapshot(newArchiveProgress(gopts, stat), target, opts.Tags, parentSnapshotID)
 	if err != nil {
 		return err
 	}
 
-	cmd.global.Verbosef("snapshot %s saved\n", id.Str())
+	Verbosef("snapshot %s saved\n", id.Str())
 
 	return nil
 }

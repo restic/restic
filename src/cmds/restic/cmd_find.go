@@ -4,25 +4,51 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"restic"
 	"restic/debug"
 	"restic/errors"
 	"restic/repository"
 )
 
+var cmdFind = &cobra.Command{
+	Use:   "find [flags] PATTERN",
+	Short: "find a file or directory",
+	Long: `
+The "find" command searches for files or directories in snapshots stored in the
+repo. `,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runFind(findOptions, globalOptions, args)
+	},
+}
+
+// FindOptions bundle all options for the find command.
+type FindOptions struct {
+	Oldest   string
+	Newest   string
+	Snapshot string
+}
+
+var findOptions FindOptions
+
+func init() {
+	cmdRoot.AddCommand(cmdFind)
+
+	f := cmdFind.Flags()
+	f.StringVarP(&findOptions.Oldest, "oldest", "o", "", "Oldest modification date/time")
+	f.StringVarP(&findOptions.Newest, "newest", "n", "", "Newest modification date/time")
+	f.StringVarP(&findOptions.Snapshot, "snapshot", "s", "", "Snapshot ID to search in")
+}
+
+type findPattern struct {
+	oldest, newest time.Time
+	pattern        string
+}
+
 type findResult struct {
 	node *restic.Node
 	path string
-}
-
-type CmdFind struct {
-	Oldest   string `short:"o" long:"oldest" description:"Oldest modification date/time"`
-	Newest   string `short:"n" long:"newest" description:"Newest modification date/time"`
-	Snapshot string `short:"s" long:"snapshot" description:"Snapshot ID to search in"`
-
-	oldest, newest time.Time
-	pattern        string
-	global         *GlobalOptions
 }
 
 var timeFormats = []string{
@@ -39,16 +65,6 @@ var timeFormats = []string{
 	"Mon Jan 2 15:04:05 -0700 MST 2006",
 }
 
-func init() {
-	_, err := parser.AddCommand("find",
-		"find a file/directory",
-		"The find command searches for files or directories in snapshots",
-		&CmdFind{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
-}
-
 func parseTime(str string) (time.Time, error) {
 	for _, fmt := range timeFormats {
 		if t, err := time.ParseInLocation(fmt, str, time.Local); err == nil {
@@ -59,7 +75,7 @@ func parseTime(str string) (time.Time, error) {
 	return time.Time{}, errors.Fatalf("unable to parse time: %q", str)
 }
 
-func (c CmdFind) findInTree(repo *repository.Repository, id restic.ID, path string) ([]findResult, error) {
+func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, path string) ([]findResult, error) {
 	debug.Log("restic.find", "checking tree %v\n", id)
 	tree, err := repo.LoadTree(id)
 	if err != nil {
@@ -70,20 +86,20 @@ func (c CmdFind) findInTree(repo *repository.Repository, id restic.ID, path stri
 	for _, node := range tree.Nodes {
 		debug.Log("restic.find", "  testing entry %q\n", node.Name)
 
-		m, err := filepath.Match(c.pattern, node.Name)
+		m, err := filepath.Match(pat.pattern, node.Name)
 		if err != nil {
 			return nil, err
 		}
 
 		if m {
 			debug.Log("restic.find", "    pattern matches\n")
-			if !c.oldest.IsZero() && node.ModTime.Before(c.oldest) {
-				debug.Log("restic.find", "    ModTime is older than %s\n", c.oldest)
+			if !pat.oldest.IsZero() && node.ModTime.Before(pat.oldest) {
+				debug.Log("restic.find", "    ModTime is older than %s\n", pat.oldest)
 				continue
 			}
 
-			if !c.newest.IsZero() && node.ModTime.After(c.newest) {
-				debug.Log("restic.find", "    ModTime is newer than %s\n", c.newest)
+			if !pat.newest.IsZero() && node.ModTime.After(pat.newest) {
+				debug.Log("restic.find", "    ModTime is newer than %s\n", pat.newest)
 				continue
 			}
 
@@ -93,7 +109,7 @@ func (c CmdFind) findInTree(repo *repository.Repository, id restic.ID, path stri
 		}
 
 		if node.Type == "dir" {
-			subdirResults, err := c.findInTree(repo, *node.Subtree, filepath.Join(path, node.Name))
+			subdirResults, err := findInTree(repo, pat, *node.Subtree, filepath.Join(path, node.Name))
 			if err != nil {
 				return nil, err
 			}
@@ -105,15 +121,15 @@ func (c CmdFind) findInTree(repo *repository.Repository, id restic.ID, path stri
 	return results, nil
 }
 
-func (c CmdFind) findInSnapshot(repo *repository.Repository, id restic.ID) error {
-	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", id.Str(), c.oldest, c.newest)
+func findInSnapshot(repo *repository.Repository, pat findPattern, id restic.ID) error {
+	debug.Log("restic.find", "searching in snapshot %s\n  for entries within [%s %s]", id.Str(), pat.oldest, pat.newest)
 
 	sn, err := restic.LoadSnapshot(repo, id)
 	if err != nil {
 		return err
 	}
 
-	results, err := c.findInTree(repo, *sn.Tree, "")
+	results, err := findInTree(repo, pat, *sn.Tree, "")
 	if err != nil {
 		return err
 	}
@@ -121,49 +137,50 @@ func (c CmdFind) findInSnapshot(repo *repository.Repository, id restic.ID) error
 	if len(results) == 0 {
 		return nil
 	}
-	c.global.Verbosef("found %d matching entries in snapshot %s\n", len(results), id)
+	Verbosef("found %d matching entries in snapshot %s\n", len(results), id)
 	for _, res := range results {
 		res.node.Name = filepath.Join(res.path, res.node.Name)
-		c.global.Printf("  %s\n", res.node)
+		Printf("  %s\n", res.node)
 	}
 
 	return nil
 }
 
-func (CmdFind) Usage() string {
-	return "[find-OPTIONS] PATTERN"
-}
-
-func (c CmdFind) Execute(args []string) error {
+func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
-		return errors.Fatalf("wrong number of arguments, Usage: %s", c.Usage())
+		return errors.Fatalf("wrong number of arguments")
 	}
 
-	var err error
+	var (
+		err error
+		pat findPattern
+	)
 
-	if c.Oldest != "" {
-		c.oldest, err = parseTime(c.Oldest)
+	if opts.Oldest != "" {
+		pat.oldest, err = parseTime(opts.Oldest)
 		if err != nil {
 			return err
 		}
 	}
 
-	if c.Newest != "" {
-		c.newest, err = parseTime(c.Newest)
+	if opts.Newest != "" {
+		pat.newest, err = parseTime(opts.Newest)
 		if err != nil {
 			return err
 		}
 	}
 
-	repo, err := c.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
 
-	lock, err := lockRepo(repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
+	if !gopts.NoLock {
+		lock, err := lockRepo(repo)
+		defer unlockRepo(lock)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = repo.LoadIndex()
@@ -171,21 +188,21 @@ func (c CmdFind) Execute(args []string) error {
 		return err
 	}
 
-	c.pattern = args[0]
+	pat.pattern = args[0]
 
-	if c.Snapshot != "" {
-		snapshotID, err := restic.FindSnapshot(repo, c.Snapshot)
+	if opts.Snapshot != "" {
+		snapshotID, err := restic.FindSnapshot(repo, opts.Snapshot)
 		if err != nil {
 			return errors.Fatalf("invalid id %q: %v", args[1], err)
 		}
 
-		return c.findInSnapshot(repo, snapshotID)
+		return findInSnapshot(repo, pat, snapshotID)
 	}
 
 	done := make(chan struct{})
 	defer close(done)
 	for snapshotID := range repo.List(restic.SnapshotFile, done) {
-		err := c.findInSnapshot(repo, snapshotID)
+		err := findInSnapshot(repo, pat, snapshotID)
 
 		if err != nil {
 			return err

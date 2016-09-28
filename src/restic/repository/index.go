@@ -524,7 +524,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
 func LoadIndexWithDecoder(repo restic.Repository, id restic.ID, fn func(io.Reader) (*Index, error)) (idx *Index, err error) {
-	debug.Log("LoadIndexWithDecoder", "Loading index %v", id[:8])
+	debug.Log("LoadIndexWithDecoder", "Loading index %v", id.Str())
 
 	buf, err := repo.LoadAndDecrypt(restic.IndexFile, id)
 	if err != nil {

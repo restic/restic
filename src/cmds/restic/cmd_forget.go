@@ -5,46 +5,58 @@ import (
 	"io"
 	"restic"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
-// CmdForget implements the 'forget' command.
-type CmdForget struct {
-	Last    int `short:"l" long:"keep-last"   description:"keep the last n snapshots"`
-	Hourly  int `short:"H" long:"keep-hourly" description:"keep the last n hourly snapshots"`
-	Daily   int `short:"d" long:"keep-daily"  description:"keep the last n daily snapshots"`
-	Weekly  int `short:"w" long:"keep-weekly" description:"keep the last n weekly snapshots"`
-	Monthly int `short:"m" long:"keep-monthly"description:"keep the last n monthly snapshots"`
-	Yearly  int `short:"y" long:"keep-yearly" description:"keep the last n yearly snapshots"`
-
-	KeepTags []string `long:"keep-tag"    description:"alwaps keep snapshots with this tag (can be specified multiple times)"`
-
-	Hostname string   `long:"hostname" description:"only forget snapshots for the given hostname"`
-	Tags     []string `long:"tag"      description:"only forget snapshots with the tag (can be specified multiple times)"`
-
-	DryRun bool `short:"n" long:"dry-run" description:"do not delete anything, just print what would be done"`
-
-	global *GlobalOptions
+var cmdForget = &cobra.Command{
+	Use:   "forget [flags] [snapshot ID] [...]",
+	Short: "forget removes snapshots from the repository",
+	Long: `
+The "forget" command removes snapshots according to a policy. Please note that
+this command really only deletes the snapshot object in the repository, which
+is a reference to data stored there. In order to remove this (now unreferenced)
+data after 'forget' was run successfully, see the 'prune' command. `,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runForget(forgetOptions, globalOptions, args)
+	},
 }
+
+// ForgetOptions collects all options for the forget command.
+type ForgetOptions struct {
+	Last    int
+	Hourly  int
+	Daily   int
+	Weekly  int
+	Monthly int
+	Yearly  int
+
+	KeepTags []string
+
+	Hostname string
+	Tags     []string
+
+	DryRun bool
+}
+
+var forgetOptions ForgetOptions
 
 func init() {
-	_, err := parser.AddCommand("forget",
-		"removes snapshots from a repository",
-		`
-The forget command removes snapshots according to a policy. Please note
-that this command really only deletes the snapshot object in the repo, which
-is a reference to data stored there. In order to remove this (now
-unreferenced) data after 'forget' was run successfully, see the 'prune'
-command.
-`,
-		&CmdForget{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
-}
+	cmdRoot.AddCommand(cmdForget)
 
-// Usage returns usage information for 'forget'.
-func (cmd CmdForget) Usage() string {
-	return "[snapshot ID] ..."
+	f := cmdForget.Flags()
+	f.IntVarP(&forgetOptions.Last, "keep-last", "l", 0, "keep the last n snapshots")
+	f.IntVarP(&forgetOptions.Hourly, "keep-hourly", "H", 0, "keep the last n hourly snapshots")
+	f.IntVarP(&forgetOptions.Daily, "keep-daily", "d", 0, "keep the last n daily snapshots")
+	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last n weekly snapshots")
+	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last n monthly snapshots")
+	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last n yearly snapshots")
+
+	f.StringSliceVar(&forgetOptions.KeepTags, "keep-tag", []string{}, "always keep snapshots with this tag (can be specified multiple times)")
+	f.StringVar(&forgetOptions.Hostname, "hostname", "", "only forget snapshots for the given hostname")
+	f.StringSliceVar(&forgetOptions.Tags, "tag", []string{}, "only forget snapshots with the tag (can be specified multiple times)")
+
+	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 }
 
 func printSnapshots(w io.Writer, snapshots restic.Snapshots) {
@@ -87,9 +99,8 @@ func printSnapshots(w io.Writer, snapshots restic.Snapshots) {
 	tab.Write(w)
 }
 
-// Execute runs the 'forget' command.
-func (cmd CmdForget) Execute(args []string) error {
-	repo, err := cmd.global.OpenRepository()
+func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
@@ -112,26 +123,26 @@ func (cmd CmdForget) Execute(args []string) error {
 			return err
 		}
 
-		if !cmd.DryRun {
+		if !opts.DryRun {
 			err = repo.Backend().Remove(restic.SnapshotFile, id.String())
 			if err != nil {
 				return err
 			}
 
-			cmd.global.Verbosef("removed snapshot %v\n", id.Str())
+			Verbosef("removed snapshot %v\n", id.Str())
 		} else {
-			cmd.global.Verbosef("would removed snapshot %v\n", id.Str())
+			Verbosef("would removed snapshot %v\n", id.Str())
 		}
 	}
 
 	policy := restic.ExpirePolicy{
-		Last:    cmd.Last,
-		Hourly:  cmd.Hourly,
-		Daily:   cmd.Daily,
-		Weekly:  cmd.Weekly,
-		Monthly: cmd.Monthly,
-		Yearly:  cmd.Yearly,
-		Tags:    cmd.KeepTags,
+		Last:    opts.Last,
+		Hourly:  opts.Hourly,
+		Daily:   opts.Daily,
+		Weekly:  opts.Weekly,
+		Monthly: opts.Monthly,
+		Yearly:  opts.Yearly,
+		Tags:    opts.KeepTags,
 	}
 
 	if policy.Empty() {
@@ -153,11 +164,11 @@ func (cmd CmdForget) Execute(args []string) error {
 	snapshotGroups := make(map[key]restic.Snapshots)
 
 	for _, sn := range snapshots {
-		if cmd.Hostname != "" && sn.Hostname != cmd.Hostname {
+		if opts.Hostname != "" && sn.Hostname != opts.Hostname {
 			continue
 		}
 
-		if !sn.HasTags(cmd.Tags) {
+		if !sn.HasTags(opts.Tags) {
 			continue
 		}
 
@@ -168,18 +179,18 @@ func (cmd CmdForget) Execute(args []string) error {
 	}
 
 	for key, snapshotGroup := range snapshotGroups {
-		cmd.global.Printf("snapshots for host %v, directories %v:\n\n", key.Hostname, key.Dirs)
+		Printf("snapshots for host %v, directories %v:\n\n", key.Hostname, key.Dirs)
 		keep, remove := restic.ApplyPolicy(snapshotGroup, policy)
 
-		cmd.global.Printf("keep %d snapshots:\n", len(keep))
-		printSnapshots(cmd.global.stdout, keep)
-		cmd.global.Printf("\n")
+		Printf("keep %d snapshots:\n", len(keep))
+		printSnapshots(globalOptions.stdout, keep)
+		Printf("\n")
 
-		cmd.global.Printf("remove %d snapshots:\n", len(remove))
-		printSnapshots(cmd.global.stdout, remove)
-		cmd.global.Printf("\n")
+		Printf("remove %d snapshots:\n", len(remove))
+		printSnapshots(globalOptions.stdout, remove)
+		Printf("\n")
 
-		if !cmd.DryRun {
+		if !opts.DryRun {
 			for _, sn := range remove {
 				err = repo.Backend().Remove(restic.SnapshotFile, sn.ID().String())
 				if err != nil {

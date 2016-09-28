@@ -1,3 +1,4 @@
+// +build ignore
 // +build !openbsd
 // +build !windows
 

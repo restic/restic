@@ -1,35 +1,43 @@
 package main
 
-import "restic"
+import (
+	"restic"
 
-type CmdUnlock struct {
-	RemoveAll bool `long:"remove-all" description:"Remove all locks, even stale ones"`
+	"github.com/spf13/cobra"
+)
 
-	global *GlobalOptions
+var unlockCmd = &cobra.Command{
+	Use:   "unlock",
+	Short: "remove locks other processes created",
+	Long: `
+The "unlock" command removes stale locks that have been created by other restic processes.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runUnlock(unlockOptions, globalOptions)
+	},
 }
+
+// UnlockOptions collects all options for the unlock command.
+type UnlockOptions struct {
+	RemoveAll bool
+}
+
+var unlockOptions UnlockOptions
 
 func init() {
-	_, err := parser.AddCommand("unlock",
-		"remove locks",
-		"The unlock command checks for stale locks and removes them",
-		&CmdUnlock{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(unlockCmd)
+
+	unlockCmd.Flags().BoolVar(&unlockOptions.RemoveAll, "remove-all", false, "Remove all locks, even non-stale ones")
 }
 
-func (cmd CmdUnlock) Usage() string {
-	return "[unlock-options]"
-}
-
-func (cmd CmdUnlock) Execute(args []string) error {
-	repo, err := cmd.global.OpenRepository()
+func runUnlock(opts UnlockOptions, gopts GlobalOptions) error {
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
 
 	fn := restic.RemoveStaleLocks
-	if cmd.RemoveAll {
+	if opts.RemoveAll {
 		fn = restic.RemoveAllLocks
 	}
 
@@ -38,6 +46,6 @@ func (cmd CmdUnlock) Execute(args []string) error {
 		return err
 	}
 
-	cmd.global.Verbosef("successfully removed locks\n")
+	Verbosef("successfully removed locks\n")
 	return nil
 }

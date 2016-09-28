@@ -4,34 +4,31 @@ import (
 	"fmt"
 	"restic"
 
+	"github.com/spf13/cobra"
+
 	"restic/errors"
 	"restic/repository"
 )
 
-type CmdKey struct {
-	global      *GlobalOptions
-	newPassword string
+var cmdKey = &cobra.Command{
+	Use:   "key [list|add|rm|passwd] [ID]",
+	Short: "manage keys (passwords)",
+	Long: `
+The "key" command manages keys (passwords) for accessing a repository.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runKey(globalOptions, args)
+	},
 }
 
 func init() {
-	_, err := parser.AddCommand("key",
-		"manage keys",
-		"The key command manages keys (passwords) of a repository",
-		&CmdKey{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
+	cmdRoot.AddCommand(cmdKey)
 }
 
-func (cmd CmdKey) listKeys(s *repository.Repository) error {
+func listKeys(s *repository.Repository) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
-
-	plen, err := s.PrefixLength(restic.KeyFile)
-	if err != nil {
-		return err
-	}
 
 	done := make(chan struct{})
 	defer close(done)
@@ -39,7 +36,7 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 	for id := range s.List(restic.KeyFile, done) {
 		k, err := repository.LoadKey(s, id.String())
 		if err != nil {
-			cmd.global.Warnf("LoadKey() failed: %v\n", err)
+			Warnf("LoadKey() failed: %v\n", err)
 			continue
 		}
 
@@ -49,25 +46,28 @@ func (cmd CmdKey) listKeys(s *repository.Repository) error {
 		} else {
 			current = " "
 		}
-		tab.Rows = append(tab.Rows, []interface{}{current, id.String()[:plen],
+		tab.Rows = append(tab.Rows, []interface{}{current, id.Str(),
 			k.Username, k.Hostname, k.Created.Format(TimeFormat)})
 	}
 
-	return tab.Write(cmd.global.stdout)
+	return tab.Write(globalOptions.stdout)
 }
 
-func (cmd CmdKey) getNewPassword() (string, error) {
-	if cmd.newPassword != "" {
-		return cmd.newPassword, nil
+// testKeyNewPassword is used to set a new password during integration testing.
+var testKeyNewPassword string
+
+func getNewPassword(gopts GlobalOptions) (string, error) {
+	if testKeyNewPassword != "" {
+		return testKeyNewPassword, nil
 	}
 
-	return cmd.global.ReadPasswordTwice(
+	return ReadPasswordTwice(gopts,
 		"enter password for new key: ",
 		"enter password again: ")
 }
 
-func (cmd CmdKey) addKey(repo *repository.Repository) error {
-	pw, err := cmd.getNewPassword()
+func addKey(gopts GlobalOptions, repo *repository.Repository) error {
+	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
 	}
@@ -77,12 +77,12 @@ func (cmd CmdKey) addKey(repo *repository.Repository) error {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
-	cmd.global.Verbosef("saved new key as %s\n", id)
+	Verbosef("saved new key as %s\n", id)
 
 	return nil
 }
 
-func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
+func deleteKey(repo *repository.Repository, name string) error {
 	if name == repo.KeyName() {
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
@@ -92,12 +92,12 @@ func (cmd CmdKey) deleteKey(repo *repository.Repository, name string) error {
 		return err
 	}
 
-	cmd.global.Verbosef("removed key %v\n", name)
+	Verbosef("removed key %v\n", name)
 	return nil
 }
 
-func (cmd CmdKey) changePassword(repo *repository.Repository) error {
-	pw, err := cmd.getNewPassword()
+func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
+	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
 	}
@@ -112,21 +112,17 @@ func (cmd CmdKey) changePassword(repo *repository.Repository) error {
 		return err
 	}
 
-	cmd.global.Verbosef("saved new key as %s\n", id)
+	Verbosef("saved new key as %s\n", id)
 
 	return nil
 }
 
-func (cmd CmdKey) Usage() string {
-	return "[list|add|rm|passwd] [ID]"
-}
-
-func (cmd CmdKey) Execute(args []string) error {
+func runKey(gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) {
-		return errors.Fatalf("wrong number of arguments, Usage: %s", cmd.Usage())
+		return errors.Fatalf("wrong number of arguments")
 	}
 
-	repo, err := cmd.global.OpenRepository()
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
@@ -139,7 +135,7 @@ func (cmd CmdKey) Execute(args []string) error {
 			return err
 		}
 
-		return cmd.listKeys(repo)
+		return listKeys(repo)
 	case "add":
 		lock, err := lockRepo(repo)
 		defer unlockRepo(lock)
@@ -147,7 +143,7 @@ func (cmd CmdKey) Execute(args []string) error {
 			return err
 		}
 
-		return cmd.addKey(repo)
+		return addKey(gopts, repo)
 	case "rm":
 		lock, err := lockRepoExclusive(repo)
 		defer unlockRepo(lock)
@@ -160,7 +156,7 @@ func (cmd CmdKey) Execute(args []string) error {
 			return err
 		}
 
-		return cmd.deleteKey(repo, id)
+		return deleteKey(repo, id)
 	case "passwd":
 		lock, err := lockRepoExclusive(repo)
 		defer unlockRepo(lock)
@@ -168,7 +164,7 @@ func (cmd CmdKey) Execute(args []string) error {
 			return err
 		}
 
-		return cmd.changePassword(repo)
+		return changePassword(gopts, repo)
 	}
 
 	return nil

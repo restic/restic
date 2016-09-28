@@ -166,18 +166,6 @@ type testEnvironment struct {
 	base, cache, repo, testdata string
 }
 
-func configureRestic(t testing.TB, cache, repo string) GlobalOptions {
-	return GlobalOptions{
-		CacheDir: cache,
-		Repo:     repo,
-		Quiet:    true,
-
-		password: TestPassword,
-		stdout:   os.Stdout,
-		stderr:   os.Stderr,
-	}
-}
-
 // withTestEnvironment creates a test environment and calls f with it. After f has
 // returned, the temporary directory is removed.
 func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) {
@@ -201,7 +189,18 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 	OK(t, os.MkdirAll(env.cache, 0700))
 	OK(t, os.MkdirAll(env.repo, 0700))
 
-	f(&env, configureRestic(t, env.cache, env.repo))
+	gopts := GlobalOptions{
+		Repo:     env.repo,
+		Quiet:    true,
+		password: TestPassword,
+		stdout:   os.Stdout,
+		stderr:   os.Stderr,
+	}
+
+	// always overwrite global options
+	globalOptions = gopts
+
+	f(&env, gopts)
 
 	if !TestCleanupTempDirs {
 		t.Logf("leaving temporary directory %v used for test", tempdir)

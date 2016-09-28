@@ -27,9 +27,9 @@ func IsFatal(err error) bool {
 	return ok && e.Fatal()
 }
 
-// Fatal returns an error which implements the Fataler interface.
+// Fatal returns a wrapped error which implements the Fataler interface.
 func Fatal(s string) error {
-	return fatalError(s)
+	return Wrap(fatalError(s), "Fatal")
 }
 
 // Fatalf returns an error which implements the Fataler interface.

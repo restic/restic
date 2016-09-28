@@ -2,85 +2,58 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"restic/errors"
 	"sort"
-	"strings"
+
+	"github.com/spf13/cobra"
 
 	"restic"
 )
 
-type Table struct {
-	Header string
-	Rows   [][]interface{}
-
-	RowFormat string
+var cmdSnapshots = &cobra.Command{
+	Use:   "snapshots",
+	Short: "list all snapshots",
+	Long: `
+The "snapshots" command lists all snapshots stored in a repository.
+`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runSnapshots(snapshotOptions, globalOptions, args)
+	},
 }
 
-func NewTable() Table {
-	return Table{
-		Rows: [][]interface{}{},
+// SnapshotOptions bundle all options for the snapshots command.
+type SnapshotOptions struct {
+	Host  string
+	Paths []string
+}
+
+var snapshotOptions SnapshotOptions
+
+func init() {
+	cmdRoot.AddCommand(cmdSnapshots)
+
+	f := cmdSnapshots.Flags()
+	f.StringVar(&snapshotOptions.Host, "host", "", "only print snapshots for this host")
+	f.StringSliceVar(&snapshotOptions.Paths, "path", []string{}, "only print snapshots for this path (can be specified multiple times)")
+}
+
+func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
+	if len(args) != 0 {
+		return errors.Fatalf("wrong number of arguments")
 	}
-}
 
-func (t Table) Write(w io.Writer) error {
-	_, err := fmt.Fprintln(w, t.Header)
+	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(w, strings.Repeat("-", 70))
-	if err != nil {
-		return err
-	}
 
-	for _, row := range t.Rows {
-		_, err = fmt.Fprintf(w, t.RowFormat+"\n", row...)
+	if !gopts.NoLock {
+		lock, err := lockRepo(repo)
+		defer unlockRepo(lock)
 		if err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-const TimeFormat = "2006-01-02 15:04:05"
-
-type CmdSnapshots struct {
-	Host  string   `short:"h" long:"host"  description:"Host Filter"`
-	Paths []string `short:"p" long:"path" description:"Path Filter (absolute path) (can be specified multiple times)"`
-
-	global *GlobalOptions
-}
-
-func init() {
-	_, err := parser.AddCommand("snapshots",
-		"show snapshots",
-		"The snapshots command lists all snapshots stored in a repository",
-		&CmdSnapshots{global: &globalOpts})
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (cmd CmdSnapshots) Usage() string {
-	return ""
-}
-
-func (cmd CmdSnapshots) Execute(args []string) error {
-	if len(args) != 0 {
-		return errors.Fatalf("wrong number of arguments, usage: %s", cmd.Usage())
-	}
-
-	repo, err := cmd.global.OpenRepository()
-	if err != nil {
-		return err
-	}
-
-	lock, err := lockRepo(repo)
-	defer unlockRepo(lock)
-	if err != nil {
-		return err
 	}
 
 	tab := NewTable()
@@ -98,7 +71,7 @@ func (cmd CmdSnapshots) Execute(args []string) error {
 			continue
 		}
 
-		if restic.SamePaths(sn.Paths, cmd.Paths) && (cmd.Host == "" || cmd.Host == sn.Hostname) {
+		if restic.SamePaths(sn.Paths, opts.Paths) && (opts.Host == "" || opts.Host == sn.Hostname) {
 			pos := sort.Search(len(list), func(i int) bool {
 				return list[i].Time.After(sn.Time)
 			})
