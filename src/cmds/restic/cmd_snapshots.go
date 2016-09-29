@@ -35,7 +35,7 @@ func init() {
 
 	f := cmdSnapshots.Flags()
 	f.StringVar(&snapshotOptions.Host, "host", "", "only print snapshots for this host")
-	f.StringSliceVar(&snapshotOptions.Paths, "path", []string{}, "only print snapshots for this path (can be specified multiple times)")
+	f.StringSliceVar(&snapshotOptions.Paths, "path", []string{}, "only print snapshots for this `path` (can be specified multiple times)")
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {

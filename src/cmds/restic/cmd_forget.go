@@ -45,16 +45,16 @@ func init() {
 	cmdRoot.AddCommand(cmdForget)
 
 	f := cmdForget.Flags()
-	f.IntVarP(&forgetOptions.Last, "keep-last", "l", 0, "keep the last n snapshots")
-	f.IntVarP(&forgetOptions.Hourly, "keep-hourly", "H", 0, "keep the last n hourly snapshots")
-	f.IntVarP(&forgetOptions.Daily, "keep-daily", "d", 0, "keep the last n daily snapshots")
-	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last n weekly snapshots")
-	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last n monthly snapshots")
-	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last n yearly snapshots")
+	f.IntVarP(&forgetOptions.Last, "keep-last", "l", 0, "keep the last `n` snapshots")
+	f.IntVarP(&forgetOptions.Hourly, "keep-hourly", "H", 0, "keep the last `n` hourly snapshots")
+	f.IntVarP(&forgetOptions.Daily, "keep-daily", "d", 0, "keep the last `n` daily snapshots")
+	f.IntVarP(&forgetOptions.Weekly, "keep-weekly", "w", 0, "keep the last `n` weekly snapshots")
+	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
+	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
 
-	f.StringSliceVar(&forgetOptions.KeepTags, "keep-tag", []string{}, "always keep snapshots with this tag (can be specified multiple times)")
+	f.StringSliceVar(&forgetOptions.KeepTags, "keep-tag", []string{}, "always keep snapshots with this `tag` (can be specified multiple times)")
 	f.StringVar(&forgetOptions.Hostname, "hostname", "", "only forget snapshots for the given hostname")
-	f.StringSliceVar(&forgetOptions.Tags, "tag", []string{}, "only forget snapshots with the tag (can be specified multiple times)")
+	f.StringSliceVar(&forgetOptions.Tags, "tag", []string{}, "only forget snapshots with the `tag` (can be specified multiple times)")
 
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 }
