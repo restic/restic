@@ -56,12 +56,12 @@ func init() {
 	f := cmdBackup.Flags()
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories. Overrides the "parent" flag`)
-	f.StringSliceVarP(&backupOptions.Excludes, "exclude", "e", []string{}, "exclude a pattern (can be specified multiple times)")
+	f.StringSliceVarP(&backupOptions.Excludes, "exclude", "e", []string{}, "exclude a `pattern` (can be specified multiple times)")
 	f.StringVar(&backupOptions.ExcludeFile, "exclude-file", "", "read exclude patterns from a file")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "Exclude other file systems")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "", "file name to use when reading from stdin")
-	f.StringSliceVar(&backupOptions.Tags, "tag", []string{}, "add a tag for the new snapshot (can be specified multiple times)")
+	f.StringSliceVar(&backupOptions.Tags, "tag", []string{}, "add a `tag` for the new snapshot (can be specified multiple times)")
 }
 
 func newScanProgress(gopts GlobalOptions) *restic.Progress {
