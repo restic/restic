@@ -39,11 +39,10 @@ Building restic with gccgo may work, but is not supported.
 Contribute and Documentation
 ============================
 
-Contributions are welcome! More information can be found in
-[`CONTRIBUTING.md`](CONTRIBUTING.md). A document describing the design of
-restic and the data structures stored on the back end is contained in
-[`doc/Design.md`](doc/Design.md).
-The development environment is described in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Contributions are welcome! More information and a description of the
+development environment can be found in [`CONTRIBUTING.md`](CONTRIBUTING.md). A
+document describing the design of restic and the data structures stored on the
+back end is contained in [`doc/Design.md`](doc/Design.md).
 
 If you'd like to start contributing to restic, but don't know exactly what do
 to, have a look at this great article by Dave Cheney:
