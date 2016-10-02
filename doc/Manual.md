@@ -351,10 +351,7 @@ the repository with FUSE:
     Now serving /tmp/backup at /tmp/restic
     Don't forget to umount after quitting!
 
-Windows doesn't support FUSE directly. Projects like
-[dokan](http://dokan-dev.github.io/) try to fill the gap. We haven't tested it
-yet, but we'd like to hear about your experience. For setup information see
-[dokan FUSE in dokan's wiki](https://github.com/dokan-dev/dokany/wiki/FUSE).
+Mounting repositories via FUSE is not possible on Windows and OpenBSD.
 
 # Create an SFTP repository
 
