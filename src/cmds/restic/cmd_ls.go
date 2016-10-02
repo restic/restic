@@ -39,13 +39,13 @@ func printNode(prefix string, n *restic.Node) string {
 	switch n.Type {
 	case "file":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			n.Mode, n.UID, n.GID, n.Size, n.ModTime, filepath.Join(prefix, n.Name))
+			n.Mode, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name))
 	case "dir":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			n.Mode|os.ModeDir, n.UID, n.GID, n.Size, n.ModTime, filepath.Join(prefix, n.Name))
+			n.Mode|os.ModeDir, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name))
 	case "symlink":
 		return fmt.Sprintf("%s %5d %5d %6d %s %s -> %s",
-			n.Mode|os.ModeSymlink, n.UID, n.GID, n.Size, n.ModTime, filepath.Join(prefix, n.Name), n.LinkTarget)
+			n.Mode|os.ModeSymlink, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name), n.LinkTarget)
 	default:
 		return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
 	}
