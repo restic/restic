@@ -28,19 +28,19 @@ func fixpath(name string) string {
 		abspath, err := filepath.Abs(name)
 		if err == nil {
 			// Check if \\?\UNC\ already exist
-			if strings.HasPrefix(abspath, "\\\\?\\UNC\\") {
+			if strings.HasPrefix(abspath, `\\?\UNC\`) {
 				return abspath
 			}
 			// Check if \\?\ already exist
-			if strings.HasPrefix(abspath, "\\\\?\\") {
+			if strings.HasPrefix(abspath, `\\?\`) {
 				return abspath
 			}
 			// Check if path starts with \\
-			if strings.HasPrefix(abspath, "\\\\") {
-				return strings.Replace(abspath, "\\\\", "\\\\?\\UNC\\", 1)
+			if strings.HasPrefix(abspath, `\\`) {
+				return strings.Replace(abspath, `\\`, `\\?\UNC\`, 1)
 			}
 			// Normal path
-			return "\\\\?\\" + abspath
+			return `\\?\` + abspath
 		}
 	}
 	return name
