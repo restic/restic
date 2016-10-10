@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"restic"
@@ -116,11 +117,24 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	// first, process all snapshot IDs given as arguments
+	// parse arguments as hex strings
+	var ids []string
 	for _, s := range args {
+		_, err := hex.DecodeString(s)
+		if err != nil {
+			Warnf("argument %q is not a snapshot ID, ignoring\n", s)
+			continue
+		}
+
+		ids = append(ids, s)
+	}
+
+	// process all snapshot IDs given as arguments
+	for _, s := range ids {
 		id, err := restic.FindSnapshot(repo, s)
 		if err != nil {
-			return err
+			Warnf("cound not find a snapshot for ID %q, ignoring\n", s)
+			continue
 		}
 
 		if !opts.DryRun {
