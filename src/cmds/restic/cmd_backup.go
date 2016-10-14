@@ -71,8 +71,13 @@ func newScanProgress(gopts GlobalOptions) *restic.Progress {
 
 	p := restic.NewProgress()
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		if IsProcessBackground() {
+			return
+		}
+
 		PrintProgress("[%s] %d directories, %d files, %s", formatDuration(d), s.Dirs, s.Files, formatBytes(s.Bytes))
 	}
+
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
 		PrintProgress("scanned %d directories, %d files in %s\n", s.Dirs, s.Files, formatDuration(d))
 	}
@@ -91,6 +96,10 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 	itemsTodo := todo.Files + todo.Dirs
 
 	archiveProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		if IsProcessBackground() {
+			return
+		}
+
 		sec := uint64(d / time.Second)
 		if todo.Bytes > 0 && sec > 0 && ticker {
 			bps = s.Bytes / sec
@@ -144,6 +153,10 @@ func newArchiveStdinProgress(gopts GlobalOptions) *restic.Progress {
 	var bps uint64
 
 	archiveProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
+		if IsProcessBackground() {
+			return
+		}
+
 		sec := uint64(d / time.Second)
 		if s.Bytes > 0 && sec > 0 && ticker {
 			bps = s.Bytes / sec
