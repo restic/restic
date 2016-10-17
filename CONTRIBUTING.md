@@ -92,6 +92,16 @@ quickly set up VMs and run the tests, e.g.:
     $ vagrant ssh freebsd -c 'cd restic/restic; go test -v ./...'
     [...]
 
+The default `go` tool can also be used by setting the environment variable
+`GOPATH` to the following value while being in the top level directory in the
+git repository:
+
+    $ export GOPATH=$PWD:$PWD/vendor
+
+The file `.envrc` allows automatic `GOPATH` configuration with
+[direnv](https://direnv.net/), inspect the file and then allow automatic
+configuration by running `direnv allow`.
+
 Providing Patches
 =================
 
