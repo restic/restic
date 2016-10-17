@@ -67,7 +67,6 @@ alexander@bumpern.de. If possible, please encrypt your email using the following
 pub   4096R/91A6868BD3F7A907 2014-11-01
       Key fingerprint = CF8F 18F2 8445 7597 3F79  D4E1 91A6 868B D3F7 A907
       uid                          Alexander Neumann <alexander@bumpern.de>
-      uid                          Alexander Neumann <alexander@debian.org>
       sub   4096R/D5FC2ACF4043FDF1 2014-11-01
 ```
 
