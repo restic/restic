@@ -112,11 +112,6 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	err = repo.LoadIndex()
-	if err != nil {
-		return err
-	}
-
 	// parse arguments as hex strings
 	var ids []string
 	for _, s := range args {
