@@ -345,7 +345,7 @@ func (r *SFTP) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 
 	defer func() {
 		e := f.Close()
-		if err == nil && e != nil {
+		if err == nil {
 			err = errors.Wrap(e, "Close")
 		}
 	}()
