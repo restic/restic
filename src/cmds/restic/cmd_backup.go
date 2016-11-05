@@ -359,7 +359,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 			return false
 		}
 
-		if !opts.ExcludeOtherFS {
+		if !opts.ExcludeOtherFS || fi == nil {
 			return true
 		}
 
