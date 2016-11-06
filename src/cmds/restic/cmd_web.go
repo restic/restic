@@ -4,48 +4,44 @@
 package main
 
 import (
-	"os"
+	"net/http"
 
 	"github.com/spf13/cobra"
 
 	"restic/debug"
 	"restic/errors"
 
-	resticfs "restic/fs"
+	//resticfs "restic/fs"
 	"restic/fuse"
+	resticWebdav "restic/webdav"
 
-	systemFuse "bazil.org/fuse"
-	"bazil.org/fuse/fs"
+	"golang.org/x/net/webdav"
 )
 
-var cmdMount = &cobra.Command{
-	Use:   "mount [flags] mountpoint",
-	Short: "mount the repository",
+var cmdWeb = &cobra.Command{
+	Use:   "web [flags] [[hostname]:port]",
+	Short: "mount the repository as a WebDAV server",
 	Long: `
-The "mount" command mounts the repository via fuse to a directory. This is a
-read-only mount.
+The "web" command mounts the repository as a WebDAV server. This is a
+read-only interface.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runMount(mountOptions, globalOptions, args)
+		return runWeb(webOptions, globalOptions, args)
 	},
 }
 
-// MountOptions collects all options for the mount command.
-type MountOptions struct {
-	OwnerRoot bool
-}
+// WebOptions collects all options for the mount command.
+type WebOptions struct{}
 
-var mountOptions MountOptions
+var webOptions WebOptions
 
 func init() {
-	cmdRoot.AddCommand(cmdMount)
-
-	cmdMount.Flags().BoolVar(&mountOptions.OwnerRoot, "owner-root", false, "use 'root' as the owner of files and dirs")
+	cmdRoot.AddCommand(cmdWeb)
 }
 
-func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
-	debug.Log("start mount")
-	defer debug.Log("finish mount")
+func web(opts WebOptions, gopts GlobalOptions, address string) error {
+	debug.Log("start web")
+	defer debug.Log("finish web")
 
 	repo, err := OpenRepository(gopts)
 	if err != nil {
@@ -57,57 +53,22 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		return err
 	}
 
-	if _, err := resticfs.Stat(mountpoint); os.IsNotExist(errors.Cause(err)) {
-		Verbosef("Mountpoint %s doesn't exist, creating it\n", mountpoint)
-		err = resticfs.Mkdir(mountpoint, os.ModeDir|0700)
-		if err != nil {
-			return err
-		}
-	}
-	c, err := systemFuse.Mount(
-		mountpoint,
-		systemFuse.ReadOnly(),
-		systemFuse.FSName("restic"),
-	)
-	if err != nil {
-		return err
+	fsHandler := &webdav.Handler{
+		FileSystem: resticWebdav.NewWebdavFS(fuse.NewSnapshotsDir(repo, true)),
+		LockSystem: webdav.NewMemLS(),
+		Logger:     nil,
 	}
 
-	Printf("Now serving the repository at %s\n", mountpoint)
-	Printf("Don't forget to umount after quitting!\n")
-
-	root := fs.Tree{}
-	root.Add("snapshots", fuse.NewSnapshotsDir(repo, opts.OwnerRoot))
-
-	debug.Log("serving mount at %v", mountpoint)
-	err = fs.Serve(c, &root)
-	if err != nil {
-		return err
-	}
-
-	<-c.Ready
-	return c.MountError
+	debug.Log("serving mount at %v", address)
+	return http.ListenAndServe(address, fsHandler)
 }
 
-func umount(mountpoint string) error {
-	return systemFuse.Unmount(mountpoint)
-}
-
-func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
+func runWeb(opts WebOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
 		return errors.Fatalf("wrong number of parameters")
 	}
 
-	mountpoint := args[0]
+	address := args[0]
 
-	AddCleanupHandler(func() error {
-		debug.Log("running umount cleanup handler for mount at %v", mountpoint)
-		err := umount(mountpoint)
-		if err != nil {
-			Warnf("unable to umount (maybe already umounted?): %v\n", err)
-		}
-		return nil
-	})
-
-	return mount(opts, gopts, mountpoint)
+	return web(opts, gopts, address)
 }
