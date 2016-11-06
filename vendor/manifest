@@ -111,6 +111,13 @@
 			"path": "/context"
 		},
 		{
+			"importpath": "golang.org/x/net/webdav",
+			"repository": "https://go.googlesource.com/net",
+			"revision": "76c1a11e06a6d0fcd17b3830b8e1b87a2ade4a9c",
+			"branch": "master",
+			"path": "/webdav"
+		},
+		{
 			"importpath": "golang.org/x/sys/unix",
 			"repository": "https://go.googlesource.com/sys",
 			"revision": "30de6d19a3bd89a5f38ae4028e23aaa5582648af",
