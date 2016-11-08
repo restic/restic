@@ -62,11 +62,13 @@ overhead is 32 bytes. For each file, a new random IV is selected.
 The file `config` is encrypted this way and contains a JSON document like the
 following:
 
-    {
-      "version": 1,
-      "id": "5956a3f67a6230d4a92cefb29529f10196c7d92582ec305fd71ff6d331d6271b",
-      "chunker_polynomial": "25b468838dcb75"
-    }
+```json
+{
+  "version": 1,
+  "id": "5956a3f67a6230d4a92cefb29529f10196c7d92582ec305fd71ff6d331d6271b",
+  "chunker_polynomial": "25b468838dcb75"
+}
+```
 
 After decryption, restic first checks that the version field contains a version
 number that it understands, otherwise it aborts. At the moment, the version is
@@ -102,7 +104,9 @@ The basic layout of a sample restic repository is shown here:
 
 A repository can be initialized with the `restic init` command, e.g.:
 
-    $ restic -r /tmp/restic-repo init
+```console
+$ restic -r /tmp/restic-repo init
+```
 
 Pack Format
 -----------
@@ -163,35 +167,37 @@ used to reconstruct the index. The files are encrypted and authenticated like
 Data and Tree Blobs, so the outer structure is `IV || Ciphertext || MAC` again.
 The plaintext consists of a JSON document like the following:
 
+```json
+{
+  "supersedes": [
+    "ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452"
+  ],
+  "packs": [
     {
-      "supersedes": [
-        "ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452"
-      ],
-      "packs": [
+      "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
+      "blobs": [
         {
-          "id": "73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c",
-          "blobs": [
-            {
-              "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
-              "type": "data",
-              "offset": 0,
-              "length": 25
-            },{
-              "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
-              "type": "tree",
-              "offset": 38,
-              "length": 100
-            },
-            {
-              "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
-              "type": "data",
-              "offset": 150,
-              "length": 123
-            }
-          ]
-        }, [...]
+          "id": "3ec79977ef0cf5de7b08cd12b874cd0f62bbaf7f07f3497a5b1bbcc8cb39b1ce",
+          "type": "data",
+          "offset": 0,
+          "length": 25
+        },{
+          "id": "9ccb846e60d90d4eb915848add7aa7ea1e4bbabfc60e573db9f7bfb2789afbae",
+          "type": "tree",
+          "offset": 38,
+          "length": 100
+        },
+        {
+          "id": "d3dc577b4ffd38cc4b32122cabf8655a0223ed22edfd93b353dc0c3f2b0fdf66",
+          "type": "data",
+          "offset": 150,
+          "length": 123
+        }
       ]
-    }
+    }, [...]
+  ]
+}
+```
 
 This JSON document lists Packs and the blobs contained therein. In this
 example, the Pack `73d04e61` contains two data Blobs and one Tree blob, the
@@ -258,14 +264,16 @@ document which contains the master encryption and message authentication keys
 for this repository (encoded in Base64). The command `restic cat masterkey` can
 be used as follows to decrypt and pretty-print the master key:
 
-    $ restic -r /tmp/restic-repo cat masterkey
-    {
-        "mac": {
-          "k": "evFWd9wWlndL9jc501268g==",
-          "r": "E9eEDnSJZgqwTOkDtOp+Dw=="
-        },
-        "encrypt": "UQCqa0lKZ94PygPxMRqkePTZnHRYh1k1pX2k2lM2v3Q=",
-    }
+```console
+$ restic -r /tmp/restic-repo cat masterkey
+{
+    "mac": {
+      "k": "evFWd9wWlndL9jc501268g==",
+      "r": "E9eEDnSJZgqwTOkDtOp+Dw=="
+    },
+    "encrypt": "UQCqa0lKZ94PygPxMRqkePTZnHRYh1k1pX2k2lM2v3Q=",
+}
+```
 
 All data in the repository is encrypted and authenticated with these master keys.
 For encryption, the AES-256 algorithm in Counter mode is used. For message
@@ -286,17 +294,19 @@ string is unique and used within restic to uniquely identify a snapshot.
 The command `restic cat snapshot` can be used as follows to decrypt and
 pretty-print the contents of a snapshot file:
 
-    $ restic -r /tmp/restic-repo cat snapshot 22a5af1b
-    enter password for repository:
-    {
-      "time": "2015-01-02T18:10:50.895208559+01:00",
-      "tree": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
-      "dir": "/tmp/testdata",
-      "hostname": "kasimir",
-      "username": "fd0",
-      "uid": 1000,
-      "gid": 100
-    }
+```console
+$ restic -r /tmp/restic-repo cat snapshot 22a5af1b
+enter password for repository:
+{
+  "time": "2015-01-02T18:10:50.895208559+01:00",
+  "tree": "2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf",
+  "dir": "/tmp/testdata",
+  "hostname": "kasimir",
+  "username": "fd0",
+  "uid": 1000,
+  "gid": 100
+}
+```
 
 Here it can be seen that this snapshot represents the contents of the directory
 `/tmp/testdata`. The most important field is `tree`.
@@ -319,26 +329,28 @@ subdirectory of the directory `data`.
 
 The command `restic cat tree` can be used to inspect the tree referenced above:
 
-    $ restic -r /tmp/restic-repo cat tree b8138ab08a4722596ac89c917827358da4672eac68e3c03a8115b88dbf4bfb59
-    enter password for repository:
+```console
+$ restic -r /tmp/restic-repo cat tree b8138ab08a4722596ac89c917827358da4672eac68e3c03a8115b88dbf4bfb59
+enter password for repository:
+{
+  "nodes": [
     {
-      "nodes": [
-        {
-          "name": "testdata",
-          "type": "dir",
-          "mode": 493,
-          "mtime": "2014-12-22T14:47:59.912418701+01:00",
-          "atime": "2014-12-06T17:49:21.748468803+01:00",
-          "ctime": "2014-12-22T14:47:59.912418701+01:00",
-          "uid": 1000,
-          "gid": 100,
-          "user": "fd0",
-          "inode": 409704562,
-          "content": null,
-          "subtree": "b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc"
-        }
-      ]
+      "name": "testdata",
+      "type": "dir",
+      "mode": 493,
+      "mtime": "2014-12-22T14:47:59.912418701+01:00",
+      "atime": "2014-12-06T17:49:21.748468803+01:00",
+      "ctime": "2014-12-22T14:47:59.912418701+01:00",
+      "uid": 1000,
+      "gid": 100,
+      "user": "fd0",
+      "inode": 409704562,
+      "content": null,
+      "subtree": "b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc"
     }
+  ]
+}
+```
 
 A tree contains a list of entries (in the field `nodes`) which contain meta
 data like a name and timestamps. When the entry references a directory, the
@@ -347,30 +359,32 @@ field `subtree` contains the plain text ID of another tree object.
 When the command `restic cat tree` is used, the storage hash is needed to print
 a tree. The tree referenced above can be dumped as follows:
 
-    $ restic -r /tmp/restic-repo cat tree 8b238c8811cc362693e91a857460c78d3acf7d9edb2f111048691976803cf16e
-    enter password for repository:
+```console
+$ restic -r /tmp/restic-repo cat tree 8b238c8811cc362693e91a857460c78d3acf7d9edb2f111048691976803cf16e
+enter password for repository:
+{
+  "nodes": [
     {
-      "nodes": [
-        {
-          "name": "testfile",
-          "type": "file",
-          "mode": 420,
-          "mtime": "2014-12-06T17:50:23.34513538+01:00",
-          "atime": "2014-12-06T17:50:23.338468713+01:00",
-          "ctime": "2014-12-06T17:50:23.34513538+01:00",
-          "uid": 1000,
-          "gid": 100,
-          "user": "fd0",
-          "inode": 416863351,
-          "size": 1234,
-          "links": 1,
-          "content": [
-            "50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d"
-          ]
-        },
-        [...]
+      "name": "testfile",
+      "type": "file",
+      "mode": 420,
+      "mtime": "2014-12-06T17:50:23.34513538+01:00",
+      "atime": "2014-12-06T17:50:23.338468713+01:00",
+      "ctime": "2014-12-06T17:50:23.34513538+01:00",
+      "uid": 1000,
+      "gid": 100,
+      "user": "fd0",
+      "inode": 416863351,
+      "size": 1234,
+      "links": 1,
+      "content": [
+        "50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d"
       ]
-    }
+    },
+    [...]
+  ]
+}
+```
 
 This tree contains a file entry. This time, the `subtree` field is not present
 and the `content` field contains a list with one plain text SHA-256 hash.
@@ -378,9 +392,11 @@ and the `content` field contains a list with one plain text SHA-256 hash.
 The command `restic cat data` can be used to extract and decrypt data given a
 plaintext ID, e.g. for the data mentioned above:
 
-    $ restic -r /tmp/restic-repo cat blob 50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d | sha256sum
-    enter password for repository:
-    50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
+```console
+$ restic -r /tmp/restic-repo cat blob 50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d | sha256sum
+enter password for repository:
+50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d  -
+```
 
 As can be seen from the output of the program `sha256sum`, the hash matches the
 plaintext hash from the map included in the tree above, so the correct data has
@@ -404,15 +420,17 @@ A lock is a file in the subdir `locks` whose filename is the storage ID of
 the contents. It is encrypted and authenticated the same way as other files
 in the repository and contains the following JSON structure:
 
-    {
-      "time": "2015-06-27T12:18:51.759239612+02:00",
-      "exclusive": false,
-      "hostname": "kasimir",
-      "username": "fd0",
-      "pid": 13607,
-      "uid": 1000,
-      "gid": 100
-    }
+```json
+{
+  "time": "2015-06-27T12:18:51.759239612+02:00",
+  "exclusive": false,
+  "hostname": "kasimir",
+  "username": "fd0",
+  "pid": 13607,
+  "uid": 1000,
+  "gid": 100
+}
+```
 
 The field `exclusive` defines the type of lock. When a new lock is to be
 created, restic checks all locks in the repository. When a lock is found, it

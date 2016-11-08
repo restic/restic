@@ -20,10 +20,12 @@ this page, where you can select the version.
 The restic documentation is built with [MkDocs](http://www.mkdocs.org). After
 installing it, you can edit and view the documentation locally by running:
 
-    $ mkdocs serve
-    INFO    -  Building documentation...
-    INFO    -  Cleaning site directory
-    [I 160221 12:33:57 server:271] Serving on http://127.0.0.1:8000
+```console
+$ mkdocs serve
+INFO    -  Building documentation...
+INFO    -  Cleaning site directory
+[I 160221 12:33:57 server:271] Serving on http://127.0.0.1:8000
+```
 
 Afterwards visit the URL with a browser.
 
