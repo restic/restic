@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -59,7 +60,7 @@ func Open(cfg Config) (restic.Backend, error) {
 	for i := 0; i < connLimit; i++ {
 		connChan <- struct{}{}
 	}
-	tr := &http.Transport{}
+	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
 	client := http.Client{Transport: tr}
 
 	return &restBackend{url: cfg.URL, connChan: connChan, client: client}, nil
@@ -102,6 +103,7 @@ func (b *restBackend) Load(h restic.Handle, p []byte, off int64) (n int, err err
 
 	if resp != nil {
 		defer func() {
+			io.Copy(ioutil.Discard, resp.Body)
 			e := resp.Body.Close()
 
 			if err == nil {
@@ -132,6 +134,7 @@ func (b *restBackend) Save(h restic.Handle, p []byte) (err error) {
 
 	if resp != nil {
 		defer func() {
+			io.Copy(ioutil.Discard, resp.Body)
 			e := resp.Body.Close()
 
 			if err == nil {
@@ -164,6 +167,7 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, errors.Wrap(err, "client.Head")
 	}
 
+	io.Copy(ioutil.Discard, resp.Body)
 	if err = resp.Body.Close(); err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Close")
 	}
@@ -216,6 +220,7 @@ func (b *restBackend) Remove(t restic.FileType, name string) error {
 		return errors.New("blob not removed")
 	}
 
+	io.Copy(ioutil.Discard, resp.Body)
 	return resp.Body.Close()
 }
 
@@ -235,7 +240,14 @@ func (b *restBackend) List(t restic.FileType, done <-chan struct{}) <-chan strin
 	b.connChan <- struct{}{}
 
 	if resp != nil {
-		defer resp.Body.Close()
+		defer func() {
+			io.Copy(ioutil.Discard, resp.Body)
+			e := resp.Body.Close()
+
+			if err == nil {
+				err = errors.Wrap(e, "Close")
+			}
+		}()
 	}
 
 	if err != nil {
