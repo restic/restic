@@ -157,11 +157,6 @@ func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 		return "", errors.Wrap(err, "Syncn")
 	}
 
-	err = fs.ClearCache(tmpfile)
-	if err != nil {
-		return "", errors.Wrap(err, "ClearCache")
-	}
-
 	err = tmpfile.Close()
 	if err != nil {
 		return "", errors.Wrap(err, "Close")

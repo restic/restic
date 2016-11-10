@@ -125,6 +125,11 @@ func Create(name string) (*os.File, error) {
 	return os.Create(fixpath(name))
 }
 
+// Open opens a file for reading.
+func Open(name string) (File, error) {
+	return os.Open(fixpath(name))
+}
+
 // OpenFile is the generalized open call; most users will use Open
 // or Create instead.  It opens the named file with specified flag
 // (O_RDONLY etc.) and perm, (0666 etc.) if applicable.  If successful,
