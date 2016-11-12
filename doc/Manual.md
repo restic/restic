@@ -99,6 +99,7 @@ Usage:
 Flags:
   -e, --exclude pattern         exclude a pattern (can be specified multiple times)
       --exclude-file string     read exclude patterns from a file
+      --files-from string       read the files to backup from file (can be combined with file args)
   -f, --force                   force re-reading the target files/directories. Overrides the "parent" flag
   -x, --one-file-system         Exclude other file systems
       --parent string           use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
@@ -235,6 +236,27 @@ reside on. For example, calling restic like this won't backup `/sys` or
 
 ```console
 $ restic -r /tmp/backup backup --one-file-system /
+```
+By using the `--files-from` option you can read the files you want to backup
+from a file. This is especially useful if a lot of files have to be backed up
+that are not in the same folder or are maybe pre-filtered by other software.
+
+For example maybe you want to backup files that have a certain filename in them:
+
+```console
+$ find /tmp/somefiles | grep 'PATTERN' > /tmp/files_to_backup
+```
+
+You can then use restic to backup the filtered files:
+
+```console
+$ restic -r /tmp/backup backup --files-from /tmp/files_to_backup
+```
+
+Incidentally you can also combine `--files-from` with the normal files args:
+
+```console
+$ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 ```
 
 ## Reading data from stdin

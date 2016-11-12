@@ -46,6 +46,7 @@ type BackupOptions struct {
 	Stdin          bool
 	StdinFilename  string
 	Tags           []string
+	FilesFrom      string
 }
 
 var backupOptions BackupOptions
@@ -62,6 +63,7 @@ func init() {
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "", "file name to use when reading from stdin")
 	f.StringSliceVar(&backupOptions.Tags, "tag", []string{}, "add a `tag` for the new snapshot (can be specified multiple times)")
+	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 }
 
 func newScanProgress(gopts GlobalOptions) *restic.Progress {
@@ -258,12 +260,48 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 	return nil
 }
 
+// readFromFile will read all lines from the given filename and write them to a
+// string array, if filename is empty readFromFile returns and empty string
+// array
+func readLinesFromFile(filename string) ([]string, error) {
+	if filename == "" {
+		return nil, nil
+	}
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return lines, nil
+}
+
 func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
+	target, err := readLinesFromFile(opts.FilesFrom)
+	if err != nil {
+		return err
+	}
+
+	// merge files from files-from into normal args so we can reuse the normal
+	// args checks and have the ability to use both files-from and args at the
+	// same time
+	args = append(args, target...)
 	if len(args) == 0 {
 		return errors.Fatalf("wrong number of parameters")
 	}
 
-	target := make([]string, 0, len(args))
 	for _, d := range args {
 		if a, err := filepath.Abs(d); err == nil {
 			d = a
@@ -271,7 +309,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		target = append(target, d)
 	}
 
-	target, err := filterExisting(target)
+	target, err = filterExisting(target)
 	if err != nil {
 		return err
 	}
