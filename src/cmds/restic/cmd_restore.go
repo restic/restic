@@ -106,7 +106,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return nil
 	}
 
-	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) bool {
+	selectExcludeFilter := func(item string, node *restic.Node) bool {
 		matched, err := filter.List(opts.Exclude, item)
 		if err != nil {
 			Warnf("error for exclude pattern: %v", err)
@@ -115,7 +115,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return !matched
 	}
 
-	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) bool {
+	selectIncludeFilter := func(item string, node *restic.Node) bool {
 		matched, err := filter.List(opts.Include, item)
 		if err != nil {
 			Warnf("error for include pattern: %v", err)
