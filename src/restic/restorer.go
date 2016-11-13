@@ -39,7 +39,7 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 	return r, nil
 }
 
-func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
+func (res *Restorer) walk(dir string, treeID ID, callback func(*Node, string) error) error {
 	tree, err := res.repo.LoadTree(treeID)
 	if err != nil {
 		return res.Error(dir, nil, err)
@@ -50,7 +50,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
 		debug.Log("SelectForRestore returned %v", selectedForRestore)
 
 		if selectedForRestore {
-			err := res.restoreNodeTo(node, dir, dst)
+			err := callback(node, dir)
 			if err != nil {
 				return err
 			}
@@ -62,22 +62,40 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
 			}
 
 			subp := filepath.Join(dir, node.Name)
-			err = res.restoreTo(dst, subp, *node.Subtree)
+			err = res.walk(subp, *node.Subtree, callback)
 			if err != nil {
 				err = res.Error(subp, node, err)
 				if err != nil {
 					return err
 				}
 			}
-
-			if selectedForRestore {
-				// Restore directory timestamp at the end. If we would do it earlier, restoring files within
-				// the directory would overwrite the timestamp of the directory they are in.
-				if err := node.RestoreTimestamps(filepath.Join(dst, dir, node.Name)); err != nil {
-					return err
-				}
-			}
 		}
+	}
+
+	return nil
+}
+
+func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
+	err := res.walk(dir, treeID, func(node *Node, currentDir string) error {
+		return res.restoreNodeTo(node, currentDir, dst)
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Restore directory timestamps at the end. If we would do it earlier, restoring files within
+	// the directory would overwrite the timestamp of the directory they are in.
+	err = res.walk(dir, treeID, func(node *Node, currentDir string) error {
+		if node.Type == "dir" {
+			return node.RestoreTimestamps(filepath.Join(dst, currentDir, node.Name))
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
 	return nil
