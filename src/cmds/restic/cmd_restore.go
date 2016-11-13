@@ -47,6 +47,10 @@ func init() {
 	flags.StringSliceVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 }
 
+func newRestoreProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
+	return newArchiveProgress(gopts, todo)
+}
+
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
 		return errors.Fatalf("no snapshot ID specified")
@@ -132,5 +136,10 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
-	return res.RestoreTo(opts.Target)
+	stat, err := res.Scan()
+	if err != nil {
+		return err
+	}
+
+	return res.RestoreTo(opts.Target, newRestoreProgress(gopts, stat))
 }

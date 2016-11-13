@@ -12,8 +12,9 @@ import (
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
-	repo Repository
-	sn   *Snapshot
+	repo        Repository
+	sn          *Snapshot
+	progressBar *Progress
 
 	Error        func(dir string, node *Node, err error) error
 	SelectFilter func(item string, node *Node) bool
@@ -37,6 +38,23 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 	}
 
 	return r, nil
+}
+
+// Scan traverses the directories/files to be restored to collect restic.Stat information
+func (res *Restorer) Scan() (Stat, error) {
+	var stat Stat
+
+	err := res.walk("", *res.sn.Tree, func(node *Node, dir string) error {
+		if node.Type == "dir" {
+			stat.Add(Stat{Dirs: 1})
+		} else {
+			stat.Add(Stat{Files: 1, Bytes: node.Size})
+		}
+
+		return nil
+	})
+
+	return stat, err
 }
 
 func (res *Restorer) walk(dir string, treeID ID, callback func(*Node, string) error) error {
@@ -105,7 +123,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 	debug.Log("node %v, dir %v, dst %v", node.Name, dir, dst)
 	dstPath := filepath.Join(dst, dir, node.Name)
 
-	err := node.CreateAt(dstPath, res.repo)
+	err := node.CreateAt(dstPath, res.repo, res.progressBar)
 	if err != nil {
 		debug.Log("node.CreateAt(%s) error %v", dstPath, err)
 	}
@@ -117,16 +135,23 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 		// Create parent directories and retry
 		err = fs.MkdirAll(filepath.Dir(dstPath), 0700)
 		if err == nil || os.IsExist(errors.Cause(err)) {
-			err = node.CreateAt(dstPath, res.repo)
+			err = node.CreateAt(dstPath, res.repo, res.progressBar)
 		}
 	}
 
 	if err != nil {
 		debug.Log("error %v", err)
+		res.progressBar.Report(Stat{Errors: 1})
 		err = res.Error(dstPath, node, err)
 		if err != nil {
 			return err
 		}
+	}
+
+	if node.Type == "dir" {
+		res.progressBar.Report(Stat{Dirs: 1})
+	} else {
+		res.progressBar.Report(Stat{Files: 1})
 	}
 
 	debug.Log("successfully restored %v", node.Name)
@@ -136,7 +161,11 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 
 // RestoreTo creates the directories and files in the snapshot below dir.
 // Before an item is created, res.Filter is called.
-func (res *Restorer) RestoreTo(dir string) error {
+func (res *Restorer) RestoreTo(dir string, p *Progress) error {
+	res.progressBar = p
+	res.progressBar.Start()
+	defer res.progressBar.Done()
+
 	return res.restoreTo(dir, "", *res.sn.Tree)
 }
 
