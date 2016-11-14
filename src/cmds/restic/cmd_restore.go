@@ -136,7 +136,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
-	stat, err := res.Scan()
+	stat, err := res.Scan(newScanProgress(gopts))
 	if err != nil {
 		return err
 	}

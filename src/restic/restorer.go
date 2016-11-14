@@ -41,15 +41,23 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 }
 
 // Scan traverses the directories/files to be restored to collect restic.Stat information
-func (res *Restorer) Scan() (Stat, error) {
+func (res *Restorer) Scan(p *Progress) (Stat, error) {
+	p.Start()
+	defer p.Done()
+
 	var stat Stat
 
 	err := res.walk("", *res.sn.Tree, func(node *Node, dir string) error {
+		s := Stat{}
 		if node.Type == "dir" {
-			stat.Add(Stat{Dirs: 1})
+			s.Dirs++
 		} else {
-			stat.Add(Stat{Files: 1, Bytes: node.Size})
+			s.Files++
+			s.Bytes += node.Size
 		}
+
+		p.Report(s)
+		stat.Add(s)
 
 		return nil
 	})
