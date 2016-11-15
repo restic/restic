@@ -145,8 +145,8 @@ func SamePaths(expected, actual []string) bool {
 // ErrNoSnapshotFound is returned when no snapshot for the given criteria could be found.
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
-// FindLatestSnapshot finds latest snapshot with optional target/directory and source filters
-func FindLatestSnapshot(repo Repository, targets []string, source string) (ID, error) {
+// FindLatestSnapshot finds latest snapshot with optional target/directory and hostname filters.
+func FindLatestSnapshot(repo Repository, targets []string, hostname string) (ID, error) {
 	var (
 		latest   time.Time
 		latestID ID
@@ -158,7 +158,7 @@ func FindLatestSnapshot(repo Repository, targets []string, source string) (ID, e
 		if err != nil {
 			return ID{}, errors.Errorf("Error listing snapshot: %v", err)
 		}
-		if snapshot.Time.After(latest) && SamePaths(snapshot.Paths, targets) && (source == "" || source == snapshot.Hostname) {
+		if snapshot.Time.After(latest) && SamePaths(snapshot.Paths, targets) && (hostname == "" || hostname == snapshot.Hostname) {
 			latest = snapshot.Time
 			latestID = snapshotID
 			found = true
