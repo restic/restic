@@ -137,6 +137,31 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2015-05-14 21:07:24.222"),
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
 	},
+
+	// include "testFile" and "testDir" again with slightly different
+	// metadata, so we can test if CreateAt works with pre-existing files.
+	restic.Node{
+		Name:       "testFile",
+		Type:       "file",
+		Content:    restic.IDs{},
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0604,
+		ModTime:    parseTime("2005-05-14 21:07:03.111"),
+		AccessTime: parseTime("2005-05-14 21:07:04.222"),
+		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+	},
+	restic.Node{
+		Name:       "testDir",
+		Type:       "dir",
+		Subtree:    nil,
+		UID:        uint32(os.Getuid()),
+		GID:        uint32(os.Getgid()),
+		Mode:       0750 | os.ModeDir,
+		ModTime:    parseTime("2005-05-14 21:07:03.111"),
+		AccessTime: parseTime("2005-05-14 21:07:04.222"),
+		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
+	},
 }
 
 func TestNodeRestoreAt(t *testing.T) {

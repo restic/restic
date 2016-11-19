@@ -184,7 +184,7 @@ func (node Node) RestoreTimestamps(path string) error {
 
 func (node Node) createDirAt(path string) error {
 	err := fs.Mkdir(path, node.Mode)
-	if err != nil {
+	if err != nil && !os.IsExist(err) {
 		return errors.Wrap(err, "Mkdir")
 	}
 
