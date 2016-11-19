@@ -10,7 +10,7 @@
 		{
 			"importpath": "github.com/elithrar/simple-scrypt",
 			"repository": "https://github.com/elithrar/simple-scrypt",
-			"revision": "cbb1ebac08e2ca5495a43f4ef5555e61a7ec7677",
+			"revision": "2325946f714c95de4a6088202c402fbdfa64163b",
 			"branch": "master"
 		},
 		{
