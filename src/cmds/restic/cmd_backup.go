@@ -354,7 +354,13 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentSnapshotID == nil {
-		id, err := restic.FindLatestSnapshot(repo, target, "")
+		hostname, err := os.Hostname()
+		if err != nil {
+			debug.Log("os.Hostname() returned err: %v", err)
+			hostname = ""
+		}
+
+		id, err := restic.FindLatestSnapshot(repo, target, hostname)
 		if err == nil {
 			parentSnapshotID = &id
 		} else if err != restic.ErrNoSnapshotFound {
