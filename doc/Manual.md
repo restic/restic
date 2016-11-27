@@ -457,18 +457,20 @@ $ export AWS_ACCESS_KEY_ID=<MY_ACCESS_KEY>
 $ export AWS_SECRET_ACCESS_KEY=<MY_SECRET_ACCESS_KEY>
 ```
 
-You can then easily initialize a repository that uses your Amazon S3 as a backend.
+You can then easily initialize a repository that uses your Amazon S3 as a backend, if the bucket does not exist yet it will be created in the default location:
 
 ```console
-$ restic -r s3:eu-central-1/bucket_name init
+$ restic -r s3:s3.amazonaws.com/bucket_name init
 enter password for new backend:
 enter password again:
-created restic backend eefee03bbd at s3:eu-central-1/bucket_name
+created restic backend eefee03bbd at s3:s3.amazonaws.com/bucket_name
 Please note that knowledge of your password is required to access the repository.
 Losing your password means that your data is irrecoverably lost.
 ```
 
-Fro an s3-compatible server that is not Amazon (like Minio, see below), or is
+It is not possible at the moment to have restic create a new bucket in a different location, so you need to create it using a different program. Afterwards, the S3 server (`s3.amazonaws.com`) will redirect restic to the correct endpoint.
+
+For an S3-compatible server that is not Amazon (like Minio, see below), or is
 only available via HTTP, you can specify the URL to the server like this:
 `s3:http://server:port/bucket_name`.
 
