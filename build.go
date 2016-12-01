@@ -264,24 +264,14 @@ type Constants map[string]string
 func (cs Constants) LDFlags() string {
 	l := make([]string, 0, len(cs))
 
-	if runtime.Version() < "go1.5" {
-		for k, v := range cs {
-			l = append(l, fmt.Sprintf(`-X %q %q`, k, v))
-		}
-	} else {
-		for k, v := range cs {
-			l = append(l, fmt.Sprintf(`-X "%s=%s"`, k, v))
-		}
+	for k, v := range cs {
+		l = append(l, fmt.Sprintf(`-X "%s=%s"`, k, v))
 	}
 
 	return strings.Join(l, " ")
 }
 
 func main() {
-	if runtime.Version() < "go1.6" {
-		fmt.Fprintf(os.Stderr, "old version of Go detected (%v), I'll try but no guarantees\n", runtime.Version())
-	}
-
 	buildTags := []string{}
 
 	skipNext := false
