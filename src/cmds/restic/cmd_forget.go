@@ -140,7 +140,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 			Verbosef("removed snapshot %v\n", id.Str())
 		} else {
-			Verbosef("would removed snapshot %v\n", id.Str())
+			Verbosef("would remove snapshot %v\n", id.Str())
 		}
 	}
 
