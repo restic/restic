@@ -256,7 +256,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return err
 	}
 
-	fmt.Printf("archived as %v\n", id.Str())
+	Verbosef("archived as %v\n", id.Str())
 	return nil
 }
 
