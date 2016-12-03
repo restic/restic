@@ -21,6 +21,18 @@ var (
 	runTests   bool
 )
 
+var config = struct {
+	Name      string
+	Namespace string
+	Main      string
+	Tests     []string
+}{
+	Name:      "restic",                           // name of the program executable and directory
+	Namespace: "",                                 // subdir of GOPATH, e.g. "github.com/foo/bar"
+	Main:      "cmds/restic",                      // package name for the main package
+	Tests:     []string{"restic/...", "cmds/..."}, // tests to run
+}
+
 const timeFormat = "2006-01-02 15:04:05"
 
 // specialDir returns true if the file begins with a special character ('.' or '_').
@@ -94,6 +106,15 @@ func updateGopath(dst, src, prefix string) error {
 
 		return copyFile(fileDst, fileSrc)
 	})
+}
+
+func directoryExists(dirname string) bool {
+	stat, err := os.Stat(dirname)
+	if err != nil && os.IsNotExist(err) {
+		return false
+	}
+
+	return stat.IsDir()
 }
 
 // copyFile creates dst from src, preserving file attributes and timestamps.
@@ -292,6 +313,9 @@ func main() {
 		case "-k", "--keep-gopath":
 			keepGopath = true
 		case "-t", "-tags", "--tags":
+			if i+1 >= len(params) {
+				die("-t given but no tag specified")
+			}
 			skipNext = true
 			buildTags = strings.Split(params[i+1], " ")
 		case "-T", "--test":
@@ -328,23 +352,21 @@ func main() {
 		die("Getwd(): %v\n", err)
 	}
 
-	gopath, err := ioutil.TempDir("", "restic-build-")
+	gopath, err := ioutil.TempDir("", fmt.Sprintf("%v-build-", config.Name))
 	if err != nil {
 		die("TempDir(): %v\n", err)
 	}
 
 	verbosePrintf("create GOPATH at %v\n", gopath)
-	if err = updateGopath(gopath, filepath.Join(root, "src", "restic"), "restic"); err != nil {
-		die("copying files from %v/src/restic to %v/src/restic failed: %v\n", root, gopath, err)
-	}
-
-	if err = updateGopath(gopath, filepath.Join(root, "src", "cmds"), "cmds"); err != nil {
-		die("copying files from %v/src/cmds to %v/src/restic/cmds failed: %v\n", root, gopath, err)
+	if err = updateGopath(gopath, filepath.Join(root, "src"), config.Namespace); err != nil {
+		die("copying files from %v/src to %v/src failed: %v\n", root, gopath, err)
 	}
 
 	vendor := filepath.Join(root, "vendor", "src")
-	if err = updateGopath(gopath, vendor, ""); err != nil {
-		die("copying files from %v to %v/src failed: %v\n", vendor, gopath, err)
+	if directoryExists(vendor) {
+		if err = updateGopath(gopath, vendor, ""); err != nil {
+			die("copying files from %v to %v failed: %v\n", root, gopath, err)
+		}
 	}
 
 	defer func() {
@@ -358,9 +380,9 @@ func main() {
 		}
 	}()
 
-	outputFilename := "restic"
+	outputFilename := config.Name
 	if targetGOOS == "windows" {
-		outputFilename = "restic.exe"
+		outputFilename += ".exe"
 	}
 
 	cwd, err := os.Getwd()
@@ -381,7 +403,7 @@ func main() {
 	args := []string{
 		"-tags", strings.Join(buildTags, " "),
 		"-ldflags", ldflags,
-		"-o", output, "cmds/restic",
+		"-o", output, config.Main,
 	}
 
 	err = build(filepath.Join(gopath, "src"), targetGOOS, targetGOARCH, gopath, args...)
@@ -392,7 +414,7 @@ func main() {
 	if runTests {
 		verbosePrintf("running tests\n")
 
-		err = test(filepath.Join(gopath, "src"), gopath, "restic/...")
+		err = test(cwd, gopath, config.Tests...)
 		if err != nil {
 			die("running tests failed: %v\n", err)
 		}
