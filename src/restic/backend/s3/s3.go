@@ -37,13 +37,13 @@ func Open(cfg Config) (restic.Backend, error) {
 	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix}
 	be.createConnections()
 
-	ok, err := client.BucketExists(cfg.Bucket)
+	found, err := client.BucketExists(cfg.Bucket)
 	if err != nil {
-		debug.Log("BucketExists(%v) returned err %v, trying to create the bucket", cfg.Bucket, err)
+		debug.Log("BucketExists(%v) returned err %v", cfg.Bucket, err)
 		return nil, errors.Wrap(err, "client.BucketExists")
 	}
 
-	if !ok {
+	if !found {
 		// create new bucket with default ACL in default region
 		err = client.MakeBucket(cfg.Bucket, "")
 		if err != nil {
