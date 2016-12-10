@@ -214,6 +214,8 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) error {
 		return errors.Wrap(err, "Open")
 	}
 
+	debug.RunHook("archiver.SaveFile", node.Path)
+
 	node, err = arch.reloadFileIfChanged(node, file)
 	if err != nil {
 		return err

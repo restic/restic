@@ -343,6 +343,52 @@ func TestBackupMissingFile2(t *testing.T) {
 	})
 }
 
+func TestBackupChangedFile(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(errors.Cause(err)) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		SetupTarTestFixture(t, env.testdata, datafile)
+
+		testRunInit(t, gopts)
+
+		globalOptions.stderr = ioutil.Discard
+		defer func() {
+			globalOptions.stderr = os.Stderr
+		}()
+
+		modFile := filepath.Join(env.testdata, "0", "0", "6", "18")
+
+		ranHook := false
+		debug.Hook("archiver.SaveFile", func(context interface{}) {
+			pathname := context.(string)
+
+			if pathname != modFile {
+				return
+			}
+
+			t.Logf("in hook, modifying test file %v", modFile)
+			ranHook = true
+
+			OK(t, ioutil.WriteFile(modFile, []byte("modified"), 0600))
+		})
+
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+
+		Assert(t, ranHook, "hook did not run")
+		debug.RemoveHook("archiver.SaveFile")
+	})
+}
+
 func TestBackupDirectoryError(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
