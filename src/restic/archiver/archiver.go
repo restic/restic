@@ -207,18 +207,18 @@ func updateNodeContent(node *restic.Node, results []saveResult) error {
 
 // SaveFile stores the content of the file on the backend as a Blob by calling
 // Save for each chunk.
-func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) error {
+func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) (*restic.Node, error) {
 	file, err := fs.Open(node.Path)
 	defer file.Close()
 	if err != nil {
-		return errors.Wrap(err, "Open")
+		return nil, errors.Wrap(err, "Open")
 	}
 
 	debug.RunHook("archiver.SaveFile", node.Path)
 
 	node, err = arch.reloadFileIfChanged(node, file)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	chnker := chunker.New(file, arch.repo.Config().ChunkerPolynomial)
@@ -231,7 +231,7 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) error {
 		}
 
 		if err != nil {
-			return errors.Wrap(err, "chunker.Next")
+			return nil, errors.Wrap(err, "chunker.Next")
 		}
 
 		resCh := make(chan saveResult, 1)
@@ -241,11 +241,11 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) error {
 
 	results, err := waitForResults(resultChannels)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	err = updateNodeContent(node, results)
-	return err
+
+	return node, err
 }
 
 func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-chan struct{}, entCh <-chan pipe.Entry) {
@@ -309,7 +309,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 			// otherwise read file normally
 			if node.Type == "file" && len(node.Content) == 0 {
 				debug.Log("   read and save %v, content: %v", e.Path(), node.Content)
-				err = arch.SaveFile(p, node)
+				node, err = arch.SaveFile(p, node)
 				if err != nil {
 					// TODO: integrate error reporting
 					fmt.Fprintf(os.Stderr, "error for %v: %v\n", node.Path, err)
