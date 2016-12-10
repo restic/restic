@@ -26,7 +26,9 @@ const (
 	maxConcurrency     = 10
 )
 
-var archiverAbortOnAllErrors = func(str string, fi os.FileInfo, err error) error { return err }
+var archiverPrintWarnings = func(path string, fi os.FileInfo, err error) {
+	fmt.Fprintf(os.Stderr, "warning for %v: %v", path, err)
+}
 var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
 // Archiver is used to backup a set of directories.
@@ -39,7 +41,7 @@ type Archiver struct {
 
 	blobToken chan struct{}
 
-	Error        func(dir string, fi os.FileInfo, err error) error
+	Warn         func(dir string, fi os.FileInfo, err error)
 	SelectFilter pipe.SelectFunc
 	Excludes     []string
 }
@@ -61,7 +63,7 @@ func New(repo restic.Repository) *Archiver {
 		arch.blobToken <- struct{}{}
 	}
 
-	arch.Error = archiverAbortOnAllErrors
+	arch.Warn = archiverPrintWarnings
 	arch.SelectFilter = archiverAllowAllFiles
 
 	return arch
@@ -135,10 +137,7 @@ func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*res
 		return node, nil
 	}
 
-	err = arch.Error(node.Path, fi, errors.New("file has changed"))
-	if err != nil {
-		return nil, err
-	}
+	arch.Warn(node.Path, fi, errors.New("file has changed"))
 
 	node, err = restic.NodeFromFileInfo(node.Path, fi)
 	if err != nil {

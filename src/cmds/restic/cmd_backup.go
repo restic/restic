@@ -431,10 +431,9 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	arch.Excludes = opts.Excludes
 	arch.SelectFilter = selectFilter
 
-	arch.Error = func(dir string, fi os.FileInfo, err error) error {
+	arch.Warn = func(dir string, fi os.FileInfo, err error) {
 		// TODO: make ignoring errors configurable
-		Warnf("%s\rerror for %s: %v\n", ClearLine(), dir, err)
-		return nil
+		Warnf("%s\rwarning for %s: %v\n", ClearLine(), dir, err)
 	}
 
 	_, id, err := arch.Snapshot(newArchiveProgress(gopts, stat), target, opts.Tags, parentSnapshotID)
