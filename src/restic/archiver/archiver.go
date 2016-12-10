@@ -197,7 +197,7 @@ func updateNodeContent(node *restic.Node, results []saveResult) error {
 	}
 
 	if bytes != node.Size {
-		return errors.Errorf("errors saving node %q: saved %d bytes, wanted %d bytes", node.Path, bytes, node.Size)
+		fmt.Fprintf(os.Stderr, "warning for %v: expected %d bytes, saved %d bytes\n", node.Path, node.Size, bytes)
 	}
 
 	debug.Log("SaveFile(%q): %v blobs\n", node.Path, len(results))
