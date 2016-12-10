@@ -26,7 +26,9 @@ const (
 	maxConcurrency     = 10
 )
 
-var archiverAbortOnAllErrors = func(str string, fi os.FileInfo, err error) error { return err }
+var archiverPrintWarnings = func(path string, fi os.FileInfo, err error) {
+	fmt.Fprintf(os.Stderr, "warning for %v: %v", path, err)
+}
 var archiverAllowAllFiles = func(string, os.FileInfo) bool { return true }
 
 // Archiver is used to backup a set of directories.
@@ -39,7 +41,7 @@ type Archiver struct {
 
 	blobToken chan struct{}
 
-	Error        func(dir string, fi os.FileInfo, err error) error
+	Warn         func(dir string, fi os.FileInfo, err error)
 	SelectFilter pipe.SelectFunc
 	Excludes     []string
 }
@@ -61,7 +63,7 @@ func New(repo restic.Repository) *Archiver {
 		arch.blobToken <- struct{}{}
 	}
 
-	arch.Error = archiverAbortOnAllErrors
+	arch.Warn = archiverPrintWarnings
 	arch.SelectFilter = archiverAllowAllFiles
 
 	return arch
@@ -135,10 +137,7 @@ func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*res
 		return node, nil
 	}
 
-	err = arch.Error(node.Path, fi, errors.New("file has changed"))
-	if err != nil {
-		return nil, err
-	}
+	arch.Warn(node.Path, fi, errors.New("file has changed"))
 
 	node, err = restic.NodeFromFileInfo(node.Path, fi)
 	if err != nil {
@@ -207,16 +206,18 @@ func updateNodeContent(node *restic.Node, results []saveResult) error {
 
 // SaveFile stores the content of the file on the backend as a Blob by calling
 // Save for each chunk.
-func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) error {
+func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) (*restic.Node, error) {
 	file, err := fs.Open(node.Path)
 	defer file.Close()
 	if err != nil {
-		return errors.Wrap(err, "Open")
+		return nil, errors.Wrap(err, "Open")
 	}
+
+	debug.RunHook("archiver.SaveFile", node.Path)
 
 	node, err = arch.reloadFileIfChanged(node, file)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	chnker := chunker.New(file, arch.repo.Config().ChunkerPolynomial)
@@ -229,7 +230,7 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) error {
 		}
 
 		if err != nil {
-			return errors.Wrap(err, "chunker.Next")
+			return nil, errors.Wrap(err, "chunker.Next")
 		}
 
 		resCh := make(chan saveResult, 1)
@@ -239,11 +240,11 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) error {
 
 	results, err := waitForResults(resultChannels)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
 	err = updateNodeContent(node, results)
-	return err
+
+	return node, err
 }
 
 func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-chan struct{}, entCh <-chan pipe.Entry) {
@@ -307,7 +308,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 			// otherwise read file normally
 			if node.Type == "file" && len(node.Content) == 0 {
 				debug.Log("   read and save %v, content: %v", e.Path(), node.Content)
-				err = arch.SaveFile(p, node)
+				node, err = arch.SaveFile(p, node)
 				if err != nil {
 					// TODO: integrate error reporting
 					fmt.Fprintf(os.Stderr, "error for %v: %v\n", node.Path, err)
