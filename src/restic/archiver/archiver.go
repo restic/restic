@@ -727,19 +727,6 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 
 	debug.Log("workers terminated")
 
-	// receive the top-level tree
-	root := (<-resCh).(*restic.Node)
-	debug.Log("root node received: %v", root.Subtree.Str())
-	sn.Tree = root.Subtree
-
-	// save snapshot
-	id, err := arch.repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
-	if err != nil {
-		return nil, restic.ID{}, err
-	}
-
-	debug.Log("saved snapshot %v", id.Str())
-
 	// flush repository
 	err = arch.repo.Flush()
 	if err != nil {
@@ -754,6 +741,19 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 	}
 
 	debug.Log("saved indexes")
+
+	// receive the top-level tree
+	root := (<-resCh).(*restic.Node)
+	debug.Log("root node received: %v", root.Subtree.Str())
+	sn.Tree = root.Subtree
+
+	// save snapshot
+	id, err := arch.repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
+	if err != nil {
+		return nil, restic.ID{}, err
+	}
+
+	debug.Log("saved snapshot %v", id.Str())
 
 	return sn, id, nil
 }
