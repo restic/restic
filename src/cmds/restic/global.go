@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"restic/backend/b2"
 	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
@@ -329,6 +330,16 @@ func open(s string) (restic.Backend, error) {
 
 		debug.Log("opening s3 repository at %#v", cfg)
 		be, err = s3.Open(cfg)
+	case "b2":
+		cfg := loc.Config.(b2.Config)
+		if cfg.AccountID == "" {
+			cfg.AccountID = os.Getenv("B2_ACCOUNT_ID")
+		}
+		if cfg.Key == "" {
+			cfg.Key = os.Getenv("B2_ACCOUNT_KEY")
+		}
+		debug.Log("opening b2 repository at %#v", cfg)
+		be, err = b2.Open(cfg)
 	case "rest":
 		be, err = rest.Open(loc.Config.(rest.Config))
 	default:
@@ -369,6 +380,18 @@ func create(s string) (restic.Backend, error) {
 
 		debug.Log("create s3 repository at %#v", loc.Config)
 		return s3.Open(cfg)
+	case "b2":
+		cfg := loc.Config.(b2.Config)
+		if cfg.AccountID == "" {
+			cfg.AccountID = os.Getenv("B2_ACCOUNT_ID")
+
+		}
+		if cfg.Key == "" {
+			cfg.Key = os.Getenv("B2_ACCOUNT_KEY")
+		}
+
+		debug.Log("create b2 repository at %#v", loc.Config)
+		return b2.Open(cfg)
 	case "rest":
 		return rest.Open(loc.Config.(rest.Config))
 	}
