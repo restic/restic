@@ -7,6 +7,7 @@ import (
 	"os"
 	"restic"
 	"runtime"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -326,6 +327,7 @@ func open(s string) (restic.Backend, error) {
 		if cfg.Secret == "" {
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		}
+		cfg.LegacyPaths, _ = strconv.ParseBool(os.Getenv("AWS_LEGACY_PATHS"))
 
 		debug.Log("opening s3 repository at %#v", cfg)
 		be, err = s3.Open(cfg)
