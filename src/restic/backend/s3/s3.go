@@ -247,7 +247,8 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	go func() {
 		defer close(ch)
 		for obj := range listresp {
-			m := strings.TrimPrefix(obj.Key, prefix)
+			s := strings.Split(obj.Key, "/")
+			m := s[len(s)-1]
 			if m == "" {
 				continue
 			}
