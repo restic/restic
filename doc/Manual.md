@@ -501,6 +501,29 @@ Please note that knowledge of your password is required to access
 the repository. Losing your password means that your data is irrecoverably lost.
 ```
 
+# Create a Backblaze B2 repository
+
+Restic can backup data to any Backblaze B2 bucket. You must first setup the
+following environment variables with the credentials you obtained when signed
+into your B2 account:
+
+```console
+$ export B2_ACCOUNT_ID=<MY_ACCOUNT_ID>
+$ export B2_ACCOUNT_KEY=<MY_SECRET_ACCOUNT_KEY>
+```
+
+You can then easily initialize a repository that uses your Backblaze B2 as a
+backend. If the bucket does not exist yet, it will be created:
+
+```console
+$ restic -r b2:bucket_name init
+enter password for new backend:
+enter password again:
+created restic backend eefee03bbd at b2:bucket_name
+Please note that knowledge of your password is required to access the repository.
+Losing your password means that your data is irrecoverably lost.
+```
+
 # Removing old snapshots
 
 All backup space is finite, so restic allows removing old snapshots. This can

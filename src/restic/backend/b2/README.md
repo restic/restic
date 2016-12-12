@@ -1,7 +1,7 @@
-BackBlaze B2 backend support for restic
+Backblaze B2 backend support for restic
 =======================================
 
-This package allows using BackBlaze's B2 object storage service as a backend for
+This package allows using Backblaze's B2 object storage service as a backend for
 restic. It implements kurin's [blazer](https://github.com/kurin/blazer) client
 library for integration with the B2 service.
 
