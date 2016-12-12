@@ -110,7 +110,7 @@ func (be b2) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	defer r.Close()
 
 	bufsize := int64(len(p))
-	var pos int64 = 0
+	var pos int64
 
 	// loop to read chunks until the buffer is full or EOF is reached
 	for {
