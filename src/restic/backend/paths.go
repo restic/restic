@@ -30,7 +30,7 @@ var Paths = struct {
 // backends.
 var Modes = struct{ Dir, File os.FileMode }{0700, 0600}
 
-// Construct default directory for given FileType.
+// Dirname constructs the default directory for given FileType.
 func Dirname(base string, t restic.FileType, name string) string {
 	var n string
 	switch t {
@@ -51,7 +51,7 @@ func Dirname(base string, t restic.FileType, name string) string {
 	return filepath.Join(base, n)
 }
 
-// Construct default path for given FileType and name.
+// Filename constructs the default path for given FileType and name.
 func Filename(base string, t restic.FileType, name string) string {
 	if t == restic.ConfigFile {
 		return filepath.Join(base, "config")
