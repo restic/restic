@@ -210,14 +210,14 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) (*restic.N
 	file, err := fs.Open(node.Path)
 	defer file.Close()
 	if err != nil {
-		return nil, errors.Wrap(err, "Open")
+		return node, errors.Wrap(err, "Open")
 	}
 
 	debug.RunHook("archiver.SaveFile", node.Path)
 
 	node, err = arch.reloadFileIfChanged(node, file)
 	if err != nil {
-		return nil, err
+		return node, err
 	}
 
 	chnker := chunker.New(file, arch.repo.Config().ChunkerPolynomial)
@@ -230,7 +230,7 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) (*restic.N
 		}
 
 		if err != nil {
-			return nil, errors.Wrap(err, "chunker.Next")
+			return node, errors.Wrap(err, "chunker.Next")
 		}
 
 		resCh := make(chan saveResult, 1)
@@ -240,7 +240,7 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) (*restic.N
 
 	results, err := waitForResults(resultChannels)
 	if err != nil {
-		return nil, err
+		return node, err
 	}
 	err = updateNodeContent(node, results)
 
