@@ -72,8 +72,9 @@ func (be b2) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 		return 0, errors.Wrap(err, "bucket.Object")
 	}
 
+	// Ensure object attributes are loaded and status is uploaded.
 	info, err := obj.Attrs(be.context)
-	if err != nil {
+	if err != nil || info == nil || info.Status != blazerb2.Uploaded {
 		return 0, errors.Wrap(err, "obj.Attrs")
 	}
 
@@ -185,8 +186,8 @@ func (be *b2) Test(t restic.FileType, name string) (bool, error) {
 	found := false
 	objName := be.b2path(t, name)
 	obj := be.bucket.Object(objName)
-	_, err := obj.Attrs(be.context)
-	if err == nil {
+	info, err := obj.Attrs(be.context)
+	if err == nil && info != nil && info.Status == blazerb2.Uploaded {
 		found = true
 	}
 	return found, nil
