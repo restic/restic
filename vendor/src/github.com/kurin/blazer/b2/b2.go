@@ -155,6 +155,11 @@ type Attrs struct {
 	Info            map[string]string // Save arbitrary metadata on upload, but limited to 10 keys.
 }
 
+// Name returns an object's name
+func (o *Object) Name() string {
+	return o.name
+}
+
 // Attrs returns an object's attributes.
 func (o *Object) Attrs(ctx context.Context) (*Attrs, error) {
 	if err := o.ensure(ctx); err != nil {

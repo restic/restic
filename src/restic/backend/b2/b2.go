@@ -221,18 +221,13 @@ func (be *b2) List(t restic.FileType, done <-chan struct{}) <-chan string {
 				return
 			}
 			for _, obj := range objs {
-				info, err := obj.Attrs(be.context)
-				if err != nil {
-					continue
-				}
-
 				// Skip objects returned that do not have the specified prefix.
-				if !strings.HasPrefix(info.Name, prefix) {
+				if !strings.HasPrefix(obj.Name(), prefix) {
 					continue
 				}
 
 				// Remove the prefix from returned names.
-				m := strings.TrimPrefix(info.Name, prefix)
+				m := strings.TrimPrefix(obj.Name(), prefix)
 				if m == "" {
 					continue
 				}
