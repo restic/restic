@@ -289,7 +289,7 @@ func readLinesFromFile(filename string) ([]string, error) {
 }
 
 func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
-	target, err := readLinesFromFile(opts.FilesFrom)
+	fromfile, err := readLinesFromFile(opts.FilesFrom)
 	if err != nil {
 		return err
 	}
@@ -297,11 +297,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	// merge files from files-from into normal args so we can reuse the normal
 	// args checks and have the ability to use both files-from and args at the
 	// same time
-	args = append(args, target...)
+	args = append(args, fromfile...)
 	if len(args) == 0 {
 		return errors.Fatalf("wrong number of parameters")
 	}
 
+	target := make([]string, 0, len(args))
 	for _, d := range args {
 		if a, err := filepath.Abs(d); err == nil {
 			d = a
