@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 )
 
 var (
@@ -32,8 +31,6 @@ var config = struct {
 	Main:      "cmds/restic",                      // package name for the main package
 	Tests:     []string{"restic/...", "cmds/..."}, // tests to run
 }
-
-const timeFormat = "2006-01-02 15:04:05"
 
 // specialDir returns true if the file begins with a special character ('.' or '_').
 func specialDir(name string) bool {
@@ -392,8 +389,7 @@ func main() {
 	output := filepath.Join(cwd, outputFilename)
 
 	version := getVersion()
-	compileTime := time.Now().Format(timeFormat)
-	constants := Constants{`main.compiledAt`: compileTime}
+	constants := Constants{}
 	if version != "" {
 		constants["main.version"] = version
 	}

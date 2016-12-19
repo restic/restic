@@ -26,7 +26,6 @@ import (
 )
 
 var version = "compiled manually"
-var compiledAt = "unknown time"
 
 func parseEnvironment(cmd *cobra.Command, args []string) {
 	repo := os.Getenv("RESTIC_REPOSITORY")
