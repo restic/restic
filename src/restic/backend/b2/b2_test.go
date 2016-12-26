@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"restic"
 	"restic/backend/b2"
 	"restic/backend/test"
@@ -49,16 +51,17 @@ func init() {
 		return b2.Open(cfg)
 	}
 
-	// test.CleanupFn = func() error {
-	// 	if tempBackendDir == "" {
-	// 		return nil
-	// 	}
-	//
-	// 	fmt.Printf("removing test backend at %v\n", tempBackendDir)
-	// 	err := os.RemoveAll(tempBackendDir)
-	// 	tempBackendDir = ""
-	// 	return err
-	// }
+	// Remove the test bucket as clean up.
+	test.CleanupFn = func() error {
+		be, err := b2.Open(cfg)
+		if err != nil {
+			return err
+		}
+
+		ctx := context.Background()
+		b2be := be.(*b2.B2)
+		return b2be.Bucket().Delete(ctx)
+	}
 }
 
 // Generates a random bucket name starting with "restic-test-".

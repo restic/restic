@@ -14,8 +14,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-// b2 is a backend which stores the data on a B2 endpoint.
-type b2 struct {
+// B2 is a backend which stores the data on a B2 endpoint.
+type B2 struct {
 	client     *blazerb2.Client
 	bucket     *blazerb2.Bucket
 	bucketName string
@@ -39,13 +39,13 @@ func Open(cfg Config) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "blazerb2.NewBucket")
 	}
 
-	be := &b2{client: client, bucket: bucket, bucketName: cfg.Bucket, prefix: cfg.Prefix, context: ctx}
+	be := &B2{client: client, bucket: bucket, bucketName: cfg.Bucket, prefix: cfg.Prefix, context: ctx}
 
 	return be, nil
 }
 
-// Resolve the backend path for based on file type ane name.
-func (be *b2) b2path(t restic.FileType, name string) string {
+// Resolve the backend path for based on file type and name.
+func (be *B2) b2path(t restic.FileType, name string) string {
 	if t == "key" && name == "config" {
 		t = restic.ConfigFile
 	}
@@ -56,13 +56,18 @@ func (be *b2) b2path(t restic.FileType, name string) string {
 }
 
 // Location returns this backend's location (the bucket name).
-func (be *b2) Location() string {
+func (be *B2) Location() string {
 	return be.bucketName
+}
+
+// Bucket returns the blazer/b2 bucket object.
+func (be *B2) Bucket() *blazerb2.Bucket {
+	return be.bucket
 }
 
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
-func (be b2) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
+func (be B2) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	debug.Log("Load: %v, offset %v, len %v", h, off, len(p))
 	objName := be.b2path(h.Type, h.Name)
 
@@ -133,7 +138,7 @@ func (be b2) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 }
 
 // Save stores data in the backend at the handle.
-func (be b2) Save(h restic.Handle, p []byte) (err error) {
+func (be B2) Save(h restic.Handle, p []byte) (err error) {
 	debug.Log("Save: %v with len %d", h, len(p))
 	if err := h.Valid(); err != nil {
 		return err
@@ -169,7 +174,7 @@ func (be b2) Save(h restic.Handle, p []byte) (err error) {
 }
 
 // Stat returns information about a blob.
-func (be b2) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
+func (be B2) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("Stat: %v", h)
 	objName := be.b2path(h.Type, h.Name)
 	obj := be.bucket.Object(objName)
@@ -182,7 +187,7 @@ func (be b2) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *b2) Test(t restic.FileType, name string) (bool, error) {
+func (be *B2) Test(t restic.FileType, name string) (bool, error) {
 	found := false
 	objName := be.b2path(t, name)
 	obj := be.bucket.Object(objName)
@@ -194,7 +199,7 @@ func (be *b2) Test(t restic.FileType, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *b2) Remove(t restic.FileType, name string) error {
+func (be *B2) Remove(t restic.FileType, name string) error {
 	objName := be.b2path(t, name)
 
 	obj := be.bucket.Object(objName)
@@ -207,7 +212,7 @@ func (be *b2) Remove(t restic.FileType, name string) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (be *b2) List(t restic.FileType, done <-chan struct{}) <-chan string {
+func (be *B2) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	debug.Log("List: %v", t)
 	ch := make(chan string)
 
@@ -250,7 +255,7 @@ func (be *b2) List(t restic.FileType, done <-chan struct{}) <-chan string {
 }
 
 // Remove keys for a specified backend type.
-func (be *b2) removeKeys(t restic.FileType) error {
+func (be *B2) removeKeys(t restic.FileType) error {
 	done := make(chan struct{})
 	defer close(done)
 	for key := range be.List(restic.DataFile, done) {
@@ -263,7 +268,7 @@ func (be *b2) removeKeys(t restic.FileType) error {
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
-func (be *b2) Delete() error {
+func (be *B2) Delete() error {
 	alltypes := []restic.FileType{
 		restic.DataFile,
 		restic.KeyFile,
@@ -281,4 +286,4 @@ func (be *b2) Delete() error {
 }
 
 // Close does nothing
-func (be *b2) Close() error { return nil }
+func (be *B2) Close() error { return nil }
