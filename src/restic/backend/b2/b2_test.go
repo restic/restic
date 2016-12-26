@@ -1,13 +1,15 @@
 package b2_test
 
 import (
+	"bytes"
+	"math/rand"
 	"os"
+	"time"
+
 	"restic"
-
-	"restic/errors"
-
 	"restic/backend/b2"
 	"restic/backend/test"
+	"restic/errors"
 )
 
 //go:generate go run ../test/generate_backend_tests.go
@@ -21,7 +23,7 @@ func init() {
 	cfg := b2.Config{
 		AccountID: os.Getenv("B2_ACCOUNT_ID"),
 		Key:       os.Getenv("B2_ACCOUNT_KEY"),
-		Bucket:    "restic-test",
+		Bucket:    generateBucketName(),
 		Prefix:    "test",
 	}
 
@@ -57,4 +59,18 @@ func init() {
 	// 	tempBackendDir = ""
 	// 	return err
 	// }
+}
+
+// Generates a random bucket name starting with "restic-test-".
+func generateBucketName() string {
+	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+	const lenChars = len(chars)
+	const lenBucket = 16
+	var bucket bytes.Buffer
+	bucket.WriteString("restic-test-")
+	r := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
+	for i := 0; i < lenBucket; i++ {
+		bucket.WriteByte(chars[r.Intn(lenChars)])
+	}
+	return bucket.String()
 }
