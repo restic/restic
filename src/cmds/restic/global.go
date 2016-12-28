@@ -131,7 +131,7 @@ func Printf(format string, args ...interface{}) {
 	_, err := fmt.Fprintf(globalOptions.stdout, format, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stdout: %v\n", err)
-		os.Exit(100)
+		Exit(100)
 	}
 }
 
@@ -174,18 +174,19 @@ func Warnf(format string, args ...interface{}) {
 	_, err := fmt.Fprintf(globalOptions.stderr, format, args...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to write to stderr: %v\n", err)
-		os.Exit(100)
+		Exit(100)
 	}
 }
 
-// Exitf uses Warnf to write the message and then calls os.Exit(exitcode).
+// Exitf uses Warnf to write the message and then terminates the process with
+// the given exit code.
 func Exitf(exitcode int, format string, args ...interface{}) {
 	if format[len(format)-1] != '\n' {
 		format += "\n"
 	}
 
 	Warnf(format, args...)
-	os.Exit(exitcode)
+	Exit(exitcode)
 }
 
 // readPassword reads the password from the given reader directly.

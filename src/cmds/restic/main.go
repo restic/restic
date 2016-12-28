@@ -49,9 +49,10 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%+v\n", err)
 	}
 
-	RunCleanupHandlers()
-
+	var exitCode int
 	if err != nil {
-		os.Exit(1)
+		exitCode = 1
 	}
+
+	Exit(exitCode)
 }
