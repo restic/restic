@@ -62,8 +62,13 @@ func CleanupHandler(c <-chan os.Signal) {
 	for s := range c {
 		debug.Log("signal %v received, cleaning up", s)
 		fmt.Printf("%sInterrupt received, cleaning up\n", ClearLine())
-		RunCleanupHandlers()
-		fmt.Println("exiting")
-		os.Exit(0)
+		Exit(0)
 	}
+}
+
+// Exit runs the cleanup handlers and then terminates the process with the
+// given exit code.
+func Exit(code int) {
+	RunCleanupHandlers()
+	os.Exit(code)
 }

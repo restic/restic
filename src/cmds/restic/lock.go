@@ -36,6 +36,7 @@ func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, 
 	if err != nil {
 		return nil, err
 	}
+	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 
 	globalLocks.Lock()
 	if globalLocks.cancelRefresh == nil {
@@ -88,7 +89,7 @@ func unlockRepo(lock *restic.Lock) error {
 	globalLocks.Lock()
 	defer globalLocks.Unlock()
 
-	debug.Log("unlocking repository")
+	debug.Log("unlocking repository with lock %p", lock)
 	if err := lock.Unlock(); err != nil {
 		debug.Log("error while unlocking: %v", err)
 		return err
