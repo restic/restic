@@ -3,6 +3,10 @@ clone_folder: c:\restic
 environment:
   GOPATH: c:\gopath
 
+branches:
+  only:
+    - master
+
 init:
   - ps: >-
       $app = Get-WmiObject -Class Win32_Product -Filter "Vendor = 'http://golang.org'"
@@ -13,8 +17,8 @@ init:
 
 install:
   - rmdir c:\go /s /q
-  - appveyor DownloadFile https://storage.googleapis.com/golang/go1.7.windows-amd64.msi
-  - msiexec /i go1.7.windows-amd64.msi /q
+  - appveyor DownloadFile https://storage.googleapis.com/golang/go1.7.4.windows-amd64.msi
+  - msiexec /i go1.7.4.windows-amd64.msi /q
   - go version
   - go env
   - appveyor DownloadFile http://sourceforge.netcologne.de/project/gnuwin32/tar/1.13-1/tar-1.13-1-bin.zip -FileName tar.zip
