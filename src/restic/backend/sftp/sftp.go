@@ -23,6 +23,7 @@ import (
 
 const (
 	tempfileRandomSuffixLength = 10
+	defaultDirPrefixLen        = 2
 )
 
 // SFTP is a backend in a directory accessed via SFTP.
@@ -298,32 +299,12 @@ func Join(parts ...string) string {
 
 // Construct path for given restic.Type and name.
 func (r *SFTP) filename(t restic.FileType, name string) string {
-	if t == restic.ConfigFile {
-		return Join(r.p, "config")
-	}
-
-	return Join(r.dirname(t, name), name)
+	return backend.Filename(r.p, t, name, defaultDirPrefixLen)
 }
 
 // Construct directory for given backend.Type.
 func (r *SFTP) dirname(t restic.FileType, name string) string {
-	var n string
-	switch t {
-	case restic.DataFile:
-		n = backend.Paths.Data
-		if len(name) > 2 {
-			n = Join(n, name[:2])
-		}
-	case restic.SnapshotFile:
-		n = backend.Paths.Snapshots
-	case restic.IndexFile:
-		n = backend.Paths.Index
-	case restic.LockFile:
-		n = backend.Paths.Locks
-	case restic.KeyFile:
-		n = backend.Paths.Keys
-	}
-	return Join(r.p, n)
+	return Join(r.p, backend.Dirname(t, name, defaultDirPrefixLen))
 }
 
 // Load returns the data stored in the backend for h at the given offset
