@@ -2,8 +2,9 @@ language: go
 sudo: false
 
 go:
-  - 1.6.3
-  - 1.7.1
+  - 1.6.4
+  - 1.7.4
+  - tip
 
 os:
   - linux
@@ -16,16 +17,23 @@ env:
 matrix:
   exclude:
     - os: osx
-      go: 1.6.3
+      go: 1.6.4
+    - os: osx
+      go: tip
     - os: linux
-      go: 1.7.1
+      go: 1.7.4
   include:
     - os: linux
-      go: 1.7.1
+      go: 1.7.4
       sudo: true
       env:
         RESTIC_TEST_FUSE=1
+  allow_failures:
+    - go: tip
 
+branches:
+  only:
+    - master
 
 notifications:
   irc:
@@ -46,5 +54,4 @@ script:
   - go run run_integration_tests.go
 
 after_success:
-  - GOPATH=$PWD:$PWD/vendor goveralls -coverprofile=all.cov -service=travis-ci -repotoken "$COVERALLS_TOKEN"
   - bash <(curl -s https://codecov.io/bash) -f all.cov
