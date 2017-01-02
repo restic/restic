@@ -10,8 +10,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/spf13/cobra"
-
 	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
@@ -27,7 +25,7 @@ import (
 
 var version = "compiled manually"
 
-func parseEnvironment(cmd *cobra.Command, args []string) {
+func parseEnvironment() {
 	repo := os.Getenv("RESTIC_REPOSITORY")
 	if repo != "" {
 		globalOptions.Repo = repo
@@ -57,6 +55,7 @@ var globalOptions = GlobalOptions{
 }
 
 func init() {
+	parseEnvironment()
 	f := cmdRoot.PersistentFlags()
 	f.StringVarP(&globalOptions.Repo, "repo", "r", "", "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", "", "read the repository password from a file")
