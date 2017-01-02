@@ -133,7 +133,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	// update blobs in the index
 	for _, b := range p.Blobs() {
 		debug.Log("  updating blob %v to pack %v", b.ID.Str(), id.Str())
-		r.idx.Current().Store(restic.PackedBlob{
+		r.idx.Store(restic.PackedBlob{
 			Blob: restic.Blob{
 				Type:   b.Type,
 				ID:     b.ID,
