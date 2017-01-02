@@ -448,6 +448,35 @@ You can also specify a relative (read: no slash (`/`) character at the
 beginning) directory, in this case the dir is relative to the remote user's
 home directory.
 
+# Create a REST server repository
+
+In order to backup data to the remote server via HTTP or HTTPS protocol,
+you must first set up a remote [REST server](https://github.com/restic/rest-server)
+instance.  Once the server is configured, accessing it is achieved by changing the
+URL scheme like this:
+
+```console
+$ restic -r rest:http://host:8000/
+```
+
+Depending on your REST server setup, you can use HTTPS protocol, password
+protection, or multiple repositories.  Or any combination of those features, as
+you see fit. TCP/IP port is also configurable. Here are some more examples:
+
+```console
+$ restic -r rest:https://host:8000/
+$ restic -r rest:https://user:pass@host:8000/
+$ restic -r rest:https://user:pass@host:8000/my_backup_repo/
+```
+
+If you use TLS, make sure your certificates are signed, 'cause restic client
+will refuse to communicate otherwise.  It's easy to obtain such certificates
+today, thanks to free certificate authorities like [Let’s
+Encrypt](https://letsencrypt.org/).
+
+REST server uses exactly the same directory structure as local backend, so you
+should be able to access it both locally and via HTTP, even simultaneously.
+
 # Create an Amazon S3 repository
 
 Restic can backup data to any Amazon S3 bucket. However, in this case, changing the URL scheme is not enough since Amazon uses special security credentials to sign HTTP requests. By consequence, you must first setup the following environment variables with the credentials you obtained while creating the bucket.
