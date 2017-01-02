@@ -4,6 +4,7 @@ package location
 import (
 	"strings"
 
+	"restic/backend/b2"
 	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
@@ -25,6 +26,7 @@ type parser struct {
 // parsers is a list of valid config parsers for the backends. The first parser
 // is the fallback and should always be set to the local backend.
 var parsers = []parser{
+	{"b2", b2.ParseConfig},
 	{"local", local.ParseConfig},
 	{"sftp", sftp.ParseConfig},
 	{"s3", s3.ParseConfig},
