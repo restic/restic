@@ -25,18 +25,6 @@ import (
 
 var version = "compiled manually"
 
-func parseEnvironment() {
-	repo := os.Getenv("RESTIC_REPOSITORY")
-	if repo != "" {
-		globalOptions.Repo = repo
-	}
-
-	pw := os.Getenv("RESTIC_PASSWORD")
-	if pw != "" {
-		globalOptions.password = pw
-	}
-}
-
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
 	Repo         string
@@ -55,9 +43,13 @@ var globalOptions = GlobalOptions{
 }
 
 func init() {
-	parseEnvironment()
+	pw := os.Getenv("RESTIC_PASSWORD")
+	if pw != "" {
+		globalOptions.password = pw
+	}
+
 	f := cmdRoot.PersistentFlags()
-	f.StringVarP(&globalOptions.Repo, "repo", "r", "", "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
+	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", "", "read the repository password from a file")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not outputcomprehensive progress report")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
