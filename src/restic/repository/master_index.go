@@ -119,16 +119,14 @@ func (mi *MasterIndex) Remove(index *Index) {
 	}
 }
 
-// Current returns an index that is not yet finalized, so that new entries can
-// still be added. If all indexes are finalized, a new index is created and
-// returned.
-func (mi *MasterIndex) Current() *Index {
+// Store remembers the id and pack in the index.
+func (mi *MasterIndex) Store(pb restic.PackedBlob) {
 	mi.idxMutex.RLock()
-
 	for _, idx := range mi.idx {
 		if !idx.Final() {
 			mi.idxMutex.RUnlock()
-			return idx
+			idx.Store(pb)
+			return
 		}
 	}
 
@@ -137,9 +135,8 @@ func (mi *MasterIndex) Current() *Index {
 	defer mi.idxMutex.Unlock()
 
 	newIdx := NewIndex()
+	newIdx.Store(pb)
 	mi.idx = append(mi.idx, newIdx)
-
-	return newIdx
 }
 
 // NotFinalIndexes returns all indexes that have not yet been saved.
