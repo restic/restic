@@ -17,6 +17,8 @@ var cmdLs = &cobra.Command{
 	Short: "list files in a snapshot",
 	Long: `
 The "ls" command allows listing files and directories in a snapshot.
+
+The special snapshot-ID "latest" can be used to list files and directories of the latest snapshot in the repository.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runLs(globalOptions, args)
@@ -86,9 +88,20 @@ func runLs(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	id, err := restic.FindSnapshot(repo, args[0])
-	if err != nil {
-		return err
+	snapshotIDString := args[0]
+	var id restic.ID
+	var paths []string
+
+	if snapshotIDString == "latest" {
+		id, err = restic.FindLatestSnapshot(repo, paths, "")
+		if err != nil {
+			return err
+		}
+	} else {
+		id, err = restic.FindSnapshot(repo, snapshotIDString)
+		if err != nil {
+			return err
+		}
 	}
 
 	sn, err := restic.LoadSnapshot(repo, id)
