@@ -176,7 +176,7 @@ func (env *TravisEnvironment) Prepare() error {
 				"windows/386", "windows/amd64",
 				"darwin/386", "darwin/amd64",
 				"freebsd/386", "freebsd/amd64",
-				"opendbsd/386", "opendbsd/amd64",
+				"openbsd/386", "openbsd/amd64",
 			}
 			if !strings.HasPrefix(runtime.Version(), "go1.3") {
 				env.goxOSArch = append(env.goxOSArch,
