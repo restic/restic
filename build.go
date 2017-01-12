@@ -205,7 +205,7 @@ func cleanEnv() (env []string) {
 func build(cwd, goos, goarch, gopath string, args ...string) error {
 	args = append([]string{"build"}, args...)
 	cmd := exec.Command("go", args...)
-	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos)
+	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos, "CGO_ENABLED=0")
 	cmd.Dir = cwd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
