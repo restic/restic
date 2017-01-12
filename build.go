@@ -174,6 +174,7 @@ func showUsage(output io.Writer) {
 	fmt.Fprintf(output, "  -t     --tags          specify additional build tags\n")
 	fmt.Fprintf(output, "  -k     --keep-gopath   do not remove the GOPATH after build\n")
 	fmt.Fprintf(output, "  -T     --test          run tests\n")
+	fmt.Fprintf(output, "  -o     --output        set output file name\n")
 	fmt.Fprintf(output, "         --goos value    set GOOS for cross-compilation\n")
 	fmt.Fprintf(output, "         --goarch value  set GOARCH for cross-compilation\n")
 }
@@ -298,6 +299,8 @@ func main() {
 	targetGOOS := runtime.GOOS
 	targetGOARCH := runtime.GOARCH
 
+	var outputFilename string
+
 	for i, arg := range params {
 		if skipNext {
 			skipNext = false
@@ -315,6 +318,9 @@ func main() {
 			}
 			skipNext = true
 			buildTags = strings.Split(params[i+1], " ")
+		case "-o", "--output":
+			skipNext = true
+			outputFilename = params[i+1]
 		case "-T", "--test":
 			runTests = true
 		case "--goos":
@@ -377,9 +383,11 @@ func main() {
 		}
 	}()
 
-	outputFilename := config.Name
-	if targetGOOS == "windows" {
-		outputFilename += ".exe"
+	if outputFilename == "" {
+		outputFilename = config.Name
+		if targetGOOS == "windows" {
+			outputFilename += ".exe"
+		}
 	}
 
 	cwd, err := os.Getwd()
