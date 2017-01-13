@@ -2,12 +2,12 @@ package repository_test
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha256"
 	"io"
-	mrand "math/rand"
+	"math/rand"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"restic"
 	"restic/archiver"
@@ -17,13 +17,15 @@ import (
 
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
+var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func TestSave(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
-		_, err := io.ReadFull(rand.Reader, data)
+		_, err := io.ReadFull(rnd, data)
 		OK(t, err)
 
 		id := restic.Hash(data)
@@ -59,7 +61,7 @@ func TestSaveFrom(t *testing.T) {
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
-		_, err := io.ReadFull(rand.Reader, data)
+		_, err := io.ReadFull(rnd, data)
 		OK(t, err)
 
 		id := restic.Hash(data)
@@ -94,7 +96,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 	size := 4 << 20 // 4MiB
 
 	data := make([]byte, size)
-	_, err := io.ReadFull(rand.Reader, data)
+	_, err := io.ReadFull(rnd, data)
 	OK(t, err)
 
 	id := restic.ID(sha256.Sum256(data))
@@ -142,6 +144,36 @@ func BenchmarkLoadTree(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		_, err := repo.LoadTree(*sn.Tree)
 		OK(t, err)
+	}
+}
+
+func BenchmarkLoadBlob(b *testing.B) {
+	repo, cleanup := repository.TestRepository(b)
+	defer cleanup()
+
+	length := 1000000
+	buf := make([]byte, length)
+	_, err := io.ReadFull(rnd, buf)
+	OK(b, err)
+
+	id, err := repo.SaveBlob(restic.DataBlob, buf, restic.ID{})
+	OK(b, err)
+	OK(b, repo.Flush())
+
+	b.ResetTimer()
+	b.SetBytes(int64(length))
+
+	for i := 0; i < b.N; i++ {
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+		OK(b, err)
+		if n != length {
+			b.Errorf("wanted %d bytes, got %d", length, n)
+		}
+
+		id2 := restic.Hash(buf[:n])
+		if !id.Equal(id2) {
+			b.Errorf("wrong data returned, wanted %v, got %v", id.Str(), id2.Str())
+		}
 	}
 }
 
@@ -197,10 +229,10 @@ func BenchmarkLoadIndex(b *testing.B) {
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
 func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
 	for i := 0; i < num; i++ {
-		size := mrand.Int() % sizeMax
+		size := rand.Int() % sizeMax
 
 		buf := make([]byte, size)
-		_, err := io.ReadFull(rand.Reader, buf)
+		_, err := io.ReadFull(rnd, buf)
 		OK(t, err)
 
 		_, err = repo.SaveBlob(restic.DataBlob, buf, restic.ID{})
