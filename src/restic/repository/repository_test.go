@@ -177,6 +177,38 @@ func BenchmarkLoadBlob(b *testing.B) {
 	}
 }
 
+func BenchmarkLoadAndDecrypt(b *testing.B) {
+	repo, cleanup := repository.TestRepository(b)
+	defer cleanup()
+
+	length := 1000000
+	buf := restic.NewBlobBuffer(length)
+	_, err := io.ReadFull(rnd, buf)
+	OK(b, err)
+
+	dataID := restic.Hash(buf)
+
+	storageID, err := repo.SaveUnpacked(restic.DataFile, buf)
+	OK(b, err)
+	// OK(b, repo.Flush())
+
+	b.ResetTimer()
+	b.SetBytes(int64(length))
+
+	for i := 0; i < b.N; i++ {
+		data, err := repo.LoadAndDecrypt(restic.DataFile, storageID)
+		OK(b, err)
+		if len(data) != length {
+			b.Errorf("wanted %d bytes, got %d", length, len(data))
+		}
+
+		id2 := restic.Hash(data)
+		if !dataID.Equal(id2) {
+			b.Errorf("wrong data returned, wanted %v, got %v", storageID.Str(), id2.Str())
+		}
+	}
+}
+
 func TestLoadJSONUnpacked(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
