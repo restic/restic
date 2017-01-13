@@ -326,6 +326,19 @@ func TestIndexUnserialize(t *testing.T) {
 	}
 }
 
+func BenchmarkDecodeIndex(b *testing.B) {
+	rd := bytes.NewReader(docExample)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := rd.Seek(0, 0)
+		OK(b, err)
+		_, err = repository.DecodeIndex(rd)
+		OK(b, err)
+	}
+}
+
 func TestIndexUnserializeOld(t *testing.T) {
 	idx, err := repository.DecodeOldIndex(bytes.NewReader(docOldExample))
 	OK(t, err)
