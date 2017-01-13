@@ -213,7 +213,7 @@ func (r *Repository) SaveJSONUnpacked(t restic.FileType, item interface{}) (rest
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
 func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, err error) {
-	ciphertext := make([]byte, len(p)+crypto.Extension)
+	ciphertext := restic.NewBlobBuffer(len(p))
 	ciphertext, err = r.Encrypt(ciphertext, p)
 	if err != nil {
 		return restic.ID{}, err
@@ -528,8 +528,8 @@ func (r *Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int,
 	}
 
 	buf = buf[:cap(buf)]
-	if len(buf) < int(size)+crypto.Extension {
-		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), size+crypto.Extension)
+	if len(buf) < restic.CiphertextLength(int(size)) {
+		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), restic.CiphertextLength(int(size)))
 	}
 
 	n, err := r.loadBlob(id, t, buf)
@@ -563,7 +563,7 @@ func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
 	}
 
 	debug.Log("size is %d, create buffer", size)
-	buf := make([]byte, size+crypto.Extension)
+	buf := restic.NewBlobBuffer(int(size))
 
 	n, err := r.loadBlob(id, restic.TreeBlob, buf)
 	if err != nil {

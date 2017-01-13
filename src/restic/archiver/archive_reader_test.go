@@ -5,7 +5,6 @@ import (
 	"io"
 	"math/rand"
 	"restic"
-	"restic/crypto"
 	"restic/repository"
 	"testing"
 )
@@ -45,7 +44,7 @@ func checkSavedFile(t *testing.T, repo restic.Repository, treeID restic.ID, name
 			t.Fatal(err)
 		}
 
-		buf := make([]byte, int(size), int(size)+crypto.Extension)
+		buf := restic.NewBlobBuffer(int(size))
 		n := loadBlob(t, repo, id, buf)
 		if n != len(buf) {
 			t.Errorf("wrong number of bytes read, want %d, got %d", len(buf), n)

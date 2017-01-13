@@ -10,7 +10,6 @@ import (
 
 	"restic/errors"
 
-	"restic/crypto"
 	"restic/debug"
 )
 
@@ -177,15 +176,15 @@ func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
 	return false
 }
 
-// LookupSize returns the length of the cleartext content behind the
-// given id
-func (idx *Index) LookupSize(id restic.ID, tpe restic.BlobType) (cleartextLength uint, err error) {
+// LookupSize returns the length of the plaintext content of the blob with the
+// given id.
+func (idx *Index) LookupSize(id restic.ID, tpe restic.BlobType) (plaintextLength uint, err error) {
 	blobs, err := idx.Lookup(id, tpe)
 	if err != nil {
 		return 0, err
 	}
 
-	return blobs[0].Length - crypto.Extension, nil
+	return uint(restic.PlaintextLength(int(blobs[0].Length))), nil
 }
 
 // Supersedes returns the list of indexes this index supersedes, if any.
