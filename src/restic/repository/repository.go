@@ -64,15 +64,13 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 		return nil, errors.New("invalid data returned")
 	}
 
-	plain := make([]byte, len(buf))
-
 	// decrypt
-	n, err := r.decryptTo(plain, buf)
+	n, err := r.decryptTo(buf, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	return plain[:n], nil
+	return buf[:n], nil
 }
 
 // loadBlob tries to load and decrypt content identified by t and id from a
