@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"restic"
@@ -451,12 +450,11 @@ func isErrOldIndex(err error) bool {
 var ErrOldIndexFormat = errors.New("index has old format")
 
 // DecodeIndex loads and unserializes an index from rd.
-func DecodeIndex(rd io.Reader) (idx *Index, err error) {
+func DecodeIndex(buf []byte) (idx *Index, err error) {
 	debug.Log("Start decoding index")
-	idxJSON := jsonIndex{}
+	idxJSON := &jsonIndex{}
 
-	dec := json.NewDecoder(rd)
-	err = dec.Decode(&idxJSON)
+	err = json.Unmarshal(buf, idxJSON)
 	if err != nil {
 		debug.Log("Error %v", err)
 
@@ -490,12 +488,11 @@ func DecodeIndex(rd io.Reader) (idx *Index, err error) {
 }
 
 // DecodeOldIndex loads and unserializes an index in the old format from rd.
-func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
+func DecodeOldIndex(buf []byte) (idx *Index, err error) {
 	debug.Log("Start decoding old index")
 	list := []*packJSON{}
 
-	dec := json.NewDecoder(rd)
-	err = dec.Decode(&list)
+	err = json.Unmarshal(buf, &list)
 	if err != nil {
 		debug.Log("Error %#v", err)
 		return nil, errors.Wrap(err, "Decode")
@@ -522,7 +519,7 @@ func DecodeOldIndex(rd io.Reader) (idx *Index, err error) {
 }
 
 // LoadIndexWithDecoder loads the index and decodes it with fn.
-func LoadIndexWithDecoder(repo restic.Repository, id restic.ID, fn func(io.Reader) (*Index, error)) (idx *Index, err error) {
+func LoadIndexWithDecoder(repo restic.Repository, id restic.ID, fn func([]byte) (*Index, error)) (idx *Index, err error) {
 	debug.Log("Loading index %v", id.Str())
 
 	buf, err := repo.LoadAndDecrypt(restic.IndexFile, id)
@@ -530,7 +527,7 @@ func LoadIndexWithDecoder(repo restic.Repository, id restic.ID, fn func(io.Reade
 		return nil, err
 	}
 
-	idx, err = fn(bytes.NewReader(buf))
+	idx, err = fn(buf)
 	if err != nil {
 		debug.Log("error while decoding index %v: %v", id, err)
 		return nil, err
