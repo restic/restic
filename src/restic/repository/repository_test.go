@@ -11,6 +11,7 @@ import (
 
 	"restic"
 	"restic/archiver"
+	"restic/crypto"
 	"restic/repository"
 	. "restic/test"
 )
@@ -152,7 +153,7 @@ func BenchmarkLoadBlob(b *testing.B) {
 	defer cleanup()
 
 	length := 1000000
-	buf := make([]byte, length)
+	buf := make([]byte, length, length+crypto.Extension)
 	_, err := io.ReadFull(rnd, buf)
 	OK(b, err)
 
