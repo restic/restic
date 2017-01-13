@@ -41,7 +41,7 @@ func TestSave(t *testing.T) {
 		// OK(t, repo.SaveIndex())
 
 		// read back
-		buf := make([]byte, size)
+		buf := make([]byte, size, size+crypto.Extension)
 		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 		OK(t, err)
 		Equals(t, len(buf), n)
@@ -75,7 +75,7 @@ func TestSaveFrom(t *testing.T) {
 		OK(t, repo.Flush())
 
 		// read back
-		buf := make([]byte, size)
+		buf := make([]byte, size, size+crypto.Extension)
 		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 		OK(t, err)
 		Equals(t, len(buf), n)
