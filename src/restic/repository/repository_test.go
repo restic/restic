@@ -246,15 +246,38 @@ func TestRepositoryLoadIndex(t *testing.T) {
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
-	repodir, cleanup := Env(b, repoFixture)
+	repository.TestUseLowSecurityKDFParameters(b)
+
+	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
-	repo := repository.TestOpenLocal(b, repodir)
+	idx := repository.NewIndex()
+
+	for i := 0; i < 5000; i++ {
+		idx.Store(restic.PackedBlob{
+			Blob: restic.Blob{
+				Type:   restic.DataBlob,
+				Length: 1234,
+				ID:     restic.NewRandomID(),
+				Offset: 1235,
+			},
+			PackID: restic.NewRandomID(),
+		})
+	}
+
+	id, err := repository.SaveIndex(repo, idx)
+	OK(b, err)
+
+	b.Logf("index saved as %v (%v entries)", id.Str(), idx.Count(restic.DataBlob))
+	fi, err := repo.Backend().Stat(restic.Handle{Type: restic.IndexFile, Name: id.String()})
+	OK(b, err)
+	b.Logf("filesize is %v", fi.Size)
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		repo.SetIndex(repository.NewMasterIndex())
-		OK(b, repo.LoadIndex())
+		_, err := repository.LoadIndex(repo, id)
+		OK(b, err)
 	}
 }
 
