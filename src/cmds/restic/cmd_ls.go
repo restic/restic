@@ -17,22 +17,35 @@ var cmdLs = &cobra.Command{
 	Short: "list files in a snapshot",
 	Long: `
 The "ls" command allows listing files and directories in a snapshot.
+
+The special snapshot-ID "latest" can be used to list files and directories of the latest snapshot in the repository.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runLs(globalOptions, args)
 	},
 }
 
-var listLong bool
+// LsOptions collects all options for the ls command.
+type LsOptions struct {
+	ListLong bool
+	Host     string
+	Paths    []string
+}
+
+var lsOptions LsOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdLs)
 
-	cmdLs.Flags().BoolVarP(&listLong, "long", "l", false, "use a long listing format showing size and mode")
+	flags := cmdLs.Flags()
+	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
+
+	flags.StringVarP(&lsOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
+	flags.StringSliceVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 }
 
 func printNode(prefix string, n *restic.Node) string {
-	if !listLong {
+	if !lsOptions.ListLong {
 		return filepath.Join(prefix, n.Name)
 	}
 
@@ -86,9 +99,19 @@ func runLs(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	id, err := restic.FindSnapshot(repo, args[0])
-	if err != nil {
-		return err
+	snapshotIDString := args[0]
+	var id restic.ID
+
+	if snapshotIDString == "latest" {
+		id, err = restic.FindLatestSnapshot(repo, lsOptions.Paths, lsOptions.Host)
+		if err != nil {
+			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Host:%v", err, lsOptions.Paths, lsOptions.Host)
+		}
+	} else {
+		id, err = restic.FindSnapshot(repo, snapshotIDString)
+		if err != nil {
+			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
+		}
 	}
 
 	sn, err := restic.LoadSnapshot(repo, id)
