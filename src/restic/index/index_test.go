@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"restic"
 	"restic/repository"
+	"restic/test"
 	"testing"
 	"time"
 )
@@ -135,6 +136,26 @@ func BenchmarkIndexNew(b *testing.B) {
 		if idx == nil {
 			b.Fatalf("New() returned nil index")
 		}
+		b.Logf("idx %v packs", len(idx.Packs))
+	}
+}
+
+func BenchmarkIndexSave(b *testing.B) {
+	repo, cleanup := createFilledRepo(b, 3, 0)
+	defer cleanup()
+
+	idx, err := New(repo, nil)
+	test.OK(b, err)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		id, err := idx.Save(repo, nil)
+		if err != nil {
+			b.Fatalf("New() returned error %v", err)
+		}
+
+		b.Logf("saved as %v", id.Str())
 	}
 }
 
@@ -250,7 +271,6 @@ func TestIndexAddRemovePack(t *testing.T) {
 			t.Errorf("removed blob %v found in index", h)
 		}
 	}
-
 }
 
 // example index serialization from doc/Design.md
