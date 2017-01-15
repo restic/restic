@@ -14,27 +14,20 @@ import (
 
 // Pack contains information about the contents of a pack.
 type Pack struct {
+	ID      restic.ID
 	Size    int64
 	Entries []restic.Blob
-}
-
-// Blob contains information about a blob.
-type Blob struct {
-	Size  int64
-	Packs restic.IDSet
 }
 
 // Index contains information about blobs and packs stored in a repo.
 type Index struct {
 	Packs    map[restic.ID]Pack
-	Blobs    map[restic.BlobHandle]Blob
 	IndexIDs restic.IDSet
 }
 
 func newIndex() *Index {
 	return &Index{
 		Packs:    make(map[restic.ID]Pack),
-		Blobs:    make(map[restic.BlobHandle]Blob),
 		IndexIDs: restic.NewIDSet(),
 	}
 }
@@ -70,7 +63,7 @@ func New(repo restic.Repository, p *restic.Progress) (*Index, error) {
 			return nil, err
 		}
 
-		p := Pack{Entries: j.Entries(), Size: j.Size()}
+		p := Pack{ID: packID, Entries: j.Entries(), Size: j.Size()}
 		idx.Packs[packID] = p
 	}
 
@@ -181,18 +174,6 @@ func (idx *Index) AddPack(id restic.ID, size int64, entries []restic.Blob) error
 
 	idx.Packs[id] = Pack{Size: size, Entries: entries}
 
-	for _, entry := range entries {
-		h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
-		if _, ok := idx.Blobs[h]; !ok {
-			idx.Blobs[h] = Blob{
-				Size:  int64(entry.Length),
-				Packs: restic.NewIDSet(),
-			}
-		}
-
-		idx.Blobs[h].Packs.Insert(id)
-	}
-
 	return nil
 }
 
@@ -200,15 +181,6 @@ func (idx *Index) AddPack(id restic.ID, size int64, entries []restic.Blob) error
 func (idx *Index) RemovePack(id restic.ID) error {
 	if _, ok := idx.Packs[id]; !ok {
 		return errors.Errorf("pack %v not found in the index", id.Str())
-	}
-
-	for _, blob := range idx.Packs[id].Entries {
-		h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
-		idx.Blobs[h].Packs.Delete(id)
-
-		if len(idx.Blobs[h].Packs) == 0 {
-			delete(idx.Blobs, h)
-		}
 	}
 
 	delete(idx.Packs, id)
@@ -239,14 +211,11 @@ func (idx *Index) DuplicateBlobs() (dups restic.BlobSet) {
 func (idx *Index) PacksForBlobs(blobs restic.BlobSet) (packs restic.IDSet) {
 	packs = restic.NewIDSet()
 
-	for h := range blobs {
-		blob, ok := idx.Blobs[h]
-		if !ok {
-			continue
-		}
-
-		for id := range blob.Packs {
-			packs.Insert(id)
+	for id, p := range idx.Packs {
+		for _, entry := range p.Entries {
+			if blobs.Has(restic.BlobHandle{ID: entry.ID, Type: entry.Type}) {
+				packs.Insert(id)
+			}
 		}
 	}
 
@@ -264,31 +233,20 @@ type Location struct {
 var ErrBlobNotFound = errors.New("blob not found in index")
 
 // FindBlob returns a list of packs and positions the blob can be found in.
-func (idx *Index) FindBlob(h restic.BlobHandle) ([]Location, error) {
-	blob, ok := idx.Blobs[h]
-	if !ok {
-		return nil, ErrBlobNotFound
+func (idx *Index) FindBlob(h restic.BlobHandle) (result []Location, err error) {
+	for id, p := range idx.Packs {
+		for _, entry := range p.Entries {
+			if entry.ID.Equal(h.ID) && entry.Type == h.Type {
+				result = append(result, Location{
+					PackID: id,
+					Blob:   entry,
+				})
+			}
+		}
 	}
 
-	result := make([]Location, 0, len(blob.Packs))
-	for packID := range blob.Packs {
-		pack, ok := idx.Packs[packID]
-		if !ok {
-			return nil, errors.Errorf("pack %v not found in index", packID.Str())
-		}
-
-		for _, entry := range pack.Entries {
-			if entry.Type != h.Type {
-				continue
-			}
-
-			if !entry.ID.Equal(h.ID) {
-				continue
-			}
-
-			loc := Location{PackID: packID, Blob: entry}
-			result = append(result, loc)
-		}
+	if len(result) == 0 {
+		return nil, ErrBlobNotFound
 	}
 
 	return result, nil

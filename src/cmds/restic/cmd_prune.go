@@ -103,11 +103,13 @@ func runPrune(gopts GlobalOptions) error {
 		return err
 	}
 
+	blobs := 0
 	for _, pack := range idx.Packs {
 		stats.bytes += pack.Size
+		blobs += len(pack.Entries)
 	}
 	Verbosef("repository contains %v packs (%v blobs) with %v bytes\n",
-		len(idx.Packs), len(idx.Blobs), formatBytes(uint64(stats.bytes)))
+		len(idx.Packs), blobs, formatBytes(uint64(stats.bytes)))
 
 	blobCount := make(map[restic.BlobHandle]int)
 	duplicateBlobs := 0
@@ -164,14 +166,17 @@ func runPrune(gopts GlobalOptions) error {
 
 	// find packs that need a rewrite
 	rewritePacks := restic.NewIDSet()
-	for h, blob := range idx.Blobs {
-		if !usedBlobs.Has(h) {
-			rewritePacks.Merge(blob.Packs)
-			continue
-		}
+	for _, pack := range idx.Packs {
+		for _, blob := range pack.Entries {
+			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+			if !usedBlobs.Has(h) {
+				rewritePacks.Insert(pack.ID)
+				continue
+			}
 
-		if blobCount[h] > 1 {
-			rewritePacks.Merge(blob.Packs)
+			if blobCount[h] > 1 {
+				rewritePacks.Insert(pack.ID)
+			}
 		}
 	}
 

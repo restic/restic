@@ -151,7 +151,7 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 	if len(dups) == 0 {
 		t.Errorf("no duplicate blobs found")
 	}
-	t.Logf("%d packs, %d unique blobs", len(idx.Packs), len(idx.Blobs))
+	t.Logf("%d packs, %d duplicate blobs", len(idx.Packs), len(dups))
 
 	packs := idx.PacksForBlobs(dups)
 	if len(packs) == 0 {
@@ -248,10 +248,6 @@ func TestIndexAddRemovePack(t *testing.T) {
 		_, err := idx.FindBlob(h)
 		if err == nil {
 			t.Errorf("removed blob %v found in index", h)
-		}
-
-		if _, ok := idx.Blobs[h]; ok {
-			t.Errorf("removed blob %v found in index.Blobs", h)
 		}
 	}
 
