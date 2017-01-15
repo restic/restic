@@ -233,6 +233,8 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 
 	hdrRd := bytes.NewReader(buf)
 
+	entries = make([]restic.Blob, 0, uint(n)/entrySize)
+
 	pos := uint(0)
 	for {
 		e := headerEntry{}
