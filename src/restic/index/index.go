@@ -62,9 +62,6 @@ func New(repo restic.Repository, p *restic.Progress) (*Index, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		p := Pack{ID: packID, Entries: j.Entries(), Size: j.Size()}
-		idx.Packs[packID] = p
 	}
 
 	return idx, nil
