@@ -141,11 +141,25 @@ func BenchmarkIndexNew(b *testing.B) {
 }
 
 func BenchmarkIndexSave(b *testing.B) {
-	repo, cleanup := createFilledRepo(b, 3, 0)
+	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
 	idx, err := New(repo, nil)
 	test.OK(b, err)
+
+	for i := 0; i < 8000; i++ {
+		entries := make([]restic.Blob, 0, 200)
+		for j := 0; j < len(entries); j++ {
+			entries = append(entries, restic.Blob{
+				ID:     restic.NewRandomID(),
+				Length: 1000,
+				Offset: 5,
+				Type:   restic.DataBlob,
+			})
+		}
+
+		idx.AddPack(restic.NewRandomID(), 10000, entries)
+	}
 
 	b.ResetTimer()
 
