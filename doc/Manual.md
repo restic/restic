@@ -77,7 +77,7 @@ Available Commands:
 Flags:
       --no-lock                do not lock the repo, this allows some operations on read-only repos
   -p, --password-file string   read the repository password from a file
-  -q, --quiet                  do not outputcomprehensive progress report
+  -q, --quiet                  do not output comprehensive progress report
   -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
 
 Use "restic [command] --help" for more information about a command.
@@ -110,7 +110,7 @@ Flags:
 Global Flags:
       --no-lock                do not lock the repo, this allows some operations on read-only repos
   -p, --password-file string   read the repository password from a file
-  -q, --quiet                  do not outputcomprehensive progress report
+  -q, --quiet                  do not output comprehensive progress report
   -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
 ```
 
