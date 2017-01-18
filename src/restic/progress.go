@@ -55,7 +55,6 @@ func NewProgress(progressUpdateInterval int) *Progress {
 		updateProgressDynamically = false
 	} else {
 		if !updateProgressDynamically {
-			// TODO: make the duration for non-terminal progress (user) configurable
 			d = time.Duration(10) * time.Second
 		} else {
 			d = time.Second
