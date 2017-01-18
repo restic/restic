@@ -1,7 +1,7 @@
 FAQ
 ===
 
-This ist the list of Frequently Asked Questions for restic.
+This is the list of Frequently Asked Questions for restic.
 
 `restic check` reports packs that aren't referenced in any index, is my repository broken?
 ------------------------------------------------------------------------------------------
