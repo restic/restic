@@ -32,12 +32,12 @@ func init() {
 }
 
 // newProgressMax returns a progress that counts blobs.
-func newProgressMax(show bool, max uint64, description string) *restic.Progress {
+func newProgressMax(interval int, show bool, max uint64, description string) *restic.Progress {
 	if !show {
 		return nil
 	}
 
-	p := restic.NewProgress()
+	p := restic.NewProgress(interval)
 
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 		status := fmt.Sprintf("[%s] %s  %d / %d %s",
@@ -97,7 +97,7 @@ func runPrune(gopts GlobalOptions) error {
 
 	Verbosef("building new index for repo\n")
 
-	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
+	bar := newProgressMax(gopts.ProgressUpdateInterval, !gopts.Quiet, uint64(stats.packs), "packs")
 	idx, err := index.New(repo, bar)
 	if err != nil {
 		return err
@@ -144,7 +144,7 @@ func runPrune(gopts GlobalOptions) error {
 	usedBlobs := restic.NewBlobSet()
 	seenBlobs := restic.NewBlobSet()
 
-	bar = newProgressMax(!gopts.Quiet, uint64(len(snapshots)), "snapshots")
+	bar = newProgressMax(gopts.ProgressUpdateInterval, !gopts.Quiet, uint64(len(snapshots)), "snapshots")
 	bar.Start()
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID().Str())
@@ -226,7 +226,7 @@ func runPrune(gopts GlobalOptions) error {
 	for _ = range repo.List(restic.DataFile, done) {
 		stats.packs++
 	}
-	bar = newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
+	bar = newProgressMax(gopts.ProgressUpdateInterval, !gopts.Quiet, uint64(stats.packs), "packs")
 	idx, err = index.New(repo, bar)
 	if err != nil {
 		return err

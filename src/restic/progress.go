@@ -11,7 +11,7 @@ import (
 
 const minTickerTime = time.Second / 60
 
-var isTerminal = terminal.IsTerminal(int(os.Stdout.Fd()))
+var updateProgressDynamically = terminal.IsTerminal(int(os.Stdout.Fd()))
 var forceUpdateProgress = make(chan bool)
 
 type Progress struct {
@@ -48,13 +48,18 @@ type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 // called when new data arrives or at least every d interval. The function
 // OnDone is called when Done() is called. Both functions are called
 // synchronously and can use shared state.
-func NewProgress() *Progress {
+func NewProgress(progressUpdateInterval int) *Progress {
 	var d time.Duration
-	if !isTerminal {
-		// TODO: make the duration for non-terminal progress (user) configurable
-		d = time.Duration(10) * time.Second
+	if progressUpdateInterval != 0 {
+		d = time.Duration(progressUpdateInterval) * time.Second
+		updateProgressDynamically = false
 	} else {
-		d = time.Second
+		if !updateProgressDynamically {
+			// TODO: make the duration for non-terminal progress (user) configurable
+			d = time.Duration(10) * time.Second
+		} else {
+			d = time.Second
+		}
 	}
 	return &Progress{d: d}
 }
@@ -109,7 +114,7 @@ func (p *Progress) Report(s Stat) {
 	p.cur.Add(s)
 	cur := p.cur
 	needUpdate := false
-	if isTerminal && time.Since(p.lastUpdate) > minTickerTime {
+	if updateProgressDynamically && time.Since(p.lastUpdate) > minTickerTime {
 		p.lastUpdate = time.Now()
 		needUpdate = true
 	}
