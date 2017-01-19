@@ -11,7 +11,8 @@ restic is a backup program that is fast, efficient and secure. Detailed
 information can be found in [the documentation](doc/index.md) and [the user
 manual](doc/Manual.md). The [design document](doc/Design.md) lists the
 technical background and gives detailed information about the structure of the
-repository and the data saved therein.
+repository and the data saved therein. The file [FAQ.md](doc/FAQ.md) lists the
+most frequently asked questions.
 
 The latest documentation can be viewed online at
 <https://restic.readthedocs.io/en/latest>. On the bottom left corner there is
