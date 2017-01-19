@@ -17,4 +17,4 @@ When `restic check` reports that there are pack files in the repository that are
     Check snapshots, trees and blobs
     Fatal: repository contains errors
 
-The message means that there is more data stored in the repo than strictly necessary. With high probability this is duplicate data. In order to clean it up, the command `restic prune` can be used. The source of this additional data is not yet known.
+The message means that there is more data stored in the repo than strictly necessary. With high probability this is duplicate data. In order to clean it up, the command `restic prune` can be used. The cause of this bug is not yet known.
