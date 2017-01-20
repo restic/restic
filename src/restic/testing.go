@@ -23,16 +23,26 @@ type fakeFileSystem struct {
 	repo        Repository
 	knownBlobs  IDSet
 	duplication float32
+	buf         []byte
+	chunker     *chunker.Chunker
 }
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
 // IDs is returned.
-func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
-	blobs = IDs{}
-	ch := chunker.New(rd, fs.repo.Config().ChunkerPolynomial)
+func (fs *fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
+	if fs.buf == nil {
+		fs.buf = make([]byte, chunker.MaxSize)
+	}
 
+	if fs.chunker == nil {
+		fs.chunker = chunker.New(rd, fs.repo.Config().ChunkerPolynomial)
+	} else {
+		fs.chunker.Reset(rd, fs.repo.Config().ChunkerPolynomial)
+	}
+
+	blobs = IDs{}
 	for {
-		chunk, err := ch.Next(getBuf())
+		chunk, err := fs.chunker.Next(fs.buf)
 		if errors.Cause(err) == io.EOF {
 			break
 		}
@@ -50,7 +60,6 @@ func (fs fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
 
 			fs.knownBlobs.Insert(id)
 		}
-		freeBuf(chunk.Data)
 
 		blobs = append(blobs, id)
 	}
@@ -64,7 +73,7 @@ const (
 	maxNodes    = 32
 )
 
-func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {
+func (fs *fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {
 	data, err := json.Marshal(tree)
 	if err != nil {
 		fs.t.Fatalf("json.Marshal(tree) returned error: %v", err)
@@ -76,7 +85,7 @@ func (fs fakeFileSystem) treeIsKnown(tree *Tree) (bool, []byte, ID) {
 	return fs.blobIsKnown(id, TreeBlob), data, id
 }
 
-func (fs fakeFileSystem) blobIsKnown(id ID, t BlobType) bool {
+func (fs *fakeFileSystem) blobIsKnown(id ID, t BlobType) bool {
 	if rand.Float32() < fs.duplication {
 		return false
 	}
@@ -94,7 +103,7 @@ func (fs fakeFileSystem) blobIsKnown(id ID, t BlobType) bool {
 }
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
-func (fs fakeFileSystem) saveTree(seed int64, depth int) ID {
+func (fs *fakeFileSystem) saveTree(seed int64, depth int) ID {
 	rnd := rand.NewSource(seed)
 	numNodes := int(rnd.Int63() % maxNodes)
 

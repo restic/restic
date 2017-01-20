@@ -30,8 +30,7 @@ func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic
 	for _, idx := range mi.idx {
 		blobs, err = idx.Lookup(id, tpe)
 		if err == nil {
-			debug.Log("MasterIndex.Lookup",
-				"found id %v: %v", id.Str(), blobs)
+			debug.Log("found id %v: %v", id.Str(), blobs)
 			return
 		}
 	}
@@ -46,9 +45,8 @@ func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, erro
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		length, err := idx.LookupSize(id, tpe)
-		if err == nil {
-			return length, nil
+		if idx.Has(id, tpe) {
+			return idx.LookupSize(id, tpe)
 		}
 	}
 

@@ -85,15 +85,15 @@ func (p *Packer) Finalize() (uint, error) {
 		return 0, errors.Wrap(err, "Write")
 	}
 
-	hdrBytes := bytesHeader + crypto.Extension
-	if uint(n) != hdrBytes {
+	hdrBytes := restic.CiphertextLength(int(bytesHeader))
+	if n != hdrBytes {
 		return 0, errors.New("wrong number of bytes written")
 	}
 
-	bytesWritten += hdrBytes
+	bytesWritten += uint(hdrBytes)
 
 	// write length
-	err = binary.Write(p.wr, binary.LittleEndian, uint32(uint(len(p.blobs))*entrySize+crypto.Extension))
+	err = binary.Write(p.wr, binary.LittleEndian, uint32(restic.CiphertextLength(len(p.blobs)*int(entrySize))))
 	if err != nil {
 		return 0, errors.Wrap(err, "binary.Write")
 	}
@@ -232,6 +232,8 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 	buf = buf[:n]
 
 	hdrRd := bytes.NewReader(buf)
+
+	entries = make([]restic.Blob, 0, uint(n)/entrySize)
 
 	pos := uint(0)
 	for {

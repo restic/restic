@@ -64,15 +64,13 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 		return nil, errors.New("invalid data returned")
 	}
 
-	plain := make([]byte, len(buf))
-
 	// decrypt
-	n, err := r.decryptTo(plain, buf)
+	n, err := r.decryptTo(buf, buf)
 	if err != nil {
 		return nil, err
 	}
 
-	return plain[:n], nil
+	return buf[:n], nil
 }
 
 // loadBlob tries to load and decrypt content identified by t and id from a
@@ -80,17 +78,6 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 // large enough to hold the complete blob.
 func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []byte) (int, error) {
 	debug.Log("load %v with id %v (buf %p, len %d)", t, id.Str(), plaintextBuf, len(plaintextBuf))
-
-	// lookup plaintext size of blob
-	size, err := r.idx.LookupSize(id, t)
-	if err != nil {
-		return 0, err
-	}
-
-	// make sure the plaintext buffer is large enough, extend otherwise
-	if len(plaintextBuf) < int(size) {
-		return 0, errors.Errorf("buffer is too small: %d < %d", len(plaintextBuf), size)
-	}
 
 	// lookup packs
 	blobs, err := r.idx.Lookup(id, t)
@@ -109,8 +96,8 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 
 		// load blob from pack
 		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
-		ciphertextBuf := make([]byte, blob.Length)
-		n, err := r.be.Load(h, ciphertextBuf, int64(blob.Offset))
+		plaintextBuf = plaintextBuf[:cap(plaintextBuf)]
+		n, err := r.be.Load(h, plaintextBuf, int64(blob.Offset))
 		if err != nil {
 			debug.Log("error loading blob %v: %v", blob, err)
 			lastError = err
@@ -125,7 +112,7 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		}
 
 		// decrypt
-		n, err = r.decryptTo(plaintextBuf, ciphertextBuf)
+		n, err = r.decryptTo(plaintextBuf, plaintextBuf)
 		if err != nil {
 			lastError = errors.Errorf("decrypting blob %v failed: %v", id, err)
 			continue
@@ -224,7 +211,7 @@ func (r *Repository) SaveJSONUnpacked(t restic.FileType, item interface{}) (rest
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
 func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, err error) {
-	ciphertext := make([]byte, len(p)+crypto.Extension)
+	ciphertext := restic.NewBlobBuffer(len(p))
 	ciphertext, err = r.Encrypt(ciphertext, p)
 	if err != nil {
 		return restic.ID{}, err
@@ -528,7 +515,9 @@ func (r *Repository) Close() error {
 	return r.be.Close()
 }
 
-// LoadBlob loads a blob of type t from the repository to the buffer.
+// LoadBlob loads a blob of type t from the repository to the buffer. buf must
+// be large enough to hold the encrypted blob, since it is used as scratch
+// space.
 func (r *Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int, error) {
 	debug.Log("load blob %v into buf %p", id.Str(), buf)
 	size, err := r.idx.LookupSize(id, t)
@@ -536,8 +525,9 @@ func (r *Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int,
 		return 0, err
 	}
 
-	if len(buf) < int(size) {
-		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), size)
+	buf = buf[:cap(buf)]
+	if len(buf) < restic.CiphertextLength(int(size)) {
+		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), restic.CiphertextLength(int(size)))
 	}
 
 	n, err := r.loadBlob(id, t, buf)
@@ -571,7 +561,7 @@ func (r *Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
 	}
 
 	debug.Log("size is %d, create buffer", size)
-	buf := make([]byte, size)
+	buf := restic.NewBlobBuffer(int(size))
 
 	n, err := r.loadBlob(id, restic.TreeBlob, buf)
 	if err != nil {

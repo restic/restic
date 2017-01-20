@@ -208,7 +208,7 @@ func (node Node) createFileAt(path string, repo Repository) error {
 
 		buf = buf[:cap(buf)]
 		if uint(len(buf)) < size {
-			buf = make([]byte, size)
+			buf = NewBlobBuffer(int(size))
 		}
 
 		n, err := repo.LoadBlob(DataBlob, id, buf)

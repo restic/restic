@@ -3,7 +3,9 @@ package index
 import (
 	"math/rand"
 	"restic"
+	"restic/checker"
 	"restic/repository"
+	"restic/test"
 	"testing"
 	"time"
 )
@@ -135,6 +137,40 @@ func BenchmarkIndexNew(b *testing.B) {
 		if idx == nil {
 			b.Fatalf("New() returned nil index")
 		}
+		b.Logf("idx %v packs", len(idx.Packs))
+	}
+}
+
+func BenchmarkIndexSave(b *testing.B) {
+	repo, cleanup := repository.TestRepository(b)
+	defer cleanup()
+
+	idx, err := New(repo, nil)
+	test.OK(b, err)
+
+	for i := 0; i < 8000; i++ {
+		entries := make([]restic.Blob, 0, 200)
+		for j := 0; j < len(entries); j++ {
+			entries = append(entries, restic.Blob{
+				ID:     restic.NewRandomID(),
+				Length: 1000,
+				Offset: 5,
+				Type:   restic.DataBlob,
+			})
+		}
+
+		idx.AddPack(restic.NewRandomID(), 10000, entries)
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		id, err := idx.Save(repo, nil)
+		if err != nil {
+			b.Fatalf("New() returned error %v", err)
+		}
+
+		b.Logf("saved as %v", id.Str())
 	}
 }
 
@@ -151,7 +187,7 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 	if len(dups) == 0 {
 		t.Errorf("no duplicate blobs found")
 	}
-	t.Logf("%d packs, %d unique blobs", len(idx.Packs), len(idx.Blobs))
+	t.Logf("%d packs, %d duplicate blobs", len(idx.Packs), len(dups))
 
 	packs := idx.PacksForBlobs(dups)
 	if len(packs) == 0 {
@@ -169,7 +205,7 @@ func loadIndex(t testing.TB, repo restic.Repository) *Index {
 	return idx
 }
 
-func TestIndexSave(t *testing.T) {
+func TestSave(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
@@ -219,6 +255,41 @@ func TestIndexSave(t *testing.T) {
 	}
 }
 
+func TestIndexSave(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0)
+	defer cleanup()
+
+	idx := loadIndex(t, repo)
+
+	id, err := idx.Save(repo, idx.IndexIDs.List())
+	if err != nil {
+		t.Fatalf("unable to save new index: %v", err)
+	}
+
+	t.Logf("new index saved as %v", id.Str())
+
+	for id := range idx.IndexIDs {
+		t.Logf("remove index %v", id.Str())
+		err = repo.Backend().Remove(restic.IndexFile, id.String())
+		if err != nil {
+			t.Errorf("error removing index %v: %v", id, err)
+		}
+	}
+
+	idx2 := loadIndex(t, repo)
+	t.Logf("load new index with %d packs", len(idx2.Packs))
+
+	checker := checker.New(repo)
+	hints, errs := checker.LoadIndex()
+	for _, h := range hints {
+		t.Logf("hint: %v\n", h)
+	}
+
+	for _, err := range errs {
+		t.Errorf("checker found error: %v", err)
+	}
+}
+
 func TestIndexAddRemovePack(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
@@ -249,12 +320,7 @@ func TestIndexAddRemovePack(t *testing.T) {
 		if err == nil {
 			t.Errorf("removed blob %v found in index", h)
 		}
-
-		if _, ok := idx.Blobs[h]; ok {
-			t.Errorf("removed blob %v found in index.Blobs", h)
-		}
 	}
-
 }
 
 // example index serialization from doc/Design.md
