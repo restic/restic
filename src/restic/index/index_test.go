@@ -3,6 +3,7 @@ package index
 import (
 	"math/rand"
 	"restic"
+	"restic/checker"
 	"restic/repository"
 	"restic/test"
 	"testing"
@@ -204,7 +205,7 @@ func loadIndex(t testing.TB, repo restic.Repository) *Index {
 	return idx
 }
 
-func TestIndexSave(t *testing.T) {
+func TestSave(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
@@ -251,6 +252,41 @@ func TestIndexSave(t *testing.T) {
 		if _, ok := packs[id]; !ok {
 			t.Errorf("pack %v is not contained in new index", id.Str())
 		}
+	}
+}
+
+func TestIndexSave(t *testing.T) {
+	repo, cleanup := createFilledRepo(t, 3, 0)
+	defer cleanup()
+
+	idx := loadIndex(t, repo)
+
+	id, err := idx.Save(repo, idx.IndexIDs.List())
+	if err != nil {
+		t.Fatalf("unable to save new index: %v", err)
+	}
+
+	t.Logf("new index saved as %v", id.Str())
+
+	for id := range idx.IndexIDs {
+		t.Logf("remove index %v", id.Str())
+		err = repo.Backend().Remove(restic.IndexFile, id.String())
+		if err != nil {
+			t.Errorf("error removing index %v: %v", id, err)
+		}
+	}
+
+	idx2 := loadIndex(t, repo)
+	t.Logf("load new index with %d packs", len(idx2.Packs))
+
+	checker := checker.New(repo)
+	hints, errs := checker.LoadIndex()
+	for _, h := range hints {
+		t.Logf("hint: %v\n", h)
+	}
+
+	for _, err := range errs {
+		t.Errorf("checker found error: %v", err)
 	}
 }
 
