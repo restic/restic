@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Endpoint      string
 	UseHTTP       bool
+	LegacyPaths   bool
 	KeyID, Secret string
 	Bucket        string
 	Prefix        string

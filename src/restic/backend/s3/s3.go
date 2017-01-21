@@ -11,6 +11,7 @@ import (
 
 	"github.com/minio/minio-go"
 
+	"restic/backend"
 	"restic/debug"
 )
 
@@ -18,10 +19,11 @@ const connLimit = 10
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
-	client     *minio.Client
-	connChan   chan struct{}
-	bucketname string
-	prefix     string
+	client      *minio.Client
+	connChan    chan struct{}
+	bucketname  string
+	prefix      string
+	legacyPaths bool
 }
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
@@ -34,7 +36,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
-	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix}
+	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix, legacyPaths: cfg.LegacyPaths}
 	be.createConnections()
 
 	found, err := client.BucketExists(cfg.Bucket)
@@ -55,10 +57,14 @@ func Open(cfg Config) (restic.Backend, error) {
 }
 
 func (be *s3) s3path(t restic.FileType, name string) string {
-	if t == restic.ConfigFile {
-		return path.Join(be.prefix, string(t))
+	// Use legacy paths if requested
+	if be.legacyPaths {
+		if t == restic.ConfigFile {
+			return path.Join(be.prefix, string(t))
+		}
+		return path.Join(be.prefix, string(t), name)
 	}
-	return path.Join(be.prefix, string(t), name)
+	return backend.Filename(be.prefix, t, name)
 }
 
 func (be *s3) createConnections() {
@@ -241,7 +247,8 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	go func() {
 		defer close(ch)
 		for obj := range listresp {
-			m := strings.TrimPrefix(obj.Key, prefix)
+			s := strings.Split(obj.Key, "/")
+			m := s[len(s)-1]
 			if m == "" {
 				continue
 			}

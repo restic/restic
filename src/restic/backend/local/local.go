@@ -71,36 +71,6 @@ func (b *Local) Location() string {
 	return b.p
 }
 
-// Construct path for given Type and name.
-func filename(base string, t restic.FileType, name string) string {
-	if t == restic.ConfigFile {
-		return filepath.Join(base, "config")
-	}
-
-	return filepath.Join(dirname(base, t, name), name)
-}
-
-// Construct directory for given Type.
-func dirname(base string, t restic.FileType, name string) string {
-	var n string
-	switch t {
-	case restic.DataFile:
-		n = backend.Paths.Data
-		if len(name) > 2 {
-			n = filepath.Join(n, name[:2])
-		}
-	case restic.SnapshotFile:
-		n = backend.Paths.Snapshots
-	case restic.IndexFile:
-		n = backend.Paths.Index
-	case restic.LockFile:
-		n = backend.Paths.Locks
-	case restic.KeyFile:
-		n = backend.Paths.Keys
-	}
-	return filepath.Join(base, n)
-}
-
 // Load returns the data stored in the backend for h at the given offset and
 // saves it in p. Load has the same semantics as io.ReaderAt, with one
 // exception: when off is lower than zero, it is treated as an offset relative
@@ -111,7 +81,7 @@ func (b *Local) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 		return 0, err
 	}
 
-	f, err := fs.Open(filename(b.p, h.Type, h.Name))
+	f, err := fs.Open(backend.Filename(b.p, h.Type, h.Name))
 	if err != nil {
 		return 0, errors.Wrap(err, "Open")
 	}
@@ -178,7 +148,7 @@ func (b *Local) Save(h restic.Handle, p []byte) (err error) {
 		return err
 	}
 
-	filename := filename(b.p, h.Type, h.Name)
+	filename := backend.Filename(b.p, h.Type, h.Name)
 
 	// test if new path already exists
 	if _, err := fs.Stat(filename); err == nil {
@@ -217,7 +187,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	fi, err := fs.Stat(filename(b.p, h.Type, h.Name))
+	fi, err := fs.Stat(backend.Filename(b.p, h.Type, h.Name))
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
@@ -228,7 +198,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(t restic.FileType, name string) (bool, error) {
 	debug.Log("Test %v %v", t, name)
-	_, err := fs.Stat(filename(b.p, t, name))
+	_, err := fs.Stat(backend.Filename(b.p, t, name))
 	if err != nil {
 		if os.IsNotExist(errors.Cause(err)) {
 			return false, nil
@@ -242,7 +212,7 @@ func (b *Local) Test(t restic.FileType, name string) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(t restic.FileType, name string) error {
 	debug.Log("Remove %v %v", t, name)
-	fn := filename(b.p, t, name)
+	fn := backend.Filename(b.p, t, name)
 
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)
@@ -323,7 +293,7 @@ func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	}
 
 	ch := make(chan string)
-	items, err := lister(filepath.Join(dirname(b.p, t, "")))
+	items, err := lister(filepath.Join(backend.Dirname(b.p, t, "")))
 	if err != nil {
 		close(ch)
 		return ch
