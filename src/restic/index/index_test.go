@@ -27,8 +27,13 @@ func createFilledRepo(t testing.TB, snapshots int, dup float32) (restic.Reposito
 
 func validateIndex(t testing.TB, repo restic.Repository, idx *Index) {
 	for id := range repo.List(restic.DataFile, nil) {
-		if _, ok := idx.Packs[id]; !ok {
+		p, ok := idx.Packs[id]
+		if !ok {
 			t.Errorf("pack %v missing from index", id.Str())
+		}
+
+		if !p.ID.Equal(id) {
+			t.Errorf("pack %v has invalid ID: want %v, got %v", id.Str(), id, p.ID)
 		}
 	}
 }
@@ -150,7 +155,7 @@ func BenchmarkIndexSave(b *testing.B) {
 
 	for i := 0; i < 8000; i++ {
 		entries := make([]restic.Blob, 0, 200)
-		for j := 0; j < len(entries); j++ {
+		for j := 0; j < cap(entries); j++ {
 			entries = append(entries, restic.Blob{
 				ID:     restic.NewRandomID(),
 				Length: 1000,
