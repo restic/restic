@@ -159,6 +159,15 @@ func testRunFind(t testing.TB, gopts GlobalOptions, pattern string) []string {
 	return strings.Split(string(buf.Bytes()), "\n")
 }
 
+func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {
+	opts := ForgetOptions{}
+	OK(t, runForget(opts, gopts, args))
+}
+
+func testRunPrune(t testing.TB, gopts GlobalOptions) {
+	OK(t, runPrune(gopts))
+}
+
 func TestBackup(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "backup-data.tar.gz")
@@ -945,5 +954,35 @@ func TestCheckRestoreNoLock(t *testing.T) {
 		}
 
 		testRunRestore(t, gopts, filepath.Join(env.base, "restore"), snapshotIDs[0])
+	})
+}
+
+func TestPrune(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(errors.Cause(err)) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		testRunInit(t, gopts)
+
+		SetupTarTestFixture(t, env.testdata, datafile)
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "1")}, opts, gopts)
+		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "2")}, opts, gopts)
+		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "3")}, opts, gopts)
+
+		snapshotIDs := testRunList(t, "snapshots", gopts)
+		Assert(t, len(snapshotIDs) == 3,
+			"expected one snapshot, got %v", snapshotIDs)
+
+		testRunForget(t, gopts, snapshotIDs[0].String())
+		testRunPrune(t, gopts)
+		testRunCheck(t, gopts)
 	})
 }
