@@ -58,6 +58,13 @@ func TestMemBackendLoadNegativeOffset(t *testing.T) {
 	test.TestLoadNegativeOffset(t)
 }
 
+func TestMemBackendGet(t *testing.T) {
+	if SkipMessage != "" {
+		t.Skip(SkipMessage)
+	}
+	test.TestGet(t)
+}
+
 func TestMemBackendSave(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)

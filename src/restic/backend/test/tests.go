@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"reflect"
 	"restic"
@@ -364,6 +365,99 @@ func TestLoadNegativeOffset(t testing.TB) {
 			continue
 		}
 
+	}
+
+	test.OK(t, b.Remove(restic.DataFile, id.String()))
+}
+
+// TestGet tests the backend's Get function.
+func TestGet(t testing.TB) {
+	b := open(t)
+	defer close(t)
+
+	_, err := b.Get(restic.Handle{}, 0, 0)
+	if err == nil {
+		t.Fatalf("Get() did not return an error for invalid handle")
+	}
+
+	_, err = b.Get(restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
+	if err == nil {
+		t.Fatalf("Get() did not return an error for non-existing blob")
+	}
+
+	length := rand.Intn(1<<24) + 2000
+
+	data := test.Random(23, length)
+	id := restic.Hash(data)
+
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	err = b.Save(handle, bytes.NewReader(data))
+	if err != nil {
+		t.Fatalf("Save() error: %v", err)
+	}
+
+	rd, err := b.Get(handle, 100, -1)
+	if err == nil {
+		t.Fatalf("Get() returned no error for negative offset!")
+	}
+
+	if rd != nil {
+		t.Fatalf("Get() returned a non-nil reader for negative offset!")
+	}
+
+	for i := 0; i < 50; i++ {
+		l := rand.Intn(length + 2000)
+		o := rand.Intn(length + 2000)
+
+		d := data
+		if o < len(d) {
+			d = d[o:]
+		} else {
+			o = len(d)
+			d = d[:0]
+		}
+
+		getlen := l
+		if l >= len(d) && rand.Float32() >= 0.5 {
+			getlen = 0
+		}
+
+		if l > 0 && l < len(d) {
+			d = d[:l]
+		}
+
+		rd, err := b.Get(handle, getlen, int64(o))
+		if err != nil {
+			t.Errorf("Get(%d, %d) returned unexpected error: %v", l, o, err)
+			continue
+		}
+
+		buf, err := ioutil.ReadAll(rd)
+		if err != nil {
+			t.Errorf("Get(%d, %d) ReadAll() returned unexpected error: %v", l, o, err)
+			continue
+		}
+
+		if l <= len(d) && len(buf) != l {
+			t.Errorf("Get(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
+			continue
+		}
+
+		if l > len(d) && len(buf) != len(d) {
+			t.Errorf("Get(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
+			continue
+		}
+
+		if !bytes.Equal(buf, d) {
+			t.Errorf("Get(%d, %d) returned wrong bytes", l, o)
+			continue
+		}
+
+		err = rd.Close()
+		if err != nil {
+			t.Errorf("Get(%d, %d) rd.Close() returned unexpected error: %v", l, o, err)
+			continue
+		}
 	}
 
 	test.OK(t, b.Remove(restic.DataFile, id.String()))

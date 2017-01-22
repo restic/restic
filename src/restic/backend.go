@@ -26,6 +26,11 @@ type Backend interface {
 	// Save stores the data in the backend under the given handle.
 	Save(h Handle, rd io.Reader) error
 
+	// Get returns a reader that yields the contents of the file at h at the
+	// given offset. If length is nonzero, only a portion of the file is
+	// returned. rd must be closed after use.
+	Get(h Handle, length int, offset int64) (io.ReadCloser, error)
+
 	// Stat returns information about the File identified by h.
 	Stat(h Handle) (FileInfo, error)
 

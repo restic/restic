@@ -1,11 +1,13 @@
 package mem
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"restic"
 	"sync"
 
+	"restic/backend"
 	"restic/errors"
 
 	"restic/debug"
@@ -119,6 +121,44 @@ func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
 	debug.Log("saved %v bytes at %v", len(buf), h)
 
 	return nil
+}
+
+// Get returns a reader that yields the contents of the file at h at the
+// given offset. If length is nonzero, only a portion of the file is
+// returned. rd must be closed after use.
+func (be *MemoryBackend) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	if err := h.Valid(); err != nil {
+		return nil, err
+	}
+
+	be.m.Lock()
+	defer be.m.Unlock()
+
+	if h.Type == restic.ConfigFile {
+		h.Name = ""
+	}
+
+	debug.Log("Get %v offset %v len %v", h, offset, length)
+
+	if offset < 0 {
+		return nil, errors.New("offset is negative")
+	}
+
+	if _, ok := be.data[entry{h.Type, h.Name}]; !ok {
+		return nil, errors.New("no such data")
+	}
+
+	buf := be.data[entry{h.Type, h.Name}]
+	if offset > int64(len(buf)) {
+		return nil, errors.New("offset beyond end of file")
+	}
+
+	buf = buf[offset:]
+	if length > 0 && len(buf) > length {
+		buf = buf[:length]
+	}
+
+	return backend.Closer{bytes.NewReader(buf)}, nil
 }
 
 // Stat returns information about a file in the backend.

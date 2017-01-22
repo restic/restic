@@ -58,6 +58,13 @@ func TestTestBackendLoadNegativeOffset(t *testing.T) {
 	test.TestLoadNegativeOffset(t)
 }
 
+func TestTestBackendGet(t *testing.T) {
+	if SkipMessage != "" {
+		t.Skip(SkipMessage)
+	}
+	test.TestGet(t)
+}
+
 func TestTestBackendSave(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
