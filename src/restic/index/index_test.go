@@ -150,7 +150,7 @@ func BenchmarkIndexSave(b *testing.B) {
 
 	for i := 0; i < 8000; i++ {
 		entries := make([]restic.Blob, 0, 200)
-		for j := 0; j < len(entries); j++ {
+		for j := 0; j < cap(entries); j++ {
 			entries = append(entries, restic.Blob{
 				ID:     restic.NewRandomID(),
 				Length: 1000,
