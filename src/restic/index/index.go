@@ -169,7 +169,7 @@ func (idx *Index) AddPack(id restic.ID, size int64, entries []restic.Blob) error
 		return errors.Errorf("pack %v already present in the index", id.Str())
 	}
 
-	idx.Packs[id] = Pack{Size: size, Entries: entries}
+	idx.Packs[id] = Pack{ID: id, Size: size, Entries: entries}
 
 	return nil
 }
