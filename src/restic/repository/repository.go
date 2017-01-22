@@ -235,15 +235,15 @@ func (r *Repository) Flush() error {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
-	debug.Log("manually flushing %d packs", len(r.packs))
+	debug.Log("manually flushing %d packs", len(r.packerManager.packers))
 
-	for _, p := range r.packs {
+	for _, p := range r.packerManager.packers {
 		err := r.savePacker(p)
 		if err != nil {
 			return err
 		}
 	}
-	r.packs = r.packs[:0]
+	r.packerManager.packers = r.packerManager.packers[:0]
 	return nil
 }
 
