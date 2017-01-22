@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,6 +17,9 @@ import (
 )
 
 const connLimit = 10
+
+// make sure the rest backend implements restic.Backend
+var _ restic.Backend = &restBackend{}
 
 // restPath returns the path to the given resource.
 func restPath(url *url.URL, h restic.Handle) string {
@@ -123,13 +125,13 @@ func (b *restBackend) Load(h restic.Handle, p []byte, off int64) (n int, err err
 }
 
 // Save stores data in the backend at the handle.
-func (b *restBackend) Save(h restic.Handle, p []byte) (err error) {
+func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
 	<-b.connChan
-	resp, err := b.client.Post(restPath(b.url, h), "binary/octet-stream", bytes.NewReader(p))
+	resp, err := b.client.Post(restPath(b.url, h), "binary/octet-stream", rd)
 	b.connChan <- struct{}{}
 
 	if resp != nil {

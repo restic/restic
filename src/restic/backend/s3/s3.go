@@ -1,7 +1,6 @@
 package s3
 
 import (
-	"bytes"
 	"io"
 	"path"
 	"restic"
@@ -147,12 +146,12 @@ func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 }
 
 // Save stores data in the backend at the handle.
-func (be s3) Save(h restic.Handle, p []byte) (err error) {
+func (be s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
-	debug.Log("%v with %d bytes", h, len(p))
+	debug.Log("Save %v", h)
 
 	objName := be.s3path(h.Type, h.Name)
 
@@ -168,9 +167,9 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 		be.connChan <- struct{}{}
 	}()
 
-	debug.Log("PutObject(%v, %v, %v, %v)",
-		be.bucketname, objName, int64(len(p)), "binary/octet-stream")
-	n, err := be.client.PutObject(be.bucketname, objName, bytes.NewReader(p), "binary/octet-stream")
+	debug.Log("PutObject(%v, %v)",
+		be.bucketname, objName)
+	n, err := be.client.PutObject(be.bucketname, objName, rd, "binary/octet-stream")
 	debug.Log("%v -> %v bytes, err %#v", objName, n, err)
 
 	return errors.Wrap(err, "client.PutObject")

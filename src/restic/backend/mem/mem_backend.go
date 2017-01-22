@@ -2,6 +2,7 @@ package mem
 
 import (
 	"io"
+	"io/ioutil"
 	"restic"
 	"sync"
 
@@ -93,7 +94,7 @@ func (be *MemoryBackend) Load(h restic.Handle, p []byte, off int64) (int, error)
 }
 
 // Save adds new Data to the backend.
-func (be *MemoryBackend) Save(h restic.Handle, p []byte) error {
+func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -109,10 +110,13 @@ func (be *MemoryBackend) Save(h restic.Handle, p []byte) error {
 		return errors.New("file already exists")
 	}
 
-	debug.Log("save %v bytes at %v", len(p), h)
-	buf := make([]byte, len(p))
-	copy(buf, p)
+	buf, err := ioutil.ReadAll(rd)
+	if err != nil {
+		return err
+	}
+
 	be.data[entry{h.Type, h.Name}] = buf
+	debug.Log("saved %v bytes at %v", len(buf), h)
 
 	return nil
 }

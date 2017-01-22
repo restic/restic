@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"restic"
 	"sort"
+	"strings"
 	"testing"
 
 	"restic/errors"
@@ -157,7 +158,7 @@ func TestConfig(t testing.TB) {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 
-	err = b.Save(restic.Handle{Type: restic.ConfigFile}, []byte(testString))
+	err = b.Save(restic.Handle{Type: restic.ConfigFile}, strings.NewReader(testString))
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
 	}
@@ -198,7 +199,7 @@ func TestLoad(t testing.TB) {
 	id := restic.Hash(data)
 
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	err = b.Save(handle, data)
+	err = b.Save(handle, bytes.NewReader(data))
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
 	}
@@ -323,7 +324,7 @@ func TestLoadNegativeOffset(t testing.TB) {
 	id := restic.Hash(data)
 
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	err := b.Save(handle, data)
+	err := b.Save(handle, bytes.NewReader(data))
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
 	}
@@ -384,7 +385,7 @@ func TestSave(t testing.TB) {
 			Type: restic.DataFile,
 			Name: fmt.Sprintf("%s-%d", id, i),
 		}
-		err := b.Save(h, data)
+		err := b.Save(h, bytes.NewReader(data))
 		test.OK(t, err)
 
 		buf, err := backend.LoadAll(b, h, nil)
@@ -430,7 +431,7 @@ func TestSaveFilenames(t testing.TB) {
 
 	for i, test := range filenameTests {
 		h := restic.Handle{Name: test.name, Type: restic.DataFile}
-		err := b.Save(h, []byte(test.data))
+		err := b.Save(h, strings.NewReader(test.data))
 		if err != nil {
 			t.Errorf("test %d failed: Save() returned %v", i, err)
 			continue
@@ -466,7 +467,7 @@ var testStrings = []struct {
 
 func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) {
 	id := restic.Hash(data)
-	err := b.Save(restic.Handle{Name: id.String(), Type: tpe}, data)
+	err := b.Save(restic.Handle{Name: id.String(), Type: tpe}, bytes.NewReader(data))
 	test.OK(t, err)
 }
 
@@ -530,7 +531,7 @@ func TestBackend(t testing.TB) {
 		ts := testStrings[0]
 
 		// create blob
-		err := b.Save(restic.Handle{Type: tpe, Name: ts.id}, []byte(ts.data))
+		err := b.Save(restic.Handle{Type: tpe, Name: ts.id}, strings.NewReader(ts.data))
 		test.Assert(t, err != nil, "expected error, got %v", err)
 
 		// remove and recreate
@@ -543,7 +544,7 @@ func TestBackend(t testing.TB) {
 		test.Assert(t, ok == false, "removed blob still present")
 
 		// create blob
-		err = b.Save(restic.Handle{Type: tpe, Name: ts.id}, []byte(ts.data))
+		err = b.Save(restic.Handle{Type: tpe, Name: ts.id}, strings.NewReader(ts.data))
 		test.OK(t, err)
 
 		// list items

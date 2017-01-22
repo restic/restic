@@ -137,20 +137,16 @@ func (b *Local) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 	return io.ReadFull(f, p)
 }
 
-// writeToTempfile saves p into a tempfile in tempdir.
-func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
+// copyToTempfile saves p into a tempfile in tempdir.
+func copyToTempfile(tempdir string, rd io.Reader) (filename string, err error) {
 	tmpfile, err := ioutil.TempFile(tempdir, "temp-")
 	if err != nil {
 		return "", errors.Wrap(err, "TempFile")
 	}
 
-	n, err := tmpfile.Write(p)
+	_, err = io.Copy(tmpfile, rd)
 	if err != nil {
 		return "", errors.Wrap(err, "Write")
-	}
-
-	if n != len(p) {
-		return "", errors.New("not all bytes writen")
 	}
 
 	if err = tmpfile.Sync(); err != nil {
@@ -166,14 +162,14 @@ func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 }
 
 // Save stores data in the backend at the handle.
-func (b *Local) Save(h restic.Handle, p []byte) (err error) {
-	debug.Log("Save %v, length %v", h, len(p))
+func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
+	debug.Log("Save %v", h)
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
-	tmpfile, err := writeToTempfile(filepath.Join(b.p, backend.Paths.Temp), p)
-	debug.Log("saved %v (%d bytes) to %v", h, len(p), tmpfile)
+	tmpfile, err := copyToTempfile(filepath.Join(b.p, backend.Paths.Temp), rd)
+	debug.Log("saved %v to %v", h, tmpfile)
 	if err != nil {
 		return err
 	}

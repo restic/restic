@@ -1,12 +1,14 @@
 package repository
 
 import (
+	"bytes"
 	"io"
 	"math/rand"
 	"os"
 	"restic"
 	"restic/backend/mem"
 	"restic/crypto"
+	"restic/mock"
 	"testing"
 )
 
@@ -65,7 +67,7 @@ func saveFile(t testing.TB, be Saver, filename string, n int) {
 
 	h := restic.Handle{Type: restic.DataFile, Name: restic.Hash(data).String()}
 
-	err = be.Save(h, data)
+	err = be.Save(h, bytes.NewReader(data))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,12 +136,6 @@ func flushRemainingPacks(t testing.TB, rnd *randReader, be Saver, pm *packerMana
 	return bytes
 }
 
-type fakeBackend struct{}
-
-func (f *fakeBackend) Save(h restic.Handle, data []byte) error {
-	return nil
-}
-
 func TestPackerManager(t *testing.T) {
 	rnd := newRandReader(rand.NewSource(23))
 
@@ -157,7 +153,9 @@ func TestPackerManager(t *testing.T) {
 func BenchmarkPackerManager(t *testing.B) {
 	rnd := newRandReader(rand.NewSource(23))
 
-	be := &fakeBackend{}
+	be := &mock.Backend{
+		SaveFn: func(restic.Handle, io.Reader) error { return nil },
+	}
 	pm := newPackerManager(be, crypto.NewRandomKey())
 	blobBuf := make([]byte, maxBlobSize)
 

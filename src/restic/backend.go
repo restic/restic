@@ -1,5 +1,7 @@
 package restic
 
+import "io"
+
 // Backend is used to store and access data.
 type Backend interface {
 	// Location returns a string that describes the type and location of the
@@ -22,7 +24,7 @@ type Backend interface {
 	Load(h Handle, p []byte, off int64) (int, error)
 
 	// Save stores the data in the backend under the given handle.
-	Save(h Handle, p []byte) error
+	Save(h Handle, rd io.Reader) error
 
 	// Stat returns information about the File identified by h.
 	Stat(h Handle) (FileInfo, error)

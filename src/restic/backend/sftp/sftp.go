@@ -365,8 +365,8 @@ func (r *SFTP) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
 }
 
 // Save stores data in the backend at the handle.
-func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
-	debug.Log("save %v bytes to %v", h, len(p))
+func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
+	debug.Log("save to %v", h)
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -380,16 +380,12 @@ func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
 		return err
 	}
 
-	debug.Log("save %v (%d bytes) to %v", h, len(p), filename)
-
-	n, err := tmpfile.Write(p)
+	n, err := io.Copy(tmpfile, rd)
 	if err != nil {
 		return errors.Wrap(err, "Write")
 	}
 
-	if n != len(p) {
-		return errors.New("not all bytes writen")
-	}
+	debug.Log("saved %v (%d bytes) to %v", h, n, filename)
 
 	err = tmpfile.Close()
 	if err != nil {

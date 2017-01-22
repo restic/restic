@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
@@ -17,7 +18,7 @@ import (
 
 // Saver implements saving data in a backend.
 type Saver interface {
-	Save(h restic.Handle, jp []byte) error
+	Save(restic.Handle, io.Reader) error
 }
 
 // packerManager keeps a list of open packs and creates new on demand.
@@ -117,7 +118,7 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 	id := restic.Hash(data)
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-	err = r.be.Save(h, data)
+	err = r.be.Save(h, bytes.NewReader(data))
 	if err != nil {
 		debug.Log("Save(%v) error: %v", h, err)
 		return err
