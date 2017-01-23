@@ -22,6 +22,15 @@ directories in an encrypted repository stored on different backends.
 `,
 	SilenceErrors: true,
 	SilenceUsage:  true,
+
+	// run the debug functions for all subcommands (if build tag "debug" is
+	// enabled)
+	PersistentPreRunE: func(*cobra.Command, []string) error {
+		return runDebug()
+	},
+	PersistentPostRun: func(*cobra.Command, []string) {
+		shutdownDebug()
+	},
 }
 
 func init() {
