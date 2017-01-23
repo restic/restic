@@ -12,7 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"restic/errors"
 	"restic/test"
 
 	"restic/backend"
@@ -177,197 +176,6 @@ func TestConfig(t testing.TB) {
 			t.Fatalf("wrong data returned, want %q, got %q", testString, string(buf))
 		}
 	}
-}
-
-// TestLoad tests the backend's Load function.
-func TestLoad(t testing.TB) {
-	b := open(t)
-	defer close(t)
-
-	_, err := b.Load(restic.Handle{}, nil, 0)
-	if err == nil {
-		t.Fatalf("Load() did not return an error for invalid handle")
-	}
-
-	_, err = b.Load(restic.Handle{Type: restic.DataFile, Name: "foobar"}, nil, 0)
-	if err == nil {
-		t.Fatalf("Load() did not return an error for non-existing blob")
-	}
-
-	length := rand.Intn(1<<24) + 2000
-
-	data := test.Random(23, length)
-	id := restic.Hash(data)
-
-	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	err = b.Save(handle, bytes.NewReader(data))
-	if err != nil {
-		t.Fatalf("Save() error: %v", err)
-	}
-
-	for i := 0; i < 50; i++ {
-		l := rand.Intn(length + 2000)
-		o := rand.Intn(length + 2000)
-
-		d := data
-		if o < len(d) {
-			d = d[o:]
-		} else {
-			o = len(d)
-			d = d[:0]
-		}
-
-		if l > 0 && l < len(d) {
-			d = d[:l]
-		}
-
-		buf := make([]byte, l)
-		n, err := b.Load(handle, buf, int64(o))
-
-		// if we requested data beyond the end of the file, require
-		// ErrUnexpectedEOF error
-		if l > len(d) {
-			if errors.Cause(err) != io.ErrUnexpectedEOF {
-				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
-			}
-			err = nil
-			buf = buf[:len(d)]
-		}
-
-		if err != nil {
-			t.Errorf("Load(%d, %d): unexpected error: %v", len(buf), int64(o), err)
-			continue
-		}
-
-		if n != len(buf) {
-			t.Errorf("Load(%d, %d): wrong length returned, want %d, got %d",
-				len(buf), int64(o), len(buf), n)
-			continue
-		}
-
-		buf = buf[:n]
-		if !bytes.Equal(buf, d) {
-			t.Errorf("Load(%d, %d) returned wrong bytes", len(buf), int64(o))
-			continue
-		}
-	}
-
-	// test with negative offset
-	for i := 0; i < 50; i++ {
-		l := rand.Intn(length + 2000)
-		o := rand.Intn(length + 2000)
-
-		d := data
-		if o < len(d) {
-			d = d[len(d)-o:]
-		} else {
-			o = 0
-		}
-
-		if l > 0 && l < len(d) {
-			d = d[:l]
-		}
-
-		buf := make([]byte, l)
-		n, err := b.Load(handle, buf, -int64(o))
-
-		// if we requested data beyond the end of the file, require
-		// ErrUnexpectedEOF error
-		if l > len(d) {
-			if errors.Cause(err) != io.ErrUnexpectedEOF {
-				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
-				continue
-			}
-			err = nil
-			buf = buf[:len(d)]
-		}
-
-		if err != nil {
-			t.Errorf("Load(%d, %d): unexpected error: %v", len(buf), int64(o), err)
-			continue
-		}
-
-		if n != len(buf) {
-			t.Errorf("Load(%d, %d): wrong length returned, want %d, got %d",
-				len(buf), int64(o), len(buf), n)
-			continue
-		}
-
-		buf = buf[:n]
-		if !bytes.Equal(buf, d) {
-			t.Errorf("Load(%d, %d) returned wrong bytes", len(buf), int64(o))
-			continue
-		}
-	}
-
-	// load with a too-large buffer, this should return io.ErrUnexpectedEOF
-	buf := make([]byte, length+100)
-	n, err := b.Load(handle, buf, 0)
-	if n != length {
-		t.Errorf("wrong length for larger buffer returned, want %d, got %d", length, n)
-	}
-
-	if errors.Cause(err) != io.ErrUnexpectedEOF {
-		t.Errorf("wrong error returned for larger buffer: want io.ErrUnexpectedEOF, got %#v", err)
-	}
-
-	test.OK(t, b.Remove(restic.DataFile, id.String()))
-}
-
-// TestLoadNegativeOffset tests the backend's Load function with negative offsets.
-func TestLoadNegativeOffset(t testing.TB) {
-	b := open(t)
-	defer close(t)
-
-	length := rand.Intn(1<<24) + 2000
-
-	data := test.Random(23, length)
-	id := restic.Hash(data)
-
-	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	err := b.Save(handle, bytes.NewReader(data))
-	if err != nil {
-		t.Fatalf("Save() error: %v", err)
-	}
-
-	// test normal reads
-	for i := 0; i < 50; i++ {
-		l := rand.Intn(length + 2000)
-		o := -rand.Intn(length + 2000)
-
-		buf := make([]byte, l)
-		n, err := b.Load(handle, buf, int64(o))
-
-		// if we requested data beyond the end of the file, require
-		// ErrUnexpectedEOF error
-		if len(buf) > -o {
-			if errors.Cause(err) != io.ErrUnexpectedEOF {
-				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), o)
-				continue
-			}
-			err = nil
-			buf = buf[:-o]
-		}
-
-		if err != nil {
-			t.Errorf("Load(%d, %d) returned error: %v", len(buf), o, err)
-			continue
-		}
-
-		if n != len(buf) {
-			t.Errorf("Load(%d, %d) returned short read, only got %d bytes", len(buf), o, n)
-			continue
-		}
-
-		p := len(data) + o
-		if !bytes.Equal(buf, data[p:p+len(buf)]) {
-			t.Errorf("Load(%d, %d) returned wrong bytes", len(buf), o)
-			continue
-		}
-
-	}
-
-	test.OK(t, b.Remove(restic.DataFile, id.String()))
 }
 
 // TestGet tests the backend's Get function.
@@ -590,7 +398,7 @@ func TestBackend(t testing.TB) {
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
-			_, err = b.Load(h, nil, 0)
+			_, err = b.Get(h, 0, 0)
 			test.Assert(t, err != nil, "blob reader could be obtained before creation")
 
 			// try to get string out, should fail
@@ -615,9 +423,18 @@ func TestBackend(t testing.TB) {
 			length := end - start
 
 			buf2 := make([]byte, length)
-			n, err := b.Load(h, buf2, int64(start))
+			rd, err := b.Get(h, len(buf2), int64(start))
 			test.OK(t, err)
-			test.Equals(t, length, n)
+			n, err := io.ReadFull(rd, buf2)
+			test.OK(t, err)
+			test.Equals(t, len(buf2), n)
+
+			remaining, err := io.Copy(ioutil.Discard, rd)
+			test.OK(t, err)
+			test.Equals(t, int64(0), remaining)
+
+			test.OK(t, rd.Close())
+
 			test.Equals(t, ts.data[start:end], string(buf2))
 		}
 

@@ -326,44 +326,6 @@ func (r *SFTP) dirname(t restic.FileType, name string) string {
 	return Join(r.p, n)
 }
 
-// Load returns the data stored in the backend for h at the given offset
-// and saves it in p. Load has the same semantics as io.ReaderAt.
-func (r *SFTP) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	debug.Log("load %v, %d bytes, offset %v", h, len(p), off)
-	if err := r.clientError(); err != nil {
-		return 0, err
-	}
-
-	if err := h.Valid(); err != nil {
-		return 0, err
-	}
-
-	f, err := r.c.Open(r.filename(h.Type, h.Name))
-	if err != nil {
-		return 0, errors.Wrap(err, "Open")
-	}
-
-	defer func() {
-		e := f.Close()
-		if err == nil {
-			err = errors.Wrap(e, "Close")
-		}
-	}()
-
-	switch {
-	case off > 0:
-		_, err = f.Seek(off, 0)
-	case off < 0:
-		_, err = f.Seek(off, 2)
-	}
-
-	if err != nil {
-		return 0, errors.Wrap(err, "Seek")
-	}
-
-	return io.ReadFull(f, p)
-}
-
 // Save stores data in the backend at the handle.
 func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("save to %v", h)

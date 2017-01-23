@@ -55,46 +55,6 @@ func (be *MemoryBackend) Test(t restic.FileType, name string) (bool, error) {
 	return false, nil
 }
 
-// Load reads data from the backend.
-func (be *MemoryBackend) Load(h restic.Handle, p []byte, off int64) (int, error) {
-	if err := h.Valid(); err != nil {
-		return 0, err
-	}
-
-	be.m.Lock()
-	defer be.m.Unlock()
-
-	if h.Type == restic.ConfigFile {
-		h.Name = ""
-	}
-
-	debug.Log("get %v offset %v len %v", h, off, len(p))
-
-	if _, ok := be.data[entry{h.Type, h.Name}]; !ok {
-		return 0, errors.New("no such data")
-	}
-
-	buf := be.data[entry{h.Type, h.Name}]
-	switch {
-	case off > int64(len(buf)):
-		return 0, errors.New("offset beyond end of file")
-	case off < -int64(len(buf)):
-		off = 0
-	case off < 0:
-		off = int64(len(buf)) + off
-	}
-
-	buf = buf[off:]
-
-	n := copy(p, buf)
-
-	if len(p) > len(buf) {
-		return n, io.ErrUnexpectedEOF
-	}
-
-	return n, nil
-}
-
 // Save adds new Data to the backend.
 func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
 	if err := h.Valid(); err != nil {

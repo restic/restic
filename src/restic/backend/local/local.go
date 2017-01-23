@@ -101,42 +101,6 @@ func dirname(base string, t restic.FileType, name string) string {
 	return filepath.Join(base, n)
 }
 
-// Load returns the data stored in the backend for h at the given offset and
-// saves it in p. Load has the same semantics as io.ReaderAt, with one
-// exception: when off is lower than zero, it is treated as an offset relative
-// to the end of the file.
-func (b *Local) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	debug.Log("Load %v, length %v at %v", h, len(p), off)
-	if err := h.Valid(); err != nil {
-		return 0, err
-	}
-
-	f, err := fs.Open(filename(b.p, h.Type, h.Name))
-	if err != nil {
-		return 0, errors.Wrap(err, "Open")
-	}
-
-	defer func() {
-		e := f.Close()
-		if err == nil {
-			err = errors.Wrap(e, "Close")
-		}
-	}()
-
-	switch {
-	case off > 0:
-		_, err = f.Seek(off, 0)
-	case off < 0:
-		_, err = f.Seek(off, 2)
-	}
-
-	if err != nil {
-		return 0, errors.Wrap(err, "Seek")
-	}
-
-	return io.ReadFull(f, p)
-}
-
 // copyToTempfile saves p into a tempfile in tempdir.
 func copyToTempfile(tempdir string, rd io.Reader) (filename string, err error) {
 	tmpfile, err := ioutil.TempFile(tempdir, "temp-")

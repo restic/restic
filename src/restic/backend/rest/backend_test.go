@@ -44,20 +44,6 @@ func TestRestBackendConfig(t *testing.T) {
 	test.TestConfig(t)
 }
 
-func TestRestBackendLoad(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestLoad(t)
-}
-
-func TestRestBackendLoadNegativeOffset(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestLoadNegativeOffset(t)
-}
-
 func TestRestBackendGet(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)

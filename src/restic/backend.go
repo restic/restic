@@ -17,18 +17,12 @@ type Backend interface {
 	// Close the backend
 	Close() error
 
-	// Load returns the data stored in the backend for h at the given offset
-	// and saves it in p. Load has the same semantics as io.ReaderAt, except
-	// that a negative offset is also allowed. In this case it references a
-	// position relative to the end of the file (similar to Seek()).
-	Load(h Handle, p []byte, off int64) (int, error)
-
 	// Save stores the data in the backend under the given handle.
 	Save(h Handle, rd io.Reader) error
 
 	// Get returns a reader that yields the contents of the file at h at the
-	// given offset. If length is nonzero, only a portion of the file is
-	// returned. rd must be closed after use. If an error is returned, the
+	// given offset. If length is larger than zero, only a portion of the file
+	// is returned. rd must be closed after use. If an error is returned, the
 	// ReadCloser must be nil.
 	Get(h Handle, length int, offset int64) (io.ReadCloser, error)
 

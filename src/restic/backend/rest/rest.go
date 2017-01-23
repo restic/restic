@@ -74,63 +74,6 @@ func (b *restBackend) Location() string {
 	return b.url.String()
 }
 
-// Load returns the data stored in the backend for h at the given offset
-// and saves it in p. Load has the same semantics as io.ReaderAt.
-func (b *restBackend) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	debug.Log("Load(%v, length %v, offset %v)", h, len(p), off)
-	if err := h.Valid(); err != nil {
-		return 0, err
-	}
-
-	if len(p) == 0 {
-		return 0, errors.New("buffer length is zero")
-	}
-
-	// invert offset
-	if off < 0 {
-		info, err := b.Stat(h)
-		if err != nil {
-			return 0, errors.Wrap(err, "Stat")
-		}
-
-		if -off > info.Size {
-			off = 0
-		} else {
-			off = info.Size + off
-		}
-	}
-
-	req, err := http.NewRequest("GET", restPath(b.url, h), nil)
-	if err != nil {
-		return 0, errors.Wrap(err, "http.NewRequest")
-	}
-	debug.Log("Load(%v) send range %d-%d", h, off, off+int64(len(p)-1))
-	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", off, off+int64(len(p))))
-	<-b.connChan
-	resp, err := b.client.Do(req)
-	b.connChan <- struct{}{}
-
-	if resp != nil {
-		defer func() {
-			io.Copy(ioutil.Discard, resp.Body)
-			e := resp.Body.Close()
-
-			if err == nil {
-				err = errors.Wrap(e, "Close")
-			}
-		}()
-	}
-
-	if err != nil {
-		return 0, errors.Wrap(err, "client.Do")
-	}
-	if resp.StatusCode != 200 && resp.StatusCode != 206 {
-		return 0, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
-	}
-
-	return io.ReadFull(resp.Body, p)
-}
-
 // Save stores data in the backend at the handle.
 func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {

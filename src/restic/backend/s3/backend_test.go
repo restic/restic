@@ -44,20 +44,6 @@ func TestS3BackendConfig(t *testing.T) {
 	test.TestConfig(t)
 }
 
-func TestS3BackendLoad(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestLoad(t)
-}
-
-func TestS3BackendLoadNegativeOffset(t *testing.T) {
-	if SkipMessage != "" {
-		t.Skip(SkipMessage)
-	}
-	test.TestLoadNegativeOffset(t)
-}
-
 func TestS3BackendGet(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
