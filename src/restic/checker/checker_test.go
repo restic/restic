@@ -209,15 +209,6 @@ type errorBackend struct {
 	ProduceErrors bool
 }
 
-func (b errorBackend) Load(h restic.Handle, p []byte, off int64) (int, error) {
-	n, err := b.Backend.Load(h, p, off)
-
-	if b.ProduceErrors {
-		induceError(p)
-	}
-	return n, err
-}
-
 func (b errorBackend) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	rd, err := b.Backend.Get(h, length, offset)
 	if err != nil {
