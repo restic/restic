@@ -54,7 +54,7 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 	debug.Log("load %v with id %v", t, id.Str())
 
 	h := restic.Handle{Type: t, Name: id.String()}
-	buf, err := backend.LoadAll(r.be, h, nil)
+	buf, err := backend.LoadAll(r.be, h)
 	if err != nil {
 		debug.Log("error loading %v: %v", id.Str(), err)
 		return nil, err

@@ -154,7 +154,7 @@ func TestConfig(t testing.TB) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := backend.LoadAll(b, restic.Handle{Type: restic.ConfigFile}, nil)
+	_, err := backend.LoadAll(b, restic.Handle{Type: restic.ConfigFile})
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
@@ -168,7 +168,7 @@ func TestConfig(t testing.TB) {
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
 		h := restic.Handle{Type: restic.ConfigFile, Name: name}
-		buf, err := backend.LoadAll(b, h, nil)
+		buf, err := backend.LoadAll(b, h)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %v", name, err)
 		}
@@ -482,7 +482,7 @@ func TestSave(t testing.TB) {
 		err := b.Save(h, bytes.NewReader(data))
 		test.OK(t, err)
 
-		buf, err := backend.LoadAll(b, h, nil)
+		buf, err := backend.LoadAll(b, h)
 		test.OK(t, err)
 		if len(buf) != len(data) {
 			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
@@ -531,7 +531,7 @@ func TestSaveFilenames(t testing.TB) {
 			continue
 		}
 
-		buf, err := backend.LoadAll(b, h, nil)
+		buf, err := backend.LoadAll(b, h)
 		if err != nil {
 			t.Errorf("test %d failed: Load() returned %v", i, err)
 			continue
@@ -605,7 +605,7 @@ func TestBackend(t testing.TB) {
 
 			// test Load()
 			h := restic.Handle{Type: tpe, Name: ts.id}
-			buf, err := backend.LoadAll(b, h, nil)
+			buf, err := backend.LoadAll(b, h)
 			test.OK(t, err)
 			test.Equals(t, ts.data, string(buf))
 

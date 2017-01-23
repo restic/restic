@@ -147,7 +147,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 // LoadKey loads a key from the backend.
 func LoadKey(s *Repository, name string) (k *Key, err error) {
 	h := restic.Handle{Type: restic.KeyFile, Name: name}
-	data, err := backend.LoadAll(s.be, h, nil)
+	data, err := backend.LoadAll(s.be, h)
 	if err != nil {
 		return nil, err
 	}
