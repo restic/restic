@@ -97,7 +97,8 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		// load blob from pack
 		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
 		plaintextBuf = plaintextBuf[:cap(plaintextBuf)]
-		n, err := r.be.Load(h, plaintextBuf, int64(blob.Offset))
+
+		n, err := restic.ReadAt(r.be, h, int64(blob.Offset), plaintextBuf)
 		if err != nil {
 			debug.Log("error loading blob %v: %v", blob, err)
 			lastError = err
