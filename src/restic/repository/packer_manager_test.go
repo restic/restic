@@ -7,6 +7,7 @@ import (
 	"restic"
 	"restic/backend/mem"
 	"restic/crypto"
+	"restic/mock"
 	"testing"
 )
 
@@ -46,27 +47,20 @@ func randomID(rd io.Reader) restic.ID {
 
 const maxBlobSize = 1 << 20
 
-func saveFile(t testing.TB, be Saver, filename string, n int) {
+func saveFile(t testing.TB, be Saver, filename string, id restic.ID) {
 	f, err := os.Open(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	data := make([]byte, n)
-	m, err := io.ReadFull(f, data)
+	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+	t.Logf("save file %v", h)
 
-	if m != n {
-		t.Fatalf("read wrong number of bytes from %v: want %v, got %v", filename, m, n)
-	}
-
-	if err = f.Close(); err != nil {
+	if err = be.Save(h, f); err != nil {
 		t.Fatal(err)
 	}
 
-	h := restic.Handle{Type: restic.DataFile, Name: restic.Hash(data).String()}
-
-	err = be.Save(h, data)
-	if err != nil {
+	if err = f.Close(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -105,13 +99,13 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 			continue
 		}
 
-		bytesWritten, err := packer.Finalize()
+		_, err = packer.Finalize()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		tmpfile := packer.Writer().(*os.File)
-		saveFile(t, be, tmpfile.Name(), int(bytesWritten))
+		packID := restic.IDFromHash(packer.hw.Sum(nil))
+		saveFile(t, be, packer.tmpfile.Name(), packID)
 	}
 
 	return bytes
@@ -119,25 +113,19 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 
 func flushRemainingPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager) (bytes int) {
 	if pm.countPacker() > 0 {
-		for _, packer := range pm.packs {
+		for _, packer := range pm.packers {
 			n, err := packer.Finalize()
 			if err != nil {
 				t.Fatal(err)
 			}
 			bytes += int(n)
 
-			tmpfile := packer.Writer().(*os.File)
-			saveFile(t, be, tmpfile.Name(), bytes)
+			packID := restic.IDFromHash(packer.hw.Sum(nil))
+			saveFile(t, be, packer.tmpfile.Name(), packID)
 		}
 	}
 
 	return bytes
-}
-
-type fakeBackend struct{}
-
-func (f *fakeBackend) Save(h restic.Handle, data []byte) error {
-	return nil
 }
 
 func TestPackerManager(t *testing.T) {
@@ -157,17 +145,18 @@ func TestPackerManager(t *testing.T) {
 func BenchmarkPackerManager(t *testing.B) {
 	rnd := newRandReader(rand.NewSource(23))
 
-	be := &fakeBackend{}
-	pm := newPackerManager(be, crypto.NewRandomKey())
+	be := &mock.Backend{
+		SaveFn: func(restic.Handle, io.Reader) error { return nil },
+	}
 	blobBuf := make([]byte, maxBlobSize)
 
 	t.ResetTimer()
 
-	bytes := 0
 	for i := 0; i < t.N; i++ {
+		bytes := 0
+		pm := newPackerManager(be, crypto.NewRandomKey())
 		bytes += fillPacks(t, rnd, be, pm, blobBuf)
+		bytes += flushRemainingPacks(t, rnd, be, pm)
+		t.Logf("saved %d bytes", bytes)
 	}
-
-	bytes += flushRemainingPacks(t, rnd, be, pm)
-	t.Logf("saved %d bytes", bytes)
 }

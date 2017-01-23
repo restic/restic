@@ -114,3 +114,13 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
+
+// IDFromHash returns the ID for the hash.
+func IDFromHash(hash []byte) (id ID) {
+	if len(hash) != idSize {
+		panic("invalid hash type, not enough/too many bytes")
+	}
+
+	copy(id[:], hash)
+	return id
+}

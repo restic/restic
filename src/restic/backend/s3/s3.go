@@ -7,6 +7,7 @@ import (
 	"restic"
 	"strings"
 
+	"restic/backend"
 	"restic/errors"
 
 	"github.com/minio/minio-go"
@@ -73,86 +74,13 @@ func (be *s3) Location() string {
 	return be.bucketname
 }
 
-// Load returns the data stored in the backend for h at the given offset
-// and saves it in p. Load has the same semantics as io.ReaderAt.
-func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	var obj *minio.Object
-
-	debug.Log("%v, offset %v, len %v", h, off, len(p))
-	objName := be.s3path(h.Type, h.Name)
-
-	<-be.connChan
-	defer func() {
-		be.connChan <- struct{}{}
-	}()
-
-	obj, err = be.client.GetObject(be.bucketname, objName)
-	if err != nil {
-		debug.Log("  err %v", err)
-		return 0, errors.Wrap(err, "client.GetObject")
-	}
-
-	// make sure that the object is closed properly.
-	defer func() {
-		e := obj.Close()
-		if err == nil {
-			err = errors.Wrap(e, "Close")
-		}
-	}()
-
-	info, err := obj.Stat()
-	if err != nil {
-		return 0, errors.Wrap(err, "obj.Stat")
-	}
-
-	// handle negative offsets
-	if off < 0 {
-		// if the negative offset is larger than the object itself, read from
-		// the beginning.
-		if -off > info.Size {
-			off = 0
-		} else {
-			// otherwise compute the offset from the end of the file.
-			off = info.Size + off
-		}
-	}
-
-	// return an error if the offset is beyond the end of the file
-	if off > info.Size {
-		return 0, errors.Wrap(io.EOF, "")
-	}
-
-	var nextError error
-
-	// manually create an io.ErrUnexpectedEOF
-	if off+int64(len(p)) > info.Size {
-		newlen := info.Size - off
-		p = p[:newlen]
-
-		nextError = io.ErrUnexpectedEOF
-
-		debug.Log("    capped buffer to %v byte", len(p))
-	}
-
-	n, err = obj.ReadAt(p, off)
-	if int64(n) == info.Size-off && errors.Cause(err) == io.EOF {
-		err = nil
-	}
-
-	if err == nil {
-		err = nextError
-	}
-
-	return n, err
-}
-
 // Save stores data in the backend at the handle.
-func (be s3) Save(h restic.Handle, p []byte) (err error) {
+func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
-	debug.Log("%v with %d bytes", h, len(p))
+	debug.Log("Save %v", h)
 
 	objName := be.s3path(h.Type, h.Name)
 
@@ -168,16 +96,94 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 		be.connChan <- struct{}{}
 	}()
 
-	debug.Log("PutObject(%v, %v, %v, %v)",
-		be.bucketname, objName, int64(len(p)), "binary/octet-stream")
-	n, err := be.client.PutObject(be.bucketname, objName, bytes.NewReader(p), "binary/octet-stream")
+	debug.Log("PutObject(%v, %v)",
+		be.bucketname, objName)
+	n, err := be.client.PutObject(be.bucketname, objName, rd, "binary/octet-stream")
 	debug.Log("%v -> %v bytes, err %#v", objName, n, err)
 
 	return errors.Wrap(err, "client.PutObject")
 }
 
+// Load returns a reader that yields the contents of the file at h at the
+// given offset. If length is nonzero, only a portion of the file is
+// returned. rd must be closed after use.
+func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	debug.Log("Load %v, length %v, offset %v", h, length, offset)
+	if err := h.Valid(); err != nil {
+		return nil, err
+	}
+
+	if offset < 0 {
+		return nil, errors.New("offset is negative")
+	}
+
+	if length < 0 {
+		return nil, errors.Errorf("invalid length %d", length)
+	}
+
+	var obj *minio.Object
+
+	objName := be.s3path(h.Type, h.Name)
+
+	<-be.connChan
+	defer func() {
+		be.connChan <- struct{}{}
+	}()
+
+	obj, err := be.client.GetObject(be.bucketname, objName)
+	if err != nil {
+		debug.Log("  err %v", err)
+		return nil, errors.Wrap(err, "client.GetObject")
+	}
+
+	// if we're going to read the whole object, just pass it on.
+	if length == 0 {
+		debug.Log("Load %v: pass on object", h)
+		_, err = obj.Seek(offset, 0)
+		if err != nil {
+			_ = obj.Close()
+			return nil, errors.Wrap(err, "obj.Seek")
+		}
+
+		return obj, nil
+	}
+
+	// otherwise use a buffer with ReadAt
+	info, err := obj.Stat()
+	if err != nil {
+		_ = obj.Close()
+		return nil, errors.Wrap(err, "obj.Stat")
+	}
+
+	if offset > info.Size {
+		_ = obj.Close()
+		return nil, errors.Errorf("offset larger than file size")
+	}
+
+	l := int64(length)
+	if offset+l > info.Size {
+		l = info.Size - offset
+	}
+
+	buf := make([]byte, l)
+	n, err := obj.ReadAt(buf, offset)
+	debug.Log("Load %v: use buffer with ReadAt: %v, %v", h, n, err)
+	if err == io.EOF {
+		debug.Log("Load %v: shorten buffer %v -> %v", h, len(buf), n)
+		buf = buf[:n]
+		err = nil
+	}
+
+	if err != nil {
+		_ = obj.Close()
+		return nil, errors.Wrap(err, "obj.ReadAt")
+	}
+
+	return backend.Closer{Reader: bytes.NewReader(buf)}, nil
+}
+
 // Stat returns information about a blob.
-func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
+func (be *s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("%v", h)
 
 	objName := be.s3path(h.Type, h.Name)

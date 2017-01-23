@@ -99,7 +99,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		return nil
 	case "key":
 		h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
-		buf, err := backend.LoadAll(repo.Backend(), h, nil)
+		buf, err := backend.LoadAll(repo.Backend(), h)
 		if err != nil {
 			return err
 		}
@@ -150,7 +150,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 	switch tpe {
 	case "pack":
 		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-		buf, err := backend.LoadAll(repo.Backend(), h, nil)
+		buf, err := backend.LoadAll(repo.Backend(), h)
 		if err != nil {
 			return err
 		}

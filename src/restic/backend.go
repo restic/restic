@@ -1,5 +1,7 @@
 package restic
 
+import "io"
+
 // Backend is used to store and access data.
 type Backend interface {
 	// Location returns a string that describes the type and location of the
@@ -15,14 +17,14 @@ type Backend interface {
 	// Close the backend
 	Close() error
 
-	// Load returns the data stored in the backend for h at the given offset
-	// and saves it in p. Load has the same semantics as io.ReaderAt, except
-	// that a negative offset is also allowed. In this case it references a
-	// position relative to the end of the file (similar to Seek()).
-	Load(h Handle, p []byte, off int64) (int, error)
-
 	// Save stores the data in the backend under the given handle.
-	Save(h Handle, p []byte) error
+	Save(h Handle, rd io.Reader) error
+
+	// Load returns a reader that yields the contents of the file at h at the
+	// given offset. If length is larger than zero, only a portion of the file
+	// is returned. rd must be closed after use. If an error is returned, the
+	// ReadCloser must be nil.
+	Load(h Handle, length int, offset int64) (io.ReadCloser, error)
 
 	// Stat returns information about the File identified by h.
 	Stat(h Handle) (FileInfo, error)

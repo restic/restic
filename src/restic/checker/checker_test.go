@@ -1,6 +1,7 @@
 package checker_test
 
 import (
+	"io"
 	"math/rand"
 	"path/filepath"
 	"sort"
@@ -208,13 +209,33 @@ type errorBackend struct {
 	ProduceErrors bool
 }
 
-func (b errorBackend) Load(h restic.Handle, p []byte, off int64) (int, error) {
-	n, err := b.Backend.Load(h, p, off)
+func (b errorBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	rd, err := b.Backend.Load(h, length, offset)
+	if err != nil {
+		return rd, err
+	}
 
 	if b.ProduceErrors {
-		induceError(p)
+		return errorReadCloser{rd}, err
+	}
+
+	return rd, nil
+}
+
+type errorReadCloser struct {
+	io.ReadCloser
+}
+
+func (erd errorReadCloser) Read(p []byte) (int, error) {
+	n, err := erd.ReadCloser.Read(p)
+	if n > 0 {
+		induceError(p[:n])
 	}
 	return n, err
+}
+
+func (erd errorReadCloser) Close() error {
+	return erd.ReadCloser.Close()
 }
 
 // induceError flips a bit in the slice.
@@ -266,7 +287,7 @@ func TestCheckerModifiedData(t *testing.T) {
 	}
 
 	for _, err := range checkData(chkr) {
-		t.Logf("struct error: %v", err)
+		t.Logf("data error: %v", err)
 		errFound = true
 	}
 

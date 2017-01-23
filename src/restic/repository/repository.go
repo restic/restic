@@ -54,7 +54,7 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 	debug.Log("load %v with id %v", t, id.Str())
 
 	h := restic.Handle{Type: t, Name: id.String()}
-	buf, err := backend.LoadAll(r.be, h, nil)
+	buf, err := backend.LoadAll(r.be, h)
 	if err != nil {
 		debug.Log("error loading %v: %v", id.Str(), err)
 		return nil, err
@@ -97,7 +97,8 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 		// load blob from pack
 		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
 		plaintextBuf = plaintextBuf[:cap(plaintextBuf)]
-		n, err := r.be.Load(h, plaintextBuf, int64(blob.Offset))
+
+		n, err := restic.ReadAt(r.be, h, int64(blob.Offset), plaintextBuf)
 		if err != nil {
 			debug.Log("error loading blob %v: %v", blob, err)
 			lastError = err
@@ -220,7 +221,7 @@ func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, er
 	id = restic.Hash(ciphertext)
 	h := restic.Handle{Type: t, Name: id.String()}
 
-	err = r.be.Save(h, ciphertext)
+	err = r.be.Save(h, bytes.NewReader(ciphertext))
 	if err != nil {
 		debug.Log("error saving blob %v: %v", h, err)
 		return restic.ID{}, err
@@ -235,15 +236,15 @@ func (r *Repository) Flush() error {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
-	debug.Log("manually flushing %d packs", len(r.packs))
+	debug.Log("manually flushing %d packs", len(r.packerManager.packers))
 
-	for _, p := range r.packs {
+	for _, p := range r.packerManager.packers {
 		err := r.savePacker(p)
 		if err != nil {
 			return err
 		}
 	}
-	r.packs = r.packs[:0]
+	r.packerManager.packers = r.packerManager.packers[:0]
 	return nil
 }
 

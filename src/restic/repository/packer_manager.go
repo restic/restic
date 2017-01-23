@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"crypto/sha256"
 	"io"
 	"io/ioutil"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"sync"
 
 	"restic/errors"
+	"restic/hashing"
 
 	"restic/crypto"
 	"restic/debug"
@@ -17,15 +19,36 @@ import (
 
 // Saver implements saving data in a backend.
 type Saver interface {
-	Save(h restic.Handle, jp []byte) error
+	Save(restic.Handle, io.Reader) error
+}
+
+// Packer holds a pack.Packer together with a hash writer.
+type Packer struct {
+	*pack.Packer
+	hw      *hashing.Writer
+	tmpfile *os.File
+}
+
+// Finalize finalizes the pack.Packer and then closes the tempfile.
+func (p *Packer) Finalize() (uint, error) {
+	n, err := p.Packer.Finalize()
+	if err != nil {
+		return n, err
+	}
+
+	if err = p.tmpfile.Close(); err != nil {
+		return n, err
+	}
+
+	return n, nil
 }
 
 // packerManager keeps a list of open packs and creates new on demand.
 type packerManager struct {
-	be    Saver
-	key   *crypto.Key
-	pm    sync.Mutex
-	packs []*pack.Packer
+	be      Saver
+	key     *crypto.Key
+	pm      sync.Mutex
+	packers []*Packer
 
 	pool sync.Pool
 }
@@ -50,18 +73,18 @@ func newPackerManager(be Saver, key *crypto.Key) *packerManager {
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is
 // created or one is returned that already has some blobs.
-func (r *packerManager) findPacker(size uint) (packer *pack.Packer, err error) {
+func (r *packerManager) findPacker(size uint) (packer *Packer, err error) {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
 	// search for a suitable packer
-	if len(r.packs) > 0 {
+	if len(r.packers) > 0 {
 		debug.Log("searching packer for %d bytes\n", size)
-		for i, p := range r.packs {
-			if p.Size()+size < maxPackSize {
+		for i, p := range r.packers {
+			if p.Packer.Size()+size < maxPackSize {
 				debug.Log("found packer %v", p)
 				// remove from list
-				r.packs = append(r.packs[:i], r.packs[i+1:]...)
+				r.packers = append(r.packers[:i], r.packers[i+1:]...)
 				return p, nil
 			}
 		}
@@ -74,50 +97,43 @@ func (r *packerManager) findPacker(size uint) (packer *pack.Packer, err error) {
 		return nil, errors.Wrap(err, "ioutil.TempFile")
 	}
 
-	return pack.NewPacker(r.key, tmpfile), nil
+	hw := hashing.NewWriter(tmpfile, sha256.New())
+	p := pack.NewPacker(r.key, hw)
+	packer = &Packer{
+		Packer:  p,
+		hw:      hw,
+		tmpfile: tmpfile,
+	}
+
+	return packer, nil
 }
 
 // insertPacker appends p to s.packs.
-func (r *packerManager) insertPacker(p *pack.Packer) {
+func (r *packerManager) insertPacker(p *Packer) {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
-	r.packs = append(r.packs, p)
-	debug.Log("%d packers\n", len(r.packs))
+	r.packers = append(r.packers, p)
+	debug.Log("%d packers\n", len(r.packers))
 }
 
 // savePacker stores p in the backend.
-func (r *Repository) savePacker(p *pack.Packer) error {
-	debug.Log("save packer with %d blobs\n", p.Count())
-	n, err := p.Finalize()
+func (r *Repository) savePacker(p *Packer) error {
+	debug.Log("save packer with %d blobs\n", p.Packer.Count())
+	_, err := p.Packer.Finalize()
 	if err != nil {
 		return err
 	}
 
-	tmpfile := p.Writer().(*os.File)
-	f, err := fs.Open(tmpfile.Name())
+	_, err = p.tmpfile.Seek(0, 0)
 	if err != nil {
-		return errors.Wrap(err, "Open")
+		return errors.Wrap(err, "Seek")
 	}
 
-	data := make([]byte, n)
-	m, err := io.ReadFull(f, data)
-	if err != nil {
-		return errors.Wrap(err, "ReadFul")
-	}
-
-	if uint(m) != n {
-		return errors.Errorf("read wrong number of bytes from %v: want %v, got %v", tmpfile.Name(), n, m)
-	}
-
-	if err = f.Close(); err != nil {
-		return errors.Wrap(err, "Close")
-	}
-
-	id := restic.Hash(data)
+	id := restic.IDFromHash(p.hw.Sum(nil))
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-	err = r.be.Save(h, data)
+	err = r.be.Save(h, p.tmpfile)
 	if err != nil {
 		debug.Log("Save(%v) error: %v", h, err)
 		return err
@@ -125,13 +141,18 @@ func (r *Repository) savePacker(p *pack.Packer) error {
 
 	debug.Log("saved as %v", h)
 
-	err = fs.Remove(tmpfile.Name())
+	err = p.tmpfile.Close()
+	if err != nil {
+		return errors.Wrap(err, "close tempfile")
+	}
+
+	err = fs.Remove(p.tmpfile.Name())
 	if err != nil {
 		return errors.Wrap(err, "Remove")
 	}
 
 	// update blobs in the index
-	for _, b := range p.Blobs() {
+	for _, b := range p.Packer.Blobs() {
 		debug.Log("  updating blob %v to pack %v", b.ID.Str(), id.Str())
 		r.idx.Store(restic.PackedBlob{
 			Blob: restic.Blob{
@@ -152,5 +173,5 @@ func (r *packerManager) countPacker() int {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
-	return len(r.packs)
+	return len(r.packers)
 }

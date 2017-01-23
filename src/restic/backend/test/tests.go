@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"reflect"
 	"restic"
 	"sort"
+	"strings"
 	"testing"
 
-	"restic/errors"
 	"restic/test"
 
 	"restic/backend"
@@ -152,12 +153,12 @@ func TestConfig(t testing.TB) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := backend.LoadAll(b, restic.Handle{Type: restic.ConfigFile}, nil)
+	_, err := backend.LoadAll(b, restic.Handle{Type: restic.ConfigFile})
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 
-	err = b.Save(restic.Handle{Type: restic.ConfigFile}, []byte(testString))
+	err = b.Save(restic.Handle{Type: restic.ConfigFile}, strings.NewReader(testString))
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
 	}
@@ -166,7 +167,7 @@ func TestConfig(t testing.TB) {
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
 		h := restic.Handle{Type: restic.ConfigFile, Name: name}
-		buf, err := backend.LoadAll(b, h, nil)
+		buf, err := backend.LoadAll(b, h)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %v", name, err)
 		}
@@ -182,12 +183,12 @@ func TestLoad(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
-	_, err := b.Load(restic.Handle{}, nil, 0)
+	_, err := b.Load(restic.Handle{}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
 
-	_, err = b.Load(restic.Handle{Type: restic.DataFile, Name: "foobar"}, nil, 0)
+	_, err = b.Load(restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
@@ -198,9 +199,18 @@ func TestLoad(t testing.TB) {
 	id := restic.Hash(data)
 
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	err = b.Save(handle, data)
+	err = b.Save(handle, bytes.NewReader(data))
 	if err != nil {
 		t.Fatalf("Save() error: %v", err)
+	}
+
+	rd, err := b.Load(handle, 100, -1)
+	if err == nil {
+		t.Fatalf("Load() returned no error for negative offset!")
+	}
+
+	if rd != nil {
+		t.Fatalf("Load() returned a non-nil reader for negative offset!")
 	}
 
 	for i := 0; i < 50; i++ {
@@ -215,154 +225,47 @@ func TestLoad(t testing.TB) {
 			d = d[:0]
 		}
 
-		if l > 0 && l < len(d) {
-			d = d[:l]
-		}
-
-		buf := make([]byte, l)
-		n, err := b.Load(handle, buf, int64(o))
-
-		// if we requested data beyond the end of the file, require
-		// ErrUnexpectedEOF error
-		if l > len(d) {
-			if errors.Cause(err) != io.ErrUnexpectedEOF {
-				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
-			}
-			err = nil
-			buf = buf[:len(d)]
-		}
-
-		if err != nil {
-			t.Errorf("Load(%d, %d): unexpected error: %v", len(buf), int64(o), err)
-			continue
-		}
-
-		if n != len(buf) {
-			t.Errorf("Load(%d, %d): wrong length returned, want %d, got %d",
-				len(buf), int64(o), len(buf), n)
-			continue
-		}
-
-		buf = buf[:n]
-		if !bytes.Equal(buf, d) {
-			t.Errorf("Load(%d, %d) returned wrong bytes", len(buf), int64(o))
-			continue
-		}
-	}
-
-	// test with negative offset
-	for i := 0; i < 50; i++ {
-		l := rand.Intn(length + 2000)
-		o := rand.Intn(length + 2000)
-
-		d := data
-		if o < len(d) {
-			d = d[len(d)-o:]
-		} else {
-			o = 0
+		getlen := l
+		if l >= len(d) && rand.Float32() >= 0.5 {
+			getlen = 0
 		}
 
 		if l > 0 && l < len(d) {
 			d = d[:l]
 		}
 
-		buf := make([]byte, l)
-		n, err := b.Load(handle, buf, -int64(o))
-
-		// if we requested data beyond the end of the file, require
-		// ErrUnexpectedEOF error
-		if l > len(d) {
-			if errors.Cause(err) != io.ErrUnexpectedEOF {
-				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), int64(o))
-				continue
-			}
-			err = nil
-			buf = buf[:len(d)]
-		}
-
+		rd, err := b.Load(handle, getlen, int64(o))
 		if err != nil {
-			t.Errorf("Load(%d, %d): unexpected error: %v", len(buf), int64(o), err)
+			t.Errorf("Load(%d, %d) returned unexpected error: %v", l, o, err)
 			continue
 		}
 
-		if n != len(buf) {
-			t.Errorf("Load(%d, %d): wrong length returned, want %d, got %d",
-				len(buf), int64(o), len(buf), n)
+		buf, err := ioutil.ReadAll(rd)
+		if err != nil {
+			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %v", l, o, err)
 			continue
 		}
 
-		buf = buf[:n]
+		if l <= len(d) && len(buf) != l {
+			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
+			continue
+		}
+
+		if l > len(d) && len(buf) != len(d) {
+			t.Errorf("Load(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
+			continue
+		}
+
 		if !bytes.Equal(buf, d) {
-			t.Errorf("Load(%d, %d) returned wrong bytes", len(buf), int64(o))
+			t.Errorf("Load(%d, %d) returned wrong bytes", l, o)
 			continue
 		}
-	}
 
-	// load with a too-large buffer, this should return io.ErrUnexpectedEOF
-	buf := make([]byte, length+100)
-	n, err := b.Load(handle, buf, 0)
-	if n != length {
-		t.Errorf("wrong length for larger buffer returned, want %d, got %d", length, n)
-	}
-
-	if errors.Cause(err) != io.ErrUnexpectedEOF {
-		t.Errorf("wrong error returned for larger buffer: want io.ErrUnexpectedEOF, got %#v", err)
-	}
-
-	test.OK(t, b.Remove(restic.DataFile, id.String()))
-}
-
-// TestLoadNegativeOffset tests the backend's Load function with negative offsets.
-func TestLoadNegativeOffset(t testing.TB) {
-	b := open(t)
-	defer close(t)
-
-	length := rand.Intn(1<<24) + 2000
-
-	data := test.Random(23, length)
-	id := restic.Hash(data)
-
-	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	err := b.Save(handle, data)
-	if err != nil {
-		t.Fatalf("Save() error: %v", err)
-	}
-
-	// test normal reads
-	for i := 0; i < 50; i++ {
-		l := rand.Intn(length + 2000)
-		o := -rand.Intn(length + 2000)
-
-		buf := make([]byte, l)
-		n, err := b.Load(handle, buf, int64(o))
-
-		// if we requested data beyond the end of the file, require
-		// ErrUnexpectedEOF error
-		if len(buf) > -o {
-			if errors.Cause(err) != io.ErrUnexpectedEOF {
-				t.Errorf("Load(%d, %d) did not return io.ErrUnexpectedEOF", len(buf), o)
-				continue
-			}
-			err = nil
-			buf = buf[:-o]
-		}
-
+		err = rd.Close()
 		if err != nil {
-			t.Errorf("Load(%d, %d) returned error: %v", len(buf), o, err)
+			t.Errorf("Load(%d, %d) rd.Close() returned unexpected error: %v", l, o, err)
 			continue
 		}
-
-		if n != len(buf) {
-			t.Errorf("Load(%d, %d) returned short read, only got %d bytes", len(buf), o, n)
-			continue
-		}
-
-		p := len(data) + o
-		if !bytes.Equal(buf, data[p:p+len(buf)]) {
-			t.Errorf("Load(%d, %d) returned wrong bytes", len(buf), o)
-			continue
-		}
-
 	}
 
 	test.OK(t, b.Remove(restic.DataFile, id.String()))
@@ -384,10 +287,10 @@ func TestSave(t testing.TB) {
 			Type: restic.DataFile,
 			Name: fmt.Sprintf("%s-%d", id, i),
 		}
-		err := b.Save(h, data)
+		err := b.Save(h, bytes.NewReader(data))
 		test.OK(t, err)
 
-		buf, err := backend.LoadAll(b, h, nil)
+		buf, err := backend.LoadAll(b, h)
 		test.OK(t, err)
 		if len(buf) != len(data) {
 			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
@@ -430,13 +333,13 @@ func TestSaveFilenames(t testing.TB) {
 
 	for i, test := range filenameTests {
 		h := restic.Handle{Name: test.name, Type: restic.DataFile}
-		err := b.Save(h, []byte(test.data))
+		err := b.Save(h, strings.NewReader(test.data))
 		if err != nil {
 			t.Errorf("test %d failed: Save() returned %v", i, err)
 			continue
 		}
 
-		buf, err := backend.LoadAll(b, h, nil)
+		buf, err := backend.LoadAll(b, h)
 		if err != nil {
 			t.Errorf("test %d failed: Load() returned %v", i, err)
 			continue
@@ -466,7 +369,7 @@ var testStrings = []struct {
 
 func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) {
 	id := restic.Hash(data)
-	err := b.Save(restic.Handle{Name: id.String(), Type: tpe}, data)
+	err := b.Save(restic.Handle{Name: id.String(), Type: tpe}, bytes.NewReader(data))
 	test.OK(t, err)
 }
 
@@ -495,7 +398,7 @@ func TestBackend(t testing.TB) {
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
-			_, err = b.Load(h, nil, 0)
+			_, err = b.Load(h, 0, 0)
 			test.Assert(t, err != nil, "blob reader could be obtained before creation")
 
 			// try to get string out, should fail
@@ -510,7 +413,7 @@ func TestBackend(t testing.TB) {
 
 			// test Load()
 			h := restic.Handle{Type: tpe, Name: ts.id}
-			buf, err := backend.LoadAll(b, h, nil)
+			buf, err := backend.LoadAll(b, h)
 			test.OK(t, err)
 			test.Equals(t, ts.data, string(buf))
 
@@ -520,9 +423,18 @@ func TestBackend(t testing.TB) {
 			length := end - start
 
 			buf2 := make([]byte, length)
-			n, err := b.Load(h, buf2, int64(start))
+			rd, err := b.Load(h, len(buf2), int64(start))
 			test.OK(t, err)
-			test.Equals(t, length, n)
+			n, err := io.ReadFull(rd, buf2)
+			test.OK(t, err)
+			test.Equals(t, len(buf2), n)
+
+			remaining, err := io.Copy(ioutil.Discard, rd)
+			test.OK(t, err)
+			test.Equals(t, int64(0), remaining)
+
+			test.OK(t, rd.Close())
+
 			test.Equals(t, ts.data[start:end], string(buf2))
 		}
 
@@ -530,7 +442,7 @@ func TestBackend(t testing.TB) {
 		ts := testStrings[0]
 
 		// create blob
-		err := b.Save(restic.Handle{Type: tpe, Name: ts.id}, []byte(ts.data))
+		err := b.Save(restic.Handle{Type: tpe, Name: ts.id}, strings.NewReader(ts.data))
 		test.Assert(t, err != nil, "expected error, got %v", err)
 
 		// remove and recreate
@@ -543,7 +455,7 @@ func TestBackend(t testing.TB) {
 		test.Assert(t, ok == false, "removed blob still present")
 
 		// create blob
-		err = b.Save(restic.Handle{Type: tpe, Name: ts.id}, []byte(ts.data))
+		err = b.Save(restic.Handle{Type: tpe, Name: ts.id}, strings.NewReader(ts.data))
 		test.OK(t, err)
 
 		// list items

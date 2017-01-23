@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"io"
 	"restic"
 
 	"restic/errors"
@@ -9,8 +10,8 @@ import (
 // Backend implements a mock backend.
 type Backend struct {
 	CloseFn    func() error
-	LoadFn     func(h restic.Handle, p []byte, off int64) (int, error)
-	SaveFn     func(h restic.Handle, p []byte) error
+	SaveFn     func(h restic.Handle, rd io.Reader) error
+	LoadFn     func(h restic.Handle, length int, offset int64) (io.ReadCloser, error)
 	StatFn     func(h restic.Handle) (restic.FileInfo, error)
 	ListFn     func(restic.FileType, <-chan struct{}) <-chan string
 	RemoveFn   func(restic.FileType, string) error
@@ -37,22 +38,22 @@ func (m *Backend) Location() string {
 	return m.LocationFn()
 }
 
-// Load loads data from the backend.
-func (m *Backend) Load(h restic.Handle, p []byte, off int64) (int, error) {
-	if m.LoadFn == nil {
-		return 0, errors.New("not implemented")
-	}
-
-	return m.LoadFn(h, p, off)
-}
-
 // Save data in the backend.
-func (m *Backend) Save(h restic.Handle, p []byte) error {
+func (m *Backend) Save(h restic.Handle, rd io.Reader) error {
 	if m.SaveFn == nil {
 		return errors.New("not implemented")
 	}
 
-	return m.SaveFn(h, p)
+	return m.SaveFn(h, rd)
+}
+
+// Load loads data from the backend.
+func (m *Backend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	if m.LoadFn == nil {
+		return nil, errors.New("not implemented")
+	}
+
+	return m.LoadFn(h, length, offset)
 }
 
 // Stat an object in the backend.

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -146,7 +147,7 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 // LoadKey loads a key from the backend.
 func LoadKey(s *Repository, name string) (k *Key, err error) {
 	h := restic.Handle{Type: restic.KeyFile, Name: name}
-	data, err := backend.LoadAll(s.be, h, nil)
+	data, err := backend.LoadAll(s.be, h)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +233,7 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 		Name: restic.Hash(buf).String(),
 	}
 
-	err = s.be.Save(h, buf)
+	err = s.be.Save(h, bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}

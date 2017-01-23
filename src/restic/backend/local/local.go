@@ -101,56 +101,16 @@ func dirname(base string, t restic.FileType, name string) string {
 	return filepath.Join(base, n)
 }
 
-// Load returns the data stored in the backend for h at the given offset and
-// saves it in p. Load has the same semantics as io.ReaderAt, with one
-// exception: when off is lower than zero, it is treated as an offset relative
-// to the end of the file.
-func (b *Local) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	debug.Log("Load %v, length %v at %v", h, len(p), off)
-	if err := h.Valid(); err != nil {
-		return 0, err
-	}
-
-	f, err := fs.Open(filename(b.p, h.Type, h.Name))
-	if err != nil {
-		return 0, errors.Wrap(err, "Open")
-	}
-
-	defer func() {
-		e := f.Close()
-		if err == nil {
-			err = errors.Wrap(e, "Close")
-		}
-	}()
-
-	switch {
-	case off > 0:
-		_, err = f.Seek(off, 0)
-	case off < 0:
-		_, err = f.Seek(off, 2)
-	}
-
-	if err != nil {
-		return 0, errors.Wrap(err, "Seek")
-	}
-
-	return io.ReadFull(f, p)
-}
-
-// writeToTempfile saves p into a tempfile in tempdir.
-func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
+// copyToTempfile saves p into a tempfile in tempdir.
+func copyToTempfile(tempdir string, rd io.Reader) (filename string, err error) {
 	tmpfile, err := ioutil.TempFile(tempdir, "temp-")
 	if err != nil {
 		return "", errors.Wrap(err, "TempFile")
 	}
 
-	n, err := tmpfile.Write(p)
+	_, err = io.Copy(tmpfile, rd)
 	if err != nil {
 		return "", errors.Wrap(err, "Write")
-	}
-
-	if n != len(p) {
-		return "", errors.New("not all bytes writen")
 	}
 
 	if err = tmpfile.Sync(); err != nil {
@@ -166,14 +126,14 @@ func writeToTempfile(tempdir string, p []byte) (filename string, err error) {
 }
 
 // Save stores data in the backend at the handle.
-func (b *Local) Save(h restic.Handle, p []byte) (err error) {
-	debug.Log("Save %v, length %v", h, len(p))
+func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
+	debug.Log("Save %v", h)
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
-	tmpfile, err := writeToTempfile(filepath.Join(b.p, backend.Paths.Temp), p)
-	debug.Log("saved %v (%d bytes) to %v", h, len(p), tmpfile)
+	tmpfile, err := copyToTempfile(filepath.Join(b.p, backend.Paths.Temp), rd)
+	debug.Log("saved %v to %v", h, tmpfile)
 	if err != nil {
 		return err
 	}
@@ -208,6 +168,39 @@ func (b *Local) Save(h restic.Handle, p []byte) (err error) {
 	}
 
 	return setNewFileMode(filename, fi)
+}
+
+// Load returns a reader that yields the contents of the file at h at the
+// given offset. If length is nonzero, only a portion of the file is
+// returned. rd must be closed after use.
+func (b *Local) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	debug.Log("Load %v, length %v, offset %v", h, length, offset)
+	if err := h.Valid(); err != nil {
+		return nil, err
+	}
+
+	if offset < 0 {
+		return nil, errors.New("offset is negative")
+	}
+
+	f, err := os.Open(filename(b.p, h.Type, h.Name))
+	if err != nil {
+		return nil, err
+	}
+
+	if offset > 0 {
+		_, err = f.Seek(offset, 0)
+		if err != nil {
+			f.Close()
+			return nil, err
+		}
+	}
+
+	if length > 0 {
+		return backend.LimitReadCloser(f, int64(length)), nil
+	}
+
+	return f, nil
 }
 
 // Stat returns information about a blob.
