@@ -419,7 +419,7 @@ func (r *SFTP) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 	if offset > 0 {
 		_, err = f.Seek(offset, 0)
 		if err != nil {
-			f.Close()
+			_ = f.Close()
 			return nil, err
 		}
 	}

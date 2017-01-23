@@ -214,6 +214,7 @@ func (be *s3) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, err
 		debug.Log("Get %v: pass on object", h)
 		_, err = obj.Seek(offset, 0)
 		if err != nil {
+			_ = obj.Close()
 			return nil, errors.Wrap(err, "obj.Seek")
 		}
 
@@ -223,10 +224,12 @@ func (be *s3) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, err
 	// otherwise use a buffer with ReadAt
 	info, err := obj.Stat()
 	if err != nil {
+		_ = obj.Close()
 		return nil, errors.Wrap(err, "obj.Stat")
 	}
 
 	if offset > info.Size {
+		_ = obj.Close()
 		return nil, errors.Errorf("offset larger than file size")
 	}
 
@@ -245,6 +248,7 @@ func (be *s3) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, err
 	}
 
 	if err != nil {
+		_ = obj.Close()
 		return nil, errors.Wrap(err, "obj.ReadAt")
 	}
 

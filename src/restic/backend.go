@@ -28,7 +28,8 @@ type Backend interface {
 
 	// Get returns a reader that yields the contents of the file at h at the
 	// given offset. If length is nonzero, only a portion of the file is
-	// returned. rd must be closed after use.
+	// returned. rd must be closed after use. If an error is returned, the
+	// ReadCloser must be nil.
 	Get(h Handle, length int, offset int64) (io.ReadCloser, error)
 
 	// Stat returns information about the File identified by h.
