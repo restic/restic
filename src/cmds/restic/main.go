@@ -25,8 +25,11 @@ directories in an encrypted repository stored on different backends.
 
 	// run the debug functions for all subcommands (if build tag "debug" is
 	// enabled)
-	PersistentPreRun: func(*cobra.Command, []string) {
-		runDebug()
+	PersistentPreRunE: func(*cobra.Command, []string) error {
+		return runDebug()
+	},
+	PersistentPostRun: func(*cobra.Command, []string) {
+		shutdownDebug()
 	},
 }
 
