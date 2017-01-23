@@ -10,19 +10,21 @@ import (
 	"restic/backend"
 	"restic/errors"
 
-	"github.com/minio/minio-go"
-
+	"restic/backend"
 	"restic/debug"
+
+	"github.com/minio/minio-go"
 )
 
 const connLimit = 10
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
-	client     *minio.Client
-	connChan   chan struct{}
-	bucketname string
-	prefix     string
+	client      *minio.Client
+	connChan    chan struct{}
+	bucketname  string
+	prefix      string
+	localLayout bool
 }
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
@@ -35,7 +37,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
-	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix}
+	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix, localLayout: cfg.LocalLayout}
 	be.createConnections()
 
 	found, err := client.BucketExists(cfg.Bucket)
@@ -59,7 +61,39 @@ func (be *s3) s3path(t restic.FileType, name string) string {
 	if t == restic.ConfigFile {
 		return path.Join(be.prefix, string(t))
 	}
+	if be.localLayout == true {
+		// use the local compatible repository layout
+		return path.Join(be.prefix, dirname(t, name), name)
+	}
+	// use the standard s3 repository layout
 	return path.Join(be.prefix, string(t), name)
+}
+
+// Construct the directory name for a given FileType and file name using
+// the path names defined in backend.Paths.
+//
+// This will also use the first two characters of the blob name as a
+// directory prefix to partition blobs into smaller directories. This
+// is similar to the way local and sftp repositories are handling
+// blob filenames.
+func dirname(t restic.FileType, name string) string {
+	var n string
+	switch t {
+	case restic.DataFile:
+		n = backend.Paths.Data
+		if len(name) > 2 {
+			n = path.Join(n, name[:2])
+		}
+	case restic.SnapshotFile:
+		n = backend.Paths.Snapshots
+	case restic.IndexFile:
+		n = backend.Paths.Index
+	case restic.LockFile:
+		n = backend.Paths.Locks
+	case restic.KeyFile:
+		n = backend.Paths.Keys
+	}
+	return n
 }
 
 func (be *s3) createConnections() {

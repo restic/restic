@@ -320,6 +320,17 @@ func open(s string) (restic.Backend, error) {
 
 		debug.Log("opening s3 repository at %#v", cfg)
 		be, err = s3.Open(cfg)
+	case "gs":
+		cfg := loc.Config.(s3.Config)
+		if cfg.KeyID == "" {
+			cfg.KeyID = os.Getenv("GS_ACCESS_KEY_ID")
+
+		}
+		if cfg.Secret == "" {
+			cfg.Secret = os.Getenv("GS_SECRET_ACCESS_KEY")
+		}
+		debug.Log("open", "opening gcs repository at %#v", cfg)
+		be, err = s3.Open(cfg)
 	case "rest":
 		be, err = rest.Open(loc.Config.(rest.Config))
 	default:
@@ -359,6 +370,18 @@ func create(s string) (restic.Backend, error) {
 		}
 
 		debug.Log("create s3 repository at %#v", loc.Config)
+		return s3.Open(cfg)
+	case "gs":
+		cfg := loc.Config.(s3.Config)
+		if cfg.KeyID == "" {
+			cfg.KeyID = os.Getenv("GS_ACCESS_KEY_ID")
+
+		}
+		if cfg.Secret == "" {
+			cfg.Secret = os.Getenv("GS_SECRET_ACCESS_KEY")
+		}
+
+		debug.Log("open", "create gcs repository at %#v", loc.Config)
 		return s3.Open(cfg)
 	case "rest":
 		return rest.Open(loc.Config.(rest.Config))
