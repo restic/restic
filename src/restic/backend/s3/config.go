@@ -16,9 +16,13 @@ type Config struct {
 	KeyID, Secret string
 	Bucket        string
 	Prefix        string
+	DirPrefixLen  int
 }
 
-const defaultPrefix = "restic"
+const (
+	defaultPrefix       = "restic"
+	defaultDirPrefixLen = 0
+)
 
 // ParseConfig parses the string s and extracts the s3 config. The two
 // supported configuration formats are s3://host/bucketname/prefix and
@@ -40,7 +44,7 @@ func ParseConfig(s string) (interface{}, error) {
 		}
 
 		path := strings.SplitN(url.Path[1:], "/", 2)
-		return createConfig(url.Host, path, url.Scheme == "http")
+		return NewConfig(url.Host, path, url.Scheme == "http", defaultDirPrefixLen)
 	case strings.HasPrefix(s, "s3://"):
 		s = s[5:]
 	case strings.HasPrefix(s, "s3:"):
@@ -51,10 +55,13 @@ func ParseConfig(s string) (interface{}, error) {
 	// use the first entry of the path as the endpoint and the
 	// remainder as bucket name and prefix
 	path := strings.SplitN(s, "/", 3)
-	return createConfig(path[0], path[1:], false)
+	return NewConfig(path[0], path[1:], false, defaultDirPrefixLen)
 }
 
-func createConfig(endpoint string, p []string, useHTTP bool) (interface{}, error) {
+// NewConfig creates a Config at the specified endpoint. The Bucket is
+// the first entry in path and the remaining entries will be used as the
+// object name prefix.
+func NewConfig(endpoint string, p []string, useHTTP bool, dirPrefixLen int) (interface{}, error) {
 	var prefix string
 	switch {
 	case len(p) < 1:
@@ -65,9 +72,10 @@ func createConfig(endpoint string, p []string, useHTTP bool) (interface{}, error
 		prefix = path.Clean(p[1])
 	}
 	return Config{
-		Endpoint: endpoint,
-		UseHTTP:  useHTTP,
-		Bucket:   p[0],
-		Prefix:   prefix,
+		Endpoint:     endpoint,
+		UseHTTP:      useHTTP,
+		Bucket:       p[0],
+		Prefix:       prefix,
+		DirPrefixLen: dirPrefixLen,
 	}, nil
 }
