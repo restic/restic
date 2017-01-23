@@ -38,6 +38,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/pkg/profile",
+			"repository": "https://github.com/pkg/profile",
+			"revision": "1c16f117a3ab788fdf0e334e623b8bccf5679866",
+			"branch": "HEAD"
+		},
+		{
 			"importpath": "github.com/pkg/sftp",
 			"repository": "https://github.com/pkg/sftp",
 			"revision": "8197a2e580736b78d704be0fc47b2324c0591a32",
