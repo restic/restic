@@ -142,6 +142,11 @@ func testArchiverDuplication(t *testing.T) {
 	close(done)
 
 	wg.Wait()
+
+	err = repo.Flush()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestArchiverDuplication(t *testing.T) {
