@@ -111,15 +111,15 @@ func (r *Repository) savePacker(p *Packer) error {
 		return err
 	}
 
-	f, err := fs.Open(p.tmpfile.Name())
+	_, err = p.tmpfile.Seek(0, 0)
 	if err != nil {
-		return errors.Wrap(err, "Open")
+		return errors.Wrap(err, "Seek")
 	}
 
 	id := restic.IDFromHash(p.hw.Sum(nil))
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-	err = r.be.Save(h, f)
+	err = r.be.Save(h, p.tmpfile)
 	if err != nil {
 		debug.Log("Save(%v) error: %v", h, err)
 		return err
@@ -127,7 +127,7 @@ func (r *Repository) savePacker(p *Packer) error {
 
 	debug.Log("saved as %v", h)
 
-	err = f.Close()
+	err = p.tmpfile.Close()
 	if err != nil {
 		return errors.Wrap(err, "close tempfile")
 	}
