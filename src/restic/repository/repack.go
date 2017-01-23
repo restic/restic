@@ -30,7 +30,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 			return errors.Wrap(err, "TempFile")
 		}
 
-		beRd, err := repo.Backend().Get(h, 0, 0)
+		beRd, err := repo.Backend().Load(h, 0, 0)
 		if err != nil {
 			return err
 		}

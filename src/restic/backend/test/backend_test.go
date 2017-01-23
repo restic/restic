@@ -44,11 +44,11 @@ func TestTestBackendConfig(t *testing.T) {
 	test.TestConfig(t)
 }
 
-func TestTestBackendGet(t *testing.T) {
+func TestTestBackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.TestGet(t)
+	test.TestLoad(t)
 }
 
 func TestTestBackendSave(t *testing.T) {

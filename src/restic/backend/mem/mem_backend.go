@@ -83,10 +83,10 @@ func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
 	return nil
 }
 
-// Get returns a reader that yields the contents of the file at h at the
+// Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (be *MemoryBackend) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *MemoryBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	if err := h.Valid(); err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (be *MemoryBackend) Get(h restic.Handle, length int, offset int64) (io.Read
 		h.Name = ""
 	}
 
-	debug.Log("Get %v offset %v len %v", h, offset, length)
+	debug.Log("Load %v offset %v len %v", h, offset, length)
 
 	if offset < 0 {
 		return nil, errors.New("offset is negative")

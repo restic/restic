@@ -104,11 +104,11 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	return errors.Wrap(err, "client.PutObject")
 }
 
-// Get returns a reader that yields the contents of the file at h at the
+// Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (be *s3) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Get %v, length %v, offset %v", h, length, offset)
+func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (be *s3) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, err
 
 	// if we're going to read the whole object, just pass it on.
 	if length == 0 {
-		debug.Log("Get %v: pass on object", h)
+		debug.Log("Load %v: pass on object", h)
 		_, err = obj.Seek(offset, 0)
 		if err != nil {
 			_ = obj.Close()
@@ -167,9 +167,9 @@ func (be *s3) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, err
 
 	buf := make([]byte, l)
 	n, err := obj.ReadAt(buf, offset)
-	debug.Log("Get %v: use buffer with ReadAt: %v, %v", h, n, err)
+	debug.Log("Load %v: use buffer with ReadAt: %v, %v", h, n, err)
 	if err == io.EOF {
-		debug.Log("Get %v: shorten buffer %v -> %v", h, len(buf), n)
+		debug.Log("Load %v: shorten buffer %v -> %v", h, len(buf), n)
 		buf = buf[:n]
 		err = nil
 	}

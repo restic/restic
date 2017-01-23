@@ -11,7 +11,7 @@ import (
 type Backend struct {
 	CloseFn    func() error
 	SaveFn     func(h restic.Handle, rd io.Reader) error
-	GetFn      func(h restic.Handle, length int, offset int64) (io.ReadCloser, error)
+	LoadFn     func(h restic.Handle, length int, offset int64) (io.ReadCloser, error)
 	StatFn     func(h restic.Handle) (restic.FileInfo, error)
 	ListFn     func(restic.FileType, <-chan struct{}) <-chan string
 	RemoveFn   func(restic.FileType, string) error
@@ -47,13 +47,13 @@ func (m *Backend) Save(h restic.Handle, rd io.Reader) error {
 	return m.SaveFn(h, rd)
 }
 
-// Get loads data from the backend.
-func (m *Backend) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	if m.GetFn == nil {
+// Load loads data from the backend.
+func (m *Backend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	if m.LoadFn == nil {
 		return nil, errors.New("not implemented")
 	}
 
-	return m.GetFn(h, length, offset)
+	return m.LoadFn(h, length, offset)
 }
 
 // Stat an object in the backend.

@@ -44,11 +44,11 @@ func TestSftpBackendConfig(t *testing.T) {
 	test.TestConfig(t)
 }
 
-func TestSftpBackendGet(t *testing.T) {
+func TestSftpBackendLoad(t *testing.T) {
 	if SkipMessage != "" {
 		t.Skip(SkipMessage)
 	}
-	test.TestGet(t)
+	test.TestLoad(t)
 }
 
 func TestSftpBackendSave(t *testing.T) {

@@ -43,7 +43,7 @@ func forgetfulBackend() restic.Backend {
 		return false, nil
 	}
 
-	be.GetFn = func(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	be.LoadFn = func(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 		return nil, errors.New("not found")
 	}
 

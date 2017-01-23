@@ -178,19 +178,19 @@ func TestConfig(t testing.TB) {
 	}
 }
 
-// TestGet tests the backend's Get function.
-func TestGet(t testing.TB) {
+// TestLoad tests the backend's Load function.
+func TestLoad(t testing.TB) {
 	b := open(t)
 	defer close(t)
 
-	_, err := b.Get(restic.Handle{}, 0, 0)
+	_, err := b.Load(restic.Handle{}, 0, 0)
 	if err == nil {
-		t.Fatalf("Get() did not return an error for invalid handle")
+		t.Fatalf("Load() did not return an error for invalid handle")
 	}
 
-	_, err = b.Get(restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
+	_, err = b.Load(restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
 	if err == nil {
-		t.Fatalf("Get() did not return an error for non-existing blob")
+		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
 
 	length := rand.Intn(1<<24) + 2000
@@ -204,13 +204,13 @@ func TestGet(t testing.TB) {
 		t.Fatalf("Save() error: %v", err)
 	}
 
-	rd, err := b.Get(handle, 100, -1)
+	rd, err := b.Load(handle, 100, -1)
 	if err == nil {
-		t.Fatalf("Get() returned no error for negative offset!")
+		t.Fatalf("Load() returned no error for negative offset!")
 	}
 
 	if rd != nil {
-		t.Fatalf("Get() returned a non-nil reader for negative offset!")
+		t.Fatalf("Load() returned a non-nil reader for negative offset!")
 	}
 
 	for i := 0; i < 50; i++ {
@@ -234,36 +234,36 @@ func TestGet(t testing.TB) {
 			d = d[:l]
 		}
 
-		rd, err := b.Get(handle, getlen, int64(o))
+		rd, err := b.Load(handle, getlen, int64(o))
 		if err != nil {
-			t.Errorf("Get(%d, %d) returned unexpected error: %v", l, o, err)
+			t.Errorf("Load(%d, %d) returned unexpected error: %v", l, o, err)
 			continue
 		}
 
 		buf, err := ioutil.ReadAll(rd)
 		if err != nil {
-			t.Errorf("Get(%d, %d) ReadAll() returned unexpected error: %v", l, o, err)
+			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %v", l, o, err)
 			continue
 		}
 
 		if l <= len(d) && len(buf) != l {
-			t.Errorf("Get(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
+			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
 			continue
 		}
 
 		if l > len(d) && len(buf) != len(d) {
-			t.Errorf("Get(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
+			t.Errorf("Load(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
 			continue
 		}
 
 		if !bytes.Equal(buf, d) {
-			t.Errorf("Get(%d, %d) returned wrong bytes", l, o)
+			t.Errorf("Load(%d, %d) returned wrong bytes", l, o)
 			continue
 		}
 
 		err = rd.Close()
 		if err != nil {
-			t.Errorf("Get(%d, %d) rd.Close() returned unexpected error: %v", l, o, err)
+			t.Errorf("Load(%d, %d) rd.Close() returned unexpected error: %v", l, o, err)
 			continue
 		}
 	}
@@ -398,7 +398,7 @@ func TestBackend(t testing.TB) {
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
-			_, err = b.Get(h, 0, 0)
+			_, err = b.Load(h, 0, 0)
 			test.Assert(t, err != nil, "blob reader could be obtained before creation")
 
 			// try to get string out, should fail
@@ -423,7 +423,7 @@ func TestBackend(t testing.TB) {
 			length := end - start
 
 			buf2 := make([]byte, length)
-			rd, err := b.Get(h, len(buf2), int64(start))
+			rd, err := b.Load(h, len(buf2), int64(start))
 			test.OK(t, err)
 			n, err := io.ReadFull(rd, buf2)
 			test.OK(t, err)

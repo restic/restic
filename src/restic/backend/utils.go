@@ -8,7 +8,7 @@ import (
 
 // LoadAll reads all data stored in the backend for the handle.
 func LoadAll(be restic.Backend, h restic.Handle) (buf []byte, err error) {
-	rd, err := be.Get(h, 0, 0)
+	rd, err := be.Load(h, 0, 0)
 	if err != nil {
 		return nil, err
 	}

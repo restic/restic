@@ -360,11 +360,11 @@ func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 	return err
 }
 
-// Get returns a reader that yields the contents of the file at h at the
+// Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (r *SFTP) Get(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Get %v, length %v, offset %v", h, length, offset)
+func (r *SFTP) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, err
 	}
