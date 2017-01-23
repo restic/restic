@@ -53,17 +53,14 @@ func saveFile(t testing.TB, be Saver, filename string, id restic.ID) {
 		t.Fatal(err)
 	}
 
-	defer func() {
-		if err := f.Close(); err != nil {
-			t.Fatal(err)
-		}
-	}()
-
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	t.Logf("save file %v", h)
 
-	err = be.Save(h, f)
-	if err != nil {
+	if err = be.Save(h, f); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = f.Close(); err != nil {
 		t.Fatal(err)
 	}
 
