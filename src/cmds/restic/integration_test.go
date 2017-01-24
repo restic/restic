@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	mrand "math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -736,6 +737,30 @@ func TestRestoreFilter(t *testing.T) {
 			}
 		}
 
+	})
+}
+
+func TestRestore(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		testRunInit(t, gopts)
+
+		for i := 0; i < 10; i++ {
+			p := filepath.Join(env.testdata, fmt.Sprintf("foo/bar/testfile%v", i))
+			OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+			OK(t, appendRandomData(p, uint(mrand.Intn(5<<21))))
+		}
+
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+
+		// Restore latest without any filters
+		restoredir := filepath.Join(env.base, "restore")
+		testRunRestoreLatest(t, gopts, restoredir, nil, "")
+
+		Assert(t, directoriesEqualContents(env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata))),
+			"directories are not equal")
 	})
 }
 

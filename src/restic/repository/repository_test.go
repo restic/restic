@@ -147,6 +147,51 @@ func BenchmarkLoadTree(t *testing.B) {
 	}
 }
 
+func TestLoadBlob(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	length := 1000000
+	buf := restic.NewBlobBuffer(length)
+	_, err := io.ReadFull(rnd, buf)
+	OK(t, err)
+
+	id, err := repo.SaveBlob(restic.DataBlob, buf, restic.ID{})
+	OK(t, err)
+	OK(t, repo.Flush())
+
+	// first, test with buffers that are too small
+	for _, testlength := range []int{length - 20, length, restic.CiphertextLength(length) - 1} {
+		buf = make([]byte, 0, testlength)
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+		if err == nil {
+			t.Errorf("LoadBlob() did not return an error for a buffer that is too small to hold the blob")
+			continue
+		}
+
+		if n != 0 {
+			t.Errorf("LoadBlob() returned an error and n > 0")
+			continue
+		}
+	}
+
+	// then use buffers that are large enough
+	base := restic.CiphertextLength(length)
+	for _, testlength := range []int{base, base + 7, base + 15, base + 1000} {
+		buf = make([]byte, 0, testlength)
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+		if err != nil {
+			t.Errorf("LoadBlob() returned an error for buffer size %v: %v", testlength, err)
+			continue
+		}
+
+		if n != length {
+			t.Errorf("LoadBlob() returned the wrong number of bytes: want %v, got %v", length, n)
+			continue
+		}
+	}
+}
+
 func BenchmarkLoadBlob(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
