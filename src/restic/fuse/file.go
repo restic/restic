@@ -91,6 +91,11 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 		return f.blobs[i], nil
 	}
 
+	// release earlier blobs
+	for j := 0; j < i; j++ {
+		f.blobs[j] = nil
+	}
+
 	buf := restic.NewBlobBuffer(f.sizes[i])
 	n, err := f.repo.LoadBlob(restic.DataBlob, f.node.Content[i], buf)
 	if err != nil {
