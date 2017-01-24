@@ -77,7 +77,7 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
 func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []byte) (int, error) {
-	debug.Log("load %v with id %v (buf %p, len %d)", t, id.Str(), plaintextBuf, len(plaintextBuf))
+	debug.Log("load %v with id %v (buf len %v, cap %d)", t, id.Str(), len(plaintextBuf), cap(plaintextBuf))
 
 	// lookup packs
 	blobs, err := r.idx.Lookup(id, t)
@@ -96,7 +96,12 @@ func (r *Repository) loadBlob(id restic.ID, t restic.BlobType, plaintextBuf []by
 
 		// load blob from pack
 		h := restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}
-		plaintextBuf = plaintextBuf[:cap(plaintextBuf)]
+
+		if uint(cap(plaintextBuf)) < blob.Length {
+			return 0, errors.Errorf("buffer is too small: %v < %v", cap(plaintextBuf), blob.Length)
+		}
+
+		plaintextBuf = plaintextBuf[:blob.Length]
 
 		n, err := restic.ReadAt(r.be, h, int64(blob.Offset), plaintextBuf)
 		if err != nil {
@@ -526,9 +531,8 @@ func (r *Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int,
 		return 0, err
 	}
 
-	buf = buf[:cap(buf)]
-	if len(buf) < restic.CiphertextLength(int(size)) {
-		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", len(buf), restic.CiphertextLength(int(size)))
+	if cap(buf) < restic.CiphertextLength(int(size)) {
+		return 0, errors.Errorf("buffer is too small for data blob (%d < %d)", cap(buf), restic.CiphertextLength(int(size)))
 	}
 
 	n, err := r.loadBlob(id, t, buf)
