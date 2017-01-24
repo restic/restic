@@ -520,7 +520,7 @@ func (r *Repository) Close() error {
 // be large enough to hold the encrypted blob, since it is used as scratch
 // space.
 func (r *Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int, error) {
-	debug.Log("load blob %v into buf %p", id.Str(), buf)
+	debug.Log("load blob %v into buf (len %v, cap %v)", id.Str(), len(buf), cap(buf))
 	size, err := r.idx.LookupSize(id, t)
 	if err != nil {
 		return 0, err
