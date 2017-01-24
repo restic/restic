@@ -9,7 +9,6 @@ import (
 
 	"restic"
 	"restic/archiver"
-	"restic/backend/mem"
 	"restic/checker"
 	"restic/repository"
 	"restic/test"
@@ -249,19 +248,15 @@ func induceError(data []byte) {
 }
 
 func TestCheckerModifiedData(t *testing.T) {
-	be := mem.New()
-
-	repository.TestUseLowSecurityKDFParameters(t)
-
-	repo := repository.New(be)
-	test.OK(t, repo.Init(test.TestPassword))
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
 	arch := archiver.New(repo)
 	_, id, err := arch.Snapshot(nil, []string{"."}, nil, nil)
 	test.OK(t, err)
 	t.Logf("archived as %v", id.Str())
 
-	beError := &errorBackend{Backend: be}
+	beError := &errorBackend{Backend: repo.Backend()}
 	checkRepo := repository.New(beError)
 	test.OK(t, checkRepo.SearchKey(test.TestPassword, 5))
 
