@@ -6,8 +6,10 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"reflect"
 	"restic"
+	"restic/errors"
 	"sort"
 	"strings"
 	"testing"
@@ -271,6 +273,16 @@ func TestLoad(t testing.TB) {
 	test.OK(t, b.Remove(restic.DataFile, id.String()))
 }
 
+type errorCloser struct {
+	io.Reader
+	t testing.TB
+}
+
+func (ec errorCloser) Close() error {
+	ec.t.Error("forbidden method close was called")
+	return errors.New("forbidden method close was called")
+}
+
 // TestSave tests saving data in the backend.
 func TestSave(t testing.TB) {
 	b := open(t)
@@ -311,6 +323,46 @@ func TestSave(t testing.TB) {
 		if err != nil {
 			t.Fatalf("error removing item: %v", err)
 		}
+	}
+
+	// test saving from a tempfile
+	tmpfile, err := ioutil.TempFile("", "restic-backend-save-test-")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	length := rand.Intn(1<<23) + 200000
+	data := test.Random(23, length)
+	copy(id[:], data)
+
+	if _, err = tmpfile.Write(data); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err = tmpfile.Seek(0, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+
+	// wrap the tempfile in an errorCloser, so we can detect if the backend
+	// closes the reader
+	err = b.Save(h, errorCloser{t: t, Reader: tmpfile})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err = os.Remove(tmpfile.Name()); err != nil {
+		t.Fatal(err)
+	}
+
+	err = b.Remove(h.Type, h.Name)
+	if err != nil {
+		t.Fatalf("error removing item: %v", err)
 	}
 }
 
