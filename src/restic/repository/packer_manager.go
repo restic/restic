@@ -29,20 +29,6 @@ type Packer struct {
 	tmpfile *os.File
 }
 
-// Finalize finalizes the pack.Packer and then closes the tempfile.
-func (p *Packer) Finalize() (uint, error) {
-	n, err := p.Packer.Finalize()
-	if err != nil {
-		return n, err
-	}
-
-	if err = p.tmpfile.Close(); err != nil {
-		return n, err
-	}
-
-	return n, nil
-}
-
 // packerManager keeps a list of open packs and creates new on demand.
 type packerManager struct {
 	be      Saver
