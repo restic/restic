@@ -79,7 +79,7 @@ func Random(seed, count int) []byte {
 
 		for j := range data {
 			cur := i + j
-			if len(p) >= cur {
+			if cur >= len(p) {
 				break
 			}
 			p[cur] = data[j]
