@@ -39,7 +39,7 @@ func randomID() restic.ID {
 func forgetfulBackend() restic.Backend {
 	be := &mock.Backend{}
 
-	be.TestFn = func(t restic.FileType, name string) (bool, error) {
+	be.TestFn = func(h restic.Handle) (bool, error) {
 		return false, nil
 	}
 
@@ -55,7 +55,7 @@ func forgetfulBackend() restic.Backend {
 		return restic.FileInfo{}, errors.New("not found")
 	}
 
-	be.RemoveFn = func(t restic.FileType, name string) error {
+	be.RemoveFn = func(h restic.Handle) error {
 		return nil
 	}
 

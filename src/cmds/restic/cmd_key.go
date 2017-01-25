@@ -87,7 +87,8 @@ func deleteKey(repo *repository.Repository, name string) error {
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
 
-	err := repo.Backend().Remove(restic.KeyFile, name)
+	h := restic.Handle{Type: restic.KeyFile, Name: name}
+	err := repo.Backend().Remove(h)
 	if err != nil {
 		return err
 	}
@@ -107,7 +108,8 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
-	err = repo.Backend().Remove(restic.KeyFile, repo.KeyName())
+	h := restic.Handle{Type: restic.KeyFile, Name: repo.KeyName()}
+	err = repo.Backend().Remove(h)
 	if err != nil {
 		return err
 	}

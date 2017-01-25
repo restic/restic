@@ -14,8 +14,8 @@ type Backend struct {
 	LoadFn     func(h restic.Handle, length int, offset int64) (io.ReadCloser, error)
 	StatFn     func(h restic.Handle) (restic.FileInfo, error)
 	ListFn     func(restic.FileType, <-chan struct{}) <-chan string
-	RemoveFn   func(restic.FileType, string) error
-	TestFn     func(restic.FileType, string) (bool, error)
+	RemoveFn   func(h restic.Handle) error
+	TestFn     func(h restic.Handle) (bool, error)
 	DeleteFn   func() error
 	LocationFn func() string
 }
@@ -77,21 +77,21 @@ func (m *Backend) List(t restic.FileType, done <-chan struct{}) <-chan string {
 }
 
 // Remove data from the backend.
-func (m *Backend) Remove(t restic.FileType, name string) error {
+func (m *Backend) Remove(h restic.Handle) error {
 	if m.RemoveFn == nil {
 		return errors.New("not implemented")
 	}
 
-	return m.RemoveFn(t, name)
+	return m.RemoveFn(h)
 }
 
 // Test for the existence of a specific item.
-func (m *Backend) Test(t restic.FileType, name string) (bool, error) {
+func (m *Backend) Test(h restic.Handle) (bool, error) {
 	if m.TestFn == nil {
 		return false, errors.New("not implemented")
 	}
 
-	return m.TestFn(t, name)
+	return m.TestFn(h)
 }
 
 // Delete all data.

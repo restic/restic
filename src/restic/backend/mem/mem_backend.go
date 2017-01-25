@@ -13,12 +13,7 @@ import (
 	"restic/debug"
 )
 
-type entry struct {
-	Type restic.FileType
-	Name string
-}
-
-type memMap map[entry][]byte
+type memMap map[restic.Handle][]byte
 
 // make sure that MemoryBackend implements backend.Backend
 var _ restic.Backend = &MemoryBackend{}
@@ -42,13 +37,13 @@ func New() *MemoryBackend {
 }
 
 // Test returns whether a file exists.
-func (be *MemoryBackend) Test(t restic.FileType, name string) (bool, error) {
+func (be *MemoryBackend) Test(h restic.Handle) (bool, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	debug.Log("test %v %v", t, name)
+	debug.Log("Test %v", h)
 
-	if _, ok := be.data[entry{t, name}]; ok {
+	if _, ok := be.data[h]; ok {
 		return true, nil
 	}
 
@@ -68,7 +63,7 @@ func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
 		h.Name = ""
 	}
 
-	if _, ok := be.data[entry{h.Type, h.Name}]; ok {
+	if _, ok := be.data[h]; ok {
 		return errors.New("file already exists")
 	}
 
@@ -77,7 +72,7 @@ func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
 		return err
 	}
 
-	be.data[entry{h.Type, h.Name}] = buf
+	be.data[h] = buf
 	debug.Log("saved %v bytes at %v", len(buf), h)
 
 	return nil
@@ -104,11 +99,11 @@ func (be *MemoryBackend) Load(h restic.Handle, length int, offset int64) (io.Rea
 		return nil, errors.New("offset is negative")
 	}
 
-	if _, ok := be.data[entry{h.Type, h.Name}]; !ok {
+	if _, ok := be.data[h]; !ok {
 		return nil, errors.New("no such data")
 	}
 
-	buf := be.data[entry{h.Type, h.Name}]
+	buf := be.data[h]
 	if offset > int64(len(buf)) {
 		return nil, errors.New("offset beyond end of file")
 	}
@@ -118,7 +113,7 @@ func (be *MemoryBackend) Load(h restic.Handle, length int, offset int64) (io.Rea
 		buf = buf[:length]
 	}
 
-	return backend.Closer{bytes.NewReader(buf)}, nil
+	return backend.Closer{Reader: bytes.NewReader(buf)}, nil
 }
 
 // Stat returns information about a file in the backend.
@@ -136,7 +131,7 @@ func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 
 	debug.Log("stat %v", h)
 
-	e, ok := be.data[entry{h.Type, h.Name}]
+	e, ok := be.data[h]
 	if !ok {
 		return restic.FileInfo{}, errors.New("no such data")
 	}
@@ -145,17 +140,17 @@ func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Remove deletes a file from the backend.
-func (be *MemoryBackend) Remove(t restic.FileType, name string) error {
+func (be *MemoryBackend) Remove(h restic.Handle) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	debug.Log("get %v %v", t, name)
+	debug.Log("Remove %v", h)
 
-	if _, ok := be.data[entry{t, name}]; !ok {
+	if _, ok := be.data[h]; !ok {
 		return errors.New("no such data")
 	}
 
-	delete(be.data, entry{t, name})
+	delete(be.data, h)
 
 	return nil
 }

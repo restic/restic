@@ -380,7 +380,7 @@ func (r *Repository) SearchKey(password string, maxKeys int) error {
 // Init creates a new master key with the supplied password, initializes and
 // saves the repository config.
 func (r *Repository) Init(password string) error {
-	has, err := r.be.Test(restic.ConfigFile, "")
+	has, err := r.be.Test(restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return err
 	}

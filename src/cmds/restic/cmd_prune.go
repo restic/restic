@@ -219,7 +219,8 @@ func runPrune(gopts GlobalOptions) error {
 	}
 
 	for packID := range removePacks {
-		err = repo.Backend().Remove(restic.DataFile, packID.String())
+		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
+		err = repo.Backend().Remove(h)
 		if err != nil {
 			Warnf("unable to remove file %v from the repository\n", packID.Str())
 		}
@@ -239,7 +240,8 @@ func runPrune(gopts GlobalOptions) error {
 
 	var supersedes restic.IDs
 	for idxID := range repo.List(restic.IndexFile, done) {
-		err := repo.Backend().Remove(restic.IndexFile, idxID.String())
+		h := restic.Handle{Type: restic.IndexFile, Name: idxID.String()}
+		err := repo.Backend().Remove(h)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", idxID.Str(), err)
 		}

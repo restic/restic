@@ -102,7 +102,8 @@ func createFakeLock(repo restic.Repository, t time.Time, pid int) (restic.ID, er
 }
 
 func removeLock(repo restic.Repository, id restic.ID) error {
-	return repo.Backend().Remove(restic.LockFile, id.String())
+	h := restic.Handle{Type: restic.LockFile, Name: id.String()}
+	return repo.Backend().Remove(h)
 }
 
 var staleLockTests = []struct {
@@ -162,7 +163,8 @@ func TestLockStale(t *testing.T) {
 }
 
 func lockExists(repo restic.Repository, t testing.TB, id restic.ID) bool {
-	exists, err := repo.Backend().Test(restic.LockFile, id.String())
+	h := restic.Handle{Type: restic.LockFile, Name: id.String()}
+	exists, err := repo.Backend().Test(h)
 	OK(t, err)
 
 	return exists

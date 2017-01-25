@@ -73,8 +73,11 @@ func TestMissingPack(t *testing.T) {
 
 	repo := repository.TestOpenLocal(t, repodir)
 
-	packID := "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6"
-	test.OK(t, repo.Backend().Remove(restic.DataFile, packID))
+	packHandle := restic.Handle{
+		Type: restic.DataFile,
+		Name: "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6",
+	}
+	test.OK(t, repo.Backend().Remove(packHandle))
 
 	chkr := checker.New(repo)
 	hints, errs := chkr.LoadIndex()
@@ -92,7 +95,7 @@ func TestMissingPack(t *testing.T) {
 		"expected exactly one error, got %v", len(errs))
 
 	if err, ok := errs[0].(checker.PackError); ok {
-		test.Equals(t, packID, err.ID.String())
+		test.Equals(t, packHandle.Name, err.ID.String())
 	} else {
 		t.Errorf("expected error returned by checker.Packs() to be PackError, got %v", err)
 	}
@@ -105,9 +108,12 @@ func TestUnreferencedPack(t *testing.T) {
 	repo := repository.TestOpenLocal(t, repodir)
 
 	// index 3f1a only references pack 60e0
-	indexID := "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44"
 	packID := "60e0438dcb978ec6860cc1f8c43da648170ee9129af8f650f876bad19f8f788e"
-	test.OK(t, repo.Backend().Remove(restic.IndexFile, indexID))
+	indexHandle := restic.Handle{
+		Type: restic.IndexFile,
+		Name: "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44",
+	}
+	test.OK(t, repo.Backend().Remove(indexHandle))
 
 	chkr := checker.New(repo)
 	hints, errs := chkr.LoadIndex()
@@ -137,8 +143,11 @@ func TestUnreferencedBlobs(t *testing.T) {
 
 	repo := repository.TestOpenLocal(t, repodir)
 
-	snID := "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02"
-	test.OK(t, repo.Backend().Remove(restic.SnapshotFile, snID))
+	snapshotHandle := restic.Handle{
+		Type: restic.SnapshotFile,
+		Name: "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02",
+	}
+	test.OK(t, repo.Backend().Remove(snapshotHandle))
 
 	unusedBlobsBySnapshot := restic.IDs{
 		restic.TestParseID("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849"),

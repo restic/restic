@@ -187,7 +187,8 @@ func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<
 	defer wg.Done()
 
 	for id := range inChan {
-		ok, err := repo.Backend().Test(restic.DataFile, id.String())
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		ok, err := repo.Backend().Test(h)
 		if err != nil {
 			err = PackError{ID: id, Err: err}
 		} else {
