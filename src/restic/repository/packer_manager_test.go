@@ -47,25 +47,19 @@ func randomID(rd io.Reader) restic.ID {
 
 const maxBlobSize = 1 << 20
 
-func saveFile(t testing.TB, be Saver, filename string, id restic.ID) {
-	f, err := os.Open(filename)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func saveFile(t testing.TB, be Saver, f *os.File, id restic.ID) {
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	t.Logf("save file %v", h)
 
-	if err = be.Save(h, f); err != nil {
+	if err := be.Save(h, f); err != nil {
 		t.Fatal(err)
 	}
 
-	if err = f.Close(); err != nil {
+	if err := f.Close(); err != nil {
 		t.Fatal(err)
 	}
 
-	err = os.Remove(filename)
-	if err != nil {
+	if err := os.Remove(f.Name()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -104,8 +98,12 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 			t.Fatal(err)
 		}
 
+		if _, err = packer.tmpfile.Seek(0, 0); err != nil {
+			t.Fatal(err)
+		}
+
 		packID := restic.IDFromHash(packer.hw.Sum(nil))
-		saveFile(t, be, packer.tmpfile.Name(), packID)
+		saveFile(t, be, packer.tmpfile, packID)
 	}
 
 	return bytes
@@ -121,7 +119,7 @@ func flushRemainingPacks(t testing.TB, rnd *randReader, be Saver, pm *packerMana
 			bytes += int(n)
 
 			packID := restic.IDFromHash(packer.hw.Sum(nil))
-			saveFile(t, be, packer.tmpfile.Name(), packID)
+			saveFile(t, be, packer.tmpfile, packID)
 		}
 	}
 

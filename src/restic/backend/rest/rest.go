@@ -80,6 +80,10 @@ func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 		return err
 	}
 
+	// make sure that client.Post() cannot close the reader by wrapping it in
+	// backend.Closer, which has a noop method.
+	rd = backend.Closer{Reader: rd}
+
 	<-b.connChan
 	resp, err := b.client.Post(restPath(b.url, h), "binary/octet-stream", rd)
 	b.connChan <- struct{}{}
