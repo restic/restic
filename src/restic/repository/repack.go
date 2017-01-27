@@ -123,7 +123,8 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 	}
 
 	for packID := range packs {
-		err := repo.Backend().Remove(restic.DataFile, packID.String())
+		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
+		err := repo.Backend().Remove(h)
 		if err != nil {
 			debug.Log("error removing pack %v: %v", packID.Str(), err)
 			return err

@@ -194,8 +194,8 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
-	_, err := b.Stat(restic.Handle{Type: t, Name: name})
+func (b *restBackend) Test(h restic.Handle) (bool, error) {
+	_, err := b.Stat(h)
 	if err != nil {
 		return false, nil
 	}
@@ -204,8 +204,7 @@ func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *restBackend) Remove(t restic.FileType, name string) error {
-	h := restic.Handle{Type: t, Name: name}
+func (b *restBackend) Remove(h restic.Handle) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}

@@ -234,7 +234,8 @@ func TestSave(t *testing.T) {
 
 	for id := range idx.IndexIDs {
 		t.Logf("remove index %v", id.Str())
-		err = repo.Backend().Remove(restic.IndexFile, id.String())
+		h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
+		err = repo.Backend().Remove(h)
 		if err != nil {
 			t.Errorf("error removing index %v: %v", id, err)
 		}
@@ -275,7 +276,8 @@ func TestIndexSave(t *testing.T) {
 
 	for id := range idx.IndexIDs {
 		t.Logf("remove index %v", id.Str())
-		err = repo.Backend().Remove(restic.IndexFile, id.String())
+		h := restic.Handle{Type: restic.IndexFile, Name: id.String()}
+		err = repo.Backend().Remove(h)
 		if err != nil {
 			t.Errorf("error removing index %v: %v", id, err)
 		}

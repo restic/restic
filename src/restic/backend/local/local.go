@@ -219,9 +219,9 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *Local) Test(t restic.FileType, name string) (bool, error) {
-	debug.Log("Test %v %v", t, name)
-	_, err := fs.Stat(filename(b.p, t, name))
+func (b *Local) Test(h restic.Handle) (bool, error) {
+	debug.Log("Test %v", h)
+	_, err := fs.Stat(filename(b.p, h.Type, h.Name))
 	if err != nil {
 		if os.IsNotExist(errors.Cause(err)) {
 			return false, nil
@@ -233,9 +233,9 @@ func (b *Local) Test(t restic.FileType, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *Local) Remove(t restic.FileType, name string) error {
-	debug.Log("Remove %v %v", t, name)
-	fn := filename(b.p, t, name)
+func (b *Local) Remove(h restic.Handle) error {
+	debug.Log("Remove %v", h)
+	fn := filename(b.p, h.Type, h.Name)
 
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)

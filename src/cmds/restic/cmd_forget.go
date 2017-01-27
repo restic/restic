@@ -133,7 +133,8 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		if !opts.DryRun {
-			err = repo.Backend().Remove(restic.SnapshotFile, id.String())
+			h := restic.Handle{Type: restic.SnapshotFile, Name: id.String()}
+			err = repo.Backend().Remove(h)
 			if err != nil {
 				return err
 			}
@@ -201,7 +202,8 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 		if !opts.DryRun {
 			for _, sn := range remove {
-				err = repo.Backend().Remove(restic.SnapshotFile, sn.ID().String())
+				h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+				err = repo.Backend().Remove(h)
 				if err != nil {
 					return err
 				}

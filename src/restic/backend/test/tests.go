@@ -130,7 +130,7 @@ func TestCreateWithConfig(t testing.TB) {
 	}
 
 	// remove config
-	err = b.Remove(restic.ConfigFile, "")
+	err = b.Remove(restic.Handle{Type: restic.ConfigFile, Name: ""})
 	if err != nil {
 		t.Fatalf("unexpected error removing config: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestLoad(t testing.TB) {
 		}
 	}
 
-	test.OK(t, b.Remove(restic.DataFile, id.String()))
+	test.OK(t, b.Remove(handle))
 }
 
 type errorCloser struct {
@@ -319,7 +319,7 @@ func TestSave(t testing.TB) {
 			t.Fatalf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
 		}
 
-		err = b.Remove(h.Type, h.Name)
+		err = b.Remove(h)
 		if err != nil {
 			t.Fatalf("error removing item: %v", err)
 		}
@@ -360,7 +360,7 @@ func TestSave(t testing.TB) {
 		t.Fatal(err)
 	}
 
-	err = b.Remove(h.Type, h.Name)
+	err = b.Remove(h)
 	if err != nil {
 		t.Fatalf("error removing item: %v", err)
 	}
@@ -401,7 +401,7 @@ func TestSaveFilenames(t testing.TB) {
 			t.Errorf("test %d: returned wrong bytes", i)
 		}
 
-		err = b.Remove(h.Type, h.Name)
+		err = b.Remove(h)
 		if err != nil {
 			t.Errorf("test %d failed: Remove() returned %v", i, err)
 			continue
@@ -419,10 +419,12 @@ var testStrings = []struct {
 	{"4e54d2c721cbdb730f01b10b62dec622962b36966ec685880effa63d71c808f2", "foo/../../baz"},
 }
 
-func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) {
+func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) restic.Handle {
 	id := restic.Hash(data)
-	err := b.Save(restic.Handle{Name: id.String(), Type: tpe}, bytes.NewReader(data))
+	h := restic.Handle{Name: id.String(), Type: tpe}
+	err := b.Save(h, bytes.NewReader(data))
 	test.OK(t, err)
+	return h
 }
 
 // TestBackend tests all functions of the backend.
@@ -440,12 +442,12 @@ func TestBackend(t testing.TB) {
 			test.OK(t, err)
 
 			// test if blob is already in repository
-			ret, err := b.Test(tpe, id.String())
+			h := restic.Handle{Type: tpe, Name: id.String()}
+			ret, err := b.Test(h)
 			test.OK(t, err)
 			test.Assert(t, !ret, "blob was found to exist before creating")
 
 			// try to stat a not existing blob
-			h := restic.Handle{Type: tpe, Name: id.String()}
 			_, err = b.Stat(h)
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 
@@ -454,7 +456,7 @@ func TestBackend(t testing.TB) {
 			test.Assert(t, err != nil, "blob reader could be obtained before creation")
 
 			// try to get string out, should fail
-			ret, err = b.Test(tpe, id.String())
+			ret, err = b.Test(h)
 			test.OK(t, err)
 			test.Assert(t, !ret, "id %q was found (but should not have)", ts.id)
 		}
@@ -498,16 +500,17 @@ func TestBackend(t testing.TB) {
 		test.Assert(t, err != nil, "expected error, got %v", err)
 
 		// remove and recreate
-		err = b.Remove(tpe, ts.id)
+		h := restic.Handle{Type: tpe, Name: ts.id}
+		err = b.Remove(h)
 		test.OK(t, err)
 
 		// test that the blob is gone
-		ok, err := b.Test(tpe, ts.id)
+		ok, err := b.Test(h)
 		test.OK(t, err)
 		test.Assert(t, ok == false, "removed blob still present")
 
 		// create blob
-		err = b.Save(restic.Handle{Type: tpe, Name: ts.id}, strings.NewReader(ts.data))
+		err = b.Save(h, strings.NewReader(ts.data))
 		test.OK(t, err)
 
 		// list items
@@ -542,12 +545,14 @@ func TestBackend(t testing.TB) {
 				id, err := restic.ParseID(ts.id)
 				test.OK(t, err)
 
-				found, err := b.Test(tpe, id.String())
+				h := restic.Handle{Type: tpe, Name: id.String()}
+
+				found, err := b.Test(h)
 				test.OK(t, err)
 
-				test.OK(t, b.Remove(tpe, id.String()))
+				test.OK(t, b.Remove(h))
 
-				found, err = b.Test(tpe, id.String())
+				found, err = b.Test(h)
 				test.OK(t, err)
 				test.Assert(t, !found, fmt.Sprintf("id %q not found after removal", id))
 			}
