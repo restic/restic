@@ -360,7 +360,7 @@ func TestSave(t testing.TB) {
 		t.Fatal(err)
 	}
 
-	err = b.Remove(h.Type, h.Name)
+	err = b.Remove(h)
 	if err != nil {
 		t.Fatalf("error removing item: %v", err)
 	}
