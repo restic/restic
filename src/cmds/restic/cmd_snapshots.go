@@ -136,11 +136,12 @@ func naturaloutput(list []*restic.Snapshot) {
 
 	tab.Write(os.Stdout)
 
-	return nil
+	return
 }
 
+//Snapshot provides struct to store snapshots
 type Snapshot struct {
-	Id        string   `json:"id"`
+	ID        string   `json:"id"`
 	Date      string   `json:"date"`
 	Host      string   `json:"host"`
 	Tags      []string `json:"tags"`
@@ -154,7 +155,7 @@ func jsonoutput(list []*restic.Snapshot) error {
 	for _, sn := range list {
 
 		k := Snapshot{
-			Id:        sn.ID().Str(),
+			ID:        sn.ID().Str(),
 			Date:      sn.Time.Format(TimeFormat),
 			Host:      sn.Hostname,
 			Tags:      sn.Tags,
