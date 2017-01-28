@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"restic/errors"
@@ -26,6 +27,7 @@ The "snapshots" command lists all snapshots stored in a repository.
 type SnapshotOptions struct {
 	Host  string
 	Paths []string
+	Json  bool
 }
 
 var snapshotOptions SnapshotOptions
@@ -36,6 +38,7 @@ func init() {
 	f := cmdSnapshots.Flags()
 	f.StringVar(&snapshotOptions.Host, "host", "", "only print snapshots for this host")
 	f.StringSliceVar(&snapshotOptions.Paths, "path", []string{}, "only print snapshots for this `path` (can be specified multiple times)")
+	f.BoolVarP(&snapshotOptions.Json, "json", "", false, `print snapshots in json format`)
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
@@ -55,10 +58,6 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 			return err
 		}
 	}
-
-	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %s", "ID", "Date", "Host", "Tags", "Directory")
-	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %s"
 
 	done := make(chan struct{})
 	defer close(done)
@@ -86,6 +85,22 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 
 	}
+
+	if opts.Json == true {
+		jsonoutput(list)
+	} else {
+		naturaloutput(list)
+	}
+
+	return nil
+}
+
+//naturaloutput provides human redability
+func naturaloutput(list []*restic.Snapshot) {
+
+	tab := NewTable()
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %s", "ID", "Date", "Host", "Tags", "Directory")
+	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %s"
 
 	for _, sn := range list {
 		if len(sn.Paths) == 0 {
@@ -122,4 +137,38 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	tab.Write(os.Stdout)
 
 	return nil
+}
+
+type Snapshot struct {
+	Id        string   `json:"id"`
+	Date      string   `json:"date"`
+	Host      string   `json:"host"`
+	Tags      []string `json:"tags"`
+	Directory []string `json:"directory"`
+}
+
+//jsonoutput provides machine redability
+func jsonoutput(list []*restic.Snapshot) error {
+	var response []Snapshot
+
+	for _, sn := range list {
+
+		k := Snapshot{
+			Id:        sn.ID().Str(),
+			Date:      sn.Time.Format(TimeFormat),
+			Host:      sn.Hostname,
+			Tags:      sn.Tags,
+			Directory: sn.Paths}
+
+		response = append(response, k)
+	}
+
+	output, _ := json.Marshal(response)
+
+	_, err := fmt.Fprintln(os.Stdout, string(output))
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
