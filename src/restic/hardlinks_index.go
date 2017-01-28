@@ -5,63 +5,68 @@ import (
 	"fmt"
 )
 
-type HardlinkKey struct {
+type hardlinkKey struct {
     Inode, Device uint64
 }
 
-type HardlinkData struct {
+type hardlinkData struct {
     Links uint64
     Name string
 }
 
 var (
-	hardLinkIndex      = make(map[HardlinkKey]*HardlinkData)
+	hardLinkIndex      = make(map[hardlinkKey]*hardlinkData)
 	hardLinkIndexMutex = sync.RWMutex{}
 )
 
+// ExistsLink checks wether the link already exist in the index
 func ExistsLink(inode uint64, device uint64) bool {
 	hardLinkIndexMutex.RLock()
 	defer hardLinkIndexMutex.RUnlock()
-	_, ok := hardLinkIndex[HardlinkKey{inode, device}]
+	_, ok := hardLinkIndex[hardlinkKey{inode, device}]
 	
 	return ok
 }
 
+// Addlinks adds a link to the index
 func AddLink(inode uint64, device uint64, links uint64, name string) {
 	hardLinkIndexMutex.RLock()
-	_, ok := hardLinkIndex[HardlinkKey{inode, device}]
+	_, ok := hardLinkIndex[hardlinkKey{inode, device}]
 	hardLinkIndexMutex.RUnlock()
 	
 	if !ok {
 		hardLinkIndexMutex.Lock()
-		hardLinkIndex[HardlinkKey{inode,device}] = &HardlinkData{links, name};
+		hardLinkIndex[hardlinkKey{inode,device}] = &hardlinkData{links, name};
 		hardLinkIndexMutex.Unlock()
 	} 	
 }
 
-func GetLink(inode uint64, device uint64) *HardlinkData {
+// Getlink obtains a link from the index
+func GetLink(inode uint64, device uint64) *hardlinkData {
 	hardLinkIndexMutex.RLock()
 	defer hardLinkIndexMutex.RUnlock()
-	return hardLinkIndex[HardlinkKey{inode, device}]
+	return hardLinkIndex[hardlinkKey{inode, device}]
 }
 
+// RemoveLink removes a link from the index
 func RemoveLink(inode uint64, device uint64) {
 	hardLinkIndexMutex.Lock()
 	defer hardLinkIndexMutex.Unlock()
-	delete(hardLinkIndex, HardlinkKey{inode, device})
+	delete(hardLinkIndex, hardlinkKey{inode, device})
 }
 
+// DecrementLinks decrements the count of a link in the index
 func DecrementLink(inode uint64, device uint64) {
 	hardLinkIndexMutex.RLock()
-	_, ok := hardLinkIndex[HardlinkKey{inode, device}]
+	_, ok := hardLinkIndex[hardlinkKey{inode, device}]
 	hardLinkIndexMutex.RUnlock()
 	
 	if ok {
 		hardLinkIndexMutex.RLock()
-		if hardLinkIndex[HardlinkKey{inode, device}].Links > 0 {
+		if hardLinkIndex[hardlinkKey{inode, device}].Links > 0 {
 			hardLinkIndexMutex.RUnlock()
 			hardLinkIndexMutex.Lock()
-			hardLinkIndex[HardlinkKey{inode, device}].Links--
+			hardLinkIndex[hardlinkKey{inode, device}].Links--
 			hardLinkIndexMutex.Unlock()
 		} else {
 			hardLinkIndexMutex.RUnlock()
@@ -69,18 +74,19 @@ func DecrementLink(inode uint64, device uint64) {
 	}
 }
 
-/* return the number of links for a given inode-device combination */
+// CountLink return the number of links for a given inode-device combination
 func CountLink(inode uint64, device uint64) uint64 {
 	hardLinkIndexMutex.RLock()
 	defer hardLinkIndexMutex.RUnlock()
 	
-	_, ok := hardLinkIndex[HardlinkKey{inode, device}]
+	_, ok := hardLinkIndex[hardlinkKey{inode, device}]
 	if ok {
-		return hardLinkIndex[HardlinkKey{inode, device}].Links
+		return hardLinkIndex[hardlinkKey{inode, device}].Links
 	}
 	return 0
 }
 
+// PrintLinkSummary prints the unresolved links during the restore process
 func PrintLinkSummary() {
 	hardLinkIndexMutex.RLock()
 	defer hardLinkIndexMutex.RUnlock()
