@@ -6,6 +6,13 @@ following values are valid for `{type}`: `data`, `keys`, `locks`, `snapshots`,
 `index`, `config`. `{path}` is a path to the repository, so that multiple
 different repositories can be accessed. The default path is `/`.
 
+## POST {path}?create=true
+
+This request is used to initially create a new repository. The server responds
+with "200 OK" if the repository structure was created successfully, otherwise
+an error is returned. If the repo already exists, the HTTP error "409 Conflict"
+is returned.
+
 ## HEAD {path}/config
 
 Returns "200 OK" if the repository has a configuration,
