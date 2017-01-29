@@ -85,11 +85,14 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 
 	}
 
-	if gopts.JSON == true {
-		jsonoutput(list)
-	} else {
-		naturaloutput(list)
+	if gopts.JSON {
+		err := jsonoutput(list)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error printing snapshot: %v\n", err)
+		}
+		return nil
 	}
+	naturaloutput(list)
 
 	return nil
 }
