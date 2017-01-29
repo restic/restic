@@ -38,7 +38,6 @@ func init() {
 	f := cmdSnapshots.Flags()
 	f.StringVar(&snapshotOptions.Host, "host", "", "only print snapshots for this host")
 	f.StringSliceVar(&snapshotOptions.Paths, "path", []string{}, "only print snapshots for this `path` (can be specified multiple times)")
-	f.BoolVarP(&snapshotOptions.Json, "json", "", false, `print snapshots in json format`)
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
@@ -86,7 +85,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 
 	}
 
-	if opts.Json == true {
+	if gopts.JSON == true {
 		jsonoutput(list)
 	} else {
 		naturaloutput(list)

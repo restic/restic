@@ -31,6 +31,7 @@ type GlobalOptions struct {
 	PasswordFile string
 	Quiet        bool
 	NoLock       bool
+	JSON         bool
 
 	password string
 	stdout   io.Writer
@@ -53,6 +54,7 @@ func init() {
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", "", "read the repository password from a file")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
+	f.BoolVarP(&globalOptions.JSON, "json", "", false, `print snapshots in json format`)
 
 	restoreTerminal()
 }
