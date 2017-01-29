@@ -100,8 +100,8 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 func printSnapshotsReadable(list []*restic.Snapshot) {
 
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %s", "ID", "Date", "Host", "Tags", "Directory")
-	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %s"
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %-3s %s", "ID", "Date", "Host", "Tags", "", "Directory")
+	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %-3s %s"
 
 	for _, sn := range list {
 		if len(sn.Paths) == 0 {
@@ -113,9 +113,15 @@ func printSnapshotsReadable(list []*restic.Snapshot) {
 			firstTag = sn.Tags[0]
 		}
 
-		tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, firstTag, sn.Paths[0]})
-
 		rows := len(sn.Paths)
+
+		treeElement := "   "
+		if rows != 1 {
+			treeElement = "┌──"
+		}
+
+		tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, firstTag, treeElement, sn.Paths[0]})
+
 		if len(sn.Tags) > rows {
 			rows = len(sn.Tags)
 		}
@@ -131,7 +137,12 @@ func printSnapshotsReadable(list []*restic.Snapshot) {
 				tag = sn.Tags[i]
 			}
 
-			tab.Rows = append(tab.Rows, []interface{}{"", "", "", tag, path})
+			treeElement := "│"
+			if i == (rows - 1) {
+				treeElement = "└──"
+			}
+
+			tab.Rows = append(tab.Rows, []interface{}{"", "", "", tag, treeElement, path})
 		}
 	}
 

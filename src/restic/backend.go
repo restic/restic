@@ -9,10 +9,10 @@ type Backend interface {
 	Location() string
 
 	// Test a boolean value whether a File with the name and type exists.
-	Test(t FileType, name string) (bool, error)
+	Test(h Handle) (bool, error)
 
 	// Remove removes a File with type t and name.
-	Remove(t FileType, name string) error
+	Remove(h Handle) error
 
 	// Close the backend
 	Close() error

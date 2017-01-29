@@ -80,6 +80,10 @@ func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 		return err
 	}
 
+	// make sure that client.Post() cannot close the reader by wrapping it in
+	// backend.Closer, which has a noop method.
+	rd = backend.Closer{Reader: rd}
+
 	<-b.connChan
 	resp, err := b.client.Post(restPath(b.url, h), "binary/octet-stream", rd)
 	b.connChan <- struct{}{}
@@ -190,8 +194,8 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
-	_, err := b.Stat(restic.Handle{Type: t, Name: name})
+func (b *restBackend) Test(h restic.Handle) (bool, error) {
+	_, err := b.Stat(h)
 	if err != nil {
 		return false, nil
 	}
@@ -200,8 +204,7 @@ func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *restBackend) Remove(t restic.FileType, name string) error {
-	h := restic.Handle{Type: t, Name: name}
+func (b *restBackend) Remove(h restic.Handle) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}

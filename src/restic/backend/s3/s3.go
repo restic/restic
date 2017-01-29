@@ -55,11 +55,11 @@ func Open(cfg Config) (restic.Backend, error) {
 	return be, nil
 }
 
-func (be *s3) s3path(t restic.FileType, name string) string {
-	if t == restic.ConfigFile {
-		return path.Join(be.prefix, string(t))
+func (be *s3) s3path(h restic.Handle) string {
+	if h.Type == restic.ConfigFile {
+		return path.Join(be.prefix, string(h.Type))
 	}
-	return path.Join(be.prefix, string(t), name)
+	return path.Join(be.prefix, string(h.Type), h.Name)
 }
 
 func (be *s3) createConnections() {
@@ -82,7 +82,7 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 
 	debug.Log("Save %v", h)
 
-	objName := be.s3path(h.Type, h.Name)
+	objName := be.s3path(h)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, objName)
@@ -123,7 +123,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 
 	var obj *minio.Object
 
-	objName := be.s3path(h.Type, h.Name)
+	objName := be.s3path(h)
 
 	<-be.connChan
 	defer func() {
@@ -186,7 +186,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 func (be *s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("%v", h)
 
-	objName := be.s3path(h.Type, h.Name)
+	objName := be.s3path(h)
 	var obj *minio.Object
 
 	obj, err = be.client.GetObject(be.bucketname, objName)
@@ -213,9 +213,9 @@ func (be *s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *s3) Test(t restic.FileType, name string) (bool, error) {
+func (be *s3) Test(h restic.Handle) (bool, error) {
 	found := false
-	objName := be.s3path(t, name)
+	objName := be.s3path(h)
 	_, err := be.client.StatObject(be.bucketname, objName)
 	if err == nil {
 		found = true
@@ -226,10 +226,10 @@ func (be *s3) Test(t restic.FileType, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *s3) Remove(t restic.FileType, name string) error {
-	objName := be.s3path(t, name)
+func (be *s3) Remove(h restic.Handle) error {
+	objName := be.s3path(h)
 	err := be.client.RemoveObject(be.bucketname, objName)
-	debug.Log("%v %v -> err %v", t, name, err)
+	debug.Log("Remove(%v) -> err %v", h, err)
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
@@ -240,7 +240,7 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
-	prefix := be.s3path(t, "") + "/"
+	prefix := be.s3path(restic.Handle{Type: t}) + "/"
 
 	listresp := be.client.ListObjects(be.bucketname, prefix, true, done)
 
@@ -268,7 +268,7 @@ func (be *s3) removeKeys(t restic.FileType) error {
 	done := make(chan struct{})
 	defer close(done)
 	for key := range be.List(restic.DataFile, done) {
-		err := be.Remove(restic.DataFile, key)
+		err := be.Remove(restic.Handle{Type: restic.DataFile, Name: key})
 		if err != nil {
 			return err
 		}
@@ -293,7 +293,7 @@ func (be *s3) Delete() error {
 		}
 	}
 
-	return be.Remove(restic.ConfigFile, "")
+	return be.Remove(restic.Handle{Type: restic.ConfigFile})
 }
 
 // Close does nothing
