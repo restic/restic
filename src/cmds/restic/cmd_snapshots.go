@@ -152,9 +152,17 @@ type Snapshot struct {
 
 //printSnapshotsJSON provides machine redability
 func printSnapshotsJSON(list []*restic.Snapshot) error {
-	var response []Snapshot
 
-	for _, sn := range list {
+	enc := json.NewEncoder(os.Stdout)
+	//set JSON prefix
+	fmt.Fprint(os.Stdout, "[")
+
+	for i, sn := range list {
+
+		//set JSON delimiter
+		if i != 0 {
+			fmt.Fprint(os.Stdout, ",")
+		}
 
 		k := Snapshot{
 			ID:          sn.ID().Str(),
@@ -163,15 +171,16 @@ func printSnapshotsJSON(list []*restic.Snapshot) error {
 			Tags:        sn.Tags,
 			Directories: sn.Paths}
 
-		response = append(response, k)
+		err := enc.Encode(k)
+		if err != nil {
+			return err
+		}
+
 	}
 
-	output, _ := json.Marshal(response)
+	//set JSON postfix
+	fmt.Fprint(os.Stdout, "]")
 
-	_, err := fmt.Fprintln(os.Stdout, string(output))
-	if err != nil {
-		return err
-	}
 	return nil
 
 }
