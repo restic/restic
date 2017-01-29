@@ -13,6 +13,13 @@ with "200 OK" if the repository structure was created successfully, otherwise
 an error is returned. If the repo already exists, the HTTP error "409 Conflict"
 is returned.
 
+## DELETE {path}
+
+Deletes the repository on the server side. The server responds with "200 OK" if
+the repository was successfully removed. If this function is not implemented
+the server returns "501 Not Implemented", if this it is denied by the server it
+returns "403 Forbidden".
+
 ## HEAD {path}/config
 
 Returns "200 OK" if the repository has a configuration,
