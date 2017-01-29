@@ -86,19 +86,19 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	}
 
 	if gopts.JSON {
-		err := jsonoutput(list)
+		err := printSnapshotsJSON(list)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error printing snapshot: %v\n", err)
 		}
 		return nil
 	}
-	naturaloutput(list)
+	printSnapshotsReadable(list)
 
 	return nil
 }
 
-//naturaloutput provides human redability
-func naturaloutput(list []*restic.Snapshot) {
+//printSnapshotsReadable provides human redability
+func printSnapshotsReadable(list []*restic.Snapshot) {
 
 	tab := NewTable()
 	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %s", "ID", "Date", "Host", "Tags", "Directory")
@@ -150,8 +150,8 @@ type Snapshot struct {
 	Directory []string `json:"directory"`
 }
 
-//jsonoutput provides machine redability
-func jsonoutput(list []*restic.Snapshot) error {
+//printSnapshotsJSON provides machine redability
+func printSnapshotsJSON(list []*restic.Snapshot) error {
 	var response []Snapshot
 
 	for _, sn := range list {
