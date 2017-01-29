@@ -27,7 +27,6 @@ The "snapshots" command lists all snapshots stored in a repository.
 type SnapshotOptions struct {
 	Host  string
 	Paths []string
-	Json  bool
 }
 
 var snapshotOptions SnapshotOptions
