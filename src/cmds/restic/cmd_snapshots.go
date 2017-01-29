@@ -143,11 +143,11 @@ func printSnapshotsReadable(list []*restic.Snapshot) {
 
 //Snapshot provides struct to store snapshots
 type Snapshot struct {
-	ID        string   `json:"id"`
-	Date      string   `json:"date"`
-	Host      string   `json:"host"`
-	Tags      []string `json:"tags"`
-	Directory []string `json:"directory"`
+	ID          string   `json:"id"`
+	Date        string   `json:"date"`
+	Host        string   `json:"host"`
+	Tags        []string `json:"tags"`
+	Directories []string `json:"directories"`
 }
 
 //printSnapshotsJSON provides machine redability
@@ -157,11 +157,11 @@ func printSnapshotsJSON(list []*restic.Snapshot) error {
 	for _, sn := range list {
 
 		k := Snapshot{
-			ID:        sn.ID().Str(),
-			Date:      sn.Time.Format(TimeFormat),
-			Host:      sn.Hostname,
-			Tags:      sn.Tags,
-			Directory: sn.Paths}
+			ID:          sn.ID().Str(),
+			Date:        sn.Time.Format(TimeFormat),
+			Host:        sn.Hostname,
+			Tags:        sn.Tags,
+			Directories: sn.Paths}
 
 		response = append(response, k)
 	}
