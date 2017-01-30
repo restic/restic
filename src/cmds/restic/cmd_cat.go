@@ -14,7 +14,7 @@ import (
 )
 
 var cmdCat = &cobra.Command{
-	Use:   "cat [flags] [pack|blob|tree|snapshot|key|masterkey|config|lock] ID",
+	Use:   "cat [flags] [pack|blob|snapshot|key|masterkey|config|lock] ID",
 	Short: "print internal objects to stdout",
 	Long: `
 The "cat" command is used to print internal objects to stdout.
