@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 )
 
@@ -24,4 +25,25 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 	}
 
 	return true
+}
+
+func nlink(info os.FileInfo) uint64 {
+	return 1
+}
+
+func inode(info os.FileInfo) uint64 {
+	return uint64(0)
+}
+
+func createFileSetPerHardlink(dir string) map[uint64][]string {
+	linkTests := make(map[uint64][]string)
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	for i, f := range files {
+		linkTests[uint64(i)] = append(linkTests[uint64(i)], f.Name())
+		i++
+	}
+	return linkTests
 }
