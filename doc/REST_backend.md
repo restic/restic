@@ -9,9 +9,8 @@ different repositories can be accessed. The default path is `/`.
 ## POST {path}?create=true
 
 This request is used to initially create a new repository. The server responds
-with "200 OK" if the repository structure was created successfully, otherwise
-an error is returned. If the repo already exists, the HTTP error "409 Conflict"
-is returned.
+with "200 OK" if the repository structure was created successfully or already
+exists, otherwise an error is returned.
 
 ## DELETE {path}
 
