@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"restic"
 	"restic/errors"
+	"restic/index"
 
 	"github.com/spf13/cobra"
 )
@@ -52,6 +54,19 @@ func runList(opts GlobalOptions, args []string) error {
 		t = restic.KeyFile
 	case "locks":
 		t = restic.LockFile
+	case "blobs":
+		idx, err := index.Load(repo, nil)
+		if err != nil {
+			return err
+		}
+
+		for _, pack := range idx.Packs {
+			for _, entry := range pack.Entries {
+				fmt.Printf("%v %v\n", entry.Type, entry.ID)
+			}
+		}
+
+		return nil
 	default:
 		return errors.Fatal("invalid type")
 	}
