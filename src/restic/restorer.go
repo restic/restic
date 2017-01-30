@@ -38,7 +38,7 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 	return r, nil
 }
 
-func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
+func (res *Restorer) restoreTo(dst string, dir string, treeID ID, idx *HardlinkIndex) error {
 	tree, err := res.repo.LoadTree(treeID)
 	if err != nil {
 		return res.Error(dir, nil, err)
@@ -50,7 +50,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
 		debug.Log("SelectForRestore returned %v", selectedForRestore)
 
 		if selectedForRestore {
-			err := res.restoreNodeTo(node, dir, dst)
+			err := res.restoreNodeTo(node, dir, dst, idx)
 			if err != nil {
 				return err
 			}
@@ -62,7 +62,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
 			}
 
 			subp := filepath.Join(dir, node.Name)
-			err = res.restoreTo(dst, subp, *node.Subtree)
+			err = res.restoreTo(dst, subp, *node.Subtree, idx)
 			if err != nil {
 				err = res.Error(subp, node, err)
 				if err != nil {
@@ -83,11 +83,11 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID) error {
 	return nil
 }
 
-func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
+func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string, idx *HardlinkIndex) error {
 	debug.Log("node %v, dir %v, dst %v", node.Name, dir, dst)
 	dstPath := filepath.Join(dst, dir, node.Name)
 
-	err := node.CreateAt(dstPath, res.repo)
+	err := node.CreateAt(dstPath, res.repo, idx)
 	if err != nil {
 		debug.Log("node.CreateAt(%s) error %v", dstPath, err)
 	}
@@ -99,7 +99,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 		// Create parent directories and retry
 		err = fs.MkdirAll(filepath.Dir(dstPath), 0700)
 		if err == nil || os.IsExist(errors.Cause(err)) {
-			err = node.CreateAt(dstPath, res.repo)
+			err = node.CreateAt(dstPath, res.repo, idx)
 		}
 	}
 
@@ -119,7 +119,8 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string) error {
 // RestoreTo creates the directories and files in the snapshot below dir.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(dir string) error {
-	return res.restoreTo(dir, "", *res.sn.Tree)
+	idx := NewHardlinkIndex()
+	return res.restoreTo(dir, "", *res.sn.Tree, idx)
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.

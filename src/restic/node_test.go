@@ -176,9 +176,11 @@ func TestNodeRestoreAt(t *testing.T) {
 		}
 	}()
 
+	idx := restic.NewHardlinkIndex()
+
 	for _, test := range nodeTests {
 		nodePath := filepath.Join(tempdir, test.Name)
-		OK(t, test.CreateAt(nodePath, nil))
+		OK(t, test.CreateAt(nodePath, nil, idx))
 
 		if test.Type == "symlink" && runtime.GOOS == "windows" {
 			continue

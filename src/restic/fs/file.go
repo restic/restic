@@ -102,6 +102,12 @@ func Symlink(oldname, newname string) error {
 	return os.Symlink(fixpath(oldname), fixpath(newname))
 }
 
+// Link creates newname as a hard link to oldname.
+// If there is an error, it will be of type *LinkError.
+func Link(oldname, newname string) error {
+	return os.Link(fixpath(oldname), fixpath(newname))
+}
+
 // Stat returns a FileInfo structure describing the named file.
 // If there is an error, it will be of type *PathError.
 func Stat(name string) (os.FileInfo, error) {
