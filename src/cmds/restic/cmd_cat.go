@@ -9,7 +9,6 @@ import (
 
 	"restic"
 	"restic/backend"
-	"restic/debug"
 	"restic/errors"
 	"restic/repository"
 )
@@ -183,23 +182,6 @@ func runCat(gopts GlobalOptions, args []string) error {
 		}
 
 		return errors.Fatal("blob not found")
-
-	case "tree":
-		debug.Log("cat tree %v", id.Str())
-		tree, err := repo.LoadTree(id)
-		if err != nil {
-			debug.Log("unable to load tree %v: %v", id.Str(), err)
-			return err
-		}
-
-		buf, err := json.MarshalIndent(&tree, "", "  ")
-		if err != nil {
-			debug.Log("error json.MarshalIndent(): %v", err)
-			return err
-		}
-
-		_, err = os.Stdout.Write(append(buf, '\n'))
-		return nil
 
 	default:
 		return errors.Fatal("invalid type")
