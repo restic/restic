@@ -327,10 +327,11 @@ A snapshot references a tree by the SHA-256 hash of the JSON string
 representation of its contents. Trees and data are saved in pack files in a
 subdirectory of the directory `data`.
 
-The command `restic cat tree` can be used to inspect the tree referenced above:
+The command `restic cat blob` can be used to inspect the tree referenced above
+(piping the output of the command to `jq .` so that the JSON is indented):
 
 ```console
-$ restic -r /tmp/restic-repo cat tree b8138ab08a4722596ac89c917827358da4672eac68e3c03a8115b88dbf4bfb59
+$ restic -r /tmp/restic-repo cat blob b8138ab08a4722596ac89c917827358da4672eac68e3c03a8115b88dbf4bfb59 | jq .
 enter password for repository:
 {
   "nodes": [
@@ -356,11 +357,11 @@ A tree contains a list of entries (in the field `nodes`) which contain meta
 data like a name and timestamps. When the entry references a directory, the
 field `subtree` contains the plain text ID of another tree object.
 
-When the command `restic cat tree` is used, the storage hash is needed to print
+When the command `restic cat blob` is used, the plaintext ID is needed to print
 a tree. The tree referenced above can be dumped as follows:
 
 ```console
-$ restic -r /tmp/restic-repo cat tree 8b238c8811cc362693e91a857460c78d3acf7d9edb2f111048691976803cf16e
+$ restic -r /tmp/restic-repo cat blob 8b238c8811cc362693e91a857460c78d3acf7d9edb2f111048691976803cf16e
 enter password for repository:
 {
   "nodes": [
@@ -389,8 +390,8 @@ enter password for repository:
 This tree contains a file entry. This time, the `subtree` field is not present
 and the `content` field contains a list with one plain text SHA-256 hash.
 
-The command `restic cat data` can be used to extract and decrypt data given a
-plaintext ID, e.g. for the data mentioned above:
+The command `restic cat blob` can also be used to extract and decrypt data
+given a plaintext ID, e.g. for the data mentioned above:
 
 ```console
 $ restic -r /tmp/restic-repo cat blob 50f77b3b4291e8411a027b9f9b9e64658181cc676ce6ba9958b95f268cb1109d | sha256sum
