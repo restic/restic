@@ -172,7 +172,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 			blob := list[0]
 
 			buf := make([]byte, blob.Length)
-			n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+			n, err := repo.LoadBlob(t, id, buf)
 			if err != nil {
 				return err
 			}
