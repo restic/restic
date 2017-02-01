@@ -4,12 +4,12 @@ import (
 	"sync"
 )
 
-// HardlinkKey is a composed key for finding inodes on a specific device
+// HardlinkKey is a composed key for finding inodes on a specific device.
 type HardlinkKey struct {
 	Inode, Device uint64
 }
 
-// HardlinkIndex contains a list of inodes, devices these inodes are one, and associated file names
+// HardlinkIndex contains a list of inodes, devices these inodes are one, and associated file names.
 type HardlinkIndex struct {
 	m     sync.Mutex
 	Index map[HardlinkKey]string
@@ -22,8 +22,8 @@ func NewHardlinkIndex() *HardlinkIndex {
 	}
 }
 
-// ExistsLink checks wether the link already exist in the index
-func (idx *HardlinkIndex) ExistsLink(inode uint64, device uint64) bool {
+// Has checks wether the link already exist in the index.
+func (idx *HardlinkIndex) Has(inode uint64, device uint64) bool {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 	_, ok := idx.Index[HardlinkKey{inode, device}]
@@ -31,8 +31,8 @@ func (idx *HardlinkIndex) ExistsLink(inode uint64, device uint64) bool {
 	return ok
 }
 
-// AddLink adds a link to the index
-func (idx *HardlinkIndex) AddLink(inode uint64, device uint64, name string) {
+// Add adds a link to the index.
+func (idx *HardlinkIndex) Add(inode uint64, device uint64, name string) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 	_, ok := idx.Index[HardlinkKey{inode, device}]
@@ -42,15 +42,15 @@ func (idx *HardlinkIndex) AddLink(inode uint64, device uint64, name string) {
 	}
 }
 
-// GetLinkName obtains the filename from the index
-func (idx *HardlinkIndex) GetLinkName(inode uint64, device uint64) string {
+// GetFilename obtains the filename from the index.
+func (idx *HardlinkIndex) GetFilename(inode uint64, device uint64) string {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 	return idx.Index[HardlinkKey{inode, device}]
 }
 
-// RemoveLink removes a link from the index
-func (idx *HardlinkIndex) RemoveLink(inode uint64, device uint64) {
+// Remove removes a link from the index.
+func (idx *HardlinkIndex) Remove(inode uint64, device uint64) {
 	idx.m.Lock()
 	defer idx.m.Unlock()
 	delete(idx.Index, HardlinkKey{inode, device})
