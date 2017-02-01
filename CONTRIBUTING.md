@@ -83,7 +83,7 @@ The following commands can be used to run all the tests:
     [...]
 
 If you want to run your tests on Linux, OpenBSD or FreeBSD, you can use
-[vagrant](https://www.vagrantup.com/) with the proveded `Vagrantfile` to
+[vagrant](https://www.vagrantup.com/) with the provided `Vagrantfile` to
 quickly set up VMs and run the tests, e.g.:
 
     $ vagrant up freebsd
