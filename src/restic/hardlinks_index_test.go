@@ -7,7 +7,7 @@ import (
 	. "restic/test"
 )
 
-// TestHardLinks contains various tests for the HardlinkIndex.
+// TestHardLinks contains various tests for HardlinkIndex.
 func TestHardLinks(t *testing.T) {
 
 	idx := restic.NewHardlinkIndex()
