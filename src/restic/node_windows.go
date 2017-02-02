@@ -30,12 +30,12 @@ func Getxattr(path, name string) ([]byte, error) {
 // Listxattr retrieves a list of names of extended attributes associated with the
 // given path in the file system.
 func Listxattr(path string) ([]string, error) {
-	return "", nil
+	return nil, nil
 }
 
 // Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
-	return nil, nil
+	return nil
 }
 
 type statWin syscall.Win32FileAttributeData

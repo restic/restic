@@ -15,7 +15,6 @@ import (
 	"runtime"
 
 	"bytes"
-	"github.com/pkg/xattr"
 	"restic/debug"
 	"restic/fs"
 )
@@ -171,6 +170,10 @@ func (node Node) restoreMetadata(path string) error {
 		}
 	}
 
+	switch runtime.GOOS {
+	case "windows", "openbsd":
+		return nil
+	}
 	err = node.restoreAcls(path)
 	if err != nil {
 		debug.Log("error restoring acls for %v: %v", path, err)
@@ -182,7 +185,7 @@ func (node Node) restoreMetadata(path string) error {
 
 func (node Node) restoreAcls(path string) error {
 	for _, attr := range node.Xattrs {
-		err := xattr.Setxattr(path, attr.XattrName, attr.XattrValue)
+		err := Setxattr(path, attr.XattrName, attr.XattrValue)
 		if err != nil {
 			return err
 		}
@@ -565,6 +568,10 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		err = errors.Errorf("invalid node type %q", node.Type)
 	}
 
+	switch runtime.GOOS {
+	case "windows", "openbsd":
+		return err
+	}
 	if err = node.fillAcls(path); err != nil {
 		return err
 	}
@@ -573,12 +580,12 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 }
 
 func (node *Node) fillAcls(path string) error {
-	xattrs, e := xattr.Listxattr(path)
+	xattrs, e := Listxattr(path)
 	// ignore paths for which no acl can be obtained silently
 	if e == nil {
 		node.Xattrs = make([]Xattr, len(xattrs))
 		for i, attr := range xattrs {
-			attrVal, err := xattr.Getxattr(path, attr)
+			attrVal, err := Getxattr(path, attr)
 			if err != nil {
 				errors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
 				return err
