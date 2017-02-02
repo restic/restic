@@ -385,7 +385,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 			node := &restic.Node{}
 
 			if dir.Path() != "" && dir.Info() != nil {
-				n, err := restic.NodeFromFileInfo(dir.Path(), dir.Info())
+				n, err := restic.NodeFromFileInfo(dir.Fullpath(), dir.Info())
 				if err != nil {
 					n.Error = err.Error()
 					dir.Result() <- n

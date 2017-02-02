@@ -50,6 +50,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/pkg/xattr",
+			"repository": "https://github.com/pkg/xattr",
+			"revision": "c1e229dfccc37e5ab6be9011f17b4b0784ee6c26",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/restic/chunker",
 			"repository": "https://github.com/restic/chunker",
 			"revision": "49e9b5212b022a1ab373faf981ed4f2fc807502a",

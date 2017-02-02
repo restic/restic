@@ -14,9 +14,17 @@ import (
 
 	"runtime"
 
+	"bytes"
+	"github.com/pkg/xattr"
 	"restic/debug"
 	"restic/fs"
 )
+
+// Xattr is a tuple storing the xattr name and value.
+type Xattr struct {
+	XattrName  string `json:"xattrname"`
+	XattrValue []byte `json:"xattrvalue"`
+}
 
 // Node is a file, directory or other item in a backup.
 type Node struct {
@@ -34,6 +42,7 @@ type Node struct {
 	Size       uint64      `json:"size,omitempty"`
 	Links      uint64      `json:"links,omitempty"`
 	LinkTarget string      `json:"linktarget,omitempty"`
+	Xattrs     []Xattr     `json:"xattrstore,omitempty"`
 	Device     uint64      `json:"device,omitempty"`
 	Content    IDs         `json:"content"`
 	Subtree    *ID         `json:"subtree,omitempty"`
@@ -162,6 +171,22 @@ func (node Node) restoreMetadata(path string) error {
 		}
 	}
 
+	err = node.restoreAcls(path)
+	if err != nil {
+		debug.Log("error restoring acls for %v: %v", path, err)
+		return err
+	}
+
+	return nil
+}
+
+func (node Node) restoreAcls(path string) error {
+	for _, attr := range node.Xattrs {
+		err := xattr.Setxattr(path, attr.XattrName, attr.XattrValue)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -340,6 +365,9 @@ func (node Node) Equals(other Node) bool {
 	if !node.sameContent(other) {
 		return false
 	}
+	if !node.sameAcl(other) {
+		return false
+	}
 	if node.Subtree != nil {
 		if other.Subtree == nil {
 			return false
@@ -379,6 +407,48 @@ func (node Node) sameContent(other Node) bool {
 		}
 	}
 
+	return true
+}
+
+func (node Node) sameAcl(other Node) bool {
+	if node.Xattrs == nil {
+		return other.Xattrs == nil
+	}
+	if other.Xattrs == nil {
+		return false
+	}
+	if len(node.Xattrs) != len(other.Xattrs) {
+		return false
+	}
+	for _, this_attr := range node.Xattrs {
+		found := false
+		for _, other_attr := range other.Xattrs {
+			if this_attr.XattrName == "" && other_attr.XattrName == "" && this_attr.XattrValue == nil && other_attr.XattrValue == nil {
+				found = true
+				break
+			}
+			if this_attr.XattrName == "" || other_attr.XattrName == "" || this_attr.XattrValue == nil || other_attr.XattrValue == nil {
+				continue
+			}
+			if len(this_attr.XattrName) != len(other_attr.XattrName) {
+				continue
+			}
+			if len(this_attr.XattrValue) != len(other_attr.XattrValue) {
+				continue
+			}
+			if this_attr.XattrName != other_attr.XattrName {
+				continue
+			}
+			if !bytes.Equal(this_attr.XattrValue, other_attr.XattrValue) {
+				continue
+			}
+			found = true
+			break
+		}
+		if !found {
+			return false
+		}
+	}
 	return true
 }
 
@@ -496,7 +566,29 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		err = errors.Errorf("invalid node type %q", node.Type)
 	}
 
+	if err = node.fillAcls(path); err != nil {
+		return err
+	}
+
 	return err
+}
+
+func (node *Node) fillAcls(path string) error {
+	xattrs, e := xattr.Listxattr(path)
+	// ignore paths for which no acl can be obtained silently
+	if e == nil {
+		node.Xattrs = make([]Xattr, len(xattrs))
+		for i, attr := range xattrs {
+			attr_val, err := xattr.Getxattr(path, attr)
+			if err != nil {
+				errors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
+				return err
+			}
+			node.Xattrs[i].XattrName = attr
+			node.Xattrs[i].XattrValue = attr_val
+		}
+	}
+	return nil
 }
 
 type statT interface {
