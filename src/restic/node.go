@@ -406,7 +406,6 @@ func (node Node) sameContent(other Node) bool {
 			return false
 		}
 	}
-
 	return true
 }
 
@@ -420,26 +419,26 @@ func (node Node) sameAcl(other Node) bool {
 	if len(node.Xattrs) != len(other.Xattrs) {
 		return false
 	}
-	for _, this_attr := range node.Xattrs {
+	for _, thisAttr := range node.Xattrs {
 		found := false
-		for _, other_attr := range other.Xattrs {
-			if this_attr.XattrName == "" && other_attr.XattrName == "" && this_attr.XattrValue == nil && other_attr.XattrValue == nil {
+		for _, otherAttr := range other.Xattrs {
+			if thisAttr.XattrName == "" && otherAttr.XattrName == "" && thisAttr.XattrValue == nil && otherAttr.XattrValue == nil {
 				found = true
 				break
 			}
-			if this_attr.XattrName == "" || other_attr.XattrName == "" || this_attr.XattrValue == nil || other_attr.XattrValue == nil {
+			if thisAttr.XattrName == "" || otherAttr.XattrName == "" || thisAttr.XattrValue == nil || otherAttr.XattrValue == nil {
 				continue
 			}
-			if len(this_attr.XattrName) != len(other_attr.XattrName) {
+			if len(thisAttr.XattrName) != len(otherAttr.XattrName) {
 				continue
 			}
-			if len(this_attr.XattrValue) != len(other_attr.XattrValue) {
+			if len(thisAttr.XattrValue) != len(otherAttr.XattrValue) {
 				continue
 			}
-			if this_attr.XattrName != other_attr.XattrName {
+			if thisAttr.XattrName != otherAttr.XattrName {
 				continue
 			}
-			if !bytes.Equal(this_attr.XattrValue, other_attr.XattrValue) {
+			if !bytes.Equal(thisAttr.XattrValue, otherAttr.XattrValue) {
 				continue
 			}
 			found = true
@@ -579,13 +578,13 @@ func (node *Node) fillAcls(path string) error {
 	if e == nil {
 		node.Xattrs = make([]Xattr, len(xattrs))
 		for i, attr := range xattrs {
-			attr_val, err := xattr.Getxattr(path, attr)
+			attrVal, err := xattr.Getxattr(path, attr)
 			if err != nil {
 				errors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
 				return err
 			}
 			node.Xattrs[i].XattrName = attr
-			node.Xattrs[i].XattrValue = attr_val
+			node.Xattrs[i].XattrValue = attrVal
 		}
 	}
 	return nil
