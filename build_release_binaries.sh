@@ -36,7 +36,7 @@ for R in       \
 
     echo $filename
 
-    go run ../build.go --goos $OS --goarch $ARCH --output ${filename}
+    go run build.go --goos $OS --goarch $ARCH --output ${filename}
     if [[ "$OS" == "windows" ]]; then
         zip ${filename%.exe}.zip ${filename}
         rm ${filename}
