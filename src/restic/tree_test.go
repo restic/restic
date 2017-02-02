@@ -82,7 +82,7 @@ func TestNodeComparison(t *testing.T) {
 	fi, err := os.Lstat("tree_test.go")
 	OK(t, err)
 
-	node, err := restic.NodeFromFileInfo("foo", fi)
+	node, err := restic.NodeFromFileInfo("tree_test.go", fi)
 	OK(t, err)
 
 	n2 := *node

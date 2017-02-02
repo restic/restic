@@ -12,31 +12,38 @@ import (
 
 	"restic/errors"
 
-	"runtime"
-
+	"bytes"
 	"restic/debug"
 	"restic/fs"
+	"runtime"
 )
+
+// ExtendedAttribute is a tuple storing the xattr name and value.
+type ExtendedAttribute struct {
+	Name  string `json:"name"`
+	Value []byte `json:"value"`
+}
 
 // Node is a file, directory or other item in a backup.
 type Node struct {
-	Name       string      `json:"name"`
-	Type       string      `json:"type"`
-	Mode       os.FileMode `json:"mode,omitempty"`
-	ModTime    time.Time   `json:"mtime,omitempty"`
-	AccessTime time.Time   `json:"atime,omitempty"`
-	ChangeTime time.Time   `json:"ctime,omitempty"`
-	UID        uint32      `json:"uid"`
-	GID        uint32      `json:"gid"`
-	User       string      `json:"user,omitempty"`
-	Group      string      `json:"group,omitempty"`
-	Inode      uint64      `json:"inode,omitempty"`
-	Size       uint64      `json:"size,omitempty"`
-	Links      uint64      `json:"links,omitempty"`
-	LinkTarget string      `json:"linktarget,omitempty"`
-	Device     uint64      `json:"device,omitempty"`
-	Content    IDs         `json:"content"`
-	Subtree    *ID         `json:"subtree,omitempty"`
+	Name               string              `json:"name"`
+	Type               string              `json:"type"`
+	Mode               os.FileMode         `json:"mode,omitempty"`
+	ModTime            time.Time           `json:"mtime,omitempty"`
+	AccessTime         time.Time           `json:"atime,omitempty"`
+	ChangeTime         time.Time           `json:"ctime,omitempty"`
+	UID                uint32              `json:"uid"`
+	GID                uint32              `json:"gid"`
+	User               string              `json:"user,omitempty"`
+	Group              string              `json:"group,omitempty"`
+	Inode              uint64              `json:"inode,omitempty"`
+	Size               uint64              `json:"size,omitempty"`
+	Links              uint64              `json:"links,omitempty"`
+	LinkTarget         string              `json:"linktarget,omitempty"`
+	ExtendedAttributes []ExtendedAttribute `json:"extended_attributes,omitempty"`
+	Device             uint64              `json:"device,omitempty"`
+	Content            IDs                 `json:"content"`
+	Subtree            *ID                 `json:"subtree,omitempty"`
 
 	Error string `json:"error,omitempty"`
 
@@ -94,6 +101,16 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 	}
 
 	return ""
+}
+
+// GetExtendedAttribute gets the extended attribute.
+func (node Node) GetExtendedAttribute(a string) []byte {
+	for _, attr := range node.ExtendedAttributes {
+		if attr.Name == a {
+			return attr.Value
+		}
+	}
+	return nil
 }
 
 // CreateAt creates the node at the given path and restores all the meta data.
@@ -162,6 +179,22 @@ func (node Node) restoreMetadata(path string) error {
 		}
 	}
 
+	err = node.restoreExtendedAttributes(path)
+	if err != nil {
+		debug.Log("error restoring extended attributes for %v: %v", path, err)
+		return err
+	}
+
+	return nil
+}
+
+func (node Node) restoreExtendedAttributes(path string) error {
+	for _, attr := range node.ExtendedAttributes {
+		err := Setxattr(path, attr.Name, attr.Value)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -350,6 +383,9 @@ func (node Node) Equals(other Node) bool {
 	if !node.sameContent(other) {
 		return false
 	}
+	if !node.sameExtendedAttributes(other) {
+		return false
+	}
 	if node.Subtree != nil {
 		if other.Subtree == nil {
 			return false
@@ -385,6 +421,51 @@ func (node Node) sameContent(other Node) bool {
 
 	for i := 0; i < len(node.Content); i++ {
 		if !node.Content[i].Equal(other.Content[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func (node Node) sameExtendedAttributes(other Node) bool {
+	if len(node.ExtendedAttributes) != len(other.ExtendedAttributes) {
+		return false
+	}
+
+	// build a set of all attributes that node has
+	type mapvalue struct {
+		value   []byte
+		present bool
+	}
+	attributes := make(map[string]mapvalue)
+	for _, attr := range node.ExtendedAttributes {
+		attributes[attr.Name] = mapvalue{value: attr.Value}
+	}
+
+	for _, attr := range other.ExtendedAttributes {
+		v, ok := attributes[attr.Name]
+		if !ok {
+			// extended attribute is not set for node
+			debug.Log("other node has attribute %v, which is not present in node", attr.Name)
+			return false
+
+		}
+
+		if !bytes.Equal(v.value, attr.Value) {
+			// attribute has different value
+			debug.Log("attribute %v has different value", attr.Name)
+			return false
+		}
+
+		// remember that this attribute is present in other.
+		v.present = true
+		attributes[attr.Name] = v
+	}
+
+	// check for attributes that are not present in other
+	for name, v := range attributes {
+		if !v.present {
+			debug.Log("attribute %v not present in other node", name)
 			return false
 		}
 	}
@@ -497,6 +578,9 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		node.LinkTarget, err = fs.Readlink(path)
 		node.Links = uint64(stat.nlink())
 		err = errors.Wrap(err, "Readlink")
+		if err != nil {
+			return err
+		}
 	case "dev":
 		node.Device = uint64(stat.rdev())
 		node.Links = uint64(stat.nlink())
@@ -506,9 +590,32 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "fifo":
 	case "socket":
 	default:
-		err = errors.Errorf("invalid node type %q", node.Type)
+		return errors.Errorf("invalid node type %q", node.Type)
 	}
 
+	if err = node.fillExtendedAttributes(path); err != nil {
+		return err
+	}
+
+	return err
+}
+
+func (node *Node) fillExtendedAttributes(path string) error {
+	if node.Type == "symlink" {
+		return nil
+	}
+	xattrs, err := Listxattr(path)
+	if err == nil {
+		node.ExtendedAttributes = make([]ExtendedAttribute, len(xattrs))
+		for i, attr := range xattrs {
+			attrVal, err := Getxattr(path, attr)
+			if err != nil {
+				return errors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
+			}
+			node.ExtendedAttributes[i].Name = attr
+			node.ExtendedAttributes[i].Value = attrVal
+		}
+	}
 	return err
 }
 
