@@ -236,7 +236,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 	}
 
 	if gopts.password == "" && gopts.PasswordFile == "" {
-		return errors.Fatal("Unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
+		return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
 	}
 
 	repo, err := OpenRepository(gopts)
