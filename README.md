@@ -19,6 +19,11 @@ The latest documentation can be viewed online at
 a menu that allows switching to the documentation and user manual for the
 latest released version.
 
+Install restic
+==============
+
+You can download the latest pre-compiled binary from the [restic release page](https://github.com/restic/restic/releases/latest).
+
 Build restic
 ============
 
