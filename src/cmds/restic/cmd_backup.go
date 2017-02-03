@@ -235,6 +235,10 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return errors.Fatalf("when reading from stdin, no additional files can be specified")
 	}
 
+	if gopts.password == "" && gopts.PasswordFile == "" {
+		return errors.Fatal("Unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
+	}
+
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
