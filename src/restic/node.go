@@ -19,7 +19,7 @@ import (
 	"restic/fs"
 )
 
-// Xattr is a tuple storing the xattr name and value.
+// ExtendedAttribute is a tuple storing the xattr name and value.
 type ExtendedAttribute struct {
 	XattrName  string `json:"name"`
 	XattrValue []byte `json:"value"`
