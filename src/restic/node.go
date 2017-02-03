@@ -567,7 +567,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 
 func (node *Node) fillExtendedAttributes(path string) error {
 	xattrs, err := Listxattr(path)
-	if e == nil {
+	if err == nil {
 		node.Xattrs = make([]ExtendedAttribute, len(xattrs))
 		for i, attr := range xattrs {
 			attrVal, err := Getxattr(path, attr)
@@ -578,7 +578,7 @@ func (node *Node) fillExtendedAttributes(path string) error {
 			node.Xattrs[i].XattrValue = attrVal
 		}
 	}
-	return rrors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
+	return errors.Errorf("can not obtain extended attributes for %v:\n", path)
 }
 
 type statT interface {
