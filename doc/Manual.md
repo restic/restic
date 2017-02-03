@@ -1,7 +1,13 @@
 Thanks for using restic. This document will give you an overview of the basic
 functionality provided by restic.
 
-# Building/installing restic
+# Installing restic
+
+## from pre-compiled binary
+
+You can download the latest pre-compiled binary from the [restic release page](https://github.com/restic/restic/releases/latest).
+
+## Mac OS X
 
 If you are using Mac OS X, you can install restic using the
 [homebrew](http://brew.sh/) packet manager:
@@ -11,25 +17,19 @@ $ brew tap restic/restic
 $ brew install restic
 ```
 
+## archlinux
+
 On archlinux, there is a package called `restic-git` which can be installed from AUR, e.g. with `pacaur`:
 
 ```console
 $ pacaur -S restic-git
 ```
 
-At debian stable you can install 'go' directly from the repositories (as root):
+# Building restic
 
-```console
-$ apt-get install golang-go
-```
-
-after installation of 'go' go straight forward to 'git clone [...]'
-
-If you are using Linux, BSD or Windows, the only way to install restic on your
-system right now is to compile it from source. restic is written in the Go
-programming language and you need at least Go version 1.6. Building restic may
-also work with older versions of Go, but that's not supported. See the [Getting
-started](https://golang.org/doc/install) guide of the Go project for
+restic is written in the Go programming language and you need at least Go version 1.6.
+Building restic may also work with older versions of Go, but that's not spported.
+See the [Getting started](https://golang.org/doc/install) guide of the Go project for
 instructions how to install Go.
 
 In order to build restic from source, execute the following steps:
@@ -45,6 +45,8 @@ $ go run build.go
 
 At the moment, the only tested compiler for restic is the official Go compiler.
 Building restic with gccgo may work, but is not supported.
+
+# Usage help
 
 Usage help is available:
 
@@ -351,7 +353,6 @@ $ restic -r /tmp/backup restore latest --target ~/tmp/restore-work --path "/home
 enter password for repository:
 restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-work
 ```
-
 
 # Manage repository keys
 

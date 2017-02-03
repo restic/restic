@@ -19,23 +19,22 @@ The latest documentation can be viewed online at
 a menu that allows switching to the documentation and user manual for the
 latest released version.
 
-Build restic
-============
+Install restic
+==============
 
-Install Go/Golang (at least version 1.6), then run `go run build.go`,
-afterwards you'll find the binary in the current directory:
+You can download the latest pre-compiled binary from the [restic release page](https://github.com/restic/restic/releases/latest).
 
-    $ go run build.go
+```sh
+$ ./restic --help
+restic is a backup program which allows saving multiple revisions of files and
+directories in an encrypted repository stored on different backends.
 
-    $ ./restic --help
-    Usage:
-      restic [OPTIONS] <command>
-    [...]
+Usage:
+  restic [command]
+[...]
+```
 
 More documentation can be found in the [user manual](doc/Manual.md).
-
-At the moment, the only tested compiler for restic is the official Go compiler.
-Building restic with gccgo may work, but is not supported.
 
 Contribute and Documentation
 ============================
