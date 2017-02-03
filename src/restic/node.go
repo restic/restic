@@ -20,31 +20,31 @@ import (
 )
 
 // Xattr is a tuple storing the xattr name and value.
-type Xattr struct {
-	XattrName  string `json:"xattrname"`
-	XattrValue []byte `json:"xattrvalue"`
+type ExtendedAttribute struct {
+	XattrName  string `json:"name"`
+	XattrValue []byte `json:"value"`
 }
 
 // Node is a file, directory or other item in a backup.
 type Node struct {
-	Name       string      `json:"name"`
-	Type       string      `json:"type"`
-	Mode       os.FileMode `json:"mode,omitempty"`
-	ModTime    time.Time   `json:"mtime,omitempty"`
-	AccessTime time.Time   `json:"atime,omitempty"`
-	ChangeTime time.Time   `json:"ctime,omitempty"`
-	UID        uint32      `json:"uid"`
-	GID        uint32      `json:"gid"`
-	User       string      `json:"user,omitempty"`
-	Group      string      `json:"group,omitempty"`
-	Inode      uint64      `json:"inode,omitempty"`
-	Size       uint64      `json:"size,omitempty"`
-	Links      uint64      `json:"links,omitempty"`
-	LinkTarget string      `json:"linktarget,omitempty"`
-	Xattrs     []Xattr     `json:"xattrstore,omitempty"`
-	Device     uint64      `json:"device,omitempty"`
-	Content    IDs         `json:"content"`
-	Subtree    *ID         `json:"subtree,omitempty"`
+	Name       string              `json:"name"`
+	Type       string              `json:"type"`
+	Mode       os.FileMode         `json:"mode,omitempty"`
+	ModTime    time.Time           `json:"mtime,omitempty"`
+	AccessTime time.Time           `json:"atime,omitempty"`
+	ChangeTime time.Time           `json:"ctime,omitempty"`
+	UID        uint32              `json:"uid"`
+	GID        uint32              `json:"gid"`
+	User       string              `json:"user,omitempty"`
+	Group      string              `json:"group,omitempty"`
+	Inode      uint64              `json:"inode,omitempty"`
+	Size       uint64              `json:"size,omitempty"`
+	Links      uint64              `json:"links,omitempty"`
+	LinkTarget string              `json:"linktarget,omitempty"`
+	Xattrs     []ExtendedAttribute `json:"extended_attributes,omitempty"`
+	Device     uint64              `json:"device,omitempty"`
+	Content    IDs                 `json:"content"`
+	Subtree    *ID                 `json:"subtree,omitempty"`
 
 	Error string `json:"error,omitempty"`
 
@@ -170,20 +170,16 @@ func (node Node) restoreMetadata(path string) error {
 		}
 	}
 
-	switch runtime.GOOS {
-	case "windows", "openbsd":
-		return nil
-	}
-	err = node.restoreAcls(path)
+	err = node.restoreExtendedAttributes(path)
 	if err != nil {
-		debug.Log("error restoring acls for %v: %v", path, err)
+		debug.Log("error restoring extended attributes for %v: %v", path, err)
 		return err
 	}
 
 	return nil
 }
 
-func (node Node) restoreAcls(path string) error {
+func (node Node) restoreExtendedAttributes(path string) error {
 	for _, attr := range node.Xattrs {
 		err := Setxattr(path, attr.XattrName, attr.XattrValue)
 		if err != nil {
@@ -255,10 +251,6 @@ func (node Node) createFileAt(path string, repo Repository) error {
 }
 
 func (node Node) createSymlinkAt(path string) error {
-	// Windows does not allow non-admins to create soft links.
-	if runtime.GOOS == "windows" {
-		return nil
-	}
 	err := fs.Symlink(node.LinkTarget, path)
 	if err != nil {
 		return errors.Wrap(err, "Symlink")
@@ -368,7 +360,7 @@ func (node Node) Equals(other Node) bool {
 	if !node.sameContent(other) {
 		return false
 	}
-	if !node.sameAcl(other) {
+	if !node.sameExtendedAttributes(other) {
 		return false
 	}
 	if node.Subtree != nil {
@@ -412,13 +404,7 @@ func (node Node) sameContent(other Node) bool {
 	return true
 }
 
-func (node Node) sameAcl(other Node) bool {
-	if node.Xattrs == nil {
-		return other.Xattrs == nil
-	}
-	if other.Xattrs == nil {
-		return false
-	}
+func (node Node) sameExtendedAttributes(other Node) bool {
 	if len(node.Xattrs) != len(other.Xattrs) {
 		return false
 	}
@@ -572,29 +558,27 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "windows", "openbsd":
 		return err
 	}
-	if err = node.fillAcls(path); err != nil {
+	if err = node.fillExtendedAttributes(path); err != nil {
 		return err
 	}
 
 	return err
 }
 
-func (node *Node) fillAcls(path string) error {
-	xattrs, e := Listxattr(path)
-	// ignore paths for which no acl can be obtained silently
+func (node *Node) fillExtendedAttributes(path string) error {
+	xattrs, err := Listxattr(path)
 	if e == nil {
-		node.Xattrs = make([]Xattr, len(xattrs))
+		node.Xattrs = make([]ExtendedAttribute, len(xattrs))
 		for i, attr := range xattrs {
 			attrVal, err := Getxattr(path, attr)
 			if err != nil {
-				errors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
-				return err
+				return errors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
 			}
 			node.Xattrs[i].XattrName = attr
 			node.Xattrs[i].XattrValue = attrVal
 		}
 	}
-	return nil
+	return rrors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
 }
 
 type statT interface {
