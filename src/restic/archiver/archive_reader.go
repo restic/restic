@@ -25,7 +25,7 @@ func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, nam
 
 	chnker := chunker.New(rd, repo.Config().ChunkerPolynomial)
 
-	var ids restic.IDs
+	ids := restic.IDs{}
 	var fileSize uint64
 
 	for {
