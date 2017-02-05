@@ -35,12 +35,14 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 			return err
 		}
 
-		defer beRd.Close()
-
 		hrd := hashing.NewReader(beRd, sha256.New())
 		packLength, err := io.Copy(tempfile, hrd)
 		if err != nil {
 			return errors.Wrap(err, "Copy")
+		}
+
+		if err = beRd.Close(); err != nil {
+			return errors.Wrap(err, "Close")
 		}
 
 		hash := restic.IDFromHash(hrd.Sum(nil))
