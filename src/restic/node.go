@@ -12,8 +12,6 @@ import (
 
 	"restic/errors"
 
-	"runtime"
-
 	"bytes"
 	"restic/debug"
 	"restic/fs"
@@ -551,13 +549,9 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "fifo":
 	case "socket":
 	default:
-		err = errors.Errorf("invalid node type %q", node.Type)
+		return errors.Errorf("invalid node type %q", node.Type)
 	}
 
-	switch runtime.GOOS {
-	case "windows", "openbsd":
-		return err
-	}
 	if err = node.fillExtendedAttributes(path); err != nil {
 		return err
 	}
@@ -566,6 +560,9 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 }
 
 func (node *Node) fillExtendedAttributes(path string) error {
+	if node.Type == "symlink" && node.LinkTarget == "invalid" {
+		return nil
+	}
 	xattrs, err := Listxattr(path)
 	if err == nil {
 		node.Xattrs = make([]ExtendedAttribute, len(xattrs))
@@ -578,7 +575,7 @@ func (node *Node) fillExtendedAttributes(path string) error {
 			node.Xattrs[i].XattrValue = attrVal
 		}
 	}
-	return errors.Errorf("can not obtain extended attributes for %v:\n", path)
+	return err
 }
 
 type statT interface {
