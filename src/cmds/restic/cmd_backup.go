@@ -28,7 +28,12 @@ The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if backupOptions.Stdin {
+		stdinDeclaredTwice := backupOptions.Stdin && backupOptions.FilesFrom == "-"
+		if stdinDeclaredTwice {
+			return errors.Fatal("unable to use argument '-' and stdin flag together")
+		}
+
+		if backupOptions.Stdin || backupOptions.FilesFrom == "-" {
 			return readBackupFromStdin(backupOptions, globalOptions, args)
 		}
 
