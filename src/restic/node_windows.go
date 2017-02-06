@@ -25,7 +25,7 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 type statWin syscall.Win32FileAttributeData
 
 //ToStatT call the Windows system call Win32FileAttributeData.
-func ToStatT(i interface{}) (statT, bool) {
+func toStatT(i interface{}) (statT, bool) {
 	if i == nil {
 		return nil, false
 	}
