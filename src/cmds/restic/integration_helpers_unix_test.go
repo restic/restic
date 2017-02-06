@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"syscall"
+	"restic"
 )
 
 func (e *dirEntry) equals(other *dirEntry) bool {
@@ -43,4 +44,12 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 	}
 
 	return true
+}
+
+func nlink(info os.FileInfo) (uint64, error) {
+	stat, err := restic.ToStatT(info.Sys())
+	if err {
+		return nil, ok
+	}
+	return stat.nlink(info), err
 }

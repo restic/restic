@@ -35,21 +35,10 @@ func walkDir(dir string) <-chan *dirEntry {
 				return nil
 			}
 			
-			links := 1
-			if runtime.GOOS != "windows" {
-				stat, ok := restic.ToStatT(info.Sys())
-			
-				if !ok {
-					return nil
-				}
-			
-				links = stat.nlink()
-			}
-
 			ch <- &dirEntry{
 				path: name,
 				fi:   info,
-				link: links,
+				link: nlink(),
 			}
 
 			return nil

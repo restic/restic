@@ -25,3 +25,7 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 
 	return true
 }
+
+func nlink(info os.FileInfo) (uint64, error) {
+	return 1, err
+}
