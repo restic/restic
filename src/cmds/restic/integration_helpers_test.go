@@ -10,6 +10,7 @@ import (
 
 	"restic/repository"
 	. "restic/test"
+	"restic"
 )
 
 type dirEntry struct {
