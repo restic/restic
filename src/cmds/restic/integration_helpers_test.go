@@ -15,6 +15,7 @@ import (
 type dirEntry struct {
 	path string
 	fi   os.FileInfo
+	link uint64
 }
 
 func walkDir(dir string) <-chan *dirEntry {
@@ -32,10 +33,16 @@ func walkDir(dir string) <-chan *dirEntry {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				return nil
 			}
-
+			
+			stat, err := toStatT(info.Sys())
+			if !err {
+				return nil
+			}
+			
 			ch <- &dirEntry{
 				path: name,
 				fi:   info,
+				link: stat.nlink(),
 			}
 
 			return nil

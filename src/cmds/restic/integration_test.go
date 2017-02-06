@@ -1011,3 +1011,42 @@ func TestPrune(t *testing.T) {
 		testRunCheck(t, gopts)
 	})
 }
+
+func TestHardLink(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "test.hl.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(errors.Cause(err)) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		testRunInit(t, gopts)
+
+		SetupTarTestFixture(t, env.testdata, datafile)
+		opts := BackupOptions{}
+
+		// first backup
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		snapshotIDs := testRunList(t, "snapshots", gopts)
+		Assert(t, len(snapshotIDs) == 1,
+			"expected one snapshot, got %v", snapshotIDs)
+
+		testRunCheck(t, gopts)
+		stat1 := dirStats(env.repo)
+
+		// restore all backups and compare
+		for i, snapshotID := range snapshotIDs {
+			restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
+			t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
+			testRunRestore(t, gopts, restoredir, snapshotIDs[0])
+			Assert(t, directoriesEqualContents(env.testdata, filepath.Join(restoredir, "testdata")),
+				"directories are not equal")
+		}
+
+		testRunCheck(t, gopts)
+	})
+}
+
