@@ -495,13 +495,17 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		node.Size = uint64(stat.size())
 		node.Links = uint64(stat.nlink())
 	case "dir":
+		node.Links = uint64(stat.nlink())
 	case "symlink":
 		node.LinkTarget, err = fs.Readlink(path)
+		node.Links = uint64(stat.nlink())
 		err = errors.Wrap(err, "Readlink")
 	case "dev":
 		node.Device = uint64(stat.rdev())
+		node.Links = uint64(stat.nlink())
 	case "chardev":
 		node.Device = uint64(stat.rdev())
+		node.Links = uint64(stat.nlink())
 	case "fifo":
 	case "socket":
 	default:
