@@ -36,6 +36,11 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 		fmt.Fprintf(os.Stderr, "%v: GID does not match (%v != %v)\n", e.path, stat.Gid, stat2.Gid)
 		return false
 	}
+	
+	if stat.nlink() != stat2.nlink() {
+		fmt.Fprintf(os.Stderr, "%v: Number of links doe not match (%v != %v)\n", e.path, stat.nlink(), stat2.nlink())
+		return false
+	}
 
 	return true
 }
