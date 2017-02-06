@@ -34,10 +34,16 @@ func walkDir(dir string) <-chan *dirEntry {
 				return nil
 			}
 			
+			link, err := nlink(info)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				return nil
+			}
+			
 			ch <- &dirEntry{
 				path: name,
 				fi:   info,
-				link: nlink(info),
+				link: link,
 			}
 
 			return nil
