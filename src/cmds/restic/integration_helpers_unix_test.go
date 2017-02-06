@@ -49,7 +49,7 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 func nlink(info os.FileInfo) (uint64, error) {
 	stat, err := restic.ToStatT(info.Sys())
 	if err {
-		return nil, ok
+		return 0, err
 	}
 	return stat.Nlink(info), err
 }
