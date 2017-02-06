@@ -12,7 +12,7 @@ var lchown = os.Lchown
 
 type statUnix syscall.Stat_t
 
-func toStatT(i interface{}) (statT, bool) {
+func ToStatT(i interface{}) (statT, bool) {
 	if i == nil {
 		return nil, false
 	}

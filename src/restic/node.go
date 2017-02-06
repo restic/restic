@@ -409,7 +409,7 @@ func (node *Node) IsNewer(path string, fi os.FileInfo) bool {
 
 	size := uint64(fi.Size())
 
-	extendedStat, ok := toStatT(fi.Sys())
+	extendedStat, ok := ToStatT(fi.Sys())
 	if !ok {
 		if node.ModTime != fi.ModTime() ||
 			node.Size != size {
@@ -475,7 +475,7 @@ func lookupUsername(uid string) (string, error) {
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
-	stat, ok := toStatT(fi.Sys())
+	stat, ok := ToStatT(fi.Sys())
 	if !ok {
 		return nil
 	}

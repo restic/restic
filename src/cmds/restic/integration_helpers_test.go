@@ -35,7 +35,8 @@ func walkDir(dir string) <-chan *dirEntry {
 				return nil
 			}
 			
-			stat, err := restic.toStatT(info.Sys())
+			stat, err := restic.ToStatT(info.Sys())
+			
 			if !err {
 				return nil
 			}
