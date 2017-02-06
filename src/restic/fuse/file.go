@@ -82,6 +82,9 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Atime = f.node.AccessTime
 	a.Ctime = f.node.ChangeTime
 	a.Mtime = f.node.ModTime
+	
+	a.Nlink = uint32(f.node.Links)
+
 	return nil
 }
 

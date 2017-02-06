@@ -38,5 +38,8 @@ func (l *link) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Atime = l.node.AccessTime
 	a.Ctime = l.node.ChangeTime
 	a.Mtime = l.node.ModTime
+	
+	a.Nlink = uint32(l.node.Links)
+	
 	return nil
 }
