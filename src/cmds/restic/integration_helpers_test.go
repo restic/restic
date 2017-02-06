@@ -10,7 +10,6 @@ import (
 
 	"restic/repository"
 	. "restic/test"
-	"restic"
 )
 
 type dirEntry struct {
@@ -38,7 +37,7 @@ func walkDir(dir string) <-chan *dirEntry {
 			ch <- &dirEntry{
 				path: name,
 				fi:   info,
-				link: nlink(),
+				link: nlink(info),
 			}
 
 			return nil
