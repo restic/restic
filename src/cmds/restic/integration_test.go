@@ -1035,7 +1035,6 @@ func TestHardLink(t *testing.T) {
 			"expected one snapshot, got %v", snapshotIDs)
 
 		testRunCheck(t, gopts)
-		stat1 := dirStats(env.repo)
 
 		// restore all backups and compare
 		for i, snapshotID := range snapshotIDs {
