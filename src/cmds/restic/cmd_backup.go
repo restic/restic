@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"restic"
@@ -28,6 +29,10 @@ The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if backupOptions.Stdin && backupOptions.FilesFrom == "-" {
+			return errors.Fatal("cannot use both `--stdin` and `--files-from -`")
+		}
+
 		if backupOptions.Stdin {
 			return readBackupFromStdin(backupOptions, globalOptions, args)
 		}
@@ -266,21 +271,26 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 
 // readFromFile will read all lines from the given filename and write them to a
 // string array, if filename is empty readFromFile returns and empty string
-// array
+// array. If filename is a dash (-), readFromFile will read the lines from
+// the standard input.
 func readLinesFromFile(filename string) ([]string, error) {
 	if filename == "" {
 		return nil, nil
 	}
 
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+	var r io.Reader = os.Stdin
+	if filename != "-" {
+		f, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		r = f
 	}
-	defer file.Close()
 
 	var lines []string
 
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
@@ -293,6 +303,10 @@ func readLinesFromFile(filename string) ([]string, error) {
 }
 
 func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
+	if opts.FilesFrom == "-" && gopts.password == "" && gopts.PasswordFile == "" {
+		return errors.Fatal("no password; either use `--password-file` option or put the password into the RESTIC_PASSWORD environment variable")
+	}
+
 	fromfile, err := readLinesFromFile(opts.FilesFrom)
 	if err != nil {
 		return err
