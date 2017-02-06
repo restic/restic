@@ -51,5 +51,5 @@ func nlink(info os.FileInfo) (uint64, error) {
 	if err {
 		return nil, ok
 	}
-	return stat.nlink(info), err
+	return stat.Nlink(info), err
 }
