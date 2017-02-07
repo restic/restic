@@ -33,7 +33,7 @@ func walkDir(dir string) <-chan *dirEntry {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				return nil
 			}
-			
+
 			ch <- &dirEntry{
 				path: name,
 				fi:   info,

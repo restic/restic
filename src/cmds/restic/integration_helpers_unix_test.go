@@ -36,7 +36,7 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 		fmt.Fprintf(os.Stderr, "%v: GID does not match (%v != %v)\n", e.path, stat.Gid, stat2.Gid)
 		return false
 	}
-	
+
 	if stat.Nlink != stat2.Nlink {
 		fmt.Fprintf(os.Stderr, "%v: Number of links doe not match (%v != %v)\n", e.path, stat.Nlink, stat2.Nlink)
 		return false
@@ -45,7 +45,7 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 	return true
 }
 
-func nlink(info os.FileInfo) (uint64) {
+func nlink(info os.FileInfo) uint64 {
 	stat, _ := info.Sys().(*syscall.Stat_t)
 	return stat.Nlink
 }
