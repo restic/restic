@@ -1,14 +1,17 @@
 package checker
 
 import (
-	"bytes"
+	"crypto/sha256"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"sync"
 
 	"restic/errors"
+	"restic/hashing"
 
 	"restic"
-	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
@@ -659,36 +662,77 @@ func (c *Checker) CountPacks() uint64 {
 func checkPack(r restic.Repository, id restic.ID) error {
 	debug.Log("checking pack %v", id.Str())
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	buf, err := backend.LoadAll(r.Backend(), h)
+
+	rd, err := r.Backend().Load(h, 0, 0)
 	if err != nil {
 		return err
 	}
 
-	hash := restic.Hash(buf)
+	packfile, err := ioutil.TempFile("", "restic-temp-check-")
+	if err != nil {
+		return errors.Wrap(err, "TempFile")
+	}
+
+	defer func() {
+		packfile.Close()
+		os.Remove(packfile.Name())
+	}()
+
+	hrd := hashing.NewReader(rd, sha256.New())
+	size, err := io.Copy(packfile, hrd)
+	if err != nil {
+		return errors.Wrap(err, "Copy")
+	}
+
+	if err = rd.Close(); err != nil {
+		return err
+	}
+
+	hash := restic.IDFromHash(hrd.Sum(nil))
+	debug.Log("hash for pack %v is %v", id.Str(), hash.Str())
+
 	if !hash.Equal(id) {
 		debug.Log("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 		return errors.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 	}
 
-	blobs, err := pack.List(r.Key(), bytes.NewReader(buf), int64(len(buf)))
+	blobs, err := pack.List(r.Key(), packfile, size)
 	if err != nil {
 		return err
 	}
 
 	var errs []error
+	var buf []byte
 	for i, blob := range blobs {
-		debug.Log("  check blob %d: %v", i, blob.ID.Str())
+		debug.Log("  check blob %d: %v", i, blob)
 
-		plainBuf := make([]byte, blob.Length)
-		n, err := crypto.Decrypt(r.Key(), plainBuf, buf[blob.Offset:blob.Offset+blob.Length])
+		buf = buf[:cap(buf)]
+		if uint(len(buf)) < blob.Length {
+			buf = make([]byte, blob.Length)
+		}
+		buf = buf[:blob.Length]
+
+		_, err := packfile.Seek(int64(blob.Offset), 0)
+		if err != nil {
+			return errors.Errorf("Seek(%v): %v", blob.Offset, err)
+		}
+
+		_, err = io.ReadFull(packfile, buf)
+		if err != nil {
+			debug.Log("  error loading blob %v: %v", blob.ID.Str(), err)
+			errs = append(errs, errors.Errorf("blob %v: %v", i, err))
+			continue
+		}
+
+		n, err := crypto.Decrypt(r.Key(), buf, buf)
 		if err != nil {
 			debug.Log("  error decrypting blob %v: %v", blob.ID.Str(), err)
 			errs = append(errs, errors.Errorf("blob %v: %v", i, err))
 			continue
 		}
-		plainBuf = plainBuf[:n]
+		buf = buf[:n]
 
-		hash := restic.Hash(plainBuf)
+		hash := restic.Hash(buf)
 		if !hash.Equal(blob.ID) {
 			debug.Log("  Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
 			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))

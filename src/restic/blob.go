@@ -14,6 +14,11 @@ type Blob struct {
 	Offset uint
 }
 
+func (b Blob) String() string {
+	return fmt.Sprintf("<Blob (%v) %v, offset %v, length %v>",
+		b.Type, b.ID.Str(), b.Offset, b.Length)
+}
+
 // PackedBlob is a blob stored within a file.
 type PackedBlob struct {
 	Blob

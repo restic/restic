@@ -299,3 +299,28 @@ func TestCheckerModifiedData(t *testing.T) {
 		t.Fatal("no error found, checker is broken")
 	}
 }
+
+func BenchmarkChecker(t *testing.B) {
+	repodir, cleanup := test.Env(t, checkerTestData)
+	defer cleanup()
+
+	repo := repository.TestOpenLocal(t, repodir)
+
+	chkr := checker.New(repo)
+	hints, errs := chkr.LoadIndex()
+	if len(errs) > 0 {
+		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
+	}
+
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		test.OKs(t, checkPacks(chkr))
+		test.OKs(t, checkStruct(chkr))
+		test.OKs(t, checkData(chkr))
+	}
+}
