@@ -47,5 +47,5 @@ func (e *dirEntry) equals(other *dirEntry) bool {
 
 func nlink(info os.FileInfo) uint64 {
 	stat, _ := info.Sys().(*syscall.Stat_t)
-	return stat.Nlink
+	return uint64(stat.Nlink)
 }
