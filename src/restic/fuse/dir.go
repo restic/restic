@@ -114,7 +114,23 @@ func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Atime = d.node.AccessTime
 	a.Ctime = d.node.ChangeTime
 	a.Mtime = d.node.ModTime
+	
+	a.Nlink = d.calcNumberOfLinks()
+	
 	return nil
+}
+
+func (d *dir) calcNumberOfLinks() uint32 {
+	// a directory d has 2 hardlinks + the number of number
+	// of directories contained by d
+	var count uint32
+	count = 2
+	for _, node := range d.items {
+		if node.Type == "dir" {
+			count++
+		}
+	}
+	return count
 }
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
