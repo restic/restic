@@ -97,7 +97,7 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 }
 
 // CreateAt creates the node at the given path and restores all the meta data.
-func (node *Node) CreateAt(path string, repo Repository) error {
+func (node *Node) CreateAt(path string, repo Repository, p *Progress) error {
 	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
@@ -106,7 +106,7 @@ func (node *Node) CreateAt(path string, repo Repository) error {
 			return err
 		}
 	case "file":
-		if err := node.createFileAt(path, repo); err != nil {
+		if err := node.createFileAt(path, repo, p); err != nil {
 			return err
 		}
 	case "symlink":
@@ -191,7 +191,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(path string, repo Repository) error {
+func (node Node) createFileAt(path string, repo Repository, p *Progress) error {
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 	defer f.Close()
 
@@ -221,6 +221,8 @@ func (node Node) createFileAt(path string, repo Repository) error {
 		if err != nil {
 			return errors.Wrap(err, "Write")
 		}
+
+		p.Report(Stat{Bytes: uint64(size)})
 	}
 
 	return nil

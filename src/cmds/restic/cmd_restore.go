@@ -47,6 +47,10 @@ func init() {
 	flags.StringSliceVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 }
 
+func newRestoreProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
+	return newArchiveProgress(gopts, todo)
+}
+
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
 		return errors.Fatalf("no snapshot ID specified")
@@ -106,7 +110,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return nil
 	}
 
-	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) bool {
+	selectExcludeFilter := func(item string, node *restic.Node) bool {
 		matched, err := filter.List(opts.Exclude, item)
 		if err != nil {
 			Warnf("error for exclude pattern: %v", err)
@@ -115,7 +119,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return !matched
 	}
 
-	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) bool {
+	selectIncludeFilter := func(item string, node *restic.Node) bool {
 		matched, err := filter.List(opts.Include, item)
 		if err != nil {
 			Warnf("error for include pattern: %v", err)
@@ -132,5 +136,10 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
-	return res.RestoreTo(opts.Target)
+	stat, err := res.Scan(newScanProgress(gopts))
+	if err != nil {
+		return err
+	}
+
+	return res.RestoreTo(opts.Target, newRestoreProgress(gopts, stat))
 }
