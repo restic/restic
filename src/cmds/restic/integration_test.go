@@ -1048,4 +1048,3 @@ func TestHardLink(t *testing.T) {
 		testRunCheck(t, gopts)
 	})
 }
-
