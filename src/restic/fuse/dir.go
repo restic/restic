@@ -121,7 +121,7 @@ func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 }
 
 func (d *dir) calcNumberOfLinks() uint32 {
-	// a directory d has 2 hardlinks + the number of number
+	// a directory d has 2 hardlinks + the number
 	// of directories contained by d
 	var count uint32
 	count = 2
