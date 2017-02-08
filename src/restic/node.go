@@ -570,7 +570,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 }
 
 func (node *Node) fillExtendedAttributes(path string) error {
-	if node.Type == "symlink" && node.LinkTarget == "invalid" {
+	if node.Type == "symlink" {
 		return nil
 	}
 	xattrs, err := Listxattr(path)
