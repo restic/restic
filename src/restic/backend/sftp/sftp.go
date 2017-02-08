@@ -153,7 +153,7 @@ func buildSSHCommand(cfg Config) []string {
 }
 
 // OpenWithConfig opens an sftp backend as described by the config by running
-// "ssh" with the appropiate arguments.
+// "ssh" with the appropriate arguments.
 func OpenWithConfig(cfg Config) (*SFTP, error) {
 	debug.Log("open with config %v", cfg)
 	return Open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
@@ -193,7 +193,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 }
 
 // CreateWithConfig creates an sftp backend as described by the config by running
-// "ssh" with the appropiate arguments.
+// "ssh" with the appropriate arguments.
 func CreateWithConfig(cfg Config) (*SFTP, error) {
 	debug.Log("config %v", cfg)
 	return Create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)

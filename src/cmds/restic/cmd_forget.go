@@ -128,7 +128,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	for _, s := range ids {
 		id, err := restic.FindSnapshot(repo, s)
 		if err != nil {
-			Warnf("cound not find a snapshot for ID %q, ignoring\n", s)
+			Warnf("could not find a snapshot for ID %q, ignoring\n", s)
 			continue
 		}
 

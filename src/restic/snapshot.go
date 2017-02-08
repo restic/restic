@@ -87,7 +87,7 @@ func (sn Snapshot) String() string {
 		sn.id.Str(), sn.Paths, sn.Time, sn.Username, sn.Hostname)
 }
 
-// ID retuns the snapshot's ID.
+// ID returns the snapshot's ID.
 func (sn Snapshot) ID() *ID {
 	return sn.id
 }
