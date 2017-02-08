@@ -66,7 +66,7 @@ func init() {
 	f.StringVar(&backupOptions.ExcludeFile, "exclude-file", "", "read exclude patterns from a file")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "Exclude other file systems")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
-	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "", "file name to use when reading from stdin")
+	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
 	f.StringSliceVar(&backupOptions.Tags, "tag", []string{}, "add a `tag` for the new snapshot (can be specified multiple times)")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 }
@@ -238,6 +238,10 @@ func gatherDevices(items []string) (deviceMap map[uint64]struct{}, err error) {
 func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
 		return errors.Fatalf("when reading from stdin, no additional files can be specified")
+	}
+
+	if opts.StdinFilename == "" {
+		return errors.Fatal("filename for backup from stdin must not be empty")
 	}
 
 	if gopts.password == "" && gopts.PasswordFile == "" {
