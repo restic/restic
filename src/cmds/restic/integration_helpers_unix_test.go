@@ -49,3 +49,25 @@ func nlink(info os.FileInfo) uint64 {
 	stat, _ := info.Sys().(*syscall.Stat_t)
 	return uint64(stat.Nlink)
 }
+
+func inode(info os.FileInfo) uint64 {
+	stat, _ := info.Sys().(*syscall.Stat_t)
+	return uint64(stat.Ino)
+}
+
+func createFileSetPerHardlink(dir string) map[uint64][]string {
+	var stat syscall.Stat_t
+	linkTests := make(map[uint64][]string)
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	for _, f := range files {
+		
+		if err := syscall.Stat(filepath.Join(dir, f.Name()), &stat); err != nil {
+			return nil
+		}
+		linkTests[uint64(stat.Ino)] = append(linkTests[uint64(stat.Ino)], f.Name())
+	}
+	return linkTests
+}
