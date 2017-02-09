@@ -14,6 +14,10 @@ import (
 // ArchiveReader reads from the reader and archives the data. Returned is the
 // resulting snapshot and its ID.
 func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, name string, tags []string) (*restic.Snapshot, restic.ID, error) {
+	if name == "" {
+		return nil, restic.ID{}, errors.New("no filename given")
+	}
+
 	debug.Log("start archiving %s", name)
 	sn, err := restic.NewSnapshot([]string{name}, tags)
 	if err != nil {
