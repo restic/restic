@@ -203,7 +203,7 @@ func (l *Lock) Stale() bool {
 
 	hn, err := os.Hostname()
 	if err != nil {
-		debug.Log("unable to find current hostnanme: %v", err)
+		debug.Log("unable to find current hostname: %v", err)
 		// since we cannot find the current hostname, assume that the lock is
 		// not stale.
 		return false

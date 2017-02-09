@@ -836,7 +836,7 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 
 		testRunRestore(t, gopts, filepath.Join(env.base, "restore"), snapshots[0])
 
-		// make sure that all files have been restored, regardeless of any
+		// make sure that all files have been restored, regardless of any
 		// permission errors
 		files := testRunLs(t, gopts, snapshots[0].String())
 		for _, filename := range files {
@@ -935,7 +935,7 @@ func TestRebuildIndex(t *testing.T) {
 		}
 
 		if !strings.Contains(out, "restic rebuild-index") {
-			t.Fatalf("did not find hint for rebuild-index comman")
+			t.Fatalf("did not find hint for rebuild-index command")
 		}
 
 		testRunRebuildIndex(t, gopts)

@@ -28,7 +28,7 @@ $ pacaur -S restic-git
 # Building restic
 
 restic is written in the Go programming language and you need at least Go version 1.6.
-Building restic may also work with older versions of Go, but that's not spported.
+Building restic may also work with older versions of Go, but that's not supported.
 See the [Getting started](https://golang.org/doc/install) guide of the Go project for
 instructions how to install Go.
 
@@ -228,7 +228,7 @@ $ restic -r /tmp/backup backup ~/work --exclude=*.c --exclude-file=exclude
 
 Patterns use [`filepath.Glob`](https://golang.org/pkg/path/filepath/#Glob) internally,
 see [`filepath.Match`](https://golang.org/pkg/path/filepath/#Match) for syntax.
-Additionally `**` exludes arbitrary subdirectories.
+Additionally `**` excludes arbitrary subdirectories.
 Environment-variables in exclude-files are expanded with [`os.ExpandEnv`](https://golang.org/pkg/os/#ExpandEnv).
 
 By specifying the option `--one-file-system` you can instruct restic to only
@@ -511,7 +511,7 @@ only available via HTTP, you can specify the URL to the server like this:
 ### Pre-Requisites
 
 * Download and Install [Minio Server](https://minio.io/download/).
-* You can also refer to [https://docs.minio.io](https://docs.minio.io) for step by step guidance on installation and getting started on Minio CLient and Minio Server.
+* You can also refer to [https://docs.minio.io](https://docs.minio.io) for step by step guidance on installation and getting started on Minio Client and Minio Server.
 
 You must first setup the following environment variables with the credentials of your running Minio Server.
 

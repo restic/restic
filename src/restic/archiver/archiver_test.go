@@ -220,7 +220,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 
 	errChannels := [](<-chan error){}
 
-	// interweaved processing of subsequent chunks
+	// interwoven processing of subsequent chunks
 	maxParallel := 2*duplication - 1
 	barrier := make(chan struct{}, maxParallel)
 

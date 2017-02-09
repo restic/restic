@@ -392,7 +392,7 @@ func (idx *Index) SetID(id restic.ID) error {
 	defer idx.m.Unlock()
 
 	if !idx.final {
-		return errors.New("indexs is not final")
+		return errors.New("index is not final")
 	}
 
 	if !idx.id.IsNull() {

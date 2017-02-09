@@ -43,7 +43,7 @@ func (id ID) String() string {
 	return hex.EncodeToString(id[:])
 }
 
-// NewRandomID retuns a randomly generated ID. When reading from rand fails,
+// NewRandomID returns a randomly generated ID. When reading from rand fails,
 // the function panics.
 func NewRandomID() ID {
 	id := ID{}

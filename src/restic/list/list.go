@@ -25,7 +25,7 @@ func (l Result) PackID() restic.ID {
 	return l.packID
 }
 
-// Size ruturns the size of the pack.
+// Size returns the size of the pack.
 func (l Result) Size() int64 {
 	return l.size
 }
