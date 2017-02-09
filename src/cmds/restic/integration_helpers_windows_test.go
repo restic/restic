@@ -42,8 +42,8 @@ func createFileSetPerHardlink(dir string) map[uint64][]string {
 	if err != nil {
 		return nil
 	}
-	for i uint64, f := range files {
-		linkTests[i] = append(linkTests[i], f.Name())
+	for i, f := range files {
+		linkTests[uint64(i)] = append(linkTests[uint64(i)], f.Name())
 		i++
 	}
 	return linkTests
