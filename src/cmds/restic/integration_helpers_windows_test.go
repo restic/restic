@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"io/ioutil"
 )
 
 func (e *dirEntry) equals(other *dirEntry) bool {

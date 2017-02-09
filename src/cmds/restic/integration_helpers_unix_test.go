@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"syscall"
+	"io/ioutil"
 )
 
 func (e *dirEntry) equals(other *dirEntry) bool {
