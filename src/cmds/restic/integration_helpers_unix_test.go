@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"syscall"
+	"path/filepath"
 )
 
 func (e *dirEntry) equals(other *dirEntry) bool {
