@@ -249,6 +249,10 @@ func (node Node) createFileAt(path string, repo Repository) error {
 }
 
 func (node Node) createSymlinkAt(path string) error {
+	// Windows does not allow non-admins to create soft links.
+	if runtime.GOOS == "windows" {
+		return nil
+	}
 	err := fs.Symlink(node.LinkTarget, path)
 	if err != nil {
 		return errors.Wrap(err, "Symlink")
