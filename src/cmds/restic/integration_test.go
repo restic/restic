@@ -1013,6 +1013,7 @@ func TestPrune(t *testing.T) {
 }
 
 func TestHardLink(t *testing.T) {
+	// this test assumes a test set with a single directory containing hard linked files
 	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		datafile := filepath.Join("testdata", "test.hl.tar.gz")
 		fd, err := os.Open(datafile)
@@ -1026,6 +1027,9 @@ func TestHardLink(t *testing.T) {
 		testRunInit(t, gopts)
 
 		SetupTarTestFixture(t, env.testdata, datafile)
+
+		linkTests := createFileSetPerHardlink(env.testdata)
+
 		opts := BackupOptions{}
 
 		// first backup
@@ -1043,8 +1047,80 @@ func TestHardLink(t *testing.T) {
 			testRunRestore(t, gopts, restoredir, snapshotIDs[0])
 			Assert(t, directoriesEqualContents(env.testdata, filepath.Join(restoredir, "testdata")),
 				"directories are not equal")
+
+			linkResults := createFileSetPerHardlink(filepath.Join(restoredir, "testdata"))
+			Assert(t, linksEqual(linkTests, linkResults),
+				"links are not equal")
 		}
 
 		testRunCheck(t, gopts)
 	})
+}
+
+func linksEqual(source, dest map[uint64][]string) bool {
+	for _, vs := range source {
+		found := false
+		for kd, vd := range dest {
+			if linkEqual(vs, vd) {
+				delete(dest, kd)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	if len(dest) != 0 {
+		return false
+	}
+
+	return true
+}
+
+func linkEqual(source, dest []string) bool {
+	// equal if sliced are equal without considering order
+	if source == nil && dest == nil {
+		return true
+	}
+
+	if source == nil || dest == nil {
+		return false
+	}
+
+	if len(source) != len(dest) {
+		return false
+	}
+
+	for i := range source {
+		found := false
+		for j := range dest {
+			if source[i] == dest[j] {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	return true
+}
+
+func createFileSetPerHardlink(dir string) map[uint64][]string {
+	var stat syscall.Stat_t
+	linkTests := make(map[uint64][]string)
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	for _, f := range files {
+		if err := syscall.Stat(filepath.Join(dir, f.Name()), &stat); err != nil {
+			return nil
+		}
+		linkTests[uint64(stat.Ino)] = append(linkTests[uint64(stat.Ino)], f.Name())
+	}
+	return linkTests
 }
