@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"restic/debug"
 	"restic/fs"
+	"runtime"
 )
 
 // ExtendedAttribute is a tuple storing the xattr name and value.
