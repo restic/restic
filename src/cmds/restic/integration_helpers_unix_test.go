@@ -4,9 +4,8 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"syscall"
 	"io/ioutil"
+	"os"
 	"syscall"
 )
 
@@ -65,7 +64,7 @@ func createFileSetPerHardlink(dir string) map[uint64][]string {
 		return nil
 	}
 	for _, f := range files {
-		
+
 		if err := syscall.Stat(filepath.Join(dir, f.Name()), &stat); err != nil {
 			return nil
 		}

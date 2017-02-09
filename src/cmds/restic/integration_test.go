@@ -1108,4 +1108,3 @@ func linkEqual(source, dest []string) bool {
 
 	return true
 }
-
