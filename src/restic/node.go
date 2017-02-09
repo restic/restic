@@ -192,7 +192,7 @@ func (node Node) createDirAt(path string) error {
 }
 
 func (node Node) createFileAt(path string, repo Repository) error {
-	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
+	f, err := fs.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
 	defer f.Close()
 
 	if err != nil {
@@ -202,6 +202,24 @@ func (node Node) createFileAt(path string, repo Repository) error {
 	var buf []byte
 	for _, id := range node.Content {
 		size, err := repo.LookupBlobSize(id, DataBlob)
+		if err != nil {
+			return err
+		}
+
+		// Skip loading if the data already exists locally
+		existingData := make([]byte, size)
+
+		readSize, _ := f.Read(existingData)
+		if readSize == int(size) {
+			if Hash(existingData) == id {
+				continue
+			}
+		}
+
+		debug.Log("Fetching blob %v (size: %v)", id, size)
+
+		// Move the write offset back to where it was
+		_, err = f.Seek(int64(-readSize), os.SEEK_CUR)
 		if err != nil {
 			return err
 		}
