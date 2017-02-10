@@ -2,7 +2,6 @@ package restic
 
 import (
 	"fmt"
-	"os"
 	"os/user"
 	"path/filepath"
 	"time"
@@ -28,7 +27,7 @@ type Snapshot struct {
 
 // NewSnapshot returns an initialized snapshot struct for the current user and
 // time.
-func NewSnapshot(paths []string, tags []string) (*Snapshot, error) {
+func NewSnapshot(paths []string, tags []string, hostname string) (*Snapshot, error) {
 	for i, path := range paths {
 		if p, err := filepath.Abs(path); err != nil {
 			paths[i] = p
@@ -36,17 +35,13 @@ func NewSnapshot(paths []string, tags []string) (*Snapshot, error) {
 	}
 
 	sn := &Snapshot{
-		Paths: paths,
-		Time:  time.Now(),
-		Tags:  tags,
+		Paths:    paths,
+		Time:     time.Now(),
+		Tags:     tags,
+		Hostname: hostname,
 	}
 
-	hn, err := os.Hostname()
-	if err == nil {
-		sn.Hostname = hn
-	}
-
-	err = sn.fillUserInfo()
+	err := sn.fillUserInfo()
 	if err != nil {
 		return nil, err
 	}

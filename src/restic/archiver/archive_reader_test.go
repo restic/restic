@@ -79,7 +79,7 @@ func TestArchiveReader(t *testing.T) {
 
 	f := fakeFile(t, seed, size)
 
-	sn, id, err := ArchiveReader(repo, nil, f, "fakefile", []string{"test"})
+	sn, id, err := ArchiveReader(repo, nil, f, "fakefile", []string{"test"}, "localhost")
 	if err != nil {
 		t.Fatalf("ArchiveReader() returned error %v", err)
 	}
@@ -99,7 +99,7 @@ func TestArchiveReaderNull(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	sn, id, err := ArchiveReader(repo, nil, bytes.NewReader(nil), "fakefile", nil)
+	sn, id, err := ArchiveReader(repo, nil, bytes.NewReader(nil), "fakefile", nil, "localhost")
 	if err != nil {
 		t.Fatalf("ArchiveReader() returned error %v", err)
 	}
@@ -134,7 +134,7 @@ func TestArchiveReaderError(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	sn, id, err := ArchiveReader(repo, nil, errReader("error returned by reading stdin"), "fakefile", nil)
+	sn, id, err := ArchiveReader(repo, nil, errReader("error returned by reading stdin"), "fakefile", nil, "localhost")
 	if err == nil {
 		t.Errorf("expected error not returned")
 	}
@@ -171,7 +171,7 @@ func BenchmarkArchiveReader(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, _, err := ArchiveReader(repo, nil, bytes.NewReader(buf), "fakefile", []string{"test"})
+		_, _, err := ArchiveReader(repo, nil, bytes.NewReader(buf), "fakefile", []string{"test"}, "localhost")
 		if err != nil {
 			t.Fatal(err)
 		}
