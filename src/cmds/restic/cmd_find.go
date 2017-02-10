@@ -148,7 +148,7 @@ func findInSnapshot(repo *repository.Repository, pat findPattern, id restic.ID) 
 
 func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
-		return errors.Fatalf("wrong number of arguments")
+		return errors.Fatal("wrong number of arguments")
 	}
 
 	var (

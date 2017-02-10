@@ -245,7 +245,7 @@ func gatherDevices(items []string) (deviceMap map[uint64]struct{}, err error) {
 
 func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
-		return errors.Fatalf("when reading from stdin, no additional files can be specified")
+		return errors.Fatal("when reading from stdin, no additional files can be specified")
 	}
 
 	if opts.StdinFilename == "" {
@@ -329,7 +329,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	// same time
 	args = append(args, fromfile...)
 	if len(args) == 0 {
-		return errors.Fatalf("wrong number of parameters")
+		return errors.Fatal("wrong number of parameters")
 	}
 
 	target := make([]string, 0, len(args))

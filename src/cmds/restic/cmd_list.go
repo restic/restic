@@ -26,7 +26,7 @@ func init() {
 
 func runList(opts GlobalOptions, args []string) error {
 	if len(args) != 1 {
-		return errors.Fatalf("type not specified")
+		return errors.Fatal("type not specified")
 	}
 
 	repo, err := OpenRepository(opts)

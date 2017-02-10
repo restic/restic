@@ -30,7 +30,7 @@ func init() {
 
 func runCat(gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return errors.Fatalf("type or ID not specified")
+		return errors.Fatal("type or ID not specified")
 	}
 
 	repo, err := OpenRepository(gopts)

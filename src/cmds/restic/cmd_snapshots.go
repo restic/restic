@@ -40,7 +40,7 @@ func init() {
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
-		return errors.Fatalf("wrong number of arguments")
+		return errors.Fatal("wrong number of arguments")
 	}
 
 	repo, err := OpenRepository(gopts)

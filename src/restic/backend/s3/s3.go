@@ -157,7 +157,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 
 	if offset > info.Size {
 		_ = obj.Close()
-		return nil, errors.Errorf("offset larger than file size")
+		return nil, errors.New("offset larger than file size")
 	}
 
 	l := int64(length)
