@@ -74,6 +74,7 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Size = f.node.Size
 	a.Blocks = (f.node.Size / blockSize) + 1
 	a.BlockSize = blockSize
+	a.Nlink = uint32(f.node.Links)
 
 	if !f.ownerIsRoot {
 		a.Uid = f.node.UID
