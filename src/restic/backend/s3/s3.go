@@ -155,11 +155,16 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 
 	objName := be.s3path(h)
 
+	// get token for connection
 	<-be.connChan
 
 	obj, err := be.client.GetObject(be.bucketname, objName)
 	if err != nil {
 		debug.Log("  err %v", err)
+
+		// return token
+		be.connChan <- struct{}{}
+
 		return nil, errors.Wrap(err, "client.GetObject")
 	}
 
@@ -170,12 +175,18 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 		_, err = obj.Seek(offset, 0)
 		if err != nil {
 			_ = obj.Close()
+
+			// return token
+			be.connChan <- struct{}{}
+
 			return nil, errors.Wrap(err, "obj.Seek")
 		}
 
 		rd := wrapReader{
 			ReadCloser: obj,
 			f: func() {
+				debug.Log("Close()")
+				// return token
 				be.connChan <- struct{}{}
 			},
 		}
@@ -183,6 +194,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 	}
 
 	defer func() {
+		// return token
 		be.connChan <- struct{}{}
 	}()
 
