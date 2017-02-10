@@ -245,21 +245,25 @@ func TestLoad(t testing.TB) {
 		buf, err := ioutil.ReadAll(rd)
 		if err != nil {
 			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %v", l, o, err)
+			rd.Close()
 			continue
 		}
 
 		if l <= len(d) && len(buf) != l {
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
+			rd.Close()
 			continue
 		}
 
 		if l > len(d) && len(buf) != len(d) {
 			t.Errorf("Load(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
+			rd.Close()
 			continue
 		}
 
 		if !bytes.Equal(buf, d) {
 			t.Errorf("Load(%d, %d) returned wrong bytes", l, o)
+			rd.Close()
 			continue
 		}
 
