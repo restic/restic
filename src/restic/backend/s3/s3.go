@@ -122,6 +122,18 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	return errors.Wrap(err, "client.PutObject")
 }
 
+// wrapReader wraps an io.ReadCloser to run an additional function on Close.
+type wrapReader struct {
+	io.ReadCloser
+	f func()
+}
+
+func (wr wrapReader) Close() error {
+	err := wr.ReadCloser.Close()
+	wr.f()
+	return err
+}
+
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
@@ -144,9 +156,6 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 	objName := be.s3path(h)
 
 	<-be.connChan
-	defer func() {
-		be.connChan <- struct{}{}
-	}()
 
 	obj, err := be.client.GetObject(be.bucketname, objName)
 	if err != nil {
@@ -157,14 +166,25 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 	// if we're going to read the whole object, just pass it on.
 	if length == 0 {
 		debug.Log("Load %v: pass on object", h)
+
 		_, err = obj.Seek(offset, 0)
 		if err != nil {
 			_ = obj.Close()
 			return nil, errors.Wrap(err, "obj.Seek")
 		}
 
-		return obj, nil
+		rd := wrapReader{
+			ReadCloser: obj,
+			f: func() {
+				be.connChan <- struct{}{}
+			},
+		}
+		return rd, nil
 	}
+
+	defer func() {
+		be.connChan <- struct{}{}
+	}()
 
 	// otherwise use a buffer with ReadAt
 	info, err := obj.Stat()
