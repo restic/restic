@@ -192,6 +192,24 @@ func (node Node) createDirAt(path string) error {
 }
 
 func (node Node) createFileAt(path string, repo Repository) error {
+	
+	if node.Links > 1 {
+		if !ExistsLink(node.Inode, node.Device) {
+			AddLink(node.Inode, node.Device, node.Links, path)
+			DecrementLink(node.Inode, node.Device)
+		} else {
+			err :=fs.Hardlink(GetLink(node.Inode, node.Device).Name, path)
+			if err != nil {
+				return errors.Wrap(err, "CreateHardlink")
+			}
+			DecrementLink(node.Inode, node.Device)
+			if CountLink(node.Inode, node.Device) == 0 {
+				RemoveLink(node.Inode, node.Device)
+			}
+			return nil
+		}
+	}
+		
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
 	defer f.Close()
 
@@ -482,6 +500,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "file":
 		node.Size = uint64(stat.size())
 		node.Links = uint64(stat.nlink())
+		node.Device = uint64(stat.dev())
 	case "dir":
 	case "symlink":
 		node.LinkTarget, err = fs.Readlink(path)
