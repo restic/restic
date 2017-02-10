@@ -49,7 +49,7 @@ func init() {
 
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
-		return errors.Fatalf("no snapshot ID specified")
+		return errors.Fatal("no snapshot ID specified")
 	}
 
 	if opts.Target == "" {

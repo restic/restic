@@ -95,7 +95,7 @@ func umount(mountpoint string) error {
 
 func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
 	if len(args) == 0 {
-		return errors.Fatalf("wrong number of parameters")
+		return errors.Fatal("wrong number of parameters")
 	}
 
 	mountpoint := args[0]
