@@ -261,7 +261,7 @@ func TestCheckerModifiedData(t *testing.T) {
 	defer cleanup()
 
 	arch := archiver.New(repo)
-	_, id, err := arch.Snapshot(nil, []string{"."}, nil, nil)
+	_, id, err := arch.Snapshot(nil, []string{"."}, nil, "localhost", nil)
 	test.OK(t, err)
 	t.Logf("archived as %v", id.Str())
 

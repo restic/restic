@@ -51,6 +51,7 @@ type BackupOptions struct {
 	Stdin          bool
 	StdinFilename  string
 	Tags           []string
+	Hostname       string
 	FilesFrom      string
 }
 
@@ -58,6 +59,12 @@ var backupOptions BackupOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdBackup)
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		debug.Log("os.Hostname() returned err: %v", err)
+		hostname = ""
+	}
 
 	f := cmdBackup.Flags()
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)")
@@ -68,6 +75,7 @@ func init() {
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
 	f.StringSliceVar(&backupOptions.Tags, "tag", []string{}, "add a `tag` for the new snapshot (can be specified multiple times)")
+	f.StringVar(&backupOptions.Hostname, "hostname", hostname, "set the `hostname` for the snapshot manually")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 }
 
@@ -264,7 +272,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return err
 	}
 
-	_, id, err := archiver.ArchiveReader(repo, newArchiveStdinProgress(gopts), os.Stdin, opts.StdinFilename, opts.Tags)
+	_, id, err := archiver.ArchiveReader(repo, newArchiveStdinProgress(gopts), os.Stdin, opts.StdinFilename, opts.Tags, opts.Hostname)
 	if err != nil {
 		return err
 	}
@@ -377,13 +385,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentSnapshotID == nil {
-		hostname, err := os.Hostname()
-		if err != nil {
-			debug.Log("os.Hostname() returned err: %v", err)
-			hostname = ""
-		}
-
-		id, err := restic.FindLatestSnapshot(repo, target, hostname)
+		id, err := restic.FindLatestSnapshot(repo, target, opts.Hostname)
 		if err == nil {
 			parentSnapshotID = &id
 		} else if err != restic.ErrNoSnapshotFound {
@@ -459,7 +461,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		Warnf("%s\rwarning for %s: %v\n", ClearLine(), dir, err)
 	}
 
-	_, id, err := arch.Snapshot(newArchiveProgress(gopts, stat), target, opts.Tags, parentSnapshotID)
+	_, id, err := arch.Snapshot(newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID)
 	if err != nil {
 		return err
 	}
