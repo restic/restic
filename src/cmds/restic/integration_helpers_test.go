@@ -15,6 +15,7 @@ import (
 type dirEntry struct {
 	path string
 	fi   os.FileInfo
+	link uint64
 }
 
 func walkDir(dir string) <-chan *dirEntry {
@@ -36,6 +37,7 @@ func walkDir(dir string) <-chan *dirEntry {
 			ch <- &dirEntry{
 				path: name,
 				fi:   info,
+				link: nlink(info),
 			}
 
 			return nil
