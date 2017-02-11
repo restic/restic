@@ -80,6 +80,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	debug.Log("Start")
 	type indexRes struct {
 		Index *repository.Index
+		err   error
 		ID    string
 	}
 
@@ -95,39 +96,40 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 			idx, err = repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeOldIndex)
 		}
 
-		if err != nil {
-			return err
-		}
+		err = errors.Wrapf(err, "error loading index %v", id.Str())
 
 		select {
-		case indexCh <- indexRes{Index: idx, ID: id.String()}:
+		case indexCh <- indexRes{Index: idx, ID: id.String(), err: err}:
 		case <-done:
 		}
 
 		return nil
 	}
 
-	var perr error
 	go func() {
 		defer close(indexCh)
 		debug.Log("start loading indexes in parallel")
-		perr = repository.FilesInParallel(c.repo.Backend(), restic.IndexFile, defaultParallelism,
+		err := repository.FilesInParallel(c.repo.Backend(), restic.IndexFile, defaultParallelism,
 			repository.ParallelWorkFuncParseID(worker))
-		debug.Log("loading indexes finished, error: %v", perr)
+		debug.Log("loading indexes finished, error: %v", err)
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	done := make(chan struct{})
 	defer close(done)
 
-	if perr != nil {
-		errs = append(errs, perr)
-		return hints, errs
-	}
-
 	packToIndex := make(map[restic.ID]restic.IDSet)
 
 	for res := range indexCh {
-		debug.Log("process index %v", res.ID)
+		debug.Log("process index %v, err %v", res.ID, res.err)
+
+		if res.err != nil {
+			errs = append(errs, res.err)
+			continue
+		}
+
 		idxID, err := restic.ParseID(res.ID)
 		if err != nil {
 			errs = append(errs, errors.Errorf("unable to parse as index ID: %v", res.ID))
@@ -153,8 +155,6 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 
 		debug.Log("%d blobs processed", cnt)
 	}
-
-	debug.Log("done, error %v", perr)
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
