@@ -86,6 +86,7 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Nlink = uint32(f.node.Links)
 
 	return nil
+	
 }
 
 func (f *file) getBlobAt(i int) (blob []byte, err error) {
