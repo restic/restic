@@ -61,7 +61,7 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 	}
 
 	if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
-		return nil, errors.Errorf("%v: invalid data returned", h)
+		return nil, errors.Errorf("load %v: invalid data returned", h)
 	}
 
 	// decrypt
