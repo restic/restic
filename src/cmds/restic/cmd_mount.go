@@ -32,7 +32,9 @@ read-only mount.
 
 // MountOptions collects all options for the mount command.
 type MountOptions struct {
-	OwnerRoot bool
+	OwnerRoot  bool
+	AllowRoot  bool
+	AllowOther bool
 }
 
 var mountOptions MountOptions
@@ -41,6 +43,8 @@ func init() {
 	cmdRoot.AddCommand(cmdMount)
 
 	cmdMount.Flags().BoolVar(&mountOptions.OwnerRoot, "owner-root", false, "use 'root' as the owner of files and dirs")
+	cmdMount.Flags().BoolVar(&mountOptions.AllowRoot, "allow-root", false, "allow root user to access the data in the mounted directory")
+	cmdMount.Flags().BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 }
 
 func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
@@ -64,11 +68,21 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 			return err
 		}
 	}
-	c, err := systemFuse.Mount(
-		mountpoint,
+
+	mountOptions := []systemFuse.MountOption{
 		systemFuse.ReadOnly(),
 		systemFuse.FSName("restic"),
-	)
+	}
+
+	if opts.AllowRoot {
+		mountOptions = append(mountOptions, systemFuse.AllowRoot())
+	}
+
+	if opts.AllowOther {
+		mountOptions = append(mountOptions, systemFuse.AllowOther())
+	}
+
+	c, err := systemFuse.Mount(mountpoint, mountOptions...)
 	if err != nil {
 		return err
 	}
