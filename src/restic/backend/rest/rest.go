@@ -17,7 +17,7 @@ import (
 	"restic/backend"
 )
 
-const connLimit = 10
+const connLimit = 40
 
 // make sure the rest backend implements restic.Backend
 var _ restic.Backend = &restBackend{}
