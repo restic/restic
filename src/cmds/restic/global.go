@@ -54,7 +54,7 @@ func init() {
 	f.StringVarP(&globalOptions.PasswordFile, "password-file", "p", "", "read the repository password from a file")
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
-	f.BoolVarP(&globalOptions.JSON, "json", "", false, `print snapshots in json format`)
+	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 
 	restoreTerminal()
 }

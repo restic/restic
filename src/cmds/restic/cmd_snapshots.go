@@ -96,7 +96,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	return nil
 }
 
-//printSnapshotsReadable provides human redability
+// printSnapshotsReadable prints a text table of the snapshots in list to stdout.
 func printSnapshotsReadable(list []*restic.Snapshot) {
 
 	tab := NewTable()
@@ -160,7 +160,7 @@ type Snapshot struct {
 	Directories []string `json:"directories"`
 }
 
-//printSnapshotsJSON provides machine redability
+// printSnapshotsJSON writes the JSON representation of list to stdout.
 func printSnapshotsJSON(list []*restic.Snapshot) error {
 
 	enc := json.NewEncoder(os.Stdout)
