@@ -56,12 +56,12 @@ func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, er
 	h := restic.Handle{Type: t, Name: id.String()}
 	buf, err := backend.LoadAll(r.be, h)
 	if err != nil {
-		debug.Log("error loading %v: %v", id.Str(), err)
+		debug.Log("error loading %v: %v", h, err)
 		return nil, err
 	}
 
 	if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
-		return nil, errors.New("invalid data returned")
+		return nil, errors.Errorf("%v: invalid data returned", h)
 	}
 
 	// decrypt
