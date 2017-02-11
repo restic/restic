@@ -179,6 +179,48 @@ func TestUnreferencedBlobs(t *testing.T) {
 	test.Equals(t, unusedBlobsBySnapshot, blobs)
 }
 
+func TestModifiedIndex(t *testing.T) {
+	repodir, cleanup := test.Env(t, checkerTestData)
+	defer cleanup()
+
+	repo := repository.TestOpenLocal(t, repodir)
+
+	done := make(chan struct{})
+	defer close(done)
+
+	h := restic.Handle{
+		Type: restic.IndexFile,
+		Name: "90f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
+	}
+	f, err := repo.Backend().Load(h, 0, 0)
+	test.OK(t, err)
+
+	// save the index again with a modified name so that the hash doesn't match
+	// the content any more
+	h2 := restic.Handle{
+		Type: restic.IndexFile,
+		Name: "80f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
+	}
+	err = repo.Backend().Save(h2, f)
+	test.OK(t, err)
+
+	test.OK(t, f.Close())
+
+	chkr := checker.New(repo)
+	hints, errs := chkr.LoadIndex()
+	if len(errs) == 0 {
+		t.Fatalf("expected errors not found")
+	}
+
+	for _, err := range errs {
+		t.Logf("found expected error %v", err)
+	}
+
+	if len(hints) > 0 {
+		t.Errorf("expected no hints, got %v: %v", len(hints), hints)
+	}
+}
+
 var checkerDuplicateIndexTestData = filepath.Join("testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 
 func TestDuplicatePacksInIndex(t *testing.T) {
