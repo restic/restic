@@ -83,7 +83,9 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Atime = f.node.AccessTime
 	a.Ctime = f.node.ChangeTime
 	a.Mtime = f.node.ModTime
+
 	return nil
+
 }
 
 func (f *file) getBlobAt(i int) (blob []byte, err error) {

@@ -426,6 +426,11 @@ Don't forget to umount after quitting!
 
 Mounting repositories via FUSE is not possible on Windows and OpenBSD.
 
+Restic supports storage and preservation of hard links. However, since hard links
+exist in the scope of a filesystem by definition, restoring hard links from a fuse
+mount should be done by a program that preserves hard links. A program that does so
+is rsync, used with the option --hard-links.
+
 # Create an SFTP repository
 
 In order to backup data via SFTP, you must first set up a server with SSH and
