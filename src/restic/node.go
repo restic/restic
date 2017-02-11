@@ -103,6 +103,16 @@ func nodeTypeFromFileInfo(fi os.FileInfo) string {
 	return ""
 }
 
+// GetExtendedAttribute gets the extended attribute.
+func (node Node) GetExtendedAttribute(a string) []byte {
+	for _, attr := range node.ExtendedAttributes {
+		if attr.Name == a {
+			return attr.Value
+		}
+	}
+	return nil
+}
+
 // CreateAt creates the node at the given path and restores all the meta data.
 func (node *Node) CreateAt(path string, repo Repository) error {
 	debug.Log("create node %v at %v", node.Name, path)
@@ -557,6 +567,9 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "symlink":
 		node.LinkTarget, err = fs.Readlink(path)
 		err = errors.Wrap(err, "Readlink")
+		if err != nil {
+			return err
+		}
 	case "dev":
 		node.Device = uint64(stat.rdev())
 	case "chardev":
@@ -565,10 +578,6 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "socket":
 	default:
 		return errors.Errorf("invalid node type %q", node.Type)
-	}
-	
-	if err {
-		return err
 	}
 
 	if err = node.fillExtendedAttributes(path); err != nil {
