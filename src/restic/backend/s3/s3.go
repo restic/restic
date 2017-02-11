@@ -3,12 +3,10 @@ package s3
 import (
 	"bytes"
 	"io"
-	"net"
 	"net/http"
 	"path"
 	"restic"
 	"strings"
-	"time"
 
 	"restic/backend"
 	"restic/errors"
@@ -18,7 +16,7 @@ import (
 	"restic/debug"
 )
 
-const connLimit = 10
+const connLimit = 40
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
@@ -40,19 +38,8 @@ func Open(cfg Config) (restic.Backend, error) {
 
 	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix}
 
-	t := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
-		}).DialContext,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   30,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-	client.SetCustomTransport(t)
+	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
+	client.SetCustomTransport(tr)
 
 	be.createConnections()
 
