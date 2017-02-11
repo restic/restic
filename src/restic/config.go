@@ -17,9 +17,13 @@ type Config struct {
 	ChunkerPolynomial chunker.Pol `json:"chunker_polynomial"`
 }
 
-// RepoVersion is the version that is written to the config when a repository
-// is newly created with Init().
-const RepoVersion = 1
+// CurrentRepoVersion is the version that is written to the config when a
+// repository is newly created with Init().
+const CurrentRepoVersion = 2
+
+// OldestSupportedRepoVersion is the last repository version that the current
+// code supports.
+const OldestSupportedRepoVersion = 1
 
 // JSONUnpackedLoader loads unpacked JSON.
 type JSONUnpackedLoader interface {
@@ -40,7 +44,7 @@ func CreateConfig() (Config, error) {
 	}
 
 	cfg.ID = NewRandomID().String()
-	cfg.Version = RepoVersion
+	cfg.Version = CurrentRepoVersion
 
 	debug.Log("New config: %#v", cfg)
 	return cfg, nil
@@ -51,7 +55,7 @@ func TestCreateConfig(t testing.TB, pol chunker.Pol) (cfg Config) {
 	cfg.ChunkerPolynomial = pol
 
 	cfg.ID = NewRandomID().String()
-	cfg.Version = RepoVersion
+	cfg.Version = CurrentRepoVersion
 
 	return cfg
 }
@@ -67,8 +71,12 @@ func LoadConfig(r JSONUnpackedLoader) (Config, error) {
 		return Config{}, err
 	}
 
-	if cfg.Version != RepoVersion {
-		return Config{}, errors.New("unsupported repository version")
+	if cfg.Version < OldestSupportedRepoVersion {
+		return Config{}, errors.New("Repository version is too old")
+	}
+
+	if cfg.Version > CurrentRepoVersion {
+		return Config{}, errors.New("Repository version is too new")
 	}
 
 	if !cfg.ChunkerPolynomial.Irreducible() {
