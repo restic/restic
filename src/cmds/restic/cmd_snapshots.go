@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"restic"
+	"time"
 )
 
 var cmdSnapshots = &cobra.Command{
@@ -151,35 +152,47 @@ func printSnapshotsReadable(list []*restic.Snapshot) {
 	return
 }
 
-//Snapshot provides struct to store snapshots
+// Snapshot helps to print Snaphots as JSON
 type Snapshot struct {
-	ID          string   `json:"id"`
-	Date        string   `json:"date"`
-	Host        string   `json:"host"`
-	Tags        []string `json:"tags"`
-	Directories []string `json:"directories"`
+	Time     time.Time `json:"time"`
+	Parent   string    `json:"parent,omitempty"`
+	Tree     string    `json:"tree,omitempty"`
+	Paths    []string  `json:"paths"`
+	Hostname string    `json:"hostname,omitempty"`
+	Username string    `json:"username,omitempty"`
+	UID      uint32    `json:"uid,omitempty"`
+	GID      uint32    `json:"gid,omitempty"`
+	Excludes []string  `json:"excludes,omitempty"`
+	Tags     []string  `json:"tags,omitempty"`
+	ID       string    `json:"id"`
 }
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
 func printSnapshotsJSON(list []*restic.Snapshot) error {
 
 	enc := json.NewEncoder(os.Stdout)
-	//set JSON prefix
+	// set JSON prefix
 	fmt.Fprint(os.Stdout, "[")
 
 	for i, sn := range list {
 
-		//set JSON delimiter
+		// set JSON delimiter
 		if i != 0 {
 			fmt.Fprint(os.Stdout, ",")
 		}
 
 		k := Snapshot{
-			ID:          sn.ID().Str(),
-			Date:        sn.Time.Format(TimeFormat),
-			Host:        sn.Hostname,
-			Tags:        sn.Tags,
-			Directories: sn.Paths}
+			Time:     sn.Time,
+			Parent:   sn.Parent.PrintStr(),
+			Tree:     sn.Tree.PrintStr(),
+			Paths:    sn.Paths,
+			Hostname: sn.Hostname,
+			Username: sn.Username,
+			UID:      sn.UID,
+			GID:      sn.GID,
+			Excludes: sn.Excludes,
+			Tags:     sn.Tags,
+			ID:       sn.ID().String()}
 
 		err := enc.Encode(k)
 		if err != nil {
@@ -188,7 +201,7 @@ func printSnapshotsJSON(list []*restic.Snapshot) error {
 
 	}
 
-	//set JSON postfix
+	// set JSON postfix
 	fmt.Fprint(os.Stdout, "]")
 
 	return nil
