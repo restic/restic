@@ -77,6 +77,7 @@ Available Commands:
   version       Print version information
 
 Flags:
+      --json                   set output mode to JSON for commands that support it
       --no-lock                do not lock the repo, this allows some operations on read-only repos
   -p, --password-file string   read the repository password from a file
   -q, --quiet                  do not output comprehensive progress report
@@ -110,6 +111,7 @@ Flags:
       --tag tag                 add a tag for the new snapshot (can be specified multiple times)
 
 Global Flags:
+      --json                   set output mode to JSON for commands that support it
       --no-lock                do not lock the repo, this allows some operations on read-only repos
   -p, --password-file string   read the repository password from a file
   -q, --quiet                  do not output comprehensive progress report
@@ -739,3 +741,10 @@ enter password for repository:
   "gid": 20
 }
 ```
+
+# Scripting restic
+
+Restic supports the output of some commands in JSON format. The JSON flag ```--json``` is currently supported only by ```restic snapshots```.
+
+```console
+$ restic -r /tmp/backup snapshots --json```
