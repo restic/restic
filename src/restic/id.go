@@ -69,15 +69,6 @@ func (id *ID) Str() string {
 	return hex.EncodeToString(id[:shortStr])
 }
 
-// PrintStr returns the string version of id if available.
-func (id *ID) PrintStr() string {
-	if id == nil || id.IsNull() {
-		return ""
-	}
-
-	return hex.EncodeToString(id[:])
-}
-
 // IsNull returns true iff id only consists of null bytes.
 func (id ID) IsNull() bool {
 	var nullID ID

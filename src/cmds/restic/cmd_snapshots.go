@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"restic/errors"
@@ -9,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"encoding/json"
 	"restic"
-	"time"
 )
 
 var cmdSnapshots = &cobra.Command{
@@ -154,56 +153,25 @@ func printSnapshotsReadable(list []*restic.Snapshot) {
 
 // Snapshot helps to print Snaphots as JSON
 type Snapshot struct {
-	Time     time.Time `json:"time"`
-	Parent   string    `json:"parent,omitempty"`
-	Tree     string    `json:"tree,omitempty"`
-	Paths    []string  `json:"paths"`
-	Hostname string    `json:"hostname,omitempty"`
-	Username string    `json:"username,omitempty"`
-	UID      uint32    `json:"uid,omitempty"`
-	GID      uint32    `json:"gid,omitempty"`
-	Excludes []string  `json:"excludes,omitempty"`
-	Tags     []string  `json:"tags,omitempty"`
-	ID       string    `json:"id"`
+	*restic.Snapshot
+
+	ID string `json:"id"`
 }
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
 func printSnapshotsJSON(list []*restic.Snapshot) error {
 
-	enc := json.NewEncoder(os.Stdout)
-	// set JSON prefix
-	fmt.Fprint(os.Stdout, "[")
+	var snapshots []Snapshot
 
-	for i, sn := range list {
-
-		// set JSON delimiter
-		if i != 0 {
-			fmt.Fprint(os.Stdout, ",")
-		}
+	for _, sn := range list {
 
 		k := Snapshot{
-			Time:     sn.Time,
-			Parent:   sn.Parent.PrintStr(),
-			Tree:     sn.Tree.PrintStr(),
-			Paths:    sn.Paths,
-			Hostname: sn.Hostname,
-			Username: sn.Username,
-			UID:      sn.UID,
-			GID:      sn.GID,
-			Excludes: sn.Excludes,
-			Tags:     sn.Tags,
-			ID:       sn.ID().String()}
-
-		err := enc.Encode(k)
-		if err != nil {
-			return err
+			Snapshot: sn,
+			ID:       sn.ID().String(),
 		}
-
+		snapshots = append(snapshots, k)
 	}
 
-	// set JSON postfix
-	fmt.Fprint(os.Stdout, "]")
-
-	return nil
+	return json.NewEncoder(os.Stdout).Encode(snapshots)
 
 }
