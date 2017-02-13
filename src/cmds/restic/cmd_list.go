@@ -13,7 +13,7 @@ var cmdList = &cobra.Command{
 	Use:   "list [blobs|packs|index|snapshots|keys|locks]",
 	Short: "list objects in the repository",
 	Long: `
-
+The "list" command allows listing objects in the repository based on type.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runList(globalOptions, args)
