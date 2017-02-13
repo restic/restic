@@ -11,7 +11,7 @@ import (
 
 var cmdList = &cobra.Command{
 	Use:   "list [blobs|packs|index|snapshots|keys|locks]",
-	Short: "list items in the repository",
+	Short: "list objects in the repository",
 	Long: `
 
 `,

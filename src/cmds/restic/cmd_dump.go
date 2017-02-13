@@ -22,7 +22,7 @@ var cmdDump = &cobra.Command{
 	Use:   "dump [indexes|snapshots|trees|all|packs]",
 	Short: "dump data structures",
 	Long: `
-The "dump" command dumps data structures from a repository as JSON objects. It
+The "dump" command dumps data structures from the repository as JSON objects. It
 is used for debugging purposes only.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDump(globalOptions, args)
