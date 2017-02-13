@@ -120,7 +120,7 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 }
 
 func runKey(gopts GlobalOptions, args []string) error {
-	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) {
+	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) || (args[0] != "rm" && len(args) != 1) {
 		return errors.Fatal("wrong number of arguments")
 	}
 
