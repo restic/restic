@@ -10,8 +10,8 @@ var cmdRebuildIndex = &cobra.Command{
 	Use:   "rebuild-index [flags]",
 	Short: "build a new index file",
 	Long: `
-The "rebuild-index" command creates a new index by combining the index files
-into a new one.
+The "rebuild-index" command creates a new index based on the pack files in the
+repository.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runRebuildIndex(globalOptions)
