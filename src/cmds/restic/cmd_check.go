@@ -38,8 +38,8 @@ func init() {
 	cmdRoot.AddCommand(cmdCheck)
 
 	f := cmdCheck.Flags()
-	f.BoolVar(&checkOptions.ReadData, "read-data", false, "Read all data blobs")
-	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "Find unused blobs")
+	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
+	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
 }
 
 func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
