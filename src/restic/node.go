@@ -215,7 +215,7 @@ func (node Node) createFileAt(path string, repo Repository, idx *HardlinkIndex) 
 		}
 
 		buf = buf[:cap(buf)]
-		if uint(len(buf)) < size {
+		if len(buf) < CiphertextLength(int(size)) {
 			buf = NewBlobBuffer(int(size))
 		}
 
