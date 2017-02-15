@@ -14,7 +14,7 @@ var cmdKey = &cobra.Command{
 	Use:   "key [list|add|rm|passwd] [ID]",
 	Short: "manage keys (passwords)",
 	Long: `
-The "key" command manages keys (passwords) for accessing a repository.
+The "key" command manages keys (passwords) for accessing the repository.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runKey(globalOptions, args)
@@ -120,7 +120,7 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 }
 
 func runKey(gopts GlobalOptions, args []string) error {
-	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) {
+	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) || (args[0] != "rm" && len(args) != 1) {
 		return errors.Fatal("wrong number of arguments")
 	}
 

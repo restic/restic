@@ -15,7 +15,7 @@ var cmdSnapshots = &cobra.Command{
 	Use:   "snapshots",
 	Short: "list all snapshots",
 	Long: `
-The "snapshots" command lists all snapshots stored in a repository.
+The "snapshots" command lists all snapshots stored in the repository.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runSnapshots(snapshotOptions, globalOptions, args)

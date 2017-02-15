@@ -36,9 +36,9 @@ func init() {
 	cmdRoot.AddCommand(cmdFind)
 
 	f := cmdFind.Flags()
-	f.StringVarP(&findOptions.Oldest, "oldest", "o", "", "Oldest modification date/time")
-	f.StringVarP(&findOptions.Newest, "newest", "n", "", "Newest modification date/time")
-	f.StringVarP(&findOptions.Snapshot, "snapshot", "s", "", "Snapshot ID to search in")
+	f.StringVarP(&findOptions.Oldest, "oldest", "o", "", "oldest modification date/time")
+	f.StringVarP(&findOptions.Newest, "newest", "n", "", "newest modification date/time")
+	f.StringVarP(&findOptions.Snapshot, "snapshot", "s", "", "snapshot ID to search in")
 }
 
 type findPattern struct {
