@@ -164,3 +164,21 @@ func (f *file) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	}
 	return nil
 }
+
+func (f *file) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	debug.Log("Listxattr(%v, %v)", f.node.Name, req.Size)
+	for _, attr := range f.node.ExtendedAttributes {
+		resp.Append(attr.Name)
+	}
+	return nil
+}
+
+func (f *file) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	debug.Log("Getxattr(%v, %v, %v)", f.node.Name, req.Name, req.Size)
+	attrval := f.node.GetExtendedAttribute(req.Name)
+	if attrval != nil {
+		resp.Xattr = attrval
+		return nil
+	}
+	return fuse.ErrNoXattr
+}
