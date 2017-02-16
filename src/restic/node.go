@@ -604,19 +604,29 @@ func (node *Node) fillExtendedAttributes(path string) error {
 	if node.Type == "symlink" {
 		return nil
 	}
+
 	xattrs, err := Listxattr(path)
-	if err == nil {
-		node.ExtendedAttributes = make([]ExtendedAttribute, len(xattrs))
-		for i, attr := range xattrs {
-			attrVal, err := Getxattr(path, attr)
-			if err != nil {
-				return errors.Errorf("can not obtain extended attribute %v for %v:\n", attr, path)
-			}
-			node.ExtendedAttributes[i].Name = attr
-			node.ExtendedAttributes[i].Value = attrVal
-		}
+	debug.Log("fillExtendedAttributes(%v) %v %v", path, xattrs, err)
+	if err != nil {
+		return err
 	}
-	return err
+
+	node.ExtendedAttributes = make([]ExtendedAttribute, 0, len(xattrs))
+	for _, attr := range xattrs {
+		attrVal, err := Getxattr(path, attr)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "can not obtain extended attribute %v for %v:\n", attr, path)
+			continue
+		}
+		attr := ExtendedAttribute{
+			Name:  attr,
+			Value: attrVal,
+		}
+
+		node.ExtendedAttributes = append(node.ExtendedAttributes, attr)
+	}
+
+	return nil
 }
 
 type statT interface {

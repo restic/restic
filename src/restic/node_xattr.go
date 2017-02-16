@@ -4,13 +4,14 @@
 package restic
 
 import (
-	"github.com/ivaxer/go-xattr"
 	"syscall"
+
+	"github.com/pkg/xattr"
 )
 
 // Getxattr retrieves extended attribute data associated with path.
 func Getxattr(path, name string) ([]byte, error) {
-	b, e := xattr.Get(path, name)
+	b, e := xattr.Getxattr(path, name)
 	if e == syscall.ENOTSUP {
 		return nil, nil
 	}
@@ -20,7 +21,7 @@ func Getxattr(path, name string) ([]byte, error) {
 // Listxattr retrieves a list of names of extended attributes associated with the
 // given path in the file system.
 func Listxattr(path string) ([]string, error) {
-	s, e := xattr.List(path)
+	s, e := xattr.Listxattr(path)
 	if e == syscall.ENOTSUP {
 		return nil, nil
 	}
@@ -29,7 +30,7 @@ func Listxattr(path string) ([]string, error) {
 
 // Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
-	e := xattr.Set(path, name, data)
+	e := xattr.Setxattr(path, name, data)
 	if e == syscall.ENOTSUP {
 		return nil
 	}
