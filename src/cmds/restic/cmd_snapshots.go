@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"encoding/json"
 	"restic"
 )
 
@@ -56,10 +57,6 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 	}
 
-	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %-3s %s", "ID", "Date", "Host", "Tags", "", "Directory")
-	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %-3s %s"
-
 	done := make(chan struct{})
 	defer close(done)
 
@@ -86,6 +83,25 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 
 	}
+
+	if gopts.JSON {
+		err := printSnapshotsJSON(list)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error printing snapshot: %v\n", err)
+		}
+		return nil
+	}
+	printSnapshotsReadable(list)
+
+	return nil
+}
+
+// printSnapshotsReadable prints a text table of the snapshots in list to stdout.
+func printSnapshotsReadable(list []*restic.Snapshot) {
+
+	tab := NewTable()
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %-3s %s", "ID", "Date", "Host", "Tags", "", "Directory")
+	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %-3s %s"
 
 	for _, sn := range list {
 		if len(sn.Paths) == 0 {
@@ -132,5 +148,30 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 
 	tab.Write(os.Stdout)
 
-	return nil
+	return
+}
+
+// Snapshot helps to print Snaphots as JSON
+type Snapshot struct {
+	*restic.Snapshot
+
+	ID string `json:"id"`
+}
+
+// printSnapshotsJSON writes the JSON representation of list to stdout.
+func printSnapshotsJSON(list []*restic.Snapshot) error {
+
+	var snapshots []Snapshot
+
+	for _, sn := range list {
+
+		k := Snapshot{
+			Snapshot: sn,
+			ID:       sn.ID().String(),
+		}
+		snapshots = append(snapshots, k)
+	}
+
+	return json.NewEncoder(os.Stdout).Encode(snapshots)
+
 }
