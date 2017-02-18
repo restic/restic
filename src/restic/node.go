@@ -577,9 +577,8 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "symlink":
 		node.LinkTarget, err = fs.Readlink(path)
 		node.Links = uint64(stat.nlink())
-		err = errors.Wrap(err, "Readlink")
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Readlink")
 		}
 	case "dev":
 		node.Device = uint64(stat.rdev())
@@ -597,7 +596,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (node *Node) fillExtendedAttributes(path string) error {
