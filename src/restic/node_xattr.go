@@ -1,6 +1,5 @@
 // +build !openbsd
 // +build !windows
-// +build !freebsd
 
 package restic
 
