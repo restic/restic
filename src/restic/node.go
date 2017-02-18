@@ -63,7 +63,8 @@ func (node Node) String() string {
 	return fmt.Sprintf("<Node(%s) %s>", node.Type, node.Name)
 }
 
-// NodeFromFileInfo returns a new node from the given path and FileInfo.
+// NodeFromFileInfo returns a new node from the given path and FileInfo. It
+// returns the first error that is encountered, together with a node.
 func NodeFromFileInfo(path string, fi os.FileInfo) (*Node, error) {
 	mask := os.ModePerm | os.ModeType | os.ModeSetuid | os.ModeSetgid | os.ModeSticky
 	node := &Node{
