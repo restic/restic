@@ -216,6 +216,15 @@ snapshot 31f7bd63 saved
 In fact several hosts may use the same repository to backup directories and
 files leading to a greater de-duplication.
 
+Please be aware that when you backup different directories (or the directories
+to be saved have a variable name component like a time/date), restic always
+needs to read all files and only afterwards can compute which parts of the
+files need to be saved. When you backup the same directory again (maybe with
+new or changed files) restic will find the old snapshot in the repo and by
+default only reads those files that are new or have been modified since the
+last snapshot. This is decided based on the modify date of the file in the
+file system.
+
 You can exclude folders and files by specifying exclude-patterns.
 Either specify them with multiple `--exclude`'s or one `--exclude-file`
 
