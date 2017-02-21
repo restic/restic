@@ -545,7 +545,8 @@ be done either manually (by specifying a snapshot ID to remove) or by using a
 policy that describes which snapshots to forget. For all remove operations, two
 commands need to be called in sequence: `forget` to remove a snapshot and
 `prune` to actually remove the data that was referenced by the snapshot from
-the repository.
+the repository. This can be automated with the `--prune` option of the `forget`
+command, which runs `prune` automatically if snapshots have been removed.
 
 ## Remove a single snapshot
 
@@ -609,6 +610,41 @@ done
 ```
 
 Afterwards the repository is smaller.
+
+You can automate this two-step process by using the `--prune` switch to
+`forget`:
+
+```console
+$ restic forget --keep-last 1 --prune
+snapshots for host mopped, directories /home/user/work:
+
+keep 1 snapshots:
+ID        Date                 Host        Tags        Directory
+----------------------------------------------------------------------
+4bba301e  2017-02-21 10:49:18  mopped                  /home/user/work
+
+remove 1 snapshots:
+ID        Date                 Host        Tags        Directory
+----------------------------------------------------------------------
+8c02b94b  2017-02-21 10:48:33  mopped                  /home/user/work
+
+1 snapshots have been removed, running prune
+counting files in repo
+building new index for repo
+[0:00] 100.00%  37 / 37 packs
+repository contains 37 packs (5521 blobs) with 151.012 MiB bytes
+processed 5521 blobs: 0 duplicate blobs, 0B duplicate
+load all snapshots
+find data that is still in use for 1 snapshots
+[0:00] 100.00%  1 / 1 snapshots
+found 5323 of 5521 data blobs still in use, removing 198 blobs
+will delete 0 packs and rewrite 27 packs, this frees 22.106 MiB
+creating new index
+[0:00] 100.00%  30 / 30 packs
+saved new index as b49f3e68
+done
+```
+
 
 ## Removing snapshots according to a policy
 

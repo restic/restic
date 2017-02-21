@@ -75,7 +75,11 @@ func runPrune(gopts GlobalOptions) error {
 		return err
 	}
 
-	err = repo.LoadIndex()
+	return pruneRepository(gopts, repo)
+}
+
+func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
+	err := repo.LoadIndex()
 	if err != nil {
 		return err
 	}
