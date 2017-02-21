@@ -19,6 +19,13 @@ The latest documentation can be viewed online at
 a menu that allows switching to the documentation and user manual for the
 latest released version.
 
+News
+====
+
+You can follow the restic project on Twitter
+[@resticbackup](https://twitter.com/resticbackup) or by subscribing to the
+[development blog](https://restic.github.io/blog/).
+
 Install restic
 ==============
 
