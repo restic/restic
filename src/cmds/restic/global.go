@@ -27,11 +27,11 @@ var version = "compiled manually"
 
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
-	Repo         string
-	PasswordFile string
-	Quiet        bool
-	NoLock       bool
-	JSON         bool
+	Repo                   string
+	PasswordFile           string
+	Quiet                  bool
+	NoLock                 bool
+	JSON                   bool
 	ProgressUpdateInterval int
 
 	password string
