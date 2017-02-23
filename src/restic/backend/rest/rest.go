@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,12 +11,16 @@ import (
 	"restic"
 	"strings"
 
+	"restic/debug"
 	"restic/errors"
 
 	"restic/backend"
 )
 
-const connLimit = 10
+const connLimit = 40
+
+// make sure the rest backend implements restic.Backend
+var _ restic.Backend = &restBackend{}
 
 // restPath returns the path to the given resource.
 func restPath(url *url.URL, h restic.Handle) string {
@@ -71,65 +74,18 @@ func (b *restBackend) Location() string {
 	return b.url.String()
 }
 
-// Load returns the data stored in the backend for h at the given offset
-// and saves it in p. Load has the same semantics as io.ReaderAt.
-func (b *restBackend) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	if err := h.Valid(); err != nil {
-		return 0, err
-	}
-
-	// invert offset
-	if off < 0 {
-		info, err := b.Stat(h)
-		if err != nil {
-			return 0, errors.Wrap(err, "Stat")
-		}
-
-		if -off > info.Size {
-			off = 0
-		} else {
-			off = info.Size + off
-		}
-	}
-
-	req, err := http.NewRequest("GET", restPath(b.url, h), nil)
-	if err != nil {
-		return 0, errors.Wrap(err, "http.NewRequest")
-	}
-	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d", off, off+int64(len(p))))
-	<-b.connChan
-	resp, err := b.client.Do(req)
-	b.connChan <- struct{}{}
-
-	if resp != nil {
-		defer func() {
-			io.Copy(ioutil.Discard, resp.Body)
-			e := resp.Body.Close()
-
-			if err == nil {
-				err = errors.Wrap(e, "Close")
-			}
-		}()
-	}
-
-	if err != nil {
-		return 0, errors.Wrap(err, "client.Do")
-	}
-	if resp.StatusCode != 200 && resp.StatusCode != 206 {
-		return 0, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
-	}
-
-	return io.ReadFull(resp.Body, p)
-}
-
 // Save stores data in the backend at the handle.
-func (b *restBackend) Save(h restic.Handle, p []byte) (err error) {
+func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
+	// make sure that client.Post() cannot close the reader by wrapping it in
+	// backend.Closer, which has a noop method.
+	rd = backend.Closer{Reader: rd}
+
 	<-b.connChan
-	resp, err := b.client.Post(restPath(b.url, h), "binary/octet-stream", bytes.NewReader(p))
+	resp, err := b.client.Post(restPath(b.url, h), "binary/octet-stream", rd)
 	b.connChan <- struct{}{}
 
 	if resp != nil {
@@ -152,6 +108,56 @@ func (b *restBackend) Save(h restic.Handle, p []byte) (err error) {
 	}
 
 	return nil
+}
+
+// Load returns a reader that yields the contents of the file at h at the
+// given offset. If length is nonzero, only a portion of the file is
+// returned. rd must be closed after use.
+func (b *restBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	debug.Log("Load %v, length %v, offset %v", h, length, offset)
+	if err := h.Valid(); err != nil {
+		return nil, err
+	}
+
+	if offset < 0 {
+		return nil, errors.New("offset is negative")
+	}
+
+	if length < 0 {
+		return nil, errors.Errorf("invalid length %d", length)
+	}
+
+	req, err := http.NewRequest("GET", restPath(b.url, h), nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "http.NewRequest")
+	}
+
+	byteRange := fmt.Sprintf("bytes=%d-", offset)
+	if length > 0 {
+		byteRange = fmt.Sprintf("bytes=%d-%d", offset, offset+int64(length)-1)
+	}
+	req.Header.Add("Range", byteRange)
+	debug.Log("Load(%v) send range %v", h, byteRange)
+
+	<-b.connChan
+	resp, err := b.client.Do(req)
+	b.connChan <- struct{}{}
+
+	if err != nil {
+		if resp != nil {
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+		}
+		return nil, errors.Wrap(err, "client.Do")
+	}
+
+	if resp.StatusCode != 200 && resp.StatusCode != 206 {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+		return nil, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+	}
+
+	return resp.Body, nil
 }
 
 // Stat returns information about a blob.
@@ -188,8 +194,8 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
-	_, err := b.Stat(restic.Handle{Type: t, Name: name})
+func (b *restBackend) Test(h restic.Handle) (bool, error) {
+	_, err := b.Stat(h)
 	if err != nil {
 		return false, nil
 	}
@@ -198,8 +204,7 @@ func (b *restBackend) Test(t restic.FileType, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *restBackend) Remove(t restic.FileType, name string) error {
-	h := restic.Handle{Type: t, Name: name}
+func (b *restBackend) Remove(h restic.Handle) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}

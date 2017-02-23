@@ -75,7 +75,11 @@ func runPrune(gopts GlobalOptions) error {
 		return err
 	}
 
-	err = repo.LoadIndex()
+	return pruneRepository(gopts, repo)
+}
+
+func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
+	err := repo.LoadIndex()
 	if err != nil {
 		return err
 	}
@@ -103,11 +107,13 @@ func runPrune(gopts GlobalOptions) error {
 		return err
 	}
 
+	blobs := 0
 	for _, pack := range idx.Packs {
 		stats.bytes += pack.Size
+		blobs += len(pack.Entries)
 	}
 	Verbosef("repository contains %v packs (%v blobs) with %v bytes\n",
-		len(idx.Packs), len(idx.Blobs), formatBytes(uint64(stats.bytes)))
+		len(idx.Packs), blobs, formatBytes(uint64(stats.bytes)))
 
 	blobCount := make(map[restic.BlobHandle]int)
 	duplicateBlobs := 0
@@ -164,14 +170,17 @@ func runPrune(gopts GlobalOptions) error {
 
 	// find packs that need a rewrite
 	rewritePacks := restic.NewIDSet()
-	for h, blob := range idx.Blobs {
-		if !usedBlobs.Has(h) {
-			rewritePacks.Merge(blob.Packs)
-			continue
-		}
+	for _, pack := range idx.Packs {
+		for _, blob := range pack.Entries {
+			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
+			if !usedBlobs.Has(h) {
+				rewritePacks.Insert(pack.ID)
+				continue
+			}
 
-		if blobCount[h] > 1 {
-			rewritePacks.Merge(blob.Packs)
+			if blobCount[h] > 1 {
+				rewritePacks.Insert(pack.ID)
+			}
 		}
 	}
 
@@ -214,7 +223,8 @@ func runPrune(gopts GlobalOptions) error {
 	}
 
 	for packID := range removePacks {
-		err = repo.Backend().Remove(restic.DataFile, packID.String())
+		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
+		err = repo.Backend().Remove(h)
 		if err != nil {
 			Warnf("unable to remove file %v from the repository\n", packID.Str())
 		}
@@ -234,7 +244,8 @@ func runPrune(gopts GlobalOptions) error {
 
 	var supersedes restic.IDs
 	for idxID := range repo.List(restic.IndexFile, done) {
-		err := repo.Backend().Remove(restic.IndexFile, idxID.String())
+		h := restic.Handle{Type: restic.IndexFile, Name: idxID.String()}
+		err := repo.Backend().Remove(h)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", idxID.Str(), err)
 		}

@@ -54,10 +54,9 @@ func verifyBlobs(t testing.TB, bufs []Buf, k *crypto.Key, rd io.ReaderAt, packSi
 	}
 	// header length
 	written += binary.Size(uint32(0))
-	// header
-	written += len(bufs) * (binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + len(restic.ID{}))
-	// header crypto
-	written += crypto.Extension
+	// header + header crypto
+	headerSize := len(bufs) * (binary.Size(restic.BlobType(0)) + binary.Size(uint32(0)) + len(restic.ID{}))
+	written += restic.CiphertextLength(headerSize)
 
 	// check length
 	Equals(t, uint(written), packSize)
@@ -127,7 +126,7 @@ func TestUnpackReadSeeker(t *testing.T) {
 	id := restic.Hash(packData)
 
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	OK(t, b.Save(handle, packData))
+	OK(t, b.Save(handle, bytes.NewReader(packData)))
 	verifyBlobs(t, bufs, k, restic.ReaderAt(b, handle), packSize)
 }
 
@@ -140,6 +139,6 @@ func TestShortPack(t *testing.T) {
 	id := restic.Hash(packData)
 
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	OK(t, b.Save(handle, packData))
+	OK(t, b.Save(handle, bytes.NewReader(packData)))
 	verifyBlobs(t, bufs, k, restic.ReaderAt(b, handle), packSize)
 }

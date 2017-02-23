@@ -55,7 +55,8 @@ func RebuildIndex(repo restic.Repository) error {
 	debug.Log("new index saved as %v", id.Str())
 
 	for indexID := range oldIndexes {
-		err := repo.Backend().Remove(restic.IndexFile, indexID.String())
+		h := restic.Handle{Type: restic.IndexFile, Name: indexID.String()}
+		err := repo.Backend().Remove(h)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", indexID.Str(), err)
 		}

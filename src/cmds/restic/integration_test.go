@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	mrand "math/rand"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -157,6 +158,15 @@ func testRunFind(t testing.TB, gopts GlobalOptions, pattern string) []string {
 	OK(t, runFind(opts, gopts, []string{pattern}))
 
 	return strings.Split(string(buf.Bytes()), "\n")
+}
+
+func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {
+	opts := ForgetOptions{}
+	OK(t, runForget(opts, gopts, args))
+}
+
+func testRunPrune(t testing.TB, gopts GlobalOptions) {
+	OK(t, runPrune(gopts))
 }
 
 func TestBackup(t *testing.T) {
@@ -730,6 +740,30 @@ func TestRestoreFilter(t *testing.T) {
 	})
 }
 
+func TestRestore(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		testRunInit(t, gopts)
+
+		for i := 0; i < 10; i++ {
+			p := filepath.Join(env.testdata, fmt.Sprintf("foo/bar/testfile%v", i))
+			OK(t, os.MkdirAll(filepath.Dir(p), 0755))
+			OK(t, appendRandomData(p, uint(mrand.Intn(5<<21))))
+		}
+
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+
+		// Restore latest without any filters
+		restoredir := filepath.Join(env.base, "restore")
+		testRunRestoreLatest(t, gopts, restoredir, nil, "")
+
+		Assert(t, directoriesEqualContents(env.testdata, filepath.Join(restoredir, filepath.Base(env.testdata))),
+			"directories are not equal")
+	})
+}
+
 func TestRestoreLatest(t *testing.T) {
 
 	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
@@ -802,7 +836,7 @@ func TestRestoreWithPermissionFailure(t *testing.T) {
 
 		testRunRestore(t, gopts, filepath.Join(env.base, "restore"), snapshots[0])
 
-		// make sure that all files have been restored, regardeless of any
+		// make sure that all files have been restored, regardless of any
 		// permission errors
 		files := testRunLs(t, gopts, snapshots[0].String())
 		for _, filename := range files {
@@ -901,7 +935,7 @@ func TestRebuildIndex(t *testing.T) {
 		}
 
 		if !strings.Contains(out, "restic rebuild-index") {
-			t.Fatalf("did not find hint for rebuild-index comman")
+			t.Fatalf("did not find hint for rebuild-index command")
 		}
 
 		testRunRebuildIndex(t, gopts)
@@ -946,4 +980,131 @@ func TestCheckRestoreNoLock(t *testing.T) {
 
 		testRunRestore(t, gopts, filepath.Join(env.base, "restore"), snapshotIDs[0])
 	})
+}
+
+func TestPrune(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(errors.Cause(err)) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		testRunInit(t, gopts)
+
+		SetupTarTestFixture(t, env.testdata, datafile)
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "1")}, opts, gopts)
+		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "2")}, opts, gopts)
+		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "3")}, opts, gopts)
+
+		snapshotIDs := testRunList(t, "snapshots", gopts)
+		Assert(t, len(snapshotIDs) == 3,
+			"expected one snapshot, got %v", snapshotIDs)
+
+		testRunForget(t, gopts, snapshotIDs[0].String())
+		testRunPrune(t, gopts)
+		testRunCheck(t, gopts)
+	})
+}
+
+func TestHardLink(t *testing.T) {
+	// this test assumes a test set with a single directory containing hard linked files
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "test.hl.tar.gz")
+		fd, err := os.Open(datafile)
+		if os.IsNotExist(errors.Cause(err)) {
+			t.Skipf("unable to find data file %q, skipping", datafile)
+			return
+		}
+		OK(t, err)
+		OK(t, fd.Close())
+
+		testRunInit(t, gopts)
+
+		SetupTarTestFixture(t, env.testdata, datafile)
+
+		linkTests := createFileSetPerHardlink(env.testdata)
+
+		opts := BackupOptions{}
+
+		// first backup
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		snapshotIDs := testRunList(t, "snapshots", gopts)
+		Assert(t, len(snapshotIDs) == 1,
+			"expected one snapshot, got %v", snapshotIDs)
+
+		testRunCheck(t, gopts)
+
+		// restore all backups and compare
+		for i, snapshotID := range snapshotIDs {
+			restoredir := filepath.Join(env.base, fmt.Sprintf("restore%d", i))
+			t.Logf("restoring snapshot %v to %v", snapshotID.Str(), restoredir)
+			testRunRestore(t, gopts, restoredir, snapshotIDs[0])
+			Assert(t, directoriesEqualContents(env.testdata, filepath.Join(restoredir, "testdata")),
+				"directories are not equal")
+
+			linkResults := createFileSetPerHardlink(filepath.Join(restoredir, "testdata"))
+			Assert(t, linksEqual(linkTests, linkResults),
+				"links are not equal")
+		}
+
+		testRunCheck(t, gopts)
+	})
+}
+
+func linksEqual(source, dest map[uint64][]string) bool {
+	for _, vs := range source {
+		found := false
+		for kd, vd := range dest {
+			if linkEqual(vs, vd) {
+				delete(dest, kd)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	if len(dest) != 0 {
+		return false
+	}
+
+	return true
+}
+
+func linkEqual(source, dest []string) bool {
+	// equal if sliced are equal without considering order
+	if source == nil && dest == nil {
+		return true
+	}
+
+	if source == nil || dest == nil {
+		return false
+	}
+
+	if len(source) != len(dest) {
+		return false
+	}
+
+	for i := range source {
+		found := false
+		for j := range dest {
+			if source[i] == dest[j] {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	return true
 }

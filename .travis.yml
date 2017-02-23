@@ -3,7 +3,8 @@ sudo: false
 
 go:
   - 1.6.4
-  - 1.7.4
+  - 1.7.5
+  - 1.8
   - tip
 
 os:
@@ -21,10 +22,10 @@ matrix:
     - os: osx
       go: tip
     - os: linux
-      go: 1.7.4
+      go: 1.7.5
   include:
     - os: linux
-      go: 1.7.4
+      go: 1.7.5
       sudo: true
       env:
         RESTIC_TEST_FUSE=1
@@ -48,7 +49,6 @@ install:
   - export GOBIN="$GOPATH/bin"
   - export PATH="$PATH:$GOBIN"
   - go env
-  - ulimit -n 2048
 
 script:
   - go run run_integration_tests.go

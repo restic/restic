@@ -1,7 +1,13 @@
 Thanks for using restic. This document will give you an overview of the basic
 functionality provided by restic.
 
-# Building/installing restic
+# Installing restic
+
+## from pre-compiled binary
+
+You can download the latest pre-compiled binary from the [restic release page](https://github.com/restic/restic/releases/latest).
+
+## Mac OS X
 
 If you are using Mac OS X, you can install restic using the
 [homebrew](http://brew.sh/) packet manager:
@@ -11,25 +17,19 @@ $ brew tap restic/restic
 $ brew install restic
 ```
 
+## archlinux
+
 On archlinux, there is a package called `restic-git` which can be installed from AUR, e.g. with `pacaur`:
 
 ```console
 $ pacaur -S restic-git
 ```
 
-At debian stable you can install 'go' directly from the repositories (as root):
+# Building restic
 
-```console
-$ apt-get install golang-go
-```
-
-after installation of 'go' go straight forward to 'git clone [...]'
-
-If you are using Linux, BSD or Windows, the only way to install restic on your
-system right now is to compile it from source. restic is written in the Go
-programming language and you need at least Go version 1.6. Building restic may
-also work with older versions of Go, but that's not supported. See the [Getting
-started](https://golang.org/doc/install) guide of the Go project for
+restic is written in the Go programming language and you need at least Go version 1.6.
+Building restic may also work with older versions of Go, but that's not supported.
+See the [Getting started](https://golang.org/doc/install) guide of the Go project for
 instructions how to install Go.
 
 In order to build restic from source, execute the following steps:
@@ -45,6 +45,8 @@ $ go run build.go
 
 At the moment, the only tested compiler for restic is the official Go compiler.
 Building restic with gccgo may work, but is not supported.
+
+# Usage help
 
 Usage help is available:
 
@@ -75,6 +77,7 @@ Available Commands:
   version       Print version information
 
 Flags:
+      --json                   set output mode to JSON for commands that support it
       --no-lock                do not lock the repo, this allows some operations on read-only repos
   -p, --password-file string   read the repository password from a file
   -q, --quiet                  do not output comprehensive progress report
@@ -108,11 +111,12 @@ Flags:
       --tag tag                 add a tag for the new snapshot (can be specified multiple times)
 
 Global Flags:
-      --no-lock                        do not lock the repo, this allows some operations on read-only repos
-  -p, --password-file string           read the repository password from a file
+      --json                   set output mode to JSON for commands that support it
+      --no-lock                do not lock the repo, this allows some operations on read-only repos
+  -p, --password-file string   read the repository password from a file
       --progress-update-interval int   update process indicator every this many seconds
-  -q, --quiet                          do not output comprehensive progress report
-  -r, --repo string                    repository to backup to or restore from (default: $RESTIC_REPOSITORY)
+  -q, --quiet                  do not output comprehensive progress report
+  -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
 ```
 
 Subcommand that support showing progress information such as `backup`, `check` and `prune` will do so unless
@@ -214,6 +218,15 @@ snapshot 31f7bd63 saved
 In fact several hosts may use the same repository to backup directories and
 files leading to a greater de-duplication.
 
+Please be aware that when you backup different directories (or the directories
+to be saved have a variable name component like a time/date), restic always
+needs to read all files and only afterwards can compute which parts of the
+files need to be saved. When you backup the same directory again (maybe with
+new or changed files) restic will find the old snapshot in the repo and by
+default only reads those files that are new or have been modified since the
+last snapshot. This is decided based on the modify date of the file in the
+file system.
+
 You can exclude folders and files by specifying exclude-patterns.
 Either specify them with multiple `--exclude`'s or one `--exclude-file`
 
@@ -228,7 +241,7 @@ $ restic -r /tmp/backup backup ~/work --exclude=*.c --exclude-file=exclude
 
 Patterns use [`filepath.Glob`](https://golang.org/pkg/path/filepath/#Glob) internally,
 see [`filepath.Match`](https://golang.org/pkg/path/filepath/#Match) for syntax.
-Additionally `**` exludes arbitrary subdirectories.
+Additionally `**` excludes arbitrary subdirectories.
 Environment-variables in exclude-files are expanded with [`os.ExpandEnv`](https://golang.org/pkg/os/#ExpandEnv).
 
 By specifying the option `--one-file-system` you can instruct restic to only
@@ -354,7 +367,6 @@ enter password for repository:
 restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-work
 ```
 
-
 # Manage repository keys
 
 The `key` command allows you to set multiple access keys or passwords per
@@ -426,6 +438,11 @@ Don't forget to umount after quitting!
 ```
 
 Mounting repositories via FUSE is not possible on Windows and OpenBSD.
+
+Restic supports storage and preservation of hard links. However, since hard links
+exist in the scope of a filesystem by definition, restoring hard links from a fuse
+mount should be done by a program that preserves hard links. A program that does so
+is rsync, used with the option --hard-links.
 
 # Create an SFTP repository
 
@@ -512,7 +529,7 @@ only available via HTTP, you can specify the URL to the server like this:
 ### Pre-Requisites
 
 * Download and Install [Minio Server](https://minio.io/download/).
-* You can also refer to [https://docs.minio.io](https://docs.minio.io) for step by step guidance on installation and getting started on Minio CLient and Minio Server.
+* You can also refer to [https://docs.minio.io](https://docs.minio.io) for step by step guidance on installation and getting started on Minio Client and Minio Server.
 
 You must first setup the following environment variables with the credentials of your running Minio Server.
 
@@ -539,7 +556,8 @@ be done either manually (by specifying a snapshot ID to remove) or by using a
 policy that describes which snapshots to forget. For all remove operations, two
 commands need to be called in sequence: `forget` to remove a snapshot and
 `prune` to actually remove the data that was referenced by the snapshot from
-the repository.
+the repository. This can be automated with the `--prune` option of the `forget`
+command, which runs `prune` automatically if snapshots have been removed.
 
 ## Remove a single snapshot
 
@@ -603,6 +621,41 @@ done
 ```
 
 Afterwards the repository is smaller.
+
+You can automate this two-step process by using the `--prune` switch to
+`forget`:
+
+```console
+$ restic forget --keep-last 1 --prune
+snapshots for host mopped, directories /home/user/work:
+
+keep 1 snapshots:
+ID        Date                 Host        Tags        Directory
+----------------------------------------------------------------------
+4bba301e  2017-02-21 10:49:18  mopped                  /home/user/work
+
+remove 1 snapshots:
+ID        Date                 Host        Tags        Directory
+----------------------------------------------------------------------
+8c02b94b  2017-02-21 10:48:33  mopped                  /home/user/work
+
+1 snapshots have been removed, running prune
+counting files in repo
+building new index for repo
+[0:00] 100.00%  37 / 37 packs
+repository contains 37 packs (5521 blobs) with 151.012 MiB bytes
+processed 5521 blobs: 0 duplicate blobs, 0B duplicate
+load all snapshots
+find data that is still in use for 1 snapshots
+[0:00] 100.00%  1 / 1 snapshots
+found 5323 of 5521 data blobs still in use, removing 198 blobs
+will delete 0 packs and rewrite 27 packs, this frees 22.106 MiB
+creating new index
+[0:00] 100.00%  30 / 30 packs
+saved new index as b49f3e68
+done
+```
+
 
 ## Removing snapshots according to a policy
 
@@ -735,3 +788,10 @@ enter password for repository:
   "gid": 20
 }
 ```
+
+# Scripting restic
+
+Restic supports the output of some commands in JSON format. The JSON flag ```--json``` is currently supported only by ```restic snapshots```.
+
+```console
+$ restic -r /tmp/backup snapshots --json```

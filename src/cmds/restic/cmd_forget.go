@@ -38,6 +38,7 @@ type ForgetOptions struct {
 	Tags     []string
 
 	DryRun bool
+	Prune  bool
 }
 
 var forgetOptions ForgetOptions
@@ -58,6 +59,7 @@ func init() {
 	f.StringSliceVar(&forgetOptions.Tags, "tag", []string{}, "only forget snapshots with the `tag` (can be specified multiple times)")
 
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
+	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 }
 
 func printSnapshots(w io.Writer, snapshots restic.Snapshots) {
@@ -128,12 +130,13 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	for _, s := range ids {
 		id, err := restic.FindSnapshot(repo, s)
 		if err != nil {
-			Warnf("cound not find a snapshot for ID %q, ignoring\n", s)
+			Warnf("could not find a snapshot for ID %q, ignoring\n", s)
 			continue
 		}
 
 		if !opts.DryRun {
-			err = repo.Backend().Remove(restic.SnapshotFile, id.String())
+			h := restic.Handle{Type: restic.SnapshotFile, Name: id.String()}
+			err = repo.Backend().Remove(h)
 			if err != nil {
 				return err
 			}
@@ -187,6 +190,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		snapshotGroups[k] = list
 	}
 
+	removeSnapshots := 0
 	for key, snapshotGroup := range snapshotGroups {
 		Printf("snapshots for host %v, directories %v:\n\n", key.Hostname, key.Dirs)
 		keep, remove := restic.ApplyPolicy(snapshotGroup, policy)
@@ -199,13 +203,23 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		printSnapshots(globalOptions.stdout, remove)
 		Printf("\n")
 
+		removeSnapshots += len(remove)
+
 		if !opts.DryRun {
 			for _, sn := range remove {
-				err = repo.Backend().Remove(restic.SnapshotFile, sn.ID().String())
+				h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+				err = repo.Backend().Remove(h)
 				if err != nil {
 					return err
 				}
 			}
+		}
+	}
+
+	if removeSnapshots > 0 && opts.Prune {
+		Printf("%d snapshots have been removed, running prune\n", removeSnapshots)
+		if !opts.DryRun {
+			return pruneRepository(gopts, repo)
 		}
 	}
 

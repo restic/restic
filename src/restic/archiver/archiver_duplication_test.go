@@ -39,15 +39,15 @@ func randomID() restic.ID {
 func forgetfulBackend() restic.Backend {
 	be := &mock.Backend{}
 
-	be.TestFn = func(t restic.FileType, name string) (bool, error) {
+	be.TestFn = func(h restic.Handle) (bool, error) {
 		return false, nil
 	}
 
-	be.LoadFn = func(h restic.Handle, p []byte, off int64) (int, error) {
-		return 0, errors.New("not found")
+	be.LoadFn = func(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+		return nil, errors.New("not found")
 	}
 
-	be.SaveFn = func(h restic.Handle, p []byte) error {
+	be.SaveFn = func(h restic.Handle, rd io.Reader) error {
 		return nil
 	}
 
@@ -55,7 +55,7 @@ func forgetfulBackend() restic.Backend {
 		return restic.FileInfo{}, errors.New("not found")
 	}
 
-	be.RemoveFn = func(t restic.FileType, name string) error {
+	be.RemoveFn = func(h restic.Handle) error {
 		return nil
 	}
 
@@ -142,6 +142,11 @@ func testArchiverDuplication(t *testing.T) {
 	close(done)
 
 	wg.Wait()
+
+	err = repo.Flush()
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestArchiverDuplication(t *testing.T) {

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"restic"
@@ -28,6 +29,10 @@ The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if backupOptions.Stdin && backupOptions.FilesFrom == "-" {
+			return errors.Fatal("cannot use both `--stdin` and `--files-from -`")
+		}
+
 		if backupOptions.Stdin {
 			return readBackupFromStdin(backupOptions, globalOptions, args)
 		}
@@ -46,6 +51,7 @@ type BackupOptions struct {
 	Stdin          bool
 	StdinFilename  string
 	Tags           []string
+	Hostname       string
 	FilesFrom      string
 }
 
@@ -54,15 +60,22 @@ var backupOptions BackupOptions
 func init() {
 	cmdRoot.AddCommand(cmdBackup)
 
+	hostname, err := os.Hostname()
+	if err != nil {
+		debug.Log("os.Hostname() returned err: %v", err)
+		hostname = ""
+	}
+
 	f := cmdBackup.Flags()
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)")
-	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories. Overrides the "parent" flag`)
+	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
 	f.StringSliceVarP(&backupOptions.Excludes, "exclude", "e", []string{}, "exclude a `pattern` (can be specified multiple times)")
 	f.StringVar(&backupOptions.ExcludeFile, "exclude-file", "", "read exclude patterns from a file")
-	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "Exclude other file systems")
+	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
-	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "", "file name to use when reading from stdin")
+	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
 	f.StringSliceVar(&backupOptions.Tags, "tag", []string{}, "add a `tag` for the new snapshot (can be specified multiple times)")
+	f.StringVar(&backupOptions.Hostname, "hostname", hostname, "set the `hostname` for the snapshot manually")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 }
 
@@ -232,7 +245,15 @@ func gatherDevices(items []string) (deviceMap map[uint64]struct{}, err error) {
 
 func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
-		return errors.Fatalf("when reading from stdin, no additional files can be specified")
+		return errors.Fatal("when reading from stdin, no additional files can be specified")
+	}
+
+	if opts.StdinFilename == "" {
+		return errors.Fatal("filename for backup from stdin must not be empty")
+	}
+
+	if gopts.password == "" && gopts.PasswordFile == "" {
+		return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
 	}
 
 	repo, err := OpenRepository(gopts)
@@ -251,7 +272,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return err
 	}
 
-	_, id, err := archiver.ArchiveReader(repo, newArchiveStdinProgress(gopts), os.Stdin, opts.StdinFilename, opts.Tags)
+	_, id, err := archiver.ArchiveReader(repo, newArchiveStdinProgress(gopts), os.Stdin, opts.StdinFilename, opts.Tags, opts.Hostname)
 	if err != nil {
 		return err
 	}
@@ -262,21 +283,26 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 
 // readFromFile will read all lines from the given filename and write them to a
 // string array, if filename is empty readFromFile returns and empty string
-// array
+// array. If filename is a dash (-), readFromFile will read the lines from
+// the standard input.
 func readLinesFromFile(filename string) ([]string, error) {
 	if filename == "" {
 		return nil, nil
 	}
 
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+	var r io.Reader = os.Stdin
+	if filename != "-" {
+		f, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		r = f
 	}
-	defer file.Close()
 
 	var lines []string
 
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
@@ -289,6 +315,10 @@ func readLinesFromFile(filename string) ([]string, error) {
 }
 
 func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
+	if opts.FilesFrom == "-" && gopts.password == "" && gopts.PasswordFile == "" {
+		return errors.Fatal("no password; either use `--password-file` option or put the password into the RESTIC_PASSWORD environment variable")
+	}
+
 	fromfile, err := readLinesFromFile(opts.FilesFrom)
 	if err != nil {
 		return err
@@ -299,7 +329,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	// same time
 	args = append(args, fromfile...)
 	if len(args) == 0 {
-		return errors.Fatalf("wrong number of parameters")
+		return errors.Fatal("wrong number of parameters")
 	}
 
 	target := make([]string, 0, len(args))
@@ -355,13 +385,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentSnapshotID == nil {
-		hostname, err := os.Hostname()
-		if err != nil {
-			debug.Log("os.Hostname() returned err: %v", err)
-			hostname = ""
-		}
-
-		id, err := restic.FindLatestSnapshot(repo, target, hostname)
+		id, err := restic.FindLatestSnapshot(repo, target, opts.Hostname)
 		if err == nil {
 			parentSnapshotID = &id
 		} else if err != restic.ErrNoSnapshotFound {
@@ -437,7 +461,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		Warnf("%s\rwarning for %s: %v\n", ClearLine(), dir, err)
 	}
 
-	_, id, err := arch.Snapshot(newArchiveProgress(gopts, stat), target, opts.Tags, parentSnapshotID)
+	_, id, err := arch.Snapshot(newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID)
 	if err != nil {
 		return err
 	}

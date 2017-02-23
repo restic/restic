@@ -9,7 +9,7 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print version information",
+	Short: "print version information",
 	Long: `
 The "version" command prints detailed information about the build environment
 and the version of this software.

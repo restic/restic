@@ -22,8 +22,25 @@ func (node Node) restoreSymlinkTimestamps(path string, utimes [2]syscall.Timespe
 	return nil
 }
 
+// Getxattr retrieves extended attribute data associated with path.
+func Getxattr(path, name string) ([]byte, error) {
+	return nil, nil
+}
+
+// Listxattr retrieves a list of names of extended attributes associated with the
+// given path in the file system.
+func Listxattr(path string) ([]string, error) {
+	return nil, nil
+}
+
+// Setxattr associates name and data together as an attribute of path.
+func Setxattr(path, name string, data []byte) error {
+	return nil
+}
+
 type statWin syscall.Win32FileAttributeData
 
+//ToStatT call the Windows system call Win32FileAttributeData.
 func toStatT(i interface{}) (statT, bool) {
 	if i == nil {
 		return nil, false

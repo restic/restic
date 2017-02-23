@@ -37,7 +37,7 @@ func init() {
 			return nil, err
 		}
 
-		exists, err := be.Test(restic.ConfigFile, "")
+		exists, err := be.Test(restic.Handle{Type: restic.ConfigFile, Name: ""})
 		if err != nil {
 			return nil, err
 		}

@@ -2,12 +2,12 @@ package repository_test
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha256"
 	"io"
-	mrand "math/rand"
+	"math/rand"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"restic"
 	"restic/archiver"
@@ -17,13 +17,15 @@ import (
 
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
 
+var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func TestSave(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
-		_, err := io.ReadFull(rand.Reader, data)
+		_, err := io.ReadFull(rnd, data)
 		OK(t, err)
 
 		id := restic.Hash(data)
@@ -38,7 +40,7 @@ func TestSave(t *testing.T) {
 		// OK(t, repo.SaveIndex())
 
 		// read back
-		buf := make([]byte, size)
+		buf := restic.NewBlobBuffer(size)
 		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 		OK(t, err)
 		Equals(t, len(buf), n)
@@ -59,7 +61,7 @@ func TestSaveFrom(t *testing.T) {
 
 	for _, size := range testSizes {
 		data := make([]byte, size)
-		_, err := io.ReadFull(rand.Reader, data)
+		_, err := io.ReadFull(rnd, data)
 		OK(t, err)
 
 		id := restic.Hash(data)
@@ -72,7 +74,7 @@ func TestSaveFrom(t *testing.T) {
 		OK(t, repo.Flush())
 
 		// read back
-		buf := make([]byte, size)
+		buf := restic.NewBlobBuffer(size)
 		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
 		OK(t, err)
 		Equals(t, len(buf), n)
@@ -94,7 +96,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 	size := 4 << 20 // 4MiB
 
 	data := make([]byte, size)
-	_, err := io.ReadFull(rand.Reader, data)
+	_, err := io.ReadFull(rnd, data)
 	OK(t, err)
 
 	id := restic.ID(sha256.Sum256(data))
@@ -145,6 +147,113 @@ func BenchmarkLoadTree(t *testing.B) {
 	}
 }
 
+func TestLoadBlob(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	length := 1000000
+	buf := restic.NewBlobBuffer(length)
+	_, err := io.ReadFull(rnd, buf)
+	OK(t, err)
+
+	id, err := repo.SaveBlob(restic.DataBlob, buf, restic.ID{})
+	OK(t, err)
+	OK(t, repo.Flush())
+
+	// first, test with buffers that are too small
+	for _, testlength := range []int{length - 20, length, restic.CiphertextLength(length) - 1} {
+		buf = make([]byte, 0, testlength)
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+		if err == nil {
+			t.Errorf("LoadBlob() did not return an error for a buffer that is too small to hold the blob")
+			continue
+		}
+
+		if n != 0 {
+			t.Errorf("LoadBlob() returned an error and n > 0")
+			continue
+		}
+	}
+
+	// then use buffers that are large enough
+	base := restic.CiphertextLength(length)
+	for _, testlength := range []int{base, base + 7, base + 15, base + 1000} {
+		buf = make([]byte, 0, testlength)
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+		if err != nil {
+			t.Errorf("LoadBlob() returned an error for buffer size %v: %v", testlength, err)
+			continue
+		}
+
+		if n != length {
+			t.Errorf("LoadBlob() returned the wrong number of bytes: want %v, got %v", length, n)
+			continue
+		}
+	}
+}
+
+func BenchmarkLoadBlob(b *testing.B) {
+	repo, cleanup := repository.TestRepository(b)
+	defer cleanup()
+
+	length := 1000000
+	buf := restic.NewBlobBuffer(length)
+	_, err := io.ReadFull(rnd, buf)
+	OK(b, err)
+
+	id, err := repo.SaveBlob(restic.DataBlob, buf, restic.ID{})
+	OK(b, err)
+	OK(b, repo.Flush())
+
+	b.ResetTimer()
+	b.SetBytes(int64(length))
+
+	for i := 0; i < b.N; i++ {
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+		OK(b, err)
+		if n != length {
+			b.Errorf("wanted %d bytes, got %d", length, n)
+		}
+
+		id2 := restic.Hash(buf[:n])
+		if !id.Equal(id2) {
+			b.Errorf("wrong data returned, wanted %v, got %v", id.Str(), id2.Str())
+		}
+	}
+}
+
+func BenchmarkLoadAndDecrypt(b *testing.B) {
+	repo, cleanup := repository.TestRepository(b)
+	defer cleanup()
+
+	length := 1000000
+	buf := restic.NewBlobBuffer(length)
+	_, err := io.ReadFull(rnd, buf)
+	OK(b, err)
+
+	dataID := restic.Hash(buf)
+
+	storageID, err := repo.SaveUnpacked(restic.DataFile, buf)
+	OK(b, err)
+	// OK(b, repo.Flush())
+
+	b.ResetTimer()
+	b.SetBytes(int64(length))
+
+	for i := 0; i < b.N; i++ {
+		data, err := repo.LoadAndDecrypt(restic.DataFile, storageID)
+		OK(b, err)
+		if len(data) != length {
+			b.Errorf("wanted %d bytes, got %d", length, len(data))
+		}
+
+		id2 := restic.Hash(data)
+		if !dataID.Equal(id2) {
+			b.Errorf("wrong data returned, wanted %v, got %v", storageID.Str(), id2.Str())
+		}
+	}
+}
+
 func TestLoadJSONUnpacked(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
@@ -182,25 +291,48 @@ func TestRepositoryLoadIndex(t *testing.T) {
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
-	repodir, cleanup := Env(b, repoFixture)
+	repository.TestUseLowSecurityKDFParameters(b)
+
+	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
-	repo := repository.TestOpenLocal(b, repodir)
+	idx := repository.NewIndex()
+
+	for i := 0; i < 5000; i++ {
+		idx.Store(restic.PackedBlob{
+			Blob: restic.Blob{
+				Type:   restic.DataBlob,
+				Length: 1234,
+				ID:     restic.NewRandomID(),
+				Offset: 1235,
+			},
+			PackID: restic.NewRandomID(),
+		})
+	}
+
+	id, err := repository.SaveIndex(repo, idx)
+	OK(b, err)
+
+	b.Logf("index saved as %v (%v entries)", id.Str(), idx.Count(restic.DataBlob))
+	fi, err := repo.Backend().Stat(restic.Handle{Type: restic.IndexFile, Name: id.String()})
+	OK(b, err)
+	b.Logf("filesize is %v", fi.Size)
+
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		repo.SetIndex(repository.NewMasterIndex())
-		OK(b, repo.LoadIndex())
+		_, err := repository.LoadIndex(repo, id)
+		OK(b, err)
 	}
 }
 
 // saveRandomDataBlobs generates random data blobs and saves them to the repository.
 func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax int) {
 	for i := 0; i < num; i++ {
-		size := mrand.Int() % sizeMax
+		size := rand.Int() % sizeMax
 
 		buf := make([]byte, size)
-		_, err := io.ReadFull(rand.Reader, buf)
+		_, err := io.ReadFull(rnd, buf)
 		OK(t, err)
 
 		_, err = repo.SaveBlob(restic.DataBlob, buf, restic.ID{})

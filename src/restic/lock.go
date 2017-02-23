@@ -186,7 +186,7 @@ func (l *Lock) Unlock() error {
 		return nil
 	}
 
-	return l.repo.Backend().Remove(LockFile, l.lockID.String())
+	return l.repo.Backend().Remove(Handle{Type: LockFile, Name: l.lockID.String()})
 }
 
 var staleTimeout = 30 * time.Minute
@@ -203,7 +203,7 @@ func (l *Lock) Stale() bool {
 
 	hn, err := os.Hostname()
 	if err != nil {
-		debug.Log("unable to find current hostnanme: %v", err)
+		debug.Log("unable to find current hostname: %v", err)
 		// since we cannot find the current hostname, assume that the lock is
 		// not stale.
 		return false
@@ -234,7 +234,7 @@ func (l *Lock) Refresh() error {
 		return err
 	}
 
-	err = l.repo.Backend().Remove(LockFile, l.lockID.String())
+	err = l.repo.Backend().Remove(Handle{Type: LockFile, Name: l.lockID.String()})
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func RemoveStaleLocks(repo Repository) error {
 		}
 
 		if lock.Stale() {
-			return repo.Backend().Remove(LockFile, id.String())
+			return repo.Backend().Remove(Handle{Type: LockFile, Name: id.String()})
 		}
 
 		return nil
@@ -299,6 +299,6 @@ func RemoveStaleLocks(repo Repository) error {
 // RemoveAllLocks removes all locks forcefully.
 func RemoveAllLocks(repo Repository) error {
 	return eachLock(repo, func(id ID, lock *Lock, err error) error {
-		return repo.Backend().Remove(LockFile, id.String())
+		return repo.Backend().Remove(Handle{Type: LockFile, Name: id.String()})
 	})
 }

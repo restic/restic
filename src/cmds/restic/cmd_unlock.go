@@ -27,7 +27,7 @@ var unlockOptions UnlockOptions
 func init() {
 	cmdRoot.AddCommand(unlockCmd)
 
-	unlockCmd.Flags().BoolVar(&unlockOptions.RemoveAll, "remove-all", false, "Remove all locks, even non-stale ones")
+	unlockCmd.Flags().BoolVar(&unlockOptions.RemoveAll, "remove-all", false, "remove all locks, even non-stale ones")
 }
 
 func runUnlock(opts UnlockOptions, gopts GlobalOptions) error {

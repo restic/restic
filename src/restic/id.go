@@ -43,7 +43,7 @@ func (id ID) String() string {
 	return hex.EncodeToString(id[:])
 }
 
-// NewRandomID retuns a randomly generated ID. When reading from rand fails,
+// NewRandomID returns a randomly generated ID. When reading from rand fails,
 // the function panics.
 func NewRandomID() ID {
 	id := ID{}
@@ -113,4 +113,14 @@ func (id *ID) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
+}
+
+// IDFromHash returns the ID for the hash.
+func IDFromHash(hash []byte) (id ID) {
+	if len(hash) != idSize {
+		panic("invalid hash type, not enough/too many bytes")
+	}
+
+	copy(id[:], hash)
+	return id
 }

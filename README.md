@@ -11,12 +11,25 @@ restic is a backup program that is fast, efficient and secure. Detailed
 information can be found in [the documentation](doc/index.md) and [the user
 manual](doc/Manual.md). The [design document](doc/Design.md) lists the
 technical background and gives detailed information about the structure of the
-repository and the data saved therein.
+repository and the data saved therein. The file [FAQ.md](doc/FAQ.md) lists the
+most frequently asked questions.
 
 The latest documentation can be viewed online at
 <https://restic.readthedocs.io/en/latest>. On the bottom left corner there is
 a menu that allows switching to the documentation and user manual for the
 latest released version.
+
+News
+====
+
+You can follow the restic project on Twitter
+[@resticbackup](https://twitter.com/resticbackup) or by subscribing to the
+[development blog](https://restic.github.io/blog/).
+
+Install restic
+==============
+
+You can download the latest pre-compiled binary from the [restic release page](https://github.com/restic/restic/releases/latest).
 
 Build restic
 ============
@@ -39,10 +52,15 @@ Building restic with gccgo may work, but is not supported.
 Contribute and Documentation
 ============================
 
-Contributions are welcome! More information and a description of the
-development environment can be found in [`CONTRIBUTING.md`](CONTRIBUTING.md). A
-document describing the design of restic and the data structures stored on the
-back end is contained in [`doc/Design.md`](doc/Design.md).
+Contributions are welcome! Please **open an issue first** (or add a comment to
+an existing issue) if you plan to work on any code or add a new feature. This
+way, duplicate work is prevented and we can discuss your ideas and design
+first.
+
+More information and a description of the development environment can be found
+in [`CONTRIBUTING.md`](CONTRIBUTING.md). A document describing the design of
+restic and the data structures stored on the back end is contained in
+[`doc/Design.md`](doc/Design.md).
 
 If you'd like to start contributing to restic, but don't know exactly what do
 to, have a look at this great article by Dave Cheney:

@@ -4,8 +4,6 @@
 package fuse
 
 import (
-	"sync"
-
 	"restic/errors"
 
 	"restic"
@@ -35,29 +33,23 @@ type file struct {
 	node        *restic.Node
 	ownerIsRoot bool
 
-	sizes []uint
+	sizes []int
 	blobs [][]byte
 }
 
 const defaultBlobSize = 128 * 1024
 
-var blobPool = sync.Pool{
-	New: func() interface{} {
-		return make([]byte, defaultBlobSize)
-	},
-}
-
 func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error) {
 	debug.Log("create new file for %v with %d blobs", node.Name, len(node.Content))
 	var bytes uint64
-	sizes := make([]uint, len(node.Content))
+	sizes := make([]int, len(node.Content))
 	for i, id := range node.Content {
 		size, err := repo.LookupBlobSize(id, restic.DataBlob)
 		if err != nil {
 			return nil, err
 		}
 
-		sizes[i] = size
+		sizes[i] = int(size)
 		bytes += uint64(size)
 	}
 
@@ -82,6 +74,7 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Size = f.node.Size
 	a.Blocks = (f.node.Size / blockSize) + 1
 	a.BlockSize = blockSize
+	a.Nlink = uint32(f.node.Links)
 
 	if !f.ownerIsRoot {
 		a.Uid = f.node.UID
@@ -90,7 +83,9 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Atime = f.node.AccessTime
 	a.Ctime = f.node.ChangeTime
 	a.Mtime = f.node.ModTime
+
 	return nil
+
 }
 
 func (f *file) getBlobAt(i int) (blob []byte, err error) {
@@ -99,16 +94,12 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 		return f.blobs[i], nil
 	}
 
-	buf := blobPool.Get().([]byte)
-	buf = buf[:cap(buf)]
-
-	if uint(len(buf)) < f.sizes[i] {
-		if len(buf) > defaultBlobSize {
-			blobPool.Put(buf)
-		}
-		buf = make([]byte, f.sizes[i])
+	// release earlier blobs
+	for j := 0; j < i; j++ {
+		f.blobs[j] = nil
 	}
 
+	buf := restic.NewBlobBuffer(f.sizes[i])
 	n, err := f.repo.LoadBlob(restic.DataBlob, f.node.Content[i], buf)
 	if err != nil {
 		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
@@ -169,10 +160,25 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 
 func (f *file) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
 	for i := range f.blobs {
-		if f.blobs[i] != nil {
-			blobPool.Put(f.blobs[i])
-			f.blobs[i] = nil
-		}
+		f.blobs[i] = nil
 	}
 	return nil
+}
+
+func (f *file) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	debug.Log("Listxattr(%v, %v)", f.node.Name, req.Size)
+	for _, attr := range f.node.ExtendedAttributes {
+		resp.Append(attr.Name)
+	}
+	return nil
+}
+
+func (f *file) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	debug.Log("Getxattr(%v, %v, %v)", f.node.Name, req.Name, req.Size)
+	attrval := f.node.GetExtendedAttribute(req.Name)
+	if attrval != nil {
+		resp.Xattr = attrval
+		return nil
+	}
+	return fuse.ErrNoXattr
 }

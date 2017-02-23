@@ -9,13 +9,12 @@ import (
 
 	"restic"
 	"restic/backend"
-	"restic/debug"
 	"restic/errors"
 	"restic/repository"
 )
 
 var cmdCat = &cobra.Command{
-	Use:   "cat [flags] [pack|blob|tree|snapshot|key|masterkey|config|lock] ID",
+	Use:   "cat [flags] [pack|blob|snapshot|index|key|masterkey|config|lock] ID",
 	Short: "print internal objects to stdout",
 	Long: `
 The "cat" command is used to print internal objects to stdout.
@@ -31,7 +30,7 @@ func init() {
 
 func runCat(gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || (args[0] != "masterkey" && args[0] != "config" && len(args) != 2) {
-		return errors.Fatalf("type or ID not specified")
+		return errors.Fatal("type or ID not specified")
 	}
 
 	repo, err := OpenRepository(gopts)
@@ -99,7 +98,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		return nil
 	case "key":
 		h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
-		buf, err := backend.LoadAll(repo.Backend(), h, nil)
+		buf, err := backend.LoadAll(repo.Backend(), h)
 		if err != nil {
 			return err
 		}
@@ -150,7 +149,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 	switch tpe {
 	case "pack":
 		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-		buf, err := backend.LoadAll(repo.Backend(), h, nil)
+		buf, err := backend.LoadAll(repo.Backend(), h)
 		if err != nil {
 			return err
 		}
@@ -172,7 +171,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 			blob := list[0]
 
 			buf := make([]byte, blob.Length)
-			n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+			n, err := repo.LoadBlob(t, id, buf)
 			if err != nil {
 				return err
 			}
@@ -183,23 +182,6 @@ func runCat(gopts GlobalOptions, args []string) error {
 		}
 
 		return errors.Fatal("blob not found")
-
-	case "tree":
-		debug.Log("cat tree %v", id.Str())
-		tree, err := repo.LoadTree(id)
-		if err != nil {
-			debug.Log("unable to load tree %v: %v", id.Str(), err)
-			return err
-		}
-
-		buf, err := json.MarshalIndent(&tree, "", "  ")
-		if err != nil {
-			debug.Log("error json.MarshalIndent(): %v", err)
-			return err
-		}
-
-		_, err = os.Stdout.Write(append(buf, '\n'))
-		return nil
 
 	default:
 		return errors.Fatal("invalid type")

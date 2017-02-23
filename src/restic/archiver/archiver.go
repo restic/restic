@@ -142,7 +142,7 @@ func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*res
 	node, err = restic.NodeFromFileInfo(node.Path, fi)
 	if err != nil {
 		debug.Log("restic.NodeFromFileInfo returned error for %v: %v", node.Path, err)
-		return nil, err
+		arch.Warn(node.Path, fi, err)
 	}
 
 	return node, nil
@@ -275,11 +275,8 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 
 			node, err := restic.NodeFromFileInfo(e.Fullpath(), e.Info())
 			if err != nil {
-				// TODO: integrate error reporting
 				debug.Log("restic.NodeFromFileInfo returned error for %v: %v", node.Path, err)
-				e.Result() <- nil
-				p.Report(restic.Stat{Errors: 1})
-				continue
+				arch.Warn(e.Fullpath(), e.Info(), err)
 			}
 
 			// try to use old node, if present
@@ -307,11 +304,11 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 
 			// otherwise read file normally
 			if node.Type == "file" && len(node.Content) == 0 {
-				debug.Log("   read and save %v, content: %v", e.Path(), node.Content)
+				debug.Log("   read and save %v", e.Path())
 				node, err = arch.SaveFile(p, node)
 				if err != nil {
-					// TODO: integrate error reporting
 					fmt.Fprintf(os.Stderr, "error for %v: %v\n", node.Path, err)
+					arch.Warn(e.Path(), nil, err)
 					// ignore this file
 					e.Result() <- nil
 					p.Report(restic.Stat{Errors: 1})
@@ -371,25 +368,28 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 
 				// else insert node
 				node := res.(*restic.Node)
-				tree.Insert(node)
 
 				if node.Type == "dir" {
 					debug.Log("got tree node for %s: %v", node.Path, node.Subtree)
+
+					if node.Subtree == nil {
+						debug.Log("subtree is nil for node %v", node.Path)
+						continue
+					}
 
 					if node.Subtree.IsNull() {
 						panic("invalid null subtree restic.ID")
 					}
 				}
+				tree.Insert(node)
 			}
 
 			node := &restic.Node{}
 
 			if dir.Path() != "" && dir.Info() != nil {
-				n, err := restic.NodeFromFileInfo(dir.Path(), dir.Info())
+				n, err := restic.NodeFromFileInfo(dir.Fullpath(), dir.Info())
 				if err != nil {
-					n.Error = err.Error()
-					dir.Result() <- n
-					continue
+					arch.Warn(dir.Path(), dir.Info(), err)
 				}
 				node = n
 			}
@@ -634,7 +634,7 @@ func (p baseNameSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 // Snapshot creates a snapshot of the given paths. If parentrestic.ID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
-func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentID *restic.ID) (*restic.Snapshot, restic.ID, error) {
+func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostname string, parentID *restic.ID) (*restic.Snapshot, restic.ID, error) {
 	paths = unique(paths)
 	sort.Sort(baseNameSlice(paths))
 
@@ -650,7 +650,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, parentI
 	defer p.Done()
 
 	// create new snapshot
-	sn, err := restic.NewSnapshot(paths, tags)
+	sn, err := restic.NewSnapshot(paths, tags, hostname)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

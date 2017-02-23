@@ -114,7 +114,23 @@ func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Atime = d.node.AccessTime
 	a.Ctime = d.node.ChangeTime
 	a.Mtime = d.node.ModTime
+
+	a.Nlink = d.calcNumberOfLinks()
+
 	return nil
+}
+
+func (d *dir) calcNumberOfLinks() uint32 {
+	// a directory d has 2 hardlinks + the number
+	// of directories contained by d
+	var count uint32
+	count = 2
+	for _, node := range d.items {
+		if node.Type == "dir" {
+			count++
+		}
+	}
+	return count
 }
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
@@ -160,4 +176,22 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		debug.Log("  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT
 	}
+}
+
+func (d *dir) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
+	debug.Log("Listxattr(%v, %v)", d.node.Name, req.Size)
+	for _, attr := range d.node.ExtendedAttributes {
+		resp.Append(attr.Name)
+	}
+	return nil
+}
+
+func (d *dir) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
+	debug.Log("Getxattr(%v, %v, %v)", d.node.Name, req.Name, req.Size)
+	attrval := d.node.GetExtendedAttribute(req.Name)
+	if attrval != nil {
+		resp.Xattr = attrval
+		return nil
+	}
+	return fuse.ErrNoXattr
 }

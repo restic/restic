@@ -3,10 +3,12 @@ package s3
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"path"
 	"restic"
 	"strings"
 
+	"restic/backend"
 	"restic/errors"
 
 	"github.com/minio/minio-go"
@@ -14,7 +16,7 @@ import (
 	"restic/debug"
 )
 
-const connLimit = 10
+const connLimit = 40
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
@@ -35,6 +37,10 @@ func Open(cfg Config) (restic.Backend, error) {
 	}
 
 	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix}
+
+	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
+	client.SetCustomTransport(tr)
+
 	be.createConnections()
 
 	found, err := client.BucketExists(cfg.Bucket)
@@ -54,11 +60,11 @@ func Open(cfg Config) (restic.Backend, error) {
 	return be, nil
 }
 
-func (be *s3) s3path(t restic.FileType, name string) string {
-	if t == restic.ConfigFile {
-		return path.Join(be.prefix, string(t))
+func (be *s3) s3path(h restic.Handle) string {
+	if h.Type == restic.ConfigFile {
+		return path.Join(be.prefix, string(h.Type))
 	}
-	return path.Join(be.prefix, string(t), name)
+	return path.Join(be.prefix, string(h.Type), h.Name)
 }
 
 func (be *s3) createConnections() {
@@ -73,88 +79,15 @@ func (be *s3) Location() string {
 	return be.bucketname
 }
 
-// Load returns the data stored in the backend for h at the given offset
-// and saves it in p. Load has the same semantics as io.ReaderAt.
-func (be s3) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	var obj *minio.Object
-
-	debug.Log("%v, offset %v, len %v", h, off, len(p))
-	objName := be.s3path(h.Type, h.Name)
-
-	<-be.connChan
-	defer func() {
-		be.connChan <- struct{}{}
-	}()
-
-	obj, err = be.client.GetObject(be.bucketname, objName)
-	if err != nil {
-		debug.Log("  err %v", err)
-		return 0, errors.Wrap(err, "client.GetObject")
-	}
-
-	// make sure that the object is closed properly.
-	defer func() {
-		e := obj.Close()
-		if err == nil {
-			err = errors.Wrap(e, "Close")
-		}
-	}()
-
-	info, err := obj.Stat()
-	if err != nil {
-		return 0, errors.Wrap(err, "obj.Stat")
-	}
-
-	// handle negative offsets
-	if off < 0 {
-		// if the negative offset is larger than the object itself, read from
-		// the beginning.
-		if -off > info.Size {
-			off = 0
-		} else {
-			// otherwise compute the offset from the end of the file.
-			off = info.Size + off
-		}
-	}
-
-	// return an error if the offset is beyond the end of the file
-	if off > info.Size {
-		return 0, errors.Wrap(io.EOF, "")
-	}
-
-	var nextError error
-
-	// manually create an io.ErrUnexpectedEOF
-	if off+int64(len(p)) > info.Size {
-		newlen := info.Size - off
-		p = p[:newlen]
-
-		nextError = io.ErrUnexpectedEOF
-
-		debug.Log("    capped buffer to %v byte", len(p))
-	}
-
-	n, err = obj.ReadAt(p, off)
-	if int64(n) == info.Size-off && errors.Cause(err) == io.EOF {
-		err = nil
-	}
-
-	if err == nil {
-		err = nextError
-	}
-
-	return n, err
-}
-
 // Save stores data in the backend at the handle.
-func (be s3) Save(h restic.Handle, p []byte) (err error) {
+func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
 
-	debug.Log("%v with %d bytes", h, len(p))
+	debug.Log("Save %v", h)
 
-	objName := be.s3path(h.Type, h.Name)
+	objName := be.s3path(h)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, objName)
@@ -168,19 +101,129 @@ func (be s3) Save(h restic.Handle, p []byte) (err error) {
 		be.connChan <- struct{}{}
 	}()
 
-	debug.Log("PutObject(%v, %v, %v, %v)",
-		be.bucketname, objName, int64(len(p)), "binary/octet-stream")
-	n, err := be.client.PutObject(be.bucketname, objName, bytes.NewReader(p), "binary/octet-stream")
+	debug.Log("PutObject(%v, %v)",
+		be.bucketname, objName)
+	n, err := be.client.PutObject(be.bucketname, objName, rd, "binary/octet-stream")
 	debug.Log("%v -> %v bytes, err %#v", objName, n, err)
 
 	return errors.Wrap(err, "client.PutObject")
 }
 
+// wrapReader wraps an io.ReadCloser to run an additional function on Close.
+type wrapReader struct {
+	io.ReadCloser
+	f func()
+}
+
+func (wr wrapReader) Close() error {
+	err := wr.ReadCloser.Close()
+	wr.f()
+	return err
+}
+
+// Load returns a reader that yields the contents of the file at h at the
+// given offset. If length is nonzero, only a portion of the file is
+// returned. rd must be closed after use.
+func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	debug.Log("Load %v, length %v, offset %v", h, length, offset)
+	if err := h.Valid(); err != nil {
+		return nil, err
+	}
+
+	if offset < 0 {
+		return nil, errors.New("offset is negative")
+	}
+
+	if length < 0 {
+		return nil, errors.Errorf("invalid length %d", length)
+	}
+
+	var obj *minio.Object
+
+	objName := be.s3path(h)
+
+	// get token for connection
+	<-be.connChan
+
+	obj, err := be.client.GetObject(be.bucketname, objName)
+	if err != nil {
+		debug.Log("  err %v", err)
+
+		// return token
+		be.connChan <- struct{}{}
+
+		return nil, errors.Wrap(err, "client.GetObject")
+	}
+
+	// if we're going to read the whole object, just pass it on.
+	if length == 0 {
+		debug.Log("Load %v: pass on object", h)
+
+		_, err = obj.Seek(offset, 0)
+		if err != nil {
+			_ = obj.Close()
+
+			// return token
+			be.connChan <- struct{}{}
+
+			return nil, errors.Wrap(err, "obj.Seek")
+		}
+
+		rd := wrapReader{
+			ReadCloser: obj,
+			f: func() {
+				debug.Log("Close()")
+				// return token
+				be.connChan <- struct{}{}
+			},
+		}
+		return rd, nil
+	}
+
+	defer func() {
+		// return token
+		be.connChan <- struct{}{}
+	}()
+
+	// otherwise use a buffer with ReadAt
+	info, err := obj.Stat()
+	if err != nil {
+		_ = obj.Close()
+		return nil, errors.Wrap(err, "obj.Stat")
+	}
+
+	if offset > info.Size {
+		_ = obj.Close()
+		return nil, errors.New("offset larger than file size")
+	}
+
+	l := int64(length)
+	if offset+l > info.Size {
+		l = info.Size - offset
+	}
+
+	buf := make([]byte, l)
+	n, err := obj.ReadAt(buf, offset)
+	debug.Log("Load %v: use buffer with ReadAt: %v, %v", h, n, err)
+	if err == io.EOF {
+		debug.Log("Load %v: shorten buffer %v -> %v", h, len(buf), n)
+		buf = buf[:n]
+		err = nil
+	}
+
+	if err != nil {
+		_ = obj.Close()
+		return nil, errors.Wrap(err, "obj.ReadAt")
+	}
+
+	return backend.Closer{Reader: bytes.NewReader(buf)}, nil
+}
+
 // Stat returns information about a blob.
-func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
+func (be *s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("%v", h)
 
-	objName := be.s3path(h.Type, h.Name)
+	objName := be.s3path(h)
 	var obj *minio.Object
 
 	obj, err = be.client.GetObject(be.bucketname, objName)
@@ -207,9 +250,9 @@ func (be s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *s3) Test(t restic.FileType, name string) (bool, error) {
+func (be *s3) Test(h restic.Handle) (bool, error) {
 	found := false
-	objName := be.s3path(t, name)
+	objName := be.s3path(h)
 	_, err := be.client.StatObject(be.bucketname, objName)
 	if err == nil {
 		found = true
@@ -220,10 +263,10 @@ func (be *s3) Test(t restic.FileType, name string) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *s3) Remove(t restic.FileType, name string) error {
-	objName := be.s3path(t, name)
+func (be *s3) Remove(h restic.Handle) error {
+	objName := be.s3path(h)
 	err := be.client.RemoveObject(be.bucketname, objName)
-	debug.Log("%v %v -> err %v", t, name, err)
+	debug.Log("Remove(%v) -> err %v", h, err)
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
@@ -234,7 +277,7 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
-	prefix := be.s3path(t, "") + "/"
+	prefix := be.s3path(restic.Handle{Type: t}) + "/"
 
 	listresp := be.client.ListObjects(be.bucketname, prefix, true, done)
 
@@ -262,7 +305,7 @@ func (be *s3) removeKeys(t restic.FileType) error {
 	done := make(chan struct{})
 	defer close(done)
 	for key := range be.List(restic.DataFile, done) {
-		err := be.Remove(restic.DataFile, key)
+		err := be.Remove(restic.Handle{Type: restic.DataFile, Name: key})
 		if err != nil {
 			return err
 		}
@@ -287,7 +330,7 @@ func (be *s3) Delete() error {
 		}
 	}
 
-	return be.Remove(restic.ConfigFile, "")
+	return be.Remove(restic.Handle{Type: restic.ConfigFile})
 }
 
 // Close does nothing

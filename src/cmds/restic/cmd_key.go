@@ -14,7 +14,7 @@ var cmdKey = &cobra.Command{
 	Use:   "key [list|add|rm|passwd] [ID]",
 	Short: "manage keys (passwords)",
 	Long: `
-The "key" command manages keys (passwords) for accessing a repository.
+The "key" command manages keys (passwords) for accessing the repository.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runKey(globalOptions, args)
@@ -87,7 +87,8 @@ func deleteKey(repo *repository.Repository, name string) error {
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
 
-	err := repo.Backend().Remove(restic.KeyFile, name)
+	h := restic.Handle{Type: restic.KeyFile, Name: name}
+	err := repo.Backend().Remove(h)
 	if err != nil {
 		return err
 	}
@@ -107,7 +108,8 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
-	err = repo.Backend().Remove(restic.KeyFile, repo.KeyName())
+	h := restic.Handle{Type: restic.KeyFile, Name: repo.KeyName()}
+	err = repo.Backend().Remove(h)
 	if err != nil {
 		return err
 	}
@@ -118,8 +120,8 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 }
 
 func runKey(gopts GlobalOptions, args []string) error {
-	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) {
-		return errors.Fatalf("wrong number of arguments")
+	if len(args) < 1 || (args[0] == "rm" && len(args) != 2) || (args[0] != "rm" && len(args) != 1) {
+		return errors.Fatal("wrong number of arguments")
 	}
 
 	repo, err := OpenRepository(gopts)

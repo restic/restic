@@ -1,21 +1,19 @@
 package mem
 
 import (
+	"bytes"
 	"io"
+	"io/ioutil"
 	"restic"
 	"sync"
 
+	"restic/backend"
 	"restic/errors"
 
 	"restic/debug"
 )
 
-type entry struct {
-	Type restic.FileType
-	Name string
-}
-
-type memMap map[entry][]byte
+type memMap map[restic.Handle][]byte
 
 // make sure that MemoryBackend implements backend.Backend
 var _ restic.Backend = &MemoryBackend{}
@@ -39,61 +37,21 @@ func New() *MemoryBackend {
 }
 
 // Test returns whether a file exists.
-func (be *MemoryBackend) Test(t restic.FileType, name string) (bool, error) {
+func (be *MemoryBackend) Test(h restic.Handle) (bool, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	debug.Log("test %v %v", t, name)
+	debug.Log("Test %v", h)
 
-	if _, ok := be.data[entry{t, name}]; ok {
+	if _, ok := be.data[h]; ok {
 		return true, nil
 	}
 
 	return false, nil
 }
 
-// Load reads data from the backend.
-func (be *MemoryBackend) Load(h restic.Handle, p []byte, off int64) (int, error) {
-	if err := h.Valid(); err != nil {
-		return 0, err
-	}
-
-	be.m.Lock()
-	defer be.m.Unlock()
-
-	if h.Type == restic.ConfigFile {
-		h.Name = ""
-	}
-
-	debug.Log("get %v offset %v len %v", h, off, len(p))
-
-	if _, ok := be.data[entry{h.Type, h.Name}]; !ok {
-		return 0, errors.New("no such data")
-	}
-
-	buf := be.data[entry{h.Type, h.Name}]
-	switch {
-	case off > int64(len(buf)):
-		return 0, errors.New("offset beyond end of file")
-	case off < -int64(len(buf)):
-		off = 0
-	case off < 0:
-		off = int64(len(buf)) + off
-	}
-
-	buf = buf[off:]
-
-	n := copy(p, buf)
-
-	if len(p) > len(buf) {
-		return n, io.ErrUnexpectedEOF
-	}
-
-	return n, nil
-}
-
 // Save adds new Data to the backend.
-func (be *MemoryBackend) Save(h restic.Handle, p []byte) error {
+func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -105,16 +63,57 @@ func (be *MemoryBackend) Save(h restic.Handle, p []byte) error {
 		h.Name = ""
 	}
 
-	if _, ok := be.data[entry{h.Type, h.Name}]; ok {
+	if _, ok := be.data[h]; ok {
 		return errors.New("file already exists")
 	}
 
-	debug.Log("save %v bytes at %v", len(p), h)
-	buf := make([]byte, len(p))
-	copy(buf, p)
-	be.data[entry{h.Type, h.Name}] = buf
+	buf, err := ioutil.ReadAll(rd)
+	if err != nil {
+		return err
+	}
+
+	be.data[h] = buf
+	debug.Log("saved %v bytes at %v", len(buf), h)
 
 	return nil
+}
+
+// Load returns a reader that yields the contents of the file at h at the
+// given offset. If length is nonzero, only a portion of the file is
+// returned. rd must be closed after use.
+func (be *MemoryBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	if err := h.Valid(); err != nil {
+		return nil, err
+	}
+
+	be.m.Lock()
+	defer be.m.Unlock()
+
+	if h.Type == restic.ConfigFile {
+		h.Name = ""
+	}
+
+	debug.Log("Load %v offset %v len %v", h, offset, length)
+
+	if offset < 0 {
+		return nil, errors.New("offset is negative")
+	}
+
+	if _, ok := be.data[h]; !ok {
+		return nil, errors.New("no such data")
+	}
+
+	buf := be.data[h]
+	if offset > int64(len(buf)) {
+		return nil, errors.New("offset beyond end of file")
+	}
+
+	buf = buf[offset:]
+	if length > 0 && len(buf) > length {
+		buf = buf[:length]
+	}
+
+	return backend.Closer{Reader: bytes.NewReader(buf)}, nil
 }
 
 // Stat returns information about a file in the backend.
@@ -132,7 +131,7 @@ func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 
 	debug.Log("stat %v", h)
 
-	e, ok := be.data[entry{h.Type, h.Name}]
+	e, ok := be.data[h]
 	if !ok {
 		return restic.FileInfo{}, errors.New("no such data")
 	}
@@ -141,17 +140,17 @@ func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Remove deletes a file from the backend.
-func (be *MemoryBackend) Remove(t restic.FileType, name string) error {
+func (be *MemoryBackend) Remove(h restic.Handle) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	debug.Log("get %v %v", t, name)
+	debug.Log("Remove %v", h)
 
-	if _, ok := be.data[entry{t, name}]; !ok {
+	if _, ok := be.data[h]; !ok {
 		return errors.New("no such data")
 	}
 
-	delete(be.data, entry{t, name})
+	delete(be.data, h)
 
 	return nil
 }

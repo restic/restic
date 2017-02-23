@@ -153,7 +153,7 @@ func buildSSHCommand(cfg Config) []string {
 }
 
 // OpenWithConfig opens an sftp backend as described by the config by running
-// "ssh" with the appropiate arguments.
+// "ssh" with the appropriate arguments.
 func OpenWithConfig(cfg Config) (*SFTP, error) {
 	debug.Log("open with config %v", cfg)
 	return Open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
@@ -193,7 +193,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 }
 
 // CreateWithConfig creates an sftp backend as described by the config by running
-// "ssh" with the appropiate arguments.
+// "ssh" with the appropriate arguments.
 func CreateWithConfig(cfg Config) (*SFTP, error) {
 	debug.Log("config %v", cfg)
 	return Create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
@@ -259,11 +259,11 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 }
 
 // Rename temp file to final name according to type and name.
-func (r *SFTP) renameFile(oldname string, t restic.FileType, name string) error {
-	filename := r.filename(t, name)
+func (r *SFTP) renameFile(oldname string, h restic.Handle) error {
+	filename := r.filename(h)
 
 	// create directories if necessary
-	if t == restic.DataFile {
+	if h.Type == restic.DataFile {
 		err := r.mkdirAll(path.Dir(filename), backend.Modes.Dir)
 		if err != nil {
 			return err
@@ -297,22 +297,22 @@ func Join(parts ...string) string {
 }
 
 // Construct path for given restic.Type and name.
-func (r *SFTP) filename(t restic.FileType, name string) string {
-	if t == restic.ConfigFile {
+func (r *SFTP) filename(h restic.Handle) string {
+	if h.Type == restic.ConfigFile {
 		return Join(r.p, "config")
 	}
 
-	return Join(r.dirname(t, name), name)
+	return Join(r.dirname(h), h.Name)
 }
 
 // Construct directory for given backend.Type.
-func (r *SFTP) dirname(t restic.FileType, name string) string {
+func (r *SFTP) dirname(h restic.Handle) string {
 	var n string
-	switch t {
+	switch h.Type {
 	case restic.DataFile:
 		n = backend.Paths.Data
-		if len(name) > 2 {
-			n = Join(n, name[:2])
+		if len(h.Name) > 2 {
+			n = Join(n, h.Name[:2])
 		}
 	case restic.SnapshotFile:
 		n = backend.Paths.Snapshots
@@ -326,47 +326,9 @@ func (r *SFTP) dirname(t restic.FileType, name string) string {
 	return Join(r.p, n)
 }
 
-// Load returns the data stored in the backend for h at the given offset
-// and saves it in p. Load has the same semantics as io.ReaderAt.
-func (r *SFTP) Load(h restic.Handle, p []byte, off int64) (n int, err error) {
-	debug.Log("load %v, %d bytes, offset %v", h, len(p), off)
-	if err := r.clientError(); err != nil {
-		return 0, err
-	}
-
-	if err := h.Valid(); err != nil {
-		return 0, err
-	}
-
-	f, err := r.c.Open(r.filename(h.Type, h.Name))
-	if err != nil {
-		return 0, errors.Wrap(err, "Open")
-	}
-
-	defer func() {
-		e := f.Close()
-		if err == nil {
-			err = errors.Wrap(e, "Close")
-		}
-	}()
-
-	switch {
-	case off > 0:
-		_, err = f.Seek(off, 0)
-	case off < 0:
-		_, err = f.Seek(off, 2)
-	}
-
-	if err != nil {
-		return 0, errors.Wrap(err, "Seek")
-	}
-
-	return io.ReadFull(f, p)
-}
-
 // Save stores data in the backend at the handle.
-func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
-	debug.Log("save %v bytes to %v", h, len(p))
+func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
+	debug.Log("save to %v", h)
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -380,31 +342,60 @@ func (r *SFTP) Save(h restic.Handle, p []byte) (err error) {
 		return err
 	}
 
-	debug.Log("save %v (%d bytes) to %v", h, len(p), filename)
-
-	n, err := tmpfile.Write(p)
+	n, err := io.Copy(tmpfile, rd)
 	if err != nil {
 		return errors.Wrap(err, "Write")
 	}
 
-	if n != len(p) {
-		return errors.New("not all bytes writen")
-	}
+	debug.Log("saved %v (%d bytes) to %v", h, n, filename)
 
 	err = tmpfile.Close()
 	if err != nil {
 		return errors.Wrap(err, "Close")
 	}
 
-	err = r.renameFile(filename, h.Type, h.Name)
+	err = r.renameFile(filename, h)
 	debug.Log("save %v: rename %v: %v",
 		h, path.Base(filename), err)
 	return err
 }
 
+// Load returns a reader that yields the contents of the file at h at the
+// given offset. If length is nonzero, only a portion of the file is
+// returned. rd must be closed after use.
+func (r *SFTP) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	debug.Log("Load %v, length %v, offset %v", h, length, offset)
+	if err := h.Valid(); err != nil {
+		return nil, err
+	}
+
+	if offset < 0 {
+		return nil, errors.New("offset is negative")
+	}
+
+	f, err := r.c.Open(r.filename(h))
+	if err != nil {
+		return nil, err
+	}
+
+	if offset > 0 {
+		_, err = f.Seek(offset, 0)
+		if err != nil {
+			_ = f.Close()
+			return nil, err
+		}
+	}
+
+	if length > 0 {
+		return backend.LimitReadCloser(f, int64(length)), nil
+	}
+
+	return f, nil
+}
+
 // Stat returns information about a blob.
 func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
-	debug.Log("stat %v", h)
+	debug.Log("Stat(%v)", h)
 	if err := r.clientError(); err != nil {
 		return restic.FileInfo{}, err
 	}
@@ -413,7 +404,7 @@ func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	fi, err := r.c.Lstat(r.filename(h.Type, h.Name))
+	fi, err := r.c.Lstat(r.filename(h))
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Lstat")
 	}
@@ -422,13 +413,13 @@ func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (r *SFTP) Test(t restic.FileType, name string) (bool, error) {
-	debug.Log("type %v, name %v", t, name)
+func (r *SFTP) Test(h restic.Handle) (bool, error) {
+	debug.Log("Test(%v)", h)
 	if err := r.clientError(); err != nil {
 		return false, err
 	}
 
-	_, err := r.c.Lstat(r.filename(t, name))
+	_, err := r.c.Lstat(r.filename(h))
 	if os.IsNotExist(errors.Cause(err)) {
 		return false, nil
 	}
@@ -441,13 +432,13 @@ func (r *SFTP) Test(t restic.FileType, name string) (bool, error) {
 }
 
 // Remove removes the content stored at name.
-func (r *SFTP) Remove(t restic.FileType, name string) error {
-	debug.Log("type %v, name %v", t, name)
+func (r *SFTP) Remove(h restic.Handle) error {
+	debug.Log("Remove(%v)", h)
 	if err := r.clientError(); err != nil {
 		return err
 	}
 
-	return r.c.Remove(r.filename(t, name))
+	return r.c.Remove(r.filename(h))
 }
 
 // List returns a channel that yields all names of blobs of type t. A
@@ -462,7 +453,7 @@ func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
 
 		if t == restic.DataFile {
 			// read first level
-			basedir := r.dirname(t, "")
+			basedir := r.dirname(restic.Handle{Type: t})
 
 			list1, err := r.c.ReadDir(basedir)
 			if err != nil {
@@ -495,7 +486,7 @@ func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
 				}
 			}
 		} else {
-			entries, err := r.c.ReadDir(r.dirname(t, ""))
+			entries, err := r.c.ReadDir(r.dirname(restic.Handle{Type: t}))
 			if err != nil {
 				return
 			}

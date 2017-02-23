@@ -14,11 +14,11 @@
 #   docker run --rm -v $PWD:/home/travis/restic restic/test gb test -v ./backend
 #
 # build the image for an older version of Go:
-#   docker build --build-arg GOVERSION=1.3.3 -t restic/test:go1.3.3 .
+#   docker build --build-arg GOVERSION=1.6.4 -t restic/test:go1.6.4 .
 
 FROM ubuntu:14.04
 
-ARG GOVERSION=1.7
+ARG GOVERSION=1.7.5
 ARG GOARCH=amd64
 
 # install dependencies

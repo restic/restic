@@ -5,7 +5,6 @@ import (
 	"os"
 	"restic"
 	"restic/debug"
-	"runtime"
 
 	"github.com/spf13/cobra"
 
@@ -22,17 +21,15 @@ directories in an encrypted repository stored on different backends.
 `,
 	SilenceErrors: true,
 	SilenceUsage:  true,
-}
 
-func init() {
-	// set GOMAXPROCS to number of CPUs
-	if runtime.Version() < "go1.5" {
-		gomaxprocs := os.Getenv("GOMAXPROCS")
-		debug.Log("read GOMAXPROCS from env variable, value: %s", gomaxprocs)
-		if gomaxprocs == "" {
-			runtime.GOMAXPROCS(runtime.NumCPU())
-		}
-	}
+	// run the debug functions for all subcommands (if build tag "debug" is
+	// enabled)
+	PersistentPreRunE: func(*cobra.Command, []string) error {
+		return runDebug()
+	},
+	PersistentPostRun: func(*cobra.Command, []string) {
+		shutdownDebug()
+	},
 }
 
 func main() {

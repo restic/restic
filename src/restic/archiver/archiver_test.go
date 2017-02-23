@@ -104,7 +104,7 @@ func archiveDirectory(b testing.TB) {
 
 	arch := archiver.New(repo)
 
-	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil, nil)
+	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil, "localhost", nil)
 	OK(b, err)
 
 	b.Logf("snapshot archived as %v", id)
@@ -220,7 +220,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 
 	errChannels := [](<-chan error){}
 
-	// interweaved processing of subsequent chunks
+	// interwoven processing of subsequent chunks
 	maxParallel := 2*duplication - 1
 	barrier := make(chan struct{}, maxParallel)
 

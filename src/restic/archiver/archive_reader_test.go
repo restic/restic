@@ -2,9 +2,11 @@ package archiver
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"math/rand"
 	"restic"
+	"restic/checker"
 	"restic/repository"
 	"testing"
 )
@@ -44,7 +46,7 @@ func checkSavedFile(t *testing.T, repo restic.Repository, treeID restic.ID, name
 			t.Fatal(err)
 		}
 
-		buf := make([]byte, int(size))
+		buf := restic.NewBlobBuffer(int(size))
 		n := loadBlob(t, repo, id, buf)
 		if n != len(buf) {
 			t.Errorf("wrong number of bytes read, want %d, got %d", len(buf), n)
@@ -77,7 +79,7 @@ func TestArchiveReader(t *testing.T) {
 
 	f := fakeFile(t, seed, size)
 
-	sn, id, err := ArchiveReader(repo, nil, f, "fakefile", []string{"test"})
+	sn, id, err := ArchiveReader(repo, nil, f, "fakefile", []string{"test"}, "localhost")
 	if err != nil {
 		t.Fatalf("ArchiveReader() returned error %v", err)
 	}
@@ -89,6 +91,68 @@ func TestArchiveReader(t *testing.T) {
 	t.Logf("snapshot saved as %v, tree is %v", id.Str(), sn.Tree.Str())
 
 	checkSavedFile(t, repo, *sn.Tree, "fakefile", fakeFile(t, seed, size))
+
+	checker.TestCheckRepo(t, repo)
+}
+
+func TestArchiveReaderNull(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	sn, id, err := ArchiveReader(repo, nil, bytes.NewReader(nil), "fakefile", nil, "localhost")
+	if err != nil {
+		t.Fatalf("ArchiveReader() returned error %v", err)
+	}
+
+	if id.IsNull() {
+		t.Fatalf("ArchiveReader() returned null ID")
+	}
+
+	t.Logf("snapshot saved as %v, tree is %v", id.Str(), sn.Tree.Str())
+
+	checker.TestCheckRepo(t, repo)
+}
+
+type errReader string
+
+func (e errReader) Read([]byte) (int, error) {
+	return 0, errors.New(string(e))
+}
+
+func countSnapshots(t testing.TB, repo restic.Repository) int {
+	done := make(chan struct{})
+	defer close(done)
+
+	snapshots := 0
+	for range repo.List(restic.SnapshotFile, done) {
+		snapshots++
+	}
+	return snapshots
+}
+
+func TestArchiveReaderError(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	sn, id, err := ArchiveReader(repo, nil, errReader("error returned by reading stdin"), "fakefile", nil, "localhost")
+	if err == nil {
+		t.Errorf("expected error not returned")
+	}
+
+	if sn != nil {
+		t.Errorf("Snapshot should be nil, but isn't")
+	}
+
+	if !id.IsNull() {
+		t.Errorf("id should be null, but %v returned", id.Str())
+	}
+
+	n := countSnapshots(t, repo)
+	if n > 0 {
+		t.Errorf("expected zero snapshots, but got %d", n)
+	}
+
+	checker.TestCheckRepo(t, repo)
 }
 
 func BenchmarkArchiveReader(t *testing.B) {
@@ -107,7 +171,7 @@ func BenchmarkArchiveReader(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, _, err := ArchiveReader(repo, nil, bytes.NewReader(buf), "fakefile", []string{"test"})
+		_, _, err := ArchiveReader(repo, nil, bytes.NewReader(buf), "fakefile", []string{"test"}, "localhost")
 		if err != nil {
 			t.Fatal(err)
 		}

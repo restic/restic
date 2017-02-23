@@ -54,7 +54,7 @@ func TestIndexSerialize(t *testing.T) {
 	err := idx.Encode(wr)
 	OK(t, err)
 
-	idx2, err := repository.DecodeIndex(wr)
+	idx2, err := repository.DecodeIndex(wr.Bytes())
 	OK(t, err)
 	Assert(t, idx2 != nil,
 		"nil returned for decoded index")
@@ -136,7 +136,7 @@ func TestIndexSerialize(t *testing.T) {
 	Assert(t, id2.Equal(id),
 		"wrong ID returned: want %v, got %v", id, id2)
 
-	idx3, err := repository.DecodeIndex(wr3)
+	idx3, err := repository.DecodeIndex(wr3.Bytes())
 	OK(t, err)
 	Assert(t, idx3 != nil,
 		"nil returned for decoded index")
@@ -288,7 +288,7 @@ var exampleLookupTest = struct {
 func TestIndexUnserialize(t *testing.T) {
 	oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
-	idx, err := repository.DecodeIndex(bytes.NewReader(docExample))
+	idx, err := repository.DecodeIndex(docExample)
 	OK(t, err)
 
 	for _, test := range exampleTests {
@@ -326,8 +326,17 @@ func TestIndexUnserialize(t *testing.T) {
 	}
 }
 
+func BenchmarkDecodeIndex(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, err := repository.DecodeIndex(docExample)
+		OK(b, err)
+	}
+}
+
 func TestIndexUnserializeOld(t *testing.T) {
-	idx, err := repository.DecodeOldIndex(bytes.NewReader(docOldExample))
+	idx, err := repository.DecodeOldIndex(docOldExample)
 	OK(t, err)
 
 	for _, test := range exampleTests {

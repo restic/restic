@@ -86,7 +86,7 @@ func printTree(prefix string, repo *repository.Repository, id restic.ID) error {
 
 func runLs(gopts GlobalOptions, args []string) error {
 	if len(args) < 1 || len(args) > 2 {
-		return errors.Fatalf("no snapshot ID given")
+		return errors.Fatal("no snapshot ID given")
 	}
 
 	repo, err := OpenRepository(gopts)

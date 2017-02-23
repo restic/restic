@@ -9,7 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"restic/errors"
+	"golang.org/x/net/context"
+
+	"restic/repository"
 
 	"bazil.org/fuse"
 
@@ -17,108 +19,96 @@ import (
 	. "restic/test"
 )
 
-type MockRepo struct {
-	blobs map[restic.ID][]byte
-}
-
-func NewMockRepo(content map[restic.ID][]byte) *MockRepo {
-	return &MockRepo{blobs: content}
-}
-
-func (m *MockRepo) LookupBlobSize(id restic.ID, t restic.BlobType) (uint, error) {
-	buf, ok := m.blobs[id]
-	if !ok {
-		return 0, errors.New("blob not found")
-	}
-
-	return uint(len(buf)), nil
-}
-
-func (m *MockRepo) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (int, error) {
-	size, err := m.LookupBlobSize(id, t)
-	if err != nil {
-		return 0, err
-	}
-
-	if uint(len(buf)) < size {
-		return 0, errors.New("buffer too small")
-	}
-
-	buf = buf[:size]
-	copy(buf, m.blobs[id])
-	return int(size), nil
-}
-
-type MockContext struct{}
-
-func (m MockContext) Deadline() (time.Time, bool)       { return time.Now(), false }
-func (m MockContext) Done() <-chan struct{}             { return nil }
-func (m MockContext) Err() error                        { return nil }
-func (m MockContext) Value(key interface{}) interface{} { return nil }
-
-var testContent = genTestContent()
-var testContentLengths = []uint{
-	4646 * 1024,
-	655 * 1024,
-	378 * 1024,
-	8108 * 1024,
-	558 * 1024,
-}
-var testMaxFileSize uint
-
-func genTestContent() map[restic.ID][]byte {
-	m := make(map[restic.ID][]byte)
-
-	for _, length := range testContentLengths {
-		buf := Random(int(length), int(length))
-		id := restic.Hash(buf)
-		m[id] = buf
-		testMaxFileSize += length
-	}
-
-	return m
-}
-
-const maxBufSize = 20 * 1024 * 1024
-
-func testRead(t *testing.T, f *file, offset, length int, data []byte) {
-	ctx := MockContext{}
+func testRead(t testing.TB, f *file, offset, length int, data []byte) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	req := &fuse.ReadRequest{
 		Offset: int64(offset),
 		Size:   length,
 	}
 	resp := &fuse.ReadResponse{
-		Data: make([]byte, length),
+		Data: data,
 	}
 	OK(t, f.Read(ctx, req, resp))
 }
 
-var offsetReadsTests = []struct {
-	offset, length int
-}{
-	{0, 5 * 1024 * 1024},
-	{4000 * 1024, 1000 * 1024},
+func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
+	done := make(chan struct{})
+	defer close(done)
+	for id := range repo.List(restic.SnapshotFile, done) {
+		if first.IsNull() {
+			first = id
+		}
+	}
+	return first
+}
+
+func loadFirstSnapshot(t testing.TB, repo restic.Repository) *restic.Snapshot {
+	id := firstSnapshotID(t, repo)
+	sn, err := restic.LoadSnapshot(repo, id)
+	OK(t, err)
+	return sn
+}
+
+func loadTree(t testing.TB, repo restic.Repository, id restic.ID) *restic.Tree {
+	tree, err := repo.LoadTree(id)
+	OK(t, err)
+	return tree
 }
 
 func TestFuseFile(t *testing.T) {
-	repo := NewMockRepo(testContent)
-	ctx := MockContext{}
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
 
-	memfile := make([]byte, 0, maxBufSize)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	var ids restic.IDs
-	for id, buf := range repo.blobs {
-		ids = append(ids, id)
+	timestamp, err := time.Parse(time.RFC3339, "2017-01-24T10:42:56+01:00")
+	OK(t, err)
+	restic.TestCreateSnapshot(t, repo, timestamp, 2, 0.1)
+
+	sn := loadFirstSnapshot(t, repo)
+	tree := loadTree(t, repo, *sn.Tree)
+
+	var content restic.IDs
+	for _, node := range tree.Nodes {
+		content = append(content, node.Content...)
+	}
+	t.Logf("tree loaded, content: %v", content)
+
+	var (
+		filesize uint64
+		memfile  []byte
+	)
+	for _, id := range content {
+		size, err := repo.LookupBlobSize(id, restic.DataBlob)
+		OK(t, err)
+		filesize += uint64(size)
+
+		buf := restic.NewBlobBuffer(int(size))
+		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+		OK(t, err)
+
+		if uint(n) != size {
+			t.Fatalf("not enough bytes read for id %v: want %v, got %v", id.Str(), size, n)
+		}
+
+		if uint(len(buf)) != size {
+			t.Fatalf("buffer has wrong length for id %v: want %v, got %v", id.Str(), size, len(buf))
+		}
+
 		memfile = append(memfile, buf...)
 	}
+
+	t.Logf("filesize is %v, memfile has size %v", filesize, len(memfile))
 
 	node := &restic.Node{
 		Name:    "foo",
 		Inode:   23,
 		Mode:    0742,
-		Size:    42,
-		Content: ids,
+		Size:    filesize,
+		Content: content,
 	}
 	f, err := newFile(repo, node, false)
 	OK(t, err)
@@ -131,28 +121,19 @@ func TestFuseFile(t *testing.T) {
 	Equals(t, node.Size, attr.Size)
 	Equals(t, (node.Size/uint64(attr.BlockSize))+1, attr.Blocks)
 
-	for i, test := range offsetReadsTests {
-		b := memfile[test.offset : test.offset+test.length]
-		buf := make([]byte, test.length)
-		testRead(t, f, test.offset, test.length, buf)
-		if !bytes.Equal(b, buf) {
-			t.Errorf("test %d failed, wrong data returned", i)
-		}
-	}
-
 	for i := 0; i < 200; i++ {
-		length := rand.Intn(int(testMaxFileSize) / 2)
-		offset := rand.Intn(int(testMaxFileSize))
-		if length+offset > int(testMaxFileSize) {
-			diff := length + offset - int(testMaxFileSize)
-			length -= diff
-		}
+		offset := rand.Intn(int(filesize))
+		length := rand.Intn(int(filesize)-offset) + 100
 
 		b := memfile[offset : offset+length]
+
 		buf := make([]byte, length)
+
 		testRead(t, f, offset, length, buf)
 		if !bytes.Equal(b, buf) {
-			t.Errorf("test %d failed (offset %d, length %d), wrong data returned", i, offset, length)
+			t.Errorf("test %d failed, wrong data returned (offset %v, length %v)", i, offset, length)
 		}
 	}
+
+	OK(t, f.Release(ctx, nil))
 }

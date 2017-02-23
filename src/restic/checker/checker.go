@@ -1,14 +1,17 @@
 package checker
 
 import (
-	"bytes"
+	"crypto/sha256"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"sync"
 
 	"restic/errors"
+	"restic/hashing"
 
 	"restic"
-	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
@@ -77,6 +80,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	debug.Log("Start")
 	type indexRes struct {
 		Index *repository.Index
+		err   error
 		ID    string
 	}
 
@@ -92,39 +96,40 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 			idx, err = repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeOldIndex)
 		}
 
-		if err != nil {
-			return err
-		}
+		err = errors.Wrapf(err, "error loading index %v", id.Str())
 
 		select {
-		case indexCh <- indexRes{Index: idx, ID: id.String()}:
+		case indexCh <- indexRes{Index: idx, ID: id.String(), err: err}:
 		case <-done:
 		}
 
 		return nil
 	}
 
-	var perr error
 	go func() {
 		defer close(indexCh)
 		debug.Log("start loading indexes in parallel")
-		perr = repository.FilesInParallel(c.repo.Backend(), restic.IndexFile, defaultParallelism,
+		err := repository.FilesInParallel(c.repo.Backend(), restic.IndexFile, defaultParallelism,
 			repository.ParallelWorkFuncParseID(worker))
-		debug.Log("loading indexes finished, error: %v", perr)
+		debug.Log("loading indexes finished, error: %v", err)
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	done := make(chan struct{})
 	defer close(done)
 
-	if perr != nil {
-		errs = append(errs, perr)
-		return hints, errs
-	}
-
 	packToIndex := make(map[restic.ID]restic.IDSet)
 
 	for res := range indexCh {
-		debug.Log("process index %v", res.ID)
+		debug.Log("process index %v, err %v", res.ID, res.err)
+
+		if res.err != nil {
+			errs = append(errs, res.err)
+			continue
+		}
+
 		idxID, err := restic.ParseID(res.ID)
 		if err != nil {
 			errs = append(errs, errors.Errorf("unable to parse as index ID: %v", res.ID))
@@ -150,8 +155,6 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 
 		debug.Log("%d blobs processed", cnt)
 	}
-
-	debug.Log("done, error %v", perr)
 
 	debug.Log("checking for duplicate packs")
 	for packID := range c.packs {
@@ -187,7 +190,8 @@ func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<
 	defer wg.Done()
 
 	for id := range inChan {
-		ok, err := repo.Backend().Test(restic.DataFile, id.String())
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		ok, err := repo.Backend().Test(h)
 		if err != nil {
 			err = PackError{ID: id, Err: err}
 		} else {
@@ -658,36 +662,77 @@ func (c *Checker) CountPacks() uint64 {
 func checkPack(r restic.Repository, id restic.ID) error {
 	debug.Log("checking pack %v", id.Str())
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	buf, err := backend.LoadAll(r.Backend(), h, nil)
+
+	rd, err := r.Backend().Load(h, 0, 0)
 	if err != nil {
 		return err
 	}
 
-	hash := restic.Hash(buf)
+	packfile, err := ioutil.TempFile("", "restic-temp-check-")
+	if err != nil {
+		return errors.Wrap(err, "TempFile")
+	}
+
+	defer func() {
+		packfile.Close()
+		os.Remove(packfile.Name())
+	}()
+
+	hrd := hashing.NewReader(rd, sha256.New())
+	size, err := io.Copy(packfile, hrd)
+	if err != nil {
+		return errors.Wrap(err, "Copy")
+	}
+
+	if err = rd.Close(); err != nil {
+		return err
+	}
+
+	hash := restic.IDFromHash(hrd.Sum(nil))
+	debug.Log("hash for pack %v is %v", id.Str(), hash.Str())
+
 	if !hash.Equal(id) {
 		debug.Log("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 		return errors.Errorf("Pack ID does not match, want %v, got %v", id.Str(), hash.Str())
 	}
 
-	blobs, err := pack.List(r.Key(), bytes.NewReader(buf), int64(len(buf)))
+	blobs, err := pack.List(r.Key(), packfile, size)
 	if err != nil {
 		return err
 	}
 
 	var errs []error
+	var buf []byte
 	for i, blob := range blobs {
-		debug.Log("  check blob %d: %v", i, blob.ID.Str())
+		debug.Log("  check blob %d: %v", i, blob)
 
-		plainBuf := make([]byte, blob.Length)
-		n, err := crypto.Decrypt(r.Key(), plainBuf, buf[blob.Offset:blob.Offset+blob.Length])
+		buf = buf[:cap(buf)]
+		if uint(len(buf)) < blob.Length {
+			buf = make([]byte, blob.Length)
+		}
+		buf = buf[:blob.Length]
+
+		_, err := packfile.Seek(int64(blob.Offset), 0)
+		if err != nil {
+			return errors.Errorf("Seek(%v): %v", blob.Offset, err)
+		}
+
+		_, err = io.ReadFull(packfile, buf)
+		if err != nil {
+			debug.Log("  error loading blob %v: %v", blob.ID.Str(), err)
+			errs = append(errs, errors.Errorf("blob %v: %v", i, err))
+			continue
+		}
+
+		n, err := crypto.Decrypt(r.Key(), buf, buf)
 		if err != nil {
 			debug.Log("  error decrypting blob %v: %v", blob.ID.Str(), err)
 			errs = append(errs, errors.Errorf("blob %v: %v", i, err))
 			continue
 		}
-		plainBuf = plainBuf[:n]
+		buf = buf[:n]
 
-		hash := restic.Hash(plainBuf)
+		hash := restic.Hash(buf)
 		if !hash.Equal(blob.ID) {
 			debug.Log("  Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
 			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))
