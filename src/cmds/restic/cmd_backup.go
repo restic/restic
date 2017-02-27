@@ -304,7 +304,11 @@ func readLinesFromFile(filename string) ([]string, error) {
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+		line := scanner.Text()
+		if line == "" {
+			continue
+		}
+		lines = append(lines, line)
 	}
 
 	if err := scanner.Err(); err != nil {
