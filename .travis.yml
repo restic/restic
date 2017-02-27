@@ -24,7 +24,7 @@ matrix:
     - os: osx
       go: tip
     - os: linux
-      go: 1.6.4
+      go: 1.8
   include:
     - os: linux
       go: 1.8
