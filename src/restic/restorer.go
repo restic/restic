@@ -116,11 +116,11 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string, idx *Hard
 	return nil
 }
 
-// RestoreTo creates the directories and files in the snapshot below dir.
+// RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
-func (res *Restorer) RestoreTo(dir string) error {
+func (res *Restorer) RestoreTo(dst string) error {
 	idx := NewHardlinkIndex()
-	return res.restoreTo(dir, string(filepath.Separator), *res.sn.Tree, idx)
+	return res.restoreTo(dst, string(filepath.Separator), *res.sn.Tree, idx)
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.
