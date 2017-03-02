@@ -129,7 +129,7 @@ func findInSnapshot(repo *repository.Repository, pat findPattern, id restic.ID) 
 		return err
 	}
 
-	results, err := findInTree(repo, pat, *sn.Tree, "")
+	results, err := findInTree(repo, pat, *sn.Tree, string(filepath.Separator))
 	if err != nil {
 		return err
 	}
