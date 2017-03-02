@@ -120,7 +120,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string, idx *Hard
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(dir string) error {
 	idx := NewHardlinkIndex()
-	return res.restoreTo(dir, "", *res.sn.Tree, idx)
+	return res.restoreTo(dir, string(filepath.Separator), *res.sn.Tree, idx)
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.
