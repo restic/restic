@@ -11,15 +11,22 @@ import (
 	"github.com/restic/chunker"
 )
 
-// ArchiveReader reads from the reader and archives the data. Returned is the
-// resulting snapshot and its ID.
-func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, name string, tags []string, hostname string) (*restic.Snapshot, restic.ID, error) {
+// Reader allows saving a stream of data to the repository.
+type Reader struct {
+	restic.Repository
+
+	Tags     []string
+	Hostname string
+}
+
+// Archive reads data from the reader and saves it to the repo.
+func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic.Snapshot, restic.ID, error) {
 	if name == "" {
 		return nil, restic.ID{}, errors.New("no filename given")
 	}
 
 	debug.Log("start archiving %s", name)
-	sn, err := restic.NewSnapshot([]string{name}, tags, hostname)
+	sn, err := restic.NewSnapshot([]string{name}, r.Tags, r.Hostname)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
@@ -27,6 +34,7 @@ func ArchiveReader(repo restic.Repository, p *restic.Progress, rd io.Reader, nam
 	p.Start()
 	defer p.Done()
 
+	repo := r.Repository
 	chnker := chunker.New(rd, repo.Config().ChunkerPolynomial)
 
 	ids := restic.IDs{}
