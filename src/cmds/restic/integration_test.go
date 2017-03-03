@@ -516,23 +516,23 @@ func TestBackupExclude(t *testing.T) {
 		testRunBackup(t, []string{datadir}, opts, gopts)
 		snapshots, snapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
 		files := testRunLs(t, gopts, snapshotID)
-		Assert(t, includes(files, filepath.Join("/testdata", "foo.tar.gz")),
+		Assert(t, includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 			"expected file %q in first snapshot, but it's not included", "foo.tar.gz")
 
 		opts.Excludes = []string{"*.tar.gz"}
 		testRunBackup(t, []string{datadir}, opts, gopts)
 		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
 		files = testRunLs(t, gopts, snapshotID)
-		Assert(t, !includes(files, filepath.Join("/testdata", "foo.tar.gz")),
+		Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
 
 		opts.Excludes = []string{"*.tar.gz", "private/secret"}
 		testRunBackup(t, []string{datadir}, opts, gopts)
 		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
 		files = testRunLs(t, gopts, snapshotID)
-		Assert(t, !includes(files, filepath.Join("/testdata", "foo.tar.gz")),
+		Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
-		Assert(t, !includes(files, filepath.Join("/testdata", "private", "secret", "passwords.txt")),
+		Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "private", "secret", "passwords.txt")),
 			"expected file %q not in first snapshot, but it's included", "passwords.txt")
 	})
 }
