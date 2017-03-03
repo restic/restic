@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"restic/backend/mem"
 	"restic/errors"
 
 	"restic"
@@ -35,41 +36,68 @@ func randomID() restic.ID {
 	return id
 }
 
-// forgetfulBackend returns a backend that forgets everything.
+// forgetfulBackend returns a backend that forgets everything except keys and
+// config.
 func forgetfulBackend() restic.Backend {
-	be := &mock.Backend{}
+	be := mem.New()
 
-	be.TestFn = func(h restic.Handle) (bool, error) {
+	mock := &mock.Backend{}
+
+	mock.TestFn = func(h restic.Handle) (bool, error) {
+		if h.Type == restic.ConfigFile || h.Type == restic.KeyFile {
+			return be.Test(h)
+		}
+
 		return false, nil
 	}
 
-	be.LoadFn = func(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	mock.LoadFn = func(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+		if h.Type == restic.ConfigFile || h.Type == restic.KeyFile {
+			return be.Load(h, length, offset)
+		}
+
 		return nil, errors.New("not found")
 	}
 
-	be.SaveFn = func(h restic.Handle, rd io.Reader) error {
+	mock.SaveFn = func(h restic.Handle, rd io.Reader) error {
+		if h.Type == restic.ConfigFile || h.Type == restic.KeyFile {
+			return be.Save(h, rd)
+		}
+
 		return nil
 	}
 
-	be.StatFn = func(h restic.Handle) (restic.FileInfo, error) {
+	mock.StatFn = func(h restic.Handle) (restic.FileInfo, error) {
+		if h.Type == restic.ConfigFile || h.Type == restic.KeyFile {
+			return be.Stat(h)
+		}
+
 		return restic.FileInfo{}, errors.New("not found")
 	}
 
-	be.RemoveFn = func(h restic.Handle) error {
+	mock.RemoveFn = func(h restic.Handle) error {
+		if h.Type == restic.ConfigFile || h.Type == restic.KeyFile {
+			return be.Remove(h)
+		}
+
 		return nil
 	}
 
-	be.ListFn = func(t restic.FileType, done <-chan struct{}) <-chan string {
+	mock.ListFn = func(t restic.FileType, done <-chan struct{}) <-chan string {
+		if t == restic.ConfigFile || t == restic.KeyFile {
+			return be.List(t, done)
+		}
+
 		ch := make(chan string)
 		close(ch)
 		return ch
 	}
 
-	be.DeleteFn = func() error {
+	mock.DeleteFn = func() error {
 		return nil
 	}
 
-	return be
+	return mock
 }
 
 func testArchiverDuplication(t *testing.T) {
@@ -78,9 +106,12 @@ func testArchiverDuplication(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo := repository.New(forgetfulBackend())
+	be := forgetfulBackend()
+	if err := repository.Init(be, "foo"); err != nil {
+		t.Fatal(err)
+	}
 
-	err = repo.Init("foo")
+	repo, err := repository.Open(be, "foo", 1)
 	if err != nil {
 		t.Fatal(err)
 	}

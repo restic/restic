@@ -69,7 +69,7 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(repo, pw, repo.Key())
+	id, err := repository.AddKey(repo.Backend(), pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -100,7 +100,7 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(repo, pw, repo.Key())
+	id, err := repository.AddKey(repo.Backend(), pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}

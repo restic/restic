@@ -25,17 +25,6 @@ type Repository struct {
 	*packerManager
 }
 
-// New returns a new repository with backend be.
-func New(be restic.Backend) *Repository {
-	repo := &Repository{
-		be:            be,
-		idx:           NewMasterIndex(),
-		packerManager: newPackerManager(be, nil),
-	}
-
-	return repo
-}
-
 // Config returns the repository configuration.
 func (r *Repository) Config() restic.Config {
 	return r.cfg
@@ -335,41 +324,6 @@ func (r *Repository) SearchKey(password string, maxKeys int) error {
 	return err
 }
 
-// Init creates a new master key with the supplied password, initializes and
-// saves the repository config.
-func (r *Repository) Init(password string) error {
-	has, err := r.be.Test(restic.Handle{Type: restic.ConfigFile})
-	if err != nil {
-		return err
-	}
-	if has {
-		return errors.New("repository master key and config already initialized")
-	}
-
-	cfg, err := restic.CreateConfig()
-	if err != nil {
-		return err
-	}
-
-	return r.init(password, cfg)
-}
-
-// init creates a new master key with the supplied password and uses it to save
-// the config into the repo.
-func (r *Repository) init(password string, cfg restic.Config) error {
-	key, err := createMasterKey(r.be, password)
-	if err != nil {
-		return err
-	}
-
-	r.key = key.master
-	r.packerManager.key = key.master
-	r.keyName = key.Name()
-	r.cfg = cfg
-	_, err = r.SaveJSONUnpacked(restic.ConfigFile, cfg)
-	return err
-}
-
 // decrypt authenticates and decrypts ciphertext and stores the result in
 // plaintext.
 func (r *Repository) decryptTo(plaintext, ciphertext []byte) (int, error) {
@@ -533,4 +487,69 @@ func (r *Repository) SaveTree(t *restic.Tree) (restic.ID, error) {
 
 	_, err = r.SaveBlob(restic.TreeBlob, buf, id)
 	return id, err
+}
+
+// Init creates a new master key with the supplied password, initializes and
+// saves the repository config in the backend.
+func Init(be restic.Backend, password string) error {
+	has, err := be.Test(restic.Handle{Type: restic.ConfigFile})
+	if err != nil {
+		return err
+	}
+	if has {
+		return errors.New("repository master key and config already initialized")
+	}
+
+	cfg, err := restic.CreateConfig()
+	if err != nil {
+		return err
+	}
+
+	return InitConfig(be, password, cfg)
+}
+
+// InitConfig creates a new master key with the supplied password and saves the
+// repository config in the backend.
+func InitConfig(be restic.Backend, password string, cfg restic.Config) error {
+	has, err := be.Test(restic.Handle{Type: restic.ConfigFile})
+	if err != nil {
+		return err
+	}
+	if has {
+		return errors.New("repository master key and config already initialized")
+	}
+
+	key, err := AddKey(be, password, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = SaveJSON(be, key.Master(), restic.ConfigFile, cfg)
+	return err
+}
+
+// Open opens a repository in the backend with the password.
+func Open(be restic.Backend, password string, maxKeys int) (*Repository, error) {
+	key, err := SearchKey(be, password, maxKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	repo := &Repository{
+		be:      be,
+		key:     key.Master(),
+		keyName: key.Name(),
+
+		idx:           NewMasterIndex(),
+		packerManager: newPackerManager(be, key.Master()),
+	}
+
+	cfg, err := restic.LoadConfig(repo)
+	if err != nil {
+		return nil, err
+	}
+
+	repo.cfg = cfg
+
+	return repo, nil
 }
