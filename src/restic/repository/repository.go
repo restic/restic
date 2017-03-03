@@ -9,7 +9,6 @@ import (
 
 	"restic/errors"
 
-	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
@@ -51,26 +50,7 @@ func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
 // LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
 func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, error) {
-	debug.Log("load %v with id %v", t, id.Str())
-
-	h := restic.Handle{Type: t, Name: id.String()}
-	buf, err := backend.LoadAll(r.be, h)
-	if err != nil {
-		debug.Log("error loading %v: %v", h, err)
-		return nil, err
-	}
-
-	if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
-		return nil, errors.Errorf("load %v: invalid data returned", h)
-	}
-
-	// decrypt
-	n, err := r.decryptTo(buf, buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf[:n], nil
+	return Load(r.be, r.key, t, id)
 }
 
 // loadBlob tries to load and decrypt content identified by t and id from a
@@ -205,35 +185,13 @@ func (r *Repository) SaveAndEncrypt(t restic.BlobType, data []byte, id *restic.I
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
 func (r *Repository) SaveJSONUnpacked(t restic.FileType, item interface{}) (restic.ID, error) {
-	debug.Log("save new blob %v", t)
-	plaintext, err := json.Marshal(item)
-	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "json.Marshal")
-	}
-
-	return r.SaveUnpacked(t, plaintext)
+	return SaveJSON(r.be, r.key, t, item)
 }
 
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
 func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, err error) {
-	ciphertext := restic.NewBlobBuffer(len(p))
-	ciphertext, err = r.Encrypt(ciphertext, p)
-	if err != nil {
-		return restic.ID{}, err
-	}
-
-	id = restic.Hash(ciphertext)
-	h := restic.Handle{Type: t, Name: id.String()}
-
-	err = r.be.Save(h, bytes.NewReader(ciphertext))
-	if err != nil {
-		debug.Log("error saving blob %v: %v", h, err)
-		return restic.ID{}, err
-	}
-
-	debug.Log("blob %v saved", h)
-	return id, nil
+	return Save(r.be, r.key, t, p)
 }
 
 // Flush saves all remaining packs.
