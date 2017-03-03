@@ -31,7 +31,7 @@ func listKeys(ctx context.Context, s *repository.Repository) error {
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
 	for id := range s.List(restic.KeyFile, ctx.Done()) {
-		k, err := repository.LoadKey(s, id.String())
+		k, err := repository.LoadKey(s.Backend(), id.String())
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
 			continue

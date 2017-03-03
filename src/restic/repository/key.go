@@ -62,8 +62,8 @@ func createMasterKey(s *Repository, password string) (*Key, error) {
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
-func OpenKey(s *Repository, name string, password string) (*Key, error) {
-	k, err := LoadKey(s, name)
+func OpenKey(be restic.Backend, name string, password string) (*Key, error) {
+	k, err := LoadKey(be, name)
 	if err != nil {
 		debug.Log("LoadKey(%v) returned error %v", name[:12], err)
 		return nil, err
@@ -113,19 +113,19 @@ func OpenKey(s *Repository, name string, password string) (*Key, error) {
 // given password. If none could be found, ErrNoKeyFound is returned. When
 // maxKeys is reached, ErrMaxKeysReached is returned. When setting maxKeys to
 // zero, all keys in the repo are checked.
-func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
+func SearchKey(be restic.Backend, password string, maxKeys int) (*Key, error) {
 	checked := 0
 
 	// try at most maxKeysForSearch keys in repo
 	done := make(chan struct{})
 	defer close(done)
-	for name := range s.Backend().List(restic.KeyFile, done) {
+	for name := range be.List(restic.KeyFile, done) {
 		if maxKeys > 0 && checked > maxKeys {
 			return nil, ErrMaxKeysReached
 		}
 
 		debug.Log("trying key %v", name[:12])
-		key, err := OpenKey(s, name, password)
+		key, err := OpenKey(be, name, password)
 		if err != nil {
 			debug.Log("key %v returned error %v", name[:12], err)
 
@@ -145,9 +145,9 @@ func SearchKey(s *Repository, password string, maxKeys int) (*Key, error) {
 }
 
 // LoadKey loads a key from the backend.
-func LoadKey(s *Repository, name string) (k *Key, err error) {
+func LoadKey(be restic.Backend, name string) (k *Key, err error) {
 	h := restic.Handle{Type: restic.KeyFile, Name: name}
-	data, err := backend.LoadAll(s.be, h)
+	data, err := backend.LoadAll(be, h)
 	if err != nil {
 		return nil, err
 	}
@@ -258,4 +258,9 @@ func (k Key) Name() string {
 // Valid tests whether the mac and encryption keys are valid (i.e. not zero)
 func (k *Key) Valid() bool {
 	return k.user.Valid() && k.master.Valid()
+}
+
+// Master returns the master key.
+func (k *Key) Master() *crypto.Key {
+	return k.master
 }
