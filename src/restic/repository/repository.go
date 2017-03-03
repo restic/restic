@@ -309,21 +309,6 @@ func LoadIndex(repo restic.Repository, id restic.ID) (*Index, error) {
 	return nil, err
 }
 
-// SearchKey finds a key with the supplied password, afterwards the config is
-// read and parsed. It tries at most maxKeys key files in the repo.
-func (r *Repository) SearchKey(password string, maxKeys int) error {
-	key, err := SearchKey(r.be, password, maxKeys)
-	if err != nil {
-		return err
-	}
-
-	r.key = key.master
-	r.packerManager.key = key.master
-	r.keyName = key.Name()
-	r.cfg, err = restic.LoadConfig(r)
-	return err
-}
-
 // decrypt authenticates and decrypts ciphertext and stores the result in
 // plaintext.
 func (r *Repository) decryptTo(plaintext, ciphertext []byte) (int, error) {
