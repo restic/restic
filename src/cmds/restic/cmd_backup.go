@@ -272,7 +272,13 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return err
 	}
 
-	_, id, err := archiver.ArchiveReader(repo, newArchiveStdinProgress(gopts), os.Stdin, opts.StdinFilename, opts.Tags, opts.Hostname)
+	r := &archiver.Reader{
+		Repository: repo,
+		Tags:       opts.Tags,
+		Hostname:   opts.Hostname,
+	}
+
+	_, id, err := r.Archive(opts.StdinFilename, os.Stdin, newArchiveStdinProgress(gopts))
 	if err != nil {
 		return err
 	}
