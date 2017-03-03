@@ -57,8 +57,8 @@ var (
 
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
-func createMasterKey(s *Repository, password string) (*Key, error) {
-	return AddKey(s, password, nil)
+func createMasterKey(be restic.Backend, password string) (*Key, error) {
+	return AddKey(be, password, nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
@@ -162,7 +162,7 @@ func LoadKey(be restic.Backend, name string) (k *Key, err error) {
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) {
+func AddKey(be restic.Backend, password string, template *crypto.Key) (*Key, error) {
 	// make sure we have valid KDF parameters
 	if KDFParams == nil {
 		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
@@ -233,7 +233,7 @@ func AddKey(s *Repository, password string, template *crypto.Key) (*Key, error) 
 		Name: restic.Hash(buf).String(),
 	}
 
-	err = s.be.Save(h, bytes.NewReader(buf))
+	err = be.Save(h, bytes.NewReader(buf))
 	if err != nil {
 		return nil, err
 	}

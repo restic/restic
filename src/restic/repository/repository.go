@@ -399,7 +399,7 @@ func (r *Repository) Init(password string) error {
 // init creates a new master key with the supplied password and uses it to save
 // the config into the repo.
 func (r *Repository) init(password string, cfg restic.Config) error {
-	key, err := createMasterKey(r, password)
+	key, err := createMasterKey(r.be, password)
 	if err != nil {
 		return err
 	}
