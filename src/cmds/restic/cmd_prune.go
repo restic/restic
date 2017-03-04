@@ -218,7 +218,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
 	if len(rewritePacks) != 0 {
-		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewriten")
+		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
 		bar.Start()
 		err = repository.Repack(repo, rewritePacks, usedBlobs, bar)
 		if err != nil {
