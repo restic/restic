@@ -217,17 +217,28 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
 		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
-	err = repository.Repack(repo, rewritePacks, usedBlobs)
-	if err != nil {
-		return err
+	if len(rewritePacks) != 0 {
+		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewriten")
+		bar.Start()
+		err = repository.Repack(repo, rewritePacks, usedBlobs, bar)
+		if err != nil {
+			return err
+		}
+		bar.Done()
 	}
 
-	for packID := range removePacks {
-		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
-		err = repo.Backend().Remove(h)
-		if err != nil {
-			Warnf("unable to remove file %v from the repository\n", packID.Str())
+	if len(removePacks) != 0 {
+		bar = newProgressMax(!gopts.Quiet, uint64(len(removePacks)), "packs deleted")
+		bar.Start()
+		for packID := range removePacks {
+			h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
+			err = repo.Backend().Remove(h)
+			if err != nil {
+				Warnf("unable to remove file %v from the repository\n", packID.Str())
+			}
+			bar.Report(restic.Stat{Blobs: 1})
 		}
+		bar.Done()
 	}
 
 	Verbosef("creating new index\n")
