@@ -18,7 +18,7 @@ import (
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Afterwards, the packs are removed. This operation requires
 // an exclusive lock on the repo.
-func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet) (err error) {
+func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *restic.Progress) (err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	for packID := range packs {
@@ -117,6 +117,9 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 
 		if err = os.Remove(tempfile.Name()); err != nil {
 			return errors.Wrap(err, "Remove")
+		}
+		if p != nil {
+			p.Report(restic.Stat{Blobs: 1})
 		}
 	}
 

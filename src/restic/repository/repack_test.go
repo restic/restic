@@ -132,7 +132,7 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 }
 
 func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs restic.BlobSet) {
-	err := repository.Repack(repo, packs, blobs)
+	err := repository.Repack(repo, packs, blobs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
