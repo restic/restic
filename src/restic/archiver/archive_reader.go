@@ -4,6 +4,7 @@ import (
 	"io"
 	"restic"
 	"restic/debug"
+	"restic/index"
 	"time"
 
 	"restic/errors"
@@ -37,8 +38,12 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 	repo := r.Repository
 	chnker := chunker.New(rd, repo.Config().ChunkerPolynomial)
 
+	debug.Log("load index")
+	idx, err := index.Load(repo, nil)
+
 	ids := restic.IDs{}
 	var fileSize uint64
+	cm := NewContentManager(repo.Backend(), repo.Key())
 
 	for {
 		chunk, err := chnker.Next(getBuf())
@@ -52,11 +57,12 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 
 		id := restic.Hash(chunk.Data)
 
-		if !repo.Index().Has(id, restic.DataBlob) {
-			_, err := repo.SaveBlob(restic.DataBlob, chunk.Data, id)
-			if err != nil {
+		h := restic.BlobHandle{ID: id, Type: restic.DataBlob}
+		if !idx.Has(h) {
+			if err := cm.AddNewBlob(h, chunk.Data); err != nil {
 				return nil, restic.ID{}, err
 			}
+
 			debug.Log("saved blob %v (%d bytes)\n", id.Str(), chunk.Length)
 		} else {
 			debug.Log("blob %v already saved in the repo\n", id.Str())
@@ -68,6 +74,14 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 
 		p.Report(restic.Stat{Bytes: uint64(chunk.Length)})
 		fileSize += uint64(chunk.Length)
+
+		if err = cm.SaveFullFile(); err != nil {
+			return nil, restic.ID{}, err
+		}
+	}
+
+	if err = cm.SaveAllFiles(); err != nil {
+		return nil, restic.ID{}, err
 	}
 
 	tree := &restic.Tree{
@@ -94,7 +108,14 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 	sn.Tree = &treeID
 	debug.Log("tree saved as %v", treeID.Str())
 
-	id, err := repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
+	// save new index
+	id, err := index.Save(repo, cm.Packs, nil)
+	if err != nil {
+		return nil, restic.ID{}, err
+	}
+	debug.Log("new index saved as %v", id.Str())
+
+	id, err = repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
