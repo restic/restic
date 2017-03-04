@@ -526,7 +526,7 @@ only available via HTTP, you can specify the URL to the server like this:
 
 ### Pre-Requisites
 
-* Download and Install [Minio Server](https://minio.io/download/).
+* Download and Install [Minio Server](https://minio.io/downloads/#minio-server).
 * You can also refer to [https://docs.minio.io](https://docs.minio.io) for step by step guidance on installation and getting started on Minio Client and Minio Server.
 
 You must first setup the following environment variables with the credentials of your running Minio Server.
