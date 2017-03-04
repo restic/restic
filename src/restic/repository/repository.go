@@ -30,12 +30,6 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
-// PrefixLength returns the number of bytes required so that all prefixes of
-// all IDs of type t are unique.
-func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
-	return restic.PrefixLength(r.be, t)
-}
-
 // LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
 func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, error) {
