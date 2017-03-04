@@ -184,7 +184,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		}
 	}
 
-	removeBytes := 0
+	removeBytes := duplicateBytes
 
 	// find packs that are unneeded
 	removePacks := restic.NewIDSet()
