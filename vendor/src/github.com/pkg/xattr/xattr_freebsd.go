@@ -10,40 +10,46 @@ const (
 	EXTATTR_NAMESPACE_USER = 1
 )
 
-// Retrieve extended attribute data associated with path.
+// Getxattr retrieves extended attribute data associated with path.
 func Getxattr(path, name string) ([]byte, error) {
 	// find size.
 	size, err := extattr_get_file(path, EXTATTR_NAMESPACE_USER, name, nil, 0)
 	if err != nil {
 		return nil, &XAttrError{"extattr_get_file", path, name, err}
 	}
-	buf := make([]byte, size)
-	// Read into buffer of that size.
-	read, err := extattr_get_file(path, EXTATTR_NAMESPACE_USER, name, &buf[0], size)
-	if err != nil {
-		return nil, &XAttrError{"extattr_get_file", path, name, err}
+	if size > 0 {
+		buf := make([]byte, size)
+		// Read into buffer of that size.
+		read, err := extattr_get_file(path, EXTATTR_NAMESPACE_USER, name, &buf[0], size)
+		if err != nil {
+			return nil, &XAttrError{"extattr_get_file", path, name, err}
+		}
+		return buf[:read], nil
 	}
-	return buf[:read], nil
+	return []byte{}, nil
 }
 
-// Retrieves a list of names of extended attributes associated with the
-// given path in the file system.
+// Listxattr retrieves a list of names of extended attributes associated
+// with the given path in the file system.
 func Listxattr(path string) ([]string, error) {
 	// find size.
 	size, err := extattr_list_file(path, EXTATTR_NAMESPACE_USER, nil, 0)
 	if err != nil {
 		return nil, &XAttrError{"extattr_list_file", path, "", err}
 	}
-	buf := make([]byte, size)
-	// Read into buffer of that size.
-	read, err := extattr_list_file(path, EXTATTR_NAMESPACE_USER, &buf[0], size)
-	if err != nil {
-		return nil, &XAttrError{"extattr_list_file", path, "", err}
+	if size > 0 {
+		buf := make([]byte, size)
+		// Read into buffer of that size.
+		read, err := extattr_list_file(path, EXTATTR_NAMESPACE_USER, &buf[0], size)
+		if err != nil {
+			return nil, &XAttrError{"extattr_list_file", path, "", err}
+		}
+		return attrListToStrings(buf[:read]), nil
 	}
-	return attrListToStrings(buf[:read]), nil
+	return []string{}, nil
 }
 
-// Associates name and data together as an attribute of path.
+// Setxattr associates name and data together as an attribute of path.
 func Setxattr(path, name string, data []byte) error {
 	written, err := extattr_set_file(path, EXTATTR_NAMESPACE_USER, name, &data[0], len(data))
 	if err != nil {
@@ -55,7 +61,7 @@ func Setxattr(path, name string, data []byte) error {
 	return nil
 }
 
-// Remove the attribute.
+// Removexattr removes the attribute associated with the given path.
 func Removexattr(path, name string) error {
 	if err := extattr_delete_file(path, EXTATTR_NAMESPACE_USER, name); err != nil {
 		return &XAttrError{"extattr_delete_file", path, name, err}
@@ -63,7 +69,7 @@ func Removexattr(path, name string) error {
 	return nil
 }
 
-// Convert a sequnce of attribute name entries to a []string.
+// attrListToStrings converts a sequnce of attribute name entries to a []string.
 // Each entry consists of a single byte containing the length
 // of the attribute name, followed by the attribute name.
 // The name is _not_ terminated by NUL.

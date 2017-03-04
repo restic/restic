@@ -52,7 +52,7 @@
 		{
 			"importpath": "github.com/pkg/xattr",
 			"repository": "https://github.com/pkg/xattr",
-			"revision": "1d40b70a947cd8e8457e4715e1123f8e99f5f241",
+			"revision": "b867675798fa7708a444945602b452ca493f2272",
 			"branch": "master"
 		},
 		{
