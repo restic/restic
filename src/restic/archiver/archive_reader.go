@@ -20,6 +20,31 @@ type Reader struct {
 	Hostname string
 }
 
+// Chunk is one chunk of a file (or an error).
+type Chunk struct {
+	chunker.Chunk
+	Error error
+}
+
+// chunkReader sends the chunks read from rd to ch, which is close on EOF or
+// any error.
+func chunkReader(c *chunker.Chunker, ch chan<- Chunk) {
+	defer close(ch)
+	for {
+		chunk, err := c.Next(getBuf())
+		if errors.Cause(err) == io.EOF {
+			break
+		}
+
+		if err != nil {
+			ch <- Chunk{Error: err}
+			return
+		}
+
+		ch <- Chunk{Chunk: chunk}
+	}
+}
+
 // Archive reads data from the reader and saves it to the repo.
 func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic.Snapshot, restic.ID, error) {
 	if name == "" {
@@ -36,7 +61,7 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 	defer p.Done()
 
 	repo := r.Repository
-	chnker := chunker.New(rd, repo.Config().ChunkerPolynomial)
+	ch := make(chan Chunk)
 
 	debug.Log("load index")
 	idx, err := index.Load(repo, nil)
@@ -45,14 +70,12 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 	var fileSize uint64
 	cm := NewContentManager(repo.Backend(), repo.Key())
 
-	for {
-		chunk, err := chnker.Next(getBuf())
-		if errors.Cause(err) == io.EOF {
-			break
-		}
+	go chunkReader(chunker.New(rd, repo.Config().ChunkerPolynomial), ch)
 
-		if err != nil {
-			return nil, restic.ID{}, errors.Wrap(err, "chunker.Next()")
+	for chunk := range ch {
+		if chunk.Error != nil {
+			debug.Log("received error from chunker: %v", chunk.Error)
+			return nil, restic.ID{}, errors.Wrap(chunk.Error, "chunker.Next()")
 		}
 
 		id := restic.Hash(chunk.Data)
