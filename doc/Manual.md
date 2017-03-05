@@ -143,6 +143,8 @@ Please note that knowledge of your password is required to access the repository
 Losing your password means that your data is irrecoverably lost.
 ```
 
+Other backends like sftp and s3 are [described in a later section](#create-an-sftp-repository) of this document.
+
 Remembering your password is important! If you lose it, you won't be able to
 access data stored in the repository.
 
