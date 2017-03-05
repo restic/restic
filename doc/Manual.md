@@ -397,28 +397,39 @@ enter password for repository:
 
 # Manage tags
 
-Managing tags on snapshots is simple. The existing set of tags can be either
-replaced completely, added to or removed from. The result is directly visible
-in the `snapshots` command.
+Managing tags on snapshots is done with the `tag` command. The existing set of
+tags can be replaced completely, tags can be added to removed. The result is
+directly visible in the `snapshots` command.
+
+Let's say we want to tag snapshot `590c8fc8` with the tags `NL` and `CH` and
+remove all other tags that may be present, the following command does that:
 
 ```console
 $ restic -r /tmp/backup tag --set NL,CH 590c8fc8
 Create exclusive lock for repository
 Modified tags on 1 snapshots
 ```
+
 Note the snapshot ID has changed, so between each change we need to look up
 the new ID of the snapshot. But there is an even better way, the `tag` command
-accepts `--tag`, so we can filter snapshots based on the tag we just added.
+accepts `--tag` for a filter, so we can filter snapshots based on the tag we
+just added.
+
+So we can add and remove tags incrementally like this:
+
 ```console
 $ restic -r /tmp/backup tag --tag NL --remove CH
 Create exclusive lock for repository
 Modified tags on 1 snapshots
+
 $ restic -r /tmp/backup tag --tag NL --add UK
 Create exclusive lock for repository
 Modified tags on 1 snapshots
+
 $ restic -r /tmp/backup tag --tag NL --remove NL
 Create exclusive lock for repository
 Modified tags on 1 snapshots
+
 $ restic -r /tmp/backup tag --tag NL --add SOMETHING
 No snapshots were modified
 ```
