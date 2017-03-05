@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -158,6 +159,33 @@ func testRunFind(t testing.TB, gopts GlobalOptions, pattern string) []string {
 	OK(t, runFind(opts, gopts, []string{pattern}))
 
 	return strings.Split(string(buf.Bytes()), "\n")
+}
+
+func testRunSnapshots(t testing.TB, gopts GlobalOptions) (*Snapshot, map[string]Snapshot) {
+	buf := bytes.NewBuffer(nil)
+	globalOptions.stdout = buf
+	globalOptions.JSON = true
+	defer func() {
+		globalOptions.stdout = os.Stdout
+		globalOptions.JSON = gopts.JSON
+	}()
+
+	opts := SnapshotOptions{}
+
+	OK(t, runSnapshots(opts, globalOptions, []string{}))
+
+	snapshots := []Snapshot{}
+	OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
+
+	var newest *Snapshot
+	snapmap := make(map[string]Snapshot, len(snapshots))
+	for _, sn := range snapshots {
+		snapmap[sn.ID] = sn
+		if newest == nil || sn.Time.After(newest.Time) {
+			newest = &sn
+		}
+	}
+	return newest, snapmap
 }
 
 func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {
@@ -599,6 +627,31 @@ func TestIncrementalBackup(t *testing.T) {
 			t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
 		}
 		t.Logf("repository grown by %d bytes", stat3.size-stat2.size)
+	})
+}
+
+func TestBackupTags(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		testRunInit(t, gopts)
+		SetupTarTestFixture(t, env.testdata, datafile)
+
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+		newest, _ := testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 0,
+			"expected no tags, got %v", newest.Tags)
+
+		opts.Tags = []string{"NL"}
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+		newest, _ = testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
+			"expected one NL tag, got %v", newest.Tags)
 	})
 }
 
