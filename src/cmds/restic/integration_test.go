@@ -670,6 +670,9 @@ func TestTag(t *testing.T) {
 		Assert(t, newest != nil, "expected a new backup, got nil")
 		Assert(t, len(newest.Tags) == 0,
 			"expected no tags, got %v", newest.Tags)
+		Assert(t, newest.Original == nil,
+			"expected original ID to be nil, got %v", newest.Original)
+		originalID := *newest.ID
 
 		testRunTag(t, TagOptions{SetTags: []string{"NL"}}, gopts)
 		testRunCheck(t, gopts)
@@ -677,6 +680,9 @@ func TestTag(t *testing.T) {
 		Assert(t, newest != nil, "expected a new backup, got nil")
 		Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
 			"set failed, expected one NL tag, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
 
 		testRunTag(t, TagOptions{AddTags: []string{"CH"}}, gopts)
 		testRunCheck(t, gopts)
@@ -684,6 +690,9 @@ func TestTag(t *testing.T) {
 		Assert(t, newest != nil, "expected a new backup, got nil")
 		Assert(t, len(newest.Tags) == 2 && newest.Tags[0] == "NL" && newest.Tags[1] == "CH",
 			"add failed, expected CH,NL tags, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
 
 		testRunTag(t, TagOptions{RemoveTags: []string{"NL"}}, gopts)
 		testRunCheck(t, gopts)
@@ -691,6 +700,9 @@ func TestTag(t *testing.T) {
 		Assert(t, newest != nil, "expected a new backup, got nil")
 		Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "CH",
 			"remove failed, expected one CH tag, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
 
 		testRunTag(t, TagOptions{AddTags: []string{"US", "RU"}}, gopts)
 		testRunTag(t, TagOptions{RemoveTags: []string{"CH", "US", "RU"}}, gopts)
@@ -699,6 +711,9 @@ func TestTag(t *testing.T) {
 		Assert(t, newest != nil, "expected a new backup, got nil")
 		Assert(t, len(newest.Tags) == 0,
 			"expected no tags, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
 
 		// Check special case of removing all tags.
 		testRunTag(t, TagOptions{SetTags: []string{""}}, gopts)
@@ -707,6 +722,9 @@ func TestTag(t *testing.T) {
 		Assert(t, newest != nil, "expected a new backup, got nil")
 		Assert(t, len(newest.Tags) == 0,
 			"expected no tags, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
 	})
 }
 

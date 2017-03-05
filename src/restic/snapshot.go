@@ -21,6 +21,7 @@ type Snapshot struct {
 	GID      uint32    `json:"gid,omitempty"`
 	Excludes []string  `json:"excludes,omitempty"`
 	Tags     []string  `json:"tags,omitempty"`
+	Original *ID       `json:"original,omitempty"`
 
 	id *ID // plaintext ID, used during restore
 }

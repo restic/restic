@@ -76,6 +76,11 @@ func changeTags(repo *repository.Repository, snapshotID restic.ID, setTags, addT
 	}
 
 	if changed {
+		// Retain the original snapshot id over all tag changes.
+		if sn.Original == nil {
+			sn.Original = sn.ID()
+		}
+
 		// Save the new snapshot.
 		id, err := repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
 		if err != nil {
