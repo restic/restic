@@ -161,7 +161,7 @@ func testRunFind(t testing.TB, gopts GlobalOptions, pattern string) []string {
 	return strings.Split(string(buf.Bytes()), "\n")
 }
 
-func testRunSnapshots(t testing.TB, gopts GlobalOptions) (*Snapshot, map[string]Snapshot) {
+func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
 	buf := bytes.NewBuffer(nil)
 	globalOptions.stdout = buf
 	globalOptions.JSON = true
@@ -177,15 +177,14 @@ func testRunSnapshots(t testing.TB, gopts GlobalOptions) (*Snapshot, map[string]
 	snapshots := []Snapshot{}
 	OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
 
-	var newest *Snapshot
-	snapmap := make(map[string]Snapshot, len(snapshots))
+	snapmap = make(map[restic.ID]Snapshot, len(snapshots))
 	for _, sn := range snapshots {
-		snapmap[sn.ID] = sn
+		snapmap[*sn.ID] = sn
 		if newest == nil || sn.Time.After(newest.Time) {
 			newest = &sn
 		}
 	}
-	return newest, snapmap
+	return
 }
 
 func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {

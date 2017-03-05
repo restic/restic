@@ -166,7 +166,7 @@ func printSnapshotsReadable(stdout io.Writer, list []*restic.Snapshot) {
 type Snapshot struct {
 	*restic.Snapshot
 
-	ID string `json:"id"`
+	ID *restic.ID `json:"id"`
 }
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
@@ -178,7 +178,7 @@ func printSnapshotsJSON(stdout io.Writer, list []*restic.Snapshot) error {
 
 		k := Snapshot{
 			Snapshot: sn,
-			ID:       sn.ID().String(),
+			ID:       sn.ID(),
 		}
 		snapshots = append(snapshots, k)
 	}
