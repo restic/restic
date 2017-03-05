@@ -62,38 +62,16 @@ func changeTags(repo *repository.Repository, snapshotID restic.ID, setTags, addT
 	}
 
 	if len(setTags) != 0 {
-		// Setting the tag to an empty string really means no more tags.
+		// Setting the tag to an empty string really means no tags.
 		if len(setTags) == 1 && setTags[0] == "" {
 			setTags = nil
 		}
 		sn.Tags = setTags
 		changed = true
 	} else {
-		for _, add := range addTags {
-			found := false
-			for _, tag := range sn.Tags {
-				if tag == add {
-					found = true
-					break
-				}
-			}
-			if !found {
-				sn.Tags = append(sn.Tags, add)
-				changed = true
-			}
-		}
-		for _, remove := range removeTags {
-			for i, tag := range sn.Tags {
-				if tag == remove {
-					// https://github.com/golang/go/wiki/SliceTricks
-					sn.Tags[i] = sn.Tags[len(sn.Tags)-1]
-					sn.Tags[len(sn.Tags)-1] = ""
-					sn.Tags = sn.Tags[:len(sn.Tags)-1]
-
-					changed = true
-					break
-				}
-			}
+		changed = sn.AddTags(addTags)
+		if sn.RemoveTags(removeTags) {
+			changed = true
 		}
 	}
 

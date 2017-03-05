@@ -73,8 +73,7 @@ func LoadAllSnapshots(repo Repository) (snapshots []*Snapshot, err error) {
 
 		snapshots = append(snapshots, sn)
 	}
-
-	return snapshots, nil
+	return
 }
 
 func (sn Snapshot) String() string {
@@ -97,6 +96,41 @@ func (sn *Snapshot) fillUserInfo() error {
 	// set userid and groupid
 	sn.UID, sn.GID, err = uidGidInt(*usr)
 	return err
+}
+
+// AddTags adds the given tags to the snapshots tags, preventing duplicates.
+// It returns true if any changes were made.
+func (sn *Snapshot) AddTags(addTags []string) (changed bool) {
+nextTag:
+	for _, add := range addTags {
+		for _, tag := range sn.Tags {
+			if tag == add {
+				continue nextTag
+			}
+		}
+		sn.Tags = append(sn.Tags, add)
+		changed = true
+	}
+	return
+}
+
+// RemoveTags removes the given tags from the snapshots tags and
+// returns true if any changes were made.
+func (sn *Snapshot) RemoveTags(removeTags []string) (changed bool) {
+	for _, remove := range removeTags {
+		for i, tag := range sn.Tags {
+			if tag == remove {
+				// https://github.com/golang/go/wiki/SliceTricks
+				sn.Tags[i] = sn.Tags[len(sn.Tags)-1]
+				sn.Tags[len(sn.Tags)-1] = ""
+				sn.Tags = sn.Tags[:len(sn.Tags)-1]
+
+				changed = true
+				break
+			}
+		}
+	}
+	return
 }
 
 // HasTags returns true if the snapshot has all the tags.
