@@ -99,9 +99,22 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 // printSnapshotsReadable prints a text table of the snapshots in list to stdout.
 func printSnapshotsReadable(stdout io.Writer, list []*restic.Snapshot) {
 
+	// Determine the max widths for host and tag.
+	maxHost, maxTag := 10, 6
+	for _, sn := range list {
+		if len(sn.Hostname) > maxHost {
+			maxHost = len(sn.Hostname)
+		}
+		for _, tag := range sn.Tags {
+			if len(tag) > maxTag {
+				maxTag = len(tag)
+			}
+		}
+	}
+
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %-3s %s", "ID", "Date", "Host", "Tags", "", "Directory")
-	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %-3s %s"
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-*s  %-*s  %-3s %s", "ID", "Date", -maxHost, "Host", -maxTag, "Tags", "", "Directory")
+	tab.RowFormat = fmt.Sprintf("%%-8s  %%-19s  %%%ds  %%%ds  %%-3s %%s", -maxHost, -maxTag)
 
 	for _, sn := range list {
 		if len(sn.Paths) == 0 {
