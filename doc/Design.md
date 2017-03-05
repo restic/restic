@@ -285,7 +285,7 @@ This way, the password can be changed without having to re-encrypt all data.
 Snapshots
 ---------
 
-A snapshots represents a directory with all files and sub-directories at a
+A snapshot represents a directory with all files and sub-directories at a
 given point in time. For each backup that is made, a new snapshot is created. A
 snapshot is a JSON document that is stored in an encrypted file below the
 directory `snapshots` in the repository. The filename is the storage ID. This
@@ -304,12 +304,22 @@ enter password for repository:
   "hostname": "kasimir",
   "username": "fd0",
   "uid": 1000,
-  "gid": 100
+  "gid": 100,
+  "tags": [
+    "NL"
+  ],
+  "original": "251c2e5841355f743f9d4ffd3260bee765acee40a6229857e32b60446991b837"
 }
 ```
 
 Here it can be seen that this snapshot represents the contents of the directory
-`/tmp/testdata`. The most important field is `tree`.
+`/tmp/testdata` after its tags were changed to "NL". The most important field
+is `tree`.
+
+Another important field is `original`, if any modification is made to the
+snapshot, say because its tags changed, its SHA-256 hash changes and therefore
+the original snapshot id is lost. Retaining a stable id is especially important
+for caching.
 
 All content within a restic repository is referenced according to its SHA-256
 hash. Before saving, each file is split into variable sized Blobs of data. The

@@ -73,6 +73,7 @@ Available Commands:
   rebuild-index build a new index file
   restore       extract the data from a snapshot
   snapshots     list all snapshots
+  tag           modifies tags on snapshots
   unlock        remove locks other processes created
   version       Print version information
 
@@ -392,6 +393,34 @@ enter password for repository:
 ----------------------------------------------------------------------
  5c657874    username    kasimir   2015-08-12 13:35:05
 *eb78040b    username    kasimir   2015-08-12 13:29:57
+```
+
+# Manage tags
+
+Managing tags on snapshots is simple. The existing set of tags can be either
+replaced completely, added to or removed from. The result is directly visible
+in the `snapshots` command.
+
+```console
+$ restic -r /tmp/backup tag --set NL,CH 590c8fc8
+Create exclusive lock for repository
+Modified tags on 1 snapshots
+```
+Note the snapshot ID has changed, so between each change we need to look up
+the new ID of the snapshot. But there is an even better way, the `tag` command
+accepts `--tag`, so we can filter snapshots based on the tag we just added.
+```console
+$ restic -r /tmp/backup tag --tag NL --remove CH
+Create exclusive lock for repository
+Modified tags on 1 snapshots
+$ restic -r /tmp/backup tag --tag NL --add UK
+Create exclusive lock for repository
+Modified tags on 1 snapshots
+$ restic -r /tmp/backup tag --tag NL --remove NL
+Create exclusive lock for repository
+Modified tags on 1 snapshots
+$ restic -r /tmp/backup tag --tag NL --add SOMETHING
+No snapshots were modified
 ```
 
 # Check integrity and consistency
