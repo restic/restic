@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"restic/errors"
 	"sort"
 
@@ -64,7 +64,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	for id := range repo.List(restic.SnapshotFile, done) {
 		sn, err := restic.LoadSnapshot(repo, id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
+			Warnf("error loading snapshot %s: %v\n", id, err)
 			continue
 		}
 
@@ -85,19 +85,19 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	}
 
 	if gopts.JSON {
-		err := printSnapshotsJSON(list)
+		err := printSnapshotsJSON(gopts.stdout, list)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error printing snapshot: %v\n", err)
+			Warnf("error printing snapshot: %v\n", err)
 		}
 		return nil
 	}
-	printSnapshotsReadable(list)
+	printSnapshotsReadable(gopts.stdout, list)
 
 	return nil
 }
 
 // printSnapshotsReadable prints a text table of the snapshots in list to stdout.
-func printSnapshotsReadable(list []*restic.Snapshot) {
+func printSnapshotsReadable(stdout io.Writer, list []*restic.Snapshot) {
 
 	tab := NewTable()
 	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %-3s %s", "ID", "Date", "Host", "Tags", "", "Directory")
@@ -146,9 +146,7 @@ func printSnapshotsReadable(list []*restic.Snapshot) {
 		}
 	}
 
-	tab.Write(os.Stdout)
-
-	return
+	tab.Write(stdout)
 }
 
 // Snapshot helps to print Snaphots as JSON
@@ -159,7 +157,7 @@ type Snapshot struct {
 }
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
-func printSnapshotsJSON(list []*restic.Snapshot) error {
+func printSnapshotsJSON(stdout io.Writer, list []*restic.Snapshot) error {
 
 	var snapshots []Snapshot
 
@@ -172,6 +170,6 @@ func printSnapshotsJSON(list []*restic.Snapshot) error {
 		snapshots = append(snapshots, k)
 	}
 
-	return json.NewEncoder(os.Stdout).Encode(snapshots)
+	return json.NewEncoder(stdout).Encode(snapshots)
 
 }
