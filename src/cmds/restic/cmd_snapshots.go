@@ -127,6 +127,9 @@ func printSnapshotsReadable(stdout io.Writer, list []*restic.Snapshot) {
 		}
 
 		rows := len(sn.Paths)
+		if rows < len(sn.Tags) {
+			rows = len(sn.Tags)
+		}
 
 		treeElement := "   "
 		if rows != 1 {
