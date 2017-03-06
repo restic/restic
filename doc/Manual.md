@@ -115,13 +115,15 @@ Global Flags:
       --json                   set output mode to JSON for commands that support it
       --no-lock                do not lock the repo, this allows some operations on read-only repos
   -p, --password-file string   read the repository password from a file
+      --progress-update-interval int   update process indicator every this many seconds
   -q, --quiet                  do not output comprehensive progress report
   -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
 ```
 
 Subcommand that support showing progress information such as `backup`, `check` and `prune` will do so unless
 the quiet flag `-q` or `--quiet` is set. When running from a non-interactive console progress reporting will
-be limited to once every 10 seconds to not fill your logs.
+be limited to once every 10 seconds to not fill your logs. With `--progress-update-interval` the progress
+update interval can be manually specified.
 
 Additionally on Unix systems if `restic` receives a SIGUSR signal the current progress will written to the
 standard output so you can check up on the status at will.

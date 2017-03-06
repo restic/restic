@@ -84,7 +84,7 @@ func newScanProgress(gopts GlobalOptions) *restic.Progress {
 		return nil
 	}
 
-	p := restic.NewProgress()
+	p := restic.NewProgress(gopts.ProgressUpdateInterval)
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 		if IsProcessBackground() {
 			return
@@ -105,7 +105,7 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 		return nil
 	}
 
-	archiveProgress := restic.NewProgress()
+	archiveProgress := restic.NewProgress(gopts.ProgressUpdateInterval)
 
 	var bps, eta uint64
 	itemsTodo := todo.Files + todo.Dirs
@@ -163,7 +163,7 @@ func newArchiveStdinProgress(gopts GlobalOptions) *restic.Progress {
 		return nil
 	}
 
-	archiveProgress := restic.NewProgress()
+	archiveProgress := restic.NewProgress(gopts.ProgressUpdateInterval)
 
 	var bps uint64
 

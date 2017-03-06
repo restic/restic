@@ -27,11 +27,12 @@ var version = "compiled manually"
 
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
-	Repo         string
-	PasswordFile string
-	Quiet        bool
-	NoLock       bool
-	JSON         bool
+	Repo                   string
+	PasswordFile           string
+	Quiet                  bool
+	NoLock                 bool
+	JSON                   bool
+	ProgressUpdateInterval int
 
 	password string
 	stdout   io.Writer
@@ -55,6 +56,7 @@ func init() {
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
+	f.IntVar(&globalOptions.ProgressUpdateInterval, "progress-update-interval", 0, "update process indicator every this many seconds")
 
 	restoreTerminal()
 }

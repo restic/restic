@@ -47,7 +47,7 @@ func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
 		return nil
 	}
 
-	readProgress := restic.NewProgress()
+	readProgress := restic.NewProgress(gopts.ProgressUpdateInterval)
 
 	readProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 		status := fmt.Sprintf("[%s] %s  %d / %d items",
