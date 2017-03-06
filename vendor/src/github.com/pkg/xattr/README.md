@@ -1,3 +1,7 @@
+[![GoDoc](https://godoc.org/github.com/pkg/xattr?status.svg)](http://godoc.org/github.com/pkg/xattr)
+[![Go Report Card](https://goreportcard.com/badge/github.com/pkg/xattr)](https://goreportcard.com/report/github.com/pkg/xattr)
+[![Build Status](https://travis-ci.org/pkg/xattr.svg?branch=master)](https://travis-ci.org/pkg/xattr)
+
 xattr
 =====
 Extended attribute support for Go (linux + darwin + freebsd).
@@ -10,12 +14,12 @@ Extended attribute support for Go (linux + darwin + freebsd).
   const path = "/tmp/myfile"
   const prefix = "user."
 
-  if err = Setxattr(path, prefix+"test", []byte("test-attr-value")); err != nil {
-    t.Fatal(err)
+  if err := xattr.Setxattr(path, prefix+"test", []byte("test-attr-value")); err != nil {
+    log.Fatal(err)
   }
 
   var data []byte
-  data, err = Getxattr(path, prefix+"test"); err != nil {
-    t.Fatal(err)
+  data, err = xattr.Getxattr(path, prefix+"test"); err != nil {
+    log.Fatal(err)
   }
 ```

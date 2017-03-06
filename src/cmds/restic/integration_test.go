@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -158,6 +159,32 @@ func testRunFind(t testing.TB, gopts GlobalOptions, pattern string) []string {
 	OK(t, runFind(opts, gopts, []string{pattern}))
 
 	return strings.Split(string(buf.Bytes()), "\n")
+}
+
+func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
+	buf := bytes.NewBuffer(nil)
+	globalOptions.stdout = buf
+	globalOptions.JSON = true
+	defer func() {
+		globalOptions.stdout = os.Stdout
+		globalOptions.JSON = gopts.JSON
+	}()
+
+	opts := SnapshotOptions{}
+
+	OK(t, runSnapshots(opts, globalOptions, []string{}))
+
+	snapshots := []Snapshot{}
+	OK(t, json.Unmarshal(buf.Bytes(), &snapshots))
+
+	snapmap = make(map[restic.ID]Snapshot, len(snapshots))
+	for _, sn := range snapshots {
+		snapmap[*sn.ID] = sn
+		if newest == nil || sn.Time.After(newest.Time) {
+			newest = &sn
+		}
+	}
+	return
 }
 
 func testRunForget(t testing.TB, gopts GlobalOptions, args ...string) {
@@ -516,23 +543,23 @@ func TestBackupExclude(t *testing.T) {
 		testRunBackup(t, []string{datadir}, opts, gopts)
 		snapshots, snapshotID := lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
 		files := testRunLs(t, gopts, snapshotID)
-		Assert(t, includes(files, filepath.Join("testdata", "foo.tar.gz")),
+		Assert(t, includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 			"expected file %q in first snapshot, but it's not included", "foo.tar.gz")
 
 		opts.Excludes = []string{"*.tar.gz"}
 		testRunBackup(t, []string{datadir}, opts, gopts)
 		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
 		files = testRunLs(t, gopts, snapshotID)
-		Assert(t, !includes(files, filepath.Join("testdata", "foo.tar.gz")),
+		Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
 
 		opts.Excludes = []string{"*.tar.gz", "private/secret"}
 		testRunBackup(t, []string{datadir}, opts, gopts)
 		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
 		files = testRunLs(t, gopts, snapshotID)
-		Assert(t, !includes(files, filepath.Join("testdata", "foo.tar.gz")),
+		Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")
-		Assert(t, !includes(files, filepath.Join("testdata", "private", "secret", "passwords.txt")),
+		Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "private", "secret", "passwords.txt")),
 			"expected file %q not in first snapshot, but it's included", "passwords.txt")
 	})
 }
@@ -599,6 +626,105 @@ func TestIncrementalBackup(t *testing.T) {
 			t.Errorf("repository size has grown by more than %d bytes", incrementalFirstWrite)
 		}
 		t.Logf("repository grown by %d bytes", stat3.size-stat2.size)
+	})
+}
+
+func TestBackupTags(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		testRunInit(t, gopts)
+		SetupTarTestFixture(t, env.testdata, datafile)
+
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+		newest, _ := testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 0,
+			"expected no tags, got %v", newest.Tags)
+
+		opts.Tags = []string{"NL"}
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+		newest, _ = testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
+			"expected one NL tag, got %v", newest.Tags)
+	})
+}
+
+func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
+	OK(t, runTag(opts, gopts, []string{}))
+}
+
+func TestTag(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		testRunInit(t, gopts)
+		SetupTarTestFixture(t, env.testdata, datafile)
+
+		testRunBackup(t, []string{env.testdata}, BackupOptions{}, gopts)
+		testRunCheck(t, gopts)
+		newest, _ := testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 0,
+			"expected no tags, got %v", newest.Tags)
+		Assert(t, newest.Original == nil,
+			"expected original ID to be nil, got %v", newest.Original)
+		originalID := *newest.ID
+
+		testRunTag(t, TagOptions{SetTags: []string{"NL"}}, gopts)
+		testRunCheck(t, gopts)
+		newest, _ = testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
+			"set failed, expected one NL tag, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
+
+		testRunTag(t, TagOptions{AddTags: []string{"CH"}}, gopts)
+		testRunCheck(t, gopts)
+		newest, _ = testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 2 && newest.Tags[0] == "NL" && newest.Tags[1] == "CH",
+			"add failed, expected CH,NL tags, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
+
+		testRunTag(t, TagOptions{RemoveTags: []string{"NL"}}, gopts)
+		testRunCheck(t, gopts)
+		newest, _ = testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "CH",
+			"remove failed, expected one CH tag, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
+
+		testRunTag(t, TagOptions{AddTags: []string{"US", "RU"}}, gopts)
+		testRunTag(t, TagOptions{RemoveTags: []string{"CH", "US", "RU"}}, gopts)
+		testRunCheck(t, gopts)
+		newest, _ = testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 0,
+			"expected no tags, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
+
+		// Check special case of removing all tags.
+		testRunTag(t, TagOptions{SetTags: []string{""}}, gopts)
+		testRunCheck(t, gopts)
+		newest, _ = testRunSnapshots(t, gopts)
+		Assert(t, newest != nil, "expected a new backup, got nil")
+		Assert(t, len(newest.Tags) == 0,
+			"expected no tags, got %v", newest.Tags)
+		Assert(t, newest.Original != nil, "expected original snapshot id, got nil")
+		Assert(t, *newest.Original == originalID,
+			"expected original ID to be set to the first snapshot id")
 	})
 }
 

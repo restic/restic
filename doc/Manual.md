@@ -73,6 +73,7 @@ Available Commands:
   rebuild-index build a new index file
   restore       extract the data from a snapshot
   snapshots     list all snapshots
+  tag           modifies tags on snapshots
   unlock        remove locks other processes created
   version       Print version information
 
@@ -144,6 +145,8 @@ created restic backend 085b3c76b9 at /tmp/backup
 Please note that knowledge of your password is required to access the repository.
 Losing your password means that your data is irrecoverably lost.
 ```
+
+Other backends like sftp and s3 are [described in a later section](#create-an-sftp-repository) of this document.
 
 Remembering your password is important! If you lose it, you won't be able to
 access data stored in the repository.
@@ -394,6 +397,45 @@ enter password for repository:
 *eb78040b    username    kasimir   2015-08-12 13:29:57
 ```
 
+# Manage tags
+
+Managing tags on snapshots is done with the `tag` command. The existing set of
+tags can be replaced completely, tags can be added to removed. The result is
+directly visible in the `snapshots` command.
+
+Let's say we want to tag snapshot `590c8fc8` with the tags `NL` and `CH` and
+remove all other tags that may be present, the following command does that:
+
+```console
+$ restic -r /tmp/backup tag --set NL,CH 590c8fc8
+Create exclusive lock for repository
+Modified tags on 1 snapshots
+```
+
+Note the snapshot ID has changed, so between each change we need to look up
+the new ID of the snapshot. But there is an even better way, the `tag` command
+accepts `--tag` for a filter, so we can filter snapshots based on the tag we
+just added.
+
+So we can add and remove tags incrementally like this:
+
+```console
+$ restic -r /tmp/backup tag --tag NL --remove CH
+Create exclusive lock for repository
+Modified tags on 1 snapshots
+
+$ restic -r /tmp/backup tag --tag NL --add UK
+Create exclusive lock for repository
+Modified tags on 1 snapshots
+
+$ restic -r /tmp/backup tag --tag NL --remove NL
+Create exclusive lock for repository
+Modified tags on 1 snapshots
+
+$ restic -r /tmp/backup tag --tag NL --add SOMETHING
+No snapshots were modified
+```
+
 # Check integrity and consistency
 
 Imagine your repository is saved on a server that has a faulty hard drive, or
@@ -528,7 +570,7 @@ only available via HTTP, you can specify the URL to the server like this:
 
 ### Pre-Requisites
 
-* Download and Install [Minio Server](https://minio.io/download/).
+* Download and Install [Minio Server](https://minio.io/downloads/#minio-server).
 * You can also refer to [https://docs.minio.io](https://docs.minio.io) for step by step guidance on installation and getting started on Minio Client and Minio Server.
 
 You must first setup the following environment variables with the credentials of your running Minio Server.

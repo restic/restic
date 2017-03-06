@@ -20,12 +20,14 @@ matrix:
     - os: osx
       go: 1.6.4
     - os: osx
+      go: 1.7.5
+    - os: osx
       go: tip
     - os: linux
-      go: 1.7.5
+      go: 1.8
   include:
     - os: linux
-      go: 1.7.5
+      go: 1.8
       sudo: true
       env:
         RESTIC_TEST_FUSE=1

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"restic/errors"
 	"sort"
 
@@ -64,11 +64,11 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	for id := range repo.List(restic.SnapshotFile, done) {
 		sn, err := restic.LoadSnapshot(repo, id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error loading snapshot %s: %v\n", id, err)
+			Warnf("error loading snapshot %s: %v\n", id, err)
 			continue
 		}
 
-		if restic.SamePaths(sn.Paths, opts.Paths) && (opts.Host == "" || opts.Host == sn.Hostname) {
+		if (opts.Host == "" || opts.Host == sn.Hostname) && sn.HasPaths(opts.Paths) {
 			pos := sort.Search(len(list), func(i int) bool {
 				return list[i].Time.After(sn.Time)
 			})
@@ -85,23 +85,36 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	}
 
 	if gopts.JSON {
-		err := printSnapshotsJSON(list)
+		err := printSnapshotsJSON(gopts.stdout, list)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error printing snapshot: %v\n", err)
+			Warnf("error printing snapshot: %v\n", err)
 		}
 		return nil
 	}
-	printSnapshotsReadable(list)
+	printSnapshotsReadable(gopts.stdout, list)
 
 	return nil
 }
 
 // printSnapshotsReadable prints a text table of the snapshots in list to stdout.
-func printSnapshotsReadable(list []*restic.Snapshot) {
+func printSnapshotsReadable(stdout io.Writer, list []*restic.Snapshot) {
+
+	// Determine the max widths for host and tag.
+	maxHost, maxTag := 10, 6
+	for _, sn := range list {
+		if len(sn.Hostname) > maxHost {
+			maxHost = len(sn.Hostname)
+		}
+		for _, tag := range sn.Tags {
+			if len(tag) > maxTag {
+				maxTag = len(tag)
+			}
+		}
+	}
 
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-10s  %-10s  %-3s %s", "ID", "Date", "Host", "Tags", "", "Directory")
-	tab.RowFormat = "%-8s  %-19s  %-10s  %-10s  %-3s %s"
+	tab.Header = fmt.Sprintf("%-8s  %-19s  %-*s  %-*s  %-3s %s", "ID", "Date", -maxHost, "Host", -maxTag, "Tags", "", "Directory")
+	tab.RowFormat = fmt.Sprintf("%%-8s  %%-19s  %%%ds  %%%ds  %%-3s %%s", -maxHost, -maxTag)
 
 	for _, sn := range list {
 		if len(sn.Paths) == 0 {
@@ -114,6 +127,9 @@ func printSnapshotsReadable(list []*restic.Snapshot) {
 		}
 
 		rows := len(sn.Paths)
+		if rows < len(sn.Tags) {
+			rows = len(sn.Tags)
+		}
 
 		treeElement := "   "
 		if rows != 1 {
@@ -146,20 +162,18 @@ func printSnapshotsReadable(list []*restic.Snapshot) {
 		}
 	}
 
-	tab.Write(os.Stdout)
-
-	return
+	tab.Write(stdout)
 }
 
 // Snapshot helps to print Snaphots as JSON
 type Snapshot struct {
 	*restic.Snapshot
 
-	ID string `json:"id"`
+	ID *restic.ID `json:"id"`
 }
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
-func printSnapshotsJSON(list []*restic.Snapshot) error {
+func printSnapshotsJSON(stdout io.Writer, list []*restic.Snapshot) error {
 
 	var snapshots []Snapshot
 
@@ -167,11 +181,11 @@ func printSnapshotsJSON(list []*restic.Snapshot) error {
 
 		k := Snapshot{
 			Snapshot: sn,
-			ID:       sn.ID().String(),
+			ID:       sn.ID(),
 		}
 		snapshots = append(snapshots, k)
 	}
 
-	return json.NewEncoder(os.Stdout).Encode(snapshots)
+	return json.NewEncoder(stdout).Encode(snapshots)
 
 }

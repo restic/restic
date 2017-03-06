@@ -4,6 +4,7 @@ import (
 	"io"
 	"math/rand"
 	"restic"
+	"restic/index"
 	"restic/repository"
 	"testing"
 )
@@ -131,7 +132,7 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 }
 
 func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs restic.BlobSet) {
-	err := repository.Repack(repo, packs, blobs)
+	err := repository.Repack(repo, packs, blobs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,8 +145,24 @@ func saveIndex(t *testing.T, repo restic.Repository) {
 }
 
 func rebuildIndex(t *testing.T, repo restic.Repository) {
-	if err := repository.RebuildIndex(repo); err != nil {
-		t.Fatalf("error rebuilding index: %v", err)
+	idx, err := index.New(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for id := range repo.List(restic.IndexFile, nil) {
+		err = repo.Backend().Remove(restic.Handle{
+			Type: restic.IndexFile,
+			Name: id.String(),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	_, err = idx.Save(repo, nil)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

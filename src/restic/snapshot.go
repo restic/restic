@@ -21,6 +21,7 @@ type Snapshot struct {
 	GID      uint32    `json:"gid,omitempty"`
 	Excludes []string  `json:"excludes,omitempty"`
 	Tags     []string  `json:"tags,omitempty"`
+	Original *ID       `json:"original,omitempty"`
 
 	id *ID // plaintext ID, used during restore
 }
@@ -73,8 +74,7 @@ func LoadAllSnapshots(repo Repository) (snapshots []*Snapshot, err error) {
 
 		snapshots = append(snapshots, sn)
 	}
-
-	return snapshots, nil
+	return
 }
 
 func (sn Snapshot) String() string {
@@ -99,7 +99,42 @@ func (sn *Snapshot) fillUserInfo() error {
 	return err
 }
 
-// HasTags returns true if the snapshot has all the tags.
+// AddTags adds the given tags to the snapshots tags, preventing duplicates.
+// It returns true if any changes were made.
+func (sn *Snapshot) AddTags(addTags []string) (changed bool) {
+nextTag:
+	for _, add := range addTags {
+		for _, tag := range sn.Tags {
+			if tag == add {
+				continue nextTag
+			}
+		}
+		sn.Tags = append(sn.Tags, add)
+		changed = true
+	}
+	return
+}
+
+// RemoveTags removes the given tags from the snapshots tags and
+// returns true if any changes were made.
+func (sn *Snapshot) RemoveTags(removeTags []string) (changed bool) {
+	for _, remove := range removeTags {
+		for i, tag := range sn.Tags {
+			if tag == remove {
+				// https://github.com/golang/go/wiki/SliceTricks
+				sn.Tags[i] = sn.Tags[len(sn.Tags)-1]
+				sn.Tags[len(sn.Tags)-1] = ""
+				sn.Tags = sn.Tags[:len(sn.Tags)-1]
+
+				changed = true
+				break
+			}
+		}
+	}
+	return
+}
+
+// HasTags returns true if the snapshot has at least all of tags.
 func (sn *Snapshot) HasTags(tags []string) bool {
 nextTag:
 	for _, tag := range tags {
@@ -115,26 +150,28 @@ nextTag:
 	return true
 }
 
-// SamePaths compares the Snapshot's paths and provided paths are exactly the same
-func SamePaths(expected, actual []string) bool {
-	if len(expected) == 0 || len(actual) == 0 {
-		return true
-	}
-
-	for i := range expected {
-		found := false
-		for j := range actual {
-			if expected[i] == actual[j] {
-				found = true
-				break
+// HasPaths returns true if the snapshot has at least all of paths.
+func (sn *Snapshot) HasPaths(paths []string) bool {
+nextPath:
+	for _, path := range paths {
+		for _, snPath := range sn.Paths {
+			if path == snPath {
+				continue nextPath
 			}
 		}
-		if !found {
-			return false
-		}
+
+		return false
 	}
 
 	return true
+}
+
+// SamePaths returns true if the snapshot matches the entire paths set
+func (sn *Snapshot) SamePaths(paths []string) bool {
+	if len(sn.Paths) != len(paths) {
+		return false
+	}
+	return sn.HasPaths(paths)
 }
 
 // ErrNoSnapshotFound is returned when no snapshot for the given criteria could be found.
@@ -153,7 +190,7 @@ func FindLatestSnapshot(repo Repository, targets []string, hostname string) (ID,
 		if err != nil {
 			return ID{}, errors.Errorf("Error listing snapshot: %v", err)
 		}
-		if snapshot.Time.After(latest) && SamePaths(snapshot.Paths, targets) && (hostname == "" || hostname == snapshot.Hostname) {
+		if snapshot.Time.After(latest) && snapshot.HasPaths(targets) && (hostname == "" || hostname == snapshot.Hostname) {
 			latest = snapshot.Time
 			latestID = snapshotID
 			found = true

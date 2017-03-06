@@ -121,5 +121,5 @@ func runLs(gopts GlobalOptions, args []string) error {
 
 	Verbosef("snapshot of %v at %s:\n", sn.Paths, sn.Time)
 
-	return printTree("", repo, *sn.Tree)
+	return printTree(string(filepath.Separator), repo, *sn.Tree)
 }
