@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/ssh/terminal"
-
 	"github.com/spf13/cobra"
 
 	"restic/archiver"
@@ -136,8 +134,7 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 			s.Errors)
 		status2 := fmt.Sprintf("ETA %s ", formatSeconds(eta))
 
-		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
-		if err == nil {
+		if w := stdoutTerminalWidth(); w > 0 {
 			maxlen := w - len(status2) - 1
 
 			if maxlen < 4 {
@@ -181,8 +178,7 @@ func newArchiveStdinProgress(gopts GlobalOptions) *restic.Progress {
 			formatBytes(s.Bytes),
 			formatBytes(bps))
 
-		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
-		if err == nil {
+		if w := stdoutTerminalWidth(); w > 0 {
 			maxlen := w - len(status1)
 
 			if maxlen < 4 {

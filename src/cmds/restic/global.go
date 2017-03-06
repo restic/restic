@@ -82,6 +82,14 @@ func stdoutIsTerminal() bool {
 	return terminal.IsTerminal(int(os.Stdout.Fd()))
 }
 
+func stdoutTerminalWidth() int {
+	w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return 0
+	}
+	return w
+}
+
 // restoreTerminal installs a cleanup handler that restores the previous
 // terminal state on exit.
 func restoreTerminal() {
@@ -110,8 +118,7 @@ func restoreTerminal() {
 // current windows cmd shell.
 func ClearLine() string {
 	if runtime.GOOS == "windows" {
-		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
-		if err == nil {
+		if w := stdoutTerminalWidth(); w > 0 {
 			return strings.Repeat(" ", w-1) + "\r"
 		}
 		return ""
