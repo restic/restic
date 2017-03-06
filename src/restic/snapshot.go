@@ -134,7 +134,7 @@ func (sn *Snapshot) RemoveTags(removeTags []string) (changed bool) {
 	return
 }
 
-// HasTags returns true if the snapshot has all the tags.
+// HasTags returns true if the snapshot has at least all of tags.
 func (sn *Snapshot) HasTags(tags []string) bool {
 nextTag:
 	for _, tag := range tags {
@@ -150,26 +150,28 @@ nextTag:
 	return true
 }
 
-// SamePaths compares the Snapshot's paths and provided paths are exactly the same
-func SamePaths(expected, actual []string) bool {
-	if len(expected) == 0 || len(actual) == 0 {
-		return true
-	}
-
-	for i := range expected {
-		found := false
-		for j := range actual {
-			if expected[i] == actual[j] {
-				found = true
-				break
+// HasPaths returns true if the snapshot has at least all of paths.
+func (sn *Snapshot) HasPaths(paths []string) bool {
+nextPath:
+	for _, path := range paths {
+		for _, snPath := range sn.Paths {
+			if path == snPath {
+				continue nextPath
 			}
 		}
-		if !found {
-			return false
-		}
+
+		return false
 	}
 
 	return true
+}
+
+// SamePaths returns true if the snapshot matches the entire paths set
+func (sn *Snapshot) SamePaths(paths []string) bool {
+	if len(sn.Paths) != len(paths) {
+		return false
+	}
+	return sn.HasPaths(paths)
 }
 
 // ErrNoSnapshotFound is returned when no snapshot for the given criteria could be found.
@@ -188,7 +190,7 @@ func FindLatestSnapshot(repo Repository, targets []string, hostname string) (ID,
 		if err != nil {
 			return ID{}, errors.Errorf("Error listing snapshot: %v", err)
 		}
-		if snapshot.Time.After(latest) && SamePaths(snapshot.Paths, targets) && (hostname == "" || hostname == snapshot.Hostname) {
+		if snapshot.Time.After(latest) && snapshot.HasPaths(targets) && (hostname == "" || hostname == snapshot.Hostname) {
 			latest = snapshot.Time
 			latestID = snapshotID
 			found = true
