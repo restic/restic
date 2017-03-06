@@ -442,50 +442,22 @@ func (r *Repository) KeyName() string {
 	return r.keyName
 }
 
-func (r *Repository) list(t restic.FileType, done <-chan struct{}, out chan<- restic.ID) {
-	defer close(out)
-	in := r.be.List(t, done)
-
-	var (
-		// disable sending on the outCh until we received a job
-		outCh chan<- restic.ID
-		// enable receiving from in
-		inCh = in
-		id   restic.ID
-		err  error
-	)
-
-	for {
-		select {
-		case <-done:
-			return
-		case strID, ok := <-inCh:
-			if !ok {
-				// input channel closed, we're done
-				return
-			}
-			id, err = restic.ParseID(strID)
-			if err != nil {
-				// ignore invalid IDs
-				continue
-			}
-
-			inCh = nil
-			outCh = out
-		case outCh <- id:
-			outCh = nil
-			inCh = in
-		}
-	}
-}
-
 // List returns a channel that yields all IDs of type t in the backend.
 func (r *Repository) List(t restic.FileType, done <-chan struct{}) <-chan restic.ID {
-	outCh := make(chan restic.ID)
-
-	go r.list(t, done, outCh)
-
-	return outCh
+	out := make(chan restic.ID)
+	go func() {
+		defer close(out)
+		for strID := range r.be.List(t, done) {
+			if id, err := restic.ParseID(strID); err == nil {
+				select {
+				case out <- id:
+				case <-done:
+					return
+				}
+			}
+		}
+	}()
+	return out
 }
 
 // ListPack returns the list of blobs saved in the pack id and the length of
