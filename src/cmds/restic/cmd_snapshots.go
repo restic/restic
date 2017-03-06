@@ -68,7 +68,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 			continue
 		}
 
-		if restic.SamePaths(sn.Paths, opts.Paths) && (opts.Host == "" || opts.Host == sn.Hostname) {
+		if (opts.Host == "" || opts.Host == sn.Hostname) && sn.HasPaths(opts.Paths) {
 			pos := sort.Search(len(list), func(i int) bool {
 				return list[i].Time.After(sn.Time)
 			})

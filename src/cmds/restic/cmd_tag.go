@@ -57,7 +57,7 @@ func changeTags(repo *repository.Repository, snapshotID restic.ID, setTags, addT
 	if err != nil {
 		return false, err
 	}
-	if (host != "" && host != sn.Hostname) || !sn.HasTags(tags) || !restic.SamePaths(sn.Paths, paths) {
+	if (host != "" && host != sn.Hostname) || !sn.HasTags(tags) || !sn.HasPaths(paths) {
 		return false, nil
 	}
 
