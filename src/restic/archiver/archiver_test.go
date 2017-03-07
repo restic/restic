@@ -294,3 +294,23 @@ func assertNoUnreferencedPacks(t *testing.T, chkr *checker.Checker) {
 		OK(t, err)
 	}
 }
+
+func TestArchiveEmptySnapshot(t *testing.T) {
+	repo, cleanup := repository.TestRepository(t)
+	defer cleanup()
+
+	arch := archiver.New(repo)
+
+	sn, id, err := arch.Snapshot(nil, []string{"file-does-not-exist-123123213123", "file2-does-not-exist-too-123123123"}, nil, "localhost", nil)
+	if err == nil {
+		t.Errorf("expected error for empty snapshot, got nil")
+	}
+
+	if !id.IsNull() {
+		t.Errorf("expected null ID for empty snapshot, got %v", id.Str())
+	}
+
+	if sn != nil {
+		t.Errorf("expected null snapshot for empty snapshot, got %v", sn)
+	}
+}
