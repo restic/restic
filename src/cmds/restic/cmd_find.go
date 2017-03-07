@@ -2,6 +2,7 @@ package main
 
 import (
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -25,9 +26,10 @@ repo. `,
 
 // FindOptions bundle all options for the find command.
 type FindOptions struct {
-	Oldest   string
-	Newest   string
-	Snapshot string
+	Oldest          string
+	Newest          string
+	Snapshot        string
+	CaseInsensitive bool
 }
 
 var findOptions FindOptions
@@ -39,11 +41,13 @@ func init() {
 	f.StringVarP(&findOptions.Oldest, "oldest", "o", "", "oldest modification date/time")
 	f.StringVarP(&findOptions.Newest, "newest", "n", "", "newest modification date/time")
 	f.StringVarP(&findOptions.Snapshot, "snapshot", "s", "", "snapshot ID to search in")
+	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
 }
 
 type findPattern struct {
 	oldest, newest time.Time
 	pattern        string
+	ignoreCase     bool
 }
 
 type findResult struct {
@@ -86,7 +90,12 @@ func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, path
 	for _, node := range tree.Nodes {
 		debug.Log("  testing entry %q\n", node.Name)
 
-		m, err := filepath.Match(pat.pattern, node.Name)
+		name := node.Name
+		if pat.ignoreCase {
+			name = strings.ToLower(name)
+		}
+
+		m, err := filepath.Match(pat.pattern, name)
 		if err != nil {
 			return nil, err
 		}
@@ -189,6 +198,11 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	pat.pattern = args[0]
+
+	if opts.CaseInsensitive {
+		pat.pattern = strings.ToLower(pat.pattern)
+		pat.ignoreCase = true
+	}
 
 	if opts.Snapshot != "" {
 		snapshotID, err := restic.FindSnapshot(repo, opts.Snapshot)
