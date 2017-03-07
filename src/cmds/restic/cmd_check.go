@@ -7,8 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"golang.org/x/crypto/ssh/terminal"
-
 	"restic"
 	"restic/checker"
 	"restic/errors"
@@ -55,8 +53,7 @@ func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
 			formatPercent(s.Blobs, todo.Blobs),
 			s.Blobs, todo.Blobs)
 
-		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
-		if err == nil {
+		if w := stdoutTerminalWidth(); w > 0 {
 			if len(status) > w {
 				max := w - len(status) - 4
 				status = status[:max] + "... "
