@@ -734,6 +734,21 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 		return nil, restic.ID{}, err
 	}
 
+	// receive the top-level tree
+	root := (<-resCh).(*restic.Node)
+	debug.Log("root node received: %v", root.Subtree.Str())
+	sn.Tree = root.Subtree
+
+	// load top-level tree again to see if it is empty
+	toptree, err := arch.repo.LoadTree(*root.Subtree)
+	if err != nil {
+		return nil, restic.ID{}, err
+	}
+
+	if len(toptree.Nodes) == 0 {
+		return nil, restic.ID{}, errors.Fatal("no files/dirs saved, refusing to create empty snapshot")
+	}
+
 	// save index
 	err = arch.repo.SaveIndex()
 	if err != nil {
@@ -742,11 +757,6 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 	}
 
 	debug.Log("saved indexes")
-
-	// receive the top-level tree
-	root := (<-resCh).(*restic.Node)
-	debug.Log("root node received: %v", root.Subtree.Str())
-	sn.Tree = root.Subtree
 
 	// save snapshot
 	id, err := arch.repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
