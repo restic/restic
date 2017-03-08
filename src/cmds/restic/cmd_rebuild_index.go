@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"restic"
 	"restic/index"
 
@@ -35,25 +36,29 @@ func runRebuildIndex(gopts GlobalOptions) error {
 		return err
 	}
 
-	done := make(chan struct{})
-	defer close(done)
+	ctx, cancel := context.WithCancel(gopts.ctx)
+	defer cancel()
+	return rebuildIndex(ctx, repo)
+}
 
+func rebuildIndex(ctx context.Context, repo restic.Repository) error {
 	Verbosef("counting files in repo\n")
 
 	var packs uint64
-	for _ = range repo.List(restic.DataFile, done) {
+	for _ = range repo.List(restic.DataFile, ctx.Done()) {
 		packs++
 	}
 
-	bar := newProgressMax(!gopts.Quiet, packs, "packs")
+	bar := newProgressMax(!globalOptions.Quiet, packs, "packs")
 	idx, err := index.New(repo, bar)
 	if err != nil {
 		return err
 	}
 
-	Verbosef("listing old index files\n")
+	Verbosef("finding old index files\n")
+
 	var supersedes restic.IDs
-	for id := range repo.List(restic.IndexFile, done) {
+	for id := range repo.List(restic.IndexFile, ctx.Done()) {
 		supersedes = append(supersedes, id)
 	}
 
@@ -67,13 +72,11 @@ func runRebuildIndex(gopts GlobalOptions) error {
 	Verbosef("remove %d old index files\n", len(supersedes))
 
 	for _, id := range supersedes {
-		err := repo.Backend().Remove(restic.Handle{
+		if err := repo.Backend().Remove(restic.Handle{
 			Type: restic.IndexFile,
 			Name: id.String(),
-		})
-
-		if err != nil {
-			Warnf("error deleting old index %v: %v\n", id.Str(), err)
+		}); err != nil {
+			Warnf("error removing old index %v: %v\n", id.Str(), err)
 		}
 	}
 
