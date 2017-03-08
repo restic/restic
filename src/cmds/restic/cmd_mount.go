@@ -35,6 +35,9 @@ type MountOptions struct {
 	OwnerRoot  bool
 	AllowRoot  bool
 	AllowOther bool
+	Host       string
+	Tags       []string
+	Paths      []string
 }
 
 var mountOptions MountOptions
@@ -42,9 +45,14 @@ var mountOptions MountOptions
 func init() {
 	cmdRoot.AddCommand(cmdMount)
 
-	cmdMount.Flags().BoolVar(&mountOptions.OwnerRoot, "owner-root", false, "use 'root' as the owner of files and dirs")
-	cmdMount.Flags().BoolVar(&mountOptions.AllowRoot, "allow-root", false, "allow root user to access the data in the mounted directory")
-	cmdMount.Flags().BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
+	mountFlags := cmdMount.Flags()
+	mountFlags.BoolVar(&mountOptions.OwnerRoot, "owner-root", false, "use 'root' as the owner of files and dirs")
+	mountFlags.BoolVar(&mountOptions.AllowRoot, "allow-root", false, "allow root user to access the data in the mounted directory")
+	mountFlags.BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
+
+	mountFlags.StringVarP(&mountOptions.Host, "host", "H", "", `only consider snapshots for this host`)
+	mountFlags.StringSliceVar(&mountOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`")
+	mountFlags.StringSliceVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
 }
 
 func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
@@ -91,7 +99,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	Printf("Don't forget to umount after quitting!\n")
 
 	root := fs.Tree{}
-	root.Add("snapshots", fuse.NewSnapshotsDir(repo, opts.OwnerRoot))
+	root.Add("snapshots", fuse.NewSnapshotsDir(repo, opts.OwnerRoot, opts.Paths, opts.Tags, opts.Host))
 
 	debug.Log("serving mount at %v", mountpoint)
 	err = fs.Serve(c, &root)

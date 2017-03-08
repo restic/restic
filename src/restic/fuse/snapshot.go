@@ -32,6 +32,9 @@ var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 type SnapshotsDir struct {
 	repo        restic.Repository
 	ownerIsRoot bool
+	paths       []string
+	tags        []string
+	host        string
 
 	// knownSnapshots maps snapshot timestamp to the snapshot
 	sync.RWMutex
@@ -40,12 +43,15 @@ type SnapshotsDir struct {
 }
 
 // NewSnapshotsDir returns a new dir object for the snapshots.
-func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool) *SnapshotsDir {
+func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool, paths []string, tags []string, host string) *SnapshotsDir {
 	debug.Log("fuse mount initiated")
 	return &SnapshotsDir{
 		repo:           repo,
-		knownSnapshots: make(map[string]SnapshotWithId),
 		ownerIsRoot:    ownerIsRoot,
+		paths:          paths,
+		tags:           tags,
+		host:           host,
+		knownSnapshots: make(map[string]SnapshotWithId),
 		processed:      restic.NewIDSet(),
 	}
 }
@@ -77,6 +83,13 @@ func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
 		snapshot, err := restic.LoadSnapshot(sn.repo, id)
 		if err != nil {
 			return err
+		}
+
+		// Filter snapshots we don't care for.
+		if (sn.host != "" && sn.host != snapshot.Hostname) ||
+			!snapshot.HasTags(sn.tags) ||
+			!snapshot.HasPaths(sn.paths) {
+			continue
 		}
 
 		timestamp := snapshot.Time.Format(time.RFC3339)
