@@ -3,3 +3,4 @@
 /restic
 /.vagrant
 /vendor/pkg
+.idea/
