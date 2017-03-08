@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 
 	"restic"
@@ -45,21 +47,13 @@ func init() {
 	tagFlags.StringSliceVar(&tagOptions.AddTags, "add", nil, "`tag` which will be added to the existing tags (can be given multiple times)")
 	tagFlags.StringSliceVar(&tagOptions.RemoveTags, "remove", nil, "`tag` which will be removed from the existing tags (can be given multiple times)")
 
-	tagFlags.StringVarP(&tagOptions.Host, "host", "H", "", `only consider snapshots for this host, when no snapshot ID is given`)
+	tagFlags.StringVarP(&tagOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
 	tagFlags.StringSliceVar(&tagOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot-ID is given")
 	tagFlags.StringSliceVar(&tagOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 }
 
-func changeTags(repo *repository.Repository, snapshotID restic.ID, setTags, addTags, removeTags, tags, paths []string, host string) (bool, error) {
+func changeTags(repo *repository.Repository, sn *restic.Snapshot, setTags, addTags, removeTags []string) (bool, error) {
 	var changed bool
-
-	sn, err := restic.LoadSnapshot(repo, snapshotID)
-	if err != nil {
-		return false, err
-	}
-	if (host != "" && host != sn.Hostname) || !sn.HasTags(tags) || !sn.HasPaths(paths) {
-		return false, nil
-	}
 
 	if len(setTags) != 0 {
 		// Setting the tag to an empty string really means no tags.
@@ -126,37 +120,13 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	var ids restic.IDs
-	if len(args) != 0 {
-		// When explit snapshot-IDs are given, the filtering does not matter anymore.
-		opts.Host = ""
-		opts.Tags = nil
-		opts.Paths = nil
-
-		// Process all snapshot IDs given as arguments.
-		for _, s := range args {
-			snapshotID, err := restic.FindSnapshot(repo, s)
-			if err != nil {
-				Warnf("could not find a snapshot for ID %q, ignoring: %v\n", s, err)
-				continue
-			}
-			ids = append(ids, snapshotID)
-		}
-		ids = ids.Uniq()
-	} else {
-		// If there were no arguments, just get all snapshots.
-		done := make(chan struct{})
-		defer close(done)
-		for snapshotID := range repo.List(restic.SnapshotFile, done) {
-			ids = append(ids, snapshotID)
-		}
-	}
-
 	changeCnt := 0
-	for _, id := range ids {
-		changed, err := changeTags(repo, id, opts.SetTags, opts.AddTags, opts.RemoveTags, opts.Tags, opts.Paths, opts.Host)
+	ctx, cancel := context.WithCancel(gopts.ctx)
+	defer cancel()
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+		changed, err := changeTags(repo, sn, opts.SetTags, opts.AddTags, opts.RemoveTags)
 		if err != nil {
-			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", id, err)
+			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)
 			continue
 		}
 		if changed {
