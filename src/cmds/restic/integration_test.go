@@ -142,7 +142,9 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 		globalOptions.Quiet = quiet
 	}()
 
-	OK(t, runLs(gopts, []string{snapshotID}))
+	opts := LsOptions{}
+
+	OK(t, runLs(opts, gopts, []string{snapshotID}))
 
 	return strings.Split(string(buf.Bytes()), "\n")
 }
