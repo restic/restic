@@ -91,13 +91,13 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 		return nil
 	}
-	printSnapshotsReadable(gopts.stdout, list)
+	PrintSnapshots(gopts.stdout, list)
 
 	return nil
 }
 
-// printSnapshotsReadable prints a text table of the snapshots in list to stdout.
-func printSnapshotsReadable(stdout io.Writer, list []*restic.Snapshot) {
+// PrintSnapshots prints a text table of the snapshots in list to stdout.
+func PrintSnapshots(stdout io.Writer, list []*restic.Snapshot) {
 
 	// Determine the max widths for host and tag.
 	maxHost, maxTag := 10, 6
