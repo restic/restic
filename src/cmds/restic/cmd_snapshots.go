@@ -1,19 +1,19 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
-	"restic/errors"
 	"sort"
 
 	"github.com/spf13/cobra"
 
-	"encoding/json"
 	"restic"
 )
 
 var cmdSnapshots = &cobra.Command{
-	Use:   "snapshots",
+	Use:   "snapshots [snapshotID ...]",
 	Short: "list all snapshots",
 	Long: `
 The "snapshots" command lists all snapshots stored in the repository.
@@ -26,6 +26,7 @@ The "snapshots" command lists all snapshots stored in the repository.
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
 	Host  string
+	Tags  []string
 	Paths []string
 }
 
@@ -35,15 +36,12 @@ func init() {
 	cmdRoot.AddCommand(cmdSnapshots)
 
 	f := cmdSnapshots.Flags()
-	f.StringVar(&snapshotOptions.Host, "host", "", "only print snapshots for this host")
-	f.StringSliceVar(&snapshotOptions.Paths, "path", []string{}, "only print snapshots for this `path` (can be specified multiple times)")
+	f.StringVarP(&snapshotOptions.Host, "host", "H", "", "only consider snapshots for this `host`")
+	f.StringSliceVar(&snapshotOptions.Tags, "tag", nil, "only consider snapshots which include this `tag` (can be specified multiple times)")
+	f.StringSliceVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
-	if len(args) != 0 {
-		return errors.Fatal("wrong number of arguments")
-	}
-
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -57,32 +55,14 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 	}
 
-	done := make(chan struct{})
-	defer close(done)
+	ctx, cancel := context.WithCancel(gopts.ctx)
+	defer cancel()
 
-	list := []*restic.Snapshot{}
-	for id := range repo.List(restic.SnapshotFile, done) {
-		sn, err := restic.LoadSnapshot(repo, id)
-		if err != nil {
-			Warnf("error loading snapshot %s: %v\n", id, err)
-			continue
-		}
-
-		if (opts.Host == "" || opts.Host == sn.Hostname) && sn.HasPaths(opts.Paths) {
-			pos := sort.Search(len(list), func(i int) bool {
-				return list[i].Time.After(sn.Time)
-			})
-
-			if pos < len(list) {
-				list = append(list, nil)
-				copy(list[pos+1:], list[pos:])
-				list[pos] = sn
-			} else {
-				list = append(list, sn)
-			}
-		}
-
+	var list restic.Snapshots
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+		list = append(list, sn)
 	}
+	sort.Sort(sort.Reverse(list))
 
 	if gopts.JSON {
 		err := printSnapshotsJSON(gopts.stdout, list)
@@ -97,7 +77,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 }
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
-func PrintSnapshots(stdout io.Writer, list []*restic.Snapshot) {
+func PrintSnapshots(stdout io.Writer, list restic.Snapshots) {
 
 	// Determine the max widths for host and tag.
 	maxHost, maxTag := 10, 6
@@ -165,7 +145,7 @@ func PrintSnapshots(stdout io.Writer, list []*restic.Snapshot) {
 	tab.Write(stdout)
 }
 
-// Snapshot helps to print Snaphots as JSON
+// Snapshot helps to print Snaphots as JSON with their ID included.
 type Snapshot struct {
 	*restic.Snapshot
 
@@ -173,7 +153,7 @@ type Snapshot struct {
 }
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
-func printSnapshotsJSON(stdout io.Writer, list []*restic.Snapshot) error {
+func printSnapshotsJSON(stdout io.Writer, list restic.Snapshots) error {
 
 	var snapshots []Snapshot
 
@@ -187,5 +167,4 @@ func printSnapshotsJSON(stdout io.Writer, list []*restic.Snapshot) error {
 	}
 
 	return json.NewEncoder(stdout).Encode(snapshots)
-
 }
