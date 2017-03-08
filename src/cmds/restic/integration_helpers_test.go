@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -194,6 +195,7 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 	gopts := GlobalOptions{
 		Repo:     env.repo,
 		Quiet:    true,
+		ctx:      context.Background(),
 		password: TestPassword,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,

@@ -1,7 +1,7 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-GO_VERSION = '1.6'
+GO_VERSION = '1.7'
 
 def packages_freebsd
   return <<-EOF

@@ -77,7 +77,7 @@ Just clone the repository, `cd` to it and run `gb build` to build the binary:
     [...]
     $ bin/restic version
     restic compiled manually
-    compiled at unknown time with go1.6
+    compiled at unknown time with go1.7
 
 The following commands can be used to run all the tests:
 

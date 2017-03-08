@@ -27,7 +27,7 @@ $ pacaur -S restic-git
 
 # Building restic
 
-restic is written in the Go programming language and you need at least Go version 1.6.
+restic is written in the Go programming language and you need at least Go version 1.7.
 Building restic may also work with older versions of Go, but that's not supported.
 See the [Getting started](https://golang.org/doc/install) guide of the Go project for
 instructions how to install Go.
