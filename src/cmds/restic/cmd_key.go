@@ -1,13 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"restic"
-
-	"github.com/spf13/cobra"
-
 	"restic/errors"
 	"restic/repository"
+
+	"github.com/spf13/cobra"
 )
 
 var cmdKey = &cobra.Command{
@@ -25,15 +25,12 @@ func init() {
 	cmdRoot.AddCommand(cmdKey)
 }
 
-func listKeys(s *repository.Repository) error {
+func listKeys(ctx context.Context, s *repository.Repository) error {
 	tab := NewTable()
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
-	done := make(chan struct{})
-	defer close(done)
-
-	for id := range s.List(restic.KeyFile, done) {
+	for id := range s.List(restic.KeyFile, ctx.Done()) {
 		k, err := repository.LoadKey(s, id.String())
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
@@ -124,6 +121,9 @@ func runKey(gopts GlobalOptions, args []string) error {
 		return errors.Fatal("wrong number of arguments")
 	}
 
+	ctx, cancel := context.WithCancel(gopts.ctx)
+	defer cancel()
+
 	repo, err := OpenRepository(gopts)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return listKeys(repo)
+		return listKeys(ctx, repo)
 	case "add":
 		lock, err := lockRepo(repo)
 		defer unlockRepo(lock)
