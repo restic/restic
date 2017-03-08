@@ -23,7 +23,7 @@ The "snapshots" command lists all snapshots stored in the repository.
 	},
 }
 
-// SnapshotOptions bundle all options for the snapshots command.
+// SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
 	Host  string
 	Paths []string

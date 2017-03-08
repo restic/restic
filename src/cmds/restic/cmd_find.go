@@ -24,7 +24,7 @@ repo. `,
 	},
 }
 
-// FindOptions bundle all options for the find command.
+// FindOptions bundles all options for the find command.
 type FindOptions struct {
 	Oldest          string
 	Newest          string

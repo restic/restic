@@ -24,7 +24,7 @@ finds. It can also be used to read all data and therefore simulate a restore.
 	},
 }
 
-// CheckOptions bundle all options for the 'check' command.
+// CheckOptions bundles all options for the 'check' command.
 type CheckOptions struct {
 	ReadData    bool
 	CheckUnused bool
