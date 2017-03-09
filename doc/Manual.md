@@ -1,4 +1,4 @@
-Thanks for using restic. This document will give you an overview of the basic
+nhanks for using restic. This document will give you an overview of the basic
 functionality provided by restic.
 
 # Installing restic
@@ -42,6 +42,16 @@ $ cd restic
 
 $ go run build.go
 ```
+
+You can easily cross-compile restic for all supported platforms, just supply
+the target OS and platform via the command-line options like this (for Windows
+and FreeBSD respectively):
+
+    $ go run build.go --goos windows --goarch amd64
+
+    $ go run build.go --goos freebsd --goarch 386
+
+The resulting binary is statically linked and does not require any libraries.
 
 At the moment, the only tested compiler for restic is the official Go compiler.
 Building restic with gccgo may work, but is not supported.

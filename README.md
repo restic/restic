@@ -44,6 +44,16 @@ afterwards you'll find the binary in the current directory:
       restic [OPTIONS] <command>
     [...]
 
+You can easily cross-compile restic for all supported platforms, just supply
+the target OS and platform via the command-line options like this (for Windows
+and FreeBSD respectively):
+
+    $ go run build.go --goos windows --goarch amd64
+
+    $ go run build.go --goos freebsd --goarch 386
+
+The resulting binary is statically linked and does not require any libraries.
+
 More documentation can be found in the [user manual](doc/Manual.md).
 
 At the moment, the only tested compiler for restic is the official Go compiler.
