@@ -53,7 +53,7 @@ mv restic-$VERSION.tar.gz ${dir}
 
 echo "creating checksums"
 pushd ${dir}
-sha256sum restic_*.{zip,bz2} > SHA256SUMS
+sha256sum restic_*.{zip,bz2} restic-$VERSION.tar.gz > SHA256SUMS
 gpg --armor --detach-sign SHA256SUMS
 popd
 
