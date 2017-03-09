@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,6 +34,7 @@ type GlobalOptions struct {
 	NoLock       bool
 	JSON         bool
 
+	ctx      context.Context
 	password string
 	stdout   io.Writer
 	stderr   io.Writer
@@ -48,6 +50,13 @@ func init() {
 	if pw != "" {
 		globalOptions.password = pw
 	}
+
+	var cancel context.CancelFunc
+	globalOptions.ctx, cancel = context.WithCancel(context.Background())
+	AddCleanupHandler(func() error {
+		cancel()
+		return nil
+	})
 
 	f := cmdRoot.PersistentFlags()
 	f.StringVarP(&globalOptions.Repo, "repo", "r", os.Getenv("RESTIC_REPOSITORY"), "repository to backup to or restore from (default: $RESTIC_REPOSITORY)")

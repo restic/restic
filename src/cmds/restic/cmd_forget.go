@@ -1,13 +1,11 @@
 package main
 
 import (
-	"encoding/hex"
+	"context"
 	"encoding/json"
 	"restic"
 	"sort"
 	"strings"
-
-	"restic/errors"
 
 	"github.com/spf13/cobra"
 )
@@ -27,13 +25,12 @@ data after 'forget' was run successfully, see the 'prune' command. `,
 
 // ForgetOptions collects all options for the forget command.
 type ForgetOptions struct {
-	Last    int
-	Hourly  int
-	Daily   int
-	Weekly  int
-	Monthly int
-	Yearly  int
-
+	Last     int
+	Hourly   int
+	Daily    int
+	Weekly   int
+	Monthly  int
+	Yearly   int
 	KeepTags []string
 
 	Host  string
@@ -83,32 +80,43 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	// Process all snapshot IDs given as arguments.
-	if len(args) != 0 {
-		for _, s := range args {
-			// Parse argument as hex string.
-			if _, err := hex.DecodeString(s); err != nil {
-				Warnf("argument %q is not a snapshot ID, ignoring\n", s)
-				continue
-			}
-			id, err := restic.FindSnapshot(repo, s)
-			if err != nil {
-				Warnf("could not find a snapshot for ID %q, ignoring\n", s)
-				continue
-			}
+	// group by hostname and dirs
+	type key struct {
+		Hostname string
+		Paths    []string
+		Tags     []string
+	}
+	snapshotGroups := make(map[string]restic.Snapshots)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+		if len(args) > 0 {
+			// When explicit snapshots args are given, remove them immediately.
 			if !opts.DryRun {
-				h := restic.Handle{Type: restic.SnapshotFile, Name: id.String()}
-				err = repo.Backend().Remove(h)
-				if err != nil {
+				h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+				if err = repo.Backend().Remove(h); err != nil {
 					return err
 				}
-
-				Verbosef("removed snapshot %v\n", id.Str())
+				Verbosef("removed snapshot %v\n", sn.ID().Str())
 			} else {
-				Verbosef("would remove snapshot %v\n", id.Str())
+				Verbosef("would have removed snapshot %v\n", sn.ID().Str())
 			}
+		} else {
+			var tags []string
+			if opts.GroupByTags {
+				tags = sn.Tags
+				sort.StringSlice(tags).Sort()
+			}
+			sort.StringSlice(sn.Paths).Sort()
+			k, err := json.Marshal(key{Hostname: sn.Hostname, Tags: tags, Paths: sn.Paths})
+			if err != nil {
+				return err
+			}
+			snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
 		}
+	}
+	if len(args) > 0 {
 		return nil
 	}
 
@@ -122,53 +130,17 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		Tags:    opts.KeepTags,
 	}
 
-	snapshots, err := restic.LoadAllSnapshots(repo)
-	if err != nil {
-		return err
-	}
-
-	// Group snapshots by hostname and dirs.
-	type key struct {
-		Hostname string
-		Paths    []string
-		Tags     []string
-	}
-
-	snapshotGroups := make(map[string]restic.Snapshots)
-
-	for _, sn := range snapshots {
-		if opts.Host != "" && sn.Hostname != opts.Host {
-			continue
-		}
-
-		if !sn.HasTags(opts.Tags) {
-			continue
-		}
-
-		if !sn.HasPaths(opts.Paths) {
-			continue
-		}
-
-		var tags []string
-		if opts.GroupByTags {
-			sort.StringSlice(sn.Tags).Sort()
-			tags = sn.Tags
-		}
-		sort.StringSlice(sn.Paths).Sort()
-		k, _ := json.Marshal(key{Hostname: sn.Hostname, Tags: tags, Paths: sn.Paths})
-		snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
-	}
-	if len(snapshotGroups) == 0 {
-		return errors.Fatal("no snapshots remained after filtering")
-	}
 	if policy.Empty() {
 		Verbosef("no policy was specified, no snapshots will be removed\n")
+		return nil
 	}
 
 	removeSnapshots := 0
 	for k, snapshotGroup := range snapshotGroups {
 		var key key
-		json.Unmarshal([]byte(k), &key)
+		if json.Unmarshal([]byte(k), &key) != nil {
+			return err
+		}
 		if opts.GroupByTags {
 			Printf("snapshots for host %v, tags [%v], paths: [%v]:\n\n", key.Hostname, strings.Join(key.Tags, ", "), strings.Join(key.Paths, ", "))
 		} else {

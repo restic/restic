@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
+
+	"restic"
 )
 
 func formatBytes(c uint64) string {
@@ -57,4 +61,24 @@ func formatRate(bytes uint64, duration time.Duration) string {
 func formatDuration(d time.Duration) string {
 	sec := uint64(d / time.Second)
 	return formatSeconds(sec)
+}
+
+func formatNode(prefix string, n *restic.Node, long bool) string {
+	if !long {
+		return filepath.Join(prefix, n.Name)
+	}
+
+	switch n.Type {
+	case "file":
+		return fmt.Sprintf("%s %5d %5d %6d %s %s",
+			n.Mode, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name))
+	case "dir":
+		return fmt.Sprintf("%s %5d %5d %6d %s %s",
+			n.Mode|os.ModeDir, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name))
+	case "symlink":
+		return fmt.Sprintf("%s %5d %5d %6d %s %s -> %s",
+			n.Mode|os.ModeSymlink, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name), n.LinkTarget)
+	default:
+		return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
+	}
 }

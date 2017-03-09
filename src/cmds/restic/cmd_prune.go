@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"restic"
 	"restic/debug"
 	"restic/errors"
@@ -81,8 +81,8 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		return err
 	}
 
-	done := make(chan struct{})
-	defer close(done)
+	ctx, cancel := context.WithCancel(gopts.ctx)
+	defer cancel()
 
 	var stats struct {
 		blobs     int
@@ -92,7 +92,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	Verbosef("counting files in repo\n")
-	for _ = range repo.List(restic.DataFile, done) {
+	for _ = range repo.List(restic.DataFile, ctx.Done()) {
 		stats.packs++
 	}
 
@@ -238,34 +238,9 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		bar.Done()
 	}
 
-	Verbosef("creating new index\n")
-
-	stats.packs = 0
-	for _ = range repo.List(restic.DataFile, done) {
-		stats.packs++
-	}
-	bar = newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
-	idx, err = index.New(repo, bar)
-	if err != nil {
+	if err = rebuildIndex(ctx, repo); err != nil {
 		return err
 	}
-
-	var supersedes restic.IDs
-	for idxID := range repo.List(restic.IndexFile, done) {
-		h := restic.Handle{Type: restic.IndexFile, Name: idxID.String()}
-		err := repo.Backend().Remove(h)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "unable to remove index %v: %v\n", idxID.Str(), err)
-		}
-
-		supersedes = append(supersedes, idxID)
-	}
-
-	id, err := idx.Save(repo, supersedes)
-	if err != nil {
-		return err
-	}
-	Verbosef("saved new index as %v\n", id.Str())
 
 	Verbosef("done\n")
 	return nil

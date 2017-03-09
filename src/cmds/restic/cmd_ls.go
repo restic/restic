@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"context"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -13,7 +12,7 @@ import (
 )
 
 var cmdLs = &cobra.Command{
-	Use:   "ls [flags] snapshot-ID",
+	Use:   "ls [flags] [snapshot-ID ...]",
 	Short: "list files in a snapshot",
 	Long: `
 The "ls" command allows listing files and directories in a snapshot.
@@ -21,7 +20,7 @@ The "ls" command allows listing files and directories in a snapshot.
 The special snapshot-ID "latest" can be used to list files and directories of the latest snapshot in the repository.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runLs(globalOptions, args)
+		return runLs(lsOptions, globalOptions, args)
 	},
 }
 
@@ -29,6 +28,7 @@ The special snapshot-ID "latest" can be used to list files and directories of th
 type LsOptions struct {
 	ListLong bool
 	Host     string
+	Tags     []string
 	Paths    []string
 }
 
@@ -40,42 +40,22 @@ func init() {
 	flags := cmdLs.Flags()
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
-	flags.StringVarP(&lsOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
-	flags.StringSliceVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags.StringVarP(&lsOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
+	flags.StringSliceVar(&lsOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot ID is given")
+	flags.StringSliceVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 }
 
-func printNode(prefix string, n *restic.Node) string {
-	if !lsOptions.ListLong {
-		return filepath.Join(prefix, n.Name)
-	}
-
-	switch n.Type {
-	case "file":
-		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			n.Mode, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name))
-	case "dir":
-		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			n.Mode|os.ModeDir, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name))
-	case "symlink":
-		return fmt.Sprintf("%s %5d %5d %6d %s %s -> %s",
-			n.Mode|os.ModeSymlink, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name), n.LinkTarget)
-	default:
-		return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
-	}
-}
-
-func printTree(prefix string, repo *repository.Repository, id restic.ID) error {
-	tree, err := repo.LoadTree(id)
+func printTree(repo *repository.Repository, id *restic.ID, prefix string) error {
+	tree, err := repo.LoadTree(*id)
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range tree.Nodes {
-		Printf(printNode(prefix, entry) + "\n")
+		Printf(formatNode(prefix, entry, lsOptions.ListLong) + "\n")
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			err = printTree(filepath.Join(prefix, entry.Name), repo, *entry.Subtree)
-			if err != nil {
+			if err = printTree(repo, entry.Subtree, filepath.Join(prefix, entry.Name)); err != nil {
 				return err
 			}
 		}
@@ -84,9 +64,9 @@ func printTree(prefix string, repo *repository.Repository, id restic.ID) error {
 	return nil
 }
 
-func runLs(gopts GlobalOptions, args []string) error {
-	if len(args) < 1 || len(args) > 2 {
-		return errors.Fatal("no snapshot ID given")
+func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
+	if len(args) == 0 && opts.Host == "" && len(opts.Tags) == 0 && len(opts.Paths) == 0 {
+		return errors.Fatal("Invalid arguments, either give one or more snapshot IDs or set filters.")
 	}
 
 	repo, err := OpenRepository(gopts)
@@ -94,32 +74,18 @@ func runLs(gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	err = repo.LoadIndex()
-	if err != nil {
+	if err = repo.LoadIndex(); err != nil {
 		return err
 	}
 
-	snapshotIDString := args[0]
-	var id restic.ID
+	ctx, cancel := context.WithCancel(gopts.ctx)
+	defer cancel()
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+		Verbosef("snapshot %s of %v at %s):\n", sn.ID().Str(), sn.Paths, sn.Time)
 
-	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(repo, lsOptions.Paths, lsOptions.Host)
-		if err != nil {
-			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Host:%v", err, lsOptions.Paths, lsOptions.Host)
-		}
-	} else {
-		id, err = restic.FindSnapshot(repo, snapshotIDString)
-		if err != nil {
-			Exitf(1, "invalid id %q: %v", snapshotIDString, err)
+		if err = printTree(repo, sn.Tree, string(filepath.Separator)); err != nil {
+			return err
 		}
 	}
-
-	sn, err := restic.LoadSnapshot(repo, id)
-	if err != nil {
-		return err
-	}
-
-	Verbosef("snapshot of %v at %s:\n", sn.Paths, sn.Time)
-
-	return printTree(string(filepath.Separator), repo, *sn.Tree)
+	return nil
 }
