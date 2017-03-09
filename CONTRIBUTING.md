@@ -137,7 +137,13 @@ down to the following steps:
     commits to the branch you created for the pull request, they will be
     automatically added to the pull request.
 
- 7. Once your code looks good and passes all the tests, we'll merge it. Thanks
+ 7. If your pull request changes anything that users should be aware of (a
+    bugfix, a new feature, ...) please add an entry to the file
+    ['CHANGELOG.md'](CHANGELOG.md). It will be used in the announcement of the
+    next stable release. While writing, ask yourself: If I were the user, what
+    would I need to be aware of with this change.
+
+ 8. Once your code looks good and passes all the tests, we'll merge it. Thanks
     a low for your contribution!
 
 Please provide the patches for each bug or feature in a separate branch and
