@@ -170,19 +170,19 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		var key key
 		json.Unmarshal([]byte(k), &key)
 		if opts.GroupByTags {
-			Printf("snapshots for host %v, tags [%v], paths: [%v]:\n\n", key.Hostname, strings.Join(key.Tags, ", "), strings.Join(key.Paths, ", "))
+			Verbosef("snapshots for host %v, tags [%v], paths: [%v]:\n\n", key.Hostname, strings.Join(key.Tags, ", "), strings.Join(key.Paths, ", "))
 		} else {
-			Printf("snapshots for host %v, paths: [%v]:\n\n", key.Hostname, strings.Join(key.Paths, ", "))
+			Verbosef("snapshots for host %v, paths: [%v]:\n\n", key.Hostname, strings.Join(key.Paths, ", "))
 		}
 		keep, remove := restic.ApplyPolicy(snapshotGroup, policy)
 
-		if len(keep) != 0 {
+		if len(keep) != 0 && !gopts.Quiet {
 			Printf("keep %d snapshots:\n", len(keep))
 			PrintSnapshots(globalOptions.stdout, keep)
 			Printf("\n")
 		}
 
-		if len(remove) != 0 {
+		if len(remove) != 0 && !gopts.Quiet {
 			Printf("remove %d snapshots:\n", len(remove))
 			PrintSnapshots(globalOptions.stdout, remove)
 			Printf("\n")
@@ -202,7 +202,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if removeSnapshots > 0 && opts.Prune {
-		Printf("%d snapshots have been removed, running prune\n", removeSnapshots)
+		Verbosef("%d snapshots have been removed, running prune\n", removeSnapshots)
 		if !opts.DryRun {
 			return pruneRepository(gopts, repo)
 		}
