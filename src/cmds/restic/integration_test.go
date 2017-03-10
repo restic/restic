@@ -149,18 +149,20 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 	return strings.Split(string(buf.Bytes()), "\n")
 }
 
-func testRunFind(t testing.TB, gopts GlobalOptions, pattern string) []string {
+func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern string) []byte {
 	buf := bytes.NewBuffer(nil)
 	globalOptions.stdout = buf
+	globalOptions.JSON = wantJSON
 	defer func() {
 		globalOptions.stdout = os.Stdout
+		globalOptions.JSON = false
 	}()
 
 	opts := FindOptions{}
 
 	OK(t, runFind(opts, gopts, []string{pattern}))
 
-	return strings.Split(string(buf.Bytes()), "\n")
+	return buf.Bytes()
 }
 
 func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
@@ -1037,14 +1039,61 @@ func TestFind(t *testing.T) {
 		testRunBackup(t, []string{env.testdata}, opts, gopts)
 		testRunCheck(t, gopts)
 
-		results := testRunFind(t, gopts, "unexistingfile")
-		Assert(t, len(results) != 0, "unexisting file found in repo (%v)", datafile)
+		results := testRunFind(t, false, gopts, "unexistingfile")
+		Assert(t, len(results) == 0, "unexisting file found in repo (%v)", datafile)
 
-		results = testRunFind(t, gopts, "testfile")
-		Assert(t, len(results) != 1, "file not found in repo (%v)", datafile)
+		results = testRunFind(t, false, gopts, "testfile")
+		lines := strings.Split(string(results), "\n")
+		Assert(t, len(lines) == 2, "expected one file found in repo (%v)", datafile)
 
-		results = testRunFind(t, gopts, "test")
-		Assert(t, len(results) < 2, "less than two file found in repo (%v)", datafile)
+		results = testRunFind(t, false, gopts, "testfile*")
+		lines = strings.Split(string(results), "\n")
+		Assert(t, len(lines) == 4, "expected three files found in repo (%v)", datafile)
+	})
+}
+
+type testMatch struct {
+	Path        string    `json:"path,omitempty"`
+	Permissions string    `json:"permissions,omitempty"`
+	Size        uint64    `json:"size,omitempty"`
+	Date        time.Time `json:"date,omitempty"`
+	UID         uint32    `json:"uid,omitempty"`
+	GID         uint32    `json:"gid,omitempty"`
+}
+
+type testMatches struct {
+	Hits       int         `json:"hits,omitempty"`
+	SnapshotID string      `json:"snapshot,omitempty"`
+	Matches    []testMatch `json:"matches,omitempty"`
+}
+
+func TestFindJSON(t *testing.T) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		datafile := filepath.Join("testdata", "backup-data.tar.gz")
+		testRunInit(t, gopts)
+		SetupTarTestFixture(t, env.testdata, datafile)
+
+		opts := BackupOptions{}
+
+		testRunBackup(t, []string{env.testdata}, opts, gopts)
+		testRunCheck(t, gopts)
+
+		results := testRunFind(t, true, gopts, "unexistingfile")
+		matches := []testMatches{}
+		OK(t, json.Unmarshal(results, &matches))
+		Assert(t, len(matches) == 0, "expected no match in repo (%v)", datafile)
+
+		results = testRunFind(t, true, gopts, "testfile")
+		OK(t, json.Unmarshal(results, &matches))
+		Assert(t, len(matches) == 1, "expected a single snapshot in repo (%v)", datafile)
+		Assert(t, len(matches[0].Matches) == 1, "expected a single file to match (%v)", datafile)
+		Assert(t, matches[0].Hits == 1, "expected hits to show 1 match (%v)", datafile)
+
+		results = testRunFind(t, true, gopts, "testfile*")
+		OK(t, json.Unmarshal(results, &matches))
+		Assert(t, len(matches) == 1, "expected a single snapshot in repo (%v)", datafile)
+		Assert(t, len(matches[0].Matches) == 3, "expected 3 files to match (%v)", datafile)
+		Assert(t, matches[0].Hits == 3, "expected hits to show 3 matches (%v)", datafile)
 	})
 }
 

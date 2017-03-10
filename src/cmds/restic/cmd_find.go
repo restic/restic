@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"strings"
 	"time"
@@ -84,7 +85,94 @@ func parseTime(str string) (time.Time, error) {
 	return time.Time{}, errors.Fatalf("unable to parse time: %q", str)
 }
 
-func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, prefix string, snapshotID *string) error {
+type statefulOutput struct {
+	ListLong bool
+	JSON     bool
+	inuse    bool
+	newsn    *restic.Snapshot
+	oldsn    *restic.Snapshot
+	hits     int
+}
+
+func (s *statefulOutput) PrintJSON(prefix string, node *restic.Node) {
+	type findNode restic.Node
+	b, err := json.Marshal(struct {
+		// Add these attributes
+		Path        string `json:"path,omitempty"`
+		Permissions string `json:"permissions,omitempty"`
+
+		*findNode
+
+		// Make the following attributes disappear
+		Name               byte `json:"name,omitempty"`
+		Inode              byte `json:"inode,omitempty"`
+		ExtendedAttributes byte `json:"extended_attributes,omitempty"`
+		Device             byte `json:"device,omitempty"`
+		Content            byte `json:"content,omitempty"`
+		Subtree            byte `json:"subtree,omitempty"`
+	}{
+		Path:        filepath.Join(prefix, node.Name),
+		Permissions: node.Mode.String(),
+		findNode:    (*findNode)(node),
+	})
+	if err != nil {
+		Warnf("Marshall failed: %v\n", err)
+		return
+	}
+	if !s.inuse {
+		Printf("[")
+		s.inuse = true
+	}
+	if s.newsn != s.oldsn {
+		if s.oldsn != nil {
+			Printf("],\"hits\":%d,\"snapshot\":%q},", s.hits, s.oldsn.ID())
+		}
+		Printf(`{"matches":[`)
+		s.oldsn = s.newsn
+		s.hits = 0
+	}
+	if s.hits > 0 {
+		Printf(",")
+	}
+	Printf(string(b))
+	s.hits++
+}
+
+func (s *statefulOutput) PrintNormal(prefix string, node *restic.Node) {
+	if s.newsn != s.oldsn {
+		if s.oldsn != nil {
+			Verbosef("\n")
+		}
+		s.oldsn = s.newsn
+		Verbosef("Found matching entries in snapshot %s\n", s.oldsn.ID())
+	}
+	Printf(formatNode(prefix, node, s.ListLong) + "\n")
+}
+
+func (s *statefulOutput) Print(prefix string, node *restic.Node) {
+	if s.JSON {
+		s.PrintJSON(prefix, node)
+	} else {
+		s.PrintNormal(prefix, node)
+	}
+}
+
+func (s *statefulOutput) Finish() {
+	if s.JSON {
+		// do some finishing up
+		if s.oldsn != nil {
+			Printf("],\"hits\":%d,\"snapshot\":%q}", s.hits, s.oldsn.ID())
+		}
+		if s.inuse {
+			Printf("]\n")
+		} else {
+			Printf("[]\n")
+		}
+		return
+	}
+}
+
+func findInTree(repo *repository.Repository, pat *findPattern, id restic.ID, prefix string, state *statefulOutput) error {
 	debug.Log("checking tree %v\n", id)
 
 	tree, err := repo.LoadTree(id)
@@ -117,17 +205,13 @@ func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, pref
 				continue
 			}
 
-			if snapshotID != nil {
-				Verbosef("Found matching entries in snapshot %s\n", *snapshotID)
-				snapshotID = nil
-			}
-			Printf(formatNode(prefix, node, findOptions.ListLong) + "\n")
+			state.Print(prefix, node)
 		} else {
 			debug.Log("    pattern does not match\n")
 		}
 
 		if node.Type == "dir" {
-			if err := findInTree(repo, pat, *node.Subtree, filepath.Join(prefix, node.Name), snapshotID); err != nil {
+			if err := findInTree(repo, pat, *node.Subtree, filepath.Join(prefix, node.Name), state); err != nil {
 				return err
 			}
 		}
@@ -136,11 +220,11 @@ func findInTree(repo *repository.Repository, pat findPattern, id restic.ID, pref
 	return nil
 }
 
-func findInSnapshot(repo *repository.Repository, sn *restic.Snapshot, pat findPattern) error {
+func findInSnapshot(repo *repository.Repository, sn *restic.Snapshot, pat findPattern, state *statefulOutput) error {
 	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), pat.oldest, pat.newest)
 
-	snapshotID := sn.ID().Str()
-	if err := findInTree(repo, pat, *sn.Tree, string(filepath.Separator), &snapshotID); err != nil {
+	state.newsn = sn
+	if err := findInTree(repo, &pat, *sn.Tree, string(filepath.Separator), state); err != nil {
 		return err
 	}
 	return nil
@@ -189,11 +273,13 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
+	state := statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON}
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
-		if err = findInSnapshot(repo, sn, pat); err != nil {
+		if err = findInSnapshot(repo, sn, pat, &state); err != nil {
 			return err
 		}
 	}
+	state.Finish()
 
 	return nil
 }
