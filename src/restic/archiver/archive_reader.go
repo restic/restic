@@ -65,6 +65,9 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 
 	debug.Log("load index")
 	idx, err := index.Load(repo, nil)
+	if err != nil {
+		return nil, restic.ID{}, err
+	}
 
 	ids := restic.IDs{}
 	var fileSize uint64
