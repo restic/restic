@@ -875,3 +875,17 @@ $ restic -r /tmp/backup snapshots --json | jq .
   }
 ]
 ```
+
+# Temporary files
+
+During some operations (e.g. `backup` and `prune`) restic uses temporary files
+to store data. These files will, by default, be saved to the system's temporary
+directory, on Linux this is usually located in `/tmp/`. The environment
+variable `TMPDIR` can be used to specify a different directory, e.g. to use the
+directory `/var/tmp/restic-tmp` instead of the default, set the environment
+variable like this:
+
+```console
+$ export TMPDIR=/var/tmp/restic-tmp
+$ restic -r /tmp/backup backup ~/work
+```
