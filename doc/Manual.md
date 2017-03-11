@@ -841,7 +841,37 @@ enter password for repository:
 
 # Scripting restic
 
-Restic supports the output of some commands in JSON format. The JSON flag ```--json``` is currently supported only by ```restic snapshots```.
+Restic supports the output of some commands in JSON format, the JSON data can
+then be processed by other programs (e.g. [`jq`](https://stedolan.github.io/jq/)).
+The following example lists all snapshots as JSON and uses `jq` to pretty-print
+the result:
 
 ```console
-$ restic -r /tmp/backup snapshots --json```
+$ restic -r /tmp/backup snapshots --json | jq .
+[
+  {
+    "time": "2017-03-11T09:57:43.26630619+01:00",
+    "tree": "bf25241679533df554fc0fd0ae6dbb9dcf1859a13f2bc9dd4543c354eff6c464",
+    "paths": [
+      "/home/work/doc"
+    ],
+    "hostname": "kasimir",
+    "username": "fd0",
+    "uid": 1000,
+    "gid": 100,
+    "id": "bbeed6d28159aa384d1ccc6fa0b540644b1b9599b162d2972acda86b1b80f89e"
+  },
+  {
+    "time": "2017-03-11T09:58:57.541446938+01:00",
+    "tree": "7f8c95d3420baaac28dc51609796ae0e0ecfb4862b609a9f38ffaf7ae2d758da",
+    "paths": [
+      "/home/user/shared"
+    ],
+    "hostname": "kasimir",
+    "username": "fd0",
+    "uid": 1000,
+    "gid": 100,
+    "id": "b157d91c16f0ba56801ece3a708dfc53791fe2a97e827090d6ed9a69a6ebdca0"
+  }
+]
+```
