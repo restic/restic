@@ -44,7 +44,7 @@ func loadIDSet(t testing.TB, filename string) restic.BlobSet {
 }
 
 func saveIDSet(t testing.TB, filename string, s restic.BlobSet) {
-	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0644)
+	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		t.Fatalf("unable to update golden file %v: %v", filename, err)
 		return

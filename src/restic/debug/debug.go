@@ -53,7 +53,7 @@ func initDebugLogger() {
 	}
 
 	if err != nil && os.IsNotExist(errors.Cause(err)) {
-		f, err = fs.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE, 0600)
+		f, err = fs.OpenFile(debugfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	}
 
 	if err != nil {

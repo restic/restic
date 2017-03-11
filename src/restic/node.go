@@ -234,7 +234,7 @@ func (node Node) createFileAt(path string, repo Repository, idx *HardlinkIndex) 
 		return nil
 	}
 
-	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0600)
+	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	defer f.Close()
 
 	if err != nil {
