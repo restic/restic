@@ -135,11 +135,11 @@ func (cm *ContentManager) SaveFullFile() error {
 		return nil
 	}
 
-	return cm.SaveFile(f)
+	return cm.saveFile(f)
 }
 
-// SaveFile stores a pack file in the backend. The pack is added to cm.Packs.
-func (cm *ContentManager) SaveFile(f PackFile) error {
+// saveFile stores a pack file in the backend. The pack is added to cm.Packs.
+func (cm *ContentManager) saveFile(f PackFile) error {
 	packID, err := f.Save(cm.Backend)
 	if err != nil {
 		return err
@@ -157,7 +157,7 @@ func (cm *ContentManager) SaveFile(f PackFile) error {
 // returned.
 func (cm *ContentManager) SaveAllFiles() error {
 	for _, f := range cm.Files {
-		err := cm.SaveFile(f)
+		err := cm.saveFile(f)
 		if err != nil {
 			return err
 		}
