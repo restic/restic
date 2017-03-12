@@ -103,8 +103,10 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		Exitf(2, "creating restorer failed: %v\n", err)
 	}
 
+	totalErrors := 0
 	res.Error = func(dir string, node *restic.Node, err error) error {
-		Warnf("error for %s: %+v\n", dir, err)
+		Warnf("ignoring error for %s: %s\n", dir, err)
+		totalErrors++
 		return nil
 	}
 
@@ -134,5 +136,9 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
-	return res.RestoreTo(opts.Target)
+	err = res.RestoreTo(opts.Target)
+	if totalErrors > 0 {
+		Printf("There were %d errors\n", totalErrors)
+	}
+	return err
 }

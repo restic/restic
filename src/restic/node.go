@@ -158,35 +158,37 @@ func (node *Node) CreateAt(path string, repo Repository, idx *HardlinkIndex) err
 }
 
 func (node Node) restoreMetadata(path string) error {
-	var err error
+	var firsterr error
 
-	err = lchown(path, int(node.UID), int(node.GID))
-	if err != nil {
-		return errors.Wrap(err, "Lchown")
+	if err := lchown(path, int(node.UID), int(node.GID)); err != nil {
+		firsterr = errors.Wrap(err, "Lchown")
 	}
 
 	if node.Type != "symlink" {
-		err = fs.Chmod(path, node.Mode)
-		if err != nil {
-			return errors.Wrap(err, "Chmod")
+		if err := fs.Chmod(path, node.Mode); err != nil {
+			if firsterr != nil {
+				firsterr = errors.Wrap(err, "Chmod")
+			}
 		}
 	}
 
 	if node.Type != "dir" {
-		err = node.RestoreTimestamps(path)
-		if err != nil {
+		if err := node.RestoreTimestamps(path); err != nil {
 			debug.Log("error restoring timestamps for dir %v: %v", path, err)
-			return err
+			if firsterr != nil {
+				firsterr = err
+			}
 		}
 	}
 
-	err = node.restoreExtendedAttributes(path)
-	if err != nil {
+	if err := node.restoreExtendedAttributes(path); err != nil {
 		debug.Log("error restoring extended attributes for %v: %v", path, err)
-		return err
+		if firsterr != nil {
+			firsterr = err
+		}
 	}
 
-	return nil
+	return firsterr
 }
 
 func (node Node) restoreExtendedAttributes(path string) error {
