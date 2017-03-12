@@ -587,10 +587,6 @@ func (c *Checker) checkTree(id restic.ID, tree *restic.Tree) (errs []error) {
 	for _, node := range tree.Nodes {
 		switch node.Type {
 		case "file":
-			if node.Content == nil {
-				errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q has nil blob list", node.Name)})
-			}
-
 			for b, blobID := range node.Content {
 				if blobID.IsNull() {
 					errs = append(errs, Error{TreeID: id, Err: errors.Errorf("file %q blob %d has null ID", node.Name, b)})

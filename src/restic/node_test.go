@@ -241,3 +241,26 @@ func AssertFsTimeEqual(t *testing.T, label string, nodeType string, t1 time.Time
 
 	Assert(t, equal, "%s: %s doesn't match (%v != %v)", label, nodeType, t1, t2)
 }
+
+func TestNodeSameAttributes(t *testing.T) {
+	golden := restic.Node{ExtendedAttributes: map[string][]byte{"a": []byte{0x12, 0x34}, "b": []byte{0x56, 0x78}}}
+	testdata := []struct {
+		name     string
+		actual   restic.Node
+		expected bool
+	}{
+		{"empty", restic.Node{}, false},
+		{"same", restic.Node{ExtendedAttributes: map[string][]byte{"a": []byte{0x12, 0x34}, "b": []byte{0x56, 0x78}}}, true},
+		{"almost", restic.Node{ExtendedAttributes: map[string][]byte{"a": []byte{0x12, 0x34}, "c": []byte{0x56, 0x78}}}, false},
+		{"value", restic.Node{ExtendedAttributes: map[string][]byte{"a": []byte{0x12, 0x34}, "b": []byte{0x56, 0x9a}}}, false},
+		{"missing", restic.Node{ExtendedAttributes: map[string][]byte{"a": []byte{0x12, 0x34}}}, false},
+		{"toomuch", restic.Node{ExtendedAttributes: map[string][]byte{"a": []byte{0x12, 0x34}, "b": []byte{0x56, 0x78}, "c": []byte{0x9a, 0xbc}}}, false},
+	}
+	for _, data := range testdata {
+		t.Run(data.name, func(t *testing.T) {
+			if golden.Equals(data.actual) != data.expected {
+				t.Errorf("extended attribute mismatch: %#v vs %#v, expected %v", golden.ExtendedAttributes, data.actual.ExtendedAttributes, data.expected)
+			}
+		})
+	}
+}
