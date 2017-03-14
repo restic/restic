@@ -18,10 +18,12 @@ import (
 	"restic/debug"
 	"restic/location"
 	"restic/repository"
-
 	"restic/errors"
-
 	"golang.org/x/crypto/ssh/terminal"
+	"restic/backend/stow"
+	stowgs "github.com/graymeta/stow/google"
+	stowaz "github.com/graymeta/stow/azure"
+	stows3 "github.com/graymeta/stow/s3"
 )
 
 var version = "compiled manually"
@@ -338,6 +340,48 @@ func open(s string) (restic.Backend, error) {
 
 		debug.Log("opening s3 repository at %#v", cfg)
 		be, err = s3.Open(cfg)
+	case "aws":
+		cfg := loc.Config.(stow.Config)
+		if _, ok := cfg.ConfigMap.Config(stows3.ConfigAccessKeyID); !ok {
+			cfg.ConfigMap[stows3.ConfigAccessKeyID] = os.Getenv("AWS_ACCESS_KEY_ID")
+
+		}
+		if _, ok := cfg.ConfigMap.Config(stows3.ConfigSecretKey); !ok {
+			cfg.ConfigMap[stows3.ConfigSecretKey] = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		}
+		debug.Log("create AWS s3 repository at %#v", loc.Config)
+		be, err = stow.Open(cfg)
+	case "gs":
+		cfg := loc.Config.(stow.Config)
+		if _, ok := cfg.ConfigMap.Config(stowgs.ConfigProjectId); !ok {
+			cfg.ConfigMap[stowgs.ConfigProjectId] = os.Getenv("GOOGLE_PROJECT_ID")
+
+		}
+		if _, ok := cfg.ConfigMap.Config(stowgs.ConfigJSON); !ok {
+			if path := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); path != "" {
+				jsonKey, err := ioutil.ReadFile(path)
+				if err != nil {
+					return nil, errors.Fatalf("Failed to read google credential from file %v: %v", path, err)
+				}
+				cfg.ConfigMap[stowgs.ConfigJSON] = string(jsonKey)
+			} else {
+				return nil, errors.Fatal("No credential is set")
+			}
+		}
+		debug.Log("opening gcs repository at %#v", cfg)
+		be, err = stow.Open(cfg)
+	case "azure":
+		cfg := loc.Config.(stow.Config)
+		if _, ok := cfg.ConfigMap.Config(stowaz.ConfigAccount); !ok {
+			cfg.ConfigMap[stowaz.ConfigAccount] = os.Getenv("AZURE_STORAGE_ACCOUNT")
+
+		}
+		if _, ok := cfg.ConfigMap.Config(stowaz.ConfigKey); !ok {
+			cfg.ConfigMap[stowaz.ConfigKey] = os.Getenv("AZURE_STORAGE_KEY")
+
+		}
+		debug.Log("opening azure storage repository at %#v", cfg)
+		be, err = stow.Open(cfg)
 	case "rest":
 		be, err = rest.Open(loc.Config.(rest.Config))
 	default:
@@ -378,6 +422,48 @@ func create(s string) (restic.Backend, error) {
 
 		debug.Log("create s3 repository at %#v", loc.Config)
 		return s3.Open(cfg)
+	case "aws":
+		cfg := loc.Config.(stow.Config)
+		if _, ok := cfg.ConfigMap.Config(stows3.ConfigAccessKeyID); !ok {
+			cfg.ConfigMap[stows3.ConfigAccessKeyID] = os.Getenv("AWS_ACCESS_KEY_ID")
+
+		}
+		if _, ok := cfg.ConfigMap.Config(stows3.ConfigSecretKey); !ok {
+			cfg.ConfigMap[stows3.ConfigSecretKey] = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		}
+		debug.Log("create AWS s3 repository at %#v", loc.Config)
+		return stow.Open(cfg)
+	case "gs":
+		cfg := loc.Config.(stow.Config)
+		if _, ok := cfg.ConfigMap.Config(stowgs.ConfigProjectId); !ok {
+			cfg.ConfigMap[stowgs.ConfigProjectId] = os.Getenv("GOOGLE_PROJECT_ID")
+
+		}
+		if _, ok := cfg.ConfigMap.Config(stowgs.ConfigJSON); !ok {
+			if path := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); path != "" {
+				jsonKey, err := ioutil.ReadFile(path)
+				if err != nil {
+					return nil, errors.Fatalf("Failed to read google credential from file %v: %v", path, err)
+				}
+				cfg.ConfigMap[stowgs.ConfigJSON] = string(jsonKey)
+			} else {
+				return nil, errors.Fatal("No credential is set")
+			}
+		}
+		debug.Log("opening gcs repository at %#v", cfg)
+		return stow.Open(cfg)
+	case "azure":
+		cfg := loc.Config.(stow.Config)
+		if _, ok := cfg.ConfigMap.Config(stowaz.ConfigAccount); !ok {
+			cfg.ConfigMap[stowaz.ConfigAccount] = os.Getenv("AZURE_STORAGE_ACCOUNT")
+
+		}
+		if _, ok := cfg.ConfigMap.Config(stowaz.ConfigKey); !ok {
+			cfg.ConfigMap[stowaz.ConfigKey] = os.Getenv("AZURE_STORAGE_KEY")
+
+		}
+		debug.Log("opening azure storage repository at %#v", cfg)
+		return stow.Open(cfg)
 	case "rest":
 		return rest.Open(loc.Config.(rest.Config))
 	}

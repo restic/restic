@@ -8,6 +8,7 @@ import (
 	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
+	"restic/backend/stow"
 )
 
 // Location specifies the location of a repository, including the method of
@@ -29,6 +30,9 @@ var parsers = []parser{
 	{"sftp", sftp.ParseConfig},
 	{"s3", s3.ParseConfig},
 	{"rest", rest.ParseConfig},
+	{"azure", stow.ParseConfig},
+	{"gs", stow.ParseConfig},
+	{"aws", stow.ParseConfig},
 }
 
 // Parse extracts repository location information from the string s. If s
