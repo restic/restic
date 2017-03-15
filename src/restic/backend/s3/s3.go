@@ -7,6 +7,7 @@ import (
 	"path"
 	"restic"
 	"strings"
+	"sync"
 
 	"restic/backend"
 	"restic/errors"
@@ -20,10 +21,12 @@ const connLimit = 40
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
-	client     *minio.Client
-	connChan   chan struct{}
-	bucketname string
-	prefix     string
+	client       *minio.Client
+	connChan     chan struct{}
+	bucketname   string
+	prefix       string
+	cacheMutex   sync.RWMutex
+	cacheObjSize map[string]int64
 }
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
@@ -36,7 +39,12 @@ func Open(cfg Config) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
-	be := &s3{client: client, bucketname: cfg.Bucket, prefix: cfg.Prefix}
+	be := &s3{
+		client:       client,
+		bucketname:   cfg.Bucket,
+		prefix:       cfg.Prefix,
+		cacheObjSize: make(map[string]int64),
+	}
 
 	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
 	client.SetCustomTransport(tr)
@@ -139,6 +147,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 	}
 
 	var obj *minio.Object
+	var size int64
 
 	objName := be.s3path(h)
 
@@ -186,20 +195,30 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 	}()
 
 	// otherwise use a buffer with ReadAt
-	info, err := obj.Stat()
-	if err != nil {
-		_ = obj.Close()
-		return nil, errors.Wrap(err, "obj.Stat")
+	be.cacheMutex.RLock()
+	size, cacheHit := be.cacheObjSize[objName]
+	be.cacheMutex.RUnlock()
+
+	if !cacheHit {
+		info, err := obj.Stat()
+		if err != nil {
+			_ = obj.Close()
+			return nil, errors.Wrap(err, "obj.Stat")
+		}
+		size = info.Size
+		be.cacheMutex.Lock()
+		be.cacheObjSize[objName] = size
+		be.cacheMutex.Unlock()
 	}
 
-	if offset > info.Size {
+	if offset > size {
 		_ = obj.Close()
 		return nil, errors.New("offset larger than file size")
 	}
 
 	l := int64(length)
-	if offset+l > info.Size {
-		l = info.Size - offset
+	if offset+l > size {
+		l = size - offset
 	}
 
 	buf := make([]byte, l)
