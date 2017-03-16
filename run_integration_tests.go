@@ -27,6 +27,7 @@ var ForbiddenImports = map[string]bool{
 
 var runCrossCompile = flag.Bool("cross-compile", true, "run cross compilation tests")
 var minioServer = flag.String("minio", "", "path to the minio server binary")
+var restServer = flag.String("rest", "", "path to the rest-server binary")
 var debug = flag.Bool("debug", false, "output debug messages")
 
 var minioServerEnv = map[string]string{
@@ -35,9 +36,10 @@ var minioServerEnv = map[string]string{
 }
 
 var minioEnv = map[string]string{
-	"RESTIC_TEST_S3_SERVER": "http://127.0.0.1:9000",
-	"AWS_ACCESS_KEY_ID":     "KEBIYDZ87HCIH5D17YCN",
-	"AWS_SECRET_ACCESS_KEY": "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
+	"RESTIC_TEST_S3_SERVER":   "http://127.0.0.1:9000",
+	"RESTIC_TEST_REST_SERVER": "http://127.0.0.1:8000",
+	"AWS_ACCESS_KEY_ID":       "KEBIYDZ87HCIH5D17YCN",
+	"AWS_SECRET_ACCESS_KEY":   "bVX1KhipSBPopEfmhc7rGz8ooxx27xdJ7Gkh1mVe",
 }
 
 func init() {
@@ -54,10 +56,14 @@ type CIEnvironment interface {
 // TravisEnvironment is the environment in which Travis tests run.
 type TravisEnvironment struct {
 	goxOSArch []string
-	minio     string
 
+	minio        string
 	minioSrv     *Background
 	minioTempdir string
+
+	rest        string
+	restSrv     *Background
+	restTempdir string
 
 	env map[string]string
 }
@@ -118,7 +124,7 @@ func (env *TravisEnvironment) runMinio() error {
 
 	dir, err := ioutil.TempDir("", "minio-root")
 	if err != nil {
-		return fmt.Errorf("running minio server failed: %v", err)
+		return fmt.Errorf("TempDir: %v", err)
 	}
 
 	env.minioSrv, err = StartBackgroundCommand(minioServerEnv, env.minio,
@@ -142,6 +148,29 @@ func (env *TravisEnvironment) runMinio() error {
 	return nil
 }
 
+func (env *TravisEnvironment) runRESTServer() error {
+	if env.rest == "" {
+		return nil
+	}
+
+	// start rest server
+	msg("starting rest server at %s", env.rest)
+
+	dir, err := ioutil.TempDir("", "rest-server-root")
+	if err != nil {
+		return fmt.Errorf("TempDir: %v", err)
+	}
+
+	env.restSrv, err = StartBackgroundCommand(map[string]string{}, env.rest,
+		"--path", dir)
+	if err != nil {
+		return fmt.Errorf("error running rest server: %v", err)
+	}
+
+	env.restTempdir = dir
+	return nil
+}
+
 // Prepare installs dependencies and starts services in order to run the tests.
 func (env *TravisEnvironment) Prepare() error {
 	env.env = make(map[string]string)
@@ -151,6 +180,7 @@ func (env *TravisEnvironment) Prepare() error {
 	for _, pkg := range []string{
 		"golang.org/x/tools/cmd/cover",
 		"github.com/pierrre/gotestcover",
+		"github.com/restic/rest-server",
 	} {
 		err := run("go", "get", pkg)
 		if err != nil {
@@ -162,6 +192,9 @@ func (env *TravisEnvironment) Prepare() error {
 		return err
 	}
 	if err := env.runMinio(); err != nil {
+		return err
+	}
+	if err := env.runRESTServer(); err != nil {
 		return err
 	}
 
@@ -224,6 +257,29 @@ func (env *TravisEnvironment) Teardown() error {
 		err := os.RemoveAll(env.minioTempdir)
 		if err != nil {
 			msg("error removing minio tempdir %v: %v\n", env.minioTempdir, err)
+		}
+	}
+
+	if env.restSrv != nil {
+		msg("stopping rest-server\n")
+
+		if env.restSrv.Cmd.ProcessState == nil {
+			err := env.restSrv.Cmd.Process.Kill()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error killing rest-server process: %v", err)
+			}
+		} else {
+			result := <-env.restSrv.Result
+			if result.Error != nil {
+				msg("rest-server returned error: %v\n", result.Error)
+				msg("stdout: %s\n", result.Stdout)
+				msg("stderr: %s\n", result.Stderr)
+			}
+		}
+
+		err := os.RemoveAll(env.restTempdir)
+		if err != nil {
+			msg("error removing rest-server tempdir %v: %v\n", env.restTempdir, err)
 		}
 	}
 
