@@ -6,8 +6,6 @@ import (
 	"os"
 	"restic"
 
-	"restic/errors"
-
 	"restic/backend/rest"
 	"restic/backend/test"
 	. "restic/test"
@@ -32,21 +30,7 @@ func init() {
 	}
 
 	test.CreateFn = func() (restic.Backend, error) {
-		be, err := rest.Open(cfg)
-		if err != nil {
-			return nil, err
-		}
-
-		exists, err := be.Test(restic.Handle{Type: restic.ConfigFile, Name: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		if exists {
-			return nil, errors.New("config already exists")
-		}
-
-		return be, nil
+		return rest.Create(cfg)
 	}
 
 	test.OpenFn = func() (restic.Backend, error) {

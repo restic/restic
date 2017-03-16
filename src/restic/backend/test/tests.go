@@ -375,7 +375,7 @@ var filenameTests = []struct {
 	data string
 }{
 	{"1dfc6bc0f06cb255889e9ea7860a5753e8eb9665c9a96627971171b444e3113e", "x"},
-	{"foobar", "foobar"},
+	{"f00b4r", "foobar"},
 	{
 		"1dfc6bc0f06cb255889e9ea7860a5753e8eb9665c9a96627971171b444e3113e4bf8f2d9144cc5420a80f04a4880ad6155fc58903a4fb6457c476c43541dcaa6-5",
 		"foobar content of data blob",
@@ -500,11 +500,11 @@ func TestBackend(t testing.TB) {
 		ts := testStrings[0]
 
 		// create blob
-		err := b.Save(restic.Handle{Type: tpe, Name: ts.id}, strings.NewReader(ts.data))
-		test.Assert(t, err != nil, "expected error, got %v", err)
+		h := restic.Handle{Type: tpe, Name: ts.id}
+		err := b.Save(h, strings.NewReader(ts.data))
+		test.Assert(t, err != nil, "expected error for %v, got %v", h, err)
 
 		// remove and recreate
-		h := restic.Handle{Type: tpe, Name: ts.id}
 		err = b.Remove(h)
 		test.OK(t, err)
 
