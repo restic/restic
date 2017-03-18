@@ -69,6 +69,45 @@ func Open(cfg Config) (restic.Backend, error) {
 	return &restBackend{url: cfg.URL, connChan: connChan, client: client}, nil
 }
 
+// Create creates a new REST on server configured in config.
+func Create(cfg Config) (restic.Backend, error) {
+	be, err := Open(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = be.Stat(restic.Handle{Type: restic.ConfigFile})
+	if err == nil {
+		return nil, errors.Fatal("config file already exists")
+	}
+
+	url := *cfg.URL
+	values := url.Query()
+	values.Set("create", "true")
+	url.RawQuery = values.Encode()
+
+	resp, err := http.Post(url.String(), "binary/octet-stream", strings.NewReader(""))
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Fatalf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
+	}
+
+	_, err = io.Copy(ioutil.Discard, resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return be, nil
+}
+
 // Location returns this backend's location (the server's URL).
 func (b *restBackend) Location() string {
 	return b.url.String()
@@ -103,6 +142,7 @@ func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 		return errors.Wrap(err, "client.Post")
 	}
 
+	// fmt.Printf("status is %v (%v)\n", resp.Status, resp.StatusCode)
 	if resp.StatusCode != 200 {
 		return errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
 	}
@@ -222,7 +262,7 @@ func (b *restBackend) Remove(h restic.Handle) error {
 	}
 
 	if resp.StatusCode != 200 {
-		return errors.New("blob not removed")
+		return errors.Errorf("blob not removed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
 	io.Copy(ioutil.Discard, resp.Body)

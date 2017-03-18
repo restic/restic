@@ -379,7 +379,7 @@ func create(s string) (restic.Backend, error) {
 		debug.Log("create s3 repository at %#v", loc.Config)
 		return s3.Open(cfg)
 	case "rest":
-		return rest.Open(loc.Config.(rest.Config))
+		return rest.Create(loc.Config.(rest.Config))
 	}
 
 	debug.Log("invalid repository scheme: %v", s)
