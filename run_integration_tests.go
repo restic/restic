@@ -188,6 +188,8 @@ func (env *TravisEnvironment) Prepare() error {
 		}
 	}
 
+	env.rest = filepath.Join(os.Getenv("GOPATH"), "bin", "rest-server")
+
 	if err := env.getMinio(); err != nil {
 		return err
 	}
