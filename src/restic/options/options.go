@@ -32,6 +32,11 @@ func Parse(in []string) (Options, error) {
 		if key == "" {
 			return Options{}, errors.Fatalf("empty key is not a valid option")
 		}
+
+		if v, ok := opts[key]; ok && v != value {
+			return Options{}, errors.Fatalf("key %q present more than once", key)
+		}
+
 		opts[key] = value
 	}
 

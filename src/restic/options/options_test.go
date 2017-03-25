@@ -33,6 +33,14 @@ var optsTests = []struct {
 			"k2": "more spaces = not evil",
 		},
 	},
+	{
+		[]string{"x=1", "foo=bar", "y=2", "foo=bar"},
+		Options{
+			"x":   "1",
+			"y":   "2",
+			"foo": "bar",
+		},
+	},
 }
 
 func TestParseOptions(t *testing.T) {
@@ -57,6 +65,10 @@ var invalidOptsTests = []struct {
 	{
 		[]string{"=bar", "bar=baz", "k="},
 		"empty key is not a valid option",
+	},
+	{
+		[]string{"x=1", "foo=bar", "y=2", "foo=baz"},
+		`key "foo" present more than once`,
 	},
 }
 
