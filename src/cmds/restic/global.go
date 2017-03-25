@@ -17,6 +17,7 @@ import (
 	"restic/backend/s3"
 	"restic/backend/sftp"
 	"restic/debug"
+	"restic/options"
 	"restic/repository"
 
 	"restic/errors"
@@ -38,6 +39,10 @@ type GlobalOptions struct {
 	password string
 	stdout   io.Writer
 	stderr   io.Writer
+
+	Options []string
+
+	extended options.Options
 }
 
 var globalOptions = GlobalOptions{
@@ -64,6 +69,8 @@ func init() {
 	f.BoolVarP(&globalOptions.Quiet, "quiet", "q", false, "do not output comprehensive progress report")
 	f.BoolVar(&globalOptions.NoLock, "no-lock", false, "do not lock the repo, this allows some operations on read-only repos")
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
+
+	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 
 	restoreTerminal()
 }
@@ -287,7 +294,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, errors.Fatal("Please specify repository location (-r)")
 	}
 
-	be, err := open(opts.Repo)
+	be, err := open(opts.Repo, opts.extended)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +317,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 }
 
 // Open the backend specified by a location config.
-func open(s string) (restic.Backend, error) {
+func open(s string, opts options.Options) (restic.Backend, error) {
 	debug.Log("parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
@@ -352,7 +359,7 @@ func open(s string) (restic.Backend, error) {
 }
 
 // Create the backend specified by URI.
-func create(s string) (restic.Backend, error) {
+func create(s string, opts options.Options) (restic.Backend, error) {
 	debug.Log("parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
