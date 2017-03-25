@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var optsTests = []struct {
@@ -113,6 +114,102 @@ func TestOptionsExtract(t *testing.T) {
 
 			if !reflect.DeepEqual(opts, test.output) {
 				t.Fatalf("wrong result, want:\n  %#v\ngot:\n  %#v", test.output, opts)
+			}
+		})
+	}
+}
+
+// Target is used for Apply() tests
+type Target struct {
+	Name    string        `option:"name"`
+	ID      int           `option:"id"`
+	Timeout time.Duration `option:"timeout"`
+	Other   string
+}
+
+var setTests = []struct {
+	input  Options
+	output Target
+}{
+	{
+		Options{
+			"name": "foobar",
+		},
+		Target{
+			Name: "foobar",
+		},
+	},
+	{
+		Options{
+			"name": "foobar",
+			"id":   "1234",
+		},
+		Target{
+			Name: "foobar",
+			ID:   1234,
+		},
+	},
+	{
+		Options{
+			"timeout": "10m3s",
+		},
+		Target{
+			Timeout: time.Duration(10*time.Minute + 3*time.Second),
+		},
+	},
+}
+
+func TestOptionsApply(t *testing.T) {
+	for i, test := range setTests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			var dst Target
+			err := test.input.Apply(&dst)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if dst != test.output {
+				t.Fatalf("wrong result, want:\n  %#v\ngot:\n  %#v", test.output, dst)
+			}
+		})
+	}
+}
+
+var invalidSetTests = []struct {
+	input Options
+	err   string
+}{
+	{
+		Options{
+			"first_name": "foobar",
+		},
+		"option first_name is not known",
+	},
+	{
+		Options{
+			"id": "foobar",
+		},
+		`strconv.ParseInt: parsing "foobar": invalid syntax`,
+	},
+	{
+		Options{
+			"timeout": "2134",
+		},
+		`time: missing unit in duration 2134`,
+	},
+}
+
+func TestOptionsApplyInvalid(t *testing.T) {
+	for i, test := range invalidSetTests {
+		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
+			var dst Target
+			err := test.input.Apply(&dst)
+			if err == nil {
+				t.Fatalf("expected error %v not found", test.err)
+			}
+
+			if err.Error() != test.err {
+				t.Fatalf("expected error %q, got %q", test.err, err.Error())
 			}
 		})
 	}
