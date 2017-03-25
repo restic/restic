@@ -316,6 +316,59 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	return s, nil
 }
 
+func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
+	// only apply options for a particular backend here
+	opts = opts.Extract(loc.Scheme)
+
+	switch loc.Scheme {
+	case "local":
+		cfg := loc.Config.(local.Config)
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening local repository at %#v", cfg)
+		return cfg, nil
+
+	case "sftp":
+		cfg := loc.Config.(sftp.Config)
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening sftp repository at %#v", cfg)
+		return cfg, nil
+
+	case "s3":
+		cfg := loc.Config.(s3.Config)
+		if cfg.KeyID == "" {
+			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
+		}
+
+		if cfg.Secret == "" {
+			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		}
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening s3 repository at %#v", cfg)
+		return cfg, nil
+
+	case "rest":
+		cfg := loc.Config.(rest.Config)
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening rest repository at %#v", cfg)
+		return cfg, nil
+	}
+
+	return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
+}
+
 // Open the backend specified by a location config.
 func open(s string, opts options.Options) (restic.Backend, error) {
 	debug.Log("parsing location %v", s)
@@ -326,27 +379,21 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 
 	var be restic.Backend
 
+	cfg, err := parseConfig(loc, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	switch loc.Scheme {
 	case "local":
-		debug.Log("opening local repository at %#v", loc.Config)
-		be, err = local.Open(loc.Config.(local.Config))
+		be, err = local.Open(cfg.(local.Config))
 	case "sftp":
-		debug.Log("opening sftp repository at %#v", loc.Config)
-		be, err = sftp.OpenWithConfig(loc.Config.(sftp.Config))
+		be, err = sftp.OpenWithConfig(cfg.(sftp.Config))
 	case "s3":
-		cfg := loc.Config.(s3.Config)
-		if cfg.KeyID == "" {
-			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
-
-		}
-		if cfg.Secret == "" {
-			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
-		}
-
-		debug.Log("opening s3 repository at %#v", cfg)
-		be, err = s3.Open(cfg)
+		be, err = s3.Open(cfg.(s3.Config))
 	case "rest":
-		be, err = rest.Open(loc.Config.(rest.Config))
+		be, err = rest.Open(cfg.(rest.Config))
+
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
 	}
@@ -366,27 +413,20 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return nil, err
 	}
 
+	cfg, err := parseConfig(loc, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	switch loc.Scheme {
 	case "local":
-		debug.Log("create local repository at %#v", loc.Config)
-		return local.Create(loc.Config.(local.Config))
+		return local.Create(cfg.(local.Config))
 	case "sftp":
-		debug.Log("create sftp repository at %#v", loc.Config)
-		return sftp.CreateWithConfig(loc.Config.(sftp.Config))
+		return sftp.CreateWithConfig(cfg.(sftp.Config))
 	case "s3":
-		cfg := loc.Config.(s3.Config)
-		if cfg.KeyID == "" {
-			cfg.KeyID = os.Getenv("AWS_ACCESS_KEY_ID")
-
-		}
-		if cfg.Secret == "" {
-			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
-		}
-
-		debug.Log("create s3 repository at %#v", loc.Config)
-		return s3.Open(cfg)
+		return s3.Open(cfg.(s3.Config))
 	case "rest":
-		return rest.Create(loc.Config.(rest.Config))
+		return rest.Create(cfg.(rest.Config))
 	}
 
 	debug.Log("invalid repository scheme: %v", s)
