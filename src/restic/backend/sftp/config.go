@@ -15,10 +15,9 @@ type Config struct {
 
 // ParseConfig parses the string s and extracts the sftp config. The
 // supported configuration formats are sftp://user@host/directory
-// (with an optional port sftp://user@host:port/directory) and
-// sftp:user@host:directory.  The directory will be path Cleaned and
-// can be an absolute path if it starts with a '/'
-// (e.g. sftp://user@host//absolute and sftp:user@host:/absolute).
+//  and sftp:user@host:directory.  The directory will be path Cleaned and can
+//  be an absolute path if it starts with a '/' (e.g.
+//  sftp://user@host//absolute and sftp:user@host:/absolute).
 func ParseConfig(s string) (interface{}, error) {
 	var user, host, dir string
 	switch {

@@ -517,6 +517,40 @@ You can also specify a relative (read: no slash (`/`) character at the
 beginning) directory, in this case the dir is relative to the remote user's
 home directory.
 
+The backend config string does not allow specifying a port. If you need to
+contact an sftp server on a different port, you can create an entry in the
+`ssh` file, usually located in your user's home directory at `~/.ssh/config` or
+in `/etc/ssh/ssh_config`:
+
+```
+Host foo
+    User bar
+    Port 2222
+```
+
+Then use the specified host name `foo` normally (you don't need to specify the
+user name in this case):
+
+```
+$ restic -r sftp:foo:/tmp/backup init
+```
+
+You can also add an entry with a special host name which does not exist, just
+for use with restic, and use the `Hostname` option to set the real host name:
+
+```
+Host restic-backup-host
+    Hostname foo
+    User bar
+    Port 2222
+```
+
+Then use it in the backend specification:
+
+```
+$ restic -r sftp:restic-backup-host:/tmp/backup init
+```
+
 # Create a REST server repository
 
 In order to backup data to the remote server via HTTP or HTTPS protocol,
