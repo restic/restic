@@ -34,20 +34,14 @@ in a repository are only written once and never modified afterwards. This
 allows accessing and even writing to the repository with multiple clients in
 parallel. Only the delete operation removes data from the repository.
 
-At the time of writing, the only implemented repository type is based on
-directories and files. Such repositories can be accessed locally on the same
-system or via the integrated SFTP client (or any other storage back end).
-The directory layout is the same for both access methods.
-This repository type is described in the following section.
-
-Repositories consist of several directories and a file called `config`. For
-all other files stored in the repository, the name for the file is the lower
-case hexadecimal representation of the storage ID, which is the SHA-256 hash of
-the file's contents. This allows for easy verification of files for accidental
-modifications, like disk read errors, by simply running the program `sha256sum`
-and comparing its output to the file name. If the prefix of a filename is
-unique amongst all the other files in the same directory, the prefix may be
-used instead of the complete filename.
+Repositories consist of several directories and a top-level file called
+`config`. For all other files stored in the repository, the name for the file
+is the lower case hexadecimal representation of the storage ID, which is the
+SHA-256 hash of the file's contents. This allows for easy verification of files
+for accidental modifications, like disk read errors, by simply running the
+program `sha256sum` on the file and comparing its output to the file name. If
+the prefix of a filename is unique amongst all the other files in the same
+directory, the prefix may be used instead of the complete filename.
 
 Apart from the files stored within the `keys` directory, all files are encrypted
 with AES-256 in counter mode (CTR). The integrity of the encrypted data is
@@ -78,7 +72,15 @@ regardless if it is accessed via SFTP or locally. The field
 `chunker_polynomial` contains a parameter that is used for splitting large
 files into smaller chunks (see below).
 
-The basic layout of a sample restic repository is shown here:
+Filesystem-Based Repositories
+-----------------------------
+
+The `local` and `sftp` backends are implemented using files and directories
+stored in a file system. The directory layout is the same for both backend
+types.
+
+The basic layout of a repository stored in a `local` or `sftp` backend is shown
+here:
 
     /tmp/restic-repo
     ├── config
@@ -102,11 +104,63 @@ The basic layout of a sample restic repository is shown here:
     │   └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
     └── tmp
 
-A repository can be initialized with the `restic init` command, e.g.:
+A local repository can be initialized with the `restic init` command, e.g.:
 
 ```console
 $ restic -r /tmp/restic-repo init
 ```
+
+The local backend will also accept the repository layout described in the
+following section, so that remote repositories mounted locally e.g. via fuse
+can be accessed.
+
+Object-Storage-Based Repositories
+---------------------------------
+
+Repositories in a backend based on an object store (e.g. Amazon s3) have the
+same basic layout, with the exception that all data pack files are directly
+saved in the `data` path, without the sub-directories listed for the
+filesystem-based backends as listed in the previous section. The layout looks
+like this:
+
+    /config
+    /data
+     ├── 2159dd48f8a24f33c307b750592773f8b71ff8d11452132a7b2e2a6a01611be1
+     ├── 32ea976bc30771cebad8285cd99120ac8786f9ffd42141d452458089985043a5
+     ├── 59fe4bcde59bd6222eba87795e35a90d82cd2f138a27b6835032b7b58173a426
+     ├── 73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c
+    [...]
+    /index
+     ├── c38f5fb68307c6a3e3aa945d556e325dc38f5fb68307c6a3e3aa945d556e325d
+     └── ca171b1b7394d90d330b265d90f506f9984043b342525f019788f97e745c71fd
+    /keys
+     └── b02de829beeb3c01a63e6b25cbd421a98fef144f03b9a02e46eff9e2ca3f0bd7
+    /locks
+    /snapshots
+     └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
+
+Unfortunately during development the s3 backend uses slightly different paths
+(directory names use singular instead of plural for `key`, `lock`, and
+`snapshot` files), for s3 the repository layout looks like this:
+
+    /config
+    /data
+     ├── 2159dd48f8a24f33c307b750592773f8b71ff8d11452132a7b2e2a6a01611be1
+     ├── 32ea976bc30771cebad8285cd99120ac8786f9ffd42141d452458089985043a5
+     ├── 59fe4bcde59bd6222eba87795e35a90d82cd2f138a27b6835032b7b58173a426
+     ├── 73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c
+    [...]
+    /index
+     ├── c38f5fb68307c6a3e3aa945d556e325dc38f5fb68307c6a3e3aa945d556e325d
+     └── ca171b1b7394d90d330b265d90f506f9984043b342525f019788f97e745c71fd
+    /key
+     └── b02de829beeb3c01a63e6b25cbd421a98fef144f03b9a02e46eff9e2ca3f0bd7
+    /lock
+    /snapshot
+     └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
+
+The s3 backend understands and accepts both forms, new backends are always
+created with the former layout for compatibility reasons.
 
 Pack Format
 -----------
