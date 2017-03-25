@@ -322,7 +322,7 @@ func open(s string) (restic.Backend, error) {
 	switch loc.Scheme {
 	case "local":
 		debug.Log("opening local repository at %#v", loc.Config)
-		be, err = local.Open(loc.Config.(string))
+		be, err = local.Open(loc.Config.(local.Config))
 	case "sftp":
 		debug.Log("opening sftp repository at %#v", loc.Config)
 		be, err = sftp.OpenWithConfig(loc.Config.(sftp.Config))
@@ -362,7 +362,7 @@ func create(s string) (restic.Backend, error) {
 	switch loc.Scheme {
 	case "local":
 		debug.Log("create local repository at %#v", loc.Config)
-		return local.Create(loc.Config.(string))
+		return local.Create(loc.Config.(local.Config))
 	case "sftp":
 		debug.Log("create sftp repository at %#v", loc.Config)
 		return sftp.CreateWithConfig(loc.Config.(sftp.Config))

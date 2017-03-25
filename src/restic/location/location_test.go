@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
@@ -23,12 +24,30 @@ var parseTests = []struct {
 	s string
 	u Location
 }{
-	{"local:/srv/repo", Location{Scheme: "local", Config: "/srv/repo"}},
-	{"local:dir1/dir2", Location{Scheme: "local", Config: "dir1/dir2"}},
-	{"local:dir1/dir2", Location{Scheme: "local", Config: "dir1/dir2"}},
-	{"dir1/dir2", Location{Scheme: "local", Config: "dir1/dir2"}},
-	{"local:../dir1/dir2", Location{Scheme: "local", Config: "../dir1/dir2"}},
-	{"/dir1/dir2", Location{Scheme: "local", Config: "/dir1/dir2"}},
+	{"local:/srv/repo", Location{Scheme: "local",
+		Config: local.Config{
+			Path: "/srv/repo",
+		}}},
+	{"local:dir1/dir2", Location{Scheme: "local",
+		Config: local.Config{
+			Path: "dir1/dir2",
+		}}},
+	{"local:dir1/dir2", Location{Scheme: "local",
+		Config: local.Config{
+			Path: "dir1/dir2",
+		}}},
+	{"dir1/dir2", Location{Scheme: "local",
+		Config: local.Config{
+			Path: "dir1/dir2",
+		}}},
+	{"local:../dir1/dir2", Location{Scheme: "local",
+		Config: local.Config{
+			Path: "../dir1/dir2",
+		}}},
+	{"/dir1/dir2", Location{Scheme: "local",
+		Config: local.Config{
+			Path: "/dir1/dir2",
+		}}},
 
 	{"sftp:user@host:/srv/repo", Location{Scheme: "sftp",
 		Config: sftp.Config{
