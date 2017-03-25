@@ -69,7 +69,8 @@ func (o Options) Extract(ns string) Options {
 }
 
 // Apply sets the options on dst via reflection, using the struct tag `option`.
-func (o Options) Apply(dst interface{}) error {
+// The namespace argument (ns) is only used for error messages.
+func (o Options) Apply(ns string, dst interface{}) error {
 	v := reflect.ValueOf(dst).Elem()
 
 	fields := make(map[string]reflect.StructField)
@@ -92,6 +93,9 @@ func (o Options) Apply(dst interface{}) error {
 	for key, value := range o {
 		field, ok := fields[key]
 		if !ok {
+			if ns != "" {
+				key = ns + "." + key
+			}
 			return errors.Fatalf("option %v is not known", key)
 		}
 

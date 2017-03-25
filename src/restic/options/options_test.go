@@ -163,7 +163,7 @@ func TestOptionsApply(t *testing.T) {
 	for i, test := range setTests {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
 			var dst Target
-			err := test.input.Apply(&dst)
+			err := test.input.Apply("", &dst)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -176,25 +176,29 @@ func TestOptionsApply(t *testing.T) {
 }
 
 var invalidSetTests = []struct {
-	input Options
-	err   string
+	input     Options
+	namespace string
+	err       string
 }{
 	{
 		Options{
 			"first_name": "foobar",
 		},
-		"option first_name is not known",
+		"ns",
+		"option ns.first_name is not known",
 	},
 	{
 		Options{
 			"id": "foobar",
 		},
+		"ns",
 		`strconv.ParseInt: parsing "foobar": invalid syntax`,
 	},
 	{
 		Options{
 			"timeout": "2134",
 		},
+		"ns",
 		`time: missing unit in duration 2134`,
 	},
 }
@@ -203,7 +207,7 @@ func TestOptionsApplyInvalid(t *testing.T) {
 	for i, test := range invalidSetTests {
 		t.Run(fmt.Sprintf("test-%d", i), func(t *testing.T) {
 			var dst Target
-			err := test.input.Apply(&dst)
+			err := test.input.Apply(test.namespace, &dst)
 			if err == nil {
 				t.Fatalf("expected error %v not found", test.err)
 			}
