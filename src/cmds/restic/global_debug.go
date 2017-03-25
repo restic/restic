@@ -8,6 +8,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"restic/errors"
+	"restic/repository"
 
 	"github.com/pkg/profile"
 )
@@ -16,6 +17,7 @@ var (
 	listenMemoryProfile string
 	memProfilePath      string
 	cpuProfilePath      string
+	insecure            bool
 
 	prof interface {
 		Stop()
@@ -27,6 +29,13 @@ func init() {
 	f.StringVar(&listenMemoryProfile, "listen-profile", "", "listen on this `address:port` for memory profiling")
 	f.StringVar(&memProfilePath, "mem-profile", "", "write memory profile to `dir`")
 	f.StringVar(&cpuProfilePath, "cpu-profile", "", "write cpu profile to `dir`")
+	f.BoolVar(&insecure, "insecure-kdf", false, "use insecure KDF settings")
+}
+
+type fakeTestingTB struct{}
+
+func (fakeTestingTB) Logf(msg string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, msg, args...)
 }
 
 func runDebug() error {
@@ -48,6 +57,10 @@ func runDebug() error {
 		prof = profile.Start(profile.Quiet, profile.MemProfile, profile.ProfilePath(memProfilePath))
 	} else if memProfilePath != "" {
 		prof = profile.Start(profile.Quiet, profile.CPUProfile, profile.ProfilePath(memProfilePath))
+	}
+
+	if insecure {
+		repository.TestUseLowSecurityKDFParameters(fakeTestingTB{})
 	}
 
 	return nil
