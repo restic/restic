@@ -12,11 +12,11 @@ import (
 	"syscall"
 
 	"restic/backend/local"
+	"restic/backend/location"
 	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
 	"restic/debug"
-	"restic/location"
 	"restic/repository"
 
 	"restic/errors"
