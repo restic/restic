@@ -35,7 +35,7 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return local.Create(tempBackendDir)
+		return local.Create(local.Config{Path: tempBackendDir})
 	}
 
 	test.OpenFn = func() (restic.Backend, error) {
@@ -43,7 +43,7 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return local.Open(tempBackendDir)
+		return local.Open(local.Config{Path: tempBackendDir})
 	}
 
 	test.CleanupFn = func() error {

@@ -16,7 +16,7 @@ import (
 
 // Local is a backend in a local directory.
 type Local struct {
-	p string
+	Config
 }
 
 var _ restic.Backend = &Local{}
@@ -34,28 +34,28 @@ func paths(dir string) []string {
 }
 
 // Open opens the local backend as specified by config.
-func Open(dir string) (*Local, error) {
+func Open(cfg Config) (*Local, error) {
 	// test if all necessary dirs are there
-	for _, d := range paths(dir) {
+	for _, d := range paths(cfg.Path) {
 		if _, err := fs.Stat(d); err != nil {
 			return nil, errors.Wrap(err, "Open")
 		}
 	}
 
-	return &Local{p: dir}, nil
+	return &Local{Config: cfg}, nil
 }
 
 // Create creates all the necessary files and directories for a new local
 // backend at dir. Afterwards a new config blob should be created.
-func Create(dir string) (*Local, error) {
+func Create(cfg Config) (*Local, error) {
 	// test if config file already exists
-	_, err := fs.Lstat(filepath.Join(dir, backend.Paths.Config))
+	_, err := fs.Lstat(filepath.Join(cfg.Path, backend.Paths.Config))
 	if err == nil {
 		return nil, errors.New("config file already exists")
 	}
 
 	// create paths for data, refs and temp
-	for _, d := range paths(dir) {
+	for _, d := range paths(cfg.Path) {
 		err := fs.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {
 			return nil, errors.Wrap(err, "MkdirAll")
@@ -63,12 +63,12 @@ func Create(dir string) (*Local, error) {
 	}
 
 	// open backend
-	return Open(dir)
+	return Open(cfg)
 }
 
 // Location returns this backend's location (the directory name).
 func (b *Local) Location() string {
-	return b.p
+	return b.Path
 }
 
 // Construct path for given Type and name.
@@ -132,13 +132,13 @@ func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
 		return err
 	}
 
-	tmpfile, err := copyToTempfile(filepath.Join(b.p, backend.Paths.Temp), rd)
+	tmpfile, err := copyToTempfile(filepath.Join(b.Path, backend.Paths.Temp), rd)
 	debug.Log("saved %v to %v", h, tmpfile)
 	if err != nil {
 		return err
 	}
 
-	filename := filename(b.p, h.Type, h.Name)
+	filename := filename(b.Path, h.Type, h.Name)
 
 	// test if new path already exists
 	if _, err := fs.Stat(filename); err == nil {
@@ -183,7 +183,7 @@ func (b *Local) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 		return nil, errors.New("offset is negative")
 	}
 
-	f, err := os.Open(filename(b.p, h.Type, h.Name))
+	f, err := os.Open(filename(b.Path, h.Type, h.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	fi, err := fs.Stat(filename(b.p, h.Type, h.Name))
+	fi, err := fs.Stat(filename(b.Path, h.Type, h.Name))
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
@@ -221,7 +221,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(h restic.Handle) (bool, error) {
 	debug.Log("Test %v", h)
-	_, err := fs.Stat(filename(b.p, h.Type, h.Name))
+	_, err := fs.Stat(filename(b.Path, h.Type, h.Name))
 	if err != nil {
 		if os.IsNotExist(errors.Cause(err)) {
 			return false, nil
@@ -235,7 +235,7 @@ func (b *Local) Test(h restic.Handle) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(h restic.Handle) error {
 	debug.Log("Remove %v", h)
-	fn := filename(b.p, h.Type, h.Name)
+	fn := filename(b.Path, h.Type, h.Name)
 
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)
@@ -316,7 +316,7 @@ func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	}
 
 	ch := make(chan string)
-	items, err := lister(filepath.Join(dirname(b.p, t, "")))
+	items, err := lister(filepath.Join(dirname(b.Path, t, "")))
 	if err != nil {
 		close(ch)
 		return ch
@@ -343,7 +343,7 @@ func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 // Delete removes the repository and all files.
 func (b *Local) Delete() error {
 	debug.Log("Delete()")
-	return fs.RemoveAll(b.p)
+	return fs.RemoveAll(b.Path)
 }
 
 // Close closes all open files.

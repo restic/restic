@@ -5,6 +5,7 @@ import (
 	"os"
 	"restic"
 	"restic/debug"
+	"restic/options"
 
 	"github.com/spf13/cobra"
 
@@ -22,10 +23,21 @@ directories in an encrypted repository stored on different backends.
 	SilenceErrors: true,
 	SilenceUsage:  true,
 
-	// run the debug functions for all subcommands (if build tag "debug" is
-	// enabled)
 	PersistentPreRunE: func(*cobra.Command, []string) error {
-		return runDebug()
+		// parse extended options
+		opts, err := options.Parse(globalOptions.Options)
+		if err != nil {
+			return err
+		}
+		globalOptions.extended = opts
+
+		// run the debug functions for all subcommands (if build tag "debug" is
+		// enabled)
+		if err := runDebug(); err != nil {
+			return err
+		}
+
+		return nil
 	},
 	PersistentPostRun: func(*cobra.Command, []string) {
 		shutdownDebug()

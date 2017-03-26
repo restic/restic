@@ -27,7 +27,7 @@ func runInit(gopts GlobalOptions, args []string) error {
 		return errors.Fatal("Please specify repository location (-r)")
 	}
 
-	be, err := create(gopts.Repo)
+	be, err := create(gopts.Repo, gopts.extended)
 	if err != nil {
 		return errors.Fatalf("create backend at %s failed: %v\n", gopts.Repo, err)
 	}
