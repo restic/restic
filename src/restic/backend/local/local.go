@@ -2,7 +2,6 @@ package local
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"restic"
@@ -20,19 +19,8 @@ type Local struct {
 	backend.Layout
 }
 
+// ensure statically that *Local implements restic.Backend.
 var _ restic.Backend = &Local{}
-
-func paths(dir string) []string {
-	return []string{
-		dir,
-		filepath.Join(dir, backend.Paths.Data),
-		filepath.Join(dir, backend.Paths.Snapshots),
-		filepath.Join(dir, backend.Paths.Index),
-		filepath.Join(dir, backend.Paths.Locks),
-		filepath.Join(dir, backend.Paths.Keys),
-		filepath.Join(dir, backend.Paths.Temp),
-	}
-}
 
 // Open opens the local backend as specified by config.
 func Open(cfg Config) (*Local, error) {
@@ -84,30 +72,6 @@ func Create(cfg Config) (*Local, error) {
 // Location returns this backend's location (the directory name).
 func (b *Local) Location() string {
 	return b.Path
-}
-
-// copyToTempfile saves p into a tempfile in tempdir.
-func copyToTempfile(tempdir string, rd io.Reader) (filename string, err error) {
-	tmpfile, err := ioutil.TempFile(tempdir, "temp-")
-	if err != nil {
-		return "", errors.Wrap(err, "TempFile")
-	}
-
-	_, err = io.Copy(tmpfile, rd)
-	if err != nil {
-		return "", errors.Wrap(err, "Write")
-	}
-
-	if err = tmpfile.Sync(); err != nil {
-		return "", errors.Wrap(err, "Syncn")
-	}
-
-	err = tmpfile.Close()
-	if err != nil {
-		return "", errors.Wrap(err, "Close")
-	}
-
-	return tmpfile.Name(), nil
 }
 
 // Save stores data in the backend at the handle.
