@@ -17,6 +17,7 @@ import (
 // Local is a backend in a local directory.
 type Local struct {
 	Config
+	backend.Layout
 }
 
 var _ restic.Backend = &Local{}
@@ -35,70 +36,54 @@ func paths(dir string) []string {
 
 // Open opens the local backend as specified by config.
 func Open(cfg Config) (*Local, error) {
+	be := &Local{Config: cfg}
+
+	be.Layout = &backend.DefaultLayout{
+		Path: cfg.Path,
+		Join: filepath.Join,
+	}
+
 	// test if all necessary dirs are there
-	for _, d := range paths(cfg.Path) {
+	for _, d := range be.Paths() {
 		if _, err := fs.Stat(d); err != nil {
 			return nil, errors.Wrap(err, "Open")
 		}
 	}
 
-	return &Local{Config: cfg}, nil
+	return be, nil
 }
 
 // Create creates all the necessary files and directories for a new local
 // backend at dir. Afterwards a new config blob should be created.
 func Create(cfg Config) (*Local, error) {
+	be := &Local{
+		Config: cfg,
+		Layout: &backend.DefaultLayout{
+			Path: cfg.Path,
+			Join: filepath.Join,
+		},
+	}
+
 	// test if config file already exists
-	_, err := fs.Lstat(filepath.Join(cfg.Path, backend.Paths.Config))
+	_, err := fs.Lstat(be.Filename(restic.Handle{Type: restic.ConfigFile}))
 	if err == nil {
 		return nil, errors.New("config file already exists")
 	}
 
 	// create paths for data, refs and temp
-	for _, d := range paths(cfg.Path) {
+	for _, d := range be.Paths() {
 		err := fs.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {
 			return nil, errors.Wrap(err, "MkdirAll")
 		}
 	}
 
-	// open backend
-	return Open(cfg)
+	return be, nil
 }
 
 // Location returns this backend's location (the directory name).
 func (b *Local) Location() string {
 	return b.Path
-}
-
-// Construct path for given Type and name.
-func filename(base string, t restic.FileType, name string) string {
-	if t == restic.ConfigFile {
-		return filepath.Join(base, "config")
-	}
-
-	return filepath.Join(dirname(base, t, name), name)
-}
-
-// Construct directory for given Type.
-func dirname(base string, t restic.FileType, name string) string {
-	var n string
-	switch t {
-	case restic.DataFile:
-		n = backend.Paths.Data
-		if len(name) > 2 {
-			n = filepath.Join(n, name[:2])
-		}
-	case restic.SnapshotFile:
-		n = backend.Paths.Snapshots
-	case restic.IndexFile:
-		n = backend.Paths.Index
-	case restic.LockFile:
-		n = backend.Paths.Locks
-	case restic.KeyFile:
-		n = backend.Paths.Keys
-	}
-	return filepath.Join(base, n)
 }
 
 // copyToTempfile saves p into a tempfile in tempdir.
@@ -132,18 +117,7 @@ func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
 		return err
 	}
 
-	tmpfile, err := copyToTempfile(filepath.Join(b.Path, backend.Paths.Temp), rd)
-	debug.Log("saved %v to %v", h, tmpfile)
-	if err != nil {
-		return err
-	}
-
-	filename := filename(b.Path, h.Type, h.Name)
-
-	// test if new path already exists
-	if _, err := fs.Stat(filename); err == nil {
-		return errors.Errorf("Rename(): file %v already exists", filename)
-	}
+	filename := b.Filename(h)
 
 	// create directories if necessary, ignore errors
 	if h.Type == restic.DataFile {
@@ -153,12 +127,28 @@ func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
 		}
 	}
 
-	err = fs.Rename(tmpfile, filename)
-	debug.Log("save %v: rename %v -> %v: %v",
-		h, filepath.Base(tmpfile), filepath.Base(filename), err)
-
+	// create new file
+	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
 	if err != nil {
-		return errors.Wrap(err, "Rename")
+		return errors.Wrap(err, "OpenFile")
+	}
+
+	// save data, then sync
+	_, err = io.Copy(f, rd)
+	if err != nil {
+		f.Close()
+		return errors.Wrap(err, "Write")
+	}
+
+	if err = f.Sync(); err != nil {
+		f.Close()
+		return errors.Wrap(err, "Sync")
+	}
+
+	err = f.Close()
+	if err != nil {
+		f.Close()
+		return errors.Wrap(err, "Close")
 	}
 
 	// set mode to read-only
@@ -183,7 +173,7 @@ func (b *Local) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 		return nil, errors.New("offset is negative")
 	}
 
-	f, err := os.Open(filename(b.Path, h.Type, h.Name))
+	f, err := fs.Open(b.Filename(h))
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +200,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	fi, err := fs.Stat(filename(b.Path, h.Type, h.Name))
+	fi, err := fs.Stat(b.Filename(h))
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
@@ -221,7 +211,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 // Test returns true if a blob of the given type and name exists in the backend.
 func (b *Local) Test(h restic.Handle) (bool, error) {
 	debug.Log("Test %v", h)
-	_, err := fs.Stat(filename(b.Path, h.Type, h.Name))
+	_, err := fs.Stat(b.Filename(h))
 	if err != nil {
 		if os.IsNotExist(errors.Cause(err)) {
 			return false, nil
@@ -235,7 +225,7 @@ func (b *Local) Test(h restic.Handle) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (b *Local) Remove(h restic.Handle) error {
 	debug.Log("Remove %v", h)
-	fn := filename(b.Path, h.Type, h.Name)
+	fn := b.Filename(h)
 
 	// reset read-only flag
 	err := fs.Chmod(fn, 0666)
@@ -316,7 +306,7 @@ func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	}
 
 	ch := make(chan string)
-	items, err := lister(filepath.Join(dirname(b.Path, t, "")))
+	items, err := lister(b.Dirname(restic.Handle{Type: t}))
 	if err != nil {
 		close(ch)
 		return ch
