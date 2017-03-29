@@ -16,6 +16,7 @@ import (
 	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
+	"restic/backend/swift"
 	"restic/debug"
 	"restic/options"
 	"restic/repository"
@@ -356,6 +357,51 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		debug.Log("opening s3 repository at %#v", cfg)
 		return cfg, nil
 
+	case "swift":
+		cfg := loc.Config.(swift.Config)
+
+		for _, val := range []struct {
+			s   *string
+			env string
+		}{
+			// v2/v3 specific
+			{&cfg.UserName, "OS_USERNAME"},
+			{&cfg.APIKey, "OS_PASSWORD"},
+			{&cfg.Region, "OS_REGION_NAME"},
+			{&cfg.AuthURL, "OS_AUTH_URL"},
+
+			// v3 specific
+			{&cfg.Domain, "OS_USER_DOMAIN_NAME"},
+			{&cfg.Tenant, "OS_PROJECT_NAME"},
+			{&cfg.TenantDomain, "OS_PROJECT_DOMAIN_NAME"},
+
+			// v2 specific
+			{&cfg.TenantID, "OS_TENANT_ID"},
+			{&cfg.Tenant, "OS_TENANT_NAME"},
+
+			// v1 specific
+			{&cfg.AuthURL, "ST_AUTH"},
+			{&cfg.UserName, "ST_USER"},
+			{&cfg.APIKey, "ST_KEY"},
+
+			// Manual authentication
+			{&cfg.StorageURL, "OS_STORAGE_URL"},
+			{&cfg.AuthToken, "OS_AUTH_TOKEN"},
+
+			{&cfg.DefaultContainerPolicy, "SWIFT_DEFAULT_CONTAINER_POLICY"},
+		} {
+			if *val.s == "" {
+				*val.s = os.Getenv(val.env)
+			}
+		}
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening swift repository at %#v", cfg)
+		return cfg, nil
+
 	case "rest":
 		cfg := loc.Config.(rest.Config)
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
@@ -391,6 +437,8 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		be, err = sftp.Open(cfg.(sftp.Config))
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config))
+	case "swift":
+		be, err = swift.Open(cfg.(swift.Config))
 	case "rest":
 		be, err = rest.Open(cfg.(rest.Config))
 
@@ -435,6 +483,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return sftp.Create(cfg.(sftp.Config))
 	case "s3":
 		return s3.Open(cfg.(s3.Config))
+	case "swift":
+		return swift.Open(cfg.(swift.Config))
 	case "rest":
 		return rest.Create(cfg.(rest.Config))
 	}

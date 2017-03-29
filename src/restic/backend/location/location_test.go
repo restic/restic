@@ -9,6 +9,7 @@ import (
 	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
+	"restic/backend/swift"
 )
 
 func parseURL(s string) *url.URL {
@@ -192,6 +193,24 @@ var parseTests = []struct {
 				Bucket:   "repo",
 				Prefix:   "restic",
 				UseHTTP:  true,
+			},
+		},
+	},
+	{
+		"swift:container17:/",
+		Location{Scheme: "swift",
+			Config: swift.Config{
+				Container: "container17",
+				Prefix:    "",
+			},
+		},
+	},
+	{
+		"swift:container17:/prefix97",
+		Location{Scheme: "swift",
+			Config: swift.Config{
+				Container: "container17",
+				Prefix:    "prefix97",
 			},
 		},
 	},
