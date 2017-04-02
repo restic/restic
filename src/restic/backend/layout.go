@@ -108,6 +108,10 @@ func hasSubdirBackendFile(fs Filesystem, dir string) (bool, error) {
 	return false, nil
 }
 
+// ErrLayoutDetectionFailed is returned by DetectLayout() when the layout
+// cannot be detected automatically.
+var ErrLayoutDetectionFailed = errors.New("auto-detecting the filesystem layout failed")
+
 // DetectLayout tries to find out which layout is used in a local (or sftp)
 // filesystem at the given path. If repo is nil, an instance of LocalFilesystem
 // is used.
@@ -164,12 +168,12 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 		}, nil
 	}
 
-	return nil, errors.New("auto-detecting the filesystem layout failed")
+	return nil, ErrLayoutDetectionFailed
 }
 
 // ParseLayout parses the config string and returns a Layout. When layout is
-// the empty string, DetectLayout is used.
-func ParseLayout(repo Filesystem, layout, path string) (l Layout, err error) {
+// the empty string, DetectLayout is used. If that fails, defaultLayout is used.
+func ParseLayout(repo Filesystem, layout, defaultLayout, path string) (l Layout, err error) {
 	debug.Log("parse layout string %q for backend at %v", layout, path)
 	switch layout {
 	case "default":
@@ -188,7 +192,12 @@ func ParseLayout(repo Filesystem, layout, path string) (l Layout, err error) {
 			Join: repo.Join,
 		}
 	case "":
-		return DetectLayout(repo, path)
+		l, err = DetectLayout(repo, path)
+
+		// use the default layout if auto detection failed
+		if errors.Cause(err) == ErrLayoutDetectionFailed && defaultLayout != "" {
+			return ParseLayout(repo, defaultLayout, "", path)
+		}
 	default:
 		return nil, errors.Errorf("unknown backend layout string %q, may be one of default/cloud/s3", layout)
 	}

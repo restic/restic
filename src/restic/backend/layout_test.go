@@ -258,20 +258,21 @@ func TestParseLayout(t *testing.T) {
 	defer cleanup()
 
 	var tests = []struct {
-		layoutName string
-		want       string
+		layoutName        string
+		defaultLayoutName string
+		want              string
 	}{
-		{"default", "*backend.DefaultLayout"},
-		{"cloud", "*backend.CloudLayout"},
-		{"s3", "*backend.S3Layout"},
-		{"", "*backend.CloudLayout"},
+		{"default", "", "*backend.DefaultLayout"},
+		{"cloud", "", "*backend.CloudLayout"},
+		{"s3", "", "*backend.S3Layout"},
+		{"", "", "*backend.CloudLayout"},
 	}
 
 	SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-cloud.tar.gz"))
 
 	for _, test := range tests {
 		t.Run(test.layoutName, func(t *testing.T) {
-			layout, err := ParseLayout(&LocalFilesystem{}, test.layoutName, filepath.Join(path, "repo"))
+			layout, err := ParseLayout(&LocalFilesystem{}, test.layoutName, test.defaultLayoutName, filepath.Join(path, "repo"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -303,7 +304,7 @@ func TestParseLayoutInvalid(t *testing.T) {
 
 	for _, name := range invalidNames {
 		t.Run(name, func(t *testing.T) {
-			layout, err := ParseLayout(nil, name, path)
+			layout, err := ParseLayout(nil, name, "", path)
 			if err == nil {
 				t.Fatalf("expected error not found for layout name %v, layout is %v", name, layout)
 			}
