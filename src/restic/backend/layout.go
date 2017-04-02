@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"restic"
+	"restic/debug"
 	"restic/errors"
 	"restic/fs"
 )
@@ -140,28 +141,36 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 	}
 
 	if foundKeysFile && foundDataFile && !foundKeyFile && !foundDataSubdirFile {
-		return &CloudLayout{}, nil
+		debug.Log("found cloud layout at %v", dir)
+		return &CloudLayout{
+			Path: dir,
+			Join: repo.Join,
+		}, nil
 	}
 
 	if foundKeysFile && foundDataSubdirFile && !foundKeyFile && !foundDataFile {
-		return &DefaultLayout{}, nil
+		debug.Log("found default layout at %v", dir)
+		return &DefaultLayout{
+			Path: dir,
+			Join: repo.Join,
+		}, nil
 	}
 
 	if foundKeyFile && foundDataFile && !foundKeysFile && !foundDataSubdirFile {
-		return &S3Layout{}, nil
+		debug.Log("found s3 layout at %v", dir)
+		return &S3Layout{
+			Path: dir,
+			Join: repo.Join,
+		}, nil
 	}
 
 	return nil, errors.New("auto-detecting the filesystem layout failed")
 }
 
 // ParseLayout parses the config string and returns a Layout. When layout is
-// the empty string, DetectLayout is used. If repo is nil, an instance of LocalFilesystem
-// is used.
+// the empty string, DetectLayout is used.
 func ParseLayout(repo Filesystem, layout, path string) (l Layout, err error) {
-	if repo == nil {
-		repo = &LocalFilesystem{}
-	}
-
+	debug.Log("parse layout string %q for backend at %v", layout, path)
 	switch layout {
 	case "default":
 		l = &DefaultLayout{

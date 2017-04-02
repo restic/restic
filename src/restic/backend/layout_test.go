@@ -271,7 +271,7 @@ func TestParseLayout(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.layoutName, func(t *testing.T) {
-			layout, err := ParseLayout(nil, test.layoutName, filepath.Join(path, "repo"))
+			layout, err := ParseLayout(&LocalFilesystem{}, test.layoutName, filepath.Join(path, "repo"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -279,6 +279,11 @@ func TestParseLayout(t *testing.T) {
 			if layout == nil {
 				t.Fatal("wanted some layout, but detect returned nil")
 			}
+
+			// test that the functions work (and don't panic)
+			_ = layout.Dirname(restic.Handle{Type: restic.DataFile})
+			_ = layout.Filename(restic.Handle{Type: restic.DataFile, Name: "1234"})
+			_ = layout.Paths()
 
 			layoutName := fmt.Sprintf("%T", layout)
 			if layoutName != test.want {
