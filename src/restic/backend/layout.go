@@ -199,7 +199,7 @@ func ParseLayout(repo Filesystem, layout, defaultLayout, path string) (l Layout,
 			return ParseLayout(repo, defaultLayout, "", path)
 		}
 	default:
-		return nil, errors.Errorf("unknown backend layout string %q, may be one of default/cloud/s3", layout)
+		return nil, errors.Errorf("unknown backend layout string %q, may be one of: default, cloud, s3", layout)
 	}
 
 	return l, nil
