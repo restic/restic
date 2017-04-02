@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"reflect"
 	"restic"
-	"restic/test"
+	. "restic/test"
 	"sort"
 	"testing"
 )
 
 func TestDefaultLayout(t *testing.T) {
-	path, cleanup := test.TempDir(t)
+	path, cleanup := TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -79,7 +79,7 @@ func TestDefaultLayout(t *testing.T) {
 }
 
 func TestCloudLayout(t *testing.T) {
-	path, cleanup := test.TempDir(t)
+	path, cleanup := TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -147,7 +147,7 @@ func TestCloudLayout(t *testing.T) {
 }
 
 func TestS3Layout(t *testing.T) {
-	path, cleanup := test.TempDir(t)
+	path, cleanup := TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -210,6 +210,43 @@ func TestS3Layout(t *testing.T) {
 			if filename != test.filename {
 				t.Fatalf("wrong filename, want %v, got %v", test.filename, filename)
 			}
+		})
+	}
+}
+
+func TestDetectLayout(t *testing.T) {
+	path, cleanup := TempDir(t)
+	defer cleanup()
+
+	var tests = []struct {
+		filename string
+		want     string
+	}{
+		{"repo-layout-local.tar.gz", "*backend.DefaultLayout"},
+		{"repo-layout-cloud.tar.gz", "*backend.CloudLayout"},
+		{"repo-layout-s3-old.tar.gz", "*backend.S3Layout"},
+	}
+
+	var fs = &LocalFilesystem{}
+	for _, test := range tests {
+		t.Run(test.filename, func(t *testing.T) {
+			SetupTarTestFixture(t, path, filepath.Join("testdata", test.filename))
+
+			layout, err := DetectLayout(fs, filepath.Join(path, "repo"))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if layout == nil {
+				t.Fatal("wanted some layout, but detect returned nil")
+			}
+
+			layoutName := fmt.Sprintf("%T", layout)
+			if layoutName != test.want {
+				t.Fatalf("want layout %v, got %v", test.want, layoutName)
+			}
+
+			RemoveAll(t, filepath.Join(path, "repo"))
 		})
 	}
 }
