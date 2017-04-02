@@ -229,10 +229,49 @@ func TestDetectLayout(t *testing.T) {
 
 	var fs = &LocalFilesystem{}
 	for _, test := range tests {
-		t.Run(test.filename, func(t *testing.T) {
-			SetupTarTestFixture(t, path, filepath.Join("testdata", test.filename))
+		for _, fs := range []Filesystem{fs, nil} {
+			t.Run(fmt.Sprintf("%v/fs-%T", test.filename, fs), func(t *testing.T) {
+				SetupTarTestFixture(t, path, filepath.Join("testdata", test.filename))
 
-			layout, err := DetectLayout(fs, filepath.Join(path, "repo"))
+				layout, err := DetectLayout(fs, filepath.Join(path, "repo"))
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if layout == nil {
+					t.Fatal("wanted some layout, but detect returned nil")
+				}
+
+				layoutName := fmt.Sprintf("%T", layout)
+				if layoutName != test.want {
+					t.Fatalf("want layout %v, got %v", test.want, layoutName)
+				}
+
+				RemoveAll(t, filepath.Join(path, "repo"))
+			})
+		}
+	}
+}
+
+func TestParseLayout(t *testing.T) {
+	path, cleanup := TempDir(t)
+	defer cleanup()
+
+	var tests = []struct {
+		layoutName string
+		want       string
+	}{
+		{"default", "*backend.DefaultLayout"},
+		{"cloud", "*backend.CloudLayout"},
+		{"s3", "*backend.S3Layout"},
+		{"", "*backend.CloudLayout"},
+	}
+
+	SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-cloud.tar.gz"))
+
+	for _, test := range tests {
+		t.Run(test.layoutName, func(t *testing.T) {
+			layout, err := ParseLayout(nil, test.layoutName, filepath.Join(path, "repo"))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -245,8 +284,24 @@ func TestDetectLayout(t *testing.T) {
 			if layoutName != test.want {
 				t.Fatalf("want layout %v, got %v", test.want, layoutName)
 			}
+		})
+	}
+}
 
-			RemoveAll(t, filepath.Join(path, "repo"))
+func TestParseLayoutInvalid(t *testing.T) {
+	path, cleanup := TempDir(t)
+	defer cleanup()
+
+	var invalidNames = []string{
+		"foo", "bar", "local",
+	}
+
+	for _, name := range invalidNames {
+		t.Run(name, func(t *testing.T) {
+			layout, err := ParseLayout(nil, name, path)
+			if err == nil {
+				t.Fatalf("expected error not found for layout name %v, layout is %v", name, layout)
+			}
 		})
 	}
 }

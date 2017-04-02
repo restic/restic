@@ -108,8 +108,13 @@ func hasSubdirBackendFile(fs Filesystem, dir string) (bool, error) {
 }
 
 // DetectLayout tries to find out which layout is used in a local (or sftp)
-// filesystem at the given path.
+// filesystem at the given path. If repo is nil, an instance of LocalFilesystem
+// is used.
 func DetectLayout(repo Filesystem, dir string) (Layout, error) {
+	if repo == nil {
+		repo = &LocalFilesystem{}
+	}
+
 	// key file in the "keys" dir (DefaultLayout or CloudLayout)
 	foundKeysFile, err := hasBackendFile(repo, repo.Join(dir, defaultLayoutPaths[restic.KeyFile]))
 	if err != nil {
@@ -147,4 +152,37 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 	}
 
 	return nil, errors.New("auto-detecting the filesystem layout failed")
+}
+
+// ParseLayout parses the config string and returns a Layout. When layout is
+// the empty string, DetectLayout is used. If repo is nil, an instance of LocalFilesystem
+// is used.
+func ParseLayout(repo Filesystem, layout, path string) (l Layout, err error) {
+	if repo == nil {
+		repo = &LocalFilesystem{}
+	}
+
+	switch layout {
+	case "default":
+		l = &DefaultLayout{
+			Path: path,
+			Join: repo.Join,
+		}
+	case "cloud":
+		l = &CloudLayout{
+			Path: path,
+			Join: repo.Join,
+		}
+	case "s3":
+		l = &S3Layout{
+			Path: path,
+			Join: repo.Join,
+		}
+	case "":
+		return DetectLayout(repo, path)
+	default:
+		return nil, errors.Errorf("unknown backend layout string %q, may be one of default/cloud/s3", layout)
+	}
+
+	return l, nil
 }

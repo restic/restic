@@ -24,12 +24,12 @@ var _ restic.Backend = &Local{}
 
 // Open opens the local backend as specified by config.
 func Open(cfg Config) (*Local, error) {
-	be := &Local{Config: cfg}
-
-	be.Layout = &backend.DefaultLayout{
-		Path: cfg.Path,
-		Join: filepath.Join,
+	l, err := backend.ParseLayout(nil, cfg.Layout, cfg.Path)
+	if err != nil {
+		return nil, err
 	}
+
+	be := &Local{Config: cfg, Layout: l}
 
 	// test if all necessary dirs are there
 	for _, d := range be.Paths() {

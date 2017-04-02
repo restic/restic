@@ -8,7 +8,8 @@ import (
 
 // Config holds all information needed to open a local repository.
 type Config struct {
-	Path string
+	Path   string
+	Layout string
 }
 
 // ParseConfig parses a local backend config.
