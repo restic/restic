@@ -1,7 +1,7 @@
 package sftp
 
 import (
-	"errors"
+	"restic/errors"
 	"unicode"
 )
 
