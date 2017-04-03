@@ -1,6 +1,7 @@
 package sftp_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -50,7 +51,9 @@ func init() {
 		return
 	}
 
-	args := []string{"-e"}
+	cfg := sftp.Config{
+		Command: fmt.Sprintf("%q -e", sftpserver),
+	}
 
 	test.CreateFn = func() (restic.Backend, error) {
 		err := createTempdir()
@@ -58,7 +61,9 @@ func init() {
 			return nil, err
 		}
 
-		return sftp.Create(tempBackendDir, sftpserver, args...)
+		cfg.Dir = tempBackendDir
+
+		return sftp.CreateWithConfig(cfg)
 	}
 
 	test.OpenFn = func() (restic.Backend, error) {
@@ -66,7 +71,10 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return sftp.Open(tempBackendDir, sftpserver, args...)
+
+		cfg.Dir = tempBackendDir
+
+		return sftp.OpenWithConfig(cfg)
 	}
 
 	test.CleanupFn = func() error {

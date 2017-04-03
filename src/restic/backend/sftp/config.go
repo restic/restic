@@ -11,6 +11,7 @@ import (
 // Config collects all information required to connect to an sftp server.
 type Config struct {
 	User, Host, Dir string
+	Command         string `option:"command"`
 }
 
 // ParseConfig parses the string s and extracts the sftp config. The

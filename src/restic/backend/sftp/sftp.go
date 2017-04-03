@@ -37,6 +37,7 @@ type SFTP struct {
 var _ restic.Backend = &SFTP{}
 
 func startClient(program string, args ...string) (*SFTP, error) {
+	debug.Log("start client %v %v", program, args)
 	// Connect to a remote host and request the sftp subsystem via the 'ssh'
 	// command.  This assumes that passwordless login is correctly configured.
 	cmd := exec.Command(program, args...)
@@ -114,11 +115,11 @@ func (r *SFTP) clientError() error {
 	return nil
 }
 
-// Open opens an sftp backend. When the command is started via
+// open opens an sftp backend. When the command is started via
 // exec.Command, it is expected to speak sftp on stdin/stdout. The backend
 // is expected at the given path. `dir` must be delimited by forward slashes
 // ("/"), which is required by sftp.
-func Open(dir string, program string, args ...string) (*SFTP, error) {
+func open(dir string, program string, args ...string) (*SFTP, error) {
 	debug.Log("open backend with program %v, %v at %v", program, args, dir)
 	sftp, err := startClient(program, args...)
 	if err != nil {
@@ -155,15 +156,25 @@ func buildSSHCommand(cfg Config) []string {
 // OpenWithConfig opens an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments.
 func OpenWithConfig(cfg Config) (*SFTP, error) {
-	debug.Log("open with config %v", cfg)
-	return Open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
+	debug.Log("config %#v", cfg)
+
+	if cfg.Command == "" {
+		return open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
+	}
+
+	cmd, args, err := SplitShellArgs(cfg.Command)
+	if err != nil {
+		return nil, err
+	}
+
+	return open(cfg.Dir, cmd, args...)
 }
 
-// Create creates all the necessary files and directories for a new sftp
+// create creates all the necessary files and directories for a new sftp
 // backend at dir. Afterwards a new config blob should be created. `dir` must
 // be delimited by forward slashes ("/"), which is required by sftp.
-func Create(dir string, program string, args ...string) (*SFTP, error) {
-	debug.Log("%v %v", program, args)
+func create(dir string, program string, args ...string) (*SFTP, error) {
+	debug.Log("create() %v %v", program, args)
 	sftp, err := startClient(program, args...)
 	if err != nil {
 		return nil, err
@@ -178,6 +189,7 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 	// create paths for data, refs and temp blobs
 	for _, d := range paths(dir) {
 		err = sftp.mkdirAll(d, backend.Modes.Dir)
+		debug.Log("mkdirAll %v -> %v", d, err)
 		if err != nil {
 			return nil, err
 		}
@@ -189,14 +201,23 @@ func Create(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// open backend
-	return Open(dir, program, args...)
+	return open(dir, program, args...)
 }
 
 // CreateWithConfig creates an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments.
 func CreateWithConfig(cfg Config) (*SFTP, error) {
-	debug.Log("config %v", cfg)
-	return Create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
+	debug.Log("config %#v", cfg)
+	if cfg.Command == "" {
+		return create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
+	}
+
+	cmd, args, err := SplitShellArgs(cfg.Command)
+	if err != nil {
+		return nil, err
+	}
+
+	return create(cfg.Dir, cmd, args...)
 }
 
 // Location returns this backend's location (the directory name).

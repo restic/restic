@@ -43,7 +43,7 @@ func (s *shellSplitter) isSplitChar(c rune) bool {
 }
 
 // SplitShellArgs returns the list of arguments from a shell command string.
-func SplitShellArgs(data string) (list []string, err error) {
+func SplitShellArgs(data string) (cmd string, args []string, err error) {
 	s := &shellSplitter{}
 
 	// derived from strings.SplitFunc
@@ -51,7 +51,7 @@ func SplitShellArgs(data string) (list []string, err error) {
 	for i, rune := range data {
 		if s.isSplitChar(rune) {
 			if fieldStart >= 0 {
-				list = append(list, data[fieldStart:i])
+				args = append(args, data[fieldStart:i])
 				fieldStart = -1
 			}
 		} else if fieldStart == -1 {
@@ -59,15 +59,21 @@ func SplitShellArgs(data string) (list []string, err error) {
 		}
 	}
 	if fieldStart >= 0 { // Last field might end at EOF.
-		list = append(list, data[fieldStart:])
+		args = append(args, data[fieldStart:])
 	}
 
 	switch s.quote {
 	case '\'':
-		return nil, errors.New("single-quoted string not terminated")
+		return "", nil, errors.New("single-quoted string not terminated")
 	case '"':
-		return nil, errors.New("double-quoted string not terminated")
+		return "", nil, errors.New("double-quoted string not terminated")
 	}
 
-	return list, nil
+	if len(args) == 0 {
+		return "", nil, errors.New("command string is empty")
+	}
+
+	cmd, args = args[0], args[1:]
+
+	return cmd, args, nil
 }
