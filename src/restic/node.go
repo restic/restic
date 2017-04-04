@@ -581,6 +581,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	case "file":
 		node.Size = uint64(stat.size())
 		node.Links = uint64(stat.nlink())
+		node.Device = uint64(stat.dev())
 	case "dir":
 	case "symlink":
 		node.LinkTarget, err = fs.Readlink(path)
