@@ -229,11 +229,11 @@ func (node Node) createDirAt(path string) error {
 }
 
 func (node Node) createFileAt(path string, repo Repository, idx *HardlinkIndex) error {
-	if node.Links > 1 && idx.Has(node.Inode, node.Device) {
+	if node.Links > 1 && idx.Has(node.Inode, node.DeviceID) {
 		if err := fs.Remove(path); !os.IsNotExist(err) {
 			return errors.Wrap(err, "RemoveCreateHardlink")
 		}
-		err := fs.Link(idx.GetFilename(node.Inode, node.Device), path)
+		err := fs.Link(idx.GetFilename(node.Inode, node.DeviceID), path)
 		if err != nil {
 			return errors.Wrap(err, "CreateHardlink")
 		}
@@ -272,7 +272,7 @@ func (node Node) createFileAt(path string, repo Repository, idx *HardlinkIndex) 
 	}
 
 	if node.Links > 1 {
-		idx.Add(node.Inode, node.Device, path)
+		idx.Add(node.Inode, node.DeviceID, path)
 	}
 
 	return nil
@@ -572,7 +572,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	}
 
 	node.Inode = uint64(stat.ino())
-	node.Device = uint64(stat.dev())
+	node.DeviceID = uint64(stat.dev())
 
 	node.fillTimes(stat)
 
