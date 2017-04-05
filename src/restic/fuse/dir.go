@@ -180,17 +180,16 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 
 func (d *dir) Listxattr(ctx context.Context, req *fuse.ListxattrRequest, resp *fuse.ListxattrResponse) error {
 	debug.Log("Listxattr(%v, %v)", d.node.Name, req.Size)
-	for _, attr := range d.node.ExtendedAttributes {
-		resp.Append(attr.Name)
+	for k := range d.node.ExtendedAttributes {
+		resp.Append(k)
 	}
 	return nil
 }
 
 func (d *dir) Getxattr(ctx context.Context, req *fuse.GetxattrRequest, resp *fuse.GetxattrResponse) error {
 	debug.Log("Getxattr(%v, %v, %v)", d.node.Name, req.Name, req.Size)
-	attrval := d.node.GetExtendedAttribute(req.Name)
-	if attrval != nil {
-		resp.Xattr = attrval
+	if val, ok := d.node.ExtendedAttributes[req.Name]; ok {
+		resp.Xattr = val
 		return nil
 	}
 	return fuse.ErrNoXattr
