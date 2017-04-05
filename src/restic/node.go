@@ -37,11 +37,12 @@ type Node struct {
 	User               string              `json:"user,omitempty"`
 	Group              string              `json:"group,omitempty"`
 	Inode              uint64              `json:"inode,omitempty"`
+	DeviceID           uint64              `json:"device_id,omitempty"` // device id of the file, stat.st_dev
 	Size               uint64              `json:"size,omitempty"`
 	Links              uint64              `json:"links,omitempty"`
 	LinkTarget         string              `json:"linktarget,omitempty"`
 	ExtendedAttributes []ExtendedAttribute `json:"extended_attributes,omitempty"`
-	Device             uint64              `json:"device,omitempty"`
+	Device             uint64              `json:"device,omitempty"` // in case of Type == "dev", stat.st_rdev
 	Content            IDs                 `json:"content"`
 	Subtree            *ID                 `json:"subtree,omitempty"`
 
@@ -374,6 +375,9 @@ func (node Node) Equals(other Node) bool {
 		return false
 	}
 	if node.Inode != other.Inode {
+		return false
+	}
+	if node.DeviceID != other.DeviceID {
 		return false
 	}
 	if node.Size != other.Size {
