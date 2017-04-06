@@ -1,10 +1,9 @@
-// +build !windows,!darwin
+// +build !windows
 
-package restic_test
+package restic
 
 import (
 	"os"
-	"restic"
 	"syscall"
 	"testing"
 	"time"
@@ -23,16 +22,16 @@ func stat(t testing.TB, filename string) (fi os.FileInfo, ok bool) {
 	return fi, true
 }
 
-func checkFile(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
-	if uint32(node.Mode.Perm()) != stat.Mode&0777 {
+func checkFile(t testing.TB, stat *syscall.Stat_t, node *Node) {
+	if uint32(node.Mode.Perm()) != uint32(stat.Mode&0777) {
 		t.Errorf("Mode does not match, want %v, got %v", stat.Mode&0777, node.Mode)
 	}
 
-	if node.Inode != stat.Ino {
+	if node.Inode != uint64(stat.Ino) {
 		t.Errorf("Inode does not match, want %v, got %v", stat.Ino, node.Inode)
 	}
 
-	if node.DeviceID != stat.Dev {
+	if node.DeviceID != uint64(stat.Dev) {
 		t.Errorf("Dev does not match, want %v, got %v", stat.Dev, node.DeviceID)
 	}
 
@@ -40,20 +39,8 @@ func checkFile(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
 		t.Errorf("Size does not match, want %v, got %v", stat.Size, node.Size)
 	}
 
-	if node.Links != stat.Nlink {
+	if node.Links != uint64(stat.Nlink) {
 		t.Errorf("Links does not match, want %v, got %v", stat.Nlink, node.Links)
-	}
-
-	if node.ModTime != time.Unix(stat.Mtim.Unix()) {
-		t.Errorf("ModTime does not match, want %v, got %v", time.Unix(stat.Mtim.Unix()), node.ModTime)
-	}
-
-	if node.ChangeTime != time.Unix(stat.Ctim.Unix()) {
-		t.Errorf("ChangeTime does not match, want %v, got %v", time.Unix(stat.Ctim.Unix()), node.ChangeTime)
-	}
-
-	if node.AccessTime != time.Unix(stat.Atim.Unix()) {
-		t.Errorf("AccessTime does not match, want %v, got %v", time.Unix(stat.Atim.Unix()), node.AccessTime)
 	}
 
 	if node.UID != stat.Uid {
@@ -63,10 +50,32 @@ func checkFile(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
 	if node.GID != stat.Gid {
 		t.Errorf("UID does not match, want %v, got %v", stat.Gid, node.GID)
 	}
+
+	// use the os dependent function to compare the timestamps
+	s, ok := toStatT(stat)
+	if !ok {
+		return
+	}
+
+	mtime := s.mtim()
+	if node.ModTime != time.Unix(mtime.Unix()) {
+		t.Errorf("ModTime does not match, want %v, got %v", time.Unix(mtime.Unix()), node.ModTime)
+	}
+
+	ctime := s.ctim()
+	if node.ChangeTime != time.Unix(ctime.Unix()) {
+		t.Errorf("ChangeTime does not match, want %v, got %v", time.Unix(ctime.Unix()), node.ChangeTime)
+	}
+
+	atime := s.atim()
+	if node.AccessTime != time.Unix(atime.Unix()) {
+		t.Errorf("AccessTime does not match, want %v, got %v", time.Unix(atime.Unix()), node.AccessTime)
+	}
+
 }
 
-func checkDevice(t testing.TB, stat *syscall.Stat_t, node *restic.Node) {
-	if node.Device != stat.Rdev {
+func checkDevice(t testing.TB, stat *syscall.Stat_t, node *Node) {
+	if node.Device != uint64(stat.Rdev) {
 		t.Errorf("Rdev does not match, want %v, got %v", stat.Rdev, node.Device)
 	}
 }
@@ -100,7 +109,7 @@ func TestNodeFromFileInfo(t *testing.T) {
 				return
 			}
 
-			node, err := restic.NodeFromFileInfo(test.filename, fi)
+			node, err := NodeFromFileInfo(test.filename, fi)
 			if err != nil {
 				t.Fatal(err)
 			}
