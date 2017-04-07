@@ -37,11 +37,12 @@ type Node struct {
 	User               string              `json:"user,omitempty"`
 	Group              string              `json:"group,omitempty"`
 	Inode              uint64              `json:"inode,omitempty"`
+	DeviceID           uint64              `json:"device_id,omitempty"` // device id of the file, stat.st_dev
 	Size               uint64              `json:"size,omitempty"`
 	Links              uint64              `json:"links,omitempty"`
 	LinkTarget         string              `json:"linktarget,omitempty"`
 	ExtendedAttributes []ExtendedAttribute `json:"extended_attributes,omitempty"`
-	Device             uint64              `json:"device,omitempty"`
+	Device             uint64              `json:"device,omitempty"` // in case of Type == "dev", stat.st_rdev
 	Content            IDs                 `json:"content"`
 	Subtree            *ID                 `json:"subtree,omitempty"`
 
@@ -228,11 +229,11 @@ func (node Node) createDirAt(path string) error {
 }
 
 func (node Node) createFileAt(path string, repo Repository, idx *HardlinkIndex) error {
-	if node.Links > 1 && idx.Has(node.Inode, node.Device) {
+	if node.Links > 1 && idx.Has(node.Inode, node.DeviceID) {
 		if err := fs.Remove(path); !os.IsNotExist(err) {
 			return errors.Wrap(err, "RemoveCreateHardlink")
 		}
-		err := fs.Link(idx.GetFilename(node.Inode, node.Device), path)
+		err := fs.Link(idx.GetFilename(node.Inode, node.DeviceID), path)
 		if err != nil {
 			return errors.Wrap(err, "CreateHardlink")
 		}
@@ -271,7 +272,7 @@ func (node Node) createFileAt(path string, repo Repository, idx *HardlinkIndex) 
 	}
 
 	if node.Links > 1 {
-		idx.Add(node.Inode, node.Device, path)
+		idx.Add(node.Inode, node.DeviceID, path)
 	}
 
 	return nil
@@ -374,6 +375,9 @@ func (node Node) Equals(other Node) bool {
 		return false
 	}
 	if node.Inode != other.Inode {
+		return false
+	}
+	if node.DeviceID != other.DeviceID {
 		return false
 	}
 	if node.Size != other.Size {
@@ -568,7 +572,7 @@ func (node *Node) fillExtra(path string, fi os.FileInfo) error {
 	}
 
 	node.Inode = uint64(stat.ino())
-	node.Device = uint64(stat.dev())
+	node.DeviceID = uint64(stat.dev())
 
 	node.fillTimes(stat)
 
