@@ -4,6 +4,7 @@ package restic
 
 import (
 	"os"
+	"runtime"
 	"syscall"
 	"testing"
 	"time"
@@ -81,13 +82,19 @@ func checkDevice(t testing.TB, stat *syscall.Stat_t, node *Node) {
 }
 
 func TestNodeFromFileInfo(t *testing.T) {
-	var tests = []struct {
+	type Test struct {
 		filename string
 		canSkip  bool
-	}{
+	}
+	var tests = []Test{
 		{"node_test.go", false},
-		{"/dev/null", true},
 		{"/dev/sda", true},
+	}
+
+	// on darwin, users are not permitted to list the extended attributes of
+	// /dev/null, therefore skip it.
+	if runtime.GOOS != "darwin" {
+		tests = append(tests, Test{"/dev/null", true})
 	}
 
 	for _, test := range tests {
