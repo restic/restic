@@ -118,13 +118,17 @@ func (r *SFTP) clientError() error {
 	return nil
 }
 
-// open opens an sftp backend. When the command is started via
-// exec.Command, it is expected to speak sftp on stdin/stdout. The backend
-// is expected at the given path. `dir` must be delimited by forward slashes
-// ("/"), which is required by sftp.
-func open(dir string, program string, args ...string) (*SFTP, error) {
-	debug.Log("open backend with program %v, %v at %v", program, args, dir)
-	sftp, err := startClient(program, args...)
+// Open opens an sftp backend as described by the config by running
+// "ssh" with the appropriate arguments (or cfg.Command, if set).
+func Open(cfg Config) (*SFTP, error) {
+	debug.Log("open backend with config %#v", cfg)
+
+	cmd, args, err := buildSSHCommand(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	sftp, err := startClient(cmd, args...)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
 		return nil, err
@@ -136,19 +140,36 @@ func open(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// test if all necessary dirs and files are there
-	for _, d := range paths(dir) {
+	for _, d := range paths(cfg.Path) {
 		if _, err := sftp.c.Lstat(d); err != nil {
 			return nil, errors.Errorf("%s does not exist", d)
 		}
 	}
 
-	sftp.p = dir
+	sftp.Config = cfg
+	sftp.p = cfg.Path
 	return sftp, nil
 }
 
-func buildSSHCommand(cfg Config) []string {
+// Join combines path components with slashes (according to the sftp spec).
+func (r *SFTP) Join(p ...string) string {
+	return path.Join(p...)
+}
+
+// ReadDir returns the entries for a directory.
+func (r *SFTP) ReadDir(dir string) ([]os.FileInfo, error) {
+	return r.c.ReadDir(dir)
+}
+
+func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
+	if cfg.Command != "" {
+		return SplitShellArgs(cfg.Command)
+	}
+
+	cmd = "ssh"
+
 	hostport := strings.Split(cfg.Host, ":")
-	args := []string{hostport[0]}
+	args = []string{hostport[0]}
 	if len(hostport) > 1 {
 		args = append(args, "-p", hostport[1])
 	}
@@ -158,44 +179,36 @@ func buildSSHCommand(cfg Config) []string {
 	}
 	args = append(args, "-s")
 	args = append(args, "sftp")
-	return args
+	return cmd, args, nil
 }
 
-// Open opens an sftp backend as described by the config by running
-// "ssh" with the appropriate arguments.
-func Open(cfg Config) (*SFTP, error) {
-	debug.Log("config %#v", cfg)
-
-	if cfg.Command == "" {
-		return open(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
-	}
-
-	cmd, args, err := SplitShellArgs(cfg.Command)
+// Create creates an sftp backend as described by the config by running
+// "ssh" with the appropriate arguments (or cfg.Command, if set).
+func create(cfg Config) (*SFTP, error) {
+	cmd, args, err := buildSSHCommand(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return open(cfg.Dir, cmd, args...)
-}
+	sftp, err := startClient(cmd, args...)
+	if err != nil {
+		debug.Log("unable to start program: %v", err)
+		return nil, err
+	}
 
-// create creates all the necessary files and directories for a new sftp
-// backend at dir. `dir` must be delimited by forward slashes ("/"), which is
-// required by sftp.
-func create(dir string, program string, args ...string) (*SFTP, error) {
-	debug.Log("create() %v %v", program, args)
-	sftp, err := startClient(program, args...)
+	l, err := backend.ParseLayout(sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
 
 	// test if config file already exists
-	_, err = sftp.c.Lstat(Join(dir, backend.Paths.Config))
+	_, err = sftp.c.Lstat(Join(cfg.Path, backend.Paths.Config))
 	if err == nil {
 		return nil, errors.New("config file already exists")
 	}
 
 	// create paths for data, refs and temp blobs
-	for _, d := range paths(dir) {
+	for _, d := range paths(cfg.Path) {
 		err = sftp.mkdirAll(d, backend.Modes.Dir)
 		debug.Log("mkdirAll %v -> %v", d, err)
 		if err != nil {
@@ -209,23 +222,7 @@ func create(dir string, program string, args ...string) (*SFTP, error) {
 	}
 
 	// open backend
-	return open(dir, program, args...)
-}
-
-// Create creates an sftp backend as described by the config by running
-// "ssh" with the appropriate arguments.
-func Create(cfg Config) (*SFTP, error) {
-	debug.Log("config %#v", cfg)
-	if cfg.Command == "" {
-		return create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
-	}
-
-	cmd, args, err := SplitShellArgs(cfg.Command)
-	if err != nil {
-		return nil, err
-	}
-
-	return create(cfg.Dir, cmd, args...)
+	return Open(cfg)
 }
 
 // Location returns this backend's location (the directory name).
