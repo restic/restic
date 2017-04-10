@@ -93,18 +93,6 @@ func startClient(program string, args ...string) (*SFTP, error) {
 	return &SFTP{c: client, cmd: cmd, result: ch}, nil
 }
 
-func paths(dir string) []string {
-	return []string{
-		dir,
-		Join(dir, backend.Paths.Data),
-		Join(dir, backend.Paths.Snapshots),
-		Join(dir, backend.Paths.Index),
-		Join(dir, backend.Paths.Locks),
-		Join(dir, backend.Paths.Keys),
-		Join(dir, backend.Paths.Temp),
-	}
-}
-
 // clientError returns an error if the client has exited. Otherwise, nil is
 // returned immediately.
 func (r *SFTP) clientError() error {
@@ -140,7 +128,7 @@ func Open(cfg Config) (*SFTP, error) {
 	}
 
 	// test if all necessary dirs and files are there
-	for _, d := range paths(cfg.Path) {
+	for _, d := range sftp.Paths() {
 		if _, err := sftp.c.Lstat(d); err != nil {
 			return nil, errors.Errorf("%s does not exist", d)
 		}
@@ -220,7 +208,7 @@ func Create(cfg Config) (*SFTP, error) {
 	}
 
 	// create paths for data, refs and temp blobs
-	for _, d := range paths(cfg.Path) {
+	for _, d := range sftp.Paths() {
 		err = sftp.mkdirAll(d, backend.Modes.Dir)
 		debug.Log("mkdirAll %v -> %v", d, err)
 		if err != nil {
@@ -276,7 +264,7 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 
 // Rename temp file to final name according to type and name.
 func (r *SFTP) renameFile(oldname string, h restic.Handle) error {
-	filename := r.filename(h)
+	filename := r.Filename(h)
 
 	// create directories if necessary
 	if h.Type == restic.DataFile {
@@ -310,36 +298,6 @@ func (r *SFTP) renameFile(oldname string, h restic.Handle) error {
 // forward slashes, which is required by sftp.
 func Join(parts ...string) string {
 	return path.Clean(path.Join(parts...))
-}
-
-// Construct path for given restic.Type and name.
-func (r *SFTP) filename(h restic.Handle) string {
-	if h.Type == restic.ConfigFile {
-		return Join(r.p, "config")
-	}
-
-	return Join(r.dirname(h), h.Name)
-}
-
-// Construct directory for given backend.Type.
-func (r *SFTP) dirname(h restic.Handle) string {
-	var n string
-	switch h.Type {
-	case restic.DataFile:
-		n = backend.Paths.Data
-		if len(h.Name) > 2 {
-			n = Join(n, h.Name[:2])
-		}
-	case restic.SnapshotFile:
-		n = backend.Paths.Snapshots
-	case restic.IndexFile:
-		n = backend.Paths.Index
-	case restic.LockFile:
-		n = backend.Paths.Locks
-	case restic.KeyFile:
-		n = backend.Paths.Keys
-	}
-	return Join(r.p, n)
 }
 
 // Save stores data in the backend at the handle.
@@ -404,7 +362,7 @@ func (r *SFTP) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, e
 		return nil, errors.New("offset is negative")
 	}
 
-	f, err := r.c.Open(r.filename(h))
+	f, err := r.c.Open(r.Filename(h))
 	if err != nil {
 		return nil, err
 	}
@@ -435,7 +393,7 @@ func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	fi, err := r.c.Lstat(r.filename(h))
+	fi, err := r.c.Lstat(r.Filename(h))
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Lstat")
 	}
@@ -450,7 +408,7 @@ func (r *SFTP) Test(h restic.Handle) (bool, error) {
 		return false, err
 	}
 
-	_, err := r.c.Lstat(r.filename(h))
+	_, err := r.c.Lstat(r.Filename(h))
 	if os.IsNotExist(errors.Cause(err)) {
 		return false, nil
 	}
@@ -469,7 +427,7 @@ func (r *SFTP) Remove(h restic.Handle) error {
 		return err
 	}
 
-	return r.c.Remove(r.filename(h))
+	return r.c.Remove(r.Filename(h))
 }
 
 // List returns a channel that yields all names of blobs of type t. A
@@ -484,7 +442,7 @@ func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
 
 		if t == restic.DataFile {
 			// read first level
-			basedir := r.dirname(restic.Handle{Type: t})
+			basedir := r.Dirname(restic.Handle{Type: t})
 
 			list1, err := r.c.ReadDir(basedir)
 			if err != nil {
@@ -517,7 +475,7 @@ func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
 				}
 			}
 		} else {
-			entries, err := r.c.ReadDir(r.dirname(restic.Handle{Type: t}))
+			entries, err := r.c.ReadDir(r.Dirname(restic.Handle{Type: t}))
 			if err != nil {
 				return
 			}
