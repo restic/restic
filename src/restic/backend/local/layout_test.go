@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestLocalLayout(t *testing.T) {
+func TestLayout(t *testing.T) {
 	path, cleanup := TempDir(t)
 	defer cleanup()
 
