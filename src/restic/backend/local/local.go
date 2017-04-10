@@ -210,91 +210,30 @@ func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 
-func readdir(d string) (fileInfos []os.FileInfo, err error) {
-	f, e := fs.Open(d)
-	if e != nil {
-		return nil, errors.Wrap(e, "Open")
-	}
-
-	defer func() {
-		e := f.Close()
-		if err == nil {
-			err = errors.Wrap(e, "Close")
-		}
-	}()
-
-	return f.Readdir(-1)
-}
-
-// listDir returns a list of all files in d.
-func listDir(d string) (filenames []string, err error) {
-	fileInfos, err := readdir(d)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, fi := range fileInfos {
-		if isFile(fi) {
-			filenames = append(filenames, fi.Name())
-		}
-	}
-
-	return filenames, nil
-}
-
-// listDirs returns a list of all files in directories within d.
-func listDirs(dir string) (filenames []string, err error) {
-	fileInfos, err := readdir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, fi := range fileInfos {
-		if !fi.IsDir() {
-			continue
-		}
-
-		files, err := listDir(filepath.Join(dir, fi.Name()))
-		if err != nil {
-			continue
-		}
-
-		filenames = append(filenames, files...)
-	}
-
-	return filenames, nil
-}
-
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	debug.Log("List %v", t)
-	lister := listDir
-	if t == restic.DataFile {
-		lister = listDirs
-	}
 
 	ch := make(chan string)
-	items, err := lister(b.Dirname(restic.Handle{Type: t}))
-	if err != nil {
-		close(ch)
-		return ch
-	}
 
 	go func() {
 		defer close(ch)
-		for _, m := range items {
-			if m == "" {
-				continue
+
+		fs.Walk(b.Basedir(t), func(path string, fi os.FileInfo, err error) error {
+			if !isFile(fi) {
+				return err
 			}
 
 			select {
-			case ch <- m:
+			case ch <- filepath.Base(path):
 			case <-done:
-				return
+				return err
 			}
-		}
+
+			return err
+		})
 	}()
 
 	return ch

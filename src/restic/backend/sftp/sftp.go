@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"restic"
 	"strings"
 	"time"
@@ -434,63 +435,27 @@ func (r *SFTP) Remove(h restic.Handle) error {
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
 func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
-	debug.Log("list all %v", t)
+	debug.Log("List %v", t)
+
 	ch := make(chan string)
 
 	go func() {
 		defer close(ch)
 
-		if t == restic.DataFile {
-			// read first level
-			basedir := r.Dirname(restic.Handle{Type: t})
+		walker := r.c.Walk(r.Basedir(t))
+		for walker.Step() {
+			if walker.Err() != nil {
+				continue
+			}
 
-			list1, err := r.c.ReadDir(basedir)
-			if err != nil {
+			if !walker.Stat().Mode().IsRegular() {
+				continue
+			}
+
+			select {
+			case ch <- filepath.Base(walker.Path()):
+			case <-done:
 				return
-			}
-
-			dirs := make([]string, 0, len(list1))
-			for _, d := range list1 {
-				dirs = append(dirs, d.Name())
-			}
-
-			// read files
-			for _, dir := range dirs {
-				entries, err := r.c.ReadDir(Join(basedir, dir))
-				if err != nil {
-					continue
-				}
-
-				items := make([]string, 0, len(entries))
-				for _, entry := range entries {
-					items = append(items, entry.Name())
-				}
-
-				for _, file := range items {
-					select {
-					case ch <- file:
-					case <-done:
-						return
-					}
-				}
-			}
-		} else {
-			entries, err := r.c.ReadDir(r.Dirname(restic.Handle{Type: t}))
-			if err != nil {
-				return
-			}
-
-			items := make([]string, 0, len(entries))
-			for _, entry := range entries {
-				items = append(items, entry.Name())
-			}
-
-			for _, file := range items {
-				select {
-				case ch <- file:
-				case <-done:
-					return
-				}
 			}
 		}
 	}()
