@@ -134,7 +134,7 @@ func Open(cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	l, err := backend.ParseLayout(sftp, cfg.Layout, defaultLayout, cfg.Path)
+	sftp.Layout, err = backend.ParseLayout(sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +145,8 @@ func Open(cfg Config) (*SFTP, error) {
 			return nil, errors.Errorf("%s does not exist", d)
 		}
 	}
+
+	debug.Log("layout: %v\n", sftp.Layout)
 
 	sftp.Config = cfg
 	sftp.p = cfg.Path
@@ -159,6 +161,16 @@ func (r *SFTP) Join(p ...string) string {
 // ReadDir returns the entries for a directory.
 func (r *SFTP) ReadDir(dir string) ([]os.FileInfo, error) {
 	return r.c.ReadDir(dir)
+}
+
+// IsNotExist returns true if the error is caused by a not existing file.
+func (r *SFTP) IsNotExist(err error) bool {
+	statusError, ok := err.(*sftp.StatusError)
+	if !ok {
+		return false
+	}
+
+	return statusError.Error() == `sftp: "No such file" (SSH_FX_NO_SUCH_FILE)`
 }
 
 func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
@@ -184,7 +196,7 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 
 // Create creates an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments (or cfg.Command, if set).
-func create(cfg Config) (*SFTP, error) {
+func Create(cfg Config) (*SFTP, error) {
 	cmd, args, err := buildSSHCommand(cfg)
 	if err != nil {
 		return nil, err
@@ -196,7 +208,7 @@ func create(cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	l, err := backend.ParseLayout(sftp, cfg.Layout, defaultLayout, cfg.Path)
+	sftp.Layout, err = backend.ParseLayout(sftp, cfg.Layout, defaultLayout, cfg.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -351,14 +363,22 @@ func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 		}
 	}
 
-	// test if new file exists
-	if _, err := r.c.Lstat(filename); err == nil {
-		return errors.Errorf("Close(): file %v already exists", filename)
+	// create new file
+	f, err := r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+	if err != nil {
+		return errors.Wrap(err, "OpenFile")
 	}
 
-	err := r.c.Rename(oldname, filename)
+	// save data
+	_, err = io.Copy(f, rd)
 	if err != nil {
-		return errors.Wrap(err, "Rename")
+		f.Close()
+		return errors.Wrap(err, "Write")
+	}
+
+	err = f.Close()
+	if err != nil {
+		return errors.Wrap(err, "Close")
 	}
 
 	// set mode to read-only
@@ -369,28 +389,6 @@ func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 
 	err = r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
 	return errors.Wrap(err, "Chmod")
-
-	filename, tmpfile, err := r.tempFile()
-	if err != nil {
-		return err
-	}
-
-	n, err := io.Copy(tmpfile, rd)
-	if err != nil {
-		return errors.Wrap(err, "Write")
-	}
-
-	debug.Log("saved %v (%d bytes) to %v", h, n, filename)
-
-	err = tmpfile.Close()
-	if err != nil {
-		return errors.Wrap(err, "Close")
-	}
-
-	err = r.renameFile(filename, h)
-	debug.Log("save %v: rename %v: %v",
-		h, path.Base(filename), err)
-	return err
 }
 
 // Load returns a reader that yields the contents of the file at h at the

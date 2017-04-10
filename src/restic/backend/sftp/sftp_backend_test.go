@@ -61,7 +61,7 @@ func init() {
 			return nil, err
 		}
 
-		cfg.Dir = tempBackendDir
+		cfg.Path = tempBackendDir
 
 		return sftp.Create(cfg)
 	}
@@ -72,7 +72,7 @@ func init() {
 			return nil, err
 		}
 
-		cfg.Dir = tempBackendDir
+		cfg.Path = tempBackendDir
 
 		return sftp.Open(cfg)
 	}
