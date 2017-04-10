@@ -34,18 +34,21 @@ func createTempdir() error {
 	return nil
 }
 
-func init() {
-	sftpserver := ""
-
+func findSFTPServerBinary() string {
 	for _, dir := range strings.Split(TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
 		_, err := os.Stat(testpath)
 		if !os.IsNotExist(errors.Cause(err)) {
-			sftpserver = testpath
-			break
+			return testpath
 		}
 	}
 
+	return ""
+}
+
+var sftpserver = findSFTPServerBinary()
+
+func init() {
 	if sftpserver == "" {
 		SkipMessage = "sftp server binary not found, skipping tests"
 		return
