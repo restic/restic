@@ -2,8 +2,6 @@ package sftp
 
 import (
 	"bufio"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -32,9 +30,13 @@ type SFTP struct {
 
 	cmd    *exec.Cmd
 	result <-chan error
+
+	backend.Layout
 }
 
 var _ restic.Backend = &SFTP{}
+
+const defaultLayout = "default"
 
 func startClient(program string, args ...string) (*SFTP, error) {
 	debug.Log("start client %v %v", program, args)
@@ -124,6 +126,11 @@ func open(dir string, program string, args ...string) (*SFTP, error) {
 	sftp, err := startClient(program, args...)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
+		return nil, err
+	}
+
+	l, err := backend.ParseLayout(sftp, cfg.Layout, defaultLayout, cfg.Path)
+	if err != nil {
 		return nil, err
 	}
 
@@ -223,28 +230,6 @@ func Create(cfg Config) (*SFTP, error) {
 // Location returns this backend's location (the directory name).
 func (r *SFTP) Location() string {
 	return r.p
-}
-
-// Return temp directory in correct directory for this backend.
-func (r *SFTP) tempFile() (string, *sftp.File, error) {
-	// choose random suffix
-	buf := make([]byte, tempfileRandomSuffixLength)
-	_, err := io.ReadFull(rand.Reader, buf)
-	if err != nil {
-		return "", nil, errors.Errorf("unable to read %d random bytes for tempfile name: %v",
-			tempfileRandomSuffixLength, err)
-	}
-
-	// construct tempfile name
-	name := Join(r.p, backend.Paths.Temp, "temp-"+hex.EncodeToString(buf))
-
-	// create file in temp dir
-	f, err := r.c.Create(name)
-	if err != nil {
-		return "", nil, errors.Errorf("creating tempfile %q failed: %v", name, err)
-	}
-
-	return name, f, nil
 }
 
 func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
@@ -349,7 +334,7 @@ func (r *SFTP) dirname(h restic.Handle) string {
 
 // Save stores data in the backend at the handle.
 func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
-	debug.Log("save to %v", h)
+	debug.Log("Save %v", h)
 	if err := r.clientError(); err != nil {
 		return err
 	}
@@ -357,6 +342,35 @@ func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
+
+	filename := r.Filename(h)
+
+	// create directories if necessary
+	if h.Type == restic.DataFile {
+		err := r.mkdirAll(path.Dir(filename), backend.Modes.Dir)
+		if err != nil {
+			return err
+		}
+	}
+
+	// test if new file exists
+	if _, err := r.c.Lstat(filename); err == nil {
+		return errors.Errorf("Close(): file %v already exists", filename)
+	}
+
+	err := r.c.Rename(oldname, filename)
+	if err != nil {
+		return errors.Wrap(err, "Rename")
+	}
+
+	// set mode to read-only
+	fi, err := r.c.Lstat(filename)
+	if err != nil {
+		return errors.Wrap(err, "Lstat")
+	}
+
+	err = r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
+	return errors.Wrap(err, "Chmod")
 
 	filename, tmpfile, err := r.tempFile()
 	if err != nil {

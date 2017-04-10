@@ -11,6 +11,7 @@ import (
 // Config collects all information required to connect to an sftp server.
 type Config struct {
 	User, Host, Dir string
+	Layout          string `option:"layout"`
 	Command         string `option:"command"`
 }
 
