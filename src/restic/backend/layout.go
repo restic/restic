@@ -22,6 +22,7 @@ type Layout interface {
 type Filesystem interface {
 	Join(...string) string
 	ReadDir(string) ([]os.FileInfo, error)
+	IsNotExist(error) bool
 }
 
 // ensure statically that *LocalFilesystem implements Filesystem.
@@ -40,12 +41,12 @@ func (l *LocalFilesystem) ReadDir(dir string) ([]os.FileInfo, error) {
 
 	entries, err := f.Readdir(-1)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Readdir")
 	}
 
 	err = f.Close()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Close")
 	}
 
 	return entries, nil
@@ -56,12 +57,17 @@ func (l *LocalFilesystem) Join(paths ...string) string {
 	return filepath.Join(paths...)
 }
 
+// IsNotExist returns true for errors that are caused by not existing files.
+func (l *LocalFilesystem) IsNotExist(err error) bool {
+	return os.IsNotExist(err)
+}
+
 var backendFilenameLength = len(restic.ID{}) * 2
 var backendFilename = regexp.MustCompile(fmt.Sprintf("^[a-fA-F0-9]{%d}$", backendFilenameLength))
 
 func hasBackendFile(fs Filesystem, dir string) (bool, error) {
 	entries, err := fs.ReadDir(dir)
-	if err != nil && os.IsNotExist(errors.Cause(err)) {
+	if err != nil && fs.IsNotExist(errors.Cause(err)) {
 		return false, nil
 	}
 
@@ -82,7 +88,7 @@ var dataSubdirName = regexp.MustCompile("^[a-fA-F0-9]{2}$")
 
 func hasSubdirBackendFile(fs Filesystem, dir string) (bool, error) {
 	entries, err := fs.ReadDir(dir)
-	if err != nil && os.IsNotExist(errors.Cause(err)) {
+	if err != nil && fs.IsNotExist(errors.Cause(err)) {
 		return false, nil
 	}
 
@@ -116,6 +122,7 @@ var ErrLayoutDetectionFailed = errors.New("auto-detecting the filesystem layout 
 // filesystem at the given path. If repo is nil, an instance of LocalFilesystem
 // is used.
 func DetectLayout(repo Filesystem, dir string) (Layout, error) {
+	debug.Log("detect layout at %v", dir)
 	if repo == nil {
 		repo = &LocalFilesystem{}
 	}
@@ -168,6 +175,7 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 		}, nil
 	}
 
+	debug.Log("layout detection failed")
 	return nil, ErrLayoutDetectionFailed
 }
 
@@ -196,8 +204,14 @@ func ParseLayout(repo Filesystem, layout, defaultLayout, path string) (l Layout,
 
 		// use the default layout if auto detection failed
 		if errors.Cause(err) == ErrLayoutDetectionFailed && defaultLayout != "" {
+			debug.Log("error: %v, use default layout %v", defaultLayout)
 			return ParseLayout(repo, defaultLayout, "", path)
 		}
+
+		if err != nil {
+			return nil, err
+		}
+		debug.Log("layout detected: %v", l)
 	default:
 		return nil, errors.Errorf("unknown backend layout string %q, may be one of: default, cloud, s3", layout)
 	}
