@@ -63,7 +63,7 @@ func init() {
 
 		cfg.Dir = tempBackendDir
 
-		return sftp.CreateWithConfig(cfg)
+		return sftp.Create(cfg)
 	}
 
 	test.OpenFn = func() (restic.Backend, error) {
@@ -74,7 +74,7 @@ func init() {
 
 		cfg.Dir = tempBackendDir
 
-		return sftp.OpenWithConfig(cfg)
+		return sftp.Open(cfg)
 	}
 
 	test.CleanupFn = func() error {

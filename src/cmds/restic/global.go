@@ -388,7 +388,7 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 	case "local":
 		be, err = local.Open(cfg.(local.Config))
 	case "sftp":
-		be, err = sftp.OpenWithConfig(cfg.(sftp.Config))
+		be, err = sftp.Open(cfg.(sftp.Config))
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config))
 	case "rest":
@@ -422,7 +422,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	case "local":
 		return local.Create(cfg.(local.Config))
 	case "sftp":
-		return sftp.CreateWithConfig(cfg.(sftp.Config))
+		return sftp.Create(cfg.(sftp.Config))
 	case "s3":
 		return s3.Open(cfg.(s3.Config))
 	case "rest":

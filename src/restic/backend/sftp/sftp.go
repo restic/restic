@@ -153,9 +153,9 @@ func buildSSHCommand(cfg Config) []string {
 	return args
 }
 
-// OpenWithConfig opens an sftp backend as described by the config by running
+// Open opens an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments.
-func OpenWithConfig(cfg Config) (*SFTP, error) {
+func Open(cfg Config) (*SFTP, error) {
 	debug.Log("config %#v", cfg)
 
 	if cfg.Command == "" {
@@ -171,8 +171,8 @@ func OpenWithConfig(cfg Config) (*SFTP, error) {
 }
 
 // create creates all the necessary files and directories for a new sftp
-// backend at dir. Afterwards a new config blob should be created. `dir` must
-// be delimited by forward slashes ("/"), which is required by sftp.
+// backend at dir. `dir` must be delimited by forward slashes ("/"), which is
+// required by sftp.
 func create(dir string, program string, args ...string) (*SFTP, error) {
 	debug.Log("create() %v %v", program, args)
 	sftp, err := startClient(program, args...)
@@ -204,9 +204,9 @@ func create(dir string, program string, args ...string) (*SFTP, error) {
 	return open(dir, program, args...)
 }
 
-// CreateWithConfig creates an sftp backend as described by the config by running
+// Create creates an sftp backend as described by the config by running
 // "ssh" with the appropriate arguments.
-func CreateWithConfig(cfg Config) (*SFTP, error) {
+func Create(cfg Config) (*SFTP, error) {
 	debug.Log("config %#v", cfg)
 	if cfg.Command == "" {
 		return create(cfg.Dir, "ssh", buildSSHCommand(cfg)...)
