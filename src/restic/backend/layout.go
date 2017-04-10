@@ -15,6 +15,7 @@ import (
 type Layout interface {
 	Filename(restic.Handle) string
 	Dirname(restic.Handle) string
+	Basedir(restic.FileType) string
 	Paths() []string
 }
 

@@ -47,3 +47,8 @@ func (l *DefaultLayout) Paths() (dirs []string) {
 	}
 	return dirs
 }
+
+// Basedir returns the base dir name for type t.
+func (l *DefaultLayout) Basedir(t restic.FileType) string {
+	return l.Join(l.Path, defaultLayoutPaths[t])
+}

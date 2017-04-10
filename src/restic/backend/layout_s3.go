@@ -40,3 +40,8 @@ func (l *S3Layout) Paths() (dirs []string) {
 	}
 	return dirs
 }
+
+// Basedir returns the base dir name for type t.
+func (l *S3Layout) Basedir(t restic.FileType) string {
+	return l.Join(l.Path, s3LayoutPaths[t])
+}

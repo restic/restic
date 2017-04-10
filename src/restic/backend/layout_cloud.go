@@ -34,3 +34,8 @@ func (l *CloudLayout) Paths() (dirs []string) {
 	}
 	return dirs
 }
+
+// Basedir returns the base dir name for files of type t.
+func (l *CloudLayout) Basedir(t restic.FileType) string {
+	return l.Join(l.Path, cloudLayoutPaths[t])
+}
