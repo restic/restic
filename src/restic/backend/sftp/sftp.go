@@ -32,6 +32,7 @@ type SFTP struct {
 	result <-chan error
 
 	backend.Layout
+	Config
 }
 
 var _ restic.Backend = &SFTP{}

@@ -10,9 +10,9 @@ import (
 
 // Config collects all information required to connect to an sftp server.
 type Config struct {
-	User, Host, Dir string
-	Layout          string `option:"layout"`
-	Command         string `option:"command"`
+	User, Host, Path string
+	Layout           string `option:"layout"`
+	Command          string `option:"command"`
 }
 
 // ParseConfig parses the string s and extracts the sftp config. The
@@ -62,6 +62,6 @@ func ParseConfig(s string) (interface{}, error) {
 	return Config{
 		User: user,
 		Host: host,
-		Dir:  path.Clean(dir),
+		Path: path.Clean(dir),
 	}, nil
 }
