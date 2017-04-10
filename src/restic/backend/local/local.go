@@ -118,7 +118,6 @@ func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
 
 	err = f.Close()
 	if err != nil {
-		f.Close()
 		return errors.Wrap(err, "Close")
 	}
 
