@@ -9,6 +9,10 @@ import (
 )
 
 func TestLayout(t *testing.T) {
+	if sftpserver == "" {
+		t.Skip("sftp server binary not available")
+	}
+
 	path, cleanup := TempDir(t)
 	defer cleanup()
 
