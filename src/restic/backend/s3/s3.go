@@ -27,6 +27,7 @@ type s3 struct {
 	prefix       string
 	cacheMutex   sync.RWMutex
 	cacheObjSize map[string]int64
+	backend.Layout
 }
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
@@ -44,6 +45,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		bucketname:   cfg.Bucket,
 		prefix:       cfg.Prefix,
 		cacheObjSize: make(map[string]int64),
+		Layout:       &backend.S3Layout{URL: cfg.Endpoint, Join: path.Join},
 	}
 
 	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
@@ -68,13 +70,6 @@ func Open(cfg Config) (restic.Backend, error) {
 	return be, nil
 }
 
-func (be *s3) s3path(h restic.Handle) string {
-	if h.Type == restic.ConfigFile {
-		return path.Join(be.prefix, string(h.Type))
-	}
-	return path.Join(be.prefix, string(h.Type), h.Name)
-}
-
 func (be *s3) createConnections() {
 	be.connChan = make(chan struct{}, connLimit)
 	for i := 0; i < connLimit; i++ {
@@ -95,7 +90,7 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 
 	debug.Log("Save %v", h)
 
-	objName := be.s3path(h)
+	objName := be.Filename(h)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, objName)
@@ -149,7 +144,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 	var obj *minio.Object
 	var size int64
 
-	objName := be.s3path(h)
+	objName := be.Filename(h)
 
 	// get token for connection
 	<-be.connChan
@@ -242,7 +237,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 func (be *s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("%v", h)
 
-	objName := be.s3path(h)
+	objName := be.Filename(h)
 	var obj *minio.Object
 
 	obj, err = be.client.GetObject(be.bucketname, objName)
@@ -271,7 +266,7 @@ func (be *s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 // Test returns true if a blob of the given type and name exists in the backend.
 func (be *s3) Test(h restic.Handle) (bool, error) {
 	found := false
-	objName := be.s3path(h)
+	objName := be.Filename(h)
 	_, err := be.client.StatObject(be.bucketname, objName)
 	if err == nil {
 		found = true
@@ -283,7 +278,7 @@ func (be *s3) Test(h restic.Handle) (bool, error) {
 
 // Remove removes the blob with the given name and type.
 func (be *s3) Remove(h restic.Handle) error {
-	objName := be.s3path(h)
+	objName := be.Filename(h)
 	err := be.client.RemoveObject(be.bucketname, objName)
 	debug.Log("Remove(%v) -> err %v", h, err)
 	return errors.Wrap(err, "client.RemoveObject")
@@ -296,7 +291,7 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
-	prefix := be.s3path(restic.Handle{Type: t}) + "/"
+	prefix := be.Dirname(restic.Handle{Type: t})
 
 	listresp := be.client.ListObjects(be.bucketname, prefix, true, done)
 
