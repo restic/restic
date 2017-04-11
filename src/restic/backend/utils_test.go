@@ -49,8 +49,7 @@ func TestLoadSmallBuffer(t *testing.T) {
 		err := b.Save(restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
 		OK(t, err)
 
-		buf := make([]byte, len(data)-23)
-		buf, err = backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()})
+		buf, err := backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()})
 		OK(t, err)
 
 		if len(buf) != len(data) {
@@ -75,8 +74,7 @@ func TestLoadLargeBuffer(t *testing.T) {
 		err := b.Save(restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
 		OK(t, err)
 
-		buf := make([]byte, len(data)+100)
-		buf, err = backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()})
+		buf, err := backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()})
 		OK(t, err)
 
 		if len(buf) != len(data) {
