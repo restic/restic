@@ -5,6 +5,7 @@ import "restic"
 // S3Layout implements the old layout used for s3 cloud storage backends, as
 // described in the Design document.
 type S3Layout struct {
+	URL  string
 	Path string
 	Join func(...string) string
 }
@@ -19,7 +20,7 @@ var s3LayoutPaths = map[restic.FileType]string{
 
 // Dirname returns the directory path for a given file type and name.
 func (l *S3Layout) Dirname(h restic.Handle) string {
-	return l.Join(l.Path, s3LayoutPaths[h.Type])
+	return l.URL + l.Join(l.Path, "/", s3LayoutPaths[h.Type])
 }
 
 // Filename returns a path to a file, including its name.
@@ -30,7 +31,7 @@ func (l *S3Layout) Filename(h restic.Handle) string {
 		name = "config"
 	}
 
-	return l.Join(l.Dirname(h), name)
+	return l.URL + l.Join(l.Path, "/", s3LayoutPaths[h.Type], name)
 }
 
 // Paths returns all directory names

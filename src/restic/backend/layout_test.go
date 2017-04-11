@@ -2,6 +2,7 @@ package backend
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"reflect"
 	"restic"
@@ -141,6 +142,54 @@ func TestCloudLayout(t *testing.T) {
 			filename := l.Filename(test.Handle)
 			if filename != test.filename {
 				t.Fatalf("wrong filename, want %v, got %v", test.filename, filename)
+			}
+		})
+	}
+}
+
+func TestCloudLayoutURLs(t *testing.T) {
+	var tests = []struct {
+		l  Layout
+		h  restic.Handle
+		fn string
+	}{
+		{
+			&CloudLayout{URL: "https://hostname.foo", Path: "", Join: path.Join},
+			restic.Handle{Type: restic.DataFile, Name: "foobar"},
+			"https://hostname.foo/data/foobar",
+		},
+		{
+			&CloudLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			restic.Handle{Type: restic.LockFile, Name: "foobar"},
+			"https://hostname.foo:1234/prefix/repo/locks/foobar",
+		},
+		{
+			&CloudLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
+			"https://hostname.foo:1234/prefix/repo/config",
+		},
+		{
+			&S3Layout{URL: "https://hostname.foo", Path: "/", Join: path.Join},
+			restic.Handle{Type: restic.DataFile, Name: "foobar"},
+			"https://hostname.foo/data/foobar",
+		},
+		{
+			&S3Layout{URL: "https://hostname.foo:1234/prefix/repo", Path: "", Join: path.Join},
+			restic.Handle{Type: restic.LockFile, Name: "foobar"},
+			"https://hostname.foo:1234/prefix/repo/lock/foobar",
+		},
+		{
+			&S3Layout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
+			"https://hostname.foo:1234/prefix/repo/config",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("cloud", func(t *testing.T) {
+			res := test.l.Filename(test.h)
+			if res != test.fn {
+				t.Fatalf("wrong filename, want %v, got %v", test.fn, res)
 			}
 		})
 	}
