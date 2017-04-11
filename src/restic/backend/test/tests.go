@@ -511,7 +511,7 @@ func TestBackend(t testing.TB) {
 		// test that the blob is gone
 		ok, err := b.Test(h)
 		test.OK(t, err)
-		test.Assert(t, ok == false, "removed blob still present")
+		test.Assert(t, !ok, "removed blob still present")
 
 		// create blob
 		err = b.Save(h, strings.NewReader(ts.data))
@@ -553,6 +553,7 @@ func TestBackend(t testing.TB) {
 
 				found, err := b.Test(h)
 				test.OK(t, err)
+				test.Assert(t, found, fmt.Sprintf("id %q not found", id))
 
 				test.OK(t, b.Remove(h))
 
