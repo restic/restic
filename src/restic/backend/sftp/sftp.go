@@ -20,10 +20,6 @@ import (
 	"github.com/pkg/sftp"
 )
 
-const (
-	tempfileRandomSuffixLength = 10
-)
-
 // SFTP is a backend in a directory accessed via SFTP.
 type SFTP struct {
 	c *sftp.Client
@@ -261,38 +257,6 @@ func (r *SFTP) mkdirAll(dir string, mode os.FileMode) error {
 
 	// set mode
 	return r.c.Chmod(dir, mode)
-}
-
-// Rename temp file to final name according to type and name.
-func (r *SFTP) renameFile(oldname string, h restic.Handle) error {
-	filename := r.Filename(h)
-
-	// create directories if necessary
-	if h.Type == restic.DataFile {
-		err := r.mkdirAll(path.Dir(filename), backend.Modes.Dir)
-		if err != nil {
-			return err
-		}
-	}
-
-	// test if new file exists
-	if _, err := r.c.Lstat(filename); err == nil {
-		return errors.Errorf("Close(): file %v already exists", filename)
-	}
-
-	err := r.c.Rename(oldname, filename)
-	if err != nil {
-		return errors.Wrap(err, "Rename")
-	}
-
-	// set mode to read-only
-	fi, err := r.c.Lstat(filename)
-	if err != nil {
-		return errors.Wrap(err, "Lstat")
-	}
-
-	err = r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
-	return errors.Wrap(err, "Chmod")
 }
 
 // Join joins the given paths and cleans them afterwards. This always uses

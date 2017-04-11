@@ -5,8 +5,6 @@ import (
 	"unicode"
 )
 
-const data = `"foo" "bar" baz "test argument" another 'test arg' "last \" argument" 'another \" last argument'`
-
 // shellSplitter splits a command string into separater arguments. It supports
 // single and double quoted strings.
 type shellSplitter struct {
