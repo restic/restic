@@ -14,7 +14,11 @@ var cloudLayoutPaths = defaultLayoutPaths
 
 // Dirname returns the directory path for a given file type and name.
 func (l *CloudLayout) Dirname(h restic.Handle) string {
-	return l.URL + l.Join(l.Path, "/", cloudLayoutPaths[h.Type])
+	if h.Type == restic.ConfigFile {
+		return l.URL + l.Join(l.Path, "/")
+	}
+
+	return l.URL + l.Join(l.Path, "/", cloudLayoutPaths[h.Type]) + "/"
 }
 
 // Filename returns a path to a file, including its name.

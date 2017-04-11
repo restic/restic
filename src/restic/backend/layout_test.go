@@ -149,47 +149,59 @@ func TestCloudLayout(t *testing.T) {
 
 func TestCloudLayoutURLs(t *testing.T) {
 	var tests = []struct {
-		l  Layout
-		h  restic.Handle
-		fn string
+		l   Layout
+		h   restic.Handle
+		fn  string
+		dir string
 	}{
 		{
 			&CloudLayout{URL: "https://hostname.foo", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.DataFile, Name: "foobar"},
 			"https://hostname.foo/data/foobar",
+			"https://hostname.foo/data/",
 		},
 		{
 			&CloudLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.LockFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/locks/foobar",
+			"https://hostname.foo:1234/prefix/repo/locks/",
 		},
 		{
 			&CloudLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/config",
+			"https://hostname.foo:1234/prefix/repo/",
 		},
 		{
 			&S3Layout{URL: "https://hostname.foo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.DataFile, Name: "foobar"},
 			"https://hostname.foo/data/foobar",
+			"https://hostname.foo/data/",
 		},
 		{
 			&S3Layout{URL: "https://hostname.foo:1234/prefix/repo", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.LockFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/lock/foobar",
+			"https://hostname.foo:1234/prefix/repo/lock/",
 		},
 		{
 			&S3Layout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/config",
+			"https://hostname.foo:1234/prefix/repo/",
 		},
 	}
 
 	for _, test := range tests {
-		t.Run("cloud", func(t *testing.T) {
-			res := test.l.Filename(test.h)
-			if res != test.fn {
-				t.Fatalf("wrong filename, want %v, got %v", test.fn, res)
+		t.Run(fmt.Sprintf("%T", test.l), func(t *testing.T) {
+			fn := test.l.Filename(test.h)
+			if fn != test.fn {
+				t.Fatalf("wrong filename, want %v, got %v", test.fn, fn)
+			}
+
+			dir := test.l.Dirname(test.h)
+			if dir != test.dir {
+				t.Fatalf("wrong dirname, want %v, got %v", test.dir, dir)
 			}
 		})
 	}

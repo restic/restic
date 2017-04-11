@@ -20,7 +20,11 @@ var s3LayoutPaths = map[restic.FileType]string{
 
 // Dirname returns the directory path for a given file type and name.
 func (l *S3Layout) Dirname(h restic.Handle) string {
-	return l.URL + l.Join(l.Path, "/", s3LayoutPaths[h.Type])
+	if h.Type == restic.ConfigFile {
+		return l.URL + l.Join(l.Path, "/")
+	}
+
+	return l.URL + l.Join(l.Path, "/", s3LayoutPaths[h.Type]) + "/"
 }
 
 // Filename returns a path to a file, including its name.
