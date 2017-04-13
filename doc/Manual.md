@@ -551,6 +551,10 @@ Then use it in the backend specification:
 $ restic -r sftp:restic-backup-host:/tmp/backup init
 ```
 
+Last, if you'd like to use an entirely different program to create the SFTP
+connection, you can specify the command to be run with the option
+`-o sftp.command="foobar"`.
+
 # Create a REST server repository
 
 In order to backup data to the remote server via HTTP or HTTPS protocol,

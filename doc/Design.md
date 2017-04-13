@@ -110,9 +110,11 @@ A local repository can be initialized with the `restic init` command, e.g.:
 $ restic -r /tmp/restic-repo init
 ```
 
-The local backend will also accept the repository layout described in the
-following section, so that remote repositories mounted locally e.g. via fuse
-can be accessed.
+The local and sftp backends will also accept the repository layout described in
+the following section, so that remote repositories mounted locally e.g. via
+fuse can be accessed. The layout auto-detection can be overridden by specifying
+the option `-o local.layout=default`, valid values are `default`, `cloud` and
+`s3`. The option for the sftp backend is named `sftp.layout`.
 
 Object-Storage-Based Repositories
 ---------------------------------
