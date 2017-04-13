@@ -220,8 +220,8 @@ func filterExisting(items []string) (result []string, err error) {
 
 // gatherDevices returns the set of unique device ids of the files and/or
 // directory paths listed in "items".
-func gatherDevices(items []string) (deviceMap map[uint64]struct{}, err error) {
-	deviceMap = make(map[uint64]struct{})
+func gatherDevices(items []string) (deviceMap map[string]uint64, err error) {
+	deviceMap = make(map[string]uint64)
 	for _, item := range items {
 		fi, err := fs.Lstat(item)
 		if err != nil {
@@ -231,7 +231,7 @@ func gatherDevices(items []string) (deviceMap map[uint64]struct{}, err error) {
 		if err != nil {
 			return nil, err
 		}
-		deviceMap[id] = struct{}{}
+		deviceMap[item] = id
 	}
 	if len(deviceMap) == 0 {
 		return nil, errors.New("zero allowed devices")
@@ -352,7 +352,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	// allowed devices
-	var allowedDevs map[uint64]struct{}
+	var allowedDevs map[string]uint64
 	if opts.ExcludeOtherFS {
 		allowedDevs, err = gatherDevices(target)
 		if err != nil {
@@ -444,13 +444,24 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 			// errored out earlier. If it still does that's a reason to panic.
 			panic(err)
 		}
-		_, found := allowedDevs[id]
-		if !found {
-			debug.Log("path %q on disallowed device %d", item, id)
-			return false
+
+		for dir := item; dir != ""; dir = filepath.Dir(dir) {
+			debug.Log("item %v, test dir %v", item, dir)
+
+			allowedID, ok := allowedDevs[dir]
+			if !ok {
+				continue
+			}
+
+			if allowedID != id {
+				debug.Log("path %q on disallowed device %d", item, id)
+				return false
+			}
+
+			return true
 		}
 
-		return true
+		panic(fmt.Sprintf("item %v, device id %v not found, allowedDevs: %v", item, id, allowedDevs))
 	}
 
 	stat, err := archiver.Scan(target, selectFilter, newScanProgress(gopts))
