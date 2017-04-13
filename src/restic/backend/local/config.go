@@ -4,12 +4,17 @@ import (
 	"strings"
 
 	"restic/errors"
+	"restic/options"
 )
 
 // Config holds all information needed to open a local repository.
 type Config struct {
 	Path   string
-	Layout string `option:"layout"`
+	Layout string `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
+}
+
+func init() {
+	options.Register("local", Config{})
 }
 
 // ParseConfig parses a local backend config.

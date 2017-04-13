@@ -6,13 +6,18 @@ import (
 	"strings"
 
 	"restic/errors"
+	"restic/options"
 )
 
 // Config collects all information required to connect to an sftp server.
 type Config struct {
 	User, Host, Path string
-	Layout           string `option:"layout"`
-	Command          string `option:"command"`
+	Layout           string `option:"layout" help:"use this backend directory layout (default: auto-detect)"`
+	Command          string `option:"command" help:"specify command to create sftp connection"`
+}
+
+func init() {
+	options.Register("sftp", Config{})
 }
 
 // ParseConfig parses the string s and extracts the sftp config. The
