@@ -3,6 +3,7 @@ package options
 import (
 	"reflect"
 	"restic/errors"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -10,6 +11,80 @@ import (
 
 // Options holds options in the form key=value.
 type Options map[string]string
+
+var opts []Help
+
+// Register allows registering options so that they can be listed with List.
+func Register(ns string, cfg interface{}) {
+	opts = appendAllOptions(opts, ns, cfg)
+}
+
+// List returns a list of all registered options (using Register()).
+func List() (list []Help) {
+	list = make([]Help, 0, len(opts))
+	for _, opt := range opts {
+		list = append(list, opt)
+	}
+	return list
+}
+
+// appendAllOptions appends all options in cfg to opts, sorted by namespace.
+func appendAllOptions(opts []Help, ns string, cfg interface{}) []Help {
+	for _, opt := range listOptions(cfg) {
+		opt.Namespace = ns
+		opts = append(opts, opt)
+	}
+	return opts
+}
+
+// listOptions returns a list of options of cfg.
+func listOptions(cfg interface{}) (opts []Help) {
+	// resolve indirection if cfg is a pointer
+	v := reflect.Indirect(reflect.ValueOf(cfg))
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Type().Field(i)
+
+		h := Help{
+			Name: f.Tag.Get("option"),
+			Text: f.Tag.Get("help"),
+		}
+
+		if h.Name == "" {
+			continue
+		}
+
+		opts = append(opts, h)
+	}
+
+	sort.Sort(helpList(opts))
+	return opts
+}
+
+// Help contains information about an option.
+type Help struct {
+	Namespace string
+	Name      string
+	Text      string
+}
+
+type helpList []Help
+
+// Len is the number of elements in the collection.
+func (h helpList) Len() int {
+	return len(h)
+}
+
+// Less reports whether the element with
+// index i should sort before the element with index j.
+func (h helpList) Less(i, j int) bool {
+	return h[i].Namespace < h[j].Namespace
+}
+
+// Swap swaps the elements with indexes i and j.
+func (h helpList) Swap(i, j int) {
+	h[i], h[j] = h[j], h[i]
+}
 
 // splitKeyValue splits at the first equals (=) sign.
 func splitKeyValue(s string) (key string, value string) {
