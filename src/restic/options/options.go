@@ -34,6 +34,8 @@ func appendAllOptions(opts []Help, ns string, cfg interface{}) []Help {
 		opt.Namespace = ns
 		opts = append(opts, opt)
 	}
+
+	sort.Sort(helpList(opts))
 	return opts
 }
 
@@ -57,7 +59,6 @@ func listOptions(cfg interface{}) (opts []Help) {
 		opts = append(opts, h)
 	}
 
-	sort.Sort(helpList(opts))
 	return opts
 }
 
@@ -78,6 +79,10 @@ func (h helpList) Len() int {
 // Less reports whether the element with
 // index i should sort before the element with index j.
 func (h helpList) Less(i, j int) bool {
+	if h[i].Namespace == h[j].Namespace {
+		return h[i].Name < h[j].Name
+	}
+
 	return h[i].Namespace < h[j].Namespace
 }
 

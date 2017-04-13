@@ -291,8 +291,8 @@ func TestAppendAllOptions(t *testing.T) {
 			},
 			[]Help{
 				Help{Namespace: "local", Name: "foo", Text: "bar text help"},
-				Help{Namespace: "sftp", Name: "foo", Text: "bar text help2"},
 				Help{Namespace: "sftp", Name: "bar", Text: "bar text help"},
+				Help{Namespace: "sftp", Name: "foo", Text: "bar text help2"},
 			},
 		},
 	}
