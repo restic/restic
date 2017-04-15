@@ -9,53 +9,53 @@ var configTests = []struct {
 	// first form, user specified sftp://user@host/dir
 	{
 		"sftp://user@host/dir/subdir",
-		Config{User: "user", Host: "host", Dir: "dir/subdir"},
+		Config{User: "user", Host: "host", Path: "dir/subdir"},
 	},
 	{
 		"sftp://host/dir/subdir",
-		Config{Host: "host", Dir: "dir/subdir"},
+		Config{Host: "host", Path: "dir/subdir"},
 	},
 	{
 		"sftp://host//dir/subdir",
-		Config{Host: "host", Dir: "/dir/subdir"},
+		Config{Host: "host", Path: "/dir/subdir"},
 	},
 	{
 		"sftp://host:10022//dir/subdir",
-		Config{Host: "host:10022", Dir: "/dir/subdir"},
+		Config{Host: "host:10022", Path: "/dir/subdir"},
 	},
 	{
 		"sftp://user@host:10022//dir/subdir",
-		Config{User: "user", Host: "host:10022", Dir: "/dir/subdir"},
+		Config{User: "user", Host: "host:10022", Path: "/dir/subdir"},
 	},
 	{
 		"sftp://user@host/dir/subdir/../other",
-		Config{User: "user", Host: "host", Dir: "dir/other"},
+		Config{User: "user", Host: "host", Path: "dir/other"},
 	},
 	{
 		"sftp://user@host/dir///subdir",
-		Config{User: "user", Host: "host", Dir: "dir/subdir"},
+		Config{User: "user", Host: "host", Path: "dir/subdir"},
 	},
 
 	// second form, user specified sftp:user@host:/dir
 	{
 		"sftp:user@host:/dir/subdir",
-		Config{User: "user", Host: "host", Dir: "/dir/subdir"},
+		Config{User: "user", Host: "host", Path: "/dir/subdir"},
 	},
 	{
 		"sftp:host:../dir/subdir",
-		Config{Host: "host", Dir: "../dir/subdir"},
+		Config{Host: "host", Path: "../dir/subdir"},
 	},
 	{
 		"sftp:user@host:dir/subdir:suffix",
-		Config{User: "user", Host: "host", Dir: "dir/subdir:suffix"},
+		Config{User: "user", Host: "host", Path: "dir/subdir:suffix"},
 	},
 	{
 		"sftp:user@host:dir/subdir/../other",
-		Config{User: "user", Host: "host", Dir: "dir/other"},
+		Config{User: "user", Host: "host", Path: "dir/other"},
 	},
 	{
 		"sftp:user@host:dir///subdir",
-		Config{User: "user", Host: "host", Dir: "dir/subdir"},
+		Config{User: "user", Host: "host", Path: "dir/subdir"},
 	},
 }
 

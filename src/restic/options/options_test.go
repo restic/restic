@@ -218,3 +218,95 @@ func TestOptionsApplyInvalid(t *testing.T) {
 		})
 	}
 }
+
+func TestListOptions(t *testing.T) {
+	var teststruct = struct {
+		Foo string `option:"foo" help:"bar text help"`
+	}{}
+
+	var tests = []struct {
+		cfg  interface{}
+		opts []Help
+	}{
+		{
+			struct {
+				Foo string `option:"foo" help:"bar text help"`
+			}{},
+			[]Help{
+				Help{Name: "foo", Text: "bar text help"},
+			},
+		},
+		{
+			struct {
+				Foo string `option:"foo" help:"bar text help"`
+				Bar string `option:"bar" help:"bar text help"`
+			}{},
+			[]Help{
+				Help{Name: "foo", Text: "bar text help"},
+				Help{Name: "bar", Text: "bar text help"},
+			},
+		},
+		{
+			struct {
+				Bar string `option:"bar" help:"bar text help"`
+				Foo string `option:"foo" help:"bar text help"`
+			}{},
+			[]Help{
+				Help{Name: "bar", Text: "bar text help"},
+				Help{Name: "foo", Text: "bar text help"},
+			},
+		},
+		{
+			&teststruct,
+			[]Help{
+				Help{Name: "foo", Text: "bar text help"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			opts := listOptions(test.cfg)
+			if !reflect.DeepEqual(opts, test.opts) {
+				t.Fatalf("wrong opts, want:\n  %v\ngot:\n  %v", test.opts, opts)
+			}
+		})
+	}
+}
+
+func TestAppendAllOptions(t *testing.T) {
+	var tests = []struct {
+		cfgs map[string]interface{}
+		opts []Help
+	}{
+		{
+			map[string]interface{}{
+				"local": struct {
+					Foo string `option:"foo" help:"bar text help"`
+				}{},
+				"sftp": struct {
+					Foo string `option:"foo" help:"bar text help2"`
+					Bar string `option:"bar" help:"bar text help"`
+				}{},
+			},
+			[]Help{
+				Help{Namespace: "local", Name: "foo", Text: "bar text help"},
+				Help{Namespace: "sftp", Name: "bar", Text: "bar text help"},
+				Help{Namespace: "sftp", Name: "foo", Text: "bar text help2"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			var opts []Help
+			for ns, cfg := range test.cfgs {
+				opts = appendAllOptions(opts, ns, cfg)
+			}
+
+			if !reflect.DeepEqual(opts, test.opts) {
+				t.Fatalf("wrong list, want:\n  %v\ngot:\n  %v", test.opts, opts)
+			}
+		})
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"testing"
 
+	"restic/options"
 	"restic/repository"
 	. "restic/test"
 )
@@ -199,6 +200,7 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 		password: TestPassword,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,
+		extended: make(options.Options),
 	}
 
 	// always overwrite global options

@@ -19,8 +19,12 @@ var testKDFParams = crypto.KDFParams{
 	P: 1,
 }
 
+type logger interface {
+	Logf(format string, args ...interface{})
+}
+
 // TestUseLowSecurityKDFParameters configures low-security KDF parameters for testing.
-func TestUseLowSecurityKDFParameters(t testing.TB) {
+func TestUseLowSecurityKDFParameters(t logger) {
 	t.Logf("using low-security KDF parameters for test")
 	KDFParams = &testKDFParams
 }

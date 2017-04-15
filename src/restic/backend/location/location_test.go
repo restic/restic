@@ -79,7 +79,7 @@ var parseTests = []struct {
 			Config: sftp.Config{
 				User: "user",
 				Host: "host",
-				Dir:  "/srv/repo",
+				Path: "/srv/repo",
 			},
 		},
 	},
@@ -89,7 +89,7 @@ var parseTests = []struct {
 			Config: sftp.Config{
 				User: "",
 				Host: "host",
-				Dir:  "/srv/repo",
+				Path: "/srv/repo",
 			},
 		},
 	},
@@ -99,7 +99,7 @@ var parseTests = []struct {
 			Config: sftp.Config{
 				User: "user",
 				Host: "host",
-				Dir:  "srv/repo",
+				Path: "srv/repo",
 			},
 		},
 	},
@@ -109,7 +109,7 @@ var parseTests = []struct {
 			Config: sftp.Config{
 				User: "user",
 				Host: "host",
-				Dir:  "/srv/repo",
+				Path: "/srv/repo",
 			},
 		},
 	},

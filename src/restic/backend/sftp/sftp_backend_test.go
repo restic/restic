@@ -1,6 +1,7 @@
 package sftp_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -33,24 +34,29 @@ func createTempdir() error {
 	return nil
 }
 
-func init() {
-	sftpserver := ""
-
+func findSFTPServerBinary() string {
 	for _, dir := range strings.Split(TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
 		_, err := os.Stat(testpath)
 		if !os.IsNotExist(errors.Cause(err)) {
-			sftpserver = testpath
-			break
+			return testpath
 		}
 	}
 
+	return ""
+}
+
+var sftpserver = findSFTPServerBinary()
+
+func init() {
 	if sftpserver == "" {
 		SkipMessage = "sftp server binary not found, skipping tests"
 		return
 	}
 
-	args := []string{"-e"}
+	cfg := sftp.Config{
+		Command: fmt.Sprintf("%q -e", sftpserver),
+	}
 
 	test.CreateFn = func() (restic.Backend, error) {
 		err := createTempdir()
@@ -58,7 +64,9 @@ func init() {
 			return nil, err
 		}
 
-		return sftp.Create(tempBackendDir, sftpserver, args...)
+		cfg.Path = tempBackendDir
+
+		return sftp.Create(cfg)
 	}
 
 	test.OpenFn = func() (restic.Backend, error) {
@@ -66,7 +74,10 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return sftp.Open(tempBackendDir, sftpserver, args...)
+
+		cfg.Path = tempBackendDir
+
+		return sftp.Open(cfg)
 	}
 
 	test.CleanupFn = func() error {

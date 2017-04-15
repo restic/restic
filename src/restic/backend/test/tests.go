@@ -43,7 +43,7 @@ func open(t testing.TB) restic.Backend {
 	if !butInitialized {
 		be, err := CreateFn()
 		if err != nil {
-			t.Fatalf("Create returned unexpected error: %v", err)
+			t.Fatalf("Create returned unexpected error: %+v", err)
 		}
 
 		but = be
@@ -54,7 +54,7 @@ func open(t testing.TB) restic.Backend {
 		var err error
 		but, err = OpenFn()
 		if err != nil {
-			t.Fatalf("Open returned unexpected error: %v", err)
+			t.Fatalf("Open returned unexpected error: %+v", err)
 		}
 	}
 
@@ -68,7 +68,7 @@ func close(t testing.TB) {
 
 	err := but.Close()
 	if err != nil {
-		t.Fatalf("Close returned unexpected error: %v", err)
+		t.Fatalf("Close returned unexpected error: %+v", err)
 	}
 
 	but = nil
@@ -82,14 +82,14 @@ func TestCreate(t testing.TB) {
 
 	be, err := CreateFn()
 	if err != nil {
-		t.Fatalf("Create returned error: %v", err)
+		t.Fatalf("Create returned error: %+v", err)
 	}
 
 	butInitialized = true
 
 	err = be.Close()
 	if err != nil {
-		t.Fatalf("Close returned error: %v", err)
+		t.Fatalf("Close returned error: %+v", err)
 	}
 }
 
@@ -101,12 +101,12 @@ func TestOpen(t testing.TB) {
 
 	be, err := OpenFn()
 	if err != nil {
-		t.Fatalf("Open returned error: %v", err)
+		t.Fatalf("Open returned error: %+v", err)
 	}
 
 	err = be.Close()
 	if err != nil {
-		t.Fatalf("Close returned error: %v", err)
+		t.Fatalf("Close returned error: %+v", err)
 	}
 }
 
@@ -132,7 +132,7 @@ func TestCreateWithConfig(t testing.TB) {
 	// remove config
 	err = b.Remove(restic.Handle{Type: restic.ConfigFile, Name: ""})
 	if err != nil {
-		t.Fatalf("unexpected error removing config: %v", err)
+		t.Fatalf("unexpected error removing config: %+v", err)
 	}
 }
 
@@ -162,7 +162,7 @@ func TestConfig(t testing.TB) {
 
 	err = b.Save(restic.Handle{Type: restic.ConfigFile}, strings.NewReader(testString))
 	if err != nil {
-		t.Fatalf("Save() error: %v", err)
+		t.Fatalf("Save() error: %+v", err)
 	}
 
 	// try accessing the config with different names, should all return the
@@ -171,7 +171,7 @@ func TestConfig(t testing.TB) {
 		h := restic.Handle{Type: restic.ConfigFile, Name: name}
 		buf, err := backend.LoadAll(b, h)
 		if err != nil {
-			t.Fatalf("unable to read config with name %q: %v", name, err)
+			t.Fatalf("unable to read config with name %q: %+v", name, err)
 		}
 
 		if string(buf) != testString {
@@ -203,7 +203,7 @@ func TestLoad(t testing.TB) {
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	err = b.Save(handle, bytes.NewReader(data))
 	if err != nil {
-		t.Fatalf("Save() error: %v", err)
+		t.Fatalf("Save() error: %+v", err)
 	}
 
 	rd, err := b.Load(handle, 100, -1)
@@ -238,13 +238,13 @@ func TestLoad(t testing.TB) {
 
 		rd, err := b.Load(handle, getlen, int64(o))
 		if err != nil {
-			t.Errorf("Load(%d, %d) returned unexpected error: %v", l, o, err)
+			t.Errorf("Load(%d, %d) returned unexpected error: %+v", l, o, err)
 			continue
 		}
 
 		buf, err := ioutil.ReadAll(rd)
 		if err != nil {
-			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %v", l, o, err)
+			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %+v", l, o, err)
 			rd.Close()
 			continue
 		}
@@ -269,7 +269,7 @@ func TestLoad(t testing.TB) {
 
 		err = rd.Close()
 		if err != nil {
-			t.Errorf("Load(%d, %d) rd.Close() returned unexpected error: %v", l, o, err)
+			t.Errorf("Load(%d, %d) rd.Close() returned unexpected error: %+v", l, o, err)
 			continue
 		}
 	}
@@ -325,7 +325,7 @@ func TestSave(t testing.TB) {
 
 		err = b.Remove(h)
 		if err != nil {
-			t.Fatalf("error removing item: %v", err)
+			t.Fatalf("error removing item: %+v", err)
 		}
 	}
 
@@ -366,7 +366,7 @@ func TestSave(t testing.TB) {
 
 	err = b.Remove(h)
 	if err != nil {
-		t.Fatalf("error removing item: %v", err)
+		t.Fatalf("error removing item: %+v", err)
 	}
 }
 
@@ -391,13 +391,13 @@ func TestSaveFilenames(t testing.TB) {
 		h := restic.Handle{Name: test.name, Type: restic.DataFile}
 		err := b.Save(h, strings.NewReader(test.data))
 		if err != nil {
-			t.Errorf("test %d failed: Save() returned %v", i, err)
+			t.Errorf("test %d failed: Save() returned %+v", i, err)
 			continue
 		}
 
 		buf, err := backend.LoadAll(b, h)
 		if err != nil {
-			t.Errorf("test %d failed: Load() returned %v", i, err)
+			t.Errorf("test %d failed: Load() returned %+v", i, err)
 			continue
 		}
 
@@ -407,7 +407,7 @@ func TestSaveFilenames(t testing.TB) {
 
 		err = b.Remove(h)
 		if err != nil {
-			t.Errorf("test %d failed: Remove() returned %v", i, err)
+			t.Errorf("test %d failed: Remove() returned %+v", i, err)
 			continue
 		}
 	}
@@ -511,7 +511,7 @@ func TestBackend(t testing.TB) {
 		// test that the blob is gone
 		ok, err := b.Test(h)
 		test.OK(t, err)
-		test.Assert(t, ok == false, "removed blob still present")
+		test.Assert(t, !ok, "removed blob still present")
 
 		// create blob
 		err = b.Save(h, strings.NewReader(ts.data))
@@ -553,6 +553,7 @@ func TestBackend(t testing.TB) {
 
 				found, err := b.Test(h)
 				test.OK(t, err)
+				test.Assert(t, found, fmt.Sprintf("id %q not found", id))
 
 				test.OK(t, b.Remove(h))
 
@@ -576,7 +577,7 @@ func TestDelete(t testing.TB) {
 
 	err := be.Delete()
 	if err != nil {
-		t.Fatalf("error deleting backend: %v", err)
+		t.Fatalf("error deleting backend: %+v", err)
 	}
 }
 
@@ -594,6 +595,6 @@ func TestCleanup(t testing.TB) {
 
 	err := CleanupFn()
 	if err != nil {
-		t.Fatalf("Cleanup returned error: %v", err)
+		t.Fatalf("Cleanup returned error: %+v", err)
 	}
 }

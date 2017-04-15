@@ -22,39 +22,11 @@ const connLimit = 40
 // make sure the rest backend implements restic.Backend
 var _ restic.Backend = &restBackend{}
 
-// restPath returns the path to the given resource.
-func restPath(url *url.URL, h restic.Handle) string {
-	u := *url
-
-	var dir string
-
-	switch h.Type {
-	case restic.ConfigFile:
-		dir = ""
-		h.Name = "config"
-	case restic.DataFile:
-		dir = backend.Paths.Data
-	case restic.SnapshotFile:
-		dir = backend.Paths.Snapshots
-	case restic.IndexFile:
-		dir = backend.Paths.Index
-	case restic.LockFile:
-		dir = backend.Paths.Locks
-	case restic.KeyFile:
-		dir = backend.Paths.Keys
-	default:
-		dir = string(h.Type)
-	}
-
-	u.Path = path.Join(url.Path, dir, h.Name)
-
-	return u.String()
-}
-
 type restBackend struct {
 	url      *url.URL
 	connChan chan struct{}
 	client   http.Client
+	backend.Layout
 }
 
 // Open opens the REST backend with the given config.
@@ -66,7 +38,20 @@ func Open(cfg Config) (restic.Backend, error) {
 	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
 	client := http.Client{Transport: tr}
 
-	return &restBackend{url: cfg.URL, connChan: connChan, client: client}, nil
+	// use url without trailing slash for layout
+	url := cfg.URL.String()
+	if url[len(url)-1] == '/' {
+		url = url[:len(url)-1]
+	}
+
+	be := &restBackend{
+		url:      cfg.URL,
+		connChan: connChan,
+		client:   client,
+		Layout:   &backend.CloudLayout{URL: url, Join: path.Join},
+	}
+
+	return be, nil
 }
 
 // Create creates a new REST on server configured in config.
@@ -124,7 +109,7 @@ func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 	rd = backend.Closer{Reader: rd}
 
 	<-b.connChan
-	resp, err := b.client.Post(restPath(b.url, h), "binary/octet-stream", rd)
+	resp, err := b.client.Post(b.Filename(h), "binary/octet-stream", rd)
 	b.connChan <- struct{}{}
 
 	if resp != nil {
@@ -167,7 +152,7 @@ func (b *restBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCl
 		return nil, errors.Errorf("invalid length %d", length)
 	}
 
-	req, err := http.NewRequest("GET", restPath(b.url, h), nil)
+	req, err := http.NewRequest("GET", b.Filename(h), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "http.NewRequest")
 	}
@@ -207,7 +192,7 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 	}
 
 	<-b.connChan
-	resp, err := b.client.Head(restPath(b.url, h))
+	resp, err := b.client.Head(b.Filename(h))
 	b.connChan <- struct{}{}
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "client.Head")
@@ -249,7 +234,7 @@ func (b *restBackend) Remove(h restic.Handle) error {
 		return err
 	}
 
-	req, err := http.NewRequest("DELETE", restPath(b.url, h), nil)
+	req, err := http.NewRequest("DELETE", b.Filename(h), nil)
 	if err != nil {
 		return errors.Wrap(err, "http.NewRequest")
 	}
@@ -275,7 +260,7 @@ func (b *restBackend) Remove(h restic.Handle) error {
 func (b *restBackend) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
-	url := restPath(b.url, restic.Handle{Type: t})
+	url := b.Dirname(restic.Handle{Type: t})
 	if !strings.HasSuffix(url, "/") {
 		url += "/"
 	}
