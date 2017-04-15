@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 )
@@ -200,7 +199,7 @@ func (env *TravisEnvironment) Prepare() error {
 		return err
 	}
 
-	if *runCrossCompile && !(runtime.Version() < "go1.7") {
+	if *runCrossCompile {
 		// only test cross compilation on linux with Travis
 		if err := run("go", "get", "github.com/mitchellh/gox"); err != nil {
 			return err
@@ -212,25 +211,13 @@ func (env *TravisEnvironment) Prepare() error {
 				"darwin/386", "darwin/amd64",
 				"freebsd/386", "freebsd/amd64",
 				"openbsd/386", "openbsd/amd64",
-			}
-			if !strings.HasPrefix(runtime.Version(), "go1.3") {
-				env.goxOSArch = append(env.goxOSArch,
-					"linux/arm", "freebsd/arm")
+				"linux/arm", "freebsd/arm",
 			}
 		} else {
 			env.goxOSArch = []string{runtime.GOOS + "/" + runtime.GOARCH}
 		}
 
 		msg("gox: OS/ARCH %v\n", env.goxOSArch)
-
-		if runtime.Version() < "go1.5" {
-			err := run("gox", "-build-toolchain",
-				"-osarch", strings.Join(env.goxOSArch, " "))
-
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
@@ -286,20 +273,6 @@ func (env *TravisEnvironment) Teardown() error {
 	}
 
 	return nil
-}
-
-func goVersionAtLeast151() bool {
-	v := runtime.Version()
-
-	if match, _ := regexp.MatchString(`^go1\.[0-4]`, v); match {
-		return false
-	}
-
-	if v == "go1.5" {
-		return false
-	}
-
-	return true
 }
 
 // Background is a program running in the background.
@@ -372,7 +345,7 @@ func (env *TravisEnvironment) RunTests() error {
 
 	env.env["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
 
-	if *runCrossCompile && !(runtime.Version() < "go1.7") {
+	if *runCrossCompile {
 		// compile for all target architectures with tags
 		for _, tags := range []string{"release", "debug"} {
 			err := runWithEnv(env.env, "gox", "-verbose",
