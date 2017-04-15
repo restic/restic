@@ -4,8 +4,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 // File is an open file on a file system.
@@ -21,31 +19,6 @@ type File interface {
 	Stat() (os.FileInfo, error)
 }
 
-// fixpath returns an absolute path on windows, so restic can open long file
-// names.
-func fixpath(name string) string {
-	if runtime.GOOS == "windows" {
-		abspath, err := filepath.Abs(name)
-		if err == nil {
-			// Check if \\?\UNC\ already exist
-			if strings.HasPrefix(abspath, `\\?\UNC\`) {
-				return abspath
-			}
-			// Check if \\?\ already exist
-			if strings.HasPrefix(abspath, `\\?\`) {
-				return abspath
-			}
-			// Check if path starts with \\
-			if strings.HasPrefix(abspath, `\\`) {
-				return strings.Replace(abspath, `\\`, `\\?\UNC\`, 1)
-			}
-			// Normal path
-			return `\\?\` + abspath
-		}
-	}
-	return name
-}
-
 // Chmod changes the mode of the named file to mode.
 func Chmod(name string, mode os.FileMode) error {
 	return os.Chmod(fixpath(name), mode)
@@ -55,17 +28,6 @@ func Chmod(name string, mode os.FileMode) error {
 // If there is an error, it will be of type *PathError.
 func Mkdir(name string, perm os.FileMode) error {
 	return os.Mkdir(fixpath(name), perm)
-}
-
-// MkdirAll creates a directory named path,
-// along with any necessary parents, and returns nil,
-// or else returns an error.
-// The permission bits perm are used for all
-// directories that MkdirAll creates.
-// If path is already a directory, MkdirAll does nothing
-// and returns nil.
-func MkdirAll(path string, perm os.FileMode) error {
-	return os.MkdirAll(fixpath(path), perm)
 }
 
 // Readlink returns the destination of the named symbolic link.
