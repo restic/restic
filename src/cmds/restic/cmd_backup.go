@@ -415,11 +415,20 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
-			line := scanner.Text()
-			if !strings.HasPrefix(line, "#") {
-				line = os.ExpandEnv(line)
-				opts.Excludes = append(opts.Excludes, line)
+			line := strings.TrimSpace(scanner.Text())
+
+			// ignore empty lines
+			if line == "" {
+				continue
 			}
+
+			// strip comments
+			if strings.HasPrefix(line, "#") {
+				continue
+			}
+
+			line = os.ExpandEnv(line)
+			opts.Excludes = append(opts.Excludes, line)
 		}
 	}
 
