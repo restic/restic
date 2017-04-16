@@ -100,9 +100,14 @@ func match(patterns, strs []string) (matched bool, err error) {
 	return false, nil
 }
 
-// List returns true if str matches one of the patterns.
+// List returns true if str matches one of the patterns. Empty patterns are
+// ignored.
 func List(patterns []string, str string) (matched bool, err error) {
 	for _, pat := range patterns {
+		if pat == "" {
+			continue
+		}
+
 		matched, err = Match(pat, str)
 		if err != nil {
 			return false, err
