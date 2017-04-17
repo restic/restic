@@ -17,7 +17,7 @@ import (
 	"restic/debug"
 )
 
-const connLimit = 40
+const connLimit = 10
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
