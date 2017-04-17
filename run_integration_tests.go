@@ -5,6 +5,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -170,6 +171,83 @@ func (env *TravisEnvironment) runRESTServer() error {
 	return nil
 }
 
+func (env *TravisEnvironment) generateSwiftAuthToken() error {
+
+	authServer := os.Getenv("RESTIC_TEST_SWIFT_AUTH_SERVER")
+	authUser := os.Getenv("RESTIC_TEST_SWIFT_AUTH_USERNAME")
+	authPass := os.Getenv("RESTIC_TEST_SWIFT_AUTH_PASSWORD")
+	authTenant := os.Getenv("RESTIC_TEST_SWIFT_TENANT_NAME")
+	authRegion := os.Getenv("RESTIC_TEST_SWIFT_REGION_NAME")
+
+	if authServer == "" {
+		msg("Skipping Swift integration tests - missing Swift server configuration\n")
+		return nil
+	}
+
+	msg("Generating Swift auth token\n")
+
+	authRequestBody, err := json.Marshal(map[string]interface{}{
+		"auth": map[string]interface{}{
+			"tenantName": authTenant,
+			"passwordCredentials": map[string]interface{}{
+				"username": authUser,
+				"password": authPass,
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("Error building swift auth request body: %v", err)
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest("POST", authServer+"/tokens", bytes.NewReader(authRequestBody))
+	if err != nil {
+		return fmt.Errorf("Error building request: %v", err)
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("Error connecting swift auth server: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Authentication request failed: %s", resp.Status)
+	}
+
+	responseBody := map[string]interface{}{}
+	if err := json.NewDecoder(resp.Body).Decode(&responseBody); err != nil {
+		return err
+	}
+	access := responseBody["access"].(map[string]interface{})
+
+	// Extract Token
+	env.env["RESTIC_TEST_SWIFT_TOKEN"] = access["token"].(map[string]interface{})["id"].(string)
+
+	// Extract Storage server URL
+	for _, service := range access["serviceCatalog"].([]interface{}) {
+		service := service.(map[string]interface{})
+
+		// Filter out services other than object-store
+		if service["type"].(string) != "object-store" {
+			continue
+		}
+
+		// Find region we're interested in
+		for _, endpoint := range service["endpoints"].([]interface{}) {
+			endpoint := endpoint.(map[string]interface{})
+			if endpoint["region"].(string) == authRegion {
+				env.env["RESTIC_TEST_SWIFT_SERVER"] = endpoint["publicURL"].(string)
+			}
+		}
+	}
+
+	if _, found := env.env["RESTIC_TEST_SWIFT_SERVER"]; !found {
+		return fmt.Errorf("Could not find suitable storage swift server in region: %s", authRegion)
+	}
+
+	return nil
+}
+
 // Prepare installs dependencies and starts services in order to run the tests.
 func (env *TravisEnvironment) Prepare() error {
 	env.env = make(map[string]string)
@@ -196,6 +274,9 @@ func (env *TravisEnvironment) Prepare() error {
 		return err
 	}
 	if err := env.runRESTServer(); err != nil {
+		return err
+	}
+	if err := env.generateSwiftAuthToken(); err != nil {
 		return err
 	}
 

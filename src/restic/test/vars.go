@@ -15,6 +15,8 @@ var (
 	TestWalkerPath        = getStringVar("RESTIC_TEST_PATH", ".")
 	BenchArchiveDirectory = getStringVar("RESTIC_BENCH_DIR", ".")
 	TestS3Server          = getStringVar("RESTIC_TEST_S3_SERVER", "")
+	TestSwiftServer       = getStringVar("RESTIC_TEST_SWIFT_SERVER", "")
+	TestSwiftToken        = getStringVar("RESTIC_TEST_SWIFT_TOKEN", "")
 	TestRESTServer        = getStringVar("RESTIC_TEST_REST_SERVER", "")
 )
 

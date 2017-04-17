@@ -610,6 +610,59 @@ For an S3-compatible server that is not Amazon (like Minio, see below), or is
 only available via HTTP, you can specify the URL to the server like this:
 `s3:http://server:port/bucket_name`.
 
+# Create an OpenStack Swift repository
+
+Restic can backup data to an OpenStack Swift container. Because Swift supports various authentication methods, credentials are passed through environment variables.
+In order to help integration with existing openstack installations, the naming convention of those variables follows official python swift client:
+
+```console
+# For keystone v1 authentication
+$ export ST_AUTH=<MY_AUTH_URL>
+$ export ST_USER=<MY_USER_NAME>
+$ export ST_KEY=<MY_USER_PASSWORD>
+
+# For keystone v2 authentication (some variables are optional)
+$ export OS_AUTH_URL=<MY_AUTH_URL>
+$ export OS_REGION_NAME=<MY_REGION_NAME>
+$ export OS_USERNAME=<MY_USERNAME>
+$ export OS_PASSWORD=<MY_PASSWORD>
+$ export OS_TENANT_ID=<MY_TENANT_ID>
+$ export OS_TENANT_NAME=<MY_TENANT_NAME>
+
+# For keystone v3 authentication (some variables are optional)
+$ export OS_AUTH_URL=<MY_AUTH_URL>
+$ export OS_REGION_NAME=<MY_REGION_NAME>
+$ export OS_USERNAME=<MY_USERNAME>
+$ export OS_PASSWORD=<MY_PASSWORD>
+$ export OS_USER_DOMAIN_NAME=<MY_DOMAIN_NAME>
+$ export OS_PROJECT_NAME=<MY_PROJECT_NAME>
+$ export OS_PROJECT_DOMAIN_NAME=<MY_PROJECT_DOMAIN_NAME>
+
+# For authentication based on tokens
+$ export OS_STORAGE_URL=<MY_STORAGE_URL>
+$ export OS_AUTH_TOKEN=<MY_AUTH_TOKEN>
+```
+
+Restic should be compatible with [OpenStack RC file](https://docs.openstack.org/user-guide/common/cli-set-environment-variables-using-openstack-rc.html) in most cases.
+
+Once environment variables are set up, it's easy to create new restic repository. The name of swift container and optional subpath can be specified in the URL.
+If the container does not exist, it will be created automatically:
+
+```console
+$ restic -r swift:container_name:/path init   # path is optional
+enter password for new backend:
+enter password again:
+created restic backend eefee03bbd at swift:container_name:/path
+Please note that knowledge of your password is required to access the repository.
+Losing your password means that your data is irrecoverably lost.
+```
+
+The policy of new container created by restic can be changed using environment variable:
+
+```console
+$ export SWIFT_DEFAULT_CONTAINER_POLICY=<MY_CONTAINER_POLICY>
+```
+
 ## Create a Minio Server repository
 
 [Minio](https://www.minio.io) is an Open Source Object Storage, written in Go and compatible with AWS S3 API.
