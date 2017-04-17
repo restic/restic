@@ -1,0 +1,10 @@
+@import url('theme.css');
+
+.wy-side-nav-search {
+  background-color: #0000b4;
+}
+
+.logo {
+  height: 50% !important;
+  width: 50% !important;
+}
