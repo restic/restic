@@ -18,13 +18,29 @@ var s3LayoutPaths = map[restic.FileType]string{
 	restic.KeyFile:      "key",
 }
 
+// join calls Join with the first empty elements removed.
+func (l *S3Layout) join(url string, items ...string) string {
+	for len(items) > 0 && items[0] == "" {
+		items = items[1:]
+	}
+
+	path := l.Join(items...)
+	if path == "" || path[0] != '/' {
+		if url != "" && url[len(url)-1] != '/' {
+			url += "/"
+		}
+	}
+
+	return url + path
+}
+
 // Dirname returns the directory path for a given file type and name.
 func (l *S3Layout) Dirname(h restic.Handle) string {
 	if h.Type == restic.ConfigFile {
 		return l.URL + l.Join(l.Path, "/")
 	}
 
-	return l.URL + l.Join(l.Path, "/", s3LayoutPaths[h.Type]) + "/"
+	return l.join(l.URL, l.Path, s3LayoutPaths[h.Type]) + "/"
 }
 
 // Filename returns a path to a file, including its name.
@@ -35,7 +51,7 @@ func (l *S3Layout) Filename(h restic.Handle) string {
 		name = "config"
 	}
 
-	return l.URL + l.Join(l.Path, "/", s3LayoutPaths[h.Type], name)
+	return l.join(l.URL, l.Path, s3LayoutPaths[h.Type], name)
 }
 
 // Paths returns all directory names
