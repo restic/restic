@@ -7,6 +7,7 @@ Restic Documentation
    installation
    manual
    faq
+   tutorials
    development
    references
    talks
