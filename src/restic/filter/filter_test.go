@@ -152,6 +152,7 @@ var filterListTests = []struct {
 	{[]string{"?", "x"}, "/foo/bar/x", true},
 	{[]string{"/*/*/bar/test.*"}, "/foo/bar/test.go", false},
 	{[]string{"/*/*/bar/test.*", "*.go"}, "/foo/bar/test.go", true},
+	{[]string{"", "*.c"}, "/foo/bar/test.go", false},
 }
 
 func TestMatchList(t *testing.T) {

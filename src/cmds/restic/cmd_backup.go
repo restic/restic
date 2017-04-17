@@ -44,7 +44,7 @@ type BackupOptions struct {
 	Parent         string
 	Force          bool
 	Excludes       []string
-	ExcludeFile    string
+	ExcludeFiles   []string
 	ExcludeOtherFS bool
 	Stdin          bool
 	StdinFilename  string
@@ -68,7 +68,7 @@ func init() {
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
 	f.StringSliceVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
-	f.StringVar(&backupOptions.ExcludeFile, "exclude-file", "", "read exclude patterns from a file")
+	f.StringSliceVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
@@ -406,17 +406,28 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	Verbosef("scan %v\n", target)
 
 	// add patterns from file
-	if opts.ExcludeFile != "" {
-		file, err := fs.Open(opts.ExcludeFile)
-		if err != nil {
-			Warnf("error reading exclude patterns: %v", err)
-			return nil
-		}
+	if len(opts.ExcludeFiles) > 0 {
+		for _, filename := range opts.ExcludeFiles {
+			file, err := fs.Open(filename)
+			if err != nil {
+				Warnf("error reading exclude patterns: %v", err)
+				return nil
+			}
 
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if !strings.HasPrefix(line, "#") {
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+
+				// ignore empty lines
+				if line == "" {
+					continue
+				}
+
+				// strip comments
+				if strings.HasPrefix(line, "#") {
+					continue
+				}
+
 				line = os.ExpandEnv(line)
 				opts.Excludes = append(opts.Excludes, line)
 			}
