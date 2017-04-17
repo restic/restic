@@ -17,7 +17,7 @@ import (
 	"restic/debug"
 )
 
-const connLimit = 40
+const connLimit = 10
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
@@ -45,7 +45,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		bucketname:   cfg.Bucket,
 		prefix:       cfg.Prefix,
 		cacheObjSize: make(map[string]int64),
-		Layout:       &backend.S3Layout{URL: cfg.Endpoint, Join: path.Join},
+		Layout:       &backend.S3Layout{Path: cfg.Prefix, Join: path.Join},
 	}
 
 	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
@@ -88,9 +88,9 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 		return err
 	}
 
-	debug.Log("Save %v", h)
-
 	objName := be.Filename(h)
+
+	debug.Log("Save %v at %v", h, objName)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, objName)
@@ -128,7 +128,7 @@ func (wr wrapReader) Close() error {
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
 func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	debug.Log("Load %v, length %v, offset %v", h, length, offset)
+	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
 	if err := h.Valid(); err != nil {
 		return nil, err
 	}
@@ -280,7 +280,7 @@ func (be *s3) Test(h restic.Handle) (bool, error) {
 func (be *s3) Remove(h restic.Handle) error {
 	objName := be.Filename(h)
 	err := be.client.RemoveObject(be.bucketname, objName)
-	debug.Log("Remove(%v) -> err %v", h, err)
+	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 	return errors.Wrap(err, "client.RemoveObject")
 }
 

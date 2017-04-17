@@ -190,6 +190,24 @@ func TestCloudLayoutURLs(t *testing.T) {
 			"https://hostname.foo:1234/prefix/repo/config",
 			"https://hostname.foo:1234/prefix/repo/",
 		},
+		{
+			&S3Layout{URL: "", Path: "", Join: path.Join},
+			restic.Handle{Type: restic.DataFile, Name: "foobar"},
+			"data/foobar",
+			"data/",
+		},
+		{
+			&S3Layout{URL: "", Path: "", Join: path.Join},
+			restic.Handle{Type: restic.LockFile, Name: "foobar"},
+			"lock/foobar",
+			"lock/",
+		},
+		{
+			&S3Layout{URL: "", Path: "/", Join: path.Join},
+			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
+			"/config",
+			"/",
+		},
 	}
 
 	for _, test := range tests {
