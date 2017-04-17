@@ -10,7 +10,7 @@ Mac OS X
 If you are using Mac OS X, you can install restic using the
 `homebrew <http://brew.sh/>`__ packet manager:
 
-.. code:: console
+.. code-block:: console
 
     $ brew tap restic/restic
     $ brew install restic
@@ -21,7 +21,7 @@ archlinux
 On archlinux, there is a package called ``restic-git`` which can be
 installed from AUR, e.g. with ``pacaur``:
 
-.. code:: console
+.. code-block:: console
 
     $ pacaur -S restic-git
 
@@ -42,7 +42,7 @@ instructions how to install Go.
 
 In order to build restic from source, execute the following steps:
 
-.. code:: console
+.. code-block:: console
 
     $ git clone https://github.com/restic/restic
     [...]

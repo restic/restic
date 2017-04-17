@@ -6,7 +6,7 @@ Usage help
 
 Usage help is available:
 
-.. code:: console
+.. code-block:: console
 
     $ ./restic --help
     restic is a backup program which allows saving multiple revisions of files and
@@ -49,7 +49,7 @@ sub-command may have own command-line options, and there is a help
 option for each command which lists them, e.g. for the ``backup``
 command:
 
-.. code:: console
+.. code-block:: console
 
     $ ./restic backup --help
     The "backup" command creates a new snapshot and saves the files and directories
@@ -98,7 +98,7 @@ Local
 In order to create a repository at ``/tmp/backup``, run the following
 command and enter the same password twice:
 
-.. code:: console
+.. code-block:: console
 
     $ restic init --repo /tmp/backup
     enter password for new backend:
@@ -129,7 +129,7 @@ prompts for credentials.
 Once the server is configured, the setup of the SFTP repository can
 simply be achieved by changing the URL scheme in the ``init`` command:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r sftp:user@host:/tmp/backup init
     enter password for new backend:
@@ -190,7 +190,7 @@ server <https://github.com/restic/rest-server>`__ instance. Once the
 server is configured, accessing it is achieved by changing the URL
 scheme like this:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r rest:http://host:8000/
 
@@ -199,7 +199,7 @@ password protection, or multiple repositories. Or any combination of
 those features, as you see fit. TCP/IP port is also configurable. Here
 are some more examples:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r rest:https://host:8000/
     $ restic -r rest:https://user:pass@host:8000/
@@ -223,7 +223,7 @@ credentials to sign HTTP requests. By consequence, you must first setup
 the following environment variables with the credentials you obtained
 while creating the bucket.
 
-.. code:: console
+.. code-block:: console
 
     $ export AWS_ACCESS_KEY_ID=<MY_ACCESS_KEY>
     $ export AWS_SECRET_ACCESS_KEY=<MY_SECRET_ACCESS_KEY>
@@ -232,7 +232,7 @@ You can then easily initialize a repository that uses your Amazon S3 as
 a backend, if the bucket does not exist yet it will be created in the
 default location:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r s3:s3.amazonaws.com/bucket_name init
     enter password for new backend:
@@ -264,7 +264,7 @@ written in Go and compatible with AWS S3 API.
 You must first setup the following environment variables with the
 credentials of your running Minio Server.
 
-.. code:: console
+.. code-block:: console
 
     $ export AWS_ACCESS_KEY_ID=<YOUR-MINIO-ACCESS-KEY-ID>
     $ export AWS_SECRET_ACCESS_KEY= <YOUR-MINIO-SECRET-ACCESS-KEY>
@@ -272,7 +272,7 @@ credentials of your running Minio Server.
 Now you can easily initialize restic to use Minio server as backend with
 this command.
 
-.. code:: console
+.. code-block:: console
 
     $ ./restic -r s3:http://localhost:9000/restic init
     enter password for new backend:
@@ -295,7 +295,7 @@ You can workaround this by using a special tool called ``winpty`` (look
 `here <https://github.com/rprichard/winpty>`__ for detail information).
 On MSYS2, you can install ``winpty`` as follows:
 
-.. code:: console
+.. code-block:: console
 
     $ pacman -S winpty
     $ winpty restic -r /tmp/backup init
@@ -308,7 +308,7 @@ specific point in time is called a "snapshot" in restic. Run the
 following command and enter the repository password you chose above
 again:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup backup ~/work
     enter password for repository:
@@ -326,7 +326,7 @@ If you run the command again, restic will create another snapshot of
 your data, but this time it's even faster. This is de-duplication at
 work!
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup backup ~/shared/work/web
     enter password for repository:
@@ -339,7 +339,7 @@ work!
 
 You can even backup individual files in the same repository.
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup backup ~/work.txt
     scan [~/work.txt]
@@ -363,7 +363,7 @@ decided based on the modify date of the file in the file system.
 You can exclude folders and files by specifying exclude-patterns. Either
 specify them with multiple ``--exclude``'s or one ``--exclude-file``
 
-.. code:: console
+.. code-block:: console
 
     $ cat exclude
     # exclude go-files
@@ -385,7 +385,7 @@ to only backup files from the file systems the initially specified files
 or directories reside on. For example, calling restic like this won't
 backup ``/sys`` or ``/dev`` on a Linux system:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup backup --one-file-system /
 
@@ -397,20 +397,20 @@ by other software.
 For example maybe you want to backup files that have a certain filename
 in them:
 
-.. code:: console
+.. code-block:: console
 
     $ find /tmp/somefiles | grep 'PATTERN' > /tmp/files_to_backup
 
 You can then use restic to backup the filtered files:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup
 
 Incidentally you can also combine ``--files-from`` with the normal files
 args:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 
@@ -422,7 +422,7 @@ Sometimes it can be nice to directly save the output of a program, e.g.
 this mode of operation, just supply the option ``--stdin`` to the
 ``backup`` command like this:
 
-.. code:: console
+.. code-block:: console
 
     $ mysqldump [...] | restic -r /tmp/backup backup --stdin
 
@@ -433,7 +433,7 @@ and read the file.
 By default, the file name ``stdin`` is used, a different name can be
 specified with ``--stdin-filename``, e.g. like this:
 
-.. code:: console
+.. code-block:: console
 
     $ mysqldump [...] | restic -r /tmp/backup backup --stdin --stdin-filename production.sql
 
@@ -443,7 +443,7 @@ Tags
 Snapshots can have one or more tags, short strings which add identifying
 information. Just specify the tags for a snapshot with ``--tag``:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup backup --tag projectX ~/shared/work/web
     [...]
@@ -455,7 +455,7 @@ List all snapshots
 
 Now, you can list all the snapshots stored in the repository:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup snapshots
     enter password for repository:
@@ -469,7 +469,7 @@ Now, you can list all the snapshots stored in the repository:
 
 You can filter the listing by directory path:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup snapshots --path="/srv"
     enter password for repository:
@@ -480,7 +480,7 @@ You can filter the listing by directory path:
 
 Or filter by host:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup snapshots --host luigi
     enter password for repository:
@@ -498,7 +498,7 @@ Restoring a snapshot is as easy as it sounds, just use the following
 command to restore the contents of the latest snapshot to
 ``/tmp/restore-work``:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup restore 79766175 --target ~/tmp/restore-work
     enter password for repository:
@@ -508,7 +508,7 @@ Use the word ``latest`` to restore the last backup. You can also combine
 ``latest`` with the ``--host`` and ``--path`` filters to choose the last
 backup for a specific host, path or both.
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup restore latest --target ~/tmp/restore-work --path "/home/art" --host luigi
     enter password for repository:
@@ -521,7 +521,7 @@ The ``key`` command allows you to set multiple access keys or passwords
 per repository. In fact, you can use the ``list``, ``add``, ``remove``
 and ``passwd`` sub-commands to manage these keys very precisely:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup key list
     enter password for repository:
@@ -553,7 +553,7 @@ Let's say we want to tag snapshot ``590c8fc8`` with the tags ``NL`` and
 ``CH`` and remove all other tags that may be present, the following
 command does that:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup tag --set NL,CH 590c8fc8
     Create exclusive lock for repository
@@ -566,7 +566,7 @@ snapshots based on the tag we just added.
 
 So we can add and remove tags incrementally like this:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup tag --tag NL --remove CH
     Create exclusive lock for repository
@@ -590,7 +590,7 @@ Imagine your repository is saved on a server that has a faulty hard
 drive, or even worse, attackers get privileged access and modify your
 backup with the intention to make you restore malicious data:
 
-.. code:: console
+.. code-block:: console
 
     $ sudo echo "boom" >> backup/index/d795ffa99a8ab8f8e42cec1f814df4e48b8f49129360fb57613df93739faee97
 
@@ -598,7 +598,7 @@ In order to detect these things, it is a good idea to regularly use the
 ``check`` command to test whether everything is alright, your precious
 backup data is consistent and the integrity is unharmed:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup check
     Load indexes
@@ -607,7 +607,7 @@ backup data is consistent and the integrity is unharmed:
 Trying to restore a snapshot which has been modified as shown above will
 yield the same error:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup restore 79766175 --target ~/tmp/restore-work
     Load indexes
@@ -620,7 +620,7 @@ Browsing your backup as a regular file system is also very easy. First,
 create a mount point such as ``/mnt/restic`` and then use the following
 command to serve the repository with FUSE:
 
-.. code:: console
+.. code-block:: console
 
     $ mkdir /mnt/restic
     $ restic -r /tmp/backup mount /mnt/restic
@@ -654,7 +654,7 @@ Remove a single snapshot
 The command ``snapshots`` can be used to list all snapshots in a
 repository like this:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup snapshots
     enter password for repository:
@@ -669,7 +669,7 @@ repository like this:
 In order to remove the snapshot of ``/home/art``, use the ``forget``
 command and specify the snapshot ID on the command line:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup forget bdbd3439
     enter password for repository:
@@ -677,7 +677,7 @@ command and specify the snapshot ID on the command line:
 
 Afterwards this snapshot is removed:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup snapshots
     enter password for repository:
@@ -692,7 +692,7 @@ But the data that was referenced by files in this snapshot is still
 stored in the repository. To cleanup unreferenced data, the ``prune``
 command must be run:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup prune
     enter password for repository:
@@ -717,7 +717,7 @@ Afterwards the repository is smaller.
 You can automate this two-step process by using the ``--prune`` switch
 to ``forget``:
 
-.. code:: console
+.. code-block:: console
 
     $ restic forget --keep-last 1 --prune
     snapshots for host mopped, directories /home/user/work:
@@ -802,14 +802,14 @@ Debugging
 
 The program can be built with debug support like this:
 
-.. code:: console
+.. code-block:: console
 
     $ go run build.go -tags debug
 
 Afterwards, extensive debug messages are written to the file in
 environment variable ``DEBUG_LOG``, e.g.:
 
-.. code:: console
+.. code-block:: console
 
     $ DEBUG_LOG=/tmp/restic-debug.log restic backup ~/work
 
@@ -828,7 +828,7 @@ patterns are separated by commas. Patterns are case sensitive.
 Printing all log messages to the console can be achieved by setting the
 file filter to ``*``:
 
-.. code:: console
+.. code-block:: console
 
     $ DEBUG_FILES=* restic check
 
@@ -836,7 +836,7 @@ If you want restic to just print all debug log messages from the files
 ``main.go`` and ``lock.go``, set the environment variable
 ``DEBUG_FILES`` like this:
 
-.. code:: console
+.. code-block:: console
 
     $ DEBUG_FILES=main.go,lock.go restic check
 
@@ -844,7 +844,7 @@ The following command line instructs restic to only print debug
 statements originating in functions that match the pattern ``*unlock*``
 (case sensitive):
 
-.. code:: console
+.. code-block:: console
 
     $ DEBUG_FUNCS=*unlock* restic check
 
@@ -857,7 +857,7 @@ documentation <https://github.com/restic/restic/blob/master/doc/Design.md>`__.
 You can ``list`` objects such as blobs, packs, index, snapshots, keys or
 locks with the following command:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup list snapshots
     d369ccc7d126594950bf74f0a348d5d98d9e99f3215082eb69bf02dc9b3e464c
@@ -866,7 +866,7 @@ The ``find`` command searches for a given
 `pattern <http://golang.org/pkg/path/filepath/#Match>`__ in the
 repository.
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r backup find test.txt
     debug log file restic.log
@@ -878,7 +878,7 @@ repository.
 The ``cat`` command allows you to display the JSON representation of the
 objects or its raw content.
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup cat snapshot d369ccc7d126594950bf74f0a348d5d98d9e99f3215082eb69bf02dc9b3e464c
     enter password for repository:
@@ -902,7 +902,7 @@ data can then be processed by other programs (e.g.
 `jq <https://stedolan.github.io/jq/>`__). The following example
 lists all snapshots as JSON and uses ``jq`` to pretty-print the result:
 
-.. code:: console
+.. code-block:: console
 
     $ restic -r /tmp/backup snapshots --json | jq .
     [
@@ -942,7 +942,7 @@ the system's temporary directory, on Linux this is usually located in
 different directory, e.g. to use the directory ``/var/tmp/restic-tmp``
 instead of the default, set the environment variable like this:
 
-.. code:: console
+.. code-block:: console
 
     $ export TMPDIR=/var/tmp/restic-tmp
     $ restic -r /tmp/backup backup ~/work
