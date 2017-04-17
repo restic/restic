@@ -1,1 +1,1 @@
-references/design.rst
+design.rst

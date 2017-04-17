@@ -2,5 +2,5 @@
 References
 ==========
 
-.. include:: references/design.rst
-.. include:: references/rest_backend.rst
+.. include:: design.rst
+.. include:: rest_backend.rst
