@@ -22,6 +22,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
+
+	"github.com/minio/minio-go/pkg/s3utils"
 )
 
 // GetBucketNotification - get bucket notification at a given path.
@@ -120,7 +123,7 @@ type NotificationInfo struct {
 }
 
 // ListenBucketNotification - listen on bucket notifications.
-func (c Client) ListenBucketNotification(bucketName string, accountArn Arn, doneCh <-chan struct{}) <-chan NotificationInfo {
+func (c Client) ListenBucketNotification(bucketName, prefix, suffix string, events []string, doneCh <-chan struct{}) <-chan NotificationInfo {
 	notificationInfoCh := make(chan NotificationInfo, 1)
 	// Only success, start a routine to start reading line by line.
 	go func(notificationInfoCh chan<- NotificationInfo) {
@@ -135,7 +138,7 @@ func (c Client) ListenBucketNotification(bucketName string, accountArn Arn, done
 		}
 
 		// Check ARN partition to verify if listening bucket is supported
-		if accountArn.Partition != "minio" {
+		if s3utils.IsAmazonEndpoint(c.endpointURL) || s3utils.IsGoogleEndpoint(c.endpointURL) {
 			notificationInfoCh <- NotificationInfo{
 				Err: ErrAPINotSupported("Listening bucket notification is specific only to `minio` partitions"),
 			}
@@ -143,9 +146,18 @@ func (c Client) ListenBucketNotification(bucketName string, accountArn Arn, done
 		}
 
 		// Continously run and listen on bucket notification.
-		for {
+		// Create a done channel to control 'ListObjects' go routine.
+		retryDoneCh := make(chan struct{}, 1)
+
+		// Indicate to our routine to exit cleanly upon return.
+		defer close(retryDoneCh)
+
+		// Wait on the jitter retry loop.
+		for range c.newRetryTimerContinous(time.Second, time.Second*30, MaxJitter, retryDoneCh) {
 			urlValues := make(url.Values)
-			urlValues.Set("notificationARN", accountArn.String())
+			urlValues.Set("prefix", prefix)
+			urlValues.Set("suffix", suffix)
+			urlValues["events"] = events
 
 			// Execute GET on bucket to list objects.
 			resp, err := c.executeMethod("GET", requestMetadata{
@@ -153,10 +165,7 @@ func (c Client) ListenBucketNotification(bucketName string, accountArn Arn, done
 				queryValues: urlValues,
 			})
 			if err != nil {
-				notificationInfoCh <- NotificationInfo{
-					Err: err,
-				}
-				return
+				continue
 			}
 
 			// Validate http response, upon error return quickly.
@@ -178,10 +187,7 @@ func (c Client) ListenBucketNotification(bucketName string, accountArn Arn, done
 			for bio.Scan() {
 				var notificationInfo NotificationInfo
 				if err = json.Unmarshal(bio.Bytes(), &notificationInfo); err != nil {
-					notificationInfoCh <- NotificationInfo{
-						Err: err,
-					}
-					return
+					continue
 				}
 				// Send notifications on channel only if there are events received.
 				if len(notificationInfo.Records) > 0 {
@@ -198,12 +204,7 @@ func (c Client) ListenBucketNotification(bucketName string, accountArn Arn, done
 				// and re-connect.
 				if err == io.ErrUnexpectedEOF {
 					resp.Body.Close()
-					continue
 				}
-				notificationInfoCh <- NotificationInfo{
-					Err: err,
-				}
-				return
 			}
 		}
 	}(notificationInfoCh)

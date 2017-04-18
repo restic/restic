@@ -41,7 +41,23 @@ func (c Client) GetBucketPolicy(bucketName, objectPrefix string) (bucketPolicy p
 	return policy.GetPolicy(policyInfo.Statements, bucketName, objectPrefix), nil
 }
 
-// Request server for policy.
+// ListBucketPolicies - list all policies for a given prefix and all its children.
+func (c Client) ListBucketPolicies(bucketName, objectPrefix string) (bucketPolicies map[string]policy.BucketPolicy, err error) {
+	// Input validation.
+	if err := isValidBucketName(bucketName); err != nil {
+		return map[string]policy.BucketPolicy{}, err
+	}
+	if err := isValidObjectPrefix(objectPrefix); err != nil {
+		return map[string]policy.BucketPolicy{}, err
+	}
+	policyInfo, err := c.getBucketPolicy(bucketName, objectPrefix)
+	if err != nil {
+		return map[string]policy.BucketPolicy{}, err
+	}
+	return policy.GetPolicies(policyInfo.Statements, bucketName), nil
+}
+
+// Request server for current bucket policy.
 func (c Client) getBucketPolicy(bucketName string, objectPrefix string) (policy.BucketAccessPolicy, error) {
 	// Get resources properly escaped and lined up before
 	// using them in http request.

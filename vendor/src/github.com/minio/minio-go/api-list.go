@@ -84,6 +84,8 @@ func (c Client) ListObjectsV2(bucketName, objectPrefix string, recursive bool, d
 		// If recursive we do not delimit.
 		delimiter = ""
 	}
+	// Return object owner information by default
+	fetchOwner := true
 	// Validate bucket name.
 	if err := isValidBucketName(bucketName); err != nil {
 		defer close(objectStatCh)
@@ -108,7 +110,7 @@ func (c Client) ListObjectsV2(bucketName, objectPrefix string, recursive bool, d
 		var continuationToken string
 		for {
 			// Get list of objects a maximum of 1000 per request.
-			result, err := c.listObjectsV2Query(bucketName, objectPrefix, continuationToken, delimiter, 1000)
+			result, err := c.listObjectsV2Query(bucketName, objectPrefix, continuationToken, fetchOwner, delimiter, 1000)
 			if err != nil {
 				objectStatCh <- ObjectInfo{
 					Err: err,
@@ -166,7 +168,7 @@ func (c Client) ListObjectsV2(bucketName, objectPrefix string, recursive bool, d
 // ?delimiter - A delimiter is a character you use to group keys.
 // ?prefix - Limits the response to keys that begin with the specified prefix.
 // ?max-keys - Sets the maximum number of keys returned in the response body.
-func (c Client) listObjectsV2Query(bucketName, objectPrefix, continuationToken, delimiter string, maxkeys int) (listBucketV2Result, error) {
+func (c Client) listObjectsV2Query(bucketName, objectPrefix, continuationToken string, fetchOwner bool, delimiter string, maxkeys int) (listBucketV2Result, error) {
 	// Validate bucket name.
 	if err := isValidBucketName(bucketName); err != nil {
 		return listBucketV2Result{}, err
@@ -193,6 +195,11 @@ func (c Client) listObjectsV2Query(bucketName, objectPrefix, continuationToken, 
 	// Set delimiter.
 	if delimiter != "" {
 		urlValues.Set("delimiter", delimiter)
+	}
+
+	// Fetch owner when listing
+	if fetchOwner {
+		urlValues.Set("fetch-owner", "true")
 	}
 
 	// maxkeys should default to 1000 or less.
@@ -475,6 +482,7 @@ func (c Client) listIncompleteUploads(bucketName, objectPrefix string, recursive
 						objectMultipartStatCh <- ObjectMultipartInfo{
 							Err: err,
 						}
+						continue
 					}
 				}
 				select {

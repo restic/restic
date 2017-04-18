@@ -1,7 +1,7 @@
 // +build ignore
 
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015, 2016 Minio, Inc.
+ * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015 Minio, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ package main
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/policy"
 )
 
 func main() {
-	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-	// dummy values, please replace them with original values.
+	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-bucketname and my-objectname
+	// are dummy values, please replace them with original values.
 
 	// Requests are always secure (HTTPS) by default. Set secure=false to enable insecure (HTTP) access.
 	// This boolean value is the last argument for New().
@@ -39,16 +39,23 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// s3Client.TraceOn(os.Stderr)
+	objectsCh := make(chan string)
 
-	// Description of policy input.
-	// policy.BucketPolicyNone - Remove any previously applied bucket policy at a prefix.
-	// policy.BucketPolicyReadOnly - Set read-only operations at a prefix.
-	// policy.BucketPolicyWriteOnly - Set write-only operations at a prefix.
-	// policy.BucketPolicyReadWrite - Set read-write operations at a prefix.
-	err = s3Client.SetBucketPolicy("my-bucketname", "my-objectprefix", policy.BucketPolicyReadWrite)
-	if err != nil {
-		log.Fatalln(err)
+	// Send object names that are needed to be removed to objectsCh
+	go func() {
+		defer close(objectsCh)
+		for i := 0; i < 10; i++ {
+			objectsCh <- "/path/to/my-objectname" + strconv.Itoa(i)
+		}
+	}()
+
+	// Call RemoveObjects API
+	errorCh := s3Client.RemoveObjects("my-bucketname", objectsCh)
+
+	// Print errors received from RemoveObjects API
+	for e := range errorCh {
+		log.Fatalln("Failed to remove " + e.ObjectName + ", error: " + e.Err.Error())
 	}
+
 	log.Println("Success")
 }

@@ -1,7 +1,7 @@
 // +build ignore
 
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015, 2016 Minio, Inc.
+ * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2016 Minio, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/policy"
 )
 
 func main() {
-	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY and my-bucketname are
-	// dummy values, please replace them with original values.
+	// Note: YOUR-ACCESSKEYID, YOUR-SECRETACCESSKEY, my-testfile, my-bucketname and
+	// my-objectname are dummy values, please replace them with original values.
 
 	// Requests are always secure (HTTPS) by default. Set secure=false to enable insecure (HTTP) access.
 	// This boolean value is the last argument for New().
@@ -39,16 +39,18 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	// s3Client.TraceOn(os.Stderr)
+	// Enable S3 transfer accelerate endpoint.
+	s3Client.S3TransferAccelerate("s3-accelerate.amazonaws.com")
 
-	// Description of policy input.
-	// policy.BucketPolicyNone - Remove any previously applied bucket policy at a prefix.
-	// policy.BucketPolicyReadOnly - Set read-only operations at a prefix.
-	// policy.BucketPolicyWriteOnly - Set write-only operations at a prefix.
-	// policy.BucketPolicyReadWrite - Set read-write operations at a prefix.
-	err = s3Client.SetBucketPolicy("my-bucketname", "my-objectprefix", policy.BucketPolicyReadWrite)
+	object, err := os.Open("my-testfile")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("Success")
+	defer object.Close()
+
+	n, err := s3Client.PutObject("my-bucketname", "my-objectname", object, "application/octet-stream")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
 }

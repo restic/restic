@@ -206,3 +206,39 @@ type createBucketConfiguration struct {
 	XMLName  xml.Name `xml:"http://s3.amazonaws.com/doc/2006-03-01/ CreateBucketConfiguration" json:"-"`
 	Location string   `xml:"LocationConstraint"`
 }
+
+// deleteObject container for Delete element in MultiObjects Delete XML request
+type deleteObject struct {
+	Key       string
+	VersionID string `xml:"VersionId,omitempty"`
+}
+
+// deletedObject container for Deleted element in MultiObjects Delete XML response
+type deletedObject struct {
+	Key       string
+	VersionID string `xml:"VersionId,omitempty"`
+	// These fields are ignored.
+	DeleteMarker          bool
+	DeleteMarkerVersionID string
+}
+
+// nonDeletedObject container for Error element (failed deletion) in MultiObjects Delete XML response
+type nonDeletedObject struct {
+	Key     string
+	Code    string
+	Message string
+}
+
+// deletedMultiObjects container for MultiObjects Delete XML request
+type deleteMultiObjects struct {
+	XMLName xml.Name `xml:"Delete"`
+	Quiet   bool
+	Objects []deleteObject `xml:"Object"`
+}
+
+// deletedMultiObjectsResult container for MultiObjects Delete XML response
+type deleteMultiObjectsResult struct {
+	XMLName          xml.Name           `xml:"DeleteResult"`
+	DeletedObjects   []deletedObject    `xml:"Deleted"`
+	UnDeletedObjects []nonDeletedObject `xml:"Error"`
+}

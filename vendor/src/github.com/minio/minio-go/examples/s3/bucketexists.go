@@ -38,10 +38,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	err = s3Client.BucketExists("my-bucketname")
+	found, err := s3Client.BucketExists("my-bucketname")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	log.Println("Success")
+	if found {
+		log.Println("Bucket found.")
+	} else {
+		log.Println("Bucket not found.")
+	}
 }

@@ -22,7 +22,6 @@ import (
 	"log"
 
 	"github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/policy"
 )
 
 func main() {
@@ -41,14 +40,17 @@ func main() {
 
 	// s3Client.TraceOn(os.Stderr)
 
-	// Description of policy input.
-	// policy.BucketPolicyNone - Remove any previously applied bucket policy at a prefix.
-	// policy.BucketPolicyReadOnly - Set read-only operations at a prefix.
-	// policy.BucketPolicyWriteOnly - Set write-only operations at a prefix.
-	// policy.BucketPolicyReadWrite - Set read-write operations at a prefix.
-	err = s3Client.SetBucketPolicy("my-bucketname", "my-objectprefix", policy.BucketPolicyReadWrite)
+	// Fetch the policy at 'my-objectprefix'.
+	policies, err := s3Client.ListBucketPolicies("my-bucketname", "my-objectprefix")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println("Success")
+
+	// ListBucketPolicies returns a map of objects policy rules and their associated permissions
+	//    e.g.    mybucket/downloadfolder/* => readonly
+	//	      mybucket/shared/* => readwrite
+
+	for resource, permission := range policies {
+		log.Println(resource, " => ", permission)
+	}
 }

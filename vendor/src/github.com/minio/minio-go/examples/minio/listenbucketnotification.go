@@ -33,7 +33,7 @@ func main() {
 
 	// New returns an Amazon S3 compatible client object. API compatibility (v2 or v4) is automatically
 	// determined based on the Endpoint value.
-	minioClient, err := minio.New("play.minio.io:9000", "YOUR-ACCESSKEYID", "YOUR-SECRETACCESSKEY", true)
+	minioClient, err := minio.New("play.minio.io:9000", "YOUR-ACCESS", "YOUR-SECRET", true)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -46,30 +46,11 @@ func main() {
 	// Indicate to our routine to exit cleanly upon return.
 	defer close(doneCh)
 
-	// Fetch the bucket location.
-	location, err := minioClient.GetBucketLocation("YOUR-BUCKET")
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	// Construct a new account Arn.
-	accountArn := minio.NewArn("minio", "sns", location, "your-account-id", "listen")
-	topicConfig := minio.NewNotificationConfig(accountArn)
-	topicConfig.AddEvents(minio.ObjectCreatedAll, minio.ObjectRemovedAll)
-	topicConfig.AddFilterPrefix("photos/")
-	topicConfig.AddFilterSuffix(".jpg")
-
-	// Now, set all previously created notification configs
-	bucketNotification := minio.BucketNotification{}
-	bucketNotification.AddTopic(topicConfig)
-	err = minioClient.SetBucketNotification("YOUR-BUCKET", bucketNotification)
-	if err != nil {
-		log.Fatalln("Error: " + err.Error())
-	}
-	log.Println("Success")
-
-	// Listen for bucket notifications on "mybucket" filtered by accountArn "arn:minio:sns:<location>:<your-account-id>:listen".
-	for notificationInfo := range minioClient.ListenBucketNotification("YOUR-BUCKET", accountArn, doneCh) {
+	// Listen for bucket notifications on "mybucket" filtered by prefix, suffix and events.
+	for notificationInfo := range minioClient.ListenBucketNotification("YOUR-BUCKET", "PREFIX", "SUFFIX", []string{
+		"s3:ObjectCreated:*",
+		"s3:ObjectRemoved:*",
+	}, doneCh) {
 		if notificationInfo.Err != nil {
 			log.Fatalln(notificationInfo.Err)
 		}
