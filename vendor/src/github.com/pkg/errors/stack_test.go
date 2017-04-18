@@ -185,7 +185,7 @@ func TestStackTrace(t *testing.T) {
 		},
 	}, {
 		func() error { return New("ooh") }(), []string{
-			`github.com/pkg/errors.(func·005|TestStackTrace.func1)` +
+			`github.com/pkg/errors.(func·009|TestStackTrace.func1)` +
 				"\n\t.+/github.com/pkg/errors/stack_test.go:187", // this is the stack of New
 			"github.com/pkg/errors.TestStackTrace\n" +
 				"\t.+/github.com/pkg/errors/stack_test.go:187", // this is the stack of New's caller
@@ -196,9 +196,9 @@ func TestStackTrace(t *testing.T) {
 				return Errorf("hello %s", fmt.Sprintf("world"))
 			}()
 		}()), []string{
-			`github.com/pkg/errors.(func·006|TestStackTrace.func2.1)` +
+			`github.com/pkg/errors.(func·010|TestStackTrace.func2.1)` +
 				"\n\t.+/github.com/pkg/errors/stack_test.go:196", // this is the stack of Errorf
-			`github.com/pkg/errors.(func·007|TestStackTrace.func2)` +
+			`github.com/pkg/errors.(func·011|TestStackTrace.func2)` +
 				"\n\t.+/github.com/pkg/errors/stack_test.go:197", // this is the stack of Errorf's caller
 			"github.com/pkg/errors.TestStackTrace\n" +
 				"\t.+/github.com/pkg/errors/stack_test.go:198", // this is the stack of Errorf's caller's caller

@@ -34,8 +34,8 @@
 		{
 			"importpath": "github.com/pkg/errors",
 			"repository": "https://github.com/pkg/errors",
-			"revision": "17b591df37844cde689f4d5813e5cea0927d8dd2",
-			"branch": "master"
+			"revision": "645ef00459ed84a119197bfb8d8205042c6df63d",
+			"branch": "HEAD"
 		},
 		{
 			"importpath": "github.com/pkg/profile",
