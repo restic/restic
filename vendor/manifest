@@ -70,7 +70,7 @@
 		{
 			"importpath": "github.com/spf13/pflag",
 			"repository": "https://github.com/spf13/pflag",
-			"revision": "c7e63cf4530bcd3ba943729cee0efeff2ebea63f",
+			"revision": "2300d0f8576fe575f71aaa5b9bbe4e1b0dc2eb51",
 			"branch": "master"
 		},
 		{

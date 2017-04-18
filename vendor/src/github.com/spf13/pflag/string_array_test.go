@@ -192,3 +192,42 @@ func TestSAWithSpecialChar(t *testing.T) {
 		}
 	}
 }
+
+func TestSAWithSquareBrackets(t *testing.T) {
+	var sa []string
+	f := setUpSAFlagSet(&sa)
+
+	in := []string{"][]-[", "[a-z]", "[a-z]+"}
+	expected := []string{"][]-[", "[a-z]", "[a-z]+"}
+	argfmt := "--sa=%s"
+	arg1 := fmt.Sprintf(argfmt, in[0])
+	arg2 := fmt.Sprintf(argfmt, in[1])
+	arg3 := fmt.Sprintf(argfmt, in[2])
+	err := f.Parse([]string{arg1, arg2, arg3})
+	if err != nil {
+		t.Fatal("expected no error; got", err)
+	}
+
+	if len(expected) != len(sa) {
+		t.Fatalf("expected number of sa to be %d but got: %d", len(expected), len(sa))
+	}
+	for i, v := range sa {
+		if expected[i] != v {
+			t.Fatalf("expected sa[%d] to be %s but got: %s", i, expected[i], v)
+		}
+	}
+
+	values, err := f.GetStringArray("sa")
+	if err != nil {
+		t.Fatal("expected no error; got", err)
+	}
+
+	if len(expected) != len(values) {
+		t.Fatalf("expected number of values to be %d but got: %d", len(expected), len(values))
+	}
+	for i, v := range values {
+		if expected[i] != v {
+			t.Fatalf("expected got sa[%d] to be %s but got: %s", i, expected[i], v)
+		}
+	}
+}
