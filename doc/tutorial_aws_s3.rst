@@ -50,7 +50,7 @@ list of them here:
 
 Click the "Create bucket" button and choose a name and region for your new
 bucket. For the purpose of this tutorial, the bucket will be named
-``restic-demo`` and reside in Frankfurk. Because the bucket name space is
+``restic-demo`` and reside in Frankfurt. Because the bucket name space is
 shared among all AWS users, the name ``restic-demo`` may not be available to
 you. Be creative and choose a unique bucket name.
 
