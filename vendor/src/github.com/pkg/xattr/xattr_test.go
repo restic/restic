@@ -18,12 +18,12 @@ func Test_setxattr(t *testing.T) {
 	}
 	defer os.Remove(tmp.Name())
 
-	err = Setxattr(tmp.Name(), UserPrefix+"test", []byte("test-attr-value"))
+	err = Set(tmp.Name(), UserPrefix+"test", []byte("test-attr-value"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	list, err := Listxattr(tmp.Name())
+	list, err := List(tmp.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func Test_setxattr(t *testing.T) {
 	}
 
 	var data []byte
-	data, err = Getxattr(tmp.Name(), UserPrefix+"test")
+	data, err = Get(tmp.Name(), UserPrefix+"test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func Test_setxattr(t *testing.T) {
 		t.Fail()
 	}
 
-	err = Removexattr(tmp.Name(), UserPrefix+"test")
+	err = Remove(tmp.Name(), UserPrefix+"test")
 	if err != nil {
 		t.Fatal(err)
 	}

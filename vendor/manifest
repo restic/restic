@@ -52,8 +52,8 @@
 		{
 			"importpath": "github.com/pkg/xattr",
 			"repository": "https://github.com/pkg/xattr",
-			"revision": "b867675798fa7708a444945602b452ca493f2272",
-			"branch": "master"
+			"revision": "858d49c224b241ba9393e20f521f6a76f52dd482",
+			"branch": "HEAD"
 		},
 		{
 			"importpath": "github.com/restic/chunker",

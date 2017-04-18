@@ -14,12 +14,12 @@ Extended attribute support for Go (linux + darwin + freebsd).
   const path = "/tmp/myfile"
   const prefix = "user."
 
-  if err := xattr.Setxattr(path, prefix+"test", []byte("test-attr-value")); err != nil {
+  if err := xattr.Set(path, prefix+"test", []byte("test-attr-value")); err != nil {
     log.Fatal(err)
   }
 
   var data []byte
-  data, err = xattr.Getxattr(path, prefix+"test"); err != nil {
+  data, err = xattr.Get(path, prefix+"test"); err != nil {
     log.Fatal(err)
   }
 ```
