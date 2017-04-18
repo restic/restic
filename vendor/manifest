@@ -76,56 +76,56 @@
 		{
 			"importpath": "golang.org/x/crypto/curve25519",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/curve25519"
 		},
 		{
 			"importpath": "golang.org/x/crypto/ed25519",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/ed25519"
 		},
 		{
 			"importpath": "golang.org/x/crypto/pbkdf2",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/pbkdf2"
 		},
 		{
 			"importpath": "golang.org/x/crypto/poly1305",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "5f31782cfb2b6373211f8f9fbf31283fa234b570",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/poly1305"
 		},
 		{
 			"importpath": "golang.org/x/crypto/scrypt",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/scrypt"
 		},
 		{
 			"importpath": "golang.org/x/crypto/ssh",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/ssh"
 		},
 		{
 			"importpath": "golang.org/x/net/context",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "de35ec43e7a9aabd6a9c54d2898220ea7e44de7d",
+			"revision": "5602c733f70afc6dcec6766be0d5034d4c4f14de",
 			"branch": "master",
 			"path": "/context"
 		},
 		{
 			"importpath": "golang.org/x/sys/unix",
 			"repository": "https://go.googlesource.com/sys",
-			"revision": "30de6d19a3bd89a5f38ae4028e23aaa5582648af",
+			"revision": "f3918c30c5c2cb527c0b071a27c35120a6c0719a",
 			"branch": "master",
 			"path": "/unix"
 		}
