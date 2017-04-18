@@ -85,8 +85,7 @@ type Chunker struct {
 	chunkerState
 }
 
-// New returns a new Chunker based on polynomial p that reads from rd
-// with bufsize and pass all data to hash along the way.
+// New returns a new Chunker based on polynomial p that reads from rd.
 func New(rd io.Reader, pol Pol) *Chunker {
 	c := &Chunker{
 		chunkerState: chunkerState{
@@ -141,8 +140,8 @@ func (c *Chunker) reset() {
 	c.pre = c.MinSize - windowSize
 }
 
-// Calculate out_table and mod_table for optimization. Must be called only
-// once. This implementation uses a cache in the global variable cache.
+// fillTables calculates out_table and mod_table for optimization. This
+// implementation uses a cache in the global variable cache.
 func (c *Chunker) fillTables() {
 	// if polynomial hasn't been specified, do not compute anything for now
 	if c.pol == 0 {

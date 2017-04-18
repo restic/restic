@@ -58,8 +58,8 @@
 		{
 			"importpath": "github.com/restic/chunker",
 			"repository": "https://github.com/restic/chunker",
-			"revision": "49e9b5212b022a1ab373faf981ed4f2fc807502a",
-			"branch": "master"
+			"revision": "bb2ecf9a98e35a0b336ffc23fc515fb6e7961577",
+			"branch": "HEAD"
 		},
 		{
 			"importpath": "github.com/spf13/cobra",
