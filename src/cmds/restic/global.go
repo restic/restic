@@ -402,6 +402,16 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		return nil, errors.Fatalf("unable to open repo at %v: %v", s, err)
 	}
 
+	// check if config is there
+	fi, err := be.Stat(restic.Handle{Type: restic.ConfigFile})
+	if err != nil {
+		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, s)
+	}
+
+	if fi.Size == 0 {
+		return nil, errors.New("config file has zero size, invalid repository?")
+	}
+
 	return be, nil
 }
 

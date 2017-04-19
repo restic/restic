@@ -34,13 +34,6 @@ func Open(cfg Config) (*Local, error) {
 
 	be := &Local{Config: cfg, Layout: l}
 
-	// test if all necessary dirs are there
-	for _, d := range be.Paths() {
-		if _, err := fs.Stat(d); err != nil {
-			return nil, errors.Wrap(err, "Open")
-		}
-	}
-
 	return be, nil
 }
 
@@ -65,7 +58,7 @@ func Create(cfg Config) (*Local, error) {
 		return nil, errors.New("config file already exists")
 	}
 
-	// create paths for data, refs and temp
+	// create paths for data and refs
 	for _, d := range be.Paths() {
 		err := fs.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {
