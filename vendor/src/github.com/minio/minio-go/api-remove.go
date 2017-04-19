@@ -17,6 +17,9 @@
 package minio
 
 import (
+	"bytes"
+	"encoding/xml"
+	"io"
 	"net/http"
 	"net/url"
 )
@@ -68,10 +71,140 @@ func (c Client) RemoveObject(bucketName, objectName string) error {
 	if err != nil {
 		return err
 	}
+	if resp != nil {
+		// if some unexpected error happened and max retry is reached, we want to let client know
+		if resp.StatusCode != http.StatusNoContent {
+			return httpRespToErrorResponse(resp, bucketName, objectName)
+		}
+	}
+
 	// DeleteObject always responds with http '204' even for
 	// objects which do not exist. So no need to handle them
 	// specifically.
 	return nil
+}
+
+// RemoveObjectError - container of Multi Delete S3 API error
+type RemoveObjectError struct {
+	ObjectName string
+	Err        error
+}
+
+// generateRemoveMultiObjects - generate the XML request for remove multi objects request
+func generateRemoveMultiObjectsRequest(objects []string) []byte {
+	rmObjects := []deleteObject{}
+	for _, obj := range objects {
+		rmObjects = append(rmObjects, deleteObject{Key: obj})
+	}
+	xmlBytes, _ := xml.Marshal(deleteMultiObjects{Objects: rmObjects, Quiet: true})
+	return xmlBytes
+}
+
+// processRemoveMultiObjectsResponse - parse the remove multi objects web service
+// and return the success/failure result status for each object
+func processRemoveMultiObjectsResponse(body io.Reader, objects []string, errorCh chan<- RemoveObjectError) {
+	// Parse multi delete XML response
+	rmResult := &deleteMultiObjectsResult{}
+	err := xmlDecoder(body, rmResult)
+	if err != nil {
+		errorCh <- RemoveObjectError{ObjectName: "", Err: err}
+		return
+	}
+
+	// Fill deletion that returned an error.
+	for _, obj := range rmResult.UnDeletedObjects {
+		errorCh <- RemoveObjectError{
+			ObjectName: obj.Key,
+			Err: ErrorResponse{
+				Code:    obj.Code,
+				Message: obj.Message,
+			},
+		}
+	}
+}
+
+// RemoveObjects remove multiples objects from a bucket.
+// The list of objects to remove are received from objectsCh.
+// Remove failures are sent back via error channel.
+func (c Client) RemoveObjects(bucketName string, objectsCh <-chan string) <-chan RemoveObjectError {
+	errorCh := make(chan RemoveObjectError, 1)
+
+	// Validate if bucket name is valid.
+	if err := isValidBucketName(bucketName); err != nil {
+		defer close(errorCh)
+		errorCh <- RemoveObjectError{
+			Err: err,
+		}
+		return errorCh
+	}
+	// Validate objects channel to be properly allocated.
+	if objectsCh == nil {
+		defer close(errorCh)
+		errorCh <- RemoveObjectError{
+			Err: ErrInvalidArgument("Objects channel cannot be nil"),
+		}
+		return errorCh
+	}
+
+	// Generate and call MultiDelete S3 requests based on entries received from objectsCh
+	go func(errorCh chan<- RemoveObjectError) {
+		maxEntries := 1000
+		finish := false
+		urlValues := make(url.Values)
+		urlValues.Set("delete", "")
+
+		// Close error channel when Multi delete finishes.
+		defer close(errorCh)
+
+		// Loop over entries by 1000 and call MultiDelete requests
+		for {
+			if finish {
+				break
+			}
+			count := 0
+			var batch []string
+
+			// Try to gather 1000 entries
+			for object := range objectsCh {
+				batch = append(batch, object)
+				if count++; count >= maxEntries {
+					break
+				}
+			}
+			if count == 0 {
+				// Multi Objects Delete API doesn't accept empty object list, quit immediatly
+				break
+			}
+			if count < maxEntries {
+				// We didn't have 1000 entries, so this is the last batch
+				finish = true
+			}
+
+			// Generate remove multi objects XML request
+			removeBytes := generateRemoveMultiObjectsRequest(batch)
+			// Execute GET on bucket to list objects.
+			resp, err := c.executeMethod("POST", requestMetadata{
+				bucketName:         bucketName,
+				queryValues:        urlValues,
+				contentBody:        bytes.NewReader(removeBytes),
+				contentLength:      int64(len(removeBytes)),
+				contentMD5Bytes:    sumMD5(removeBytes),
+				contentSHA256Bytes: sum256(removeBytes),
+			})
+			if err != nil {
+				for _, b := range batch {
+					errorCh <- RemoveObjectError{ObjectName: b, Err: err}
+				}
+				continue
+			}
+
+			// Process multiobjects remove xml response
+			processRemoveMultiObjectsResponse(resp.Body, batch, errorCh)
+
+			closeResponse(resp)
+		}
+	}(errorCh)
+	return errorCh
 }
 
 // RemoveIncompleteUpload aborts an partially uploaded object.

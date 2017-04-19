@@ -149,6 +149,16 @@ func httpRespToErrorResponse(resp *http.Response, bucketName, objectName string)
 	return errResp
 }
 
+// ErrTransferAccelerationBucket - bucket name is invalid to be used with transfer acceleration.
+func ErrTransferAccelerationBucket(bucketName string) error {
+	msg := fmt.Sprintf("The name of the bucket used for Transfer Acceleration must be DNS-compliant and must not contain periods (\".\").")
+	return ErrorResponse{
+		Code:       "InvalidArgument",
+		Message:    msg,
+		BucketName: bucketName,
+	}
+}
+
 // ErrEntityTooLarge - Input size is larger than supported maximum.
 func ErrEntityTooLarge(totalSize, maxObjectSize int64, bucketName, objectName string) error {
 	msg := fmt.Sprintf("Your proposed upload size ‘%d’ exceeds the maximum allowed object size ‘%d’ for single PUT operation.", totalSize, maxObjectSize)
@@ -197,16 +207,6 @@ func ErrInvalidObjectName(message string) error {
 	return ErrorResponse{
 		Code:      "NoSuchKey",
 		Message:   message,
-		RequestID: "minio",
-	}
-}
-
-// ErrInvalidParts - Invalid number of parts.
-func ErrInvalidParts(expectedParts, uploadedParts int) error {
-	msg := fmt.Sprintf("Unexpected number of parts found Want %d, Got %d", expectedParts, uploadedParts)
-	return ErrorResponse{
-		Code:      "InvalidParts",
-		Message:   msg,
 		RequestID: "minio",
 	}
 }

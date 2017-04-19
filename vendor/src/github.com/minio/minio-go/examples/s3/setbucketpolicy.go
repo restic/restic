@@ -22,6 +22,7 @@ import (
 	"log"
 
 	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/pkg/policy"
 )
 
 func main() {
@@ -41,11 +42,11 @@ func main() {
 	// s3Client.TraceOn(os.Stderr)
 
 	// Description of policy input.
-	// minio.BucketPolicyNone - Remove any previously applied bucket policy at a prefix.
-	// minio.BucketPolicyReadOnly - Set read-only operations at a prefix.
-	// minio.BucketPolicyWriteOnly - Set write-only operations at a prefix.
-	// minio.BucketPolicyReadWrite - Set read-write operations at a prefix.
-	err = s3Client.SetBucketPolicy("my-bucketname", "my-objectprefix", minio.BucketPolicyReadWrite)
+	// policy.BucketPolicyNone - Remove any previously applied bucket policy at a prefix.
+	// policy.BucketPolicyReadOnly - Set read-only operations at a prefix.
+	// policy.BucketPolicyWriteOnly - Set write-only operations at a prefix.
+	// policy.BucketPolicyReadWrite - Set read-write operations at a prefix.
+	err = s3Client.SetBucketPolicy("my-bucketname", "my-objectprefix", policy.BucketPolicyReadWrite)
 	if err != nil {
 		log.Fatalln(err)
 	}

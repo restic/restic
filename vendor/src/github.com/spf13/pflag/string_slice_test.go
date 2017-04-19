@@ -213,3 +213,41 @@ func TestSSWithComma(t *testing.T) {
 		}
 	}
 }
+
+func TestSSWithSquareBrackets(t *testing.T) {
+	var ss []string
+	f := setUpSSFlagSet(&ss)
+
+	in := []string{`"[a-z]"`, `"[a-z]+"`}
+	expected := []string{"[a-z]", "[a-z]+"}
+	argfmt := "--ss=%s"
+	arg1 := fmt.Sprintf(argfmt, in[0])
+	arg2 := fmt.Sprintf(argfmt, in[1])
+	err := f.Parse([]string{arg1, arg2})
+	if err != nil {
+		t.Fatal("expected no error; got", err)
+	}
+
+	if len(expected) != len(ss) {
+		t.Fatalf("expected number of ss to be %d but got: %d", len(expected), len(ss))
+	}
+	for i, v := range ss {
+		if expected[i] != v {
+			t.Fatalf("expected ss[%d] to be %s but got: %s", i, expected[i], v)
+		}
+	}
+
+	values, err := f.GetStringSlice("ss")
+	if err != nil {
+		t.Fatal("expected no error; got", err)
+	}
+
+	if len(expected) != len(values) {
+		t.Fatalf("expected number of values to be %d but got: %d", len(expected), len(values))
+	}
+	for i, v := range values {
+		if expected[i] != v {
+			t.Fatalf("expected got ss[%d] to be %s but got: %s", i, expected[i], v)
+		}
+	}
+}

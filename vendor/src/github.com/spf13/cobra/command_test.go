@@ -1,6 +1,8 @@
 package cobra
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -134,6 +136,20 @@ func Test_DisableFlagParsing(t *testing.T) {
 	}
 }
 
+func TestInitHelpFlagMergesFlags(t *testing.T) {
+	usage := "custom flag"
+	baseCmd := Command{Use: "testcmd"}
+	baseCmd.PersistentFlags().Bool("help", false, usage)
+	cmd := Command{Use: "do"}
+	baseCmd.AddCommand(&cmd)
+
+	cmd.initHelpFlag()
+	actual := cmd.Flags().Lookup("help").Usage
+	if actual != usage {
+		t.Fatalf("Expected the help flag from the base command with usage '%s', but got the default with usage '%s'", usage, actual)
+	}
+}
+
 func TestCommandsAreSorted(t *testing.T) {
 	EnableCommandSorting = true
 
@@ -173,4 +189,36 @@ func TestEnableCommandSortingIsDisabled(t *testing.T) {
 	}
 
 	EnableCommandSorting = true
+}
+
+func TestSetOutput(t *testing.T) {
+	cmd := &Command{}
+	cmd.SetOutput(nil)
+	if out := cmd.OutOrStdout(); out != os.Stdout {
+		t.Fatalf("expected setting output to nil to revert back to stdout, got %v", out)
+	}
+}
+
+func TestFlagErrorFunc(t *testing.T) {
+
+	cmd := &Command{
+		Use: "print",
+		RunE: func(cmd *Command, args []string) error {
+			return nil
+		},
+	}
+	expectedFmt := "This is expected: %s"
+
+	cmd.SetFlagErrorFunc(func(c *Command, err error) error {
+		return fmt.Errorf(expectedFmt, err)
+	})
+	cmd.SetArgs([]string{"--bogus-flag"})
+	cmd.SetOutput(new(bytes.Buffer))
+
+	err := cmd.Execute()
+
+	expected := fmt.Sprintf(expectedFmt, "unknown flag: --bogus-flag")
+	if err.Error() != expected {
+		t.Errorf("expected %v, got %v", expected, err.Error())
+	}
 }

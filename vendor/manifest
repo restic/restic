@@ -28,14 +28,14 @@
 		{
 			"importpath": "github.com/minio/minio-go",
 			"repository": "https://github.com/minio/minio-go",
-			"revision": "b1674741d196d5d79486d7c1645ed6ded902b712",
-			"branch": "master"
+			"revision": "dcaae9ec4d0b0a81d17f22f6d7a186491f6a55ec",
+			"branch": "HEAD"
 		},
 		{
 			"importpath": "github.com/pkg/errors",
 			"repository": "https://github.com/pkg/errors",
-			"revision": "17b591df37844cde689f4d5813e5cea0927d8dd2",
-			"branch": "master"
+			"revision": "645ef00459ed84a119197bfb8d8205042c6df63d",
+			"branch": "HEAD"
 		},
 		{
 			"importpath": "github.com/pkg/profile",
@@ -52,80 +52,80 @@
 		{
 			"importpath": "github.com/pkg/xattr",
 			"repository": "https://github.com/pkg/xattr",
-			"revision": "b867675798fa7708a444945602b452ca493f2272",
-			"branch": "master"
+			"revision": "858d49c224b241ba9393e20f521f6a76f52dd482",
+			"branch": "HEAD"
 		},
 		{
 			"importpath": "github.com/restic/chunker",
 			"repository": "https://github.com/restic/chunker",
-			"revision": "49e9b5212b022a1ab373faf981ed4f2fc807502a",
-			"branch": "master"
+			"revision": "bb2ecf9a98e35a0b336ffc23fc515fb6e7961577",
+			"branch": "HEAD"
 		},
 		{
 			"importpath": "github.com/spf13/cobra",
 			"repository": "https://github.com/spf13/cobra",
-			"revision": "9c28e4bbd74e5c3ed7aacbc552b2cab7cfdfe744",
+			"revision": "b6cb3958937245a12d4d7728be080a6c758f4136",
 			"branch": "master"
 		},
 		{
 			"importpath": "github.com/spf13/pflag",
 			"repository": "https://github.com/spf13/pflag",
-			"revision": "c7e63cf4530bcd3ba943729cee0efeff2ebea63f",
+			"revision": "2300d0f8576fe575f71aaa5b9bbe4e1b0dc2eb51",
 			"branch": "master"
 		},
 		{
 			"importpath": "golang.org/x/crypto/curve25519",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/curve25519"
 		},
 		{
 			"importpath": "golang.org/x/crypto/ed25519",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/ed25519"
 		},
 		{
 			"importpath": "golang.org/x/crypto/pbkdf2",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/pbkdf2"
 		},
 		{
 			"importpath": "golang.org/x/crypto/poly1305",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "5f31782cfb2b6373211f8f9fbf31283fa234b570",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/poly1305"
 		},
 		{
 			"importpath": "golang.org/x/crypto/scrypt",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/scrypt"
 		},
 		{
 			"importpath": "golang.org/x/crypto/ssh",
 			"repository": "https://go.googlesource.com/crypto",
-			"revision": "81372b2fc2f10bef2a7f338da115c315a56b2726",
+			"revision": "efac7f277b17c19894091e358c6130cb6bd51117",
 			"branch": "master",
 			"path": "/ssh"
 		},
 		{
 			"importpath": "golang.org/x/net/context",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "de35ec43e7a9aabd6a9c54d2898220ea7e44de7d",
+			"revision": "5602c733f70afc6dcec6766be0d5034d4c4f14de",
 			"branch": "master",
 			"path": "/context"
 		},
 		{
 			"importpath": "golang.org/x/sys/unix",
 			"repository": "https://go.googlesource.com/sys",
-			"revision": "30de6d19a3bd89a5f38ae4028e23aaa5582648af",
+			"revision": "f3918c30c5c2cb527c0b071a27c35120a6c0719a",
 			"branch": "master",
 			"path": "/unix"
 		}

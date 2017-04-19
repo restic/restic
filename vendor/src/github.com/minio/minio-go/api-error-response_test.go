@@ -249,20 +249,6 @@ func TestErrInvalidObjectName(t *testing.T) {
 	}
 }
 
-// Test validates 'ErrInvalidParts' error response.
-func TestErrInvalidParts(t *testing.T) {
-	msg := fmt.Sprintf("Unexpected number of parts found Want %d, Got %d", 10, 9)
-	expectedResult := ErrorResponse{
-		Code:      "InvalidParts",
-		Message:   msg,
-		RequestID: "minio",
-	}
-	actualResult := ErrInvalidParts(10, 9)
-	if !reflect.DeepEqual(expectedResult, actualResult) {
-		t.Errorf("Expected result to be '%+v', but instead got '%+v'", expectedResult, actualResult)
-	}
-}
-
 // Test validates 'ErrInvalidArgument' response.
 func TestErrInvalidArgument(t *testing.T) {
 	expectedResult := ErrorResponse{

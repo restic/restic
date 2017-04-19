@@ -333,6 +333,59 @@ func testParse(f *FlagSet, t *testing.T) {
 	}
 }
 
+func testParseAll(f *FlagSet, t *testing.T) {
+	if f.Parsed() {
+		t.Error("f.Parse() = true before Parse")
+	}
+	f.BoolP("boola", "a", false, "bool value")
+	f.BoolP("boolb", "b", false, "bool2 value")
+	f.BoolP("boolc", "c", false, "bool3 value")
+	f.BoolP("boold", "d", false, "bool4 value")
+	f.StringP("stringa", "s", "0", "string value")
+	f.StringP("stringz", "z", "0", "string value")
+	f.StringP("stringx", "x", "0", "string value")
+	f.StringP("stringy", "y", "0", "string value")
+	f.Lookup("stringx").NoOptDefVal = "1"
+	args := []string{
+		"-ab",
+		"-cs=xx",
+		"--stringz=something",
+		"-d=true",
+		"-x",
+		"-y",
+		"ee",
+	}
+	want := []string{
+		"boola", "true",
+		"boolb", "true",
+		"boolc", "true",
+		"stringa", "xx",
+		"stringz", "something",
+		"boold", "true",
+		"stringx", "1",
+		"stringy", "ee",
+	}
+	got := []string{}
+	store := func(flag *Flag, value string) error {
+		got = append(got, flag.Name)
+		if len(value) > 0 {
+			got = append(got, value)
+		}
+		return nil
+	}
+	if err := f.ParseAll(args, store); err != nil {
+		t.Errorf("expected no error, got %s", err)
+	}
+	if !f.Parsed() {
+		t.Errorf("f.Parse() = false after Parse")
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("f.ParseAll() fail to restore the args")
+		t.Errorf("Got: %v", got)
+		t.Errorf("Want: %v", want)
+	}
+}
+
 func TestShorthand(t *testing.T) {
 	f := NewFlagSet("shorthand", ContinueOnError)
 	if f.Parsed() {
@@ -398,16 +451,21 @@ func TestParse(t *testing.T) {
 	testParse(GetCommandLine(), t)
 }
 
+func TestParseAll(t *testing.T) {
+	ResetForTesting(func() { t.Error("bad parse") })
+	testParseAll(GetCommandLine(), t)
+}
+
 func TestFlagSetParse(t *testing.T) {
 	testParse(NewFlagSet("test", ContinueOnError), t)
 }
 
 func TestChangedHelper(t *testing.T) {
 	f := NewFlagSet("changedtest", ContinueOnError)
-	_ = f.Bool("changed", false, "changed bool")
-	_ = f.Bool("settrue", true, "true to true")
-	_ = f.Bool("setfalse", false, "false to false")
-	_ = f.Bool("unchanged", false, "unchanged bool")
+	f.Bool("changed", false, "changed bool")
+	f.Bool("settrue", true, "true to true")
+	f.Bool("setfalse", false, "false to false")
+	f.Bool("unchanged", false, "unchanged bool")
 
 	args := []string{"--changed", "--settrue", "--setfalse=false"}
 	if err := f.Parse(args); err != nil {
@@ -945,4 +1003,44 @@ func TestPrintDefaults(t *testing.T) {
 		fmt.Println("\n" + defaultOutput)
 		t.Errorf("got %q want %q\n", got, defaultOutput)
 	}
+}
+
+func TestVisitAllFlagOrder(t *testing.T) {
+	fs := NewFlagSet("TestVisitAllFlagOrder", ContinueOnError)
+	fs.SortFlags = false
+	// https://github.com/spf13/pflag/issues/120
+	fs.SetNormalizeFunc(func(f *FlagSet, name string) NormalizedName {
+		return NormalizedName(name)
+	})
+
+	names := []string{"C", "B", "A", "D"}
+	for _, name := range names {
+		fs.Bool(name, false, "")
+	}
+
+	i := 0
+	fs.VisitAll(func(f *Flag) {
+		if names[i] != f.Name {
+			t.Errorf("Incorrect order. Expected %v, got %v", names[i], f.Name)
+		}
+		i++
+	})
+}
+
+func TestVisitFlagOrder(t *testing.T) {
+	fs := NewFlagSet("TestVisitFlagOrder", ContinueOnError)
+	fs.SortFlags = false
+	names := []string{"C", "B", "A", "D"}
+	for _, name := range names {
+		fs.Bool(name, false, "")
+		fs.Set(name, "true")
+	}
+
+	i := 0
+	fs.Visit(func(f *Flag) {
+		if names[i] != f.Name {
+			t.Errorf("Incorrect order. Expected %v, got %v", names[i], f.Name)
+		}
+		i++
+	})
 }

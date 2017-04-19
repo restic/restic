@@ -19,6 +19,7 @@ package policy
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/minio/minio-go/pkg/set"
@@ -1372,6 +1373,104 @@ func TestGetObjectPolicy(t *testing.T) {
 			t.Fatalf("%+v: expected: [%t,%t], got: [%t,%t]", testCase,
 				testCase.expectedResult1, testCase.expectedResult2,
 				readOnly, writeOnly)
+		}
+	}
+}
+
+// GetPolicyRules is called and the result is validated
+func TestListBucketPolicies(t *testing.T) {
+
+	// Condition for read objects
+	downloadCondMap := make(ConditionMap)
+	downloadCondKeyMap := make(ConditionKeyMap)
+	downloadCondKeyMap.Add("s3:prefix", set.CreateStringSet("download"))
+	downloadCondMap.Add("StringEquals", downloadCondKeyMap)
+
+	// Condition for readwrite objects
+	downloadUploadCondMap := make(ConditionMap)
+	downloadUploadCondKeyMap := make(ConditionKeyMap)
+	downloadUploadCondKeyMap.Add("s3:prefix", set.CreateStringSet("both"))
+	downloadUploadCondMap.Add("StringEquals", downloadUploadCondKeyMap)
+
+	testCases := []struct {
+		statements     []Statement
+		bucketName     string
+		prefix         string
+		expectedResult map[string]BucketPolicy
+	}{
+		// Empty statements, bucket name and prefix.
+		{[]Statement{}, "", "", map[string]BucketPolicy{}},
+		// Non-empty statements, empty bucket name and empty prefix.
+		{[]Statement{{
+			Actions:   readOnlyBucketActions,
+			Effect:    "Allow",
+			Principal: User{AWS: set.CreateStringSet("*")},
+			Resources: set.CreateStringSet("arn:aws:s3:::mybucket"),
+		}}, "", "", map[string]BucketPolicy{}},
+		// Empty statements, non-empty bucket name and empty prefix.
+		{[]Statement{}, "mybucket", "", map[string]BucketPolicy{}},
+		// Readonly object statement
+		{[]Statement{
+			{
+				Actions:   commonBucketActions,
+				Effect:    "Allow",
+				Principal: User{AWS: set.CreateStringSet("*")},
+				Resources: set.CreateStringSet("arn:aws:s3:::mybucket"),
+			},
+			{
+				Actions:    readOnlyBucketActions,
+				Effect:     "Allow",
+				Principal:  User{AWS: set.CreateStringSet("*")},
+				Conditions: downloadCondMap,
+				Resources:  set.CreateStringSet("arn:aws:s3:::mybucket"),
+			},
+			{
+				Actions:   readOnlyObjectActions,
+				Effect:    "Allow",
+				Principal: User{AWS: set.CreateStringSet("*")},
+				Resources: set.CreateStringSet("arn:aws:s3:::mybucket/download*"),
+			}}, "mybucket", "", map[string]BucketPolicy{"mybucket/download*": BucketPolicyReadOnly}},
+		// Write Only
+		{[]Statement{
+			{
+				Actions:   commonBucketActions.Union(writeOnlyBucketActions),
+				Effect:    "Allow",
+				Principal: User{AWS: set.CreateStringSet("*")},
+				Resources: set.CreateStringSet("arn:aws:s3:::mybucket"),
+			},
+			{
+				Actions:   writeOnlyObjectActions,
+				Effect:    "Allow",
+				Principal: User{AWS: set.CreateStringSet("*")},
+				Resources: set.CreateStringSet("arn:aws:s3:::mybucket/upload*"),
+			}}, "mybucket", "", map[string]BucketPolicy{"mybucket/upload*": BucketPolicyWriteOnly}},
+		// Readwrite
+		{[]Statement{
+			{
+				Actions:   commonBucketActions.Union(writeOnlyBucketActions),
+				Effect:    "Allow",
+				Principal: User{AWS: set.CreateStringSet("*")},
+				Resources: set.CreateStringSet("arn:aws:s3:::mybucket"),
+			},
+			{
+				Actions:    readOnlyBucketActions,
+				Effect:     "Allow",
+				Principal:  User{AWS: set.CreateStringSet("*")},
+				Conditions: downloadUploadCondMap,
+				Resources:  set.CreateStringSet("arn:aws:s3:::mybucket"),
+			},
+			{
+				Actions:   writeOnlyObjectActions.Union(readOnlyObjectActions),
+				Effect:    "Allow",
+				Principal: User{AWS: set.CreateStringSet("*")},
+				Resources: set.CreateStringSet("arn:aws:s3:::mybucket/both*"),
+			}}, "mybucket", "", map[string]BucketPolicy{"mybucket/both*": BucketPolicyReadWrite}},
+	}
+
+	for _, testCase := range testCases {
+		policyRules := GetPolicies(testCase.statements, testCase.bucketName)
+		if !reflect.DeepEqual(testCase.expectedResult, policyRules) {
+			t.Fatalf("%+v:\n expected: %+v, got: %+v", testCase, testCase.expectedResult, policyRules)
 		}
 	}
 }

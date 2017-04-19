@@ -49,7 +49,7 @@ func specialDir(name string) bool {
 // excludePath returns true if the file should not be copied to the new GOPATH.
 func excludePath(name string) bool {
 	ext := path.Ext(name)
-	if ext == ".go" || ext == ".s" {
+	if ext == ".go" || ext == ".s" || ext == ".h" {
 		return false
 	}
 
