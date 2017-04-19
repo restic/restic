@@ -124,13 +124,6 @@ func Open(cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	// test if all necessary dirs and files are there
-	for _, d := range sftp.Paths() {
-		if _, err := sftp.c.Lstat(d); err != nil {
-			return nil, errors.Errorf("%s does not exist", d)
-		}
-	}
-
 	debug.Log("layout: %v\n", sftp.Layout)
 
 	sftp.Config = cfg
@@ -204,7 +197,7 @@ func Create(cfg Config) (*SFTP, error) {
 		return nil, errors.New("config file already exists")
 	}
 
-	// create paths for data, refs and temp blobs
+	// create paths for data and refs
 	for _, d := range sftp.Paths() {
 		err = sftp.mkdirAll(d, backend.Modes.Dir)
 		debug.Log("mkdirAll %v -> %v", d, err)
