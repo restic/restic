@@ -9,7 +9,12 @@ For detailed usage and installation instructions check out the `documentation <h
 
 Quick start
 -----------
-Once you've `installed <https://restic.readthedocs.io/en/latest/installation.html>`__ restic, start off with creating a repository for your backups::
+
+Once you've `installed
+<https://restic.readthedocs.io/en/latest/installation.html>`__ restic, start
+off with creating a repository for your backups:
+
+.. code-block:: console
 
     $ restic init --repo /tmp/backup
     enter password for new backend:
@@ -18,7 +23,9 @@ Once you've `installed <https://restic.readthedocs.io/en/latest/installation.htm
     Please note that knowledge of your password is required to access the repository.
     Losing your password means that your data is irrecoverably lost.
 
-and add some data::
+and add some data:
+
+.. code-block:: console
 
     $ restic -r /tmp/backup backup ~/work
     enter password for repository:
