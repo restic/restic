@@ -1,4 +1,4 @@
-|Documentation| |Build Status| |Build status| |Report Card|
+|Documentation| |Build Status| |Build status| |Report Card| |Say Thanks|
 
 Introduction
 ------------
@@ -88,3 +88,5 @@ complete text in ``LICENSE``.
    :target: https://ci.appveyor.com/project/fd0/restic/branch/master
 .. |Report Card| image:: http://goreportcard.com/badge/github.com/restic/restic
    :target: http://goreportcard.com/report/github.com/restic/restic
+.. |Say Thanks| image:: https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg
+   :target: https://saythanks.io/to/restic
