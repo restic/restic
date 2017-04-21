@@ -66,6 +66,8 @@ func init() {
 
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
+
+	f.SortFlags = false
 }
 
 func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
