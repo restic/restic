@@ -64,7 +64,7 @@
 		{
 			"importpath": "github.com/spf13/cobra",
 			"repository": "https://github.com/spf13/cobra",
-			"revision": "b6cb3958937245a12d4d7728be080a6c758f4136",
+			"revision": "10f6b9d7e1631a54ad07c5c0fb71c28a1abfd3c2",
 			"branch": "master"
 		},
 		{
