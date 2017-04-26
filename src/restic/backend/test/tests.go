@@ -249,7 +249,13 @@ func TestLoad(t testing.TB) {
 			continue
 		}
 
-		if l <= len(d) && len(buf) != l {
+		if l == 0 && len(buf) != len(d) {
+			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, len(d), len(buf))
+			rd.Close()
+			continue
+		}
+
+		if l > 0 && l <= len(d) && len(buf) != l {
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
 			rd.Close()
 			continue
