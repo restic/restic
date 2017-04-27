@@ -74,6 +74,12 @@ func (env *TravisEnvironment) getMinio() error {
 		return nil
 	}
 
+	if *restServer != "" {
+		msg("using REST server at %q\n", *restServer)
+		env.rest = *restServer
+		return nil
+	}
+
 	tempfile, err := ioutil.TempFile("", "minio-server-")
 	if err != nil {
 		return fmt.Errorf("create tempfile for minio download failed: %v\n", err)
@@ -176,18 +182,26 @@ func (env *TravisEnvironment) Prepare() error {
 
 	msg("preparing environment for Travis CI\n")
 
-	for _, pkg := range []string{
+	pkgs := []string{
 		"golang.org/x/tools/cmd/cover",
 		"github.com/pierrre/gotestcover",
-		"github.com/restic/rest-server",
-	} {
+		"github.com/NebulousLabs/glyphcheck",
+	}
+
+	if env.rest == "" {
+		pkgs = append(pkgs, "github.com/restic/rest-server")
+	}
+
+	for _, pkg := range pkgs {
 		err := run("go", "get", pkg)
 		if err != nil {
 			return err
 		}
 	}
 
-	env.rest = filepath.Join(os.Getenv("GOPATH"), "bin", "rest-server")
+	if env.rest == "" {
+		env.rest = filepath.Join(os.Getenv("GOPATH"), "bin", "rest-server")
+	}
 
 	if err := env.getMinio(); err != nil {
 		return err
@@ -335,7 +349,7 @@ func (env *TravisEnvironment) RunTests() error {
 	// do not run fuse tests on darwin
 	if runtime.GOOS == "darwin" {
 		msg("skip fuse integration tests on %v\n", runtime.GOOS)
-		os.Setenv("RESTIC_TEST_FUSE", "0")
+		_ = os.Setenv("RESTIC_TEST_FUSE", "0")
 	}
 
 	cwd, err := os.Getwd()
@@ -371,6 +385,10 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	if err = runGofmt(); err != nil {
+		return err
+	}
+
+	if err = runGlyphcheck(); err != nil {
 		return err
 	}
 
@@ -524,6 +542,18 @@ func runGofmt() error {
 
 	if len(buf) > 0 {
 		return fmt.Errorf("not formatted with `gofmt`:\n%s\n", buf)
+	}
+
+	return nil
+}
+
+func runGlyphcheck() error {
+	cmd := exec.Command("glyphcheck", "./...")
+	cmd.Stderr = os.Stderr
+
+	buf, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("error running glyphcheck: %v\noutput: %s\n", err, buf)
 	}
 
 	return nil
