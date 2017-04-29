@@ -454,7 +454,7 @@ the JSON is indented):
 
 .. code-block:: console
 
-    $ restic -r /tmp/restic-repo cat blob b8138ab08a4722596ac89c917827358da4672eac68e3c03a8115b88dbf4bfb59 | jq .
+    $ restic -r /tmp/restic-repo cat blob 2da81727b6585232894cfbb8f8bdab8d1eccd3d8f7c92bc934d62e62e618ffdf | jq .
     enter password for repository:
     {
       "nodes": [
@@ -485,7 +485,7 @@ to print a tree. The tree referenced above can be dumped as follows:
 
 .. code-block:: console
 
-    $ restic -r /tmp/restic-repo cat blob 8b238c8811cc362693e91a857460c78d3acf7d9edb2f111048691976803cf16e
+    $ restic -r /tmp/restic-repo cat blob b26e315b0988ddcd1cee64c351d13a100fedbc9fdbb144a67d1b765ab280b4dc
     enter password for repository:
     {
       "nodes": [
