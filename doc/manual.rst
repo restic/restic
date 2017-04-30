@@ -372,13 +372,11 @@ specify them with multiple ``--exclude``'s or one ``--exclude-file``
     foo/**/bar
     $ restic -r /tmp/backup backup ~/work --exclude=*.c --exclude-file=exclude
 
-Patterns use
-```filepath.Glob`` <https://golang.org/pkg/path/filepath/#Glob>`__
-internally, see
-```filepath.Match`` <https://golang.org/pkg/path/filepath/#Match>`__ for
-syntax. Additionally ``**`` excludes arbitrary subdirectories.
+Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ internally,
+see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for syntax.
+Additionally ``**`` excludes arbitrary subdirectories.
 Environment-variables in exclude-files are expanded with
-```os.ExpandEnv`` <https://golang.org/pkg/os/#ExpandEnv>`__.
+`os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__.
 
 By specifying the option ``--one-file-system`` you can instruct restic
 to only backup files from the file systems the initially specified files
@@ -821,8 +819,7 @@ The debug log will always contain all log messages restic generates. You
 can also instruct restic to print some or all debug messages to stderr.
 These can also be limited to e.g. a list of source files or a list of
 patterns for function names. The patterns are globbing patterns (see the
-documentation for
-```path.Glob`` <https://golang.org/pkg/path/#Glob>`__), multiple
+documentation for `path.Glob <https://golang.org/pkg/path/#Glob>`__), multiple
 patterns are separated by commas. Patterns are case sensitive.
 
 Printing all log messages to the console can be achieved by setting the
