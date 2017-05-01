@@ -19,115 +19,88 @@ import (
 	"restic/backend"
 )
 
-// CreateFn is a function that creates a temporary repository for the tests.
-var CreateFn func() (restic.Backend, error)
+// Suite implements a test suite for restic backends.
+type Suite struct {
+	Config interface{}
 
-// OpenFn is a function that opens a previously created temporary repository.
-var OpenFn func() (restic.Backend, error)
+	// NewConfig returns a config for a new temporary backend that will be used in tests.
+	NewConfig func() (interface{}, error)
 
-// CleanupFn removes temporary files and directories created during the tests.
-var CleanupFn func() error
+	// CreateFn is a function that creates a temporary repository for the tests.
+	Create func(cfg interface{}) (restic.Backend, error)
 
-// MinimalData instructs the tests to not use excessive data.
-var MinimalData = false
+	// OpenFn is a function that opens a previously created temporary repository.
+	Open func(cfg interface{}) (restic.Backend, error)
 
-var but restic.Backend // backendUnderTest
-var butInitialized bool
+	// CleanupFn removes data created during the tests.
+	Cleanup func(cfg interface{}) error
 
-func open(t testing.TB) restic.Backend {
-	if OpenFn == nil {
-		t.Fatal("OpenFn not set")
-	}
-
-	if CreateFn == nil {
-		t.Fatalf("CreateFn not set")
-	}
-
-	if !butInitialized {
-		be, err := CreateFn()
-		if err != nil {
-			t.Fatalf("Create returned unexpected error: %+v", err)
-		}
-
-		but = be
-		butInitialized = true
-	}
-
-	if but == nil {
-		var err error
-		but, err = OpenFn()
-		if err != nil {
-			t.Fatalf("Open returned unexpected error: %+v", err)
-		}
-	}
-
-	return but
+	// MinimalData instructs the tests to not use excessive data.
+	MinimalData bool
 }
 
-func close(t testing.TB) {
-	if but == nil {
-		t.Fatalf("trying to close non-existing backend")
-	}
-
-	err := but.Close()
+// RunTests executes all defined tests as subtests of t.
+func (s *Suite) RunTests(t *testing.T) {
+	var err error
+	s.Config, err = s.NewConfig()
 	if err != nil {
-		t.Fatalf("Close returned unexpected error: %+v", err)
+		t.Fatal(err)
 	}
 
-	but = nil
-}
+	// test create/open functions first
+	be := s.create(t)
+	s.close(t, be)
 
-// TestCreate creates a backend.
-func TestCreate(t testing.TB) {
-	if CreateFn == nil {
-		t.Fatalf("CreateFn not set!")
+	for _, test := range TestFunctions {
+		t.Run(test.Name, func(t *testing.T) {
+			test.Fn(t, s)
+		})
 	}
 
-	be, err := CreateFn()
-	if err != nil {
-		t.Fatalf("Create returned error: %+v", err)
+	if !test.TestCleanupTempDirs {
+		t.Logf("not cleaning up backend")
+		return
 	}
 
-	butInitialized = true
-
-	err = be.Close()
-	if err != nil {
-		t.Fatalf("Close returned error: %+v", err)
+	if err = s.Cleanup(s.Config); err != nil {
+		t.Fatal(err)
 	}
 }
 
-// TestOpen opens a previously created backend.
-func TestOpen(t testing.TB) {
-	if OpenFn == nil {
-		t.Fatalf("OpenFn not set!")
-	}
-
-	be, err := OpenFn()
+func (s *Suite) create(t testing.TB) restic.Backend {
+	be, err := s.Create(s.Config)
 	if err != nil {
-		t.Fatalf("Open returned error: %+v", err)
+		t.Fatal(err)
 	}
+	return be
+}
 
-	err = be.Close()
+func (s *Suite) open(t testing.TB) restic.Backend {
+	be, err := s.Open(s.Config)
 	if err != nil {
-		t.Fatalf("Close returned error: %+v", err)
+		t.Fatal(err)
+	}
+	return be
+}
+
+func (s *Suite) close(t testing.TB, be restic.Backend) {
+	err := be.Close()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
 // TestCreateWithConfig tests that creating a backend in a location which already
 // has a config file fails.
-func TestCreateWithConfig(t testing.TB) {
-	if CreateFn == nil {
-		t.Fatalf("CreateFn not set")
-	}
-
-	b := open(t)
-	defer close(t)
+func TestCreateWithConfig(t testing.TB, s *Suite) {
+	b := s.open(t)
+	defer s.close(t, b)
 
 	// save a config
 	store(t, b, restic.ConfigFile, []byte("test config"))
 
 	// now create the backend again, this must fail
-	_, err := CreateFn()
+	_, err := s.Create(s.Config)
 	if err == nil {
 		t.Fatalf("expected error not found for creating a backend with an existing config file")
 	}
@@ -140,9 +113,9 @@ func TestCreateWithConfig(t testing.TB) {
 }
 
 // TestLocation tests that a location string is returned.
-func TestLocation(t testing.TB) {
-	b := open(t)
-	defer close(t)
+func TestLocation(t testing.TB, s *Suite) {
+	b := s.open(t)
+	defer s.close(t, b)
 
 	l := b.Location()
 	if l == "" {
@@ -151,9 +124,9 @@ func TestLocation(t testing.TB) {
 }
 
 // TestConfig saves and loads a config from the backend.
-func TestConfig(t testing.TB) {
-	b := open(t)
-	defer close(t)
+func TestConfig(t testing.TB, s *Suite) {
+	b := s.open(t)
+	defer s.close(t, b)
 
 	var testString = "Config"
 
@@ -184,9 +157,9 @@ func TestConfig(t testing.TB) {
 }
 
 // TestLoad tests the backend's Load function.
-func TestLoad(t testing.TB) {
-	b := open(t)
-	defer close(t)
+func TestLoad(t testing.TB, s *Suite) {
+	b := s.open(t)
+	defer s.close(t, b)
 
 	_, err := b.Load(restic.Handle{}, 0, 0)
 	if err == nil {
@@ -219,7 +192,7 @@ func TestLoad(t testing.TB) {
 	}
 
 	loadTests := 50
-	if MinimalData {
+	if s.MinimalData {
 		loadTests = 10
 	}
 
@@ -312,13 +285,13 @@ func (ec errorCloser) Close() error {
 }
 
 // TestSave tests saving data in the backend.
-func TestSave(t testing.TB) {
-	b := open(t)
-	defer close(t)
+func TestSave(t testing.TB, s *Suite) {
+	b := s.open(t)
+	defer s.close(t, b)
 	var id restic.ID
 
 	saveTests := 10
-	if MinimalData {
+	if s.MinimalData {
 		saveTests = 2
 	}
 
@@ -412,9 +385,9 @@ var filenameTests = []struct {
 }
 
 // TestSaveFilenames tests saving data with various file names in the backend.
-func TestSaveFilenames(t testing.TB) {
-	b := open(t)
-	defer close(t)
+func TestSaveFilenames(t testing.TB, s *Suite) {
+	b := s.open(t)
+	defer s.close(t, b)
 
 	for i, test := range filenameTests {
 		h := restic.Handle{Name: test.name, Type: restic.DataFile}
@@ -461,9 +434,9 @@ func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) res
 }
 
 // TestBackend tests all functions of the backend.
-func TestBackend(t testing.TB) {
-	b := open(t)
-	defer close(t)
+func TestBackend(t testing.TB, s *Suite) {
+	b := s.open(t)
+	defer s.close(t, b)
 
 	for _, tpe := range []restic.FileType{
 		restic.DataFile, restic.KeyFile, restic.LockFile,
@@ -595,9 +568,13 @@ func TestBackend(t testing.TB) {
 }
 
 // TestDelete tests the Delete function.
-func TestDelete(t testing.TB) {
-	b := open(t)
-	defer close(t)
+func TestDelete(t testing.TB, s *Suite) {
+	if !test.TestCleanupTempDirs {
+		t.Skipf("not removing backend, TestCleanupTempDirs is false")
+	}
+
+	b := s.open(t)
+	defer s.close(t, b)
 
 	be, ok := b.(restic.Deleter)
 	if !ok {
@@ -607,23 +584,5 @@ func TestDelete(t testing.TB) {
 	err := be.Delete()
 	if err != nil {
 		t.Fatalf("error deleting backend: %+v", err)
-	}
-}
-
-// TestCleanup runs the cleanup function after all tests are run.
-func TestCleanup(t testing.TB) {
-	if CleanupFn == nil {
-		t.Log("CleanupFn function not set")
-		return
-	}
-
-	if !test.TestCleanupTempDirs {
-		t.Logf("not cleaning up backend")
-		return
-	}
-
-	err := CleanupFn()
-	if err != nil {
-		t.Fatalf("Cleanup returned error: %+v", err)
 	}
 }

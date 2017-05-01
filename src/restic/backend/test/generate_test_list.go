@@ -18,9 +18,8 @@ import (
 )
 
 var data struct {
-	Package       string
-	PackagePrefix string
-	Funcs         []string
+	Package string
+	Funcs   []string
 }
 
 var testTemplate = `
@@ -29,24 +28,20 @@ package {{ .Package }}
 
 import (
 	"testing"
-
-	"restic/backend/test"
 )
 
-var SkipMessage string
-
-{{ $prefix := .PackagePrefix }}
-{{ range $f := .Funcs }}
-func Test{{ $prefix }}{{ $f }}(t *testing.T){
-	if SkipMessage != "" { t.Skip(SkipMessage) }
-	test.Test{{ $f }}(t)
-}
-
+var TestFunctions = []struct {
+	Name string
+	Fn   func(t testing.TB, suite *Suite)
+}{
+{{ range $f := .Funcs -}}
+	{"{{ $f }}", Test{{ $f }},},
 {{ end }}
+}
 `
 
-var testFile = flag.String("testfile", "../test/tests.go", "file to search test functions in")
-var outputFile = flag.String("output", "backend_test.go", "output file to write generated code to")
+var testFile = flag.String("testfile", "tests.go", "file to search test functions in")
+var outputFile = flag.String("output", "funcs.go", "output file to write generated code to")
 var packageName = flag.String("package", "", "the package name to use")
 var prefix = flag.String("prefix", "", "test function prefix")
 var quiet = flag.Bool("quiet", false, "be quiet")
@@ -123,12 +118,7 @@ func main() {
 	f, err := os.Create(*outputFile)
 	errx(err)
 
-	data.Package = pkg + "_test"
-	if *prefix != "" {
-		data.PackagePrefix = *prefix
-	} else {
-		data.PackagePrefix = packageTestFunctionPrefix(pkg) + "Backend"
-	}
+	data.Package = pkg
 	data.Funcs = findTestFunctions()
 	generateOutput(f, data)
 
