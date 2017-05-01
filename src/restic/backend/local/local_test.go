@@ -1,59 +1,55 @@
 package local_test
 
 import (
-	"fmt"
 	"io/ioutil"
-	"os"
 	"restic"
+	"testing"
 
 	"restic/backend/local"
 	"restic/backend/test"
+	. "restic/test"
 )
 
-var tempBackendDir string
+func TestBackend(t *testing.T) {
+	suite := test.Suite{
+		// NewConfig returns a config for a new temporary backend that will be used in tests.
+		NewConfig: func() (interface{}, error) {
+			dir, err := ioutil.TempDir(TestTempDir, "restic-test-local-")
+			if err != nil {
+				t.Fatal(err)
+			}
 
-//go:generate go run ../test/generate_backend_tests.go
+			t.Logf("create new backend at %v", dir)
 
-func createTempdir() error {
-	if tempBackendDir != "" {
-		return nil
-	}
+			cfg := local.Config{
+				Path: dir,
+			}
+			return cfg, nil
+		},
 
-	tempdir, err := ioutil.TempDir("", "restic-local-test-")
-	if err != nil {
-		return err
-	}
+		// CreateFn is a function that creates a temporary repository for the tests.
+		Create: func(config interface{}) (restic.Backend, error) {
+			cfg := config.(local.Config)
+			return local.Create(cfg)
+		},
 
-	fmt.Printf("created new test backend at %v\n", tempdir)
-	tempBackendDir = tempdir
-	return nil
-}
+		// OpenFn is a function that opens a previously created temporary repository.
+		Open: func(config interface{}) (restic.Backend, error) {
+			cfg := config.(local.Config)
+			return local.Open(cfg)
+		},
 
-func init() {
-	test.CreateFn = func() (restic.Backend, error) {
-		err := createTempdir()
-		if err != nil {
-			return nil, err
-		}
-		return local.Create(local.Config{Path: tempBackendDir})
-	}
+		// CleanupFn removes data created during the tests.
+		Cleanup: func(config interface{}) error {
+			cfg := config.(local.Config)
+			if !TestCleanupTempDirs {
+				t.Logf("leaving test backend dir at %v", cfg.Path)
+			}
 
-	test.OpenFn = func() (restic.Backend, error) {
-		err := createTempdir()
-		if err != nil {
-			return nil, err
-		}
-		return local.Open(local.Config{Path: tempBackendDir})
-	}
-
-	test.CleanupFn = func() error {
-		if tempBackendDir == "" {
+			RemoveAll(t, cfg.Path)
 			return nil
-		}
-
-		fmt.Printf("removing test backend at %v\n", tempBackendDir)
-		err := os.RemoveAll(tempBackendDir)
-		tempBackendDir = ""
-		return err
+		},
 	}
+
+	suite.RunTests(t)
 }
