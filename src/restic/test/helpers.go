@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"restic/errors"
 	"runtime"
 	"testing"
 
@@ -122,7 +123,7 @@ func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 // Env creates a test environment and extracts the repository fixture.
 // Returned is the repo path and a cleanup function.
 func Env(t testing.TB, repoFixture string) (repodir string, cleanup func()) {
-	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
+	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-env-")
 	OK(t, err)
 
 	fd, err := os.Open(repoFixture)
@@ -151,7 +152,11 @@ func isFile(fi os.FileInfo) bool {
 // This is mainly used for tests on Windows, which is unable to delete a file
 // set read-only.
 func ResetReadOnly(t testing.TB, dir string) {
-	OK(t, filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
+	err := filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
+		if fi == nil {
+			return err
+		}
+
 		if fi.IsDir() {
 			return os.Chmod(path, 0777)
 		}
@@ -161,14 +166,22 @@ func ResetReadOnly(t testing.TB, dir string) {
 		}
 
 		return nil
-	}))
+	})
+	if os.IsNotExist(errors.Cause(err)) {
+		err = nil
+	}
+	OK(t, err)
 }
 
 // RemoveAll recursively resets the read-only flag of all files and dirs and
 // afterwards uses os.RemoveAll() to remove the path.
 func RemoveAll(t testing.TB, path string) {
 	ResetReadOnly(t, path)
-	OK(t, os.RemoveAll(path))
+	err := os.RemoveAll(path)
+	if os.IsNotExist(errors.Cause(err)) {
+		err = nil
+	}
+	OK(t, err)
 }
 
 // TempDir returns a temporary directory that is removed when cleanup is
