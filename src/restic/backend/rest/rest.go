@@ -35,8 +35,8 @@ func Open(cfg Config) (restic.Backend, error) {
 	for i := 0; i < connLimit; i++ {
 		connChan <- struct{}{}
 	}
-	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
-	client := http.Client{Transport: tr}
+
+	client := http.Client{Transport: backend.Transport()}
 
 	// use url without trailing slash for layout
 	url := cfg.URL.String()
