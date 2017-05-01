@@ -164,6 +164,13 @@ func (env *TravisEnvironment) RunTests() error {
 		msg("S3 repository not available\n")
 	}
 
+	// if the test swift service is available, make sure that the test is not skipped
+	if os.Getenv("RESTIC_TEST_SWIFT") != "" {
+		ensureTests = append(ensureTests, "restic/backend/swift.TestBackendSwift")
+	} else {
+		msg("Swift service not available\n")
+	}
+
 	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")
 
 	if *runCrossCompile {

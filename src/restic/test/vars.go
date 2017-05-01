@@ -18,8 +18,6 @@ var (
 	BenchArchiveDirectory       = getStringVar("RESTIC_BENCH_DIR", ".")
 	TestS3Server                = getStringVar("RESTIC_TEST_S3_SERVER", "")
 	TestRESTServer              = getStringVar("RESTIC_TEST_REST_SERVER", "")
-	TestSwiftServer             = getStringVar("RESTIC_TEST_SWIFT_SERVER", "")
-	TestSwiftToken              = getStringVar("RESTIC_TEST_SWIFT_TOKEN", "")
 	TestIntegrationDisallowSkip = getStringVar("RESTIC_TEST_DISALLOW_SKIP", "")
 )
 

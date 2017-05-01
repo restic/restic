@@ -1,13 +1,9 @@
 package swift
 
 import (
-	"net/url"
-	"regexp"
+	"os"
 	"restic/errors"
-)
-
-var (
-	urlParser = regexp.MustCompile("^([^:]+):/(.*)$")
+	"strings"
 )
 
 // Config contains basic configuration needed to specify swift location for a swift server
@@ -32,21 +28,69 @@ type Config struct {
 
 // ParseConfig parses the string s and extract swift's container name and prefix.
 func ParseConfig(s string) (interface{}, error) {
-
-	url, err := url.Parse(s)
-	if err != nil {
-		return nil, errors.Wrap(err, "url.Parse")
+	data := strings.SplitN(s, ":", 3)
+	if len(data) != 3 {
+		return nil, errors.New("invalid URL, expected: swift:container-name:/[prefix]")
 	}
 
-	m := urlParser.FindStringSubmatch(url.Opaque)
-	if len(m) == 0 {
-		return nil, errors.New("swift: invalid URL, valid syntax is: 'swift:container-name:/[optional-prefix]'")
+	scheme, container, prefix := data[0], data[1], data[2]
+	if scheme != "swift" {
+		return nil, errors.Errorf("unexpected prefix: %s", data[0])
 	}
+
+	if len(prefix) == 0 {
+		return nil, errors.Errorf("prefix is empty")
+	}
+
+	if prefix[0] != '/' {
+		return nil, errors.Errorf("prefix does not start with slash (/)")
+	}
+	prefix = prefix[1:]
 
 	cfg := Config{
-		Container: m[1],
-		Prefix:    m[2],
+		Container: container,
+		Prefix:    prefix,
 	}
 
 	return cfg, nil
+}
+
+// ApplyEnvironment saves values from the environment to the config.
+func ApplyEnvironment(prefix string, cfg interface{}) error {
+	c := cfg.(*Config)
+	for _, val := range []struct {
+		s   *string
+		env string
+	}{
+		// v2/v3 specific
+		{&c.UserName, prefix + "OS_USERNAME"},
+		{&c.APIKey, prefix + "OS_PASSWORD"},
+		{&c.Region, prefix + "OS_REGION_NAME"},
+		{&c.AuthURL, prefix + "OS_AUTH_URL"},
+
+		// v3 specific
+		{&c.Domain, prefix + "OS_USER_DOMAIN_NAME"},
+		{&c.Tenant, prefix + "OS_PROJECT_NAME"},
+		{&c.TenantDomain, prefix + "OS_PROJECT_DOMAIN_NAME"},
+
+		// v2 specific
+		{&c.TenantID, prefix + "OS_TENANT_ID"},
+		{&c.Tenant, prefix + "OS_TENANT_NAME"},
+
+		// v1 specific
+		{&c.AuthURL, prefix + "ST_AUTH"},
+		{&c.UserName, prefix + "ST_USER"},
+		{&c.APIKey, prefix + "ST_KEY"},
+
+		// Manual authentication
+		{&c.StorageURL, prefix + "OS_STORAGE_URL"},
+		{&c.AuthToken, prefix + "OS_AUTH_TOKEN"},
+
+		{&c.DefaultContainerPolicy, prefix + "SWIFT_DEFAULT_CONTAINER_POLICY"},
+	} {
+		if *val.s == "" {
+			*val.s = os.Getenv(val.env)
+		}
+	}
+	return nil
 }

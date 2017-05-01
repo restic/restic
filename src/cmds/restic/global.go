@@ -360,39 +360,8 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 	case "swift":
 		cfg := loc.Config.(swift.Config)
 
-		for _, val := range []struct {
-			s   *string
-			env string
-		}{
-			// v2/v3 specific
-			{&cfg.UserName, "OS_USERNAME"},
-			{&cfg.APIKey, "OS_PASSWORD"},
-			{&cfg.Region, "OS_REGION_NAME"},
-			{&cfg.AuthURL, "OS_AUTH_URL"},
-
-			// v3 specific
-			{&cfg.Domain, "OS_USER_DOMAIN_NAME"},
-			{&cfg.Tenant, "OS_PROJECT_NAME"},
-			{&cfg.TenantDomain, "OS_PROJECT_DOMAIN_NAME"},
-
-			// v2 specific
-			{&cfg.TenantID, "OS_TENANT_ID"},
-			{&cfg.Tenant, "OS_TENANT_NAME"},
-
-			// v1 specific
-			{&cfg.AuthURL, "ST_AUTH"},
-			{&cfg.UserName, "ST_USER"},
-			{&cfg.APIKey, "ST_KEY"},
-
-			// Manual authentication
-			{&cfg.StorageURL, "OS_STORAGE_URL"},
-			{&cfg.AuthToken, "OS_AUTH_TOKEN"},
-
-			{&cfg.DefaultContainerPolicy, "SWIFT_DEFAULT_CONTAINER_POLICY"},
-		} {
-			if *val.s == "" {
-				*val.s = os.Getenv(val.env)
-			}
+		if err := swift.ApplyEnvironment("", &cfg); err != nil {
+			return nil, err
 		}
 
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {

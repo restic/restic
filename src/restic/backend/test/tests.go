@@ -438,8 +438,12 @@ func delayedRemove(b restic.Backend, h restic.Handle) error {
 	// Some backend (swift, I'm looking at you) may implement delayed
 	// removal of data. Let's wait a bit if this happens.
 	err := b.Remove(h)
+	if err != nil {
+		return err
+	}
+
 	found, err := b.Test(h)
-	for i := 0; found && i < 10; i++ {
+	for i := 0; found && i < 20; i++ {
 		found, err = b.Test(h)
 		if found {
 			time.Sleep(100 * time.Millisecond)
