@@ -28,6 +28,9 @@ var OpenFn func() (restic.Backend, error)
 // CleanupFn removes temporary files and directories created during the tests.
 var CleanupFn func() error
 
+// MinimalData instructs the tests to not use excessive data.
+var MinimalData = false
+
 var but restic.Backend // backendUnderTest
 var butInitialized bool
 
@@ -215,7 +218,12 @@ func TestLoad(t testing.TB) {
 		t.Fatalf("Load() returned a non-nil reader for negative offset!")
 	}
 
-	for i := 0; i < 50; i++ {
+	loadTests := 50
+	if MinimalData {
+		loadTests = 10
+	}
+
+	for i := 0; i < loadTests; i++ {
 		l := rand.Intn(length + 2000)
 		o := rand.Intn(length + 2000)
 
@@ -299,7 +307,12 @@ func TestSave(t testing.TB) {
 	defer close(t)
 	var id restic.ID
 
-	for i := 0; i < 10; i++ {
+	saveTests := 10
+	if MinimalData {
+		saveTests = 2
+	}
+
+	for i := 0; i < saveTests; i++ {
 		length := rand.Intn(1<<23) + 200000
 		data := test.Random(23, length)
 		// use the first 32 byte as the ID
