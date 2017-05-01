@@ -10,7 +10,7 @@ import (
 )
 
 func TestLayout(t *testing.T) {
-	if sftpserver == "" {
+	if sftpServer == "" {
 		t.Skip("sftp server binary not available")
 	}
 
@@ -46,7 +46,7 @@ func TestLayout(t *testing.T) {
 
 			repo := filepath.Join(path, "repo")
 			be, err := sftp.Open(sftp.Config{
-				Command: fmt.Sprintf("%q -e", sftpserver),
+				Command: fmt.Sprintf("%q -e", sftpServer),
 				Path:    repo,
 				Layout:  test.layout,
 			})
