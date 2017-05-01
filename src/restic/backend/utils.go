@@ -14,8 +14,12 @@ func LoadAll(be restic.Backend, h restic.Handle) (buf []byte, err error) {
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, rd)
-		e := rd.Close()
+		_, e := io.Copy(ioutil.Discard, rd)
+		if err == nil {
+			err = e
+		}
+
+		e = rd.Close()
 		if err == nil {
 			err = e
 		}
