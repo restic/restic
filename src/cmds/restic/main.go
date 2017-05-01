@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"restic"
 	"restic/debug"
@@ -44,6 +47,14 @@ directories in an encrypted repository stored on different backends.
 	},
 }
 
+var logBuffer = bytes.NewBuffer(nil)
+
+func init() {
+	// install custom global logger into a buffer, if an error occurs
+	// we can show the logs
+	log.SetOutput(logBuffer)
+}
+
 func main() {
 	debug.Log("main %#v", os.Args)
 	err := cmdRoot.Execute()
@@ -55,6 +66,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 	case err != nil:
 		fmt.Fprintf(os.Stderr, "%+v\n", err)
+
+		if logBuffer.Len() > 0 {
+			fmt.Fprintf(os.Stderr, "also, the following messages were logged by a library:\n")
+			sc := bufio.NewScanner(logBuffer)
+			for sc.Scan() {
+				fmt.Fprintln(os.Stderr, sc.Text())
+			}
+		}
 	}
 
 	var exitCode int
