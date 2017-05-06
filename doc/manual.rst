@@ -16,6 +16,7 @@ Usage help is available:
       restic [command]
 
     Available Commands:
+      autocomplete  generate shell autocompletion script
       backup        create a new backup of files and/or directories
       cat           print internal objects to stdout
       check         check the repository for errors
@@ -794,6 +795,38 @@ Only counting the days which have a backup and ignore the ones without
 is a safety feature: it prevents restic from removing many snapshots
 when no new ones are created. If it was implemented otherwise, running
 ``forget --keep-daily 4`` on a Friday would remove all snapshots!
+
+Autocompletion
+--------------
+
+Restic can write out a bash compatible autocompletion script:
+
+.. code-block:: console
+
+    $ ./restic autocomplete --help
+    The "autocomplete" command generates a shell autocompletion script.
+
+    NOTE: The current version supports Bash only.
+          This should work for *nix systems with Bash installed.
+
+    By default, the file is written directly to /etc/bash_completion.d
+    for convenience, and the command may need superuser rights, e.g.:
+
+    $ sudo restic autocomplete
+
+    Usage:
+      restic autocomplete [flags]
+
+    Flags:
+          --completionfile string   autocompletion file (default "/etc/bash_completion.d/restic.sh")
+
+    Global Flags:
+          --json                   set output mode to JSON for commands that support it
+          --no-lock                do not lock the repo, this allows some operations on read-only repos
+      -o, --option key=value       set extended option (key=value, can be specified multiple times)
+      -p, --password-file string   read the repository password from a file
+      -q, --quiet                  do not output comprehensive progress report
+      -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
 
 Debugging
 ---------
