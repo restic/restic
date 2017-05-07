@@ -91,6 +91,28 @@ func TestFilterSnapshots(t *testing.T) {
 	}
 }
 
+func TestExpireSnapshotOps(t *testing.T) {
+	data := []struct {
+		expectEmpty bool
+		expectSum   int
+		p           *restic.ExpirePolicy
+	}{
+		{true, 0, &restic.ExpirePolicy{}},
+		{true, 0, &restic.ExpirePolicy{Tags: []string{}}},
+		{false, 22, &restic.ExpirePolicy{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10}},
+	}
+	for i, d := range data {
+		isEmpty := d.p.Empty()
+		if isEmpty != d.expectEmpty {
+			t.Errorf("empty test %v: wrong result, want:\n  %#v\ngot:\n  %#v", i, d.expectEmpty, isEmpty)
+		}
+		hasSum := d.p.Sum()
+		if hasSum != d.expectSum {
+			t.Errorf("sum test %v: wrong result, want:\n  %#v\ngot:\n  %#v", i, d.expectSum, hasSum)
+		}
+	}
+}
+
 var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2014-09-01 10:20:30")},
 	{Time: parseTimeUTC("2014-09-02 10:20:30")},

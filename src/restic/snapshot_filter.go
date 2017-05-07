@@ -125,49 +125,46 @@ func y(d time.Time) int {
 }
 
 // apply moves snapshots from Unprocess to either Keep or Remove. It sorts the
-// snapshots into buckets according to the return of fn, and then moves the
-// newest snapshot in each bucket to Keep and all others to Remove. When max
-// snapshots were found, processing stops.
+// snapshots into buckets according to the return value of fn, and then moves
+// the newest snapshot in each bucket to Keep and all others to Remove. When
+// max snapshots were found, processing stops.
 func (f *filter) apply(fn func(time.Time) int, max int) {
 	if max == 0 || len(f.Unprocessed) == 0 {
 		return
 	}
 
-	sameDay := Snapshots{}
-	lastDay := fn(f.Unprocessed[0].Time)
+	sameBucket := Snapshots{}
+	lastBucket := fn(f.Unprocessed[0].Time)
 
 	for len(f.Unprocessed) > 0 {
 		cur := f.Unprocessed[0]
 
-		day := fn(cur.Time)
+		bucket := fn(cur.Time)
 
-		// if the snapshots are from a new day, forget all but the first (=last
-		// in time) snapshot from the previous day.
-		if day != lastDay {
-			f.Keep = append(f.Keep, sameDay[0])
-			for _, snapshot := range sameDay[1:] {
-				f.Remove = append(f.Remove, snapshot)
-			}
+		// if the snapshots are from a new bucket, forget all but the first
+		// (=last in time) snapshot from the previous bucket.
+		if bucket != lastBucket {
+			f.Keep = append(f.Keep, sameBucket[0])
+			f.Remove = append(f.Remove, sameBucket[1:]...)
 
-			sameDay = Snapshots{}
-			lastDay = day
+			sameBucket = Snapshots{}
+			lastBucket = bucket
 			max--
 
 			if max == 0 {
-				break
+				return
 			}
 		}
 
-		// collect all snapshots for the current day
-		sameDay = append(sameDay, cur)
+		// collect all snapshots for the current bucket
+		sameBucket = append(sameBucket, cur)
 		f.Unprocessed = f.Unprocessed[1:]
 	}
 
-	if len(sameDay) > 0 {
-		f.Keep = append(f.Keep, sameDay[0])
-		for _, snapshot := range sameDay[1:] {
-			f.Remove = append(f.Remove, snapshot)
-		}
+	// if we have leftovers, process them too.
+	if len(sameBucket) > 0 {
+		f.Keep = append(f.Keep, sameBucket[0])
+		f.Remove = append(f.Remove, sameBucket[1:]...)
 	}
 }
 

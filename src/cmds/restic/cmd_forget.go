@@ -90,7 +90,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	}
 	snapshotGroups := make(map[string]restic.Snapshots)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
 		if len(args) > 0 {
