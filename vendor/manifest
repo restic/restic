@@ -28,8 +28,8 @@
 		{
 			"importpath": "github.com/minio/minio-go",
 			"repository": "https://github.com/minio/minio-go",
-			"revision": "dcaae9ec4d0b0a81d17f22f6d7a186491f6a55ec",
-			"branch": "HEAD"
+			"revision": "2f03abaa07d8bc57faef16cda7655ea62a7e0bed",
+			"branch": "master"
 		},
 		{
 			"importpath": "github.com/pkg/errors",
