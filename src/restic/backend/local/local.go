@@ -93,6 +93,16 @@ func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
 
 	// create new file
 	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
+	if os.IsNotExist(errors.Cause(err)) {
+		// create the locks dir, then try again
+		err = fs.MkdirAll(b.Dirname(h), backend.Modes.Dir)
+		if err != nil {
+			return errors.Wrap(err, "MkdirAll")
+		}
+
+		return b.Save(h, rd)
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
 	}
@@ -215,6 +225,10 @@ func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 		defer close(ch)
 
 		fs.Walk(b.Basedir(t), func(path string, fi os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
 			if !isFile(fi) {
 				return err
 			}

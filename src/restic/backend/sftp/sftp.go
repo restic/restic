@@ -143,6 +143,10 @@ func (r *SFTP) ReadDir(dir string) ([]os.FileInfo, error) {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (r *SFTP) IsNotExist(err error) bool {
+	if os.IsNotExist(err) {
+		return true
+	}
+
 	statusError, ok := err.(*sftp.StatusError)
 	if !ok {
 		return false
@@ -271,16 +275,18 @@ func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 
 	filename := r.Filename(h)
 
-	// create directories if necessary
-	if h.Type == restic.DataFile {
-		err := r.mkdirAll(path.Dir(filename), backend.Modes.Dir)
-		if err != nil {
-			return err
-		}
-	}
-
 	// create new file
 	f, err := r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+	if r.IsNotExist(errors.Cause(err)) {
+		// create the locks dir, then try again
+		err = r.mkdirAll(r.Dirname(h), backend.Modes.Dir)
+		if err != nil {
+			return errors.Wrap(err, "MkdirAll")
+		}
+
+		return r.Save(h, rd)
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
 	}
