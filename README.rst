@@ -35,7 +35,7 @@ and add some data:
     duration: 0:29, 54.47MiB/s
     snapshot 40dc1520 saved
 
-For more options check out the `usage guide <https://restic.readthedocs.io/en/latest/usage.html>`__.
+For more options check out the `manual guide <https://restic.readthedocs.io/en/latest/manual.html>`__.
 
 Design Principles
 -----------------
