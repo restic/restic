@@ -54,3 +54,4 @@ script:
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -f all.cov
+  - head all.cov
