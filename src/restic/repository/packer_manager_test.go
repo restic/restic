@@ -7,6 +7,7 @@ import (
 	"restic"
 	"restic/backend/mem"
 	"restic/crypto"
+	"restic/fs"
 	"restic/mock"
 	"testing"
 )
@@ -59,7 +60,7 @@ func saveFile(t testing.TB, be Saver, f *os.File, id restic.ID) {
 		t.Fatal(err)
 	}
 
-	if err := os.Remove(f.Name()); err != nil {
+	if err := fs.RemoveIfExists(f.Name()); err != nil {
 		t.Fatal(err)
 	}
 }

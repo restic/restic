@@ -116,3 +116,12 @@ func OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
 func Walk(root string, walkFn filepath.WalkFunc) error {
 	return filepath.Walk(fixpath(root), walkFn)
 }
+
+// RemoveIfExists removes a file, returning no error if it does not exist.
+func RemoveIfExists(filename string) error {
+	err := os.Remove(filename)
+	if err != nil && os.IsNotExist(err) {
+		err = nil
+	}
+	return err
+}

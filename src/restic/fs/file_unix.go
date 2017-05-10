@@ -2,7 +2,10 @@
 
 package fs
 
-import "os"
+import (
+	"io/ioutil"
+	"os"
+)
 
 // fixpath returns an absolute path on windows, so restic can open long file
 // names.
@@ -16,4 +19,19 @@ func fixpath(name string) string {
 // MkdirAll does nothing and returns nil.
 func MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(fixpath(path), perm)
+}
+
+// TempFile creates a temporary file which has already been deleted (on
+// supported platforms)
+func TempFile(dir, prefix string) (f *os.File, err error) {
+	f, err = ioutil.TempFile(dir, prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = os.Remove(f.Name()); err != nil {
+		return nil, err
+	}
+
+	return f, nil
 }
