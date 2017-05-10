@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,4 +85,9 @@ func MkdirAll(path string, perm os.FileMode) error {
 		return err
 	}
 	return nil
+}
+
+// TempFile creates a temporary file.
+func TempFile(dir, prefix string) (f *os.File, err error) {
+	return ioutil.TempFile(dir, prefix)
 }

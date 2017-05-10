@@ -3,11 +3,10 @@ package repository
 import (
 	"crypto/sha256"
 	"io"
-	"io/ioutil"
-	"os"
 	"restic"
 	"restic/crypto"
 	"restic/debug"
+	"restic/fs"
 	"restic/hashing"
 	"restic/pack"
 
@@ -25,7 +24,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 		// load the complete pack into a temp file
 		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
 
-		tempfile, err := ioutil.TempFile("", "restic-temp-repack-")
+		tempfile, err := fs.TempFile("", "restic-temp-repack-")
 		if err != nil {
 			return errors.Wrap(err, "TempFile")
 		}
@@ -115,7 +114,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 			return errors.Wrap(err, "Close")
 		}
 
-		if err = os.Remove(tempfile.Name()); err != nil {
+		if err = fs.RemoveIfExists(tempfile.Name()); err != nil {
 			return errors.Wrap(err, "Remove")
 		}
 		if p != nil {

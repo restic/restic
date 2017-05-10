@@ -3,7 +3,6 @@ package repository
 import (
 	"crypto/sha256"
 	"io"
-	"io/ioutil"
 	"os"
 	"restic"
 	"sync"
@@ -78,9 +77,9 @@ func (r *packerManager) findPacker(size uint) (packer *Packer, err error) {
 
 	// no suitable packer found, return new
 	debug.Log("create new pack for %d bytes", size)
-	tmpfile, err := ioutil.TempFile("", "restic-temp-pack-")
+	tmpfile, err := fs.TempFile("", "restic-temp-pack-")
 	if err != nil {
-		return nil, errors.Wrap(err, "ioutil.TempFile")
+		return nil, errors.Wrap(err, "fs.TempFile")
 	}
 
 	hw := hashing.NewWriter(tmpfile, sha256.New())
@@ -132,7 +131,7 @@ func (r *Repository) savePacker(p *Packer) error {
 		return errors.Wrap(err, "close tempfile")
 	}
 
-	err = fs.Remove(p.tmpfile.Name())
+	err = fs.RemoveIfExists(p.tmpfile.Name())
 	if err != nil {
 		return errors.Wrap(err, "Remove")
 	}

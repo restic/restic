@@ -4,11 +4,11 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sync"
 
 	"restic/errors"
+	"restic/fs"
 	"restic/hashing"
 
 	"restic"
@@ -668,7 +668,7 @@ func checkPack(r restic.Repository, id restic.ID) error {
 		return err
 	}
 
-	packfile, err := ioutil.TempFile("", "restic-temp-check-")
+	packfile, err := fs.TempFile("", "restic-temp-check-")
 	if err != nil {
 		return errors.Wrap(err, "TempFile")
 	}
