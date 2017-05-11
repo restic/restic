@@ -25,40 +25,6 @@ func (sn Snapshots) Swap(i, j int) {
 	sn[i], sn[j] = sn[j], sn[i]
 }
 
-// SnapshotFilter configures criteria for filtering snapshots before an
-// ExpirePolicy can be applied.
-type SnapshotFilter struct {
-	Hostname string
-	Username string
-	Paths    []string
-	Tags     []string
-}
-
-// FilterSnapshots returns the snapshots from s which match the filter f.
-func FilterSnapshots(s Snapshots, f SnapshotFilter) (result Snapshots) {
-	for _, snap := range s {
-		if f.Hostname != "" && f.Hostname != snap.Hostname {
-			continue
-		}
-
-		if f.Username != "" && f.Username != snap.Username {
-			continue
-		}
-
-		if f.Paths != nil && !reflect.DeepEqual(f.Paths, snap.Paths) {
-			continue
-		}
-
-		if !snap.HasTags(f.Tags) {
-			continue
-		}
-
-		result = append(result, snap)
-	}
-
-	return result
-}
-
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
 	Last    int      // keep the last n snapshots
