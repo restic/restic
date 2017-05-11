@@ -1,7 +1,6 @@
 package restic
 
 import (
-	"fmt"
 	"reflect"
 	"sort"
 	"time"
@@ -52,18 +51,6 @@ func (e ExpirePolicy) Empty() bool {
 	return reflect.DeepEqual(e, empty)
 }
 
-// filter is used to split a list of snapshots into those to keep and those to
-// remove according to a policy.
-type filter struct {
-	Unprocessed Snapshots
-	Remove      Snapshots
-	Keep        Snapshots
-}
-
-func (f filter) String() string {
-	return fmt.Sprintf("<filter %d todo, %d keep, %d remove>", len(f.Unprocessed), len(f.Keep), len(f.Remove))
-}
-
 // ymdh returns an integer in the form YYYYMMDDHH.
 func ymdh(d time.Time) int {
 	return d.Year()*1000000 + int(d.Month())*10000 + d.Day()*100 + d.Hour()
@@ -90,84 +77,16 @@ func y(d time.Time) int {
 	return d.Year()
 }
 
-// apply moves snapshots from Unprocess to either Keep or Remove. It sorts the
-// snapshots into buckets according to the return value of fn, and then moves
-// the newest snapshot in each bucket to Keep and all others to Remove. When
-// max snapshots were found, processing stops.
-func (f *filter) apply(fn func(time.Time) int, max int) {
-	if max == 0 || len(f.Unprocessed) == 0 {
-		return
-	}
+var a int
 
-	sameBucket := Snapshots{}
-	lastBucket := fn(f.Unprocessed[0].Time)
-
-	for len(f.Unprocessed) > 0 {
-		cur := f.Unprocessed[0]
-
-		bucket := fn(cur.Time)
-
-		// if the snapshots are from a new bucket, forget all but the first
-		// (=last in time) snapshot from the previous bucket.
-		if bucket != lastBucket {
-			f.Keep = append(f.Keep, sameBucket[0])
-			f.Remove = append(f.Remove, sameBucket[1:]...)
-
-			sameBucket = Snapshots{}
-			lastBucket = bucket
-			max--
-
-			if max == 0 {
-				return
-			}
-		}
-
-		// collect all snapshots for the current bucket
-		sameBucket = append(sameBucket, cur)
-		f.Unprocessed = f.Unprocessed[1:]
-	}
-
-	// if we have leftovers, process them too.
-	if len(sameBucket) > 0 {
-		f.Keep = append(f.Keep, sameBucket[0])
-		f.Remove = append(f.Remove, sameBucket[1:]...)
-	}
+// always retuns a unique number for d.
+func always(d time.Time) int {
+	a++
+	return a
 }
 
-// keepTags marks the snapshots which have all tags as to be kept.
-func (f *filter) keepTags(tags []string) {
-	if len(tags) == 0 {
-		return
-	}
-
-	unprocessed := f.Unprocessed[:0]
-	for _, sn := range f.Unprocessed {
-		if sn.HasTags(tags) {
-			f.Keep = append(f.Keep, sn)
-			continue
-		}
-		unprocessed = append(unprocessed, sn)
-	}
-	f.Unprocessed = unprocessed
-}
-
-// keepLast marks the last n snapshots as to be kept.
-func (f *filter) keepLast(n int) {
-	if n > len(f.Unprocessed) {
-		n = len(f.Unprocessed)
-	}
-
-	f.Keep = append(f.Keep, f.Unprocessed[:n]...)
-	f.Unprocessed = f.Unprocessed[n:]
-}
-
-// finish moves all remaining snapshots to remove.
-func (f *filter) finish() {
-	f.Remove = append(f.Remove, f.Unprocessed...)
-}
-
-// ApplyPolicy runs returns the snapshots from s that are to be deleted according
-// to the policy p. s is sorted in the process.
+// ApplyPolicy returns the snapshots from list that are to be kept and removed
+// according to the policy p. list is sorted in the process.
 func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 	sort.Sort(list)
 
@@ -179,20 +98,46 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		return list, remove
 	}
 
-	f := filter{
-		Unprocessed: list,
-		Remove:      Snapshots{},
-		Keep:        Snapshots{},
+	var buckets = [6]struct {
+		Count  int
+		bucker func(d time.Time) int
+		Last   int
+	}{
+		{p.Last, always, -1},
+		{p.Hourly, ymdh, -1},
+		{p.Daily, ymd, -1},
+		{p.Weekly, yw, -1},
+		{p.Monthly, ym, -1},
+		{p.Yearly, y, -1},
 	}
 
-	f.keepTags(p.Tags)
-	f.keepLast(p.Last)
-	f.apply(ymdh, p.Hourly)
-	f.apply(ymd, p.Daily)
-	f.apply(yw, p.Weekly)
-	f.apply(ym, p.Monthly)
-	f.apply(y, p.Yearly)
-	f.finish()
+	for _, cur := range list {
+		var keep_snap bool
 
-	return f.Keep, f.Remove
+		// Tags are handled specially as they are not counted.
+		if len(p.Tags) > 0 {
+			if cur.HasTags(p.Tags) {
+				keep_snap = true
+			}
+		}
+		// Now update the other buckets and see if they have some counts left.
+		for i, b := range buckets {
+			if b.Count > 0 {
+				val := b.bucker(cur.Time)
+				if val != b.Last {
+					keep_snap = true
+					buckets[i].Last = val
+					buckets[i].Count--
+				}
+			}
+		}
+
+		if keep_snap {
+			keep = append(keep, cur)
+		} else {
+			remove = append(remove, cur)
+		}
+	}
+
+	return keep, remove
 }

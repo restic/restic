@@ -788,6 +788,9 @@ All the ``--keep-*`` options above only count
 hours/days/weeks/months/years which have a snapshot, so those without a
 snapshot are ignored.
 
+All snapshots are evaluated counted against all matching keep-* counts. A
+single snapshot on 30-09-2017 (Sun) will count as a daily, weekly and monthly.
+
 Let's explain this with an example: Suppose you have only made a backup
 on each Sunday for 12 weeks. Then ``forget --keep-daily 4`` will keep
 the last four snapshots for the last four Sundays, but remove the rest.
@@ -795,6 +798,14 @@ Only counting the days which have a backup and ignore the ones without
 is a safety feature: it prevents restic from removing many snapshots
 when no new ones are created. If it was implemented otherwise, running
 ``forget --keep-daily 4`` on a Friday would remove all snapshots!
+
+Another example: Suppose you make daily backups for 100 years. Then
+``forget --keep-daily 7 --keep-weekly 5 --keep-monthly 12 --keep-yearly 75``
+will keep the most recent 7 daily snapshots, then 4 (remember, 7 dailies
+already include a week!) last-day-of-the-weeks and 11 or 12
+last-day-of-the-months. (11 or 12 depends if the 5 weeklies cross a month).
+And ofcourse 75 last-day-of-the-year snapshots. All other snapshots are
+removed.
 
 Autocompletion
 --------------
