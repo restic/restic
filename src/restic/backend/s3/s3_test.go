@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -125,6 +126,7 @@ func TestBackendMinio(t *testing.T) {
 			cfg.Config = s3.Config{
 				Endpoint: "localhost:9000",
 				Bucket:   "restictestbucket",
+				Prefix:   fmt.Sprintf("test-%d", time.Now().UnixNano()),
 				UseHTTP:  true,
 				KeyID:    key,
 				Secret:   secret,
@@ -204,6 +206,7 @@ func TestBackendS3(t *testing.T) {
 			cfg := s3cfg.(s3.Config)
 			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
 			cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
+			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
 
