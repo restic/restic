@@ -112,12 +112,12 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 	}
 
 	for _, cur := range list {
-		var keep_snap bool
+		var keepSnap bool
 
 		// Tags are handled specially as they are not counted.
 		if len(p.Tags) > 0 {
 			if cur.HasTags(p.Tags) {
-				keep_snap = true
+				keepSnap = true
 			}
 		}
 		// Now update the other buckets and see if they have some counts left.
@@ -125,14 +125,14 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 			if b.Count > 0 {
 				val := b.bucker(cur.Time)
 				if val != b.Last {
-					keep_snap = true
+					keepSnap = true
 					buckets[i].Last = val
 					buckets[i].Count--
 				}
 			}
 		}
 
-		if keep_snap {
+		if keepSnap {
 			keep = append(keep, cur)
 		} else {
 			remove = append(remove, cur)
