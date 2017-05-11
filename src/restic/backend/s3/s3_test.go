@@ -172,3 +172,82 @@ func TestBackendMinio(t *testing.T) {
 
 	suite.RunTests(t)
 }
+
+func TestBackendS3(t *testing.T) {
+	vars := []string{
+		"RESTIC_TEST_S3_KEY",
+		"RESTIC_TEST_S3_SECRET",
+		"RESTIC_TEST_S3_REPOSITORY",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			t.Skipf("environment variable %v not set", v)
+			return
+		}
+	}
+
+	suite := test.Suite{
+		// do not use excessive data
+		MinimalData: true,
+
+		// NewConfig returns a config for a new temporary backend that will be used in tests.
+		NewConfig: func() (interface{}, error) {
+			s3cfg, err := s3.ParseConfig(os.Getenv("RESTIC_TEST_S3_REPOSITORY"))
+			if err != nil {
+				return nil, err
+			}
+
+			cfg := s3cfg.(s3.Config)
+			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
+			cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
+			return cfg, nil
+		},
+
+		// CreateFn is a function that creates a temporary repository for the tests.
+		Create: func(config interface{}) (restic.Backend, error) {
+			cfg := config.(s3.Config)
+
+			be, err := s3.Open(cfg)
+			if err != nil {
+				return nil, err
+			}
+
+			exists, err := be.Test(restic.Handle{Type: restic.ConfigFile})
+			if err != nil {
+				return nil, err
+			}
+
+			if exists {
+				return nil, errors.New("config already exists")
+			}
+
+			return be, nil
+		},
+
+		// OpenFn is a function that opens a previously created temporary repository.
+		Open: func(config interface{}) (restic.Backend, error) {
+			cfg := config.(s3.Config)
+			return s3.Open(cfg)
+		},
+
+		// CleanupFn removes data created during the tests.
+		Cleanup: func(config interface{}) error {
+			cfg := config.(s3.Config)
+
+			be, err := s3.Open(cfg)
+			if err != nil {
+				return err
+			}
+
+			if err := be.(restic.Deleter).Delete(); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+
+	t.Logf("run tests")
+	suite.RunTests(t)
+}
