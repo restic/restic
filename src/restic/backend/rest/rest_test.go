@@ -2,6 +2,7 @@ package rest_test
 
 import (
 	"bufio"
+	"context"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -15,13 +16,13 @@ import (
 	. "restic/test"
 )
 
-func runRESTServer(t testing.TB, dir string) func() {
+func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 	srv, err := exec.LookPath("rest-server")
 	if err != nil {
 		t.Skip(err)
 	}
 
-	cmd := exec.Command(srv, "--path", dir)
+	cmd := exec.CommandContext(ctx, srv, "--path", dir)
 	cmd.Stdout = os.Stdout
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
@@ -50,10 +51,13 @@ func runRESTServer(t testing.TB, dir string) func() {
 }
 
 func TestBackend(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	dir, cleanup := TempDir(t)
 	defer cleanup()
 
-	cleanup = runRESTServer(t, dir)
+	cleanup = runRESTServer(ctx, t, dir)
 	defer cleanup()
 
 	suite := test.Suite{
