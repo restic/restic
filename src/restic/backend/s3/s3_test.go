@@ -71,6 +71,9 @@ func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func()
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// ignore errors, we've killed the process
+		_ = cmd.Wait()
 	}
 }
 
