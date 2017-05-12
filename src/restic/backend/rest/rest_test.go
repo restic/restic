@@ -32,9 +32,10 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 	// wait until the TCP port is reachable
 	var success bool
 	for i := 0; i < 10; i++ {
+		time.Sleep(200 * time.Millisecond)
+
 		c, err := net.Dial("tcp", "localhost:8000")
 		if err != nil {
-			time.Sleep(200 * time.Millisecond)
 			continue
 		}
 
