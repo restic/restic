@@ -30,12 +30,12 @@ import (
 	"testing"
 )
 
-var TestFunctions = []struct {
+var testFunctions = []struct {
 	Name string
 	Fn   func(t testing.TB, suite *Suite)
 }{
 {{ range $f := .Funcs -}}
-	{"{{ $f }}", Test{{ $f }},},
+	{"{{ $f }}", BackendTest{{ $f }},},
 {{ end }}
 }
 `
@@ -55,7 +55,7 @@ func errx(err error) {
 	os.Exit(1)
 }
 
-var funcRegex = regexp.MustCompile(`^func\s+Test(.+)\s*\(`)
+var funcRegex = regexp.MustCompile(`^func\s+BackendTest(.+)\s*\(`)
 
 func findTestFunctions() (funcs []string) {
 	f, err := os.Open(*testFile)

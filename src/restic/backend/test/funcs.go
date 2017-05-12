@@ -5,16 +5,16 @@ import (
 	"testing"
 )
 
-var TestFunctions = []struct {
+var testFunctions = []struct {
 	Name string
 	Fn   func(t testing.TB, suite *Suite)
 }{
-	{"CreateWithConfig", TestCreateWithConfig},
-	{"Location", TestLocation},
-	{"Config", TestConfig},
-	{"Load", TestLoad},
-	{"Save", TestSave},
-	{"SaveFilenames", TestSaveFilenames},
-	{"Backend", TestBackend},
-	{"Delete", TestDelete},
+	{"CreateWithConfig", BackendTestCreateWithConfig},
+	{"Location", BackendTestLocation},
+	{"Config", BackendTestConfig},
+	{"Load", BackendTestLoad},
+	{"Save", BackendTestSave},
+	{"SaveFilenames", BackendTestSaveFilenames},
+	{"Backend", BackendTestBackend},
+	{"Delete", BackendTestDelete},
 }
