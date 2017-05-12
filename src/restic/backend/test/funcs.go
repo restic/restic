@@ -1,4 +1,5 @@
 // DO NOT EDIT, AUTOMATICALLY GENERATED
+
 package test
 
 import (

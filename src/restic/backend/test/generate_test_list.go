@@ -24,6 +24,7 @@ var data struct {
 
 var testTemplate = `
 // DO NOT EDIT, AUTOMATICALLY GENERATED
+
 package {{ .Package }}
 
 import (
