@@ -1,12 +1,12 @@
-Setting up Restic with Amazon S3
+Setting up restic with Amazon S3
 ================================
 
 Preface
 -------
 
-This tutorial will show you how to use Restic with AWS S3. It will show you how
+This tutorial will show you how to use restic with AWS S3. It will show you how
 to navigate the AWS web interface, create an S3 bucket, create a user with
-access to only this bucket, and finally how to connect Restic to this bucket.
+access to only this bucket, and finally how to connect restic to this bucket.
 
 Prerequisites
 -------------
@@ -95,8 +95,8 @@ AWS through the ``restic`` program and not through the web interface. Therefore,
    :alt: Choose User Name and Access Type
 
 During the next step, permissions can be assigned to the new user. To use this
-user with Restic, it only needs access to the ``restic-demo`` bucket. Select
-"Attach exiting policies directly", which will bring up a list of pre-defined
+user with restic, it only needs access to the ``restic-demo`` bucket. Select
+"Attach existing policies directly", which will bring up a list of pre-defined
 policies below. Afterwards, click the "Create policy" button to create a custom
 policy:
 
@@ -111,17 +111,17 @@ Generator" will be used to generate a policy file using a web interface:
    :alt: Create a New Policy
 
 After invoking the policy generator, you will be presented with a user
-interface to generate individual permission statements. For Restic to work, two
+interface to generate individual permission statements. For restic to work, two
 such statements must be created. The first statement is set up as follows:
 
 .. code::
 
    Effect: Allow
-   Service: S3
+   Service: Amazon S3
    Actions: DeleteObject, GetObject, PutObject
    Resource: arn:aws:s3:::restic-demo/*
 
-This statement allows Restic to create, read and delete objects inside the S3
+This statement allows restic to create, read and delete objects inside the S3
 bucket named ``restic-demo``. Adjust the bucket's name to the name of the bucket
 you created earlier. Using the "Add Statement" button, this statement can be
 saved. Now a second statement is created:
@@ -129,13 +129,13 @@ saved. Now a second statement is created:
 .. code::
 
    Effect: Allow
-   Service: S3
+   Service: Amazon S3
    Actions: ListBucket
    Resource: arn:aws:s3:::restic-demo
 
 Again, substitute ``restic-demo`` with the actual name of your bucket. Note that,
 unlike before, there is no ``/*`` after the bucket name. This statement allows
-Restic to list the objects stored in the ``restic-demo`` bucket. Again, use "Add
+restic to list the objects stored in the ``restic-demo`` bucket. Again, use "Add
 Statement" to save this statement. The policy creator interface should now
 look as follows:
 
@@ -176,7 +176,7 @@ You have now completed the configuration in AWS. Feel free to close your web
 browser now.
 
 
-Initializing the Restic repository
+Initializing the restic repository
 ----------------------------------
 
 Open a terminal and make sure you have the ``restic`` binary ready. First, choose
@@ -189,7 +189,7 @@ this purpose:
    I9n7G7G0ZpDWA3GOcJbIuwQCGvGUBkU5
 
 Note this password somewhere safe along with your AWS credentials. Next, the
-configuration of Restic will be placed into environment variables. This will
+configuration of restic will be placed into environment variables. This will
 include sensitive information, such as your AWS secret and repository password.
 Therefore, make sure the next commands **do not** end up in your shell's
 history file. Adjust the contents of the environment variables to fit your
@@ -204,7 +204,7 @@ bucket's name and your user's API credentials.
    $ export RESTIC_PASSWORD="I9n7G7G0ZpDWA3GOcJbIuwQCGvGUBkU5"
 
 
-After the environment is set up, Restic may be called to initialize the
+After the environment is set up, restic may be called to initialize the
 repository:
 
 
@@ -217,7 +217,7 @@ repository:
    the repository. Losing your password means that your data is
    irrecoverably lost.
 
-Restic is now ready to be used with AWS S3. Try to create a backup:
+restic is now ready to be used with AWS S3. Try to create a backup:
 
 .. code-block:: console
 

@@ -3,7 +3,6 @@ package s3
 import (
 	"bytes"
 	"io"
-	"net/http"
 	"path"
 	"restic"
 	"strings"
@@ -48,8 +47,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		Layout:       &backend.S3Layout{Path: cfg.Prefix, Join: path.Join},
 	}
 
-	tr := &http.Transport{MaxIdleConnsPerHost: connLimit}
-	client.SetCustomTransport(tr)
+	client.SetCustomTransport(backend.Transport())
 
 	be.createConnections()
 

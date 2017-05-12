@@ -294,7 +294,7 @@ func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 	// save data
 	_, err = io.Copy(f, rd)
 	if err != nil {
-		f.Close()
+		_ = f.Close()
 		return errors.Wrap(err, "Write")
 	}
 
