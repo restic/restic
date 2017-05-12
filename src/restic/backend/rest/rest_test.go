@@ -1,15 +1,15 @@
 package rest_test
 
 import (
-	"bufio"
 	"context"
 	"io/ioutil"
+	"net"
 	"net/url"
 	"os"
 	"os/exec"
 	"restic"
-	"strings"
 	"testing"
+	"time"
 
 	"restic/backend/rest"
 	"restic/backend/test"
@@ -24,20 +24,29 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 
 	cmd := exec.CommandContext(ctx, srv, "--path", dir)
 	cmd.Stdout = os.Stdout
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	cmd.Stderr = os.Stdout
 	if err := cmd.Start(); err != nil {
 		t.Fatal(err)
 	}
 
-	sc := bufio.NewScanner(stderr)
-	for sc.Scan() {
-		if strings.HasPrefix(sc.Text(), "Starting server") {
-			break
+	// wait until the TCP port is reachable
+	var success bool
+	for i := 0; i < 10; i++ {
+		c, err := net.Dial("tcp", "localhost:8000")
+		if err != nil {
+			time.Sleep(200 * time.Millisecond)
+			continue
 		}
+
+		success = true
+		if err := c.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if !success {
+		t.Fatal("unable to connect to rest server")
+		return nil
 	}
 
 	return func() {
