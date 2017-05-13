@@ -60,7 +60,13 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 	}
 }
 
-func TestBackend(t *testing.T) {
+func TestBackendREST(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			SkipDisallowed(t, "restic/backend/rest.TestBackendREST")
+		}
+	}()
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

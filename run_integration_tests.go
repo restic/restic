@@ -150,6 +150,15 @@ func (env *TravisEnvironment) RunTests() error {
 
 	env.env["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
 
+	// ensure that the following tests cannot be silently skipped on Travis
+	ensureTests := []string{
+		"restic/backend/rest.TestBackendREST",
+		"restic/backend/sftp.TestBackendSFTP",
+		"restic/backend/s3.TestBackendMinio",
+		"restic/backend/s3.TestBackendS3",
+	}
+	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")
+
 	if *runCrossCompile {
 		// compile for all target architectures with tags
 		for _, tags := range []string{"release", "debug"} {

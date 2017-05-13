@@ -97,6 +97,12 @@ func newCredentials(t testing.TB) (key, secret string) {
 }
 
 func TestBackendMinio(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			SkipDisallowed(t, "restic/backend/s3.TestBackendMinio")
+		}
+	}()
+
 	// try to find a minio binary
 	_, err := exec.LookPath("minio")
 	if err != nil {
@@ -179,6 +185,12 @@ func TestBackendMinio(t *testing.T) {
 }
 
 func TestBackendS3(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			SkipDisallowed(t, "restic/backend/s3.TestBackendS3")
+		}
+	}()
+
 	vars := []string{
 		"RESTIC_TEST_S3_KEY",
 		"RESTIC_TEST_S3_SECRET",
