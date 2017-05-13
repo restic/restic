@@ -1,7 +1,7 @@
 package s3
 
 import (
-	"bytes"
+	"fmt"
 	"io"
 	"path"
 	"restic"
@@ -139,96 +139,26 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 		return nil, errors.Errorf("invalid length %d", length)
 	}
 
-	var obj *minio.Object
-	var size int64
-
 	objName := be.Filename(h)
 
 	// get token for connection
 	<-be.connChan
 
-	obj, err := be.client.GetObject(be.bucketname, objName)
-	if err != nil {
-		debug.Log("  err %v", err)
-
-		// return token
-		be.connChan <- struct{}{}
-
-		return nil, errors.Wrap(err, "client.GetObject")
+	byteRange := fmt.Sprintf("bytes=%d-", offset)
+	if length > 0 {
+		byteRange = fmt.Sprintf("bytes=%d-%d", offset, offset+int64(length)-1)
 	}
+	headers := minio.NewGetReqHeaders()
+	headers.Add("Range", byteRange)
+	debug.Log("Load(%v) send range %v", h, byteRange)
 
-	// if we're going to read the whole object, just pass it on.
-	if length == 0 {
-		debug.Log("Load %v: pass on object", h)
+	coreClient := minio.Core{be.client}
+	rd, _, err := coreClient.GetObject(be.bucketname, objName, headers)
 
-		_, err = obj.Seek(offset, 0)
-		if err != nil {
-			_ = obj.Close()
+	// return token
+	be.connChan <- struct{}{}
 
-			// return token
-			be.connChan <- struct{}{}
-
-			return nil, errors.Wrap(err, "obj.Seek")
-		}
-
-		rd := wrapReader{
-			ReadCloser: obj,
-			f: func() {
-				debug.Log("Close()")
-				// return token
-				be.connChan <- struct{}{}
-			},
-		}
-		return rd, nil
-	}
-
-	defer func() {
-		// return token
-		be.connChan <- struct{}{}
-	}()
-
-	// otherwise use a buffer with ReadAt
-	be.cacheMutex.RLock()
-	size, cacheHit := be.cacheObjSize[objName]
-	be.cacheMutex.RUnlock()
-
-	if !cacheHit {
-		info, err := obj.Stat()
-		if err != nil {
-			_ = obj.Close()
-			return nil, errors.Wrap(err, "obj.Stat")
-		}
-		size = info.Size
-		be.cacheMutex.Lock()
-		be.cacheObjSize[objName] = size
-		be.cacheMutex.Unlock()
-	}
-
-	if offset > size {
-		_ = obj.Close()
-		return nil, errors.New("offset larger than file size")
-	}
-
-	l := int64(length)
-	if offset+l > size {
-		l = size - offset
-	}
-
-	buf := make([]byte, l)
-	n, err := obj.ReadAt(buf, offset)
-	debug.Log("Load %v: use buffer with ReadAt: %v, %v", h, n, err)
-	if err == io.EOF {
-		debug.Log("Load %v: shorten buffer %v -> %v", h, len(buf), n)
-		buf = buf[:n]
-		err = nil
-	}
-
-	if err != nil {
-		_ = obj.Close()
-		return nil, errors.Wrap(err, "obj.ReadAt")
-	}
-
-	return backend.Closer{Reader: bytes.NewReader(buf)}, nil
+	return rd, err
 }
 
 // Stat returns information about a blob.
