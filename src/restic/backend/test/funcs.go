@@ -25,4 +25,6 @@ var benchmarkFunctions = []struct {
 	Fn   func(*testing.B, *Suite)
 }{
 	{"LoadFile", BackendBenchmarkLoadFile},
+	{"LoadPartialFile", BackendBenchmarkLoadPartialFile},
+	{"LoadPartialFileOffset", BackendBenchmarkLoadPartialFileOffset},
 }
