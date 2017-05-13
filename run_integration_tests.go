@@ -155,8 +155,15 @@ func (env *TravisEnvironment) RunTests() error {
 		"restic/backend/rest.TestBackendREST",
 		"restic/backend/sftp.TestBackendSFTP",
 		"restic/backend/s3.TestBackendMinio",
-		"restic/backend/s3.TestBackendS3",
 	}
+
+	// if the test s3 repository is available, make sure that the test is not skipped
+	if os.Getenv("RESTIC_TEST_S3_REPOSITORY") != "" {
+		ensureTests = append(ensureTests, "restic/backend/s3.TestBackendS3")
+	} else {
+		msg("S3 repository not available\n")
+	}
+
 	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")
 
 	if *runCrossCompile {
