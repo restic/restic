@@ -293,7 +293,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err = tmpfile.Seek(0, 0); err != nil {
+	if _, err = tmpfile.Seek(0, io.SeekStart); err != nil {
 		t.Fatal(err)
 	}
 
@@ -306,17 +306,32 @@ func (s *Suite) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err = tmpfile.Close(); err != nil {
+	err = b.Remove(h)
+	if err != nil {
+		t.Fatalf("error removing item: %+v", err)
+	}
+
+	// try again directly with the temp file
+	if _, err = tmpfile.Seek(588, io.SeekStart); err != nil {
 		t.Fatal(err)
 	}
 
-	if err = os.Remove(tmpfile.Name()); err != nil {
+	err = b.Save(h, tmpfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = tmpfile.Close(); err != nil {
 		t.Fatal(err)
 	}
 
 	err = b.Remove(h)
 	if err != nil {
 		t.Fatalf("error removing item: %+v", err)
+	}
+
+	if err = os.Remove(tmpfile.Name()); err != nil {
+		t.Fatal(err)
 	}
 }
 
