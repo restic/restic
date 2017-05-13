@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"text/template"
 	"unicode"
 	"unicode/utf8"
@@ -35,7 +36,7 @@ import (
 
 var testFunctions = []struct {
 	Name string
-	Fn   func(t testing.TB, suite *Suite)
+	Fn   func(testing.TB, *Suite)
 }{
 {{ range $f := .TestFuncs -}}
 	{"{{ $f }}", BackendTest{{ $f }},},
@@ -44,7 +45,7 @@ var testFunctions = []struct {
 
 var benchmarkFunctions = []struct {
 	Name string
-	Fn   func(t testing.TB, suite *Suite)
+	Fn   func(*testing.B, *Suite)
 }{
 {{ range $f := .BenchmarkFuncs -}}
 	{"{{ $f }}", BackendBenchmark{{ $f }},},
@@ -52,7 +53,7 @@ var benchmarkFunctions = []struct {
 }
 `
 
-var testFile = flag.String("testfile", "tests.go", "file to search test functions in")
+var testFiles = flag.String("testfiles", "tests.go,benchmarks.go", "files to search test functions in (comma separated)")
 var outputFile = flag.String("output", "funcs.go", "output file to write generated code to")
 var packageName = flag.String("package", "", "the package name to use")
 var prefix = flag.String("prefix", "", "test function prefix")
@@ -71,27 +72,30 @@ var testFuncRegex = regexp.MustCompile(`^func\s+BackendTest(.+)\s*\(`)
 var benchmarkFuncRegex = regexp.MustCompile(`^func\s+BackendBenchmark(.+)\s*\(`)
 
 func findFunctions() (testFuncs, benchmarkFuncs []string) {
-	f, err := os.Open(*testFile)
-	errx(err)
+	for _, filename := range strings.Split(*testFiles, ",") {
+		f, err := os.Open(filename)
+		errx(err)
 
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		match := testFuncRegex.FindStringSubmatch(sc.Text())
-		if len(match) > 0 {
-			testFuncs = append(testFuncs, match[1])
+		sc := bufio.NewScanner(f)
+		for sc.Scan() {
+			match := testFuncRegex.FindStringSubmatch(sc.Text())
+			if len(match) > 0 {
+				testFuncs = append(testFuncs, match[1])
+			}
+
+			match = benchmarkFuncRegex.FindStringSubmatch(sc.Text())
+			if len(match) > 0 {
+				benchmarkFuncs = append(benchmarkFuncs, match[1])
+			}
 		}
 
-		match = benchmarkFuncRegex.FindStringSubmatch(sc.Text())
-		if len(match) > 0 {
-			benchmarkFuncs = append(benchmarkFuncs, match[1])
+		if err := sc.Err(); err != nil {
+			log.Fatalf("Error scanning file: %v", err)
 		}
+
+		errx(f.Close())
 	}
 
-	if err := sc.Err(); err != nil {
-		log.Fatalf("Error scanning file: %v", err)
-	}
-
-	errx(f.Close())
 	return testFuncs, benchmarkFuncs
 }
 

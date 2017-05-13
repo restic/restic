@@ -8,7 +8,7 @@ import (
 
 var testFunctions = []struct {
 	Name string
-	Fn   func(t testing.TB, suite *Suite)
+	Fn   func(testing.TB, *Suite)
 }{
 	{"CreateWithConfig", BackendTestCreateWithConfig},
 	{"Location", BackendTestLocation},
@@ -22,5 +22,7 @@ var testFunctions = []struct {
 
 var benchmarkFunctions = []struct {
 	Name string
-	Fn   func(t testing.TB, suite *Suite)
-}{}
+	Fn   func(*testing.B, *Suite)
+}{
+	{"LoadFile", BackendBenchmarkLoadFile},
+}
