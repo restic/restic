@@ -68,6 +68,34 @@ func (s *Suite) RunTests(t *testing.T) {
 	}
 }
 
+// RunBenchmarks executes all defined benchmarks as subtests of b.
+func (s *Suite) RunBenchmarks(b *testing.B) {
+	var err error
+	s.Config, err = s.NewConfig()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	// test create/open functions first
+	be := s.create(b)
+	s.close(b, be)
+
+	for _, test := range benchmarkFunctions {
+		b.Run(test.Name, func(b *testing.B) {
+			test.Fn(b, s)
+		})
+	}
+
+	if !test.TestCleanupTempDirs {
+		b.Logf("not cleaning up backend")
+		return
+	}
+
+	if err = s.Cleanup(s.Config); err != nil {
+		b.Fatal(err)
+	}
+}
+
 func (s *Suite) create(t testing.TB) restic.Backend {
 	be, err := s.Create(s.Config)
 	if err != nil {

@@ -19,3 +19,8 @@ var testFunctions = []struct {
 	{"Backend", BackendTestBackend},
 	{"Delete", BackendTestDelete},
 }
+
+var benchmarkFunctions = []struct {
+	Name string
+	Fn   func(t testing.TB, suite *Suite)
+}{}

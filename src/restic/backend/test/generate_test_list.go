@@ -4,12 +4,13 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
+	"go/format"
 	"io"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"text/template"
@@ -18,8 +19,9 @@ import (
 )
 
 var data struct {
-	Package string
-	Funcs   []string
+	Package        string
+	TestFuncs      []string
+	BenchmarkFuncs []string
 }
 
 var testTemplate = `
@@ -35,8 +37,17 @@ var testFunctions = []struct {
 	Name string
 	Fn   func(t testing.TB, suite *Suite)
 }{
-{{ range $f := .Funcs -}}
+{{ range $f := .TestFuncs -}}
 	{"{{ $f }}", BackendTest{{ $f }},},
+{{ end }}
+}
+
+var benchmarkFunctions = []struct {
+	Name string
+	Fn   func(t testing.TB, suite *Suite)
+}{
+{{ range $f := .BenchmarkFuncs -}}
+	{"{{ $f }}", BackendBenchmark{{ $f }},},
 {{ end }}
 }
 `
@@ -56,17 +67,23 @@ func errx(err error) {
 	os.Exit(1)
 }
 
-var funcRegex = regexp.MustCompile(`^func\s+BackendTest(.+)\s*\(`)
+var testFuncRegex = regexp.MustCompile(`^func\s+BackendTest(.+)\s*\(`)
+var benchmarkFuncRegex = regexp.MustCompile(`^func\s+BackendBenchmark(.+)\s*\(`)
 
-func findTestFunctions() (funcs []string) {
+func findFunctions() (testFuncs, benchmarkFuncs []string) {
 	f, err := os.Open(*testFile)
 	errx(err)
 
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
-		match := funcRegex.FindStringSubmatch(sc.Text())
+		match := testFuncRegex.FindStringSubmatch(sc.Text())
 		if len(match) > 0 {
-			funcs = append(funcs, match[1])
+			testFuncs = append(testFuncs, match[1])
+		}
+
+		match = benchmarkFuncRegex.FindStringSubmatch(sc.Text())
+		if len(match) > 0 {
+			benchmarkFuncs = append(benchmarkFuncs, match[1])
 		}
 	}
 
@@ -75,20 +92,20 @@ func findTestFunctions() (funcs []string) {
 	}
 
 	errx(f.Close())
-	return funcs
+	return testFuncs, benchmarkFuncs
 }
 
 func generateOutput(wr io.Writer, data interface{}) {
 	t := template.Must(template.New("backendtest").Parse(testTemplate))
 
-	cmd := exec.Command("gofmt")
-	cmd.Stdout = wr
-	in, err := cmd.StdinPipe()
+	buf := bytes.NewBuffer(nil)
+	errx(t.Execute(buf, data))
+
+	source, err := format.Source(buf.Bytes())
 	errx(err)
-	errx(cmd.Start())
-	errx(t.Execute(in, data))
-	errx(in.Close())
-	errx(cmd.Wait())
+
+	_, err = wr.Write(source)
+	errx(err)
 }
 
 func packageTestFunctionPrefix(pkg string) string {
@@ -120,7 +137,7 @@ func main() {
 	errx(err)
 
 	data.Package = pkg
-	data.Funcs = findTestFunctions()
+	data.TestFuncs, data.BenchmarkFuncs = findFunctions()
 	generateOutput(f, data)
 
 	errx(f.Close())
