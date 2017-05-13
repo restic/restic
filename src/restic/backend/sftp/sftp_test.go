@@ -29,18 +29,8 @@ func findSFTPServerBinary() string {
 
 var sftpServer = findSFTPServerBinary()
 
-func TestBackendSFTP(t *testing.T) {
-	defer func() {
-		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/sftp.TestBackendSFTP")
-		}
-	}()
-
-	if sftpServer == "" {
-		t.Skip("sftp server binary not found")
-	}
-
-	suite := test.Suite{
+func newTestSuite(t testing.TB) *test.Suite {
+	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
 			dir, err := ioutil.TempDir(TestTempDir, "restic-test-sftp-")
@@ -80,6 +70,26 @@ func TestBackendSFTP(t *testing.T) {
 			return nil
 		},
 	}
+}
 
-	suite.RunTests(t)
+func TestBackendSFTP(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			SkipDisallowed(t, "restic/backend/sftp.TestBackendSFTP")
+		}
+	}()
+
+	if sftpServer == "" {
+		t.Skip("sftp server binary not found")
+	}
+
+	newTestSuite(t).RunTests(t)
+}
+
+func BenchmarkBackendSFTP(t *testing.B) {
+	if sftpServer == "" {
+		t.Skip("sftp server binary not found")
+	}
+
+	newTestSuite(t).RunBenchmarks(t)
 }
