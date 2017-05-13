@@ -27,4 +27,5 @@ var benchmarkFunctions = []struct {
 	{"LoadFile", BackendBenchmarkLoadFile},
 	{"LoadPartialFile", BackendBenchmarkLoadPartialFile},
 	{"LoadPartialFileOffset", BackendBenchmarkLoadPartialFileOffset},
+	{"Save", BackendBenchmarkSave},
 }

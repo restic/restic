@@ -144,3 +144,32 @@ func BackendBenchmarkLoadPartialFileOffset(t *testing.B, s *Suite) {
 
 	}
 }
+
+func BackendBenchmarkSave(t *testing.B, s *Suite) {
+	be := s.open(t)
+	defer s.close(t, be)
+
+	length := 1<<24 + 2123
+	data := test.Random(23, length)
+	id := restic.Hash(data)
+	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
+
+	rd := bytes.NewReader(data)
+
+	t.SetBytes(int64(length))
+	t.ResetTimer()
+
+	for i := 0; i < t.N; i++ {
+		if _, err := rd.Seek(0, 0); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := be.Save(handle, rd); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := be.Remove(handle); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
