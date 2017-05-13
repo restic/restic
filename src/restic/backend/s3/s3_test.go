@@ -169,7 +169,6 @@ func TestBackendMinio(t *testing.T) {
 				cfg.stopServer()
 			}
 			if cfg.removeTempdir != nil {
-				t.Logf("removeTempdir %v", config)
 				cfg.removeTempdir()
 			}
 			return nil
