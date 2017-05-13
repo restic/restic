@@ -212,11 +212,22 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 
 	coreClient := minio.Core{be.client}
 	rd, _, err := coreClient.GetObject(be.bucketname, objName, headers)
+	if err != nil {
+		// return token
+		be.connChan <- struct{}{}
+		return nil, err
+	}
 
-	// return token
-	be.connChan <- struct{}{}
+	closeRd := wrapReader{
+		ReadCloser: rd,
+		f: func() {
+			debug.Log("Close()")
+			// return token
+			be.connChan <- struct{}{}
+		},
+	}
 
-	return rd, err
+	return closeRd, err
 }
 
 // Stat returns information about a blob.
