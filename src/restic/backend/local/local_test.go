@@ -10,8 +10,8 @@ import (
 	. "restic/test"
 )
 
-func TestBackend(t *testing.T) {
-	suite := test.Suite{
+func newTestSuite(t testing.TB) *test.Suite {
+	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
 			dir, err := ioutil.TempDir(TestTempDir, "restic-test-local-")
@@ -50,6 +50,12 @@ func TestBackend(t *testing.T) {
 			return nil
 		},
 	}
+}
 
-	suite.RunTests(t)
+func TestBackend(t *testing.T) {
+	newTestSuite(t).RunTests(t)
+}
+
+func BenchmarkBackend(t *testing.B) {
+	newTestSuite(t).RunBenchmarks(t)
 }
