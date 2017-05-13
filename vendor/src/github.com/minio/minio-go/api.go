@@ -553,7 +553,7 @@ func (c Client) executeMethod(method string, metadata requestMetadata) (res *htt
 		// Bucket region if set in error response and the error
 		// code dictates invalid region, we can retry the request
 		// with the new region.
-		if errResponse.Code == "InvalidRegion" && errResponse.Region != "" {
+		if errResponse.Region != "" && res.StatusCode == http.StatusBadRequest {
 			c.bucketLocCache.Set(metadata.bucketName, errResponse.Region)
 			continue // Retry.
 		}
