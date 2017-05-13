@@ -3,6 +3,7 @@ package s3
 import (
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"restic"
 	"strings"
@@ -84,6 +85,35 @@ type Sizer interface {
 	Size() int64
 }
 
+type Lenner interface {
+	Len() int
+}
+
+// getRemainingSize returns number of bytes remaining. If it is not possible to
+// determine the size, panic() is called.
+func getRemainingSize(rd io.Reader) (size int64, err error) {
+	if r, ok := rd.(Lenner); ok {
+		size = int64(r.Len())
+	} else if r, ok := rd.(Sizer); ok {
+		size = r.Size()
+	} else if f, ok := rd.(*os.File); ok {
+		fi, err := f.Stat()
+		if err != nil {
+			return 0, err
+		}
+
+		pos, err := f.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return 0, err
+		}
+
+		size = fi.Size() - pos
+	} else {
+		panic(fmt.Sprintf("Save() got passed a reader without a method to determine the data size, type is %T", rd))
+	}
+	return size, nil
+}
+
 // Save stores data in the backend at the handle.
 func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
@@ -91,12 +121,9 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	}
 
 	objName := be.Filename(h)
-
-	var size int64
-	if r, ok := rd.(Sizer); ok {
-		size = r.Size()
-	} else {
-		panic("Save() got passed a reader without a method to determine the data size")
+	size, err := getRemainingSize(rd)
+	if err != nil {
+		return err
 	}
 
 	debug.Log("Save %v at %v", h, objName)
