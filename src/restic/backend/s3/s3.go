@@ -114,6 +114,17 @@ func getRemainingSize(rd io.Reader) (size int64, err error) {
 	return size, nil
 }
 
+// preventCloser wraps an io.Reader to run a function instead of the original Close() function.
+type preventCloser struct {
+	io.Reader
+	f func()
+}
+
+func (wr preventCloser) Close() error {
+	wr.f()
+	return nil
+}
+
 // Save stores data in the backend at the handle.
 func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
@@ -136,6 +147,15 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	}
 
 	<-be.connChan
+
+	// wrap the reader so that net/http client cannot close the reader, return
+	// the token instead.
+	rd = preventCloser{
+		Reader: rd,
+		f: func() {
+			debug.Log("Close()")
+		},
+	}
 
 	debug.Log("PutObject(%v, %v)", be.bucketname, objName)
 	coreClient := minio.Core{be.client}
