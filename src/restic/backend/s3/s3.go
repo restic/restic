@@ -80,6 +80,10 @@ func (be *s3) Location() string {
 	return be.bucketname
 }
 
+type Sizer interface {
+	Size() int64
+}
+
 // Save stores data in the backend at the handle.
 func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
@@ -87,6 +91,13 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	}
 
 	objName := be.Filename(h)
+
+	var size int64
+	if r, ok := rd.(Sizer); ok {
+		size = r.Size()
+	} else {
+		panic("Save() got passed a reader without a method to determine the data size")
+	}
 
 	debug.Log("Save %v at %v", h, objName)
 
@@ -98,14 +109,14 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	}
 
 	<-be.connChan
-	defer func() {
-		be.connChan <- struct{}{}
-	}()
 
-	debug.Log("PutObject(%v, %v)",
-		be.bucketname, objName)
-	n, err := be.client.PutObject(be.bucketname, objName, rd, "binary/octet-stream")
-	debug.Log("%v -> %v bytes, err %#v", objName, n, err)
+	debug.Log("PutObject(%v, %v)", be.bucketname, objName)
+	coreClient := minio.Core{be.client}
+	info, err := coreClient.PutObject(be.bucketname, objName, size, rd, nil, nil, nil)
+
+	// return token
+	be.connChan <- struct{}{}
+	debug.Log("%v -> %v bytes, err %#v", objName, info.Size, err)
 
 	return errors.Wrap(err, "client.PutObject")
 }
