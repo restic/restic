@@ -1,8 +1,9 @@
 package s3
 
 import (
-	"bytes"
+	"fmt"
 	"io"
+	"os"
 	"path"
 	"restic"
 	"strings"
@@ -80,6 +81,50 @@ func (be *s3) Location() string {
 	return be.bucketname
 }
 
+// getRemainingSize returns number of bytes remaining. If it is not possible to
+// determine the size, panic() is called.
+func getRemainingSize(rd io.Reader) (size int64, err error) {
+	type Sizer interface {
+		Size() int64
+	}
+
+	type Lenner interface {
+		Len() int
+	}
+
+	if r, ok := rd.(Lenner); ok {
+		size = int64(r.Len())
+	} else if r, ok := rd.(Sizer); ok {
+		size = r.Size()
+	} else if f, ok := rd.(*os.File); ok {
+		fi, err := f.Stat()
+		if err != nil {
+			return 0, err
+		}
+
+		pos, err := f.Seek(0, io.SeekCurrent)
+		if err != nil {
+			return 0, err
+		}
+
+		size = fi.Size() - pos
+	} else {
+		panic(fmt.Sprintf("Save() got passed a reader without a method to determine the data size, type is %T", rd))
+	}
+	return size, nil
+}
+
+// preventCloser wraps an io.Reader to run a function instead of the original Close() function.
+type preventCloser struct {
+	io.Reader
+	f func()
+}
+
+func (wr preventCloser) Close() error {
+	wr.f()
+	return nil
+}
+
 // Save stores data in the backend at the handle.
 func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
@@ -87,6 +132,10 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	}
 
 	objName := be.Filename(h)
+	size, err := getRemainingSize(rd)
+	if err != nil {
+		return err
+	}
 
 	debug.Log("Save %v at %v", h, objName)
 
@@ -98,14 +147,23 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	}
 
 	<-be.connChan
-	defer func() {
-		be.connChan <- struct{}{}
-	}()
 
-	debug.Log("PutObject(%v, %v)",
-		be.bucketname, objName)
-	n, err := be.client.PutObject(be.bucketname, objName, rd, "binary/octet-stream")
-	debug.Log("%v -> %v bytes, err %#v", objName, n, err)
+	// wrap the reader so that net/http client cannot close the reader, return
+	// the token instead.
+	rd = preventCloser{
+		Reader: rd,
+		f: func() {
+			debug.Log("Close()")
+		},
+	}
+
+	debug.Log("PutObject(%v, %v)", be.bucketname, objName)
+	coreClient := minio.Core{be.client}
+	info, err := coreClient.PutObject(be.bucketname, objName, size, rd, nil, nil, nil)
+
+	// return token
+	be.connChan <- struct{}{}
+	debug.Log("%v -> %v bytes, err %#v", objName, info.Size, err)
 
 	return errors.Wrap(err, "client.PutObject")
 }
@@ -139,96 +197,37 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 		return nil, errors.Errorf("invalid length %d", length)
 	}
 
-	var obj *minio.Object
-	var size int64
-
 	objName := be.Filename(h)
 
 	// get token for connection
 	<-be.connChan
 
-	obj, err := be.client.GetObject(be.bucketname, objName)
-	if err != nil {
-		debug.Log("  err %v", err)
+	byteRange := fmt.Sprintf("bytes=%d-", offset)
+	if length > 0 {
+		byteRange = fmt.Sprintf("bytes=%d-%d", offset, offset+int64(length)-1)
+	}
+	headers := minio.NewGetReqHeaders()
+	headers.Add("Range", byteRange)
+	debug.Log("Load(%v) send range %v", h, byteRange)
 
+	coreClient := minio.Core{be.client}
+	rd, _, err := coreClient.GetObject(be.bucketname, objName, headers)
+	if err != nil {
 		// return token
 		be.connChan <- struct{}{}
-
-		return nil, errors.Wrap(err, "client.GetObject")
+		return nil, err
 	}
 
-	// if we're going to read the whole object, just pass it on.
-	if length == 0 {
-		debug.Log("Load %v: pass on object", h)
-
-		_, err = obj.Seek(offset, 0)
-		if err != nil {
-			_ = obj.Close()
-
+	closeRd := wrapReader{
+		ReadCloser: rd,
+		f: func() {
+			debug.Log("Close()")
 			// return token
 			be.connChan <- struct{}{}
-
-			return nil, errors.Wrap(err, "obj.Seek")
-		}
-
-		rd := wrapReader{
-			ReadCloser: obj,
-			f: func() {
-				debug.Log("Close()")
-				// return token
-				be.connChan <- struct{}{}
-			},
-		}
-		return rd, nil
+		},
 	}
 
-	defer func() {
-		// return token
-		be.connChan <- struct{}{}
-	}()
-
-	// otherwise use a buffer with ReadAt
-	be.cacheMutex.RLock()
-	size, cacheHit := be.cacheObjSize[objName]
-	be.cacheMutex.RUnlock()
-
-	if !cacheHit {
-		info, err := obj.Stat()
-		if err != nil {
-			_ = obj.Close()
-			return nil, errors.Wrap(err, "obj.Stat")
-		}
-		size = info.Size
-		be.cacheMutex.Lock()
-		be.cacheObjSize[objName] = size
-		be.cacheMutex.Unlock()
-	}
-
-	if offset > size {
-		_ = obj.Close()
-		return nil, errors.New("offset larger than file size")
-	}
-
-	l := int64(length)
-	if offset+l > size {
-		l = size - offset
-	}
-
-	buf := make([]byte, l)
-	n, err := obj.ReadAt(buf, offset)
-	debug.Log("Load %v: use buffer with ReadAt: %v, %v", h, n, err)
-	if err == io.EOF {
-		debug.Log("Load %v: shorten buffer %v -> %v", h, len(buf), n)
-		buf = buf[:n]
-		err = nil
-	}
-
-	if err != nil {
-		_ = obj.Close()
-		return nil, errors.Wrap(err, "obj.ReadAt")
-	}
-
-	return backend.Closer{Reader: bytes.NewReader(buf)}, nil
+	return closeRd, err
 }
 
 // Stat returns information about a blob.
