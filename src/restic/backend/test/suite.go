@@ -1,8 +1,10 @@
 package test
 
 import (
+	"reflect"
 	"restic"
 	"restic/test"
+	"strings"
 	"testing"
 )
 
@@ -38,10 +40,8 @@ func (s *Suite) RunTests(t *testing.T) {
 	be := s.create(t)
 	s.close(t, be)
 
-	for _, test := range testFunctions {
-		t.Run(test.Name, func(t *testing.T) {
-			test.Fn(t, s)
-		})
+	for _, test := range s.testFuncs(t) {
+		t.Run(test.Name, test.Fn)
 	}
 
 	if !test.TestCleanupTempDirs {
@@ -52,6 +52,76 @@ func (s *Suite) RunTests(t *testing.T) {
 	if err = s.Cleanup(s.Config); err != nil {
 		t.Fatal(err)
 	}
+}
+
+type testFunction struct {
+	Name string
+	Fn   func(*testing.T)
+}
+
+func (s *Suite) testFuncs(t testing.TB) (funcs []testFunction) {
+	tpe := reflect.TypeOf(s)
+	v := reflect.ValueOf(s)
+
+	for i := 0; i < tpe.NumMethod(); i++ {
+		methodType := tpe.Method(i)
+		name := methodType.Name
+
+		// discard functions which do not have the right name
+		if !strings.HasPrefix(name, "Test") {
+			continue
+		}
+
+		iface := v.Method(i).Interface()
+		f, ok := iface.(func(*testing.T))
+		if !ok {
+			t.Logf("warning: function %v of *Suite has the wrong signature for a test function\nwant: func(*testing.T),\nhave: %T",
+				name, iface)
+			continue
+		}
+
+		funcs = append(funcs, testFunction{
+			Name: name,
+			Fn:   f,
+		})
+	}
+
+	return funcs
+}
+
+type benchmarkFunction struct {
+	Name string
+	Fn   func(*testing.B)
+}
+
+func (s *Suite) benchmarkFuncs(t testing.TB) (funcs []benchmarkFunction) {
+	tpe := reflect.TypeOf(s)
+	v := reflect.ValueOf(s)
+
+	for i := 0; i < tpe.NumMethod(); i++ {
+		methodType := tpe.Method(i)
+		name := methodType.Name
+
+		// discard functions which do not have the right name
+		if !strings.HasPrefix(name, "Benchmark") {
+			continue
+		}
+
+		iface := v.Method(i).Interface()
+		f, ok := iface.(func(*testing.B))
+		if !ok {
+			t.Logf("warning: function %v of *Suite has the wrong signature for a test function\nwant: func(*testing.T),\nhave: %T",
+				name, iface)
+			continue
+		}
+
+		funcs = append(funcs, benchmarkFunction{
+			Name: name,
+			Fn:   f,
+		})
+	}
+
+	return funcs
 }
 
 // RunBenchmarks executes all defined benchmarks as subtests of b.
@@ -66,10 +136,8 @@ func (s *Suite) RunBenchmarks(b *testing.B) {
 	be := s.create(b)
 	s.close(b, be)
 
-	for _, test := range benchmarkFunctions {
-		b.Run(test.Name, func(b *testing.B) {
-			test.Fn(b, s)
-		})
+	for _, test := range s.benchmarkFuncs(b) {
+		b.Run(test.Name, test.Fn)
 	}
 
 	if !test.TestCleanupTempDirs {
