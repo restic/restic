@@ -15,10 +15,6 @@ func writeFile(t testing.TB, data []byte, offset int64) *os.File {
 		t.Fatal(err)
 	}
 
-	if err = os.Remove(tempfile.Name()); err != nil {
-		t.Fatal(err)
-	}
-
 	if _, err = tempfile.Write(data); err != nil {
 		t.Fatal(err)
 	}
@@ -41,6 +37,15 @@ func TestGetRemainingSize(t *testing.T) {
 	_, _ = io.ReadFull(partReader, buf)
 
 	partFileReader := writeFile(t, data, int64(partialRead))
+	defer func() {
+		if err := partFileReader.Close(); err != nil {
+			t.Fatal(err)
+		}
+
+		if err := os.Remove(partFileReader.Name()); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	var tests = []struct {
 		io.Reader
