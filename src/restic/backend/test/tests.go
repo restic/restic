@@ -1,4 +1,3 @@
-// Package test contains a test suite for restic backends.
 package test
 
 import (
