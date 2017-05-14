@@ -81,17 +81,17 @@ func (be *s3) Location() string {
 	return be.bucketname
 }
 
-type Sizer interface {
-	Size() int64
-}
-
-type Lenner interface {
-	Len() int
-}
-
 // getRemainingSize returns number of bytes remaining. If it is not possible to
 // determine the size, panic() is called.
 func getRemainingSize(rd io.Reader) (size int64, err error) {
+	type Sizer interface {
+		Size() int64
+	}
+
+	type Lenner interface {
+		Len() int
+	}
+
 	if r, ok := rd.(Lenner); ok {
 		size = int64(r.Len())
 	} else if r, ok := rd.(Sizer); ok {
