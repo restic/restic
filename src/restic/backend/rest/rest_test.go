@@ -60,23 +60,8 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 	}
 }
 
-func TestBackendREST(t *testing.T) {
-	defer func() {
-		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/rest.TestBackendREST")
-		}
-	}()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	dir, cleanup := TempDir(t)
-	defer cleanup()
-
-	cleanup = runRESTServer(ctx, t, dir)
-	defer cleanup()
-
-	suite := test.Suite{
+func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
+	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
 			dir, err := ioutil.TempDir(TestTempDir, "restic-test-rest-")
@@ -114,6 +99,36 @@ func TestBackendREST(t *testing.T) {
 			return nil
 		},
 	}
+}
 
-	suite.RunTests(t)
+func TestBackendREST(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			SkipDisallowed(t, "restic/backend/rest.TestBackendREST")
+		}
+	}()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	dir, cleanup := TempDir(t)
+	defer cleanup()
+
+	cleanup = runRESTServer(ctx, t, dir)
+	defer cleanup()
+
+	newTestSuite(ctx, t).RunTests(t)
+}
+
+func BenchmarkBackendREST(t *testing.B) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	dir, cleanup := TempDir(t)
+	defer cleanup()
+
+	cleanup = runRESTServer(ctx, t, dir)
+	defer cleanup()
+
+	newTestSuite(ctx, t).RunBenchmarks(t)
 }

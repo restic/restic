@@ -79,7 +79,7 @@ func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func()
 	}
 }
 
-func newCredentials(t testing.TB) (key, secret string) {
+func newRandomCredentials(t testing.TB) (key, secret string) {
 	buf := make([]byte, 10)
 	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {
@@ -96,38 +96,22 @@ func newCredentials(t testing.TB) (key, secret string) {
 	return key, secret
 }
 
-func TestBackendMinio(t *testing.T) {
-	defer func() {
-		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/s3.TestBackendMinio")
-		}
-	}()
+type MinioTestConfig struct {
+	s3.Config
 
-	// try to find a minio binary
-	_, err := exec.LookPath("minio")
-	if err != nil {
-		t.Skip(err)
-		return
-	}
+	tempdir       string
+	removeTempdir func()
+	stopServer    func()
+}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	type Config struct {
-		s3.Config
-
-		tempdir       string
-		removeTempdir func()
-		stopServer    func()
-	}
-
-	suite := test.Suite{
+func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
+	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			cfg := Config{}
+			cfg := MinioTestConfig{}
 
 			cfg.tempdir, cfg.removeTempdir = TempDir(t)
-			key, secret := newCredentials(t)
+			key, secret := newRandomCredentials(t)
 			cfg.stopServer = runMinio(ctx, t, cfg.tempdir, key, secret)
 
 			cfg.Config = s3.Config{
@@ -143,7 +127,7 @@ func TestBackendMinio(t *testing.T) {
 
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(Config)
+			cfg := config.(MinioTestConfig)
 
 			be, err := s3.Open(cfg.Config)
 			if err != nil {
@@ -164,13 +148,13 @@ func TestBackendMinio(t *testing.T) {
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
-			cfg := config.(Config)
+			cfg := config.(MinioTestConfig)
 			return s3.Open(cfg.Config)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
-			cfg := config.(Config)
+			cfg := config.(MinioTestConfig)
 			if cfg.stopServer != nil {
 				cfg.stopServer()
 			}
@@ -180,31 +164,44 @@ func TestBackendMinio(t *testing.T) {
 			return nil
 		},
 	}
-
-	suite.RunTests(t)
 }
 
-func TestBackendS3(t *testing.T) {
+func TestBackendMinio(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/s3.TestBackendS3")
+			SkipDisallowed(t, "restic/backend/s3.TestBackendMinio")
 		}
 	}()
 
-	vars := []string{
-		"RESTIC_TEST_S3_KEY",
-		"RESTIC_TEST_S3_SECRET",
-		"RESTIC_TEST_S3_REPOSITORY",
+	// try to find a minio binary
+	_, err := exec.LookPath("minio")
+	if err != nil {
+		t.Skip(err)
+		return
 	}
 
-	for _, v := range vars {
-		if os.Getenv(v) == "" {
-			t.Skipf("environment variable %v not set", v)
-			return
-		}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	newMinioTestSuite(ctx, t).RunTests(t)
+}
+
+func BenchmarkBackendMinio(t *testing.B) {
+	// try to find a minio binary
+	_, err := exec.LookPath("minio")
+	if err != nil {
+		t.Skip(err)
+		return
 	}
 
-	suite := test.Suite{
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	newMinioTestSuite(ctx, t).RunBenchmarks(t)
+}
+
+func newS3TestSuite(t testing.TB) *test.Suite {
+	return &test.Suite{
 		// do not use excessive data
 		MinimalData: true,
 
@@ -265,7 +262,46 @@ func TestBackendS3(t *testing.T) {
 			return nil
 		},
 	}
+}
+
+func TestBackendS3(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			SkipDisallowed(t, "restic/backend/s3.TestBackendS3")
+		}
+	}()
+
+	vars := []string{
+		"RESTIC_TEST_S3_KEY",
+		"RESTIC_TEST_S3_SECRET",
+		"RESTIC_TEST_S3_REPOSITORY",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			t.Skipf("environment variable %v not set", v)
+			return
+		}
+	}
 
 	t.Logf("run tests")
-	suite.RunTests(t)
+	newS3TestSuite(t).RunTests(t)
+}
+
+func BenchmarkBackendS3(t *testing.B) {
+	vars := []string{
+		"RESTIC_TEST_S3_KEY",
+		"RESTIC_TEST_S3_SECRET",
+		"RESTIC_TEST_S3_REPOSITORY",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			t.Skipf("environment variable %v not set", v)
+			return
+		}
+	}
+
+	t.Logf("run tests")
+	newS3TestSuite(t).RunBenchmarks(t)
 }

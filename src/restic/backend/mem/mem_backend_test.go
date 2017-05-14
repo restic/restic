@@ -14,8 +14,8 @@ type memConfig struct {
 	be restic.Backend
 }
 
-func TestSuiteBackendMem(t *testing.T) {
-	suite := test.Suite{
+func newTestSuite() *test.Suite {
+	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
 			return &memConfig{}, nil
@@ -54,6 +54,12 @@ func TestSuiteBackendMem(t *testing.T) {
 			return nil
 		},
 	}
+}
 
-	suite.RunTests(t)
+func TestSuiteBackendMem(t *testing.T) {
+	newTestSuite().RunTests(t)
+}
+
+func BenchmarkSuiteBackendMem(t *testing.B) {
+	newTestSuite().RunBenchmarks(t)
 }
