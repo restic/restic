@@ -89,7 +89,7 @@ func (c Client) MakeBucket(bucketName string, location string) (err error) {
 		if resp.StatusCode != http.StatusOK {
 			err := httpRespToErrorResponse(resp, bucketName, "")
 			errResp := ToErrorResponse(err)
-			if errResp.Code == "InvalidRegion" && errResp.Region != "" {
+			if resp.StatusCode == http.StatusBadRequest && errResp.Region != "" {
 				// Fetch bucket region found in headers
 				// of S3 error response, attempt bucket
 				// create again.

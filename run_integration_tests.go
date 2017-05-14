@@ -150,6 +150,22 @@ func (env *TravisEnvironment) RunTests() error {
 
 	env.env["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
 
+	// ensure that the following tests cannot be silently skipped on Travis
+	ensureTests := []string{
+		"restic/backend/rest.TestBackendREST",
+		"restic/backend/sftp.TestBackendSFTP",
+		"restic/backend/s3.TestBackendMinio",
+	}
+
+	// if the test s3 repository is available, make sure that the test is not skipped
+	if os.Getenv("RESTIC_TEST_S3_REPOSITORY") != "" {
+		ensureTests = append(ensureTests, "restic/backend/s3.TestBackendS3")
+	} else {
+		msg("S3 repository not available\n")
+	}
+
+	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")
+
 	if *runCrossCompile {
 		// compile for all target architectures with tags
 		for _, tags := range []string{"release", "debug"} {

@@ -29,7 +29,13 @@ func findSFTPServerBinary() string {
 
 var sftpServer = findSFTPServerBinary()
 
-func TestBackend(t *testing.T) {
+func TestBackendSFTP(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			SkipDisallowed(t, "restic/backend/sftp.TestBackendSFTP")
+		}
+	}()
+
 	if sftpServer == "" {
 		t.Skip("sftp server binary not found")
 	}
