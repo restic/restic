@@ -25,11 +25,22 @@ func BackendTestCreateWithConfig(t testing.TB, s *Suite) {
 	b := s.open(t)
 	defer s.close(t, b)
 
+	// remove a config if present
+	cfgHandle := restic.Handle{Type: restic.ConfigFile}
+	cfgPresent, err := b.Test(cfgHandle)
+	if err != nil {
+		t.Fatalf("unable to test for config: %+v", err)
+	}
+
+	if cfgPresent {
+		remove(t, b, cfgHandle)
+	}
+
 	// save a config
 	store(t, b, restic.ConfigFile, []byte("test config"))
 
 	// now create the backend again, this must fail
-	_, err := s.Create(s.Config)
+	_, err = s.Create(s.Config)
 	if err == nil {
 		t.Fatalf("expected error not found for creating a backend with an existing config file")
 	}
@@ -83,6 +94,9 @@ func BackendTestConfig(t testing.TB, s *Suite) {
 			t.Fatalf("wrong data returned, want %q, got %q", testString, string(buf))
 		}
 	}
+
+	// remove the config
+	remove(t, b, restic.Handle{Type: restic.ConfigFile})
 }
 
 // BackendTestLoad tests the backend's Load function.
