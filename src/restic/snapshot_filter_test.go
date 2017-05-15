@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"restic"
-	"sort"
 	"testing"
 	"time"
 )
@@ -19,76 +18,6 @@ func parseTimeUTC(s string) time.Time {
 	}
 
 	return t.UTC()
-}
-
-var testFilterSnapshots = restic.Snapshots{
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-01 01:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
-	{Hostname: "bar", Username: "testuser", Time: parseTimeUTC("2016-01-01 01:03:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-03 07:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
-	{Hostname: "bar", Username: "testuser", Time: parseTimeUTC("2016-01-01 07:08:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 10:23:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 11:23:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:23:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:24:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"test"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:28:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"test"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 12:30:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"test", "foo", "bar"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-04 16:23:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"test", "test2"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-05 09:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"foo"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-06 08:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"fox"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-07 10:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"fox"}},
-	{Hostname: "foo", Username: "root", Time: parseTimeUTC("2016-01-08 20:02:03"), Paths: []string{"/usr", "/sbin"}, Tags: []string{"foo"}},
-	{Hostname: "foo", Username: "root", Time: parseTimeUTC("2016-01-09 21:02:03"), Paths: []string{"/usr", "/sbin"}, Tags: []string{"fox"}},
-	{Hostname: "bar", Username: "root", Time: parseTimeUTC("2016-01-12 21:02:03"), Paths: []string{"/usr", "/sbin"}, Tags: []string{"foo"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-12 21:08:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"bar"}},
-	{Hostname: "foo", Username: "testuser", Time: parseTimeUTC("2016-01-18 12:02:03"), Paths: []string{"/usr", "/bin"}, Tags: []string{"bar"}},
-}
-
-var filterTests = []restic.SnapshotFilter{
-	{Hostname: "foo"},
-	{Username: "root"},
-	{Hostname: "foo", Username: "root"},
-	{Paths: []string{"/usr", "/bin"}},
-	{Hostname: "bar", Paths: []string{"/usr", "/bin"}},
-	{Hostname: "foo", Username: "root", Paths: []string{"/usr", "/sbin"}},
-	{Tags: []string{"foo"}},
-	{Tags: []string{"fox"}, Username: "root"},
-	{Tags: []string{"foo", "test"}},
-	{Tags: []string{"foo", "test2"}},
-}
-
-func TestFilterSnapshots(t *testing.T) {
-	sort.Sort(testFilterSnapshots)
-
-	for i, f := range filterTests {
-		res := restic.FilterSnapshots(testFilterSnapshots, f)
-
-		goldenFilename := filepath.Join("testdata", fmt.Sprintf("filter_snapshots_%d", i))
-
-		if *updateGoldenFiles {
-			buf, err := json.MarshalIndent(res, "", "  ")
-			if err != nil {
-				t.Fatalf("error marshaling result: %v", err)
-			}
-
-			if err = ioutil.WriteFile(goldenFilename, buf, 0644); err != nil {
-				t.Fatalf("unable to update golden file: %v", err)
-			}
-		}
-
-		buf, err := ioutil.ReadFile(goldenFilename)
-		if err != nil {
-			t.Errorf("error loading golden file %v: %v", goldenFilename, err)
-			continue
-		}
-
-		var want restic.Snapshots
-		err = json.Unmarshal(buf, &want)
-
-		if !reflect.DeepEqual(res, want) {
-			t.Errorf("test %v: wrong result, want:\n  %#v\ngot:\n  %#v", i, want, res)
-			continue
-		}
-	}
 }
 
 func TestExpireSnapshotOps(t *testing.T) {
@@ -128,7 +57,7 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2014-08-10 10:20:30")},
 	{Time: parseTimeUTC("2014-08-12 10:20:30")},
 	{Time: parseTimeUTC("2014-08-13 10:20:30")},
-	{Time: parseTimeUTC("2014-08-13 10:20:30")},
+	{Time: parseTimeUTC("2014-08-13 10:20:30.1")},
 	{Time: parseTimeUTC("2014-08-15 10:20:30")},
 	{Time: parseTimeUTC("2014-08-18 10:20:30")},
 	{Time: parseTimeUTC("2014-08-20 10:20:30")},
@@ -148,8 +77,8 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2014-11-10 10:20:30"), Tags: []string{"foo"}},
 	{Time: parseTimeUTC("2014-11-12 10:20:30"), Tags: []string{"foo"}},
 	{Time: parseTimeUTC("2014-11-13 10:20:30"), Tags: []string{"foo"}},
-	{Time: parseTimeUTC("2014-11-13 10:20:30")},
-	{Time: parseTimeUTC("2014-11-15 10:20:30")},
+	{Time: parseTimeUTC("2014-11-13 10:20:30.1"), Tags: []string{"bar"}},
+	{Time: parseTimeUTC("2014-11-15 10:20:30"), Tags: []string{"foo", "bar"}},
 	{Time: parseTimeUTC("2014-11-18 10:20:30")},
 	{Time: parseTimeUTC("2014-11-20 10:20:30")},
 	{Time: parseTimeUTC("2014-11-21 10:20:30")},
@@ -168,7 +97,7 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2015-08-10 10:20:30")},
 	{Time: parseTimeUTC("2015-08-12 10:20:30")},
 	{Time: parseTimeUTC("2015-08-13 10:20:30")},
-	{Time: parseTimeUTC("2015-08-13 10:20:30")},
+	{Time: parseTimeUTC("2015-08-13 10:20:30.1")},
 	{Time: parseTimeUTC("2015-08-15 10:20:30")},
 	{Time: parseTimeUTC("2015-08-18 10:20:30")},
 	{Time: parseTimeUTC("2015-08-20 10:20:30")},
@@ -188,7 +117,7 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2015-11-10 10:20:30")},
 	{Time: parseTimeUTC("2015-11-12 10:20:30")},
 	{Time: parseTimeUTC("2015-11-13 10:20:30")},
-	{Time: parseTimeUTC("2015-11-13 10:20:30")},
+	{Time: parseTimeUTC("2015-11-13 10:20:30.1")},
 	{Time: parseTimeUTC("2015-11-15 10:20:30")},
 	{Time: parseTimeUTC("2015-11-18 10:20:30")},
 	{Time: parseTimeUTC("2015-11-20 10:20:30")},
@@ -235,6 +164,7 @@ var expireTests = []restic.ExpirePolicy{
 	{Yearly: 10},
 	{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10},
 	{Tags: []string{"foo"}},
+	{Tags: []string{"foo", "bar"}},
 }
 
 func TestApplyPolicy(t *testing.T) {
