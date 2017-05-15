@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"restic/errors"
+	"restic/options"
 )
 
 // Config contains all configuration necessary to connect to an s3 compatible
@@ -16,6 +17,11 @@ type Config struct {
 	KeyID, Secret string
 	Bucket        string
 	Prefix        string
+	Layout        string `option:"layout" help:"use this backend layout (default: auto-detect)"`
+}
+
+func init() {
+	options.Register("s3", Config{})
 }
 
 const defaultPrefix = "restic"
