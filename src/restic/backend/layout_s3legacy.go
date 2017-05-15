@@ -2,9 +2,9 @@ package backend
 
 import "restic"
 
-// S3Layout implements the old layout used for s3 cloud storage backends, as
+// S3LegacyLayout implements the old layout used for s3 cloud storage backends, as
 // described in the Design document.
-type S3Layout struct {
+type S3LegacyLayout struct {
 	URL  string
 	Path string
 	Join func(...string) string
@@ -19,7 +19,7 @@ var s3LayoutPaths = map[restic.FileType]string{
 }
 
 // join calls Join with the first empty elements removed.
-func (l *S3Layout) join(url string, items ...string) string {
+func (l *S3LegacyLayout) join(url string, items ...string) string {
 	for len(items) > 0 && items[0] == "" {
 		items = items[1:]
 	}
@@ -35,7 +35,7 @@ func (l *S3Layout) join(url string, items ...string) string {
 }
 
 // Dirname returns the directory path for a given file type and name.
-func (l *S3Layout) Dirname(h restic.Handle) string {
+func (l *S3LegacyLayout) Dirname(h restic.Handle) string {
 	if h.Type == restic.ConfigFile {
 		return l.URL + l.Join(l.Path, "/")
 	}
@@ -44,7 +44,7 @@ func (l *S3Layout) Dirname(h restic.Handle) string {
 }
 
 // Filename returns a path to a file, including its name.
-func (l *S3Layout) Filename(h restic.Handle) string {
+func (l *S3LegacyLayout) Filename(h restic.Handle) string {
 	name := h.Name
 
 	if h.Type == restic.ConfigFile {
@@ -55,7 +55,7 @@ func (l *S3Layout) Filename(h restic.Handle) string {
 }
 
 // Paths returns all directory names
-func (l *S3Layout) Paths() (dirs []string) {
+func (l *S3LegacyLayout) Paths() (dirs []string) {
 	for _, p := range s3LayoutPaths {
 		dirs = append(dirs, l.Join(l.Path, p))
 	}
@@ -63,6 +63,6 @@ func (l *S3Layout) Paths() (dirs []string) {
 }
 
 // Basedir returns the base dir name for type t.
-func (l *S3Layout) Basedir(t restic.FileType) string {
+func (l *S3LegacyLayout) Basedir(t restic.FileType) string {
 	return l.Join(l.Path, s3LayoutPaths[t])
 }

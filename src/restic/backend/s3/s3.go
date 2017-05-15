@@ -45,7 +45,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		bucketname:   cfg.Bucket,
 		prefix:       cfg.Prefix,
 		cacheObjSize: make(map[string]int64),
-		Layout:       &backend.S3Layout{Path: cfg.Prefix, Join: path.Join},
+		Layout:       &backend.S3LegacyLayout{Path: cfg.Prefix, Join: path.Join},
 	}
 
 	client.SetCustomTransport(backend.Transport())

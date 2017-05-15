@@ -173,37 +173,37 @@ func TestCloudLayoutURLs(t *testing.T) {
 			"https://hostname.foo:1234/prefix/repo/",
 		},
 		{
-			&S3Layout{URL: "https://hostname.foo", Path: "/", Join: path.Join},
+			&S3LegacyLayout{URL: "https://hostname.foo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.DataFile, Name: "foobar"},
 			"https://hostname.foo/data/foobar",
 			"https://hostname.foo/data/",
 		},
 		{
-			&S3Layout{URL: "https://hostname.foo:1234/prefix/repo", Path: "", Join: path.Join},
+			&S3LegacyLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.LockFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/lock/foobar",
 			"https://hostname.foo:1234/prefix/repo/lock/",
 		},
 		{
-			&S3Layout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			&S3LegacyLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/config",
 			"https://hostname.foo:1234/prefix/repo/",
 		},
 		{
-			&S3Layout{URL: "", Path: "", Join: path.Join},
+			&S3LegacyLayout{URL: "", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.DataFile, Name: "foobar"},
 			"data/foobar",
 			"data/",
 		},
 		{
-			&S3Layout{URL: "", Path: "", Join: path.Join},
+			&S3LegacyLayout{URL: "", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.LockFile, Name: "foobar"},
 			"lock/foobar",
 			"lock/",
 		},
 		{
-			&S3Layout{URL: "", Path: "/", Join: path.Join},
+			&S3LegacyLayout{URL: "", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
 			"/config",
 			"/",
@@ -225,7 +225,7 @@ func TestCloudLayoutURLs(t *testing.T) {
 	}
 }
 
-func TestS3Layout(t *testing.T) {
+func TestS3LegacyLayout(t *testing.T) {
 	path, cleanup := TempDir(t)
 	defer cleanup()
 
@@ -259,7 +259,7 @@ func TestS3Layout(t *testing.T) {
 		},
 	}
 
-	l := &S3Layout{
+	l := &S3LegacyLayout{
 		Path: path,
 		Join: filepath.Join,
 	}
@@ -303,7 +303,7 @@ func TestDetectLayout(t *testing.T) {
 	}{
 		{"repo-layout-local.tar.gz", "*backend.DefaultLayout"},
 		{"repo-layout-cloud.tar.gz", "*backend.CloudLayout"},
-		{"repo-layout-s3-old.tar.gz", "*backend.S3Layout"},
+		{"repo-layout-s3-old.tar.gz", "*backend.S3LegacyLayout"},
 	}
 
 	var fs = &LocalFilesystem{}
@@ -343,7 +343,7 @@ func TestParseLayout(t *testing.T) {
 	}{
 		{"default", "", "*backend.DefaultLayout"},
 		{"cloud", "", "*backend.CloudLayout"},
-		{"s3", "", "*backend.S3Layout"},
+		{"s3legacy", "", "*backend.S3LegacyLayout"},
 		{"", "", "*backend.CloudLayout"},
 	}
 
