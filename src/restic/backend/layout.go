@@ -128,19 +128,19 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 		repo = &LocalFilesystem{}
 	}
 
-	// key file in the "keys" dir (DefaultLayout or CloudLayout)
+	// key file in the "keys" dir (DefaultLayout)
 	foundKeysFile, err := hasBackendFile(repo, repo.Join(dir, defaultLayoutPaths[restic.KeyFile]))
 	if err != nil {
 		return nil, err
 	}
 
-	// key file in the "key" dir (S3Layout)
+	// key file in the "key" dir (S3LegacyLayout)
 	foundKeyFile, err := hasBackendFile(repo, repo.Join(dir, s3LayoutPaths[restic.KeyFile]))
 	if err != nil {
 		return nil, err
 	}
 
-	// data file in "data" directory (S3Layout or CloudLayout)
+	// data file in "data" directory (S3LegacyLayout)
 	foundDataFile, err := hasBackendFile(repo, repo.Join(dir, s3LayoutPaths[restic.DataFile]))
 	if err != nil {
 		return nil, err
@@ -150,14 +150,6 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 	foundDataSubdirFile, err := hasSubdirBackendFile(repo, repo.Join(dir, s3LayoutPaths[restic.DataFile]))
 	if err != nil {
 		return nil, err
-	}
-
-	if foundKeysFile && foundDataFile && !foundKeyFile && !foundDataSubdirFile {
-		debug.Log("found cloud layout at %v", dir)
-		return &CloudLayout{
-			Path: dir,
-			Join: repo.Join,
-		}, nil
 	}
 
 	if foundKeysFile && foundDataSubdirFile && !foundKeyFile && !foundDataFile {
@@ -190,11 +182,6 @@ func ParseLayout(repo Filesystem, layout, defaultLayout, path string) (l Layout,
 			Path: path,
 			Join: repo.Join,
 		}
-	case "cloud":
-		l = &CloudLayout{
-			Path: path,
-			Join: repo.Join,
-		}
 	case "s3legacy":
 		l = &S3LegacyLayout{
 			Path: path,
@@ -214,7 +201,7 @@ func ParseLayout(repo Filesystem, layout, defaultLayout, path string) (l Layout,
 		}
 		debug.Log("layout detected: %v", l)
 	default:
-		return nil, errors.Errorf("unknown backend layout string %q, may be one of: default, cloud, s3legacy", layout)
+		return nil, errors.Errorf("unknown backend layout string %q, may be one of: default, s3legacy", layout)
 	}
 
 	return l, nil
