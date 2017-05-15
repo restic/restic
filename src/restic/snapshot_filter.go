@@ -77,12 +77,9 @@ func y(d time.Time) int {
 	return d.Year()
 }
 
-var a int
-
-// always retuns a unique number for d.
+// always returns a unique number for d.
 func always(d time.Time) int {
-	a++
-	return a
+	return int(d.UnixNano())
 }
 
 // ApplyPolicy returns the snapshots from list that are to be kept and removed

@@ -57,7 +57,7 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2014-08-10 10:20:30")},
 	{Time: parseTimeUTC("2014-08-12 10:20:30")},
 	{Time: parseTimeUTC("2014-08-13 10:20:30")},
-	{Time: parseTimeUTC("2014-08-13 10:20:30")},
+	{Time: parseTimeUTC("2014-08-13 10:20:30.1")},
 	{Time: parseTimeUTC("2014-08-15 10:20:30")},
 	{Time: parseTimeUTC("2014-08-18 10:20:30")},
 	{Time: parseTimeUTC("2014-08-20 10:20:30")},
@@ -77,7 +77,7 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2014-11-10 10:20:30"), Tags: []string{"foo"}},
 	{Time: parseTimeUTC("2014-11-12 10:20:30"), Tags: []string{"foo"}},
 	{Time: parseTimeUTC("2014-11-13 10:20:30"), Tags: []string{"foo"}},
-	{Time: parseTimeUTC("2014-11-13 10:20:30"), Tags: []string{"bar"}},
+	{Time: parseTimeUTC("2014-11-13 10:20:30.1"), Tags: []string{"bar"}},
 	{Time: parseTimeUTC("2014-11-15 10:20:30"), Tags: []string{"foo", "bar"}},
 	{Time: parseTimeUTC("2014-11-18 10:20:30")},
 	{Time: parseTimeUTC("2014-11-20 10:20:30")},
@@ -97,7 +97,7 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2015-08-10 10:20:30")},
 	{Time: parseTimeUTC("2015-08-12 10:20:30")},
 	{Time: parseTimeUTC("2015-08-13 10:20:30")},
-	{Time: parseTimeUTC("2015-08-13 10:20:30")},
+	{Time: parseTimeUTC("2015-08-13 10:20:30.1")},
 	{Time: parseTimeUTC("2015-08-15 10:20:30")},
 	{Time: parseTimeUTC("2015-08-18 10:20:30")},
 	{Time: parseTimeUTC("2015-08-20 10:20:30")},
@@ -117,7 +117,7 @@ var testExpireSnapshots = restic.Snapshots{
 	{Time: parseTimeUTC("2015-11-10 10:20:30")},
 	{Time: parseTimeUTC("2015-11-12 10:20:30")},
 	{Time: parseTimeUTC("2015-11-13 10:20:30")},
-	{Time: parseTimeUTC("2015-11-13 10:20:30")},
+	{Time: parseTimeUTC("2015-11-13 10:20:30.1")},
 	{Time: parseTimeUTC("2015-11-15 10:20:30")},
 	{Time: parseTimeUTC("2015-11-18 10:20:30")},
 	{Time: parseTimeUTC("2015-11-20 10:20:30")},
@@ -169,53 +169,53 @@ var expireTests = []restic.ExpirePolicy{
 
 func TestApplyPolicy(t *testing.T) {
 	for i, p := range expireTests {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			keep, remove := restic.ApplyPolicy(testExpireSnapshots, p)
+		keep, remove := restic.ApplyPolicy(testExpireSnapshots, p)
 
-			t.Logf("test %d: returned keep %v, remove %v (of %v) expired snapshots for policy %v",
-				i, len(keep), len(remove), len(testExpireSnapshots), p)
+		t.Logf("test %d: returned keep %v, remove %v (of %v) expired snapshots for policy %v",
+			i, len(keep), len(remove), len(testExpireSnapshots), p)
 
-			if len(keep)+len(remove) != len(testExpireSnapshots) {
-				t.Errorf("test %d: len(keep)+len(remove) = %d != len(testExpireSnapshots) = %d",
-					i, len(keep)+len(remove), len(testExpireSnapshots))
-			}
+		if len(keep)+len(remove) != len(testExpireSnapshots) {
+			t.Errorf("test %d: len(keep)+len(remove) = %d != len(testExpireSnapshots) = %d",
+				i, len(keep)+len(remove), len(testExpireSnapshots))
+		}
 
-			if p.Sum() > 0 && len(keep) > p.Sum() {
-				t.Errorf("not enough snapshots removed: policy allows %v snapshots to remain, but ended up with %v",
-					p.Sum(), len(keep))
-			}
+		if p.Sum() > 0 && len(keep) > p.Sum() {
+			t.Errorf("not enough snapshots removed: policy allows %v snapshots to remain, but ended up with %v",
+				p.Sum(), len(keep))
+		}
 
-			for _, sn := range keep {
-				t.Logf("test %d:     keep snapshot at %v %s\n", i, sn.Time, sn.Tags)
-			}
-			for _, sn := range remove {
-				t.Logf("test %d:   forget snapshot at %v %s\n", i, sn.Time, sn.Tags)
-			}
+		for _, sn := range keep {
+			t.Logf("test %d:     keep snapshot at %v %s\n", i, sn.Time, sn.Tags)
+		}
+		for _, sn := range remove {
+			t.Logf("test %d:   forget snapshot at %v %s\n", i, sn.Time, sn.Tags)
+		}
 
-			goldenFilename := filepath.Join("testdata", fmt.Sprintf("policy_keep_snapshots_%d", i))
+		goldenFilename := filepath.Join("testdata", fmt.Sprintf("policy_keep_snapshots_%d", i))
 
-			if *updateGoldenFiles {
-				buf, err := json.MarshalIndent(keep, "", "  ")
-				if err != nil {
-					t.Fatalf("error marshaling result: %v", err)
-				}
-
-				if err = ioutil.WriteFile(goldenFilename, buf, 0644); err != nil {
-					t.Fatalf("unable to update golden file: %v", err)
-				}
-			}
-
-			buf, err := ioutil.ReadFile(goldenFilename)
+		if *updateGoldenFiles {
+			buf, err := json.MarshalIndent(keep, "", "  ")
 			if err != nil {
-				t.Fatalf("error loading golden file %v: %v", goldenFilename, err)
+				t.Fatalf("error marshaling result: %v", err)
 			}
 
-			var want restic.Snapshots
-			err = json.Unmarshal(buf, &want)
-
-			if !reflect.DeepEqual(keep, want) {
-				t.Fatalf("test %v: wrong result, want:\n  %v\ngot:\n  %v", i, want, keep)
+			if err = ioutil.WriteFile(goldenFilename, buf, 0644); err != nil {
+				t.Fatalf("unable to update golden file: %v", err)
 			}
-		})
+		}
+
+		buf, err := ioutil.ReadFile(goldenFilename)
+		if err != nil {
+			t.Errorf("error loading golden file %v: %v", goldenFilename, err)
+			continue
+		}
+
+		var want restic.Snapshots
+		err = json.Unmarshal(buf, &want)
+
+		if !reflect.DeepEqual(keep, want) {
+			t.Errorf("test %v: wrong result, want:\n  %v\ngot:\n  %v", i, want, keep)
+			continue
+		}
 	}
 }
