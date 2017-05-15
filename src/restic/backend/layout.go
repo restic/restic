@@ -85,36 +85,6 @@ func hasBackendFile(fs Filesystem, dir string) (bool, error) {
 	return false, nil
 }
 
-var dataSubdirName = regexp.MustCompile("^[a-fA-F0-9]{2}$")
-
-func hasSubdirBackendFile(fs Filesystem, dir string) (bool, error) {
-	entries, err := fs.ReadDir(dir)
-	if err != nil && fs.IsNotExist(errors.Cause(err)) {
-		return false, nil
-	}
-
-	if err != nil {
-		return false, errors.Wrap(err, "ReadDir")
-	}
-
-	for _, subdir := range entries {
-		if !dataSubdirName.MatchString(subdir.Name()) {
-			continue
-		}
-
-		present, err := hasBackendFile(fs, fs.Join(dir, subdir.Name()))
-		if err != nil {
-			return false, err
-		}
-
-		if present {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
 // ErrLayoutDetectionFailed is returned by DetectLayout() when the layout
 // cannot be detected automatically.
 var ErrLayoutDetectionFailed = errors.New("auto-detecting the filesystem layout failed")
@@ -140,19 +110,7 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 		return nil, err
 	}
 
-	// data file in "data" directory (S3LegacyLayout)
-	foundDataFile, err := hasBackendFile(repo, repo.Join(dir, s3LayoutPaths[restic.DataFile]))
-	if err != nil {
-		return nil, err
-	}
-
-	// data file in subdir of "data" directory (DefaultLayout)
-	foundDataSubdirFile, err := hasSubdirBackendFile(repo, repo.Join(dir, s3LayoutPaths[restic.DataFile]))
-	if err != nil {
-		return nil, err
-	}
-
-	if foundKeysFile && foundDataSubdirFile && !foundKeyFile && !foundDataFile {
+	if foundKeysFile && !foundKeyFile {
 		debug.Log("found default layout at %v", dir)
 		return &DefaultLayout{
 			Path: dir,
@@ -160,7 +118,7 @@ func DetectLayout(repo Filesystem, dir string) (Layout, error) {
 		}, nil
 	}
 
-	if foundKeyFile && foundDataFile && !foundKeysFile && !foundDataSubdirFile {
+	if foundKeyFile && !foundKeysFile {
 		debug.Log("found s3 layout at %v", dir)
 		return &S3LegacyLayout{
 			Path: dir,
@@ -192,7 +150,7 @@ func ParseLayout(repo Filesystem, layout, defaultLayout, path string) (l Layout,
 
 		// use the default layout if auto detection failed
 		if errors.Cause(err) == ErrLayoutDetectionFailed && defaultLayout != "" {
-			debug.Log("error: %v, use default layout %v", defaultLayout)
+			debug.Log("error: %v, use default layout %v", err, defaultLayout)
 			return ParseLayout(repo, defaultLayout, "", path)
 		}
 
