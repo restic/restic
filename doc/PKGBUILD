@@ -4,7 +4,7 @@
 # Contributor: Alexander Neumann <alexander@bumpern.de>
 options=(!strip)
 pkgname=restic-git
-pkgver=v0.1.0.r172.g1f1b8e1
+pkgver=v0.5.0.r218.g089b04c8
 pkgrel=1
 pkgdesc="restic is a program that does backups right."
 arch=('i686' 'x86_64')
@@ -32,7 +32,7 @@ build() {
 package() {
   install -Dm755 "$pkgname/restic"    "$pkgdir/usr/bin/restic"
   install -Dm644 "$pkgname/LICENSE"   "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  install -Dm644 "$pkgname/README.md" "$pkgdir/usr/share/doc/$pkgname/README"
+  install -Dm644 "$pkgname/README.rst" "$pkgdir/usr/share/doc/$pkgname/README"
 }
 
 # vim:set ts=2 sw=2 et:
