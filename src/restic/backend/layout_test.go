@@ -301,8 +301,8 @@ func TestDetectLayout(t *testing.T) {
 		filename string
 		want     string
 	}{
-		{"repo-layout-local.tar.gz", "*backend.DefaultLayout"},
-		{"repo-layout-s3-old.tar.gz", "*backend.S3LegacyLayout"},
+		{"repo-layout-default.tar.gz", "*backend.DefaultLayout"},
+		{"repo-layout-s3legacy.tar.gz", "*backend.S3LegacyLayout"},
 	}
 
 	var fs = &LocalFilesystem{}
@@ -345,7 +345,7 @@ func TestParseLayout(t *testing.T) {
 		{"", "", "*backend.DefaultLayout"},
 	}
 
-	SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-local.tar.gz"))
+	SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-default.tar.gz"))
 
 	for _, test := range tests {
 		t.Run(test.layoutName, func(t *testing.T) {
