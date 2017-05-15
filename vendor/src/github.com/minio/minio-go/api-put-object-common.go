@@ -157,13 +157,11 @@ func hashCopyN(hashAlgorithms map[string]hash.Hash, hashSums map[string][]byte, 
 			return 0, err
 		}
 	}
-	if err == nil && size == partSize {
-		for k, v := range hashAlgorithms {
-			hashSums[k] = v.Sum(nil)
-		}
-		return size, nil
+
+	for k, v := range hashAlgorithms {
+		hashSums[k] = v.Sum(nil)
 	}
-	return 0, ErrUnexpectedEOF(size, partSize, "", "")
+	return size, err
 }
 
 // getUploadID - fetch upload id if already present for an object name
