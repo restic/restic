@@ -14,6 +14,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/go-ini/ini",
+			"repository": "https://github.com/go-ini/ini",
+			"revision": "e7fea39b01aea8d5671f6858f0532f56e8bff3a5",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/inconshreveable/mousetrap",
 			"repository": "https://github.com/inconshreveable/mousetrap",
 			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
@@ -26,9 +32,15 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/minio/go-homedir",
+			"repository": "https://github.com/minio/go-homedir",
+			"revision": "0b1069c753c94b3633cc06a1995252dbcc27c7a6",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/minio/minio-go",
 			"repository": "https://github.com/minio/minio-go",
-			"revision": "2f03abaa07d8bc57faef16cda7655ea62a7e0bed",
+			"revision": "85f15b007f08e11a62c769abe65299b812fd2e0d",
 			"branch": "master"
 		},
 		{
