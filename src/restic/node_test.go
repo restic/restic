@@ -71,7 +71,7 @@ func parseTime(s string) time.Time {
 }
 
 var nodeTests = []restic.Node{
-	restic.Node{
+	{
 		Name:       "testFile",
 		Type:       "file",
 		Content:    restic.IDs{},
@@ -82,7 +82,7 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2015-05-14 21:07:24.222"),
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
 	},
-	restic.Node{
+	{
 		Name:       "testSuidFile",
 		Type:       "file",
 		Content:    restic.IDs{},
@@ -93,7 +93,7 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2015-05-14 21:07:24.222"),
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
 	},
-	restic.Node{
+	{
 		Name:       "testSuidFile2",
 		Type:       "file",
 		Content:    restic.IDs{},
@@ -104,7 +104,7 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2015-05-14 21:07:24.222"),
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
 	},
-	restic.Node{
+	{
 		Name:       "testSticky",
 		Type:       "file",
 		Content:    restic.IDs{},
@@ -115,7 +115,7 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2015-05-14 21:07:24.222"),
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
 	},
-	restic.Node{
+	{
 		Name:       "testDir",
 		Type:       "dir",
 		Subtree:    nil,
@@ -126,7 +126,7 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2015-05-14 21:07:24.222"),
 		ChangeTime: parseTime("2015-05-14 21:07:25.333"),
 	},
-	restic.Node{
+	{
 		Name:       "testSymlink",
 		Type:       "symlink",
 		LinkTarget: "invalid",
@@ -140,7 +140,7 @@ var nodeTests = []restic.Node{
 
 	// include "testFile" and "testDir" again with slightly different
 	// metadata, so we can test if CreateAt works with pre-existing files.
-	restic.Node{
+	{
 		Name:       "testFile",
 		Type:       "file",
 		Content:    restic.IDs{},
@@ -151,7 +151,7 @@ var nodeTests = []restic.Node{
 		AccessTime: parseTime("2005-05-14 21:07:04.222"),
 		ChangeTime: parseTime("2005-05-14 21:07:05.333"),
 	},
-	restic.Node{
+	{
 		Name:       "testDir",
 		Type:       "dir",
 		Subtree:    nil,

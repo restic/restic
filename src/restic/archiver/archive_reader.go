@@ -72,7 +72,7 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 
 	tree := &restic.Tree{
 		Nodes: []*restic.Node{
-			&restic.Node{
+			{
 				Name:       name,
 				AccessTime: time.Now(),
 				ModTime:    time.Now(),

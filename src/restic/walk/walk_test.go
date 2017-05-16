@@ -1389,7 +1389,7 @@ func BenchmarkDelayedWalkTree(t *testing.B) {
 		treeJobs := make(chan walk.TreeJob)
 		go walk.Tree(dr, root, nil, treeJobs)
 
-		for _ = range treeJobs {
+		for range treeJobs {
 		}
 	}
 }

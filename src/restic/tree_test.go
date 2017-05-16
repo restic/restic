@@ -56,11 +56,11 @@ func TestTree(t *testing.T) {
 }
 
 var testNodes = []restic.Node{
-	restic.Node{Name: "normal"},
-	restic.Node{Name: "with backslashes \\zzz"},
-	restic.Node{Name: "test utf-8 föbärß"},
-	restic.Node{Name: "test invalid \x00\x01\x02\x03\x04"},
-	restic.Node{Name: "test latin1 \x75\x6d\x6c\xe4\xfc\x74\xf6\x6e\xdf\x6e\x6c\x6c"},
+	{Name: "normal"},
+	{Name: "with backslashes \\zzz"},
+	{Name: "test utf-8 föbärß"},
+	{Name: "test invalid \x00\x01\x02\x03\x04"},
+	{Name: "test latin1 \x75\x6d\x6c\xe4\xfc\x74\xf6\x6e\xdf\x6e\x6c\x6c"},
 }
 
 func TestNodeMarshal(t *testing.T) {

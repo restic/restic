@@ -92,7 +92,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	Verbosef("counting files in repo\n")
-	for _ = range repo.List(restic.DataFile, ctx.Done()) {
+	for range repo.List(restic.DataFile, ctx.Done()) {
 		stats.packs++
 	}
 

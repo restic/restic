@@ -71,7 +71,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 
 			debug.Log("  process blob %v", h)
 
-			buf = buf[:len(buf)]
+			buf = buf[:]
 			if uint(len(buf)) < entry.Length {
 				buf = make([]byte, entry.Length)
 			}
