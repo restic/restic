@@ -170,7 +170,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		if err != nil {
 			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %+v", l, o, err)
 			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", err)
+				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
 			}
 			continue
 		}
@@ -178,7 +178,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		if l == 0 && len(buf) != len(d) {
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, len(d), len(buf))
 			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", err)
+				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
 			}
 			continue
 		}
@@ -186,7 +186,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		if l > 0 && l <= len(d) && len(buf) != l {
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
 			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", err)
+				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
 			}
 			continue
 		}
@@ -194,7 +194,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		if l > len(d) && len(buf) != len(d) {
 			t.Errorf("Load(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
 			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", err)
+				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
 			}
 			continue
 		}
@@ -202,7 +202,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		if !bytes.Equal(buf, d) {
 			t.Errorf("Load(%d, %d) returned wrong bytes", l, o)
 			if err = rd.Close(); err != nil {
-				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", err)
+				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
 			}
 			continue
 		}

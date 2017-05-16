@@ -155,7 +155,7 @@ var filterListTests = []struct {
 	{[]string{"", "*.c"}, "/foo/bar/test.go", false},
 }
 
-func TestMatchList(t *testing.T) {
+func TestList(t *testing.T) {
 	for i, test := range filterListTests {
 		match, err := filter.List(test.patterns, test.path)
 		if err != nil {
@@ -171,7 +171,7 @@ func TestMatchList(t *testing.T) {
 	}
 }
 
-func ExampleMatchList() {
+func ExampleList() {
 	match, _ := filter.List([]string{"*.c", "*.go"}, "/home/user/file.go")
 	fmt.Printf("match: %v\n", match)
 	// Output:
