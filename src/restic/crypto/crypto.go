@@ -173,10 +173,10 @@ func (m *MACKey) UnmarshalJSON(data []byte) error {
 }
 
 // Valid tests whether the key k is valid (i.e. not zero).
-func (k *MACKey) Valid() bool {
+func (m *MACKey) Valid() bool {
 	nonzeroK := false
-	for i := 0; i < len(k.K); i++ {
-		if k.K[i] != 0 {
+	for i := 0; i < len(m.K); i++ {
+		if m.K[i] != 0 {
 			nonzeroK = true
 		}
 	}
@@ -185,8 +185,8 @@ func (k *MACKey) Valid() bool {
 		return false
 	}
 
-	for i := 0; i < len(k.R); i++ {
-		if k.R[i] != 0 {
+	for i := 0; i < len(m.R); i++ {
+		if m.R[i] != 0 {
 			return true
 		}
 	}
