@@ -212,6 +212,10 @@ func TestApplyPolicy(t *testing.T) {
 
 		var want restic.Snapshots
 		err = json.Unmarshal(buf, &want)
+		if err != nil {
+			t.Errorf("error unmarshalling golden file %v: %v", goldenFilename, err)
+			continue
+		}
 
 		if !reflect.DeepEqual(keep, want) {
 			t.Errorf("test %v: wrong result, want:\n  %v\ngot:\n  %v", i, want, keep)
