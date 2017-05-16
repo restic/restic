@@ -12,12 +12,10 @@ func TestRestoreLocalLayout(t *testing.T) {
 			filename string
 			layout   string
 		}{
-			{"repo-layout-cloud.tar.gz", ""},
-			{"repo-layout-local.tar.gz", ""},
-			{"repo-layout-s3-old.tar.gz", ""},
-			{"repo-layout-cloud.tar.gz", "cloud"},
-			{"repo-layout-local.tar.gz", "default"},
-			{"repo-layout-s3-old.tar.gz", "s3"},
+			{"repo-layout-default.tar.gz", ""},
+			{"repo-layout-s3legacy.tar.gz", ""},
+			{"repo-layout-default.tar.gz", "default"},
+			{"repo-layout-s3legacy.tar.gz", "s3legacy"},
 		}
 
 		for _, test := range tests {
