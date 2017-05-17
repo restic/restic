@@ -233,7 +233,7 @@ func TestListOptions(t *testing.T) {
 				Foo string `option:"foo" help:"bar text help"`
 			}{},
 			[]Help{
-				Help{Name: "foo", Text: "bar text help"},
+				{Name: "foo", Text: "bar text help"},
 			},
 		},
 		{
@@ -242,8 +242,8 @@ func TestListOptions(t *testing.T) {
 				Bar string `option:"bar" help:"bar text help"`
 			}{},
 			[]Help{
-				Help{Name: "foo", Text: "bar text help"},
-				Help{Name: "bar", Text: "bar text help"},
+				{Name: "foo", Text: "bar text help"},
+				{Name: "bar", Text: "bar text help"},
 			},
 		},
 		{
@@ -252,14 +252,14 @@ func TestListOptions(t *testing.T) {
 				Foo string `option:"foo" help:"bar text help"`
 			}{},
 			[]Help{
-				Help{Name: "bar", Text: "bar text help"},
-				Help{Name: "foo", Text: "bar text help"},
+				{Name: "bar", Text: "bar text help"},
+				{Name: "foo", Text: "bar text help"},
 			},
 		},
 		{
 			&teststruct,
 			[]Help{
-				Help{Name: "foo", Text: "bar text help"},
+				{Name: "foo", Text: "bar text help"},
 			},
 		},
 	}
@@ -290,9 +290,9 @@ func TestAppendAllOptions(t *testing.T) {
 				}{},
 			},
 			[]Help{
-				Help{Namespace: "local", Name: "foo", Text: "bar text help"},
-				Help{Namespace: "sftp", Name: "bar", Text: "bar text help"},
-				Help{Namespace: "sftp", Name: "foo", Text: "bar text help2"},
+				{Namespace: "local", Name: "foo", Text: "bar text help"},
+				{Namespace: "sftp", Name: "bar", Text: "bar text help"},
+				{Namespace: "sftp", Name: "foo", Text: "bar text help2"},
 			},
 		},
 	}

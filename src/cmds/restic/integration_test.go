@@ -559,7 +559,7 @@ func TestBackupExclude(t *testing.T) {
 
 		opts.Excludes = []string{"*.tar.gz", "private/secret"}
 		testRunBackup(t, []string{datadir}, opts, gopts)
-		snapshots, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
+		_, snapshotID = lastSnapshot(snapshots, loadSnapshotMap(t, gopts))
 		files = testRunLs(t, gopts, snapshotID)
 		Assert(t, !includes(files, filepath.Join(string(filepath.Separator), "testdata", "foo.tar.gz")),
 			"expected file %q not in first snapshot, but it's included", "foo.tar.gz")

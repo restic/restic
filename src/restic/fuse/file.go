@@ -143,7 +143,7 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 		}
 
 		if offset > 0 {
-			blob = blob[offset:len(blob)]
+			blob = blob[offset:]
 			offset = 0
 		}
 

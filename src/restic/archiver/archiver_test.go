@@ -129,7 +129,7 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 }
 
 func countPacks(repo restic.Repository, t restic.FileType) (n uint) {
-	for _ = range repo.Backend().List(t, nil) {
+	for range repo.Backend().List(t, nil) {
 		n++
 	}
 

@@ -45,7 +45,7 @@ func rebuildIndex(ctx context.Context, repo restic.Repository) error {
 	Verbosef("counting files in repo\n")
 
 	var packs uint64
-	for _ = range repo.List(restic.DataFile, ctx.Done()) {
+	for range repo.List(restic.DataFile, ctx.Done()) {
 		packs++
 	}
 

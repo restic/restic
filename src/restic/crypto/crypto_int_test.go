@@ -7,7 +7,7 @@ import (
 )
 
 // test vectors from http://cr.yp.to/mac/poly1305-20050329.pdf
-var poly1305_tests = []struct {
+var poly1305Tests = []struct {
 	msg   []byte
 	r     []byte
 	k     []byte
@@ -44,7 +44,7 @@ var poly1305_tests = []struct {
 }
 
 func TestPoly1305(t *testing.T) {
-	for _, test := range poly1305_tests {
+	for _, test := range poly1305Tests {
 		key := &MACKey{}
 		copy(key.K[:], test.k)
 		copy(key.R[:], test.r)
