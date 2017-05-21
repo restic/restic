@@ -1,6 +1,6 @@
 <!--
 NOTE: Not filling out the issue template needs a good reason, otherwise the
-issue will be closed instantly! Please take the time to help us debugging the
+issue may be closed instantly! Please take the time to help us debugging the
 problem by collecting information, even if it seems irrelevant to you. Thanks!
 -->
 
