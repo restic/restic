@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"testing"
 )
 
@@ -13,6 +14,7 @@ func TestFlags(t *testing.T) {
 
 	for _, cmd := range cmdRoot.Commands() {
 		t.Run(cmd.Name(), func(t *testing.T) {
+			cmd.Flags().SetOutput(ioutil.Discard)
 			err := cmd.ParseFlags([]string{"--help"})
 			if err.Error() == "pflag: help requested" {
 				err = nil

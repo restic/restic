@@ -76,8 +76,8 @@ identifies the repository, regardless if it is accessed via SFTP or
 locally. The field ``chunker_polynomial`` contains a parameter that is
 used for splitting large files into smaller chunks (see below).
 
-Filesystem-Based Repositories
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Repository Layout
+~~~~~~~~~~~~~~~~~
 
 The ``local`` and ``sftp`` backends are implemented using files and
 directories stored in a file system. The directory layout is the same
@@ -117,44 +117,20 @@ e.g.:
 
     $ restic -r /tmp/restic-repo init
 
-The local and sftp backends will also accept the repository layout
-described in the following section, so that remote repositories mounted
-locally e.g. via fuse can be accessed. The layout auto-detection can be
-overridden by specifying the option ``-o local.layout=default``, valid
-values are ``default``, ``cloud`` and ``s3``. The option for the sftp
-backend is named ``sftp.layout``.
+The local and sftp backends will auto-detect and accept all layouts described
+in the following sections, so that remote repositories mounted locally e.g. via
+fuse can be accessed. The layout auto-detection can be overridden by specifying
+the option ``-o local.layout=default``, valid values are ``default`` and
+``s3legacy``. The option for the sftp backend is named ``sftp.layout``, for the
+s3 backend ``s3.layout``.
 
-Object-Storage-Based Repositories
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+S3 Legacy Layout
+~~~~~~~~~~~~~~~~
 
-Repositories in a backend based on an object store (e.g. Amazon s3) have
-the same basic layout, with the exception that all data pack files are
-directly saved in the ``data`` path, without the sub-directories listed
-for the filesystem-based backends as listed in the previous section. The
-layout looks like this:
-
-::
-
-    /config
-    /data
-     ├── 2159dd48f8a24f33c307b750592773f8b71ff8d11452132a7b2e2a6a01611be1
-     ├── 32ea976bc30771cebad8285cd99120ac8786f9ffd42141d452458089985043a5
-     ├── 59fe4bcde59bd6222eba87795e35a90d82cd2f138a27b6835032b7b58173a426
-     ├── 73d04e6125cf3c28a299cc2f3cca3b78ceac396e4fcf9575e34536b26782413c
-    [...]
-    /index
-     ├── c38f5fb68307c6a3e3aa945d556e325dc38f5fb68307c6a3e3aa945d556e325d
-     └── ca171b1b7394d90d330b265d90f506f9984043b342525f019788f97e745c71fd
-    /keys
-     └── b02de829beeb3c01a63e6b25cbd421a98fef144f03b9a02e46eff9e2ca3f0bd7
-    /locks
-    /snapshots
-     └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
-
-Unfortunately during development the s3 backend uses slightly different
+Unfortunately during development the AWS S3 backend uses slightly different
 paths (directory names use singular instead of plural for ``key``,
-``lock``, and ``snapshot`` files), for s3 the repository layout looks
-like this:
+``lock``, and ``snapshot`` files), and the data files are stored directly below
+the ``data`` directory. The S3 Legacy repository layout looks like this:
 
 ::
 
@@ -174,8 +150,8 @@ like this:
     /snapshot
      └── 22a5af1bdc6e616f8a29579458c49627e01b32210d09adb288d1ecda7c5711ec
 
-The s3 backend understands and accepts both forms, new backends are
-always created with the former layout for compatibility reasons.
+The S3 backend understands and accepts both forms, new backends are
+always created with the default layout for compatibility reasons.
 
 Pack Format
 -----------

@@ -79,7 +79,7 @@ func TestDefaultLayout(t *testing.T) {
 	}
 }
 
-func TestCloudLayout(t *testing.T) {
+func TestRESTLayout(t *testing.T) {
 	path, cleanup := TempDir(t)
 	defer cleanup()
 
@@ -113,7 +113,7 @@ func TestCloudLayout(t *testing.T) {
 		},
 	}
 
-	l := &CloudLayout{
+	l := &RESTLayout{
 		Path: path,
 		Join: filepath.Join,
 	}
@@ -147,7 +147,7 @@ func TestCloudLayout(t *testing.T) {
 	}
 }
 
-func TestCloudLayoutURLs(t *testing.T) {
+func TestRESTLayoutURLs(t *testing.T) {
 	var tests = []struct {
 		l   Layout
 		h   restic.Handle
@@ -155,55 +155,55 @@ func TestCloudLayoutURLs(t *testing.T) {
 		dir string
 	}{
 		{
-			&CloudLayout{URL: "https://hostname.foo", Path: "", Join: path.Join},
+			&RESTLayout{URL: "https://hostname.foo", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.DataFile, Name: "foobar"},
 			"https://hostname.foo/data/foobar",
 			"https://hostname.foo/data/",
 		},
 		{
-			&CloudLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			&RESTLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.LockFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/locks/foobar",
 			"https://hostname.foo:1234/prefix/repo/locks/",
 		},
 		{
-			&CloudLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			&RESTLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/config",
 			"https://hostname.foo:1234/prefix/repo/",
 		},
 		{
-			&S3Layout{URL: "https://hostname.foo", Path: "/", Join: path.Join},
+			&S3LegacyLayout{URL: "https://hostname.foo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.DataFile, Name: "foobar"},
 			"https://hostname.foo/data/foobar",
 			"https://hostname.foo/data/",
 		},
 		{
-			&S3Layout{URL: "https://hostname.foo:1234/prefix/repo", Path: "", Join: path.Join},
+			&S3LegacyLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.LockFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/lock/foobar",
 			"https://hostname.foo:1234/prefix/repo/lock/",
 		},
 		{
-			&S3Layout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
+			&S3LegacyLayout{URL: "https://hostname.foo:1234/prefix/repo", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
 			"https://hostname.foo:1234/prefix/repo/config",
 			"https://hostname.foo:1234/prefix/repo/",
 		},
 		{
-			&S3Layout{URL: "", Path: "", Join: path.Join},
+			&S3LegacyLayout{URL: "", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.DataFile, Name: "foobar"},
 			"data/foobar",
 			"data/",
 		},
 		{
-			&S3Layout{URL: "", Path: "", Join: path.Join},
+			&S3LegacyLayout{URL: "", Path: "", Join: path.Join},
 			restic.Handle{Type: restic.LockFile, Name: "foobar"},
 			"lock/foobar",
 			"lock/",
 		},
 		{
-			&S3Layout{URL: "", Path: "/", Join: path.Join},
+			&S3LegacyLayout{URL: "", Path: "/", Join: path.Join},
 			restic.Handle{Type: restic.ConfigFile, Name: "foobar"},
 			"/config",
 			"/",
@@ -225,7 +225,7 @@ func TestCloudLayoutURLs(t *testing.T) {
 	}
 }
 
-func TestS3Layout(t *testing.T) {
+func TestS3LegacyLayout(t *testing.T) {
 	path, cleanup := TempDir(t)
 	defer cleanup()
 
@@ -259,7 +259,7 @@ func TestS3Layout(t *testing.T) {
 		},
 	}
 
-	l := &S3Layout{
+	l := &S3LegacyLayout{
 		Path: path,
 		Join: filepath.Join,
 	}
@@ -301,9 +301,8 @@ func TestDetectLayout(t *testing.T) {
 		filename string
 		want     string
 	}{
-		{"repo-layout-local.tar.gz", "*backend.DefaultLayout"},
-		{"repo-layout-cloud.tar.gz", "*backend.CloudLayout"},
-		{"repo-layout-s3-old.tar.gz", "*backend.S3Layout"},
+		{"repo-layout-default.tar.gz", "*backend.DefaultLayout"},
+		{"repo-layout-s3legacy.tar.gz", "*backend.S3LegacyLayout"},
 	}
 
 	var fs = &LocalFilesystem{}
@@ -342,12 +341,11 @@ func TestParseLayout(t *testing.T) {
 		want              string
 	}{
 		{"default", "", "*backend.DefaultLayout"},
-		{"cloud", "", "*backend.CloudLayout"},
-		{"s3", "", "*backend.S3Layout"},
-		{"", "", "*backend.CloudLayout"},
+		{"s3legacy", "", "*backend.S3LegacyLayout"},
+		{"", "", "*backend.DefaultLayout"},
 	}
 
-	SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-cloud.tar.gz"))
+	SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-default.tar.gz"))
 
 	for _, test := range tests {
 		t.Run(test.layoutName, func(t *testing.T) {

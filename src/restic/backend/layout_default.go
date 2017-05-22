@@ -24,10 +24,10 @@ func (l *DefaultLayout) Dirname(h restic.Handle) string {
 	p := defaultLayoutPaths[h.Type]
 
 	if h.Type == restic.DataFile && len(h.Name) > 2 {
-		p = l.Join(p, h.Name[:2])
+		p = l.Join(p, h.Name[:2]) + "/"
 	}
 
-	return l.Join(l.Path, p)
+	return l.Join(l.Path, p) + "/"
 }
 
 // Filename returns a path to a file, including its name.

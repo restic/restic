@@ -48,7 +48,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		url:      cfg.URL,
 		connChan: connChan,
 		client:   client,
-		Layout:   &backend.CloudLayout{URL: url, Join: path.Join},
+		Layout:   &backend.RESTLayout{URL: url, Join: path.Join},
 	}
 
 	return be, nil

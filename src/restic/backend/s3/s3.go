@@ -8,6 +8,7 @@ import (
 	"restic"
 	"strings"
 	"sync"
+	"time"
 
 	"restic/backend"
 	"restic/errors"
@@ -30,6 +31,8 @@ type s3 struct {
 	backend.Layout
 }
 
+const defaultLayout = "s3legacy"
+
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
 func Open(cfg Config) (restic.Backend, error) {
@@ -45,10 +48,16 @@ func Open(cfg Config) (restic.Backend, error) {
 		bucketname:   cfg.Bucket,
 		prefix:       cfg.Prefix,
 		cacheObjSize: make(map[string]int64),
-		Layout:       &backend.S3Layout{Path: cfg.Prefix, Join: path.Join},
 	}
 
 	client.SetCustomTransport(backend.Transport())
+
+	l, err := backend.ParseLayout(be, cfg.Layout, defaultLayout, cfg.Prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	be.Layout = l
 
 	be.createConnections()
 
@@ -74,6 +83,77 @@ func (be *s3) createConnections() {
 	for i := 0; i < connLimit; i++ {
 		be.connChan <- struct{}{}
 	}
+}
+
+// IsNotExist returns true if the error is caused by a not existing file.
+func (be *s3) IsNotExist(err error) bool {
+	debug.Log("IsNotExist(%T, %#v)", err, err)
+	if os.IsNotExist(err) {
+		return true
+	}
+
+	return false
+}
+
+// Join combines path components with slashes.
+func (be *s3) Join(p ...string) string {
+	return path.Join(p...)
+}
+
+type fileInfo struct {
+	name    string
+	size    int64
+	mode    os.FileMode
+	modTime time.Time
+	isDir   bool
+}
+
+func (fi fileInfo) Name() string       { return fi.name }    // base name of the file
+func (fi fileInfo) Size() int64        { return fi.size }    // length in bytes for regular files; system-dependent for others
+func (fi fileInfo) Mode() os.FileMode  { return fi.mode }    // file mode bits
+func (fi fileInfo) ModTime() time.Time { return fi.modTime } // modification time
+func (fi fileInfo) IsDir() bool        { return fi.isDir }   // abbreviation for Mode().IsDir()
+func (fi fileInfo) Sys() interface{}   { return nil }        // underlying data source (can return nil)
+
+// ReadDir returns the entries for a directory.
+func (be *s3) ReadDir(dir string) (list []os.FileInfo, err error) {
+	debug.Log("ReadDir(%v)", dir)
+
+	// make sure dir ends with a slash
+	if dir[len(dir)-1] != '/' {
+		dir += "/"
+	}
+
+	done := make(chan struct{})
+	defer close(done)
+
+	for obj := range be.client.ListObjects(be.bucketname, dir, false, done) {
+		if obj.Key == "" {
+			continue
+		}
+
+		name := strings.TrimPrefix(obj.Key, dir)
+		if name == "" {
+			return nil, errors.Errorf("invalid key name %v, removing prefix %v yielded empty string", obj.Key, dir)
+		}
+		entry := fileInfo{
+			name:    name,
+			size:    obj.Size,
+			modTime: obj.LastModified,
+		}
+
+		if name[len(name)-1] == '/' {
+			entry.isDir = true
+			entry.mode = os.ModeDir | 0755
+			entry.name = name[:len(name)-1]
+		} else {
+			entry.mode = 0644
+		}
+
+		list = append(list, entry)
+	}
+
+	return list, nil
 }
 
 // Location returns this backend's location (the bucket name).
@@ -289,6 +369,11 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 	ch := make(chan string)
 
 	prefix := be.Dirname(restic.Handle{Type: t})
+
+	// make sure prefix ends with a slash
+	if prefix[len(prefix)-1] != '/' {
+		prefix += "/"
+	}
 
 	listresp := be.client.ListObjects(be.bucketname, prefix, true, done)
 
