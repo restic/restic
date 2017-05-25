@@ -18,6 +18,7 @@ var (
 	verbose    bool
 	keepGopath bool
 	runTests   bool
+	enableCGO  bool
 )
 
 var config = struct {
@@ -165,6 +166,7 @@ func showUsage(output io.Writer) {
 	fmt.Fprintf(output, "  -k     --keep-gopath   do not remove the GOPATH after build\n")
 	fmt.Fprintf(output, "  -T     --test          run tests\n")
 	fmt.Fprintf(output, "  -o     --output        set output file name\n")
+	fmt.Fprintf(output, "         --enable-cgo    use CGO to link against libc\n")
 	fmt.Fprintf(output, "         --goos value    set GOOS for cross-compilation\n")
 	fmt.Fprintf(output, "         --goarch value  set GOARCH for cross-compilation\n")
 }
@@ -195,7 +197,11 @@ func cleanEnv() (env []string) {
 func build(cwd, goos, goarch, gopath string, args ...string) error {
 	args = append([]string{"build"}, args...)
 	cmd := exec.Command("go", args...)
-	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos, "CGO_ENABLED=0")
+	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos)
+	if !enableCGO {
+		cmd.Env = append(cmd.Env, "CGO_ENABLED=0")
+	}
+
 	cmd.Dir = cwd
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -319,6 +325,8 @@ func main() {
 			outputFilename = params[i+1]
 		case "-T", "--test":
 			runTests = true
+		case "--enable-cgo":
+			enableCGO = true
 		case "--goos":
 			skipNext = true
 			targetGOOS = params[i+1]
