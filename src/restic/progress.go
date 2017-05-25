@@ -14,6 +14,7 @@ const minTickerTime = time.Second / 60
 var isTerminal = terminal.IsTerminal(int(os.Stdout.Fd()))
 var forceUpdateProgress = make(chan bool)
 
+// Progress reports progress on an operation.
 type Progress struct {
 	OnStart  func()
 	OnUpdate ProgressFunc
@@ -32,6 +33,7 @@ type Progress struct {
 	running bool
 }
 
+// Stat captures newly done parts of the operation.
 type Stat struct {
 	Files  uint64
 	Dirs   uint64
@@ -41,6 +43,7 @@ type Stat struct {
 	Errors uint64
 }
 
+// ProgressFunc is used to report progress back to the user.
 type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 
 // NewProgress returns a new progress reporter. When Start() is called, the
@@ -50,10 +53,7 @@ type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 // synchronously and can use shared state.
 func NewProgress() *Progress {
 	var d time.Duration
-	if !isTerminal {
-		// TODO: make the duration for non-terminal progress (user) configurable
-		d = time.Duration(10) * time.Second
-	} else {
+	if isTerminal {
 		d = time.Second
 	}
 	return &Progress{d: d}
@@ -70,7 +70,10 @@ func (p *Progress) Start() {
 	p.running = true
 	p.Reset()
 	p.start = time.Now()
-	p.c = time.NewTicker(p.d)
+	p.c = nil
+	if p.d != 0 {
+		p.c = time.NewTicker(p.d)
+	}
 
 	if p.OnStart != nil {
 		p.OnStart()
@@ -143,14 +146,21 @@ func (p *Progress) reporter() {
 		p.updateProgress(cur, true)
 	}
 
+	var ticker <-chan time.Time
+	if p.c != nil {
+		ticker = p.c.C
+	}
+
 	for {
 		select {
-		case <-p.c.C:
+		case <-ticker:
 			updateProgress()
 		case <-forceUpdateProgress:
 			updateProgress()
 		case <-p.cancel:
-			p.c.Stop()
+			if p.c != nil {
+				p.c.Stop()
+			}
 			return
 		}
 	}
