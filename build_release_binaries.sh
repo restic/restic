@@ -7,6 +7,11 @@ if [[ -z "$VERSION" ]]; then
     exit 1
 fi
 
+if [[ -n "$(git diff)" ]]; then
+    echo 'workspace is dirty'
+    exit 1
+fi
+
 dir=$(mktemp -d --tmpdir restic-release-XXXXXX)
 echo "path is ${dir}"
 
