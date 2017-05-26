@@ -4,6 +4,11 @@ released version of restic from the perspective of the user.
 Important Changes in 0.X.Y
 ==========================
 
+ * New "swift" backend: A new backend for the OpenStack Swift cloud storage
+   protocol has been added, https://wiki.openstack.org/wiki/Swift
+   https://github.com/restic/restic/pull/975
+   https://github.com/restic/restic/pull/648
+
 Important Changes in 0.6.1
 ==========================
 
