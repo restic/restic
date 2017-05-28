@@ -113,12 +113,15 @@ func (s *Suite) TestLoad(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
-	_, err := b.Load(restic.Handle{}, 0, 0)
+	rd, err := b.Load(restic.Handle{}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
+	if rd != nil {
+		rd.Close()
+	}
 
-	_, err = b.Load(restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
+	err = testLoad(b, restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
@@ -136,7 +139,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 	t.Logf("saved %d bytes as %v", length, handle)
 
-	rd, err := b.Load(handle, 100, -1)
+	rd, err = b.Load(handle, 100, -1)
 	if err == nil {
 		t.Fatalf("Load() returned no error for negative offset!")
 	}
@@ -416,6 +419,21 @@ func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) res
 	return h
 }
 
+// testLoad loads a blob (but discards its contents).
+func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error {
+	rd, err := b.Load(h, 0, 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(ioutil.Discard, rd)
+	cerr := rd.Close()
+	if err == nil {
+		err = cerr
+	}
+	return err
+}
+
 // TestBackend tests all functions of the backend.
 func (s *Suite) TestBackend(t *testing.T) {
 	b := s.open(t)
@@ -441,8 +459,8 @@ func (s *Suite) TestBackend(t *testing.T) {
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
-			_, err = b.Load(h, 0, 0)
-			test.Assert(t, err != nil, "blob reader could be obtained before creation")
+			err = testLoad(b, h, 0, 0)
+			test.Assert(t, err != nil, "blob could be read before creation")
 
 			// try to get string out, should fail
 			ret, err = b.Test(h)
