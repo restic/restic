@@ -127,9 +127,8 @@ func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 		return errors.Wrap(err, "client.Post")
 	}
 
-	// fmt.Printf("status is %v (%v)\n", resp.Status, resp.StatusCode)
 	if resp.StatusCode != 200 {
-		return errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return errors.Errorf("server response unexpected: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
 	return nil
@@ -179,7 +178,7 @@ func (b *restBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCl
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
 		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
-		return nil, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return nil, errors.Errorf("unexpected HTTP response (%v): %v", resp.StatusCode, resp.Status)
 	}
 
 	return resp.Body, nil
@@ -204,7 +203,7 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return restic.FileInfo{}, errors.Errorf("unexpected HTTP response code %v", resp.StatusCode)
+		return restic.FileInfo{}, errors.Errorf("unexpected HTTP response (%v): %v", resp.StatusCode, resp.Status)
 	}
 
 	if resp.ContentLength < 0 {
