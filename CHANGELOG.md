@@ -4,6 +4,11 @@ released version of restic from the perspective of the user.
 Important Changes in 0.X.Y
 ==========================
 
+ * New "b2" backend: A new backend for Backblaze B2 cloud storage
+   service has been added, https://www.backblaze.com
+   https://github.com/restic/restic/issues/512
+   https://github.com/restic/restic/pull/978
+
 Important Changes in 0.6.1
 ==========================
 
