@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"restic/backend/b2"
 	"restic/backend/local"
 	"restic/backend/location"
 	"restic/backend/rest"
@@ -356,6 +357,23 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		debug.Log("opening s3 repository at %#v", cfg)
 		return cfg, nil
 
+	case "b2":
+		cfg := loc.Config.(b2.Config)
+
+		if cfg.AccountID == "" {
+			cfg.AccountID = os.Getenv("B2_ACCOUNT_ID")
+		}
+
+		if cfg.Key == "" {
+			cfg.Key = os.Getenv("B2_ACCOUNT_KEY")
+		}
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening b2 repository at %#v", cfg)
+		return cfg, nil
 	case "rest":
 		cfg := loc.Config.(rest.Config)
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
@@ -391,6 +409,8 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		be, err = sftp.Open(cfg.(sftp.Config))
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config))
+	case "b2":
+		be, err = b2.Open(cfg.(b2.Config))
 	case "rest":
 		be, err = rest.Open(cfg.(rest.Config))
 
@@ -435,6 +455,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return sftp.Create(cfg.(sftp.Config))
 	case "s3":
 		return s3.Open(cfg.(s3.Config))
+	case "b2":
+		return b2.Create(cfg.(b2.Config))
 	case "rest":
 		return rest.Create(cfg.(rest.Config))
 	}
