@@ -13,11 +13,18 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"restic/test"
 
 	"restic/backend"
 )
+
+func seedRand(t testing.TB) {
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+	t.Logf("rand initialized with seed %d", seed)
+}
 
 // TestCreateWithConfig tests that creating a backend in a location which already
 // has a config file fails.
@@ -101,6 +108,8 @@ func (s *Suite) TestConfig(t *testing.T) {
 
 // TestLoad tests the backend's Load function.
 func (s *Suite) TestLoad(t *testing.T) {
+	seedRand(t)
+
 	b := s.open(t)
 	defer s.close(t, b)
 
@@ -160,6 +169,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 			d = d[:l]
 		}
 
+		t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 		rd, err := b.Load(handle, getlen, int64(o))
 		if err != nil {
 			t.Errorf("Load(%d, %d) returned unexpected error: %+v", l, o, err)
@@ -234,6 +244,8 @@ func (ec errorCloser) Size() int64 {
 
 // TestSave tests saving data in the backend.
 func (s *Suite) TestSave(t *testing.T) {
+	seedRand(t)
+
 	b := s.open(t)
 	defer s.close(t, b)
 	var id restic.ID
