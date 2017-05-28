@@ -13,11 +13,18 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"restic/test"
 
 	"restic/backend"
 )
+
+func seedRand(t testing.TB) {
+	seed := time.Now().UnixNano()
+	rand.Seed(seed)
+	t.Logf("rand initialized with seed %d", seed)
+}
 
 // TestCreateWithConfig tests that creating a backend in a location which already
 // has a config file fails.
@@ -101,15 +108,20 @@ func (s *Suite) TestConfig(t *testing.T) {
 
 // TestLoad tests the backend's Load function.
 func (s *Suite) TestLoad(t *testing.T) {
+	seedRand(t)
+
 	b := s.open(t)
 	defer s.close(t, b)
 
-	_, err := b.Load(restic.Handle{}, 0, 0)
+	rd, err := b.Load(restic.Handle{}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
+	if rd != nil {
+		rd.Close()
+	}
 
-	_, err = b.Load(restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
+	err = testLoad(b, restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for non-existing blob")
 	}
@@ -125,7 +137,9 @@ func (s *Suite) TestLoad(t *testing.T) {
 		t.Fatalf("Save() error: %+v", err)
 	}
 
-	rd, err := b.Load(handle, 100, -1)
+	t.Logf("saved %d bytes as %v", length, handle)
+
+	rd, err = b.Load(handle, 100, -1)
 	if err == nil {
 		t.Fatalf("Load() returned no error for negative offset!")
 	}
@@ -147,8 +161,8 @@ func (s *Suite) TestLoad(t *testing.T) {
 		if o < len(d) {
 			d = d[o:]
 		} else {
-			o = len(d)
-			d = d[:0]
+			t.Logf("offset == length, skipping test")
+			continue
 		}
 
 		getlen := l
@@ -162,12 +176,14 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 		rd, err := b.Load(handle, getlen, int64(o))
 		if err != nil {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) returned unexpected error: %+v", l, o, err)
 			continue
 		}
 
 		buf, err := ioutil.ReadAll(rd)
 		if err != nil {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %+v", l, o, err)
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -176,6 +192,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		if l == 0 && len(buf) != len(d) {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, len(d), len(buf))
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -184,6 +201,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		if l > 0 && l <= len(d) && len(buf) != l {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -192,6 +210,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		if l > len(d) && len(buf) != len(d) {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -200,6 +219,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		if !bytes.Equal(buf, d) {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) returned wrong bytes", l, o)
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -209,6 +229,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 		err = rd.Close()
 		if err != nil {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) rd.Close() returned unexpected error: %+v", l, o, err)
 			continue
 		}
@@ -234,6 +255,8 @@ func (ec errorCloser) Size() int64 {
 
 // TestSave tests saving data in the backend.
 func (s *Suite) TestSave(t *testing.T) {
+	seedRand(t)
+
 	b := s.open(t)
 	defer s.close(t, b)
 	var id restic.ID
@@ -396,6 +419,21 @@ func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) res
 	return h
 }
 
+// testLoad loads a blob (but discards its contents).
+func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error {
+	rd, err := b.Load(h, 0, 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(ioutil.Discard, rd)
+	cerr := rd.Close()
+	if err == nil {
+		err = cerr
+	}
+	return err
+}
+
 // TestBackend tests all functions of the backend.
 func (s *Suite) TestBackend(t *testing.T) {
 	b := s.open(t)
@@ -421,8 +459,8 @@ func (s *Suite) TestBackend(t *testing.T) {
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
-			_, err = b.Load(h, 0, 0)
-			test.Assert(t, err != nil, "blob reader could be obtained before creation")
+			err = testLoad(b, h, 0, 0)
+			test.Assert(t, err != nil, "blob could be read before creation")
 
 			// try to get string out, should fail
 			ret, err = b.Test(h)

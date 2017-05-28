@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"restic"
 	"strings"
 	"time"
@@ -416,7 +415,7 @@ func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
 			}
 
 			select {
-			case ch <- filepath.Base(walker.Path()):
+			case ch <- path.Base(walker.Path()):
 			case <-done:
 				return
 			}
