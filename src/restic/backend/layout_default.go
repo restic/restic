@@ -34,7 +34,7 @@ func (l *DefaultLayout) Dirname(h restic.Handle) string {
 func (l *DefaultLayout) Filename(h restic.Handle) string {
 	name := h.Name
 	if h.Type == restic.ConfigFile {
-		name = "config"
+		return l.Join(l.Path, "config")
 	}
 
 	return l.Join(l.Dirname(h), name)

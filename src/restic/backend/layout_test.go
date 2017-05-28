@@ -12,53 +12,103 @@ import (
 )
 
 func TestDefaultLayout(t *testing.T) {
-	path, cleanup := TempDir(t)
+	tempdir, cleanup := TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
+		path string
+		join func(...string) string
 		restic.Handle
 		filename string
 	}{
 		{
+			tempdir,
+			filepath.Join,
 			restic.Handle{Type: restic.DataFile, Name: "0123456"},
-			filepath.Join(path, "data", "01", "0123456"),
+			filepath.Join(tempdir, "data", "01", "0123456"),
 		},
 		{
+			tempdir,
+			filepath.Join,
 			restic.Handle{Type: restic.ConfigFile, Name: "CFG"},
-			filepath.Join(path, "config"),
+			filepath.Join(tempdir, "config"),
 		},
 		{
+			tempdir,
+			filepath.Join,
 			restic.Handle{Type: restic.SnapshotFile, Name: "123456"},
-			filepath.Join(path, "snapshots", "123456"),
+			filepath.Join(tempdir, "snapshots", "123456"),
 		},
 		{
+			tempdir,
+			filepath.Join,
 			restic.Handle{Type: restic.IndexFile, Name: "123456"},
-			filepath.Join(path, "index", "123456"),
+			filepath.Join(tempdir, "index", "123456"),
 		},
 		{
+			tempdir,
+			filepath.Join,
 			restic.Handle{Type: restic.LockFile, Name: "123456"},
-			filepath.Join(path, "locks", "123456"),
+			filepath.Join(tempdir, "locks", "123456"),
 		},
 		{
+			tempdir,
+			filepath.Join,
 			restic.Handle{Type: restic.KeyFile, Name: "123456"},
-			filepath.Join(path, "keys", "123456"),
+			filepath.Join(tempdir, "keys", "123456"),
 		},
-	}
-
-	l := &DefaultLayout{
-		Path: path,
-		Join: filepath.Join,
+		{
+			"",
+			path.Join,
+			restic.Handle{Type: restic.DataFile, Name: "0123456"},
+			"data/01/0123456",
+		},
+		{
+			"",
+			path.Join,
+			restic.Handle{Type: restic.ConfigFile, Name: "CFG"},
+			"config",
+		},
+		{
+			"",
+			path.Join,
+			restic.Handle{Type: restic.SnapshotFile, Name: "123456"},
+			"snapshots/123456",
+		},
+		{
+			"",
+			path.Join,
+			restic.Handle{Type: restic.IndexFile, Name: "123456"},
+			"index/123456",
+		},
+		{
+			"",
+			path.Join,
+			restic.Handle{Type: restic.LockFile, Name: "123456"},
+			"locks/123456",
+		},
+		{
+			"",
+			path.Join,
+			restic.Handle{Type: restic.KeyFile, Name: "123456"},
+			"keys/123456",
+		},
 	}
 
 	t.Run("Paths", func(t *testing.T) {
+		l := &DefaultLayout{
+			Path: tempdir,
+			Join: filepath.Join,
+		}
+
 		dirs := l.Paths()
 
 		want := []string{
-			filepath.Join(path, "data"),
-			filepath.Join(path, "snapshots"),
-			filepath.Join(path, "index"),
-			filepath.Join(path, "locks"),
-			filepath.Join(path, "keys"),
+			filepath.Join(tempdir, "data"),
+			filepath.Join(tempdir, "snapshots"),
+			filepath.Join(tempdir, "index"),
+			filepath.Join(tempdir, "locks"),
+			filepath.Join(tempdir, "keys"),
 		}
 
 		sort.Sort(sort.StringSlice(want))
@@ -71,6 +121,11 @@ func TestDefaultLayout(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%v/%v", test.Type, test.Handle.Name), func(t *testing.T) {
+			l := &DefaultLayout{
+				Path: test.path,
+				Join: test.join,
+			}
+
 			filename := l.Filename(test.Handle)
 			if filename != test.filename {
 				t.Fatalf("wrong filename, want %v, got %v", test.filename, filename)
