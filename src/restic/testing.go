@@ -205,7 +205,7 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 func TestParseID(s string) ID {
 	id, err := ParseID(s)
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("unable to parse string %q as ID: %v", s, err))
 	}
 
 	return id
