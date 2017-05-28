@@ -156,8 +156,8 @@ func (s *Suite) TestLoad(t *testing.T) {
 		if o < len(d) {
 			d = d[o:]
 		} else {
-			o = len(d)
-			d = d[:0]
+			t.Logf("offset == length, skipping test")
+			continue
 		}
 
 		getlen := l
