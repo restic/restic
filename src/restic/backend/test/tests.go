@@ -134,6 +134,8 @@ func (s *Suite) TestLoad(t *testing.T) {
 		t.Fatalf("Save() error: %+v", err)
 	}
 
+	t.Logf("saved %d bytes as %v", length, handle)
+
 	rd, err := b.Load(handle, 100, -1)
 	if err == nil {
 		t.Fatalf("Load() returned no error for negative offset!")
@@ -169,15 +171,16 @@ func (s *Suite) TestLoad(t *testing.T) {
 			d = d[:l]
 		}
 
-		t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 		rd, err := b.Load(handle, getlen, int64(o))
 		if err != nil {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) returned unexpected error: %+v", l, o, err)
 			continue
 		}
 
 		buf, err := ioutil.ReadAll(rd)
 		if err != nil {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) ReadAll() returned unexpected error: %+v", l, o, err)
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -186,6 +189,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		if l == 0 && len(buf) != len(d) {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, len(d), len(buf))
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -194,6 +198,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		if l > 0 && l <= len(d) && len(buf) != l {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read: want %d, got %d", l, o, l, len(buf))
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -202,6 +207,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		if l > len(d) && len(buf) != len(d) {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) wrong number of bytes read for overlong read: want %d, got %d", l, o, l, len(buf))
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -210,6 +216,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 
 		if !bytes.Equal(buf, d) {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) returned wrong bytes", l, o)
 			if err = rd.Close(); err != nil {
 				t.Errorf("Load(%d, %d) rd.Close() returned error: %+v", l, o, err)
@@ -219,6 +226,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 		err = rd.Close()
 		if err != nil {
+			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) rd.Close() returned unexpected error: %+v", l, o, err)
 			continue
 		}
