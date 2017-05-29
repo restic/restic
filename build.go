@@ -195,8 +195,11 @@ func cleanEnv() (env []string) {
 
 // build runs "go build args..." with GOPATH set to gopath.
 func build(cwd, goos, goarch, gopath string, args ...string) error {
-	args = append([]string{"build"}, args...)
-	cmd := exec.Command("go", args...)
+	a := []string{"build"}
+	a = append(a, "-asmflags", fmt.Sprintf("-trimpath=%s", gopath))
+	a = append(a, "-gcflags", fmt.Sprintf("-trimpath=%s", gopath))
+	a = append(a, args...)
+	cmd := exec.Command("go", a...)
 	cmd.Env = append(cleanEnv(), "GOPATH="+gopath, "GOARCH="+goarch, "GOOS="+goos)
 	if !enableCGO {
 		cmd.Env = append(cmd.Env, "CGO_ENABLED=0")
