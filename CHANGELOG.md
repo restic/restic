@@ -12,6 +12,10 @@ Small changes:
    reporting the current status by sending a `USR1` signal to the process.
    https://github.com/restic/restic/pull/974
 
+ * The `build.go` now strips the temporary directory used for compilation from
+   the binary. This is the first step in enabling reproducible builds.
+   https://github.com/restic/restic/pull/981
+
 Important Changes in 0.6.0
 ==========================
 
