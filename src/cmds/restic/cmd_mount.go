@@ -79,6 +79,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 
 	mountOptions := []systemFuse.MountOption{
 		systemFuse.ReadOnly(),
+		systemFuse.AllowOther(),
 		systemFuse.FSName("restic"),
 	}
 
