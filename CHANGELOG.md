@@ -1,11 +1,10 @@
 This file describes changes relevant to all users that are made in each
 released version of restic from the perspective of the user.
 
-Important Changes in 0.X.Y
+Important Changes in 0.6.1
 ==========================
 
-Small changes:
---------------
+This is mostly a bugfix release and only contains small changes:
 
  * We've fixed a bug where `rebuild-index` would corrupt the index when used
    with the s3 backend together with the `default` layout. This is not the
