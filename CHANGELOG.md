@@ -7,6 +7,11 @@ Important Changes in 0.X.Y
 Small changes:
 --------------
 
+ * We've fixed a bug where `rebuild-index` would corrupt the index when used
+   with the s3 backend together with the `default` layout. This is not the
+   default setting.
+   https://github.com/restic/restic/pull/987
+
  * Backends based on HTTP now allow several idle connections in parallel. This
    is especially important for the REST backend, which (when used with a local
    server) may create a lot connections and exhaust available ports quickly.
