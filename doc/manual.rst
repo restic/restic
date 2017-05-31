@@ -820,8 +820,10 @@ Restic can write out a bash compatible autocompletion script:
     NOTE: The current version supports Bash only.
           This should work for *nix systems with Bash installed.
 
-    By default, the file is written directly to /etc/bash_completion.d
-    for convenience, and the command may need superuser rights, e.g.:
+By default, the file is written directly to ``/etc/bash_completion.d/``
+for convenience, and the command may need superuser rights, e.g.
+
+.. code-block:: console
 
     $ sudo restic autocomplete
 
