@@ -386,7 +386,7 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 			}
 
 			select {
-			case ch <- m:
+			case ch <- path.Base(m):
 			case <-done:
 				return
 			}
