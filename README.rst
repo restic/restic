@@ -68,6 +68,15 @@ following principles in mind:
    data should be de-duplicated before it is actually written to the
    storage back end to save precious backup space.
 
+Reproducible Builds
+-------------------
+
+The binaries released with each restic version starting at 0.6.1 are
+[reproducible](https://reproducible-builds.org/), which means that you can
+easily reproduce a byte identical version from the source code for that
+release. Instructions on how to do that are contained in the
+[build repository](https://github.com/restic/build).
+
 News
 ----
 
