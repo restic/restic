@@ -88,11 +88,7 @@ func (be *s3) createConnections() {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *s3) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	if os.IsNotExist(err) {
-		return true
-	}
-
-	return false
+	return os.IsNotExist(err)
 }
 
 // Join combines path components with slashes.
