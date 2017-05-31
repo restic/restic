@@ -7,6 +7,12 @@ Important Changes in 0.X.Y
 Small changes:
 --------------
 
+ * Backends based on HTTP now allow several idle connections in parallel. This
+   is especially important for the REST backend, which (when used with a local
+   server) may create a lot connections and exhaust available ports quickly.
+   https://github.com/restic/restic/issues/985
+   https://github.com/restic/restic/pull/986
+
  * Regular status report: We've removed the status report that was printed
    every 10 seconds when restic is run non-interactively. You can still force
    reporting the current status by sending a `USR1` signal to the process.
