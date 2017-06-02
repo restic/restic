@@ -75,7 +75,7 @@ The binaries released with each restic version starting at 0.6.1 are
 `reproducible <https://reproducible-builds.org/>`__, which means that you can
 easily reproduce a byte identical version from the source code for that
 release. Instructions on how to do that are contained in the
-`build repository <https://github.com/restic/build>`__.
+`builder repository <https://github.com/restic/builder>`__.
 
 News
 ----
