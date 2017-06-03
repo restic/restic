@@ -434,6 +434,24 @@ func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error
 	return err
 }
 
+func delayedRemove(b restic.Backend, h restic.Handle) error {
+	// Some backend (swift, I'm looking at you) may implement delayed
+	// removal of data. Let's wait a bit if this happens.
+	err := b.Remove(h)
+	if err != nil {
+		return err
+	}
+
+	found, err := b.Test(h)
+	for i := 0; found && i < 20; i++ {
+		found, err = b.Test(h)
+		if found {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	return err
+}
+
 // TestBackend tests all functions of the backend.
 func (s *Suite) TestBackend(t *testing.T) {
 	b := s.open(t)
@@ -508,7 +526,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 		test.Assert(t, err != nil, "expected error for %v, got %v", h, err)
 
 		// remove and recreate
-		err = b.Remove(h)
+		err = delayedRemove(b, h)
 		test.OK(t, err)
 
 		// test that the blob is gone
@@ -558,7 +576,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 				test.OK(t, err)
 				test.Assert(t, found, fmt.Sprintf("id %q not found", id))
 
-				test.OK(t, b.Remove(h))
+				test.OK(t, delayedRemove(b, h))
 
 				found, err = b.Test(h)
 				test.OK(t, err)

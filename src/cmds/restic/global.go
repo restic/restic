@@ -16,6 +16,7 @@ import (
 	"restic/backend/rest"
 	"restic/backend/s3"
 	"restic/backend/sftp"
+	"restic/backend/swift"
 	"restic/debug"
 	"restic/options"
 	"restic/repository"
@@ -356,6 +357,20 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		debug.Log("opening s3 repository at %#v", cfg)
 		return cfg, nil
 
+	case "swift":
+		cfg := loc.Config.(swift.Config)
+
+		if err := swift.ApplyEnvironment("", &cfg); err != nil {
+			return nil, err
+		}
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening swift repository at %#v", cfg)
+		return cfg, nil
+
 	case "rest":
 		cfg := loc.Config.(rest.Config)
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
@@ -391,6 +406,8 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		be, err = sftp.Open(cfg.(sftp.Config))
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config))
+	case "swift":
+		be, err = swift.Open(cfg.(swift.Config))
 	case "rest":
 		be, err = rest.Open(cfg.(rest.Config))
 
@@ -435,6 +452,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return sftp.Create(cfg.(sftp.Config))
 	case "s3":
 		return s3.Open(cfg.(s3.Config))
+	case "swift":
+		return swift.Open(cfg.(swift.Config))
 	case "rest":
 		return rest.Create(cfg.(rest.Config))
 	}

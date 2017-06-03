@@ -282,6 +282,67 @@ this command.
     Please note that knowledge of your password is required to access
     the repository. Losing your password means that your data is irrecoverably lost.
 
+OpenStack Swift
+~~~~~~~~~~~~~~~
+
+Restic can backup data to an OpenStack Swift container. Because Swift supports
+various authentication methods, credentials are passed through environment
+variables. In order to help integration with existing OpenStack installations,
+the naming convention of those variables follows official python swift client:
+
+.. code-block:: console
+
+   # For keystone v1 authentication
+   $ export ST_AUTH=<MY_AUTH_URL>
+   $ export ST_USER=<MY_USER_NAME>
+   $ export ST_KEY=<MY_USER_PASSWORD>
+
+   # For keystone v2 authentication (some variables are optional)
+   $ export OS_AUTH_URL=<MY_AUTH_URL>
+   $ export OS_REGION_NAME=<MY_REGION_NAME>
+   $ export OS_USERNAME=<MY_USERNAME>
+   $ export OS_PASSWORD=<MY_PASSWORD>
+   $ export OS_TENANT_ID=<MY_TENANT_ID>
+   $ export OS_TENANT_NAME=<MY_TENANT_NAME>
+
+   # For keystone v3 authentication (some variables are optional)
+   $ export OS_AUTH_URL=<MY_AUTH_URL>
+   $ export OS_REGION_NAME=<MY_REGION_NAME>
+   $ export OS_USERNAME=<MY_USERNAME>
+   $ export OS_PASSWORD=<MY_PASSWORD>
+   $ export OS_USER_DOMAIN_NAME=<MY_DOMAIN_NAME>
+   $ export OS_PROJECT_NAME=<MY_PROJECT_NAME>
+   $ export OS_PROJECT_DOMAIN_NAME=<MY_PROJECT_DOMAIN_NAME>
+
+   # For authentication based on tokens
+   $ export OS_STORAGE_URL=<MY_STORAGE_URL>
+   $ export OS_AUTH_TOKEN=<MY_AUTH_TOKEN>
+
+
+Restic should be compatible with [OpenStack RC
+file](https://docs.openstack.org/user-guide/common/cli-set-environment-variables-using-openstack-rc.html)
+in most cases.
+
+Once environment variables are set up, a new repository can be created. The
+name of swift container and optional path can be specified. If
+the container does not exist, it will be created automatically:
+
+.. code-block:: console
+
+   $ restic -r swift:container_name:/path init   # path is optional
+   enter password for new backend:
+   enter password again:
+   created restic backend eefee03bbd at swift:container_name:/path
+   Please note that knowledge of your password is required to access the repository.
+   Losing your password means that your data is irrecoverably lost.
+
+The policy of new container created by restic can be changed using environment variable:
+
+.. code-block:: console
+
+   $ export SWIFT_DEFAULT_CONTAINER_POLICY=<MY_CONTAINER_POLICY>
+
+
 Password prompt on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

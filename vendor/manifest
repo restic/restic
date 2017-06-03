@@ -44,6 +44,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/ncw/swift",
+			"repository": "https://github.com/ncw/swift",
+			"revision": "bf51ccd3b5c3a1f12ac762b4511c5f9f1ce6b26f",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/pkg/errors",
 			"repository": "https://github.com/pkg/errors",
 			"revision": "645ef00459ed84a119197bfb8d8205042c6df63d",
