@@ -1,6 +1,9 @@
 This file describes changes relevant to all users that are made in each
 released version of restic from the perspective of the user.
 
+Important Changes in 0.X.Y
+==========================
+
 Important Changes in 0.6.1
 ==========================
 
