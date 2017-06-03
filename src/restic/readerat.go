@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"context"
 	"io"
 	"restic/debug"
 )
@@ -22,7 +23,7 @@ func ReaderAt(be Backend, h Handle) io.ReaderAt {
 // ReadAt reads from the backend handle h at the given position.
 func ReadAt(be Backend, h Handle, offset int64, p []byte) (n int, err error) {
 	debug.Log("ReadAt(%v) at %v, len %v", h, offset, len(p))
-	rd, err := be.Load(h, len(p), offset)
+	rd, err := be.Load(context.TODO(), h, len(p), offset)
 	if err != nil {
 		return 0, err
 	}

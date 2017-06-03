@@ -1,6 +1,9 @@
 package restic
 
-import "restic/errors"
+import (
+	"context"
+	"restic/errors"
+)
 
 // ErrNoIDPrefixFound is returned by Find() when no ID for the given prefix
 // could be found.
@@ -14,13 +17,10 @@ var ErrMultipleIDMatches = errors.New("multiple IDs with prefix found")
 // start with prefix. If none is found, nil and ErrNoIDPrefixFound is returned.
 // If more than one is found, nil and ErrMultipleIDMatches is returned.
 func Find(be Lister, t FileType, prefix string) (string, error) {
-	done := make(chan struct{})
-	defer close(done)
-
 	match := ""
 
 	// TODO: optimize by sorting list etc.
-	for name := range be.List(t, done) {
+	for name := range be.List(context.TODO(), t) {
 		if prefix == name[:len(prefix)] {
 			if match == "" {
 				match = name
@@ -42,12 +42,9 @@ const minPrefixLength = 8
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all names of type t are unique.
 func PrefixLength(be Lister, t FileType) (int, error) {
-	done := make(chan struct{})
-	defer close(done)
-
 	// load all IDs of the given type
 	list := make([]string, 0, 100)
-	for name := range be.List(t, done) {
+	for name := range be.List(context.TODO(), t) {
 		list = append(list, name)
 	}
 

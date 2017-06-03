@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"path/filepath"
 	"restic"
 	. "restic/test"
@@ -47,7 +48,7 @@ func TestLayout(t *testing.T) {
 			}
 
 			datafiles := make(map[string]bool)
-			for id := range be.List(restic.DataFile, nil) {
+			for id := range be.List(context.TODO(), restic.DataFile) {
 				datafiles[id] = false
 			}
 

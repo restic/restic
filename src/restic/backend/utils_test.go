@@ -2,6 +2,7 @@ package backend_test
 
 import (
 	"bytes"
+	"context"
 	"math/rand"
 	"restic"
 	"testing"
@@ -21,10 +22,10 @@ func TestLoadAll(t *testing.T) {
 		data := Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
-		err := b.Save(restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
+		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
 		OK(t, err)
 
-		buf, err := backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()})
+		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})
 		OK(t, err)
 
 		if len(buf) != len(data) {
@@ -46,10 +47,10 @@ func TestLoadSmallBuffer(t *testing.T) {
 		data := Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
-		err := b.Save(restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
+		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
 		OK(t, err)
 
-		buf, err := backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()})
+		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})
 		OK(t, err)
 
 		if len(buf) != len(data) {
@@ -71,10 +72,10 @@ func TestLoadLargeBuffer(t *testing.T) {
 		data := Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
-		err := b.Save(restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
+		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
 		OK(t, err)
 
-		buf, err := backend.LoadAll(b, restic.Handle{Type: restic.DataFile, Name: id.String()})
+		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})
 		OK(t, err)
 
 		if len(buf) != len(data) {

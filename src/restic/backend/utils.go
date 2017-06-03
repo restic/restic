@@ -1,14 +1,15 @@
 package backend
 
 import (
+	"context"
 	"io"
 	"io/ioutil"
 	"restic"
 )
 
 // LoadAll reads all data stored in the backend for the handle.
-func LoadAll(be restic.Backend, h restic.Handle) (buf []byte, err error) {
-	rd, err := be.Load(h, 0, 0)
+func LoadAll(ctx context.Context, be restic.Backend, h restic.Handle) (buf []byte, err error) {
+	rd, err := be.Load(ctx, h, 0, 0)
 	if err != nil {
 		return nil, err
 	}

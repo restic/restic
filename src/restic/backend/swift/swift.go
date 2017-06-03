@@ -1,6 +1,7 @@
 package swift
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,6 +27,9 @@ type beSwift struct {
 	prefix    string // Prefix of object names in the container
 	backend.Layout
 }
+
+// ensure statically that *beSwift implements restic.Backend.
+var _ restic.Backend = &beSwift{}
 
 // Open opens the swift backend at a container in region. The container is
 // created if it does not exist yet.
@@ -120,7 +124,7 @@ func (be *beSwift) Location() string {
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (be *beSwift) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, err
@@ -164,7 +168,7 @@ func (be *beSwift) Load(h restic.Handle, length int, offset int64) (io.ReadClose
 }
 
 // Save stores data in the backend at the handle.
-func (be *beSwift) Save(h restic.Handle, rd io.Reader) (err error) {
+func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	if err = h.Valid(); err != nil {
 		return err
 	}
@@ -201,7 +205,7 @@ func (be *beSwift) Save(h restic.Handle, rd io.Reader) (err error) {
 }
 
 // Stat returns information about a blob.
-func (be *beSwift) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
+func (be *beSwift) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("%v", h)
 
 	objName := be.Filename(h)
@@ -216,7 +220,7 @@ func (be *beSwift) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *beSwift) Test(h restic.Handle) (bool, error) {
+func (be *beSwift) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	objName := be.Filename(h)
 	switch _, _, err := be.conn.Object(be.container, objName); err {
 	case nil:
@@ -231,7 +235,7 @@ func (be *beSwift) Test(h restic.Handle) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *beSwift) Remove(h restic.Handle) error {
+func (be *beSwift) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 	err := be.conn.ObjectDelete(be.container, objName)
 	debug.Log("Remove(%v) -> err %v", h, err)
@@ -241,7 +245,7 @@ func (be *beSwift) Remove(h restic.Handle) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (be *beSwift) List(t restic.FileType, done <-chan struct{}) <-chan string {
+func (be *beSwift) List(ctx context.Context, t restic.FileType) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
@@ -264,7 +268,7 @@ func (be *beSwift) List(t restic.FileType, done <-chan struct{}) <-chan string {
 
 					select {
 					case ch <- m:
-					case <-done:
+					case <-ctx.Done():
 						return nil, io.EOF
 					}
 				}
@@ -280,11 +284,9 @@ func (be *beSwift) List(t restic.FileType, done <-chan struct{}) <-chan string {
 }
 
 // Remove keys for a specified backend type.
-func (be *beSwift) removeKeys(t restic.FileType) error {
-	done := make(chan struct{})
-	defer close(done)
-	for key := range be.List(t, done) {
-		err := be.Remove(restic.Handle{Type: t, Name: key})
+func (be *beSwift) removeKeys(ctx context.Context, t restic.FileType) error {
+	for key := range be.List(ctx, t) {
+		err := be.Remove(ctx, restic.Handle{Type: t, Name: key})
 		if err != nil {
 			return err
 		}
@@ -304,7 +306,7 @@ func (be *beSwift) IsNotExist(err error) bool {
 
 // Delete removes all restic objects in the container.
 // It will not remove the container itself.
-func (be *beSwift) Delete() error {
+func (be *beSwift) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
 		restic.DataFile,
 		restic.KeyFile,
@@ -313,13 +315,13 @@ func (be *beSwift) Delete() error {
 		restic.IndexFile}
 
 	for _, t := range alltypes {
-		err := be.removeKeys(t)
+		err := be.removeKeys(ctx, t)
 		if err != nil {
 			return nil
 		}
 	}
 
-	err := be.Remove(restic.Handle{Type: restic.ConfigFile})
+	err := be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil && !be.IsNotExist(err) {
 		return err
 	}

@@ -1,15 +1,16 @@
 package restic
 
 import (
+	"context"
 	"testing"
 )
 
 type mockBackend struct {
-	list func(FileType, <-chan struct{}) <-chan string
+	list func(context.Context, FileType) <-chan string
 }
 
-func (m mockBackend) List(t FileType, done <-chan struct{}) <-chan string {
-	return m.list(t, done)
+func (m mockBackend) List(ctx context.Context, t FileType) <-chan string {
+	return m.list(ctx, t)
 }
 
 var samples = IDs{
@@ -27,14 +28,14 @@ func TestPrefixLength(t *testing.T) {
 	list := samples
 
 	m := mockBackend{}
-	m.list = func(t FileType, done <-chan struct{}) <-chan string {
+	m.list = func(ctx context.Context, t FileType) <-chan string {
 		ch := make(chan string)
 		go func() {
 			defer close(ch)
 			for _, id := range list {
 				select {
 				case ch <- id.String():
-				case <-done:
+				case <-ctx.Done():
 					return
 				}
 			}

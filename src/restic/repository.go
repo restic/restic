@@ -1,6 +1,9 @@
 package restic
 
-import "restic/crypto"
+import (
+	"context"
+	"restic/crypto"
+)
 
 // Repository stores data in a backend. It provides high-level functions and
 // transparently encrypts/decrypts data.
@@ -42,12 +45,12 @@ type Repository interface {
 
 // Deleter removes all data stored in a backend/repo.
 type Deleter interface {
-	Delete() error
+	Delete(context.Context) error
 }
 
 // Lister allows listing files in a backend.
 type Lister interface {
-	List(FileType, <-chan struct{}) <-chan string
+	List(context.Context, FileType) <-chan string
 }
 
 // Index keeps track of the blobs are stored within files.

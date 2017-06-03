@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -34,7 +35,7 @@ func (s *Suite) TestCreateWithConfig(t *testing.T) {
 
 	// remove a config if present
 	cfgHandle := restic.Handle{Type: restic.ConfigFile}
-	cfgPresent, err := b.Test(cfgHandle)
+	cfgPresent, err := b.Test(context.TODO(), cfgHandle)
 	if err != nil {
 		t.Fatalf("unable to test for config: %+v", err)
 	}
@@ -53,7 +54,7 @@ func (s *Suite) TestCreateWithConfig(t *testing.T) {
 	}
 
 	// remove config
-	err = b.Remove(restic.Handle{Type: restic.ConfigFile, Name: ""})
+	err = b.Remove(context.TODO(), restic.Handle{Type: restic.ConfigFile, Name: ""})
 	if err != nil {
 		t.Fatalf("unexpected error removing config: %+v", err)
 	}
@@ -78,12 +79,12 @@ func (s *Suite) TestConfig(t *testing.T) {
 	var testString = "Config"
 
 	// create config and read it back
-	_, err := backend.LoadAll(b, restic.Handle{Type: restic.ConfigFile})
+	_, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.ConfigFile})
 	if err == nil {
 		t.Fatalf("did not get expected error for non-existing config")
 	}
 
-	err = b.Save(restic.Handle{Type: restic.ConfigFile}, strings.NewReader(testString))
+	err = b.Save(context.TODO(), restic.Handle{Type: restic.ConfigFile}, strings.NewReader(testString))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
 	}
@@ -92,7 +93,7 @@ func (s *Suite) TestConfig(t *testing.T) {
 	// same config
 	for _, name := range []string{"", "foo", "bar", "0000000000000000000000000000000000000000000000000000000000000000"} {
 		h := restic.Handle{Type: restic.ConfigFile, Name: name}
-		buf, err := backend.LoadAll(b, h)
+		buf, err := backend.LoadAll(context.TODO(), b, h)
 		if err != nil {
 			t.Fatalf("unable to read config with name %q: %+v", name, err)
 		}
@@ -113,12 +114,12 @@ func (s *Suite) TestLoad(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
-	rd, err := b.Load(restic.Handle{}, 0, 0)
+	rd, err := b.Load(context.TODO(), restic.Handle{}, 0, 0)
 	if err == nil {
 		t.Fatalf("Load() did not return an error for invalid handle")
 	}
 	if rd != nil {
-		rd.Close()
+		_ = rd.Close()
 	}
 
 	err = testLoad(b, restic.Handle{Type: restic.DataFile, Name: "foobar"}, 0, 0)
@@ -132,14 +133,14 @@ func (s *Suite) TestLoad(t *testing.T) {
 	id := restic.Hash(data)
 
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	err = b.Save(handle, bytes.NewReader(data))
+	err = b.Save(context.TODO(), handle, bytes.NewReader(data))
 	if err != nil {
 		t.Fatalf("Save() error: %+v", err)
 	}
 
 	t.Logf("saved %d bytes as %v", length, handle)
 
-	rd, err = b.Load(handle, 100, -1)
+	rd, err = b.Load(context.TODO(), handle, 100, -1)
 	if err == nil {
 		t.Fatalf("Load() returned no error for negative offset!")
 	}
@@ -174,7 +175,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 			d = d[:l]
 		}
 
-		rd, err := b.Load(handle, getlen, int64(o))
+		rd, err := b.Load(context.TODO(), handle, getlen, int64(o))
 		if err != nil {
 			t.Logf("Load, l %v, o %v, len(d) %v, getlen %v", l, o, len(d), getlen)
 			t.Errorf("Load(%d, %d) returned unexpected error: %+v", l, o, err)
@@ -235,7 +236,7 @@ func (s *Suite) TestLoad(t *testing.T) {
 		}
 	}
 
-	test.OK(t, b.Remove(handle))
+	test.OK(t, b.Remove(context.TODO(), handle))
 }
 
 type errorCloser struct {
@@ -276,10 +277,10 @@ func (s *Suite) TestSave(t *testing.T) {
 			Type: restic.DataFile,
 			Name: fmt.Sprintf("%s-%d", id, i),
 		}
-		err := b.Save(h, bytes.NewReader(data))
+		err := b.Save(context.TODO(), h, bytes.NewReader(data))
 		test.OK(t, err)
 
-		buf, err := backend.LoadAll(b, h)
+		buf, err := backend.LoadAll(context.TODO(), b, h)
 		test.OK(t, err)
 		if len(buf) != len(data) {
 			t.Fatalf("number of bytes does not match, want %v, got %v", len(data), len(buf))
@@ -289,14 +290,14 @@ func (s *Suite) TestSave(t *testing.T) {
 			t.Fatalf("data not equal")
 		}
 
-		fi, err := b.Stat(h)
+		fi, err := b.Stat(context.TODO(), h)
 		test.OK(t, err)
 
 		if fi.Size != int64(len(data)) {
 			t.Fatalf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
 		}
 
-		err = b.Remove(h)
+		err = b.Remove(context.TODO(), h)
 		if err != nil {
 			t.Fatalf("error removing item: %+v", err)
 		}
@@ -324,12 +325,12 @@ func (s *Suite) TestSave(t *testing.T) {
 
 	// wrap the tempfile in an errorCloser, so we can detect if the backend
 	// closes the reader
-	err = b.Save(h, errorCloser{t: t, size: int64(length), Reader: tmpfile})
+	err = b.Save(context.TODO(), h, errorCloser{t: t, size: int64(length), Reader: tmpfile})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = b.Remove(h)
+	err = b.Remove(context.TODO(), h)
 	if err != nil {
 		t.Fatalf("error removing item: %+v", err)
 	}
@@ -339,7 +340,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = b.Save(h, tmpfile)
+	err = b.Save(context.TODO(), h, tmpfile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +349,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = b.Remove(h)
+	err = b.Remove(context.TODO(), h)
 	if err != nil {
 		t.Fatalf("error removing item: %+v", err)
 	}
@@ -377,13 +378,13 @@ func (s *Suite) TestSaveFilenames(t *testing.T) {
 
 	for i, test := range filenameTests {
 		h := restic.Handle{Name: test.name, Type: restic.DataFile}
-		err := b.Save(h, strings.NewReader(test.data))
+		err := b.Save(context.TODO(), h, strings.NewReader(test.data))
 		if err != nil {
 			t.Errorf("test %d failed: Save() returned %+v", i, err)
 			continue
 		}
 
-		buf, err := backend.LoadAll(b, h)
+		buf, err := backend.LoadAll(context.TODO(), b, h)
 		if err != nil {
 			t.Errorf("test %d failed: Load() returned %+v", i, err)
 			continue
@@ -393,7 +394,7 @@ func (s *Suite) TestSaveFilenames(t *testing.T) {
 			t.Errorf("test %d: returned wrong bytes", i)
 		}
 
-		err = b.Remove(h)
+		err = b.Remove(context.TODO(), h)
 		if err != nil {
 			t.Errorf("test %d failed: Remove() returned %+v", i, err)
 			continue
@@ -414,14 +415,14 @@ var testStrings = []struct {
 func store(t testing.TB, b restic.Backend, tpe restic.FileType, data []byte) restic.Handle {
 	id := restic.Hash(data)
 	h := restic.Handle{Name: id.String(), Type: tpe}
-	err := b.Save(h, bytes.NewReader(data))
+	err := b.Save(context.TODO(), h, bytes.NewReader(data))
 	test.OK(t, err)
 	return h
 }
 
 // testLoad loads a blob (but discards its contents).
 func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error {
-	rd, err := b.Load(h, 0, 0)
+	rd, err := b.Load(context.TODO(), h, 0, 0)
 	if err != nil {
 		return err
 	}
@@ -437,14 +438,14 @@ func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error
 func delayedRemove(b restic.Backend, h restic.Handle) error {
 	// Some backend (swift, I'm looking at you) may implement delayed
 	// removal of data. Let's wait a bit if this happens.
-	err := b.Remove(h)
+	err := b.Remove(context.TODO(), h)
 	if err != nil {
 		return err
 	}
 
-	found, err := b.Test(h)
+	found, err := b.Test(context.TODO(), h)
 	for i := 0; found && i < 20; i++ {
-		found, err = b.Test(h)
+		found, err = b.Test(context.TODO(), h)
 		if found {
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -468,12 +469,12 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 			// test if blob is already in repository
 			h := restic.Handle{Type: tpe, Name: id.String()}
-			ret, err := b.Test(h)
+			ret, err := b.Test(context.TODO(), h)
 			test.OK(t, err)
 			test.Assert(t, !ret, "blob was found to exist before creating")
 
 			// try to stat a not existing blob
-			_, err = b.Stat(h)
+			_, err = b.Stat(context.TODO(), h)
 			test.Assert(t, err != nil, "blob data could be extracted before creation")
 
 			// try to read not existing blob
@@ -481,7 +482,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 			test.Assert(t, err != nil, "blob could be read before creation")
 
 			// try to get string out, should fail
-			ret, err = b.Test(h)
+			ret, err = b.Test(context.TODO(), h)
 			test.OK(t, err)
 			test.Assert(t, !ret, "id %q was found (but should not have)", ts.id)
 		}
@@ -492,7 +493,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 			// test Load()
 			h := restic.Handle{Type: tpe, Name: ts.id}
-			buf, err := backend.LoadAll(b, h)
+			buf, err := backend.LoadAll(context.TODO(), b, h)
 			test.OK(t, err)
 			test.Equals(t, ts.data, string(buf))
 
@@ -502,7 +503,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 			length := end - start
 
 			buf2 := make([]byte, length)
-			rd, err := b.Load(h, len(buf2), int64(start))
+			rd, err := b.Load(context.TODO(), h, len(buf2), int64(start))
 			test.OK(t, err)
 			n, err := io.ReadFull(rd, buf2)
 			test.OK(t, err)
@@ -522,7 +523,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 		// create blob
 		h := restic.Handle{Type: tpe, Name: ts.id}
-		err := b.Save(h, strings.NewReader(ts.data))
+		err := b.Save(context.TODO(), h, strings.NewReader(ts.data))
 		test.Assert(t, err != nil, "expected error for %v, got %v", h, err)
 
 		// remove and recreate
@@ -530,12 +531,12 @@ func (s *Suite) TestBackend(t *testing.T) {
 		test.OK(t, err)
 
 		// test that the blob is gone
-		ok, err := b.Test(h)
+		ok, err := b.Test(context.TODO(), h)
 		test.OK(t, err)
 		test.Assert(t, !ok, "removed blob still present")
 
 		// create blob
-		err = b.Save(h, strings.NewReader(ts.data))
+		err = b.Save(context.TODO(), h, strings.NewReader(ts.data))
 		test.OK(t, err)
 
 		// list items
@@ -549,7 +550,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 		list := restic.IDs{}
 
-		for s := range b.List(tpe, nil) {
+		for s := range b.List(context.TODO(), tpe) {
 			list = append(list, restic.TestParseID(s))
 		}
 
@@ -572,13 +573,13 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 				h := restic.Handle{Type: tpe, Name: id.String()}
 
-				found, err := b.Test(h)
+				found, err := b.Test(context.TODO(), h)
 				test.OK(t, err)
 				test.Assert(t, found, fmt.Sprintf("id %q not found", id))
 
 				test.OK(t, delayedRemove(b, h))
 
-				found, err = b.Test(h)
+				found, err = b.Test(context.TODO(), h)
 				test.OK(t, err)
 				test.Assert(t, !found, fmt.Sprintf("id %q not found after removal", id))
 			}
@@ -600,7 +601,7 @@ func (s *Suite) TestDelete(t *testing.T) {
 		return
 	}
 
-	err := be.Delete()
+	err := be.Delete(context.TODO())
 	if err != nil {
 		t.Fatalf("error deleting backend: %+v", err)
 	}

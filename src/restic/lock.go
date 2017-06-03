@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -186,7 +187,7 @@ func (l *Lock) Unlock() error {
 		return nil
 	}
 
-	return l.repo.Backend().Remove(Handle{Type: LockFile, Name: l.lockID.String()})
+	return l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: l.lockID.String()})
 }
 
 var staleTimeout = 30 * time.Minute
@@ -234,7 +235,7 @@ func (l *Lock) Refresh() error {
 		return err
 	}
 
-	err = l.repo.Backend().Remove(Handle{Type: LockFile, Name: l.lockID.String()})
+	err = l.repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: l.lockID.String()})
 	if err != nil {
 		return err
 	}
@@ -289,7 +290,7 @@ func RemoveStaleLocks(repo Repository) error {
 		}
 
 		if lock.Stale() {
-			return repo.Backend().Remove(Handle{Type: LockFile, Name: id.String()})
+			return repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
 		}
 
 		return nil
@@ -299,6 +300,6 @@ func RemoveStaleLocks(repo Repository) error {
 // RemoveAllLocks removes all locks forcefully.
 func RemoveAllLocks(repo Repository) error {
 	return eachLock(repo, func(id ID, lock *Lock, err error) error {
-		return repo.Backend().Remove(Handle{Type: LockFile, Name: id.String()})
+		return repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
 	})
 }

@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,8 @@ import (
 	"path"
 	"restic"
 	"strings"
+
+	"golang.org/x/net/context/ctxhttp"
 
 	"restic/debug"
 	"restic/errors"
@@ -25,7 +28,7 @@ var _ restic.Backend = &restBackend{}
 type restBackend struct {
 	url      *url.URL
 	connChan chan struct{}
-	client   http.Client
+	client   *http.Client
 	backend.Layout
 }
 
@@ -36,7 +39,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		connChan <- struct{}{}
 	}
 
-	client := http.Client{Transport: backend.Transport()}
+	client := &http.Client{Transport: backend.Transport()}
 
 	// use url without trailing slash for layout
 	url := cfg.URL.String()
@@ -61,7 +64,7 @@ func Create(cfg Config) (restic.Backend, error) {
 		return nil, err
 	}
 
-	_, err = be.Stat(restic.Handle{Type: restic.ConfigFile})
+	_, err = be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
 	if err == nil {
 		return nil, errors.Fatal("config file already exists")
 	}
@@ -99,22 +102,25 @@ func (b *restBackend) Location() string {
 }
 
 // Save stores data in the backend at the handle.
-func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
+func (b *restBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	// make sure that client.Post() cannot close the reader by wrapping it in
 	// backend.Closer, which has a noop method.
 	rd = backend.Closer{Reader: rd}
 
 	<-b.connChan
-	resp, err := b.client.Post(b.Filename(h), "binary/octet-stream", rd)
+	resp, err := ctxhttp.Post(ctx, b.client, b.Filename(h), "binary/octet-stream", rd)
 	b.connChan <- struct{}{}
 
 	if resp != nil {
 		defer func() {
-			io.Copy(ioutil.Discard, resp.Body)
+			_, _ = io.Copy(ioutil.Discard, resp.Body)
 			e := resp.Body.Close()
 
 			if err == nil {
@@ -137,7 +143,7 @@ func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (b *restBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (b *restBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, err
@@ -164,20 +170,19 @@ func (b *restBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCl
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
 	<-b.connChan
-	resp, err := b.client.Do(req)
+	resp, err := ctxhttp.Do(ctx, b.client, req)
 	b.connChan <- struct{}{}
 
 	if err != nil {
 		if resp != nil {
-			io.Copy(ioutil.Discard, resp.Body)
-			resp.Body.Close()
+			_, _ = io.Copy(ioutil.Discard, resp.Body)
+			_ = resp.Body.Close()
 		}
 		return nil, errors.Wrap(err, "client.Do")
 	}
 
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil, errors.Errorf("unexpected HTTP response (%v): %v", resp.StatusCode, resp.Status)
 	}
 
@@ -185,19 +190,19 @@ func (b *restBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCl
 }
 
 // Stat returns information about a blob.
-func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
+func (b *restBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	if err := h.Valid(); err != nil {
 		return restic.FileInfo{}, err
 	}
 
 	<-b.connChan
-	resp, err := b.client.Head(b.Filename(h))
+	resp, err := ctxhttp.Head(ctx, b.client, b.Filename(h))
 	b.connChan <- struct{}{}
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "client.Head")
 	}
 
-	io.Copy(ioutil.Discard, resp.Body)
+	_, _ = io.Copy(ioutil.Discard, resp.Body)
 	if err = resp.Body.Close(); err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "Close")
 	}
@@ -218,8 +223,8 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *restBackend) Test(h restic.Handle) (bool, error) {
-	_, err := b.Stat(h)
+func (b *restBackend) Test(ctx context.Context, h restic.Handle) (bool, error) {
+	_, err := b.Stat(ctx, h)
 	if err != nil {
 		return false, nil
 	}
@@ -228,7 +233,7 @@ func (b *restBackend) Test(h restic.Handle) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *restBackend) Remove(h restic.Handle) error {
+func (b *restBackend) Remove(ctx context.Context, h restic.Handle) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -238,7 +243,7 @@ func (b *restBackend) Remove(h restic.Handle) error {
 		return errors.Wrap(err, "http.NewRequest")
 	}
 	<-b.connChan
-	resp, err := b.client.Do(req)
+	resp, err := ctxhttp.Do(ctx, b.client, req)
 	b.connChan <- struct{}{}
 
 	if err != nil {
@@ -249,14 +254,18 @@ func (b *restBackend) Remove(h restic.Handle) error {
 		return errors.Errorf("blob not removed, server response: %v (%v)", resp.Status, resp.StatusCode)
 	}
 
-	io.Copy(ioutil.Discard, resp.Body)
-	return resp.Body.Close()
+	_, err = io.Copy(ioutil.Discard, resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "Copy")
+	}
+
+	return errors.Wrap(resp.Body.Close(), "Close")
 }
 
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (b *restBackend) List(t restic.FileType, done <-chan struct{}) <-chan string {
+func (b *restBackend) List(ctx context.Context, t restic.FileType) <-chan string {
 	ch := make(chan string)
 
 	url := b.Dirname(restic.Handle{Type: t})
@@ -265,12 +274,12 @@ func (b *restBackend) List(t restic.FileType, done <-chan struct{}) <-chan strin
 	}
 
 	<-b.connChan
-	resp, err := b.client.Get(url)
+	resp, err := ctxhttp.Get(ctx, b.client, url)
 	b.connChan <- struct{}{}
 
 	if resp != nil {
 		defer func() {
-			io.Copy(ioutil.Discard, resp.Body)
+			_, _ = io.Copy(ioutil.Discard, resp.Body)
 			e := resp.Body.Close()
 
 			if err == nil {
@@ -296,7 +305,7 @@ func (b *restBackend) List(t restic.FileType, done <-chan struct{}) <-chan strin
 		for _, m := range list {
 			select {
 			case ch <- m:
-			case <-done:
+			case <-ctx.Done():
 				return
 			}
 		}

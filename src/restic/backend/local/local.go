@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -75,7 +76,7 @@ func (b *Local) Location() string {
 }
 
 // Save stores data in the backend at the handle.
-func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
+func (b *Local) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("Save %v", h)
 	if err := h.Valid(); err != nil {
 		return err
@@ -100,7 +101,7 @@ func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
 			return errors.Wrap(err, "MkdirAll")
 		}
 
-		return b.Save(h, rd)
+		return b.Save(ctx, h, rd)
 	}
 
 	if err != nil {
@@ -110,12 +111,12 @@ func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
 	// save data, then sync
 	_, err = io.Copy(f, rd)
 	if err != nil {
-		f.Close()
+		_ = f.Close()
 		return errors.Wrap(err, "Write")
 	}
 
 	if err = f.Sync(); err != nil {
-		f.Close()
+		_ = f.Close()
 		return errors.Wrap(err, "Sync")
 	}
 
@@ -136,7 +137,7 @@ func (b *Local) Save(h restic.Handle, rd io.Reader) (err error) {
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (b *Local) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (b *Local) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, err
@@ -154,7 +155,7 @@ func (b *Local) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 	if offset > 0 {
 		_, err = f.Seek(offset, 0)
 		if err != nil {
-			f.Close()
+			_ = f.Close()
 			return nil, err
 		}
 	}
@@ -167,7 +168,7 @@ func (b *Local) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 }
 
 // Stat returns information about a blob.
-func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
+func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	debug.Log("Stat %v", h)
 	if err := h.Valid(); err != nil {
 		return restic.FileInfo{}, err
@@ -182,7 +183,7 @@ func (b *Local) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (b *Local) Test(h restic.Handle) (bool, error) {
+func (b *Local) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	debug.Log("Test %v", h)
 	_, err := fs.Stat(b.Filename(h))
 	if err != nil {
@@ -196,7 +197,7 @@ func (b *Local) Test(h restic.Handle) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (b *Local) Remove(h restic.Handle) error {
+func (b *Local) Remove(ctx context.Context, h restic.Handle) error {
 	debug.Log("Remove %v", h)
 	fn := b.Filename(h)
 
@@ -214,9 +215,8 @@ func isFile(fi os.FileInfo) bool {
 }
 
 // List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this. If the channel done is closed, sending
-// stops.
-func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
+// goroutine is started for this.
+func (b *Local) List(ctx context.Context, t restic.FileType) <-chan string {
 	debug.Log("List %v", t)
 
 	ch := make(chan string)
@@ -235,7 +235,7 @@ func (b *Local) List(t restic.FileType, done <-chan struct{}) <-chan string {
 
 			select {
 			case ch <- filepath.Base(path):
-			case <-done:
+			case <-ctx.Done():
 				return err
 			}
 
