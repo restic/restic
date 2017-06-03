@@ -343,6 +343,35 @@ The policy of new container created by restic can be changed using environment v
    $ export SWIFT_DEFAULT_CONTAINER_POLICY=<MY_CONTAINER_POLICY>
 
 
+Backblaze B2
+~~~~~~~~~~~~
+
+Restic can backup data to any Backblaze B2 bucket. You need to first setup the
+following environment variables with the credentials you obtained when signed
+into your B2 account:
+
+.. code-block:: console
+
+    $ export B2_ACCOUNT_ID=<MY_ACCOUNT_ID>
+    $ export B2_ACCOUNT_KEY=<MY_SECRET_ACCOUNT_KEY>
+
+You can then easily initialize a repository stored at Backblaze B2. If the
+bucket does not exist yet, it will be created:
+
+.. code-block:: console
+
+    $ restic -r b2:bucketname:path/to/repo init
+    enter password for new backend:
+    enter password again:
+    created restic backend eefee03bbd at b2:bucketname:path/to/repo
+    Please note that knowledge of your password is required to access the repository.
+    Losing your password means that your data is irrecoverably lost.
+
+The number of concurrent connections to the B2 service can be set with the `-o
+b2.connections=10`. By default, at most five parallel connections are
+established.
+
+
 Password prompt on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

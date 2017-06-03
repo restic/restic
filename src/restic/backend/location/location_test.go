@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"restic/backend/b2"
 	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
@@ -219,6 +220,24 @@ var parseTests = []struct {
 		Location{Scheme: "rest",
 			Config: rest.Config{
 				URL: parseURL("http://hostname.foo:1234/"),
+			},
+		},
+	},
+	{
+		"b2:bucketname:/prefix", Location{Scheme: "b2",
+			Config: b2.Config{
+				Bucket:      "bucketname",
+				Prefix:      "prefix",
+				Connections: 5,
+			},
+		},
+	},
+	{
+		"b2:bucketname", Location{Scheme: "b2",
+			Config: b2.Config{
+				Bucket:      "bucketname",
+				Prefix:      "",
+				Connections: 5,
 			},
 		},
 	},
