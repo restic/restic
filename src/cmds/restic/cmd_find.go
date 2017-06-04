@@ -187,7 +187,7 @@ func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
 
 	debug.Log("%v checking tree %v\n", prefix, treeID.Str())
 
-	tree, err := f.repo.LoadTree(treeID)
+	tree, err := f.repo.LoadTree(context.TODO(), treeID)
 	if err != nil {
 		return err
 	}
@@ -283,7 +283,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	if err = repo.LoadIndex(); err != nil {
+	if err = repo.LoadIndex(context.TODO()); err != nil {
 		return err
 	}
 

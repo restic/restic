@@ -9,6 +9,8 @@ import (
 	"restic"
 	"restic/debug"
 
+	scontext "context"
+
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"golang.org/x/net/context"
@@ -25,7 +27,7 @@ var _ = fs.HandleReleaser(&file{})
 // for fuse operations.
 type BlobLoader interface {
 	LookupBlobSize(restic.ID, restic.BlobType) (uint, error)
-	LoadBlob(restic.BlobType, restic.ID, []byte) (int, error)
+	LoadBlob(scontext.Context, restic.BlobType, restic.ID, []byte) (int, error)
 }
 
 type file struct {
@@ -88,7 +90,7 @@ func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 
 }
 
-func (f *file) getBlobAt(i int) (blob []byte, err error) {
+func (f *file) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 	debug.Log("getBlobAt(%v, %v)", f.node.Name, i)
 	if f.blobs[i] != nil {
 		return f.blobs[i], nil
@@ -100,7 +102,7 @@ func (f *file) getBlobAt(i int) (blob []byte, err error) {
 	}
 
 	buf := restic.NewBlobBuffer(f.sizes[i])
-	n, err := f.repo.LoadBlob(restic.DataBlob, f.node.Content[i], buf)
+	n, err := f.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], buf)
 	if err != nil {
 		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err
@@ -137,7 +139,7 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	readBytes := 0
 	remainingBytes := req.Size
 	for i := startContent; remainingBytes > 0 && i < len(f.sizes); i++ {
-		blob, err := f.getBlobAt(i)
+		blob, err := f.getBlobAt(ctx, i)
 		if err != nil {
 			return err
 		}

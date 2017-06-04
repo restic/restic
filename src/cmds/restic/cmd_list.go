@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"restic"
 	"restic/errors"
@@ -55,7 +56,7 @@ func runList(opts GlobalOptions, args []string) error {
 	case "locks":
 		t = restic.LockFile
 	case "blobs":
-		idx, err := index.Load(repo, nil)
+		idx, err := index.Load(context.TODO(), repo, nil)
 		if err != nil {
 			return err
 		}
@@ -71,7 +72,7 @@ func runList(opts GlobalOptions, args []string) error {
 		return errors.Fatal("invalid type")
 	}
 
-	for id := range repo.List(t, nil) {
+	for id := range repo.List(context.TODO(), t) {
 		Printf("%s\n", id)
 	}
 

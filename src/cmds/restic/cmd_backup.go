@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -263,7 +264,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return err
 	}
 
-	err = repo.LoadIndex()
+	err = repo.LoadIndex(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -274,7 +275,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		Hostname:   opts.Hostname,
 	}
 
-	_, id, err := r.Archive(opts.StdinFilename, os.Stdin, newArchiveStdinProgress(gopts))
+	_, id, err := r.Archive(context.TODO(), opts.StdinFilename, os.Stdin, newArchiveStdinProgress(gopts))
 	if err != nil {
 		return err
 	}
@@ -372,7 +373,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	err = repo.LoadIndex()
+	err = repo.LoadIndex(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -391,7 +392,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentSnapshotID == nil {
-		id, err := restic.FindLatestSnapshot(repo, target, opts.Tags, opts.Hostname)
+		id, err := restic.FindLatestSnapshot(context.TODO(), repo, target, opts.Tags, opts.Hostname)
 		if err == nil {
 			parentSnapshotID = &id
 		} else if err != restic.ErrNoSnapshotFound {
@@ -489,7 +490,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		Warnf("%s\rwarning for %s: %v\n", ClearLine(), dir, err)
 	}
 
-	_, id, err := arch.Snapshot(newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID)
+	_, id, err := arch.Snapshot(context.TODO(), newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID)
 	if err != nil {
 		return err
 	}

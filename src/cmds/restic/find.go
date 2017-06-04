@@ -22,7 +22,7 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 			// Process all snapshot IDs given as arguments.
 			for _, s := range snapshotIDs {
 				if s == "latest" {
-					id, err = restic.FindLatestSnapshot(repo, paths, tags, host)
+					id, err = restic.FindLatestSnapshot(ctx, repo, paths, tags, host)
 					if err != nil {
 						Warnf("Ignoring %q, no snapshot matched given filter (Paths:%v Tags:%v Host:%v)\n", s, paths, tags, host)
 						usedFilter = true
@@ -44,7 +44,7 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 			}
 
 			for _, id := range ids.Uniq() {
-				sn, err := restic.LoadSnapshot(repo, id)
+				sn, err := restic.LoadSnapshot(ctx, repo, id)
 				if err != nil {
 					Warnf("Ignoring %q, could not load snapshot: %v\n", id, err)
 					continue
@@ -58,8 +58,8 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 			return
 		}
 
-		for id := range repo.List(restic.SnapshotFile, ctx.Done()) {
-			sn, err := restic.LoadSnapshot(repo, id)
+		for id := range repo.List(ctx, restic.SnapshotFile) {
+			sn, err := restic.LoadSnapshot(ctx, repo, id)
 			if err != nil {
 				Warnf("Ignoring %q, could not load snapshot: %v\n", id, err)
 				continue

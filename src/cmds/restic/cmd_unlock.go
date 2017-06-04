@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"restic"
 
 	"github.com/spf13/cobra"
@@ -41,7 +42,7 @@ func runUnlock(opts UnlockOptions, gopts GlobalOptions) error {
 		fn = restic.RemoveAllLocks
 	}
 
-	err = fn(repo)
+	err = fn(context.TODO(), repo)
 	if err != nil {
 		return err
 	}

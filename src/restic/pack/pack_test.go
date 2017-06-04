@@ -2,6 +2,7 @@ package pack_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
@@ -126,7 +127,7 @@ func TestUnpackReadSeeker(t *testing.T) {
 	id := restic.Hash(packData)
 
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	OK(t, b.Save(handle, bytes.NewReader(packData)))
+	OK(t, b.Save(context.TODO(), handle, bytes.NewReader(packData)))
 	verifyBlobs(t, bufs, k, restic.ReaderAt(b, handle), packSize)
 }
 
@@ -139,6 +140,6 @@ func TestShortPack(t *testing.T) {
 	id := restic.Hash(packData)
 
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	OK(t, b.Save(handle, bytes.NewReader(packData)))
+	OK(t, b.Save(context.TODO(), handle, bytes.NewReader(packData)))
 	verifyBlobs(t, bufs, k, restic.ReaderAt(b, handle), packSize)
 }

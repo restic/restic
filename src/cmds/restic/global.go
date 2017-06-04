@@ -310,7 +310,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		}
 	}
 
-	err = s.SearchKey(opts.password, maxKeys)
+	err = s.SearchKey(context.TODO(), opts.password, maxKeys)
 	if err != nil {
 		return nil, errors.Fatalf("unable to open repo: %v", err)
 	}
@@ -440,7 +440,7 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 	}
 
 	// check if config is there
-	fi, err := be.Stat(restic.Handle{Type: restic.ConfigFile})
+	fi, err := be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, s)
 	}

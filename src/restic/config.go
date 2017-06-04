@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"context"
 	"testing"
 
 	"restic/errors"
@@ -23,7 +24,7 @@ const RepoVersion = 1
 
 // JSONUnpackedLoader loads unpacked JSON.
 type JSONUnpackedLoader interface {
-	LoadJSONUnpacked(FileType, ID, interface{}) error
+	LoadJSONUnpacked(context.Context, FileType, ID, interface{}) error
 }
 
 // CreateConfig creates a config file with a randomly selected polynomial and
@@ -57,12 +58,12 @@ func TestCreateConfig(t testing.TB, pol chunker.Pol) (cfg Config) {
 }
 
 // LoadConfig returns loads, checks and returns the config for a repository.
-func LoadConfig(r JSONUnpackedLoader) (Config, error) {
+func LoadConfig(ctx context.Context, r JSONUnpackedLoader) (Config, error) {
 	var (
 		cfg Config
 	)
 
-	err := r.LoadJSONUnpacked(ConfigFile, ID{}, &cfg)
+	err := r.LoadJSONUnpacked(ctx, ConfigFile, ID{}, &cfg)
 	if err != nil {
 		return Config{}, err
 	}

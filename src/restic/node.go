@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -116,7 +117,7 @@ func (node Node) GetExtendedAttribute(a string) []byte {
 }
 
 // CreateAt creates the node at the given path and restores all the meta data.
-func (node *Node) CreateAt(path string, repo Repository, idx *HardlinkIndex) error {
+func (node *Node) CreateAt(ctx context.Context, path string, repo Repository, idx *HardlinkIndex) error {
 	debug.Log("create node %v at %v", node.Name, path)
 
 	switch node.Type {
@@ -125,7 +126,7 @@ func (node *Node) CreateAt(path string, repo Repository, idx *HardlinkIndex) err
 			return err
 		}
 	case "file":
-		if err := node.createFileAt(path, repo, idx); err != nil {
+		if err := node.createFileAt(ctx, path, repo, idx); err != nil {
 			return err
 		}
 	case "symlink":
@@ -228,7 +229,7 @@ func (node Node) createDirAt(path string) error {
 	return nil
 }
 
-func (node Node) createFileAt(path string, repo Repository, idx *HardlinkIndex) error {
+func (node Node) createFileAt(ctx context.Context, path string, repo Repository, idx *HardlinkIndex) error {
 	if node.Links > 1 && idx.Has(node.Inode, node.DeviceID) {
 		if err := fs.Remove(path); !os.IsNotExist(err) {
 			return errors.Wrap(err, "RemoveCreateHardlink")
@@ -259,7 +260,7 @@ func (node Node) createFileAt(path string, repo Repository, idx *HardlinkIndex) 
 			buf = NewBlobBuffer(int(size))
 		}
 
-		n, err := repo.LoadBlob(DataBlob, id, buf)
+		n, err := repo.LoadBlob(ctx, DataBlob, id, buf)
 		if err != nil {
 			return err
 		}

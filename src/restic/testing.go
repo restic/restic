@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,7 +30,7 @@ type fakeFileSystem struct {
 
 // saveFile reads from rd and saves the blobs in the repository. The list of
 // IDs is returned.
-func (fs *fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
+func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs) {
 	if fs.buf == nil {
 		fs.buf = make([]byte, chunker.MaxSize)
 	}
@@ -53,7 +54,7 @@ func (fs *fakeFileSystem) saveFile(rd io.Reader) (blobs IDs) {
 
 		id := Hash(chunk.Data)
 		if !fs.blobIsKnown(id, DataBlob) {
-			_, err := fs.repo.SaveBlob(DataBlob, chunk.Data, id)
+			_, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id)
 			if err != nil {
 				fs.t.Fatalf("error saving chunk: %v", err)
 			}
@@ -103,7 +104,7 @@ func (fs *fakeFileSystem) blobIsKnown(id ID, t BlobType) bool {
 }
 
 // saveTree saves a tree of fake files in the repo and returns the ID.
-func (fs *fakeFileSystem) saveTree(seed int64, depth int) ID {
+func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) ID {
 	rnd := rand.NewSource(seed)
 	numNodes := int(rnd.Int63() % maxNodes)
 
@@ -113,7 +114,7 @@ func (fs *fakeFileSystem) saveTree(seed int64, depth int) ID {
 		// randomly select the type of the node, either tree (p = 1/4) or file (p = 3/4).
 		if depth > 1 && rnd.Int63()%4 == 0 {
 			treeSeed := rnd.Int63() % maxSeed
-			id := fs.saveTree(treeSeed, depth-1)
+			id := fs.saveTree(ctx, treeSeed, depth-1)
 
 			node := &Node{
 				Name:    fmt.Sprintf("dir-%v", treeSeed),
@@ -136,7 +137,7 @@ func (fs *fakeFileSystem) saveTree(seed int64, depth int) ID {
 			Size: uint64(fileSize),
 		}
 
-		node.Content = fs.saveFile(fakeFile(fs.t, fileSeed, fileSize))
+		node.Content = fs.saveFile(ctx, fakeFile(fs.t, fileSeed, fileSize))
 		tree.Nodes = append(tree.Nodes, node)
 	}
 
@@ -145,7 +146,7 @@ func (fs *fakeFileSystem) saveTree(seed int64, depth int) ID {
 		return id
 	}
 
-	_, err := fs.repo.SaveBlob(TreeBlob, buf, id)
+	_, err := fs.repo.SaveBlob(ctx, TreeBlob, buf, id)
 	if err != nil {
 		fs.t.Fatal(err)
 	}
@@ -176,10 +177,10 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 		duplication: duplication,
 	}
 
-	treeID := fs.saveTree(seed, depth)
+	treeID := fs.saveTree(context.TODO(), seed, depth)
 	snapshot.Tree = &treeID
 
-	id, err := repo.SaveJSONUnpacked(SnapshotFile, snapshot)
+	id, err := repo.SaveJSONUnpacked(context.TODO(), SnapshotFile, snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +194,7 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 		t.Fatal(err)
 	}
 
-	err = repo.SaveIndex()
+	err = repo.SaveIndex(context.TODO())
 	if err != nil {
 		t.Fatal(err)
 	}

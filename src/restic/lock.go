@@ -59,15 +59,15 @@ func IsAlreadyLocked(err error) bool {
 // NewLock returns a new, non-exclusive lock for the repository. If an
 // exclusive lock is already held by another process, ErrAlreadyLocked is
 // returned.
-func NewLock(repo Repository) (*Lock, error) {
-	return newLock(repo, false)
+func NewLock(ctx context.Context, repo Repository) (*Lock, error) {
+	return newLock(ctx, repo, false)
 }
 
 // NewExclusiveLock returns a new, exclusive lock for the repository. If
 // another lock (normal and exclusive) is already held by another process,
 // ErrAlreadyLocked is returned.
-func NewExclusiveLock(repo Repository) (*Lock, error) {
-	return newLock(repo, true)
+func NewExclusiveLock(ctx context.Context, repo Repository) (*Lock, error) {
+	return newLock(ctx, repo, true)
 }
 
 var waitBeforeLockCheck = 200 * time.Millisecond
@@ -78,7 +78,7 @@ func TestSetLockTimeout(t testing.TB, d time.Duration) {
 	waitBeforeLockCheck = d
 }
 
-func newLock(repo Repository, excl bool) (*Lock, error) {
+func newLock(ctx context.Context, repo Repository, excl bool) (*Lock, error) {
 	lock := &Lock{
 		Time:      time.Now(),
 		PID:       os.Getpid(),
@@ -95,11 +95,11 @@ func newLock(repo Repository, excl bool) (*Lock, error) {
 		return nil, err
 	}
 
-	if err = lock.checkForOtherLocks(); err != nil {
+	if err = lock.checkForOtherLocks(ctx); err != nil {
 		return nil, err
 	}
 
-	lockID, err := lock.createLock()
+	lockID, err := lock.createLock(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func newLock(repo Repository, excl bool) (*Lock, error) {
 
 	time.Sleep(waitBeforeLockCheck)
 
-	if err = lock.checkForOtherLocks(); err != nil {
+	if err = lock.checkForOtherLocks(ctx); err != nil {
 		lock.Unlock()
 		return nil, err
 	}
@@ -133,8 +133,8 @@ func (l *Lock) fillUserInfo() error {
 // if there are any other locks, regardless if exclusive or not. If a
 // non-exclusive lock is to be created, an error is only returned when an
 // exclusive lock is found.
-func (l *Lock) checkForOtherLocks() error {
-	return eachLock(l.repo, func(id ID, lock *Lock, err error) error {
+func (l *Lock) checkForOtherLocks(ctx context.Context) error {
+	return eachLock(ctx, l.repo, func(id ID, lock *Lock, err error) error {
 		if l.lockID != nil && id.Equal(*l.lockID) {
 			return nil
 		}
@@ -156,12 +156,9 @@ func (l *Lock) checkForOtherLocks() error {
 	})
 }
 
-func eachLock(repo Repository, f func(ID, *Lock, error) error) error {
-	done := make(chan struct{})
-	defer close(done)
-
-	for id := range repo.List(LockFile, done) {
-		lock, err := LoadLock(repo, id)
+func eachLock(ctx context.Context, repo Repository, f func(ID, *Lock, error) error) error {
+	for id := range repo.List(ctx, LockFile) {
+		lock, err := LoadLock(ctx, repo, id)
 		err = f(id, lock, err)
 		if err != nil {
 			return err
@@ -172,8 +169,8 @@ func eachLock(repo Repository, f func(ID, *Lock, error) error) error {
 }
 
 // createLock acquires the lock by creating a file in the repository.
-func (l *Lock) createLock() (ID, error) {
-	id, err := l.repo.SaveJSONUnpacked(LockFile, l)
+func (l *Lock) createLock(ctx context.Context) (ID, error) {
+	id, err := l.repo.SaveJSONUnpacked(ctx, LockFile, l)
 	if err != nil {
 		return ID{}, err
 	}
@@ -228,9 +225,9 @@ func (l *Lock) Stale() bool {
 
 // Refresh refreshes the lock by creating a new file in the backend with a new
 // timestamp. Afterwards the old lock is removed.
-func (l *Lock) Refresh() error {
+func (l *Lock) Refresh(ctx context.Context) error {
 	debug.Log("refreshing lock %v", l.lockID.Str())
-	id, err := l.createLock()
+	id, err := l.createLock(ctx)
 	if err != nil {
 		return err
 	}
@@ -271,9 +268,9 @@ func init() {
 }
 
 // LoadLock loads and unserializes a lock from a repository.
-func LoadLock(repo Repository, id ID) (*Lock, error) {
+func LoadLock(ctx context.Context, repo Repository, id ID) (*Lock, error) {
 	lock := &Lock{}
-	if err := repo.LoadJSONUnpacked(LockFile, id, lock); err != nil {
+	if err := repo.LoadJSONUnpacked(ctx, LockFile, id, lock); err != nil {
 		return nil, err
 	}
 	lock.lockID = &id
@@ -282,8 +279,8 @@ func LoadLock(repo Repository, id ID) (*Lock, error) {
 }
 
 // RemoveStaleLocks deletes all locks detected as stale from the repository.
-func RemoveStaleLocks(repo Repository) error {
-	return eachLock(repo, func(id ID, lock *Lock, err error) error {
+func RemoveStaleLocks(ctx context.Context, repo Repository) error {
+	return eachLock(ctx, repo, func(id ID, lock *Lock, err error) error {
 		// ignore locks that cannot be loaded
 		if err != nil {
 			return nil
@@ -298,8 +295,8 @@ func RemoveStaleLocks(repo Repository) error {
 }
 
 // RemoveAllLocks removes all locks forcefully.
-func RemoveAllLocks(repo Repository) error {
-	return eachLock(repo, func(id ID, lock *Lock, err error) error {
+func RemoveAllLocks(ctx context.Context, repo Repository) error {
+	return eachLock(ctx, repo, func(id ID, lock *Lock, err error) error {
 		return repo.Backend().Remove(context.TODO(), Handle{Type: LockFile, Name: id.String()})
 	})
 }

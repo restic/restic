@@ -1,6 +1,7 @@
 package archiver
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -92,7 +93,7 @@ func (arch *Archiver) isKnownBlob(id restic.ID, t restic.BlobType) bool {
 }
 
 // Save stores a blob read from rd in the repository.
-func (arch *Archiver) Save(t restic.BlobType, data []byte, id restic.ID) error {
+func (arch *Archiver) Save(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
 	debug.Log("Save(%v, %v)\n", t, id.Str())
 
 	if arch.isKnownBlob(id, restic.DataBlob) {
@@ -100,7 +101,7 @@ func (arch *Archiver) Save(t restic.BlobType, data []byte, id restic.ID) error {
 		return nil
 	}
 
-	_, err := arch.repo.SaveBlob(t, data, id)
+	_, err := arch.repo.SaveBlob(ctx, t, data, id)
 	if err != nil {
 		debug.Log("Save(%v, %v): error %v\n", t, id.Str(), err)
 		return err
@@ -111,7 +112,7 @@ func (arch *Archiver) Save(t restic.BlobType, data []byte, id restic.ID) error {
 }
 
 // SaveTreeJSON stores a tree in the repository.
-func (arch *Archiver) SaveTreeJSON(tree *restic.Tree) (restic.ID, error) {
+func (arch *Archiver) SaveTreeJSON(ctx context.Context, tree *restic.Tree) (restic.ID, error) {
 	data, err := json.Marshal(tree)
 	if err != nil {
 		return restic.ID{}, errors.Wrap(err, "Marshal")
@@ -124,7 +125,7 @@ func (arch *Archiver) SaveTreeJSON(tree *restic.Tree) (restic.ID, error) {
 		return id, nil
 	}
 
-	return arch.repo.SaveBlob(restic.TreeBlob, data, id)
+	return arch.repo.SaveBlob(ctx, restic.TreeBlob, data, id)
 }
 
 func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*restic.Node, error) {
@@ -153,11 +154,11 @@ type saveResult struct {
 	bytes uint64
 }
 
-func (arch *Archiver) saveChunk(chunk chunker.Chunk, p *restic.Progress, token struct{}, file fs.File, resultChannel chan<- saveResult) {
+func (arch *Archiver) saveChunk(ctx context.Context, chunk chunker.Chunk, p *restic.Progress, token struct{}, file fs.File, resultChannel chan<- saveResult) {
 	defer freeBuf(chunk.Data)
 
 	id := restic.Hash(chunk.Data)
-	err := arch.Save(restic.DataBlob, chunk.Data, id)
+	err := arch.Save(ctx, restic.DataBlob, chunk.Data, id)
 	// TODO handle error
 	if err != nil {
 		panic(err)
@@ -206,7 +207,7 @@ func updateNodeContent(node *restic.Node, results []saveResult) error {
 
 // SaveFile stores the content of the file on the backend as a Blob by calling
 // Save for each chunk.
-func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) (*restic.Node, error) {
+func (arch *Archiver) SaveFile(ctx context.Context, p *restic.Progress, node *restic.Node) (*restic.Node, error) {
 	file, err := fs.Open(node.Path)
 	defer file.Close()
 	if err != nil {
@@ -234,7 +235,7 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) (*restic.N
 		}
 
 		resCh := make(chan saveResult, 1)
-		go arch.saveChunk(chunk, p, <-arch.blobToken, file, resCh)
+		go arch.saveChunk(ctx, chunk, p, <-arch.blobToken, file, resCh)
 		resultChannels = append(resultChannels, resCh)
 	}
 
@@ -247,7 +248,7 @@ func (arch *Archiver) SaveFile(p *restic.Progress, node *restic.Node) (*restic.N
 	return node, err
 }
 
-func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-chan struct{}, entCh <-chan pipe.Entry) {
+func (arch *Archiver) fileWorker(ctx context.Context, wg *sync.WaitGroup, p *restic.Progress, entCh <-chan pipe.Entry) {
 	defer func() {
 		debug.Log("done")
 		wg.Done()
@@ -305,7 +306,7 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 			// otherwise read file normally
 			if node.Type == "file" && len(node.Content) == 0 {
 				debug.Log("   read and save %v", e.Path())
-				node, err = arch.SaveFile(p, node)
+				node, err = arch.SaveFile(ctx, p, node)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "error for %v: %v\n", node.Path, err)
 					arch.Warn(e.Path(), nil, err)
@@ -322,14 +323,14 @@ func (arch *Archiver) fileWorker(wg *sync.WaitGroup, p *restic.Progress, done <-
 			debug.Log("   processed %v, %d blobs", e.Path(), len(node.Content))
 			e.Result() <- node
 			p.Report(restic.Stat{Files: 1})
-		case <-done:
+		case <-ctx.Done():
 			// pipeline was cancelled
 			return
 		}
 	}
 }
 
-func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-chan struct{}, dirCh <-chan pipe.Dir) {
+func (arch *Archiver) dirWorker(ctx context.Context, wg *sync.WaitGroup, p *restic.Progress, dirCh <-chan pipe.Dir) {
 	debug.Log("start")
 	defer func() {
 		debug.Log("done")
@@ -398,7 +399,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 				node.Error = err.Error()
 			}
 
-			id, err := arch.SaveTreeJSON(tree)
+			id, err := arch.SaveTreeJSON(ctx, tree)
 			if err != nil {
 				panic(err)
 			}
@@ -415,7 +416,7 @@ func (arch *Archiver) dirWorker(wg *sync.WaitGroup, p *restic.Progress, done <-c
 			if dir.Path() != "" {
 				p.Report(restic.Stat{Dirs: 1})
 			}
-		case <-done:
+		case <-ctx.Done():
 			// pipeline was cancelled
 			return
 		}
@@ -427,7 +428,7 @@ type archivePipe struct {
 	New <-chan pipe.Job
 }
 
-func copyJobs(done <-chan struct{}, in <-chan pipe.Job, out chan<- pipe.Job) {
+func copyJobs(ctx context.Context, in <-chan pipe.Job, out chan<- pipe.Job) {
 	var (
 		// disable sending on the outCh until we received a job
 		outCh chan<- pipe.Job
@@ -439,7 +440,7 @@ func copyJobs(done <-chan struct{}, in <-chan pipe.Job, out chan<- pipe.Job) {
 
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			return
 		case job, ok = <-inCh:
 			if !ok {
@@ -462,7 +463,7 @@ type archiveJob struct {
 	new    pipe.Job
 }
 
-func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
+func (a *archivePipe) compare(ctx context.Context, out chan<- pipe.Job) {
 	defer func() {
 		close(out)
 		debug.Log("done")
@@ -488,7 +489,7 @@ func (a *archivePipe) compare(done <-chan struct{}, out chan<- pipe.Job) {
 					out <- archiveJob{new: newJob}.Copy()
 				}
 
-				copyJobs(done, a.New, out)
+				copyJobs(ctx, a.New, out)
 				return
 			}
 
@@ -585,7 +586,7 @@ func (j archiveJob) Copy() pipe.Job {
 const saveIndexTime = 30 * time.Second
 
 // saveIndexes regularly queries the master index for full indexes and saves them.
-func (arch *Archiver) saveIndexes(wg *sync.WaitGroup, done <-chan struct{}) {
+func (arch *Archiver) saveIndexes(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	ticker := time.NewTicker(saveIndexTime)
@@ -593,11 +594,11 @@ func (arch *Archiver) saveIndexes(wg *sync.WaitGroup, done <-chan struct{}) {
 
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			debug.Log("saving full indexes")
-			err := arch.repo.SaveFullIndex()
+			err := arch.repo.SaveFullIndex(ctx)
 			if err != nil {
 				debug.Log("save indexes returned an error: %v", err)
 				fmt.Fprintf(os.Stderr, "error saving preliminary index: %v\n", err)
@@ -634,7 +635,7 @@ func (p baseNameSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 // Snapshot creates a snapshot of the given paths. If parentrestic.ID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
-func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostname string, parentID *restic.ID) (*restic.Snapshot, restic.ID, error) {
+func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, tags []string, hostname string, parentID *restic.ID) (*restic.Snapshot, restic.ID, error) {
 	paths = unique(paths)
 	sort.Sort(baseNameSlice(paths))
 
@@ -643,7 +644,6 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 	debug.RunHook("Archiver.Snapshot", nil)
 
 	// signal the whole pipeline to stop
-	done := make(chan struct{})
 	var err error
 
 	p.Start()
@@ -663,14 +663,14 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 		sn.Parent = parentID
 
 		// load parent snapshot
-		parent, err := restic.LoadSnapshot(arch.repo, *parentID)
+		parent, err := restic.LoadSnapshot(ctx, arch.repo, *parentID)
 		if err != nil {
 			return nil, restic.ID{}, err
 		}
 
 		// start walker on old tree
 		ch := make(chan walk.TreeJob)
-		go walk.Tree(arch.repo, *parent.Tree, done, ch)
+		go walk.Tree(ctx, arch.repo, *parent.Tree, ch)
 		jobs.Old = ch
 	} else {
 		// use closed channel
@@ -683,13 +683,13 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 	pipeCh := make(chan pipe.Job)
 	resCh := make(chan pipe.Result, 1)
 	go func() {
-		pipe.Walk(paths, arch.SelectFilter, done, pipeCh, resCh)
+		pipe.Walk(ctx, paths, arch.SelectFilter, pipeCh, resCh)
 		debug.Log("pipe.Walk done")
 	}()
 	jobs.New = pipeCh
 
 	ch := make(chan pipe.Job)
-	go jobs.compare(done, ch)
+	go jobs.compare(ctx, ch)
 
 	var wg sync.WaitGroup
 	entCh := make(chan pipe.Entry)
@@ -708,22 +708,22 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 	// run workers
 	for i := 0; i < maxConcurrency; i++ {
 		wg.Add(2)
-		go arch.fileWorker(&wg, p, done, entCh)
-		go arch.dirWorker(&wg, p, done, dirCh)
+		go arch.fileWorker(ctx, &wg, p, entCh)
+		go arch.dirWorker(ctx, &wg, p, dirCh)
 	}
 
 	// run index saver
 	var wgIndexSaver sync.WaitGroup
-	stopIndexSaver := make(chan struct{})
+	indexCtx, indexCancel := context.WithCancel(ctx)
 	wgIndexSaver.Add(1)
-	go arch.saveIndexes(&wgIndexSaver, stopIndexSaver)
+	go arch.saveIndexes(indexCtx, &wgIndexSaver)
 
 	// wait for all workers to terminate
 	debug.Log("wait for workers")
 	wg.Wait()
 
 	// stop index saver
-	close(stopIndexSaver)
+	indexCancel()
 	wgIndexSaver.Wait()
 
 	debug.Log("workers terminated")
@@ -740,7 +740,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 	sn.Tree = root.Subtree
 
 	// load top-level tree again to see if it is empty
-	toptree, err := arch.repo.LoadTree(*root.Subtree)
+	toptree, err := arch.repo.LoadTree(ctx, *root.Subtree)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
@@ -750,7 +750,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 	}
 
 	// save index
-	err = arch.repo.SaveIndex()
+	err = arch.repo.SaveIndex(ctx)
 	if err != nil {
 		debug.Log("error saving index: %v", err)
 		return nil, restic.ID{}, err
@@ -759,7 +759,7 @@ func (arch *Archiver) Snapshot(p *restic.Progress, paths, tags []string, hostnam
 	debug.Log("saved indexes")
 
 	// save snapshot
-	id, err := arch.repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
+	id, err := arch.repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

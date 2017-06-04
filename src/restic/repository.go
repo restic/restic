@@ -17,30 +17,30 @@ type Repository interface {
 	SetIndex(Index)
 
 	Index() Index
-	SaveFullIndex() error
-	SaveIndex() error
-	LoadIndex() error
+	SaveFullIndex(context.Context) error
+	SaveIndex(context.Context) error
+	LoadIndex(context.Context) error
 
 	Config() Config
 
 	LookupBlobSize(ID, BlobType) (uint, error)
 
-	List(FileType, <-chan struct{}) <-chan ID
-	ListPack(ID) ([]Blob, int64, error)
+	List(context.Context, FileType) <-chan ID
+	ListPack(context.Context, ID) ([]Blob, int64, error)
 
 	Flush() error
 
-	SaveUnpacked(FileType, []byte) (ID, error)
-	SaveJSONUnpacked(FileType, interface{}) (ID, error)
+	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
+	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, error)
 
-	LoadJSONUnpacked(FileType, ID, interface{}) error
-	LoadAndDecrypt(FileType, ID) ([]byte, error)
+	LoadJSONUnpacked(context.Context, FileType, ID, interface{}) error
+	LoadAndDecrypt(context.Context, FileType, ID) ([]byte, error)
 
-	LoadBlob(BlobType, ID, []byte) (int, error)
-	SaveBlob(BlobType, []byte, ID) (ID, error)
+	LoadBlob(context.Context, BlobType, ID, []byte) (int, error)
+	SaveBlob(context.Context, BlobType, []byte, ID) (ID, error)
 
-	LoadTree(ID) (*Tree, error)
-	SaveTree(t *Tree) (ID, error)
+	LoadTree(context.Context, ID) (*Tree, error)
+	SaveTree(context.Context, *Tree) (ID, error)
 }
 
 // Deleter removes all data stored in a backend/repo.

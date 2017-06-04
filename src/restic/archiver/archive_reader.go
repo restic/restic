@@ -1,6 +1,7 @@
 package archiver
 
 import (
+	"context"
 	"io"
 	"restic"
 	"restic/debug"
@@ -20,7 +21,7 @@ type Reader struct {
 }
 
 // Archive reads data from the reader and saves it to the repo.
-func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic.Snapshot, restic.ID, error) {
+func (r *Reader) Archive(ctx context.Context, name string, rd io.Reader, p *restic.Progress) (*restic.Snapshot, restic.ID, error) {
 	if name == "" {
 		return nil, restic.ID{}, errors.New("no filename given")
 	}
@@ -53,7 +54,7 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 		id := restic.Hash(chunk.Data)
 
 		if !repo.Index().Has(id, restic.DataBlob) {
-			_, err := repo.SaveBlob(restic.DataBlob, chunk.Data, id)
+			_, err := repo.SaveBlob(ctx, restic.DataBlob, chunk.Data, id)
 			if err != nil {
 				return nil, restic.ID{}, err
 			}
@@ -87,14 +88,14 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 		},
 	}
 
-	treeID, err := repo.SaveTree(tree)
+	treeID, err := repo.SaveTree(ctx, tree)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
 	sn.Tree = &treeID
 	debug.Log("tree saved as %v", treeID.Str())
 
-	id, err := repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
+	id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
@@ -106,7 +107,7 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 		return nil, restic.ID{}, err
 	}
 
-	err = repo.SaveIndex()
+	err = repo.SaveIndex(ctx)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

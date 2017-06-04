@@ -1,6 +1,7 @@
 package checker
 
 import (
+	"context"
 	"restic"
 	"testing"
 )
@@ -9,7 +10,7 @@ import (
 func TestCheckRepo(t testing.TB, repo restic.Repository) {
 	chkr := New(repo)
 
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) != 0 {
 		t.Fatalf("errors loading index: %v", errs)
 	}
@@ -18,12 +19,9 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 		t.Fatalf("errors loading index: %v", hints)
 	}
 
-	done := make(chan struct{})
-	defer close(done)
-
 	// packs
 	errChan := make(chan error)
-	go chkr.Packs(errChan, done)
+	go chkr.Packs(context.TODO(), errChan)
 
 	for err := range errChan {
 		t.Error(err)
@@ -31,7 +29,7 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 
 	// structure
 	errChan = make(chan error)
-	go chkr.Structure(errChan, done)
+	go chkr.Structure(context.TODO(), errChan)
 
 	for err := range errChan {
 		t.Error(err)
@@ -45,7 +43,7 @@ func TestCheckRepo(t testing.TB, repo restic.Repository) {
 
 	// read data
 	errChan = make(chan error)
-	go chkr.ReadData(nil, errChan, done)
+	go chkr.ReadData(context.TODO(), nil, errChan)
 
 	for err := range errChan {
 		t.Error(err)

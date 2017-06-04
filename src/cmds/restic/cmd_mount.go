@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -64,7 +65,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		return err
 	}
 
-	err = repo.LoadIndex()
+	err = repo.LoadIndex(context.TODO())
 	if err != nil {
 		return err
 	}

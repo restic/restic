@@ -1,6 +1,7 @@
 package pipe
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -78,7 +79,7 @@ func readDirNames(dirname string) ([]string, error) {
 // dirs). If false is returned, files are ignored and dirs are not even walked.
 type SelectFunc func(item string, fi os.FileInfo) bool
 
-func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs chan<- Job, res chan<- Result) (excluded bool) {
+func walk(ctx context.Context, basedir, dir string, selectFunc SelectFunc, jobs chan<- Job, res chan<- Result) (excluded bool) {
 	debug.Log("start on %q, basedir %q", dir, basedir)
 
 	relpath, err := filepath.Rel(basedir, dir)
@@ -92,7 +93,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		debug.Log("error for %v: %v, res %p", dir, err, res)
 		select {
 		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
-		case <-done:
+		case <-ctx.Done():
 		}
 		return
 	}
@@ -107,7 +108,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		debug.Log("sending file job for %v, res %p", dir, res)
 		select {
 		case jobs <- Entry{info: info, basedir: basedir, path: relpath, result: res}:
-		case <-done:
+		case <-ctx.Done():
 		}
 		return
 	}
@@ -117,7 +118,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 	if err != nil {
 		debug.Log("Readdirnames(%v) returned error: %v, res %p", dir, err, res)
 		select {
-		case <-done:
+		case <-ctx.Done():
 		case jobs <- Dir{basedir: basedir, path: relpath, info: info, error: err, result: res}:
 		}
 		return
@@ -146,7 +147,7 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 			debug.Log("sending file job for %v, err %v, res %p", subpath, err, res)
 			select {
 			case jobs <- Entry{info: fi, error: statErr, basedir: basedir, path: filepath.Join(relpath, name), result: ch}:
-			case <-done:
+			case <-ctx.Done():
 				return
 			}
 			continue
@@ -156,13 +157,13 @@ func walk(basedir, dir string, selectFunc SelectFunc, done <-chan struct{}, jobs
 		// between walk and open
 		debug.RunHook("pipe.walk2", filepath.Join(relpath, name))
 
-		walk(basedir, subpath, selectFunc, done, jobs, ch)
+		walk(ctx, basedir, subpath, selectFunc, jobs, ch)
 	}
 
 	debug.Log("sending dirjob for %q, basedir %q, res %p", dir, basedir, res)
 	select {
 	case jobs <- Dir{basedir: basedir, path: relpath, info: info, Entries: entries, result: res}:
-	case <-done:
+	case <-ctx.Done():
 	}
 
 	return
@@ -191,7 +192,7 @@ func cleanupPath(path string) ([]string, error) {
 
 // Walk sends a Job for each file and directory it finds below the paths. When
 // the channel done is closed, processing stops.
-func Walk(walkPaths []string, selectFunc SelectFunc, done chan struct{}, jobs chan<- Job, res chan<- Result) {
+func Walk(ctx context.Context, walkPaths []string, selectFunc SelectFunc, jobs chan<- Job, res chan<- Result) {
 	var paths []string
 
 	for _, p := range walkPaths {
@@ -215,7 +216,7 @@ func Walk(walkPaths []string, selectFunc SelectFunc, done chan struct{}, jobs ch
 	for _, path := range paths {
 		debug.Log("start walker for %v", path)
 		ch := make(chan Result, 1)
-		excluded := walk(filepath.Dir(path), path, selectFunc, done, jobs, ch)
+		excluded := walk(ctx, filepath.Dir(path), path, selectFunc, jobs, ch)
 
 		if excluded {
 			debug.Log("walker for %v done, it was excluded by the filter", path)
@@ -228,7 +229,7 @@ func Walk(walkPaths []string, selectFunc SelectFunc, done chan struct{}, jobs ch
 
 	debug.Log("sending root node, res %p", res)
 	select {
-	case <-done:
+	case <-ctx.Done():
 		return
 	case jobs <- Dir{Entries: entries, result: res}:
 	}

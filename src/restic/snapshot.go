@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"context"
 	"fmt"
 	"os/user"
 	"path/filepath"
@@ -51,9 +52,9 @@ func NewSnapshot(paths []string, tags []string, hostname string) (*Snapshot, err
 }
 
 // LoadSnapshot loads the snapshot with the id and returns it.
-func LoadSnapshot(repo Repository, id ID) (*Snapshot, error) {
+func LoadSnapshot(ctx context.Context, repo Repository, id ID) (*Snapshot, error) {
 	sn := &Snapshot{id: &id}
-	err := repo.LoadJSONUnpacked(SnapshotFile, id, sn)
+	err := repo.LoadJSONUnpacked(ctx, SnapshotFile, id, sn)
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +63,9 @@ func LoadSnapshot(repo Repository, id ID) (*Snapshot, error) {
 }
 
 // LoadAllSnapshots returns a list of all snapshots in the repo.
-func LoadAllSnapshots(repo Repository) (snapshots []*Snapshot, err error) {
-	done := make(chan struct{})
-	defer close(done)
-
-	for id := range repo.List(SnapshotFile, done) {
-		sn, err := LoadSnapshot(repo, id)
+func LoadAllSnapshots(ctx context.Context, repo Repository) (snapshots []*Snapshot, err error) {
+	for id := range repo.List(ctx, SnapshotFile) {
+		sn, err := LoadSnapshot(ctx, repo, id)
 		if err != nil {
 			return nil, err
 		}
@@ -178,15 +176,15 @@ func (sn *Snapshot) SamePaths(paths []string) bool {
 var ErrNoSnapshotFound = errors.New("no snapshot found")
 
 // FindLatestSnapshot finds latest snapshot with optional target/directory, tags and hostname filters.
-func FindLatestSnapshot(repo Repository, targets []string, tags []string, hostname string) (ID, error) {
+func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tags []string, hostname string) (ID, error) {
 	var (
 		latest   time.Time
 		latestID ID
 		found    bool
 	)
 
-	for snapshotID := range repo.List(SnapshotFile, make(chan struct{})) {
-		snapshot, err := LoadSnapshot(repo, snapshotID)
+	for snapshotID := range repo.List(ctx, SnapshotFile) {
+		snapshot, err := LoadSnapshot(ctx, repo, snapshotID)
 		if err != nil {
 			return ID{}, errors.Errorf("Error listing snapshot: %v", err)
 		}

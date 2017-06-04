@@ -50,6 +50,8 @@ func init() {
 }
 
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
+	ctx := gopts.ctx
+
 	if len(args) != 1 {
 		return errors.Fatal("no snapshot ID specified")
 	}
@@ -79,7 +81,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex()
+	err = repo.LoadIndex(ctx)
 	if err != nil {
 		return err
 	}
@@ -87,7 +89,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(repo, opts.Paths, opts.Tags, opts.Host)
+		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Host)
 		if err != nil {
 			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Host:%v", err, opts.Paths, opts.Host)
 		}
@@ -136,7 +138,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
-	err = res.RestoreTo(opts.Target)
+	err = res.RestoreTo(ctx, opts.Target)
 	if totalErrors > 0 {
 		Printf("There were %d errors\n", totalErrors)
 	}

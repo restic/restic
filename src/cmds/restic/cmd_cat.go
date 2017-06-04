@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -73,7 +74,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "index":
-		buf, err := repo.LoadAndDecrypt(restic.IndexFile, id)
+		buf, err := repo.LoadAndDecrypt(context.TODO(), restic.IndexFile, id)
 		if err != nil {
 			return err
 		}
@@ -83,7 +84,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 
 	case "snapshot":
 		sn := &restic.Snapshot{}
-		err = repo.LoadJSONUnpacked(restic.SnapshotFile, id, sn)
+		err = repo.LoadJSONUnpacked(context.TODO(), restic.SnapshotFile, id, sn)
 		if err != nil {
 			return err
 		}
@@ -98,7 +99,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		return nil
 	case "key":
 		h := restic.Handle{Type: restic.KeyFile, Name: id.String()}
-		buf, err := backend.LoadAll(repo.Backend(), h)
+		buf, err := backend.LoadAll(context.TODO(), repo.Backend(), h)
 		if err != nil {
 			return err
 		}
@@ -125,7 +126,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 		fmt.Println(string(buf))
 		return nil
 	case "lock":
-		lock, err := restic.LoadLock(repo, id)
+		lock, err := restic.LoadLock(context.TODO(), repo, id)
 		if err != nil {
 			return err
 		}
@@ -141,7 +142,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 	}
 
 	// load index, handle all the other types
-	err = repo.LoadIndex()
+	err = repo.LoadIndex(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -149,7 +150,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 	switch tpe {
 	case "pack":
 		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-		buf, err := backend.LoadAll(repo.Backend(), h)
+		buf, err := backend.LoadAll(context.TODO(), repo.Backend(), h)
 		if err != nil {
 			return err
 		}
@@ -171,7 +172,7 @@ func runCat(gopts GlobalOptions, args []string) error {
 			blob := list[0]
 
 			buf := make([]byte, blob.Length)
-			n, err := repo.LoadBlob(t, id, buf)
+			n, err := repo.LoadBlob(context.TODO(), t, id, buf)
 			if err != nil {
 				return err
 			}

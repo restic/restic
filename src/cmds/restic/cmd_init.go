@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"restic/errors"
 	"restic/repository"
 
@@ -43,7 +44,7 @@ func runInit(gopts GlobalOptions, args []string) error {
 
 	s := repository.New(be)
 
-	err = s.Init(gopts.password)
+	err = s.Init(context.TODO(), gopts.password)
 	if err != nil {
 		return errors.Fatalf("create key in backend at %s failed: %v\n", gopts.Repo, err)
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -92,7 +93,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	chkr := checker.New(repo)
 
 	Verbosef("Load indexes\n")
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 
 	dupFound := false
 	for _, hint := range hints {
@@ -113,14 +114,11 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("LoadIndex returned errors")
 	}
 
-	done := make(chan struct{})
-	defer close(done)
-
 	errorsFound := false
 	errChan := make(chan error)
 
 	Verbosef("Check all packs\n")
-	go chkr.Packs(errChan, done)
+	go chkr.Packs(context.TODO(), errChan)
 
 	for err := range errChan {
 		errorsFound = true
@@ -129,7 +127,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("Check snapshots, trees and blobs\n")
 	errChan = make(chan error)
-	go chkr.Structure(errChan, done)
+	go chkr.Structure(context.TODO(), errChan)
 
 	for err := range errChan {
 		errorsFound = true
@@ -156,7 +154,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		p := newReadProgress(gopts, restic.Stat{Blobs: chkr.CountPacks()})
 		errChan := make(chan error)
 
-		go chkr.ReadData(p, errChan, done)
+		go chkr.ReadData(context.TODO(), p, errChan)
 
 		for err := range errChan {
 			errorsFound = true
