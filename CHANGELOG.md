@@ -14,6 +14,12 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/issues/512
    https://github.com/restic/restic/pull/978
 
+ * Improved performance for the `find` command: Restic recognizes paths it has
+   already checked for the files in question, so the number of backend requests
+   is reduced a lot.
+   https://github.com/restic/restic/issues/989
+   https://github.com/restic/restic/pull/993
+
 Important Changes in 0.6.1
 ==========================
 
