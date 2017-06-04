@@ -173,7 +173,7 @@ func (s *statefulOutput) Finish() {
 }
 
 func findInTree(repo *repository.Repository, pat *findPattern, id restic.ID, prefix string, state *statefulOutput) error {
-	debug.Log("checking tree %v\n", id)
+	debug.Log("%v checking tree %v\n", prefix, id)
 
 	tree, err := repo.LoadTree(id)
 	if err != nil {
