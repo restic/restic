@@ -173,12 +173,18 @@ func (s *statefulOutput) Finish() {
 
 // Finder bundles information needed to find a file or directory.
 type Finder struct {
-	repo restic.Repository
-	pat  findPattern
-	out  statefulOutput
+	repo     restic.Repository
+	pat      findPattern
+	out      statefulOutput
+	notfound restic.IDSet
 }
 
 func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
+	if f.notfound.Has(treeID) {
+		debug.Log("%v skipping tree %v, has already been checked", prefix, treeID.Str())
+		return nil
+	}
+
 	debug.Log("%v checking tree %v\n", prefix, treeID.Str())
 
 	tree, err := f.repo.LoadTree(treeID)
@@ -186,6 +192,7 @@ func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
 		return err
 	}
 
+	var found bool
 	for _, node := range tree.Nodes {
 		debug.Log("  testing entry %q\n", node.Name)
 
@@ -211,6 +218,7 @@ func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
 			}
 
 			debug.Log("    found match\n")
+			found = true
 			f.out.Print(prefix, node)
 		}
 
@@ -219,6 +227,10 @@ func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
 				return err
 			}
 		}
+	}
+
+	if !found {
+		f.notfound.Insert(treeID)
 	}
 
 	return nil
@@ -279,9 +291,10 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	defer cancel()
 
 	f := &Finder{
-		repo: repo,
-		pat:  pat,
-		out:  statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
+		repo:     repo,
+		pat:      pat,
+		out:      statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
+		notfound: restic.NewIDSet(),
 	}
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
 		if err = f.findInSnapshot(sn); err != nil {
