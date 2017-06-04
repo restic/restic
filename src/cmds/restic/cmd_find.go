@@ -12,7 +12,6 @@ import (
 	"restic"
 	"restic/debug"
 	"restic/errors"
-	"restic/repository"
 )
 
 var cmdFind = &cobra.Command{
@@ -172,10 +171,17 @@ func (s *statefulOutput) Finish() {
 	}
 }
 
-func findInTree(repo *repository.Repository, pat *findPattern, id restic.ID, prefix string, state *statefulOutput) error {
-	debug.Log("%v checking tree %v\n", prefix, id)
+// Finder bundles information needed to find a file or directory.
+type Finder struct {
+	repo restic.Repository
+	pat  findPattern
+	out  statefulOutput
+}
 
-	tree, err := repo.LoadTree(id)
+func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
+	debug.Log("%v checking tree %v\n", prefix, treeID.Str())
+
+	tree, err := f.repo.LoadTree(treeID)
 	if err != nil {
 		return err
 	}
@@ -184,34 +190,32 @@ func findInTree(repo *repository.Repository, pat *findPattern, id restic.ID, pre
 		debug.Log("  testing entry %q\n", node.Name)
 
 		name := node.Name
-		if pat.ignoreCase {
+		if f.pat.ignoreCase {
 			name = strings.ToLower(name)
 		}
 
-		m, err := filepath.Match(pat.pattern, name)
+		m, err := filepath.Match(f.pat.pattern, name)
 		if err != nil {
 			return err
 		}
 
 		if m {
-			debug.Log("    pattern matches\n")
-			if !pat.oldest.IsZero() && node.ModTime.Before(pat.oldest) {
-				debug.Log("    ModTime is older than %s\n", pat.oldest)
+			if !f.pat.oldest.IsZero() && node.ModTime.Before(f.pat.oldest) {
+				debug.Log("    ModTime is older than %s\n", f.pat.oldest)
 				continue
 			}
 
-			if !pat.newest.IsZero() && node.ModTime.After(pat.newest) {
-				debug.Log("    ModTime is newer than %s\n", pat.newest)
+			if !f.pat.newest.IsZero() && node.ModTime.After(f.pat.newest) {
+				debug.Log("    ModTime is newer than %s\n", f.pat.newest)
 				continue
 			}
 
-			state.Print(prefix, node)
-		} else {
-			debug.Log("    pattern does not match\n")
+			debug.Log("    found match\n")
+			f.out.Print(prefix, node)
 		}
 
 		if node.Type == "dir" {
-			if err := findInTree(repo, pat, *node.Subtree, filepath.Join(prefix, node.Name), state); err != nil {
+			if err := f.findInTree(*node.Subtree, filepath.Join(prefix, node.Name)); err != nil {
 				return err
 			}
 		}
@@ -220,11 +224,11 @@ func findInTree(repo *repository.Repository, pat *findPattern, id restic.ID, pre
 	return nil
 }
 
-func findInSnapshot(repo *repository.Repository, sn *restic.Snapshot, pat findPattern, state *statefulOutput) error {
-	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), pat.oldest, pat.newest)
+func (f *Finder) findInSnapshot(sn *restic.Snapshot) error {
+	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
 
-	state.newsn = sn
-	if err := findInTree(repo, &pat, *sn.Tree, string(filepath.Separator), state); err != nil {
+	f.out.newsn = sn
+	if err := f.findInTree(*sn.Tree, string(filepath.Separator)); err != nil {
 		return err
 	}
 	return nil
@@ -273,13 +277,18 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
-	state := statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON}
+
+	f := &Finder{
+		repo: repo,
+		pat:  pat,
+		out:  statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
+	}
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
-		if err = findInSnapshot(repo, sn, pat, &state); err != nil {
+		if err = f.findInSnapshot(sn); err != nil {
 			return err
 		}
 	}
-	state.Finish()
+	f.out.Finish()
 
 	return nil
 }
