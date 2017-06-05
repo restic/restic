@@ -1,8 +1,9 @@
-// +build debug
+// xbuild debug
 
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -44,11 +45,8 @@ func prettyPrintJSON(wr io.Writer, item interface{}) error {
 }
 
 func debugPrintSnapshots(repo *repository.Repository, wr io.Writer) error {
-	done := make(chan struct{})
-	defer close(done)
-
-	for id := range repo.List(restic.SnapshotFile, done) {
-		snapshot, err := restic.LoadSnapshot(repo, id)
+	for id := range repo.List(context.TODO(), restic.SnapshotFile) {
+		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "LoadSnapshot(%v): %v", id.Str(), err)
 			continue
@@ -83,15 +81,12 @@ type Blob struct {
 }
 
 func printPacks(repo *repository.Repository, wr io.Writer) error {
-	done := make(chan struct{})
-	defer close(done)
-
-	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
+	f := func(ctx context.Context, job worker.Job) (interface{}, error) {
 		name := job.Data.(string)
 
 		h := restic.Handle{Type: restic.DataFile, Name: name}
 
-		blobInfo, err := repo.Backend().Stat(h)
+		blobInfo, err := repo.Backend().Stat(ctx, h)
 		if err != nil {
 			return nil, err
 		}
@@ -106,10 +101,10 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 
 	jobCh := make(chan worker.Job)
 	resCh := make(chan worker.Job)
-	wp := worker.New(dumpPackWorkers, f, jobCh, resCh)
+	wp := worker.New(context.TODO(), dumpPackWorkers, f, jobCh, resCh)
 
 	go func() {
-		for name := range repo.Backend().List(restic.DataFile, done) {
+		for name := range repo.Backend().List(context.TODO(), restic.DataFile) {
 			jobCh <- worker.Job{Data: name}
 		}
 		close(jobCh)
@@ -146,13 +141,10 @@ func printPacks(repo *repository.Repository, wr io.Writer) error {
 }
 
 func dumpIndexes(repo restic.Repository) error {
-	done := make(chan struct{})
-	defer close(done)
-
-	for id := range repo.List(restic.IndexFile, done) {
+	for id := range repo.List(context.TODO(), restic.IndexFile) {
 		fmt.Printf("index_id: %v\n", id)
 
-		idx, err := repository.LoadIndex(repo, id)
+		idx, err := repository.LoadIndex(context.TODO(), repo, id)
 		if err != nil {
 			return err
 		}
@@ -184,7 +176,7 @@ func runDump(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex()
+	err = repo.LoadIndex(context.TODO())
 	if err != nil {
 		return err
 	}
