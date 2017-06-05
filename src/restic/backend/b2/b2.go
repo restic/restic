@@ -50,6 +50,11 @@ func Open(cfg Config) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "Bucket")
 	}
 
+	sem, err := backend.NewSemaphore(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
+
 	be := &b2Backend{
 		client: client,
 		bucket: bucket,
@@ -58,7 +63,7 @@ func Open(cfg Config) (restic.Backend, error) {
 			Join: path.Join,
 			Path: cfg.Prefix,
 		},
-		sem: backend.NewSemaphore(cfg.Connections),
+		sem: sem,
 	}
 
 	return be, nil
@@ -85,6 +90,11 @@ func Create(cfg Config) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "NewBucket")
 	}
 
+	sem, err := backend.NewSemaphore(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
+
 	be := &b2Backend{
 		client: client,
 		bucket: bucket,
@@ -93,7 +103,7 @@ func Create(cfg Config) (restic.Backend, error) {
 			Join: path.Join,
 			Path: cfg.Prefix,
 		},
-		sem: backend.NewSemaphore(cfg.Connections),
+		sem: sem,
 	}
 
 	present, err := be.Test(restic.Handle{Type: restic.ConfigFile})

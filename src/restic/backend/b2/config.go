@@ -17,7 +17,7 @@ type Config struct {
 	Bucket    string
 	Prefix    string
 
-	Connections int `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }
 
 // NewConfig returns a new config with default options applied.
