@@ -23,20 +23,20 @@ const connLimit = 40
 var _ restic.Backend = &restBackend{}
 
 type restBackend struct {
-	url      *url.URL
-	connChan chan struct{}
-	client   http.Client
+	url    *url.URL
+	sem    *backend.Semaphore
+	client http.Client
 	backend.Layout
 }
 
 // Open opens the REST backend with the given config.
 func Open(cfg Config) (restic.Backend, error) {
-	connChan := make(chan struct{}, connLimit)
-	for i := 0; i < connLimit; i++ {
-		connChan <- struct{}{}
-	}
-
 	client := http.Client{Transport: backend.Transport()}
+
+	sem, err := backend.NewSemaphore(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
 
 	// use url without trailing slash for layout
 	url := cfg.URL.String()
@@ -45,10 +45,10 @@ func Open(cfg Config) (restic.Backend, error) {
 	}
 
 	be := &restBackend{
-		url:      cfg.URL,
-		connChan: connChan,
-		client:   client,
-		Layout:   &backend.RESTLayout{URL: url, Join: path.Join},
+		url:    cfg.URL,
+		client: client,
+		Layout: &backend.RESTLayout{URL: url, Join: path.Join},
+		sem:    sem,
 	}
 
 	return be, nil
@@ -108,9 +108,9 @@ func (b *restBackend) Save(h restic.Handle, rd io.Reader) (err error) {
 	// backend.Closer, which has a noop method.
 	rd = backend.Closer{Reader: rd}
 
-	<-b.connChan
+	b.sem.GetToken()
 	resp, err := b.client.Post(b.Filename(h), "binary/octet-stream", rd)
-	b.connChan <- struct{}{}
+	b.sem.ReleaseToken()
 
 	if resp != nil {
 		defer func() {
@@ -163,9 +163,9 @@ func (b *restBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCl
 	req.Header.Add("Range", byteRange)
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
-	<-b.connChan
+	b.sem.GetToken()
 	resp, err := b.client.Do(req)
-	b.connChan <- struct{}{}
+	b.sem.ReleaseToken()
 
 	if err != nil {
 		if resp != nil {
@@ -190,9 +190,9 @@ func (b *restBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, err
 	}
 
-	<-b.connChan
+	b.sem.GetToken()
 	resp, err := b.client.Head(b.Filename(h))
-	b.connChan <- struct{}{}
+	b.sem.ReleaseToken()
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "client.Head")
 	}
@@ -237,9 +237,9 @@ func (b *restBackend) Remove(h restic.Handle) error {
 	if err != nil {
 		return errors.Wrap(err, "http.NewRequest")
 	}
-	<-b.connChan
+	b.sem.GetToken()
 	resp, err := b.client.Do(req)
-	b.connChan <- struct{}{}
+	b.sem.ReleaseToken()
 
 	if err != nil {
 		return errors.Wrap(err, "client.Do")
@@ -264,9 +264,9 @@ func (b *restBackend) List(t restic.FileType, done <-chan struct{}) <-chan strin
 		url += "/"
 	}
 
-	<-b.connChan
+	b.sem.GetToken()
 	resp, err := b.client.Get(url)
-	b.connChan <- struct{}{}
+	b.sem.ReleaseToken()
 
 	if resp != nil {
 		defer func() {
