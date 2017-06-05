@@ -107,7 +107,7 @@ func (w *Writer) setErr(err error) {
 	w.emux.Lock()
 	defer w.emux.Unlock()
 	if w.err == nil {
-		blog.V(0).Infof("error writing %s: %v", w.name, err)
+		blog.V(1).Infof("error writing %s: %v", w.name, err)
 		w.err = err
 		w.cancel()
 	}
@@ -134,15 +134,15 @@ func (w *Writer) completeChunk(id int) {
 var gid int32
 
 func (w *Writer) thread() {
+	w.wg.Add(1)
 	go func() {
+		defer w.wg.Done()
 		id := atomic.AddInt32(&gid, 1)
 		fc, err := w.file.getUploadPartURL(w.ctx)
 		if err != nil {
 			w.setErr(err)
 			return
 		}
-		w.wg.Add(1)
-		defer w.wg.Done()
 		for {
 			chunk, ok := <-w.ready
 			if !ok {

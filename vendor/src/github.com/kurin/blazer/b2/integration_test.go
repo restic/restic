@@ -25,8 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kurin/blazer/base"
-
 	"golang.org/x/net/context"
 )
 
@@ -36,16 +34,6 @@ const (
 
 	errVar = "B2_TRANSIENT_ERRORS"
 )
-
-func init() {
-	fail := os.Getenv(errVar)
-	switch fail {
-	case "", "0", "false":
-		return
-	}
-	base.FailSomeUploads = true
-	base.ExpireSomeAuthTokens = true
-}
 
 func TestReadWriteLive(t *testing.T) {
 	ctx := context.Background()
@@ -144,6 +132,21 @@ func TestHideShowLive(t *testing.T) {
 	}
 }
 
+type cancelReader struct {
+	r    io.Reader
+	n, l int
+	c    func()
+}
+
+func (c *cancelReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += n
+	if c.n >= c.l {
+		c.c()
+	}
+	return n, err
+}
+
 func TestResumeWriter(t *testing.T) {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
@@ -151,18 +154,11 @@ func TestResumeWriter(t *testing.T) {
 
 	w := bucket.Object("foo").NewWriter(ctx)
 	w.ChunkSize = 5e6
-	r := io.LimitReader(zReader{}, 15e6)
-	go func() {
-		// Cancel the context after the first chunk has been written.
-		ticker := time.NewTicker(time.Second)
-		defer ticker.Stop()
-		defer cancel()
-		for range ticker.C {
-			if w.cidx > 1 {
-				return
-			}
-		}
-	}()
+	r := &cancelReader{
+		r: io.LimitReader(zReader{}, 15e6),
+		l: 6e6,
+		c: cancel,
+	}
 	if _, err := io.Copy(w, r); err != context.Canceled {
 		t.Fatalf("io.Copy: wanted canceled context, got: %v", err)
 	}
@@ -392,6 +388,11 @@ func TestRangeReaderLive(t *testing.T) {
 			length: 2e6,
 			size:   1e6,
 		},
+		{
+			offset: 0,
+			length: 4e6,
+			size:   3e6,
+		},
 	}
 
 	for _, e := range table {
@@ -418,12 +419,12 @@ func TestRangeReaderLive(t *testing.T) {
 			continue
 		}
 		if read != e.size {
-			t.Errorf("read %d bytes, wanted %d bytes", read, e.size)
+			t.Errorf("NewRangeReader(_, %d, %d): read %d bytes, wanted %d bytes", e.offset, e.length, read, e.size)
 		}
 		got := fmt.Sprintf("%x", hr.Sum(nil))
 		want := fmt.Sprintf("%x", hw.Sum(nil))
 		if got != want {
-			t.Errorf("bad hash, got %q, want %q", got, want)
+			t.Errorf("NewRangeReader(_, %d, %d): got %q, want %q", e.offset, e.length, got, want)
 		}
 	}
 }
@@ -661,7 +662,7 @@ func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 		t.Skipf("B2_ACCOUNT_ID or B2_SECRET_KEY unset; skipping integration tests")
 		return nil, nil
 	}
-	client, err := NewClient(ctx, id, key)
+	client, err := NewClient(ctx, id, key, FailSomeUploads(), ExpireSomeAuthTokens())
 	if err != nil {
 		t.Fatal(err)
 		return nil, nil

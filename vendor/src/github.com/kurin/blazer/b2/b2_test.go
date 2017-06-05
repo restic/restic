@@ -196,8 +196,18 @@ func (t *testBucket) listFileVersions(ctx context.Context, count int, a, b, c, d
 }
 
 func (t *testBucket) downloadFileByName(_ context.Context, name string, offset, size int64) (b2FileReaderInterface, error) {
+	f := t.files[name]
+	end := int(offset + size)
+	if end >= len(f) {
+		end = len(f)
+	}
+	if int(offset) >= len(f) {
+		return nil, errNoMoreContent
+	}
 	return &testFileReader{
-		b: ioutil.NopCloser(bytes.NewBufferString(t.files[name][offset : offset+size])),
+		b: ioutil.NopCloser(bytes.NewBufferString(f[offset:end])),
+		s: end - int(offset),
+		n: name,
 	}, nil
 }
 
@@ -205,7 +215,8 @@ func (t *testBucket) hideFile(context.Context, string) (b2FileInterface, error) 
 func (t *testBucket) getDownloadAuthorization(context.Context, string, time.Duration) (string, error) {
 	return "", nil
 }
-func (t *testBucket) baseURL() string { return "" }
+func (t *testBucket) baseURL() string                { return "" }
+func (t *testBucket) file(id string) b2FileInterface { return nil }
 
 type testURL struct {
 	files map[string]string
@@ -310,12 +321,14 @@ func (t *testFile) deleteFileVersion(context.Context) error {
 
 type testFileReader struct {
 	b io.ReadCloser
-	s int64
+	s int
+	n string
 }
 
 func (t *testFileReader) Read(p []byte) (int, error)                      { return t.b.Read(p) }
 func (t *testFileReader) Close() error                                    { return nil }
-func (t *testFileReader) stats() (int, string, string, map[string]string) { return 0, "", "", nil }
+func (t *testFileReader) stats() (int, string, string, map[string]string) { return t.s, "", "", nil }
+func (t *testFileReader) id() string                                      { return t.n }
 
 type zReader struct{}
 
@@ -566,6 +579,46 @@ func TestReadWrite(t *testing.T) {
 
 	if err := readFile(ctx, lobj, wshaL, 1e7, 10); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestReadRangeReturnsRight(t *testing.T) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	client := &Client{
+		backend: &beRoot{
+			b2i: &testRoot{
+				bucketMap: make(map[string]map[string]string),
+				errs:      &errCont{},
+			},
+		},
+	}
+
+	bucket, err := client.NewBucket(ctx, bucketName, &BucketAttrs{Type: Private})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := bucket.Delete(ctx); err != nil {
+			t.Error(err)
+		}
+	}()
+
+	obj, _, err := writeFile(ctx, bucket, "file", 1e6+42, 1e8)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := obj.NewRangeReader(ctx, 200, 1400)
+	r.ChunkSize = 1000
+
+	i, err := io.Copy(ioutil.Discard, r)
+	if err != nil {
+		t.Error(err)
+	}
+	if i != 1400 {
+		t.Errorf("NewRangeReader(_, 200, 1400): want 1400, got %d", i)
 	}
 }
 

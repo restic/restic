@@ -16,6 +16,7 @@ package b2
 
 import (
 	"io"
+	"net/http"
 	"time"
 
 	"github.com/kurin/blazer/base"
@@ -50,6 +51,7 @@ type b2BucketInterface interface {
 	hideFile(context.Context, string) (b2FileInterface, error)
 	getDownloadAuthorization(context.Context, string, time.Duration) (string, error)
 	baseURL() string
+	file(string) b2FileInterface
 }
 
 type b2URLInterface interface {
@@ -81,6 +83,7 @@ type b2FileChunkInterface interface {
 type b2FileReaderInterface interface {
 	io.ReadCloser
 	stats() (int, string, string, map[string]string)
+	id() string
 }
 
 type b2FileInfoInterface interface {
@@ -137,6 +140,15 @@ func (b *b2Root) authorizeAccount(ctx context.Context, account, key string, opts
 	var aopts []base.AuthOption
 	if c.transport != nil {
 		aopts = append(aopts, base.Transport(c.transport))
+	}
+	if c.failSomeUploads {
+		aopts = append(aopts, base.FailSomeUploads())
+	}
+	if c.expireTokens {
+		aopts = append(aopts, base.ExpireSomeAuthTokens())
+	}
+	if c.capExceeded {
+		aopts = append(aopts, base.ForceCapExceeded())
 	}
 	nb, err := base.AuthorizeAccount(ctx, account, key, aopts...)
 	if err != nil {
@@ -303,6 +315,9 @@ func (b *b2Bucket) listFileVersions(ctx context.Context, count int, nextName, ne
 func (b *b2Bucket) downloadFileByName(ctx context.Context, name string, offset, size int64) (b2FileReaderInterface, error) {
 	fr, err := b.b.DownloadFileByName(ctx, name, offset, size)
 	if err != nil {
+		if code, _ := base.Code(err); code == http.StatusRequestedRangeNotSatisfiable {
+			return nil, errNoMoreContent
+		}
 		return nil, err
 	}
 	return &b2FileReader{fr}, nil
@@ -323,6 +338,8 @@ func (b *b2Bucket) getDownloadAuthorization(ctx context.Context, p string, v tim
 func (b *b2Bucket) baseURL() string {
 	return b.b.BaseURL()
 }
+
+func (b *b2Bucket) file(id string) b2FileInterface { return &b2File{b.b.File(id)} }
 
 func (b *b2URL) uploadFile(ctx context.Context, r io.Reader, size int, name, contentType, sha1 string, info map[string]string) (b2FileInterface, error) {
 	file, err := b.b.UploadFile(ctx, r, size, name, contentType, sha1, info)
@@ -415,6 +432,8 @@ func (b *b2FileReader) Close() error {
 func (b *b2FileReader) stats() (int, string, string, map[string]string) {
 	return b.b.ContentLength, b.b.ContentType, b.b.SHA1, b.b.Info
 }
+
+func (b *b2FileReader) id() string { return b.b.ID }
 
 func (b *b2FileInfo) stats() (string, string, int64, string, map[string]string, string, time.Time) {
 	return b.b.Name, b.b.SHA1, b.b.Size, b.b.ContentType, b.b.Info, b.b.Status, b.b.Timestamp

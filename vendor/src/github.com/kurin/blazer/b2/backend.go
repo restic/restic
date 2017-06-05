@@ -54,6 +54,7 @@ type beBucketInterface interface {
 	hideFile(context.Context, string) (beFileInterface, error)
 	getDownloadAuthorization(context.Context, string, time.Duration) (string, error)
 	baseURL() string
+	file(string) beFileInterface
 }
 
 type beBucket struct {
@@ -110,6 +111,7 @@ type beFileChunk struct {
 type beFileReaderInterface interface {
 	io.ReadCloser
 	stats() (int, string, string, map[string]string)
+	id() string
 }
 
 type beFileReader struct {
@@ -405,6 +407,13 @@ func (b *beBucket) baseURL() string {
 	return b.b2bucket.baseURL()
 }
 
+func (b *beBucket) file(id string) beFileInterface {
+	return &beFile{
+		b2file: b.b2bucket.file(id),
+		ri:     b.ri,
+	}
+}
+
 func (b *beURL) uploadFile(ctx context.Context, r io.ReadSeeker, size int, name, ct, sha1 string, info map[string]string) (beFileInterface, error) {
 	var file beFileInterface
 	f := func() error {
@@ -601,6 +610,8 @@ func (b *beFileReader) Close() error {
 func (b *beFileReader) stats() (int, string, string, map[string]string) {
 	return b.b2fileReader.stats()
 }
+
+func (b *beFileReader) id() string { return b.b2fileReader.id() }
 
 func (b *beFileInfo) stats() (string, string, int64, string, map[string]string, string, time.Time) {
 	return b.name, b.sha, b.size, b.ct, b.info, b.status, b.stamp

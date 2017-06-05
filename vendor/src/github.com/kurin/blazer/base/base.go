@@ -208,7 +208,10 @@ func millitime(t int64) time.Time {
 }
 
 type b2Options struct {
-	transport http.RoundTripper
+	transport       http.RoundTripper
+	failSomeUploads bool
+	expireTokens    bool
+	capExceeded     bool
 }
 
 func (o *b2Options) getTransport() http.RoundTripper {
@@ -272,20 +275,6 @@ func (rb *requestBody) getBody() io.Reader {
 	return rb.body
 }
 
-var (
-	// FailSomeUploads causes B2 to return errors, randomly, to some RPCs.  It is
-	// intended to be used for integration testing.
-	FailSomeUploads = false
-
-	// ExpireSomeAuthTokens causes B2 to expire auth tokens frequently, testing
-	// account reauthentication.
-	ExpireSomeAuthTokens = false
-
-	// ForceCapExceeded causes B2 to reject all uploads with capacity limit
-	// failures.
-	ForceCapExceeded = false
-)
-
 var reqID int64
 
 func (o *b2Options) makeRequest(ctx context.Context, method, verb, url string, b2req, b2resp interface{}, headers map[string]string, body *requestBody) error {
@@ -311,13 +300,13 @@ func (o *b2Options) makeRequest(ctx context.Context, method, verb, url string, b
 	}
 	req.Header.Set("X-Blazer-Request-ID", fmt.Sprintf("%d", atomic.AddInt64(&reqID, 1)))
 	req.Header.Set("X-Blazer-Method", method)
-	if FailSomeUploads {
+	if o.failSomeUploads {
 		req.Header.Add("X-Bz-Test-Mode", "fail_some_uploads")
 	}
-	if ExpireSomeAuthTokens {
+	if o.expireTokens {
 		req.Header.Add("X-Bz-Test-Mode", "expire_some_account_authorization_tokens")
 	}
-	if ForceCapExceeded {
+	if o.capExceeded {
 		req.Header.Add("X-Bz-Test-Mode", "force_cap_exceeded")
 	}
 	cancel := make(chan struct{})
@@ -393,6 +382,30 @@ type AuthOption func(*b2Options)
 func Transport(rt http.RoundTripper) AuthOption {
 	return func(o *b2Options) {
 		o.transport = rt
+	}
+}
+
+// FailSomeUploads requests intermittent upload failures from the B2 service.
+// This is mostly useful for testing.
+func FailSomeUploads() AuthOption {
+	return func(o *b2Options) {
+		o.failSomeUploads = true
+	}
+}
+
+// ExpireSomeAuthTokens requests intermittent authentication failures from the
+// B2 service.
+func ExpireSomeAuthTokens() AuthOption {
+	return func(o *b2Options) {
+		o.expireTokens = true
+	}
+}
+
+// ForceCapExceeded requests a cap limit from the B2 service.  This causes all
+// uploads to be treated as if they would exceed the configure B2 capacity.
+func ForceCapExceeded() AuthOption {
+	return func(o *b2Options) {
+		o.capExceeded = true
 	}
 }
 
@@ -602,6 +615,12 @@ type File struct {
 	Timestamp time.Time
 	id        string
 	b2        *B2
+}
+
+// File returns a bare File struct, but with the appropriate id and b2
+// interfaces.
+func (b *Bucket) File(id string) *File {
+	return &File{id: id, b2: b.b2}
 }
 
 // UploadFile wraps b2_upload_file.
@@ -910,6 +929,7 @@ type FileReader struct {
 	ContentLength int
 	ContentType   string
 	SHA1          string
+	ID            string
 	Info          map[string]string
 }
 
@@ -971,6 +991,7 @@ func (b *Bucket) DownloadFileByName(ctx context.Context, name string, offset, si
 	return &FileReader{
 		ReadCloser:    reply.resp.Body,
 		SHA1:          reply.resp.Header.Get("X-Bz-Content-Sha1"),
+		ID:            reply.resp.Header.Get("X-Bz-File-Id"),
 		ContentType:   reply.resp.Header.Get("Content-Type"),
 		ContentLength: int(clen),
 		Info:          info,

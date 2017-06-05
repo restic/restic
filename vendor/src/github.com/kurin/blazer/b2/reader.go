@@ -16,6 +16,7 @@ package b2
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"sync"
 
@@ -23,6 +24,8 @@ import (
 
 	"golang.org/x/net/context"
 )
+
+var errNoMoreContent = errors.New("416: out of content")
 
 // Reader reads files from B2.
 type Reader struct {
@@ -42,22 +45,26 @@ type Reader struct {
 	name   string
 	offset int64 // the start of the file
 	length int64 // the length to read, or -1
-	size   int64 // the end of the file, in absolute terms
 	csize  int   // chunk size
 	read   int   // amount read
 	chwid  int   // chunks written
 	chrid  int   // chunks read
-	chbuf  chan *bytes.Buffer
+	chbuf  chan *rchunk
 	init   sync.Once
 	rmux   sync.Mutex // guards rcond
 	rcond  *sync.Cond
-	chunks map[int]*bytes.Buffer
+	chunks map[int]*rchunk
 
 	emux sync.RWMutex // guards err, believe it or not
 	err  error
 
 	smux sync.Mutex
 	smap map[int]*meteredReader
+}
+
+type rchunk struct {
+	bytes.Buffer
+	final bool
 }
 
 // Close frees resources associated with the download.
@@ -93,7 +100,7 @@ func (r *Reader) getErr() error {
 func (r *Reader) thread() {
 	go func() {
 		for {
-			var buf *bytes.Buffer
+			var buf *rchunk
 			select {
 			case b, ok := <-r.chbuf:
 				if !ok {
@@ -109,26 +116,31 @@ func (r *Reader) thread() {
 			r.rmux.Unlock()
 			offset := int64(chunkID*r.csize) + r.offset
 			size := int64(r.csize)
-			if offset >= r.size {
-				// Send an empty chunk.  This is necessary to prevent a deadlock when
-				// this is the very first chunk.
+			if r.length > 0 {
+				if size > r.length {
+					buf.final = true
+					size = r.length
+				}
+				r.length -= size
+			}
+		redo:
+			fr, err := r.o.b.b.downloadFileByName(r.ctx, r.name, offset, size)
+			if err == errNoMoreContent {
+				// this read generated a 416 so we are entirely past the end of the object
+				buf.final = true
 				r.rmux.Lock()
 				r.chunks[chunkID] = buf
 				r.rmux.Unlock()
 				r.rcond.Broadcast()
 				return
 			}
-			if offset+size > r.size {
-				size = r.size - offset
-			}
-		redo:
-			fr, err := r.o.b.b.downloadFileByName(r.ctx, r.name, offset, size)
 			if err != nil {
 				r.setErr(err)
 				r.rcond.Broadcast()
 				return
 			}
-			mr := &meteredReader{r: &fakeSeeker{fr}, size: int(size)}
+			rsize, _, _, _ := fr.stats()
+			mr := &meteredReader{r: &fakeSeeker{fr}, size: int(rsize)}
 			r.smux.Lock()
 			r.smap[chunkID] = mr
 			r.smux.Unlock()
@@ -136,9 +148,9 @@ func (r *Reader) thread() {
 			r.smux.Lock()
 			r.smap[chunkID] = nil
 			r.smux.Unlock()
-			if i < size || err == io.ErrUnexpectedEOF {
+			if i < int64(rsize) || err == io.ErrUnexpectedEOF {
 				// Probably the network connection was closed early.  Retry.
-				blog.V(1).Infof("b2 reader %d: got %dB of %dB; retrying", chunkID, i, size)
+				blog.V(1).Infof("b2 reader %d: got %dB of %dB; retrying", chunkID, i, rsize)
 				buf.Reset()
 				goto redo
 			}
@@ -155,8 +167,8 @@ func (r *Reader) thread() {
 	}()
 }
 
-func (r *Reader) curChunk() (*bytes.Buffer, error) {
-	ch := make(chan *bytes.Buffer)
+func (r *Reader) curChunk() (*rchunk, error) {
+	ch := make(chan *rchunk)
 	go func() {
 		r.rmux.Lock()
 		defer r.rmux.Unlock()
@@ -185,17 +197,6 @@ func (r *Reader) initFunc() {
 	r.smap = make(map[int]*meteredReader)
 	r.smux.Unlock()
 	r.o.b.c.addReader(r)
-	if err := r.o.ensure(r.ctx); err != nil {
-		r.setErr(err)
-		return
-	}
-	r.size = r.o.f.size()
-	if r.length >= 0 && r.offset+r.length < r.size {
-		r.size = r.offset + r.length
-	}
-	if r.offset > r.size {
-		r.offset = r.size
-	}
 	r.rcond = sync.NewCond(&r.rmux)
 	cr := r.ConcurrentDownloads
 	if cr < 1 {
@@ -205,10 +206,10 @@ func (r *Reader) initFunc() {
 		r.ChunkSize = 1e7
 	}
 	r.csize = r.ChunkSize
-	r.chbuf = make(chan *bytes.Buffer, cr)
+	r.chbuf = make(chan *rchunk, cr)
 	for i := 0; i < cr; i++ {
 		r.thread()
-		r.chbuf <- &bytes.Buffer{}
+		r.chbuf <- &rchunk{}
 	}
 }
 
@@ -226,7 +227,7 @@ func (r *Reader) Read(p []byte) (int, error) {
 	n, err := chunk.Read(p)
 	r.read += n
 	if err == io.EOF {
-		if int64(r.read) >= r.size-r.offset {
+		if chunk.final {
 			close(r.chbuf)
 			r.setErrNoCancel(err)
 			return n, err
