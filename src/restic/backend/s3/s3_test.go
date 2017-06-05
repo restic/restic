@@ -114,14 +114,13 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 			key, secret := newRandomCredentials(t)
 			cfg.stopServer = runMinio(ctx, t, cfg.tempdir, key, secret)
 
-			cfg.Config = s3.Config{
-				Endpoint: "localhost:9000",
-				Bucket:   "restictestbucket",
-				Prefix:   fmt.Sprintf("test-%d", time.Now().UnixNano()),
-				UseHTTP:  true,
-				KeyID:    key,
-				Secret:   secret,
-			}
+			cfg.Config = s3.NewConfig()
+			cfg.Config.Endpoint = "localhost:9000"
+			cfg.Config.Bucket = "restictestbucket"
+			cfg.Config.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+			cfg.Config.UseHTTP = true
+			cfg.Config.KeyID = key
+			cfg.Config.Secret = secret
 			return cfg, nil
 		},
 

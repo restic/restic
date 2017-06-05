@@ -18,6 +18,15 @@ type Config struct {
 	Bucket        string
 	Prefix        string
 	Layout        string `option:"layout" help:"use this backend layout (default: auto-detect)"`
+
+	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 20)"`
+}
+
+// NewConfig returns a new Config with the default values filled in.
+func NewConfig() Config {
+	return Config{
+		Connections: 20,
+	}
 }
 
 func init() {
@@ -70,10 +79,10 @@ func createConfig(endpoint string, p []string, useHTTP bool) (interface{}, error
 	default:
 		prefix = path.Clean(p[1])
 	}
-	return Config{
-		Endpoint: endpoint,
-		UseHTTP:  useHTTP,
-		Bucket:   p[0],
-		Prefix:   prefix,
-	}, nil
+	cfg := NewConfig()
+	cfg.Endpoint = endpoint
+	cfg.UseHTTP = useHTTP
+	cfg.Bucket = p[0]
+	cfg.Prefix = prefix
+	return cfg, nil
 }

@@ -23,7 +23,7 @@ const connLimit = 10
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
 	client       *minio.Client
-	connChan     chan struct{}
+	sem          *backend.Semaphore
 	bucketname   string
 	prefix       string
 	cacheMutex   sync.RWMutex
@@ -43,8 +43,14 @@ func Open(cfg Config) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "minio.New")
 	}
 
+	sem, err := backend.NewSemaphore(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
+
 	be := &s3{
 		client:       client,
+		sem:          sem,
 		bucketname:   cfg.Bucket,
 		prefix:       cfg.Prefix,
 		cacheObjSize: make(map[string]int64),
@@ -58,8 +64,6 @@ func Open(cfg Config) (restic.Backend, error) {
 	}
 
 	be.Layout = l
-
-	be.createConnections()
 
 	found, err := client.BucketExists(cfg.Bucket)
 	if err != nil {
@@ -76,13 +80,6 @@ func Open(cfg Config) (restic.Backend, error) {
 	}
 
 	return be, nil
-}
-
-func (be *s3) createConnections() {
-	be.connChan = make(chan struct{}, connLimit)
-	for i := 0; i < connLimit; i++ {
-		be.connChan <- struct{}{}
-	}
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -222,7 +219,7 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 		return errors.New("key already exists")
 	}
 
-	<-be.connChan
+	be.sem.GetToken()
 
 	// wrap the reader so that net/http client cannot close the reader, return
 	// the token instead.
@@ -234,11 +231,10 @@ func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
 	}
 
 	debug.Log("PutObject(%v, %v)", be.bucketname, objName)
-	coreClient := minio.Core{be.client}
+	coreClient := minio.Core{Client: be.client}
 	info, err := coreClient.PutObject(be.bucketname, objName, size, rd, nil, nil, nil)
 
-	// return token
-	be.connChan <- struct{}{}
+	be.sem.ReleaseToken()
 	debug.Log("%v -> %v bytes, err %#v", objName, info.Size, err)
 
 	return errors.Wrap(err, "client.PutObject")
@@ -275,8 +271,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 
 	objName := be.Filename(h)
 
-	// get token for connection
-	<-be.connChan
+	be.sem.GetToken()
 
 	byteRange := fmt.Sprintf("bytes=%d-", offset)
 	if length > 0 {
@@ -286,11 +281,10 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 	headers.Add("Range", byteRange)
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
-	coreClient := minio.Core{be.client}
+	coreClient := minio.Core{Client: be.client}
 	rd, _, err := coreClient.GetObject(be.bucketname, objName, headers)
 	if err != nil {
-		// return token
-		be.connChan <- struct{}{}
+		be.sem.ReleaseToken()
 		return nil, err
 	}
 
@@ -298,8 +292,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 		ReadCloser: rd,
 		f: func() {
 			debug.Log("Close()")
-			// return token
-			be.connChan <- struct{}{}
+			be.sem.ReleaseToken()
 		},
 	}
 
