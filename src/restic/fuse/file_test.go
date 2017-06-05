@@ -108,7 +108,7 @@ func TestFuseFile(t *testing.T) {
 		Size:    filesize,
 		Content: content,
 	}
-	f, err := newFile(repo, node, false)
+	f, err := newFile(repo, node, false, make(map[restic.ID]uint))
 	OK(t, err)
 
 	attr := fuse.Attr{}

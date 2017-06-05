@@ -41,14 +41,17 @@ type file struct {
 
 const defaultBlobSize = 128 * 1024
 
-func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool) (*file, error) {
+func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool, sizecache map[restic.ID]uint) (fusefile *file, err error) {
 	debug.Log("create new file for %v with %d blobs", node.Name, len(node.Content))
 	var bytes uint64
 	sizes := make([]int, len(node.Content))
 	for i, id := range node.Content {
-		size, err := repo.LookupBlobSize(id, restic.DataBlob)
-		if err != nil {
-			return nil, err
+		size, ok := sizecache[id]
+		if !ok {
+			size, err = repo.LookupBlobSize(id, restic.DataBlob)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		sizes[i] = int(size)

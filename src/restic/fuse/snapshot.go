@@ -14,6 +14,7 @@ import (
 
 	"restic"
 	"restic/debug"
+	"restic/repository"
 
 	"golang.org/x/net/context"
 )
@@ -36,10 +37,23 @@ type SnapshotsDir struct {
 	tags        []string
 	host        string
 
+	// sizes caches the sizes of all blobs.
+	sizes map[restic.ID]uint
+
 	// knownSnapshots maps snapshot timestamp to the snapshot
 	sync.RWMutex
 	knownSnapshots map[string]SnapshotWithId
 	processed      restic.IDSet
+}
+
+func sizeCache(midx *repository.MasterIndex) map[restic.ID]uint {
+	c := make(map[restic.ID]uint, 1000)
+	for _, idx := range midx.All() {
+		for pb := range idx.Each(nil) {
+			c[pb.ID] = pb.Length
+		}
+	}
+	return c
 }
 
 // NewSnapshotsDir returns a new dir object for the snapshots.
@@ -53,6 +67,7 @@ func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool, paths []string, t
 		host:           host,
 		knownSnapshots: make(map[string]SnapshotWithId),
 		processed:      restic.NewIDSet(),
+		sizes:          sizeCache(repo.Index().(*repository.MasterIndex)),
 	}
 }
 
@@ -158,5 +173,5 @@ func (sn *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error
 		}
 	}
 
-	return newDirFromSnapshot(ctx, sn.repo, snapshot, sn.ownerIsRoot)
+	return newDirFromSnapshot(ctx, sn.repo, snapshot, sn.ownerIsRoot, sn.sizes)
 }
