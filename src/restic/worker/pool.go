@@ -16,7 +16,6 @@ type Func func(ctx context.Context, job Job) (result interface{}, err error)
 // Pool implements a worker pool.
 type Pool struct {
 	f     Func
-	ctx   context.Context
 	jobCh <-chan Job
 	resCh chan<- Job
 
@@ -38,7 +37,7 @@ func New(ctx context.Context, n int, f Func, jobChan <-chan Job, resultChan chan
 	}
 
 	for i := 0; i < n; i++ {
-		go p.runWorker(i)
+		go p.runWorker(ctx, i)
 	}
 
 	go p.waitForExit()
@@ -59,7 +58,7 @@ func (p *Pool) waitForExit() {
 }
 
 // runWorker runs a worker function.
-func (p *Pool) runWorker(numWorker int) {
+func (p *Pool) runWorker(ctx context.Context, numWorker int) {
 	defer func() {
 		p.workersExit <- struct{}{}
 	}()
@@ -76,7 +75,7 @@ func (p *Pool) runWorker(numWorker int) {
 
 	for {
 		select {
-		case <-p.ctx.Done():
+		case <-ctx.Done():
 			return
 
 		case job, ok = <-inCh:
@@ -84,7 +83,7 @@ func (p *Pool) runWorker(numWorker int) {
 				return
 			}
 
-			job.Result, job.Error = p.f(p.ctx, job)
+			job.Result, job.Error = p.f(ctx, job)
 			inCh = nil
 			outCh = p.resCh
 

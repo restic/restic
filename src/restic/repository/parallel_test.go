@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"context"
 	"math/rand"
 	"restic"
 	"testing"
@@ -73,7 +74,7 @@ var lister = testIDs{
 	"34dd044c228727f2226a0c9c06a3e5ceb5e30e31cb7854f8fa1cde846b395a58",
 }
 
-func (tests testIDs) List(t restic.FileType, done <-chan struct{}) <-chan string {
+func (tests testIDs) List(ctx context.Context, t restic.FileType) <-chan string {
 	ch := make(chan string)
 
 	go func() {
@@ -83,7 +84,7 @@ func (tests testIDs) List(t restic.FileType, done <-chan struct{}) <-chan string
 			for _, id := range tests {
 				select {
 				case ch <- id:
-				case <-done:
+				case <-ctx.Done():
 					return
 				}
 			}
@@ -94,13 +95,13 @@ func (tests testIDs) List(t restic.FileType, done <-chan struct{}) <-chan string
 }
 
 func TestFilesInParallel(t *testing.T) {
-	f := func(id string, done <-chan struct{}) error {
+	f := func(ctx context.Context, id string) error {
 		time.Sleep(1 * time.Millisecond)
 		return nil
 	}
 
 	for n := uint(1); n < 5; n++ {
-		err := repository.FilesInParallel(lister, restic.DataFile, n*100, f)
+		err := repository.FilesInParallel(context.TODO(), lister, restic.DataFile, n*100, f)
 		OK(t, err)
 	}
 }
@@ -109,7 +110,7 @@ var errTest = errors.New("test error")
 
 func TestFilesInParallelWithError(t *testing.T) {
 
-	f := func(id string, done <-chan struct{}) error {
+	f := func(ctx context.Context, id string) error {
 		time.Sleep(1 * time.Millisecond)
 
 		if rand.Float32() < 0.01 {
@@ -120,7 +121,7 @@ func TestFilesInParallelWithError(t *testing.T) {
 	}
 
 	for n := uint(1); n < 5; n++ {
-		err := repository.FilesInParallel(lister, restic.DataFile, n*100, f)
+		err := repository.FilesInParallel(context.TODO(), lister, restic.DataFile, n*100, f)
 		Equals(t, errTest, err)
 	}
 }

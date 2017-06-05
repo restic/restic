@@ -2,6 +2,7 @@ package archiver
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"math/rand"
@@ -12,7 +13,7 @@ import (
 )
 
 func loadBlob(t *testing.T, repo restic.Repository, id restic.ID, buf []byte) int {
-	n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+	n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
 	if err != nil {
 		t.Fatalf("LoadBlob(%v) returned error %v", id, err)
 	}
@@ -21,7 +22,7 @@ func loadBlob(t *testing.T, repo restic.Repository, id restic.ID, buf []byte) in
 }
 
 func checkSavedFile(t *testing.T, repo restic.Repository, treeID restic.ID, name string, rd io.Reader) {
-	tree, err := repo.LoadTree(treeID)
+	tree, err := repo.LoadTree(context.TODO(), treeID)
 	if err != nil {
 		t.Fatalf("LoadTree() returned error %v", err)
 	}
@@ -85,7 +86,7 @@ func TestArchiveReader(t *testing.T) {
 		Tags:       []string{"test"},
 	}
 
-	sn, id, err := r.Archive("fakefile", f, nil)
+	sn, id, err := r.Archive(context.TODO(), "fakefile", f, nil)
 	if err != nil {
 		t.Fatalf("ArchiveReader() returned error %v", err)
 	}
@@ -111,7 +112,7 @@ func TestArchiveReaderNull(t *testing.T) {
 		Tags:       []string{"test"},
 	}
 
-	sn, id, err := r.Archive("fakefile", bytes.NewReader(nil), nil)
+	sn, id, err := r.Archive(context.TODO(), "fakefile", bytes.NewReader(nil), nil)
 	if err != nil {
 		t.Fatalf("ArchiveReader() returned error %v", err)
 	}
@@ -132,11 +133,8 @@ func (e errReader) Read([]byte) (int, error) {
 }
 
 func countSnapshots(t testing.TB, repo restic.Repository) int {
-	done := make(chan struct{})
-	defer close(done)
-
 	snapshots := 0
-	for range repo.List(restic.SnapshotFile, done) {
+	for range repo.List(context.TODO(), restic.SnapshotFile) {
 		snapshots++
 	}
 	return snapshots
@@ -152,7 +150,7 @@ func TestArchiveReaderError(t *testing.T) {
 		Tags:       []string{"test"},
 	}
 
-	sn, id, err := r.Archive("fakefile", errReader("error returned by reading stdin"), nil)
+	sn, id, err := r.Archive(context.TODO(), "fakefile", errReader("error returned by reading stdin"), nil)
 	if err == nil {
 		t.Errorf("expected error not returned")
 	}
@@ -195,7 +193,7 @@ func BenchmarkArchiveReader(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		_, _, err := r.Archive("fakefile", bytes.NewReader(buf), nil)
+		_, _, err := r.Archive(context.TODO(), "fakefile", bytes.NewReader(buf), nil)
 		if err != nil {
 			t.Fatal(err)
 		}

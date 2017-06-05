@@ -1,6 +1,7 @@
 package pipe_test
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -127,7 +128,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	}()
 
 	resCh := make(chan pipe.Result, 1)
-	pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
+	pipe.Walk(context.TODO(), []string{TestWalkerPath}, acceptAll, jobs, resCh)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -145,6 +146,9 @@ func TestPipelineWalker(t *testing.T) {
 	if TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 
 	var err error
 	if !filepath.IsAbs(TestWalkerPath) {
@@ -164,7 +168,7 @@ func TestPipelineWalker(t *testing.T) {
 	after := stats{}
 	m := sync.Mutex{}
 
-	worker := func(wg *sync.WaitGroup, done <-chan struct{}, jobs <-chan pipe.Job) {
+	worker := func(ctx context.Context, wg *sync.WaitGroup, jobs <-chan pipe.Job) {
 		defer wg.Done()
 		for {
 			select {
@@ -195,7 +199,7 @@ func TestPipelineWalker(t *testing.T) {
 					j.Result() <- true
 				}
 
-			case <-done:
+			case <-ctx.Done():
 				// pipeline was cancelled
 				return
 			}
@@ -203,16 +207,15 @@ func TestPipelineWalker(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	done := make(chan struct{})
 	jobs := make(chan pipe.Job)
 
 	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
-		go worker(&wg, done, jobs)
+		go worker(ctx, &wg, jobs)
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
+	pipe.Walk(ctx, []string{TestWalkerPath}, acceptAll, jobs, resCh)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -286,11 +289,12 @@ func TestPipeWalkerError(t *testing.T) {
 		OK(t, os.RemoveAll(testdir))
 	})
 
-	done := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.TODO())
+
 	ch := make(chan pipe.Job)
 	resCh := make(chan pipe.Result, 1)
 
-	go pipe.Walk([]string{dir}, acceptAll, done, ch, resCh)
+	go pipe.Walk(ctx, []string{dir}, acceptAll, ch, resCh)
 
 	i := 0
 	for job := range ch {
@@ -321,7 +325,7 @@ func TestPipeWalkerError(t *testing.T) {
 		t.Errorf("expected %d jobs, got %d", len(testjobs), i)
 	}
 
-	close(done)
+	cancel()
 
 	Assert(t, ranHook, "hook did not run")
 	OK(t, os.RemoveAll(dir))
@@ -335,7 +339,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 	var max time.Duration
 	m := sync.Mutex{}
 
-	fileWorker := func(wg *sync.WaitGroup, done <-chan struct{}, ch <-chan pipe.Entry) {
+	fileWorker := func(ctx context.Context, wg *sync.WaitGroup, ch <-chan pipe.Entry) {
 		defer wg.Done()
 		for {
 			select {
@@ -349,14 +353,14 @@ func BenchmarkPipelineWalker(b *testing.B) {
 				//time.Sleep(10 * time.Millisecond)
 
 				e.Result() <- true
-			case <-done:
+			case <-ctx.Done():
 				// pipeline was cancelled
 				return
 			}
 		}
 	}
 
-	dirWorker := func(wg *sync.WaitGroup, done <-chan struct{}, ch <-chan pipe.Dir) {
+	dirWorker := func(ctx context.Context, wg *sync.WaitGroup, ch <-chan pipe.Dir) {
 		defer wg.Done()
 		for {
 			select {
@@ -381,16 +385,18 @@ func BenchmarkPipelineWalker(b *testing.B) {
 				m.Unlock()
 
 				dir.Result() <- true
-			case <-done:
+			case <-ctx.Done():
 				// pipeline was cancelled
 				return
 			}
 		}
 	}
 
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
 	for i := 0; i < b.N; i++ {
 		max = 0
-		done := make(chan struct{})
 		entCh := make(chan pipe.Entry, 200)
 		dirCh := make(chan pipe.Dir, 200)
 
@@ -398,8 +404,8 @@ func BenchmarkPipelineWalker(b *testing.B) {
 		b.Logf("starting %d workers", maxWorkers)
 		for i := 0; i < maxWorkers; i++ {
 			wg.Add(2)
-			go dirWorker(&wg, done, dirCh)
-			go fileWorker(&wg, done, entCh)
+			go dirWorker(ctx, &wg, dirCh)
+			go fileWorker(ctx, &wg, entCh)
 		}
 
 		jobs := make(chan pipe.Job, 200)
@@ -412,7 +418,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 		}()
 
 		resCh := make(chan pipe.Result, 1)
-		pipe.Walk([]string{TestWalkerPath}, acceptAll, done, jobs, resCh)
+		pipe.Walk(ctx, []string{TestWalkerPath}, acceptAll, jobs, resCh)
 
 		// wait for all workers to terminate
 		wg.Wait()
@@ -429,6 +435,9 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
 	paths, err := filepath.Glob(filepath.Join(TestWalkerPath, "*"))
 	OK(t, err)
 
@@ -441,7 +450,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 	after := stats{}
 	m := sync.Mutex{}
 
-	worker := func(wg *sync.WaitGroup, done <-chan struct{}, jobs <-chan pipe.Job) {
+	worker := func(ctx context.Context, wg *sync.WaitGroup, jobs <-chan pipe.Job) {
 		defer wg.Done()
 		for {
 			select {
@@ -472,7 +481,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 					j.Result() <- true
 				}
 
-			case <-done:
+			case <-ctx.Done():
 				// pipeline was cancelled
 				return
 			}
@@ -480,16 +489,15 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	done := make(chan struct{})
 	jobs := make(chan pipe.Job)
 
 	for i := 0; i < maxWorkers; i++ {
 		wg.Add(1)
-		go worker(&wg, done, jobs)
+		go worker(ctx, &wg, jobs)
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	pipe.Walk(paths, acceptAll, done, jobs, resCh)
+	pipe.Walk(ctx, paths, acceptAll, jobs, resCh)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -547,9 +555,6 @@ func testPipeWalkerRootWithPath(path string, t *testing.T) {
 
 	t.Logf("paths in %v (pattern %q) expanded to %v items", path, pattern, len(rootPaths))
 
-	done := make(chan struct{})
-	defer close(done)
-
 	jobCh := make(chan pipe.Job)
 	var jobs []pipe.Job
 
@@ -571,7 +576,7 @@ func testPipeWalkerRootWithPath(path string, t *testing.T) {
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	pipe.Walk([]string{path}, filter, done, jobCh, resCh)
+	pipe.Walk(context.TODO(), []string{path}, filter, jobCh, resCh)
 
 	wg.Wait()
 

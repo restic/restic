@@ -34,9 +34,7 @@ func testRead(t testing.TB, f *file, offset, length int, data []byte) {
 }
 
 func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
-	done := make(chan struct{})
-	defer close(done)
-	for id := range repo.List(restic.SnapshotFile, done) {
+	for id := range repo.List(context.TODO(), restic.SnapshotFile) {
 		if first.IsNull() {
 			first = id
 		}
@@ -46,13 +44,13 @@ func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
 
 func loadFirstSnapshot(t testing.TB, repo restic.Repository) *restic.Snapshot {
 	id := firstSnapshotID(t, repo)
-	sn, err := restic.LoadSnapshot(repo, id)
+	sn, err := restic.LoadSnapshot(context.TODO(), repo, id)
 	OK(t, err)
 	return sn
 }
 
 func loadTree(t testing.TB, repo restic.Repository, id restic.ID) *restic.Tree {
-	tree, err := repo.LoadTree(id)
+	tree, err := repo.LoadTree(context.TODO(), id)
 	OK(t, err)
 	return tree
 }
@@ -87,7 +85,7 @@ func TestFuseFile(t *testing.T) {
 		filesize += uint64(size)
 
 		buf := restic.NewBlobBuffer(int(size))
-		n, err := repo.LoadBlob(restic.DataBlob, id, buf)
+		n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
 		OK(t, err)
 
 		if uint(n) != size {

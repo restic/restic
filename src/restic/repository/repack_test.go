@@ -1,6 +1,7 @@
 package repository_test
 
 import (
+	"context"
 	"io"
 	"math/rand"
 	"restic"
@@ -47,7 +48,7 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 			continue
 		}
 
-		_, err := repo.SaveBlob(tpe, buf, id)
+		_, err := repo.SaveBlob(context.TODO(), tpe, buf, id)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
 		}
@@ -67,16 +68,13 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 // selectBlobs splits the list of all blobs randomly into two lists. A blob
 // will be contained in the firstone ith probability p.
 func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 restic.BlobSet) {
-	done := make(chan struct{})
-	defer close(done)
-
 	list1 = restic.NewBlobSet()
 	list2 = restic.NewBlobSet()
 
 	blobs := restic.NewBlobSet()
 
-	for id := range repo.List(restic.DataFile, done) {
-		entries, _, err := repo.ListPack(id)
+	for id := range repo.List(context.TODO(), restic.DataFile) {
+		entries, _, err := repo.ListPack(context.TODO(), id)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
 		}
@@ -102,11 +100,8 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 }
 
 func listPacks(t *testing.T, repo restic.Repository) restic.IDSet {
-	done := make(chan struct{})
-	defer close(done)
-
 	list := restic.NewIDSet()
-	for id := range repo.List(restic.DataFile, done) {
+	for id := range repo.List(context.TODO(), restic.DataFile) {
 		list.Insert(id)
 	}
 
@@ -132,35 +127,36 @@ func findPacksForBlobs(t *testing.T, repo restic.Repository, blobs restic.BlobSe
 }
 
 func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs restic.BlobSet) {
-	err := repository.Repack(repo, packs, blobs, nil)
+	err := repository.Repack(context.TODO(), repo, packs, blobs, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
 func saveIndex(t *testing.T, repo restic.Repository) {
-	if err := repo.SaveIndex(); err != nil {
+	if err := repo.SaveIndex(context.TODO()); err != nil {
 		t.Fatalf("repo.SaveIndex() %v", err)
 	}
 }
 
 func rebuildIndex(t *testing.T, repo restic.Repository) {
-	idx, err := index.New(repo, nil)
+	idx, err := index.New(context.TODO(), repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	for id := range repo.List(restic.IndexFile, nil) {
-		err = repo.Backend().Remove(restic.Handle{
+	for id := range repo.List(context.TODO(), restic.IndexFile) {
+		h := restic.Handle{
 			Type: restic.IndexFile,
 			Name: id.String(),
-		})
+		}
+		err = repo.Backend().Remove(context.TODO(), h)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	_, err = idx.Save(repo, nil)
+	_, err = idx.Save(context.TODO(), repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +164,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 
 func reloadIndex(t *testing.T, repo restic.Repository) {
 	repo.SetIndex(repository.NewMasterIndex())
-	if err := repo.LoadIndex(); err != nil {
+	if err := repo.LoadIndex(context.TODO()); err != nil {
 		t.Fatalf("error loading new index: %v", err)
 	}
 }

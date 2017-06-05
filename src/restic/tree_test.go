@@ -1,6 +1,7 @@
 package restic_test
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -98,14 +99,14 @@ func TestLoadTree(t *testing.T) {
 
 	// save tree
 	tree := restic.NewTree()
-	id, err := repo.SaveTree(tree)
+	id, err := repo.SaveTree(context.TODO(), tree)
 	OK(t, err)
 
 	// save packs
 	OK(t, repo.Flush())
 
 	// load tree again
-	tree2, err := repo.LoadTree(id)
+	tree2, err := repo.LoadTree(context.TODO(), id)
 	OK(t, err)
 
 	Assert(t, tree.Equals(tree2),

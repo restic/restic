@@ -2,6 +2,7 @@ package archiver_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"testing"
 	"time"
@@ -104,7 +105,7 @@ func archiveDirectory(b testing.TB) {
 
 	arch := archiver.New(repo)
 
-	_, id, err := arch.Snapshot(nil, []string{BenchArchiveDirectory}, nil, "localhost", nil)
+	_, id, err := arch.Snapshot(context.TODO(), nil, []string{BenchArchiveDirectory}, nil, "localhost", nil)
 	OK(b, err)
 
 	b.Logf("snapshot archived as %v", id)
@@ -129,7 +130,7 @@ func BenchmarkArchiveDirectory(b *testing.B) {
 }
 
 func countPacks(repo restic.Repository, t restic.FileType) (n uint) {
-	for range repo.Backend().List(t, nil) {
+	for range repo.Backend().List(context.TODO(), t) {
 		n++
 	}
 
@@ -234,7 +235,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 
 				id := restic.Hash(c.Data)
 				time.Sleep(time.Duration(id[0]))
-				err := arch.Save(restic.DataBlob, c.Data, id)
+				err := arch.Save(context.TODO(), restic.DataBlob, c.Data, id)
 				<-barrier
 				errChan <- err
 			}(c, errChan)
@@ -246,7 +247,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 	}
 
 	OK(t, repo.Flush())
-	OK(t, repo.SaveIndex())
+	OK(t, repo.SaveIndex(context.TODO()))
 
 	chkr := createAndInitChecker(t, repo)
 	assertNoUnreferencedPacks(t, chkr)
@@ -271,7 +272,7 @@ func getRandomData(seed int, size int) []chunker.Chunk {
 func createAndInitChecker(t *testing.T, repo restic.Repository) *checker.Checker {
 	chkr := checker.New(repo)
 
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -284,11 +285,8 @@ func createAndInitChecker(t *testing.T, repo restic.Repository) *checker.Checker
 }
 
 func assertNoUnreferencedPacks(t *testing.T, chkr *checker.Checker) {
-	done := make(chan struct{})
-	defer close(done)
-
 	errChan := make(chan error)
-	go chkr.Packs(errChan, done)
+	go chkr.Packs(context.TODO(), errChan)
 
 	for err := range errChan {
 		OK(t, err)
@@ -301,7 +299,7 @@ func TestArchiveEmptySnapshot(t *testing.T) {
 
 	arch := archiver.New(repo)
 
-	sn, id, err := arch.Snapshot(nil, []string{"file-does-not-exist-123123213123", "file2-does-not-exist-too-123123123"}, nil, "localhost", nil)
+	sn, id, err := arch.Snapshot(context.TODO(), nil, []string{"file-does-not-exist-123123213123", "file2-does-not-exist-too-123123123"}, nil, "localhost", nil)
 	if err == nil {
 		t.Errorf("expected error for empty snapshot, got nil")
 	}

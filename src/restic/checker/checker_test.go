@@ -1,6 +1,7 @@
 package checker_test
 
 import (
+	"context"
 	"io"
 	"math/rand"
 	"path/filepath"
@@ -16,13 +17,13 @@ import (
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")
 
-func collectErrors(f func(chan<- error, <-chan struct{})) (errs []error) {
-	done := make(chan struct{})
-	defer close(done)
+func collectErrors(ctx context.Context, f func(context.Context, chan<- error)) (errs []error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	errChan := make(chan error)
 
-	go f(errChan, done)
+	go f(ctx, errChan)
 
 	for err := range errChan {
 		errs = append(errs, err)
@@ -32,17 +33,18 @@ func collectErrors(f func(chan<- error, <-chan struct{})) (errs []error) {
 }
 
 func checkPacks(chkr *checker.Checker) []error {
-	return collectErrors(chkr.Packs)
+	return collectErrors(context.TODO(), chkr.Packs)
 }
 
 func checkStruct(chkr *checker.Checker) []error {
-	return collectErrors(chkr.Structure)
+	return collectErrors(context.TODO(), chkr.Structure)
 }
 
 func checkData(chkr *checker.Checker) []error {
 	return collectErrors(
-		func(errCh chan<- error, done <-chan struct{}) {
-			chkr.ReadData(nil, errCh, done)
+		context.TODO(),
+		func(ctx context.Context, errCh chan<- error) {
+			chkr.ReadData(ctx, nil, errCh)
 		},
 	)
 }
@@ -54,7 +56,7 @@ func TestCheckRepo(t *testing.T) {
 	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -77,10 +79,10 @@ func TestMissingPack(t *testing.T) {
 		Type: restic.DataFile,
 		Name: "657f7fb64f6a854fff6fe9279998ee09034901eded4e6db9bcee0e59745bbce6",
 	}
-	test.OK(t, repo.Backend().Remove(packHandle))
+	test.OK(t, repo.Backend().Remove(context.TODO(), packHandle))
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -113,10 +115,10 @@ func TestUnreferencedPack(t *testing.T) {
 		Type: restic.IndexFile,
 		Name: "3f1abfcb79c6f7d0a3be517d2c83c8562fba64ef2c8e9a3544b4edaf8b5e3b44",
 	}
-	test.OK(t, repo.Backend().Remove(indexHandle))
+	test.OK(t, repo.Backend().Remove(context.TODO(), indexHandle))
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -147,7 +149,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 		Type: restic.SnapshotFile,
 		Name: "51d249d28815200d59e4be7b3f21a157b864dc343353df9d8e498220c2499b02",
 	}
-	test.OK(t, repo.Backend().Remove(snapshotHandle))
+	test.OK(t, repo.Backend().Remove(context.TODO(), snapshotHandle))
 
 	unusedBlobsBySnapshot := restic.IDs{
 		restic.TestParseID("58c748bbe2929fdf30c73262bd8313fe828f8925b05d1d4a87fe109082acb849"),
@@ -161,7 +163,7 @@ func TestUnreferencedBlobs(t *testing.T) {
 	sort.Sort(unusedBlobsBySnapshot)
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -192,7 +194,7 @@ func TestModifiedIndex(t *testing.T) {
 		Type: restic.IndexFile,
 		Name: "90f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
-	f, err := repo.Backend().Load(h, 0, 0)
+	f, err := repo.Backend().Load(context.TODO(), h, 0, 0)
 	test.OK(t, err)
 
 	// save the index again with a modified name so that the hash doesn't match
@@ -201,13 +203,13 @@ func TestModifiedIndex(t *testing.T) {
 		Type: restic.IndexFile,
 		Name: "80f838b4ac28735fda8644fe6a08dbc742e57aaf81b30977b4fefa357010eafd",
 	}
-	err = repo.Backend().Save(h2, f)
+	err = repo.Backend().Save(context.TODO(), h2, f)
 	test.OK(t, err)
 
 	test.OK(t, f.Close())
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) == 0 {
 		t.Fatalf("expected errors not found")
 	}
@@ -230,7 +232,7 @@ func TestDuplicatePacksInIndex(t *testing.T) {
 	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(hints) == 0 {
 		t.Fatalf("did not get expected checker hints for duplicate packs in indexes")
 	}
@@ -259,8 +261,8 @@ type errorBackend struct {
 	ProduceErrors bool
 }
 
-func (b errorBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
-	rd, err := b.Backend.Load(h, length, offset)
+func (b errorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	rd, err := b.Backend.Load(ctx, h, length, offset)
 	if err != nil {
 		return rd, err
 	}
@@ -303,17 +305,17 @@ func TestCheckerModifiedData(t *testing.T) {
 	defer cleanup()
 
 	arch := archiver.New(repo)
-	_, id, err := arch.Snapshot(nil, []string{"."}, nil, "localhost", nil)
+	_, id, err := arch.Snapshot(context.TODO(), nil, []string{"."}, nil, "localhost", nil)
 	test.OK(t, err)
 	t.Logf("archived as %v", id.Str())
 
 	beError := &errorBackend{Backend: repo.Backend()}
 	checkRepo := repository.New(beError)
-	test.OK(t, checkRepo.SearchKey(test.TestPassword, 5))
+	test.OK(t, checkRepo.SearchKey(context.TODO(), test.TestPassword, 5))
 
 	chkr := checker.New(checkRepo)
 
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}
@@ -349,7 +351,7 @@ func BenchmarkChecker(t *testing.B) {
 	repo := repository.TestOpenLocal(t, repodir)
 
 	chkr := checker.New(repo)
-	hints, errs := chkr.LoadIndex()
+	hints, errs := chkr.LoadIndex(context.TODO())
 	if len(errs) > 0 {
 		t.Fatalf("expected no errors, got %v: %v", len(errs), errs)
 	}

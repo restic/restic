@@ -1,6 +1,7 @@
 package restic_test
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -180,7 +181,7 @@ func TestNodeRestoreAt(t *testing.T) {
 
 	for _, test := range nodeTests {
 		nodePath := filepath.Join(tempdir, test.Name)
-		OK(t, test.CreateAt(nodePath, nil, idx))
+		OK(t, test.CreateAt(context.TODO(), nodePath, nil, idx))
 
 		if test.Type == "symlink" && runtime.GOOS == "windows" {
 			continue
