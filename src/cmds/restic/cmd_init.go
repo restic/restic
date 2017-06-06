@@ -41,14 +41,12 @@ func runInit(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	s := repository.New(be)
-
-	err = s.Init(gopts.password)
+	err = repository.Init(be, gopts.password)
 	if err != nil {
 		return errors.Fatalf("create key in backend at %s failed: %v\n", gopts.Repo, err)
 	}
 
-	Verbosef("created restic backend %v at %s\n", s.Config().ID[:10], gopts.Repo)
+	Verbosef("created restic backend at %s\n", gopts.Repo)
 	Verbosef("\n")
 	Verbosef("Please note that knowledge of your password is required to access\n")
 	Verbosef("the repository. Losing your password means that your data is\n")

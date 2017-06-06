@@ -4,6 +4,7 @@ import (
 	"io"
 	"restic"
 	"restic/debug"
+	"restic/index"
 	"time"
 
 	"restic/errors"
@@ -17,6 +18,31 @@ type Reader struct {
 
 	Tags     []string
 	Hostname string
+}
+
+// Chunk is one chunk of a file (or an error).
+type Chunk struct {
+	chunker.Chunk
+	Error error
+}
+
+// chunkReader sends the chunks read from rd to ch, which is close on EOF or
+// any error.
+func chunkReader(c *chunker.Chunker, ch chan<- Chunk) {
+	defer close(ch)
+	for {
+		chunk, err := c.Next(getBuf())
+		if errors.Cause(err) == io.EOF {
+			break
+		}
+
+		if err != nil {
+			ch <- Chunk{Error: err}
+			return
+		}
+
+		ch <- Chunk{Chunk: chunk}
+	}
 }
 
 // Archive reads data from the reader and saves it to the repo.
@@ -35,28 +61,34 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 	defer p.Done()
 
 	repo := r.Repository
-	chnker := chunker.New(rd, repo.Config().ChunkerPolynomial)
+	ch := make(chan Chunk)
+
+	debug.Log("load index")
+	idx, err := index.Load(repo, nil)
+	if err != nil {
+		return nil, restic.ID{}, err
+	}
 
 	ids := restic.IDs{}
 	var fileSize uint64
+	cm := NewContentManager(repo.Backend(), repo.Key())
 
-	for {
-		chunk, err := chnker.Next(getBuf())
-		if errors.Cause(err) == io.EOF {
-			break
-		}
+	go chunkReader(chunker.New(rd, repo.Config().ChunkerPolynomial), ch)
 
-		if err != nil {
-			return nil, restic.ID{}, errors.Wrap(err, "chunker.Next()")
+	for chunk := range ch {
+		if chunk.Error != nil {
+			debug.Log("received error from chunker: %v", chunk.Error)
+			return nil, restic.ID{}, errors.Wrap(chunk.Error, "chunker.Next()")
 		}
 
 		id := restic.Hash(chunk.Data)
 
-		if !repo.Index().Has(id, restic.DataBlob) {
-			_, err := repo.SaveBlob(restic.DataBlob, chunk.Data, id)
-			if err != nil {
+		h := restic.BlobHandle{ID: id, Type: restic.DataBlob}
+		if !idx.Has(h) {
+			if err := cm.AddNewBlob(h, chunk.Data); err != nil {
 				return nil, restic.ID{}, err
 			}
+
 			debug.Log("saved blob %v (%d bytes)\n", id.Str(), chunk.Length)
 		} else {
 			debug.Log("blob %v already saved in the repo\n", id.Str())
@@ -68,6 +100,14 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 
 		p.Report(restic.Stat{Bytes: uint64(chunk.Length)})
 		fileSize += uint64(chunk.Length)
+
+		if err = cm.SaveFullFile(); err != nil {
+			return nil, restic.ID{}, err
+		}
+	}
+
+	if err = cm.SaveAllFiles(); err != nil {
+		return nil, restic.ID{}, err
 	}
 
 	tree := &restic.Tree{
@@ -94,7 +134,14 @@ func (r *Reader) Archive(name string, rd io.Reader, p *restic.Progress) (*restic
 	sn.Tree = &treeID
 	debug.Log("tree saved as %v", treeID.Str())
 
-	id, err := repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
+	// save new index
+	id, err := index.Save(repo, cm.Packs, nil)
+	if err != nil {
+		return nil, restic.ID{}, err
+	}
+	debug.Log("new index saved as %v", id.Str())
+
+	id, err = repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

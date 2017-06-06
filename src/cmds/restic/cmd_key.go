@@ -31,7 +31,7 @@ func listKeys(ctx context.Context, s *repository.Repository) error {
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
 	for id := range s.List(restic.KeyFile, ctx.Done()) {
-		k, err := repository.LoadKey(s, id.String())
+		k, err := repository.LoadKey(s.Backend(), id.String())
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
 			continue
@@ -69,7 +69,7 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(repo, pw, repo.Key())
+	id, err := repository.AddKey(repo.Backend(), pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -100,7 +100,7 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(repo, pw, repo.Key())
+	id, err := repository.AddKey(repo.Backend(), pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}

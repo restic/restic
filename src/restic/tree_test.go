@@ -2,58 +2,13 @@ package restic_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"restic"
 	"restic/repository"
 	. "restic/test"
 )
-
-var testFiles = []struct {
-	name    string
-	content []byte
-}{
-	{"foo", []byte("bar")},
-	{"bar/foo2", []byte("bar2")},
-	{"bar/bla/blubb", []byte("This is just a test!\n")},
-}
-
-func createTempDir(t *testing.T) string {
-	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
-	OK(t, err)
-
-	for _, test := range testFiles {
-		file := filepath.Join(tempdir, test.name)
-		dir := filepath.Dir(file)
-		if dir != "." {
-			OK(t, os.MkdirAll(dir, 0755))
-		}
-
-		f, err := os.Create(file)
-		defer func() {
-			OK(t, f.Close())
-		}()
-
-		OK(t, err)
-
-		_, err = f.Write(test.content)
-		OK(t, err)
-	}
-
-	return tempdir
-}
-
-func TestTree(t *testing.T) {
-	dir := createTempDir(t)
-	defer func() {
-		if TestCleanupTempDirs {
-			RemoveAll(t, dir)
-		}
-	}()
-}
 
 var testNodes = []restic.Node{
 	{Name: "normal"},

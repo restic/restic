@@ -96,6 +96,10 @@ func TestArchiveReader(t *testing.T) {
 
 	t.Logf("snapshot saved as %v, tree is %v", id.Str(), sn.Tree.Str())
 
+	if err := repo.LoadIndex(); err != nil {
+		t.Fatalf("error loading index: %v", err)
+	}
+
 	checkSavedFile(t, repo, *sn.Tree, "fakefile", fakeFile(t, seed, size))
 
 	checker.TestCheckRepo(t, repo)

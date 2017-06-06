@@ -308,8 +308,9 @@ func TestCheckerModifiedData(t *testing.T) {
 	t.Logf("archived as %v", id.Str())
 
 	beError := &errorBackend{Backend: repo.Backend()}
-	checkRepo := repository.New(beError)
-	test.OK(t, checkRepo.SearchKey(test.TestPassword, 5))
+
+	checkRepo, err := repository.Open(beError, test.TestPassword, 5)
+	test.OK(t, err)
 
 	chkr := checker.New(checkRepo)
 

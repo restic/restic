@@ -216,10 +216,13 @@ func TestSave(t *testing.T) {
 
 	idx := loadIndex(t, repo)
 
-	packs := make(map[restic.ID][]restic.Blob)
+	var packs []restic.Pack
 	for id := range idx.Packs {
 		if rand.Float32() < 0.5 {
-			packs[id] = idx.Packs[id].Entries
+			packs = append(packs, restic.Pack{
+				ID:    id,
+				Blobs: idx.Packs[id].Entries,
+			})
 		}
 	}
 
@@ -248,15 +251,20 @@ func TestSave(t *testing.T) {
 		t.Errorf("wrong number of packs in new index, want %d, got %d", len(packs), len(idx2.Packs))
 	}
 
-	for id := range packs {
+	packIDs := make(restic.IDSet)
+	for _, pack := range packs {
+		packIDs.Insert(pack.ID)
+	}
+
+	for id := range packIDs {
 		if _, ok := idx2.Packs[id]; !ok {
 			t.Errorf("pack %v is not contained in new index", id.Str())
 		}
 	}
 
 	for id := range idx2.Packs {
-		if _, ok := packs[id]; !ok {
-			t.Errorf("pack %v is not contained in new index", id.Str())
+		if _, ok := packIDs[id]; !ok {
+			t.Errorf("extra pack %v is contained in new index", id.Str())
 		}
 	}
 }

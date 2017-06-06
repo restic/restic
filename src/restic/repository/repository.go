@@ -9,7 +9,6 @@ import (
 
 	"restic/errors"
 
-	"restic/backend"
 	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
@@ -26,51 +25,15 @@ type Repository struct {
 	*packerManager
 }
 
-// New returns a new repository with backend be.
-func New(be restic.Backend) *Repository {
-	repo := &Repository{
-		be:            be,
-		idx:           NewMasterIndex(),
-		packerManager: newPackerManager(be, nil),
-	}
-
-	return repo
-}
-
 // Config returns the repository configuration.
 func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
-// PrefixLength returns the number of bytes required so that all prefixes of
-// all IDs of type t are unique.
-func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
-	return restic.PrefixLength(r.be, t)
-}
-
 // LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
 func (r *Repository) LoadAndDecrypt(t restic.FileType, id restic.ID) ([]byte, error) {
-	debug.Log("load %v with id %v", t, id.Str())
-
-	h := restic.Handle{Type: t, Name: id.String()}
-	buf, err := backend.LoadAll(r.be, h)
-	if err != nil {
-		debug.Log("error loading %v: %v", h, err)
-		return nil, err
-	}
-
-	if t != restic.ConfigFile && !restic.Hash(buf).Equal(id) {
-		return nil, errors.Errorf("load %v: invalid data returned", h)
-	}
-
-	// decrypt
-	n, err := r.decryptTo(buf, buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf[:n], nil
+	return Load(r.be, r.key, t, id)
 }
 
 // loadBlob tries to load and decrypt content identified by t and id from a
@@ -205,35 +168,13 @@ func (r *Repository) SaveAndEncrypt(t restic.BlobType, data []byte, id *restic.I
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
 func (r *Repository) SaveJSONUnpacked(t restic.FileType, item interface{}) (restic.ID, error) {
-	debug.Log("save new blob %v", t)
-	plaintext, err := json.Marshal(item)
-	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "json.Marshal")
-	}
-
-	return r.SaveUnpacked(t, plaintext)
+	return SaveJSON(r.be, r.key, t, item)
 }
 
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
 func (r *Repository) SaveUnpacked(t restic.FileType, p []byte) (id restic.ID, err error) {
-	ciphertext := restic.NewBlobBuffer(len(p))
-	ciphertext, err = r.Encrypt(ciphertext, p)
-	if err != nil {
-		return restic.ID{}, err
-	}
-
-	id = restic.Hash(ciphertext)
-	h := restic.Handle{Type: t, Name: id.String()}
-
-	err = r.be.Save(h, bytes.NewReader(ciphertext))
-	if err != nil {
-		debug.Log("error saving blob %v: %v", h, err)
-		return restic.ID{}, err
-	}
-
-	debug.Log("blob %v saved", h)
-	return id, nil
+	return Save(r.be, r.key, t, p)
 }
 
 // Flush saves all remaining packs.
@@ -360,56 +301,6 @@ func LoadIndex(repo restic.Repository, id restic.ID) (*Index, error) {
 	}
 
 	return nil, err
-}
-
-// SearchKey finds a key with the supplied password, afterwards the config is
-// read and parsed. It tries at most maxKeys key files in the repo.
-func (r *Repository) SearchKey(password string, maxKeys int) error {
-	key, err := SearchKey(r, password, maxKeys)
-	if err != nil {
-		return err
-	}
-
-	r.key = key.master
-	r.packerManager.key = key.master
-	r.keyName = key.Name()
-	r.cfg, err = restic.LoadConfig(r)
-	return err
-}
-
-// Init creates a new master key with the supplied password, initializes and
-// saves the repository config.
-func (r *Repository) Init(password string) error {
-	has, err := r.be.Test(restic.Handle{Type: restic.ConfigFile})
-	if err != nil {
-		return err
-	}
-	if has {
-		return errors.New("repository master key and config already initialized")
-	}
-
-	cfg, err := restic.CreateConfig()
-	if err != nil {
-		return err
-	}
-
-	return r.init(password, cfg)
-}
-
-// init creates a new master key with the supplied password and uses it to save
-// the config into the repo.
-func (r *Repository) init(password string, cfg restic.Config) error {
-	key, err := createMasterKey(r, password)
-	if err != nil {
-		return err
-	}
-
-	r.key = key.master
-	r.packerManager.key = key.master
-	r.keyName = key.Name()
-	r.cfg = cfg
-	_, err = r.SaveJSONUnpacked(restic.ConfigFile, cfg)
-	return err
 }
 
 // decrypt authenticates and decrypts ciphertext and stores the result in
@@ -575,4 +466,69 @@ func (r *Repository) SaveTree(t *restic.Tree) (restic.ID, error) {
 
 	_, err = r.SaveBlob(restic.TreeBlob, buf, id)
 	return id, err
+}
+
+// Init creates a new master key with the supplied password, initializes and
+// saves the repository config in the backend.
+func Init(be restic.Backend, password string) error {
+	has, err := be.Test(restic.Handle{Type: restic.ConfigFile})
+	if err != nil {
+		return err
+	}
+	if has {
+		return errors.New("repository master key and config already initialized")
+	}
+
+	cfg, err := restic.CreateConfig()
+	if err != nil {
+		return err
+	}
+
+	return InitConfig(be, password, cfg)
+}
+
+// InitConfig creates a new master key with the supplied password and saves the
+// repository config in the backend.
+func InitConfig(be restic.Backend, password string, cfg restic.Config) error {
+	has, err := be.Test(restic.Handle{Type: restic.ConfigFile})
+	if err != nil {
+		return err
+	}
+	if has {
+		return errors.New("repository master key and config already initialized")
+	}
+
+	key, err := AddKey(be, password, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = SaveJSON(be, key.Master(), restic.ConfigFile, cfg)
+	return err
+}
+
+// Open opens a repository in the backend with the password.
+func Open(be restic.Backend, password string, maxKeys int) (*Repository, error) {
+	key, err := SearchKey(be, password, maxKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	repo := &Repository{
+		be:      be,
+		key:     key.Master(),
+		keyName: key.Name(),
+
+		idx:           NewMasterIndex(),
+		packerManager: newPackerManager(be, key.Master()),
+	}
+
+	cfg, err := restic.LoadConfig(repo)
+	if err != nil {
+		return nil, err
+	}
+
+	repo.cfg = cfg
+
+	return repo, nil
 }

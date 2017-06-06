@@ -249,26 +249,42 @@ func (idx *Index) FindBlob(h restic.BlobHandle) (result []Location, err error) {
 	return result, nil
 }
 
+// Has checks whether the blob is contained in the index.
+func (idx *Index) Has(h restic.BlobHandle) bool {
+	for _, p := range idx.Packs {
+		for _, entry := range p.Entries {
+			if entry.ID.Equal(h.ID) && entry.Type == h.Type {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // Save writes the complete index to the repo.
 func (idx *Index) Save(repo restic.Repository, supersedes restic.IDs) (restic.ID, error) {
-	packs := make(map[restic.ID][]restic.Blob, len(idx.Packs))
+	packs := make([]restic.Pack, 0, len(idx.Packs))
 	for id, p := range idx.Packs {
-		packs[id] = p.Entries
+		packs = append(packs, restic.Pack{
+			ID:    id,
+			Blobs: p.Entries,
+		})
 	}
 
 	return Save(repo, packs, supersedes)
 }
 
 // Save writes a new index containing the given packs.
-func Save(repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes restic.IDs) (restic.ID, error) {
+func Save(repo restic.Repository, packs []restic.Pack, supersedes restic.IDs) (restic.ID, error) {
 	idx := &indexJSON{
 		Supersedes: supersedes,
 		Packs:      make([]*packJSON, 0, len(packs)),
 	}
 
-	for packID, blobs := range packs {
-		b := make([]blobJSON, 0, len(blobs))
-		for _, blob := range blobs {
+	for _, pack := range packs {
+		b := make([]blobJSON, 0, len(pack.Blobs))
+		for _, blob := range pack.Blobs {
 			b = append(b, blobJSON{
 				ID:     blob.ID,
 				Type:   blob.Type,
@@ -278,7 +294,7 @@ func Save(repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes 
 		}
 
 		p := &packJSON{
-			ID:    packID,
+			ID:    pack.ID,
 			Blobs: b,
 		}
 
