@@ -19,6 +19,15 @@ var defaultLayoutPaths = map[restic.FileType]string{
 	restic.KeyFile:      "keys",
 }
 
+func (l *DefaultLayout) String() string {
+	return "<DefaultLayout>"
+}
+
+// Name returns the name for this layout.
+func (l *DefaultLayout) Name() string {
+	return "default"
+}
+
 // Dirname returns the directory path for a given file type and name.
 func (l *DefaultLayout) Dirname(h restic.Handle) string {
 	p := defaultLayoutPaths[h.Type]

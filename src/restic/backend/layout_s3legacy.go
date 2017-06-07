@@ -18,6 +18,15 @@ var s3LayoutPaths = map[restic.FileType]string{
 	restic.KeyFile:      "key",
 }
 
+func (l *S3LegacyLayout) String() string {
+	return "<S3LegacyLayout>"
+}
+
+// Name returns the name for this layout.
+func (l *S3LegacyLayout) Name() string {
+	return "s3legacy"
+}
+
 // join calls Join with the first empty elements removed.
 func (l *S3LegacyLayout) join(url string, items ...string) string {
 	for len(items) > 0 && items[0] == "" {
