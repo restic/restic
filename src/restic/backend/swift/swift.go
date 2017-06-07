@@ -22,7 +22,7 @@ const connLimit = 10
 // beSwift is a backend which stores the data on a swift endpoint.
 type beSwift struct {
 	conn      *swift.Connection
-	connChan  chan struct{}
+	sem       *backend.Semaphore
 	container string // Container name
 	prefix    string // Prefix of object names in the container
 	backend.Layout
@@ -35,6 +35,11 @@ var _ restic.Backend = &beSwift{}
 // created if it does not exist yet.
 func Open(cfg Config) (restic.Backend, error) {
 	debug.Log("config %#v", cfg)
+
+	sem, err := backend.NewSemaphore(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
 
 	be := &beSwift{
 		conn: &swift.Connection{
@@ -54,6 +59,7 @@ func Open(cfg Config) (restic.Backend, error) {
 
 			Transport: backend.Transport(),
 		},
+		sem:       sem,
 		container: cfg.Container,
 		prefix:    cfg.Prefix,
 		Layout: &backend.DefaultLayout{
@@ -61,7 +67,6 @@ func Open(cfg Config) (restic.Backend, error) {
 			Join: path.Join,
 		},
 	}
-	be.createConnections()
 
 	// Authenticate if needed
 	if !be.conn.Authenticated() {
@@ -96,13 +101,6 @@ func Open(cfg Config) (restic.Backend, error) {
 	}
 
 	return be, nil
-}
-
-func (be *beSwift) createConnections() {
-	be.connChan = make(chan struct{}, connLimit)
-	for i := 0; i < connLimit; i++ {
-		be.connChan <- struct{}{}
-	}
 }
 
 func (be *beSwift) createContainer(policy string) error {
@@ -140,9 +138,9 @@ func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset
 
 	objName := be.Filename(h)
 
-	<-be.connChan
+	be.sem.GetToken()
 	defer func() {
-		be.connChan <- struct{}{}
+		be.sem.ReleaseToken()
 	}()
 
 	headers := swift.Headers{}
@@ -190,9 +188,9 @@ func (be *beSwift) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 		return errors.Wrap(err, "conn.Object")
 	}
 
-	<-be.connChan
+	be.sem.GetToken()
 	defer func() {
-		be.connChan <- struct{}{}
+		be.sem.ReleaseToken()
 	}()
 
 	encoding := "binary/octet-stream"

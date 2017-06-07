@@ -3,6 +3,7 @@ package swift
 import (
 	"os"
 	"restic/errors"
+	"restic/options"
 	"strings"
 )
 
@@ -24,6 +25,19 @@ type Config struct {
 	Container              string
 	Prefix                 string
 	DefaultContainerPolicy string
+
+	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 20)"`
+}
+
+func init() {
+	options.Register("swift", Config{})
+}
+
+// NewConfig returns a new config with the default values filled in.
+func NewConfig() Config {
+	return Config{
+		Connections: 20,
+	}
 }
 
 // ParseConfig parses the string s and extract swift's container name and prefix.
@@ -47,10 +61,9 @@ func ParseConfig(s string) (interface{}, error) {
 	}
 	prefix = prefix[1:]
 
-	cfg := Config{
-		Container: container,
-		Prefix:    prefix,
-	}
+	cfg := NewConfig()
+	cfg.Container = container
+	cfg.Prefix = prefix
 
 	return cfg, nil
 }

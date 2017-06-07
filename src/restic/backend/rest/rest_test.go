@@ -76,9 +76,8 @@ func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 				t.Fatal(err)
 			}
 
-			cfg := rest.Config{
-				URL: url,
-			}
+			cfg := rest.NewConfig()
+			cfg.URL = url
 			return cfg, nil
 		},
 

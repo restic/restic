@@ -6,9 +6,28 @@ var configTests = []struct {
 	s   string
 	cfg Config
 }{
-	{"swift:cnt1:/", Config{Container: "cnt1", Prefix: ""}},
-	{"swift:cnt2:/prefix", Config{Container: "cnt2", Prefix: "prefix"}},
-	{"swift:cnt3:/prefix/longer", Config{Container: "cnt3", Prefix: "prefix/longer"}},
+	{
+		"swift:cnt1:/",
+		Config{
+			Container:   "cnt1",
+			Prefix:      "",
+			Connections: 20,
+		},
+	},
+	{
+		"swift:cnt2:/prefix",
+		Config{Container: "cnt2",
+			Prefix:      "prefix",
+			Connections: 20,
+		},
+	},
+	{
+		"swift:cnt3:/prefix/longer",
+		Config{Container: "cnt3",
+			Prefix:      "prefix/longer",
+			Connections: 20,
+		},
+	},
 }
 
 func TestParseConfig(t *testing.T) {
