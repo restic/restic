@@ -9,7 +9,7 @@ new feature. This way, duplicate work is prevented and we can discuss
 your ideas and design first.
 
 More information and a description of the development environment can be
-found in `CONTRIBUTING.md <CONTRIBUTING.md>`__.
+found in `CONTRIBUTING.md <https://github.com/restic/restic/blob/master/CONTRIBUTING.md>`__.
 A document describing the design of restic and the data structures stored on the
 back end is contained in `Design <https://restic.readthedocs.io/en/latest/design.html>`__.
 
