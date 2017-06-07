@@ -155,7 +155,12 @@ func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
 
 // Location returns this backend's location (the bucket name).
 func (be *Backend) Location() string {
-	return be.bucketname
+	return be.Join(be.bucketname, be.prefix)
+}
+
+// Path returns the path in the bucket that is used for this backend.
+func (be *Backend) Path() string {
+	return be.prefix
 }
 
 // getRemainingSize returns number of bytes remaining. If it is not possible to
@@ -422,3 +427,21 @@ func (be *Backend) Delete(ctx context.Context) error {
 
 // Close does nothing
 func (be *Backend) Close() error { return nil }
+
+// Rename moves a file based on the new layout l.
+func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
+	debug.Log("Rename %v to %v", h, l)
+	oldname := be.Filename(h)
+	newname := l.Filename(h)
+
+	debug.Log("  %v -> %v", oldname, newname)
+
+	coreClient := minio.Core{Client: be.client}
+	err := coreClient.CopyObject(be.bucketname, newname, path.Join(be.bucketname, oldname), minio.CopyConditions{})
+	if err != nil {
+		debug.Log("copy failed: %v", err)
+		return err
+	}
+
+	return be.client.RemoveObject(be.bucketname, oldname)
+}
