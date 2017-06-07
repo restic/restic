@@ -19,6 +19,34 @@ import (
 	"golang.org/x/net/context"
 )
 
+// BlobSizeCache caches the size of blobs in the repo.
+type BlobSizeCache struct {
+	m map[restic.ID]uint
+}
+
+// NewBlobSizeCache returns a new blob size cache containing all entries from midx.
+func NewBlobSizeCache(midx *repository.MasterIndex) *BlobSizeCache {
+	m := make(map[restic.ID]uint, 1000)
+	for _, idx := range midx.All() {
+		for pb := range idx.Each(nil) {
+			m[pb.ID] = pb.Length
+		}
+	}
+	return &BlobSizeCache{
+		m: m,
+	}
+}
+
+// Lookup returns the size of the blob id.
+func (c *BlobSizeCache) Lookup(id restic.ID) (size uint, found bool) {
+	if c == nil {
+		return 0, false
+	}
+
+	size, found = c.m[id]
+	return size, found
+}
+
 type SnapshotWithId struct {
 	*restic.Snapshot
 	restic.ID
@@ -37,23 +65,12 @@ type SnapshotsDir struct {
 	tags        []string
 	host        string
 
-	// sizes caches the sizes of all blobs.
-	sizes map[restic.ID]uint
+	blobsize *BlobSizeCache
 
 	// knownSnapshots maps snapshot timestamp to the snapshot
 	sync.RWMutex
 	knownSnapshots map[string]SnapshotWithId
 	processed      restic.IDSet
-}
-
-func sizeCache(midx *repository.MasterIndex) map[restic.ID]uint {
-	c := make(map[restic.ID]uint, 1000)
-	for _, idx := range midx.All() {
-		for pb := range idx.Each(nil) {
-			c[pb.ID] = pb.Length
-		}
-	}
-	return c
 }
 
 // NewSnapshotsDir returns a new dir object for the snapshots.
@@ -67,7 +84,7 @@ func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool, paths []string, t
 		host:           host,
 		knownSnapshots: make(map[string]SnapshotWithId),
 		processed:      restic.NewIDSet(),
-		sizes:          sizeCache(repo.Index().(*repository.MasterIndex)),
+		blobsize:       NewBlobSizeCache(repo.Index().(*repository.MasterIndex)),
 	}
 }
 
@@ -173,5 +190,5 @@ func (sn *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error
 		}
 	}
 
-	return newDirFromSnapshot(ctx, sn.repo, snapshot, sn.ownerIsRoot, sn.sizes)
+	return newDirFromSnapshot(ctx, sn.repo, snapshot, sn.ownerIsRoot, sn.blobsize)
 }

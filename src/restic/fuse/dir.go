@@ -25,10 +25,10 @@ type dir struct {
 	node        *restic.Node
 	ownerIsRoot bool
 
-	sizes map[restic.ID]uint
+	blobsize *BlobSizeCache
 }
 
-func newDir(ctx context.Context, repo restic.Repository, node *restic.Node, ownerIsRoot bool, sizes map[restic.ID]uint) (*dir, error) {
+func newDir(ctx context.Context, repo restic.Repository, node *restic.Node, ownerIsRoot bool, blobsize *BlobSizeCache) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree.Str())
 	tree, err := repo.LoadTree(ctx, *node.Subtree)
 	if err != nil {
@@ -46,7 +46,7 @@ func newDir(ctx context.Context, repo restic.Repository, node *restic.Node, owne
 		items:       items,
 		inode:       node.Inode,
 		ownerIsRoot: ownerIsRoot,
-		sizes:       sizes,
+		blobsize:    blobsize,
 	}, nil
 }
 
@@ -69,7 +69,7 @@ func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *rest
 	return tree.Nodes, nil
 }
 
-func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot SnapshotWithId, ownerIsRoot bool, sizes map[restic.ID]uint) (*dir, error) {
+func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot SnapshotWithId, ownerIsRoot bool, blobsize *BlobSizeCache) (*dir, error) {
 	debug.Log("new dir for snapshot %v (%v)", snapshot.ID.Str(), snapshot.Tree.Str())
 	tree, err := repo.LoadTree(ctx, *snapshot.Tree)
 	if err != nil {
@@ -102,7 +102,7 @@ func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot Sn
 		items:       items,
 		inode:       inodeFromBackendID(snapshot.ID),
 		ownerIsRoot: ownerIsRoot,
-		sizes:       sizes,
+		blobsize:    blobsize,
 	}, nil
 }
 
@@ -171,9 +171,9 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	switch node.Type {
 	case "dir":
-		return newDir(ctx, d.repo, node, d.ownerIsRoot, d.sizes)
+		return newDir(ctx, d.repo, node, d.ownerIsRoot, d.blobsize)
 	case "file":
-		return newFile(d.repo, node, d.ownerIsRoot, d.sizes)
+		return newFile(d.repo, node, d.ownerIsRoot, d.blobsize)
 	case "symlink":
 		return newLink(d.repo, node, d.ownerIsRoot)
 	default:
