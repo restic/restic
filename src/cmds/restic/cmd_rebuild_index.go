@@ -45,12 +45,12 @@ func rebuildIndex(ctx context.Context, repo restic.Repository) error {
 	Verbosef("counting files in repo\n")
 
 	var packs uint64
-	for range repo.List(restic.DataFile, ctx.Done()) {
+	for range repo.List(ctx, restic.DataFile) {
 		packs++
 	}
 
 	bar := newProgressMax(!globalOptions.Quiet, packs, "packs")
-	idx, err := index.New(repo, bar)
+	idx, err := index.New(ctx, repo, bar)
 	if err != nil {
 		return err
 	}
@@ -58,11 +58,11 @@ func rebuildIndex(ctx context.Context, repo restic.Repository) error {
 	Verbosef("finding old index files\n")
 
 	var supersedes restic.IDs
-	for id := range repo.List(restic.IndexFile, ctx.Done()) {
+	for id := range repo.List(ctx, restic.IndexFile) {
 		supersedes = append(supersedes, id)
 	}
 
-	id, err := idx.Save(repo, supersedes)
+	id, err := idx.Save(ctx, repo, supersedes)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func rebuildIndex(ctx context.Context, repo restic.Repository) error {
 	Verbosef("remove %d old index files\n", len(supersedes))
 
 	for _, id := range supersedes {
-		if err := repo.Backend().Remove(restic.Handle{
+		if err := repo.Backend().Remove(ctx, restic.Handle{
 			Type: restic.IndexFile,
 			Name: id.String(),
 		}); err != nil {

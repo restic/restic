@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -32,7 +33,7 @@ func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, 
 		lockFn = restic.NewExclusiveLock
 	}
 
-	lock, err := lockFn(repo)
+	lock, err := lockFn(context.TODO(), repo)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func refreshLocks(wg *sync.WaitGroup, done <-chan struct{}) {
 			debug.Log("refreshing locks")
 			globalLocks.Lock()
 			for _, lock := range globalLocks.locks {
-				err := lock.Refresh()
+				err := lock.Refresh(context.TODO())
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "unable to refresh lock: %v\n", err)
 				}

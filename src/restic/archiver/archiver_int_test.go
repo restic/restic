@@ -1,6 +1,7 @@
 package archiver
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -83,10 +84,10 @@ func (j testPipeJob) Error() error               { return j.err }
 func (j testPipeJob) Info() os.FileInfo          { return j.fi }
 func (j testPipeJob) Result() chan<- pipe.Result { return j.res }
 
-func testTreeWalker(done <-chan struct{}, out chan<- walk.TreeJob) {
+func testTreeWalker(ctx context.Context, out chan<- walk.TreeJob) {
 	for _, e := range treeJobs {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			return
 		case out <- walk.TreeJob{Path: e}:
 		}
@@ -95,10 +96,10 @@ func testTreeWalker(done <-chan struct{}, out chan<- walk.TreeJob) {
 	close(out)
 }
 
-func testPipeWalker(done <-chan struct{}, out chan<- pipe.Job) {
+func testPipeWalker(ctx context.Context, out chan<- pipe.Job) {
 	for _, e := range pipeJobs {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			return
 		case out <- testPipeJob{path: e}:
 		}
@@ -108,19 +109,19 @@ func testPipeWalker(done <-chan struct{}, out chan<- pipe.Job) {
 }
 
 func TestArchivePipe(t *testing.T) {
-	done := make(chan struct{})
+	ctx := context.TODO()
 
 	treeCh := make(chan walk.TreeJob)
 	pipeCh := make(chan pipe.Job)
 
-	go testTreeWalker(done, treeCh)
-	go testPipeWalker(done, pipeCh)
+	go testTreeWalker(ctx, treeCh)
+	go testPipeWalker(ctx, pipeCh)
 
 	p := archivePipe{Old: treeCh, New: pipeCh}
 
 	ch := make(chan pipe.Job)
 
-	go p.compare(done, ch)
+	go p.compare(ctx, ch)
 
 	i := 0
 	for job := range ch {

@@ -73,14 +73,14 @@ func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
 	sn.Lock()
 	defer sn.Unlock()
 
-	for id := range sn.repo.List(restic.SnapshotFile, ctx.Done()) {
+	for id := range sn.repo.List(ctx, restic.SnapshotFile) {
 		if sn.processed.Has(id) {
 			debug.Log("skipping snapshot %v, already in list", id.Str())
 			continue
 		}
 
 		debug.Log("found snapshot id %v", id.Str())
-		snapshot, err := restic.LoadSnapshot(sn.repo, id)
+		snapshot, err := restic.LoadSnapshot(ctx, sn.repo, id)
 		if err != nil {
 			return err
 		}
@@ -158,5 +158,5 @@ func (sn *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error
 		}
 	}
 
-	return newDirFromSnapshot(sn.repo, snapshot, sn.ownerIsRoot)
+	return newDirFromSnapshot(ctx, sn.repo, snapshot, sn.ownerIsRoot)
 }

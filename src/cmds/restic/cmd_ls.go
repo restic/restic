@@ -46,7 +46,7 @@ func init() {
 }
 
 func printTree(repo *repository.Repository, id *restic.ID, prefix string) error {
-	tree, err := repo.LoadTree(*id)
+	tree, err := repo.LoadTree(context.TODO(), *id)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(); err != nil {
+	if err = repo.LoadIndex(context.TODO()); err != nil {
 		return err
 	}
 

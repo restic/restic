@@ -1,12 +1,14 @@
 package restic
 
+import "context"
+
 // FindUsedBlobs traverses the tree ID and adds all seen blobs (trees and data
 // blobs) to the set blobs. The tree blobs in the `seen` BlobSet will not be visited
 // again.
-func FindUsedBlobs(repo Repository, treeID ID, blobs BlobSet, seen BlobSet) error {
+func FindUsedBlobs(ctx context.Context, repo Repository, treeID ID, blobs BlobSet, seen BlobSet) error {
 	blobs.Insert(BlobHandle{ID: treeID, Type: TreeBlob})
 
-	tree, err := repo.LoadTree(treeID)
+	tree, err := repo.LoadTree(ctx, treeID)
 	if err != nil {
 		return err
 	}
@@ -26,7 +28,7 @@ func FindUsedBlobs(repo Repository, treeID ID, blobs BlobSet, seen BlobSet) erro
 
 			seen.Insert(h)
 
-			err := FindUsedBlobs(repo, subtreeID, blobs, seen)
+			err := FindUsedBlobs(ctx, repo, subtreeID, blobs, seen)
 			if err != nil {
 				return err
 			}

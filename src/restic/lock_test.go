@@ -1,6 +1,7 @@
 package restic_test
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -14,7 +15,7 @@ func TestLock(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	lock, err := restic.NewLock(repo)
+	lock, err := restic.NewLock(context.TODO(), repo)
 	OK(t, err)
 
 	OK(t, lock.Unlock())
@@ -24,7 +25,7 @@ func TestDoubleUnlock(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	lock, err := restic.NewLock(repo)
+	lock, err := restic.NewLock(context.TODO(), repo)
 	OK(t, err)
 
 	OK(t, lock.Unlock())
@@ -38,10 +39,10 @@ func TestMultipleLock(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	lock1, err := restic.NewLock(repo)
+	lock1, err := restic.NewLock(context.TODO(), repo)
 	OK(t, err)
 
-	lock2, err := restic.NewLock(repo)
+	lock2, err := restic.NewLock(context.TODO(), repo)
 	OK(t, err)
 
 	OK(t, lock1.Unlock())
@@ -52,7 +53,7 @@ func TestLockExclusive(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	elock, err := restic.NewExclusiveLock(repo)
+	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
 	OK(t, err)
 	OK(t, elock.Unlock())
 }
@@ -61,10 +62,10 @@ func TestLockOnExclusiveLockedRepo(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	elock, err := restic.NewExclusiveLock(repo)
+	elock, err := restic.NewExclusiveLock(context.TODO(), repo)
 	OK(t, err)
 
-	lock, err := restic.NewLock(repo)
+	lock, err := restic.NewLock(context.TODO(), repo)
 	Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
 	Assert(t, restic.IsAlreadyLocked(err),
@@ -78,10 +79,10 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	elock, err := restic.NewLock(repo)
+	elock, err := restic.NewLock(context.TODO(), repo)
 	OK(t, err)
 
-	lock, err := restic.NewExclusiveLock(repo)
+	lock, err := restic.NewExclusiveLock(context.TODO(), repo)
 	Assert(t, err != nil,
 		"create normal lock with exclusively locked repo didn't return an error")
 	Assert(t, restic.IsAlreadyLocked(err),
@@ -98,12 +99,12 @@ func createFakeLock(repo restic.Repository, t time.Time, pid int) (restic.ID, er
 	}
 
 	newLock := &restic.Lock{Time: t, PID: pid, Hostname: hostname}
-	return repo.SaveJSONUnpacked(restic.LockFile, &newLock)
+	return repo.SaveJSONUnpacked(context.TODO(), restic.LockFile, &newLock)
 }
 
 func removeLock(repo restic.Repository, id restic.ID) error {
 	h := restic.Handle{Type: restic.LockFile, Name: id.String()}
-	return repo.Backend().Remove(h)
+	return repo.Backend().Remove(context.TODO(), h)
 }
 
 var staleLockTests = []struct {
@@ -164,7 +165,7 @@ func TestLockStale(t *testing.T) {
 
 func lockExists(repo restic.Repository, t testing.TB, id restic.ID) bool {
 	h := restic.Handle{Type: restic.LockFile, Name: id.String()}
-	exists, err := repo.Backend().Test(h)
+	exists, err := repo.Backend().Test(context.TODO(), h)
 	OK(t, err)
 
 	return exists
@@ -183,7 +184,7 @@ func TestLockWithStaleLock(t *testing.T) {
 	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
 	OK(t, err)
 
-	OK(t, restic.RemoveStaleLocks(repo))
+	OK(t, restic.RemoveStaleLocks(context.TODO(), repo))
 
 	Assert(t, lockExists(repo, t, id1) == false,
 		"stale lock still exists after RemoveStaleLocks was called")
@@ -208,7 +209,7 @@ func TestRemoveAllLocks(t *testing.T) {
 	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
 	OK(t, err)
 
-	OK(t, restic.RemoveAllLocks(repo))
+	OK(t, restic.RemoveAllLocks(context.TODO(), repo))
 
 	Assert(t, lockExists(repo, t, id1) == false,
 		"lock still exists after RemoveAllLocks was called")
@@ -222,21 +223,21 @@ func TestLockRefresh(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	lock, err := restic.NewLock(repo)
+	lock, err := restic.NewLock(context.TODO(), repo)
 	OK(t, err)
 
 	var lockID *restic.ID
-	for id := range repo.List(restic.LockFile, nil) {
+	for id := range repo.List(context.TODO(), restic.LockFile) {
 		if lockID != nil {
 			t.Error("more than one lock found")
 		}
 		lockID = &id
 	}
 
-	OK(t, lock.Refresh())
+	OK(t, lock.Refresh(context.TODO()))
 
 	var lockID2 *restic.ID
-	for id := range repo.List(restic.LockFile, nil) {
+	for id := range repo.List(context.TODO(), restic.LockFile) {
 		if lockID2 != nil {
 			t.Error("more than one lock found")
 		}

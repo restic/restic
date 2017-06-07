@@ -1,6 +1,7 @@
 package list
 
 import (
+	"context"
 	"restic"
 	"restic/worker"
 )
@@ -9,8 +10,8 @@ const listPackWorkers = 10
 
 // Lister combines lists packs in a repo and blobs in a pack.
 type Lister interface {
-	List(restic.FileType, <-chan struct{}) <-chan restic.ID
-	ListPack(restic.ID) ([]restic.Blob, int64, error)
+	List(context.Context, restic.FileType) <-chan restic.ID
+	ListPack(context.Context, restic.ID) ([]restic.Blob, int64, error)
 }
 
 // Result is returned in the channel from LoadBlobsFromAllPacks.
@@ -36,10 +37,10 @@ func (l Result) Entries() []restic.Blob {
 }
 
 // AllPacks sends the contents of all packs to ch.
-func AllPacks(repo Lister, ch chan<- worker.Job, done <-chan struct{}) {
-	f := func(job worker.Job, done <-chan struct{}) (interface{}, error) {
+func AllPacks(ctx context.Context, repo Lister, ch chan<- worker.Job) {
+	f := func(ctx context.Context, job worker.Job) (interface{}, error) {
 		packID := job.Data.(restic.ID)
-		entries, size, err := repo.ListPack(packID)
+		entries, size, err := repo.ListPack(ctx, packID)
 
 		return Result{
 			packID:  packID,
@@ -49,14 +50,14 @@ func AllPacks(repo Lister, ch chan<- worker.Job, done <-chan struct{}) {
 	}
 
 	jobCh := make(chan worker.Job)
-	wp := worker.New(listPackWorkers, f, jobCh, ch)
+	wp := worker.New(ctx, listPackWorkers, f, jobCh, ch)
 
 	go func() {
 		defer close(jobCh)
-		for id := range repo.List(restic.DataFile, done) {
+		for id := range repo.List(ctx, restic.DataFile) {
 			select {
 			case jobCh <- worker.Job{Data: id}:
-			case <-done:
+			case <-ctx.Done():
 				return
 			}
 		}

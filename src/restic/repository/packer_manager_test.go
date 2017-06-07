@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"io"
 	"math/rand"
 	"os"
@@ -52,7 +53,7 @@ func saveFile(t testing.TB, be Saver, f *os.File, id restic.ID) {
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 	t.Logf("save file %v", h)
 
-	if err := be.Save(h, f); err != nil {
+	if err := be.Save(context.TODO(), h, f); err != nil {
 		t.Fatal(err)
 	}
 
@@ -145,7 +146,7 @@ func BenchmarkPackerManager(t *testing.B) {
 	rnd := newRandReader(rand.NewSource(23))
 
 	be := &mock.Backend{
-		SaveFn: func(restic.Handle, io.Reader) error { return nil },
+		SaveFn: func(context.Context, restic.Handle, io.Reader) error { return nil },
 	}
 	blobBuf := make([]byte, maxBlobSize)
 

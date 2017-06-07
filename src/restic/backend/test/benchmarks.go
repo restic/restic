@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"restic"
 	"restic/test"
@@ -12,14 +13,14 @@ func saveRandomFile(t testing.TB, be restic.Backend, length int) ([]byte, restic
 	data := test.Random(23, length)
 	id := restic.Hash(data)
 	handle := restic.Handle{Type: restic.DataFile, Name: id.String()}
-	if err := be.Save(handle, bytes.NewReader(data)); err != nil {
+	if err := be.Save(context.TODO(), handle, bytes.NewReader(data)); err != nil {
 		t.Fatalf("Save() error: %+v", err)
 	}
 	return data, handle
 }
 
 func remove(t testing.TB, be restic.Backend, h restic.Handle) {
-	if err := be.Remove(h); err != nil {
+	if err := be.Remove(context.TODO(), h); err != nil {
 		t.Fatalf("Remove() returned error: %v", err)
 	}
 }
@@ -40,7 +41,7 @@ func (s *Suite) BenchmarkLoadFile(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		rd, err := be.Load(handle, 0, 0)
+		rd, err := be.Load(context.TODO(), handle, 0, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +83,7 @@ func (s *Suite) BenchmarkLoadPartialFile(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		rd, err := be.Load(handle, testLength, 0)
+		rd, err := be.Load(context.TODO(), handle, testLength, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -126,7 +127,7 @@ func (s *Suite) BenchmarkLoadPartialFileOffset(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		rd, err := be.Load(handle, testLength, int64(testOffset))
+		rd, err := be.Load(context.TODO(), handle, testLength, int64(testOffset))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -171,11 +172,11 @@ func (s *Suite) BenchmarkSave(t *testing.B) {
 			t.Fatal(err)
 		}
 
-		if err := be.Save(handle, rd); err != nil {
+		if err := be.Save(context.TODO(), handle, rd); err != nil {
 			t.Fatal(err)
 		}
 
-		if err := be.Remove(handle); err != nil {
+		if err := be.Remove(context.TODO(), handle); err != nil {
 			t.Fatal(err)
 		}
 	}

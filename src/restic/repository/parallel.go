@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"restic"
 	"sync"
 
@@ -18,24 +19,19 @@ func closeIfOpen(ch chan struct{}) {
 }
 
 // ParallelWorkFunc gets one file ID to work on. If an error is returned,
-// processing stops. If done is closed, the function should return.
-type ParallelWorkFunc func(id string, done <-chan struct{}) error
+// processing stops. When the contect is cancelled the function should return.
+type ParallelWorkFunc func(ctx context.Context, id string) error
 
 // ParallelIDWorkFunc gets one restic.ID to work on. If an error is returned,
-// processing stops. If done is closed, the function should return.
-type ParallelIDWorkFunc func(id restic.ID, done <-chan struct{}) error
+// processing stops. When the context is cancelled the function should return.
+type ParallelIDWorkFunc func(ctx context.Context, id restic.ID) error
 
 // FilesInParallel runs n workers of f in parallel, on the IDs that
 // repo.List(t) yield. If f returns an error, the process is aborted and the
 // first error is returned.
-func FilesInParallel(repo restic.Lister, t restic.FileType, n uint, f ParallelWorkFunc) error {
-	done := make(chan struct{})
-	defer closeIfOpen(done)
-
+func FilesInParallel(ctx context.Context, repo restic.Lister, t restic.FileType, n uint, f ParallelWorkFunc) error {
 	wg := &sync.WaitGroup{}
-
-	ch := repo.List(t, done)
-
+	ch := repo.List(ctx, t)
 	errors := make(chan error, n)
 
 	for i := 0; uint(i) < n; i++ {
@@ -50,13 +46,12 @@ func FilesInParallel(repo restic.Lister, t restic.FileType, n uint, f ParallelWo
 						return
 					}
 
-					err := f(id, done)
+					err := f(ctx, id)
 					if err != nil {
-						closeIfOpen(done)
 						errors <- err
 						return
 					}
-				case <-done:
+				case <-ctx.Done():
 					return
 				}
 			}
@@ -79,13 +74,13 @@ func FilesInParallel(repo restic.Lister, t restic.FileType, n uint, f ParallelWo
 // function that takes a string. Filenames that do not parse as a restic.ID
 // are ignored.
 func ParallelWorkFuncParseID(f ParallelIDWorkFunc) ParallelWorkFunc {
-	return func(s string, done <-chan struct{}) error {
+	return func(ctx context.Context, s string) error {
 		id, err := restic.ParseID(s)
 		if err != nil {
 			debug.Log("invalid ID %q: %v", id, err)
 			return err
 		}
 
-		return f(id, done)
+		return f(ctx, id)
 	}
 }

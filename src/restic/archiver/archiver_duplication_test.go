@@ -1,6 +1,7 @@
 package archiver_test
 
 import (
+	"context"
 	"crypto/rand"
 	"io"
 	mrand "math/rand"
@@ -39,33 +40,33 @@ func randomID() restic.ID {
 func forgetfulBackend() restic.Backend {
 	be := &mock.Backend{}
 
-	be.TestFn = func(h restic.Handle) (bool, error) {
+	be.TestFn = func(ctx context.Context, h restic.Handle) (bool, error) {
 		return false, nil
 	}
 
-	be.LoadFn = func(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	be.LoadFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 		return nil, errors.New("not found")
 	}
 
-	be.SaveFn = func(h restic.Handle, rd io.Reader) error {
+	be.SaveFn = func(ctx context.Context, h restic.Handle, rd io.Reader) error {
 		return nil
 	}
 
-	be.StatFn = func(h restic.Handle) (restic.FileInfo, error) {
+	be.StatFn = func(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 		return restic.FileInfo{}, errors.New("not found")
 	}
 
-	be.RemoveFn = func(h restic.Handle) error {
+	be.RemoveFn = func(ctx context.Context, h restic.Handle) error {
 		return nil
 	}
 
-	be.ListFn = func(t restic.FileType, done <-chan struct{}) <-chan string {
+	be.ListFn = func(ctx context.Context, t restic.FileType) <-chan string {
 		ch := make(chan string)
 		close(ch)
 		return ch
 	}
 
-	be.DeleteFn = func() error {
+	be.DeleteFn = func(ctx context.Context) error {
 		return nil
 	}
 
@@ -80,7 +81,7 @@ func testArchiverDuplication(t *testing.T) {
 
 	repo := repository.New(forgetfulBackend())
 
-	err = repo.Init("foo")
+	err = repo.Init(context.TODO(), "foo")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +109,7 @@ func testArchiverDuplication(t *testing.T) {
 
 				buf := make([]byte, 50)
 
-				err := arch.Save(restic.DataBlob, buf, id)
+				err := arch.Save(context.TODO(), restic.DataBlob, buf, id)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -127,7 +128,7 @@ func testArchiverDuplication(t *testing.T) {
 			case <-done:
 				return
 			case <-ticker.C:
-				err := repo.SaveFullIndex()
+				err := repo.SaveFullIndex(context.TODO())
 				if err != nil {
 					t.Fatal(err)
 				}

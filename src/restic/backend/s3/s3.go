@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -30,6 +31,9 @@ type s3 struct {
 	cacheObjSize map[string]int64
 	backend.Layout
 }
+
+// make sure that *s3 implements backend.Backend
+var _ restic.Backend = &s3{}
 
 const defaultLayout = "s3legacy"
 
@@ -202,7 +206,7 @@ func (wr preventCloser) Close() error {
 }
 
 // Save stores data in the backend at the handle.
-func (be *s3) Save(h restic.Handle, rd io.Reader) (err error) {
+func (be *s3) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -259,7 +263,7 @@ func (wr wrapReader) Close() error {
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *s3) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
 	if err := h.Valid(); err != nil {
 		return nil, err
@@ -307,7 +311,7 @@ func (be *s3) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, er
 }
 
 // Stat returns information about a blob.
-func (be *s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
+func (be *s3) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("%v", h)
 
 	objName := be.Filename(h)
@@ -337,7 +341,7 @@ func (be *s3) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *s3) Test(h restic.Handle) (bool, error) {
+func (be *s3) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	found := false
 	objName := be.Filename(h)
 	_, err := be.client.StatObject(be.bucketname, objName)
@@ -350,7 +354,7 @@ func (be *s3) Test(h restic.Handle) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *s3) Remove(h restic.Handle) error {
+func (be *s3) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 	err := be.client.RemoveObject(be.bucketname, objName)
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
@@ -360,7 +364,7 @@ func (be *s3) Remove(h restic.Handle) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
+func (be *s3) List(ctx context.Context, t restic.FileType) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
@@ -371,7 +375,7 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 		prefix += "/"
 	}
 
-	listresp := be.client.ListObjects(be.bucketname, prefix, true, done)
+	listresp := be.client.ListObjects(be.bucketname, prefix, true, ctx.Done())
 
 	go func() {
 		defer close(ch)
@@ -383,7 +387,7 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 
 			select {
 			case ch <- path.Base(m):
-			case <-done:
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -393,11 +397,9 @@ func (be *s3) List(t restic.FileType, done <-chan struct{}) <-chan string {
 }
 
 // Remove keys for a specified backend type.
-func (be *s3) removeKeys(t restic.FileType) error {
-	done := make(chan struct{})
-	defer close(done)
-	for key := range be.List(restic.DataFile, done) {
-		err := be.Remove(restic.Handle{Type: restic.DataFile, Name: key})
+func (be *s3) removeKeys(ctx context.Context, t restic.FileType) error {
+	for key := range be.List(ctx, restic.DataFile) {
+		err := be.Remove(ctx, restic.Handle{Type: restic.DataFile, Name: key})
 		if err != nil {
 			return err
 		}
@@ -407,7 +409,7 @@ func (be *s3) removeKeys(t restic.FileType) error {
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
-func (be *s3) Delete() error {
+func (be *s3) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
 		restic.DataFile,
 		restic.KeyFile,
@@ -416,13 +418,13 @@ func (be *s3) Delete() error {
 		restic.IndexFile}
 
 	for _, t := range alltypes {
-		err := be.removeKeys(t)
+		err := be.removeKeys(ctx, t)
 		if err != nil {
 			return nil
 		}
 	}
 
-	return be.Remove(restic.Handle{Type: restic.ConfigFile})
+	return be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
 }
 
 // Close does nothing

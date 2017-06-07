@@ -2,6 +2,7 @@
 package index
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"restic"
@@ -33,15 +34,12 @@ func newIndex() *Index {
 }
 
 // New creates a new index for repo from scratch.
-func New(repo restic.Repository, p *restic.Progress) (*Index, error) {
-	done := make(chan struct{})
-	defer close(done)
-
+func New(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Index, error) {
 	p.Start()
 	defer p.Done()
 
 	ch := make(chan worker.Job)
-	go list.AllPacks(repo, ch, done)
+	go list.AllPacks(ctx, repo, ch)
 
 	idx := newIndex()
 
@@ -84,11 +82,11 @@ type indexJSON struct {
 	Packs      []*packJSON `json:"packs"`
 }
 
-func loadIndexJSON(repo restic.Repository, id restic.ID) (*indexJSON, error) {
+func loadIndexJSON(ctx context.Context, repo restic.Repository, id restic.ID) (*indexJSON, error) {
 	debug.Log("process index %v\n", id.Str())
 
 	var idx indexJSON
-	err := repo.LoadJSONUnpacked(restic.IndexFile, id, &idx)
+	err := repo.LoadJSONUnpacked(ctx, restic.IndexFile, id, &idx)
 	if err != nil {
 		return nil, err
 	}
@@ -97,25 +95,22 @@ func loadIndexJSON(repo restic.Repository, id restic.ID) (*indexJSON, error) {
 }
 
 // Load creates an index by loading all index files from the repo.
-func Load(repo restic.Repository, p *restic.Progress) (*Index, error) {
+func Load(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Index, error) {
 	debug.Log("loading indexes")
 
 	p.Start()
 	defer p.Done()
-
-	done := make(chan struct{})
-	defer close(done)
 
 	supersedes := make(map[restic.ID]restic.IDSet)
 	results := make(map[restic.ID]map[restic.ID]Pack)
 
 	index := newIndex()
 
-	for id := range repo.List(restic.IndexFile, done) {
+	for id := range repo.List(ctx, restic.IndexFile) {
 		p.Report(restic.Stat{Blobs: 1})
 
 		debug.Log("Load index %v", id.Str())
-		idx, err := loadIndexJSON(repo, id)
+		idx, err := loadIndexJSON(ctx, repo, id)
 		if err != nil {
 			return nil, err
 		}
@@ -250,17 +245,17 @@ func (idx *Index) FindBlob(h restic.BlobHandle) (result []Location, err error) {
 }
 
 // Save writes the complete index to the repo.
-func (idx *Index) Save(repo restic.Repository, supersedes restic.IDs) (restic.ID, error) {
+func (idx *Index) Save(ctx context.Context, repo restic.Repository, supersedes restic.IDs) (restic.ID, error) {
 	packs := make(map[restic.ID][]restic.Blob, len(idx.Packs))
 	for id, p := range idx.Packs {
 		packs[id] = p.Entries
 	}
 
-	return Save(repo, packs, supersedes)
+	return Save(ctx, repo, packs, supersedes)
 }
 
 // Save writes a new index containing the given packs.
-func Save(repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes restic.IDs) (restic.ID, error) {
+func Save(ctx context.Context, repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes restic.IDs) (restic.ID, error) {
 	idx := &indexJSON{
 		Supersedes: supersedes,
 		Packs:      make([]*packJSON, 0, len(packs)),
@@ -285,5 +280,5 @@ func Save(repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes 
 		idx.Packs = append(idx.Packs, p)
 	}
 
-	return repo.SaveJSONUnpacked(restic.IndexFile, idx)
+	return repo.SaveJSONUnpacked(ctx, restic.IndexFile, idx)
 }

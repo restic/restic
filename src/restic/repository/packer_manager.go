@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"crypto/sha256"
 	"io"
 	"os"
@@ -18,7 +19,7 @@ import (
 
 // Saver implements saving data in a backend.
 type Saver interface {
-	Save(restic.Handle, io.Reader) error
+	Save(context.Context, restic.Handle, io.Reader) error
 }
 
 // Packer holds a pack.Packer together with a hash writer.
@@ -118,7 +119,7 @@ func (r *Repository) savePacker(p *Packer) error {
 	id := restic.IDFromHash(p.hw.Sum(nil))
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-	err = r.be.Save(h, p.tmpfile)
+	err = r.be.Save(context.TODO(), h, p.tmpfile)
 	if err != nil {
 		debug.Log("Save(%v) error: %v", h, err)
 		return err

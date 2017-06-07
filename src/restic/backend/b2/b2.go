@@ -23,6 +23,9 @@ type b2Backend struct {
 	sem *backend.Semaphore
 }
 
+// ensure statically that *b2Backend implements restic.Backend.
+var _ restic.Backend = &b2Backend{}
+
 func newClient(ctx context.Context, cfg Config) (*b2.Client, error) {
 	opts := []b2.ClientOption{b2.Transport(backend.Transport())}
 
@@ -96,7 +99,7 @@ func Create(cfg Config) (restic.Backend, error) {
 		sem: backend.NewSemaphore(cfg.Connections),
 	}
 
-	present, err := be.Test(restic.Handle{Type: restic.ConfigFile})
+	present, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +143,7 @@ func (wr *wrapReader) Close() error {
 
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
-func (be *b2Backend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
 	if err := h.Valid(); err != nil {
 		return nil, err
@@ -154,7 +157,7 @@ func (be *b2Backend) Load(h restic.Handle, length int, offset int64) (io.ReadClo
 		return nil, errors.Errorf("invalid length %d", length)
 	}
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 
 	be.sem.GetToken()
 
@@ -191,8 +194,8 @@ func (be *b2Backend) Load(h restic.Handle, length int, offset int64) (io.ReadClo
 }
 
 // Save stores data in the backend at the handle.
-func (be *b2Backend) Save(h restic.Handle, rd io.Reader) (err error) {
-	ctx, cancel := context.WithCancel(context.TODO())
+func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	if err := h.Valid(); err != nil {
@@ -225,11 +228,8 @@ func (be *b2Backend) Save(h restic.Handle, rd io.Reader) (err error) {
 }
 
 // Stat returns information about a blob.
-func (be *b2Backend) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
+func (be *b2Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("Stat %v", h)
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
 
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
@@ -245,11 +245,8 @@ func (be *b2Backend) Stat(h restic.Handle) (bi restic.FileInfo, err error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *b2Backend) Test(h restic.Handle) (bool, error) {
+func (be *b2Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	debug.Log("Test %v", h)
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
 
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
@@ -265,11 +262,8 @@ func (be *b2Backend) Test(h restic.Handle) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *b2Backend) Remove(h restic.Handle) error {
+func (be *b2Backend) Remove(ctx context.Context, h restic.Handle) error {
 	debug.Log("Remove %v", h)
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	defer cancel()
 
 	be.sem.GetToken()
 	defer be.sem.ReleaseToken()
@@ -281,11 +275,11 @@ func (be *b2Backend) Remove(h restic.Handle) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (be *b2Backend) List(t restic.FileType, done <-chan struct{}) <-chan string {
+func (be *b2Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 	debug.Log("List %v", t)
 	ch := make(chan string)
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 
 	be.sem.GetToken()
 
@@ -315,7 +309,7 @@ func (be *b2Backend) List(t restic.FileType, done <-chan struct{}) <-chan string
 
 				select {
 				case ch <- m:
-				case <-done:
+				case <-ctx.Done():
 					return
 				}
 			}
@@ -330,13 +324,10 @@ func (be *b2Backend) List(t restic.FileType, done <-chan struct{}) <-chan string
 }
 
 // Remove keys for a specified backend type.
-func (be *b2Backend) removeKeys(t restic.FileType) error {
+func (be *b2Backend) removeKeys(ctx context.Context, t restic.FileType) error {
 	debug.Log("removeKeys %v", t)
-
-	done := make(chan struct{})
-	defer close(done)
-	for key := range be.List(t, done) {
-		err := be.Remove(restic.Handle{Type: t, Name: key})
+	for key := range be.List(ctx, t) {
+		err := be.Remove(ctx, restic.Handle{Type: t, Name: key})
 		if err != nil {
 			return err
 		}
@@ -345,7 +336,7 @@ func (be *b2Backend) removeKeys(t restic.FileType) error {
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
-func (be *b2Backend) Delete() error {
+func (be *b2Backend) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
 		restic.DataFile,
 		restic.KeyFile,
@@ -354,12 +345,12 @@ func (be *b2Backend) Delete() error {
 		restic.IndexFile}
 
 	for _, t := range alltypes {
-		err := be.removeKeys(t)
+		err := be.removeKeys(ctx, t)
 		if err != nil {
 			return nil
 		}
 	}
-	err := be.Remove(restic.Handle{Type: restic.ConfigFile})
+	err := be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil && b2.IsNotExist(errors.Cause(err)) {
 		err = nil
 	}

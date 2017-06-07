@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"os"
 	"restic"
 	"restic/backend/local"
@@ -50,7 +51,7 @@ func TestRepositoryWithBackend(t testing.TB, be restic.Backend) (r restic.Reposi
 	repo := New(be)
 
 	cfg := restic.TestCreateConfig(t, testChunkerPol)
-	err := repo.init(test.TestPassword, cfg)
+	err := repo.init(context.TODO(), test.TestPassword, cfg)
 	if err != nil {
 		t.Fatalf("TestRepository(): initialize repo failed: %v", err)
 	}
@@ -94,7 +95,7 @@ func TestOpenLocal(t testing.TB, dir string) (r restic.Repository) {
 	}
 
 	repo := New(be)
-	err = repo.SearchKey(test.TestPassword, 10)
+	err = repo.SearchKey(context.TODO(), test.TestPassword, 10)
 	if err != nil {
 		t.Fatal(err)
 	}

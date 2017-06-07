@@ -2,6 +2,7 @@ package sftp
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -262,7 +263,7 @@ func Join(parts ...string) string {
 }
 
 // Save stores data in the backend at the handle.
-func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
+func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("Save %v", h)
 	if err := r.clientError(); err != nil {
 		return err
@@ -283,7 +284,7 @@ func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 			return errors.Wrap(err, "MkdirAll")
 		}
 
-		return r.Save(h, rd)
+		return r.Save(ctx, h, rd)
 	}
 
 	if err != nil {
@@ -315,7 +316,7 @@ func (r *SFTP) Save(h restic.Handle, rd io.Reader) (err error) {
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (r *SFTP) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (r *SFTP) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v", h, length, offset)
 	if err := h.Valid(); err != nil {
 		return nil, err
@@ -346,7 +347,7 @@ func (r *SFTP) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, e
 }
 
 // Stat returns information about a blob.
-func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
+func (r *SFTP) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	debug.Log("Stat(%v)", h)
 	if err := r.clientError(); err != nil {
 		return restic.FileInfo{}, err
@@ -365,7 +366,7 @@ func (r *SFTP) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (r *SFTP) Test(h restic.Handle) (bool, error) {
+func (r *SFTP) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	debug.Log("Test(%v)", h)
 	if err := r.clientError(); err != nil {
 		return false, err
@@ -384,7 +385,7 @@ func (r *SFTP) Test(h restic.Handle) (bool, error) {
 }
 
 // Remove removes the content stored at name.
-func (r *SFTP) Remove(h restic.Handle) error {
+func (r *SFTP) Remove(ctx context.Context, h restic.Handle) error {
 	debug.Log("Remove(%v)", h)
 	if err := r.clientError(); err != nil {
 		return err
@@ -396,7 +397,7 @@ func (r *SFTP) Remove(h restic.Handle) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
+func (r *SFTP) List(ctx context.Context, t restic.FileType) <-chan string {
 	debug.Log("List %v", t)
 
 	ch := make(chan string)
@@ -416,7 +417,7 @@ func (r *SFTP) List(t restic.FileType, done <-chan struct{}) <-chan string {
 
 			select {
 			case ch <- path.Base(walker.Path()):
-			case <-done:
+			case <-ctx.Done():
 				return
 			}
 		}

@@ -134,7 +134,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 				return nil, err
 			}
 
-			exists, err := be.Test(restic.Handle{Type: restic.ConfigFile})
+			exists, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
 			if err != nil {
 				return nil, err
 			}
@@ -228,7 +228,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 				return nil, err
 			}
 
-			exists, err := be.Test(restic.Handle{Type: restic.ConfigFile})
+			exists, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
 			if err != nil {
 				return nil, err
 			}
@@ -255,7 +255,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 				return err
 			}
 
-			if err := be.(restic.Deleter).Delete(); err != nil {
+			if err := be.(restic.Deleter).Delete(context.TODO()); err != nil {
 				return err
 			}
 

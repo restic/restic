@@ -1,6 +1,7 @@
 package walk
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,7 +35,7 @@ func NewTreeWalker(ch chan<- loadTreeJob, out chan<- TreeJob) *TreeWalker {
 
 // Walk starts walking the tree given by id. When the channel done is closed,
 // processing stops.
-func (tw *TreeWalker) Walk(path string, id restic.ID, done chan struct{}) {
+func (tw *TreeWalker) Walk(ctx context.Context, path string, id restic.ID) {
 	debug.Log("starting on tree %v for %v", id.Str(), path)
 	defer debug.Log("done walking tree %v for %v", id.Str(), path)
 
@@ -48,22 +49,22 @@ func (tw *TreeWalker) Walk(path string, id restic.ID, done chan struct{}) {
 	if res.err != nil {
 		select {
 		case tw.out <- TreeJob{Path: path, Error: res.err}:
-		case <-done:
+		case <-ctx.Done():
 			return
 		}
 		return
 	}
 
-	tw.walk(path, res.tree, done)
+	tw.walk(ctx, path, res.tree)
 
 	select {
 	case tw.out <- TreeJob{Path: path, Tree: res.tree}:
-	case <-done:
+	case <-ctx.Done():
 		return
 	}
 }
 
-func (tw *TreeWalker) walk(path string, tree *restic.Tree, done chan struct{}) {
+func (tw *TreeWalker) walk(ctx context.Context, path string, tree *restic.Tree) {
 	debug.Log("start on %q", path)
 	defer debug.Log("done for %q", path)
 
@@ -94,7 +95,7 @@ func (tw *TreeWalker) walk(path string, tree *restic.Tree, done chan struct{}) {
 
 			res := <-results[i]
 			if res.err == nil {
-				tw.walk(p, res.tree, done)
+				tw.walk(ctx, p, res.tree)
 			} else {
 				fmt.Fprintf(os.Stderr, "error loading tree: %v\n", res.err)
 			}
@@ -106,7 +107,7 @@ func (tw *TreeWalker) walk(path string, tree *restic.Tree, done chan struct{}) {
 
 		select {
 		case tw.out <- job:
-		case <-done:
+		case <-ctx.Done():
 			return
 		}
 	}
@@ -124,14 +125,14 @@ type loadTreeJob struct {
 
 type treeLoader func(restic.ID) (*restic.Tree, error)
 
-func loadTreeWorker(wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader, done <-chan struct{}) {
+func loadTreeWorker(ctx context.Context, wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader) {
 	debug.Log("start")
 	defer debug.Log("exit")
 	defer wg.Done()
 
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			debug.Log("done channel closed")
 			return
 		case job, ok := <-in:
@@ -148,7 +149,7 @@ func loadTreeWorker(wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader, 
 			select {
 			case job.res <- loadTreeResult{tree, err}:
 				debug.Log("job result sent")
-			case <-done:
+			case <-ctx.Done():
 				debug.Log("done channel closed before result could be sent")
 				return
 			}
@@ -158,7 +159,7 @@ func loadTreeWorker(wg *sync.WaitGroup, in <-chan loadTreeJob, load treeLoader, 
 
 // TreeLoader loads tree objects.
 type TreeLoader interface {
-	LoadTree(restic.ID) (*restic.Tree, error)
+	LoadTree(context.Context, restic.ID) (*restic.Tree, error)
 }
 
 const loadTreeWorkers = 10
@@ -166,11 +167,11 @@ const loadTreeWorkers = 10
 // Tree walks the tree specified by id recursively and sends a job for each
 // file and directory it finds. When the channel done is closed, processing
 // stops.
-func Tree(repo TreeLoader, id restic.ID, done chan struct{}, jobCh chan<- TreeJob) {
+func Tree(ctx context.Context, repo TreeLoader, id restic.ID, jobCh chan<- TreeJob) {
 	debug.Log("start on %v, start workers", id.Str())
 
 	load := func(id restic.ID) (*restic.Tree, error) {
-		tree, err := repo.LoadTree(id)
+		tree, err := repo.LoadTree(ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -182,11 +183,11 @@ func Tree(repo TreeLoader, id restic.ID, done chan struct{}, jobCh chan<- TreeJo
 	var wg sync.WaitGroup
 	for i := 0; i < loadTreeWorkers; i++ {
 		wg.Add(1)
-		go loadTreeWorker(&wg, ch, load, done)
+		go loadTreeWorker(ctx, &wg, ch, load)
 	}
 
 	tw := NewTreeWalker(ch, jobCh)
-	tw.Walk("", id, done)
+	tw.Walk(ctx, "", id)
 	close(jobCh)
 
 	close(ch)

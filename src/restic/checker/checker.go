@@ -1,6 +1,7 @@
 package checker
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -76,7 +77,7 @@ func (err ErrOldIndexFormat) Error() string {
 }
 
 // LoadIndex loads all index files.
-func (c *Checker) LoadIndex() (hints []error, errs []error) {
+func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 	debug.Log("Start")
 	type indexRes struct {
 		Index *repository.Index
@@ -86,21 +87,21 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 
 	indexCh := make(chan indexRes)
 
-	worker := func(id restic.ID, done <-chan struct{}) error {
+	worker := func(ctx context.Context, id restic.ID) error {
 		debug.Log("worker got index %v", id)
-		idx, err := repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeIndex)
+		idx, err := repository.LoadIndexWithDecoder(ctx, c.repo, id, repository.DecodeIndex)
 		if errors.Cause(err) == repository.ErrOldIndexFormat {
 			debug.Log("index %v has old format", id.Str())
 			hints = append(hints, ErrOldIndexFormat{id})
 
-			idx, err = repository.LoadIndexWithDecoder(c.repo, id, repository.DecodeOldIndex)
+			idx, err = repository.LoadIndexWithDecoder(ctx, c.repo, id, repository.DecodeOldIndex)
 		}
 
 		err = errors.Wrapf(err, "error loading index %v", id.Str())
 
 		select {
 		case indexCh <- indexRes{Index: idx, ID: id.String(), err: err}:
-		case <-done:
+		case <-ctx.Done():
 		}
 
 		return nil
@@ -109,7 +110,7 @@ func (c *Checker) LoadIndex() (hints []error, errs []error) {
 	go func() {
 		defer close(indexCh)
 		debug.Log("start loading indexes in parallel")
-		err := repository.FilesInParallel(c.repo.Backend(), restic.IndexFile, defaultParallelism,
+		err := repository.FilesInParallel(ctx, c.repo.Backend(), restic.IndexFile, defaultParallelism,
 			repository.ParallelWorkFuncParseID(worker))
 		debug.Log("loading indexes finished, error: %v", err)
 		if err != nil {
@@ -183,7 +184,7 @@ func (e PackError) Error() string {
 	return "pack " + e.ID.String() + ": " + e.Err.Error()
 }
 
-func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<- error, wg *sync.WaitGroup, done <-chan struct{}) {
+func packIDTester(ctx context.Context, repo restic.Repository, inChan <-chan restic.ID, errChan chan<- error, wg *sync.WaitGroup) {
 	debug.Log("worker start")
 	defer debug.Log("worker done")
 
@@ -191,7 +192,7 @@ func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<
 
 	for id := range inChan {
 		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-		ok, err := repo.Backend().Test(h)
+		ok, err := repo.Backend().Test(ctx, h)
 		if err != nil {
 			err = PackError{ID: id, Err: err}
 		} else {
@@ -203,7 +204,7 @@ func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<
 		if err != nil {
 			debug.Log("error checking for pack %s: %v", id.Str(), err)
 			select {
-			case <-done:
+			case <-ctx.Done():
 				return
 			case errChan <- err:
 			}
@@ -218,7 +219,7 @@ func packIDTester(repo restic.Repository, inChan <-chan restic.ID, errChan chan<
 // Packs checks that all packs referenced in the index are still available and
 // there are no packs that aren't in an index. errChan is closed after all
 // packs have been checked.
-func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
+func (c *Checker) Packs(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
 
 	debug.Log("checking for %d packs", len(c.packs))
@@ -229,7 +230,7 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	IDChan := make(chan restic.ID)
 	for i := 0; i < defaultParallelism; i++ {
 		workerWG.Add(1)
-		go packIDTester(c.repo, IDChan, errChan, &workerWG, done)
+		go packIDTester(ctx, c.repo, IDChan, errChan, &workerWG)
 	}
 
 	for id := range c.packs {
@@ -242,12 +243,12 @@ func (c *Checker) Packs(errChan chan<- error, done <-chan struct{}) {
 	workerWG.Wait()
 	debug.Log("workers terminated")
 
-	for id := range c.repo.List(restic.DataFile, done) {
+	for id := range c.repo.List(ctx, restic.DataFile) {
 		debug.Log("check data blob %v", id.Str())
 		if !seenPacks.Has(id) {
 			c.orphanedPacks = append(c.orphanedPacks, id)
 			select {
-			case <-done:
+			case <-ctx.Done():
 				return
 			case errChan <- PackError{ID: id, Orphaned: true, Err: errors.New("not referenced in any index")}:
 			}
@@ -277,8 +278,8 @@ func (e Error) Error() string {
 	return e.Err.Error()
 }
 
-func loadTreeFromSnapshot(repo restic.Repository, id restic.ID) (restic.ID, error) {
-	sn, err := restic.LoadSnapshot(repo, id)
+func loadTreeFromSnapshot(ctx context.Context, repo restic.Repository, id restic.ID) (restic.ID, error) {
+	sn, err := restic.LoadSnapshot(ctx, repo, id)
 	if err != nil {
 		debug.Log("error loading snapshot %v: %v", id.Str(), err)
 		return restic.ID{}, err
@@ -293,7 +294,7 @@ func loadTreeFromSnapshot(repo restic.Repository, id restic.ID) (restic.ID, erro
 }
 
 // loadSnapshotTreeIDs loads all snapshots from backend and returns the tree IDs.
-func loadSnapshotTreeIDs(repo restic.Repository) (restic.IDs, []error) {
+func loadSnapshotTreeIDs(ctx context.Context, repo restic.Repository) (restic.IDs, []error) {
 	var trees struct {
 		IDs restic.IDs
 		sync.Mutex
@@ -304,7 +305,7 @@ func loadSnapshotTreeIDs(repo restic.Repository) (restic.IDs, []error) {
 		sync.Mutex
 	}
 
-	snapshotWorker := func(strID string, done <-chan struct{}) error {
+	snapshotWorker := func(ctx context.Context, strID string) error {
 		id, err := restic.ParseID(strID)
 		if err != nil {
 			return err
@@ -312,7 +313,7 @@ func loadSnapshotTreeIDs(repo restic.Repository) (restic.IDs, []error) {
 
 		debug.Log("load snapshot %v", id.Str())
 
-		treeID, err := loadTreeFromSnapshot(repo, id)
+		treeID, err := loadTreeFromSnapshot(ctx, repo, id)
 		if err != nil {
 			errs.Lock()
 			errs.errs = append(errs.errs, err)
@@ -328,7 +329,7 @@ func loadSnapshotTreeIDs(repo restic.Repository) (restic.IDs, []error) {
 		return nil
 	}
 
-	err := repository.FilesInParallel(repo.Backend(), restic.SnapshotFile, defaultParallelism, snapshotWorker)
+	err := repository.FilesInParallel(ctx, repo.Backend(), restic.SnapshotFile, defaultParallelism, snapshotWorker)
 	if err != nil {
 		errs.errs = append(errs.errs, err)
 	}
@@ -353,9 +354,9 @@ type treeJob struct {
 }
 
 // loadTreeWorker loads trees from repo and sends them to out.
-func loadTreeWorker(repo restic.Repository,
+func loadTreeWorker(ctx context.Context, repo restic.Repository,
 	in <-chan restic.ID, out chan<- treeJob,
-	done <-chan struct{}, wg *sync.WaitGroup) {
+	wg *sync.WaitGroup) {
 
 	defer func() {
 		debug.Log("exiting")
@@ -371,7 +372,7 @@ func loadTreeWorker(repo restic.Repository,
 	outCh = nil
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			return
 
 		case treeID, ok := <-inCh:
@@ -380,7 +381,7 @@ func loadTreeWorker(repo restic.Repository,
 			}
 			debug.Log("load tree %v", treeID.Str())
 
-			tree, err := repo.LoadTree(treeID)
+			tree, err := repo.LoadTree(ctx, treeID)
 			debug.Log("load tree %v (%v) returned err: %v", tree, treeID.Str(), err)
 			job = treeJob{ID: treeID, error: err, Tree: tree}
 			outCh = out
@@ -395,7 +396,7 @@ func loadTreeWorker(repo restic.Repository,
 }
 
 // checkTreeWorker checks the trees received and sends out errors to errChan.
-func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-chan struct{}, wg *sync.WaitGroup) {
+func (c *Checker) checkTreeWorker(ctx context.Context, in <-chan treeJob, out chan<- error, wg *sync.WaitGroup) {
 	defer func() {
 		debug.Log("exiting")
 		wg.Done()
@@ -410,7 +411,7 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-ch
 	outCh = nil
 	for {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			debug.Log("done channel closed, exiting")
 			return
 
@@ -458,7 +459,7 @@ func (c *Checker) checkTreeWorker(in <-chan treeJob, out chan<- error, done <-ch
 	}
 }
 
-func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob, done <-chan struct{}) {
+func filterTrees(ctx context.Context, backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan treeJob, out chan<- treeJob) {
 	defer func() {
 		debug.Log("closing output channels")
 		close(loaderChan)
@@ -489,7 +490,7 @@ func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan tree
 		}
 
 		select {
-		case <-done:
+		case <-ctx.Done():
 			return
 
 		case loadCh <- nextTreeID:
@@ -549,15 +550,15 @@ func filterTrees(backlog restic.IDs, loaderChan chan<- restic.ID, in <-chan tree
 // Structure checks that for all snapshots all referenced data blobs and
 // subtrees are available in the index. errChan is closed after all trees have
 // been traversed.
-func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
+func (c *Checker) Structure(ctx context.Context, errChan chan<- error) {
 	defer close(errChan)
 
-	trees, errs := loadSnapshotTreeIDs(c.repo)
+	trees, errs := loadSnapshotTreeIDs(ctx, c.repo)
 	debug.Log("need to check %d trees from snapshots, %d errs returned", len(trees), len(errs))
 
 	for _, err := range errs {
 		select {
-		case <-done:
+		case <-ctx.Done():
 			return
 		case errChan <- err:
 		}
@@ -570,11 +571,11 @@ func (c *Checker) Structure(errChan chan<- error, done <-chan struct{}) {
 	var wg sync.WaitGroup
 	for i := 0; i < defaultParallelism; i++ {
 		wg.Add(2)
-		go loadTreeWorker(c.repo, treeIDChan, treeJobChan1, done, &wg)
-		go c.checkTreeWorker(treeJobChan2, errChan, done, &wg)
+		go loadTreeWorker(ctx, c.repo, treeIDChan, treeJobChan1, &wg)
+		go c.checkTreeWorker(ctx, treeJobChan2, errChan, &wg)
 	}
 
-	filterTrees(trees, treeIDChan, treeJobChan1, treeJobChan2, done)
+	filterTrees(ctx, trees, treeIDChan, treeJobChan1, treeJobChan2)
 
 	wg.Wait()
 }
@@ -659,11 +660,11 @@ func (c *Checker) CountPacks() uint64 {
 }
 
 // checkPack reads a pack and checks the integrity of all blobs.
-func checkPack(r restic.Repository, id restic.ID) error {
+func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 	debug.Log("checking pack %v", id.Str())
 	h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 
-	rd, err := r.Backend().Load(h, 0, 0)
+	rd, err := r.Backend().Load(ctx, h, 0, 0)
 	if err != nil {
 		return err
 	}
@@ -748,7 +749,7 @@ func checkPack(r restic.Repository, id restic.ID) error {
 }
 
 // ReadData loads all data from the repository and checks the integrity.
-func (c *Checker) ReadData(p *restic.Progress, errChan chan<- error, done <-chan struct{}) {
+func (c *Checker) ReadData(ctx context.Context, p *restic.Progress, errChan chan<- error) {
 	defer close(errChan)
 
 	p.Start()
@@ -761,7 +762,7 @@ func (c *Checker) ReadData(p *restic.Progress, errChan chan<- error, done <-chan
 			var ok bool
 
 			select {
-			case <-done:
+			case <-ctx.Done():
 				return
 			case id, ok = <-in:
 				if !ok {
@@ -769,21 +770,21 @@ func (c *Checker) ReadData(p *restic.Progress, errChan chan<- error, done <-chan
 				}
 			}
 
-			err := checkPack(c.repo, id)
+			err := checkPack(ctx, c.repo, id)
 			p.Report(restic.Stat{Blobs: 1})
 			if err == nil {
 				continue
 			}
 
 			select {
-			case <-done:
+			case <-ctx.Done():
 				return
 			case errChan <- err:
 			}
 		}
 	}
 
-	ch := c.repo.List(restic.DataFile, done)
+	ch := c.repo.List(ctx, restic.DataFile)
 
 	var wg sync.WaitGroup
 	for i := 0; i < defaultParallelism; i++ {

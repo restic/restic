@@ -30,8 +30,8 @@ func listKeys(ctx context.Context, s *repository.Repository) error {
 	tab.Header = fmt.Sprintf(" %-10s  %-10s  %-10s  %s", "ID", "User", "Host", "Created")
 	tab.RowFormat = "%s%-10s  %-10s  %-10s  %s"
 
-	for id := range s.List(restic.KeyFile, ctx.Done()) {
-		k, err := repository.LoadKey(s, id.String())
+	for id := range s.List(ctx, restic.KeyFile) {
+		k, err := repository.LoadKey(ctx, s, id.String())
 		if err != nil {
 			Warnf("LoadKey() failed: %v\n", err)
 			continue
@@ -69,7 +69,7 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(repo, pw, repo.Key())
+	id, err := repository.AddKey(context.TODO(), repo, pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -85,7 +85,7 @@ func deleteKey(repo *repository.Repository, name string) error {
 	}
 
 	h := restic.Handle{Type: restic.KeyFile, Name: name}
-	err := repo.Backend().Remove(h)
+	err := repo.Backend().Remove(context.TODO(), h)
 	if err != nil {
 		return err
 	}
@@ -100,13 +100,13 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(repo, pw, repo.Key())
+	id, err := repository.AddKey(context.TODO(), repo, pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
 	h := restic.Handle{Type: restic.KeyFile, Name: repo.KeyName()}
-	err = repo.Backend().Remove(h)
+	err = repo.Backend().Remove(context.TODO(), h)
 	if err != nil {
 		return err
 	}

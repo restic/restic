@@ -1,6 +1,7 @@
 package sftp_test
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"restic"
@@ -54,7 +55,7 @@ func TestLayout(t *testing.T) {
 			}
 
 			datafiles := make(map[string]bool)
-			for id := range be.List(restic.DataFile, nil) {
+			for id := range be.List(context.TODO(), restic.DataFile) {
 				datafiles[id] = false
 			}
 

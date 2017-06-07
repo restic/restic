@@ -1,6 +1,7 @@
 package restic
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
@@ -30,7 +31,7 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 
 	var err error
 
-	r.sn, err = LoadSnapshot(repo, id)
+	r.sn, err = LoadSnapshot(context.TODO(), repo, id)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +39,8 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 	return r, nil
 }
 
-func (res *Restorer) restoreTo(dst string, dir string, treeID ID, idx *HardlinkIndex) error {
-	tree, err := res.repo.LoadTree(treeID)
+func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, treeID ID, idx *HardlinkIndex) error {
+	tree, err := res.repo.LoadTree(ctx, treeID)
 	if err != nil {
 		return res.Error(dir, nil, err)
 	}
@@ -50,7 +51,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID, idx *HardlinkI
 		debug.Log("SelectForRestore returned %v", selectedForRestore)
 
 		if selectedForRestore {
-			err := res.restoreNodeTo(node, dir, dst, idx)
+			err := res.restoreNodeTo(ctx, node, dir, dst, idx)
 			if err != nil {
 				return err
 			}
@@ -62,7 +63,7 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID, idx *HardlinkI
 			}
 
 			subp := filepath.Join(dir, node.Name)
-			err = res.restoreTo(dst, subp, *node.Subtree, idx)
+			err = res.restoreTo(ctx, dst, subp, *node.Subtree, idx)
 			if err != nil {
 				err = res.Error(subp, node, err)
 				if err != nil {
@@ -83,11 +84,11 @@ func (res *Restorer) restoreTo(dst string, dir string, treeID ID, idx *HardlinkI
 	return nil
 }
 
-func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string, idx *HardlinkIndex) error {
+func (res *Restorer) restoreNodeTo(ctx context.Context, node *Node, dir string, dst string, idx *HardlinkIndex) error {
 	debug.Log("node %v, dir %v, dst %v", node.Name, dir, dst)
 	dstPath := filepath.Join(dst, dir, node.Name)
 
-	err := node.CreateAt(dstPath, res.repo, idx)
+	err := node.CreateAt(ctx, dstPath, res.repo, idx)
 	if err != nil {
 		debug.Log("node.CreateAt(%s) error %v", dstPath, err)
 	}
@@ -99,7 +100,7 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string, idx *Hard
 		// Create parent directories and retry
 		err = fs.MkdirAll(filepath.Dir(dstPath), 0700)
 		if err == nil || os.IsExist(errors.Cause(err)) {
-			err = node.CreateAt(dstPath, res.repo, idx)
+			err = node.CreateAt(ctx, dstPath, res.repo, idx)
 		}
 	}
 
@@ -118,9 +119,9 @@ func (res *Restorer) restoreNodeTo(node *Node, dir string, dst string, idx *Hard
 
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
-func (res *Restorer) RestoreTo(dst string) error {
+func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
 	idx := NewHardlinkIndex()
-	return res.restoreTo(dst, string(filepath.Separator), *res.sn.Tree, idx)
+	return res.restoreTo(ctx, dst, string(filepath.Separator), *res.sn.Tree, idx)
 }
 
 // Snapshot returns the snapshot this restorer is configured to use.

@@ -1,6 +1,7 @@
 package walk_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,17 +25,15 @@ func TestWalkTree(t *testing.T) {
 
 	// archive a few files
 	arch := archiver.New(repo)
-	sn, _, err := arch.Snapshot(nil, dirs, nil, "localhost", nil)
+	sn, _, err := arch.Snapshot(context.TODO(), nil, dirs, nil, "localhost", nil)
 	OK(t, err)
 
 	// flush repo, write all packs
 	OK(t, repo.Flush())
 
-	done := make(chan struct{})
-
 	// start tree walker
 	treeJobs := make(chan walk.TreeJob)
-	go walk.Tree(repo, *sn.Tree, done, treeJobs)
+	go walk.Tree(context.TODO(), repo, *sn.Tree, treeJobs)
 
 	// start filesystem walker
 	fsJobs := make(chan pipe.Job)
@@ -43,7 +42,7 @@ func TestWalkTree(t *testing.T) {
 	f := func(string, os.FileInfo) bool {
 		return true
 	}
-	go pipe.Walk(dirs, f, done, fsJobs, resCh)
+	go pipe.Walk(context.TODO(), dirs, f, fsJobs, resCh)
 
 	for {
 		// receive fs job
@@ -95,9 +94,9 @@ type delayRepo struct {
 	delay time.Duration
 }
 
-func (d delayRepo) LoadTree(id restic.ID) (*restic.Tree, error) {
+func (d delayRepo) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, error) {
 	time.Sleep(d.delay)
-	return d.repo.LoadTree(id)
+	return d.repo.LoadTree(ctx, id)
 }
 
 var repoFixture = filepath.Join("testdata", "walktree-test-repo.tar.gz")
@@ -1345,7 +1344,7 @@ func TestDelayedWalkTree(t *testing.T) {
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
-	OK(t, repo.LoadIndex())
+	OK(t, repo.LoadIndex(context.TODO()))
 
 	root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
 	OK(t, err)
@@ -1354,7 +1353,7 @@ func TestDelayedWalkTree(t *testing.T) {
 
 	// start tree walker
 	treeJobs := make(chan walk.TreeJob)
-	go walk.Tree(dr, root, nil, treeJobs)
+	go walk.Tree(context.TODO(), dr, root, treeJobs)
 
 	i := 0
 	for job := range treeJobs {
@@ -1375,7 +1374,7 @@ func BenchmarkDelayedWalkTree(t *testing.B) {
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
-	OK(t, repo.LoadIndex())
+	OK(t, repo.LoadIndex(context.TODO()))
 
 	root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
 	OK(t, err)
@@ -1387,7 +1386,7 @@ func BenchmarkDelayedWalkTree(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		// start tree walker
 		treeJobs := make(chan walk.TreeJob)
-		go walk.Tree(dr, root, nil, treeJobs)
+		go walk.Tree(context.TODO(), dr, root, treeJobs)
 
 		for range treeJobs {
 		}

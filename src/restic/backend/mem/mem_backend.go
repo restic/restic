@@ -2,6 +2,7 @@ package mem
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"io/ioutil"
 	"restic"
@@ -37,7 +38,7 @@ func New() *MemoryBackend {
 }
 
 // Test returns whether a file exists.
-func (be *MemoryBackend) Test(h restic.Handle) (bool, error) {
+func (be *MemoryBackend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -51,7 +52,7 @@ func (be *MemoryBackend) Test(h restic.Handle) (bool, error) {
 }
 
 // Save adds new Data to the backend.
-func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
+func (be *MemoryBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -81,7 +82,7 @@ func (be *MemoryBackend) Save(h restic.Handle, rd io.Reader) error {
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (be *MemoryBackend) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *MemoryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	if err := h.Valid(); err != nil {
 		return nil, err
 	}
@@ -117,7 +118,7 @@ func (be *MemoryBackend) Load(h restic.Handle, length int, offset int64) (io.Rea
 }
 
 // Stat returns information about a file in the backend.
-func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
+func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -140,7 +141,7 @@ func (be *MemoryBackend) Stat(h restic.Handle) (restic.FileInfo, error) {
 }
 
 // Remove deletes a file from the backend.
-func (be *MemoryBackend) Remove(h restic.Handle) error {
+func (be *MemoryBackend) Remove(ctx context.Context, h restic.Handle) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -156,7 +157,7 @@ func (be *MemoryBackend) Remove(h restic.Handle) error {
 }
 
 // List returns a channel which yields entries from the backend.
-func (be *MemoryBackend) List(t restic.FileType, done <-chan struct{}) <-chan string {
+func (be *MemoryBackend) List(ctx context.Context, t restic.FileType) <-chan string {
 	be.m.Lock()
 	defer be.m.Unlock()
 
@@ -177,7 +178,7 @@ func (be *MemoryBackend) List(t restic.FileType, done <-chan struct{}) <-chan st
 		for _, id := range ids {
 			select {
 			case ch <- id:
-			case <-done:
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -192,7 +193,7 @@ func (be *MemoryBackend) Location() string {
 }
 
 // Delete removes all data in the backend.
-func (be *MemoryBackend) Delete() error {
+func (be *MemoryBackend) Delete(ctx context.Context) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 

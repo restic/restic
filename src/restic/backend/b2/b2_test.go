@@ -1,6 +1,7 @@
 package b2_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -52,7 +53,7 @@ func newB2TestSuite(t testing.TB) *test.Suite {
 				return err
 			}
 
-			if err := be.(restic.Deleter).Delete(); err != nil {
+			if err := be.(restic.Deleter).Delete(context.TODO()); err != nil {
 				return err
 			}
 

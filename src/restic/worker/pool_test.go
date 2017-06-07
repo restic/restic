@@ -1,6 +1,7 @@
 package worker_test
 
 import (
+	"context"
 	"testing"
 
 	"restic/errors"
@@ -12,7 +13,7 @@ const concurrency = 10
 
 var errTooLarge = errors.New("too large")
 
-func square(job worker.Job, done <-chan struct{}) (interface{}, error) {
+func square(ctx context.Context, job worker.Job) (interface{}, error) {
 	n := job.Data.(int)
 	if n > 2000 {
 		return nil, errTooLarge
@@ -20,15 +21,15 @@ func square(job worker.Job, done <-chan struct{}) (interface{}, error) {
 	return n * n, nil
 }
 
-func newBufferedPool(bufsize int, n int, f worker.Func) (chan worker.Job, chan worker.Job, *worker.Pool) {
+func newBufferedPool(ctx context.Context, bufsize int, n int, f worker.Func) (chan worker.Job, chan worker.Job, *worker.Pool) {
 	inCh := make(chan worker.Job, bufsize)
 	outCh := make(chan worker.Job, bufsize)
 
-	return inCh, outCh, worker.New(n, f, inCh, outCh)
+	return inCh, outCh, worker.New(ctx, n, f, inCh, outCh)
 }
 
 func TestPool(t *testing.T) {
-	inCh, outCh, p := newBufferedPool(200, concurrency, square)
+	inCh, outCh, p := newBufferedPool(context.TODO(), 200, concurrency, square)
 
 	for i := 0; i < 150; i++ {
 		inCh <- worker.Job{Data: i}
@@ -53,7 +54,7 @@ func TestPool(t *testing.T) {
 }
 
 func TestPoolErrors(t *testing.T) {
-	inCh, outCh, p := newBufferedPool(200, concurrency, square)
+	inCh, outCh, p := newBufferedPool(context.TODO(), 200, concurrency, square)
 
 	for i := 0; i < 150; i++ {
 		inCh <- worker.Job{Data: i + 1900}

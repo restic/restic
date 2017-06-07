@@ -1,6 +1,7 @@
 package restic_test
 
 import (
+	"context"
 	"restic"
 	"restic/checker"
 	"restic/repository"
@@ -23,7 +24,7 @@ func TestCreateSnapshot(t *testing.T) {
 		restic.TestCreateSnapshot(t, repo, testSnapshotTime.Add(time.Duration(i)*time.Second), testDepth, 0)
 	}
 
-	snapshots, err := restic.LoadAllSnapshots(repo)
+	snapshots, err := restic.LoadAllSnapshots(context.TODO(), repo)
 	if err != nil {
 		t.Fatal(err)
 	}

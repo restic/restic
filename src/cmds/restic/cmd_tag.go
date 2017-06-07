@@ -76,7 +76,7 @@ func changeTags(repo *repository.Repository, sn *restic.Snapshot, setTags, addTa
 		}
 
 		// Save the new snapshot.
-		id, err := repo.SaveJSONUnpacked(restic.SnapshotFile, sn)
+		id, err := repo.SaveJSONUnpacked(context.TODO(), restic.SnapshotFile, sn)
 		if err != nil {
 			return false, err
 		}
@@ -89,7 +89,7 @@ func changeTags(repo *repository.Repository, sn *restic.Snapshot, setTags, addTa
 
 		// Remove the old snapshot.
 		h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-		if err = repo.Backend().Remove(h); err != nil {
+		if err = repo.Backend().Remove(context.TODO(), h); err != nil {
 			return false, err
 		}
 

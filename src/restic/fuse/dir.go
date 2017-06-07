@@ -26,9 +26,9 @@ type dir struct {
 	ownerIsRoot bool
 }
 
-func newDir(repo restic.Repository, node *restic.Node, ownerIsRoot bool) (*dir, error) {
+func newDir(ctx context.Context, repo restic.Repository, node *restic.Node, ownerIsRoot bool) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree.Str())
-	tree, err := repo.LoadTree(*node.Subtree)
+	tree, err := repo.LoadTree(ctx, *node.Subtree)
 	if err != nil {
 		debug.Log("  error loading tree %v: %v", node.Subtree.Str(), err)
 		return nil, err
@@ -49,7 +49,7 @@ func newDir(repo restic.Repository, node *restic.Node, ownerIsRoot bool) (*dir, 
 
 // replaceSpecialNodes replaces nodes with name "." and "/" by their contents.
 // Otherwise, the node is returned.
-func replaceSpecialNodes(repo restic.Repository, node *restic.Node) ([]*restic.Node, error) {
+func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *restic.Node) ([]*restic.Node, error) {
 	if node.Type != "dir" || node.Subtree == nil {
 		return []*restic.Node{node}, nil
 	}
@@ -58,7 +58,7 @@ func replaceSpecialNodes(repo restic.Repository, node *restic.Node) ([]*restic.N
 		return []*restic.Node{node}, nil
 	}
 
-	tree, err := repo.LoadTree(*node.Subtree)
+	tree, err := repo.LoadTree(ctx, *node.Subtree)
 	if err != nil {
 		return nil, err
 	}
@@ -66,16 +66,16 @@ func replaceSpecialNodes(repo restic.Repository, node *restic.Node) ([]*restic.N
 	return tree.Nodes, nil
 }
 
-func newDirFromSnapshot(repo restic.Repository, snapshot SnapshotWithId, ownerIsRoot bool) (*dir, error) {
+func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot SnapshotWithId, ownerIsRoot bool) (*dir, error) {
 	debug.Log("new dir for snapshot %v (%v)", snapshot.ID.Str(), snapshot.Tree.Str())
-	tree, err := repo.LoadTree(*snapshot.Tree)
+	tree, err := repo.LoadTree(ctx, *snapshot.Tree)
 	if err != nil {
 		debug.Log("  loadTree(%v) failed: %v", snapshot.ID.Str(), err)
 		return nil, err
 	}
 	items := make(map[string]*restic.Node)
 	for _, n := range tree.Nodes {
-		nodes, err := replaceSpecialNodes(repo, n)
+		nodes, err := replaceSpecialNodes(ctx, repo, n)
 		if err != nil {
 			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
 			return nil, err
@@ -167,7 +167,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	switch node.Type {
 	case "dir":
-		return newDir(d.repo, node, d.ownerIsRoot)
+		return newDir(ctx, d.repo, node, d.ownerIsRoot)
 	case "file":
 		return newFile(d.repo, node, d.ownerIsRoot)
 	case "symlink":

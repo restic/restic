@@ -1,5 +1,7 @@
 package worker
 
+import "context"
+
 // Job is one unit of work. It is given to a Func, and the returned result and
 // error are stored in Result and Error.
 type Job struct {
@@ -9,12 +11,11 @@ type Job struct {
 }
 
 // Func does the actual work within a Pool.
-type Func func(job Job, done <-chan struct{}) (result interface{}, err error)
+type Func func(ctx context.Context, job Job) (result interface{}, err error)
 
 // Pool implements a worker pool.
 type Pool struct {
 	f     Func
-	done  chan struct{}
 	jobCh <-chan Job
 	resCh chan<- Job
 
@@ -25,10 +26,9 @@ type Pool struct {
 
 // New returns a new worker pool with n goroutines, each running the function
 // f. The workers are started immediately.
-func New(n int, f Func, jobChan <-chan Job, resultChan chan<- Job) *Pool {
+func New(ctx context.Context, n int, f Func, jobChan <-chan Job, resultChan chan<- Job) *Pool {
 	p := &Pool{
 		f:              f,
-		done:           make(chan struct{}),
 		workersExit:    make(chan struct{}),
 		allWorkersDone: make(chan struct{}),
 		numWorkers:     n,
@@ -37,7 +37,7 @@ func New(n int, f Func, jobChan <-chan Job, resultChan chan<- Job) *Pool {
 	}
 
 	for i := 0; i < n; i++ {
-		go p.runWorker(i)
+		go p.runWorker(ctx, i)
 	}
 
 	go p.waitForExit()
@@ -58,7 +58,7 @@ func (p *Pool) waitForExit() {
 }
 
 // runWorker runs a worker function.
-func (p *Pool) runWorker(numWorker int) {
+func (p *Pool) runWorker(ctx context.Context, numWorker int) {
 	defer func() {
 		p.workersExit <- struct{}{}
 	}()
@@ -75,7 +75,7 @@ func (p *Pool) runWorker(numWorker int) {
 
 	for {
 		select {
-		case <-p.done:
+		case <-ctx.Done():
 			return
 
 		case job, ok = <-inCh:
@@ -83,7 +83,7 @@ func (p *Pool) runWorker(numWorker int) {
 				return
 			}
 
-			job.Result, job.Error = p.f(job, p.done)
+			job.Result, job.Error = p.f(ctx, job)
 			inCh = nil
 			outCh = p.resCh
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"restic"
 	"restic/debug"
@@ -76,13 +75,12 @@ func runPrune(gopts GlobalOptions) error {
 }
 
 func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
-	err := repo.LoadIndex()
+	ctx := gopts.ctx
+
+	err := repo.LoadIndex(ctx)
 	if err != nil {
 		return err
 	}
-
-	ctx, cancel := context.WithCancel(gopts.ctx)
-	defer cancel()
 
 	var stats struct {
 		blobs     int
@@ -92,14 +90,14 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	Verbosef("counting files in repo\n")
-	for range repo.List(restic.DataFile, ctx.Done()) {
+	for range repo.List(ctx, restic.DataFile) {
 		stats.packs++
 	}
 
 	Verbosef("building new index for repo\n")
 
 	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
-	idx, err := index.New(repo, bar)
+	idx, err := index.New(ctx, repo, bar)
 	if err != nil {
 		return err
 	}
@@ -135,7 +133,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("load all snapshots\n")
 
 	// find referenced blobs
-	snapshots, err := restic.LoadAllSnapshots(repo)
+	snapshots, err := restic.LoadAllSnapshots(ctx, repo)
 	if err != nil {
 		return err
 	}
@@ -152,7 +150,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	for _, sn := range snapshots {
 		debug.Log("process snapshot %v", sn.ID().Str())
 
-		err = restic.FindUsedBlobs(repo, *sn.Tree, usedBlobs, seenBlobs)
+		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs, seenBlobs)
 		if err != nil {
 			return err
 		}
@@ -217,7 +215,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	if len(rewritePacks) != 0 {
 		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
 		bar.Start()
-		err = repository.Repack(repo, rewritePacks, usedBlobs, bar)
+		err = repository.Repack(ctx, repo, rewritePacks, usedBlobs, bar)
 		if err != nil {
 			return err
 		}
@@ -229,7 +227,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		bar.Start()
 		for packID := range removePacks {
 			h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
-			err = repo.Backend().Remove(h)
+			err = repo.Backend().Remove(ctx, h)
 			if err != nil {
 				Warnf("unable to remove file %v from the repository\n", packID.Str())
 			}

@@ -1,6 +1,7 @@
 package test_test
 
 import (
+	"context"
 	"restic"
 	"restic/errors"
 	"testing"
@@ -26,7 +27,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 		Create: func(cfg interface{}) (restic.Backend, error) {
 			c := cfg.(*memConfig)
 			if c.be != nil {
-				ok, err := c.be.Test(restic.Handle{Type: restic.ConfigFile})
+				ok, err := c.be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
 				if err != nil {
 					return nil, err
 				}

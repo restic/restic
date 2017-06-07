@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"crypto/sha256"
 	"io"
 	"restic"
@@ -17,7 +18,7 @@ import (
 // these packs. Each pack is loaded and the blobs listed in keepBlobs is saved
 // into a new pack. Afterwards, the packs are removed. This operation requires
 // an exclusive lock on the repo.
-func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *restic.Progress) (err error) {
+func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet, p *restic.Progress) (err error) {
 	debug.Log("repacking %d packs while keeping %d blobs", len(packs), len(keepBlobs))
 
 	for packID := range packs {
@@ -29,7 +30,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 			return errors.Wrap(err, "TempFile")
 		}
 
-		beRd, err := repo.Backend().Load(h, 0, 0)
+		beRd, err := repo.Backend().Load(ctx, h, 0, 0)
 		if err != nil {
 			return err
 		}
@@ -100,7 +101,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 					h, tempfile.Name(), id)
 			}
 
-			_, err = repo.SaveBlob(entry.Type, buf, entry.ID)
+			_, err = repo.SaveBlob(ctx, entry.Type, buf, entry.ID)
 			if err != nil {
 				return err
 			}
@@ -128,7 +129,7 @@ func Repack(repo restic.Repository, packs restic.IDSet, keepBlobs restic.BlobSet
 
 	for packID := range packs {
 		h := restic.Handle{Type: restic.DataFile, Name: packID.String()}
-		err := repo.Backend().Remove(h)
+		err := repo.Backend().Remove(ctx, h)
 		if err != nil {
 			debug.Log("error removing pack %v: %v", packID.Str(), err)
 			return err
