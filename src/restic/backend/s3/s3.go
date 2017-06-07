@@ -35,7 +35,7 @@ type Backend struct {
 // make sure that *Backend implements backend.Backend
 var _ restic.Backend = &Backend{}
 
-const defaultLayout = "s3legacy"
+const defaultLayout = "default"
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
