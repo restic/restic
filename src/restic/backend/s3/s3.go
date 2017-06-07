@@ -8,7 +8,6 @@ import (
 	"path"
 	"restic"
 	"strings"
-	"sync"
 	"time"
 
 	"restic/backend"
@@ -23,12 +22,10 @@ const connLimit = 10
 
 // s3 is a backend which stores the data on an S3 endpoint.
 type s3 struct {
-	client       *minio.Client
-	sem          *backend.Semaphore
-	bucketname   string
-	prefix       string
-	cacheMutex   sync.RWMutex
-	cacheObjSize map[string]int64
+	client     *minio.Client
+	sem        *backend.Semaphore
+	bucketname string
+	prefix     string
 	backend.Layout
 }
 
@@ -53,11 +50,10 @@ func Open(cfg Config) (restic.Backend, error) {
 	}
 
 	be := &s3{
-		client:       client,
-		sem:          sem,
-		bucketname:   cfg.Bucket,
-		prefix:       cfg.Prefix,
-		cacheObjSize: make(map[string]int64),
+		client:     client,
+		sem:        sem,
+		bucketname: cfg.Bucket,
+		prefix:     cfg.Prefix,
 	}
 
 	client.SetCustomTransport(backend.Transport())
