@@ -189,9 +189,26 @@ func readHeaderLength(rd io.ReaderAt, size int64) (uint32, error) {
 
 const maxHeaderSize = 16 * 1024 * 1024
 
+// we require at least one entry in the header, and one blob for a pack file
+var minFileSize = entrySize + crypto.Extension
+
 // readHeader reads the header at the end of rd. size is the length of the
 // whole data accessible in rd.
 func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
+	if size == 0 {
+		err := InvalidFileError{
+			Message: "file is empty",
+		}
+		return nil, errors.Wrap(err, "readHeader")
+	}
+
+	if size < int64(minFileSize) {
+		err := InvalidFileError{
+			Message: "file is too small",
+		}
+		return nil, errors.Wrap(err, "readHeader")
+	}
+
 	hl, err := readHeaderLength(rd, size)
 	if err != nil {
 		return nil, err
@@ -216,6 +233,15 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 	}
 
 	return buf, nil
+}
+
+// InvalidFileError is return when a file is found that is not a pack file.
+type InvalidFileError struct {
+	Message string
+}
+
+func (e InvalidFileError) Error() string {
+	return e.Message
 }
 
 // List returns the list of entries found in a pack file.
