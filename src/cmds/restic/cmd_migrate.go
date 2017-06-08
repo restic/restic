@@ -39,7 +39,7 @@ func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 		}
 
 		if ok {
-			Printf("  %v\n", m.Name())
+			Printf("  %v: %v\n", m.Name(), m.Desc())
 		}
 	}
 
@@ -59,10 +59,11 @@ func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 				}
 
 				if !ok {
-					Warnf("migration %v cannot be applied: check failed\n")
+					Warnf("migration %v cannot be applied: check failed\n", m.Name())
 					continue
 				}
 
+				Printf("applying migration %v...\n", m.Name())
 				if err = m.Apply(ctx, repo); err != nil {
 					Warnf("migration %v failed: %v\n", m.Name(), err)
 					if firsterr == nil {
