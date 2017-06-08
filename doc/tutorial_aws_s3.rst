@@ -64,7 +64,7 @@ changes:
 .. image:: images/aws_s3/05_bucket_create_review.png
    :alt: Review Bucket Creation
 
-The newly created ``restic-demo`` bucket will no appear on the list of S3
+The newly created ``restic-demo`` bucket will now appear on the list of S3
 buckets:
 
 .. image:: images/aws_s3/06_buckets_list_after.png
