@@ -11,6 +11,15 @@ type RESTLayout struct {
 
 var restLayoutPaths = defaultLayoutPaths
 
+func (l *RESTLayout) String() string {
+	return "<RESTLayout>"
+}
+
+// Name returns the name for this layout.
+func (l *RESTLayout) Name() string {
+	return "rest"
+}
+
 // Dirname returns the directory path for a given file type and name.
 func (l *RESTLayout) Dirname(h restic.Handle) string {
 	if h.Type == restic.ConfigFile {

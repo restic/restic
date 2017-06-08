@@ -20,8 +20,8 @@ import (
 
 const connLimit = 10
 
-// s3 is a backend which stores the data on an S3 endpoint.
-type s3 struct {
+// Backend stores data on an S3 endpoint.
+type Backend struct {
 	client     *minio.Client
 	sem        *backend.Semaphore
 	bucketname string
@@ -29,10 +29,10 @@ type s3 struct {
 	backend.Layout
 }
 
-// make sure that *s3 implements backend.Backend
-var _ restic.Backend = &s3{}
+// make sure that *Backend implements backend.Backend
+var _ restic.Backend = &Backend{}
 
-const defaultLayout = "s3legacy"
+const defaultLayout = "default"
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
@@ -49,7 +49,7 @@ func Open(cfg Config) (restic.Backend, error) {
 		return nil, err
 	}
 
-	be := &s3{
+	be := &Backend{
 		client:     client,
 		sem:        sem,
 		bucketname: cfg.Bucket,
@@ -83,13 +83,13 @@ func Open(cfg Config) (restic.Backend, error) {
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
-func (be *s3) IsNotExist(err error) bool {
+func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
 	return os.IsNotExist(err)
 }
 
 // Join combines path components with slashes.
-func (be *s3) Join(p ...string) string {
+func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
 }
 
@@ -109,7 +109,7 @@ func (fi fileInfo) IsDir() bool        { return fi.isDir }   // abbreviation for
 func (fi fileInfo) Sys() interface{}   { return nil }        // underlying data source (can return nil)
 
 // ReadDir returns the entries for a directory.
-func (be *s3) ReadDir(dir string) (list []os.FileInfo, err error) {
+func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
 	debug.Log("ReadDir(%v)", dir)
 
 	// make sure dir ends with a slash
@@ -150,8 +150,13 @@ func (be *s3) ReadDir(dir string) (list []os.FileInfo, err error) {
 }
 
 // Location returns this backend's location (the bucket name).
-func (be *s3) Location() string {
-	return be.bucketname
+func (be *Backend) Location() string {
+	return be.Join(be.bucketname, be.prefix)
+}
+
+// Path returns the path in the bucket that is used for this backend.
+func (be *Backend) Path() string {
+	return be.prefix
 }
 
 // getRemainingSize returns number of bytes remaining. If it is not possible to
@@ -199,7 +204,7 @@ func (wr preventCloser) Close() error {
 }
 
 // Save stores data in the backend at the handle.
-func (be *s3) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
+func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	if err := h.Valid(); err != nil {
 		return err
 	}
@@ -255,7 +260,7 @@ func (wr wrapReader) Close() error {
 // Load returns a reader that yields the contents of the file at h at the
 // given offset. If length is nonzero, only a portion of the file is
 // returned. rd must be closed after use.
-func (be *s3) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	debug.Log("Load %v, length %v, offset %v from %v", h, length, offset, be.Filename(h))
 	if err := h.Valid(); err != nil {
 		return nil, err
@@ -300,7 +305,7 @@ func (be *s3) Load(ctx context.Context, h restic.Handle, length int, offset int6
 }
 
 // Stat returns information about a blob.
-func (be *s3) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
+func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
 	debug.Log("%v", h)
 
 	objName := be.Filename(h)
@@ -330,7 +335,7 @@ func (be *s3) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, er
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
-func (be *s3) Test(ctx context.Context, h restic.Handle) (bool, error) {
+func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	found := false
 	objName := be.Filename(h)
 	_, err := be.client.StatObject(be.bucketname, objName)
@@ -343,7 +348,7 @@ func (be *s3) Test(ctx context.Context, h restic.Handle) (bool, error) {
 }
 
 // Remove removes the blob with the given name and type.
-func (be *s3) Remove(ctx context.Context, h restic.Handle) error {
+func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 	err := be.client.RemoveObject(be.bucketname, objName)
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
@@ -353,7 +358,7 @@ func (be *s3) Remove(ctx context.Context, h restic.Handle) error {
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this. If the channel done is closed, sending
 // stops.
-func (be *s3) List(ctx context.Context, t restic.FileType) <-chan string {
+func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
@@ -386,7 +391,7 @@ func (be *s3) List(ctx context.Context, t restic.FileType) <-chan string {
 }
 
 // Remove keys for a specified backend type.
-func (be *s3) removeKeys(ctx context.Context, t restic.FileType) error {
+func (be *Backend) removeKeys(ctx context.Context, t restic.FileType) error {
 	for key := range be.List(ctx, restic.DataFile) {
 		err := be.Remove(ctx, restic.Handle{Type: restic.DataFile, Name: key})
 		if err != nil {
@@ -398,7 +403,7 @@ func (be *s3) removeKeys(ctx context.Context, t restic.FileType) error {
 }
 
 // Delete removes all restic keys in the bucket. It will not remove the bucket itself.
-func (be *s3) Delete(ctx context.Context) error {
+func (be *Backend) Delete(ctx context.Context) error {
 	alltypes := []restic.FileType{
 		restic.DataFile,
 		restic.KeyFile,
@@ -417,4 +422,22 @@ func (be *s3) Delete(ctx context.Context) error {
 }
 
 // Close does nothing
-func (be *s3) Close() error { return nil }
+func (be *Backend) Close() error { return nil }
+
+// Rename moves a file based on the new layout l.
+func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
+	debug.Log("Rename %v to %v", h, l)
+	oldname := be.Filename(h)
+	newname := l.Filename(h)
+
+	debug.Log("  %v -> %v", oldname, newname)
+
+	coreClient := minio.Core{Client: be.client}
+	err := coreClient.CopyObject(be.bucketname, newname, path.Join(be.bucketname, oldname), minio.CopyConditions{})
+	if err != nil {
+		debug.Log("copy failed: %v", err)
+		return err
+	}
+
+	return be.client.RemoveObject(be.bucketname, oldname)
+}

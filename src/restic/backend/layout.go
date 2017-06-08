@@ -17,6 +17,7 @@ type Layout interface {
 	Dirname(restic.Handle) string
 	Basedir(restic.FileType) string
 	Paths() []string
+	Name() string
 }
 
 // Filesystem is the abstraction of a file system used for a backend.
