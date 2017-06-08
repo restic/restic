@@ -20,6 +20,12 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/issues/989
    https://github.com/restic/restic/pull/993
 
+ * The default layout for the s3 backend is now `default` (instead of
+   `s3legacy`). Also, there's a new `migrate` command to convert an existing
+   repo, it can be run like this: `restic migrate s3_layout`
+   https://github.com/restic/restic/issues/965
+   https://github.com/restic/restic/pull/1004
+
 Important Changes in 0.6.1
 ==========================
 
