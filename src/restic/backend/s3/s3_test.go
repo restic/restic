@@ -49,7 +49,7 @@ func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func()
 
 	// wait until the TCP port is reachable
 	var success bool
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		time.Sleep(200 * time.Millisecond)
 
 		c, err := net.Dial("tcp", "localhost:9000")
