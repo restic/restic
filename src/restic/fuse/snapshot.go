@@ -14,9 +14,38 @@ import (
 
 	"restic"
 	"restic/debug"
+	"restic/repository"
 
 	"golang.org/x/net/context"
 )
+
+// BlobSizeCache caches the size of blobs in the repo.
+type BlobSizeCache struct {
+	m map[restic.ID]uint
+}
+
+// NewBlobSizeCache returns a new blob size cache containing all entries from midx.
+func NewBlobSizeCache(midx *repository.MasterIndex) *BlobSizeCache {
+	m := make(map[restic.ID]uint, 1000)
+	for _, idx := range midx.All() {
+		for pb := range idx.Each(nil) {
+			m[pb.ID] = pb.Length
+		}
+	}
+	return &BlobSizeCache{
+		m: m,
+	}
+}
+
+// Lookup returns the size of the blob id.
+func (c *BlobSizeCache) Lookup(id restic.ID) (size uint, found bool) {
+	if c == nil {
+		return 0, false
+	}
+
+	size, found = c.m[id]
+	return size, found
+}
 
 type SnapshotWithId struct {
 	*restic.Snapshot
@@ -36,6 +65,8 @@ type SnapshotsDir struct {
 	tags        []string
 	host        string
 
+	blobsize *BlobSizeCache
+
 	// knownSnapshots maps snapshot timestamp to the snapshot
 	sync.RWMutex
 	knownSnapshots map[string]SnapshotWithId
@@ -53,6 +84,7 @@ func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool, paths []string, t
 		host:           host,
 		knownSnapshots: make(map[string]SnapshotWithId),
 		processed:      restic.NewIDSet(),
+		blobsize:       NewBlobSizeCache(repo.Index().(*repository.MasterIndex)),
 	}
 }
 
@@ -158,5 +190,5 @@ func (sn *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error
 		}
 	}
 
-	return newDirFromSnapshot(ctx, sn.repo, snapshot, sn.ownerIsRoot)
+	return newDirFromSnapshot(ctx, sn.repo, snapshot, sn.ownerIsRoot, sn.blobsize)
 }

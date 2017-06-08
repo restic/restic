@@ -20,6 +20,10 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/issues/989
    https://github.com/restic/restic/pull/993
 
+ * Improved performance for the fuse mount: Listing directories which contain
+   large files now is significantly faster.
+   https://github.com/restic/restic/pull/998
+
 Important Changes in 0.6.1
 ==========================
 
