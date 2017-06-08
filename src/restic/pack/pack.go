@@ -8,6 +8,7 @@ import (
 	"restic"
 	"sync"
 
+	"restic/debug"
 	"restic/errors"
 
 	"restic/crypto"
@@ -195,23 +196,37 @@ var minFileSize = entrySize + crypto.Extension
 // readHeader reads the header at the end of rd. size is the length of the
 // whole data accessible in rd.
 func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
+	debug.Log("size: %v", size)
 	if size == 0 {
-		err := InvalidFileError{
-			Message: "file is empty",
-		}
+		err := InvalidFileError{Message: "file is empty"}
 		return nil, errors.Wrap(err, "readHeader")
 	}
 
 	if size < int64(minFileSize) {
-		err := InvalidFileError{
-			Message: "file is too small",
-		}
+		err := InvalidFileError{Message: "file is too small"}
 		return nil, errors.Wrap(err, "readHeader")
 	}
 
 	hl, err := readHeaderLength(rd, size)
 	if err != nil {
 		return nil, err
+	}
+
+	debug.Log("header length: %v", size)
+
+	if hl == 0 {
+		err := InvalidFileError{Message: "header length is zero"}
+		return nil, errors.Wrap(err, "readHeader")
+	}
+
+	if hl < crypto.Extension {
+		err := InvalidFileError{Message: "header length is too small"}
+		return nil, errors.Wrap(err, "readHeader")
+	}
+
+	if (hl-crypto.Extension)%uint32(entrySize) != 0 {
+		err := InvalidFileError{Message: "header length is invalid"}
+		return nil, errors.Wrap(err, "readHeader")
 	}
 
 	if int64(hl) > size-int64(binary.Size(hl)) {
