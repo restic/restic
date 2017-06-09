@@ -52,7 +52,9 @@ func (rd *eofDetectReader) Close() error {
 
 func (tr eofDetectRoundTripper) RoundTrip(req *http.Request) (res *http.Response, err error) {
 	res, err = tr.RoundTripper.RoundTrip(req)
-	res.Body = &eofDetectReader{rd: res.Body}
+	if res != nil && res.Body != nil {
+		res.Body = &eofDetectReader{rd: res.Body}
+	}
 	return res, err
 }
 
