@@ -52,7 +52,7 @@ func printTree(repo *repository.Repository, id *restic.ID, prefix string) error 
 	}
 
 	for _, entry := range tree.Nodes {
-		Printf(formatNode(prefix, entry, lsOptions.ListLong) + "\n")
+		Printf("%s\n", formatNode(prefix, entry, lsOptions.ListLong))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
 			if err = printTree(repo, entry.Subtree, filepath.Join(prefix, entry.Name)); err != nil {
