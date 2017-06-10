@@ -53,6 +53,13 @@ type Node struct {
 	Path string `json:"-"`
 }
 
+// Nodes is a slice of nodes that can be sorted.
+type Nodes []*Node
+
+func (n Nodes) Len() int           { return len(n) }
+func (n Nodes) Less(i, j int) bool { return n[i].Name < n[j].Name }
+func (n Nodes) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
+
 func (node Node) String() string {
 	switch node.Type {
 	case "file":

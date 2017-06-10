@@ -71,6 +71,13 @@ func (t Tree) binarySearch(name string) (int, *Node, error) {
 	return pos, nil, errors.New("named node not found")
 }
 
+// Sort sorts the nodes by name.
+func (t *Tree) Sort() {
+	list := Nodes(t.Nodes)
+	sort.Sort(list)
+	t.Nodes = list
+}
+
 // Subtrees returns a slice of all subtree IDs of the tree.
 func (t Tree) Subtrees() (trees IDs) {
 	for _, node := range t.Nodes {
