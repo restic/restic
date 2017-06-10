@@ -192,6 +192,14 @@ func (o Options) Apply(ns string, dst interface{}) error {
 
 			v.Field(i).SetInt(vi)
 
+		case "uint":
+			vi, err := strconv.ParseUint(value, 0, 32)
+			if err != nil {
+				return err
+			}
+
+			v.Field(i).SetUint(vi)
+
 		case "Duration":
 			d, err := time.ParseDuration(value)
 			if err != nil {
