@@ -155,7 +155,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 			return err
 		}
 
-		debug.Log("found %v blobs for snapshot %v", sn.ID().Str())
+		debug.Log("processed snapshot %v", sn.ID().Str())
 		bar.Report(restic.Stat{Blobs: 1})
 	}
 	bar.Done()
