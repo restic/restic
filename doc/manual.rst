@@ -1240,3 +1240,19 @@ instead of the default, set the environment variable like this:
 
     $ export TMPDIR=/var/tmp/restic-tmp
     $ restic -r /tmp/backup backup ~/work
+
+Caching
+-------
+
+Restic keeps a cache with some files from the repository on the local machine.
+This allows faster operations, since meta data does not need to be loaded from
+a remote repository. The cache is automatically created, usually in the
+directory ``.cache/restic`` in the user's home directory. The environment
+variable ``XDG_CACHE_DIR`` or the command line parameter ``--cache-dir`` can
+each be used to specify where the cache is located. The parameter
+``--no-cache`` disables the cache entirely. In this case, all data is loaded
+from the repo.
+
+The cache is ephemeral: When a file cannot be read from the cache, it is loaded
+from the repository.
+

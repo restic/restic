@@ -7,3 +7,7 @@ References
 ------------------------
 
 .. include:: rest_backend.rst
+
+------------------------
+
+.. include:: cache.rst

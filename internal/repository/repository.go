@@ -23,6 +23,7 @@ type Repository struct {
 	key     *crypto.Key
 	keyName string
 	idx     *MasterIndex
+	restic.Cache
 
 	treePM *packerManager
 	dataPM *packerManager
@@ -45,6 +46,16 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
+// UseCache replaces the backend with the wrapped cache.
+func (r *Repository) UseCache(c restic.Cache) {
+	if c == nil {
+		return
+	}
+	debug.Log("using cache")
+	r.Cache = c
+	r.be = c.Wrap(r.be)
+}
+
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
 func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
@@ -53,11 +64,11 @@ func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
 
 // LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
-func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id restic.ID) ([]byte, error) {
+func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id restic.ID) (buf []byte, err error) {
 	debug.Log("load %v with id %v", t, id.Str())
 
 	h := restic.Handle{Type: t, Name: id.String()}
-	buf, err := backend.LoadAll(ctx, r.be, h)
+	buf, err = backend.LoadAll(ctx, r.be, h)
 	if err != nil {
 		debug.Log("error loading %v: %v", h, err)
 		return nil, err
