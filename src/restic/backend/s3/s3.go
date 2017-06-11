@@ -213,7 +213,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 		return err
 	}
 
-	debug.Log("Save %v at %v", h, objName)
+	debug.Log("Save %v at %v (%d bytes)", h, objName, size)
 
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.bucketname, objName)
