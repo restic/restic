@@ -174,8 +174,8 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 		return errors.New("key already exists")
 	}
 
-	debug.Log("PutObject(%v, %v)", be.bucketname, objName)
 	be.sem.GetToken()
+	debug.Log("PutObject(%v, %v)", be.bucketname, objName)
 	n, err := be.client.PutObject(be.bucketname, objName, rd, "application/octet-stream")
 	be.sem.ReleaseToken()
 
@@ -215,14 +215,14 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
-
 	byteRange := fmt.Sprintf("bytes=%d-", offset)
 	if length > 0 {
 		byteRange = fmt.Sprintf("bytes=%d-%d", offset, offset+int64(length)-1)
 	}
 	headers := minio.NewGetReqHeaders()
 	headers.Add("Range", byteRange)
+
+	be.sem.GetToken()
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
 	coreClient := minio.Core{Client: be.client}
