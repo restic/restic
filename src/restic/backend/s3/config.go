@@ -25,7 +25,7 @@ type Config struct {
 // NewConfig returns a new Config with the default values filled in.
 func NewConfig() Config {
 	return Config{
-		Connections: 20,
+		Connections: 5,
 	}
 }
 
