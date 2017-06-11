@@ -39,8 +39,6 @@ type file struct {
 	blobs [][]byte
 }
 
-const defaultBlobSize = 128 * 1024
-
 func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool, blobsize *BlobSizeCache) (fusefile *file, err error) {
 	debug.Log("create new file for %v with %d blobs", node.Name, len(node.Content))
 	var bytes uint64
