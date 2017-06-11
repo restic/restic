@@ -13,7 +13,7 @@ import (
 // contains a slash-separated path from the root of the tree. If there was a
 // problem loading the tree, tree may be nil and error is set accordingly. If a
 // non-nil error is returned, walking stops.
-type Func func(dir string, tree *restic.Tree, err error) error
+type Func func(dir string, id restic.ID, tree *restic.Tree, err error) error
 
 // Walk walks the tree with treeID by loading subsequent subtrees from the repo,
 // calling fn for each tree. The walk order is determined by the subdir names,
@@ -32,7 +32,7 @@ func walk(ctx context.Context, repo TreeLoader, treeID restic.ID, dir string, fn
 	}
 
 	tree, err := repo.LoadTree(ctx, treeID)
-	err = fn(dir, tree, nil)
+	err = fn(dir, treeID, tree, nil)
 	if err != nil {
 		return err
 	}
