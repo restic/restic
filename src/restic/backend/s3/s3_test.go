@@ -53,13 +53,12 @@ func runMinio(ctx context.Context, t testing.TB, dir, key, secret string) func()
 		time.Sleep(200 * time.Millisecond)
 
 		c, err := net.Dial("tcp", "localhost:9000")
-		if err != nil {
-			continue
-		}
-
-		success = true
-		if err := c.Close(); err != nil {
-			t.Fatal(err)
+		if err == nil {
+			success = true
+			if err := c.Close(); err != nil {
+				t.Fatal(err)
+			}
+			break
 		}
 	}
 
