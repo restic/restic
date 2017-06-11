@@ -238,7 +238,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	info, err := coreClient.PutObject(be.bucketname, objName, size, rd, nil, nil, nil)
 
 	be.sem.ReleaseToken()
-	debug.Log("%v -> %v bytes, err %#v", objName, info.Size, err)
+	debug.Log("%v -> %v bytes, err %#v: %v", objName, info.Size, err, err)
 
 	return errors.Wrap(err, "client.PutObject")
 }
