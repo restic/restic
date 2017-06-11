@@ -8,16 +8,6 @@ import (
 	"restic/debug"
 )
 
-func closeIfOpen(ch chan struct{}) {
-	// only close ch when it is not already closed, in which the case statement runs.
-	select {
-	case <-ch:
-		return
-	default:
-		close(ch)
-	}
-}
-
 // ParallelWorkFunc gets one file ID to work on. If an error is returned,
 // processing stops. When the contect is cancelled the function should return.
 type ParallelWorkFunc func(ctx context.Context, id string) error

@@ -18,8 +18,6 @@ import (
 	"restic/debug"
 )
 
-const connLimit = 10
-
 // Backend stores data on an S3 endpoint.
 type Backend struct {
 	client     *minio.Client

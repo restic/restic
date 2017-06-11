@@ -52,11 +52,6 @@ func nlink(info os.FileInfo) uint64 {
 	return uint64(stat.Nlink)
 }
 
-func inode(info os.FileInfo) uint64 {
-	stat, _ := info.Sys().(*syscall.Stat_t)
-	return uint64(stat.Ino)
-}
-
 func createFileSetPerHardlink(dir string) map[uint64][]string {
 	var stat syscall.Stat_t
 	linkTests := make(map[uint64][]string)
