@@ -211,7 +211,7 @@ var parseTests = []struct {
 			Config: swift.Config{
 				Container:   "container17",
 				Prefix:      "",
-				Connections: 20,
+				Connections: 5,
 			},
 		},
 	},
@@ -221,7 +221,7 @@ var parseTests = []struct {
 			Config: swift.Config{
 				Container:   "container17",
 				Prefix:      "prefix97",
-				Connections: 20,
+				Connections: 5,
 			},
 		},
 	},
@@ -230,7 +230,7 @@ var parseTests = []struct {
 		Location{Scheme: "rest",
 			Config: rest.Config{
 				URL:         parseURL("http://hostname.foo:1234/"),
-				Connections: 20,
+				Connections: 5,
 			},
 		},
 	},
