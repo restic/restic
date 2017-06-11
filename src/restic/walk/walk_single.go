@@ -32,7 +32,7 @@ func walk(ctx context.Context, repo TreeLoader, treeID restic.ID, dir string, fn
 	}
 
 	tree, err := repo.LoadTree(ctx, treeID)
-	err = fn(dir, treeID, tree, nil)
+	err = fn(dir, treeID, tree, err)
 	if err != nil {
 		return err
 	}
