@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"restic"
@@ -14,8 +15,8 @@ type SnapshotWriter struct {
 
 // NewSnapshotWriter adds a new snapshot to the cache. The returned
 // SnapshotWriter must be closed after the last tree has been added.
-func (c *Cache) NewSnapshotWriter(id restic.ID, sn *restic.Snapshot) (*SnapshotWriter, error) {
-	f, err := os.Create(filepath.Join(c.Path, id.String()))
+func (c *Cache) NewSnapshotWriter(id restic.ID, sn *restic.Snapshot) (restic.SnapshotWriter, error) {
+	f, err := os.Create(filepath.Join(c.Path, "snapshots", id.String()))
 	if err != nil {
 		return nil, errors.Wrap(err, "Create")
 	}
@@ -29,16 +30,9 @@ func (c *Cache) NewSnapshotWriter(id restic.ID, sn *restic.Snapshot) (*SnapshotW
 	return sw, nil
 }
 
-// Tree is a cached tree in a snapshot.
-type Tree struct {
-	Path string       `json:"path"`
-	ID   restic.ID    `json:"id"`
-	Tree *restic.Tree `json:"tree"`
-}
-
-// AddTree writes a new tree to the cache file.
-func (s *SnapshotWriter) AddTree(path string, id restic.ID, tree *restic.Tree) error {
-	t := Tree{
+// Add writes a new tree to the cache file.
+func (s *SnapshotWriter) Add(path string, id restic.ID, tree *restic.Tree) error {
+	t := restic.CachedTree{
 		Path: path,
 		ID:   id,
 		Tree: tree,
@@ -52,10 +46,26 @@ type SnapshotReader struct {
 	BlockReader
 }
 
+// Next returns the next tree from the cached snapshot.
+func (r *SnapshotReader) Next() (*restic.CachedTree, error) {
+	buf, err := r.Read(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var tree restic.CachedTree
+	err = json.Unmarshal(buf, &tree)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tree, nil
+}
+
 // LoadSnapshot loads a snapshot from a cached file. The returned
 // SnapshotReader must be closed.
-func (c *Cache) LoadSnapshot(id restic.ID) (*restic.Snapshot, *SnapshotReader, error) {
-	f, err := os.Open(filepath.Join(c.Path, id.String()))
+func (c *Cache) LoadSnapshot(id restic.ID) (*restic.Snapshot, restic.SnapshotReader, error) {
+	f, err := os.Open(filepath.Join(c.Path, "snapshots", id.String()))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Open")
 	}
