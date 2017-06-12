@@ -30,6 +30,16 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/issues/965
    https://github.com/restic/restic/pull/1004
 
+Small changes
+-------------
+
+ * For the s3 backend we're back to using the high-level API the s3 client
+   library for uploading data, a few users reported dropped connections (which
+   the library will automatically retry now).
+   https://github.com/restic/restic/issues/1013
+   https://github.com/restic/restic/issues/1023
+   https://github.com/restic/restic/pull/1025
+
 Important Changes in 0.6.1
 ==========================
 
