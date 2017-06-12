@@ -21,7 +21,7 @@ var configTests = []struct {
 }{
 	{"rest:http://localhost:1234", Config{
 		URL:         parseURL("http://localhost:1234"),
-		Connections: 20,
+		Connections: 5,
 	}},
 }
 

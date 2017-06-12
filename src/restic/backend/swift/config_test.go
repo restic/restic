@@ -11,21 +11,21 @@ var configTests = []struct {
 		Config{
 			Container:   "cnt1",
 			Prefix:      "",
-			Connections: 20,
+			Connections: 5,
 		},
 	},
 	{
 		"swift:cnt2:/prefix",
 		Config{Container: "cnt2",
 			Prefix:      "prefix",
-			Connections: 20,
+			Connections: 5,
 		},
 	},
 	{
 		"swift:cnt3:/prefix/longer",
 		Config{Container: "cnt3",
 			Prefix:      "prefix/longer",
-			Connections: 20,
+			Connections: 5,
 		},
 	},
 }

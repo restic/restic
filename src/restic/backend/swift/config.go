@@ -26,7 +26,7 @@ type Config struct {
 	Prefix                 string
 	DefaultContainerPolicy string
 
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 20)"`
+	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }
 
 func init() {
@@ -36,7 +36,7 @@ func init() {
 // NewConfig returns a new config with the default values filled in.
 func NewConfig() Config {
 	return Config{
-		Connections: 20,
+		Connections: 5,
 	}
 }
 

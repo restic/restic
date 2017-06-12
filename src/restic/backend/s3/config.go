@@ -19,13 +19,13 @@ type Config struct {
 	Prefix        string
 	Layout        string `option:"layout" help:"use this backend layout (default: auto-detect)"`
 
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 20)"`
+	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
 }
 
 // NewConfig returns a new Config with the default values filled in.
 func NewConfig() Config {
 	return Config{
-		Connections: 20,
+		Connections: 5,
 	}
 }
 
