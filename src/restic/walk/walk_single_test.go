@@ -2,6 +2,8 @@ package walk_test
 
 import (
 	"context"
+	"path"
+	"path/filepath"
 	"restic"
 	"restic/repository"
 	"restic/test"
@@ -49,8 +51,10 @@ func TestWalk(t *testing.T) {
 		}
 
 		test := testItems[i]
-		if dir != test.dir {
-			t.Errorf("path %d is wrong: want %q, got %q", i, test.dir, dir)
+		want := filepath.Join(path.Split(test.dir))
+
+		if dir != want {
+			t.Errorf("path %d is wrong: want %q, got %q", i, want, dir)
 		}
 
 		if !test.id.Equal(id) {
