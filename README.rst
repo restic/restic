@@ -89,6 +89,8 @@ License
 Restic is licensed under "BSD 2-Clause License". You can find the
 complete text in ``LICENSE``.
 
+Test!
+
 .. |Documentation| image:: https://readthedocs.org/projects/restic/badge/?version=latest
    :target: https://restic.readthedocs.io/en/latest/?badge=latest
 .. |Build Status| image:: https://travis-ci.org/restic/restic.svg?branch=master
