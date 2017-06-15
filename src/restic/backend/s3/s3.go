@@ -291,6 +291,11 @@ func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 	err := be.client.RemoveObject(be.bucketname, objName)
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
+
+	if be.IsNotExist(err) {
+		err = nil
+	}
+
 	return errors.Wrap(err, "client.RemoveObject")
 }
 
