@@ -446,11 +446,32 @@ func delayedRemove(b restic.Backend, h restic.Handle) error {
 	found, err := b.Test(context.TODO(), h)
 	for i := 0; found && i < 20; i++ {
 		found, err = b.Test(context.TODO(), h)
-		if found {
+		if err != nil {
+			return err
+		}
+
+		if !found {
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
+	return err
+}
+
+func delayedList(t testing.TB, b restic.Backend, tpe restic.FileType, max int) restic.IDs {
+	list := restic.NewIDSet()
+	for i := 0; i < max; i++ {
+		for s := range b.List(context.TODO(), tpe) {
+			id := restic.TestParseID(s)
+			list.Insert(id)
+		}
+		if len(list) < max {
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
-	return err
+
+	return list.List()
 }
 
 // TestBackend tests all functions of the backend.
@@ -548,12 +569,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 			IDs = append(IDs, id)
 		}
 
-		list := restic.IDs{}
-
-		for s := range b.List(context.TODO(), tpe) {
-			list = append(list, restic.TestParseID(s))
-		}
-
+		list := delayedList(t, b, tpe, len(IDs))
 		if len(IDs) != len(list) {
 			t.Fatalf("wrong number of IDs returned: want %d, got %d", len(IDs), len(list))
 		}
@@ -581,7 +597,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 				found, err = b.Test(context.TODO(), h)
 				test.OK(t, err)
-				test.Assert(t, !found, fmt.Sprintf("id %q not found after removal", id))
+				test.Assert(t, !found, fmt.Sprintf("id %q found after removal", id))
 			}
 		}
 	}

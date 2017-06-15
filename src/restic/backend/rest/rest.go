@@ -108,9 +108,8 @@ func (b *restBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// make sure that client.Post() cannot close the reader by wrapping it in
-	// backend.Closer, which has a noop method.
-	rd = backend.Closer{Reader: rd}
+	// make sure that client.Post() cannot close the reader by wrapping it
+	rd = ioutil.NopCloser(rd)
 
 	b.sem.GetToken()
 	resp, err := ctxhttp.Post(ctx, b.client, b.Filename(h), "binary/octet-stream", rd)

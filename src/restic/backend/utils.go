@@ -29,16 +29,6 @@ func LoadAll(ctx context.Context, be restic.Backend, h restic.Handle) (buf []byt
 	return ioutil.ReadAll(rd)
 }
 
-// Closer wraps an io.Reader and adds a Close() method that does nothing.
-type Closer struct {
-	io.Reader
-}
-
-// Close is a no-op.
-func (c Closer) Close() error {
-	return nil
-}
-
 // LimitedReadCloser wraps io.LimitedReader and exposes the Close() method.
 type LimitedReadCloser struct {
 	io.ReadCloser
