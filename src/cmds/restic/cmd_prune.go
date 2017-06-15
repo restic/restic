@@ -97,7 +97,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("building new index for repo\n")
 
 	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
-	idx, err := index.New(ctx, repo, bar)
+	idx, err := index.New(ctx, repo, restic.NewIDSet(), bar)
 	if err != nil {
 		return err
 	}
@@ -222,6 +222,10 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		bar.Done()
 	}
 
+	if err = rebuildIndex(ctx, repo, removePacks); err != nil {
+		return err
+	}
+
 	if len(removePacks) != 0 {
 		bar = newProgressMax(!gopts.Quiet, uint64(len(removePacks)), "packs deleted")
 		bar.Start()
@@ -234,10 +238,6 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 			bar.Report(restic.Stat{Blobs: 1})
 		}
 		bar.Done()
-	}
-
-	if err = rebuildIndex(ctx, repo); err != nil {
-		return err
 	}
 
 	Verbosef("done\n")
