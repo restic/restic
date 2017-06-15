@@ -446,9 +446,15 @@ func delayedRemove(b restic.Backend, h restic.Handle) error {
 	found, err := b.Test(context.TODO(), h)
 	for i := 0; found && i < 20; i++ {
 		found, err = b.Test(context.TODO(), h)
-		if found {
-			time.Sleep(100 * time.Millisecond)
+		if err != nil {
+			return err
 		}
+
+		if !found {
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
 	return err
 }
@@ -591,7 +597,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 				found, err = b.Test(context.TODO(), h)
 				test.OK(t, err)
-				test.Assert(t, !found, fmt.Sprintf("id %q not found after removal", id))
+				test.Assert(t, !found, fmt.Sprintf("id %q found after removal", id))
 			}
 		}
 	}
