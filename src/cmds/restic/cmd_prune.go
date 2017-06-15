@@ -28,6 +28,18 @@ func init() {
 	cmdRoot.AddCommand(cmdPrune)
 }
 
+func shortenStatus(maxLength int, s string) string {
+	if len(s) <= maxLength {
+		return s
+	}
+
+	if maxLength < 3 {
+		return s[:maxLength]
+	}
+
+	return s[:maxLength-3] + "..."
+}
+
 // newProgressMax returns a progress that counts blobs.
 func newProgressMax(show bool, max uint64, description string) *restic.Progress {
 	if !show {
@@ -43,10 +55,7 @@ func newProgressMax(show bool, max uint64, description string) *restic.Progress 
 			s.Blobs, max, description)
 
 		if w := stdoutTerminalWidth(); w > 0 {
-			if len(status) > w {
-				max := w - len(status) - 4
-				status = status[:max] + "... "
-			}
+			status = shortenStatus(w, status)
 		}
 
 		PrintProgress("%s", status)
