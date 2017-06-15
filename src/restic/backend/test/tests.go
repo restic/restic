@@ -453,6 +453,21 @@ func delayedRemove(b restic.Backend, h restic.Handle) error {
 	return err
 }
 
+func delayedList(t testing.TB, b restic.Backend, tpe restic.FileType, max int) restic.IDs {
+	list := restic.NewIDSet()
+	for i := 0; i < max; i++ {
+		for s := range b.List(context.TODO(), tpe) {
+			id := restic.TestParseID(s)
+			list.Insert(id)
+		}
+		if len(list) < max {
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+
+	return list.List()
+}
+
 // TestBackend tests all functions of the backend.
 func (s *Suite) TestBackend(t *testing.T) {
 	b := s.open(t)
@@ -548,12 +563,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 			IDs = append(IDs, id)
 		}
 
-		list := restic.IDs{}
-
-		for s := range b.List(context.TODO(), tpe) {
-			list = append(list, restic.TestParseID(s))
-		}
-
+		list := delayedList(t, b, tpe, len(IDs))
 		if len(IDs) != len(list) {
 			t.Fatalf("wrong number of IDs returned: want %d, got %d", len(IDs), len(list))
 		}
