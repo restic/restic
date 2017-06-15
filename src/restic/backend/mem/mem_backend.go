@@ -8,7 +8,6 @@ import (
 	"restic"
 	"sync"
 
-	"restic/backend"
 	"restic/errors"
 
 	"restic/debug"
@@ -114,7 +113,7 @@ func (be *MemoryBackend) Load(ctx context.Context, h restic.Handle, length int, 
 		buf = buf[:length]
 	}
 
-	return backend.Closer{Reader: bytes.NewReader(buf)}, nil
+	return ioutil.NopCloser(bytes.NewReader(buf)), nil
 }
 
 // Stat returns information about a file in the backend.
