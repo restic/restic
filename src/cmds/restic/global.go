@@ -16,6 +16,7 @@ import (
 	"restic/backend/location"
 	"restic/backend/rest"
 	"restic/backend/s3"
+	"restic/backend/gs"
 	"restic/backend/sftp"
 	"restic/backend/swift"
 	"restic/debug"
@@ -358,6 +359,34 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		debug.Log("opening s3 repository at %#v", cfg)
 		return cfg, nil
 
+	case "gs":
+		cfg := loc.Config.(gs.Config)
+
+		if cfg.ProjectID == "" {
+			cfg.ProjectID = os.Getenv("GOOGLE_PROJECT_ID")
+		}
+
+		if cfg.JsonKeyPath == "" {
+			if path := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); path != "" {
+				//check read access
+				if _, err := ioutil.ReadFile(path); err != nil {
+					return nil, errors.Fatalf("Failed to read google credential from file %v: %v", path, err)
+				}
+				cfg.JsonKeyPath = path
+			} else {
+				return nil, errors.Fatal("No credential file path is set")
+			}
+		}
+
+
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening gs repository at %#v", cfg)
+		return cfg, nil
+
 	case "swift":
 		cfg := loc.Config.(swift.Config)
 
@@ -424,6 +453,8 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		be, err = sftp.Open(cfg.(sftp.Config))
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config))
+	case "gs":
+		be, err = gs.Open(cfg.(gs.Config))
 	case "swift":
 		be, err = swift.Open(cfg.(swift.Config))
 	case "b2":
@@ -472,6 +503,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return sftp.Create(cfg.(sftp.Config))
 	case "s3":
 		return s3.Open(cfg.(s3.Config))
+	case "gs":
+		return gs.Open(cfg.(gs.Config))
 	case "swift":
 		return swift.Open(cfg.(swift.Config))
 	case "b2":
