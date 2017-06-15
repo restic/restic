@@ -1,0 +1,89 @@
+package gs
+
+import (
+	"net/url"
+	"path"
+	"strings"
+
+	"restic/errors"
+	"restic/options"
+)
+
+// Config contains all configuration necessary to connect to an gcs compatible
+// server.
+type Config struct {
+	Endpoint    string
+	UseHTTP     bool
+	ProjectID   string
+	JsonKeyPath string
+	Bucket      string
+	Prefix      string
+	Layout      string `option:"layout" help:"use this backend layout (default: auto-detect)"`
+
+	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 20)"`
+}
+
+// NewConfig returns a new Config with the default values filled in.
+func NewConfig() Config {
+	return Config{
+		Connections: 20,
+	}
+}
+
+func init() {
+	options.Register("gcs", Config{})
+}
+
+const defaultPrefix = "restic"
+
+// ParseConfig parses the string s and extracts the gcs config. The two
+// supported configuration formats are gs://host/bucketName/prefix and
+// gs:host:bucketName/prefix. The host can also be a valid gs region
+// name. If no prefix is given the prefix "restic" will be used.
+func ParseConfig(s string) (interface{}, error) {
+	switch {
+	case strings.HasPrefix(s, "gs:http"):
+		// assume that a URL has been specified, parse it and
+		// use the host as the endpoint and the path as the
+		// bucket name and prefix
+		url, err := url.Parse(s[3:])
+		if err != nil {
+			return nil, errors.Wrap(err, "url.Parse")
+		}
+
+		if url.Path == "" {
+			return nil, errors.New("gs: bucket name not found")
+		}
+
+		path := strings.SplitN(url.Path[1:], "/", 2)
+		return createConfig(url.Host, path, url.Scheme == "http")
+	case strings.HasPrefix(s, "gs://"):
+		s = s[5:]
+	case strings.HasPrefix(s, "gs:"):
+		s = s[3:]
+	default:
+		return nil, errors.New("gs: invalid format")
+	}
+	// use the first entry of the path as the endpoint and the
+	// remainder as bucket name and prefix
+	path := strings.SplitN(s, "/", 3)
+	return createConfig(path[0], path[1:], false)
+}
+
+func createConfig(endpoint string, p []string, useHTTP bool) (interface{}, error) {
+	var prefix string
+	switch {
+	case len(p) < 1:
+		return nil, errors.New("gs: invalid format, host/region or bucket name not found")
+	case len(p) == 1 || p[1] == "":
+		prefix = defaultPrefix
+	default:
+		prefix = path.Clean(p[1])
+	}
+	cfg := NewConfig()
+	cfg.Endpoint = endpoint
+	cfg.UseHTTP = useHTTP
+	cfg.Bucket = p[0]
+	cfg.Prefix = prefix
+	return cfg, nil
+}

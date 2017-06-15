@@ -10,6 +10,7 @@ import (
 	"restic/backend/s3"
 	"restic/backend/sftp"
 	"restic/backend/swift"
+	"restic/backend/gs"
 )
 
 // Location specifies the location of a repository, including the method of
@@ -31,6 +32,7 @@ var parsers = []parser{
 	{"local", local.ParseConfig},
 	{"sftp", sftp.ParseConfig},
 	{"s3", s3.ParseConfig},
+	{"gs", gs.ParseConfig},
 	{"swift", swift.ParseConfig},
 	{"rest", rest.ParseConfig},
 }
