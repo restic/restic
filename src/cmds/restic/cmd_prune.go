@@ -106,7 +106,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("building new index for repo\n")
 
 	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
-	idx, err := index.New(ctx, repo, bar)
+	idx, err := index.New(ctx, repo, restic.NewIDSet(), bar)
 	if err != nil {
 		return err
 	}
@@ -161,6 +161,10 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs, seenBlobs)
 		if err != nil {
+			if repo.Backend().IsNotExist(err) {
+				return errors.Fatal("unable to load a tree from the repo: " + err.Error())
+			}
+
 			return err
 		}
 
@@ -221,16 +225,22 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("will delete %d packs and rewrite %d packs, this frees %s\n",
 		len(removePacks), len(rewritePacks), formatBytes(uint64(removeBytes)))
 
+	var repackedBlobs restic.IDSet
 	if len(rewritePacks) != 0 {
 		bar = newProgressMax(!gopts.Quiet, uint64(len(rewritePacks)), "packs rewritten")
 		bar.Start()
-		err = repository.Repack(ctx, repo, rewritePacks, usedBlobs, bar)
+		repackedBlobs, err = repository.Repack(ctx, repo, rewritePacks, usedBlobs, bar)
 		if err != nil {
 			return err
 		}
 		bar.Done()
 	}
 
+	if err = rebuildIndex(ctx, repo, removePacks); err != nil {
+		return err
+	}
+
+	removePacks.Merge(repackedBlobs)
 	if len(removePacks) != 0 {
 		bar = newProgressMax(!gopts.Quiet, uint64(len(removePacks)), "packs deleted")
 		bar.Start()
@@ -243,10 +253,6 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 			bar.Report(restic.Stat{Blobs: 1})
 		}
 		bar.Done()
-	}
-
-	if err = rebuildIndex(ctx, repo); err != nil {
-		return err
 	}
 
 	Verbosef("done\n")

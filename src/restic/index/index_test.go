@@ -43,7 +43,7 @@ func TestIndexNew(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0)
 	defer cleanup()
 
-	idx, err := New(context.TODO(), repo, nil)
+	idx, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
 	if err != nil {
 		t.Fatalf("New() returned error %v", err)
 	}
@@ -70,7 +70,7 @@ func TestIndexLoad(t *testing.T) {
 
 	validateIndex(t, repo, loadIdx)
 
-	newIdx, err := New(context.TODO(), repo, nil)
+	newIdx, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
 	if err != nil {
 		t.Fatalf("New() returned error %v", err)
 	}
@@ -134,7 +134,7 @@ func BenchmarkIndexNew(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		idx, err := New(context.TODO(), repo, nil)
+		idx, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
 
 		if err != nil {
 			b.Fatalf("New() returned error %v", err)
@@ -151,7 +151,7 @@ func BenchmarkIndexSave(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
-	idx, err := New(context.TODO(), repo, nil)
+	idx, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
 	test.OK(b, err)
 
 	for i := 0; i < 8000; i++ {
@@ -184,7 +184,7 @@ func TestIndexDuplicateBlobs(t *testing.T) {
 	repo, cleanup := createFilledRepo(t, 3, 0.01)
 	defer cleanup()
 
-	idx, err := New(context.TODO(), repo, nil)
+	idx, err := New(context.TODO(), repo, restic.NewIDSet(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

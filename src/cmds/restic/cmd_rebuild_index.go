@@ -38,10 +38,10 @@ func runRebuildIndex(gopts GlobalOptions) error {
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
-	return rebuildIndex(ctx, repo)
+	return rebuildIndex(ctx, repo, restic.NewIDSet())
 }
 
-func rebuildIndex(ctx context.Context, repo restic.Repository) error {
+func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet) error {
 	Verbosef("counting files in repo\n")
 
 	var packs uint64
@@ -50,7 +50,7 @@ func rebuildIndex(ctx context.Context, repo restic.Repository) error {
 	}
 
 	bar := newProgressMax(!globalOptions.Quiet, packs, "packs")
-	idx, err := index.New(ctx, repo, bar)
+	idx, err := index.New(ctx, repo, ignorePacks, bar)
 	if err != nil {
 		return err
 	}

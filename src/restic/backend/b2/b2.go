@@ -151,6 +151,11 @@ func (wr *wrapReader) Close() error {
 	return err
 }
 
+// IsNotExist returns true if the error is caused by a non-existing file.
+func (be *b2Backend) IsNotExist(err error) bool {
+	return b2.IsNotExist(errors.Cause(err))
+}
+
 // Load returns the data stored in the backend for h at the given offset
 // and saves it in p. Load has the same semantics as io.ReaderAt.
 func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {

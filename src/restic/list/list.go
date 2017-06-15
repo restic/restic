@@ -37,7 +37,7 @@ func (l Result) Entries() []restic.Blob {
 }
 
 // AllPacks sends the contents of all packs to ch.
-func AllPacks(ctx context.Context, repo Lister, ch chan<- worker.Job) {
+func AllPacks(ctx context.Context, repo Lister, ignorePacks restic.IDSet, ch chan<- worker.Job) {
 	f := func(ctx context.Context, job worker.Job) (interface{}, error) {
 		packID := job.Data.(restic.ID)
 		entries, size, err := repo.ListPack(ctx, packID)
@@ -55,6 +55,10 @@ func AllPacks(ctx context.Context, repo Lister, ch chan<- worker.Job) {
 	go func() {
 		defer close(jobCh)
 		for id := range repo.List(ctx, restic.DataFile) {
+			if ignorePacks.Has(id) {
+				continue
+			}
+
 			select {
 			case jobCh <- worker.Job{Data: id}:
 			case <-ctx.Done():

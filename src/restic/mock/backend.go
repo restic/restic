@@ -10,15 +10,16 @@ import (
 
 // Backend implements a mock backend.
 type Backend struct {
-	CloseFn    func() error
-	SaveFn     func(ctx context.Context, h restic.Handle, rd io.Reader) error
-	LoadFn     func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
-	StatFn     func(ctx context.Context, h restic.Handle) (restic.FileInfo, error)
-	ListFn     func(ctx context.Context, t restic.FileType) <-chan string
-	RemoveFn   func(ctx context.Context, h restic.Handle) error
-	TestFn     func(ctx context.Context, h restic.Handle) (bool, error)
-	DeleteFn   func(ctx context.Context) error
-	LocationFn func() string
+	CloseFn      func() error
+	IsNotExistFn func(err error) bool
+	SaveFn       func(ctx context.Context, h restic.Handle, rd io.Reader) error
+	LoadFn       func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error)
+	StatFn       func(ctx context.Context, h restic.Handle) (restic.FileInfo, error)
+	ListFn       func(ctx context.Context, t restic.FileType) <-chan string
+	RemoveFn     func(ctx context.Context, h restic.Handle) error
+	TestFn       func(ctx context.Context, h restic.Handle) (bool, error)
+	DeleteFn     func(ctx context.Context) error
+	LocationFn   func() string
 }
 
 // Close the backend.
@@ -37,6 +38,15 @@ func (m *Backend) Location() string {
 	}
 
 	return m.LocationFn()
+}
+
+// IsNotExist returns true if the error is caused by a missing file.
+func (m *Backend) IsNotExist(err error) bool {
+	if m.IsNotExistFn == nil {
+		return false
+	}
+
+	return m.IsNotExistFn(err)
 }
 
 // Save data in the backend.

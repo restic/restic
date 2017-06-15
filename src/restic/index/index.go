@@ -34,12 +34,12 @@ func newIndex() *Index {
 }
 
 // New creates a new index for repo from scratch.
-func New(ctx context.Context, repo restic.Repository, p *restic.Progress) (*Index, error) {
+func New(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet, p *restic.Progress) (*Index, error) {
 	p.Start()
 	defer p.Done()
 
 	ch := make(chan worker.Job)
-	go list.AllPacks(ctx, repo, ch)
+	go list.AllPacks(ctx, repo, ignorePacks, ch)
 
 	idx := newIndex()
 
