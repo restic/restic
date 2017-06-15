@@ -19,6 +19,8 @@ type memMap map[restic.Handle][]byte
 // make sure that MemoryBackend implements backend.Backend
 var _ restic.Backend = &MemoryBackend{}
 
+var errNotFound = errors.New("not found")
+
 // MemoryBackend is a mock backend that uses a map for storing all data in
 // memory. This should only be used for tests.
 type MemoryBackend struct {
@@ -49,6 +51,11 @@ func (be *MemoryBackend) Test(ctx context.Context, h restic.Handle) (bool, error
 	}
 
 	return false, nil
+}
+
+// IsNotExist returns true if the file does not exist.
+func (be *MemoryBackend) IsNotExist(err error) bool {
+	return errors.Cause(err) == errNotFound
 }
 
 // Save adds new Data to the backend.
@@ -101,7 +108,7 @@ func (be *MemoryBackend) Load(ctx context.Context, h restic.Handle, length int, 
 	}
 
 	if _, ok := be.data[h]; !ok {
-		return nil, errors.New("no such data")
+		return nil, errNotFound
 	}
 
 	buf := be.data[h]
@@ -134,7 +141,7 @@ func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.File
 
 	e, ok := be.data[h]
 	if !ok {
-		return restic.FileInfo{}, errors.New("no such data")
+		return restic.FileInfo{}, errNotFound
 	}
 
 	return restic.FileInfo{Size: int64(len(e))}, nil
@@ -148,7 +155,7 @@ func (be *MemoryBackend) Remove(ctx context.Context, h restic.Handle) error {
 	debug.Log("Remove %v", h)
 
 	if _, ok := be.data[h]; !ok {
-		return errors.New("no such data")
+		return errNotFound
 	}
 
 	delete(be.data, h)

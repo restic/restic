@@ -152,6 +152,10 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 		err = restic.FindUsedBlobs(ctx, repo, *sn.Tree, usedBlobs, seenBlobs)
 		if err != nil {
+			if repo.Backend().IsNotExist(err) {
+				return errors.Fatal("unable to load a tree from the repo: " + err.Error())
+			}
+
 			return err
 		}
 

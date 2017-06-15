@@ -36,6 +36,10 @@ type Backend interface {
 	// arbitrary order. A goroutine is started for this, which is stopped when
 	// ctx is cancelled.
 	List(ctx context.Context, t FileType) <-chan string
+
+	// IsNotExist returns true if the error was caused by a non-existing file
+	// in the backend.
+	IsNotExist(err error) bool
 }
 
 // FileInfo is returned by Stat() and contains information about a file in the
