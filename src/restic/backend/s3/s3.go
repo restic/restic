@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/url"
 	"os"
 	"path"
 	"restic"
@@ -14,6 +16,7 @@ import (
 	"restic/errors"
 
 	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/pkg/s3utils"
 
 	"restic/debug"
 )
@@ -22,6 +25,7 @@ import (
 type Backend struct {
 	client     *minio.Client
 	sem        *backend.Semaphore
+	cfg        Config
 	bucketname string
 	prefix     string
 	backend.Layout
@@ -50,6 +54,7 @@ func Open(cfg Config) (restic.Backend, error) {
 	be := &Backend{
 		client:     client,
 		sem:        sem,
+		cfg:        cfg,
 		bucketname: cfg.Bucket,
 		prefix:     cfg.Prefix,
 	}
@@ -157,6 +162,19 @@ func (be *Backend) Path() string {
 	return be.prefix
 }
 
+func (be *Backend) isGoogleCloudStorage() bool {
+	scheme := "https://"
+	if be.cfg.UseHTTP {
+		scheme = "http://"
+	}
+	url, err := url.Parse(scheme + be.cfg.Endpoint)
+	if err != nil {
+		panic(err)
+	}
+
+	return s3utils.IsGoogleEndpoint(*url)
+}
+
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("Save %v", h)
@@ -172,6 +190,11 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	if err == nil {
 		debug.Log("%v already exists", h)
 		return errors.New("key already exists")
+	}
+
+	// prevent GCS from closing the file
+	if be.isGoogleCloudStorage() {
+		rd = ioutil.NopCloser(rd)
 	}
 
 	be.sem.GetToken()
