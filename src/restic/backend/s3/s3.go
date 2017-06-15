@@ -23,11 +23,9 @@ import (
 
 // Backend stores data on an S3 endpoint.
 type Backend struct {
-	client     *minio.Client
-	sem        *backend.Semaphore
-	cfg        Config
-	bucketname string
-	prefix     string
+	client *minio.Client
+	sem    *backend.Semaphore
+	cfg    Config
 	backend.Layout
 }
 
@@ -52,11 +50,9 @@ func Open(cfg Config) (restic.Backend, error) {
 	}
 
 	be := &Backend{
-		client:     client,
-		sem:        sem,
-		cfg:        cfg,
-		bucketname: cfg.Bucket,
-		prefix:     cfg.Prefix,
+		client: client,
+		sem:    sem,
+		cfg:    cfg,
 	}
 
 	client.SetCustomTransport(backend.Transport())
@@ -123,7 +119,7 @@ func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
 	done := make(chan struct{})
 	defer close(done)
 
-	for obj := range be.client.ListObjects(be.bucketname, dir, false, done) {
+	for obj := range be.client.ListObjects(be.cfg.Bucket, dir, false, done) {
 		if obj.Key == "" {
 			continue
 		}
@@ -154,12 +150,12 @@ func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
 
 // Location returns this backend's location (the bucket name).
 func (be *Backend) Location() string {
-	return be.Join(be.bucketname, be.prefix)
+	return be.Join(be.cfg.Bucket, be.cfg.Prefix)
 }
 
 // Path returns the path in the bucket that is used for this backend.
 func (be *Backend) Path() string {
-	return be.prefix
+	return be.cfg.Prefix
 }
 
 func (be *Backend) isGoogleCloudStorage() bool {
@@ -186,7 +182,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	objName := be.Filename(h)
 
 	// Check key does not already exist
-	_, err = be.client.StatObject(be.bucketname, objName)
+	_, err = be.client.StatObject(be.cfg.Bucket, objName)
 	if err == nil {
 		debug.Log("%v already exists", h)
 		return errors.New("key already exists")
@@ -198,8 +194,8 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	}
 
 	be.sem.GetToken()
-	debug.Log("PutObject(%v, %v)", be.bucketname, objName)
-	n, err := be.client.PutObject(be.bucketname, objName, rd, "application/octet-stream")
+	debug.Log("PutObject(%v, %v)", be.cfg.Bucket, objName)
+	n, err := be.client.PutObject(be.cfg.Bucket, objName, rd, "application/octet-stream")
 	be.sem.ReleaseToken()
 
 	debug.Log("%v -> %v bytes, err %#v: %v", objName, n, err, err)
@@ -249,7 +245,7 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
 	coreClient := minio.Core{Client: be.client}
-	rd, _, err := coreClient.GetObject(be.bucketname, objName, headers)
+	rd, _, err := coreClient.GetObject(be.cfg.Bucket, objName, headers)
 	if err != nil {
 		be.sem.ReleaseToken()
 		return nil, err
@@ -273,7 +269,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	objName := be.Filename(h)
 	var obj *minio.Object
 
-	obj, err = be.client.GetObject(be.bucketname, objName)
+	obj, err = be.client.GetObject(be.cfg.Bucket, objName)
 	if err != nil {
 		debug.Log("GetObject() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "client.GetObject")
@@ -300,7 +296,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	found := false
 	objName := be.Filename(h)
-	_, err := be.client.StatObject(be.bucketname, objName)
+	_, err := be.client.StatObject(be.cfg.Bucket, objName)
 	if err == nil {
 		found = true
 	}
@@ -312,7 +308,7 @@ func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
-	err := be.client.RemoveObject(be.bucketname, objName)
+	err := be.client.RemoveObject(be.cfg.Bucket, objName)
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 
 	if be.IsNotExist(err) {
@@ -336,7 +332,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 		prefix += "/"
 	}
 
-	listresp := be.client.ListObjects(be.bucketname, prefix, true, ctx.Done())
+	listresp := be.client.ListObjects(be.cfg.Bucket, prefix, true, ctx.Done())
 
 	go func() {
 		defer close(ch)
@@ -400,11 +396,11 @@ func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
 	debug.Log("  %v -> %v", oldname, newname)
 
 	coreClient := minio.Core{Client: be.client}
-	err := coreClient.CopyObject(be.bucketname, newname, path.Join(be.bucketname, oldname), minio.CopyConditions{})
+	err := coreClient.CopyObject(be.cfg.Bucket, newname, path.Join(be.cfg.Bucket, oldname), minio.CopyConditions{})
 	if err != nil {
 		debug.Log("copy failed: %v", err)
 		return err
 	}
 
-	return be.client.RemoveObject(be.bucketname, oldname)
+	return be.client.RemoveObject(be.cfg.Bucket, oldname)
 }
