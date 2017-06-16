@@ -106,9 +106,13 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	Verbosef("building new index for repo\n")
 
 	bar := newProgressMax(!gopts.Quiet, uint64(stats.packs), "packs")
-	idx, err := index.New(ctx, repo, restic.NewIDSet(), bar)
+	idx, invalidFiles, err := index.New(ctx, repo, restic.NewIDSet(), bar)
 	if err != nil {
 		return err
+	}
+
+	for _, id := range invalidFiles {
+		Warnf("incomplete pack file (will be removed): %v\n", id)
 	}
 
 	blobs := 0
@@ -196,6 +200,12 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 
 	// find packs that are unneeded
 	removePacks := restic.NewIDSet()
+
+	Verbosef("will remove %d invalid files\n", len(invalidFiles))
+	for _, id := range invalidFiles {
+		removePacks.Insert(id)
+	}
+
 	for packID, p := range idx.Packs {
 
 		hasActiveBlob := false

@@ -8,6 +8,7 @@ import (
 	"restic"
 	"restic/debug"
 	"restic/list"
+	"restic/pack"
 	"restic/worker"
 
 	"restic/errors"
@@ -33,22 +34,29 @@ func newIndex() *Index {
 	}
 }
 
-// New creates a new index for repo from scratch.
-func New(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet, p *restic.Progress) (*Index, error) {
+// New creates a new index for repo from scratch. InvalidFiles contains all IDs
+// of files  that cannot be listed successfully.
+func New(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet, p *restic.Progress) (idx *Index, invalidFiles restic.IDs, err error) {
 	p.Start()
 	defer p.Done()
 
 	ch := make(chan worker.Job)
 	go list.AllPacks(ctx, repo, ignorePacks, ch)
 
-	idx := newIndex()
+	idx = newIndex()
 
 	for job := range ch {
 		p.Report(restic.Stat{Blobs: 1})
 
 		packID := job.Data.(restic.ID)
 		if job.Error != nil {
-			fmt.Fprintf(os.Stderr, "unable to list pack %v: %v\n", packID.Str(), job.Error)
+			cause := errors.Cause(job.Error)
+			if _, ok := cause.(pack.InvalidFileError); ok {
+				invalidFiles = append(invalidFiles, packID)
+				continue
+			}
+
+			fmt.Fprintf(os.Stderr, "pack file cannot be listed %v: %v\n", packID.Str(), job.Error)
 			continue
 		}
 
@@ -58,11 +66,11 @@ func New(ctx context.Context, repo restic.Repository, ignorePacks restic.IDSet, 
 
 		err := idx.AddPack(packID, j.Size(), j.Entries())
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	return idx, nil
+	return idx, invalidFiles, nil
 }
 
 type packJSON struct {
