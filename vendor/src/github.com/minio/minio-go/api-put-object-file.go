@@ -77,17 +77,8 @@ func (c Client) FPutObject(bucketName, objectName, filePath, contentType string)
 	objMetadata["Content-Type"] = []string{contentType}
 
 	// NOTE: Google Cloud Storage multipart Put is not compatible with Amazon S3 APIs.
-	// Current implementation will only upload a maximum of 5GiB to Google Cloud Storage servers.
 	if s3utils.IsGoogleEndpoint(c.endpointURL) {
-		if fileSize > int64(maxSinglePutObjectSize) {
-			return 0, ErrorResponse{
-				Code:       "NotImplemented",
-				Message:    fmt.Sprintf("Invalid Content-Length %d for file uploads to Google Cloud Storage.", fileSize),
-				Key:        objectName,
-				BucketName: bucketName,
-			}
-		}
-		// Do not compute MD5 for Google Cloud Storage. Uploads up to 5GiB in size.
+		// Do not compute MD5 for Google Cloud Storage.
 		return c.putObjectNoChecksum(bucketName, objectName, fileReader, fileSize, objMetadata, nil)
 	}
 

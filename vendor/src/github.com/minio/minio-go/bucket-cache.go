@@ -92,6 +92,12 @@ func (c Client) getBucketLocation(bucketName string) (string, error) {
 		// provides a cleaner compatible API across "us-east-1" and
 		// China region.
 		return "cn-north-1", nil
+	} else if s3utils.IsAmazonGovCloudEndpoint(c.endpointURL) {
+		// For us-gov specifically we need to set everything to
+		// us-gov-west-1 for now, there is no easier way until AWS S3
+		// provides a cleaner compatible API across "us-east-1" and
+		// Gov cloud region.
+		return "us-gov-west-1", nil
 	}
 
 	// Region set then no need to fetch bucket location.

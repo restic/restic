@@ -166,8 +166,11 @@ func (c Client) putObjectNoChecksum(bucketName, objectName string, reader io.Rea
 	if err := isValidObjectName(objectName); err != nil {
 		return 0, err
 	}
-	if size > maxSinglePutObjectSize {
-		return 0, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
+	if size > 0 {
+		readerAt, ok := reader.(io.ReaderAt)
+		if ok {
+			reader = io.NewSectionReader(readerAt, 0, size)
+		}
 	}
 
 	// Update progress reader appropriately to the latest offset as we
@@ -258,14 +261,6 @@ func (c Client) putObjectDo(bucketName, objectName string, reader io.Reader, md5
 	}
 	if err := isValidObjectName(objectName); err != nil {
 		return ObjectInfo{}, err
-	}
-
-	if size <= -1 {
-		return ObjectInfo{}, ErrEntityTooSmall(size, bucketName, objectName)
-	}
-
-	if size > maxSinglePutObjectSize {
-		return ObjectInfo{}, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
 	}
 
 	// Set headers.
