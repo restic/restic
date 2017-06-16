@@ -40,6 +40,12 @@ Small changes
    https://github.com/restic/restic/issues/1023
    https://github.com/restic/restic/pull/1025
 
+ * The `prune` command has been improved and will now remove invalid pack
+   files, for example files that have not been uploaded completely because a
+   backup was interrupted.
+   https://github.com/restic/restic/issues/1029
+   https://github.com/restic/restic/pull/1036
+
 Important Changes in 0.6.1
 ==========================
 
