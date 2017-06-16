@@ -49,7 +49,7 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 		packs++
 	}
 
-	bar := newProgressMax(!globalOptions.Quiet, packs, "packs")
+	bar := newProgressMax(!globalOptions.Quiet, packs-uint64(len(ignorePacks)), "packs")
 	idx, err := index.New(ctx, repo, ignorePacks, bar)
 	if err != nil {
 		return err
