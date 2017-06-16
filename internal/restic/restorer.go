@@ -17,7 +17,7 @@ type Restorer struct {
 	sn   *Snapshot
 
 	Error        func(dir string, node *Node, err error) error
-	SelectFilter func(item string, dstpath string, node *Node) bool
+	SelectFilter func(item string, dstpath string, node *Node) (bool, bool)
 }
 
 var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
@@ -26,7 +26,7 @@ var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { r
 func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 	r := &Restorer{
 		repo: repo, Error: restorerAbortOnAllErrors,
-		SelectFilter: func(string, string, *Node) bool { return true },
+		SelectFilter: func(string, string, *Node) (bool, bool) { return true, true },
 	}
 
 	var err error
@@ -46,9 +46,9 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 	}
 
 	for _, node := range tree.Nodes {
-		selectedForRestore := res.SelectFilter(filepath.Join(dir, node.Name),
+		selectedForRestore, childMayMatch := res.SelectFilter(filepath.Join(dir, node.Name),
 			filepath.Join(dst, dir, node.Name), node)
-		debug.Log("SelectForRestore returned %v", selectedForRestore)
+		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayMatch)
 
 		if selectedForRestore {
 			err := res.restoreNodeTo(ctx, node, dir, dst, idx)
@@ -57,7 +57,7 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 			}
 		}
 
-		if node.Type == "dir" {
+		if node.Type == "dir" && childMayMatch {
 			if node.Subtree == nil {
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
