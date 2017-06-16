@@ -84,7 +84,15 @@ func Open(cfg Config) (restic.Backend, error) {
 // IsNotExist returns true if the error is caused by a not existing file.
 func (be *Backend) IsNotExist(err error) bool {
 	debug.Log("IsNotExist(%T, %#v)", err, err)
-	return os.IsNotExist(err)
+	if os.IsNotExist(errors.Cause(err)) {
+		return true
+	}
+
+	if e, ok := errors.Cause(err).(minio.ErrorResponse); ok && e.Code == "NoSuchKey" {
+		return true
+	}
+
+	return false
 }
 
 // Join combines path components with slashes.
