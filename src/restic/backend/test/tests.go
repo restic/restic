@@ -241,8 +241,8 @@ func (s *Suite) TestLoad(t *testing.T) {
 
 type errorCloser struct {
 	io.Reader
-	size int64
-	t    testing.TB
+	l int
+	t testing.TB
 }
 
 func (ec errorCloser) Close() error {
@@ -250,8 +250,8 @@ func (ec errorCloser) Close() error {
 	return errors.New("forbidden method close was called")
 }
 
-func (ec errorCloser) Size() int64 {
-	return ec.size
+func (ec errorCloser) Len() int {
+	return ec.l
 }
 
 // TestSave tests saving data in the backend.
@@ -325,7 +325,7 @@ func (s *Suite) TestSave(t *testing.T) {
 
 	// wrap the tempfile in an errorCloser, so we can detect if the backend
 	// closes the reader
-	err = b.Save(context.TODO(), h, errorCloser{t: t, size: int64(length), Reader: tmpfile})
+	err = b.Save(context.TODO(), h, errorCloser{t: t, l: length, Reader: tmpfile})
 	if err != nil {
 		t.Fatal(err)
 	}

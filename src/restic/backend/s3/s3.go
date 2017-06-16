@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/url"
 	"os"
 	"path"
 	"restic"
@@ -16,7 +14,6 @@ import (
 	"restic/errors"
 
 	"github.com/minio/minio-go"
-	"github.com/minio/minio-go/pkg/s3utils"
 
 	"restic/debug"
 )
@@ -166,17 +163,51 @@ func (be *Backend) Path() string {
 	return be.cfg.Prefix
 }
 
-func (be *Backend) isGoogleCloudStorage() bool {
-	scheme := "https://"
-	if be.cfg.UseHTTP {
-		scheme = "http://"
-	}
-	url, err := url.Parse(scheme + be.cfg.Endpoint)
+// nopCloserFile wraps *os.File and overwrites the Close() method with method
+// that does nothing. In addition, the method Len() is implemented, which
+// returns the size of the file (filesize - current offset).
+type nopCloserFile struct {
+	*os.File
+}
+
+func (f nopCloserFile) Close() error {
+	debug.Log("prevented Close()")
+	return nil
+}
+
+// Len returns the remaining length of the file (filesize - current offset).
+func (f nopCloserFile) Len() int {
+	debug.Log("Len() called")
+	fi, err := f.Stat()
 	if err != nil {
 		panic(err)
 	}
 
-	return s3utils.IsGoogleEndpoint(*url)
+	pos, err := f.Seek(0, io.SeekCurrent)
+	if err != nil {
+		panic(err)
+	}
+
+	size := fi.Size() - pos
+	debug.Log("returning file size %v", size)
+	return int(size)
+}
+
+type lenner interface {
+	Len() int
+	io.Reader
+}
+
+// nopCloserLenner wraps a lenner and overwrites the Close() method with method
+// that does nothing. In addition, the method Size() is implemented, which
+// returns the size of the file (filesize - current offset).
+type nopCloserLenner struct {
+	lenner
+}
+
+func (f *nopCloserLenner) Close() error {
+	debug.Log("prevented Close()")
+	return nil
 }
 
 // Save stores data in the backend at the handle.
@@ -196,9 +227,15 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 		return errors.New("key already exists")
 	}
 
-	// prevent GCS from closing the file
-	if be.isGoogleCloudStorage() {
-		rd = ioutil.NopCloser(rd)
+	// prevent the HTTP client from closing a file
+	if f, ok := rd.(*os.File); ok {
+		debug.Log("reader is %#T, using nopCloserFile{}", rd)
+		rd = nopCloserFile{f}
+	} else if l, ok := rd.(lenner); ok {
+		debug.Log("reader is %#T, using nopCloserLenner{}", rd)
+		rd = nopCloserLenner{l}
+	} else {
+		debug.Log("reader is %#T, no specific workaround enabled", rd)
 	}
 
 	be.sem.GetToken()
