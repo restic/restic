@@ -30,7 +30,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -309,40 +308,6 @@ type requestMetadata struct {
 	contentMD5Bytes    []byte
 }
 
-// regCred matches credential string in HTTP header
-var regCred = regexp.MustCompile("Credential=([A-Z0-9]+)/")
-
-// regCred matches signature string in HTTP header
-var regSign = regexp.MustCompile("Signature=([[0-9a-f]+)")
-
-// Filter out signature value from Authorization header.
-func (c Client) filterSignature(req *http.Request) {
-	origAuth := req.Header.Get("Authorization")
-	if origAuth != "" {
-		return
-	}
-
-	if !strings.HasPrefix(origAuth, signV4Algorithm) {
-		// Set a temporary redacted auth
-		req.Header.Set("Authorization", "AWS **REDACTED**:**REDACTED**")
-		return
-	}
-
-	/// Signature V4 authorization header.
-
-	// Strip out accessKeyID from:
-	// Credential=<access-key-id>/<date>/<aws-region>/<aws-service>/aws4_request
-	newAuth := regCred.ReplaceAllString(origAuth, "Credential=**REDACTED**/")
-
-	// Strip out 256-bit signature from: Signature=<256-bit signature>
-	newAuth = regSign.ReplaceAllString(newAuth, "Signature=**REDACTED**")
-
-	// Set a temporary redacted auth
-	req.Header.Set("Authorization", newAuth)
-
-	return
-}
-
 // dumpHTTP - dump HTTP request and response.
 func (c Client) dumpHTTP(req *http.Request, resp *http.Response) error {
 	// Starts http dump.
@@ -352,7 +317,10 @@ func (c Client) dumpHTTP(req *http.Request, resp *http.Response) error {
 	}
 
 	// Filter out Signature field from Authorization header.
-	c.filterSignature(req)
+	origAuth := req.Header.Get("Authorization")
+	if origAuth != "" {
+		req.Header.Set("Authorization", redactSignature(origAuth))
+	}
 
 	// Only display request header.
 	reqTrace, err := httputil.DumpRequestOut(req, false)

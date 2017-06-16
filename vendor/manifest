@@ -46,7 +46,7 @@
 		{
 			"importpath": "github.com/minio/minio-go",
 			"repository": "https://github.com/minio/minio-go",
-			"revision": "f2362d9e7d8daf89594ee0a079be2424eaf360be",
+			"revision": "f6d5df6b625c00c3180ec6c9240ea710620c7070",
 			"branch": "master"
 		},
 		{

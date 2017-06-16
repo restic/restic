@@ -69,7 +69,7 @@ func (c Client) ListBuckets() ([]BucketInfo, error) {
 //   // Create a done channel.
 //   doneCh := make(chan struct{})
 //   defer close(doneCh)
-//   // Recurively list all objects in 'mytestbucket'
+//   // Recursively list all objects in 'mytestbucket'
 //   recursive := true
 //   for message := range api.ListObjectsV2("mytestbucket", "starthere", recursive, doneCh) {
 //       fmt.Println(message)
