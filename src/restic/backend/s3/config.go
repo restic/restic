@@ -20,6 +20,7 @@ type Config struct {
 	Layout        string `option:"layout" help:"use this backend layout (default: auto-detect)"`
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	MaxRetries  uint `option:"retries" help:"set the number of retries attempted"`
 }
 
 // NewConfig returns a new Config with the default values filled in.

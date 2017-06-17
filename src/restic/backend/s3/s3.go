@@ -39,6 +39,10 @@ const defaultLayout = "default"
 func Open(cfg Config) (restic.Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
+	if cfg.MaxRetries > 0 {
+		minio.MaxRetry = int(cfg.MaxRetries)
+	}
+
 	client, err := minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
 	if err != nil {
 		return nil, errors.Wrap(err, "minio.New")
