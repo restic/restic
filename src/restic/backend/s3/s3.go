@@ -31,9 +31,7 @@ var _ restic.Backend = &Backend{}
 
 const defaultLayout = "default"
 
-// Open opens the S3 backend at bucket and region. The bucket is created if it
-// does not exist yet.
-func Open(cfg Config) (restic.Backend, error) {
+func open(cfg Config) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
 	if cfg.MaxRetries > 0 {
@@ -65,7 +63,20 @@ func Open(cfg Config) (restic.Backend, error) {
 
 	be.Layout = l
 
-	found, err := client.BucketExists(cfg.Bucket)
+	return be, nil
+}
+
+// Open opens the S3 backend at bucket and region. The bucket is created if it
+// does not exist yet.
+func Open(cfg Config) (restic.Backend, error) {
+	return open(cfg)
+}
+
+// Create opens the S3 backend at bucket and region and creates the bucket if
+// it does not exist yet.
+func Create(cfg Config) (restic.Backend, error) {
+	be, err := open(cfg)
+	found, err := be.client.BucketExists(cfg.Bucket)
 	if err != nil {
 		debug.Log("BucketExists(%v) returned err %v", cfg.Bucket, err)
 		return nil, errors.Wrap(err, "client.BucketExists")
@@ -73,7 +84,7 @@ func Open(cfg Config) (restic.Backend, error) {
 
 	if !found {
 		// create new bucket with default ACL in default region
-		err = client.MakeBucket(cfg.Bucket, "")
+		err = be.client.MakeBucket(cfg.Bucket, "")
 		if err != nil {
 			return nil, errors.Wrap(err, "client.MakeBucket")
 		}
