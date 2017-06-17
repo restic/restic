@@ -83,20 +83,8 @@ func (c Client) PutObjectWithMetadata(bucketName, objectName string, reader io.R
 	}
 
 	// NOTE: Google Cloud Storage does not implement Amazon S3 Compatible multipart PUT.
-	// So we fall back to single PUT operation with the maximum limit of 5GiB.
 	if s3utils.IsGoogleEndpoint(c.endpointURL) {
-		if size <= -1 {
-			return 0, ErrorResponse{
-				Code:       "NotImplemented",
-				Message:    "Content-Length cannot be negative for file uploads to Google Cloud Storage.",
-				Key:        objectName,
-				BucketName: bucketName,
-			}
-		}
-		if size > maxSinglePutObjectSize {
-			return 0, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
-		}
-		// Do not compute MD5 for Google Cloud Storage. Uploads up to 5GiB in size.
+		// Do not compute MD5 for Google Cloud Storage.
 		return c.putObjectNoChecksum(bucketName, objectName, reader, size, metaData, progress)
 	}
 

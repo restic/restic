@@ -23,6 +23,31 @@ import (
 	"time"
 )
 
+// Tests signature redacting function used
+// in filtering on-wire Authorization header.
+func TestRedactSignature(t *testing.T) {
+	testCases := []struct {
+		authValue                 string
+		expectedRedactedAuthValue string
+	}{
+		{
+			authValue:                 "AWS 1231313:888x000231==",
+			expectedRedactedAuthValue: "AWS **REDACTED**:**REDACTED**",
+		},
+		{
+			authValue:                 "AWS4-HMAC-SHA256 Credential=12312313/20170613/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=02131231312313213",
+			expectedRedactedAuthValue: "AWS4-HMAC-SHA256 Credential=**REDACTED**/20170613/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=**REDACTED**",
+		},
+	}
+
+	for i, testCase := range testCases {
+		redactedAuthValue := redactSignature(testCase.authValue)
+		if redactedAuthValue != testCase.expectedRedactedAuthValue {
+			t.Errorf("Test %d: Expected %s, got %s", i+1, testCase.expectedRedactedAuthValue, redactedAuthValue)
+		}
+	}
+}
+
 // Tests filter header function by filtering out
 // some custom header keys.
 func TestFilterHeader(t *testing.T) {

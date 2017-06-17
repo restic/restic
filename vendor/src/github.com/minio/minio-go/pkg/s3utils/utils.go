@@ -84,8 +84,27 @@ func IsAmazonEndpoint(endpointURL url.URL) bool {
 	if IsAmazonChinaEndpoint(endpointURL) {
 		return true
 	}
-
+	if IsAmazonGovCloudEndpoint(endpointURL) {
+		return true
+	}
 	return endpointURL.Host == "s3.amazonaws.com"
+}
+
+// IsAmazonGovCloudEndpoint - Match if it is exactly Amazon S3 GovCloud endpoint.
+func IsAmazonGovCloudEndpoint(endpointURL url.URL) bool {
+	if endpointURL == sentinelURL {
+		return false
+	}
+	return (endpointURL.Host == "s3-us-gov-west-1.amazonaws.com" ||
+		IsAmazonFIPSGovCloudEndpoint(endpointURL))
+}
+
+// IsAmazonFIPSGovCloudEndpoint - Match if it is exactly Amazon S3 FIPS GovCloud endpoint.
+func IsAmazonFIPSGovCloudEndpoint(endpointURL url.URL) bool {
+	if endpointURL == sentinelURL {
+		return false
+	}
+	return endpointURL.Host == "s3-fips-us-gov-west-1.amazonaws.com"
 }
 
 // IsAmazonChinaEndpoint - Match if it is exactly Amazon S3 China endpoint.

@@ -227,3 +227,26 @@ func filterHeader(header http.Header, filterKeys []string) (filteredHeader http.
 	}
 	return filteredHeader
 }
+
+// regCred matches credential string in HTTP header
+var regCred = regexp.MustCompile("Credential=([A-Z0-9]+)/")
+
+// regCred matches signature string in HTTP header
+var regSign = regexp.MustCompile("Signature=([[0-9a-f]+)")
+
+// Redact out signature value from authorization string.
+func redactSignature(origAuth string) string {
+	if !strings.HasPrefix(origAuth, signV4Algorithm) {
+		// Set a temporary redacted auth
+		return "AWS **REDACTED**:**REDACTED**"
+	}
+
+	/// Signature V4 authorization header.
+
+	// Strip out accessKeyID from:
+	// Credential=<access-key-id>/<date>/<aws-region>/<aws-service>/aws4_request
+	newAuth := regCred.ReplaceAllString(origAuth, "Credential=**REDACTED**/")
+
+	// Strip out 256-bit signature from: Signature=<256-bit signature>
+	return regSign.ReplaceAllString(newAuth, "Signature=**REDACTED**")
+}

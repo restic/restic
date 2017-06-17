@@ -108,6 +108,20 @@ func TestMakeBucketError(t *testing.T) {
 	if err = c.RemoveBucket(bucketName); err != nil {
 		t.Fatal("Error:", err, bucketName)
 	}
+	if err = c.MakeBucket(bucketName+"..-1", "eu-central-1"); err == nil {
+		t.Fatal("Error:", err, bucketName+"..-1")
+	}
+	// Verify valid error response.
+	if ToErrorResponse(err).Code != "InvalidBucketName" {
+		t.Fatal("Error: Invalid error returned by server", err)
+	}
+	if err = c.MakeBucket(bucketName+"AAA-1", "eu-central-1"); err == nil {
+		t.Fatal("Error:", err, bucketName+"..-1")
+	}
+	// Verify valid error response.
+	if ToErrorResponse(err).Code != "InvalidBucketName" {
+		t.Fatal("Error: Invalid error returned by server", err)
+	}
 }
 
 // Tests various bucket supported formats.

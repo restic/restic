@@ -17,7 +17,6 @@
 package minio
 
 import (
-	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
 	"hash"
@@ -167,8 +166,11 @@ func (c Client) putObjectNoChecksum(bucketName, objectName string, reader io.Rea
 	if err := isValidObjectName(objectName); err != nil {
 		return 0, err
 	}
-	if size > maxSinglePutObjectSize {
-		return 0, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
+	if size > 0 {
+		readerAt, ok := reader.(io.ReaderAt)
+		if ok {
+			reader = io.NewSectionReader(readerAt, 0, size)
+		}
 	}
 
 	// Update progress reader appropriately to the latest offset as we
@@ -214,34 +216,25 @@ func (c Client) putObjectSingle(bucketName, objectName string, reader io.Reader,
 		hashAlgos["sha256"] = sha256.New()
 	}
 
-	if size <= minPartSize {
-		// Initialize a new temporary buffer.
-		tmpBuffer := new(bytes.Buffer)
-		size, err = hashCopyN(hashAlgos, hashSums, tmpBuffer, reader, size)
-		reader = bytes.NewReader(tmpBuffer.Bytes())
-		tmpBuffer.Reset()
-	} else {
-		// Initialize a new temporary file.
-		var tmpFile *tempFile
-		tmpFile, err = newTempFile("single$-putobject-single")
-		if err != nil {
-			return 0, err
-		}
-		defer tmpFile.Close()
-		size, err = hashCopyN(hashAlgos, hashSums, tmpFile, reader, size)
-		if err != nil {
-			return 0, err
-		}
-		// Seek back to beginning of the temporary file.
-		if _, err = tmpFile.Seek(0, 0); err != nil {
-			return 0, err
-		}
-		reader = tmpFile
+	// Initialize a new temporary file.
+	tmpFile, err := newTempFile("single$-putobject-single")
+	if err != nil {
+		return 0, err
 	}
+	defer tmpFile.Close()
+
+	size, err = hashCopyN(hashAlgos, hashSums, tmpFile, reader, size)
 	// Return error if its not io.EOF.
 	if err != nil && err != io.EOF {
 		return 0, err
 	}
+
+	// Seek back to beginning of the temporary file.
+	if _, err = tmpFile.Seek(0, 0); err != nil {
+		return 0, err
+	}
+	reader = tmpFile
+
 	// Execute put object.
 	st, err := c.putObjectDo(bucketName, objectName, reader, hashSums["md5"], hashSums["sha256"], size, metaData)
 	if err != nil {
@@ -268,14 +261,6 @@ func (c Client) putObjectDo(bucketName, objectName string, reader io.Reader, md5
 	}
 	if err := isValidObjectName(objectName); err != nil {
 		return ObjectInfo{}, err
-	}
-
-	if size <= -1 {
-		return ObjectInfo{}, ErrEntityTooSmall(size, bucketName, objectName)
-	}
-
-	if size > maxSinglePutObjectSize {
-		return ObjectInfo{}, ErrEntityTooLarge(size, maxSinglePutObjectSize, bucketName, objectName)
 	}
 
 	// Set headers.

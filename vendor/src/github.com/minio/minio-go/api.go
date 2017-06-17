@@ -26,11 +26,11 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -309,40 +309,6 @@ type requestMetadata struct {
 	contentMD5Bytes    []byte
 }
 
-// regCred matches credential string in HTTP header
-var regCred = regexp.MustCompile("Credential=([A-Z0-9]+)/")
-
-// regCred matches signature string in HTTP header
-var regSign = regexp.MustCompile("Signature=([[0-9a-f]+)")
-
-// Filter out signature value from Authorization header.
-func (c Client) filterSignature(req *http.Request) {
-	origAuth := req.Header.Get("Authorization")
-	if origAuth != "" {
-		return
-	}
-
-	if !strings.HasPrefix(origAuth, signV4Algorithm) {
-		// Set a temporary redacted auth
-		req.Header.Set("Authorization", "AWS **REDACTED**:**REDACTED**")
-		return
-	}
-
-	/// Signature V4 authorization header.
-
-	// Strip out accessKeyID from:
-	// Credential=<access-key-id>/<date>/<aws-region>/<aws-service>/aws4_request
-	newAuth := regCred.ReplaceAllString(origAuth, "Credential=**REDACTED**/")
-
-	// Strip out 256-bit signature from: Signature=<256-bit signature>
-	newAuth = regSign.ReplaceAllString(newAuth, "Signature=**REDACTED**")
-
-	// Set a temporary redacted auth
-	req.Header.Set("Authorization", newAuth)
-
-	return
-}
-
 // dumpHTTP - dump HTTP request and response.
 func (c Client) dumpHTTP(req *http.Request, resp *http.Response) error {
 	// Starts http dump.
@@ -352,7 +318,10 @@ func (c Client) dumpHTTP(req *http.Request, resp *http.Response) error {
 	}
 
 	// Filter out Signature field from Authorization header.
-	c.filterSignature(req)
+	origAuth := req.Header.Get("Authorization")
+	if origAuth != "" {
+		req.Header.Set("Authorization", redactSignature(origAuth))
+	}
 
 	// Only display request header.
 	reqTrace, err := httputil.DumpRequestOut(req, false)
@@ -556,9 +525,14 @@ func (c Client) executeMethod(method string, metadata requestMetadata) (res *htt
 		// Bucket region if set in error response and the error
 		// code dictates invalid region, we can retry the request
 		// with the new region.
-		if res.StatusCode == http.StatusBadRequest && errResponse.Region != "" {
-			c.bucketLocCache.Set(metadata.bucketName, errResponse.Region)
-			continue // Retry.
+		//
+		// Additionally we should only retry if bucketLocation and custom
+		// region is empty.
+		if metadata.bucketLocation == "" && c.region == "" {
+			if res.StatusCode == http.StatusBadRequest && errResponse.Region != "" {
+				c.bucketLocCache.Set(metadata.bucketName, errResponse.Region)
+				continue // Retry.
+			}
 		}
 
 		// Verify if error response code is retryable.
@@ -584,29 +558,19 @@ func (c Client) newRequest(method string, metadata requestMetadata) (req *http.R
 		method = "POST"
 	}
 
-	// Default all requests to "us-east-1" or "cn-north-1" (china region)
-	location := "us-east-1"
-	if s3utils.IsAmazonChinaEndpoint(c.endpointURL) {
-		// For china specifically we need to set everything to
-		// cn-north-1 for now, there is no easier way until AWS S3
-		// provides a cleaner compatible API across "us-east-1" and
-		// China region.
-		location = "cn-north-1"
-	}
-
+	var location string
 	// Gather location only if bucketName is present.
-	if metadata.bucketName != "" {
+	if metadata.bucketName != "" && metadata.bucketLocation == "" {
 		location, err = c.getBucketLocation(metadata.bucketName)
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		location = metadata.bucketLocation
 	}
 
-	// Save location.
-	metadata.bucketLocation = location
-
 	// Construct a new target URL.
-	targetURL, err := c.makeTargetURL(metadata.bucketName, metadata.objectName, metadata.bucketLocation, metadata.queryValues)
+	targetURL, err := c.makeTargetURL(metadata.bucketName, metadata.objectName, location, metadata.queryValues)
 	if err != nil {
 		return nil, err
 	}
@@ -664,9 +628,11 @@ func (c Client) newRequest(method string, metadata requestMetadata) (req *http.R
 		req.Header.Set(k, v[0])
 	}
 
-	// set incoming content-length.
-	if metadata.contentLength > 0 {
-		req.ContentLength = metadata.contentLength
+	// Set incoming content-length.
+	req.ContentLength = metadata.contentLength
+	if req.ContentLength <= -1 {
+		// For unknown content length, we upload using transfer-encoding: chunked.
+		req.TransferEncoding = []string{"chunked"}
 	}
 
 	// set md5Sum for content protection.
@@ -726,13 +692,25 @@ func (c Client) makeTargetURL(bucketName, objectName, bucketLocation string, que
 			// http://docs.aws.amazon.com/AmazonS3/latest/dev/transfer-acceleration.html
 			host = c.s3AccelerateEndpoint
 		} else {
-			// Fetch new host based on the bucket location.
-			host = getS3Endpoint(bucketLocation)
+			// Do not change the host if the endpoint URL is a FIPS S3 endpoint.
+			if !s3utils.IsAmazonFIPSGovCloudEndpoint(c.endpointURL) {
+				// Fetch new host based on the bucket location.
+				host = getS3Endpoint(bucketLocation)
+			}
 		}
 	}
 
 	// Save scheme.
 	scheme := c.endpointURL.Scheme
+
+	// Strip port 80 and 443 so we won't send these ports in Host header.
+	// The reason is that browsers and curl automatically remove :80 and :443
+	// with the generated presigned urls, then a signature mismatch error.
+	if h, p, err := net.SplitHostPort(host); err == nil {
+		if scheme == "http" && p == "80" || scheme == "https" && p == "443" {
+			host = h
+		}
+	}
 
 	urlStr := scheme + "://" + host + "/"
 	// Make URL only if bucketName is available, otherwise use the
