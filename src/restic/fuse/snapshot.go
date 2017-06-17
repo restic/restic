@@ -68,7 +68,7 @@ type SnapshotsDir struct {
 	blobsize *BlobSizeCache
 
 	// knownSnapshots maps snapshot timestamp to the snapshot
-	sync.RWMutex
+	sync.Mutex
 	knownSnapshots map[string]SnapshotWithId
 	processed      restic.IDSet
 }
@@ -141,9 +141,9 @@ func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
 }
 
 func (sn *SnapshotsDir) get(name string) (snapshot SnapshotWithId, ok bool) {
-	sn.RLock()
+	sn.Lock()
 	snapshot, ok = sn.knownSnapshots[name]
-	sn.RUnlock()
+	sn.Unlock()
 	debug.Log("get(%s) -> %v %v", name, snapshot, ok)
 	return snapshot, ok
 }
@@ -155,8 +155,8 @@ func (sn *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		return nil, err
 	}
 
-	sn.RLock()
-	defer sn.RUnlock()
+	sn.Lock()
+	defer sn.Unlock()
 
 	ret := make([]fuse.Dirent, 0)
 	for timestamp, snapshot := range sn.knownSnapshots {
