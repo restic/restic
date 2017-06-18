@@ -14,6 +14,7 @@ import (
 	"restic/repository"
 
 	"bazil.org/fuse"
+	"bazil.org/fuse/fs"
 
 	"restic"
 	. "restic/test"
@@ -108,13 +109,21 @@ func TestFuseFile(t *testing.T) {
 		Size:    filesize,
 		Content: content,
 	}
-	f, err := newFile(repo, node, false, nil)
+	root := &Root{
+		blobSizeCache: NewBlobSizeCache(context.TODO(), repo.Index()),
+		repo:          repo,
+	}
+
+	t.Logf("blob cache has %d entries", len(root.blobSizeCache.m))
+
+	inode := fs.GenerateDynamicInode(1, "foo")
+	f, err := newFile(context.TODO(), root, inode, node)
 	OK(t, err)
 
 	attr := fuse.Attr{}
 	OK(t, f.Attr(ctx, &attr))
 
-	Equals(t, node.Inode, attr.Inode)
+	Equals(t, inode, attr.Inode)
 	Equals(t, node.Mode, attr.Mode)
 	Equals(t, node.Size, attr.Size)
 	Equals(t, (node.Size/uint64(attr.BlockSize))+1, attr.Blocks)
