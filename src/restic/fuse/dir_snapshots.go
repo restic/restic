@@ -101,5 +101,5 @@ func (d *DirSnapshots) Lookup(ctx context.Context, name string) (fs.Node, error)
 		return nil, fuse.ENOENT
 	}
 
-	return newDirFromSnapshot(ctx, d.root.repo, sn, d.root.cfg.OwnerIsRoot, d.root.blobSizeCache)
+	return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), sn)
 }

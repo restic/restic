@@ -9,8 +9,6 @@ import (
 	"restic"
 	"restic/debug"
 
-	scontext "context"
-
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 	"golang.org/x/net/context"
@@ -23,30 +21,23 @@ const blockSize = 512
 var _ = fs.HandleReader(&file{})
 var _ = fs.HandleReleaser(&file{})
 
-// BlobLoader is an abstracted repository with a reduced set of methods used
-// for fuse operations.
-type BlobLoader interface {
-	LookupBlobSize(restic.ID, restic.BlobType) (uint, error)
-	LoadBlob(scontext.Context, restic.BlobType, restic.ID, []byte) (int, error)
-}
-
 type file struct {
-	repo        BlobLoader
-	node        *restic.Node
-	ownerIsRoot bool
+	root  *Root
+	node  *restic.Node
+	inode uint64
 
 	sizes []int
 	blobs [][]byte
 }
 
-func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool, blobsize *BlobSizeCache) (fusefile *file, err error) {
+func newFile(ctx context.Context, root *Root, inode uint64, node *restic.Node) (fusefile *file, err error) {
 	debug.Log("create new file for %v with %d blobs", node.Name, len(node.Content))
 	var bytes uint64
 	sizes := make([]int, len(node.Content))
 	for i, id := range node.Content {
-		size, ok := blobsize.Lookup(id)
+		size, ok := root.blobSizeCache.Lookup(id)
 		if !ok {
-			size, err = repo.LookupBlobSize(id, restic.DataBlob)
+			size, err = root.repo.LookupBlobSize(id, restic.DataBlob)
 			if err != nil {
 				return nil, err
 			}
@@ -62,24 +53,23 @@ func newFile(repo BlobLoader, node *restic.Node, ownerIsRoot bool, blobsize *Blo
 	}
 
 	return &file{
-		repo:        repo,
-		node:        node,
-		sizes:       sizes,
-		blobs:       make([][]byte, len(node.Content)),
-		ownerIsRoot: ownerIsRoot,
+		root:  root,
+		node:  node,
+		sizes: sizes,
+		blobs: make([][]byte, len(node.Content)),
 	}, nil
 }
 
 func (f *file) Attr(ctx context.Context, a *fuse.Attr) error {
 	debug.Log("Attr(%v)", f.node.Name)
-	a.Inode = f.node.Inode
+	a.Inode = f.inode
 	a.Mode = f.node.Mode
 	a.Size = f.node.Size
 	a.Blocks = (f.node.Size / blockSize) + 1
 	a.BlockSize = blockSize
 	a.Nlink = uint32(f.node.Links)
 
-	if !f.ownerIsRoot {
+	if !f.root.cfg.OwnerIsRoot {
 		a.Uid = f.node.UID
 		a.Gid = f.node.GID
 	}
@@ -103,7 +93,7 @@ func (f *file) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 	}
 
 	buf := restic.NewBlobBuffer(f.sizes[i])
-	n, err := f.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], buf)
+	n, err := f.root.repo.LoadBlob(ctx, restic.DataBlob, f.node.Content[i], buf)
 	if err != nil {
 		debug.Log("LoadBlob(%v, %v) failed: %v", f.node.Name, f.node.Content[i], err)
 		return nil, err
