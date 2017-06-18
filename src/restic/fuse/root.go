@@ -28,7 +28,7 @@ type Root struct {
 	cfg           Config
 	inode         uint64
 	snapshots     restic.Snapshots
-	dirSnapshots  *DirSnapshots
+	dirSnapshots  *SnapshotsDir
 	blobSizeCache *BlobSizeCache
 }
 

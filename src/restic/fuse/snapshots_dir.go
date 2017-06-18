@@ -16,8 +16,8 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-// DirSnapshots is a fuse directory which contains snapshots.
-type DirSnapshots struct {
+// SnapshotsDir is a fuse directory which contains snapshots.
+type SnapshotsDir struct {
 	inode     uint64
 	root      *Root
 	snapshots restic.Snapshots
@@ -25,13 +25,13 @@ type DirSnapshots struct {
 }
 
 // ensure that *DirSnapshots implements these interfaces
-var _ = fs.HandleReadDirAller(&DirSnapshots{})
-var _ = fs.NodeStringLookuper(&DirSnapshots{})
+var _ = fs.HandleReadDirAller(&SnapshotsDir{})
+var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 
 // NewDirSnapshots returns a new directory containing snapshots.
-func NewDirSnapshots(root *Root, inode uint64, snapshots restic.Snapshots) *DirSnapshots {
+func NewDirSnapshots(root *Root, inode uint64, snapshots restic.Snapshots) *SnapshotsDir {
 	debug.Log("create snapshots dir with %d snapshots, inode %d", len(snapshots), inode)
-	d := &DirSnapshots{
+	d := &SnapshotsDir{
 		root:      root,
 		inode:     inode,
 		snapshots: snapshots,
@@ -56,7 +56,7 @@ func NewDirSnapshots(root *Root, inode uint64, snapshots restic.Snapshots) *DirS
 }
 
 // Attr returns the attributes for the root node.
-func (d *DirSnapshots) Attr(ctx context.Context, attr *fuse.Attr) error {
+func (d *SnapshotsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Inode = d.inode
 	attr.Mode = os.ModeDir | 0555
 
@@ -69,7 +69,7 @@ func (d *DirSnapshots) Attr(ctx context.Context, attr *fuse.Attr) error {
 }
 
 // ReadDirAll returns all entries of the root node.
-func (d *DirSnapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("ReadDirAll()")
 	items := []fuse.Dirent{
 		{
@@ -96,7 +96,7 @@ func (d *DirSnapshots) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 }
 
 // Lookup returns a specific entry from the root node.
-func (d *DirSnapshots) Lookup(ctx context.Context, name string) (fs.Node, error) {
+func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	debug.Log("Lookup(%s)", name)
 
 	sn, ok := d.names[name]
