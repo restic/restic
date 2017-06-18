@@ -19,18 +19,17 @@ var _ = fs.HandleReadDirAller(&dir{})
 var _ = fs.NodeStringLookuper(&dir{})
 
 type dir struct {
-	repo        restic.Repository
-	items       map[string]*restic.Node
-	inode       uint64
-	node        *restic.Node
-	ownerIsRoot bool
+	root  *Root
+	items map[string]*restic.Node
+	inode uint64
+	node  *restic.Node
 
 	blobsize *BlobSizeCache
 }
 
-func newDir(ctx context.Context, repo restic.Repository, node *restic.Node, ownerIsRoot bool, blobsize *BlobSizeCache) (*dir, error) {
+func newDir(ctx context.Context, root *Root, inode uint64, node *restic.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree.Str())
-	tree, err := repo.LoadTree(ctx, *node.Subtree)
+	tree, err := root.repo.LoadTree(ctx, *node.Subtree)
 	if err != nil {
 		debug.Log("  error loading tree %v: %v", node.Subtree.Str(), err)
 		return nil, err
@@ -41,12 +40,10 @@ func newDir(ctx context.Context, repo restic.Repository, node *restic.Node, owne
 	}
 
 	return &dir{
-		repo:        repo,
-		node:        node,
-		items:       items,
-		inode:       node.Inode,
-		ownerIsRoot: ownerIsRoot,
-		blobsize:    blobsize,
+		root:  root,
+		node:  node,
+		items: items,
+		inode: inode,
 	}, nil
 }
 
@@ -69,16 +66,16 @@ func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *rest
 	return tree.Nodes, nil
 }
 
-func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot SnapshotWithId, ownerIsRoot bool, blobsize *BlobSizeCache) (*dir, error) {
-	debug.Log("new dir for snapshot %v (%v)", snapshot.ID.Str(), snapshot.Tree.Str())
-	tree, err := repo.LoadTree(ctx, *snapshot.Tree)
+func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot *restic.Snapshot) (*dir, error) {
+	debug.Log("new dir for snapshot %v (%v)", snapshot.ID().Str(), snapshot.Tree.Str())
+	tree, err := root.repo.LoadTree(ctx, *snapshot.Tree)
 	if err != nil {
-		debug.Log("  loadTree(%v) failed: %v", snapshot.ID.Str(), err)
+		debug.Log("  loadTree(%v) failed: %v", snapshot.ID().Str(), err)
 		return nil, err
 	}
 	items := make(map[string]*restic.Node)
 	for _, n := range tree.Nodes {
-		nodes, err := replaceSpecialNodes(ctx, repo, n)
+		nodes, err := replaceSpecialNodes(ctx, root.repo, n)
 		if err != nil {
 			debug.Log("  replaceSpecialNodes(%v) failed: %v", n, err)
 			return nil, err
@@ -90,7 +87,7 @@ func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot Sn
 	}
 
 	return &dir{
-		repo: repo,
+		root: root,
 		node: &restic.Node{
 			UID:        uint32(os.Getuid()),
 			GID:        uint32(os.Getgid()),
@@ -99,10 +96,8 @@ func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot Sn
 			ChangeTime: snapshot.Time,
 			Mode:       os.ModeDir | 0555,
 		},
-		items:       items,
-		inode:       inodeFromBackendID(snapshot.ID),
-		ownerIsRoot: ownerIsRoot,
-		blobsize:    blobsize,
+		items: items,
+		inode: inode,
 	}, nil
 }
 
@@ -111,7 +106,7 @@ func (d *dir) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = d.inode
 	a.Mode = os.ModeDir | d.node.Mode
 
-	if !d.ownerIsRoot {
+	if !d.root.cfg.OwnerIsRoot {
 		a.Uid = d.node.UID
 		a.Gid = d.node.GID
 	}
@@ -153,7 +148,7 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		}
 
 		ret = append(ret, fuse.Dirent{
-			Inode: node.Inode,
+			Inode: fs.GenerateDynamicInode(d.inode, node.Name),
 			Type:  typ,
 			Name:  node.Name,
 		})
@@ -171,11 +166,11 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	switch node.Type {
 	case "dir":
-		return newDir(ctx, d.repo, node, d.ownerIsRoot, d.blobsize)
+		return newDir(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	case "file":
-		return newFile(d.repo, node, d.ownerIsRoot, d.blobsize)
+		return newFile(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	case "symlink":
-		return newLink(d.repo, node, d.ownerIsRoot)
+		return newLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT

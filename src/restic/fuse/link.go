@@ -15,12 +15,13 @@ import (
 var _ = fs.NodeReadlinker(&link{})
 
 type link struct {
-	node        *restic.Node
-	ownerIsRoot bool
+	root  *Root
+	node  *restic.Node
+	inode uint64
 }
 
-func newLink(repo restic.Repository, node *restic.Node, ownerIsRoot bool) (*link, error) {
-	return &link{node: node, ownerIsRoot: ownerIsRoot}, nil
+func newLink(ctx context.Context, root *Root, inode uint64, node *restic.Node) (*link, error) {
+	return &link{root: root, inode: inode, node: node}, nil
 }
 
 func (l *link) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string, error) {
@@ -28,10 +29,10 @@ func (l *link) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string,
 }
 
 func (l *link) Attr(ctx context.Context, a *fuse.Attr) error {
-	a.Inode = l.node.Inode
+	a.Inode = l.inode
 	a.Mode = l.node.Mode
 
-	if !l.ownerIsRoot {
+	if !l.root.cfg.OwnerIsRoot {
 		a.Uid = l.node.UID
 		a.Gid = l.node.GID
 	}

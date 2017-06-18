@@ -142,7 +142,7 @@ func (c *Checker) LoadIndex(ctx context.Context) (hints []error, errs []error) {
 
 		debug.Log("process blobs")
 		cnt := 0
-		for blob := range res.Index.Each(done) {
+		for blob := range res.Index.Each(ctx) {
 			c.packs.Insert(blob.PackID)
 			c.blobs.Insert(blob.ID)
 			c.blobRefs.M[blob.ID] = 0

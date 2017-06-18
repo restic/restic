@@ -6,24 +6,6 @@ import (
 	"time"
 )
 
-// Snapshots is a list of snapshots.
-type Snapshots []*Snapshot
-
-// Len returns the number of snapshots in sn.
-func (sn Snapshots) Len() int {
-	return len(sn)
-}
-
-// Less returns true iff the ith snapshot has been made after the jth.
-func (sn Snapshots) Less(i, j int) bool {
-	return sn[i].Time.After(sn[j].Time)
-}
-
-// Swap exchanges the two snapshots.
-func (sn Snapshots) Swap(i, j int) {
-	sn[i], sn[j] = sn[j], sn[i]
-}
-
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
 	Last    int      // keep the last n snapshots

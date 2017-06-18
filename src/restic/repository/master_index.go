@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"restic"
 	"sync"
 
@@ -188,6 +189,35 @@ func (mi *MasterIndex) All() []*Index {
 	return mi.idx
 }
 
+// Each returns a channel that yields all blobs known to the index. When the
+// context is cancelled, the background goroutine terminates. This blocks any
+// modification of the index.
+func (mi *MasterIndex) Each(ctx context.Context) <-chan restic.PackedBlob {
+	mi.idxMutex.RLock()
+
+	ch := make(chan restic.PackedBlob)
+
+	go func() {
+		defer mi.idxMutex.RUnlock()
+		defer func() {
+			close(ch)
+		}()
+
+		for _, idx := range mi.idx {
+			idxCh := idx.Each(ctx)
+			for pb := range idxCh {
+				select {
+				case <-ctx.Done():
+					return
+				case ch <- pb:
+				}
+			}
+		}
+	}()
+
+	return ch
+}
+
 // RebuildIndex combines all known indexes to a new index, leaving out any
 // packs whose ID is contained in packBlacklist. The new index contains the IDs
 // of all known indexes in the "supersedes" field.
@@ -198,13 +228,14 @@ func (mi *MasterIndex) RebuildIndex(packBlacklist restic.IDSet) (*Index, error) 
 	debug.Log("start rebuilding index of %d indexes, pack blacklist: %v", len(mi.idx), packBlacklist)
 
 	newIndex := NewIndex()
-	done := make(chan struct{})
-	defer close(done)
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 
 	for i, idx := range mi.idx {
 		debug.Log("adding index %d", i)
 
-		for pb := range idx.Each(done) {
+		for pb := range idx.Each(ctx) {
 			if packBlacklist.Has(pb.PackID) {
 				continue
 			}

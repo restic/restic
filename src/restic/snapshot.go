@@ -6,8 +6,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"time"
-
-	"restic/errors"
 )
 
 // Snapshot is the state of a resource at one point in time.
@@ -172,45 +170,20 @@ func (sn *Snapshot) SamePaths(paths []string) bool {
 	return sn.HasPaths(paths)
 }
 
-// ErrNoSnapshotFound is returned when no snapshot for the given criteria could be found.
-var ErrNoSnapshotFound = errors.New("no snapshot found")
+// Snapshots is a list of snapshots.
+type Snapshots []*Snapshot
 
-// FindLatestSnapshot finds latest snapshot with optional target/directory, tags and hostname filters.
-func FindLatestSnapshot(ctx context.Context, repo Repository, targets []string, tags []string, hostname string) (ID, error) {
-	var (
-		latest   time.Time
-		latestID ID
-		found    bool
-	)
-
-	for snapshotID := range repo.List(ctx, SnapshotFile) {
-		snapshot, err := LoadSnapshot(ctx, repo, snapshotID)
-		if err != nil {
-			return ID{}, errors.Errorf("Error listing snapshot: %v", err)
-		}
-		if snapshot.Time.After(latest) && (hostname == "" || hostname == snapshot.Hostname) && snapshot.HasTags(tags) && snapshot.HasPaths(targets) {
-			latest = snapshot.Time
-			latestID = snapshotID
-			found = true
-		}
-	}
-
-	if !found {
-		return ID{}, ErrNoSnapshotFound
-	}
-
-	return latestID, nil
+// Len returns the number of snapshots in sn.
+func (sn Snapshots) Len() int {
+	return len(sn)
 }
 
-// FindSnapshot takes a string and tries to find a snapshot whose ID matches
-// the string as closely as possible.
-func FindSnapshot(repo Repository, s string) (ID, error) {
+// Less returns true iff the ith snapshot has been made after the jth.
+func (sn Snapshots) Less(i, j int) bool {
+	return sn[i].Time.After(sn[j].Time)
+}
 
-	// find snapshot id with prefix
-	name, err := Find(repo.Backend(), SnapshotFile, s)
-	if err != nil {
-		return ID{}, err
-	}
-
-	return ParseID(name)
+// Swap exchanges the two snapshots.
+func (sn Snapshots) Swap(i, j int) {
+	sn[i], sn[j] = sn[j], sn[i]
 }

@@ -96,14 +96,26 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		return err
 	}
 
+	systemFuse.Debug = func(msg interface{}) {
+		debug.Log("fuse: %v", msg)
+	}
+
+	cfg := fuse.Config{
+		OwnerIsRoot: opts.OwnerRoot,
+		Host:        opts.Host,
+		Tags:        opts.Tags,
+		Paths:       opts.Paths,
+	}
+	root, err := fuse.NewRoot(context.TODO(), repo, cfg)
+	if err != nil {
+		return err
+	}
+
 	Printf("Now serving the repository at %s\n", mountpoint)
 	Printf("Don't forget to umount after quitting!\n")
 
-	root := fs.Tree{}
-	root.Add("snapshots", fuse.NewSnapshotsDir(repo, opts.OwnerRoot, opts.Paths, opts.Tags, opts.Host))
-
 	debug.Log("serving mount at %v", mountpoint)
-	err = fs.Serve(c, &root)
+	err = fs.Serve(c, root)
 	if err != nil {
 		return err
 	}
