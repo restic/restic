@@ -1,10 +1,10 @@
-// +build ignore
 // +build !openbsd
 // +build !windows
 
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -55,17 +55,15 @@ func waitForMount(t testing.TB, dir string) {
 	t.Errorf("subdir %q of dir %s never appeared", mountTestSubdir, dir)
 }
 
-func mount(t testing.TB, global GlobalOptions, dir string) {
-	cmd := &CmdMount{global: &global}
-	OK(t, cmd.Mount(dir))
+func testRunMount(t testing.TB, gopts GlobalOptions, dir string) {
+	opts := MountOptions{}
+	OK(t, runMount(opts, gopts, []string{dir}))
 }
 
-func umount(t testing.TB, global GlobalOptions, dir string) {
-	cmd := &CmdMount{global: &global}
-
+func testRunUmount(t testing.TB, gopts GlobalOptions, dir string) {
 	var err error
 	for i := 0; i < mountWait; i++ {
-		if err = cmd.Umount(dir); err == nil {
+		if err = umount(dir); err == nil {
 			t.Logf("directory %v umounted", dir)
 			return
 		}
@@ -87,9 +85,10 @@ func listSnapshots(t testing.TB, dir string) []string {
 
 func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Repository, mountpoint, repodir string, snapshotIDs restic.IDs) {
 	t.Logf("checking for %d snapshots: %v", len(snapshotIDs), snapshotIDs)
-	go mount(t, global, mountpoint)
+
+	go testRunMount(t, global, mountpoint)
 	waitForMount(t, mountpoint)
-	defer umount(t, global, mountpoint)
+	defer testRunUmount(t, global, mountpoint)
 
 	if !snapshotsDirExists(t, mountpoint) {
 		t.Fatal(`virtual directory "snapshots" doesn't exist`)
@@ -110,7 +109,7 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 	}
 
 	for _, id := range snapshotIDs {
-		snapshot, err := restic.LoadSnapshot(repo, id)
+		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
 		OK(t, err)
 
 		ts := snapshot.Time.Format(time.RFC3339)
@@ -144,45 +143,46 @@ func TestMount(t *testing.T) {
 		t.Skip("Skipping fuse tests")
 	}
 
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
-
-		cmdInit(t, global)
-		repo, err := global.OpenRepository()
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
+		mountpoint, err := ioutil.TempDir(TestTempDir, "restic-test-mount-")
 		OK(t, err)
 
-		mountpoint, err := ioutil.TempDir(TestTempDir, "restic-test-mount-")
+		testRunInit(t, gopts)
+
+		repo, err := OpenRepository(gopts)
 		OK(t, err)
 
 		// We remove the mountpoint now to check that cmdMount creates it
 		RemoveAll(t, mountpoint)
 
-		checkSnapshots(t, global, repo, mountpoint, env.repo, []restic.ID{})
+		checkSnapshots(t, gopts, repo, mountpoint, env.repo, []restic.ID{})
 
 		SetupTarTestFixture(t, env.testdata, filepath.Join("testdata", "backup-data.tar.gz"))
 
 		// first backup
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		snapshotIDs := cmdList(t, global, "snapshots")
+		testRunBackup(t, []string{env.testdata}, BackupOptions{}, gopts)
+		snapshotIDs := testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshotIDs) == 1,
 			"expected one snapshot, got %v", snapshotIDs)
 
-		checkSnapshots(t, global, repo, mountpoint, env.repo, snapshotIDs)
+		checkSnapshots(t, gopts, repo, mountpoint, env.repo, snapshotIDs)
 
 		// second backup, implicit incremental
-		cmdBackup(t, global, []string{env.testdata}, nil)
-		snapshotIDs = cmdList(t, global, "snapshots")
+		testRunBackup(t, []string{env.testdata}, BackupOptions{}, gopts)
+		snapshotIDs = testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshotIDs) == 2,
 			"expected two snapshots, got %v", snapshotIDs)
 
-		checkSnapshots(t, global, repo, mountpoint, env.repo, snapshotIDs)
+		checkSnapshots(t, gopts, repo, mountpoint, env.repo, snapshotIDs)
 
 		// third backup, explicit incremental
-		cmdBackup(t, global, []string{env.testdata}, &snapshotIDs[0])
-		snapshotIDs = cmdList(t, global, "snapshots")
+		bopts := BackupOptions{Parent: snapshotIDs[0].String()}
+		testRunBackup(t, []string{env.testdata}, bopts, gopts)
+		snapshotIDs = testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshotIDs) == 3,
 			"expected three snapshots, got %v", snapshotIDs)
 
-		checkSnapshots(t, global, repo, mountpoint, env.repo, snapshotIDs)
+		checkSnapshots(t, gopts, repo, mountpoint, env.repo, snapshotIDs)
 	})
 }
 
@@ -191,10 +191,10 @@ func TestMountSameTimestamps(t *testing.T) {
 		t.Skip("Skipping fuse tests")
 	}
 
-	withTestEnvironment(t, func(env *testEnvironment, global GlobalOptions) {
+	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
 		SetupTarTestFixture(t, env.base, filepath.Join("testdata", "repo-same-timestamps.tar.gz"))
 
-		repo, err := global.OpenRepository()
+		repo, err := OpenRepository(gopts)
 		OK(t, err)
 
 		mountpoint, err := ioutil.TempDir(TestTempDir, "restic-test-mount-")
@@ -206,6 +206,6 @@ func TestMountSameTimestamps(t *testing.T) {
 			restic.TestParseID("5fd0d8b2ef0fa5d23e58f1e460188abb0f525c0f0c4af8365a1280c807a80a1b"),
 		}
 
-		checkSnapshots(t, global, repo, mountpoint, env.repo, ids)
+		checkSnapshots(t, gopts, repo, mountpoint, env.repo, ids)
 	})
 }
