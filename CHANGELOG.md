@@ -30,6 +30,13 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/issues/965
    https://github.com/restic/restic/pull/1004
 
+ * The fuse mount now has two more directories: `tags` contains a subdir for
+   each tag, which in turn contains only the snapshots that have this tag. The
+   subdir `hosts` contains a subdir for each host that has a snapshot, and the
+   subdir contains the snapshots for that host.
+   https://github.com/restic/restic/issues/636
+   https://github.com/restic/restic/pull/1050
+
 Small changes
 -------------
 
