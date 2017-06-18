@@ -53,6 +53,7 @@ func newFile(ctx context.Context, root *Root, inode uint64, node *restic.Node) (
 	}
 
 	return &file{
+		inode: inode,
 		root:  root,
 		node:  node,
 		sizes: sizes,
