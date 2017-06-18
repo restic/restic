@@ -206,10 +206,10 @@ func (idx *Index) AddToSupersedes(ids ...restic.ID) error {
 	return nil
 }
 
-// Each returns a channel that yields all blobs known to the index. If done is
-// closed, the background goroutine terminates. This blocks any modification of
-// the index.
-func (idx *Index) Each(done chan struct{}) <-chan restic.PackedBlob {
+// Each returns a channel that yields all blobs known to the index. When the
+// context is cancelled, the background goroutine terminates. This blocks any
+// modification of the index.
+func (idx *Index) Each(ctx context.Context) <-chan restic.PackedBlob {
 	idx.m.Lock()
 
 	ch := make(chan restic.PackedBlob)
@@ -223,7 +223,7 @@ func (idx *Index) Each(done chan struct{}) <-chan restic.PackedBlob {
 		for h, packs := range idx.pack {
 			for _, blob := range packs {
 				select {
-				case <-done:
+				case <-ctx.Done():
 					return
 				case ch <- restic.PackedBlob{
 					Blob: restic.Blob{

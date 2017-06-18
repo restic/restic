@@ -373,7 +373,7 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 		idx, err := repository.LoadIndex(context.TODO(), repo, id)
 		OK(t, err)
 
-		for pb := range idx.Each(nil) {
+		for pb := range idx.Each(context.TODO()) {
 			if _, ok := packEntries[pb.PackID]; !ok {
 				packEntries[pb.PackID] = make(map[restic.ID]struct{})
 			}

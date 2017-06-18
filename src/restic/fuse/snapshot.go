@@ -28,7 +28,7 @@ type BlobSizeCache struct {
 func NewBlobSizeCache(midx *repository.MasterIndex) *BlobSizeCache {
 	m := make(map[restic.ID]uint, 1000)
 	for _, idx := range midx.All() {
-		for pb := range idx.Each(nil) {
+		for pb := range idx.Each(context.TODO()) {
 			m[pb.ID] = pb.Length
 		}
 	}
