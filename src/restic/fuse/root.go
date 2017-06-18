@@ -32,6 +32,7 @@ type Root struct {
 
 	dirSnapshots *SnapshotsDir
 	dirHosts     *HostsDir
+	dirTags      *TagsDir
 }
 
 // ensure that *Root implements these interfaces
@@ -54,6 +55,7 @@ func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) (*Root, er
 
 	root.dirSnapshots = NewSnapshotsDir(root, fs.GenerateDynamicInode(root.inode, "snapshots"), snapshots)
 	root.dirHosts = NewHostsDir(root, fs.GenerateDynamicInode(root.inode, "hosts"), snapshots)
+	root.dirTags = NewTagsDir(root, fs.GenerateDynamicInode(root.inode, "tags"), snapshots)
 	root.blobSizeCache = NewBlobSizeCache(ctx, repo.Index())
 
 	return root, nil
@@ -98,8 +100,13 @@ func (r *Root) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			Type:  fuse.DT_Dir,
 		},
 		{
-			Inode: fs.GenerateDynamicInode(0, "hosts"),
+			Inode: fs.GenerateDynamicInode(r.inode, "hosts"),
 			Name:  "hosts",
+			Type:  fuse.DT_Dir,
+		},
+		{
+			Inode: fs.GenerateDynamicInode(r.inode, "tags"),
+			Name:  "tags",
 			Type:  fuse.DT_Dir,
 		},
 	}
@@ -115,6 +122,8 @@ func (r *Root) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return r.dirSnapshots, nil
 	case "hosts":
 		return r.dirHosts, nil
+	case "tags":
+		return r.dirTags, nil
 	}
 
 	return nil, fuse.ENOENT
