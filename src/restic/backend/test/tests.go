@@ -435,17 +435,18 @@ func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error
 	return err
 }
 
-func delayedRemove(b restic.Backend, h restic.Handle) error {
+func delayedRemove(t testing.TB, be restic.Backend, h restic.Handle, maxwait time.Duration) error {
 	// Some backend (swift, I'm looking at you) may implement delayed
 	// removal of data. Let's wait a bit if this happens.
-	err := b.Remove(context.TODO(), h)
+	err := be.Remove(context.TODO(), h)
 	if err != nil {
 		return err
 	}
 
-	found, err := b.Test(context.TODO(), h)
-	for i := 0; found && i < 20; i++ {
-		found, err = b.Test(context.TODO(), h)
+	start := time.Now()
+	attempt := 0
+	for time.Since(start) <= maxwait {
+		found, err := be.Test(context.TODO(), h)
 		if err != nil {
 			return err
 		}
@@ -454,20 +455,23 @@ func delayedRemove(b restic.Backend, h restic.Handle) error {
 			break
 		}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
+		attempt++
 	}
-	return err
+
+	return nil
 }
 
-func delayedList(t testing.TB, b restic.Backend, tpe restic.FileType, max int) restic.IDs {
+func delayedList(t testing.TB, b restic.Backend, tpe restic.FileType, max int, maxwait time.Duration) restic.IDs {
 	list := restic.NewIDSet()
+	start := time.Now()
 	for i := 0; i < max; i++ {
 		for s := range b.List(context.TODO(), tpe) {
 			id := restic.TestParseID(s)
 			list.Insert(id)
 		}
-		if len(list) < max {
-			time.Sleep(100 * time.Millisecond)
+		if len(list) < max && time.Since(start) < maxwait {
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
@@ -548,7 +552,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 		test.Assert(t, err != nil, "expected error for %v, got %v", h, err)
 
 		// remove and recreate
-		err = delayedRemove(b, h)
+		err = delayedRemove(t, b, h, s.WaitForDelayedRemoval)
 		test.OK(t, err)
 
 		// test that the blob is gone
@@ -569,7 +573,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 			IDs = append(IDs, id)
 		}
 
-		list := delayedList(t, b, tpe, len(IDs))
+		list := delayedList(t, b, tpe, len(IDs), s.WaitForDelayedRemoval)
 		if len(IDs) != len(list) {
 			t.Fatalf("wrong number of IDs returned: want %d, got %d", len(IDs), len(list))
 		}
@@ -593,7 +597,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 				test.OK(t, err)
 				test.Assert(t, found, fmt.Sprintf("id %q not found", id))
 
-				test.OK(t, delayedRemove(b, h))
+				test.OK(t, delayedRemove(t, b, h, s.WaitForDelayedRemoval))
 
 				found, err = b.Test(context.TODO(), h)
 				test.OK(t, err)

@@ -19,6 +19,9 @@ func newB2TestSuite(t testing.TB) *test.Suite {
 		// do not use excessive data
 		MinimalData: true,
 
+		// wait for at most 10 seconds for removed files to disappear
+		WaitForDelayedRemoval: 10 * time.Second,
+
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
 			b2cfg, err := b2.ParseConfig(os.Getenv("RESTIC_TEST_B2_REPOSITORY"))
