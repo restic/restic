@@ -28,8 +28,10 @@ type Root struct {
 	cfg           Config
 	inode         uint64
 	snapshots     restic.Snapshots
-	dirSnapshots  *SnapshotsDir
 	blobSizeCache *BlobSizeCache
+
+	dirSnapshots *SnapshotsDir
+	dirHosts     *HostsDir
 }
 
 // ensure that *Root implements these interfaces
@@ -50,7 +52,8 @@ func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) (*Root, er
 		snapshots: snapshots,
 	}
 
-	root.dirSnapshots = NewDirSnapshots(root, fs.GenerateDynamicInode(root.inode, "snapshots"), snapshots)
+	root.dirSnapshots = NewSnapshotsDir(root, fs.GenerateDynamicInode(root.inode, "snapshots"), snapshots)
+	root.dirHosts = NewHostsDir(root, fs.GenerateDynamicInode(root.inode, "hosts"), snapshots)
 	root.blobSizeCache = NewBlobSizeCache(ctx, repo.Index())
 
 	return root, nil
@@ -94,16 +97,11 @@ func (r *Root) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 			Name:  "snapshots",
 			Type:  fuse.DT_Dir,
 		},
-		// {
-		// 	Inode: fs.GenerateDynamicInode(0, "tags"),
-		// 	Name:  "tags",
-		// 	Type:  fuse.DT_Dir,
-		// },
-		// {
-		// 	Inode: fs.GenerateDynamicInode(0, "hosts"),
-		// 	Name:  "hosts",
-		// 	Type:  fuse.DT_Dir,
-		// },
+		{
+			Inode: fs.GenerateDynamicInode(0, "hosts"),
+			Name:  "hosts",
+			Type:  fuse.DT_Dir,
+		},
 	}
 
 	return items, nil
@@ -115,6 +113,8 @@ func (r *Root) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	switch name {
 	case "snapshots":
 		return r.dirSnapshots, nil
+	case "hosts":
+		return r.dirHosts, nil
 	}
 
 	return nil, fuse.ENOENT

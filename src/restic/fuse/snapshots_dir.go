@@ -28,8 +28,8 @@ type SnapshotsDir struct {
 var _ = fs.HandleReadDirAller(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 
-// NewDirSnapshots returns a new directory containing snapshots.
-func NewDirSnapshots(root *Root, inode uint64, snapshots restic.Snapshots) *SnapshotsDir {
+// NewSnapshotsDir returns a new directory containing snapshots.
+func NewSnapshotsDir(root *Root, inode uint64, snapshots restic.Snapshots) *SnapshotsDir {
 	debug.Log("create snapshots dir with %d snapshots, inode %d", len(snapshots), inode)
 	d := &SnapshotsDir{
 		root:      root,
