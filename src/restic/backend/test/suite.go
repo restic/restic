@@ -6,10 +6,12 @@ import (
 	"restic/test"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Suite implements a test suite for restic backends.
 type Suite struct {
+	// Config should be used to configure the backend.
 	Config interface{}
 
 	// NewConfig returns a config for a new temporary backend that will be used in tests.
@@ -26,6 +28,11 @@ type Suite struct {
 
 	// MinimalData instructs the tests to not use excessive data.
 	MinimalData bool
+
+	// WaitForDelayedRemoval is set to a non-zero value to instruct the test
+	// suite to wait for this amount of time until a file that was removed
+	// really disappeared.
+	WaitForDelayedRemoval time.Duration
 }
 
 // RunTests executes all defined tests as subtests of t.

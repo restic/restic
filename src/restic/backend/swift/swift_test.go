@@ -20,6 +20,9 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		// do not use excessive data
 		MinimalData: true,
 
+		// wait for removals for at least 10s
+		WaitForDelayedRemoval: 10 * time.Second,
+
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
 			swiftcfg, err := swift.ParseConfig(os.Getenv("RESTIC_TEST_SWIFT"))
