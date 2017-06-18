@@ -69,11 +69,11 @@ func replaceSpecialNodes(ctx context.Context, repo restic.Repository, node *rest
 	return tree.Nodes, nil
 }
 
-func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot SnapshotWithId, ownerIsRoot bool, blobsize *BlobSizeCache) (*dir, error) {
-	debug.Log("new dir for snapshot %v (%v)", snapshot.ID.Str(), snapshot.Tree.Str())
+func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot *restic.Snapshot, ownerIsRoot bool, blobsize *BlobSizeCache) (*dir, error) {
+	debug.Log("new dir for snapshot %v (%v)", snapshot.ID().Str(), snapshot.Tree.Str())
 	tree, err := repo.LoadTree(ctx, *snapshot.Tree)
 	if err != nil {
-		debug.Log("  loadTree(%v) failed: %v", snapshot.ID.Str(), err)
+		debug.Log("  loadTree(%v) failed: %v", snapshot.ID().Str(), err)
 		return nil, err
 	}
 	items := make(map[string]*restic.Node)
@@ -100,7 +100,7 @@ func newDirFromSnapshot(ctx context.Context, repo restic.Repository, snapshot Sn
 			Mode:       os.ModeDir | 0555,
 		},
 		items:       items,
-		inode:       inodeFromBackendID(snapshot.ID),
+		inode:       inodeFromBackendID(*snapshot.ID()),
 		ownerIsRoot: ownerIsRoot,
 		blobsize:    blobsize,
 	}, nil

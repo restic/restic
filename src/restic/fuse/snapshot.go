@@ -47,11 +47,6 @@ func (c *BlobSizeCache) Lookup(id restic.ID) (size uint, found bool) {
 	return size, found
 }
 
-type SnapshotWithId struct {
-	*restic.Snapshot
-	restic.ID
-}
-
 // These lines statically ensure that a *SnapshotsDir implement the given
 // interfaces; a misplaced refactoring of the implementation that breaks
 // the interface will be catched by the compiler
@@ -69,7 +64,7 @@ type SnapshotsDir struct {
 
 	// knownSnapshots maps snapshot timestamp to the snapshot
 	sync.Mutex
-	knownSnapshots map[string]SnapshotWithId
+	knownSnapshots map[string]*restic.Snapshot
 	processed      restic.IDSet
 }
 
@@ -82,7 +77,7 @@ func NewSnapshotsDir(repo restic.Repository, ownerIsRoot bool, paths []string, t
 		paths:          paths,
 		tags:           tags,
 		host:           host,
-		knownSnapshots: make(map[string]SnapshotWithId),
+		knownSnapshots: make(map[string]*restic.Snapshot),
 		processed:      restic.NewIDSet(),
 		blobsize:       NewBlobSizeCache(repo.Index().(*repository.MasterIndex)),
 	}
@@ -134,13 +129,13 @@ func (sn *SnapshotsDir) updateCache(ctx context.Context) error {
 		}
 
 		debug.Log("  add %v as dir %v", id.Str(), timestamp)
-		sn.knownSnapshots[timestamp] = SnapshotWithId{snapshot, id}
+		sn.knownSnapshots[timestamp] = snapshot
 		sn.processed.Insert(id)
 	}
 	return nil
 }
 
-func (sn *SnapshotsDir) get(name string) (snapshot SnapshotWithId, ok bool) {
+func (sn *SnapshotsDir) get(name string) (snapshot *restic.Snapshot, ok bool) {
 	sn.Lock()
 	snapshot, ok = sn.knownSnapshots[name]
 	sn.Unlock()
@@ -161,7 +156,7 @@ func (sn *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	ret := make([]fuse.Dirent, 0)
 	for timestamp, snapshot := range sn.knownSnapshots {
 		ret = append(ret, fuse.Dirent{
-			Inode: inodeFromBackendID(snapshot.ID),
+			Inode: inodeFromBackendID(*snapshot.ID()),
 			Type:  fuse.DT_Dir,
 			Name:  timestamp,
 		})
