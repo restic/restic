@@ -2,6 +2,8 @@ package restic
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"restic/errors"
 	"time"
 )
@@ -47,4 +49,24 @@ func FindSnapshot(repo Repository, s string) (ID, error) {
 	}
 
 	return ParseID(name)
+}
+
+// FindFilteredSnapshots yields Snapshots filtered from the list of all
+// snapshots.
+func FindFilteredSnapshots(ctx context.Context, repo Repository, host string, tags []string, paths []string) Snapshots {
+	results := make(Snapshots, 0, 20)
+
+	for id := range repo.List(ctx, SnapshotFile) {
+		sn, err := LoadSnapshot(ctx, repo, id)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not load snapshot %v: %v\n", id.Str(), err)
+			continue
+		}
+		if (host != "" && host != sn.Hostname) || !sn.HasTags(tags) || !sn.HasPaths(paths) {
+			continue
+		}
+
+		results = append(results, sn)
+	}
+	return results
 }
