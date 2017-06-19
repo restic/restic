@@ -81,10 +81,10 @@ func KDF(p KDFParams, salt []byte, password string) (*Key, error) {
 	}
 
 	// first 32 byte of scrypt output is the encryption key
-	copy(derKeys.Encrypt[:], scryptKeys[:aesKeySize])
+	copy(derKeys.EncryptionKey[:], scryptKeys[:aesKeySize])
 
 	// next 32 byte of scrypt output is the mac key, in the form k||r
-	macKeyFromSlice(&derKeys.MAC, scryptKeys[aesKeySize:])
+	macKeyFromSlice(&derKeys.MACKey, scryptKeys[aesKeySize:])
 
 	return derKeys, nil
 }

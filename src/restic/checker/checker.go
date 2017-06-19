@@ -13,7 +13,6 @@ import (
 	"restic/hashing"
 
 	"restic"
-	"restic/crypto"
 	"restic/debug"
 	"restic/pack"
 	"restic/repository"
@@ -725,7 +724,7 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 			continue
 		}
 
-		n, err := crypto.Decrypt(r.Key(), buf, buf)
+		n, err := r.Key().Decrypt(buf, buf)
 		if err != nil {
 			debug.Log("  error decrypting blob %v: %v", blob.ID.Str(), err)
 			errs = append(errs, errors.Errorf("blob %v: %v", i, err))

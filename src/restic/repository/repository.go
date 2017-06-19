@@ -420,7 +420,7 @@ func (r *Repository) decryptTo(plaintext, ciphertext []byte) (int, error) {
 		return 0, errors.New("key for repository not set")
 	}
 
-	return crypto.Decrypt(r.key, plaintext, ciphertext)
+	return r.key.Decrypt(plaintext, ciphertext)
 }
 
 // Encrypt encrypts and authenticates the plaintext and saves the result in
@@ -430,7 +430,7 @@ func (r *Repository) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
 		return nil, errors.New("key for repository not set")
 	}
 
-	return crypto.Encrypt(r.key, ciphertext, plaintext)
+	return r.key.Encrypt(ciphertext, plaintext)
 }
 
 // Key returns the current master key.
