@@ -330,7 +330,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = b.Remove(context.TODO(), h)
+	err = delayedRemove(t, b, h, s.WaitForDelayedRemoval)
 	if err != nil {
 		t.Fatalf("error removing item: %+v", err)
 	}
