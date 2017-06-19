@@ -4,13 +4,11 @@
 package fuse
 
 import (
-	"os"
 	"restic"
 	"restic/debug"
 
 	"golang.org/x/net/context"
 
-	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 )
 
@@ -28,13 +26,16 @@ type Root struct {
 	cfg           Config
 	inode         uint64
 	snapshots     restic.Snapshots
-	dirSnapshots  *DirSnapshots
 	blobSizeCache *BlobSizeCache
+
+	*MetaDir
 }
 
 // ensure that *Root implements these interfaces
 var _ = fs.HandleReadDirAller(&Root{})
 var _ = fs.NodeStringLookuper(&Root{})
+
+const rootInode = 1
 
 // NewRoot initializes a new root node from a repository.
 func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) (*Root, error) {
@@ -44,78 +45,66 @@ func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) (*Root, er
 	debug.Log("found %d matching snapshots", len(snapshots))
 
 	root := &Root{
-		repo:      repo,
-		cfg:       cfg,
-		inode:     1,
-		snapshots: snapshots,
+		repo:          repo,
+		inode:         rootInode,
+		cfg:           cfg,
+		snapshots:     snapshots,
+		blobSizeCache: NewBlobSizeCache(ctx, repo.Index()),
 	}
 
-	root.dirSnapshots = NewDirSnapshots(root, fs.GenerateDynamicInode(root.inode, "snapshots"), snapshots)
-	root.blobSizeCache = NewBlobSizeCache(ctx, repo.Index())
+	entries := map[string]fs.Node{
+		"snapshots": NewSnapshotsDir(root, fs.GenerateDynamicInode(root.inode, "snapshots"), snapshots),
+		"tags":      NewTagsDir(root, fs.GenerateDynamicInode(root.inode, "tags"), snapshots),
+		"hosts":     NewHostsDir(root, fs.GenerateDynamicInode(root.inode, "hosts"), snapshots),
+	}
+
+	root.MetaDir = NewMetaDir(root, rootInode, entries)
 
 	return root, nil
+}
+
+// NewTagsDir returns a new directory containing entries, which in turn contains
+// snapshots with this tag set.
+func NewTagsDir(root *Root, inode uint64, snapshots restic.Snapshots) fs.Node {
+	tags := make(map[string]restic.Snapshots)
+	for _, sn := range snapshots {
+		for _, tag := range sn.Tags {
+			tags[tag] = append(tags[tag], sn)
+		}
+	}
+
+	debug.Log("create tags dir with %d tags, inode %d", len(tags), inode)
+
+	entries := make(map[string]fs.Node)
+	for name, snapshots := range tags {
+		debug.Log("  tag %v has %v snapshots", name, len(snapshots))
+		entries[name] = NewSnapshotsDir(root, fs.GenerateDynamicInode(inode, name), snapshots)
+	}
+
+	return NewMetaDir(root, inode, entries)
+}
+
+// NewHostsDir returns a new directory containing hostnames, which in
+// turn contains snapshots of a single host each.
+func NewHostsDir(root *Root, inode uint64, snapshots restic.Snapshots) fs.Node {
+	hosts := make(map[string]restic.Snapshots)
+	for _, sn := range snapshots {
+		hosts[sn.Hostname] = append(hosts[sn.Hostname], sn)
+	}
+
+	debug.Log("create hosts dir with %d snapshots, inode %d", len(hosts), inode)
+
+	entries := make(map[string]fs.Node)
+	for name, snapshots := range hosts {
+		debug.Log("  host %v has %v snapshots", name, len(snapshots))
+		entries[name] = NewSnapshotsDir(root, fs.GenerateDynamicInode(inode, name), snapshots)
+	}
+
+	return NewMetaDir(root, inode, entries)
 }
 
 // Root is just there to satisfy fs.Root, it returns itself.
 func (r *Root) Root() (fs.Node, error) {
 	debug.Log("Root()")
 	return r, nil
-}
-
-// Attr returns the attributes for the root node.
-func (r *Root) Attr(ctx context.Context, attr *fuse.Attr) error {
-	attr.Inode = r.inode
-	attr.Mode = os.ModeDir | 0555
-
-	if !r.cfg.OwnerIsRoot {
-		attr.Uid = uint32(os.Getuid())
-		attr.Gid = uint32(os.Getgid())
-	}
-	debug.Log("attr: %v", attr)
-	return nil
-}
-
-// ReadDirAll returns all entries of the root node.
-func (r *Root) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	debug.Log("ReadDirAll()")
-	items := []fuse.Dirent{
-		{
-			Inode: r.inode,
-			Name:  ".",
-			Type:  fuse.DT_Dir,
-		},
-		{
-			Inode: r.inode,
-			Name:  "..",
-			Type:  fuse.DT_Dir,
-		},
-		{
-			Inode: fs.GenerateDynamicInode(r.inode, "snapshots"),
-			Name:  "snapshots",
-			Type:  fuse.DT_Dir,
-		},
-		// {
-		// 	Inode: fs.GenerateDynamicInode(0, "tags"),
-		// 	Name:  "tags",
-		// 	Type:  fuse.DT_Dir,
-		// },
-		// {
-		// 	Inode: fs.GenerateDynamicInode(0, "hosts"),
-		// 	Name:  "hosts",
-		// 	Type:  fuse.DT_Dir,
-		// },
-	}
-
-	return items, nil
-}
-
-// Lookup returns a specific entry from the root node.
-func (r *Root) Lookup(ctx context.Context, name string) (fs.Node, error) {
-	debug.Log("Lookup(%s)", name)
-	switch name {
-	case "snapshots":
-		return r.dirSnapshots, nil
-	}
-
-	return nil, fuse.ENOENT
 }

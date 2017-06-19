@@ -19,15 +19,16 @@ var _ = fs.HandleReadDirAller(&dir{})
 var _ = fs.NodeStringLookuper(&dir{})
 
 type dir struct {
-	root  *Root
-	items map[string]*restic.Node
-	inode uint64
-	node  *restic.Node
+	root        *Root
+	items       map[string]*restic.Node
+	inode       uint64
+	parentInode uint64
+	node        *restic.Node
 
 	blobsize *BlobSizeCache
 }
 
-func newDir(ctx context.Context, root *Root, inode uint64, node *restic.Node) (*dir, error) {
+func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree.Str())
 	tree, err := root.repo.LoadTree(ctx, *node.Subtree)
 	if err != nil {
@@ -40,10 +41,11 @@ func newDir(ctx context.Context, root *Root, inode uint64, node *restic.Node) (*
 	}
 
 	return &dir{
-		root:  root,
-		node:  node,
-		items: items,
-		inode: inode,
+		root:        root,
+		node:        node,
+		items:       items,
+		inode:       inode,
+		parentInode: parentInode,
 	}, nil
 }
 
@@ -134,7 +136,19 @@ func (d *dir) calcNumberOfLinks() uint32 {
 
 func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("called")
-	ret := make([]fuse.Dirent, 0, len(d.items))
+	ret := make([]fuse.Dirent, 0, len(d.items)+2)
+
+	ret = append(ret, fuse.Dirent{
+		Inode: d.inode,
+		Name:  ".",
+		Type:  fuse.DT_Dir,
+	})
+
+	ret = append(ret, fuse.Dirent{
+		Inode: d.parentInode,
+		Name:  "..",
+		Type:  fuse.DT_Dir,
+	})
 
 	for _, node := range d.items {
 		var typ fuse.DirentType
@@ -166,7 +180,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	}
 	switch node.Type {
 	case "dir":
-		return newDir(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
+		return newDir(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), d.inode, node)
 	case "file":
 		return newFile(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	case "symlink":
