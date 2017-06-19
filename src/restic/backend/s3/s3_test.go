@@ -103,9 +103,9 @@ type MinioTestConfig struct {
 	stopServer    func()
 }
 
-func openS3(t testing.TB, cfg MinioTestConfig) (be restic.Backend, err error) {
+func createS3(t testing.TB, cfg MinioTestConfig) (be restic.Backend, err error) {
 	for i := 0; i < 10; i++ {
-		be, err = s3.Open(cfg.Config)
+		be, err = s3.Create(cfg.Config)
 		if err != nil {
 			t.Logf("s3 open: try %d: error %v", i, err)
 			time.Sleep(500 * time.Millisecond)
@@ -142,7 +142,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(MinioTestConfig)
 
-			be, err := openS3(t, cfg)
+			be, err := createS3(t, cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -236,7 +236,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(s3.Config)
 
-			be, err := s3.Open(cfg)
+			be, err := s3.Create(cfg)
 			if err != nil {
 				return nil, err
 			}
