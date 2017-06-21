@@ -88,7 +88,7 @@ func OpenKey(ctx context.Context, s *Repository, name string, password string) (
 
 	// decrypt master keys
 	buf := make([]byte, len(k.Data))
-	n, err := crypto.Decrypt(k.user, buf, k.Data)
+	n, err := k.user.Decrypt(buf, k.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 		return nil, errors.Wrap(err, "Marshal")
 	}
 
-	newkey.Data, err = crypto.Encrypt(newkey.user, nil, buf)
+	newkey.Data, err = newkey.user.Encrypt(nil, buf)
 
 	// dump as json
 	buf, err = json.Marshal(newkey)

@@ -19,7 +19,9 @@ const (
 	macKeySize  = macKeySizeK + macKeySizeR // for Poly1305-AES128
 	ivSize      = aes.BlockSize
 
-	macSize   = poly1305.TagSize
+	macSize = poly1305.TagSize
+
+	// Extension is the number of bytes a plaintext is enlarged by encrypting it.
 	Extension = ivSize + macSize
 )
 
@@ -32,11 +34,14 @@ var (
 // encrypted and authenticated as a JSON data structure in the Data field of the Key
 // structure.
 type Key struct {
-	MAC     MACKey        `json:"mac"`
-	Encrypt EncryptionKey `json:"encrypt"`
+	MACKey        `json:"mac"`
+	EncryptionKey `json:"encrypt"`
 }
 
+// EncryptionKey is key used for encryption
 type EncryptionKey [32]byte
+
+// MACKey is used to sign (authenticate) data.
 type MACKey struct {
 	K [16]byte // for AES-128
 	R [16]byte // for Poly1305
@@ -123,22 +128,22 @@ func poly1305Verify(msg []byte, nonce []byte, key *MACKey, mac []byte) bool {
 func NewRandomKey() *Key {
 	k := &Key{}
 
-	n, err := rand.Read(k.Encrypt[:])
+	n, err := rand.Read(k.EncryptionKey[:])
 	if n != aesKeySize || err != nil {
 		panic("unable to read enough random bytes for encryption key")
 	}
 
-	n, err = rand.Read(k.MAC.K[:])
+	n, err = rand.Read(k.MACKey.K[:])
 	if n != macKeySizeK || err != nil {
 		panic("unable to read enough random bytes for MAC encryption key")
 	}
 
-	n, err = rand.Read(k.MAC.R[:])
+	n, err = rand.Read(k.MACKey.R[:])
 	if n != macKeySizeR || err != nil {
 		panic("unable to read enough random bytes for MAC key")
 	}
 
-	maskKey(&k.MAC)
+	maskKey(&k.MACKey)
 	return k
 }
 
@@ -156,10 +161,12 @@ type jsonMACKey struct {
 	R []byte `json:"r"`
 }
 
+// MarshalJSON converts the MACKey to JSON.
 func (m *MACKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jsonMACKey{K: m.K[:], R: m.R[:]})
 }
 
+// UnmarshalJSON fills the key m with data from the JSON representation.
 func (m *MACKey) UnmarshalJSON(data []byte) error {
 	j := jsonMACKey{}
 	err := json.Unmarshal(data, &j)
@@ -194,10 +201,12 @@ func (m *MACKey) Valid() bool {
 	return false
 }
 
+// MarshalJSON converts the EncryptionKey to JSON.
 func (k *EncryptionKey) MarshalJSON() ([]byte, error) {
 	return json.Marshal(k[:])
 }
 
+// UnmarshalJSON fills the key k with data from the JSON representation.
 func (k *EncryptionKey) UnmarshalJSON(data []byte) error {
 	d := make([]byte, aesKeySize)
 	err := json.Unmarshal(data, &d)
@@ -228,8 +237,8 @@ var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for p
 // MAC. Encrypt returns the new ciphertext slice, which is extended when
 // necessary. ciphertext and plaintext may not point to (exactly) the same
 // slice or non-intersecting slices.
-func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
-	if !ks.Valid() {
+func (k *Key) Encrypt(ciphertext []byte, plaintext []byte) ([]byte, error) {
+	if !k.Valid() {
 		return nil, errors.New("invalid key")
 	}
 
@@ -248,7 +257,7 @@ func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
 	}
 
 	iv := newIV()
-	c, err := aes.NewCipher(ks.Encrypt[:])
+	c, err := aes.NewCipher(k.EncryptionKey[:])
 	if err != nil {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
@@ -261,7 +270,7 @@ func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
 	// truncate to only cover iv and actual ciphertext
 	ciphertext = ciphertext[:ivSize+len(plaintext)]
 
-	mac := poly1305MAC(ciphertext[ivSize:], ciphertext[:ivSize], &ks.MAC)
+	mac := poly1305MAC(ciphertext[ivSize:], ciphertext[:ivSize], &k.MACKey)
 	ciphertext = append(ciphertext, mac...)
 
 	return ciphertext, nil
@@ -270,8 +279,8 @@ func Encrypt(ks *Key, ciphertext []byte, plaintext []byte) ([]byte, error) {
 // Decrypt verifies and decrypts the ciphertext. Ciphertext must be in the form
 // IV || Ciphertext || MAC. plaintext and ciphertext may point to (exactly) the
 // same slice.
-func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) (int, error) {
-	if !ks.Valid() {
+func (k *Key) Decrypt(plaintext []byte, ciphertextWithMac []byte) (int, error) {
+	if !k.Valid() {
 		return 0, errors.New("invalid key")
 	}
 
@@ -291,7 +300,7 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) (int, error) {
 	ciphertextWithIV, mac := ciphertextWithMac[:l], ciphertextWithMac[l:]
 
 	// verify mac
-	if !poly1305Verify(ciphertextWithIV[ivSize:], ciphertextWithIV[:ivSize], &ks.MAC, mac) {
+	if !poly1305Verify(ciphertextWithIV[ivSize:], ciphertextWithIV[:ivSize], &k.MACKey, mac) {
 		return 0, ErrUnauthenticated
 	}
 
@@ -303,7 +312,7 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) (int, error) {
 	}
 
 	// decrypt data
-	c, err := aes.NewCipher(ks.Encrypt[:])
+	c, err := aes.NewCipher(k.EncryptionKey[:])
 	if err != nil {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
@@ -318,5 +327,5 @@ func Decrypt(ks *Key, plaintext []byte, ciphertextWithMac []byte) (int, error) {
 
 // Valid tests if the key is valid.
 func (k *Key) Valid() bool {
-	return k.Encrypt.Valid() && k.MAC.Valid()
+	return k.EncryptionKey.Valid() && k.MACKey.Valid()
 }

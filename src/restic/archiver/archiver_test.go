@@ -43,7 +43,7 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 		Assert(b, uint(len(chunk.Data)) == chunk.Length,
 			"invalid length: got %d, expected %d", len(chunk.Data), chunk.Length)
 
-		_, err = crypto.Encrypt(key, buf2, chunk.Data)
+		_, err = key.Encrypt(buf2, chunk.Data)
 		OK(b, err)
 	}
 }
@@ -76,7 +76,7 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) 
 		}
 
 		// reduce length of chunkBuf
-		crypto.Encrypt(key, chunk.Data, chunk.Data)
+		key.Encrypt(chunk.Data, chunk.Data)
 	}
 }
 

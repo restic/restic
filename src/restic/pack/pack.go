@@ -75,7 +75,7 @@ func (p *Packer) Finalize() (uint, error) {
 		return 0, err
 	}
 
-	encryptedHeader, err := crypto.Encrypt(p.k, nil, hdrBuf.Bytes())
+	encryptedHeader, err := p.k.Encrypt(nil, hdrBuf.Bytes())
 	if err != nil {
 		return 0, err
 	}
@@ -268,7 +268,7 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 		return nil, err
 	}
 
-	n, err := crypto.Decrypt(k, buf, buf)
+	n, err := k.Decrypt(buf, buf)
 	if err != nil {
 		return nil, err
 	}

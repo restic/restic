@@ -90,18 +90,18 @@ func TestCrypto(t *testing.T) {
 	for _, tv := range testValues {
 		// test encryption
 		k := &Key{
-			Encrypt: tv.ekey,
-			MAC:     tv.skey,
+			EncryptionKey: tv.ekey,
+			MACKey:        tv.skey,
 		}
 
-		msg, err := Encrypt(k, msg, tv.plaintext)
+		msg, err := k.Encrypt(msg, tv.plaintext)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// decrypt message
 		buf := make([]byte, len(tv.plaintext))
-		n, err := Decrypt(k, buf, msg)
+		n, err := k.Decrypt(buf, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -110,7 +110,7 @@ func TestCrypto(t *testing.T) {
 		// change mac, this must fail
 		msg[len(msg)-8] ^= 0x23
 
-		if _, err = Decrypt(k, buf, msg); err != ErrUnauthenticated {
+		if _, err = k.Decrypt(buf, msg); err != ErrUnauthenticated {
 			t.Fatal("wrong MAC value not detected")
 		}
 
@@ -120,13 +120,13 @@ func TestCrypto(t *testing.T) {
 		// tamper with message, this must fail
 		msg[16+5] ^= 0x85
 
-		if _, err = Decrypt(k, buf, msg); err != ErrUnauthenticated {
+		if _, err = k.Decrypt(buf, msg); err != ErrUnauthenticated {
 			t.Fatal("tampered message not detected")
 		}
 
 		// test decryption
 		p := make([]byte, len(tv.ciphertext))
-		n, err = Decrypt(k, p, tv.ciphertext)
+		n, err = k.Decrypt(p, tv.ciphertext)
 		if err != nil {
 			t.Fatal(err)
 		}

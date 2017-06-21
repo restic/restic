@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"io"
 	"restic"
-	"restic/crypto"
 	"restic/debug"
 	"restic/fs"
 	"restic/hashing"
@@ -88,7 +87,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 					h, tempfile.Name(), len(buf), n)
 			}
 
-			n, err = crypto.Decrypt(repo.Key(), buf, buf)
+			n, err = repo.Key().Decrypt(buf, buf)
 			if err != nil {
 				return nil, err
 			}
