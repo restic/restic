@@ -230,11 +230,13 @@ func readHeader(rd io.ReaderAt, size int64) ([]byte, error) {
 	}
 
 	if int64(hl) > size-int64(binary.Size(hl)) {
-		return nil, errors.New("header is larger than file")
+		err := InvalidFileError{Message: "header is larger than file"}
+		return nil, errors.Wrap(err, "readHeader")
 	}
 
 	if int64(hl) > maxHeaderSize {
-		return nil, errors.New("header is larger than maxHeaderSize")
+		err := InvalidFileError{Message: "header is larger than maxHeaderSize"}
+		return nil, errors.Wrap(err, "readHeader")
 	}
 
 	buf := make([]byte, int(hl))
