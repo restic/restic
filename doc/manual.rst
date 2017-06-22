@@ -714,7 +714,7 @@ command to serve the repository with FUSE:
     $ mkdir /mnt/restic
     $ restic -r /tmp/backup mount /mnt/restic
     enter password for repository:
-    Now serving /tmp/backup at /tmp/restic
+    Now serving /tmp/backup at /mnt/restic
     Don't forget to umount after quitting!
 
 Mounting repositories via FUSE is not possible on Windows and OpenBSD.
