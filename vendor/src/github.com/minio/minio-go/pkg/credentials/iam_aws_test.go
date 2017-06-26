@@ -91,8 +91,8 @@ func TestIAMNoRoles(t *testing.T) {
 	if err == nil {
 		t.Fatal("Unexpected should fail here")
 	}
-	if err.Error() != "empty EC2 Role list" {
-		t.Fatalf("Expected 'empty EC2 Role list', got %s", err)
+	if err.Error() != "No IAM roles attached to this EC2 service" {
+		t.Fatalf("Expected 'No IAM roles attached to this EC2 service', got %s", err)
 	}
 }
 

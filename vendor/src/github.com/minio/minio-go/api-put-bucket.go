@@ -26,6 +26,7 @@ import (
 	"net/url"
 
 	"github.com/minio/minio-go/pkg/policy"
+	"github.com/minio/minio-go/pkg/s3utils"
 )
 
 /// Bucket operations
@@ -46,7 +47,7 @@ func (c Client) MakeBucket(bucketName string, location string) (err error) {
 	}()
 
 	// Validate the input arguments.
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketNameStrict(bucketName); err != nil {
 		return err
 	}
 
@@ -59,17 +60,6 @@ func (c Client) MakeBucket(bucketName string, location string) (err error) {
 			location = c.region
 		}
 	}
-
-	// Try creating bucket with the provided region, in case of
-	// invalid region error let's guess the appropriate region
-	// from S3 API headers
-
-	// Create a done channel to control 'newRetryTimer' go routine.
-	doneCh := make(chan struct{}, 1)
-
-	// Indicate to our routine to exit cleanly upon return.
-	defer close(doneCh)
-
 	// PUT bucket request metadata.
 	reqMetadata := requestMetadata{
 		bucketName:     bucketName,
@@ -118,10 +108,10 @@ func (c Client) MakeBucket(bucketName string, location string) (err error) {
 //  writeonly - anonymous put/delete access to a given object prefix.
 func (c Client) SetBucketPolicy(bucketName string, objectPrefix string, bucketPolicy policy.BucketPolicy) error {
 	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
 		return err
 	}
-	if err := isValidObjectPrefix(objectPrefix); err != nil {
+	if err := s3utils.CheckValidObjectNamePrefix(objectPrefix); err != nil {
 		return err
 	}
 
@@ -150,7 +140,7 @@ func (c Client) SetBucketPolicy(bucketName string, objectPrefix string, bucketPo
 // Saves a new bucket policy.
 func (c Client) putBucketPolicy(bucketName string, policyInfo policy.BucketAccessPolicy) error {
 	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
 		return err
 	}
 
@@ -196,7 +186,7 @@ func (c Client) putBucketPolicy(bucketName string, policyInfo policy.BucketAcces
 // Removes all policies on a bucket.
 func (c Client) removeBucketPolicy(bucketName string) error {
 	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
 		return err
 	}
 	// Get resources properly escaped and lined up before
@@ -220,7 +210,7 @@ func (c Client) removeBucketPolicy(bucketName string) error {
 // SetBucketNotification saves a new bucket notification.
 func (c Client) SetBucketNotification(bucketName string, bucketNotification BucketNotification) error {
 	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
 		return err
 	}
 

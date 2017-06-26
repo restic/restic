@@ -21,12 +21,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/minio/minio-go/pkg/s3utils"
 )
 
 // BucketExists verify if bucket exists and you have permission to access it.
 func (c Client) BucketExists(bucketName string) (bool, error) {
 	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
 		return false, err
 	}
 
@@ -53,11 +55,13 @@ func (c Client) BucketExists(bucketName string) (bool, error) {
 // List of header keys to be filtered, usually
 // from all S3 API http responses.
 var defaultFilterKeys = []string{
+	"Connection",
 	"Transfer-Encoding",
 	"Accept-Ranges",
 	"Date",
 	"Server",
 	"Vary",
+	"x-amz-bucket-region",
 	"x-amz-request-id",
 	"x-amz-id-2",
 	// Add new headers to be ignored.
@@ -78,10 +82,10 @@ func extractObjMetadata(header http.Header) http.Header {
 // StatObject verifies if object exists and you have permission to access.
 func (c Client) StatObject(bucketName, objectName string) (ObjectInfo, error) {
 	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
 		return ObjectInfo{}, err
 	}
-	if err := isValidObjectName(objectName); err != nil {
+	if err := s3utils.CheckValidObjectName(objectName); err != nil {
 		return ObjectInfo{}, err
 	}
 	reqHeaders := NewHeadReqHeaders()
@@ -91,10 +95,10 @@ func (c Client) StatObject(bucketName, objectName string) (ObjectInfo, error) {
 // Lower level API for statObject supporting pre-conditions and range headers.
 func (c Client) statObject(bucketName, objectName string, reqHeaders RequestHeaders) (ObjectInfo, error) {
 	// Input validation.
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
 		return ObjectInfo{}, err
 	}
-	if err := isValidObjectName(objectName); err != nil {
+	if err := s3utils.CheckValidObjectName(objectName); err != nil {
 		return ObjectInfo{}, err
 	}
 

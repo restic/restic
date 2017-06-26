@@ -42,10 +42,10 @@ func (c Client) presignURL(method string, bucketName string, objectName string, 
 	if method == "" {
 		return nil, ErrInvalidArgument("method cannot be empty.")
 	}
-	if err := isValidBucketName(bucketName); err != nil {
+	if err := s3utils.CheckValidBucketName(bucketName); err != nil {
 		return nil, err
 	}
-	if err := isValidObjectName(objectName); err != nil {
+	if err := s3utils.CheckValidObjectName(objectName); err != nil {
 		return nil, err
 	}
 	if err := isValidExpiry(expires); err != nil {

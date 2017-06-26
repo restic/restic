@@ -28,6 +28,13 @@ import (
 	"time"
 )
 
+const (
+	serverEndpoint = "SERVER_ENDPOINT"
+	accessKey      = "ACCESS_KEY"
+	secretKey      = "SECRET_KEY"
+	enableSecurity = "ENABLE_HTTPS"
+)
+
 // Tests for Core GetObject() function.
 func TestGetObjectCore(t *testing.T) {
 	if testing.Short() {
@@ -39,10 +46,10 @@ func TestGetObjectCore(t *testing.T) {
 
 	// Instantiate new minio core client object.
 	c, err := NewCore(
-		os.Getenv("S3_ADDRESS"),
-		os.Getenv("ACCESS_KEY"),
-		os.Getenv("SECRET_KEY"),
-		mustParseBool(os.Getenv("S3_SECURE")),
+		os.Getenv(serverEndpoint),
+		os.Getenv(accessKey),
+		os.Getenv(secretKey),
+		mustParseBool(os.Getenv(enableSecurity)),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -213,10 +220,10 @@ func TestGetBucketPolicy(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewCore(
-		os.Getenv("S3_ADDRESS"),
-		os.Getenv("ACCESS_KEY"),
-		os.Getenv("SECRET_KEY"),
-		mustParseBool(os.Getenv("S3_SECURE")),
+		os.Getenv(serverEndpoint),
+		os.Getenv(accessKey),
+		os.Getenv(secretKey),
+		mustParseBool(os.Getenv(enableSecurity)),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
@@ -276,10 +283,10 @@ func TestCorePutObject(t *testing.T) {
 
 	// Instantiate new minio client object.
 	c, err := NewCore(
-		os.Getenv("S3_ADDRESS"),
-		os.Getenv("ACCESS_KEY"),
-		os.Getenv("SECRET_KEY"),
-		mustParseBool(os.Getenv("S3_SECURE")),
+		os.Getenv(serverEndpoint),
+		os.Getenv(accessKey),
+		os.Getenv(secretKey),
+		mustParseBool(os.Getenv(enableSecurity)),
 	)
 	if err != nil {
 		t.Fatal("Error:", err)
