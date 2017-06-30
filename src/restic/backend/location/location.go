@@ -10,6 +10,7 @@ import (
 	"restic/backend/s3"
 	"restic/backend/sftp"
 	"restic/backend/swift"
+	"restic/errors"
 )
 
 // Location specifies the location of a repository, including the method of
@@ -35,6 +36,36 @@ var parsers = []parser{
 	{"rest", rest.ParseConfig},
 }
 
+func isPath(s string) bool {
+	if strings.HasPrefix(s, "../") || strings.HasPrefix(s, `..\`) {
+		return true
+	}
+
+	if strings.HasPrefix(s, "/") || strings.HasPrefix(s, `\`) {
+		return true
+	}
+
+	if len(s) < 3 {
+		return false
+	}
+
+	// check for drive paths
+	drive := s[0]
+	if !(drive >= 'a' && drive <= 'z') && !(drive >= 'A' && drive <= 'Z') {
+		return false
+	}
+
+	if s[1] != ':' {
+		return false
+	}
+
+	if s[2] != '\\' && s[2] != '/' {
+		return false
+	}
+
+	return true
+}
+
 // Parse extracts repository location information from the string s. If s
 // starts with a backend name followed by a colon, that backend's Parse()
 // function is called. Otherwise, the local backend is used which interprets s
@@ -56,7 +87,11 @@ func Parse(s string) (u Location, err error) {
 		return u, nil
 	}
 
-	// try again, with the local parser and the prefix "local:"
+	// if s is not a path or contains ":", it's ambiguous
+	if !isPath(s) && strings.ContainsRune(s, ':') {
+		return Location{}, errors.New("invalid backend\nIf the repo is in a local directory, you need to add a `local:` prefix")
+	}
+
 	u.Scheme = "local"
 	u.Config, err = local.ParseConfig("local:" + s)
 	if err != nil {
