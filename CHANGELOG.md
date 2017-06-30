@@ -53,6 +53,11 @@ Small changes
    https://github.com/restic/restic/issues/1029
    https://github.com/restic/restic/pull/1036
 
+ * restic now tries to detect when an invalid/unknown backend is used and
+   returns an error message.
+   https://github.com/restic/restic/issues/1021
+   https://github.com/restic/restic/pull/1070
+
 Important Changes in 0.6.1
 ==========================
 
