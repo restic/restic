@@ -66,6 +66,7 @@ type BackupOptions struct {
 }
 
 var backupOptions BackupOptions
+var progressStatus *ProgressStatus
 
 func init() {
 	cmdRoot.AddCommand(cmdBackup)
@@ -91,14 +92,27 @@ func newScanProgress(gopts GlobalOptions) *restic.Progress {
 	p := restic.NewProgress()
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 		if IsProcessBackground() {
-			return
+			// return
 		}
 
-		PrintProgress("[%s] %d directories, %d files, %s", formatDuration(d), s.Dirs, s.Files, formatBytes(s.Bytes))
+		progressStatus = NewProgressStatus(d, s.Dirs, s.Files, s.Bytes)
+		progressStatus.UpdateScanStatus(d, s.Dirs, s.Files, s.Bytes)
+		if globalOptions.JSON == true {
+			progressStatus.PrintJSON()
+		} else {
+			progressStatus.PrintScannerProgress()
+		}
+
 	}
 
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		PrintProgress("scanned %d directories, %d files in %s\n", s.Dirs, s.Files, formatDuration(d))
+		progressStatus.UpdateScanStatus(d, s.Dirs, s.Files, s.Bytes)
+		if globalOptions.JSON == true {
+			progressStatus.PrintJSON()
+		} else {
+			progressStatus.PrintScannerDone()
+		}
+
 	}
 
 	return p
@@ -116,7 +130,7 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 
 	archiveProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 		if IsProcessBackground() {
-			return
+			// return
 		}
 
 		sec := uint64(d / time.Second)
@@ -131,31 +145,24 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 
 		itemsDone := s.Files + s.Dirs
 
-		status1 := fmt.Sprintf("[%s] %s  %s/s  %s / %s  %d / %d items  %d errors  ",
-			formatDuration(d),
-			formatPercent(s.Bytes, todo.Bytes),
-			formatBytes(bps),
-			formatBytes(s.Bytes), formatBytes(todo.Bytes),
-			itemsDone, itemsTodo,
-			s.Errors)
-		status2 := fmt.Sprintf("ETA %s ", formatSeconds(eta))
+		progressStatus.UpdateProgressStatus(d, s.Bytes, todo.Bytes, bps, s.Bytes, todo.Bytes, itemsDone, itemsTodo, eta, s.Errors)
 
-		if w := stdoutTerminalWidth(); w > 0 {
-			maxlen := w - len(status2) - 1
+		if globalOptions.JSON == true {
+			progressStatus.PrintJSON()
 
-			if maxlen < 4 {
-				status1 = ""
-			} else if len(status1) > maxlen {
-				status1 = status1[:maxlen-4]
-				status1 += "... "
-			}
+		} else {
+			progressStatus.PrintArchiveProgress()
 		}
 
-		PrintProgress("%s%s", status1, status2)
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		fmt.Printf("\nduration: %s, %s\n", formatDuration(d), formatRate(todo.Bytes, d))
+		progressStatus.UpdateProgressStatus(d, s.Bytes, 0, 0, 0, todo.Bytes, 0, 0, 0, s.Errors)
+		if globalOptions.JSON == true {
+			progressStatus.PrintJSON()
+		} else {
+			progressStatus.PrintArchiveDoneProgress()
+		}
 	}
 
 	return archiveProgress

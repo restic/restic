@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -180,6 +181,18 @@ func PrintProgress(format string, args ...interface{}) {
 	}
 
 	fmt.Print(message)
+}
+
+// PrintProgressJSON wraps the json marshal and printing of the json to the stdout
+func PrintProgressJSON(status ProgressStatus) {
+	js, err := json.Marshal(status)
+
+	if err != nil {
+		msg := fmt.Sprintf("%s", err)
+		Warnf(msg)
+		Exitf(100, msg)
+	}
+	fmt.Printf("%s\n", js)
 }
 
 // Warnf writes the message to the configured stderr stream.

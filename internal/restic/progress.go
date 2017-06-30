@@ -43,7 +43,6 @@ type Stat struct {
 	Errors uint64
 }
 
-// ProgressFunc is used to report progress back to the user.
 type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 
 // NewProgress returns a new progress reporter. When Start() is called, the
