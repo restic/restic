@@ -91,7 +91,7 @@ func (env *TravisEnvironment) Prepare() error {
 		"golang.org/x/tools/cmd/cover",
 		"github.com/pierrre/gotestcover",
 		"github.com/NebulousLabs/glyphcheck",
-		"github.com/restic/rest-server",
+		"github.com/restic/rest-server/cmd/rest-server",
 	}
 
 	for _, pkg := range pkgs {

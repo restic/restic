@@ -28,7 +28,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/minio/minio-go/pkg/s3utils"
 )
@@ -148,63 +147,6 @@ func isValidExpiry(expires time.Duration) error {
 	return nil
 }
 
-// We support '.' with bucket names but we fallback to using path
-// style requests instead for such buckets.
-var validBucketName = regexp.MustCompile(`^[a-z0-9][a-z0-9\.\-]{1,61}[a-z0-9]$`)
-
-// Invalid bucket name with double dot.
-var invalidDotBucketName = regexp.MustCompile(`\.\.`)
-
-// isValidBucketName - verify bucket name in accordance with
-//  - http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingBucket.html
-func isValidBucketName(bucketName string) error {
-	if strings.TrimSpace(bucketName) == "" {
-		return ErrInvalidBucketName("Bucket name cannot be empty.")
-	}
-	if len(bucketName) < 3 {
-		return ErrInvalidBucketName("Bucket name cannot be smaller than 3 characters.")
-	}
-	if len(bucketName) > 63 {
-		return ErrInvalidBucketName("Bucket name cannot be greater than 63 characters.")
-	}
-	if bucketName[0] == '.' || bucketName[len(bucketName)-1] == '.' {
-		return ErrInvalidBucketName("Bucket name cannot start or end with a '.' dot.")
-	}
-	if invalidDotBucketName.MatchString(bucketName) {
-		return ErrInvalidBucketName("Bucket name cannot have successive periods.")
-	}
-	if !validBucketName.MatchString(bucketName) {
-		return ErrInvalidBucketName("Bucket name contains invalid characters.")
-	}
-	return nil
-}
-
-// isValidObjectName - verify object name in accordance with
-//   - http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingMetadata.html
-func isValidObjectName(objectName string) error {
-	if strings.TrimSpace(objectName) == "" {
-		return ErrInvalidObjectName("Object name cannot be empty.")
-	}
-	if len(objectName) > 1024 {
-		return ErrInvalidObjectName("Object name cannot be greater than 1024 characters.")
-	}
-	if !utf8.ValidString(objectName) {
-		return ErrInvalidBucketName("Object name with non UTF-8 strings are not supported.")
-	}
-	return nil
-}
-
-// isValidObjectPrefix - verify if object prefix is valid.
-func isValidObjectPrefix(objectPrefix string) error {
-	if len(objectPrefix) > 1024 {
-		return ErrInvalidObjectPrefix("Object prefix cannot be greater than 1024 characters.")
-	}
-	if !utf8.ValidString(objectPrefix) {
-		return ErrInvalidObjectPrefix("Object prefix with non UTF-8 strings are not supported.")
-	}
-	return nil
-}
-
 // make a copy of http.Header
 func cloneHeader(h http.Header) http.Header {
 	h2 := make(http.Header, len(h))
@@ -249,4 +191,24 @@ func redactSignature(origAuth string) string {
 
 	// Strip out 256-bit signature from: Signature=<256-bit signature>
 	return regSign.ReplaceAllString(newAuth, "Signature=**REDACTED**")
+}
+
+// Get default location returns the location based on the input
+// URL `u`, if region override is provided then all location
+// defaults to regionOverride.
+//
+// If no other cases match then the location is set to `us-east-1`
+// as a last resort.
+func getDefaultLocation(u url.URL, regionOverride string) (location string) {
+	if regionOverride != "" {
+		return regionOverride
+	}
+	if s3utils.IsAmazonChinaEndpoint(u) {
+		return "cn-north-1"
+	}
+	if s3utils.IsAmazonGovCloudEndpoint(u) {
+		return "us-gov-west-1"
+	}
+	// Default to location to 'us-east-1'.
+	return "us-east-1"
 }

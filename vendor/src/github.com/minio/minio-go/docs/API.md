@@ -438,9 +438,6 @@ if err != nil {
 
 Uploads objects that are less than 64MiB in a single PUT operation. For objects that are greater than 64MiB in size, PutObject seamlessly uploads the object as parts of 64MiB or more depending on the actual file size. The max upload size for an object is 5TB.
 
-In the event that PutObject fails to upload an object, the user may attempt to re-upload the same object. If the same object is being uploaded, PutObject API examines the previous partial attempt to upload this object and resumes automatically from where it left off.
-
-
 __Parameters__
 
 
@@ -565,8 +562,6 @@ if err != nil {
 Uploads contents from a file to objectName.
 
 FPutObject uploads objects that are less than 64MiB in a single PUT operation. For objects that are greater than the 64MiB in size, FPutObject seamlessly uploads the object in chunks of 64MiB or more depending on the actual file size. The max upload size for an object is 5TB.
-
-In the event that FPutObject fails to upload an object, the user may attempt to re-upload the same object. If the same object is being uploaded, FPutObject API examines the previous partial attempt to upload this object and resumes automatically from where it left off.
 
 
 __Parameters__
@@ -1243,7 +1238,7 @@ __Return Values__
 
 |Param   |Type   |Description   |
 |:---|:---| :---|
-|`chan NotificationInfo` | _chan_ | Read channel for all notificatons on bucket |
+|`chan NotificationInfo` | _chan_ | Read channel for all notifications on bucket |
 |`NotificationInfo` | _object_ | Notification object represents events info |
 |`notificationInfo.Records` | _[]NotificationEvent_ | Collection of notification events |
 |`notificationInfo.Err` | _error_ | Carries any error occurred during the operation |
