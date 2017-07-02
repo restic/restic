@@ -1,6 +1,9 @@
 package backend
 
-import "restic"
+import (
+	"encoding/hex"
+	"restic"
+)
 
 // DefaultLayout implements the default layout for local and sftp backends, as
 // described in the Design document. The `data` directory has one level of
@@ -49,11 +52,18 @@ func (l *DefaultLayout) Filename(h restic.Handle) string {
 	return l.Join(l.Dirname(h), name)
 }
 
-// Paths returns all directory names
+// Paths returns all directory names needed for a repo.
 func (l *DefaultLayout) Paths() (dirs []string) {
 	for _, p := range defaultLayoutPaths {
 		dirs = append(dirs, l.Join(l.Path, p))
 	}
+
+	// also add subdirs
+	for i := 0; i < 256; i++ {
+		subdir := hex.EncodeToString([]byte{byte(i)})
+		dirs = append(dirs, l.Join(l.Path, defaultLayoutPaths[restic.DataFile], subdir))
+	}
+
 	return dirs
 }
 
