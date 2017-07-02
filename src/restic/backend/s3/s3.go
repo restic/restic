@@ -453,6 +453,11 @@ func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
 	oldname := be.Filename(h)
 	newname := l.Filename(h)
 
+	if oldname == newname {
+		debug.Log("  %v is already renamed", newname)
+		return nil
+	}
+
 	debug.Log("  %v -> %v", oldname, newname)
 
 	coreClient := minio.Core{Client: be.client}
