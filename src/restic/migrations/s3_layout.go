@@ -54,10 +54,17 @@ func (m *S3Layout) Apply(ctx context.Context, repo restic.Repository) error {
 		return errors.New("backend is not s3")
 	}
 
+	oldLayout := &backend.S3LegacyLayout{
+		Path: be.Path(),
+		Join: path.Join,
+	}
+
 	newLayout := &backend.DefaultLayout{
 		Path: be.Path(),
 		Join: path.Join,
 	}
+
+	be.Layout = oldLayout
 
 	for _, t := range []restic.FileType{
 		restic.KeyFile,
