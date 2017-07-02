@@ -67,9 +67,9 @@ func (m *S3Layout) Apply(ctx context.Context, repo restic.Repository) error {
 	be.Layout = oldLayout
 
 	for _, t := range []restic.FileType{
-		restic.KeyFile,
 		restic.SnapshotFile,
 		restic.DataFile,
+		restic.KeyFile,
 		restic.LockFile,
 	} {
 		err := m.moveFiles(ctx, be, newLayout, t)
