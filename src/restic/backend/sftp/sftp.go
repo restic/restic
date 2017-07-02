@@ -126,6 +126,15 @@ func Open(cfg Config) (*SFTP, error) {
 
 	debug.Log("layout: %v\n", sftp.Layout)
 
+	// create paths for data and refs. mkdirAll does nothing if the paths already exist.
+	for _, d := range sftp.Paths() {
+		err = sftp.mkdirAll(d, backend.Modes.Dir)
+		debug.Log("mkdirAll %v -> %v", d, err)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	sftp.Config = cfg
 	sftp.p = cfg.Path
 	return sftp, nil
