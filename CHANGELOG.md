@@ -4,6 +4,12 @@ released version of restic from the perspective of the user.
 Important Changes in 0.X.Y
 ==========================
 
+ * The `migrate` command for chaning the `s3legacy` layout to the `default`
+   layout for s3 backends has been improved: It can now be restarted with
+   `restic migrate --force s3_layout` and automatically retries operations on
+   error.
+   https://github.com/restic/restic/issues/1073
+   https://github.com/restic/restic/pull/1075
 
 Important Changes in 0.7.0
 ==========================
