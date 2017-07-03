@@ -2,6 +2,8 @@ package migrations
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path"
 	"restic"
 	"restic/backend"
@@ -34,13 +36,35 @@ func (m *S3Layout) Check(ctx context.Context, repo restic.Repository) (bool, err
 	return true, nil
 }
 
+func retry(max int, fail func(err error), f func() error) error {
+	var err error
+	for i := 0; i < max; i++ {
+		err = f()
+		if err == nil {
+			return err
+		}
+		if fail != nil {
+			fail(err)
+		}
+	}
+	return err
+}
+
+// maxErrors for retrying renames on s3.
+const maxErrors = 20
+
 func (m *S3Layout) moveFiles(ctx context.Context, be *s3.Backend, l backend.Layout, t restic.FileType) error {
+	printErr := func(err error) {
+		fmt.Fprintf(os.Stderr, "renaming file returned error: %v\n", err)
+	}
+
 	for name := range be.List(ctx, t) {
 		h := restic.Handle{Type: t, Name: name}
 		debug.Log("move %v", h)
-		if err := be.Rename(h, l); err != nil {
-			return err
-		}
+
+		retry(maxErrors, printErr, func() error {
+			return be.Rename(h, l)
+		})
 	}
 
 	return nil
@@ -54,15 +78,22 @@ func (m *S3Layout) Apply(ctx context.Context, repo restic.Repository) error {
 		return errors.New("backend is not s3")
 	}
 
+	oldLayout := &backend.S3LegacyLayout{
+		Path: be.Path(),
+		Join: path.Join,
+	}
+
 	newLayout := &backend.DefaultLayout{
 		Path: be.Path(),
 		Join: path.Join,
 	}
 
+	be.Layout = oldLayout
+
 	for _, t := range []restic.FileType{
-		restic.KeyFile,
 		restic.SnapshotFile,
 		restic.DataFile,
+		restic.KeyFile,
 		restic.LockFile,
 	} {
 		err := m.moveFiles(ctx, be, newLayout, t)

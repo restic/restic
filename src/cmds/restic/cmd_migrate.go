@@ -21,12 +21,15 @@ name is explicitely given, a list of migrations that can be applied is printed.
 
 // MigrateOptions bundles all options for the 'check' command.
 type MigrateOptions struct {
+	Force bool
 }
 
 var migrateOptions MigrateOptions
 
 func init() {
 	cmdRoot.AddCommand(cmdMigrate)
+	f := cmdMigrate.Flags()
+	f.BoolVarP(&migrateOptions.Force, "force", "f", false, `apply a migration a second time`)
 }
 
 func checkMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repository) error {
@@ -59,8 +62,12 @@ func applyMigrations(opts MigrateOptions, gopts GlobalOptions, repo restic.Repos
 				}
 
 				if !ok {
-					Warnf("migration %v cannot be applied: check failed\n", m.Name())
-					continue
+					if !opts.Force {
+						Warnf("migration %v cannot be applied: check failed\nIf you want to apply this migration anyway, re-run with option --force\n", m.Name())
+						continue
+					}
+
+					Warnf("check for migration %v failed, continuing anyway\n", m.Name())
 				}
 
 				Printf("applying migration %v...\n", m.Name())

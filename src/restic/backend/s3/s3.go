@@ -453,10 +453,20 @@ func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
 	oldname := be.Filename(h)
 	newname := l.Filename(h)
 
+	if oldname == newname {
+		debug.Log("  %v is already renamed", newname)
+		return nil
+	}
+
 	debug.Log("  %v -> %v", oldname, newname)
 
 	coreClient := minio.Core{Client: be.client}
 	err := coreClient.CopyObject(be.cfg.Bucket, newname, path.Join(be.cfg.Bucket, oldname), minio.CopyConditions{})
+	if err != nil && be.IsNotExist(err) {
+		debug.Log("copy failed: %v, seems to already have been renamed", err)
+		return nil
+	}
+
 	if err != nil {
 		debug.Log("copy failed: %v", err)
 		return err
