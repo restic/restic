@@ -11,6 +11,17 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/issues/1073
    https://github.com/restic/restic/pull/1075
 
+Small changes
+-------------
+
+ * The local and sftp backends now create the subdirs below `data/` on
+   open/init. This way, restic makes sure that they always exist. This is
+   connected to an issue for the sftp server:
+   https://github.com/restic/rest-server/pull/11#issuecomment-309879710
+   https://github.com/restic/restic/issues/1055
+   https://github.com/restic/restic/pull/1077
+
+
 Important Changes in 0.7.0
 ==========================
 
