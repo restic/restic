@@ -35,6 +35,14 @@ func Open(cfg Config) (*Local, error) {
 
 	be := &Local{Config: cfg, Layout: l}
 
+	// create paths for data and refs. MkdirAll does nothing if the directory already exists.
+	for _, d := range be.Paths() {
+		err := fs.MkdirAll(d, backend.Modes.Dir)
+		if err != nil {
+			return nil, errors.Wrap(err, "MkdirAll")
+		}
+	}
+
 	return be, nil
 }
 
@@ -89,26 +97,8 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err er
 
 	filename := b.Filename(h)
 
-	// create directories if necessary, ignore errors
-	if h.Type == restic.DataFile {
-		err = fs.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
-		if err != nil {
-			return errors.Wrap(err, "MkdirAll")
-		}
-	}
-
 	// create new file
 	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
-	if os.IsNotExist(errors.Cause(err)) {
-		// create the locks dir, then try again
-		err = fs.MkdirAll(b.Dirname(h), backend.Modes.Dir)
-		if err != nil {
-			return errors.Wrap(err, "MkdirAll")
-		}
-
-		return b.Save(ctx, h, rd)
-	}
-
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
 	}

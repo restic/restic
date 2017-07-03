@@ -111,6 +111,10 @@ func TestDefaultLayout(t *testing.T) {
 			filepath.Join(tempdir, "keys"),
 		}
 
+		for i := 0; i < 256; i++ {
+			want = append(want, filepath.Join(tempdir, "data", fmt.Sprintf("%02x", i)))
+		}
+
 		sort.Sort(sort.StringSlice(want))
 		sort.Sort(sort.StringSlice(dirs))
 
