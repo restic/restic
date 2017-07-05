@@ -21,6 +21,12 @@ Small changes
    https://github.com/restic/restic/issues/1055
    https://github.com/restic/restic/pull/1077
 
+ * When no S3 credentials are specified in the environment variables, restic
+   now tries to load credentials from an IAM instance profile when the s3
+   backend is used.
+   https://github.com/restic/restic/issues/1067
+   https://github.com/restic/restic/pull/1086
+
 
 Important Changes in 0.7.0
 ==========================
