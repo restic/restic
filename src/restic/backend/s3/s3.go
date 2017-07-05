@@ -43,7 +43,7 @@ func open(cfg Config) (*Backend, error) {
 	var err error
 
 	if cfg.KeyID == "" || cfg.Secret == "" {
-		debug.Log("iam")
+		debug.Log("key/secret not found, trying to get them from IAM")
 		creds := credentials.NewIAM("")
 		client, err = minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
 
@@ -51,7 +51,7 @@ func open(cfg Config) (*Backend, error) {
 			return nil, errors.Wrap(err, "minio.NewWithCredentials")
 		}
 	} else {
-		debug.Log("key, secret")
+		debug.Log("key/secret found")
 		client, err = minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
 
 		if err != nil {
