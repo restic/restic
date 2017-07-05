@@ -14,6 +14,7 @@ import (
 	"restic/errors"
 
 	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/pkg/credentials"
 
 	"restic/debug"
 )
@@ -38,9 +39,24 @@ func open(cfg Config) (*Backend, error) {
 		minio.MaxRetry = int(cfg.MaxRetries)
 	}
 
-	client, err := minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
-	if err != nil {
-		return nil, errors.Wrap(err, "minio.New")
+	var client *minio.Client
+	var err error
+
+	if cfg.KeyID == "" || cfg.Secret == "" {
+		debug.Log("key/secret not found, trying to get them from IAM")
+		creds := credentials.NewIAM("")
+		client, err = minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
+
+		if err != nil {
+			return nil, errors.Wrap(err, "minio.NewWithCredentials")
+		}
+	} else {
+		debug.Log("key/secret found")
+		client, err = minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "minio.New")
+		}
 	}
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
