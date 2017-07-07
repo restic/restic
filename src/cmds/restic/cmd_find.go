@@ -45,13 +45,13 @@ func init() {
 	f := cmdFind.Flags()
 	f.StringVarP(&findOptions.Oldest, "oldest", "O", "", "oldest modification date/time")
 	f.StringVarP(&findOptions.Newest, "newest", "N", "", "newest modification date/time")
-	f.StringSliceVarP(&findOptions.Snapshots, "snapshot", "s", nil, "snapshot `id` to search in (can be given multiple times)")
+	f.StringArrayVarP(&findOptions.Snapshots, "snapshot", "s", nil, "snapshot `id` to search in (can be given multiple times)")
 	f.BoolVarP(&findOptions.CaseInsensitive, "ignore-case", "i", false, "ignore case for pattern")
 	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
 	f.StringVarP(&findOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
-	f.StringSliceVar(&findOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot-ID is given")
-	f.StringSliceVar(&findOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
+	f.StringArrayVar(&findOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot-ID is given")
+	f.StringArrayVar(&findOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 }
 
 type findPattern struct {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -130,36 +131,64 @@ func (sn *Snapshot) RemoveTags(removeTags []string) (changed bool) {
 	return
 }
 
-// HasTags returns true if the snapshot has at least all of tags.
+func (sn *Snapshot) hasTag(tag string) bool {
+	for _, snTag := range sn.Tags {
+		if tag == snTag {
+			return true
+		}
+	}
+	return false
+}
+
+// HasTags returns true if the snapshot has at least one of the tags. Tags
+// are compared as strings, unless they contain a comma. Then each of the comma
+// separated parts of the tag need to be present.
 func (sn *Snapshot) HasTags(tags []string) bool {
+	if len(tags) == 0 {
+		return true
+	}
 nextTag:
 	for _, tag := range tags {
-		for _, snTag := range sn.Tags {
-			if tag == snTag {
+		for _, s := range strings.Split(tag, ",") {
+			if !sn.hasTag(s) {
+				// fail, try next tag
 				continue nextTag
 			}
 		}
-
-		return false
+		return true
 	}
 
-	return true
+	return false
 }
 
-// HasPaths returns true if the snapshot has at least all of paths.
+func (sn *Snapshot) hasPath(path string) bool {
+	for _, snPath := range sn.Paths {
+		if path == snPath {
+			return true
+		}
+	}
+	return false
+}
+
+// HasPaths returns true if the snapshot has at least one of the paths. Paths
+// are compared as strings unless they contain a comma. Then each of the comma
+// separated parts of the path need to be present.
 func (sn *Snapshot) HasPaths(paths []string) bool {
+	if len(paths) == 0 {
+		return true
+	}
 nextPath:
 	for _, path := range paths {
-		for _, snPath := range sn.Paths {
-			if path == snPath {
+		for _, p := range strings.Split(path, ",") {
+			if !sn.hasPath(p) {
+				// fail, try next path
 				continue nextPath
 			}
 		}
-
-		return false
+		return true
 	}
 
-	return true
+	return false
 }
 
 // SamePaths returns true if the snapshot matches the entire paths set

@@ -37,8 +37,8 @@ func init() {
 
 	f := cmdSnapshots.Flags()
 	f.StringVarP(&snapshotOptions.Host, "host", "H", "", "only consider snapshots for this `host`")
-	f.StringSliceVar(&snapshotOptions.Tags, "tag", nil, "only consider snapshots which include this `tag` (can be specified multiple times)")
-	f.StringSliceVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
+	f.StringArrayVar(&snapshotOptions.Tags, "tag", nil, "only consider snapshots which include this `tag` (can be specified multiple times)")
+	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {

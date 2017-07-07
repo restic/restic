@@ -55,14 +55,14 @@ func init() {
 	f.IntVarP(&forgetOptions.Monthly, "keep-monthly", "m", 0, "keep the last `n` monthly snapshots")
 	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
 
-	f.StringSliceVar(&forgetOptions.KeepTags, "keep-tag", []string{}, "keep snapshots with this `tag` (can be specified multiple times)")
+	f.StringArrayVar(&forgetOptions.KeepTags, "keep-tag", []string{}, "keep snapshots with this `tag` (can be specified multiple times)")
 	f.BoolVarP(&forgetOptions.GroupByTags, "group-by-tags", "G", false, "Group by host,paths,tags instead of just host,paths")
 	// Sadly the commonly used shortcut `H` is already used.
 	f.StringVar(&forgetOptions.Host, "host", "", "only consider snapshots with the given `host`")
 	// Deprecated since 2017-03-07.
 	f.StringVar(&forgetOptions.Host, "hostname", "", "only consider snapshots with the given `hostname` (deprecated)")
-	f.StringSliceVar(&forgetOptions.Tags, "tag", nil, "only consider snapshots which include this `tag` (can be specified multiple times)")
-	f.StringSliceVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
+	f.StringArrayVar(&forgetOptions.Tags, "tag", nil, "only consider snapshots which include this `tag` (can be specified multiple times)")
+	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
 
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")

@@ -52,8 +52,8 @@ func init() {
 	mountFlags.BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 
 	mountFlags.StringVarP(&mountOptions.Host, "host", "H", "", `only consider snapshots for this host`)
-	mountFlags.StringSliceVar(&mountOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`")
-	mountFlags.StringSliceVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
+	mountFlags.StringArrayVar(&mountOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`")
+	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
 }
 
 func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {

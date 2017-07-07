@@ -164,6 +164,7 @@ var expireTests = []restic.ExpirePolicy{
 	{Yearly: 10},
 	{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10},
 	{Tags: []string{"foo"}},
+	{Tags: []string{"foo,bar"}},
 	{Tags: []string{"foo", "bar"}},
 }
 

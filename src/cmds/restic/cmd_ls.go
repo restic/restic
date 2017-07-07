@@ -41,8 +41,8 @@ func init() {
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
 	flags.StringVarP(&lsOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
-	flags.StringSliceVar(&lsOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot ID is given")
-	flags.StringSliceVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
+	flags.StringArrayVar(&lsOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot ID is given")
+	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 }
 
 func printTree(repo *repository.Repository, id *restic.ID, prefix string) error {
