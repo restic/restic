@@ -17,7 +17,7 @@ type Restorer struct {
 	sn   *Snapshot
 
 	Error        func(dir string, node *Node, err error) error
-	SelectFilter func(item string, dstpath string, node *Node) (bool, bool)
+	SelectFilter func(item string, dstpath string, node *Node) (selectedForRestore bool, childMayBeSelected bool)
 }
 
 var restorerAbortOnAllErrors = func(str string, node *Node, err error) error { return err }
@@ -46,9 +46,9 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 	}
 
 	for _, node := range tree.Nodes {
-		selectedForRestore, childMayMatch := res.SelectFilter(filepath.Join(dir, node.Name),
+		selectedForRestore, childMayBeSelected := res.SelectFilter(filepath.Join(dir, node.Name),
 			filepath.Join(dst, dir, node.Name), node)
-		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayMatch)
+		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayBeSelected)
 
 		if selectedForRestore {
 			err := res.restoreNodeTo(ctx, node, dir, dst, idx)
@@ -57,7 +57,7 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 			}
 		}
 
-		if node.Type == "dir" && childMayMatch {
+		if node.Type == "dir" && childMayBeSelected {
 			if node.Subtree == nil {
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
