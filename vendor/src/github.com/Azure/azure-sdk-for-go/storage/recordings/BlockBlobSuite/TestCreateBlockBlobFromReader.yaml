@@ -1,0 +1,370 @@
+---
+version: 1
+rwmutex: {}
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:730+mIga/KMHk4QPUO6FbTmkaJrA7Z/MTDlWi2IRPxI=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 blob
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.blob.core.windows.net/cnt-44blockblobsuitetestcreatebl?restype=container
+    method: PUT
+  response:
+    body: ""
+    headers:
+      Date:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      Etag:
+      - '"0x8D47C73BC277CBB"'
+      Last-Modified:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      Server:
+      - Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5eac31b3-0001-00d8-795c-aea568000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 201 Created
+    code: 201
+- request:
+    body: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer feugiat
+      eleifend scelerisque. Phasellus tempor turpis eget magna pretium, et finibus
+      massa convallis. Donec eget lacinia nibh. Ut ut cursus odio. Quisque id justo
+      interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec justo vehicula pretium.
+      Curabitur fermentum quam ac dolor venenatis, vitae scelerisque ex posuere. Donec
+      ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc suscipit elit gravida
+      dolor facilisis sollicitudin. Fusce ac ultrices libero. Donec erat lectus, hendrerit
+      volutpat nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi id mi porttitor
+      maximus. Phasellus vitae venenatis velit. Quisque id felis nec lacus iaculis
+      porttitor. Maecenas egestas tortor et nulla dapibus varius. In hac habitasse
+      platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+      feugiat eleifend scelerisque. Phasellus tempor turpis eget magna pretium, et
+      finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio. Quisque
+      id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec justo vehicula
+      pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque ex posuere.
+      Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc suscipit elit
+      gravida dolor facilisis sollicitudin. Fusce ac ultrices libero. Donec erat lectus,
+      hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi
+      id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque id felis nec
+      lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus varius. In
+      hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing
+      elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis eget magna
+      pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio.
+      Quisque id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec
+      justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque
+      ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc
+      suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices libero.
+      Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque
+      hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque
+      id felis nec lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus
+      varius. In hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur
+      adipiscing elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis
+      eget magna pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut
+      ut cursus odio. Quisque id justo interdum, maximus ex a, dapibus leo. Nullam
+      mattis arcu nec justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis,
+      vitae scelerisque ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar
+      metus. Nunc suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices
+      libero. Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh.
+      Pellentesque hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis
+      velit. Quisque id felis nec lacus iaculis porttitor. Maecenas egestas tortor
+      et nulla dapibus varius. In hac habitasse platea dictumst.Lorem ipsum dolor
+      sit amet, consectetur adipiscing elit. Integer feugiat eleifend scelerisque.
+      Phasellus tempor turpis eget magna pretium, et finibus massa convallis. Donec
+      eget lacinia nibh. Ut ut cursus odio. Quisque id justo interdum, maximus ex
+      a, dapibus leo. Nullam mattis arcu nec justo vehicula pretium. Curabitur fermentum
+      quam ac dolor venenatis, vitae scelerisque ex posuere. Donec ut ante porttitor,
+      ultricies ante ac, pulvinar metus. Nunc suscipit elit gravida dolor facilisis
+      sollicitudin. Fusce ac ultrices libero. Donec erat lectus, hendrerit volutpat
+      nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi id mi porttitor
+      maximus. Phasellus vitae venenatis velit. Quisque id felis nec lacus iaculis
+      porttitor. Maecenas egestas tortor et nulla dapibus varius. In hac habitasse
+      platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+      feugiat eleifend scelerisque. Phasellus tempor turpis eget magna pretium, et
+      finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio. Quisque
+      id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec justo vehicula
+      pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque ex posuere.
+      Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc suscipit elit
+      gravida dolor facilisis sollicitudin. Fusce ac ultrices libero. Donec erat lectus,
+      hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi
+      id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque id felis nec
+      lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus varius. In
+      hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing
+      elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis eget magna
+      pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio.
+      Quisque id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec
+      justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque
+      ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc
+      suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices libero.
+      Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque
+      hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque
+      id felis nec lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus
+      varius. In hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur
+      adipiscing elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis
+      eget magna pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut
+      ut cursus odio. Quisque id justo interdum, maximus ex a, dapibus leo. Nullam
+      mattis arcu nec justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis,
+      vitae scelerisque ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar
+      metus. Nunc suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices
+      libero. Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh.
+      Pellentesque hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis
+      velit. Quisque id felis nec lacus iaculis porttitor. Maecenas egestas tortor
+      et nulla dapibus varius. In hac habitasse platea dictumst.Lorem ipsum dolor
+      sit amet, consectetur adipiscing elit. Integer feugiat eleifend scelerisque.
+      Phasellus tempor turpis eget magna pretium, et finibus massa convallis. Donec
+      eget lacinia nibh. Ut ut cursus odio. Quisque id justo interdum, maximus ex
+      a, dapibus leo. Nullam mattis arcu nec justo vehicula pretium. Curabitur fermentum
+      quam ac dolor venenatis, vitae scelerisque ex posuere. Donec ut ante porttitor,
+      ultricies ante ac, pulvinar metus. Nunc suscipit elit gravida dolor facilisis
+      sollicitudin. Fusce ac ultrices libero. Donec erat lectus, hendrerit volutpat
+      nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi id mi porttitor
+      maximus. Phasellus vitae venenatis velit. Quisque id felis nec lacus iaculis
+      porttitor. Maecenas egestas tortor et nulla dapibus varius. In hac habitasse
+      platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+      feugiat eleifend scelerisque. Phasellus tempor turpis eget magna pretium, et
+      finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio. Quisque
+      id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec justo vehicula
+      pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque ex posuere.
+      Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc suscipit elit
+      gravida dolor facilisis sollicitudin. Fusce ac ultrices libero. Donec erat lectus,
+      hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi
+      id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque id felis nec
+      lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus varius. In
+      hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing
+      elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis eget magna
+      pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio.
+      Quisque id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec
+      justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque
+      ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc
+      suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices libero.
+      Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque
+      hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque
+      id felis nec lacus iaculis porttitor. Maecenas egestas
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:Lx2zPw0dwCDRdQi3/0gEW6w6oP8pptoS+aoXZp5/a8M=
+      Content-Length:
+      - "8888"
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 blob
+      X-Ms-Blob-Type:
+      - BlockBlob
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.blob.core.windows.net/cnt-44blockblobsuitetestcreatebl/blob/44blockblobsuitetestcreateblockblobfromreader
+    method: PUT
+  response:
+    body: ""
+    headers:
+      Content-Md5:
+      - Ck/NLXf/Ku+Vjw/wgLi74w==
+      Date:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      Etag:
+      - '"0x8D47C73BC1A9162"'
+      Last-Modified:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      Server:
+      - Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5eac31be-0001-00d8-035c-aea568000000
+      X-Ms-Request-Server-Encrypted:
+      - "false"
+      X-Ms-Version:
+      - 2016-05-31
+    status: 201 Created
+    code: 201
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:mYd/dUqJysyX2L5RnKOFHtPFveZIggZwCTb9tSyOA1g=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 blob
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.blob.core.windows.net/cnt-44blockblobsuitetestcreatebl/blob/44blockblobsuitetestcreateblockblobfromreader
+    method: GET
+  response:
+    body: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer feugiat
+      eleifend scelerisque. Phasellus tempor turpis eget magna pretium, et finibus
+      massa convallis. Donec eget lacinia nibh. Ut ut cursus odio. Quisque id justo
+      interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec justo vehicula pretium.
+      Curabitur fermentum quam ac dolor venenatis, vitae scelerisque ex posuere. Donec
+      ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc suscipit elit gravida
+      dolor facilisis sollicitudin. Fusce ac ultrices libero. Donec erat lectus, hendrerit
+      volutpat nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi id mi porttitor
+      maximus. Phasellus vitae venenatis velit. Quisque id felis nec lacus iaculis
+      porttitor. Maecenas egestas tortor et nulla dapibus varius. In hac habitasse
+      platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+      feugiat eleifend scelerisque. Phasellus tempor turpis eget magna pretium, et
+      finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio. Quisque
+      id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec justo vehicula
+      pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque ex posuere.
+      Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc suscipit elit
+      gravida dolor facilisis sollicitudin. Fusce ac ultrices libero. Donec erat lectus,
+      hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi
+      id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque id felis nec
+      lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus varius. In
+      hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing
+      elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis eget magna
+      pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio.
+      Quisque id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec
+      justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque
+      ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc
+      suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices libero.
+      Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque
+      hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque
+      id felis nec lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus
+      varius. In hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur
+      adipiscing elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis
+      eget magna pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut
+      ut cursus odio. Quisque id justo interdum, maximus ex a, dapibus leo. Nullam
+      mattis arcu nec justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis,
+      vitae scelerisque ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar
+      metus. Nunc suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices
+      libero. Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh.
+      Pellentesque hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis
+      velit. Quisque id felis nec lacus iaculis porttitor. Maecenas egestas tortor
+      et nulla dapibus varius. In hac habitasse platea dictumst.Lorem ipsum dolor
+      sit amet, consectetur adipiscing elit. Integer feugiat eleifend scelerisque.
+      Phasellus tempor turpis eget magna pretium, et finibus massa convallis. Donec
+      eget lacinia nibh. Ut ut cursus odio. Quisque id justo interdum, maximus ex
+      a, dapibus leo. Nullam mattis arcu nec justo vehicula pretium. Curabitur fermentum
+      quam ac dolor venenatis, vitae scelerisque ex posuere. Donec ut ante porttitor,
+      ultricies ante ac, pulvinar metus. Nunc suscipit elit gravida dolor facilisis
+      sollicitudin. Fusce ac ultrices libero. Donec erat lectus, hendrerit volutpat
+      nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi id mi porttitor
+      maximus. Phasellus vitae venenatis velit. Quisque id felis nec lacus iaculis
+      porttitor. Maecenas egestas tortor et nulla dapibus varius. In hac habitasse
+      platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+      feugiat eleifend scelerisque. Phasellus tempor turpis eget magna pretium, et
+      finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio. Quisque
+      id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec justo vehicula
+      pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque ex posuere.
+      Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc suscipit elit
+      gravida dolor facilisis sollicitudin. Fusce ac ultrices libero. Donec erat lectus,
+      hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi
+      id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque id felis nec
+      lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus varius. In
+      hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing
+      elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis eget magna
+      pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio.
+      Quisque id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec
+      justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque
+      ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc
+      suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices libero.
+      Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque
+      hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque
+      id felis nec lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus
+      varius. In hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur
+      adipiscing elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis
+      eget magna pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut
+      ut cursus odio. Quisque id justo interdum, maximus ex a, dapibus leo. Nullam
+      mattis arcu nec justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis,
+      vitae scelerisque ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar
+      metus. Nunc suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices
+      libero. Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh.
+      Pellentesque hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis
+      velit. Quisque id felis nec lacus iaculis porttitor. Maecenas egestas tortor
+      et nulla dapibus varius. In hac habitasse platea dictumst.Lorem ipsum dolor
+      sit amet, consectetur adipiscing elit. Integer feugiat eleifend scelerisque.
+      Phasellus tempor turpis eget magna pretium, et finibus massa convallis. Donec
+      eget lacinia nibh. Ut ut cursus odio. Quisque id justo interdum, maximus ex
+      a, dapibus leo. Nullam mattis arcu nec justo vehicula pretium. Curabitur fermentum
+      quam ac dolor venenatis, vitae scelerisque ex posuere. Donec ut ante porttitor,
+      ultricies ante ac, pulvinar metus. Nunc suscipit elit gravida dolor facilisis
+      sollicitudin. Fusce ac ultrices libero. Donec erat lectus, hendrerit volutpat
+      nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi id mi porttitor
+      maximus. Phasellus vitae venenatis velit. Quisque id felis nec lacus iaculis
+      porttitor. Maecenas egestas tortor et nulla dapibus varius. In hac habitasse
+      platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
+      feugiat eleifend scelerisque. Phasellus tempor turpis eget magna pretium, et
+      finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio. Quisque
+      id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec justo vehicula
+      pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque ex posuere.
+      Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc suscipit elit
+      gravida dolor facilisis sollicitudin. Fusce ac ultrices libero. Donec erat lectus,
+      hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque hendrerit nisi
+      id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque id felis nec
+      lacus iaculis porttitor. Maecenas egestas tortor et nulla dapibus varius. In
+      hac habitasse platea dictumst.Lorem ipsum dolor sit amet, consectetur adipiscing
+      elit. Integer feugiat eleifend scelerisque. Phasellus tempor turpis eget magna
+      pretium, et finibus massa convallis. Donec eget lacinia nibh. Ut ut cursus odio.
+      Quisque id justo interdum, maximus ex a, dapibus leo. Nullam mattis arcu nec
+      justo vehicula pretium. Curabitur fermentum quam ac dolor venenatis, vitae scelerisque
+      ex posuere. Donec ut ante porttitor, ultricies ante ac, pulvinar metus. Nunc
+      suscipit elit gravida dolor facilisis sollicitudin. Fusce ac ultrices libero.
+      Donec erat lectus, hendrerit volutpat nisl quis, porta accumsan nibh. Pellentesque
+      hendrerit nisi id mi porttitor maximus. Phasellus vitae venenatis velit. Quisque
+      id felis nec lacus iaculis porttitor. Maecenas egestas
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - "8888"
+      Content-Md5:
+      - Ck/NLXf/Ku+Vjw/wgLi74w==
+      Content-Type:
+      - application/octet-stream
+      Date:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      Etag:
+      - '"0x8D47C73BC1A9162"'
+      Last-Modified:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      Server:
+      - Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Blob-Type:
+      - BlockBlob
+      X-Ms-Lease-State:
+      - available
+      X-Ms-Lease-Status:
+      - unlocked
+      X-Ms-Request-Id:
+      - 5eac31d1-0001-00d8-145c-aea568000000
+      X-Ms-Server-Encrypted:
+      - "false"
+      X-Ms-Version:
+      - 2016-05-31
+    status: 200 OK
+    code: 200
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:0whOCVaVlGqgIY+Q7FU//MR+ASLDo0cgV9DumYxGoqw=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 blob
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.blob.core.windows.net/cnt-44blockblobsuitetestcreatebl?restype=container
+    method: DELETE
+  response:
+    body: ""
+    headers:
+      Date:
+      - Wed, 05 Apr 2017 22:33:08 GMT
+      Server:
+      - Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5eac31dd-0001-00d8-1d5c-aea568000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 202 Accepted
+    code: 202

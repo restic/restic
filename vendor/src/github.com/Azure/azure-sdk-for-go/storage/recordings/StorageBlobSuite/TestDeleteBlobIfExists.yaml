@@ -1,0 +1,124 @@
+---
+version: 1
+rwmutex: {}
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:my8+oQG+lcDLVGFTZ/IPYT2SjCtVmN01P1hbaf7VlH4=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 blob
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:04 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.blob.core.windows.net/cnt-39storageblobsuitetestdelete?restype=container
+    method: PUT
+  response:
+    body: ""
+    headers:
+      Date:
+      - Wed, 05 Apr 2017 22:33:03 GMT
+      Etag:
+      - '"0x8D47C73B9701FB3"'
+      Last-Modified:
+      - Wed, 05 Apr 2017 22:33:04 GMT
+      Server:
+      - Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5eac2a00-0001-00d8-405c-aea568000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 201 Created
+    code: 201
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:8gL/zzInU+rUNJZIhWvPEwEZJyBS73UlXj9r3W0abvc=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 blob
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:04 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.blob.core.windows.net/cnt-39storageblobsuitetestdelete/blob/39storageblobsuitetestdeleteblobifexists
+    method: DELETE
+  response:
+    body: "\uFEFF\x3C\x3F\x78\x6D\x6C\x20\x76\x65\x72\x73\x69\x6F\x6E\x3D\"\x31\x2E\x30\"\x20\x65\x6E\x63\x6F\x64\x69\x6E\x67\x3D\"\x75\x74\x66\x2D\x38\"\x3F\x3E\x3C\x45\x72\x72\x6F\x72\x3E\x3C\x43\x6F\x64\x65\x3E\x42\x6C\x6F\x62\x4E\x6F\x74\x46\x6F\x75\x6E\x64\x3C\x2F\x43\x6F\x64\x65\x3E\x3C\x4D\x65\x73\x73\x61\x67\x65\x3E\x54\x68\x65\x20\x73\x70\x65\x63\x69\x66\x69\x65\x64\x20\x62\x6C\x6F\x62\x20\x64\x6F\x65\x73\x20\x6E\x6F\x74\x20\x65\x78\x69\x73\x74\x2E\n\x52\x65\x71\x75\x65\x73\x74\x49\x64\x3A\x35\x65\x61\x63\x32\x61\x31\x36\x2D\x30\x30\x30\x31\x2D\x30\x30\x64\x38\x2D\x35\x34\x35\x63\x2D\x61\x65\x61\x35\x36\x38\x30\x30\x30\x30\x30\x30\n\x54\x69\x6D\x65\x3A\x32\x30\x31\x37\x2D\x30\x34\x2D\x30\x35\x54\x32\x32\x3A\x33\x33\x3A\x30\x34\x2E\x30\x37\x38\x39\x32\x36\x39\x5A\x3C\x2F\x4D\x65\x73\x73\x61\x67\x65\x3E\x3C\x2F\x45\x72\x72\x6F\x72\x3E"
+    headers:
+      Content-Length:
+      - "215"
+      Content-Type:
+      - application/xml
+      Date:
+      - Wed, 05 Apr 2017 22:33:03 GMT
+      Server:
+      - Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5eac2a16-0001-00d8-545c-aea568000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 404 The specified blob does not exist.
+    code: 404
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:8gL/zzInU+rUNJZIhWvPEwEZJyBS73UlXj9r3W0abvc=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 blob
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:04 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.blob.core.windows.net/cnt-39storageblobsuitetestdelete/blob/39storageblobsuitetestdeleteblobifexists
+    method: DELETE
+  response:
+    body: "\uFEFF\x3C\x3F\x78\x6D\x6C\x20\x76\x65\x72\x73\x69\x6F\x6E\x3D\"\x31\x2E\x30\"\x20\x65\x6E\x63\x6F\x64\x69\x6E\x67\x3D\"\x75\x74\x66\x2D\x38\"\x3F\x3E\x3C\x45\x72\x72\x6F\x72\x3E\x3C\x43\x6F\x64\x65\x3E\x42\x6C\x6F\x62\x4E\x6F\x74\x46\x6F\x75\x6E\x64\x3C\x2F\x43\x6F\x64\x65\x3E\x3C\x4D\x65\x73\x73\x61\x67\x65\x3E\x54\x68\x65\x20\x73\x70\x65\x63\x69\x66\x69\x65\x64\x20\x62\x6C\x6F\x62\x20\x64\x6F\x65\x73\x20\x6E\x6F\x74\x20\x65\x78\x69\x73\x74\x2E\n\x52\x65\x71\x75\x65\x73\x74\x49\x64\x3A\x35\x65\x61\x63\x32\x61\x33\x30\x2D\x30\x30\x30\x31\x2D\x30\x30\x64\x38\x2D\x36\x38\x35\x63\x2D\x61\x65\x61\x35\x36\x38\x30\x30\x30\x30\x30\x30\n\x54\x69\x6D\x65\x3A\x32\x30\x31\x37\x2D\x30\x34\x2D\x30\x35\x54\x32\x32\x3A\x33\x33\x3A\x30\x34\x2E\x31\x32\x33\x39\x35\x37\x38\x5A\x3C\x2F\x4D\x65\x73\x73\x61\x67\x65\x3E\x3C\x2F\x45\x72\x72\x6F\x72\x3E"
+    headers:
+      Content-Length:
+      - "215"
+      Content-Type:
+      - application/xml
+      Date:
+      - Wed, 05 Apr 2017 22:33:03 GMT
+      Server:
+      - Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5eac2a30-0001-00d8-685c-aea568000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 404 The specified blob does not exist.
+    code: 404
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:dXk+vfcAhyD9OXeGwXkjdme/LL3PrlzgZIs3QR2yhKQ=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 blob
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:04 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.blob.core.windows.net/cnt-39storageblobsuitetestdelete?restype=container
+    method: DELETE
+  response:
+    body: ""
+    headers:
+      Date:
+      - Wed, 05 Apr 2017 22:33:03 GMT
+      Server:
+      - Windows-Azure-Blob/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5eac2a48-0001-00d8-7d5c-aea568000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 202 Accepted
+    code: 202

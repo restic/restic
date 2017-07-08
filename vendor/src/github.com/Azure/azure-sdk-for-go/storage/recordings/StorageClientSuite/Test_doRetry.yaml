@@ -1,0 +1,94 @@
+---
+version: 1
+rwmutex: {}
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json;odata=nometadata
+      Prefer:
+      - return-no-content
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.table.core.windows.net/%28retry%29?timeout=30
+    method: DELETE
+  response:
+    body: '{"odata.error":{"code":"ResourceNotFound","message":{"lang":"en-US","value":"The
+      specified resource does not exist.\nRequestId:26d67dd8-0002-0096-0fff-ba608d000000\nTime:2017-04-22T00:30:49.2979671Z"}}}'
+    headers:
+      Content-Length:
+      - "202"
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 22 Apr 2017 00:30:49 GMT
+      Server:
+      - Windows-Azure-Table/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 26d67dd8-0002-0096-0fff-ba608d000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 404 The specified resource does not exist.
+    code: 404
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json;odata=nometadata
+      Prefer:
+      - return-no-content
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.table.core.windows.net/%28retry%29?timeout=30
+    method: DELETE
+  response:
+    body: '{"odata.error":{"code":"ResourceNotFound","message":{"lang":"en-US","value":"The
+      specified resource does not exist.\nRequestId:26d67f51-0002-0096-6fff-ba608d000000\nTime:2017-04-22T00:30:50.3507139Z"}}}'
+    headers:
+      Content-Length:
+      - "202"
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 22 Apr 2017 00:30:50 GMT
+      Server:
+      - Windows-Azure-Table/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 26d67f51-0002-0096-6fff-ba608d000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 404 The specified resource does not exist.
+    code: 404
+- request:
+    body: ""
+    form: {}
+    headers:
+      Accept:
+      - application/json;odata=nometadata
+      Prefer:
+      - return-no-content
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.table.core.windows.net/%28retry%29?timeout=30
+    method: DELETE
+  response:
+    body: '{"odata.error":{"code":"ResourceNotFound","message":{"lang":"en-US","value":"The
+      specified resource does not exist.\nRequestId:26d68106-0002-0096-19ff-ba608d000000\nTime:2017-04-22T00:30:52.4141773Z"}}}'
+    headers:
+      Content-Length:
+      - "202"
+      Content-Type:
+      - application/json
+      Date:
+      - Sat, 22 Apr 2017 00:30:52 GMT
+      Server:
+      - Windows-Azure-Table/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 26d68106-0002-0096-19ff-ba608d000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 404 The specified resource does not exist.
+    code: 404
