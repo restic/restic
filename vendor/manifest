@@ -8,6 +8,13 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "cloud.google.com/go/compute/metadata",
+			"repository": "https://code.googlesource.com/gocloud",
+			"revision": "887898847c8baba2e5759253ad5220fee647c9bc",
+			"branch": "master",
+			"path": "/compute/metadata"
+		},
+		{
 			"importpath": "github.com/elithrar/simple-scrypt",
 			"repository": "https://github.com/elithrar/simple-scrypt",
 			"revision": "2325946f714c95de4a6088202c402fbdfa64163b",
@@ -147,11 +154,45 @@
 			"path": "/context"
 		},
 		{
+			"importpath": "golang.org/x/oauth2",
+			"repository": "https://go.googlesource.com/oauth2",
+			"revision": "f047394b6d14284165300fd82dad67edb3a4d7f6",
+			"branch": "master"
+		},
+		{
+			"importpath": "golang.org/x/oauth2/google",
+			"repository": "https://go.googlesource.com/oauth2",
+			"revision": "f047394b6d14284165300fd82dad67edb3a4d7f6",
+			"branch": "master",
+			"path": "/google"
+		},
+		{
 			"importpath": "golang.org/x/sys/unix",
 			"repository": "https://go.googlesource.com/sys",
 			"revision": "f3918c30c5c2cb527c0b071a27c35120a6c0719a",
 			"branch": "master",
 			"path": "/unix"
+		},
+		{
+			"importpath": "google.golang.org/api/gensupport",
+			"repository": "https://code.googlesource.com/google-api-go-client",
+			"revision": "324744a33f1f37e63dd1695cfb3ec9a3e4a1cb05",
+			"branch": "master",
+			"path": "/gensupport"
+		},
+		{
+			"importpath": "google.golang.org/api/googleapi",
+			"repository": "https://code.googlesource.com/google-api-go-client",
+			"revision": "324744a33f1f37e63dd1695cfb3ec9a3e4a1cb05",
+			"branch": "master",
+			"path": "/googleapi"
+		},
+		{
+			"importpath": "google.golang.org/api/storage/v1",
+			"repository": "https://code.googlesource.com/google-api-go-client",
+			"revision": "324744a33f1f37e63dd1695cfb3ec9a3e4a1cb05",
+			"branch": "master",
+			"path": "/storage/v1"
 		}
 	]
 }
