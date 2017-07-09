@@ -8,10 +8,10 @@ import (
 // TagList is a list of tags.
 type TagList []string
 
-// SplitTagList splits a string into a list of tags. The tags in the string
+// splitTagList splits a string into a list of tags. The tags in the string
 // need to be separated by commas. Whitespace is stripped around the individual
 // tags.
-func SplitTagList(s string) (l TagList) {
+func splitTagList(s string) (l TagList) {
 	for _, t := range strings.Split(s, ",") {
 		l = append(l, strings.TrimSpace(t))
 	}
@@ -24,7 +24,7 @@ func (l TagList) String() string {
 
 // Set updates the TagList's value.
 func (l *TagList) Set(s string) error {
-	*l = SplitTagList(s)
+	*l = splitTagList(s)
 	return nil
 }
 
@@ -36,12 +36,12 @@ func (TagList) Type() string {
 // TagLists consists of several TagList.
 type TagLists []TagList
 
-// SplitTagLists splits a slice of strings into a slice of TagLists using
+// splitTagLists splits a slice of strings into a slice of TagLists using
 // SplitTagList.
-func SplitTagLists(s []string) (l TagLists) {
+func splitTagLists(s []string) (l TagLists) {
 	l = make([]TagList, 0, len(s))
 	for _, t := range s {
-		l = append(l, SplitTagList(t))
+		l = append(l, splitTagList(t))
 	}
 	return l
 }
@@ -52,7 +52,7 @@ func (l TagLists) String() string {
 
 // Set updates the TagList's value.
 func (l *TagLists) Set(s string) error {
-	*l = append(*l, SplitTagList(s))
+	*l = append(*l, splitTagList(s))
 	return nil
 }
 
