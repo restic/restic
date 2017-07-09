@@ -31,7 +31,7 @@ When no snapshot-ID is given, all snapshots matching the host, tag and path filt
 type TagOptions struct {
 	Host       string
 	Paths      []string
-	Tags       []string
+	Tags       restic.TagLists
 	SetTags    []string
 	AddTags    []string
 	RemoveTags []string
@@ -48,7 +48,7 @@ func init() {
 	tagFlags.StringSliceVar(&tagOptions.RemoveTags, "remove", nil, "`tag` which will be removed from the existing tags (can be given multiple times)")
 
 	tagFlags.StringVarP(&tagOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
-	tagFlags.StringArrayVar(&tagOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot-ID is given")
+	tagFlags.Var(&tagOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
 	tagFlags.StringArrayVar(&tagOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 }
 
@@ -123,7 +123,7 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 	changeCnt := 0
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, restic.SplitTagLists(opts.Tags), opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
 		changed, err := changeTags(repo, sn, opts.SetTags, opts.AddTags, opts.RemoveTags)
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)

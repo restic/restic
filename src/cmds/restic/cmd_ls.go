@@ -28,7 +28,7 @@ The special snapshot-ID "latest" can be used to list files and directories of th
 type LsOptions struct {
 	ListLong bool
 	Host     string
-	Tags     []string
+	Tags     restic.TagLists
 	Paths    []string
 }
 
@@ -41,7 +41,7 @@ func init() {
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
 	flags.StringVarP(&lsOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
-	flags.StringArrayVar(&lsOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot ID is given")
+	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
 	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 }
 
@@ -80,7 +80,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, restic.SplitTagLists(opts.Tags), opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
 		Verbosef("snapshot %s of %v at %s):\n", sn.ID().Str(), sn.Paths, sn.Time)
 
 		if err = printTree(repo, sn.Tree, string(filepath.Separator)); err != nil {

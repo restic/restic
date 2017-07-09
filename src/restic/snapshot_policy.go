@@ -3,32 +3,8 @@ package restic
 import (
 	"reflect"
 	"sort"
-	"strings"
 	"time"
 )
-
-// TagList is a list of tags.
-type TagList []string
-
-// SplitTagList splits a string into a list of tags. The tags in the string
-// need to be separated by commas. Whitespace is stripped around the individual
-// tags.
-func SplitTagList(s string) (l TagList) {
-	for _, t := range strings.Split(s, ",") {
-		l = append(l, strings.TrimSpace(t))
-	}
-	return l
-}
-
-// SplitTagLists splits a slice of strings into a slice of TagLists using
-// SplitTagList.
-func SplitTagLists(s []string) (l []TagList) {
-	l = make([]TagList, 0, len(s))
-	for _, t := range s {
-		l = append(l, SplitTagList(t))
-	}
-	return l
-}
 
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {

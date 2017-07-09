@@ -31,7 +31,7 @@ type RestoreOptions struct {
 	Target  string
 	Host    string
 	Paths   []string
-	Tags    []string
+	Tags    restic.TagLists
 }
 
 var restoreOptions RestoreOptions
@@ -45,7 +45,7 @@ func init() {
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
 	flags.StringVarP(&restoreOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
-	flags.StringArrayVar(&restoreOptions.Tags, "tag", nil, "only consider snapshots which include this `tag` for snapshot ID \"latest\"")
+	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
 	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 }
 
@@ -89,7 +89,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, restic.SplitTagLists(opts.Tags), opts.Host)
+		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Host)
 		if err != nil {
 			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Host:%v", err, opts.Paths, opts.Host)
 		}

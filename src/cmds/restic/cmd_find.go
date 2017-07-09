@@ -34,7 +34,7 @@ type FindOptions struct {
 	ListLong        bool
 	Host            string
 	Paths           []string
-	Tags            []string
+	Tags            restic.TagLists
 }
 
 var findOptions FindOptions
@@ -50,7 +50,7 @@ func init() {
 	f.BoolVarP(&findOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
 	f.StringVarP(&findOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
-	f.StringArrayVar(&findOptions.Tags, "tag", nil, "only consider snapshots which include the list of `tag,tag,...`, when no snapshot-ID is given")
+	f.Var(&findOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
 	f.StringArrayVar(&findOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 }
 
@@ -290,15 +290,13 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 
-	tagLists := restic.SplitTagLists(opts.Tags)
-
 	f := &Finder{
 		repo:     repo,
 		pat:      pat,
 		out:      statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
 		notfound: restic.NewIDSet(),
 	}
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, tagLists, opts.Paths, opts.Snapshots) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
 		if err = f.findInSnapshot(sn); err != nil {
 			return err
 		}

@@ -38,7 +38,7 @@ type MountOptions struct {
 	AllowRoot  bool
 	AllowOther bool
 	Host       string
-	Tags       []string
+	Tags       restic.TagLists
 	Paths      []string
 }
 
@@ -53,7 +53,7 @@ func init() {
 	mountFlags.BoolVar(&mountOptions.AllowOther, "allow-other", false, "allow other users to access the data in the mounted directory")
 
 	mountFlags.StringVarP(&mountOptions.Host, "host", "H", "", `only consider snapshots for this host`)
-	mountFlags.StringArrayVar(&mountOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`")
+	mountFlags.Var(&mountOptions.Tags, "tag", "only consider snapshots which include this `taglist`")
 	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
 }
 
@@ -104,7 +104,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	cfg := fuse.Config{
 		OwnerIsRoot: opts.OwnerRoot,
 		Host:        opts.Host,
-		Tags:        restic.SplitTagLists(opts.Tags),
+		Tags:        opts.Tags,
 		Paths:       opts.Paths,
 	}
 	root, err := fuse.NewRoot(context.TODO(), repo, cfg)
