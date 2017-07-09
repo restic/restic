@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -140,25 +139,15 @@ func (sn *Snapshot) hasTag(tag string) bool {
 	return false
 }
 
-// HasTags returns true if the snapshot has at least one of the tags. Tags
-// are compared as strings, unless they contain a comma. Then each of the comma
-// separated parts of the tag need to be present.
-func (sn *Snapshot) HasTags(tags []string) bool {
-	if len(tags) == 0 {
-		return true
-	}
-nextTag:
-	for _, tag := range tags {
-		for _, s := range strings.Split(tag, ",") {
-			if !sn.hasTag(s) {
-				// fail, try next tag
-				continue nextTag
-			}
+// HasTags returns true if the snapshot has all the tags in l.
+func (sn *Snapshot) HasTags(l []string) bool {
+	for _, tag := range l {
+		if !sn.hasTag(tag) {
+			return false
 		}
-		return true
 	}
 
-	return false
+	return true
 }
 
 func (sn *Snapshot) hasPath(path string) bool {
@@ -170,33 +159,15 @@ func (sn *Snapshot) hasPath(path string) bool {
 	return false
 }
 
-// HasPaths returns true if the snapshot has at least one of the paths. Paths
-// are compared as strings unless they contain a comma. Then each of the comma
-// separated parts of the path need to be present.
+// HasPaths returns true if the snapshot has all of the paths.
 func (sn *Snapshot) HasPaths(paths []string) bool {
-	if len(paths) == 0 {
-		return true
-	}
-nextPath:
 	for _, path := range paths {
-		for _, p := range strings.Split(path, ",") {
-			if !sn.hasPath(p) {
-				// fail, try next path
-				continue nextPath
-			}
+		if !sn.hasPath(path) {
+			return false
 		}
-		return true
 	}
 
-	return false
-}
-
-// SamePaths returns true if the snapshot matches the entire paths set
-func (sn *Snapshot) SamePaths(paths []string) bool {
-	if len(sn.Paths) != len(paths) {
-		return false
-	}
-	return sn.HasPaths(paths)
+	return true
 }
 
 // Snapshots is a list of snapshots.

@@ -122,6 +122,11 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		return nil
 	}
 
+	var tagLists []restic.TagList
+	for _, t := range opts.KeepTags {
+		tagLists = append(tagLists, restic.SplitTagList(t))
+	}
+
 	policy := restic.ExpirePolicy{
 		Last:    opts.Last,
 		Hourly:  opts.Hourly,
@@ -129,7 +134,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		Weekly:  opts.Weekly,
 		Monthly: opts.Monthly,
 		Yearly:  opts.Yearly,
-		Tags:    opts.KeepTags,
+		Tags:    tagLists,
 	}
 
 	if policy.Empty() {

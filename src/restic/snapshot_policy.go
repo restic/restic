@@ -3,18 +3,32 @@ package restic
 import (
 	"reflect"
 	"sort"
+	"strings"
 	"time"
 )
 
+// TagList is a list of tags.
+type TagList []string
+
+// SplitTagList splits a string into a list of tags. The tags in the string
+// need to be separated by commas. Whitespace is stripped around the individual
+// tags.
+func SplitTagList(s string) (l TagList) {
+	for _, t := range strings.Split(s, ",") {
+		l = append(l, strings.TrimSpace(t))
+	}
+	return l
+}
+
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
-	Last    int      // keep the last n snapshots
-	Hourly  int      // keep the last n hourly snapshots
-	Daily   int      // keep the last n daily snapshots
-	Weekly  int      // keep the last n weekly snapshots
-	Monthly int      // keep the last n monthly snapshots
-	Yearly  int      // keep the last n yearly snapshots
-	Tags    []string // keep all snapshots with these tags
+	Last    int       // keep the last n snapshots
+	Hourly  int       // keep the last n hourly snapshots
+	Daily   int       // keep the last n daily snapshots
+	Weekly  int       // keep the last n weekly snapshots
+	Monthly int       // keep the last n monthly snapshots
+	Yearly  int       // keep the last n yearly snapshots
+	Tags    []TagList // keep all snapshots that include at least one of the tag lists.
 }
 
 // Sum returns the maximum number of snapshots to be kept according to this
@@ -94,11 +108,12 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		var keepSnap bool
 
 		// Tags are handled specially as they are not counted.
-		if len(p.Tags) > 0 {
-			if cur.HasTags(p.Tags) {
+		for _, l := range p.Tags {
+			if cur.HasTags(l) {
 				keepSnap = true
 			}
 		}
+
 		// Now update the other buckets and see if they have some counts left.
 		for i, b := range buckets {
 			if b.Count > 0 {
