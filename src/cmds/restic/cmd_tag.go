@@ -123,7 +123,7 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 	changeCnt := 0
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, restic.SplitTagLists(opts.Tags), opts.Paths, args) {
 		changed, err := changeTags(repo, sn, opts.SetTags, opts.AddTags, opts.RemoveTags)
 		if err != nil {
 			Warnf("unable to modify the tags for snapshot ID %q, ignoring: %v\n", sn.ID(), err)

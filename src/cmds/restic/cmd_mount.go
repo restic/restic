@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"os"
+	"restic"
 
 	"github.com/spf13/cobra"
 
@@ -103,7 +104,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	cfg := fuse.Config{
 		OwnerIsRoot: opts.OwnerRoot,
 		Host:        opts.Host,
-		Tags:        opts.Tags,
+		Tags:        restic.SplitTagLists(opts.Tags),
 		Paths:       opts.Paths,
 	}
 	root, err := fuse.NewRoot(context.TODO(), repo, cfg)

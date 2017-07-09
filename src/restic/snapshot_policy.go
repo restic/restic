@@ -20,6 +20,16 @@ func SplitTagList(s string) (l TagList) {
 	return l
 }
 
+// SplitTagLists splits a slice of strings into a slice of TagLists using
+// SplitTagList.
+func SplitTagLists(s []string) (l []TagList) {
+	l = make([]TagList, 0, len(s))
+	for _, t := range s {
+		l = append(l, SplitTagList(t))
+	}
+	return l
+}
+
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
 	Last    int       // keep the last n snapshots

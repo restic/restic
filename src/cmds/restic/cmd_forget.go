@@ -92,7 +92,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, restic.SplitTagLists(opts.Tags), opts.Paths, args) {
 		if len(args) > 0 {
 			// When explicit snapshots args are given, remove them immediately.
 			if !opts.DryRun {

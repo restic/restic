@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
+	"restic/debug"
 	"time"
 )
 
@@ -148,6 +149,25 @@ func (sn *Snapshot) HasTags(l []string) bool {
 	}
 
 	return true
+}
+
+// HasTagList returns true if the snapshot satisfies at least one TagList,
+// so there is a TagList in l for which all tags are included in sn.
+func (sn *Snapshot) HasTagList(l []TagList) bool {
+	debug.Log("testing snapshot with tags %v against list: %v", sn.Tags, l)
+
+	if len(l) == 0 {
+		return true
+	}
+
+	for _, tags := range l {
+		if sn.HasTags(tags) {
+			debug.Log("  snapshot satisfies %v", tags, l)
+			return true
+		}
+	}
+
+	return false
 }
 
 func (sn *Snapshot) hasPath(path string) bool {

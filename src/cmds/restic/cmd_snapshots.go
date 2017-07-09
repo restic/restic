@@ -59,7 +59,7 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	defer cancel()
 
 	var list restic.Snapshots
-	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
+	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, restic.SplitTagLists(opts.Tags), opts.Paths, args) {
 		list = append(list, sn)
 	}
 	sort.Sort(sort.Reverse(list))

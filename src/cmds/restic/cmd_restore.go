@@ -89,7 +89,7 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 	var id restic.ID
 
 	if snapshotIDString == "latest" {
-		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, opts.Tags, opts.Host)
+		id, err = restic.FindLatestSnapshot(ctx, repo, opts.Paths, restic.SplitTagLists(opts.Tags), opts.Host)
 		if err != nil {
 			Exitf(1, "latest snapshot for criteria not found: %v Paths:%v Host:%v", err, opts.Paths, opts.Host)
 		}
