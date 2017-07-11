@@ -92,7 +92,7 @@ func newScanProgress(gopts GlobalOptions) *restic.Progress {
 	p := restic.NewProgress()
 	p.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 		if IsProcessBackground() {
-			// return
+			return
 		}
 
 		progressStatus = NewProgressStatus(d, s.Dirs, s.Files, s.Bytes)
@@ -130,7 +130,7 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 
 	archiveProgress.OnUpdate = func(s restic.Stat, d time.Duration, ticker bool) {
 		if IsProcessBackground() {
-			// return
+			return
 		}
 
 		sec := uint64(d / time.Second)

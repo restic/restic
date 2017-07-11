@@ -100,7 +100,7 @@ func (ps *ProgressStatus) UpdateProgressStatus(Duration time.Duration,
 	ps.Completed = Completed
 	ps.Total = Total
 	ps.Bps = Bps
-	// fmt.Printf("%v\n", Bps)
+
 	ps.CompletedBytes = CompletedBytes
 
 	ps.TotalBytes = TotalBytes
