@@ -12,7 +12,7 @@ import (
 func setNewFileMode(f string, fi os.FileInfo) error {
 	err := fs.Chmod(f, fi.Mode()&os.FileMode(^uint32(0222)))
 	// ignore the error if the FS does not support setting this mode (e.g. CIFS with gvfs on Linux)
-	if err == syscall.ENOTSUP {
+	if perr, ok := err.(*os.PathError); ok && perr.Err == syscall.ENOTSUP {
 		err = nil
 	}
 	return err
