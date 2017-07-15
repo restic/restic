@@ -195,7 +195,7 @@ func TestIndexSize(t *testing.T) {
 	t.Logf("Index file size for %d blobs in %d packs is %d", blobs*packs, packs, wr.Len())
 }
 
-// example index serialization from doc/Design.md
+// example index serialization from doc/Design.rst
 var docExample = []byte(`
 {
   "supersedes": [
