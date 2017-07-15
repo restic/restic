@@ -401,7 +401,10 @@ func main() {
 	if err != nil {
 		die("Getwd() returned %v\n", err)
 	}
-	output := filepath.Join(cwd, outputFilename)
+	output := outputFilename
+	if !filepath.IsAbs(output) {
+		output = filepath.Join(cwd, output)
+	}
 
 	version := getVersion()
 	constants := Constants{}
