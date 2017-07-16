@@ -87,6 +87,26 @@ func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id r
 	return buf[:n], nil
 }
 
+// sortCachedPacks moves all cached pack files to the front of blobs.
+func (r *Repository) sortCachedPacks(blobs []restic.PackedBlob) []restic.PackedBlob {
+	if r.Cache == nil {
+		return blobs
+	}
+
+	cached := make([]restic.PackedBlob, 0, len(blobs)/2)
+	noncached := make([]restic.PackedBlob, 0, len(blobs)/2)
+
+	for _, blob := range blobs {
+		if r.Cache.Has(restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}) {
+			cached = append(cached, blob)
+			continue
+		}
+		noncached = append(noncached, blob)
+	}
+
+	return append(cached, noncached...)
+}
+
 // loadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
@@ -100,9 +120,12 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 		return 0, err
 	}
 
+	// try cached pack files first
+	blobs = r.sortCachedPacks(blobs)
+
 	var lastError error
 	for _, blob := range blobs {
-		debug.Log("id %v found: %v", id.Str(), blob)
+		debug.Log("blob %v/%v found: %v", t, id.Str(), blob)
 
 		if blob.Type != t {
 			debug.Log("blob %v has wrong block type, want %v", blob, t)
