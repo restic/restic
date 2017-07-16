@@ -328,7 +328,7 @@ func TestIndexAddRemovePack(t *testing.T) {
 	}
 }
 
-// example index serialization from doc/Design.md
+// example index serialization from doc/Design.rst
 var docExample = []byte(`
 {
   "supersedes": [
