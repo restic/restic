@@ -126,18 +126,54 @@ func Open(cfg Config) (*SFTP, error) {
 
 	debug.Log("layout: %v\n", sftp.Layout)
 
-	// create paths for data and refs. mkdirAll does nothing if the paths already exist.
-	for _, d := range sftp.Paths() {
-		err = sftp.mkdirAll(d, backend.Modes.Dir)
-		debug.Log("mkdirAll %v -> %v", d, err)
-		if err != nil {
-			return nil, err
-		}
+	if err := sftp.checkDataSubdirs(); err != nil {
+		debug.Log("checkDataSubdirs returned %v", err)
+		return nil, err
 	}
 
 	sftp.Config = cfg
 	sftp.p = cfg.Path
 	return sftp, nil
+}
+
+func (r *SFTP) checkDataSubdirs() error {
+	datadir := r.Dirname(restic.Handle{Type: restic.DataFile})
+
+	// check if all paths for data/ exist
+	entries, err := r.c.ReadDir(datadir)
+	if err != nil {
+		return err
+	}
+
+	subdirs := make(map[string]struct{}, len(entries))
+	for _, entry := range entries {
+		subdirs[entry.Name()] = struct{}{}
+	}
+
+	for i := 0; i < 256; i++ {
+		subdir := fmt.Sprintf("%02x", i)
+		if _, ok := subdirs[subdir]; !ok {
+			debug.Log("subdir %v is missing, creating", subdir)
+			err := r.mkdirAll(path.Join(datadir, subdir), backend.Modes.Dir)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (r *SFTP) mkdirAllDataSubdirs() error {
+	for _, d := range r.Paths() {
+		err := r.mkdirAll(d, backend.Modes.Dir)
+		debug.Log("mkdirAll %v -> %v", d, err)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Join combines path components with slashes (according to the sftp spec).
@@ -211,12 +247,8 @@ func Create(cfg Config) (*SFTP, error) {
 	}
 
 	// create paths for data and refs
-	for _, d := range sftp.Paths() {
-		err = sftp.mkdirAll(d, backend.Modes.Dir)
-		debug.Log("mkdirAll %v -> %v", d, err)
-		if err != nil {
-			return nil, err
-		}
+	if err = sftp.mkdirAllDataSubdirs(); err != nil {
+		return nil, err
 	}
 
 	err = sftp.Close()
