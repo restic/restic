@@ -191,9 +191,8 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		return restic.ID{}, err
 	}
 
-	// if the pack is not full enough and there are less than maxPackers
-	// packers, put back to the list
-	if packer.Size() < minPackSize && r.countPacker() < maxPackers {
+	// if the pack is not full enough, put back to the list
+	if packer.Size() < minPackSize {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		r.insertPacker(packer)
 		return *id, nil

@@ -38,8 +38,6 @@ type packerManager struct {
 }
 
 const minPackSize = 4 * 1024 * 1024
-const maxPackSize = 16 * 1024 * 1024
-const maxPackers = 200
 
 // newPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory
@@ -58,15 +56,9 @@ func (r *packerManager) findPacker(size uint) (packer *Packer, err error) {
 
 	// search for a suitable packer
 	if len(r.packers) > 0 {
-		debug.Log("searching packer for %d bytes\n", size)
-		for i, p := range r.packers {
-			if p.Packer.Size()+size < maxPackSize {
-				debug.Log("found packer %v", p)
-				// remove from list
-				r.packers = append(r.packers[:i], r.packers[i+1:]...)
-				return p, nil
-			}
-		}
+		p := r.packers[0]
+		r.packers = r.packers[1:]
+		return p, nil
 	}
 
 	// no suitable packer found, return new
