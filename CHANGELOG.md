@@ -32,6 +32,10 @@ Small changes
    (usually when ctrl+t is pressed).
    https://github.com/restic/restic/pull/1082
 
+ * The semantic for the `--tags` option to `forget` and `snapshots` was
+   clarified:
+   https://github.com/restic/restic/issues/1081
+   https://github.com/restic/restic/pull/1090
 
 Important Changes in 0.7.0
 ==========================
