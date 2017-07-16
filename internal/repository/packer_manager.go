@@ -50,7 +50,7 @@ func newPackerManager(be Saver, key *crypto.Key) *packerManager {
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is
 // created or one is returned that already has some blobs.
-func (r *packerManager) findPacker(size uint) (packer *Packer, err error) {
+func (r *packerManager) findPacker() (packer *Packer, err error) {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
@@ -62,7 +62,7 @@ func (r *packerManager) findPacker(size uint) (packer *Packer, err error) {
 	}
 
 	// no suitable packer found, return new
-	debug.Log("create new pack for %d bytes", size)
+	debug.Log("create new pack")
 	tmpfile, err := fs.TempFile("", "restic-temp-pack-")
 	if err != nil {
 		return nil, errors.Wrap(err, "fs.TempFile")

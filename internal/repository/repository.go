@@ -24,15 +24,17 @@ type Repository struct {
 	keyName string
 	idx     *MasterIndex
 
-	*packerManager
+	treePM *packerManager
+	dataPM *packerManager
 }
 
 // New returns a new repository with backend be.
 func New(be restic.Backend) *Repository {
 	repo := &Repository{
-		be:            be,
-		idx:           NewMasterIndex(),
-		packerManager: newPackerManager(be, nil),
+		be:     be,
+		idx:    NewMasterIndex(),
+		dataPM: newPackerManager(be, nil),
+		treePM: newPackerManager(be, nil),
 	}
 
 	return repo
@@ -180,7 +182,18 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// find suitable packer and add blob
-	packer, err := r.findPacker(uint(len(ciphertext)))
+	var pm *packerManager
+
+	switch t {
+	case restic.TreeBlob:
+		pm = r.treePM
+	case restic.DataBlob:
+		pm = r.dataPM
+	default:
+		panic(fmt.Sprintf("invalid type: %v", t))
+	}
+
+	packer, err := pm.findPacker()
 	if err != nil {
 		return restic.ID{}, err
 	}
@@ -194,7 +207,7 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	// if the pack is not full enough, put back to the list
 	if packer.Size() < minPackSize {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
-		r.insertPacker(packer)
+		pm.insertPacker(packer)
 		return *id, nil
 	}
 
@@ -238,18 +251,22 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 
 // Flush saves all remaining packs.
 func (r *Repository) Flush() error {
-	r.pm.Lock()
-	defer r.pm.Unlock()
+	for _, pm := range []*packerManager{r.dataPM, r.treePM} {
+		pm.pm.Lock()
 
-	debug.Log("manually flushing %d packs", len(r.packerManager.packers))
-
-	for _, p := range r.packerManager.packers {
-		err := r.savePacker(p)
-		if err != nil {
-			return err
+		debug.Log("manually flushing %d packs", len(pm.packers))
+		for _, p := range pm.packers {
+			err := r.savePacker(p)
+			if err != nil {
+				pm.pm.Unlock()
+				return err
+			}
 		}
+		pm.packers = pm.packers[:0]
+
+		pm.pm.Unlock()
 	}
-	r.packerManager.packers = r.packerManager.packers[:0]
+
 	return nil
 }
 
@@ -371,7 +388,8 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	}
 
 	r.key = key.master
-	r.packerManager.key = key.master
+	r.dataPM.key = key.master
+	r.treePM.key = key.master
 	r.keyName = key.Name()
 	r.cfg, err = restic.LoadConfig(ctx, r)
 	return err
@@ -405,7 +423,8 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	}
 
 	r.key = key.master
-	r.packerManager.key = key.master
+	r.dataPM.key = key.master
+	r.treePM.key = key.master
 	r.keyName = key.Name()
 	r.cfg = cfg
 	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
