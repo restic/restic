@@ -35,8 +35,6 @@ type packerManager struct {
 	key     *crypto.Key
 	pm      sync.Mutex
 	packers []*Packer
-
-	pool sync.Pool
 }
 
 const minPackSize = 4 * 1024 * 1024
@@ -49,11 +47,6 @@ func newPackerManager(be Saver, key *crypto.Key) *packerManager {
 	return &packerManager{
 		be:  be,
 		key: key,
-		pool: sync.Pool{
-			New: func() interface{} {
-				return make([]byte, (minPackSize+maxPackSize)/2)
-			},
-		},
 	}
 }
 
