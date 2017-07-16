@@ -61,7 +61,7 @@ func init() {
 	f.StringVar(&forgetOptions.Host, "host", "", "only consider snapshots with the given `host`")
 	// Deprecated since 2017-03-07.
 	f.StringVar(&forgetOptions.Host, "hostname", "", "only consider snapshots with the given `hostname` (deprecated)")
-	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` (can be specified multiple times)")
+	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
 
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
