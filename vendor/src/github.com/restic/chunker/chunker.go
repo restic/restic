@@ -87,6 +87,12 @@ type Chunker struct {
 
 // New returns a new Chunker based on polynomial p that reads from rd.
 func New(rd io.Reader, pol Pol) *Chunker {
+	return NewWithBoundaries(rd, pol, MinSize, MaxSize)
+}
+
+// NewWithBoundaries returns a new Chunker based on polynomial p that reads from
+// rd and custom min and max size boundaries
+func NewWithBoundaries(rd io.Reader, pol Pol, min, max uint) *Chunker {
 	c := &Chunker{
 		chunkerState: chunkerState{
 			buf: make([]byte, chunkerBufSize),
@@ -94,8 +100,8 @@ func New(rd io.Reader, pol Pol) *Chunker {
 		chunkerConfig: chunkerConfig{
 			pol:     pol,
 			rd:      rd,
-			MinSize: MinSize,
-			MaxSize: MaxSize,
+			MinSize: min,
+			MaxSize: max,
 		},
 	}
 

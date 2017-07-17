@@ -1,9 +1,9 @@
 package homedir
 
 import (
-	"fmt"
 	"os"
 	"os/user"
+	"path/filepath"
 	"testing"
 )
 
@@ -66,7 +66,7 @@ func TestExpand(t *testing.T) {
 
 		{
 			"~/foo",
-			fmt.Sprintf("%s/foo", u.HomeDir),
+			filepath.Join(u.HomeDir, "foo"),
 			false,
 		},
 
@@ -103,12 +103,12 @@ func TestExpand(t *testing.T) {
 	DisableCache = true
 	defer func() { DisableCache = false }()
 	defer patchEnv("HOME", "/custom/path/")()
-	expected := "/custom/path/foo/bar"
+	expected := filepath.Join("/", "custom", "path", "foo/bar")
 	actual, err := Expand("~/foo/bar")
 
 	if err != nil {
 		t.Errorf("No error is expected, got: %v", err)
-	} else if actual != "/custom/path/foo/bar" {
+	} else if actual != expected {
 		t.Errorf("Expected: %v; actual: %v", expected, actual)
 	}
 }

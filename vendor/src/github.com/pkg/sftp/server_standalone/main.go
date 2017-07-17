@@ -18,6 +18,7 @@ func main() {
 		readOnly    bool
 		debugStderr bool
 		debugLevel  string
+		options     []sftp.ServerOption
 	)
 
 	flag.BoolVar(&readOnly, "R", false, "read-only server")
@@ -29,6 +30,11 @@ func main() {
 	if debugStderr {
 		debugStream = os.Stderr
 	}
+	options = append(options, sftp.WithDebug(debugStream))
+
+	if readOnly {
+		options = append(options, sftp.ReadOnly())
+	}
 
 	svr, _ := sftp.NewServer(
 		struct {
@@ -37,8 +43,7 @@ func main() {
 		}{os.Stdin,
 			os.Stdout,
 		},
-		sftp.WithDebug(debugStream),
-		sftp.ReadOnly(),
+		options...,
 	)
 	if err := svr.Serve(); err != nil {
 		fmt.Fprintf(debugStream, "sftp server completed with error: %v", err)

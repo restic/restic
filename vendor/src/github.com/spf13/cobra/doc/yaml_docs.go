@@ -89,6 +89,9 @@ func GenYaml(cmd *cobra.Command, w io.Writer) error {
 
 // GenYamlCustom creates custom yaml output.
 func GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {
+	cmd.InitDefaultHelpCmd()
+	cmd.InitDefaultHelpFlag()
+
 	yamlDoc := cmdDoc{}
 	yamlDoc.Name = cmd.CommandPath()
 
@@ -130,7 +133,8 @@ func GenYamlCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) str
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	if _, err := fmt.Fprintf(w, string(final)); err != nil {
+
+	if _, err := w.Write(final); err != nil {
 		return err
 	}
 	return nil

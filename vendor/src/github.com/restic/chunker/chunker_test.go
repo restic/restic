@@ -114,10 +114,10 @@ func testWithData(t *testing.T, chnker *Chunker, testChunks []chunk, checkDigest
 	return chunks
 }
 
-func getRandom(seed, count int) []byte {
+func getRandom(seed int64, count int) []byte {
 	buf := make([]byte, count)
 
-	rnd := rand.New(rand.NewSource(23))
+	rnd := rand.New(rand.NewSource(seed))
 	for i := 0; i < count; i += 4 {
 		r := rnd.Uint32()
 		buf[i] = byte(r)

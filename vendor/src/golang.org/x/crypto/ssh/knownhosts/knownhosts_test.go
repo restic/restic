@@ -76,6 +76,28 @@ func TestRevoked(t *testing.T) {
 	}
 }
 
+func TestHostAuthority(t *testing.T) {
+	for _, m := range []struct {
+		authorityFor string
+		address      string
+
+		good bool
+	}{
+		{authorityFor: "localhost", address: "localhost:22", good: true},
+		{authorityFor: "localhost", address: "localhost", good: false},
+		{authorityFor: "localhost", address: "localhost:1234", good: false},
+		{authorityFor: "[localhost]:1234", address: "localhost:1234", good: true},
+		{authorityFor: "[localhost]:1234", address: "localhost:22", good: false},
+		{authorityFor: "[localhost]:1234", address: "localhost", good: false},
+	} {
+		db := testDB(t, `@cert-authority `+m.authorityFor+` `+edKeyStr)
+		if ok := db.IsHostAuthority(db.lines[0].knownKey.Key, m.address); ok != m.good {
+			t.Errorf("IsHostAuthority: authority %s, address %s, wanted good = %v, got good = %v",
+				m.authorityFor, m.address, m.good, ok)
+		}
+	}
+}
+
 func TestBracket(t *testing.T) {
 	db := testDB(t, `[git.eclipse.org]:29418,[198.41.30.196]:29418 `+edKeyStr)
 
@@ -235,3 +257,73 @@ func TestWildcardMatch(t *testing.T) {
 }
 
 // TODO(hanwen): test coverage for certificates.
+
+const testHostname = "hostname"
+
+// generated with keygen -H -f
+const encodedTestHostnameHash = "|1|IHXZvQMvTcZTUU29+2vXFgx8Frs=|UGccIWfRVDwilMBnA3WJoRAC75Y="
+
+func TestHostHash(t *testing.T) {
+	testHostHash(t, testHostname, encodedTestHostnameHash)
+}
+
+func TestHashList(t *testing.T) {
+	encoded := HashHostname(testHostname)
+	testHostHash(t, testHostname, encoded)
+}
+
+func testHostHash(t *testing.T, hostname, encoded string) {
+	typ, salt, hash, err := decodeHash(encoded)
+	if err != nil {
+		t.Fatalf("decodeHash: %v", err)
+	}
+
+	if got := encodeHash(typ, salt, hash); got != encoded {
+		t.Errorf("got encoding %s want %s", got, encoded)
+	}
+
+	if typ != sha1HashType {
+		t.Fatalf("got hash type %q, want %q", typ, sha1HashType)
+	}
+
+	got := hashHost(hostname, salt)
+	if !bytes.Equal(got, hash) {
+		t.Errorf("got hash %x want %x", got, hash)
+	}
+}
+
+func TestNormalize(t *testing.T) {
+	for in, want := range map[string]string{
+		"127.0.0.1:22":             "127.0.0.1",
+		"[127.0.0.1]:22":           "127.0.0.1",
+		"[127.0.0.1]:23":           "[127.0.0.1]:23",
+		"127.0.0.1:23":             "[127.0.0.1]:23",
+		"[a.b.c]:22":               "a.b.c",
+		"[abcd:abcd:abcd:abcd]":    "[abcd:abcd:abcd:abcd]",
+		"[abcd:abcd:abcd:abcd]:22": "[abcd:abcd:abcd:abcd]",
+		"[abcd:abcd:abcd:abcd]:23": "[abcd:abcd:abcd:abcd]:23",
+	} {
+		got := Normalize(in)
+		if got != want {
+			t.Errorf("Normalize(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestHashedHostkeyCheck(t *testing.T) {
+	str := fmt.Sprintf("%s %s", HashHostname(testHostname), edKeyStr)
+	db := testDB(t, str)
+	if err := db.check(testHostname+":22", testAddr, edKey); err != nil {
+		t.Errorf("check(%s): %v", testHostname, err)
+	}
+	want := &KeyError{
+		Want: []KnownKey{{
+			Filename: "testdb",
+			Line:     1,
+			Key:      edKey,
+		}},
+	}
+	if got := db.check(testHostname+":22", testAddr, alternateEdKey); !reflect.DeepEqual(got, want) {
+		t.Errorf("got error %v, want %v", got, want)
+	}
+}

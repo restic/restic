@@ -10,7 +10,7 @@ import (
 
 const UserPrefix = "user."
 
-func Test_setxattr(t *testing.T) {
+func Test(t *testing.T) {
 	tmp, err := ioutil.TempFile("", "")
 
 	if err != nil {

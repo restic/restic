@@ -51,7 +51,7 @@ type b2BucketInterface interface {
 	hideFile(context.Context, string) (b2FileInterface, error)
 	getDownloadAuthorization(context.Context, string, time.Duration) (string, error)
 	baseURL() string
-	file(string) b2FileInterface
+	file(string, string) b2FileInterface
 }
 
 type b2URLInterface interface {
@@ -315,8 +315,12 @@ func (b *b2Bucket) listFileVersions(ctx context.Context, count int, nextName, ne
 func (b *b2Bucket) downloadFileByName(ctx context.Context, name string, offset, size int64) (b2FileReaderInterface, error) {
 	fr, err := b.b.DownloadFileByName(ctx, name, offset, size)
 	if err != nil {
-		if code, _ := base.Code(err); code == http.StatusRequestedRangeNotSatisfiable {
+		code, _ := base.Code(err)
+		switch code {
+		case http.StatusRequestedRangeNotSatisfiable:
 			return nil, errNoMoreContent
+		case http.StatusNotFound:
+			return nil, b2err{err: err, notFoundErr: true}
 		}
 		return nil, err
 	}
@@ -339,7 +343,7 @@ func (b *b2Bucket) baseURL() string {
 	return b.b.BaseURL()
 }
 
-func (b *b2Bucket) file(id string) b2FileInterface { return &b2File{b.b.File(id)} }
+func (b *b2Bucket) file(id, name string) b2FileInterface { return &b2File{b.b.File(id, name)} }
 
 func (b *b2URL) uploadFile(ctx context.Context, r io.Reader, size int, name, contentType, sha1 string, info map[string]string) (b2FileInterface, error) {
 	file, err := b.b.UploadFile(ctx, r, size, name, contentType, sha1, info)
@@ -374,6 +378,9 @@ func (b *b2File) status() string {
 }
 
 func (b *b2File) getFileInfo(ctx context.Context) (b2FileInfoInterface, error) {
+	if b.b.Info != nil {
+		return &b2FileInfo{b.b.Info}, nil
+	}
 	fi, err := b.b.GetFileInfo(ctx)
 	if err != nil {
 		return nil, err

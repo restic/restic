@@ -31,7 +31,7 @@ func ExampleMemProfileRate() {
 
 func ExampleProfilePath() {
 	// set the location that the profile will be written to
-	defer profile.Start(profile.ProfilePath(os.Getenv("HOME")))
+	defer profile.Start(profile.ProfilePath(os.Getenv("HOME"))).Stop()
 }
 
 func ExampleNoShutdownHook() {
@@ -41,13 +41,15 @@ func ExampleNoShutdownHook() {
 
 func ExampleStart_withFlags() {
 	// use the flags package to selectively enable profiling.
-	mode := flag.String("profile.mode", "", "enable profiling mode, one of [cpu, mem, block]")
+	mode := flag.String("profile.mode", "", "enable profiling mode, one of [cpu, mem, mutex, block]")
 	flag.Parse()
 	switch *mode {
 	case "cpu":
 		defer profile.Start(profile.CPUProfile).Stop()
 	case "mem":
 		defer profile.Start(profile.MemProfile).Stop()
+	case "mutex":
+		defer profile.Start(profile.MutexProfile).Stop()
 	case "block":
 		defer profile.Start(profile.BlockProfile).Stop()
 	default:

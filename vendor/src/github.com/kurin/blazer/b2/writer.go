@@ -64,16 +64,17 @@ type Writer struct {
 	contentType string
 	info        map[string]string
 
-	csize  int
-	ctx    context.Context
-	cancel context.CancelFunc
-	ready  chan chunk
-	wg     sync.WaitGroup
-	start  sync.Once
-	once   sync.Once
-	done   sync.Once
-	file   beLargeFileInterface
-	seen   map[int]string
+	csize       int
+	ctx         context.Context
+	cancel      context.CancelFunc
+	ready       chan chunk
+	wg          sync.WaitGroup
+	start       sync.Once
+	once        sync.Once
+	done        sync.Once
+	file        beLargeFileInterface
+	seen        map[int]string
+	everStarted bool
 
 	o    *Object
 	name string
@@ -202,6 +203,7 @@ func (w *Writer) thread() {
 // Write satisfies the io.Writer interface.
 func (w *Writer) Write(p []byte) (int, error) {
 	w.start.Do(func() {
+		w.everStarted = true
 		w.smux.Lock()
 		w.smap = make(map[int]*meteredReader)
 		w.smux.Unlock()
@@ -362,6 +364,9 @@ func (w *Writer) sendChunk() error {
 // value of Close on all writers.
 func (w *Writer) Close() error {
 	w.done.Do(func() {
+		if !w.everStarted {
+			return
+		}
 		defer w.o.b.c.removeWriter(w)
 		defer w.w.Close() // TODO: log error
 		if w.cidx == 0 {
@@ -419,16 +424,21 @@ type meteredReader struct {
 	read int64
 	size int
 	r    io.ReadSeeker
+	mux  sync.Mutex
 }
 
 func (mr *meteredReader) Read(p []byte) (int, error) {
+	mr.mux.Lock()
+	defer mr.mux.Unlock()
 	n, err := mr.r.Read(p)
-	atomic.AddInt64(&mr.read, int64(n))
+	mr.read += int64(n)
 	return n, err
 }
 
 func (mr *meteredReader) Seek(offset int64, whence int) (int64, error) {
-	atomic.StoreInt64(&mr.read, offset)
+	mr.mux.Lock()
+	defer mr.mux.Unlock()
+	mr.read = offset
 	return mr.r.Seek(offset, whence)
 }
 

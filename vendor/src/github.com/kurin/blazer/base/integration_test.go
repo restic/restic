@@ -17,10 +17,12 @@ package base
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -275,5 +277,142 @@ func compareFileAndInfo(t *testing.T, info *FileInfo, name, sha1 string, imap ma
 	}
 	if !reflect.DeepEqual(info.Info, imap) {
 		t.Errorf("got %v, want %v", info.Info, imap)
+	}
+}
+
+// from https://www.backblaze.com/b2/docs/string_encoding.html
+var testCases = `[
+  {"fullyEncoded": "%20", "minimallyEncoded": "+", "string": " "},
+  {"fullyEncoded": "%21", "minimallyEncoded": "!", "string": "!"},
+  {"fullyEncoded": "%22", "minimallyEncoded": "%22", "string": "\""},
+  {"fullyEncoded": "%23", "minimallyEncoded": "%23", "string": "#"},
+  {"fullyEncoded": "%24", "minimallyEncoded": "$", "string": "$"},
+  {"fullyEncoded": "%25", "minimallyEncoded": "%25", "string": "%"},
+  {"fullyEncoded": "%26", "minimallyEncoded": "%26", "string": "&"},
+  {"fullyEncoded": "%27", "minimallyEncoded": "'", "string": "'"},
+  {"fullyEncoded": "%28", "minimallyEncoded": "(", "string": "("},
+  {"fullyEncoded": "%29", "minimallyEncoded": ")", "string": ")"},
+  {"fullyEncoded": "%2A", "minimallyEncoded": "*", "string": "*"},
+  {"fullyEncoded": "%2B", "minimallyEncoded": "%2B", "string": "+"},
+  {"fullyEncoded": "%2C", "minimallyEncoded": "%2C", "string": ","},
+  {"fullyEncoded": "%2D", "minimallyEncoded": "-", "string": "-"},
+  {"fullyEncoded": "%2E", "minimallyEncoded": ".", "string": "."},
+  {"fullyEncoded": "/", "minimallyEncoded": "/", "string": "/"},
+  {"fullyEncoded": "%30", "minimallyEncoded": "0", "string": "0"},
+  {"fullyEncoded": "%31", "minimallyEncoded": "1", "string": "1"},
+  {"fullyEncoded": "%32", "minimallyEncoded": "2", "string": "2"},
+  {"fullyEncoded": "%33", "minimallyEncoded": "3", "string": "3"},
+  {"fullyEncoded": "%34", "minimallyEncoded": "4", "string": "4"},
+  {"fullyEncoded": "%35", "minimallyEncoded": "5", "string": "5"},
+  {"fullyEncoded": "%36", "minimallyEncoded": "6", "string": "6"},
+  {"fullyEncoded": "%37", "minimallyEncoded": "7", "string": "7"},
+  {"fullyEncoded": "%38", "minimallyEncoded": "8", "string": "8"},
+  {"fullyEncoded": "%39", "minimallyEncoded": "9", "string": "9"},
+  {"fullyEncoded": "%3A", "minimallyEncoded": ":", "string": ":"},
+  {"fullyEncoded": "%3B", "minimallyEncoded": ";", "string": ";"},
+  {"fullyEncoded": "%3C", "minimallyEncoded": "%3C", "string": "<"},
+  {"fullyEncoded": "%3D", "minimallyEncoded": "=", "string": "="},
+  {"fullyEncoded": "%3E", "minimallyEncoded": "%3E", "string": ">"},
+  {"fullyEncoded": "%3F", "minimallyEncoded": "%3F", "string": "?"},
+  {"fullyEncoded": "%40", "minimallyEncoded": "@", "string": "@"},
+  {"fullyEncoded": "%41", "minimallyEncoded": "A", "string": "A"},
+  {"fullyEncoded": "%42", "minimallyEncoded": "B", "string": "B"},
+  {"fullyEncoded": "%43", "minimallyEncoded": "C", "string": "C"},
+  {"fullyEncoded": "%44", "minimallyEncoded": "D", "string": "D"},
+  {"fullyEncoded": "%45", "minimallyEncoded": "E", "string": "E"},
+  {"fullyEncoded": "%46", "minimallyEncoded": "F", "string": "F"},
+  {"fullyEncoded": "%47", "minimallyEncoded": "G", "string": "G"},
+  {"fullyEncoded": "%48", "minimallyEncoded": "H", "string": "H"},
+  {"fullyEncoded": "%49", "minimallyEncoded": "I", "string": "I"},
+  {"fullyEncoded": "%4A", "minimallyEncoded": "J", "string": "J"},
+  {"fullyEncoded": "%4B", "minimallyEncoded": "K", "string": "K"},
+  {"fullyEncoded": "%4C", "minimallyEncoded": "L", "string": "L"},
+  {"fullyEncoded": "%4D", "minimallyEncoded": "M", "string": "M"},
+  {"fullyEncoded": "%4E", "minimallyEncoded": "N", "string": "N"},
+  {"fullyEncoded": "%4F", "minimallyEncoded": "O", "string": "O"},
+  {"fullyEncoded": "%50", "minimallyEncoded": "P", "string": "P"},
+  {"fullyEncoded": "%51", "minimallyEncoded": "Q", "string": "Q"},
+  {"fullyEncoded": "%52", "minimallyEncoded": "R", "string": "R"},
+  {"fullyEncoded": "%53", "minimallyEncoded": "S", "string": "S"},
+  {"fullyEncoded": "%54", "minimallyEncoded": "T", "string": "T"},
+  {"fullyEncoded": "%55", "minimallyEncoded": "U", "string": "U"},
+  {"fullyEncoded": "%56", "minimallyEncoded": "V", "string": "V"},
+  {"fullyEncoded": "%57", "minimallyEncoded": "W", "string": "W"},
+  {"fullyEncoded": "%58", "minimallyEncoded": "X", "string": "X"},
+  {"fullyEncoded": "%59", "minimallyEncoded": "Y", "string": "Y"},
+  {"fullyEncoded": "%5A", "minimallyEncoded": "Z", "string": "Z"},
+  {"fullyEncoded": "%5B", "minimallyEncoded": "%5B", "string": "["},
+  {"fullyEncoded": "%5C", "minimallyEncoded": "%5C", "string": "\\"},
+  {"fullyEncoded": "%5D", "minimallyEncoded": "%5D", "string": "]"},
+  {"fullyEncoded": "%5E", "minimallyEncoded": "%5E", "string": "^"},
+  {"fullyEncoded": "%5F", "minimallyEncoded": "_", "string": "_"},
+  {"fullyEncoded": "%60", "minimallyEncoded": "%60", "string": "` + "`" + `"},
+  {"fullyEncoded": "%61", "minimallyEncoded": "a", "string": "a"},
+  {"fullyEncoded": "%62", "minimallyEncoded": "b", "string": "b"},
+  {"fullyEncoded": "%63", "minimallyEncoded": "c", "string": "c"},
+  {"fullyEncoded": "%64", "minimallyEncoded": "d", "string": "d"},
+  {"fullyEncoded": "%65", "minimallyEncoded": "e", "string": "e"},
+  {"fullyEncoded": "%66", "minimallyEncoded": "f", "string": "f"},
+  {"fullyEncoded": "%67", "minimallyEncoded": "g", "string": "g"},
+  {"fullyEncoded": "%68", "minimallyEncoded": "h", "string": "h"},
+  {"fullyEncoded": "%69", "minimallyEncoded": "i", "string": "i"},
+  {"fullyEncoded": "%6A", "minimallyEncoded": "j", "string": "j"},
+  {"fullyEncoded": "%6B", "minimallyEncoded": "k", "string": "k"},
+  {"fullyEncoded": "%6C", "minimallyEncoded": "l", "string": "l"},
+  {"fullyEncoded": "%6D", "minimallyEncoded": "m", "string": "m"},
+  {"fullyEncoded": "%6E", "minimallyEncoded": "n", "string": "n"},
+  {"fullyEncoded": "%6F", "minimallyEncoded": "o", "string": "o"},
+  {"fullyEncoded": "%70", "minimallyEncoded": "p", "string": "p"},
+  {"fullyEncoded": "%71", "minimallyEncoded": "q", "string": "q"},
+  {"fullyEncoded": "%72", "minimallyEncoded": "r", "string": "r"},
+  {"fullyEncoded": "%73", "minimallyEncoded": "s", "string": "s"},
+  {"fullyEncoded": "%74", "minimallyEncoded": "t", "string": "t"},
+  {"fullyEncoded": "%75", "minimallyEncoded": "u", "string": "u"},
+  {"fullyEncoded": "%76", "minimallyEncoded": "v", "string": "v"},
+  {"fullyEncoded": "%77", "minimallyEncoded": "w", "string": "w"},
+  {"fullyEncoded": "%78", "minimallyEncoded": "x", "string": "x"},
+  {"fullyEncoded": "%79", "minimallyEncoded": "y", "string": "y"},
+  {"fullyEncoded": "%7A", "minimallyEncoded": "z", "string": "z"},
+  {"fullyEncoded": "%7B", "minimallyEncoded": "%7B", "string": "{"},
+  {"fullyEncoded": "%7C", "minimallyEncoded": "%7C", "string": "|"},
+  {"fullyEncoded": "%7D", "minimallyEncoded": "%7D", "string": "}"},
+  {"fullyEncoded": "%7E", "minimallyEncoded": "~", "string": "~"},
+  {"fullyEncoded": "%7F", "minimallyEncoded": "%7F", "string": "\u007f"},
+  {"fullyEncoded": "%E8%87%AA%E7%94%B1", "minimallyEncoded": "%E8%87%AA%E7%94%B1", "string": "\u81ea\u7531"},
+  {"fullyEncoded": "%F0%90%90%80", "minimallyEncoded": "%F0%90%90%80", "string": "\ud801\udc00"}
+]`
+
+type testCase struct {
+	Full string `json:"fullyEncoded"`
+	Min  string `json:"minimallyEncoded"`
+	Raw  string `json:"string"`
+}
+
+func TestEscapes(t *testing.T) {
+	dec := json.NewDecoder(strings.NewReader(testCases))
+	var tcs []testCase
+	if err := dec.Decode(&tcs); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range tcs {
+		en := escape(tc.Raw)
+		if !(en == tc.Full || en == tc.Min) {
+			t.Errorf("encode %q: got %q, want %q or %q", tc.Raw, en, tc.Min, tc.Full)
+		}
+
+		m, err := unescape(tc.Min)
+		if err != nil {
+			t.Errorf("decode %q: %v", tc.Min, err)
+		}
+		if m != tc.Raw {
+			t.Errorf("decode %q: got %q, want %q", tc.Min, m, tc.Raw)
+		}
+		f, err := unescape(tc.Full)
+		if err != nil {
+			t.Errorf("decode %q: %v", tc.Full, err)
+		}
+		if f != tc.Raw {
+			t.Errorf("decode %q: got %q, want %q", tc.Full, f, tc.Raw)
+		}
 	}
 }

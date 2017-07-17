@@ -116,7 +116,9 @@ func TestUnmarshalStatus(t *testing.T) {
 			desc:   "missing error message and language tag",
 			reqID:  1,
 			status: idCode,
-			want:   errShortPacket,
+			want: &StatusError{
+				Code: ssh_FX_FAILURE,
+			},
 		},
 		{
 			desc:   "missing language tag",

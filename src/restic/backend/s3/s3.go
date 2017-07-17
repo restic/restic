@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"restic"
@@ -197,53 +198,6 @@ func (be *Backend) Path() string {
 	return be.cfg.Prefix
 }
 
-// nopCloserFile wraps *os.File and overwrites the Close() method with method
-// that does nothing. In addition, the method Len() is implemented, which
-// returns the size of the file (filesize - current offset).
-type nopCloserFile struct {
-	*os.File
-}
-
-func (f nopCloserFile) Close() error {
-	debug.Log("prevented Close()")
-	return nil
-}
-
-// Len returns the remaining length of the file (filesize - current offset).
-func (f nopCloserFile) Len() int {
-	debug.Log("Len() called")
-	fi, err := f.Stat()
-	if err != nil {
-		panic(err)
-	}
-
-	pos, err := f.Seek(0, io.SeekCurrent)
-	if err != nil {
-		panic(err)
-	}
-
-	size := fi.Size() - pos
-	debug.Log("returning file size %v", size)
-	return int(size)
-}
-
-type lenner interface {
-	Len() int
-	io.Reader
-}
-
-// nopCloserLenner wraps a lenner and overwrites the Close() method with method
-// that does nothing. In addition, the method Size() is implemented, which
-// returns the size of the file (filesize - current offset).
-type nopCloserLenner struct {
-	lenner
-}
-
-func (f *nopCloserLenner) Close() error {
-	debug.Log("prevented Close()")
-	return nil
-}
-
 // Save stores data in the backend at the handle.
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("Save %v", h)
@@ -262,15 +216,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	}
 
 	// prevent the HTTP client from closing a file
-	if f, ok := rd.(*os.File); ok {
-		debug.Log("reader is %#T, using nopCloserFile{}", rd)
-		rd = nopCloserFile{f}
-	} else if l, ok := rd.(lenner); ok {
-		debug.Log("reader is %#T, using nopCloserLenner{}", rd)
-		rd = nopCloserLenner{l}
-	} else {
-		debug.Log("reader is %#T, no specific workaround enabled", rd)
-	}
+	rd = ioutil.NopCloser(rd)
 
 	be.sem.GetToken()
 	debug.Log("PutObject(%v, %v)", be.cfg.Bucket, objName)
@@ -479,8 +425,14 @@ func (be *Backend) Rename(h restic.Handle, l backend.Layout) error {
 
 	debug.Log("  %v -> %v", oldname, newname)
 
-	coreClient := minio.Core{Client: be.client}
-	err := coreClient.CopyObject(be.cfg.Bucket, newname, path.Join(be.cfg.Bucket, oldname), minio.CopyConditions{})
+	src := minio.NewSourceInfo(be.cfg.Bucket, oldname, nil)
+
+	dst, err := minio.NewDestinationInfo(be.cfg.Bucket, newname, nil, nil)
+	if err != nil {
+		return errors.Wrap(err, "NewDestinationInfo")
+	}
+
+	err = be.client.CopyObject(dst, src)
 	if err != nil && be.IsNotExist(err) {
 		debug.Log("copy failed: %v, seems to already have been renamed", err)
 		return nil

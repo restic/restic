@@ -84,9 +84,9 @@ func TestGetEndpointURL(t *testing.T) {
 		{"s3.cn-north-1.amazonaws.com.cn", false, "http://s3.cn-north-1.amazonaws.com.cn", nil, true},
 		{"192.168.1.1:9000", false, "http://192.168.1.1:9000", nil, true},
 		{"192.168.1.1:9000", true, "https://192.168.1.1:9000", nil, true},
+		{"s3.amazonaws.com:443", true, "https://s3.amazonaws.com:443", nil, true},
 		{"13333.123123.-", true, "", ErrInvalidArgument(fmt.Sprintf("Endpoint: %s does not follow ip address or domain name standards.", "13333.123123.-")), false},
 		{"13333.123123.-", true, "", ErrInvalidArgument(fmt.Sprintf("Endpoint: %s does not follow ip address or domain name standards.", "13333.123123.-")), false},
-		{"s3.amazonaws.com:443", true, "", ErrInvalidArgument("Amazon S3 endpoint should be 's3.amazonaws.com'."), false},
 		{"storage.googleapis.com:4000", true, "", ErrInvalidArgument("Google Cloud Storage endpoint should be 'storage.googleapis.com'."), false},
 		{"s3.aamzza.-", true, "", ErrInvalidArgument(fmt.Sprintf("Endpoint: %s does not follow ip address or domain name standards.", "s3.aamzza.-")), false},
 		{"", true, "", ErrInvalidArgument("Endpoint:  does not follow ip address or domain name standards."), false},
@@ -132,10 +132,11 @@ func TestIsValidEndpointURL(t *testing.T) {
 		{"https://s3-fips-us-gov-west-1.amazonaws.com", nil, true},
 		{"https://s3.amazonaws.com/", nil, true},
 		{"https://storage.googleapis.com/", nil, true},
+		{"https://z3.amazonaws.com", nil, true},
+		{"https://mybalancer.us-east-1.elb.amazonaws.com", nil, true},
 		{"192.168.1.1", ErrInvalidArgument("Endpoint url cannot have fully qualified paths."), false},
 		{"https://amazon.googleapis.com/", ErrInvalidArgument("Google Cloud Storage endpoint should be 'storage.googleapis.com'."), false},
 		{"https://storage.googleapis.com/bucket/", ErrInvalidArgument("Endpoint url cannot have fully qualified paths."), false},
-		{"https://z3.amazonaws.com", ErrInvalidArgument("Amazon S3 endpoint should be 's3.amazonaws.com'."), false},
 		{"https://s3.amazonaws.com/bucket/object", ErrInvalidArgument("Endpoint url cannot have fully qualified paths."), false},
 	}
 

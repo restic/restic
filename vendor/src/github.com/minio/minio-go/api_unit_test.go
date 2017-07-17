@@ -182,27 +182,6 @@ func TestValidBucketLocation(t *testing.T) {
 	}
 }
 
-// Tests temp file.
-func TestTempFile(t *testing.T) {
-	tmpFile, err := newTempFile("testing")
-	if err != nil {
-		t.Fatal("Error:", err)
-	}
-	fileName := tmpFile.Name()
-	// Closing temporary file purges the file.
-	err = tmpFile.Close()
-	if err != nil {
-		t.Fatal("Error:", err)
-	}
-	st, err := os.Stat(fileName)
-	if err != nil && !os.IsNotExist(err) {
-		t.Fatal("Error:", err)
-	}
-	if err == nil && st != nil {
-		t.Fatal("Error: file should be deleted and should not exist.")
-	}
-}
-
 // Tests error response structure.
 func TestErrorResponse(t *testing.T) {
 	var err error

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -118,8 +119,7 @@ func TestStripFlags(t *testing.T) {
 	}
 }
 
-func Test_DisableFlagParsing(t *testing.T) {
-	as := []string{"-v", "-race", "-file", "foo.go"}
+func TestDisableFlagParsing(t *testing.T) {
 	targs := []string{}
 	cmdPrint := &Command{
 		DisableFlagParsing: true,
@@ -127,14 +127,14 @@ func Test_DisableFlagParsing(t *testing.T) {
 			targs = args
 		},
 	}
-	osargs := []string{"cmd"}
-	os.Args = append(osargs, as...)
+	args := []string{"cmd", "-v", "-race", "-file", "foo.go"}
+	cmdPrint.SetArgs(args)
 	err := cmdPrint.Execute()
 	if err != nil {
 		t.Error(err)
 	}
-	if !reflect.DeepEqual(as, targs) {
-		t.Errorf("expected: %v, got: %v", as, targs)
+	if !reflect.DeepEqual(args, targs) {
+		t.Errorf("expected: %v, got: %v", args, targs)
 	}
 }
 
@@ -145,7 +145,7 @@ func TestInitHelpFlagMergesFlags(t *testing.T) {
 	cmd := Command{Use: "do"}
 	baseCmd.AddCommand(&cmd)
 
-	cmd.initHelpFlag()
+	cmd.InitDefaultHelpFlag()
 	actual := cmd.Flags().Lookup("help").Usage
 	if actual != usage {
 		t.Fatalf("Expected the help flag from the base command with usage '%s', but got the default with usage '%s'", usage, actual)
@@ -226,7 +226,7 @@ func TestFlagErrorFunc(t *testing.T) {
 
 // TestSortedFlags checks,
 // if cmd.LocalFlags() is unsorted when cmd.Flags().SortFlags set to false.
-// https://github.com/spf13/cobra/issues/404
+// Related to https://github.com/spf13/cobra/issues/404.
 func TestSortedFlags(t *testing.T) {
 	cmd := &Command{}
 	cmd.Flags().SortFlags = false
@@ -240,7 +240,7 @@ func TestSortedFlags(t *testing.T) {
 		if i == len(names) {
 			return
 		}
-		if contains(f.Name, names) {
+		if isStringInStringSlice(f.Name, names) {
 			if names[i] != f.Name {
 				t.Errorf("Incorrect order. Expected %v, got %v", names[i], f.Name)
 			}
@@ -250,11 +250,100 @@ func TestSortedFlags(t *testing.T) {
 }
 
 // contains checks, if s is in ss.
-func contains(s string, ss []string) bool {
+func isStringInStringSlice(s string, ss []string) bool {
 	for _, v := range ss {
 		if v == s {
 			return true
 		}
 	}
 	return false
+}
+
+// TestHelpFlagInHelp checks,
+// if '--help' flag is shown in help for child (executing `parent help child`),
+// that has no other flags.
+// Related to https://github.com/spf13/cobra/issues/302.
+func TestHelpFlagInHelp(t *testing.T) {
+	output := new(bytes.Buffer)
+	parent := &Command{Use: "parent", Run: func(*Command, []string) {}}
+	parent.SetOutput(output)
+
+	child := &Command{Use: "child", Run: func(*Command, []string) {}}
+	parent.AddCommand(child)
+
+	parent.SetArgs([]string{"help", "child"})
+	err := parent.Execute()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(output.String(), "[flags]") {
+		t.Errorf("\nExpecting to contain: %v\nGot: %v", "[flags]", output.String())
+	}
+}
+
+// TestMergeCommandLineToFlags checks,
+// if pflag.CommandLine is correctly merged to c.Flags() after first call
+// of c.mergePersistentFlags.
+// Related to https://github.com/spf13/cobra/issues/443.
+func TestMergeCommandLineToFlags(t *testing.T) {
+	pflag.Bool("boolflag", false, "")
+	c := &Command{Use: "c", Run: func(*Command, []string) {}}
+	c.mergePersistentFlags()
+	if c.Flags().Lookup("boolflag") == nil {
+		t.Fatal("Expecting to have flag from CommandLine in c.Flags()")
+	}
+
+	// Reset pflag.CommandLine flagset.
+	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
+}
+
+// TestUseDeprecatedFlags checks,
+// if cobra.Execute() prints a message, if a deprecated flag is used.
+// Related to https://github.com/spf13/cobra/issues/463.
+func TestUseDeprecatedFlags(t *testing.T) {
+	c := &Command{Use: "c", Run: func(*Command, []string) {}}
+	output := new(bytes.Buffer)
+	c.SetOutput(output)
+	c.Flags().BoolP("deprecated", "d", false, "deprecated flag")
+	c.Flags().MarkDeprecated("deprecated", "This flag is deprecated")
+
+	c.SetArgs([]string{"c", "-d"})
+	if err := c.Execute(); err != nil {
+		t.Error("Unexpected error:", err)
+	}
+	if !strings.Contains(output.String(), "This flag is deprecated") {
+		t.Errorf("Expected to contain deprecated message, but got %q", output.String())
+	}
+}
+
+// TestSetHelpCommand checks, if SetHelpCommand works correctly.
+func TestSetHelpCommand(t *testing.T) {
+	c := &Command{Use: "c", Run: func(*Command, []string) {}}
+	output := new(bytes.Buffer)
+	c.SetOutput(output)
+	c.SetArgs([]string{"help"})
+
+	// Help will not be shown, if c has no subcommands.
+	c.AddCommand(&Command{
+		Use: "empty",
+		Run: func(cmd *Command, args []string) {},
+	})
+
+	correctMessage := "WORKS"
+	c.SetHelpCommand(&Command{
+		Use:   "help [command]",
+		Short: "Help about any command",
+		Long: `Help provides help for any command in the application.
+	Simply type ` + c.Name() + ` help [path to command] for full details.`,
+		Run: func(c *Command, args []string) { c.Print(correctMessage) },
+	})
+
+	if err := c.Execute(); err != nil {
+		t.Error("Unexpected error:", err)
+	}
+
+	if output.String() != correctMessage {
+		t.Errorf("Expected to contain %q message, but got %q", correctMessage, output.String())
+	}
 }
