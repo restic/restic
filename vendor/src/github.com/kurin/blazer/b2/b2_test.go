@@ -32,9 +32,11 @@ import (
 
 const (
 	bucketName    = "b2-tests"
-	smallFileName = "TeenyTiny"
+	smallFileName = "Teeny Tiny"
 	largeFileName = "BigBytes"
 )
+
+var gmux = &sync.Mutex{}
 
 type testError struct {
 	retry    bool
@@ -167,6 +169,8 @@ func (t *testBucket) startLargeFile(_ context.Context, name, _ string, _ map[str
 
 func (t *testBucket) listFileNames(ctx context.Context, count int, cont, pfx, del string) ([]b2FileInterface, string, error) {
 	var f []string
+	gmux.Lock()
+	defer gmux.Unlock()
 	for name := range t.files {
 		f = append(f, name)
 	}
@@ -196,6 +200,8 @@ func (t *testBucket) listFileVersions(ctx context.Context, count int, a, b, c, d
 }
 
 func (t *testBucket) downloadFileByName(_ context.Context, name string, offset, size int64) (b2FileReaderInterface, error) {
+	gmux.Lock()
+	defer gmux.Unlock()
 	f := t.files[name]
 	end := int(offset + size)
 	if end >= len(f) {
@@ -215,8 +221,8 @@ func (t *testBucket) hideFile(context.Context, string) (b2FileInterface, error) 
 func (t *testBucket) getDownloadAuthorization(context.Context, string, time.Duration) (string, error) {
 	return "", nil
 }
-func (t *testBucket) baseURL() string                { return "" }
-func (t *testBucket) file(id string) b2FileInterface { return nil }
+func (t *testBucket) baseURL() string                      { return "" }
+func (t *testBucket) file(id, name string) b2FileInterface { return nil }
 
 type testURL struct {
 	files map[string]string
@@ -229,6 +235,8 @@ func (t *testURL) uploadFile(_ context.Context, r io.Reader, _ int, name, _, _ s
 	if _, err := io.Copy(buf, r); err != nil {
 		return nil, err
 	}
+	gmux.Lock()
+	defer gmux.Unlock()
 	t.files[name] = buf.String()
 	return &testFile{
 		n:     name,
@@ -239,7 +247,6 @@ func (t *testURL) uploadFile(_ context.Context, r io.Reader, _ int, name, _, _ s
 
 type testLargeFile struct {
 	name  string
-	mux   sync.Mutex
 	parts map[int][]byte
 	files map[string]string
 	errs  *errCont
@@ -247,6 +254,8 @@ type testLargeFile struct {
 
 func (t *testLargeFile) finishLargeFile(context.Context) (b2FileInterface, error) {
 	var total []byte
+	gmux.Lock()
+	defer gmux.Unlock()
 	for i := 1; i <= len(t.parts); i++ {
 		total = append(total, t.parts[i]...)
 	}
@@ -259,15 +268,15 @@ func (t *testLargeFile) finishLargeFile(context.Context) (b2FileInterface, error
 }
 
 func (t *testLargeFile) getUploadPartURL(context.Context) (b2FileChunkInterface, error) {
+	gmux.Lock()
+	defer gmux.Unlock()
 	return &testFileChunk{
 		parts: t.parts,
-		mux:   &t.mux,
 		errs:  t.errs,
 	}, nil
 }
 
 type testFileChunk struct {
-	mux   *sync.Mutex
 	parts map[int][]byte
 	errs  *errCont
 }
@@ -283,9 +292,9 @@ func (t *testFileChunk) uploadPart(_ context.Context, r io.Reader, _ string, _, 
 	if err != nil {
 		return int(i), err
 	}
-	t.mux.Lock()
+	gmux.Lock()
+	defer gmux.Unlock()
 	t.parts[index] = buf.Bytes()
-	t.mux.Unlock()
 	return int(i), nil
 }
 
@@ -315,6 +324,8 @@ func (t *testFile) listParts(context.Context, int, int) ([]b2FilePartInterface, 
 }
 
 func (t *testFile) deleteFileVersion(context.Context) error {
+	gmux.Lock()
+	defer gmux.Unlock()
 	delete(t.files, t.n)
 	return nil
 }

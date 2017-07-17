@@ -9,6 +9,9 @@ package knownhosts
 import (
 	"bufio"
 	"bytes"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha1"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -27,11 +30,15 @@ import (
 type addr struct{ host, port string }
 
 func (a *addr) String() string {
-	return a.host + ":" + a.port
+	h := a.host
+	if strings.Contains(h, ":") {
+		h = "[" + h + "]"
+	}
+	return h + ":" + a.port
 }
 
-func (a *addr) eq(b addr) bool {
-	return a.host == b.host && a.port == b.port
+type matcher interface {
+	match([]addr) bool
 }
 
 type hostPattern struct {
@@ -46,6 +53,25 @@ func (p *hostPattern) String() string {
 	}
 
 	return n + p.addr.String()
+}
+
+type hostPatterns []hostPattern
+
+func (ps hostPatterns) match(addrs []addr) bool {
+	matched := false
+	for _, p := range ps {
+		for _, a := range addrs {
+			m := p.match(a)
+			if !m {
+				continue
+			}
+			if p.negate {
+				return false
+			}
+			matched = true
+		}
+	}
+	return matched
 }
 
 // See
@@ -88,22 +114,8 @@ func (l *hostPattern) match(a addr) bool {
 
 type keyDBLine struct {
 	cert     bool
-	patterns []*hostPattern
+	matcher  matcher
 	knownKey KnownKey
-}
-
-func (l *keyDBLine) String() string {
-	c := ""
-	if l.cert {
-		c = markerCert + " "
-	}
-
-	var ss []string
-	for _, p := range l.patterns {
-		ss = append(ss, p.String())
-	}
-
-	return c + strings.Join(ss, ",") + " " + serialize(l.knownKey.Key)
 }
 
 func serialize(k ssh.PublicKey) string {
@@ -111,42 +123,13 @@ func serialize(k ssh.PublicKey) string {
 }
 
 func (l *keyDBLine) match(addrs []addr) bool {
-	matched := false
-	for _, p := range l.patterns {
-		for _, a := range addrs {
-			m := p.match(a)
-			if p.negate {
-				if m {
-					return false
-				} else {
-					continue
-				}
-			}
-
-			if m {
-				matched = true
-			}
-		}
-	}
-
-	return matched
+	return l.matcher.match(addrs)
 }
 
 type hostKeyDB struct {
 	// Serialized version of revoked keys
 	revoked map[string]*KnownKey
 	lines   []keyDBLine
-}
-
-func (db *hostKeyDB) String() string {
-	var ls []string
-	for _, k := range db.revoked {
-		ls = append(ls, markerRevoked+" * "+serialize(k.Key))
-	}
-	for _, l := range db.lines {
-		ls = append(ls, l.String())
-	}
-	return strings.Join(ls, "\n")
 }
 
 func newHostKeyDB() *hostKeyDB {
@@ -161,11 +144,16 @@ func keyEq(a, b ssh.PublicKey) bool {
 	return bytes.Equal(a.Marshal(), b.Marshal())
 }
 
-// IsAuthority can be used as a callback in ssh.CertChecker
-func (db *hostKeyDB) IsAuthority(remote ssh.PublicKey) bool {
+// IsAuthorityForHost can be used as a callback in ssh.CertChecker
+func (db *hostKeyDB) IsHostAuthority(remote ssh.PublicKey, address string) bool {
+	h, p, err := net.SplitHostPort(address)
+	if err != nil {
+		return false
+	}
+	a := addr{host: h, port: p}
+
 	for _, l := range db.lines {
-		// TODO(hanwen): should we check the hostname against host pattern?
-		if l.cert && keyEq(l.knownKey.Key, remote) {
+		if l.cert && keyEq(l.knownKey.Key, remote) && l.match([]addr{a}) {
 			return true
 		}
 	}
@@ -190,45 +178,39 @@ func nextWord(line []byte) (string, []byte) {
 	return string(line[:i]), bytes.TrimSpace(line[i:])
 }
 
-func parseLine(line []byte) (marker string, pattern []string, key ssh.PublicKey, err error) {
+func parseLine(line []byte) (marker, host string, key ssh.PublicKey, err error) {
 	if w, next := nextWord(line); w == markerCert || w == markerRevoked {
 		marker = w
 		line = next
 	}
 
-	hostPart, line := nextWord(line)
+	host, line = nextWord(line)
 	if len(line) == 0 {
-		return "", nil, nil, errors.New("knownhosts: missing host pattern")
+		return "", "", nil, errors.New("knownhosts: missing host pattern")
 	}
-
-	if len(hostPart) > 0 && hostPart[0] == '|' {
-		return "", nil, nil, errors.New("knownhosts: hashed hostnames not implemented")
-	}
-
-	pattern = strings.Split(hostPart, ",")
 
 	// ignore the keytype as it's in the key blob anyway.
 	_, line = nextWord(line)
 	if len(line) == 0 {
-		return "", nil, nil, errors.New("knownhosts: missing key type pattern")
+		return "", "", nil, errors.New("knownhosts: missing key type pattern")
 	}
 
 	keyBlob, _ := nextWord(line)
 
 	keyBytes, err := base64.StdEncoding.DecodeString(keyBlob)
 	if err != nil {
-		return "", nil, nil, err
+		return "", "", nil, err
 	}
 	key, err = ssh.ParsePublicKey(keyBytes)
 	if err != nil {
-		return "", nil, nil, err
+		return "", "", nil, err
 	}
 
-	return marker, pattern, key, nil
+	return marker, host, key, nil
 }
 
 func (db *hostKeyDB) parseLine(line []byte, filename string, linenum int) error {
-	marker, patterns, key, err := parseLine(line)
+	marker, pattern, key, err := parseLine(line)
 	if err != nil {
 		return err
 	}
@@ -252,7 +234,23 @@ func (db *hostKeyDB) parseLine(line []byte, filename string, linenum int) error 
 		},
 	}
 
-	for _, p := range patterns {
+	if pattern[0] == '|' {
+		entry.matcher, err = newHashedHost(pattern)
+	} else {
+		entry.matcher, err = newHostnameMatcher(pattern)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	db.lines = append(db.lines, entry)
+	return nil
+}
+
+func newHostnameMatcher(pattern string) (matcher, error) {
+	var hps hostPatterns
+	for _, p := range strings.Split(pattern, ",") {
 		if len(p) == 0 {
 			continue
 		}
@@ -265,13 +263,14 @@ func (db *hostKeyDB) parseLine(line []byte, filename string, linenum int) error 
 		}
 
 		if len(p) == 0 {
-			return errors.New("knownhosts: negation without following hostname")
+			return nil, errors.New("knownhosts: negation without following hostname")
 		}
 
+		var err error
 		if p[0] == '[' {
 			a.host, a.port, err = net.SplitHostPort(p)
 			if err != nil {
-				return err
+				return nil, err
 			}
 		} else {
 			a.host, a.port, err = net.SplitHostPort(p)
@@ -280,15 +279,12 @@ func (db *hostKeyDB) parseLine(line []byte, filename string, linenum int) error 
 				a.port = "22"
 			}
 		}
-
-		entry.patterns = append(entry.patterns, &hostPattern{
+		hps = append(hps, hostPattern{
 			negate: negate,
 			addr:   a,
 		})
 	}
-
-	db.lines = append(db.lines, entry)
-	return nil
+	return hps, nil
 }
 
 // KnownKey represents a key declared in a known_hosts file.
@@ -410,7 +406,7 @@ func (db *hostKeyDB) Read(r io.Reader, filename string) error {
 		}
 
 		if err := db.parseLine(line, filename, lineNum); err != nil {
-			return err
+			return fmt.Errorf("knownhosts: %s:%d: %v", filename, lineNum, err)
 		}
 	}
 	return scanner.Err()
@@ -418,9 +414,7 @@ func (db *hostKeyDB) Read(r io.Reader, filename string) error {
 
 // New creates a host key callback from the given OpenSSH host key
 // files. The returned callback is for use in
-// ssh.ClientConfig.HostKeyCallback. Hostnames are ignored for
-// certificates, ie. any certificate authority is assumed to be valid
-// for all remote hosts.  Hashed hostnames are not supported.
+// ssh.ClientConfig.HostKeyCallback. Hashed hostnames are not supported.
 func New(files ...string) (ssh.HostKeyCallback, error) {
 	db := newHostKeyDB()
 	for _, fn := range files {
@@ -434,36 +428,119 @@ func New(files ...string) (ssh.HostKeyCallback, error) {
 		}
 	}
 
-	// TODO(hanwen): properly supporting certificates requires an
-	// API change in the SSH library: IsAuthority should provide
-	// the address too?
-
 	var certChecker ssh.CertChecker
-	certChecker.IsAuthority = db.IsAuthority
+	certChecker.IsHostAuthority = db.IsHostAuthority
 	certChecker.IsRevoked = db.IsRevoked
 	certChecker.HostKeyFallback = db.check
 
 	return certChecker.CheckHostKey, nil
 }
 
+// Normalize normalizes an address into the form used in known_hosts
+func Normalize(address string) string {
+	host, port, err := net.SplitHostPort(address)
+	if err != nil {
+		host = address
+		port = "22"
+	}
+	entry := host
+	if port != "22" {
+		entry = "[" + entry + "]:" + port
+	} else if strings.Contains(host, ":") && !strings.HasPrefix(host, "[") {
+		entry = "[" + entry + "]"
+	}
+	return entry
+}
+
 // Line returns a line to add append to the known_hosts files.
 func Line(addresses []string, key ssh.PublicKey) string {
 	var trimmed []string
 	for _, a := range addresses {
-		host, port, err := net.SplitHostPort(a)
-		if err != nil {
-			host = a
-			port = "22"
-		}
-		entry := host
-		if port != "22" {
-			entry = "[" + entry + "]:" + port
-		} else if strings.Contains(host, ":") {
-			entry = "[" + entry + "]"
-		}
-
-		trimmed = append(trimmed, entry)
+		trimmed = append(trimmed, Normalize(a))
 	}
 
 	return strings.Join(trimmed, ",") + " " + serialize(key)
+}
+
+// HashHostname hashes the given hostname. The hostname is not
+// normalized before hashing.
+func HashHostname(hostname string) string {
+	// TODO(hanwen): check if we can safely normalize this always.
+	salt := make([]byte, sha1.Size)
+
+	_, err := rand.Read(salt)
+	if err != nil {
+		panic(fmt.Sprintf("crypto/rand failure %v", err))
+	}
+
+	hash := hashHost(hostname, salt)
+	return encodeHash(sha1HashType, salt, hash)
+}
+
+func decodeHash(encoded string) (hashType string, salt, hash []byte, err error) {
+	if len(encoded) == 0 || encoded[0] != '|' {
+		err = errors.New("knownhosts: hashed host must start with '|'")
+		return
+	}
+	components := strings.Split(encoded, "|")
+	if len(components) != 4 {
+		err = fmt.Errorf("knownhosts: got %d components, want 3", len(components))
+		return
+	}
+
+	hashType = components[1]
+	if salt, err = base64.StdEncoding.DecodeString(components[2]); err != nil {
+		return
+	}
+	if hash, err = base64.StdEncoding.DecodeString(components[3]); err != nil {
+		return
+	}
+	return
+}
+
+func encodeHash(typ string, salt []byte, hash []byte) string {
+	return strings.Join([]string{"",
+		typ,
+		base64.StdEncoding.EncodeToString(salt),
+		base64.StdEncoding.EncodeToString(hash),
+	}, "|")
+}
+
+// See https://android.googlesource.com/platform/external/openssh/+/ab28f5495c85297e7a597c1ba62e996416da7c7e/hostfile.c#120
+func hashHost(hostname string, salt []byte) []byte {
+	mac := hmac.New(sha1.New, salt)
+	mac.Write([]byte(hostname))
+	return mac.Sum(nil)
+}
+
+type hashedHost struct {
+	salt []byte
+	hash []byte
+}
+
+const sha1HashType = "1"
+
+func newHashedHost(encoded string) (*hashedHost, error) {
+	typ, salt, hash, err := decodeHash(encoded)
+	if err != nil {
+		return nil, err
+	}
+
+	// The type field seems for future algorithm agility, but it's
+	// actually hardcoded in openssh currently, see
+	// https://android.googlesource.com/platform/external/openssh/+/ab28f5495c85297e7a597c1ba62e996416da7c7e/hostfile.c#120
+	if typ != sha1HashType {
+		return nil, fmt.Errorf("knownhosts: got hash type %s, must be '1'", typ)
+	}
+
+	return &hashedHost{salt: salt, hash: hash}, nil
+}
+
+func (h *hashedHost) match(addrs []addr) bool {
+	for _, a := range addrs {
+		if bytes.Equal(hashHost(Normalize(a.String()), h.salt), h.hash) {
+			return true
+		}
+	}
+	return false
 }

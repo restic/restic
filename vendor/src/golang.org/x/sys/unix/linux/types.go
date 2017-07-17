@@ -5,7 +5,7 @@
 // +build ignore
 
 /*
-Input to cgo -godefs.  See also mkerrors.sh and mkall.sh
+Input to cgo -godefs.  See README.md
 */
 
 // +godefs map struct_in_addr [4]byte /* in_addr */
@@ -20,7 +20,6 @@ package unix
 #define _GNU_SOURCE
 
 #include <dirent.h>
-#include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <netpacket/packet.h>
@@ -36,31 +35,89 @@ package unix
 #include <sys/resource.h>
 #include <sys/select.h>
 #include <sys/signal.h>
-#include <sys/stat.h>
 #include <sys/statfs.h>
 #include <sys/sysinfo.h>
 #include <sys/time.h>
 #include <sys/times.h>
 #include <sys/timex.h>
-#include <sys/types.h>
 #include <sys/un.h>
 #include <sys/user.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
 #include <linux/filter.h>
+#include <linux/keyctl.h>
 #include <linux/netlink.h>
+#include <linux/perf_event.h>
 #include <linux/rtnetlink.h>
 #include <linux/icmpv6.h>
 #include <asm/termbits.h>
+#include <asm/ptrace.h>
 #include <time.h>
 #include <unistd.h>
 #include <ustat.h>
 #include <utime.h>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
 #include <linux/can.h>
 #include <linux/if_alg.h>
+#include <linux/fs.h>
 #include <linux/vm_sockets.h>
+#include <linux/random.h>
+
+// On mips64, the glibc stat and kernel stat do not agree
+#if (defined(__mips__) && _MIPS_SIM == _MIPS_SIM_ABI64)
+
+// Use the stat defined by the kernel with a few modifications. These are:
+//	* The time fields (like st_atime and st_atimensec) use the timespec
+//	  struct (like st_atim) for consitancy with the glibc fields.
+//	* The padding fields get different names to not break compatibility.
+//	* st_blocks is signed, again for compatibility.
+struct stat {
+	unsigned int		st_dev;
+	unsigned int		st_pad1[3]; // Reserved for st_dev expansion
+
+	unsigned long		st_ino;
+
+	mode_t			st_mode;
+	__u32			st_nlink;
+
+	uid_t			st_uid;
+	gid_t			st_gid;
+
+	unsigned int		st_rdev;
+	unsigned int		st_pad2[3]; // Reserved for st_rdev expansion
+
+	off_t			st_size;
+
+	// These are declared as speperate fields in the kernel. Here we use
+	// the timespec struct for consistancy with the other stat structs.
+	struct timespec		st_atim;
+	struct timespec		st_mtim;
+	struct timespec		st_ctim;
+
+	unsigned int		st_blksize;
+	unsigned int		st_pad4;
+
+	long			st_blocks;
+};
+
+// These are needed because we do not include fcntl.h or sys/types.h
+#include <linux/fcntl.h>
+#include <linux/fadvise.h>
+
+#else
+
+// Use the stat defined by glibc
+#include <fcntl.h>
+#include <sys/types.h>
+
+#endif
+
+// Certain constants and structs are missing from the fs/crypto UAPI
+#define FS_MAX_KEY_SIZE                 64
+struct fscrypt_key {
+  __u32 mode;
+  __u8 raw[FS_MAX_KEY_SIZE];
+  __u32 size;
+};
 
 #ifdef TCSETS2
 // On systems that have "struct termios2" use this as type Termios.
@@ -87,6 +144,13 @@ struct sockaddr_any {
 	char pad[sizeof(union sockaddr_all) - sizeof(struct sockaddr)];
 };
 
+// copied from /usr/include/bluetooth/hci.h
+struct sockaddr_hci {
+        sa_family_t     hci_family;
+        unsigned short  hci_dev;
+        unsigned short  hci_channel;
+};;
+
 // copied from /usr/include/linux/un.h
 struct my_sockaddr_un {
 	sa_family_t sun_family;
@@ -102,10 +166,8 @@ struct my_sockaddr_un {
 typedef struct user_regs PtraceRegs;
 #elif defined(__aarch64__)
 typedef struct user_pt_regs PtraceRegs;
-#elif defined(__powerpc64__)
+#elif defined(__mips__) || defined(__powerpc64__)
 typedef struct pt_regs PtraceRegs;
-#elif defined(__mips__)
-typedef struct user PtraceRegs;
 #elif defined(__s390x__)
 typedef struct _user_regs_struct PtraceRegs;
 #elif defined(__sparc__)
@@ -195,6 +257,16 @@ type Dirent C.struct_dirent
 type Fsid C.fsid_t
 
 type Flock_t C.struct_flock
+
+// Filesystem Encryption
+
+type FscryptPolicy C.struct_fscrypt_policy
+
+type FscryptKey C.struct_fscrypt_key
+
+// Structure for Keyctl
+
+type KeyctlDHParams C.struct_keyctl_dh_params
 
 // Advice to Fadvise
 
@@ -421,11 +493,11 @@ const SizeofInotifyEvent = C.sizeof_struct_inotify_event
 type PtraceRegs C.PtraceRegs
 
 // Structures contained in PtraceRegs on s390x (exported by mkpost.go)
-type ptracePsw C.ptracePsw
+type PtracePsw C.ptracePsw
 
-type ptraceFpregs C.ptraceFpregs
+type PtraceFpregs C.ptraceFpregs
 
-type ptracePer C.ptracePer
+type PtracePer C.ptracePer
 
 // Misc
 
@@ -459,6 +531,10 @@ const (
 )
 
 type Sigset_t C.sigset_t
+
+const RNDGETENTCNT = C.RNDGETENTCNT
+
+const PERF_IOC_FLAG_GROUP = C.PERF_IOC_FLAG_GROUP
 
 // sysconf information
 

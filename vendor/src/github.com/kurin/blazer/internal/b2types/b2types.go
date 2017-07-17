@@ -171,14 +171,8 @@ type ListFileNamesRequest struct {
 }
 
 type ListFileNamesResponse struct {
-	Continuation string `json:"nextFileName"`
-	Files        []struct {
-		FileID    string `json:"fileId"`
-		Name      string `json:"fileName"`
-		Size      int64  `json:"size"`
-		Action    string `json:"action"`
-		Timestamp int64  `json:"uploadTimestamp"`
-	} `json:"files"`
+	Continuation string                `json:"nextFileName"`
+	Files        []GetFileInfoResponse `json:"files"`
 }
 
 type ListFileVersionsRequest struct {
@@ -191,15 +185,9 @@ type ListFileVersionsRequest struct {
 }
 
 type ListFileVersionsResponse struct {
-	NextName string `json:"nextFileName"`
-	NextID   string `json:"nextFileId"`
-	Files    []struct {
-		FileID    string `json:"fileId"`
-		Name      string `json:"fileName"`
-		Size      int64  `json:"size"`
-		Action    string `json:"action"`
-		Timestamp int64  `json:"uploadTimestamp"`
-	} `json:"files"`
+	NextName string                `json:"nextFileName"`
+	NextID   string                `json:"nextFileId"`
+	Files    []GetFileInfoResponse `json:"files"`
 }
 
 type HideFileRequest struct {
@@ -218,6 +206,7 @@ type GetFileInfoRequest struct {
 }
 
 type GetFileInfoResponse struct {
+	FileID      string            `json:"fileId"`
 	Name        string            `json:"fileName"`
 	SHA1        string            `json:"contentSha1"`
 	Size        int64             `json:"contentLength"`

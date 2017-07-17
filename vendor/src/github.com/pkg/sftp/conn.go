@@ -14,6 +14,8 @@ type conn struct {
 	io.Reader
 	io.WriteCloser
 	sync.Mutex // used to serialise writes to sendPacket
+	// sendPacketTest is needed to replicate packet issues in testing
+	sendPacketTest func(w io.Writer, m encoding.BinaryMarshaler) error
 }
 
 func (c *conn) recvPacket() (uint8, []byte, error) {
@@ -23,6 +25,9 @@ func (c *conn) recvPacket() (uint8, []byte, error) {
 func (c *conn) sendPacket(m encoding.BinaryMarshaler) error {
 	c.Lock()
 	defer c.Unlock()
+	if c.sendPacketTest != nil {
+		return c.sendPacketTest(c, m)
+	}
 	return sendPacket(c, m)
 }
 
@@ -50,7 +55,11 @@ func (c *clientConn) loop() {
 // recv continuously reads from the server and forwards responses to the
 // appropriate channel.
 func (c *clientConn) recv() error {
-	defer c.conn.Close()
+	defer func() {
+		c.conn.Lock()
+		c.conn.Close()
+		c.conn.Unlock()
+	}()
 	for {
 		typ, data, err := c.recvPacket()
 		if err != nil {
@@ -93,11 +102,13 @@ func (c *clientConn) sendPacket(p idmarshaler) (byte, []byte, error) {
 func (c *clientConn) dispatchRequest(ch chan<- result, p idmarshaler) {
 	c.Lock()
 	c.inflight[p.id()] = ch
+	c.Unlock()
 	if err := c.conn.sendPacket(p); err != nil {
+		c.Lock()
 		delete(c.inflight, p.id())
+		c.Unlock()
 		ch <- result{err: err}
 	}
-	c.Unlock()
 }
 
 // broadcastErr sends an error to all goroutines waiting for a response.
@@ -117,6 +128,6 @@ type serverConn struct {
 	conn
 }
 
-func (s *serverConn) sendError(p id, err error) error {
+func (s *serverConn) sendError(p ider, err error) error {
 	return s.sendPacket(statusFromError(p, err))
 }

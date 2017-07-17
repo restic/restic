@@ -54,7 +54,7 @@ type beBucketInterface interface {
 	hideFile(context.Context, string) (beFileInterface, error)
 	getDownloadAuthorization(context.Context, string, time.Duration) (string, error)
 	baseURL() string
-	file(string) beFileInterface
+	file(string, string) beFileInterface
 }
 
 type beBucket struct {
@@ -407,9 +407,9 @@ func (b *beBucket) baseURL() string {
 	return b.b2bucket.baseURL()
 }
 
-func (b *beBucket) file(id string) beFileInterface {
+func (b *beBucket) file(id, name string) beFileInterface {
 	return &beFile{
-		b2file: b.b2bucket.file(id),
+		b2file: b.b2bucket.file(id, name),
 		ri:     b.ri,
 	}
 }

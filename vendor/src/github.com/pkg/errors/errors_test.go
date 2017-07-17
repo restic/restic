@@ -196,7 +196,6 @@ func TestWithMessage(t *testing.T) {
 			t.Errorf("WithMessage(%v, %q): got: %q, want %q", tt.err, tt.message, got, tt.want)
 		}
 	}
-
 }
 
 // errors.New, etc values are not expected to be compared by value

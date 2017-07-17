@@ -77,10 +77,7 @@ Downloading is as simple as uploading:
 
 ```go
 func downloadFile(ctx context.Context, bucket *b2.Bucket, downloads int, src, dst string) error {
-	r, err := bucket.Object(src).NewReader(ctx)
-	if err != nil {
-		return err
-	}
+	r := bucket.Object(src).NewReader(ctx)
 	defer r.Close()
 
 	f, err := file.Create(dst)

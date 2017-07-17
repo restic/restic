@@ -332,11 +332,9 @@ func (o *Object) Name() string {
 
 // Attrs returns an object's attributes.
 func (o *Object) Attrs(ctx context.Context) (*Attrs, error) {
-	f, err := o.b.b.downloadFileByName(ctx, o.name, 0, 1)
-	if err != nil {
+	if err := o.ensure(ctx); err != nil {
 		return nil, err
 	}
-	o.f = o.b.b.file(f.id())
 	fi, err := o.f.getFileInfo(ctx)
 	if err != nil {
 		return nil, err
@@ -585,20 +583,14 @@ func (b *Bucket) Reveal(ctx context.Context, name string) error {
 }
 
 func (b *Bucket) getObject(ctx context.Context, name string) (*Object, error) {
-	fs, _, err := b.b.listFileNames(ctx, 1, name, "", "")
+	fr, err := b.b.downloadFileByName(ctx, name, 0, 1)
 	if err != nil {
 		return nil, err
 	}
-	if len(fs) < 1 {
-		return nil, b2err{err: fmt.Errorf("%s: not found", name), notFoundErr: true}
-	}
-	f := fs[0]
-	if f.name() != name {
-		return nil, b2err{err: fmt.Errorf("%s: not found", name), notFoundErr: true}
-	}
+	fr.Close()
 	return &Object{
 		name: name,
-		f:    f,
+		f:    b.b.file(fr.id(), name),
 		b:    b,
 	}, nil
 }
