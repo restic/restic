@@ -32,6 +32,9 @@ Small changes
    (usually when ctrl+t is pressed).
    https://github.com/restic/restic/pull/1082
 
+ * The dependencies have been updated.
+   https://github.com/restic/restic/pull/1108
+
 
 Important Changes in 0.7.0
 ==========================
