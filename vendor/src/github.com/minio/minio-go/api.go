@@ -87,7 +87,7 @@ type Client struct {
 // Global constants.
 const (
 	libraryName    = "minio-go"
-	libraryVersion = "2.1.0"
+	libraryVersion = "3.0.0"
 )
 
 // User Agent should always following the below style.
@@ -211,7 +211,7 @@ func privateNew(endpoint string, creds *credentials.Credentials, secure bool, re
 
 	// Instantiate http client and bucket location cache.
 	clnt.httpClient = &http.Client{
-		Transport:     http.DefaultTransport,
+		Transport:     defaultMinioTransport,
 		CheckRedirect: redirectHeaders,
 	}
 

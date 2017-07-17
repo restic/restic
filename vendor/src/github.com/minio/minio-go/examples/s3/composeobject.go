@@ -1,7 +1,7 @@
 // +build ignore
 
 /*
- * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2015 Minio, Inc.
+ * Minio Go Library for Amazon S3 Compatible Cloud Storage (C) 2016 Minio, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ package main
 import (
 	"log"
 
-	"github.com/cheggaaa/pb"
-	"github.com/minio/minio-go"
+	minio "github.com/minio/minio-go"
 )
 
 func main() {
@@ -39,27 +38,40 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	reader, err := s3Client.GetObject("my-bucketname", "my-objectname")
+	// Enable trace.
+	// s3Client.TraceOn(os.Stderr)
+
+	// Prepare source decryption key (here we assume same key to
+	// decrypt all source objects.)
+	decKey := minio.NewSSEInfo([]byte{1, 2, 3}, "")
+
+	// Source objects to concatenate. We also specify decryption
+	// key for each
+	src1 := minio.NewSourceInfo("bucket1", "object1", &decKey)
+	src1.SetMatchETagCond("31624deb84149d2f8ef9c385918b653a")
+
+	src2 := minio.NewSourceInfo("bucket2", "object2", &decKey)
+	src2.SetMatchETagCond("f8ef9c385918b653a31624deb84149d2")
+
+	src3 := minio.NewSourceInfo("bucket3", "object3", &decKey)
+	src3.SetMatchETagCond("5918b653a31624deb84149d2f8ef9c38")
+
+	// Create slice of sources.
+	srcs := []minio.SourceInfo{src1, src2, src3}
+
+	// Prepare destination encryption key
+	encKey := minio.NewSSEInfo([]byte{8, 9, 0}, "")
+
+	// Create destination info
+	dst, err := minio.NewDestinationInfo("bucket", "object", &encKey, nil)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer reader.Close()
 
-	objectInfo, err := reader.Stat()
+	err = s3Client.ComposeObject(dst, srcs)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	// Progress reader is notified as PutObject makes progress with
-	// the Reads inside.
-	progress := pb.New64(objectInfo.Size)
-	progress.Start()
-
-	n, err := s3Client.PutObjectWithProgress("my-bucketname", "my-objectname-progress", reader, map[string][]string{
-		"Content-Type": []string{"application/octet-stream"},
-	}, progress)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	log.Println("Uploaded", "my-objectname", " of size: ", n, "Successfully.")
+	log.Println("Composed object successfully.")
 }
