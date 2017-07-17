@@ -92,6 +92,9 @@ func Open(cfg Config) (restic.Backend, error) {
 // it does not exist yet.
 func Create(cfg Config) (restic.Backend, error) {
 	be, err := open(cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "open")
+	}
 	found, err := be.client.BucketExists(cfg.Bucket)
 	if err != nil {
 		debug.Log("BucketExists(%v) returned err %v", cfg.Bucket, err)
