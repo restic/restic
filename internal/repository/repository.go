@@ -404,9 +404,23 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	}
 
 	if r.Cache != nil {
+		// clear old index files
 		err := r.Cache.Clear(restic.IndexFile, validIndex)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error clearing index files in cache: %v\n", err)
+		}
+
+		packs := restic.NewIDSet()
+		for _, idx := range r.idx.All() {
+			for id := range idx.Packs() {
+				packs.Insert(id)
+			}
+		}
+
+		// clear old data files
+		err = r.Cache.Clear(restic.DataFile, packs)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error clearing data files in cache: %v\n", err)
 		}
 	}
 
