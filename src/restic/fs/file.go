@@ -19,11 +19,6 @@ type File interface {
 	Stat() (os.FileInfo, error)
 }
 
-// Chmod changes the mode of the named file to mode.
-func Chmod(name string, mode os.FileMode) error {
-	return os.Chmod(fixpath(name), mode)
-}
-
 // Mkdir creates a new directory with the specified name and permission bits.
 // If there is an error, it will be of type *PathError.
 func Mkdir(name string, perm os.FileMode) error {
