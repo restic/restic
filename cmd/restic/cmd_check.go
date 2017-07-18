@@ -19,6 +19,9 @@ var cmdCheck = &cobra.Command{
 	Long: `
 The "check" command tests the repository for errors and reports any errors it
 finds. It can also be used to read all data and therefore simulate a restore.
+
+By default, the "check" command will always load all data directly from the
+repository and not use a local cache.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -30,6 +33,7 @@ finds. It can also be used to read all data and therefore simulate a restore.
 type CheckOptions struct {
 	ReadData    bool
 	CheckUnused bool
+	WithCache   bool
 }
 
 var checkOptions CheckOptions
@@ -40,6 +44,7 @@ func init() {
 	f := cmdCheck.Flags()
 	f.BoolVar(&checkOptions.ReadData, "read-data", false, "read all data blobs")
 	f.BoolVar(&checkOptions.CheckUnused, "check-unused", false, "find unused blobs")
+	f.BoolVar(&checkOptions.WithCache, "with-cache", false, "use the cache")
 }
 
 func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
@@ -75,6 +80,11 @@ func newReadProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress {
 func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
 		return errors.Fatal("check has no arguments")
+	}
+
+	if !opts.WithCache {
+		// do not use a cache for the checker
+		gopts.NoCache = true
 	}
 
 	repo, err := OpenRepository(gopts)
