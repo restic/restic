@@ -43,6 +43,10 @@ Small changes
    been added to detect this.
    https://github.com/restic/restic/pull/1115
 
+ * Errors for chmod() on Unix for filesystems which do not support it (e.g. smb
+   mounted via gvfs) are now ignored.
+   https://github.com/restic/restic/pull/1080
+   https://github.com/restic/restic/pull/1112
 
 Important Changes in 0.7.0
 ==========================
