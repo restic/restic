@@ -91,3 +91,8 @@ func MkdirAll(path string, perm os.FileMode) error {
 func TempFile(dir, prefix string) (f *os.File, err error) {
 	return ioutil.TempFile(dir, prefix)
 }
+
+// Chmod changes the mode of the named file to mode.
+func Chmod(name string, mode os.FileMode) error {
+	return os.Chmod(fixpath(name), mode)
+}
