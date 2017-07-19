@@ -1175,15 +1175,19 @@ func TestPrune(t *testing.T) {
 		SetupTarTestFixture(t, env.testdata, datafile)
 		opts := BackupOptions{}
 
-		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "1")}, opts, gopts)
+		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0")}, opts, gopts)
+		firstSnapshot := testRunList(t, "snapshots", gopts)
+		Assert(t, len(firstSnapshot) == 1,
+			"expected one snapshot, got %v", firstSnapshot)
+
 		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "2")}, opts, gopts)
 		testRunBackup(t, []string{filepath.Join(env.testdata, "0", "0", "3")}, opts, gopts)
 
 		snapshotIDs := testRunList(t, "snapshots", gopts)
 		Assert(t, len(snapshotIDs) == 3,
-			"expected one snapshot, got %v", snapshotIDs)
+			"expected 3 snapshot, got %v", snapshotIDs)
 
-		testRunForget(t, gopts, snapshotIDs[0].String())
+		testRunForget(t, gopts, firstSnapshot[0].String())
 		testRunPrune(t, gopts)
 		testRunCheck(t, gopts)
 	})
