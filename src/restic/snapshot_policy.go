@@ -8,13 +8,13 @@ import (
 
 // ExpirePolicy configures which snapshots should be automatically removed.
 type ExpirePolicy struct {
-	Last    int      // keep the last n snapshots
-	Hourly  int      // keep the last n hourly snapshots
-	Daily   int      // keep the last n daily snapshots
-	Weekly  int      // keep the last n weekly snapshots
-	Monthly int      // keep the last n monthly snapshots
-	Yearly  int      // keep the last n yearly snapshots
-	Tags    []string // keep all snapshots with these tags
+	Last    int       // keep the last n snapshots
+	Hourly  int       // keep the last n hourly snapshots
+	Daily   int       // keep the last n daily snapshots
+	Weekly  int       // keep the last n weekly snapshots
+	Monthly int       // keep the last n monthly snapshots
+	Yearly  int       // keep the last n yearly snapshots
+	Tags    []TagList // keep all snapshots that include at least one of the tag lists.
 }
 
 // Sum returns the maximum number of snapshots to be kept according to this
@@ -94,11 +94,12 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		var keepSnap bool
 
 		// Tags are handled specially as they are not counted.
-		if len(p.Tags) > 0 {
-			if cur.HasTags(p.Tags) {
+		for _, l := range p.Tags {
+			if cur.HasTags(l) {
 				keepSnap = true
 			}
 		}
+
 		// Now update the other buckets and see if they have some counts left.
 		for i, b := range buckets {
 			if b.Count > 0 {

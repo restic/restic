@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
+	"restic/debug"
 	"time"
 )
 
@@ -130,44 +131,63 @@ func (sn *Snapshot) RemoveTags(removeTags []string) (changed bool) {
 	return
 }
 
-// HasTags returns true if the snapshot has at least all of tags.
-func (sn *Snapshot) HasTags(tags []string) bool {
-nextTag:
-	for _, tag := range tags {
-		for _, snTag := range sn.Tags {
-			if tag == snTag {
-				continue nextTag
-			}
+func (sn *Snapshot) hasTag(tag string) bool {
+	for _, snTag := range sn.Tags {
+		if tag == snTag {
+			return true
 		}
+	}
+	return false
+}
 
-		return false
+// HasTags returns true if the snapshot has all the tags in l.
+func (sn *Snapshot) HasTags(l []string) bool {
+	for _, tag := range l {
+		if !sn.hasTag(tag) {
+			return false
+		}
 	}
 
 	return true
 }
 
-// HasPaths returns true if the snapshot has at least all of paths.
+// HasTagList returns true if the snapshot satisfies at least one TagList,
+// so there is a TagList in l for which all tags are included in sn.
+func (sn *Snapshot) HasTagList(l []TagList) bool {
+	debug.Log("testing snapshot with tags %v against list: %v", sn.Tags, l)
+
+	if len(l) == 0 {
+		return true
+	}
+
+	for _, tags := range l {
+		if sn.HasTags(tags) {
+			debug.Log("  snapshot satisfies %v", tags, l)
+			return true
+		}
+	}
+
+	return false
+}
+
+func (sn *Snapshot) hasPath(path string) bool {
+	for _, snPath := range sn.Paths {
+		if path == snPath {
+			return true
+		}
+	}
+	return false
+}
+
+// HasPaths returns true if the snapshot has all of the paths.
 func (sn *Snapshot) HasPaths(paths []string) bool {
-nextPath:
 	for _, path := range paths {
-		for _, snPath := range sn.Paths {
-			if path == snPath {
-				continue nextPath
-			}
+		if !sn.hasPath(path) {
+			return false
 		}
-
-		return false
 	}
 
 	return true
-}
-
-// SamePaths returns true if the snapshot matches the entire paths set
-func (sn *Snapshot) SamePaths(paths []string) bool {
-	if len(sn.Paths) != len(paths) {
-		return false
-	}
-	return sn.HasPaths(paths)
 }
 
 // Snapshots is a list of snapshots.

@@ -526,18 +526,20 @@ specified with ``--stdin-filename``, e.g. like this:
 
     $ mysqldump [...] | restic -r /tmp/backup backup --stdin --stdin-filename production.sql
 
-Tags
-~~~~
+Tags for backup
+~~~~~~~~~~~~~~~
 
 Snapshots can have one or more tags, short strings which add identifying
-information. Just specify the tags for a snapshot with ``--tag``:
+information. Just specify the tags for a snapshot one by one with ``--tag``:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup --tag projectX ~/shared/work/web
+    $ restic -r /tmp/backup backup --tag projectX -tag foo --tag bar ~/shared/work/web
     [...]
 
-The tags can later be used to keep (or forget) snapshots.
+The tags can later be used to keep (or forget) snapshots with the ``forget``
+command. The command ``tag`` can be used to modify tags on an existing
+snapshot.
 
 List all snapshots
 ------------------
@@ -644,7 +646,7 @@ command does that:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup tag --set NL,CH 590c8fc8
+    $ restic -r /tmp/backup tag --set NL --set CH 590c8fc8
     Create exclusive lock for repository
     Modified tags on 1 snapshots
 
@@ -872,7 +874,26 @@ The ``forget`` command accepts the following parameters:
 Additionally, you can restrict removing snapshots to those which have a
 particular hostname with the ``--hostname`` parameter, or tags with the
 ``--tag`` option. When multiple tags are specified, only the snapshots
-which have all the tags are considered.
+which have all the tags are considered. For example, the following command
+removes all but the latest snapshot of all snapshots that have the tag ``foo``:
+
+.. code-block:: console
+
+   $ restic forget --tag foo --keep-last 1
+
+This command removes all but the last snapshot of all snapshots that have
+either the ``foo`` or ``bar`` tag set:
+
+.. code-block:: console
+
+   $ restic forget --tag foo --tag bar --keep-last 1
+
+To only keep the last snapshot of all snapshots with both the tag ``foo`` and
+``bar`` set use:
+
+.. code-block:: console
+
+   $ restic forget --tag foo,tag bar --keep-last 1
 
 All the ``--keep-*`` options above only count
 hours/days/weeks/months/years which have a snapshot, so those without a

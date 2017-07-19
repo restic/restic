@@ -8,7 +8,7 @@ import (
 )
 
 // FindFilteredSnapshots yields Snapshots, either given explicitly by `snapshotIDs` or filtered from the list of all snapshots.
-func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, host string, tags []string, paths []string, snapshotIDs []string) <-chan *restic.Snapshot {
+func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, host string, tags []restic.TagList, paths []string, snapshotIDs []string) <-chan *restic.Snapshot {
 	out := make(chan *restic.Snapshot)
 	go func() {
 		defer close(out)

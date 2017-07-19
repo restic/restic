@@ -27,7 +27,7 @@ func TestExpireSnapshotOps(t *testing.T) {
 		p           *restic.ExpirePolicy
 	}{
 		{true, 0, &restic.ExpirePolicy{}},
-		{true, 0, &restic.ExpirePolicy{Tags: []string{}}},
+		{true, 0, &restic.ExpirePolicy{Tags: []restic.TagList{}}},
 		{false, 22, &restic.ExpirePolicy{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10}},
 	}
 	for i, d := range data {
@@ -163,8 +163,9 @@ var expireTests = []restic.ExpirePolicy{
 	{Daily: 2, Weekly: 2, Monthly: 6},
 	{Yearly: 10},
 	{Daily: 7, Weekly: 2, Monthly: 3, Yearly: 10},
-	{Tags: []string{"foo"}},
-	{Tags: []string{"foo", "bar"}},
+	{Tags: []restic.TagList{{"foo"}}},
+	{Tags: []restic.TagList{{"foo", "bar"}}},
+	{Tags: []restic.TagList{{"foo"}, {"bar"}}},
 }
 
 func TestApplyPolicy(t *testing.T) {

@@ -68,12 +68,12 @@ func init() {
 	f := cmdBackup.Flags()
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
-	f.StringSliceVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
-	f.StringSliceVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
+	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
+	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
-	f.StringSliceVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
+	f.StringArrayVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
 	f.StringVar(&backupOptions.Hostname, "hostname", hostname, "set the `hostname` for the snapshot manually")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 }
@@ -392,7 +392,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentSnapshotID == nil {
-		id, err := restic.FindLatestSnapshot(context.TODO(), repo, target, opts.Tags, opts.Hostname)
+		id, err := restic.FindLatestSnapshot(context.TODO(), repo, target, []restic.TagList{opts.Tags}, opts.Hostname)
 		if err == nil {
 			parentSnapshotID = &id
 		} else if err != restic.ErrNoSnapshotFound {

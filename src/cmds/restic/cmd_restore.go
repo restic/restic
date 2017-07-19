@@ -31,7 +31,7 @@ type RestoreOptions struct {
 	Target  string
 	Host    string
 	Paths   []string
-	Tags    []string
+	Tags    restic.TagLists
 }
 
 var restoreOptions RestoreOptions
@@ -40,13 +40,13 @@ func init() {
 	cmdRoot.AddCommand(cmdRestore)
 
 	flags := cmdRestore.Flags()
-	flags.StringSliceVarP(&restoreOptions.Exclude, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
-	flags.StringSliceVarP(&restoreOptions.Include, "include", "i", nil, "include a `pattern`, exclude everything else (can be specified multiple times)")
+	flags.StringArrayVarP(&restoreOptions.Exclude, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
+	flags.StringArrayVarP(&restoreOptions.Include, "include", "i", nil, "include a `pattern`, exclude everything else (can be specified multiple times)")
 	flags.StringVarP(&restoreOptions.Target, "target", "t", "", "directory to extract data to")
 
 	flags.StringVarP(&restoreOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
-	flags.StringSliceVar(&restoreOptions.Tags, "tag", nil, "only consider snapshots which include this `tag` for snapshot ID \"latest\"")
-	flags.StringSliceVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags.Var(&restoreOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
+	flags.StringArrayVar(&restoreOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 }
 
 func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {

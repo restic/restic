@@ -16,7 +16,7 @@ import (
 type Config struct {
 	OwnerIsRoot bool
 	Host        string
-	Tags        []string
+	Tags        []restic.TagList
 	Paths       []string
 }
 

@@ -26,7 +26,7 @@ The "snapshots" command lists all snapshots stored in the repository.
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
 	Host  string
-	Tags  []string
+	Tags  restic.TagLists
 	Paths []string
 }
 
@@ -37,8 +37,8 @@ func init() {
 
 	f := cmdSnapshots.Flags()
 	f.StringVarP(&snapshotOptions.Host, "host", "H", "", "only consider snapshots for this `host`")
-	f.StringSliceVar(&snapshotOptions.Tags, "tag", nil, "only consider snapshots which include this `tag` (can be specified multiple times)")
-	f.StringSliceVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
+	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` (can be specified multiple times)")
+	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {

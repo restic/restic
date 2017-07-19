@@ -28,7 +28,7 @@ The special snapshot-ID "latest" can be used to list files and directories of th
 type LsOptions struct {
 	ListLong bool
 	Host     string
-	Tags     []string
+	Tags     restic.TagLists
 	Paths    []string
 }
 
@@ -41,8 +41,8 @@ func init() {
 	flags.BoolVarP(&lsOptions.ListLong, "long", "l", false, "use a long listing format showing size and mode")
 
 	flags.StringVarP(&lsOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
-	flags.StringSliceVar(&lsOptions.Tags, "tag", nil, "only consider snapshots which include this `tag`, when no snapshot ID is given")
-	flags.StringSliceVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
+	flags.Var(&lsOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot ID is given")
+	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 }
 
 func printTree(repo *repository.Repository, id *restic.ID, prefix string) error {

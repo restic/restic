@@ -48,6 +48,11 @@ Small changes
    https://github.com/restic/restic/pull/1080
    https://github.com/restic/restic/pull/1112
 
+ * The semantic for the `--tags` option to `forget` and `snapshots` was
+   clarified:
+   https://github.com/restic/restic/issues/1081
+   https://github.com/restic/restic/pull/1090
+
 Important Changes in 0.7.0
 ==========================
 
