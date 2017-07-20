@@ -348,14 +348,7 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err err
 		return errors.Wrap(err, "Close")
 	}
 
-	// set mode to read-only
-	fi, err := r.c.Lstat(filename)
-	if err != nil {
-		return errors.Wrap(err, "Lstat")
-	}
-
-	err = r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
-	return errors.Wrap(err, "Chmod")
+	return errors.Wrap(r.c.Chmod(filename, backend.Modes.File), "Chmod")
 }
 
 // Load returns a reader that yields the contents of the file at h at the

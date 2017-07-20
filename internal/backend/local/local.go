@@ -149,13 +149,7 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err er
 		return errors.Wrap(err, "Close")
 	}
 
-	// set mode to read-only
-	fi, err := fs.Stat(filename)
-	if err != nil {
-		return errors.Wrap(err, "Stat")
-	}
-
-	return setNewFileMode(filename, fi)
+	return setNewFileMode(filename, backend.Modes.File)
 }
 
 // Load returns a reader that yields the contents of the file at h at the
