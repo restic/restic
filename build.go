@@ -30,7 +30,9 @@ var config = struct {
 	Name:      "restic",                              // name of the program executable and directory
 	Namespace: "github.com/restic/restic",            // subdir of GOPATH, e.g. "github.com/foo/bar"
 	Main:      "github.com/restic/restic/cmd/restic", // package name for the main package
-	Tests:     []string{"internal/...", "cmd/..."},   // tests to run
+	Tests: []string{ // tests to run
+		"github.com/restic/restic/internal/...",
+		"github.com/restic/restic/cmd/..."},
 }
 
 // specialDir returns true if the file begins with a special character ('.' or '_').
