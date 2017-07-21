@@ -27,10 +27,10 @@ var config = struct {
 	Main      string
 	Tests     []string
 }{
-	Name:      "restic",                           // name of the program executable and directory
-	Namespace: "",                                 // subdir of GOPATH, e.g. "github.com/foo/bar"
-	Main:      "cmds/restic",                      // package name for the main package
-	Tests:     []string{"restic/...", "cmds/..."}, // tests to run
+	Name:      "restic",                              // name of the program executable and directory
+	Namespace: "github.com/restic/restic",            // subdir of GOPATH, e.g. "github.com/foo/bar"
+	Main:      "github.com/restic/restic/cmd/restic", // package name for the main package
+	Tests:     []string{"internal/...", "cmd/..."},   // tests to run
 }
 
 // specialDir returns true if the file begins with a special character ('.' or '_').
@@ -77,13 +77,22 @@ func excludePath(name string) bool {
 //               └── restic
 //                   └── foo.go
 func updateGopath(dst, src, prefix string) error {
+	verbosePrintf("copy contents of %v to %v\n", src, filepath.Join(dst, prefix))
 	return filepath.Walk(src, func(name string, fi os.FileInfo, err error) error {
+		if name == src {
+			return err
+		}
+
 		if specialDir(name) {
 			if fi.IsDir() {
 				return filepath.SkipDir
 			}
 
 			return nil
+		}
+
+		if err != nil {
+			return err
 		}
 
 		if fi.IsDir() {
@@ -368,13 +377,13 @@ func main() {
 	}
 
 	verbosePrintf("create GOPATH at %v\n", gopath)
-	if err = updateGopath(gopath, filepath.Join(root, "src"), config.Namespace); err != nil {
+	if err = updateGopath(gopath, root, config.Namespace); err != nil {
 		die("copying files from %v/src to %v/src failed: %v\n", root, gopath, err)
 	}
 
-	vendor := filepath.Join(root, "vendor", "src")
+	vendor := filepath.Join(root, "vendor")
 	if directoryExists(vendor) {
-		if err = updateGopath(gopath, vendor, ""); err != nil {
+		if err = updateGopath(gopath, vendor, filepath.Join(config.Namespace, "vendor")); err != nil {
 			die("copying files from %v to %v failed: %v\n", root, gopath, err)
 		}
 	}
