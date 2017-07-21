@@ -90,16 +90,6 @@ func Open(cfg Config) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "conn.Container")
 	}
 
-	// check that the server supports byte ranges
-	_, hdr, err := be.conn.Account()
-	if err != nil {
-		return nil, errors.Wrap(err, "Account()")
-	}
-
-	if hdr["Accept-Ranges"] != "bytes" {
-		return nil, errors.New("backend does not support byte range")
-	}
-
 	return be, nil
 }
 
