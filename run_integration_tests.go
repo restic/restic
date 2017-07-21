@@ -143,12 +143,7 @@ func (env *TravisEnvironment) RunTests() error {
 		_ = os.Setenv("RESTIC_TEST_FUSE", "0")
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("Getwd() returned error: %v", err)
-	}
-
-	env.env["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
+	env.env["GOPATH"] = os.Getenv("GOPATH")
 
 	// ensure that the following tests cannot be silently skipped on Travis
 	ensureTests := []string{
@@ -187,7 +182,7 @@ func (env *TravisEnvironment) RunTests() error {
 				"-osarch", strings.Join(env.goxOSArch, " "),
 				"-tags", tags,
 				"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
-				"cmds/restic")
+				"./cmd/restic")
 			if err != nil {
 				return err
 			}
@@ -200,7 +195,7 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	// run the tests and gather coverage information
-	err = runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "cmds/...", "restic/...")
+	err := runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "github.com/restic/restic/cmd/...", "github.com/restic/restic/internal/...")
 	if err != nil {
 		return err
 	}
