@@ -330,7 +330,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = delayedRemove(t, b, h, s.WaitForDelayedRemoval)
+	err = delayedRemove(t, b, s.WaitForDelayedRemoval, h)
 	if err != nil {
 		t.Fatalf("error removing item: %+v", err)
 	}
@@ -435,28 +435,39 @@ func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error
 	return err
 }
 
-func delayedRemove(t testing.TB, be restic.Backend, h restic.Handle, maxwait time.Duration) error {
+func delayedRemove(t testing.TB, be restic.Backend, maxwait time.Duration, handles ...restic.Handle) error {
 	// Some backend (swift, I'm looking at you) may implement delayed
 	// removal of data. Let's wait a bit if this happens.
-	err := be.Remove(context.TODO(), h)
-	if err != nil {
-		return err
-	}
 
-	start := time.Now()
-	attempt := 0
-	for time.Since(start) <= maxwait {
-		found, err := be.Test(context.TODO(), h)
+	for _, h := range handles {
+		err := be.Remove(context.TODO(), h)
 		if err != nil {
 			return err
 		}
+	}
 
-		if !found {
-			break
+	for _, h := range handles {
+		start := time.Now()
+		attempt := 0
+		var found bool
+		var err error
+		for time.Since(start) <= maxwait {
+			found, err = be.Test(context.TODO(), h)
+			if err != nil {
+				return err
+			}
+
+			if !found {
+				break
+			}
+
+			time.Sleep(2 * time.Second)
+			attempt++
 		}
 
-		time.Sleep(500 * time.Millisecond)
-		attempt++
+		if found {
+			t.Fatalf("removed blob %v still present after %v (%d attempts)", h, time.Since(start), attempt)
+		}
 	}
 
 	return nil
@@ -552,7 +563,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 		test.Assert(t, err != nil, "expected error for %v, got %v", h, err)
 
 		// remove and recreate
-		err = delayedRemove(t, b, h, s.WaitForDelayedRemoval)
+		err = delayedRemove(t, b, s.WaitForDelayedRemoval, h)
 		test.OK(t, err)
 
 		// test that the blob is gone
@@ -587,6 +598,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 
 		// remove content if requested
 		if test.TestCleanupTempDirs {
+			var handles []restic.Handle
 			for _, ts := range testStrings {
 				id, err := restic.ParseID(ts.id)
 				test.OK(t, err)
@@ -597,12 +609,10 @@ func (s *Suite) TestBackend(t *testing.T) {
 				test.OK(t, err)
 				test.Assert(t, found, fmt.Sprintf("id %q not found", id))
 
-				test.OK(t, delayedRemove(t, b, h, s.WaitForDelayedRemoval))
-
-				found, err = b.Test(context.TODO(), h)
-				test.OK(t, err)
-				test.Assert(t, !found, fmt.Sprintf("id %q found after removal", id))
+				handles = append(handles, h)
 			}
+
+			test.OK(t, delayedRemove(t, b, s.WaitForDelayedRemoval, handles...))
 		}
 	}
 }
