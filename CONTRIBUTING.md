@@ -60,6 +60,19 @@ uploading it somewhere or post only the parts that are really relevant.
 Development Environment
 =======================
 
+In order to compile restic with the `go` tool directly, it needs to be checked
+out at the right path within a `GOPATH`. The concept of a `GOPATH` is explained
+in ["How to write Go code"](https://golang.org/doc/code.html).
+
+If you do not have a directory with Go code yet, executing the following
+instructions in your shell will create one for you and check out the restic
+repo:
+
+    $ export GOPATH="$HOME/go"
+    $ mkdir -p "$GOPATH/src/github.com/restic"
+    $ cd "$GOPATH/src/github.com/restic"
+    $ git clone https://github.com/restic/restic
+
 For development you need the build tool [`gb`](https://getgb.io), it can be
 installed by running the following command:
 
