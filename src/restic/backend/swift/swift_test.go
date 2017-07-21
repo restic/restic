@@ -20,8 +20,8 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		// do not use excessive data
 		MinimalData: true,
 
-		// wait for removals for at least 20s
-		WaitForDelayedRemoval: 20 * time.Second,
+		// wait for removals for at least 60s
+		WaitForDelayedRemoval: 60 * time.Second,
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
