@@ -1,6 +1,17 @@
 This file describes changes relevant to all users that are made in each
 released version of restic from the perspective of the user.
 
+Important Changes in 0.X.Y
+==========================
+
+ * We've added an official docker image and a Dockerfile to build this image in
+   `docker/`.
+   https://github.com/restic/restic/pull/1061
+
+Small changes
+-------------
+
+
 Important Changes in 0.7.1
 ==========================
 
