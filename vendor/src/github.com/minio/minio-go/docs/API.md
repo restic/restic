@@ -531,13 +531,9 @@ __Example__
 src := minio.NewSourceInfo("my-sourcebucketname", "my-sourceobjectname", nil)
 
 // Destination object
-dst, err := minio.NewDestinationInfo("my-bucketname", "my-objectname", nil, nil)
-if err != nil {
-    fmt.Println(err)
-    return
-}
+dst := minio.NewDestinationInfo("my-bucketname", "my-objectname", nil, nil)
 
-// Copy object call
+/ Copy object call
 err = s3Client.CopyObject(dst, src)
 if err != nil {
     fmt.Println(err)
@@ -566,13 +562,9 @@ src.SetUnmodifiedSinceCond(time.Date(2014, time.April, 23, 0, 0, 0, 0, time.UTC)
 src.SetRange(0, 1024*1024-1)
 
 // Destination object
-dst, err := minio.NewDestinationInfo("my-bucketname", "my-objectname", nil, nil)
-if err != nil {
-    fmt.Println(err)
-    return
-}
+dst := minio.NewDestinationInfo("my-bucketname", "my-objectname", nil, nil)
 
-// Copy object call
+/ Copy object call
 err = s3Client.CopyObject(dst, src)
 if err != nil {
     fmt.Println(err)
@@ -656,7 +648,7 @@ src := NewSourceInfo("bucket", "object", decKey)
 ```
 
 <a name="NewDestinationInfo"></a>
-### NewDestinationInfo(bucket, object string, encryptSSEC *SSEInfo, userMeta map[string]string) (DestinationInfo, error)
+### NewDestinationInfo(bucket, object string, encryptSSEC *SSEInfo, userMeta map[string]string) DestinationInfo
 
 Construct a `DestinationInfo` object that can be used as the destination object for server-side copying operations like `CopyObject` and `ComposeObject`.
 
@@ -673,11 +665,11 @@ __Example__
 
 ``` go
 // No encryption parameter.
-dst, err := NewDestinationInfo("bucket", "object", nil, nil)
+src := NewDestinationInfo("bucket", "object", nil, nil)
 
 // With encryption parameter.
 encKey := NewSSEKey([]byte{1,2,3}, "")
-dst, err := NewDecryptionInfo("bucket", "object", encKey, nil)
+src := NewDecryptionInfo("bucket", "object", encKey, nil)
 ```
 
 

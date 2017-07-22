@@ -213,24 +213,20 @@ func (c Client) getBucketLocationRequest(bucketName string) (*http.Request, erro
 		signerType = credentials.SignatureAnonymous
 	}
 
-	if signerType.IsAnonymous() {
-		return req, nil
-	}
-
-	if signerType.IsV2() {
-		req = s3signer.SignV2(*req, accessKeyID, secretAccessKey)
-		return req, nil
-	}
-
 	// Set sha256 sum for signature calculation only with signature version '4'.
-	var contentSha256 string
-	if c.secure {
-		contentSha256 = unsignedPayload
-	} else {
-		contentSha256 = hex.EncodeToString(sum256([]byte{}))
+	switch {
+	case signerType.IsV4():
+		var contentSha256 string
+		if c.secure {
+			contentSha256 = unsignedPayload
+		} else {
+			contentSha256 = hex.EncodeToString(sum256([]byte{}))
+		}
+		req.Header.Set("X-Amz-Content-Sha256", contentSha256)
+		req = s3signer.SignV4(*req, accessKeyID, secretAccessKey, sessionToken, "us-east-1")
+	case signerType.IsV2():
+		req = s3signer.SignV2(*req, accessKeyID, secretAccessKey)
 	}
 
-	req.Header.Set("X-Amz-Content-Sha256", contentSha256)
-	req = s3signer.SignV4(*req, accessKeyID, secretAccessKey, sessionToken, "us-east-1")
 	return req, nil
 }

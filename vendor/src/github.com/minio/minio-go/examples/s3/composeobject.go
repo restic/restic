@@ -47,14 +47,14 @@ func main() {
 
 	// Source objects to concatenate. We also specify decryption
 	// key for each
-	src1 := minio.NewSourceInfo("bucket1", "object1", &decKey)
-	src1.SetMatchETagCond("31624deb84149d2f8ef9c385918b653a")
+	src1 := minio.NewSourceInfo("bucket1", "object1", decKey)
+	src1.SetMatchETag("31624deb84149d2f8ef9c385918b653a")
 
-	src2 := minio.NewSourceInfo("bucket2", "object2", &decKey)
-	src2.SetMatchETagCond("f8ef9c385918b653a31624deb84149d2")
+	src2 := minio.NewSourceInfo("bucket2", "object2", decKey)
+	src2.SetMatchETag("f8ef9c385918b653a31624deb84149d2")
 
-	src3 := minio.NewSourceInfo("bucket3", "object3", &decKey)
-	src3.SetMatchETagCond("5918b653a31624deb84149d2f8ef9c38")
+	src3 := minio.NewSourceInfo("bucket3", "object3", decKey)
+	src3.SetMatchETag("5918b653a31624deb84149d2f8ef9c38")
 
 	// Create slice of sources.
 	srcs := []minio.SourceInfo{src1, src2, src3}
@@ -63,14 +63,11 @@ func main() {
 	encKey := minio.NewSSEInfo([]byte{8, 9, 0}, "")
 
 	// Create destination info
-	dst, err := minio.NewDestinationInfo("bucket", "object", &encKey, nil)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
+	dst := minio.NewDestinationInfo("bucket", "object", encKey)
 	err = s3Client.ComposeObject(dst, srcs)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return
 	}
 
 	log.Println("Composed object successfully.")

@@ -194,7 +194,7 @@ func (c Client) putObjectCommon(bucketName, objectName string, reader io.Reader,
 	}
 
 	if c.overrideSignerType.IsV2() {
-		if size >= 0 && size < minPartSize {
+		if size > 0 && size < minPartSize {
 			return c.putObjectNoChecksum(bucketName, objectName, reader, size, metadata, progress)
 		}
 		return c.putObjectMultipart(bucketName, objectName, reader, size, metadata, progress)
@@ -203,8 +203,6 @@ func (c Client) putObjectCommon(bucketName, objectName string, reader io.Reader,
 	// If size cannot be found on a stream, it is not possible
 	// to upload using streaming signature, fall back to multipart.
 	if size < 0 {
-		// Set regular signature calculation.
-		c.overrideSignerType = credentials.SignatureV4
 		return c.putObjectMultipart(bucketName, objectName, reader, size, metadata, progress)
 	}
 
