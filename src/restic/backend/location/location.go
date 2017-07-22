@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"restic/backend/b2"
+	"restic/backend/gs"
 	"restic/backend/local"
 	"restic/backend/rest"
 	"restic/backend/s3"
@@ -32,6 +33,7 @@ var parsers = []parser{
 	{"local", local.ParseConfig},
 	{"sftp", sftp.ParseConfig},
 	{"s3", s3.ParseConfig},
+	{"gs", gs.ParseConfig},
 	{"swift", swift.ParseConfig},
 	{"rest", rest.ParseConfig},
 }
