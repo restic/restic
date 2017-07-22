@@ -1,7 +1,7 @@
 This file describes changes relevant to all users that are made in each
 released version of restic from the perspective of the user.
 
-Important Changes in 0.X.Y
+Important Changes in 0.7.1
 ==========================
 
  * The `migrate` command for chaning the `s3legacy` layout to the `default`
@@ -34,6 +34,7 @@ Small changes
 
  * The dependencies have been updated.
    https://github.com/restic/restic/pull/1108
+   https://github.com/restic/restic/pull/1124
 
  * A bug was found (and corrected) in the index rebuilding after prune, which
    led to indexes which include blobs that were not present in the repo any
