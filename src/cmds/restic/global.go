@@ -24,6 +24,8 @@ import (
 
 	"restic/errors"
 
+	"restic/backend/azure"
+
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -358,6 +360,23 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		debug.Log("opening s3 repository at %#v", cfg)
 		return cfg, nil
 
+	case "azure":
+		cfg := loc.Config.(azure.Config)
+		if cfg.AccountName == "" {
+			cfg.AccountName = os.Getenv("AZURE_ACCOUNT_NAME")
+		}
+
+		if cfg.AccountKey == "" {
+			cfg.AccountKey = os.Getenv("AZURE_ACCOUNT_KEY")
+		}
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening gs repository at %#v", cfg)
+		return cfg, nil
+
 	case "swift":
 		cfg := loc.Config.(swift.Config)
 
@@ -424,6 +443,8 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		be, err = sftp.Open(cfg.(sftp.Config))
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config))
+	case "azure":
+		be, err = azure.Open(cfg.(azure.Config))
 	case "swift":
 		be, err = swift.Open(cfg.(swift.Config))
 	case "b2":
@@ -472,6 +493,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return sftp.Create(cfg.(sftp.Config))
 	case "s3":
 		return s3.Create(cfg.(s3.Config))
+	case "azure":
+		return azure.Open(cfg.(azure.Config))
 	case "swift":
 		return swift.Open(cfg.(swift.Config))
 	case "b2":

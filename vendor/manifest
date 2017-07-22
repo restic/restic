@@ -8,6 +8,26 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/Azure/azure-sdk-for-go/storage",
+			"repository": "https://github.com/Azure/azure-sdk-for-go",
+			"revision": "7d2af13b1fbbe2e48bc4d2d5d3c580a54274fb15",
+			"branch": "master",
+			"path": "/storage"
+		},
+		{
+			"importpath": "github.com/Azure/go-autorest/autorest",
+			"repository": "https://github.com/Azure/go-autorest",
+			"revision": "10791a4516e77c53ab10f198f144804cca3d5b43",
+			"branch": "master",
+			"path": "/autorest"
+		},
+		{
+			"importpath": "github.com/dgrijalva/jwt-go",
+			"repository": "https://github.com/dgrijalva/jwt-go",
+			"revision": "a539ee1a749a2b895533f979515ac7e6e0f5b650",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/elithrar/simple-scrypt",
 			"repository": "https://github.com/elithrar/simple-scrypt",
 			"revision": "6724715de445c2e70cdafb7a1a14c8cfe0984210",
@@ -83,6 +103,12 @@
 			"importpath": "github.com/restic/chunker",
 			"repository": "https://github.com/restic/chunker",
 			"revision": "1542d55ca53d2d8d7b38e890f7a4be90014356af",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/satori/uuid",
+			"repository": "https://github.com/satori/uuid",
+			"revision": "5bf94b69c6b68ee1b541973bb8e1144db23a194b",
 			"branch": "master"
 		},
 		{

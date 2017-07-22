@@ -4,6 +4,7 @@ package location
 import (
 	"strings"
 
+	"restic/backend/azure"
 	"restic/backend/b2"
 	"restic/backend/local"
 	"restic/backend/rest"
@@ -32,6 +33,7 @@ var parsers = []parser{
 	{"local", local.ParseConfig},
 	{"sftp", sftp.ParseConfig},
 	{"s3", s3.ParseConfig},
+	{"azure", azure.ParseConfig},
 	{"swift", swift.ParseConfig},
 	{"rest", rest.ParseConfig},
 }

@@ -1,0 +1,225 @@
+---
+version: 1
+rwmutex: {}
+interactions:
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:GDcErV0MKKWj9vyAo8Sd9hofqgLzAFUICQyAlRfzTQU=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 file
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.file.core.windows.net/share-28storagefilesuitetestfilemd5?restype=share
+    method: PUT
+  response:
+    body: ""
+    headers:
+      Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Etag:
+      - '"0x8D47C73C59E979F"'
+      Last-Modified:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Server:
+      - Windows-Azure-File/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5a027213-001a-00eb-785c-aefc45000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 201 Created
+    code: 201
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:L2CXYDagD0SCSQYa5R5zyW5EyVZ/P6LW61vFY8A8NjA=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 file
+      X-Ms-Content-Length:
+      - "1024"
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      X-Ms-Type:
+      - file
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.file.core.windows.net/share-28storagefilesuitetestfilemd5/test.dat
+    method: PUT
+  response:
+    body: ""
+    headers:
+      Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Etag:
+      - '"0x8D47C73C57DB429"'
+      Last-Modified:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Server:
+      - Windows-Azure-File/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5a027215-001a-00eb-795c-aefc45000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 201 Created
+    code: 201
+- request:
+    body: !!binary |
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////w==
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:ktNHnVNY8+4nY1jrfSsYegujNYDUGhp9ck+UqpVGHBY=
+      Content-Length:
+      - "1024"
+      Content-Md5:
+      - mokYsRh42lBvdhvBycTOFw==
+      Range:
+      - bytes=0-1023
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 file
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      X-Ms-Version:
+      - 2016-05-31
+      X-Ms-Write:
+      - update
+    url: https://golangrocksonazure.file.core.windows.net/share-28storagefilesuitetestfilemd5/test.dat?comp=range
+    method: PUT
+  response:
+    body: ""
+    headers:
+      Content-Md5:
+      - mokYsRh42lBvdhvBycTOFw==
+      Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Etag:
+      - '"0x8D47C73C586684C"'
+      Last-Modified:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Server:
+      - Windows-Azure-File/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5a027216-001a-00eb-7a5c-aefc45000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 201 Created
+    code: 201
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:DsfquVvrO5fR+xc3bvnvW6/T0izTqopb+YEvqItyAkc=
+      Range:
+      - bytes=0-1023
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 file
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      X-Ms-Range-Get-Content-Md5:
+      - "true"
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.file.core.windows.net/share-28storagefilesuitetestfilemd5/test.dat
+    method: GET
+  response:
+    body: !!binary |
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////w==
+    headers:
+      Accept-Ranges:
+      - bytes
+      Content-Length:
+      - "1024"
+      Content-Md5:
+      - mokYsRh42lBvdhvBycTOFw==
+      Content-Range:
+      - bytes 0-1023/1024
+      Content-Type:
+      - application/octet-stream
+      Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Etag:
+      - '"0x8D47C73C586684C"'
+      Last-Modified:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Server:
+      - Windows-Azure-File/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5a027217-001a-00eb-7b5c-aefc45000000
+      X-Ms-Type:
+      - File
+      X-Ms-Version:
+      - 2016-05-31
+    status: 206 Partial Content
+    code: 206
+- request:
+    body: ""
+    form: {}
+    headers:
+      Authorization:
+      - SharedKey golangrocksonazure:zpYhbNL94X54QfRPxArAPuGGa6uV2FuXfy57A+ORQBg=
+      User-Agent:
+      - Go/go1.8 (amd64-windows) azure-storage-go/0.1.0 api-version/2016-05-31 file
+      X-Ms-Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      X-Ms-Version:
+      - 2016-05-31
+    url: https://golangrocksonazure.file.core.windows.net/share-28storagefilesuitetestfilemd5?restype=share
+    method: DELETE
+  response:
+    body: ""
+    headers:
+      Date:
+      - Wed, 05 Apr 2017 22:33:24 GMT
+      Server:
+      - Windows-Azure-File/1.0 Microsoft-HTTPAPI/2.0
+      X-Ms-Request-Id:
+      - 5a027218-001a-00eb-7c5c-aefc45000000
+      X-Ms-Version:
+      - 2016-05-31
+    status: 202 Accepted
+    code: 202
