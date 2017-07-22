@@ -211,7 +211,7 @@ func privateNew(endpoint string, creds *credentials.Credentials, secure bool, re
 
 	// Instantiate http client and bucket location cache.
 	clnt.httpClient = &http.Client{
-		Transport:     defaultMinioTransport,
+		Transport:     http.DefaultTransport,
 		CheckRedirect: redirectHeaders,
 	}
 
