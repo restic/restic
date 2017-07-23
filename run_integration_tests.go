@@ -45,7 +45,7 @@ type TravisEnvironment struct {
 func (env *TravisEnvironment) getMinio() error {
 	tempfile, err := os.Create(filepath.Join(os.Getenv("GOPATH"), "bin", "minio"))
 	if err != nil {
-		return fmt.Errorf("create tempfile for minio download failed: %v\n", err)
+		return fmt.Errorf("create tempfile for minio download failed: %v", err)
 	}
 
 	url := fmt.Sprintf("https://dl.minio.io/server/minio/release/%s-%s/minio",
@@ -53,23 +53,23 @@ func (env *TravisEnvironment) getMinio() error {
 	msg("downloading %v\n", url)
 	res, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("error downloading minio server: %v\n", err)
+		return fmt.Errorf("error downloading minio server: %v", err)
 	}
 
 	_, err = io.Copy(tempfile, res.Body)
 	if err != nil {
-		return fmt.Errorf("error saving minio server to file: %v\n", err)
+		return fmt.Errorf("error saving minio server to file: %v", err)
 	}
 
 	err = res.Body.Close()
 	if err != nil {
-		return fmt.Errorf("error closing HTTP download: %v\n", err)
+		return fmt.Errorf("error closing HTTP download: %v", err)
 	}
 
 	err = tempfile.Close()
 	if err != nil {
 		msg("closing tempfile failed: %v\n", err)
-		return fmt.Errorf("error closing minio server file: %v\n", err)
+		return fmt.Errorf("error closing minio server file: %v", err)
 	}
 
 	err = os.Chmod(tempfile.Name(), 0755)
@@ -143,12 +143,7 @@ func (env *TravisEnvironment) RunTests() error {
 		_ = os.Setenv("RESTIC_TEST_FUSE", "0")
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("Getwd() returned error: %v", err)
-	}
-
-	env.env["GOPATH"] = cwd + ":" + filepath.Join(cwd, "vendor")
+	env.env["GOPATH"] = os.Getenv("GOPATH")
 
 	// ensure that the following tests cannot be silently skipped on Travis
 	ensureTests := []string{
@@ -187,7 +182,7 @@ func (env *TravisEnvironment) RunTests() error {
 				"-osarch", strings.Join(env.goxOSArch, " "),
 				"-tags", tags,
 				"-output", "/tmp/{{.Dir}}_{{.OS}}_{{.Arch}}",
-				"cmds/restic")
+				"./cmd/restic")
 			if err != nil {
 				return err
 			}
@@ -200,7 +195,7 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	// run the tests and gather coverage information
-	err = runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "cmds/...", "restic/...")
+	err := runWithEnv(env.env, "gotestcover", "-coverprofile", "all.cov", "github.com/restic/restic/cmd/...", "github.com/restic/restic/internal/...")
 	if err != nil {
 		return err
 	}
@@ -343,12 +338,12 @@ func findImports() (map[string][]string, error) {
 func runGofmt() error {
 	dir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("Getwd(): %v\n", err)
+		return fmt.Errorf("Getwd(): %v", err)
 	}
 
 	files, err := findGoFiles(dir)
 	if err != nil {
-		return fmt.Errorf("error finding Go files: %v\n", err)
+		return fmt.Errorf("error finding Go files: %v", err)
 	}
 
 	msg("runGofmt() with %d files\n", len(files))
@@ -358,23 +353,23 @@ func runGofmt() error {
 
 	buf, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("error running gofmt: %v\noutput: %s\n", err, buf)
+		return fmt.Errorf("error running gofmt: %v\noutput: %s", err, buf)
 	}
 
 	if len(buf) > 0 {
-		return fmt.Errorf("not formatted with `gofmt`:\n%s\n", buf)
+		return fmt.Errorf("not formatted with `gofmt`:\n%s", buf)
 	}
 
 	return nil
 }
 
 func runGlyphcheck() error {
-	cmd := exec.Command("glyphcheck", "./...")
+	cmd := exec.Command("glyphcheck", "./cmd/...", "./internal/...")
 	cmd.Stderr = os.Stderr
 
 	buf, err := cmd.Output()
 	if err != nil {
-		return fmt.Errorf("error running glyphcheck: %v\noutput: %s\n", err, buf)
+		return fmt.Errorf("error running glyphcheck: %v\noutput: %s", err, buf)
 	}
 
 	return nil

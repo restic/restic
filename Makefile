@@ -6,7 +6,7 @@ restic:
 	go run build.go
 
 clean:
-	rm -rf restic
+	rm -f restic
 
 test:
-	go test ./...
+	go test ./cmd/... ./internal/...

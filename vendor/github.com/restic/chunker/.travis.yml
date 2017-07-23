@@ -1,0 +1,22 @@
+language: go
+sudo: false
+
+go:
+  - 1.5.4
+  - 1.6.2
+
+os:
+  - linux
+  - osx
+
+install:
+  - go get -t ./...
+  - go get -u github.com/golang/lint/golint
+  - go get -u golang.org/x/tools/cmd/goimports
+
+script:
+  - go vet ./...
+  - go test -v -cpu=2 ./...
+  - go test -v -cpu=1,2,4 -short -race ./...
+  - diff -au <(goimports -d .) <(printf "")
+  - diff -au <(golint ./...) <(printf "")

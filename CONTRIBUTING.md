@@ -60,50 +60,35 @@ uploading it somewhere or post only the parts that are really relevant.
 Development Environment
 =======================
 
-For development you need the build tool [`gb`](https://getgb.io), it can be
-installed by running the following command:
+In order to compile restic with the `go` tool directly, it needs to be checked
+out at the right path within a `GOPATH`. The concept of a `GOPATH` is explained
+in ["How to write Go code"](https://golang.org/doc/code.html).
 
-    $ go get github.com/constabulary/gb/...
+If you do not have a directory with Go code yet, executing the following
+instructions in your shell will create one for you and check out the restic
+repo:
 
-The repository contains two directories with code: `src/` contains the code
-written for restic, whereas `vendor/` contains copies of libraries restic
-depends on. The libraries are managed with the `gb vendor` command.
-
-Just clone the repository, `cd` to it and run `gb build` to build the binary:
-
+    $ export GOPATH="$HOME/go"
+    $ mkdir -p "$GOPATH/src/github.com/restic"
+    $ cd "$GOPATH/src/github.com/restic"
     $ git clone https://github.com/restic/restic
     $ cd restic
-    $ gb build
-    [...]
-    $ bin/restic version
+
+You can then build restic as follows:
+
+    $ go build ./cmd/restic
+    $ ./restic version
     restic compiled manually
-    compiled at unknown time with go1.7
+    compiled with go1.8.3 on linux/amd64
 
 The following commands can be used to run all the tests:
 
-    $ gb test
-    ok          github.com/restic/restic        8.174s
-    [...]
+    $ go test ./cmd/... ./internal/...
 
-If you want to run your tests on Linux, OpenBSD or FreeBSD, you can use
-[vagrant](https://www.vagrantup.com/) with the provided `Vagrantfile` to
-quickly set up VMs and run the tests, e.g.:
-
-    $ vagrant up freebsd
-    [...]
-
-    $ vagrant ssh freebsd -c 'cd restic/restic; go test -v ./...'
-    [...]
-
-The default `go` tool can also be used by setting the environment variable
-`GOPATH` to the following value while being in the top level directory in the
-git repository:
-
-    $ export GOPATH=$PWD:$PWD/vendor
-
-The file `.envrc` allows automatic `GOPATH` configuration with
-[direnv](https://direnv.net/), inspect the file and then allow automatic
-configuration by running `direnv allow`.
+The repository contains two sets of directories with code: `cmd/` and
+`internal/` contain the code written for restic, whereas `vendor/` contains
+copies of libraries restic depends on. The libraries are managed with the
+[`dep`](https://github.com/golang/dep) tool.
 
 Providing Patches
 =================
@@ -122,7 +107,8 @@ down to the following steps:
 
  2. Clone the repository locally and create a new branch. If you are working on
     the code itself, please set up the development environment as described in
-    the previous section.
+    the previous section. Especially take care to place your forked repository
+    at the correct path (`src/github.com/restic/restic`) within your `GOPATH`.
 
  3. Then commit your changes as fine grained as possible, as smaller patches,
     that handle one and only one issue are easier to discuss and merge.

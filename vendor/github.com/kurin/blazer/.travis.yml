@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - tip
+
+branches:
+  only:
+  - master
+ 
+script: B2_LOG_LEVEL=2 go test -v ./base ./b2
