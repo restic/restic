@@ -20,7 +20,7 @@ func TestRestoreLocalLayout(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			datafile := filepath.Join("..", "..", "restic", "backend", "testdata", test.filename)
+			datafile := filepath.Join("..", "..", "internal", "backend", "testdata", test.filename)
 
 			SetupTarTestFixture(t, env.base, datafile)
 

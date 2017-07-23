@@ -1100,7 +1100,7 @@ func TestFindJSON(t *testing.T) {
 
 func TestRebuildIndex(t *testing.T) {
 	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
-		datafile := filepath.Join("..", "..", "restic", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
+		datafile := filepath.Join("..", "..", "internal", "checker", "testdata", "duplicate-packs-in-index-test-repo.tar.gz")
 		SetupTarTestFixture(t, env.base, datafile)
 
 		out, err := testRunCheckOutput(gopts)
