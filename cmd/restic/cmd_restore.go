@@ -1,10 +1,10 @@
 package main
 
 import (
-	"restic"
-	"restic/debug"
-	"restic/errors"
-	"restic/filter"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filter"
 
 	"github.com/spf13/cobra"
 )

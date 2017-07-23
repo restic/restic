@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"restic/options"
+
+	"github.com/restic/restic/internal/options"
 
 	"github.com/spf13/cobra"
 )

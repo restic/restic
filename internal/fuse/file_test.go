@@ -11,13 +11,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"restic/repository"
+	"github.com/restic/restic/internal/repository"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 
-	"restic"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+	. "github.com/restic/restic/internal/test"
 )
 
 func testRead(t testing.TB, f *file, offset, length int, data []byte) {

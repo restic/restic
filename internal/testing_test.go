@@ -2,11 +2,12 @@ package restic_test
 
 import (
 	"context"
-	"restic"
-	"restic/checker"
-	"restic/repository"
 	"testing"
 	"time"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/repository"
 )
 
 var testSnapshotTime = time.Unix(1460289341, 207401672)

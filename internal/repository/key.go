@@ -7,14 +7,15 @@ import (
 	"fmt"
 	"os"
 	"os/user"
-	"restic"
 	"time"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/backend"
-	"restic/crypto"
-	"restic/debug"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/debug"
 )
 
 var (

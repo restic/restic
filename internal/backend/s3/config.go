@@ -5,8 +5,8 @@ import (
 	"path"
 	"strings"
 
-	"restic/errors"
-	"restic/options"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/options"
 )
 
 // Config contains all configuration necessary to connect to an s3 compatible

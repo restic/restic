@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"restic"
-	"restic/debug"
-	"restic/errors"
-	"restic/index"
-	"restic/repository"
 	"time"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/repository"
 
 	"github.com/spf13/cobra"
 )

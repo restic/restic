@@ -2,7 +2,8 @@ package restic
 
 import (
 	"context"
-	"restic/errors"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 // ErrNoIDPrefixFound is returned by Find() when no ID for the given prefix

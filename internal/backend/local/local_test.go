@@ -2,12 +2,13 @@ package local_test
 
 import (
 	"io/ioutil"
-	"restic"
 	"testing"
 
-	"restic/backend/local"
-	"restic/backend/test"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/backend/local"
+	"github.com/restic/restic/internal/backend/test"
+	. "github.com/restic/restic/internal/test"
 )
 
 func newTestSuite(t testing.TB) *test.Suite {

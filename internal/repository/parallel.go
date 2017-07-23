@@ -2,10 +2,11 @@ package repository
 
 import (
 	"context"
-	"restic"
 	"sync"
 
-	"restic/debug"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // ParallelWorkFunc gets one file ID to work on. If an error is returned,

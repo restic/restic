@@ -4,7 +4,7 @@
 package fuse
 
 import (
-	"restic"
+	"github.com/restic/restic/internal"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"

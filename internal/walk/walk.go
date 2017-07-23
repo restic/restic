@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"restic"
 	"sync"
 
-	"restic/debug"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // TreeJob is a job sent from the tree walker.

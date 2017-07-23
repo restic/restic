@@ -3,8 +3,8 @@ package restic_test
 import (
 	"testing"
 
-	"restic"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+	. "github.com/restic/restic/internal/test"
 )
 
 func TestNewSnapshot(t *testing.T) {

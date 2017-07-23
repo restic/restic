@@ -8,14 +8,14 @@ import (
 	"os"
 	"sync"
 
-	"restic/errors"
-	"restic/fs"
-	"restic/hashing"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/hashing"
 
-	"restic"
-	"restic/debug"
-	"restic/pack"
-	"restic/repository"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/pack"
+	"github.com/restic/restic/internal/repository"
 )
 
 // Checker runs various checks on a repository. It is advisable to create an

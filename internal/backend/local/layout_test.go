@@ -3,9 +3,10 @@ package local
 import (
 	"context"
 	"path/filepath"
-	"restic"
-	. "restic/test"
 	"testing"
+
+	"github.com/restic/restic/internal"
+	. "github.com/restic/restic/internal/test"
 )
 
 func TestLayout(t *testing.T) {

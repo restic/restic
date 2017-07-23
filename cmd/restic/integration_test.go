@@ -12,18 +12,19 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"restic"
 	"strings"
 	"syscall"
 	"testing"
 	"time"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/debug"
-	"restic/filter"
-	"restic/repository"
-	. "restic/test"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/filter"
+	"github.com/restic/restic/internal/repository"
+	. "github.com/restic/restic/internal/test"
 )
 
 func parseIDsFromReader(t testing.TB, rd io.Reader) restic.IDs {

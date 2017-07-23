@@ -11,12 +11,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"restic"
-	"restic/errors"
-	"restic/pack"
-	"restic/repository"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/pack"
+	"github.com/restic/restic/internal/repository"
 
-	"restic/worker"
+	"github.com/restic/restic/internal/worker"
 )
 
 var cmdDump = &cobra.Command{

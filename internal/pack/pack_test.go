@@ -8,13 +8,14 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"io"
-	"restic"
 	"testing"
 
-	"restic/backend/mem"
-	"restic/crypto"
-	"restic/pack"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/pack"
+	. "github.com/restic/restic/internal/test"
 )
 
 var testLens = []int{23, 31650, 25860, 10928, 13769, 19862, 5211, 127, 13690, 30231}

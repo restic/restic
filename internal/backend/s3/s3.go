@@ -7,17 +7,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"restic"
 	"strings"
 	"time"
 
-	"restic/backend"
-	"restic/errors"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/errors"
 
 	"github.com/minio/minio-go"
 	"github.com/minio/minio-go/pkg/credentials"
 
-	"restic/debug"
+	"github.com/restic/restic/internal/debug"
 )
 
 // Backend stores data on an S3 endpoint.

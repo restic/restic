@@ -4,12 +4,13 @@ import (
 	"context"
 	"io"
 	"path"
-	"restic"
 	"strings"
 
-	"restic/backend"
-	"restic/debug"
-	"restic/errors"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 
 	"github.com/kurin/blazer/b2"
 )

@@ -7,17 +7,18 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"restic"
 	"strings"
 	"time"
 
+	"github.com/restic/restic/internal"
+
 	"github.com/spf13/cobra"
 
-	"restic/archiver"
-	"restic/debug"
-	"restic/errors"
-	"restic/filter"
-	"restic/fs"
+	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filter"
+	"github.com/restic/restic/internal/fs"
 )
 
 var cmdBackup = &cobra.Command{

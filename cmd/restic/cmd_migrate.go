@@ -1,8 +1,8 @@
 package main
 
 import (
-	"restic"
-	"restic/migrations"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/migrations"
 
 	"github.com/spf13/cobra"
 )

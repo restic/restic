@@ -8,11 +8,11 @@ import (
 	"sort"
 	"testing"
 
-	"restic"
-	"restic/archiver"
-	"restic/checker"
-	"restic/repository"
-	"restic/test"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/test"
 )
 
 var checkerTestData = filepath.Join("testdata", "checker-test-repo.tar.gz")

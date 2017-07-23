@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"restic/errors"
+	"github.com/restic/restic/internal/errors"
 
-	"restic/debug"
+	"github.com/restic/restic/internal/debug"
 
 	"github.com/restic/chunker"
 )

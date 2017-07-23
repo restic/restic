@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"restic"
-	"restic/archiver"
-	"restic/pipe"
-	"restic/repository"
-	. "restic/test"
-	"restic/walk"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/pipe"
+	"github.com/restic/restic/internal/repository"
+	. "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/walk"
 )
 
 func TestWalkTree(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"restic/errors"
+	"github.com/restic/restic/internal/errors"
 
 	"golang.org/x/crypto/poly1305"
 )

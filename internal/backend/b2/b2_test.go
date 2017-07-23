@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"restic"
-	"restic/backend/b2"
-	"restic/backend/test"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/backend/b2"
+	"github.com/restic/restic/internal/backend/test"
 
-	. "restic/test"
+	. "github.com/restic/restic/internal/test"
 )
 
 func newB2TestSuite(t testing.TB) *test.Suite {

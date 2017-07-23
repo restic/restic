@@ -4,7 +4,8 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"restic"
+
+	"github.com/restic/restic/internal"
 )
 
 // LoadAll reads all data stored in the backend for the handle.

@@ -6,9 +6,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
-	"restic"
 	"testing"
 	"time"
+
+	"github.com/restic/restic/internal"
 )
 
 func parseTimeUTC(s string) time.Time {

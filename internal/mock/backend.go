@@ -3,9 +3,10 @@ package mock
 import (
 	"context"
 	"io"
-	"restic"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 // Backend implements a mock backend.

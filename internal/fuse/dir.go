@@ -10,8 +10,8 @@ import (
 	"bazil.org/fuse/fs"
 	"golang.org/x/net/context"
 
-	"restic"
-	"restic/debug"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
 )
 
 // Statically ensure that *dir implement those interface

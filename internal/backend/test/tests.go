@@ -9,16 +9,17 @@ import (
 	"math/rand"
 	"os"
 	"reflect"
-	"restic"
-	"restic/errors"
 	"sort"
 	"strings"
 	"testing"
 	"time"
 
-	"restic/test"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/errors"
 
-	"restic/backend"
+	"github.com/restic/restic/internal/test"
+
+	"github.com/restic/restic/internal/backend"
 )
 
 func seedRand(t testing.TB) {

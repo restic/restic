@@ -2,10 +2,11 @@ package restic_test
 
 import (
 	"context"
-	"restic"
 	"testing"
 
-	. "restic/test"
+	"github.com/restic/restic/internal"
+
+	. "github.com/restic/restic/internal/test"
 )
 
 type saver func(restic.FileType, interface{}) (restic.ID, error)

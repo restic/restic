@@ -2,11 +2,12 @@ package test
 
 import (
 	"reflect"
-	"restic"
-	"restic/test"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/test"
 )
 
 // Suite implements a test suite for restic backends.

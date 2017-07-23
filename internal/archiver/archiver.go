@@ -7,17 +7,18 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"restic"
 	"sort"
 	"sync"
 	"time"
 
-	"restic/errors"
-	"restic/walk"
+	"github.com/restic/restic/internal"
 
-	"restic/debug"
-	"restic/fs"
-	"restic/pipe"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/walk"
+
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/pipe"
 
 	"github.com/restic/chunker"
 )

@@ -1,6 +1,6 @@
 package backend
 
-import "restic/errors"
+import "github.com/restic/restic/internal/errors"
 
 // Semaphore limits access to a restricted resource.
 type Semaphore struct {

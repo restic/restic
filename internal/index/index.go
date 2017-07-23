@@ -5,13 +5,14 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"restic"
-	"restic/debug"
-	"restic/list"
-	"restic/pack"
-	"restic/worker"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/list"
+	"github.com/restic/restic/internal/pack"
+	"github.com/restic/restic/internal/worker"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 // Pack contains information about the contents of a pack.

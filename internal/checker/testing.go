@@ -2,8 +2,9 @@ package checker
 
 import (
 	"context"
-	"restic"
 	"testing"
+
+	"github.com/restic/restic/internal"
 )
 
 // TestCheckRepo runs the checker on repo.

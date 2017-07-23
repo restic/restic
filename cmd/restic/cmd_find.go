@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"restic"
-	"restic/debug"
-	"restic/errors"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 )
 
 var cmdFind = &cobra.Command{

@@ -2,11 +2,12 @@ package repository_test
 
 import (
 	"bytes"
-	"restic"
 	"testing"
 
-	"restic/repository"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/repository"
+	. "github.com/restic/restic/internal/test"
 )
 
 func TestIndexSerialize(t *testing.T) {

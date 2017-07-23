@@ -5,14 +5,15 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"restic"
-	"restic/backend/sftp"
-	"restic/backend/test"
-	"restic/errors"
 	"strings"
 	"testing"
 
-	. "restic/test"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/backend/sftp"
+	"github.com/restic/restic/internal/backend/test"
+	"github.com/restic/restic/internal/errors"
+
+	. "github.com/restic/restic/internal/test"
 )
 
 func findSFTPServerBinary() string {

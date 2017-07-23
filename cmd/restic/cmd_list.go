@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"restic"
-	"restic/errors"
-	"restic/index"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/index"
 
 	"github.com/spf13/cobra"
 )

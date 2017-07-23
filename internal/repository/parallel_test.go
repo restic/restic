@@ -3,14 +3,15 @@ package repository_test
 import (
 	"context"
 	"math/rand"
-	"restic"
 	"testing"
 	"time"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/repository"
-	. "restic/test"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/repository"
+	. "github.com/restic/restic/internal/test"
 )
 
 type testIDs []string

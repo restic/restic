@@ -7,13 +7,14 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"restic"
 	"testing"
 	"time"
 
-	"restic/backend/rest"
-	"restic/backend/test"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/backend/rest"
+	"github.com/restic/restic/internal/backend/test"
+	. "github.com/restic/restic/internal/test"
 )
 
 func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {

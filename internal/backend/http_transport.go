@@ -3,8 +3,9 @@ package backend
 import (
 	"net"
 	"net/http"
-	"restic/debug"
 	"time"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // Transport returns a new http.RoundTripper with default settings applied.

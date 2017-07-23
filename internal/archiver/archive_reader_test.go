@@ -6,10 +6,11 @@ import (
 	"errors"
 	"io"
 	"math/rand"
-	"restic"
-	"restic/checker"
-	"restic/repository"
 	"testing"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/repository"
 )
 
 func loadBlob(t *testing.T, repo restic.Repository, id restic.ID, buf []byte) int {

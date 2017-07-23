@@ -8,14 +8,15 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"restic"
 	"strings"
 	"time"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/backend"
-	"restic/debug"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/debug"
 
 	"github.com/pkg/sftp"
 )

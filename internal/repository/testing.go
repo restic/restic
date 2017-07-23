@@ -3,12 +3,13 @@ package repository
 import (
 	"context"
 	"os"
-	"restic"
-	"restic/backend/local"
-	"restic/backend/mem"
-	"restic/crypto"
-	"restic/test"
 	"testing"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/backend/local"
+	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/test"
 
 	"github.com/restic/chunker"
 )

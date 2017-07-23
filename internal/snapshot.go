@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
-	"restic/debug"
 	"time"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // Snapshot is the state of a resource at one point in time.

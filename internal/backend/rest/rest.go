@@ -9,15 +9,16 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"restic"
 	"strings"
+
+	"github.com/restic/restic/internal"
 
 	"golang.org/x/net/context/ctxhttp"
 
-	"restic/debug"
-	"restic/errors"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 
-	"restic/backend"
+	"github.com/restic/restic/internal/backend"
 )
 
 // make sure the rest backend implements restic.Backend

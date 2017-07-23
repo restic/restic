@@ -5,13 +5,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"restic"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/backend"
-	"restic/debug"
-	"restic/fs"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/fs"
 )
 
 // Local is a backend in a local directory.

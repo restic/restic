@@ -11,13 +11,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"restic"
 	"testing"
 	"time"
 
-	"restic/backend/s3"
-	"restic/backend/test"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/backend/s3"
+	"github.com/restic/restic/internal/backend/test"
+	. "github.com/restic/restic/internal/test"
 )
 
 func mkdir(t testing.TB, dir string) {

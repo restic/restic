@@ -6,15 +6,16 @@ package main
 import (
 	"context"
 	"os"
-	"restic"
+
+	"github.com/restic/restic/internal"
 
 	"github.com/spf13/cobra"
 
-	"restic/debug"
-	"restic/errors"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 
-	resticfs "restic/fs"
-	"restic/fuse"
+	resticfs "github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/fuse"
 
 	systemFuse "bazil.org/fuse"
 	"bazil.org/fuse/fs"

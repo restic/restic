@@ -2,8 +2,9 @@ package archiver
 
 import (
 	"context"
-	"restic"
 	"testing"
+
+	"github.com/restic/restic/internal"
 )
 
 // TestSnapshot creates a new snapshot of path.

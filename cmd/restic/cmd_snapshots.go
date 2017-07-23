@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"restic"
+	"github.com/restic/restic/internal"
 )
 
 var cmdSnapshots = &cobra.Command{

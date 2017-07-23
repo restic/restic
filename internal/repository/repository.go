@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"restic"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/backend"
-	"restic/crypto"
-	"restic/debug"
-	"restic/pack"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/pack"
 )
 
 // Repository is used to access a repository in a backend.

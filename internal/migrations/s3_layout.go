@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"restic"
-	"restic/backend"
-	"restic/backend/s3"
-	"restic/debug"
-	"restic/errors"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/s3"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 )
 
 func init() {

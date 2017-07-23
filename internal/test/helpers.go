@@ -10,9 +10,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"restic/errors"
 	"runtime"
 	"testing"
+
+	"github.com/restic/restic/internal/errors"
 
 	mrand "math/rand"
 )

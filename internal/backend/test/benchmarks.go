@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"restic"
-	"restic/test"
 	"testing"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/test"
 )
 
 func saveRandomFile(t testing.TB, be restic.Backend, length int) ([]byte, restic.Handle) {

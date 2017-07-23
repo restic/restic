@@ -2,8 +2,9 @@ package list
 
 import (
 	"context"
-	"restic"
-	"restic/worker"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/worker"
 )
 
 const listPackWorkers = 10

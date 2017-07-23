@@ -3,7 +3,8 @@ package restic
 import (
 	"context"
 	"io"
-	"restic/debug"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 type backendReaderAt struct {

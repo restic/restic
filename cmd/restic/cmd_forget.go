@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"restic"
 	"sort"
 	"strings"
+
+	"github.com/restic/restic/internal"
 
 	"github.com/spf13/cobra"
 )

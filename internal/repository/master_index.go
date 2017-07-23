@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
-	"restic"
 	"sync"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/debug"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // MasterIndex is a collection of indexes and IDs of chunks that are in the process of being saved.

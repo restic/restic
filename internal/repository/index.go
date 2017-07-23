@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"restic"
 	"sync"
 	"time"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/debug"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 // Index holds a lookup table for id -> pack.

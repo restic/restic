@@ -4,15 +4,16 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"restic"
 	"testing"
 	"time"
 
-	"restic/errors"
-	. "restic/test"
+	"github.com/restic/restic/internal"
 
-	"restic/backend/swift"
-	"restic/backend/test"
+	"github.com/restic/restic/internal/errors"
+	. "github.com/restic/restic/internal/test"
+
+	"github.com/restic/restic/internal/backend/swift"
+	"github.com/restic/restic/internal/backend/test"
 )
 
 func newSwiftTestSuite(t testing.TB) *test.Suite {

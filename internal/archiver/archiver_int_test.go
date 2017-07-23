@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"restic/pipe"
-	"restic/walk"
+	"github.com/restic/restic/internal/pipe"
+	"github.com/restic/restic/internal/walk"
 )
 
 var treeJobs = []string{

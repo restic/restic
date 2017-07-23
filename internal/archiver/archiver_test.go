@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"restic"
-	"restic/archiver"
-	"restic/checker"
-	"restic/crypto"
-	"restic/repository"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/archiver"
+	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/repository"
+	. "github.com/restic/restic/internal/test"
 
-	"restic/errors"
+	"github.com/restic/restic/internal/errors"
 
 	"github.com/restic/chunker"
 )

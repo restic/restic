@@ -2,11 +2,12 @@ package options
 
 import (
 	"reflect"
-	"restic/errors"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 // Options holds options in the form key=value.

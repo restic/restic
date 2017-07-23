@@ -5,10 +5,11 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"restic"
-	. "restic/test"
 	"sort"
 	"testing"
+
+	"github.com/restic/restic/internal"
+	. "github.com/restic/restic/internal/test"
 )
 
 func TestDefaultLayout(t *testing.T) {

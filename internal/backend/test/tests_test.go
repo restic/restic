@@ -2,12 +2,13 @@ package test_test
 
 import (
 	"context"
-	"restic"
-	"restic/errors"
 	"testing"
 
-	"restic/backend/mem"
-	"restic/backend/test"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/backend/test"
 )
 
 //go:generate go run generate_test_list.go

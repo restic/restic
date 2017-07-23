@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"restic/debug"
+	"github.com/restic/restic/internal/debug"
 )
 
 func init() {

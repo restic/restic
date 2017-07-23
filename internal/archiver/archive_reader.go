@@ -3,11 +3,12 @@ package archiver
 import (
 	"context"
 	"io"
-	"restic"
-	"restic/debug"
 	"time"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+
+	"github.com/restic/restic/internal/errors"
 
 	"github.com/restic/chunker"
 )

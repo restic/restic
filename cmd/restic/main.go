@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"restic"
-	"restic/debug"
-	"restic/options"
 	"runtime"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/options"
 
 	"github.com/spf13/cobra"
 
-	"restic/errors"
+	"github.com/restic/restic/internal/errors"
 )
 
 // cmdRoot is the base command when no other command has been specified.

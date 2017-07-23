@@ -6,9 +6,10 @@ package fuse
 import (
 	"fmt"
 	"os"
-	"restic"
-	"restic/debug"
 	"time"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
 
 	"golang.org/x/net/context"
 

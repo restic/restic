@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"restic"
-	"restic/repository"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/repository"
+	. "github.com/restic/restic/internal/test"
 )
 
 var testFiles = []struct {

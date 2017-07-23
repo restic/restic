@@ -4,13 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"io"
-	"restic"
-	"restic/debug"
-	"restic/fs"
-	"restic/hashing"
-	"restic/pack"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/hashing"
+	"github.com/restic/restic/internal/pack"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 // Repack takes a list of packs together with a list of blobs contained in

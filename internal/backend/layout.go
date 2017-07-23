@@ -5,10 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"restic"
-	"restic/debug"
-	"restic/errors"
-	"restic/fs"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/fs"
 )
 
 // Layout computes paths for file name storage.

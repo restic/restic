@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"restic"
+
+	"github.com/restic/restic/internal"
 
 	"github.com/spf13/cobra"
 )

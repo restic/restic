@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"strings"
 
-	"restic/errors"
-	"restic/options"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/options"
 )
 
 // Config contains all configuration necessary to connect to a REST server.

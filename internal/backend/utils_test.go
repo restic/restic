@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"math/rand"
-	"restic"
 	"testing"
 
-	"restic/backend"
-	"restic/backend/mem"
-	. "restic/test"
+	"github.com/restic/restic/internal"
+
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/backend/mem"
+	. "github.com/restic/restic/internal/test"
 )
 
 const KiB = 1 << 10

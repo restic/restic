@@ -9,9 +9,9 @@ import (
 	"runtime"
 	"testing"
 
-	"restic/options"
-	"restic/repository"
-	. "restic/test"
+	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/repository"
+	. "github.com/restic/restic/internal/test"
 )
 
 type dirEntry struct {

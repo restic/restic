@@ -2,13 +2,14 @@ package mem_test
 
 import (
 	"context"
-	"restic"
 	"testing"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/backend/mem"
-	"restic/backend/test"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/backend/test"
 )
 
 type memConfig struct {

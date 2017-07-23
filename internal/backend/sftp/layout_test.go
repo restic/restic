@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"restic"
-	"restic/backend/sftp"
-	. "restic/test"
 	"testing"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/backend/sftp"
+	. "github.com/restic/restic/internal/test"
 )
 
 func TestLayout(t *testing.T) {

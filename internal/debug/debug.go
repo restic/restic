@@ -8,11 +8,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"restic/fs"
 	"runtime"
 	"strings"
 
-	"restic/errors"
+	"github.com/restic/restic/internal/fs"
+
+	"github.com/restic/restic/internal/errors"
 )
 
 var opts struct {

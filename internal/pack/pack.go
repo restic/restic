@@ -5,13 +5,14 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"restic"
 	"sync"
 
-	"restic/debug"
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/crypto"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/crypto"
 )
 
 // Packer is used to create a new Pack.

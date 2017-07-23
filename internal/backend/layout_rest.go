@@ -1,6 +1,6 @@
 package backend
 
-import "restic"
+import "github.com/restic/restic/internal"
 
 // RESTLayout implements the default layout for the REST protocol.
 type RESTLayout struct {

@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"restic/errors"
+	"github.com/restic/restic/internal/errors"
 
-	"restic/debug"
-	"restic/fs"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/fs"
 )
 
 // Restorer is used to restore a snapshot to a directory.

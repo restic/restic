@@ -4,10 +4,10 @@
 package fuse
 
 import (
-	"restic/errors"
+	"github.com/restic/restic/internal/errors"
 
-	"restic"
-	"restic/debug"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/debug"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"

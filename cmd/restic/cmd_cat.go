@@ -8,10 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"restic"
-	"restic/backend"
-	"restic/errors"
-	"restic/repository"
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/backend"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/repository"
 )
 
 var cmdCat = &cobra.Command{

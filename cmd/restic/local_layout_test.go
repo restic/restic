@@ -2,8 +2,9 @@ package main
 
 import (
 	"path/filepath"
-	. "restic/test"
 	"testing"
+
+	. "github.com/restic/restic/internal/test"
 )
 
 func TestRestoreLocalLayout(t *testing.T) {

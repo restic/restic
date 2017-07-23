@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"restic/debug"
-	"restic/pipe"
-	. "restic/test"
+	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/pipe"
+	. "github.com/restic/restic/internal/test"
 )
 
 type stats struct {

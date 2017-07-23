@@ -5,12 +5,13 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"restic"
 	"sync"
 
-	"restic/errors"
+	"github.com/restic/restic/internal"
 
-	"restic/debug"
+	"github.com/restic/restic/internal/errors"
+
+	"github.com/restic/restic/internal/debug"
 )
 
 type memMap map[restic.Handle][]byte

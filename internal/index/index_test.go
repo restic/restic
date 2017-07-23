@@ -3,12 +3,13 @@ package index
 import (
 	"context"
 	"math/rand"
-	"restic"
-	"restic/checker"
-	"restic/repository"
-	"restic/test"
 	"testing"
 	"time"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/checker"
+	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/test"
 )
 
 var (

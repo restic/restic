@@ -4,10 +4,11 @@ import (
 	"context"
 	"io"
 	"math/rand"
-	"restic"
-	"restic/index"
-	"restic/repository"
 	"testing"
+
+	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/index"
+	"github.com/restic/restic/internal/repository"
 )
 
 func randomSize(min, max int) int {
