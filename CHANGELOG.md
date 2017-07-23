@@ -8,6 +8,11 @@ Important Changes in 0.X.Y
    `docker/`.
    https://github.com/restic/restic/pull/1061
 
+ * The git repository layout was changed to resemble the layout typically used
+   in Go projects, we're not using `gb` for building restic any more and
+   vendoring the dependencies is now taken care of by `dep`.
+   https://github.com/restic/restic/pull/1126
+
 Small changes
 -------------
 
