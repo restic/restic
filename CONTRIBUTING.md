@@ -107,7 +107,8 @@ down to the following steps:
 
  2. Clone the repository locally and create a new branch. If you are working on
     the code itself, please set up the development environment as described in
-    the previous section.
+    the previous section. Especially take care to place your forked repository
+    at the correct path (`src/github.com/restic/restic`) within your `GOPATH`.
 
  3. Then commit your changes as fine grained as possible, as smaller patches,
     that handle one and only one issue are easier to discuss and merge.
