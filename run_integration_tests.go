@@ -364,7 +364,7 @@ func runGofmt() error {
 }
 
 func runGlyphcheck() error {
-	cmd := exec.Command("glyphcheck", "./...")
+	cmd := exec.Command("glyphcheck", "./cmd/...", "./internal/...")
 	cmd.Stderr = os.Stderr
 
 	buf, err := cmd.Output()
