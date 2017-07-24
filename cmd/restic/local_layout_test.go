@@ -8,33 +8,34 @@ import (
 )
 
 func TestRestoreLocalLayout(t *testing.T) {
-	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
-		var tests = []struct {
-			filename string
-			layout   string
-		}{
-			{"repo-layout-default.tar.gz", ""},
-			{"repo-layout-s3legacy.tar.gz", ""},
-			{"repo-layout-default.tar.gz", "default"},
-			{"repo-layout-s3legacy.tar.gz", "s3legacy"},
-		}
+	env, cleanup := withTestEnvironment(t)
+	defer cleanup()
 
-		for _, test := range tests {
-			datafile := filepath.Join("..", "..", "internal", "backend", "testdata", test.filename)
+	var tests = []struct {
+		filename string
+		layout   string
+	}{
+		{"repo-layout-default.tar.gz", ""},
+		{"repo-layout-s3legacy.tar.gz", ""},
+		{"repo-layout-default.tar.gz", "default"},
+		{"repo-layout-s3legacy.tar.gz", "s3legacy"},
+	}
 
-			SetupTarTestFixture(t, env.base, datafile)
+	for _, test := range tests {
+		datafile := filepath.Join("..", "..", "internal", "backend", "testdata", test.filename)
 
-			gopts.extended["local.layout"] = test.layout
+		SetupTarTestFixture(t, env.base, datafile)
 
-			// check the repo
-			testRunCheck(t, gopts)
+		env.gopts.extended["local.layout"] = test.layout
 
-			// restore latest snapshot
-			target := filepath.Join(env.base, "restore")
-			testRunRestoreLatest(t, gopts, target, nil, "")
+		// check the repo
+		testRunCheck(t, env.gopts)
 
-			RemoveAll(t, filepath.Join(env.base, "repo"))
-			RemoveAll(t, target)
-		}
-	})
+		// restore latest snapshot
+		target := filepath.Join(env.base, "restore")
+		testRunRestoreLatest(t, env.gopts, target, nil, "")
+
+		RemoveAll(t, filepath.Join(env.base, "repo"))
+		RemoveAll(t, target)
+	}
 }
