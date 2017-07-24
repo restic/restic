@@ -307,11 +307,9 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 	s := repository.New(be)
 
-	if opts.password == "" {
-		opts.password, err = ReadPassword(opts, "enter password for repository: ")
-		if err != nil {
-			return nil, err
-		}
+	opts.password, err = ReadPassword(opts, "enter password for repository: ")
+	if err != nil {
+		return nil, err
 	}
 
 	err = s.SearchKey(context.TODO(), opts.password, maxKeys)

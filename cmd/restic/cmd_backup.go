@@ -249,7 +249,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return errors.Fatal("filename for backup from stdin must not be empty")
 	}
 
-	if gopts.password == "" && gopts.PasswordFile == "" {
+	if gopts.password == "" {
 		return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
 	}
 
@@ -322,8 +322,8 @@ func readLinesFromFile(filename string) ([]string, error) {
 }
 
 func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
-	if opts.FilesFrom == "-" && gopts.password == "" && gopts.PasswordFile == "" {
-		return errors.Fatal("no password; either use `--password-file` option or put the password into the RESTIC_PASSWORD environment variable")
+	if opts.FilesFrom == "-" && gopts.password == "" {
+		return errors.Fatal("unable to read password from stdin when data is to be read from stdin, use --password-file or $RESTIC_PASSWORD")
 	}
 
 	fromfile, err := readLinesFromFile(opts.FilesFrom)
