@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/restic/restic/internal"
-
 	"github.com/spf13/cobra"
 
 	"github.com/restic/restic/internal/archiver"
@@ -19,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/restic"
 )
 
 var cmdBackup = &cobra.Command{

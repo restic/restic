@@ -7,9 +7,8 @@ import (
 	"io"
 	"sort"
 
+	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
-
-	"github.com/restic/restic/internal"
 )
 
 var cmdSnapshots = &cobra.Command{

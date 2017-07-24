@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/list"
 	"github.com/restic/restic/internal/pack"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/worker"
 
 	"github.com/restic/restic/internal/errors"

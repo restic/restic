@@ -1,8 +1,8 @@
 package mock
 
 import (
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Repository implements a mock Repository.

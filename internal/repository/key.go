@@ -9,9 +9,8 @@ import (
 	"os/user"
 	"time"
 
-	"github.com/restic/restic/internal"
-
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/crypto"

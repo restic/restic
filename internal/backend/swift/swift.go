@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/ncw/swift"
 )

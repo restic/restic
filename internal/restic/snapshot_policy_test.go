@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/restic"
 )
 
 func parseTimeUTC(s string) time.Time {

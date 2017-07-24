@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	. "github.com/restic/restic/internal/test"
 )
 

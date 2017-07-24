@@ -8,10 +8,10 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/checker"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/test"
 )
 

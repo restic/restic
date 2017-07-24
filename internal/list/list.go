@@ -3,7 +3,7 @@ package list
 import (
 	"context"
 
-	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/worker"
 )
 

@@ -5,11 +5,11 @@ import (
 	"crypto/sha256"
 	"io"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/hashing"
 	"github.com/restic/restic/internal/pack"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/errors"
 )
