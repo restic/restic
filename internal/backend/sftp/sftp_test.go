@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/backend/sftp"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	. "github.com/restic/restic/internal/test"
 )

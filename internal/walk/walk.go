@@ -7,9 +7,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/restic/restic/internal"
-
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/restic"
 )
 
 // TreeJob is a job sent from the tree walker.

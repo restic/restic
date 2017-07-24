@@ -17,9 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal"
-
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/filter"

@@ -3,7 +3,7 @@ package migrations
 import (
 	"context"
 
-	"github.com/restic/restic/internal"
+	"github.com/restic/restic/internal/restic"
 )
 
 // Migration implements a data migration.

@@ -6,11 +6,11 @@ import (
 	"os"
 	"path"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 )
 
 func init() {

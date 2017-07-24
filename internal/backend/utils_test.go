@@ -6,10 +6,9 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/restic/restic/internal"
-
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
+	"github.com/restic/restic/internal/restic"
 	. "github.com/restic/restic/internal/test"
 )
 

@@ -1,6 +1,6 @@
 package backend
 
-import "github.com/restic/restic/internal"
+import "github.com/restic/restic/internal/restic"
 
 // S3LegacyLayout implements the old layout used for s3 cloud storage backends, as
 // described in the Design document.

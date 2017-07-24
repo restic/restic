@@ -7,12 +7,11 @@ import (
 	"context"
 	"os"
 
-	"github.com/restic/restic/internal"
-
 	"github.com/spf13/cobra"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	resticfs "github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/fuse"

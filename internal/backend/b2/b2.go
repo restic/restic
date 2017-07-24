@@ -6,11 +6,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/restic/restic/internal"
-
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/kurin/blazer/b2"
 )

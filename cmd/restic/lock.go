@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/repository"
+	"github.com/restic/restic/internal/restic"
 )
 
 var globalLocks struct {

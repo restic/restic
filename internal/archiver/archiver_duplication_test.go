@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/mock"
 	"github.com/restic/restic/internal/repository"

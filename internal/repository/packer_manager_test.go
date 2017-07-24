@@ -7,11 +7,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/mock"
+	"github.com/restic/restic/internal/restic"
 )
 
 type randReader struct {

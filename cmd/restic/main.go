@@ -8,9 +8,9 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/restic/restic/internal"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/options"
+	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
 
