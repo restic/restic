@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
@@ -59,7 +60,16 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 		return testKeyNewPassword, nil
 	}
 
-	return ReadPasswordTwice(gopts,
+	// Since we already have an open repository, temporary remove the overrides
+	// to prompt the user for their passwd
+	oldPasswd := os.Getenv("RESTIC_PASSWORD")
+	defer func() { os.Setenv("RESTIC_PASSWORD", oldPasswd) }()
+	os.Unsetenv("RESTIC_PASSWORD")
+	newopts := gopts
+	newopts.password = ""
+	newopts.PasswordFile = ""
+
+	return ReadPasswordTwice(newopts,
 		"enter password for new key: ",
 		"enter password again: ")
 }
