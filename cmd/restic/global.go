@@ -53,11 +53,6 @@ var globalOptions = GlobalOptions{
 }
 
 func init() {
-	pw := os.Getenv("RESTIC_PASSWORD")
-	if pw != "" {
-		globalOptions.password = pw
-	}
-
 	var cancel context.CancelFunc
 	globalOptions.ctx, cancel = context.WithCancel(context.Background())
 	AddCleanupHandler(func() error {
@@ -207,6 +202,20 @@ func Exitf(exitcode int, format string, args ...interface{}) {
 	Exit(exitcode)
 }
 
+// resolvePassword determines the password to be used for opening the repository.
+func resolvePassword(opts GlobalOptions, env string) (string, error) {
+	if opts.PasswordFile != "" {
+		s, err := ioutil.ReadFile(opts.PasswordFile)
+		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
+	}
+
+	if pwd := os.Getenv(env); pwd != "" {
+		return pwd, nil
+	}
+
+	return "", nil
+}
+
 // readPassword reads the password from the given reader directly.
 func readPassword(in io.Reader) (password string, err error) {
 	buf := make([]byte, 1000)
@@ -238,13 +247,8 @@ func readPasswordTerminal(in *os.File, out io.Writer, prompt string) (password s
 // ReadPassword reads the password from a password file, the environment
 // variable RESTIC_PASSWORD or prompts the user.
 func ReadPassword(opts GlobalOptions, prompt string) (string, error) {
-	if opts.PasswordFile != "" {
-		s, err := ioutil.ReadFile(opts.PasswordFile)
-		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
-	}
-
-	if pwd := os.Getenv("RESTIC_PASSWORD"); pwd != "" {
-		return pwd, nil
+	if opts.password != "" {
+		return opts.password, nil
 	}
 
 	var (

@@ -36,6 +36,13 @@ directories in an encrypted repository stored on different backends.
 		}
 		globalOptions.extended = opts
 
+		pwd, err := resolvePassword(globalOptions, "RESTIC_PASSWORD")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Resolving password failed: %v\n", err)
+			Exit(1)
+		}
+		globalOptions.password = pwd
+
 		// run the debug functions for all subcommands (if build tag "debug" is
 		// enabled)
 		if err := runDebug(); err != nil {
