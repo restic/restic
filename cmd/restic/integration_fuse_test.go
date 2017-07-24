@@ -6,7 +6,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -144,18 +143,15 @@ func TestMount(t *testing.T) {
 	}
 
 	withTestEnvironment(t, func(env *testEnvironment, gopts GlobalOptions) {
-		mountpoint, err := ioutil.TempDir(TestTempDir, "restic-test-mount-")
-		OK(t, err)
-
 		testRunInit(t, gopts)
 
 		repo, err := OpenRepository(gopts)
 		OK(t, err)
 
 		// We remove the mountpoint now to check that cmdMount creates it
-		RemoveAll(t, mountpoint)
+		RemoveAll(t, env.mountpoint)
 
-		checkSnapshots(t, gopts, repo, mountpoint, env.repo, []restic.ID{})
+		checkSnapshots(t, gopts, repo, env.mountpoint, env.repo, []restic.ID{})
 
 		SetupTarTestFixture(t, env.testdata, filepath.Join("testdata", "backup-data.tar.gz"))
 
@@ -165,7 +161,7 @@ func TestMount(t *testing.T) {
 		Assert(t, len(snapshotIDs) == 1,
 			"expected one snapshot, got %v", snapshotIDs)
 
-		checkSnapshots(t, gopts, repo, mountpoint, env.repo, snapshotIDs)
+		checkSnapshots(t, gopts, repo, env.mountpoint, env.repo, snapshotIDs)
 
 		// second backup, implicit incremental
 		testRunBackup(t, []string{env.testdata}, BackupOptions{}, gopts)
@@ -173,7 +169,7 @@ func TestMount(t *testing.T) {
 		Assert(t, len(snapshotIDs) == 2,
 			"expected two snapshots, got %v", snapshotIDs)
 
-		checkSnapshots(t, gopts, repo, mountpoint, env.repo, snapshotIDs)
+		checkSnapshots(t, gopts, repo, env.mountpoint, env.repo, snapshotIDs)
 
 		// third backup, explicit incremental
 		bopts := BackupOptions{Parent: snapshotIDs[0].String()}
@@ -182,7 +178,7 @@ func TestMount(t *testing.T) {
 		Assert(t, len(snapshotIDs) == 3,
 			"expected three snapshots, got %v", snapshotIDs)
 
-		checkSnapshots(t, gopts, repo, mountpoint, env.repo, snapshotIDs)
+		checkSnapshots(t, gopts, repo, env.mountpoint, env.repo, snapshotIDs)
 	})
 }
 
@@ -197,15 +193,12 @@ func TestMountSameTimestamps(t *testing.T) {
 		repo, err := OpenRepository(gopts)
 		OK(t, err)
 
-		mountpoint, err := ioutil.TempDir(TestTempDir, "restic-test-mount-")
-		OK(t, err)
-
 		ids := []restic.ID{
 			restic.TestParseID("280303689e5027328889a06d718b729e96a1ce6ae9ef8290bff550459ae611ee"),
 			restic.TestParseID("75ad6cdc0868e082f2596d5ab8705e9f7d87316f5bf5690385eeff8dbe49d9f5"),
 			restic.TestParseID("5fd0d8b2ef0fa5d23e58f1e460188abb0f525c0f0c4af8365a1280c807a80a1b"),
 		}
 
-		checkSnapshots(t, gopts, repo, mountpoint, env.repo, ids)
+		checkSnapshots(t, gopts, repo, env.mountpoint, env.repo, ids)
 	})
 }
