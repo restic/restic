@@ -167,7 +167,7 @@ func dirStats(dir string) (stat dirStat) {
 }
 
 type testEnvironment struct {
-	base, cache, repo, testdata string
+	base, cache, repo, mountpoint, testdata string
 }
 
 // withTestEnvironment creates a test environment and calls f with it. After f has
@@ -183,12 +183,14 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 	OK(t, err)
 
 	env := testEnvironment{
-		base:     tempdir,
-		cache:    filepath.Join(tempdir, "cache"),
-		repo:     filepath.Join(tempdir, "repo"),
-		testdata: filepath.Join(tempdir, "testdata"),
+		base:       tempdir,
+		cache:      filepath.Join(tempdir, "cache"),
+		repo:       filepath.Join(tempdir, "repo"),
+		testdata:   filepath.Join(tempdir, "testdata"),
+		mountpoint: filepath.Join(tempdir, "mount"),
 	}
 
+	OK(t, os.MkdirAll(env.mountpoint, 0700))
 	OK(t, os.MkdirAll(env.testdata, 0700))
 	OK(t, os.MkdirAll(env.cache, 0700))
 	OK(t, os.MkdirAll(env.repo, 0700))
