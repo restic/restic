@@ -168,11 +168,12 @@ func dirStats(dir string) (stat dirStat) {
 
 type testEnvironment struct {
 	base, cache, repo, mountpoint, testdata string
+	gopts                                   GlobalOptions
 }
 
-// withTestEnvironment creates a test environment and calls f with it. After f has
-// returned, the temporary directory is removed.
-func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) {
+// withTestEnvironment creates a test environment and returns a cleanup
+// function which removes it.
+func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	if !RunIntegrationTest {
 		t.Skip("integration tests disabled")
 	}
@@ -182,7 +183,7 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
 	OK(t, err)
 
-	env := testEnvironment{
+	env = &testEnvironment{
 		base:       tempdir,
 		cache:      filepath.Join(tempdir, "cache"),
 		repo:       filepath.Join(tempdir, "repo"),
@@ -195,7 +196,7 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 	OK(t, os.MkdirAll(env.cache, 0700))
 	OK(t, os.MkdirAll(env.repo, 0700))
 
-	gopts := GlobalOptions{
+	env.gopts = GlobalOptions{
 		Repo:     env.repo,
 		Quiet:    true,
 		ctx:      context.Background(),
@@ -206,14 +207,15 @@ func withTestEnvironment(t testing.TB, f func(*testEnvironment, GlobalOptions)) 
 	}
 
 	// always overwrite global options
-	globalOptions = gopts
+	globalOptions = env.gopts
 
-	f(&env, gopts)
-
-	if !TestCleanupTempDirs {
-		t.Logf("leaving temporary directory %v used for test", tempdir)
-		return
+	cleanup = func() {
+		if !TestCleanupTempDirs {
+			t.Logf("leaving temporary directory %v used for test", tempdir)
+			return
+		}
+		RemoveAll(t, tempdir)
 	}
 
-	RemoveAll(t, tempdir)
+	return env, cleanup
 }
