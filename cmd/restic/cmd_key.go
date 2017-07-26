@@ -59,7 +59,12 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 		return testKeyNewPassword, nil
 	}
 
-	return ReadPasswordTwice(gopts,
+	// Since we already have an open repository, temporary remove the password
+	// to prompt the user for the passwd.
+	newopts := gopts
+	newopts.password = ""
+
+	return ReadPasswordTwice(newopts,
 		"enter password for new key: ",
 		"enter password again: ")
 }

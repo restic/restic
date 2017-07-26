@@ -34,13 +34,11 @@ func runInit(gopts GlobalOptions, args []string) error {
 		return errors.Fatalf("create backend at %s failed: %v\n", gopts.Repo, err)
 	}
 
-	if gopts.password == "" {
-		gopts.password, err = ReadPasswordTwice(gopts,
-			"enter password for new backend: ",
-			"enter password again: ")
-		if err != nil {
-			return err
-		}
+	gopts.password, err = ReadPasswordTwice(gopts,
+		"enter password for new backend: ",
+		"enter password again: ")
+	if err != nil {
+		return err
 	}
 
 	s := repository.New(be)
