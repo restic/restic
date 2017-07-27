@@ -206,6 +206,9 @@ func Exitf(exitcode int, format string, args ...interface{}) {
 func resolvePassword(opts GlobalOptions, env string) (string, error) {
 	if opts.PasswordFile != "" {
 		s, err := ioutil.ReadFile(opts.PasswordFile)
+		if os.IsNotExist(err) {
+			return "", errors.Fatalf("%s does not exist", opts.PasswordFile)
+		}
 		return strings.TrimSpace(string(s)), errors.Wrap(err, "Readfile")
 	}
 
