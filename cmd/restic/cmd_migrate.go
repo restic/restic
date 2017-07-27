@@ -12,7 +12,7 @@ var cmdMigrate = &cobra.Command{
 	Short: "apply migrations",
 	Long: `
 The "migrate" command applies migrations to a repository. When no migration
-name is explicitely given, a list of migrations that can be applied is printed.
+name is explicitly given, a list of migrations that can be applied is printed.
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runMigrate(migrateOptions, globalOptions, args)
