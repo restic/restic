@@ -408,31 +408,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {
-		for _, filename := range opts.ExcludeFiles {
-			file, err := fs.Open(filename)
-			if err != nil {
-				Warnf("error reading exclude patterns: %v", err)
-				return nil
-			}
-
-			scanner := bufio.NewScanner(file)
-			for scanner.Scan() {
-				line := strings.TrimSpace(scanner.Text())
-
-				// ignore empty lines
-				if line == "" {
-					continue
-				}
-
-				// strip comments
-				if strings.HasPrefix(line, "#") {
-					continue
-				}
-
-				line = os.ExpandEnv(line)
-				opts.Excludes = append(opts.Excludes, line)
-			}
-		}
+		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
 	}
 
 	selectFilter := func(item string, fi os.FileInfo) bool {
@@ -498,4 +474,46 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	Verbosef("snapshot %s saved\n", id.Str())
 
 	return nil
+}
+
+func readExcludePatternsFromFiles(excludeFiles []string) []string {
+	var excludes []string
+	for _, filename := range excludeFiles {
+		err := func() (err error) {
+			file, err := fs.Open(filename)
+			if err != nil {
+				return err
+			}
+			defer func() {
+				// return pre-close error if there was one
+				if errClose := file.Close(); err == nil {
+					err = errClose
+				}
+			}()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+
+				// ignore empty lines
+				if line == "" {
+					continue
+				}
+
+				// strip comments
+				if strings.HasPrefix(line, "#") {
+					continue
+				}
+
+				line = os.ExpandEnv(line)
+				excludes = append(excludes, line)
+			}
+			return scanner.Err()
+		}()
+		if err != nil {
+			Warnf("error reading exclude patterns: %v:", err)
+			return nil
+		}
+	}
+	return excludes
 }
