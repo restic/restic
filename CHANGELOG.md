@@ -22,6 +22,9 @@ Small changes
    https://github.com/restic/restic/issues/1132
    https://github.com/restic/restic/pull/1133
 
+ * Properly report errors when reading files with exclude patterns.
+   https://github.com/restic/restic/pull/1144
+
 
 Important Changes in 0.7.1
 ==========================
