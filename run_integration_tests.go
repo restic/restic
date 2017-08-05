@@ -208,6 +208,7 @@ func (env *TravisEnvironment) RunTests() error {
 		return err
 	}
 
+	// check for forbidden imports
 	deps, err := findImports()
 	if err != nil {
 		return err
@@ -225,6 +226,20 @@ func (env *TravisEnvironment) RunTests() error {
 
 	if foundForbiddenImports {
 		return errors.New("CI: forbidden imports found")
+	}
+
+	// check that the man pages are up to date
+	manpath := filepath.Join("doc", "new-man")
+	if err := os.MkdirAll(manpath, 0755); err != nil {
+		return err
+	}
+
+	if err := run("./restic", "manpage", "--output-dir", manpath); err != nil {
+		return err
+	}
+
+	if err := run("diff", "-aur", filepath.Join("doc/man"), manpath); err != nil {
+		return fmt.Errorf("========== man pages are not up to date\nplease run `restic manpage --output-dir doc/man`\n%v", err)
 	}
 
 	return nil
