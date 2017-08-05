@@ -16,6 +16,14 @@ The API closely mirrors Go's [bcrypt](https://golang.org/x/crypto/bcrypt)
 library in an effort to make it easy to migrate—and because it's an easy to grok
 API.
 
+## Installation
+
+With a [working Go toolchain](https://golang.org/doc/code.html):
+
+```sh
+go get -u github.com/elithrar/simple-scrypt
+```
+
 ## Example
 
 simple-scrypt doesn't try to re-invent the wheel or do anything "special". It
@@ -95,14 +103,51 @@ func main() {
 }
 ```
 
-## TO-DO:
+## Automatically Determining Parameters
 
-The following features are planned. PRs are welcome.
+Thanks to the work by [tgulacsi](https://github.com/tgulacsi), you can have simple-scrypt
+automatically determine the optimal parameters for you (time vs. memory). You should run this once
+on program startup, as calibrating parameters can be an expensive operation.
 
-- [x] Tag a release build.
-- [x] Automatically calculate "optimal" values for N, r, p similar [to the Ruby scrypt library](https://github.com/pbhogan/scrypt/blob/master/lib/scrypt.rb#L97-L146)
-   e.g. `func Calibrate(duration int, mem int, fallback Params) (Params, error)`
-   - contributed thanks to @tgulacsi.
+```go
+var params scrypt.Params
+
+func main() {
+    var err error
+    // 500ms, 64MB of RAM per hash.
+    params, err = scrypt.Calibrate(500*time.Millisecond, 64, Params{})
+    if err != nil {
+        return nil, err
+    }
+
+    ...
+}
+
+func RegisterUserHandler(w http.ResponseWriter, r *http.Request) {
+    err := r.ParseForm()
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    // Make sure you validate: not empty, not too long, etc.
+    email := r.PostFormValue("email")
+    pass := r.PostFormValue("password")
+
+    // Use our calibrated parameters
+    hash, err := scrypt.GenerateFromPassword([]byte(pass), params)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+        return
+    }
+
+    // Save to DB, etc.
+}
+```
+
+Be aware that increasing these, whilst making it harder to brute-force the resulting hash, also
+increases the risk of a denial-of-service attack against your server. A surge in authenticate
+attempts (even if legitimate!) could consume all available resources.
 
 ## License
 
