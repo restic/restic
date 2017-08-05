@@ -129,8 +129,14 @@ down to the following steps:
     next stable release. While writing, ask yourself: If I were the user, what
     would I need to be aware of with this change.
 
- 8. Once your code looks good and passes all the tests, we'll merge it. Thanks
-    a low for your contribution!
+ 8. When your contribution adds and/or changes command-line parameters or help
+    texts, the manual pages need to be regenerated and commited to the
+    repository. In order to do this, compile restic and save the generated
+    updated man pages in the subdir `doc/man` with the following command:
+    `./restic manpages --output-dir doc/man`
+
+ 9. Once your code looks good and passes all the tests, we'll merge it. Thanks
+    a lot for your contribution!
 
 Please provide the patches for each bug or feature in a separate branch and
 open up a pull request for each.
