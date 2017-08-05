@@ -2,7 +2,6 @@ language: go
 sudo: false
 
 go:
-  - 1.7.6
   - 1.8.3
   - tip
 
@@ -16,8 +15,6 @@ env:
 
 matrix:
   exclude:
-    - os: osx
-      go: 1.7.6
     - os: osx
       go: tip
     - os: linux

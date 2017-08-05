@@ -302,8 +302,8 @@ func (cs Constants) LDFlags() string {
 
 func main() {
 	ver := runtime.Version()
-	if strings.HasPrefix(ver, "go1") && ver < "go1.7" {
-		fmt.Fprintf(os.Stderr, "Go version %s detected, restic requires at least Go 1.7\n", ver)
+	if strings.HasPrefix(ver, "go1") && ver < "go1.8" {
+		fmt.Fprintf(os.Stderr, "Go version %s detected, restic requires at least Go 1.8\n", ver)
 		os.Exit(1)
 	}
 
