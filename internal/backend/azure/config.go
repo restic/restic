@@ -1,10 +1,10 @@
 package azure
 
 import (
-	"errors"
 	"path"
 	"strings"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 )
 

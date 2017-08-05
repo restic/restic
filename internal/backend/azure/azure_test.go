@@ -2,7 +2,6 @@ package azure_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"testing"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/test"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 	. "github.com/restic/restic/internal/test"
 )
