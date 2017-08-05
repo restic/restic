@@ -209,7 +209,7 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	// check for forbidden imports
-	deps, err := findImports()
+	deps, err := env.findImports()
 	if err != nil {
 		return err
 	}
@@ -310,18 +310,11 @@ func updateEnv(env []string, override map[string]string) []string {
 	return newEnv
 }
 
-func findImports() (map[string][]string, error) {
+func (env *TravisEnvironment) findImports() (map[string][]string, error) {
 	res := make(map[string][]string)
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("Getwd() returned error: %v", err)
-	}
-
-	gopath := cwd + ":" + filepath.Join(cwd, "vendor")
-
-	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .Imports " "}}`, "./src/...")
-	cmd.Env = updateEnv(os.Environ(), map[string]string{"GOPATH": gopath})
+	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .Imports " "}}`, "./internal/...", "./cmd/...")
+	cmd.Env = updateEnv(os.Environ(), env.env)
 	cmd.Stderr = os.Stderr
 
 	output, err := cmd.Output()
