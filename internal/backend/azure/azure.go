@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -34,6 +35,8 @@ func open(cfg Config) (*Backend, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "NewBasicClient")
 	}
+
+	client.HTTPClient = &http.Client{Transport: backend.Transport()}
 
 	service := client.GetBlobService()
 
