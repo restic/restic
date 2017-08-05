@@ -23,11 +23,11 @@ var testParams = []struct {
 	{true, Params{1048576, 8, 2, 64, 128}},
 	{false, Params{-1, 8, 1, 16, 32}},          // invalid N
 	{false, Params{0, 8, 1, 16, 32}},           // invalid N
-	{false, Params{1 << 31, 8, 1, 16, 32}},     // invalid N
+	{false, Params{1<<31 - 1, 8, 1, 16, 32}},   // invalid N
 	{false, Params{16384, 0, 12, 16, 32}},      // invalid R
 	{false, Params{16384, 8, 0, 16, 32}},       // invalid R > maxInt/128/P
 	{false, Params{16384, 1 << 24, 1, 16, 32}}, // invalid R > maxInt/256
-	{false, Params{1 << 31, 8, 0, 16, 32}},     // invalid p < 0
+	{false, Params{1<<31 - 1, 8, 0, 16, 32}},   // invalid p < 0
 	{false, Params{4096, 8, 1, 5, 32}},         // invalid SaltLen
 	{false, Params{4096, 8, 1, 16, 2}},         // invalid DKLen
 }

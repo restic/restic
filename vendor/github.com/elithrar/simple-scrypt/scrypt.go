@@ -260,7 +260,7 @@ func Calibrate(timeout time.Duration, memMiBytes int, params Params) (Params, er
 	var again bool
 	memBytes := memMiBytes << 20
 	// If we'd use more memory then the allowed, we can tune the memory usage
-	for 128*p.R*p.N > memBytes {
+	for 128*int64(p.R)*int64(p.N) > int64(memBytes) {
 		if p.R > 1 {
 			// by lowering r
 			p.R--

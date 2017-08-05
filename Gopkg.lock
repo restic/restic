@@ -14,10 +14,10 @@
   version = "v1.0.6"
 
 [[projects]]
+  branch = "master"
   name = "github.com/elithrar/simple-scrypt"
   packages = ["."]
-  revision = "47767683c6c880a9f89e48d376c70de7f5268951"
-  version = "v1.1"
+  revision = "6724715de445c2e70cdafb7a1a14c8cfe0984210"
 
 [[projects]]
   name = "github.com/go-ini/ini"
@@ -142,6 +142,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "10287830033309dd91c5e7e381e1a56cd3bf135fd4e776954232c404c39be210"
+  inputs-digest = "0783f6c5ff3952c10a8ea9ba5e80dcc816e95f9934983b772764b867d9be7eb8"
   solver-name = "gps-cdcl"
   solver-version = 1
