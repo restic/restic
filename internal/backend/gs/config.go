@@ -1,10 +1,10 @@
 package gs
 
 import (
-	"errors"
 	"path"
 	"strings"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/options"
 )
 
@@ -33,25 +33,28 @@ func init() {
 // ParseConfig parses the string s and extracts the gcs config. The
 // supported configuration format is gs:bucketName:/[prefix].
 func ParseConfig(s string) (interface{}, error) {
-	if strings.HasPrefix(s, "gs:") {
-		s = s[3:]
-	} else {
+	if !strings.HasPrefix(s, "gs:") {
 		return nil, errors.New("gs: invalid format")
 	}
+
+	// strip prefix "gs:"
+	s = s[3:]
+
 	// use the first entry of the path as the bucket name and the
 	// remainder as prefix
-	path := strings.SplitN(s, ":/", 2)
-	return createConfig(path)
-}
+	data := strings.SplitN(s, ":", 2)
+	if len(data) < 2 {
+		return nil, errors.New("gs: invalid format: bucket name or path not found")
+	}
 
-func createConfig(p []string) (interface{}, error) {
-	if len(p) < 2 {
-		return nil, errors.New("gs: invalid format, bucket name not found")
+	bucket, path := data[0], path.Clean(data[1])
+
+	if strings.HasPrefix(path, "/") {
+		path = path[1:]
 	}
+
 	cfg := NewConfig()
-	cfg.Bucket = p[0]
-	if p[1] != "" {
-		cfg.Prefix = path.Clean(p[1])
-	}
+	cfg.Bucket = bucket
+	cfg.Prefix = path
 	return cfg, nil
 }
