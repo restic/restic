@@ -8,6 +8,12 @@
   revision = "371fbbdaa8987b715bdd21d6adc4c9b20155f748"
 
 [[projects]]
+  name = "github.com/cpuguy83/go-md2man"
+  packages = ["md2man"]
+  revision = "a65d4d2de4d5f7c74868dfa9b202a3c8be315aaa"
+  version = "v1.0.6"
+
+[[projects]]
   name = "github.com/elithrar/simple-scrypt"
   packages = ["."]
   revision = "47767683c6c880a9f89e48d376c70de7f5268951"
@@ -86,9 +92,21 @@
   version = "v0.1.0"
 
 [[projects]]
+  name = "github.com/russross/blackfriday"
+  packages = ["."]
+  revision = "0b647d0506a698cca42caca173e55559b12a69f2"
+  version = "v1.4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/shurcooL/sanitized_anchor_name"
+  packages = ["."]
+  revision = "541ff5ee47f1dddf6a5281af78307d921524bcb5"
+
+[[projects]]
   branch = "master"
   name = "github.com/spf13/cobra"
-  packages = ["."]
+  packages = [".","doc"]
   revision = "f20b4e9c32bb3e9d44773ca208db814f24dcd21b"
 
 [[projects]]
@@ -115,9 +133,15 @@
   packages = ["unix"]
   revision = "c4489faa6e5ab84c0ef40d6ee878f7a030281f0f"
 
+[[projects]]
+  branch = "v2"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  revision = "25c4ec802a7d637f88d584ab26798e94ad14c13b"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b4de858790fd06b6d1df19baa8a3246f23b2fded9ab6eb85325ddb3ee91003b8"
+  inputs-digest = "10287830033309dd91c5e7e381e1a56cd3bf135fd4e776954232c404c39be210"
   solver-name = "gps-cdcl"
   solver-version = 1

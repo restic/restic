@@ -208,7 +208,8 @@ func (env *TravisEnvironment) RunTests() error {
 		return err
 	}
 
-	deps, err := findImports()
+	// check for forbidden imports
+	deps, err := env.findImports()
 	if err != nil {
 		return err
 	}
@@ -225,6 +226,20 @@ func (env *TravisEnvironment) RunTests() error {
 
 	if foundForbiddenImports {
 		return errors.New("CI: forbidden imports found")
+	}
+
+	// check that the man pages are up to date
+	manpath := filepath.Join("doc", "new-man")
+	if err := os.MkdirAll(manpath, 0755); err != nil {
+		return err
+	}
+
+	if err := run("./restic", "manpage", "--output-dir", manpath); err != nil {
+		return err
+	}
+
+	if err := run("diff", "-aur", filepath.Join("doc/man"), manpath); err != nil {
+		return fmt.Errorf("========== man pages are not up to date\nplease run `restic manpage --output-dir doc/man`\n%v", err)
 	}
 
 	return nil
@@ -295,18 +310,11 @@ func updateEnv(env []string, override map[string]string) []string {
 	return newEnv
 }
 
-func findImports() (map[string][]string, error) {
+func (env *TravisEnvironment) findImports() (map[string][]string, error) {
 	res := make(map[string][]string)
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("Getwd() returned error: %v", err)
-	}
-
-	gopath := cwd + ":" + filepath.Join(cwd, "vendor")
-
-	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .Imports " "}}`, "./src/...")
-	cmd.Env = updateEnv(os.Environ(), map[string]string{"GOPATH": gopath})
+	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .Imports " "}}`, "./internal/...", "./cmd/...")
+	cmd.Env = updateEnv(os.Environ(), env.env)
 	cmd.Stderr = os.Stderr
 
 	output, err := cmd.Output()

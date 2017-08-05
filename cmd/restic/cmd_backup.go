@@ -27,6 +27,16 @@ var cmdBackup = &cobra.Command{
 The "backup" command creates a new snapshot and saves the files and directories
 given as the arguments.
 `,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if backupOptions.Hostname == "" {
+			hostname, err := os.Hostname()
+			if err != nil {
+				debug.Log("os.Hostname() returned err: %v", err)
+				return
+			}
+			backupOptions.Hostname = hostname
+		}
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if backupOptions.Stdin && backupOptions.FilesFrom == "-" {
 			return errors.Fatal("cannot use both `--stdin` and `--files-from -`")
@@ -59,12 +69,6 @@ var backupOptions BackupOptions
 func init() {
 	cmdRoot.AddCommand(cmdBackup)
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		debug.Log("os.Hostname() returned err: %v", err)
-		hostname = ""
-	}
-
 	f := cmdBackup.Flags()
 	f.StringVar(&backupOptions.Parent, "parent", "", "use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)")
 	f.BoolVarP(&backupOptions.Force, "force", "f", false, `force re-reading the target files/directories (overrides the "parent" flag)`)
@@ -74,7 +78,7 @@ func init() {
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
 	f.StringArrayVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
-	f.StringVar(&backupOptions.Hostname, "hostname", hostname, "set the `hostname` for the snapshot manually")
+	f.StringVar(&backupOptions.Hostname, "hostname", "", "set the `hostname` for the snapshot manually")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 }
 

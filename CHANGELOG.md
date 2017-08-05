@@ -25,6 +25,11 @@ Small changes
  * Properly report errors when reading files with exclude patterns.
    https://github.com/restic/restic/pull/1144
 
+ * We now automatically generate man pages for all restic commands, see the
+   subdir `doc/man`.
+   https://github.com/restic/restic/issues/697
+   https://github.com/restic/restic/pull/1147
+
 
 Important Changes in 0.7.1
 ==========================
