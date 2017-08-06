@@ -498,7 +498,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	case "s3":
 		return s3.Create(cfg.(s3.Config))
 	case "azure":
-		return azure.Open(cfg.(azure.Config))
+		return azure.Create(cfg.(azure.Config))
 	case "swift":
 		return swift.Open(cfg.(swift.Config))
 	case "b2":
