@@ -33,25 +33,25 @@ func init() {
 // ParseConfig parses the string s and extracts the azure config. The
 // configuration format is azure:containerName:/[prefix].
 func ParseConfig(s string) (interface{}, error) {
-	if strings.HasPrefix(s, "azure:") {
-		s = s[6:]
-	} else {
+	if !strings.HasPrefix(s, "azure:") {
 		return nil, errors.New("azure: invalid format")
 	}
-	// use the first entry of the path as the container name and the
-	// remainder as prefix
-	path := strings.SplitN(s, ":/", 2)
-	return createConfig(path)
-}
 
-func createConfig(p []string) (interface{}, error) {
-	if len(p) < 2 {
-		return nil, errors.New("azure: invalid format, container name not found")
+	// strip prefix "azure:"
+	s = s[6:]
+
+	// use the first entry of the path as the bucket name and the
+	// remainder as prefix
+	data := strings.SplitN(s, ":", 2)
+	if len(data) < 2 {
+		return nil, errors.New("azure: invalid format: bucket name or path not found")
+	}
+	container, path := data[0], path.Clean(data[1])
+	if strings.HasPrefix(path, "/") {
+		path = path[1:]
 	}
 	cfg := NewConfig()
-	cfg.Container = p[0]
-	if p[1] != "" {
-		cfg.Prefix = path.Clean(p[1])
-	}
+	cfg.Container = container
+	cfg.Prefix = path
 	return cfg, nil
 }
