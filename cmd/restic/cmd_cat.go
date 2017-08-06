@@ -20,6 +20,7 @@ var cmdCat = &cobra.Command{
 	Long: `
 The "cat" command is used to print internal objects to stdout.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCat(globalOptions, args)
 	},

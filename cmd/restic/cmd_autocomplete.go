@@ -19,6 +19,7 @@ for convenience, and the command may need superuser rights, e.g.:
 
 $ sudo restic autocomplete`,
 
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := cmdRoot.GenBashCompletionFile(autocompleteTarget); err != nil {
 			return err

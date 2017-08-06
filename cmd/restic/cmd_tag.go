@@ -22,6 +22,7 @@ add tags to/remove tags from the existing set.
 
 When no snapshot-ID is given, all snapshots matching the host, tag and path filter criteria are modified.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runTag(tagOptions, globalOptions, args)
 	},

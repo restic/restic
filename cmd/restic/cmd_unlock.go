@@ -13,6 +13,7 @@ var unlockCmd = &cobra.Command{
 	Long: `
 The "unlock" command removes stale locks that have been created by other restic processes.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runUnlock(unlockOptions, globalOptions)
 	},

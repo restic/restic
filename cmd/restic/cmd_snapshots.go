@@ -17,6 +17,7 @@ var cmdSnapshots = &cobra.Command{
 	Long: `
 The "snapshots" command lists all snapshots stored in the repository.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runSnapshots(snapshotOptions, globalOptions, args)
 	},

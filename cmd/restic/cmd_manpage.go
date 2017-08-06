@@ -16,7 +16,8 @@ The "manpage" command generates a manual page for a single command. It can also
 be used to write all manual pages to a directory. If the output directory is
 set and no command is specified, all manpages are written to the directory.
 `,
-	RunE: runManpage,
+	DisableAutoGenTag: true,
+	RunE:              runManpage,
 }
 
 var manpageOpts = struct {

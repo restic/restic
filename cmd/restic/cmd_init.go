@@ -15,6 +15,7 @@ var cmdInit = &cobra.Command{
 	Long: `
 The "init" command initializes a new repository.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runInit(globalOptions, args)
 	},

@@ -17,6 +17,7 @@ var cmdKey = &cobra.Command{
 	Long: `
 The "key" command manages keys (passwords) for accessing the repository.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runKey(globalOptions, args)
 	},

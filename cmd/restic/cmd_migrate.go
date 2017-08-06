@@ -14,6 +14,7 @@ var cmdMigrate = &cobra.Command{
 The "migrate" command applies migrations to a repository. When no migration
 name is explicitly given, a list of migrations that can be applied is printed.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runMigrate(migrateOptions, globalOptions, args)
 	},

@@ -20,6 +20,7 @@ var cmdFind = &cobra.Command{
 	Long: `
 The "find" command searches for files or directories in snapshots stored in the
 repo. `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runFind(findOptions, globalOptions, args)
 	},

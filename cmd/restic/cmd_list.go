@@ -17,6 +17,7 @@ var cmdList = &cobra.Command{
 	Long: `
 The "list" command allows listing objects in the repository based on type.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runList(globalOptions, args)
 	},

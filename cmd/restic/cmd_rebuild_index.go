@@ -16,6 +16,7 @@ var cmdRebuildIndex = &cobra.Command{
 The "rebuild-index" command creates a new index based on the pack files in the
 repository.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runRebuildIndex(globalOptions)
 	},
