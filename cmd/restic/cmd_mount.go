@@ -27,6 +27,7 @@ var cmdMount = &cobra.Command{
 The "mount" command mounts the repository via fuse to a directory. This is a
 read-only mount.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runMount(mountOptions, globalOptions, args)
 	},

@@ -20,6 +20,7 @@ var cmdCheck = &cobra.Command{
 The "check" command tests the repository for errors and reports any errors it
 finds. It can also be used to read all data and therefore simulate a restore.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCheck(checkOptions, globalOptions, args)
 	},

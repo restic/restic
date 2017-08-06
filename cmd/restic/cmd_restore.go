@@ -19,6 +19,7 @@ a directory.
 The special snapshot "latest" can be used to restore the latest snapshot in the
 repository.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runRestore(restoreOptions, globalOptions, args)
 	},

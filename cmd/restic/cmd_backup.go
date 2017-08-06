@@ -37,6 +37,7 @@ given as the arguments.
 			backupOptions.Hostname = hostname
 		}
 	},
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if backupOptions.Stdin && backupOptions.FilesFrom == "-" {
 			return errors.Fatal("cannot use both `--stdin` and `--files-from -`")

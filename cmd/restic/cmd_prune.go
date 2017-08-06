@@ -20,6 +20,7 @@ var cmdPrune = &cobra.Command{
 The "prune" command checks the repository and removes data that is not
 referenced and therefore not needed any more.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runPrune(globalOptions)
 	},

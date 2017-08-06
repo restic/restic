@@ -19,6 +19,7 @@ The "ls" command allows listing files and directories in a snapshot.
 
 The special snapshot-ID "latest" can be used to list files and directories of the latest snapshot in the repository.
 `,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runLs(lsOptions, globalOptions, args)
 	},

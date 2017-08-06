@@ -14,6 +14,7 @@ var versionCmd = &cobra.Command{
 The "version" command prints detailed information about the build environment
 and the version of this software.
 `,
+	DisableAutoGenTag: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("restic %s\ncompiled with %v on %v/%v\n",
 			version, runtime.Version(), runtime.GOOS, runtime.GOARCH)

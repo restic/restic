@@ -16,7 +16,8 @@ The "manpage" command generates a manual page for a single command. It can also
 be used to write all manual pages to a directory. If the output directory is
 set and no command is specified, all manpages are written to the directory.
 `,
-	RunE: runManpage,
+	DisableAutoGenTag: true,
+	RunE:              runManpage,
 }
 
 var manpageOpts = struct {
@@ -42,7 +43,10 @@ func runManpage(cmd *cobra.Command, args []string) error {
 		return doc.GenManTree(cmdRoot, header, dir)
 	}
 
-	if len(args) > 1 {
+	switch {
+	case len(args) == 0:
+		return errors.Fatalf("no command given")
+	case len(args) > 1:
 		return errors.Fatalf("more than one command given: %v", args)
 	}
 

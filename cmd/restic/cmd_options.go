@@ -14,7 +14,8 @@ var optionsCmd = &cobra.Command{
 	Long: `
 The "options" command prints a list of extended options.
 `,
-	Hidden: true,
+	Hidden:            true,
+	DisableAutoGenTag: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("All Extended Options:\n")
 		for _, opt := range options.List() {

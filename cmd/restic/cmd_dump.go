@@ -25,6 +25,7 @@ var cmdDump = &cobra.Command{
 	Long: `
 The "dump" command dumps data structures from the repository as JSON objects. It
 is used for debugging purposes only.`,
+	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDump(globalOptions, args)
 	},

@@ -25,8 +25,9 @@ var cmdRoot = &cobra.Command{
 restic is a backup program which allows saving multiple revisions of files and
 directories in an encrypted repository stored on different backends.
 `,
-	SilenceErrors: true,
-	SilenceUsage:  true,
+	SilenceErrors:     true,
+	SilenceUsage:      true,
+	DisableAutoGenTag: true,
 
 	PersistentPreRunE: func(*cobra.Command, []string) error {
 		// parse extended options
