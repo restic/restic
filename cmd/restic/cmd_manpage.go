@@ -42,7 +42,10 @@ func runManpage(cmd *cobra.Command, args []string) error {
 		return doc.GenManTree(cmdRoot, header, dir)
 	}
 
-	if len(args) > 1 {
+	switch {
+	case len(args) == 0:
+		return errors.Fatalf("no command given")
+	case len(args) > 1:
 		return errors.Fatalf("more than one command given: %v", args)
 	}
 
