@@ -371,6 +371,33 @@ The number of concurrent connections to the B2 service can be set with the `-o
 b2.connections=10`. By default, at most five parallel connections are
 established.
 
+Microsoft Azure Blob Storage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can also store backups on Microsoft Azure Blob Storage. Export the Azure
+account name and key as follows:
+
+.. code-block:: console
+
+    $ export AZURE_ACCOUNT_NAME=<ACCOUNT_NAME>
+    $ export AZURE_ACCOUNT_KEY=<SECRET_KEY>
+
+Afterwards you can initialize a repository in a container called `foo` in the
+root path like this:
+
+.. code-block:: console
+
+    $ restic -r azure:foo:/ init
+    enter password for new backend:
+    enter password again:
+
+    created restic backend a934bac191 at azure:foo:/
+    [...]
+
+The number of concurrent connections to the B2 service can be set with the
+`-o azure.connections=10`. By default, at most five parallel connections are
+established.
+
 
 Password prompt on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
