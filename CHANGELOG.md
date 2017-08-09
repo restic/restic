@@ -13,6 +13,11 @@ Important Changes in 0.X.Y
    vendoring the dependencies is now taken care of by `dep`.
    https://github.com/restic/restic/pull/1126
 
+ * We've added support for Microsoft Azure Blob Storage as a restic backend.
+   https://github.com/restic/restic/pull/1149
+   https://github.com/restic/restic/pull/1059
+   https://github.com/restic/restic/issues/609
+
 Small changes
 -------------
 
