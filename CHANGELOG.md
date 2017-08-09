@@ -18,6 +18,9 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/pull/1059
    https://github.com/restic/restic/issues/609
 
+ * In the course of supporting Microsoft Azure Blobe Storage Go 1.8 is now a
+   requirement to build restic.
+
 Small changes
 -------------
 
