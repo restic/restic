@@ -5,10 +5,12 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -38,8 +40,9 @@ type CIEnvironment interface {
 
 // TravisEnvironment is the environment in which Travis tests run.
 type TravisEnvironment struct {
-	goxOSArch []string
-	env       map[string]string
+	goxOSArch          []string
+	env                map[string]string
+	gcsCredentialsFile string
 }
 
 func (env *TravisEnvironment) getMinio() error {
@@ -126,12 +129,45 @@ func (env *TravisEnvironment) Prepare() error {
 		msg("gox: OS/ARCH %v\n", env.goxOSArch)
 	}
 
+	// extract credentials file for GCS tests
+	if b64data := os.Getenv("RESTIC_TEST_GS_APPLICATION_CREDENTIALS_B64"); b64data != "" {
+		buf, err := base64.StdEncoding.DecodeString(b64data)
+		if err != nil {
+			return err
+		}
+
+		f, err := ioutil.TempFile("", "gcs-credentials-")
+		if err != nil {
+			return err
+		}
+
+		msg("saving GCS credentials to %v\n", f.Name())
+
+		_, err = f.Write(buf)
+		if err != nil {
+			f.Close()
+			return err
+		}
+
+		env.gcsCredentialsFile = f.Name()
+
+		if err = f.Close(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // Teardown stops backend services and cleans the environment again.
 func (env *TravisEnvironment) Teardown() error {
 	msg("run travis teardown\n")
+
+	if env.gcsCredentialsFile != "" {
+		msg("remove gcs credentials file %v\n", env.gcsCredentialsFile)
+		return os.Remove(env.gcsCredentialsFile)
+	}
+
 	return nil
 }
 
@@ -144,6 +180,9 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	env.env["GOPATH"] = os.Getenv("GOPATH")
+	if env.gcsCredentialsFile != "" {
+		env.env["RESTIC_TEST_GS_APPLICATION_CREDENTIALS"] = env.gcsCredentialsFile
+	}
 
 	// ensure that the following tests cannot be silently skipped on Travis
 	ensureTests := []string{
@@ -171,6 +210,13 @@ func (env *TravisEnvironment) RunTests() error {
 		ensureTests = append(ensureTests, "restic/backend/b2.TestBackendB2")
 	} else {
 		msg("B2 repository not available\n")
+	}
+
+	// if the test gs repository is available, make sure that the test is not skipped
+	if os.Getenv("RESTIC_TEST_GS_REPOSITORY") != "" {
+		ensureTests = append(ensureTests, "restic/backend/gs.TestBackendGS")
+	} else {
+		msg("GS repository not available\n")
 	}
 
 	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")

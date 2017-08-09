@@ -13,6 +13,12 @@ Important Changes in 0.X.Y
    vendoring the dependencies is now taken care of by `dep`.
    https://github.com/restic/restic/pull/1126
 
+ * We now support saving backups on Google Cloud Storage.
+   https://github.com/restic/restic/pull/1134
+   https://github.com/restic/restic/pull/1052
+   https://github.com/restic/restic/issues/211
+
+
 Small changes
 -------------
 

@@ -372,6 +372,37 @@ b2.connections=10`. By default, at most five parallel connections are
 established.
 
 
+Google Cloud Storage
+~~~~~~~~~~~~~~~~~~~~
+
+Restic supports Google Cloud Storage as a backend. In order for this to work
+you first need create a "service account" and download the JSON key file for
+it. In addition, you need the Google Project ID that you can see in the Google
+Cloud Platform console at the "Storage/Settings" menu. Export the path to the
+JSON credentials file and the project ID as follows:
+
+.. code-block:: console
+
+    $ export GOOGLE_PROJECT_ID=123123123123
+    $ export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gs-secret-restic-key.json
+
+Then you can use the ``gs:`` backend type to create a new repository in the
+bucket `foo` at the root path:
+
+.. code-block:: console
+
+    $ restic -r gs:foo:/ init
+    enter password for new backend:
+    enter password again:
+
+    created restic backend bde47d6254 at gs:restic-dev-an:foo2
+    [...]
+
+The number of concurrent connections to the GCS service can be set with the
+`-o gs.connections=10`. By default, at most five parallel connections are
+established.
+
+
 Password prompt on Windows
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
