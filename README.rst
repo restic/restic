@@ -49,7 +49,7 @@ Therefore, restic supports the following backends for storing backups natively:
 
 - `Local directory <https://restic.readthedocs.io/en/latest/manual.html#local>`__
 - `sftp server (via SSH) <https://restic.readthedocs.io/en/latest/manual.html#sftp>`__
-- `HTTP REST server <https://restic.readthedocs.io/en/latest/manual.html#rest-server>`__ (`protocol <doc/rest_backend.rst>`__ `rest-server <https://github.com/restic/rest-server`__)
+- `HTTP REST server <https://restic.readthedocs.io/en/latest/manual.html#rest-server>`__ (`protocol <doc/rest_backend.rst>`__ `rest-server <https://github.com/restic/rest-server>`__)
 - `AWS S3 <https://restic.readthedocs.io/en/latest/manual.html#amazon-s3>`__ (either from Amazon or using the `Minio <https://minio.io>`__ server)
 - `OpenStack Swift <https://restic.readthedocs.io/en/latest/manual.html#openstack-swift>`__
 - `BackBlaze B2 <https://restic.readthedocs.io/en/latest/manual.html#backblaze-b2>`__
