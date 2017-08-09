@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/b2"
 	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/local"
@@ -389,6 +390,23 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		debug.Log("opening gs repository at %#v", cfg)
 		return cfg, nil
 
+	case "azure":
+		cfg := loc.Config.(azure.Config)
+		if cfg.AccountName == "" {
+			cfg.AccountName = os.Getenv("AZURE_ACCOUNT_NAME")
+		}
+
+		if cfg.AccountKey == "" {
+			cfg.AccountKey = os.Getenv("AZURE_ACCOUNT_KEY")
+		}
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening gs repository at %#v", cfg)
+		return cfg, nil
+
 	case "swift":
 		cfg := loc.Config.(swift.Config)
 
@@ -457,6 +475,8 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		be, err = s3.Open(cfg.(s3.Config))
 	case "gs":
 		be, err = gs.Open(cfg.(gs.Config))
+	case "azure":
+		be, err = azure.Open(cfg.(azure.Config))
 	case "swift":
 		be, err = swift.Open(cfg.(swift.Config))
 	case "b2":
@@ -507,6 +527,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return s3.Create(cfg.(s3.Config))
 	case "gs":
 		return gs.Create(cfg.(gs.Config))
+	case "azure":
+		return azure.Create(cfg.(azure.Config))
 	case "swift":
 		return swift.Open(cfg.(swift.Config))
 	case "b2":

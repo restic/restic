@@ -14,10 +14,28 @@
   version = "v0.11.0"
 
 [[projects]]
+  name = "github.com/Azure/azure-sdk-for-go"
+  packages = ["storage"]
+  revision = "2d49bb8f2cee530cc16f1f1a9f0aae763dee257d"
+  version = "v10.2.1-beta"
+
+[[projects]]
+  name = "github.com/Azure/go-autorest"
+  packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
+  revision = "f6e08fe5e4d45c9a66e40196d3fed5f37331d224"
+  version = "v8.1.1"
+
+[[projects]]
   name = "github.com/cpuguy83/go-md2man"
   packages = ["md2man"]
   revision = "a65d4d2de4d5f7c74868dfa9b202a3c8be315aaa"
   version = "v1.0.6"
+
+[[projects]]
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  revision = "d2709f9f1f31ebcda9651b03077758c1f3a0018c"
+  version = "v3.0.0"
 
 [[projects]]
   branch = "master"
@@ -108,6 +126,12 @@
   packages = ["."]
   revision = "0b647d0506a698cca42caca173e55559b12a69f2"
   version = "v1.4"
+
+[[projects]]
+  name = "github.com/satori/uuid"
+  packages = ["."]
+  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
