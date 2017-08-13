@@ -7,7 +7,7 @@ restic is a backup program that is fast, efficient and secure.
 
 For detailed usage and installation instructions check out the `documentation <https://restic.readthedocs.io/en/latest>`__.
 
-You can ask questions in our `Discourse forum <https://discourse.restic.net>`__.
+You can ask questions in our `Discourse forum <https://forum.restic.net>`__.
 
 Quick start
 -----------
