@@ -94,8 +94,8 @@ func Random(seed, count int) []byte {
 // SetupTarTestFixture extracts the tarFile to outputDir.
 func SetupTarTestFixture(t testing.TB, outputDir, tarFile string) {
 	input, err := os.Open(tarFile)
-	defer input.Close()
 	OK(t, err)
+	defer input.Close()
 
 	var rd io.Reader
 	switch filepath.Ext(tarFile) {

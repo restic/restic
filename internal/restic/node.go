@@ -243,11 +243,10 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository,
 	}
 
 	f, err := fs.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
-	defer f.Close()
-
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
 	}
+	defer f.Close()
 
 	var buf []byte
 	for _, id := range node.Content {
