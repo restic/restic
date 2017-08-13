@@ -162,7 +162,7 @@ what the tests are there for.
 Git Commits
 -----------
 
-I would be good if you could follow the same general style regarding Git
+It would be good if you could follow the same general style regarding Git
 commits as the rest of the project, this makes reviewing code, browsing the
 history and triaging bugs much easier.
 
