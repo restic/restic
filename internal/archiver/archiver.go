@@ -210,10 +210,10 @@ func updateNodeContent(node *restic.Node, results []saveResult) error {
 // Save for each chunk.
 func (arch *Archiver) SaveFile(ctx context.Context, p *restic.Progress, node *restic.Node) (*restic.Node, error) {
 	file, err := fs.Open(node.Path)
-	defer file.Close()
 	if err != nil {
 		return node, errors.Wrap(err, "Open")
 	}
+	defer file.Close()
 
 	debug.RunHook("archiver.SaveFile", node.Path)
 
