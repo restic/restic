@@ -9,12 +9,17 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
+	"fmt"
+	"strings"
 )
 
 // Restorer is used to restore a snapshot to a directory.
 type Restorer struct {
 	repo Repository
 	sn   *Snapshot
+
+	// if present, the restore will only traverse the given list of absolute, non-globbed paths
+	ConstrainedPaths []string
 
 	Error        func(dir string, node *Node, err error) error
 	SelectFilter func(item string, dstpath string, node *Node) bool
@@ -63,11 +68,15 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 			}
 
 			subp := filepath.Join(dir, node.Name)
-			err = res.restoreTo(ctx, dst, subp, *node.Subtree, idx)
-			if err != nil {
-				err = res.Error(subp, node, err)
+
+			// try to avoid descending the dir if we can
+			if res.unconstrained() || res.matchesConstrainedPath(subp) {
+				err = res.restoreTo(ctx, dst, subp, *node.Subtree, idx)
 				if err != nil {
-					return err
+					err = res.Error(subp, node, err)
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -82,6 +91,21 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 	}
 
 	return nil
+}
+
+func (res *Restorer) unconstrained() (bool) {
+	return len(res.ConstrainedPaths) == 0
+}
+
+func (res *Restorer) matchesConstrainedPath(subdir string) (bool) {
+	for _, path := range res.ConstrainedPaths {
+		if strings.HasPrefix(path, subdir) {
+			fmt.Printf("%s matches => %s\n", subdir, path)
+			return true
+		}
+	}
+
+	return false
 }
 
 func (res *Restorer) restoreNodeTo(ctx context.Context, node *Node, dir string, dst string, idx *HardlinkIndex) error {

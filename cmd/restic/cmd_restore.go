@@ -7,6 +7,8 @@ import (
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/spf13/cobra"
+	"path/filepath"
+	"strings"
 )
 
 var cmdRestore = &cobra.Command{
@@ -139,9 +141,33 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("restoring %s to %s\n", res.Snapshot(), opts.Target)
 
+	// if we're doing an "inclusive" restore & have only rooted paths, we can narrow the search path for restored objects
+	if len(opts.Include) > 0 && allPathsConstrainable(opts.Include) {
+		Printf("doing constrained restore\n")
+		res.ConstrainedPaths = opts.Include
+
+	} else {
+		Printf("doing NON-constrained restore\n")
+	}
+
 	err = res.RestoreTo(ctx, opts.Target)
 	if totalErrors > 0 {
 		Printf("There were %d errors\n", totalErrors)
 	}
 	return err
+}
+
+func allPathsConstrainable(paths []string) bool {
+	for _, path := range paths {
+		if path[0] != filepath.Separator || hasMeta(path) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// see filepath/match.go
+func hasMeta(path string) bool {
+	return strings.ContainsAny(path, "*?[")
 }
