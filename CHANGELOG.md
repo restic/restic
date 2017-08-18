@@ -44,6 +44,9 @@ Small changes
    https://github.com/restic/restic/issues/697
    https://github.com/restic/restic/pull/1147
 
+ * The `key remove` command was corrected and now works as documented.
+   https://github.com/restic/restic/pull/1164
+
 
 Important Changes in 0.7.1
 ==========================
