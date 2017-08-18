@@ -786,7 +786,7 @@ func testRunKeyPasswd(t testing.TB, newPassword string, gopts GlobalOptions) {
 func testRunKeyRemove(t testing.TB, gopts GlobalOptions, IDs []string) {
 	t.Logf("remove %d keys: %q\n", len(IDs), IDs)
 	for _, id := range IDs {
-		OK(t, runKey(gopts, []string{"rm", id}))
+		OK(t, runKey(gopts, []string{"remove", id}))
 	}
 }
 
