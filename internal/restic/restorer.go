@@ -7,9 +7,9 @@ import (
 
 	"github.com/restic/restic/internal/errors"
 
+	"fmt"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
-	"fmt"
 	"strings"
 )
 
@@ -93,11 +93,11 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 	return nil
 }
 
-func (res *Restorer) unconstrained() (bool) {
+func (res *Restorer) unconstrained() bool {
 	return len(res.ConstrainedPaths) == 0
 }
 
-func (res *Restorer) matchesConstrainedPath(subdir string) (bool) {
+func (res *Restorer) matchesConstrainedPath(subdir string) bool {
 	for _, path := range res.ConstrainedPaths {
 		if strings.HasPrefix(path, subdir) {
 			fmt.Printf("%s matches => %s\n", subdir, path)
