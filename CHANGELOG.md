@@ -72,6 +72,14 @@ Small changes
    run. This is now corrected.
    https://github.com/restic/restic/pull/1191
 
+ * A new option `--exclude-caches` was added that allows excluding cache
+   directories (that are tagged as such). This is a special case of a more
+   generic option `--exclude-if-present` which excludes a directory if a file
+   with a specific name (and contents) is present.
+   https://github.com/restic/restic/issues/317
+   https://github.com/restic/restic/pull/1170
+
+
 Important Changes in 0.7.1
 ==========================
 
