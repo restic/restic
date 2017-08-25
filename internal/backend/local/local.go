@@ -35,7 +35,7 @@ func Open(cfg Config) (*Local, error) {
 
 	be := &Local{Config: cfg, Layout: l}
 
-	// create paths for data and refs. MkdirAll does nothing if the directory already exists.
+	// if data dir exists, make sure that all subdirs also exist
 	for _, d := range be.Paths() {
 		err := fs.MkdirAll(d, backend.Modes.Dir)
 		if err != nil {

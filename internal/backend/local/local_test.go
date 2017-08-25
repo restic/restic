@@ -2,6 +2,8 @@ package local_test
 
 import (
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/restic/restic/internal/backend/local"
@@ -58,4 +60,58 @@ func TestBackend(t *testing.T) {
 
 func BenchmarkBackend(t *testing.B) {
 	newTestSuite(t).RunBenchmarks(t)
+}
+
+func readdirnames(t testing.TB, dir string) []string {
+	f, err := os.Open(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entries, err := f.Readdirnames(-1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = f.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return entries
+}
+
+func empty(t testing.TB, dir string) {
+	entries := readdirnames(t, dir)
+	if len(entries) != 0 {
+		t.Fatalf("directory %v is not empty, contains: %v", dir, entries)
+	}
+}
+
+func openclose(t testing.TB, dir string) {
+	cfg := local.Config{Path: dir}
+
+	be, err := local.Open(cfg)
+	if err != nil {
+		t.Logf("Open returned error %v", err)
+	}
+
+	if be != nil {
+		err = be.Close()
+		if err != nil {
+			t.Logf("Close returned error %v", err)
+		}
+	}
+}
+
+func TestOpenNotExistingDirectory(t *testing.T) {
+	dir, cleanup := TempDir(t)
+	defer cleanup()
+
+	// local.Open must not create any files dirs in the repo
+	openclose(t, filepath.Join(dir, "repo"))
+	empty(t, dir)
+
+	openclose(t, dir)
+	empty(t, dir)
 }
