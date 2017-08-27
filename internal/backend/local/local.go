@@ -25,6 +25,25 @@ var _ restic.Backend = &Local{}
 
 const defaultLayout = "default"
 
+// dirExists returns true if the name exists and is a directory.
+func dirExists(name string) bool {
+	f, err := fs.Open(name)
+	if err != nil {
+		return false
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		return false
+	}
+
+	if err = f.Close(); err != nil {
+		return false
+	}
+
+	return fi.IsDir()
+}
+
 // Open opens the local backend as specified by config.
 func Open(cfg Config) (*Local, error) {
 	debug.Log("open local backend at %v (layout %q)", cfg.Path, cfg.Layout)
@@ -36,10 +55,17 @@ func Open(cfg Config) (*Local, error) {
 	be := &Local{Config: cfg, Layout: l}
 
 	// if data dir exists, make sure that all subdirs also exist
-	for _, d := range be.Paths() {
-		err := fs.MkdirAll(d, backend.Modes.Dir)
-		if err != nil {
-			return nil, errors.Wrap(err, "MkdirAll")
+	datadir := be.Dirname(restic.Handle{Type: restic.DataFile})
+	if dirExists(datadir) {
+		for _, d := range be.Paths() {
+			if _, err := filepath.Rel(datadir, d); err != nil {
+				continue
+			}
+
+			err := fs.MkdirAll(d, backend.Modes.Dir)
+			if err != nil {
+				return nil, errors.Wrap(err, "MkdirAll")
+			}
 		}
 	}
 
