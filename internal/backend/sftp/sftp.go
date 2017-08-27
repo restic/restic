@@ -141,6 +141,10 @@ func (r *SFTP) checkDataSubdirs() error {
 
 	// check if all paths for data/ exist
 	entries, err := r.c.ReadDir(datadir)
+	if r.IsNotExist(err) {
+		return nil
+	}
+
 	if err != nil {
 		return err
 	}
