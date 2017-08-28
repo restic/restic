@@ -223,9 +223,14 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 		}).Media(rd).Do()
 
 	be.sem.ReleaseToken()
-	debug.Log("%v -> %v bytes, err %#v: %v", objName, info.Size, err, err)
 
-	return errors.Wrap(err, "service.Objects.Insert")
+	if err != nil {
+		debug.Log("%v: err %#v: %v", objName, err, err)
+		return errors.Wrap(err, "service.Objects.Insert")
+	}
+
+	debug.Log("%v -> %v bytes", objName, info.Size)
+	return nil
 }
 
 // wrapReader wraps an io.ReadCloser to run an additional function on Close.
