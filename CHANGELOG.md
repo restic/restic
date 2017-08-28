@@ -47,6 +47,12 @@ Small changes
  * The `key remove` command was corrected and now works as documented.
    https://github.com/restic/restic/pull/1164
 
+ * When a restic command other than `init` is used with a local repository and
+   the repository directory does not exist, restic creates the directory
+   structure. That's an error, only the `init` command should create the dir.
+   https://github.com/restic/restic/issues/1167
+   https://github.com/restic/restic/pull/1182
+
 
 Important Changes in 0.7.1
 ==========================
