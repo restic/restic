@@ -477,7 +477,7 @@ work!
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup ~/shared/work/web
+    $ restic -r /tmp/backup backup ~/work
     enter password for repository:
     using parent snapshot 40dc1520aa6a07b7b3ae561786770a01951245d2367241e71e9485f18ae8228c
     scan [/home/user/work]
@@ -491,7 +491,7 @@ You can even backup individual files in the same repository.
 .. code-block:: console
 
     $ restic -r /tmp/backup backup ~/work.txt
-    scan [~/work.txt]
+    scan [/home/user/work.txt]
     scanned 0 directories, 1 files in 0:00
     [0:00] 100.00%  0B/s  220B / 220B  1 / 1 items  0 errors  ETA 0:00
     duration: 0:00, 0.03MiB/s
@@ -592,7 +592,7 @@ information. Just specify the tags for a snapshot one by one with ``--tag``:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup --tag projectX -tag foo --tag bar ~/shared/work/web
+    $ restic -r /tmp/backup backup --tag projectX -tag foo --tag bar ~/work
     [...]
 
 The tags can later be used to keep (or forget) snapshots with the ``forget``
@@ -649,7 +649,7 @@ command to restore the contents of the latest snapshot to
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup restore 79766175 --target ~/tmp/restore-work
+    $ restic -r /tmp/backup restore 79766175 --target /tmp/restore-work
     enter password for repository:
     restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
 
@@ -659,9 +659,9 @@ backup for a specific host, path or both.
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup restore latest --target ~/tmp/restore-work --path "/home/art" --host luigi
+    $ restic -r /tmp/backup restore latest --target /tmp/restore-art --path "/home/art" --host luigi
     enter password for repository:
-    restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-work
+    restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-art
 
 Manage repository keys
 ----------------------
@@ -758,7 +758,7 @@ yield the same error:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup restore 79766175 --target ~/tmp/restore-work
+    $ restic -r /tmp/backup restore 79766175 --target /tmp/restore-work
     Load indexes
     ciphertext verification failed
 
