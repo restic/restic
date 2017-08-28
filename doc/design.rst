@@ -315,13 +315,12 @@ divided into a 16 byte AES key ``k`` followed by 16 bytes of secret key
 ``r``. The key ``r`` is then masked for use with Poly1305 (see the paper
 for details).
 
-Those message authentication keys (``k`` and ``r``) are used to compute
-a MAC over the bytes contained in the JSON field ``data`` (after
-removing the Base64 encoding and not including the last 32 byte). If the
+Those keys are used to authenticate and decrypt the bytes contained in
+the JSON field ``data`` with AES-256 and Poly1305-AES as if they were
+any other blob (after removing the Base64 encoding). If the
 password is incorrect or the key file has been tampered with, the
 computed MAC will not match the last 16 bytes of the data, and restic
-exits with an error. Otherwise, the data is decrypted with the
-encryption key derived from ``scrypt``. This yields a JSON document
+exits with an error. Otherwise, the data yields a JSON document
 which contains the master encryption and message authentication keys for
 this repository (encoded in Base64). The command
 ``restic cat masterkey`` can be used as follows to decrypt and
