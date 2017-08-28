@@ -251,21 +251,19 @@ func (k *Key) Encrypt(ciphertext []byte, plaintext []byte) ([]byte, error) {
 
 	// extend ciphertext slice if necessary
 	if len(ciphertext) < len(plaintext)+Extension {
-		ext := len(plaintext) + Extension - cap(ciphertext)
+		ext := len(plaintext) + Extension - len(ciphertext)
 		ciphertext = append(ciphertext, make([]byte, ext)...)
-		ciphertext = ciphertext[:cap(ciphertext)]
 	}
 
 	iv := newIV()
+	copy(ciphertext, iv[:])
+
 	c, err := aes.NewCipher(k.EncryptionKey[:])
 	if err != nil {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
-
-	e := cipher.NewCTR(c, iv[:])
-
+	e := cipher.NewCTR(c, ciphertext[:ivSize])
 	e.XORKeyStream(ciphertext[ivSize:], plaintext)
-	copy(ciphertext, iv[:])
 
 	// truncate to only cover iv and actual ciphertext
 	ciphertext = ciphertext[:ivSize+len(plaintext)]
@@ -285,12 +283,12 @@ func (k *Key) Decrypt(plaintext []byte, ciphertextWithMac []byte) (int, error) {
 	}
 
 	// check for plausible length
-	if len(ciphertextWithMac) < ivSize+macSize {
-		panic("trying to decrypt invalid data: ciphertext too small")
+	if len(ciphertextWithMac) < Extension {
+		return 0, errors.Errorf("trying to decrypt invalid data: ciphertext too small")
 	}
 
 	// check buffer length for plaintext
-	plaintextLength := len(ciphertextWithMac) - ivSize - macSize
+	plaintextLength := len(ciphertextWithMac) - Extension
 	if len(plaintext) < plaintextLength {
 		return 0, errors.Errorf("plaintext buffer too small, %d < %d", len(plaintext), plaintextLength)
 	}
@@ -299,16 +297,16 @@ func (k *Key) Decrypt(plaintext []byte, ciphertextWithMac []byte) (int, error) {
 	l := len(ciphertextWithMac) - macSize
 	ciphertextWithIV, mac := ciphertextWithMac[:l], ciphertextWithMac[l:]
 
-	// verify mac
-	if !poly1305Verify(ciphertextWithIV[ivSize:], ciphertextWithIV[:ivSize], &k.MACKey, mac) {
-		return 0, ErrUnauthenticated
-	}
-
 	// extract iv
 	iv, ciphertext := ciphertextWithIV[:ivSize], ciphertextWithIV[ivSize:]
 
+	// verify mac
+	if !poly1305Verify(ciphertext, iv, &k.MACKey, mac) {
+		return 0, ErrUnauthenticated
+	}
+
 	if len(ciphertext) != plaintextLength {
-		return 0, errors.Errorf("plaintext and ciphertext lengths do not match: %d != %d", len(ciphertext), plaintextLength)
+		panic("plaintext and ciphertext lengths do not match")
 	}
 
 	// decrypt data
@@ -316,10 +314,7 @@ func (k *Key) Decrypt(plaintext []byte, ciphertextWithMac []byte) (int, error) {
 	if err != nil {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
-
-	// decrypt
 	e := cipher.NewCTR(c, iv)
-	plaintext = plaintext[:len(ciphertext)]
 	e.XORKeyStream(plaintext, ciphertext)
 
 	return plaintextLength, nil
