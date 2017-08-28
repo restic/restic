@@ -663,6 +663,17 @@ backup for a specific host, path or both.
     enter password for repository:
     restoring <Snapshot of [/home/art] at 2015-05-08 21:45:17.884408621 +0200 CEST> to /tmp/restore-art
 
+Use ``--exclude`` and ``--include`` to restrict the restore to a subset of
+files in the snapshot. For example, to restore a single file:
+
+.. code-block:: console
+
+    $ restic -r /tmp/backup restore 79766175 --target /tmp/restore-work --include /work/foo
+    enter password for repository:
+    restoring <Snapshot of [/home/user/work] at 2015-05-08 21:40:19.884408621 +0200 CEST> to /tmp/restore-work
+
+This will restore the file ``foo`` to ``/tmp/restore-work/work/foo``.
+
 Manage repository keys
 ----------------------
 
