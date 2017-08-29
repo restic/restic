@@ -66,6 +66,7 @@ type BackupOptions struct {
 	Tags             []string
 	Hostname         string
 	FilesFrom        string
+	TimeStamp        string
 }
 
 var backupOptions BackupOptions
@@ -86,6 +87,7 @@ func init() {
 	f.StringArrayVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
 	f.StringVar(&backupOptions.Hostname, "hostname", "", "set the `hostname` for the snapshot manually")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
+	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 }
 
 func newScanProgress(gopts GlobalOptions) *restic.Progress {
@@ -493,7 +495,15 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		Warnf("%s\rwarning for %s: %v\n", ClearLine(), dir, err)
 	}
 
-	_, id, err := arch.Snapshot(context.TODO(), newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID)
+	timeStamp := time.Now()
+	if opts.TimeStamp != "" {
+		timeStamp, err = time.Parse(TimeFormat, opts.TimeStamp)
+		if err != nil {
+			return errors.Fatalf("error in time option: %v\n", err)
+		}
+	}
+
+	_, id, err := arch.Snapshot(context.TODO(), newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID, timeStamp)
 	if err != nil {
 		return err
 	}

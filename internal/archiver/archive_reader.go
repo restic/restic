@@ -28,7 +28,7 @@ func (r *Reader) Archive(ctx context.Context, name string, rd io.Reader, p *rest
 	}
 
 	debug.Log("start archiving %s", name)
-	sn, err := restic.NewSnapshot([]string{name}, r.Tags, r.Hostname)
+	sn, err := restic.NewSnapshot([]string{name}, r.Tags, r.Hostname, time.Now())
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
