@@ -19,10 +19,6 @@ var (
 	memProfilePath      string
 	cpuProfilePath      string
 	insecure            bool
-
-	prof interface {
-		Stop()
-	}
 )
 
 func init() {
@@ -54,10 +50,21 @@ func runDebug() error {
 		return errors.Fatal("only one profile (memory or CPU) may be activated at the same time")
 	}
 
+	var prof interface {
+		Stop()
+	}
+
 	if memProfilePath != "" {
-		prof = profile.Start(profile.Quiet, profile.MemProfile, profile.ProfilePath(memProfilePath))
+		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.MemProfile, profile.ProfilePath(memProfilePath))
 	} else if cpuProfilePath != "" {
-		prof = profile.Start(profile.Quiet, profile.CPUProfile, profile.ProfilePath(cpuProfilePath))
+		prof = profile.Start(profile.Quiet, profile.NoShutdownHook, profile.CPUProfile, profile.ProfilePath(cpuProfilePath))
+	}
+
+	if prof != nil {
+		AddCleanupHandler(func() error {
+			prof.Stop()
+			return nil
+		})
 	}
 
 	if insecure {
@@ -65,10 +72,4 @@ func runDebug() error {
 	}
 
 	return nil
-}
-
-func shutdownDebug() {
-	if prof != nil {
-		prof.Stop()
-	}
 }
