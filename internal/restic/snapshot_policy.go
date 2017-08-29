@@ -34,34 +34,34 @@ func (e ExpirePolicy) Empty() bool {
 }
 
 // ymdh returns an integer in the form YYYYMMDDHH.
-func ymdh(d time.Time) int {
+func ymdh(d time.Time, _ int) int {
 	return d.Year()*1000000 + int(d.Month())*10000 + d.Day()*100 + d.Hour()
 }
 
 // ymd returns an integer in the form YYYYMMDD.
-func ymd(d time.Time) int {
+func ymd(d time.Time, _ int) int {
 	return d.Year()*10000 + int(d.Month())*100 + d.Day()
 }
 
 // yw returns an integer in the form YYYYWW, where WW is the week number.
-func yw(d time.Time) int {
+func yw(d time.Time, _ int) int {
 	year, week := d.ISOWeek()
 	return year*100 + week
 }
 
 // ym returns an integer in the form YYYYMM.
-func ym(d time.Time) int {
+func ym(d time.Time, _ int) int {
 	return d.Year()*100 + int(d.Month())
 }
 
 // y returns the year of d.
-func y(d time.Time) int {
+func y(d time.Time, _ int) int {
 	return d.Year()
 }
 
 // always returns a unique number for d.
-func always(d time.Time) int {
-	return int(d.UnixNano())
+func always(d time.Time, nr int) int {
+	return nr
 }
 
 // ApplyPolicy returns the snapshots from list that are to be kept and removed
@@ -79,7 +79,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 
 	var buckets = [6]struct {
 		Count  int
-		bucker func(d time.Time) int
+		bucker func(d time.Time, nr int) int
 		Last   int
 	}{
 		{p.Last, always, -1},
@@ -90,7 +90,9 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		{p.Yearly, y, -1},
 	}
 
+	var nr int
 	for _, cur := range list {
+		nr = nr + 1
 		var keepSnap bool
 
 		// Tags are handled specially as they are not counted.
@@ -103,7 +105,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		// Now update the other buckets and see if they have some counts left.
 		for i, b := range buckets {
 			if b.Count > 0 {
-				val := b.bucker(cur.Time)
+				val := b.bucker(cur.Time, nr)
 				if val != b.Last {
 					keepSnap = true
 					buckets[i].Last = val
