@@ -38,9 +38,10 @@ type ForgetOptions struct {
 	Tags  restic.TagLists
 	Paths []string
 
-	GroupByTags bool
-	DryRun      bool
-	Prune       bool
+	GroupByTags     bool
+	GroupByTagsOnly bool
+	DryRun          bool
+	Prune           bool
 }
 
 var forgetOptions ForgetOptions
@@ -58,6 +59,7 @@ func init() {
 
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
 	f.BoolVarP(&forgetOptions.GroupByTags, "group-by-tags", "G", false, "Group by host,paths,tags instead of just host,paths")
+	f.BoolVarP(&forgetOptions.GroupByTagsOnly, "group-by-tags-only", "", false, "Group by tags only instead of host,paths")
 	// Sadly the commonly used shortcut `H` is already used.
 	f.StringVar(&forgetOptions.Host, "host", "", "only consider snapshots with the given `host`")
 	// Deprecated since 2017-03-07.
@@ -107,12 +109,18 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			}
 		} else {
 			var tags []string
-			if opts.GroupByTags {
+			if opts.GroupByTags || opts.GroupByTagsOnly {
 				tags = sn.Tags
 				sort.StringSlice(tags).Sort()
 			}
 			sort.StringSlice(sn.Paths).Sort()
-			k, err := json.Marshal(key{Hostname: sn.Hostname, Tags: tags, Paths: sn.Paths})
+			var k []byte
+			var err error
+			if opts.GroupByTagsOnly {
+				k, err = json.Marshal(key{Tags: tags})
+			} else {
+				k, err = json.Marshal(key{Hostname: sn.Hostname, Tags: tags, Paths: sn.Paths})
+			}
 			if err != nil {
 				return err
 			}
@@ -144,7 +152,9 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		if json.Unmarshal([]byte(k), &key) != nil {
 			return err
 		}
-		if opts.GroupByTags {
+		if opts.GroupByTagsOnly {
+			Verbosef("snapshots for tags [%v]:\n\n", strings.Join(key.Tags, ", "))
+		} else if opts.GroupByTags {
 			Verbosef("snapshots for host %v, tags [%v], paths: [%v]:\n\n", key.Hostname, strings.Join(key.Tags, ", "), strings.Join(key.Paths, ", "))
 		} else {
 			Verbosef("snapshots for host %v, paths: [%v]:\n\n", key.Hostname, strings.Join(key.Paths, ", "))
