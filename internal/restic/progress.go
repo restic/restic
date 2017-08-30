@@ -3,6 +3,7 @@ package restic
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -52,7 +53,7 @@ type ProgressFunc func(s Stat, runtime time.Duration, ticker bool)
 // OnDone is called when Done() is called. Both functions are called
 // synchronously and can use shared state.
 func NewProgress() *Progress {
-	var d time.Duration
+	d := getProgressIntervalEnv()
 	if isTerminal {
 		d = time.Second
 	}
@@ -216,4 +217,14 @@ func (s Stat) String() string {
 
 	return fmt.Sprintf("Stat(%d files, %d dirs, %v trees, %v blobs, %d errors, %v)",
 		s.Files, s.Dirs, s.Trees, s.Blobs, s.Errors, str)
+}
+
+func getProgressIntervalEnv() time.Duration {
+	if e := os.Getenv("RESTIC_PROGRESS_INTERVAL"); e != "" {
+		i, err := strconv.ParseInt(e, 0, 0)
+		if err == nil {
+			return time.Duration(i) * time.Second
+		}
+	}
+	return 0
 }
