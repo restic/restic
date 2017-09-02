@@ -3,6 +3,7 @@ sudo: false
 
 go:
   - 1.8.3
+  - 1.9
   - tip
 
 os:
@@ -17,11 +18,13 @@ matrix:
   exclude:
     - os: osx
       go: tip
-    - os: linux
+    - os: osx
       go: 1.8.3
+    - os: linux
+      go: 1.9
   include:
     - os: linux
-      go: 1.8.3
+      go: 1.9
       sudo: true
       env:
         RESTIC_TEST_FUSE=1
