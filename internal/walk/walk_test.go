@@ -25,7 +25,7 @@ func TestWalkTree(t *testing.T) {
 
 	// archive a few files
 	arch := archiver.New(repo)
-	sn, _, err := arch.Snapshot(context.TODO(), nil, dirs, nil, "localhost", nil)
+	sn, _, err := arch.Snapshot(context.TODO(), nil, dirs, nil, "localhost", nil, time.Now())
 	OK(t, err)
 
 	// flush repo, write all packs
