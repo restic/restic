@@ -52,9 +52,6 @@ directories in an encrypted repository stored on different backends.
 
 		return nil
 	},
-	PersistentPostRun: func(*cobra.Command, []string) {
-		shutdownDebug()
-	},
 }
 
 var logBuffer = bytes.NewBuffer(nil)
