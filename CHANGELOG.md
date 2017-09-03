@@ -58,6 +58,12 @@ Small changes
    https://github.com/restic/restic/pull/1203
    https://github.com/restic/restic/pull/1082#issuecomment-326279920
 
+ * Since a few releases restic had the ability to write profiling files for
+   memory and CPU usage when `debug` is enabled. It was discovered that when
+   restic is interrupted (ctrl+c is pressed), the proper shutdown hook is not
+   run. This is now corrected.
+   https://github.com/restic/restic/pull/1191
+
 Important Changes in 0.7.1
 ==========================
 
