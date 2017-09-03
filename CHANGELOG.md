@@ -53,6 +53,10 @@ Small changes
    https://github.com/restic/restic/issues/1167
    https://github.com/restic/restic/pull/1182
 
+ * Restic now prints stats on all BSD systems (not only on darwin) when SIGINFO
+   is received (usually when ctrl+t is pressed).
+   https://github.com/restic/restic/pull/1203
+   https://github.com/restic/restic/pull/1082#issuecomment-326279920
 
 Important Changes in 0.7.1
 ==========================
