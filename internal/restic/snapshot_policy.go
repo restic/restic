@@ -90,8 +90,7 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 		{p.Yearly, y, -1},
 	}
 
-	var nr int
-	for _, cur := range list {
+	for nr, cur := range list {
 		nr = nr + 1
 		var keepSnap bool
 
