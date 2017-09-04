@@ -17,6 +17,10 @@ var ErrBadString = errors.New("filter.Match: string is empty")
 //
 // Pattern can be a combination of patterns suitable for filepath.Match, joined
 // by filepath.Separator.
+//
+// In addition patterns suitable for filepath.Match, pattern accepts a
+// recursive wildcard '**', which greedily matches an arbitrary number of
+// intermediate directories.
 func Match(pattern, str string) (matched bool, err error) {
 	if pattern == "" {
 		return true, nil
@@ -46,6 +50,10 @@ func Match(pattern, str string) (matched bool, err error) {
 //
 // Pattern can be a combination of patterns suitable for filepath.Match, joined
 // by filepath.Separator.
+//
+// In addition patterns suitable for filepath.Match, pattern accepts a
+// recursive wildcard '**', which greedily matches an arbitrary number of
+// intermediate directories.
 func ChildMatch(pattern, str string) (matched bool, err error) {
 	if pattern == "" {
 		return true, nil
