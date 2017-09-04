@@ -26,6 +26,10 @@ Important Changes in 0.X.Y
  * In the course of supporting Microsoft Azure Blobe Storage Go 1.8 is now a
    requirement to build restic.
 
+ * The `restore` command has been improved: When dirs are excluded (or not
+   included) in a restore, they are not loaded from the repo any more.
+   https://github.com/restic/restic/pull/1044
+
 
 Small changes
 -------------
