@@ -383,7 +383,22 @@ func (arch *Archiver) dirWorker(ctx context.Context, wg *sync.WaitGroup, p *rest
 						panic("invalid null subtree restic.ID")
 					}
 				}
-				tree.Insert(node)
+
+				// insert node into tree, resolve name collisions
+				name := node.Name
+				i := 0
+				for {
+					i++
+					err := tree.Insert(node)
+					if err == nil {
+						break
+					}
+
+					newName := fmt.Sprintf("%v-%d", name, i)
+					fmt.Fprintf(os.Stderr, "%v: name collision for %q, renaming to %q\n", filepath.Dir(node.Path), node.Name, newName)
+					node.Name = newName
+				}
+
 			}
 
 			node := &restic.Node{}
