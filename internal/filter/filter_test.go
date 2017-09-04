@@ -124,6 +124,77 @@ func TestMatch(t *testing.T) {
 	}
 }
 
+var childMatchTests = []struct {
+	pattern string
+	path    string
+	match   bool
+}{
+	{"", "", true},
+	{"", "/foo", true},
+	{"", "/x/y/z/foo", true},
+	{"foo/bar", "/foo", true},
+	{"baz/bar", "/foo", true},
+	{"foo", "/foo/bar", true},
+	{"bar", "/foo", true},
+	{"baz", "/foo/bar", true},
+	{"*", "/foo", true},
+	{"*", "/foo/bar", true},
+	{"/foo/bar", "/foo", true},
+	{"/foo/bar/baz", "/foo", true},
+	{"/foo/bar/baz", "/foo/bar", true},
+	{"/foo/bar/baz", "/foo/baz", false},
+	{"/foo/**/baz", "/foo/bar/baz", true},
+	{"/foo/**/qux", "/foo/bar/baz/qux", true},
+	{"/baz/bar", "/foo", false},
+	{"/foo", "/foo/bar", true},
+	{"/*", "/foo", true},
+	{"/*", "/foo/bar", true},
+	{"/foo", "/foo/bar", true},
+	{"/**", "/foo", true},
+	{"/*/**", "/foo", true},
+	{"/*/**", "/foo/bar", true},
+	{"/*/bar", "/foo", true},
+	{"/bar/*", "/foo", false},
+	{"/foo/*/baz", "/foo/bar", true},
+	{"/foo/*/baz", "/foo/baz", true},
+	{"/foo/*/baz", "/bar/baz", false},
+	{"/**/*", "/foo", true},
+	{"/**/bar", "/foo/bar", true},
+}
+
+func testchildpattern(t *testing.T, pattern, path string, shouldMatch bool) {
+	match, err := filter.ChildMatch(pattern, path)
+	if err != nil {
+		t.Errorf("test child pattern %q failed: expected no error for path %q, but error returned: %v",
+			pattern, path, err)
+	}
+
+	if match != shouldMatch {
+		t.Errorf("test: filter.ChildMatch(%q, %q): expected %v, got %v",
+			pattern, path, shouldMatch, match)
+	}
+}
+
+func TestChildMatch(t *testing.T) {
+	for _, test := range childMatchTests {
+		testchildpattern(t, test.pattern, test.path, test.match)
+
+		// Test with native path separator
+		if filepath.Separator != '/' {
+			// Test with pattern as native
+			pattern := strings.Replace(test.pattern, "/", string(filepath.Separator), -1)
+			testchildpattern(t, pattern, test.path, test.match)
+
+			// Test with path as native
+			path := strings.Replace(test.path, "/", string(filepath.Separator), -1)
+			testchildpattern(t, test.pattern, path, test.match)
+
+			// Test with both pattern and path as native
+			testchildpattern(t, pattern, path, test.match)
+		}
+	}
+}
+
 func ExampleMatch() {
 	match, _ := filter.Match("*.go", "/home/user/file.go")
 	fmt.Printf("match: %v\n", match)
@@ -157,7 +228,7 @@ var filterListTests = []struct {
 
 func TestList(t *testing.T) {
 	for i, test := range filterListTests {
-		match, err := filter.List(test.patterns, test.path)
+		match, _, err := filter.List(test.patterns, test.path)
 		if err != nil {
 			t.Errorf("test %d failed: expected no error for patterns %q, but error returned: %v",
 				i, test.patterns, err)
@@ -172,7 +243,7 @@ func TestList(t *testing.T) {
 }
 
 func ExampleList() {
-	match, _ := filter.List([]string{"*.c", "*.go"}, "/home/user/file.go")
+	match, _, _ := filter.List([]string{"*.c", "*.go"}, "/home/user/file.go")
 	fmt.Printf("match: %v\n", match)
 	// Output:
 	// match: true
@@ -271,7 +342,7 @@ func BenchmarkFilterPatterns(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		c = 0
 		for _, line := range lines {
-			match, err := filter.List(patterns, line)
+			match, _, err := filter.List(patterns, line)
 			if err != nil {
 				b.Fatal(err)
 			}

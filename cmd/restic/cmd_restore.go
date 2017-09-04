@@ -113,22 +113,32 @@ func runRestore(opts RestoreOptions, gopts GlobalOptions, args []string) error {
 		return nil
 	}
 
-	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) bool {
-		matched, err := filter.List(opts.Exclude, item)
+	selectExcludeFilter := func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+		matched, _, err := filter.List(opts.Exclude, item)
 		if err != nil {
 			Warnf("error for exclude pattern: %v", err)
 		}
 
-		return !matched
+		// An exclude filter is basically a 'wildcard but foo',
+		// so even if a childMayMatch, other children of a dir may not,
+		// therefore childMayMatch does not matter, but we should not go down
+		// unless the dir is selected for restore
+		selectedForRestore = !matched
+		childMayBeSelected = selectedForRestore && node.Type == "dir"
+
+		return selectedForRestore, childMayBeSelected
 	}
 
-	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) bool {
-		matched, err := filter.List(opts.Include, item)
+	selectIncludeFilter := func(item string, dstpath string, node *restic.Node) (selectedForRestore bool, childMayBeSelected bool) {
+		matched, childMayMatch, err := filter.List(opts.Include, item)
 		if err != nil {
 			Warnf("error for include pattern: %v", err)
 		}
 
-		return matched
+		selectedForRestore = matched
+		childMayBeSelected = childMayMatch && node.Type == "dir"
+
+		return selectedForRestore, childMayBeSelected
 	}
 
 	if len(opts.Exclude) > 0 {

@@ -417,7 +417,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	selectFilter := func(item string, fi os.FileInfo) bool {
-		matched, err := filter.List(opts.Excludes, item)
+		matched, _, err := filter.List(opts.Excludes, item)
 		if err != nil {
 			Warnf("error for exclude pattern: %v", err)
 		}

@@ -40,6 +40,51 @@ func Match(pattern, str string) (matched bool, err error) {
 	return match(patterns, strs)
 }
 
+// ChildMatch returns true if children of str can match the pattern. When the pattern is
+// malformed, filepath.ErrBadPattern is returned. The empty pattern matches
+// everything, when str is the empty string ErrBadString is returned.
+//
+// Pattern can be a combination of patterns suitable for filepath.Match, joined
+// by filepath.Separator.
+func ChildMatch(pattern, str string) (matched bool, err error) {
+	if pattern == "" {
+		return true, nil
+	}
+
+	pattern = filepath.Clean(pattern)
+
+	if str == "" {
+		return false, ErrBadString
+	}
+
+	// convert file path separator to '/'
+	if filepath.Separator != '/' {
+		pattern = strings.Replace(pattern, string(filepath.Separator), "/", -1)
+		str = strings.Replace(str, string(filepath.Separator), "/", -1)
+	}
+
+	patterns := strings.Split(pattern, "/")
+	strs := strings.Split(str, "/")
+
+	return childMatch(patterns, strs)
+}
+
+func childMatch(patterns, strs []string) (matched bool, err error) {
+	if patterns[0] != "" {
+		// relative pattern can always be nested down
+		return true, nil
+	}
+
+	// match path against absolute pattern prefix
+	l := 0
+	if len(strs) > len(patterns) {
+		l = len(patterns)
+	} else {
+		l = len(strs)
+	}
+	return match(patterns[0:l], strs)
+}
+
 func hasDoubleWildcard(list []string) (ok bool, pos int) {
 	for i, item := range list {
 		if item == "**" {
@@ -102,21 +147,29 @@ func match(patterns, strs []string) (matched bool, err error) {
 
 // List returns true if str matches one of the patterns. Empty patterns are
 // ignored.
-func List(patterns []string, str string) (matched bool, err error) {
+func List(patterns []string, str string) (matched bool, childMayMatch bool, err error) {
 	for _, pat := range patterns {
 		if pat == "" {
 			continue
 		}
 
-		matched, err = Match(pat, str)
+		m, err := Match(pat, str)
 		if err != nil {
-			return false, err
+			return false, false, err
 		}
 
-		if matched {
-			return true, nil
+		c, err := ChildMatch(pat, str)
+		if err != nil {
+			return false, false, err
+		}
+
+		matched = matched || m
+		childMayMatch = childMayMatch || c
+
+		if matched && childMayMatch {
+			return true, true, nil
 		}
 	}
 
-	return false, nil
+	return matched, childMayMatch, nil
 }
