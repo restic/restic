@@ -30,6 +30,10 @@ Important Changes in 0.X.Y
    included) in a restore, they are not loaded from the repo any more.
    https://github.com/restic/restic/pull/1044
 
+ * Name collisions are now resolved by appending a counter.
+   https://github.com/restic/restic/issues/1179
+   https://github.com/restic/restic/pull/1209
+
 
 Small changes
 -------------
