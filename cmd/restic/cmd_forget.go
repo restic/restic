@@ -38,8 +38,8 @@ type ForgetOptions struct {
 	Tags  restic.TagLists
 	Paths []string
 
-	GroupByTags     bool
-	GroupByTagsOnly bool
+	// Grouping
+	GroupBy		string
 	DryRun          bool
 	Prune           bool
 }
@@ -58,8 +58,6 @@ func init() {
 	f.IntVarP(&forgetOptions.Yearly, "keep-yearly", "y", 0, "keep the last `n` yearly snapshots")
 
 	f.Var(&forgetOptions.KeepTags, "keep-tag", "keep snapshots with this `taglist` (can be specified multiple times)")
-	f.BoolVarP(&forgetOptions.GroupByTags, "group-by-tags", "G", false, "Group by host,paths,tags instead of just host,paths")
-	f.BoolVarP(&forgetOptions.GroupByTagsOnly, "group-by-tags-only", "", false, "Group by tags only instead of host,paths")
 	// Sadly the commonly used shortcut `H` is already used.
 	f.StringVar(&forgetOptions.Host, "host", "", "only consider snapshots with the given `host`")
 	// Deprecated since 2017-03-07.
@@ -67,6 +65,7 @@ func init() {
 	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
 
+	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "string for grouping snapshots by host,paths,tags")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
 	f.BoolVar(&forgetOptions.Prune, "prune", false, "automatically run the 'prune' command if snapshots have been removed")
 
@@ -93,6 +92,14 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	}
 	snapshotGroups := make(map[string]restic.Snapshots)
 
+	var GroupByTag      bool
+	var GroupByHost     bool
+	var GroupByPath     bool
+
+	GroupByTag = strings.Contains( opts.GroupBy, "tag" )
+	GroupByHost = strings.Contains( opts.GroupBy, "host" )
+	GroupByPath = strings.Contains( opts.GroupBy, "path" )
+
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
@@ -108,19 +115,28 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 				Verbosef("would have removed snapshot %v\n", sn.ID().Str())
 			}
 		} else {
+			// Determing grouping-keys
 			var tags []string
-			if opts.GroupByTags || opts.GroupByTagsOnly {
+			var hostname string
+			var paths []string
+
+			if GroupByTag {
 				tags = sn.Tags
 				sort.StringSlice(tags).Sort()
 			}
+			if GroupByHost {
+				hostname = sn.Hostname
+			}
+			if GroupByPath {
+				paths = sn.Paths
+			}
+
 			sort.StringSlice(sn.Paths).Sort()
 			var k []byte
 			var err error
-			if opts.GroupByTagsOnly {
-				k, err = json.Marshal(key{Tags: tags})
-			} else {
-				k, err = json.Marshal(key{Hostname: sn.Hostname, Tags: tags, Paths: sn.Paths})
-			}
+
+			k, err = json.Marshal(key{Tags: tags, Hostname: hostname, Paths: paths})
+
 			if err != nil {
 				return err
 			}
@@ -152,13 +168,24 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		if json.Unmarshal([]byte(k), &key) != nil {
 			return err
 		}
-		if opts.GroupByTagsOnly {
-			Verbosef("snapshots for tags [%v]:\n\n", strings.Join(key.Tags, ", "))
-		} else if opts.GroupByTags {
-			Verbosef("snapshots for host %v, tags [%v], paths: [%v]:\n\n", key.Hostname, strings.Join(key.Tags, ", "), strings.Join(key.Paths, ", "))
-		} else {
-			Verbosef("snapshots for host %v, paths: [%v]:\n\n", key.Hostname, strings.Join(key.Paths, ", "))
+
+		// Info
+		Verbosef( "snapshots" )
+		var infoStrings []string
+		if GroupByTag {
+			infoStrings = append( infoStrings, "tags [" + strings.Join( key.Tags, ", " ) + "]" )
 		}
+		if GroupByHost {
+			infoStrings = append( infoStrings, "host [" + key.Hostname + "]" )
+		}
+		if GroupByPath {
+			infoStrings = append( infoStrings, "paths [" + strings.Join( key.Paths, ", " ) + "]" )
+		}
+		if infoStrings != nil {
+			Verbosef( " for ("  + strings.Join( infoStrings, ", " ) + ")" )
+		}
+		Verbosef( ":\n\n" )
+
 		keep, remove := restic.ApplyPolicy(snapshotGroup, policy)
 
 		if len(keep) != 0 && !gopts.Quiet {
