@@ -51,10 +51,6 @@ data after 'forget' was run successfully, see the 'prune' command.
     keep snapshots with this \fB\fCtaglist\fR (can be specified multiple times)
 
 .PP
-\fB\-G\fP, \fB\-\-group\-by\-tags\fP[=false]
-    Group by host,paths,tags instead of just host,paths
-
-.PP
 \fB\-\-host\fP=""
     only consider snapshots with the given \fB\fChost\fR
 
@@ -69,6 +65,10 @@ data after 'forget' was run successfully, see the 'prune' command.
 .PP
 \fB\-\-path\fP=[]
     only consider snapshots which include this (absolute) \fB\fCpath\fR (can be specified multiple times)
+
+.PP
+\fB\-g\fP, \fB\-\-group\-by\fP="host,paths"
+    string for grouping snapshots by host,paths,tags
 
 .PP
 \fB\-n\fP, \fB\-\-dry\-run\fP[=false]

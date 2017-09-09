@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/restic"
+	"github.com/restic/restic/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -95,10 +96,19 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	var GroupByTag      bool
 	var GroupByHost     bool
 	var GroupByPath     bool
+	var GroupOptionList []string
 
-	GroupByTag = strings.Contains( opts.GroupBy, "tag" )
-	GroupByHost = strings.Contains( opts.GroupBy, "host" )
-	GroupByPath = strings.Contains( opts.GroupBy, "path" )
+	GroupOptionList = strings.Split( opts.GroupBy, "," )
+
+	for _, option := range GroupOptionList {
+		switch( option ) {
+			case "host": GroupByHost = true
+			case "paths": GroupByPath = true
+			case "tags": GroupByTag = true
+			case "":
+			default: return errors.Fatal( "unknown grouping option: '" + option + "'" )
+		}
+	}
 
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
