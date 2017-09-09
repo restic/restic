@@ -354,7 +354,7 @@ func TestArchiveNameCollision(t *testing.T) {
 
 	arch := archiver.New(repo)
 
-	sn, id, err := arch.Snapshot(context.TODO(), nil, []string{"testfile", filepath.Join("..", "testfile")}, nil, "localhost", nil)
+	sn, id, err := arch.Snapshot(context.TODO(), nil, []string{"testfile", filepath.Join("..", "testfile")}, nil, "localhost", nil, time.Now())
 	OK(t, err)
 
 	t.Logf("snapshot archived as %v", id)
