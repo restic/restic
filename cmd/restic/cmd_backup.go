@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -53,16 +54,18 @@ given as the arguments.
 
 // BackupOptions bundles all options for the backup command.
 type BackupOptions struct {
-	Parent         string
-	Force          bool
-	Excludes       []string
-	ExcludeFiles   []string
-	ExcludeOtherFS bool
-	Stdin          bool
-	StdinFilename  string
-	Tags           []string
-	Hostname       string
-	FilesFrom      string
+	Parent           string
+	Force            bool
+	Excludes         []string
+	ExcludeFiles     []string
+	ExcludeOtherFS   bool
+	ExcludeIfPresent string
+	ExcludeCaches    bool
+	Stdin            bool
+	StdinFilename    string
+	Tags             []string
+	Hostname         string
+	FilesFrom        string
 }
 
 var backupOptions BackupOptions
@@ -76,6 +79,8 @@ func init() {
 	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
+	f.StringVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", "", "takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided")
+	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file`)
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
 	f.StringArrayVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
@@ -416,6 +421,18 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
 	}
 
+	if opts.ExcludeCaches {
+		if opts.ExcludeIfPresent != "" {
+			return fmt.Errorf("cannot have --exclude-caches defined at the same time as --exclude-if-present")
+		}
+		opts.ExcludeIfPresent = "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55"
+	}
+
+	excludeByFile, err := excludeByFile(opts.ExcludeIfPresent)
+	if err != nil {
+		return err
+	}
+
 	selectFilter := func(item string, fi os.FileInfo) bool {
 		matched, _, err := filter.List(opts.Excludes, item)
 		if err != nil {
@@ -424,6 +441,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 		if matched {
 			debug.Log("path %q excluded by a filter", item)
+			return false
+		}
+
+		if excludeByFile(item) {
+			debug.Log("path %q excluded by tagfile", item)
 			return false
 		}
 
@@ -521,4 +543,87 @@ func readExcludePatternsFromFiles(excludeFiles []string) []string {
 		}
 	}
 	return excludes
+}
+
+// FilenameCheck is a function that takes a filename and returns a boolean
+// depending on arbitrary check.
+type FilenameCheck func(filename string) bool
+
+// excludeByFile returns a FilenameCheck which itself returns whether a path
+// should be excluded. The FilenameCheck considers a file to be excluded when
+// it resides in a directory with an exclusion file, that is specified by
+// excludeFileSpec in the form "filename[:content]". The returned error is
+// non-nil if the filename component of excludeFileSpec is empty.
+func excludeByFile(excludeFileSpec string) (FilenameCheck, error) {
+	if excludeFileSpec == "" {
+		return func(string) bool { return false }, nil
+	}
+	colon := strings.Index(excludeFileSpec, ":")
+	if colon == 0 {
+		return nil, fmt.Errorf("no name for exclusion tagfile provided")
+	}
+	tf, tc := "", ""
+	if colon > 0 {
+		tf = excludeFileSpec[:colon]
+		tc = excludeFileSpec[colon+1:]
+	} else {
+		tf = excludeFileSpec
+	}
+	debug.Log("using %q as exclusion tagfile", tf)
+	fn := func(filename string) bool {
+		return isExcludedByFile(filename, tf, tc)
+	}
+	return fn, nil
+}
+
+// isExcludedByFile interprets filename as a path and returns true if that file
+// is in a excluded directory. A directory is identified as excluded if it contains a
+// tagfile which bears the name specified in tagFilename and starts with header.
+func isExcludedByFile(filename, tagFilename, header string) bool {
+	if tagFilename == "" {
+		return false
+	}
+	dir, base := filepath.Split(filename)
+	if base == tagFilename {
+		return false // do not exclude the tagfile itself
+	}
+	tf := filepath.Join(dir, tagFilename)
+	_, err := fs.Lstat(tf)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		Warnf("could not access exclusion tagfile: %v", err)
+		return false
+	}
+	// when no signature is given, the mere presence of tf is enough reason
+	// to exclude filename
+	if len(header) == 0 {
+		return true
+	}
+	// From this stage, errors mean tagFilename exists but it is malformed.
+	// Warnings will be generated so that the user is informed that the
+	// indented ignore-action is not performed.
+	f, err := os.Open(tf)
+	if err != nil {
+		Warnf("could not open exclusion tagfile: %v", err)
+		return false
+	}
+	defer f.Close()
+	buf := make([]byte, len(header))
+	_, err = io.ReadFull(f, buf)
+	// EOF is handled with a dedicated message, otherwise the warning were too cryptic
+	if err == io.EOF {
+		Warnf("invalid (too short) signature in exclusion tagfile %q\n", tf)
+		return false
+	}
+	if err != nil {
+		Warnf("could not read signature from exclusion tagfile %q: %v\n", tf, err)
+		return false
+	}
+	if bytes.Compare(buf, []byte(header)) != 0 {
+		Warnf("invalid signature in exclusion tagfile %q\n", tf)
+		return false
+	}
+	return true
 }

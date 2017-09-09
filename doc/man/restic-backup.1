@@ -25,8 +25,16 @@ given as the arguments.
     exclude a \fB\fCpattern\fR (can be specified multiple times)
 
 .PP
+\fB\-\-exclude\-caches\fP[=false]
+    excludes cache directories that are marked with a CACHEDIR.TAG file
+
+.PP
 \fB\-\-exclude\-file\fP=[]
     read exclude patterns from a \fB\fCfile\fR (can be specified multiple times)
+
+.PP
+\fB\-\-exclude\-if\-present\fP=""
+    takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided
 
 .PP
 \fB\-\-files\-from\fP=""
