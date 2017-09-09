@@ -123,7 +123,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int)
 			return nil, ErrMaxKeysReached
 		}
 
-		debug.Log("trying key %v", name[:12])
+		debug.Log("trying key %q", name)
 		key, err := OpenKey(ctx, s, name, password)
 		if err != nil {
 			debug.Log("key %v returned error %v", name[:12], err)
