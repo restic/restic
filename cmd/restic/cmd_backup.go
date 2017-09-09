@@ -59,7 +59,7 @@ type BackupOptions struct {
 	Excludes         []string
 	ExcludeFiles     []string
 	ExcludeOtherFS   bool
-	ExcludeIfPresent string
+	ExcludeIfPresent []string
 	ExcludeCaches    bool
 	Stdin            bool
 	StdinFilename    string
@@ -79,7 +79,7 @@ func init() {
 	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
-	f.StringVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", "", "takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided")
+	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file`)
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
@@ -423,15 +423,17 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.ExcludeCaches {
-		if opts.ExcludeIfPresent != "" {
-			return fmt.Errorf("cannot have --exclude-caches defined at the same time as --exclude-if-present")
-		}
-		opts.ExcludeIfPresent = "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55"
+		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
 	}
 
-	excludeByFile, err := excludeByFile(opts.ExcludeIfPresent)
-	if err != nil {
-		return err
+	var excludesByFile []FilenameCheck
+	for _, spec := range opts.ExcludeIfPresent {
+		f, err := excludeByFile(spec)
+		if err != nil {
+			return err
+		}
+
+		excludesByFile = append(excludesByFile, f)
 	}
 
 	selectFilter := func(item string, fi os.FileInfo) bool {
@@ -445,9 +447,11 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 			return false
 		}
 
-		if excludeByFile(item) {
-			debug.Log("path %q excluded by tagfile", item)
-			return false
+		for _, excludeByFile := range excludesByFile {
+			if excludeByFile(item) {
+				debug.Log("path %q excluded by tagfile", item)
+				return false
+			}
 		}
 
 		if !opts.ExcludeOtherFS || fi == nil {
