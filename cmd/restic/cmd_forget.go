@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
 )
 
@@ -40,9 +40,9 @@ type ForgetOptions struct {
 	Paths []string
 
 	// Grouping
-	GroupBy		string
-	DryRun          bool
-	Prune           bool
+	GroupBy string
+	DryRun  bool
+	Prune   bool
 }
 
 var forgetOptions ForgetOptions
@@ -93,20 +93,24 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 	}
 	snapshotGroups := make(map[string]restic.Snapshots)
 
-	var GroupByTag      bool
-	var GroupByHost     bool
-	var GroupByPath     bool
+	var GroupByTag bool
+	var GroupByHost bool
+	var GroupByPath bool
 	var GroupOptionList []string
 
-	GroupOptionList = strings.Split( opts.GroupBy, "," )
+	GroupOptionList = strings.Split(opts.GroupBy, ",")
 
 	for _, option := range GroupOptionList {
-		switch( option ) {
-			case "host": GroupByHost = true
-			case "paths": GroupByPath = true
-			case "tags": GroupByTag = true
-			case "":
-			default: return errors.Fatal( "unknown grouping option: '" + option + "'" )
+		switch option {
+		case "host":
+			GroupByHost = true
+		case "paths":
+			GroupByPath = true
+		case "tags":
+			GroupByTag = true
+		case "":
+		default:
+			return errors.Fatal("unknown grouping option: '" + option + "'")
 		}
 	}
 
@@ -180,21 +184,21 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		// Info
-		Verbosef( "snapshots" )
+		Verbosef("snapshots")
 		var infoStrings []string
 		if GroupByTag {
-			infoStrings = append( infoStrings, "tags [" + strings.Join( key.Tags, ", " ) + "]" )
+			infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
 		}
 		if GroupByHost {
-			infoStrings = append( infoStrings, "host [" + key.Hostname + "]" )
+			infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
 		}
 		if GroupByPath {
-			infoStrings = append( infoStrings, "paths [" + strings.Join( key.Paths, ", " ) + "]" )
+			infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
 		}
 		if infoStrings != nil {
-			Verbosef( " for ("  + strings.Join( infoStrings, ", " ) + ")" )
+			Verbosef(" for (" + strings.Join(infoStrings, ", ") + ")")
 		}
-		Verbosef( ":\n\n" )
+		Verbosef(":\n\n")
 
 		keep, remove := restic.ApplyPolicy(snapshotGroup, policy)
 
