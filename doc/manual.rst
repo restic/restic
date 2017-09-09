@@ -592,7 +592,7 @@ information. Just specify the tags for a snapshot one by one with ``--tag``:
 
 .. code-block:: console
 
-    $ restic -r /tmp/backup backup --tag projectX -tag foo --tag bar ~/work
+    $ restic -r /tmp/backup backup --tag projectX --tag foo --tag bar ~/work
     [...]
 
 The tags can later be used to keep (or forget) snapshots with the ``forget``
