@@ -426,7 +426,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
 	}
 
-	var excludesByFile []FilenameCheck
+	var excludesByFile []RejectFunc
 	for _, spec := range opts.ExcludeIfPresent {
 		f, err := excludeByFile(spec)
 		if err != nil {
@@ -448,7 +448,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		}
 
 		for _, excludeByFile := range excludesByFile {
-			if excludeByFile(item) {
+			if excludeByFile(item, fi) {
 				debug.Log("path %q excluded by tagfile", item)
 				return false
 			}
@@ -550,18 +550,19 @@ func readExcludePatternsFromFiles(excludeFiles []string) []string {
 	return excludes
 }
 
-// FilenameCheck is a function that takes a filename and returns a boolean
-// depending on arbitrary check.
-type FilenameCheck func(filename string) bool
+// RejectFunc is a function that takes a filename and os.FileInfo of a
+// file that would be included in the backup. The function returns true if it
+// should be excluded (rejected) from the backup.
+type RejectFunc func(filename string, fi os.FileInfo) bool
 
 // excludeByFile returns a FilenameCheck which itself returns whether a path
 // should be excluded. The FilenameCheck considers a file to be excluded when
 // it resides in a directory with an exclusion file, that is specified by
 // excludeFileSpec in the form "filename[:content]". The returned error is
 // non-nil if the filename component of excludeFileSpec is empty.
-func excludeByFile(excludeFileSpec string) (FilenameCheck, error) {
+func excludeByFile(excludeFileSpec string) (RejectFunc, error) {
 	if excludeFileSpec == "" {
-		return func(string) bool { return false }, nil
+		return func(string, os.FileInfo) bool { return false }, nil
 	}
 	colon := strings.Index(excludeFileSpec, ":")
 	if colon == 0 {
@@ -575,7 +576,7 @@ func excludeByFile(excludeFileSpec string) (FilenameCheck, error) {
 		tf = excludeFileSpec
 	}
 	debug.Log("using %q as exclusion tagfile", tf)
-	fn := func(filename string) bool {
+	fn := func(filename string, _ os.FileInfo) bool {
 		return isExcludedByFile(filename, tf, tc)
 	}
 	return fn, nil
