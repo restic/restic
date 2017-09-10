@@ -91,7 +91,6 @@ func ApplyPolicy(list Snapshots, p ExpirePolicy) (keep, remove Snapshots) {
 	}
 
 	for nr, cur := range list {
-		nr = nr + 1
 		var keepSnap bool
 
 		// Tags are handled specially as they are not counted.
