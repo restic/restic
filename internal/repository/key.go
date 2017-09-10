@@ -66,7 +66,7 @@ func createMasterKey(s *Repository, password string) (*Key, error) {
 func OpenKey(ctx context.Context, s *Repository, name string, password string) (*Key, error) {
 	k, err := LoadKey(ctx, s, name)
 	if err != nil {
-		debug.Log("LoadKey(%v) returned error %v", name[:12], err)
+		debug.Log("LoadKey(%v) returned error %v", name, err)
 		return nil, err
 	}
 
@@ -126,7 +126,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int)
 		debug.Log("trying key %q", name)
 		key, err := OpenKey(ctx, s, name, password)
 		if err != nil {
-			debug.Log("key %v returned error %v", name[:12], err)
+			debug.Log("key %v returned error %v", name, err)
 
 			// ErrUnauthenticated means the password is wrong, try the next key
 			if errors.Cause(err) == crypto.ErrUnauthenticated {
@@ -139,7 +139,7 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int)
 			}
 		}
 
-		debug.Log("successfully opened key %v", name[:12])
+		debug.Log("successfully opened key %v", name)
 		return key, nil
 	}
 
