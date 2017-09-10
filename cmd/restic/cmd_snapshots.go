@@ -25,9 +25,9 @@ The "snapshots" command lists all snapshots stored in the repository.
 
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
-	Host  string
-	Tags  restic.TagLists
-	Paths []string
+	Host    string
+	Tags    restic.TagLists
+	Paths   []string
 	Compact bool
 }
 
