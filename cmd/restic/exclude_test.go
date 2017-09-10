@@ -2,9 +2,10 @@ package main
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/restic/restic/internal/test"
 )
 
 func TestIsExcludedByFile(t *testing.T) {
@@ -29,13 +30,11 @@ func TestIsExcludedByFile(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir, err := ioutil.TempDir("", "restic-test-")
-			if err != nil {
-				t.Fatalf("could not create temp dir: %v", err)
-			}
-			defer os.RemoveAll(tempDir)
+			tempDir, cleanup := test.TempDir(t)
+			defer cleanup()
+
 			foo := filepath.Join(tempDir, "foo")
-			err = ioutil.WriteFile(foo, []byte("foo"), 0666)
+			err := ioutil.WriteFile(foo, []byte("foo"), 0666)
 			if err != nil {
 				t.Fatalf("could not write file: %v", err)
 			}
