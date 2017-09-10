@@ -15,7 +15,6 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
@@ -416,39 +415,34 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("scan %v\n", target)
 
+	// rejectFuncs collect functions that can reject items from the backup
+	var rejectFuncs []RejectFunc
+
 	// add patterns from file
 	if len(opts.ExcludeFiles) > 0 {
 		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
+	}
+
+	if len(opts.Excludes) > 0 {
+		rejectFuncs = append(rejectFuncs, rejectByPattern(opts.Excludes))
 	}
 
 	if opts.ExcludeCaches {
 		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
 	}
 
-	var excludesByFile []RejectFunc
 	for _, spec := range opts.ExcludeIfPresent {
 		f, err := rejectIfPresent(spec)
 		if err != nil {
 			return err
 		}
 
-		excludesByFile = append(excludesByFile, f)
+		rejectFuncs = append(rejectFuncs, f)
 	}
 
 	selectFilter := func(item string, fi os.FileInfo) bool {
-		matched, _, err := filter.List(opts.Excludes, item)
-		if err != nil {
-			Warnf("error for exclude pattern: %v", err)
-		}
-
-		if matched {
-			debug.Log("path %q excluded by a filter", item)
-			return false
-		}
-
-		for _, excludeByFile := range excludesByFile {
-			if excludeByFile(item, fi) {
-				debug.Log("path %q excluded by tagfile", item)
+		for _, reject := range rejectFuncs {
+			if reject(item, fi) {
 				return false
 			}
 		}

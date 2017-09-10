@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 )
 
@@ -17,6 +19,24 @@ import (
 // should be excluded (rejected) from the backup.
 type RejectFunc func(filename string, fi os.FileInfo) bool
 
+// rejectByPattern returns a RejectFunc which rejects files that match
+// one of the patterns.
+func rejectByPattern(patterns []string) RejectFunc {
+	return func(item string, fi os.FileInfo) bool {
+		matched, _, err := filter.List(patterns, item)
+		if err != nil {
+			Warnf("error for exclude pattern: %v", err)
+		}
+
+		if matched {
+			debug.Log("path %q excluded by a filter", item)
+			return true
+		}
+
+		return false
+	}
+}
+
 // rejectIfPresent returns a RejectFunc which itself returns whether a path
 // should be excluded. The RejectFunc considers a file to be excluded when
 // it resides in a directory with an exclusion file, that is specified by
@@ -24,7 +44,7 @@ type RejectFunc func(filename string, fi os.FileInfo) bool
 // non-nil if the filename component of excludeFileSpec is empty.
 func rejectIfPresent(excludeFileSpec string) (RejectFunc, error) {
 	if excludeFileSpec == "" {
-		return func(string, os.FileInfo) bool { return false }, nil
+		return nil, errors.New("name for exclusion tagfile is empty")
 	}
 	colon := strings.Index(excludeFileSpec, ":")
 	if colon == 0 {
