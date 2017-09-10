@@ -427,7 +427,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	var excludesByFile []RejectFunc
 	for _, spec := range opts.ExcludeIfPresent {
-		f, err := excludeByFile(spec)
+		f, err := rejectIfPresent(spec)
 		if err != nil {
 			return err
 		}
