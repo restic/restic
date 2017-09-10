@@ -79,6 +79,10 @@ Small changes
    https://github.com/restic/restic/issues/317
    https://github.com/restic/restic/pull/1170
 
+ * The `forget` command now has an option `--group-by` that allows flexible
+   grouping policies.
+   https://github.com/restic/restic/pull/1196
+
 
 Important Changes in 0.7.1
 ==========================
