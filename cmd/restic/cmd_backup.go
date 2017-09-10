@@ -324,7 +324,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	// same time
 	args = append(args, fromfile...)
 	if len(args) == 0 {
-		return errors.Fatal("wrong number of parameters")
+		return errors.Fatal("nothing to backup, please specify target files/dirs")
 	}
 
 	target := make([]string, 0, len(args))
