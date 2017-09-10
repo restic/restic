@@ -920,9 +920,10 @@ instructs restic to not remove anything but print which snapshots would
 be removed.
 
 When ``forget`` is run with a policy, restic loads the list of all
-snapshots, then groups these by host name and list of directories. The
-policy is then applied to each group of snapshots separately. This is a
-safety feature.
+snapshots, then groups these by host name and list of directories. The grouping
+options can be set with ``--group-by``, to only group snapshots by paths and
+tags use ``--group-by paths,tags``. The policy is then applied to each group of
+snapshots separately. This is a safety feature.
 
 The ``forget`` command accepts the following parameters:
 
