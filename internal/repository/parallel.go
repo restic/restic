@@ -68,7 +68,7 @@ func ParallelWorkFuncParseID(f ParallelIDWorkFunc) ParallelWorkFunc {
 		id, err := restic.ParseID(s)
 		if err != nil {
 			debug.Log("invalid ID %q: %v", id, err)
-			return err
+			return nil
 		}
 
 		return f(ctx, id)

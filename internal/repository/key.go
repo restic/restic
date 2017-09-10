@@ -19,10 +19,10 @@ import (
 
 var (
 	// ErrNoKeyFound is returned when no key for the repository could be decrypted.
-	ErrNoKeyFound = errors.New("wrong password or no key found")
+	ErrNoKeyFound = errors.Fatal("wrong password or no key found")
 
 	// ErrMaxKeysReached is returned when the maximum number of keys was checked and no key could be found.
-	ErrMaxKeysReached = errors.New("maximum number of keys reached")
+	ErrMaxKeysReached = errors.Fatal("maximum number of keys reached")
 )
 
 // Key represents an encrypted master key for a repository.
@@ -133,7 +133,10 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int)
 				continue
 			}
 
-			return nil, err
+			if err != nil {
+				debug.Log("unable to open key %v: %v\n", err)
+				continue
+			}
 		}
 
 		debug.Log("successfully opened key %v", name[:12])

@@ -319,7 +319,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 
 	err = s.SearchKey(context.TODO(), opts.password, maxKeys)
 	if err != nil {
-		return nil, errors.Fatalf("unable to open repo: %v", err)
+		return nil, err
 	}
 
 	return s, nil
