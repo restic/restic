@@ -228,27 +228,6 @@ func filterExisting(items []string) (result []string, err error) {
 	return
 }
 
-// gatherDevices returns the set of unique device ids of the files and/or
-// directory paths listed in "items".
-func gatherDevices(items []string) (deviceMap map[string]uint64, err error) {
-	deviceMap = make(map[string]uint64)
-	for _, item := range items {
-		fi, err := fs.Lstat(item)
-		if err != nil {
-			return nil, err
-		}
-		id, err := fs.DeviceID(fi)
-		if err != nil {
-			return nil, err
-		}
-		deviceMap[item] = id
-	}
-	if len(deviceMap) == 0 {
-		return nil, errors.New("zero allowed devices")
-	}
-	return deviceMap, nil
-}
-
 func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	if len(args) != 0 {
 		return errors.Fatal("when reading from stdin, no additional files can be specified")
@@ -361,14 +340,38 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
+	// rejectFuncs collect functions that can reject items from the backup
+	var rejectFuncs []RejectFunc
+
 	// allowed devices
-	var allowedDevs map[string]uint64
 	if opts.ExcludeOtherFS {
-		allowedDevs, err = gatherDevices(target)
+		f, err := rejectByDevice(target)
 		if err != nil {
 			return err
 		}
-		debug.Log("allowed devices: %v\n", allowedDevs)
+		rejectFuncs = append(rejectFuncs, f)
+	}
+
+	// add patterns from file
+	if len(opts.ExcludeFiles) > 0 {
+		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
+	}
+
+	if len(opts.Excludes) > 0 {
+		rejectFuncs = append(rejectFuncs, rejectByPattern(opts.Excludes))
+	}
+
+	if opts.ExcludeCaches {
+		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
+	}
+
+	for _, spec := range opts.ExcludeIfPresent {
+		f, err := rejectIfPresent(spec)
+		if err != nil {
+			return err
+		}
+
+		rejectFuncs = append(rejectFuncs, f)
 	}
 
 	repo, err := OpenRepository(gopts)
@@ -415,66 +418,13 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("scan %v\n", target)
 
-	// rejectFuncs collect functions that can reject items from the backup
-	var rejectFuncs []RejectFunc
-
-	// add patterns from file
-	if len(opts.ExcludeFiles) > 0 {
-		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
-	}
-
-	if len(opts.Excludes) > 0 {
-		rejectFuncs = append(rejectFuncs, rejectByPattern(opts.Excludes))
-	}
-
-	if opts.ExcludeCaches {
-		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
-	}
-
-	for _, spec := range opts.ExcludeIfPresent {
-		f, err := rejectIfPresent(spec)
-		if err != nil {
-			return err
-		}
-
-		rejectFuncs = append(rejectFuncs, f)
-	}
-
 	selectFilter := func(item string, fi os.FileInfo) bool {
 		for _, reject := range rejectFuncs {
 			if reject(item, fi) {
 				return false
 			}
 		}
-
-		if !opts.ExcludeOtherFS || fi == nil {
-			return true
-		}
-
-		id, err := fs.DeviceID(fi)
-		if err != nil {
-			// This should never happen because gatherDevices() would have
-			// errored out earlier. If it still does that's a reason to panic.
-			panic(err)
-		}
-
-		for dir := item; dir != ""; dir = filepath.Dir(dir) {
-			debug.Log("item %v, test dir %v", item, dir)
-
-			allowedID, ok := allowedDevs[dir]
-			if !ok {
-				continue
-			}
-
-			if allowedID != id {
-				debug.Log("path %q on disallowed device %d", item, id)
-				return false
-			}
-
-			return true
-		}
-
-		panic(fmt.Sprintf("item %v, device id %v not found, allowedDevs: %v", item, id, allowedDevs))
+		return true
 	}
 
 	stat, err := archiver.Scan(target, selectFilter, newScanProgress(gopts))

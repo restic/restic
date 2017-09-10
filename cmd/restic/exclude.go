@@ -115,3 +115,65 @@ func isExcludedByFile(filename, tagFilename, header string) bool {
 	}
 	return true
 }
+
+// gatherDevices returns the set of unique device ids of the files and/or
+// directory paths listed in "items".
+func gatherDevices(items []string) (deviceMap map[string]uint64, err error) {
+	deviceMap = make(map[string]uint64)
+	for _, item := range items {
+		fi, err := fs.Lstat(item)
+		if err != nil {
+			return nil, err
+		}
+		id, err := fs.DeviceID(fi)
+		if err != nil {
+			return nil, err
+		}
+		deviceMap[item] = id
+	}
+	if len(deviceMap) == 0 {
+		return nil, errors.New("zero allowed devices")
+	}
+	return deviceMap, nil
+}
+
+// rejectByDevice returns a RejectFunc that rejects files which are on a
+// different file systems than the files/dirs in samples.
+func rejectByDevice(samples []string) (RejectFunc, error) {
+	allowed, err := gatherDevices(samples)
+	if err != nil {
+		return nil, err
+	}
+	debug.Log("allowed devices: %v\n", allowed)
+
+	return func(item string, fi os.FileInfo) bool {
+		if fi == nil {
+			return false
+		}
+
+		id, err := fs.DeviceID(fi)
+		if err != nil {
+			// This should never happen because gatherDevices() would have
+			// errored out earlier. If it still does that's a reason to panic.
+			panic(err)
+		}
+
+		for dir := item; dir != ""; dir = filepath.Dir(dir) {
+			debug.Log("item %v, test dir %v", item, dir)
+
+			allowedID, ok := allowed[dir]
+			if !ok {
+				continue
+			}
+
+			if allowedID != id {
+				debug.Log("path %q on disallowed device %d", item, id)
+				return true
+			}
+
+			return false
+		}
+
+		panic(fmt.Sprintf("item %v, device id %v not found, allowedDevs: %v", item, id, allowed))
+	}, nil
+}
