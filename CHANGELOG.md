@@ -78,6 +78,7 @@ Small changes
    with a specific name (and contents) is present.
    https://github.com/restic/restic/issues/317
    https://github.com/restic/restic/pull/1170
+   https://github.com/restic/restic/pull/1224
 
 
 Important Changes in 0.7.1
