@@ -29,7 +29,7 @@ func rejectByPattern(patterns []string) RejectFunc {
 		}
 
 		if matched {
-			debug.Log("path %q excluded by a filter", item)
+			debug.Log("path %q excluded by an exclude pattern", item)
 			return true
 		}
 
