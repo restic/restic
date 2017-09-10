@@ -17,7 +17,7 @@ import (
 // RejectFunc is a function that takes a filename and os.FileInfo of a
 // file that would be included in the backup. The function returns true if it
 // should be excluded (rejected) from the backup.
-type RejectFunc func(filename string, fi os.FileInfo) bool
+type RejectFunc func(path string, fi os.FileInfo) bool
 
 // rejectByPattern returns a RejectFunc which rejects files that match
 // one of the patterns.
