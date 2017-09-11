@@ -387,6 +387,16 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
+	// exclude restic cache
+	if repo.Cache != nil {
+		f, err := rejectResticCache(repo)
+		if err != nil {
+			return err
+		}
+
+		rejectFuncs = append(rejectFuncs, f)
+	}
+
 	err = repo.LoadIndex(context.TODO())
 	if err != nil {
 		return err

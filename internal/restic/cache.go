@@ -4,6 +4,9 @@ import "io"
 
 // Cache manages a local cache.
 type Cache interface {
+	// BaseDir returns the base directory of the cache.
+	BaseDir() string
+
 	// Wrap returns a backend with a cache.
 	Wrap(Backend) Backend
 

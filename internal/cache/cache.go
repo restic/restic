@@ -152,3 +152,8 @@ func (c *Cache) Wrap(be restic.Backend) restic.Backend {
 		Cache:   c,
 	}
 }
+
+// BaseDir returns the base directory.
+func (c *Cache) BaseDir() string {
+	return c.Base
+}
