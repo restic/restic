@@ -11,7 +11,7 @@ import (
 
 var cmdManpage = &cobra.Command{
 	Use:   "manpage [command]",
-	Short: "generate manual pages",
+	Short: "Generate manual pages",
 	Long: `
 The "manpage" command generates a manual page for a single command. It can also
 be used to write all manual pages to a directory. If the output directory is

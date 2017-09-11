@@ -16,23 +16,25 @@ Usage help is available:
       restic [command]
 
     Available Commands:
-      autocomplete  generate shell autocompletion script
-      backup        create a new backup of files and/or directories
-      cat           print internal objects to stdout
-      check         check the repository for errors
-      find          find a file or directory
-      forget        forget removes snapshots from the repository
-      init          initialize a new repository
-      key           manage keys (passwords)
-      list          list items in the repository
-      ls            list files in a snapshot
-      mount         mount the repository
-      prune         remove unneeded data from the repository
-      rebuild-index build a new index file
-      restore       extract the data from a snapshot
-      snapshots     list all snapshots
-      tag           modifies tags on snapshots
-      unlock        remove locks other processes created
+      autocomplete  Generate shell autocompletion script
+      backup        Create a new backup of files and/or directories
+      cat           Print internal objects to stdout
+      check         Check the repository for errors
+      dump          Dump data structures
+      find          Find a file or directory
+      forget        Remove snapshots from the repository
+      help          Help about any command
+      init          Initialize a new repository
+      key           Manage keys (passwords)
+      list          List items in the repository
+      ls            List files in a snapshot
+      mount         Mount the repository
+      prune         Remove unneeded data from the repository
+      rebuild-index Build a new index file
+      restore       Extract the data from a snapshot
+      snapshots     List all snapshots
+      tag           Modify tags on snapshots
+      unlock        Remove locks other processes created
       version       Print version information
 
     Flags:

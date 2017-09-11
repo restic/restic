@@ -11,7 +11,7 @@ import (
 
 var cmdRebuildIndex = &cobra.Command{
 	Use:   "rebuild-index [flags]",
-	Short: "build a new index file",
+	Short: "Build a new index file",
 	Long: `
 The "rebuild-index" command creates a new index based on the pack files in the
 repository.

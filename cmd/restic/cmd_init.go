@@ -11,7 +11,7 @@ import (
 
 var cmdInit = &cobra.Command{
 	Use:   "init",
-	Short: "initialize a new repository",
+	Short: "Initialize a new repository",
 	Long: `
 The "init" command initializes a new repository.
 `,

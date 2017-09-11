@@ -13,7 +13,7 @@ import (
 
 var cmdLs = &cobra.Command{
 	Use:   "ls [flags] [snapshot-ID ...]",
-	Short: "list files in a snapshot",
+	Short: "List files in a snapshot",
 	Long: `
 The "ls" command allows listing files and directories in a snapshot.
 

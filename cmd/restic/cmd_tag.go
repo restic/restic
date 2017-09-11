@@ -13,7 +13,7 @@ import (
 
 var cmdTag = &cobra.Command{
 	Use:   "tag [flags] [snapshot-ID ...]",
-	Short: "modifies tags on snapshots",
+	Short: "Modify tags on snapshots",
 	Long: `
 The "tag" command allows you to modify tags on exiting snapshots.
 

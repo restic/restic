@@ -13,7 +13,7 @@ import (
 
 var cmdSnapshots = &cobra.Command{
 	Use:   "snapshots [snapshotID ...]",
-	Short: "list all snapshots",
+	Short: "List all snapshots",
 	Long: `
 The "snapshots" command lists all snapshots stored in the repository.
 `,

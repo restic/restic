@@ -8,7 +8,7 @@ var autocompleteTarget string
 
 var cmdAutocomplete = &cobra.Command{
 	Use:   "autocomplete",
-	Short: "generate shell autocompletion script",
+	Short: "Generate shell autocompletion script",
 	Long: `The "autocomplete" command generates a shell autocompletion script.
 
 NOTE: The current version supports Bash only.

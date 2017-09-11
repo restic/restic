@@ -22,7 +22,7 @@ import (
 
 var cmdMount = &cobra.Command{
 	Use:   "mount [flags] mountpoint",
-	Short: "mount the repository",
+	Short: "Mount the repository",
 	Long: `
 The "mount" command mounts the repository via fuse to a directory. This is a
 read-only mount.

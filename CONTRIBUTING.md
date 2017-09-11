@@ -133,7 +133,7 @@ down to the following steps:
     texts, the manual pages need to be regenerated and commited to the
     repository. In order to do this, compile restic and save the generated
     updated man pages in the subdir `doc/man` with the following command:
-    `./restic manpages --output-dir doc/man`
+    `./restic manpage --output-dir doc/man`
 
  9. Once your code looks good and passes all the tests, we'll merge it. Thanks
     a lot for your contribution!

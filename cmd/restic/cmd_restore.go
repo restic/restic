@@ -11,7 +11,7 @@ import (
 
 var cmdRestore = &cobra.Command{
 	Use:   "restore [flags] snapshotID",
-	Short: "extract the data from a snapshot",
+	Short: "Extract the data from a snapshot",
 	Long: `
 The "restore" command extracts the data from a snapshot from the repository to
 a directory.

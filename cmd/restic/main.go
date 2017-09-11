@@ -20,7 +20,7 @@ import (
 // cmdRoot is the base command when no other command has been specified.
 var cmdRoot = &cobra.Command{
 	Use:   "restic",
-	Short: "backup and restore files",
+	Short: "Backup and restore files",
 	Long: `
 restic is a backup program which allows saving multiple revisions of files and
 directories in an encrypted repository stored on different backends.
