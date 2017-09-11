@@ -20,8 +20,10 @@ Usage help is available:
       backup        Create a new backup of files and/or directories
       cat           Print internal objects to stdout
       check         Check the repository for errors
+      dump          Dump data structures
       find          Find a file or directory
       forget        Remove snapshots from the repository
+      help          Help about any command
       init          Initialize a new repository
       key           Manage keys (passwords)
       list          List items in the repository
