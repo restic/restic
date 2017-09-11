@@ -84,6 +84,10 @@ Small changes
    grouping policies.
    https://github.com/restic/restic/pull/1196
 
+ * The date and time restic records for a new backup can now be specified
+   externally by passing `--time` to the `backup` command.
+   https://github.com/restic/restic/pull/1205
+
 
 Important Changes in 0.7.1
 ==========================
