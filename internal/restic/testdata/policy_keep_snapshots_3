@@ -150,6 +150,41 @@
     "paths": null
   },
   {
+    "time": "2015-10-22T10:20:30Z",
+    "tree": null,
+    "paths": [
+      "path1",
+      "path2"
+    ],
+    "tags": [
+      "foo",
+      "bar"
+    ]
+  },
+  {
+    "time": "2015-10-22T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo",
+      "bar"
+    ]
+  },
+  {
+    "time": "2015-10-22T10:20:30Z",
+    "tree": null,
+    "paths": null
+  },
+  {
+    "time": "2015-10-22T10:20:30Z",
+    "tree": null,
+    "paths": null,
+    "tags": [
+      "foo",
+      "bar"
+    ]
+  },
+  {
     "time": "2015-10-20T10:20:30Z",
     "tree": null,
     "paths": null
@@ -520,26 +555,6 @@
   },
   {
     "time": "2014-08-13T10:20:30.1Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-13T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-12T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-10T10:20:30Z",
-    "tree": null,
-    "paths": null
-  },
-  {
-    "time": "2014-08-08T10:20:30Z",
     "tree": null,
     "paths": null
   }
