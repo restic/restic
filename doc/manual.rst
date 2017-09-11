@@ -21,7 +21,7 @@ Usage help is available:
       cat           print internal objects to stdout
       check         check the repository for errors
       find          find a file or directory
-      forget        forget removes snapshots from the repository
+      forget        remove snapshots from the repository
       init          initialize a new repository
       key           manage keys (passwords)
       list          list items in the repository
@@ -31,7 +31,7 @@ Usage help is available:
       rebuild-index build a new index file
       restore       extract the data from a snapshot
       snapshots     list all snapshots
-      tag           modifies tags on snapshots
+      tag           modify tags on snapshots
       unlock        remove locks other processes created
       version       Print version information
 
