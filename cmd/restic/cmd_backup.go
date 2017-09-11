@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -16,7 +15,6 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
 )
@@ -59,7 +57,7 @@ type BackupOptions struct {
 	Excludes         []string
 	ExcludeFiles     []string
 	ExcludeOtherFS   bool
-	ExcludeIfPresent string
+	ExcludeIfPresent []string
 	ExcludeCaches    bool
 	Stdin            bool
 	StdinFilename    string
@@ -79,7 +77,7 @@ func init() {
 	f.StringArrayVarP(&backupOptions.Excludes, "exclude", "e", nil, "exclude a `pattern` (can be specified multiple times)")
 	f.StringArrayVar(&backupOptions.ExcludeFiles, "exclude-file", nil, "read exclude patterns from a `file` (can be specified multiple times)")
 	f.BoolVarP(&backupOptions.ExcludeOtherFS, "one-file-system", "x", false, "exclude other file systems")
-	f.StringVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", "", "takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided")
+	f.StringArrayVar(&backupOptions.ExcludeIfPresent, "exclude-if-present", nil, "takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)")
 	f.BoolVar(&backupOptions.ExcludeCaches, "exclude-caches", false, `excludes cache directories that are marked with a CACHEDIR.TAG file`)
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
@@ -216,6 +214,7 @@ func filterExisting(items []string) (result []string, err error) {
 	for _, item := range items {
 		_, err := fs.Lstat(item)
 		if err != nil && os.IsNotExist(errors.Cause(err)) {
+			Warnf("%v does not exist, skipping\n", item)
 			continue
 		}
 
@@ -227,27 +226,6 @@ func filterExisting(items []string) (result []string, err error) {
 	}
 
 	return
-}
-
-// gatherDevices returns the set of unique device ids of the files and/or
-// directory paths listed in "items".
-func gatherDevices(items []string) (deviceMap map[string]uint64, err error) {
-	deviceMap = make(map[string]uint64)
-	for _, item := range items {
-		fi, err := fs.Lstat(item)
-		if err != nil {
-			return nil, err
-		}
-		id, err := fs.DeviceID(fi)
-		if err != nil {
-			return nil, err
-		}
-		deviceMap[item] = id
-	}
-	if len(deviceMap) == 0 {
-		return nil, errors.New("zero allowed devices")
-	}
-	return deviceMap, nil
 }
 
 func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string) error {
@@ -346,7 +324,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	// same time
 	args = append(args, fromfile...)
 	if len(args) == 0 {
-		return errors.Fatal("wrong number of parameters")
+		return errors.Fatal("nothing to backup, please specify target files/dirs")
 	}
 
 	target := make([]string, 0, len(args))
@@ -362,14 +340,38 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
+	// rejectFuncs collect functions that can reject items from the backup
+	var rejectFuncs []RejectFunc
+
 	// allowed devices
-	var allowedDevs map[string]uint64
 	if opts.ExcludeOtherFS {
-		allowedDevs, err = gatherDevices(target)
+		f, err := rejectByDevice(target)
 		if err != nil {
 			return err
 		}
-		debug.Log("allowed devices: %v\n", allowedDevs)
+		rejectFuncs = append(rejectFuncs, f)
+	}
+
+	// add patterns from file
+	if len(opts.ExcludeFiles) > 0 {
+		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
+	}
+
+	if len(opts.Excludes) > 0 {
+		rejectFuncs = append(rejectFuncs, rejectByPattern(opts.Excludes))
+	}
+
+	if opts.ExcludeCaches {
+		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
+	}
+
+	for _, spec := range opts.ExcludeIfPresent {
+		f, err := rejectIfPresent(spec)
+		if err != nil {
+			return err
+		}
+
+		rejectFuncs = append(rejectFuncs, f)
 	}
 
 	repo, err := OpenRepository(gopts)
@@ -416,67 +418,13 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("scan %v\n", target)
 
-	// add patterns from file
-	if len(opts.ExcludeFiles) > 0 {
-		opts.Excludes = append(opts.Excludes, readExcludePatternsFromFiles(opts.ExcludeFiles)...)
-	}
-
-	if opts.ExcludeCaches {
-		if opts.ExcludeIfPresent != "" {
-			return fmt.Errorf("cannot have --exclude-caches defined at the same time as --exclude-if-present")
-		}
-		opts.ExcludeIfPresent = "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55"
-	}
-
-	excludeByFile, err := excludeByFile(opts.ExcludeIfPresent)
-	if err != nil {
-		return err
-	}
-
 	selectFilter := func(item string, fi os.FileInfo) bool {
-		matched, _, err := filter.List(opts.Excludes, item)
-		if err != nil {
-			Warnf("error for exclude pattern: %v", err)
-		}
-
-		if matched {
-			debug.Log("path %q excluded by a filter", item)
-			return false
-		}
-
-		if excludeByFile(item) {
-			debug.Log("path %q excluded by tagfile", item)
-			return false
-		}
-
-		if !opts.ExcludeOtherFS || fi == nil {
-			return true
-		}
-
-		id, err := fs.DeviceID(fi)
-		if err != nil {
-			// This should never happen because gatherDevices() would have
-			// errored out earlier. If it still does that's a reason to panic.
-			panic(err)
-		}
-
-		for dir := item; dir != ""; dir = filepath.Dir(dir) {
-			debug.Log("item %v, test dir %v", item, dir)
-
-			allowedID, ok := allowedDevs[dir]
-			if !ok {
-				continue
-			}
-
-			if allowedID != id {
-				debug.Log("path %q on disallowed device %d", item, id)
+		for _, reject := range rejectFuncs {
+			if reject(item, fi) {
 				return false
 			}
-
-			return true
 		}
-
-		panic(fmt.Sprintf("item %v, device id %v not found, allowedDevs: %v", item, id, allowedDevs))
+		return true
 	}
 
 	stat, err := archiver.Scan(target, selectFilter, newScanProgress(gopts))
@@ -543,87 +491,4 @@ func readExcludePatternsFromFiles(excludeFiles []string) []string {
 		}
 	}
 	return excludes
-}
-
-// FilenameCheck is a function that takes a filename and returns a boolean
-// depending on arbitrary check.
-type FilenameCheck func(filename string) bool
-
-// excludeByFile returns a FilenameCheck which itself returns whether a path
-// should be excluded. The FilenameCheck considers a file to be excluded when
-// it resides in a directory with an exclusion file, that is specified by
-// excludeFileSpec in the form "filename[:content]". The returned error is
-// non-nil if the filename component of excludeFileSpec is empty.
-func excludeByFile(excludeFileSpec string) (FilenameCheck, error) {
-	if excludeFileSpec == "" {
-		return func(string) bool { return false }, nil
-	}
-	colon := strings.Index(excludeFileSpec, ":")
-	if colon == 0 {
-		return nil, fmt.Errorf("no name for exclusion tagfile provided")
-	}
-	tf, tc := "", ""
-	if colon > 0 {
-		tf = excludeFileSpec[:colon]
-		tc = excludeFileSpec[colon+1:]
-	} else {
-		tf = excludeFileSpec
-	}
-	debug.Log("using %q as exclusion tagfile", tf)
-	fn := func(filename string) bool {
-		return isExcludedByFile(filename, tf, tc)
-	}
-	return fn, nil
-}
-
-// isExcludedByFile interprets filename as a path and returns true if that file
-// is in a excluded directory. A directory is identified as excluded if it contains a
-// tagfile which bears the name specified in tagFilename and starts with header.
-func isExcludedByFile(filename, tagFilename, header string) bool {
-	if tagFilename == "" {
-		return false
-	}
-	dir, base := filepath.Split(filename)
-	if base == tagFilename {
-		return false // do not exclude the tagfile itself
-	}
-	tf := filepath.Join(dir, tagFilename)
-	_, err := fs.Lstat(tf)
-	if os.IsNotExist(err) {
-		return false
-	}
-	if err != nil {
-		Warnf("could not access exclusion tagfile: %v", err)
-		return false
-	}
-	// when no signature is given, the mere presence of tf is enough reason
-	// to exclude filename
-	if len(header) == 0 {
-		return true
-	}
-	// From this stage, errors mean tagFilename exists but it is malformed.
-	// Warnings will be generated so that the user is informed that the
-	// indented ignore-action is not performed.
-	f, err := os.Open(tf)
-	if err != nil {
-		Warnf("could not open exclusion tagfile: %v", err)
-		return false
-	}
-	defer f.Close()
-	buf := make([]byte, len(header))
-	_, err = io.ReadFull(f, buf)
-	// EOF is handled with a dedicated message, otherwise the warning were too cryptic
-	if err == io.EOF {
-		Warnf("invalid (too short) signature in exclusion tagfile %q\n", tf)
-		return false
-	}
-	if err != nil {
-		Warnf("could not read signature from exclusion tagfile %q: %v\n", tf, err)
-		return false
-	}
-	if bytes.Compare(buf, []byte(header)) != 0 {
-		Warnf("invalid signature in exclusion tagfile %q\n", tf)
-		return false
-	}
-	return true
 }
