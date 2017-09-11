@@ -16,6 +16,7 @@ import (
 // Cache manages a local cache.
 type Cache struct {
 	Path string
+	Base string
 }
 
 const dirMode = 0700
@@ -50,17 +51,47 @@ var cacheLayoutPaths = map[restic.FileType]string{
 	restic.IndexFile:    "index",
 }
 
-// New returns a new cache for the repo ID at dir. If dir is the empty string,
-// the default cache location (according to the XDG standard) is used.
-func New(id string, dir string) (c *Cache, err error) {
-	if dir == "" {
-		dir, err = getXDGCacheDir()
+const cachedirTagSignature = "Signature: 8a477f597d28d172789f06886806bc55\n"
+
+func writeCachedirTag(dir string) error {
+	if err := fs.MkdirAll(dir, dirMode); err != nil {
+		return err
+	}
+
+	f, err := fs.OpenFile(filepath.Join(dir, "CACHEDIR.TAG"), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	if err != nil {
+		if os.IsExist(errors.Cause(err)) {
+			return nil
+		}
+
+		return errors.Wrap(err, "OpenFile")
+	}
+
+	debug.Log("Create CACHEDIR.TAG at %v", dir)
+	if _, err := f.Write([]byte(cachedirTagSignature)); err != nil {
+		f.Close()
+		return errors.Wrap(err, "Write")
+	}
+
+	return f.Close()
+}
+
+// New returns a new cache for the repo ID at basedir. If basedir is the empty
+// string, the default cache location (according to the XDG standard) is used.
+func New(id string, basedir string) (c *Cache, err error) {
+	if basedir == "" {
+		basedir, err = getXDGCacheDir()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	cachedir := filepath.Join(dir, id)
+	// create base dir and tag it as a cache directory
+	if err = writeCachedirTag(basedir); err != nil {
+		return nil, err
+	}
+
+	cachedir := filepath.Join(basedir, id)
 	debug.Log("using cache dir %v", cachedir)
 
 	v, err := readVersion(cachedir)
@@ -92,6 +123,7 @@ func New(id string, dir string) (c *Cache, err error) {
 
 	c = &Cache{
 		Path: cachedir,
+		Base: basedir,
 	}
 
 	return c, nil
