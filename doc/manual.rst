@@ -69,6 +69,7 @@ command:
           --stdin                   read backup from stdin
           --stdin-filename string   file name to use when reading from stdin
           --tag tag                 add a tag for the new snapshot (can be specified multiple times)
+          --time string             time of the backup (ex. '2012-11-01 22:08:41') (default: now)
 
     Global Flags:
           --json                   set output mode to JSON for commands that support it

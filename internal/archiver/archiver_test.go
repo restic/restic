@@ -108,7 +108,7 @@ func archiveDirectory(b testing.TB) {
 
 	arch := archiver.New(repo)
 
-	_, id, err := arch.Snapshot(context.TODO(), nil, []string{BenchArchiveDirectory}, nil, "localhost", nil)
+	_, id, err := arch.Snapshot(context.TODO(), nil, []string{BenchArchiveDirectory}, nil, "localhost", nil, time.Now())
 	OK(b, err)
 
 	b.Logf("snapshot archived as %v", id)
@@ -302,7 +302,7 @@ func TestArchiveEmptySnapshot(t *testing.T) {
 
 	arch := archiver.New(repo)
 
-	sn, id, err := arch.Snapshot(context.TODO(), nil, []string{"file-does-not-exist-123123213123", "file2-does-not-exist-too-123123123"}, nil, "localhost", nil)
+	sn, id, err := arch.Snapshot(context.TODO(), nil, []string{"file-does-not-exist-123123213123", "file2-does-not-exist-too-123123123"}, nil, "localhost", nil, time.Now())
 	if err == nil {
 		t.Errorf("expected error for empty snapshot, got nil")
 	}
@@ -354,7 +354,7 @@ func TestArchiveNameCollision(t *testing.T) {
 
 	arch := archiver.New(repo)
 
-	sn, id, err := arch.Snapshot(context.TODO(), nil, []string{"testfile", filepath.Join("..", "testfile")}, nil, "localhost", nil)
+	sn, id, err := arch.Snapshot(context.TODO(), nil, []string{"testfile", filepath.Join("..", "testfile")}, nil, "localhost", nil, time.Now())
 	OK(t, err)
 
 	t.Logf("snapshot archived as %v", id)

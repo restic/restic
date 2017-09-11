@@ -29,7 +29,7 @@ type Snapshot struct {
 
 // NewSnapshot returns an initialized snapshot struct for the current user and
 // time.
-func NewSnapshot(paths []string, tags []string, hostname string) (*Snapshot, error) {
+func NewSnapshot(paths []string, tags []string, hostname string, time time.Time) (*Snapshot, error) {
 	for i, path := range paths {
 		if p, err := filepath.Abs(path); err != nil {
 			paths[i] = p
@@ -38,7 +38,7 @@ func NewSnapshot(paths []string, tags []string, hostname string) (*Snapshot, err
 
 	sn := &Snapshot{
 		Paths:    paths,
-		Time:     time.Now(),
+		Time:     time,
 		Tags:     tags,
 		Hostname: hostname,
 	}
