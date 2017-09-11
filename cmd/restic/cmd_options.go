@@ -10,7 +10,7 @@ import (
 
 var optionsCmd = &cobra.Command{
 	Use:   "options",
-	Short: "print list of extended options",
+	Short: "Print list of extended options",
 	Long: `
 The "options" command prints a list of extended options.
 `,

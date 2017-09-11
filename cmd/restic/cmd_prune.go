@@ -15,7 +15,7 @@ import (
 
 var cmdPrune = &cobra.Command{
 	Use:   "prune [flags]",
-	Short: "remove unneeded data from the repository",
+	Short: "Remove unneeded data from the repository",
 	Long: `
 The "prune" command checks the repository and removes data that is not
 referenced and therefore not needed any more.

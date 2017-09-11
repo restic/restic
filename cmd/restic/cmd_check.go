@@ -15,7 +15,7 @@ import (
 
 var cmdCheck = &cobra.Command{
 	Use:   "check [flags]",
-	Short: "check the repository for errors",
+	Short: "Check the repository for errors",
 	Long: `
 The "check" command tests the repository for errors and reports any errors it
 finds. It can also be used to read all data and therefore simulate a restore.

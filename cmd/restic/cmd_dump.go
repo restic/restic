@@ -21,7 +21,7 @@ import (
 
 var cmdDump = &cobra.Command{
 	Use:   "dump [indexes|snapshots|trees|all|packs]",
-	Short: "dump data structures",
+	Short: "Dump data structures",
 	Long: `
 The "dump" command dumps data structures from the repository as JSON objects. It
 is used for debugging purposes only.`,

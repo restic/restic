@@ -13,7 +13,7 @@ import (
 
 var cmdForget = &cobra.Command{
 	Use:   "forget [flags] [snapshot ID] [...]",
-	Short: "remove snapshots from the repository",
+	Short: "Remove snapshots from the repository",
 	Long: `
 The "forget" command removes snapshots according to a policy. Please note that
 this command really only deletes the snapshot object in the repository, which

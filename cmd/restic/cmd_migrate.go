@@ -9,7 +9,7 @@ import (
 
 var cmdMigrate = &cobra.Command{
 	Use:   "migrate [name]",
-	Short: "apply migrations",
+	Short: "Apply migrations",
 	Long: `
 The "migrate" command applies migrations to a repository. When no migration
 name is explicitly given, a list of migrations that can be applied is printed.

@@ -9,7 +9,7 @@ import (
 
 var unlockCmd = &cobra.Command{
 	Use:   "unlock",
-	Short: "remove locks other processes created",
+	Short: "Remove locks other processes created",
 	Long: `
 The "unlock" command removes stale locks that have been created by other restic processes.
 `,

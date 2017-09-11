@@ -16,7 +16,7 @@ import (
 
 var cmdFind = &cobra.Command{
 	Use:   "find [flags] PATTERN",
-	Short: "find a file or directory",
+	Short: "Find a file or directory",
 	Long: `
 The "find" command searches for files or directories in snapshots stored in the
 repo. `,
