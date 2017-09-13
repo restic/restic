@@ -10,26 +10,26 @@
 [[projects]]
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
-  revision = "44bcd0b2078ba5e7fedbeb36808d1ed893534750"
-  version = "v0.11.0"
+  revision = "5a9e19d4e1e41a734154e44a2132b358afb49a03"
+  version = "v0.13.0"
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["storage"]
-  revision = "2d49bb8f2cee530cc16f1f1a9f0aae763dee257d"
-  version = "v10.2.1-beta"
+  revision = "df4dd90d076ebbf6e87d08d3f00bfac8ff4bde1a"
+  version = "v10.3.1-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
   packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
-  revision = "f6e08fe5e4d45c9a66e40196d3fed5f37331d224"
-  version = "v8.1.1"
+  revision = "5432abe734f8d95c78340cd56712f912906e6514"
+  version = "v8.3.1"
 
 [[projects]]
   name = "github.com/cpuguy83/go-md2man"
   packages = ["md2man"]
-  revision = "a65d4d2de4d5f7c74868dfa9b202a3c8be315aaa"
-  version = "v1.0.6"
+  revision = "1d903dcb749992f3741d744c0f8376b4bd7eb3e1"
+  version = "v1.0.7"
 
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
@@ -39,27 +39,33 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  revision = "79e699ccd02f240a1f1fbbdcee7e64c1c12e41aa"
+
+[[projects]]
   name = "github.com/elithrar/simple-scrypt"
   packages = ["."]
-  revision = "6724715de445c2e70cdafb7a1a14c8cfe0984210"
+  revision = "2325946f714c95de4a6088202c402fbdfa64163b"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
-  revision = "d3de07a94d22b4a0972deb4b96d790c2c0ce8333"
-  version = "v1.28.0"
+  revision = "20b96f641a5ea98f2f8619ff4f3e061cff4833bd"
+  version = "v1.28.2"
 
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "748d386b5c1ea99658fd69fe9f03991ce86a90c1"
+  revision = "17ce1425424ab154092bbb43af630bd647f3bb0d"
 
 [[projects]]
-  branch = "master"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
 
 [[projects]]
   branch = "master"
@@ -70,8 +76,8 @@
 [[projects]]
   name = "github.com/kurin/blazer"
   packages = ["b2","base","internal/b2types","internal/blog"]
-  revision = "612082ed2430716569f1ec816fc6ade849020816"
-  version = "v0.1.0"
+  revision = "1a870c3ee8b83e17d762307c6eae8f390ac3f4a0"
+  version = "v0.1.1"
 
 [[projects]]
   branch = "master"
@@ -82,14 +88,14 @@
 [[projects]]
   name = "github.com/minio/minio-go"
   packages = [".","pkg/credentials","pkg/encrypt","pkg/policy","pkg/s3signer","pkg/s3utils","pkg/set"]
-  revision = "5ca66c9a35ba1cd674484be99dc97aa0973afe12"
-  version = "v3.0.0"
+  revision = "4e0f567303d4cc90ceb055a451959fb9fc391fb9"
+  version = "3.0.3"
 
 [[projects]]
   branch = "master"
   name = "github.com/ncw/swift"
   packages = ["."]
-  revision = "5068c3506cf003c630c94b92a64e978115394f26"
+  revision = "9d3f812e23d270d1c66a9a01e20af1005061cdc4"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -104,10 +110,10 @@
   version = "v1.2.1"
 
 [[projects]]
-  branch = "master"
   name = "github.com/pkg/sftp"
   packages = ["."]
-  revision = "4f3e725e885c021085d2fb8a9cc26e30ea1a992f"
+  revision = "98203f5a8333288eb3163b7c667d4260fe1333e9"
+  version = "1.0.0"
 
 [[projects]]
   name = "github.com/pkg/xattr"
@@ -124,8 +130,8 @@
 [[projects]]
   name = "github.com/russross/blackfriday"
   packages = ["."]
-  revision = "0b647d0506a698cca42caca173e55559b12a69f2"
-  version = "v1.4"
+  revision = "4048872b16cc0fc2c5fd9eacf0ed2c2fedaa0c8c"
+  version = "v1.5"
 
 [[projects]]
   name = "github.com/satori/uuid"
@@ -134,16 +140,16 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/shurcooL/sanitized_anchor_name"
+  name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "541ff5ee47f1dddf6a5281af78307d921524bcb5"
+  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
+  version = "v1.0.3"
 
 [[projects]]
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = [".","doc"]
-  revision = "f20b4e9c32bb3e9d44773ca208db814f24dcd21b"
+  revision = "b78744579491c1ceeaaa3b40205e56b0591b93a3"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -155,31 +161,31 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
-  revision = "6914964337150723782436d56b3f21610a74ce7b"
+  revision = "faadfbdc035307d901e69eea569f5dda451a3ee3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp"]
-  revision = "ab5485076ff3407ad2d02db054635913f017b0ed"
+  revision = "b129b8e0fbeb39c8358e51a07ab6c50ad415e72e"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
   packages = [".","google","internal","jws","jwt"]
-  revision = "96fca6c793ec32f068f97942ae3c7c073810dfc1"
+  revision = "13449ad91cb26cb47661c1b080790392170385fd"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "c4489faa6e5ab84c0ef40d6ee878f7a030281f0f"
+  packages = ["unix","windows"]
+  revision = "062cd7e4e68206d8bab9b18396626e855c992658"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
   packages = ["gensupport","googleapi","googleapi/internal/uritemplates","storage/v1"]
-  revision = "93a219feb72690ca01348faec80d5a076a32f688"
+  revision = "2fe03ca2dc379c00d654a4459d1a50812cac2848"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -191,11 +197,11 @@
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "25c4ec802a7d637f88d584ab26798e94ad14c13b"
+  revision = "eb3733d160e74a9c7e442f435eb3bea458e1d19f"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "86ff1296a8516e9135089cc88fd98cbacdc7d9986f7120557b63ab1cd789e00c"
+  inputs-digest = "53e4779dc4c7de2cd8b195f13c215c24da5efc5e33acf584615b5c43bfefd2db"
   solver-name = "gps-cdcl"
   solver-version = 1

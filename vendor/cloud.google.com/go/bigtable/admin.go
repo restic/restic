@@ -30,6 +30,8 @@ import (
 	btapb "google.golang.org/genproto/googleapis/bigtable/admin/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/codes"
 )
 
 const adminAddr = "bigtableadmin.googleapis.com:443"
@@ -378,6 +380,11 @@ func (iac *InstanceAdminClient) Instances(ctx context.Context) ([]*InstanceInfo,
 	res, err := iac.iClient.ListInstances(ctx, req)
 	if err != nil {
 		return nil, err
+	}
+	if len(res.FailedLocations) > 0 {
+		// We don't have a good way to return a partial result in the face of some zones being unavailable.
+		// Fail the entire request.
+		return nil, status.Errorf(codes.Unavailable, "Failed locations: %v", res.FailedLocations)
 	}
 
 	var is []*InstanceInfo

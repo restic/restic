@@ -50,7 +50,7 @@ func (c *Client) addAuthorizationHeader(verb, url string, headers map[string]str
 }
 
 func (c *Client) getSharedKey(verb, url string, headers map[string]string, auth authentication) (string, error) {
-	canRes, err := c.buildCanonicalizedResource(url, auth)
+	canRes, err := c.buildCanonicalizedResource(url, auth, false)
 	if err != nil {
 		return "", err
 	}
@@ -62,15 +62,18 @@ func (c *Client) getSharedKey(verb, url string, headers map[string]string, auth 
 	return c.createAuthorizationHeader(canString, auth), nil
 }
 
-func (c *Client) buildCanonicalizedResource(uri string, auth authentication) (string, error) {
+func (c *Client) buildCanonicalizedResource(uri string, auth authentication, sas bool) (string, error) {
 	errMsg := "buildCanonicalizedResource error: %s"
 	u, err := url.Parse(uri)
 	if err != nil {
 		return "", fmt.Errorf(errMsg, err.Error())
 	}
 
-	cr := bytes.NewBufferString("/")
-	cr.WriteString(c.getCanonicalizedAccountName())
+	cr := bytes.NewBufferString("")
+	if c.accountName != StorageEmulatorAccountName || !sas {
+		cr.WriteString("/")
+		cr.WriteString(c.getCanonicalizedAccountName())
+	}
 
 	if len(u.Path) > 0 {
 		// Any portion of the CanonicalizedResource string that is derived from

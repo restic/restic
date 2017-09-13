@@ -43,6 +43,7 @@ import (
 //go:cgo_import_dynamic libc_fchown fchown "libc.so"
 //go:cgo_import_dynamic libc_fchownat fchownat "libc.so"
 //go:cgo_import_dynamic libc_fdatasync fdatasync "libc.so"
+//go:cgo_import_dynamic libc_flock flock "libc.so"
 //go:cgo_import_dynamic libc_fpathconf fpathconf "libc.so"
 //go:cgo_import_dynamic libc_fstat fstat "libc.so"
 //go:cgo_import_dynamic libc_fstatvfs fstatvfs "libc.so"
@@ -128,7 +129,6 @@ import (
 //go:cgo_import_dynamic libc_getpeername getpeername "libsocket.so"
 //go:cgo_import_dynamic libc_setsockopt setsockopt "libsocket.so"
 //go:cgo_import_dynamic libc_recvfrom recvfrom "libsocket.so"
-//go:cgo_import_dynamic libc_sysconf sysconf "libc.so"
 
 //go:linkname procpipe libc_pipe
 //go:linkname procgetsockname libc_getsockname
@@ -163,6 +163,7 @@ import (
 //go:linkname procFchown libc_fchown
 //go:linkname procFchownat libc_fchownat
 //go:linkname procFdatasync libc_fdatasync
+//go:linkname procFlock libc_flock
 //go:linkname procFpathconf libc_fpathconf
 //go:linkname procFstat libc_fstat
 //go:linkname procFstatvfs libc_fstatvfs
@@ -248,7 +249,6 @@ import (
 //go:linkname procgetpeername libc_getpeername
 //go:linkname procsetsockopt libc_setsockopt
 //go:linkname procrecvfrom libc_recvfrom
-//go:linkname procsysconf libc_sysconf
 
 var (
 	procpipe,
@@ -284,6 +284,7 @@ var (
 	procFchown,
 	procFchownat,
 	procFdatasync,
+	procFlock,
 	procFpathconf,
 	procFstat,
 	procFstatvfs,
@@ -368,8 +369,7 @@ var (
 	proc__xnet_getsockopt,
 	procgetpeername,
 	procsetsockopt,
-	procrecvfrom,
-	procsysconf syscallFunc
+	procrecvfrom syscallFunc
 )
 
 func pipe(p *[2]_C_int) (n int, err error) {
@@ -696,6 +696,14 @@ func Fchownat(dirfd int, path string, uid int, gid int, flags int) (err error) {
 
 func Fdatasync(fd int) (err error) {
 	_, _, e1 := sysvicall6(uintptr(unsafe.Pointer(&procFdatasync)), 1, uintptr(fd), 0, 0, 0, 0, 0)
+	if e1 != 0 {
+		err = e1
+	}
+	return
+}
+
+func Flock(fd int, how int) (err error) {
+	_, _, e1 := sysvicall6(uintptr(unsafe.Pointer(&procFlock)), 2, uintptr(fd), uintptr(how), 0, 0, 0, 0)
 	if e1 != 0 {
 		err = e1
 	}
@@ -1573,15 +1581,6 @@ func recvfrom(fd int, p []byte, flags int, from *RawSockaddrAny, fromlen *_Sockl
 	}
 	r0, _, e1 := sysvicall6(uintptr(unsafe.Pointer(&procrecvfrom)), 6, uintptr(fd), uintptr(unsafe.Pointer(_p0)), uintptr(len(p)), uintptr(flags), uintptr(unsafe.Pointer(from)), uintptr(unsafe.Pointer(fromlen)))
 	n = int(r0)
-	if e1 != 0 {
-		err = e1
-	}
-	return
-}
-
-func sysconf(name int) (n int64, err error) {
-	r0, _, e1 := sysvicall6(uintptr(unsafe.Pointer(&procsysconf)), 1, uintptr(name), 0, 0, 0, 0, 0)
-	n = int64(r0)
 	if e1 != 0 {
 		err = e1
 	}

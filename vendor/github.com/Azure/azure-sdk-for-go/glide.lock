@@ -1,8 +1,8 @@
-hash: bdeb606eca05304f80e5577159227ae4f00a002213f353e304066c593419a31b
-updated: 2017-07-31T15:32:36.5529621-07:00
+hash: f52476dff67b66fe9fffe35b63ac0c06962fcaacd326b66820a33edf53b01a16
+updated: 2017-09-01T13:52:16.3705168-07:00
 imports:
 - name: github.com/Azure/go-autorest
-  version: f6e08fe5e4d45c9a66e40196d3fed5f37331d224
+  version: 48a8154950f853ae1f2a9c409e0eb1fb71119bc8
   subpackages:
   - autorest
   - autorest/adal
@@ -30,6 +30,8 @@ imports:
   version: 4748e29d5718c2df4028a6543edf86fd8cc0f881
 - name: github.com/nozzle/throttler
   version: d9b45f19996c645d38c9266d1f5cf1990e930119
+- name: github.com/satori/go.uuid
+  version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/satori/uuid
   version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/shopspring/decimal

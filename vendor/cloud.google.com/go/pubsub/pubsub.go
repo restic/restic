@@ -62,6 +62,10 @@ func NewClient(ctx context.Context, projectID string, opts ...option.ClientOptio
 		o = []option.ClientOption{
 			// Create multiple connections to increase throughput.
 			option.WithGRPCConnectionPool(runtime.GOMAXPROCS(0)),
+
+			// TODO(grpc/grpc-go#1388) using connection pool without WithBlock
+			// can cause RPCs to fail randomly. We can delete this after the issue is fixed.
+			option.WithGRPCDialOption(grpc.WithBlock()),
 		}
 	}
 	o = append(o, opts...)

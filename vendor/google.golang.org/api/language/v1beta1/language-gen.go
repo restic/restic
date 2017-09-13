@@ -582,6 +582,12 @@ type DependencyEdge struct {
 	//   "COP" - Copula
 	//   "DISLOCATED" - Dislocated relation (for fronted/topicalized
 	// elements)
+	//   "ASP" - Aspect marker
+	//   "GMOD" - Genitive modifier
+	//   "GOBJ" - Genitive object
+	//   "INFMOD" - Infinitival modifier
+	//   "MES" - Measure
+	//   "NCOMP" - Nominal complement of a noun
 	Label string `json:"label,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "HeadTokenIndex") to

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package blog implements a private logger, in the manner of glog, without
-// poluting the flag namespace or leaving files all over /tmp.
+// polluting the flag namespace or leaving files all over /tmp.
 //
 // It has almost no features, and a bunch of global state.
 package blog

@@ -15,6 +15,7 @@
 package bigquery
 
 import (
+	"fmt"
 	"testing"
 
 	"cloud.google.com/go/internal/testutil"
@@ -26,10 +27,11 @@ import (
 
 func defaultQueryJob() *bq.Job {
 	return &bq.Job{
+		JobReference: &bq.JobReference{ProjectId: "client-project-id"},
 		Configuration: &bq.JobConfiguration{
 			Query: &bq.JobConfigurationQuery{
 				DestinationTable: &bq.TableReference{
-					ProjectId: "project-id",
+					ProjectId: "client-project-id",
 					DatasetId: "dataset-id",
 					TableId:   "table-id",
 				},
@@ -45,7 +47,7 @@ func defaultQueryJob() *bq.Job {
 
 func TestQuery(t *testing.T) {
 	c := &Client{
-		projectID: "project-id",
+		projectID: "client-project-id",
 	}
 	testCases := []struct {
 		dst  *Table
@@ -144,6 +146,7 @@ func TestQuery(t *testing.T) {
 			},
 			want: func() *bq.Job {
 				j := defaultQueryJob()
+				j.Configuration.Query.DestinationTable.ProjectId = "project-id"
 				j.Configuration.Query.WriteDisposition = "WRITE_TRUNCATE"
 				j.Configuration.Query.CreateDisposition = "CREATE_NEVER"
 				return j
@@ -251,19 +254,17 @@ func TestQuery(t *testing.T) {
 			}(),
 		},
 	}
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		s := &testService{}
 		c.service = s
 		query := c.Query("")
 		query.QueryConfig = *tc.src
 		query.Dst = tc.dst
 		if _, err := query.Run(context.Background()); err != nil {
-			t.Errorf("err calling query: %v", err)
+			t.Errorf("#%d: err calling query: %v", i, err)
 			continue
 		}
-		if !testutil.Equal(s.Job, tc.want) {
-			t.Errorf("querying: got:\n%v\nwant:\n%v", s.Job, tc.want)
-		}
+		checkJob(t, i, s.Job, tc.want)
 	}
 }
 
@@ -302,5 +303,28 @@ func TestConfiguringQuery(t *testing.T) {
 	}
 	if !testutil.Equal(s.Job, want) {
 		t.Errorf("querying: got:\n%v\nwant:\n%v", s.Job, want)
+	}
+}
+
+func TestQueryLegacySQL(t *testing.T) {
+	c := &Client{
+		projectID: "project-id",
+		service:   &testService{},
+	}
+	q := c.Query("q")
+	q.UseStandardSQL = true
+	q.UseLegacySQL = true
+	_, err := q.Run(context.Background())
+	if err == nil {
+		t.Error("UseStandardSQL and UseLegacySQL: got nil, want error")
+	}
+	q = c.Query("q")
+	q.Parameters = []QueryParameter{{Name: "p", Value: 3}}
+	q.UseLegacySQL = true
+	_, err = q.Run(context.Background())
+	if err == nil {
+		t.Error("Parameters and UseLegacySQL: got nil, want error")
+	} else {
+		fmt.Println(err)
 	}
 }

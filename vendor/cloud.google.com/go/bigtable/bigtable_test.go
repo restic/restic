@@ -448,6 +448,24 @@ func TestClientIntegration(t *testing.T) {
 			t.Fatalf("After %s,\n got %v\nwant %v", step.desc, row, wantRow)
 		}
 	}
+
+	// Check for google-cloud-go/issues/723. RMWs that insert new rows should keep row order sorted in the emulator.
+	row, err = tbl.ApplyReadModifyWrite(ctx, "issue-723-2", appendRMW([]byte{0}))
+	if err != nil {
+		t.Fatalf("ApplyReadModifyWrite null string: %v", err)
+	}
+	row, err = tbl.ApplyReadModifyWrite(ctx, "issue-723-1", appendRMW([]byte{0}))
+	if err != nil {
+		t.Fatalf("ApplyReadModifyWrite null string: %v", err)
+	}
+	// Get only the correct row back on read.
+	r, err := tbl.ReadRow(ctx, "issue-723-1")
+	if err != nil {
+		t.Fatalf("Reading row: %v", err)
+	}
+	if r.Key() != "issue-723-1" {
+		t.Errorf("ApplyReadModifyWrite: incorrect read after RMW,\n got %v\nwant %v", r.Key(), "issue-723-1")
+	}
 	checkpoint("tested ReadModifyWrite")
 
 	// Test arbitrary timestamps more thoroughly.
@@ -465,7 +483,7 @@ func TestClientIntegration(t *testing.T) {
 	if err := tbl.Apply(ctx, "testrow", mut); err != nil {
 		t.Fatalf("Mutating row: %v", err)
 	}
-	r, err := tbl.ReadRow(ctx, "testrow")
+	r, err = tbl.ReadRow(ctx, "testrow")
 	if err != nil {
 		t.Fatalf("Reading row: %v", err)
 	}
@@ -758,7 +776,7 @@ func TestClientIntegration(t *testing.T) {
 	checkpoint("tested high concurrency")
 
 	// Large reads, writes and scans.
-	bigBytes := make([]byte, 3<<20) // 3 MB is large, but less than current gRPC max of 4 MB.
+	bigBytes := make([]byte, 5<<20) // 5 MB is larger than current default gRPC max of 4 MB, but less than the max we set.
 	nonsense := []byte("lorem ipsum dolor sit amet, ")
 	fill(bigBytes, nonsense)
 	mut = NewMutation()

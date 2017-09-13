@@ -2262,8 +2262,7 @@ func (s *WebEntity) UnmarshalJSON(data []byte) error {
 
 // WebImage: Metadata for online images.
 type WebImage struct {
-	// Score: Overall relevancy score for the image.
-	// Not normalized and not comparable across different image queries.
+	// Score: (Deprecated) Overall relevancy score for the image.
 	Score float64 `json:"score,omitempty"`
 
 	// Url: The result image URL.
@@ -2308,8 +2307,7 @@ func (s *WebImage) UnmarshalJSON(data []byte) error {
 
 // WebPage: Metadata for web pages.
 type WebPage struct {
-	// Score: Overall relevancy score for the web page.
-	// Not normalized and not comparable across different image queries.
+	// Score: (Deprecated) Overall relevancy score for the web page.
 	Score float64 `json:"score,omitempty"`
 
 	// Url: The result web page URL.

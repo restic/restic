@@ -15,7 +15,7 @@
 // Package transport/http supports network connections to HTTP servers.
 // This package is not intended for use by end developers. Use the
 // google.golang.org/api/option package to configure API clients.
-package transport
+package http
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ import (
 
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	gtransport "google.golang.org/api/googleapi/transport"
+	"google.golang.org/api/googleapi/transport"
 	"google.golang.org/api/internal"
 	"google.golang.org/api/option"
 )
@@ -45,7 +45,7 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*http.Client, 
 	}
 	if o.APIKey != "" {
 		hc := &http.Client{
-			Transport: &gtransport.APIKey{
+			Transport: &transport.APIKey{
 				Key: o.APIKey,
 				Transport: userAgentTransport{
 					base:      baseTransport(ctx),

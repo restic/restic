@@ -20,17 +20,16 @@ import (
 
 	"golang.org/x/net/context"
 
-	"cloud.google.com/go/internal/pretty"
-	"cloud.google.com/go/internal/testutil"
 	bq "google.golang.org/api/bigquery/v2"
 )
 
 func defaultLoadJob() *bq.Job {
 	return &bq.Job{
+		JobReference: &bq.JobReference{ProjectId: "client-project-id"},
 		Configuration: &bq.JobConfiguration{
 			Load: &bq.JobConfigurationLoad{
 				DestinationTable: &bq.TableReference{
-					ProjectId: "project-id",
+					ProjectId: "client-project-id",
 					DatasetId: "dataset-id",
 					TableId:   "table-id",
 				},
@@ -68,7 +67,7 @@ func bqNestedFieldSchema() *bq.TableFieldSchema {
 }
 
 func TestLoad(t *testing.T) {
-	c := &Client{projectID: "project-id"}
+	c := &Client{projectID: "client-project-id"}
 
 	testCases := []struct {
 		dst    *Table
@@ -95,7 +94,7 @@ func TestLoad(t *testing.T) {
 				j.Configuration.Load.WriteDisposition = "WRITE_TRUNCATE"
 				j.JobReference = &bq.JobReference{
 					JobId:     "ajob",
-					ProjectId: "project-id",
+					ProjectId: "client-project-id",
 				}
 				return j
 			}(),
@@ -218,12 +217,9 @@ func TestLoad(t *testing.T) {
 		tc.config.Dst = tc.dst
 		loader.LoadConfig = tc.config
 		if _, err := loader.Run(context.Background()); err != nil {
-			t.Errorf("%d: err calling Loader.Run: %v", i, err)
+			t.Errorf("#%d: err calling Loader.Run: %v", i, err)
 			continue
 		}
-		if !testutil.Equal(s.Job, tc.want) {
-			t.Errorf("loading %d: got:\n%v\nwant:\n%v",
-				i, pretty.Value(s.Job), pretty.Value(tc.want))
-		}
+		checkJob(t, i, s.Job, tc.want)
 	}
 }

@@ -17,6 +17,8 @@ package bigquery
 import (
 	"time"
 
+	"cloud.google.com/go/internal/optional"
+
 	"golang.org/x/net/context"
 	"google.golang.org/api/iterator"
 )
@@ -30,14 +32,47 @@ type Dataset struct {
 
 type DatasetMetadata struct {
 	CreationTime           time.Time
-	LastModifiedTime       time.Time // When the dataset or any of its tables were modified.
-	DefaultTableExpiration time.Duration
-	Description            string // The user-friendly description of this table.
-	Name                   string // The user-friendly name for this table.
+	LastModifiedTime       time.Time     // When the dataset or any of its tables were modified.
+	DefaultTableExpiration time.Duration // The default expiration time for new tables.
+	Description            string        // The user-friendly description of this dataset.
+	Name                   string        // The user-friendly name for this dataset.
 	ID                     string
 	Location               string            // The geo location of the dataset.
 	Labels                 map[string]string // User-provided labels.
+
+	// ETag is the ETag obtained when reading metadata. Pass it to Dataset.Update to
+	// ensure that the metadata hasn't changed since it was read.
+	ETag string
 	// TODO(jba): access rules
+}
+
+type DatasetMetadataToUpdate struct {
+	Description optional.String // The user-friendly description of this table.
+	Name        optional.String // The user-friendly name for this dataset.
+	// DefaultTableExpiration is the the default expiration time for new tables.
+	// If set to time.Duration(0), new tables never expire.
+	DefaultTableExpiration optional.Duration
+
+	setLabels    map[string]string
+	deleteLabels map[string]bool
+}
+
+// SetLabel causes a label to be added or modified when dm is used
+// in a call to Dataset.Update.
+func (dm *DatasetMetadataToUpdate) SetLabel(name, value string) {
+	if dm.setLabels == nil {
+		dm.setLabels = map[string]string{}
+	}
+	dm.setLabels[name] = value
+}
+
+// DeleteLabel causes a label to be deleted when dm is used in a
+// call to Dataset.Update.
+func (dm *DatasetMetadataToUpdate) DeleteLabel(name string) {
+	if dm.deleteLabels == nil {
+		dm.deleteLabels = map[string]bool{}
+	}
+	dm.deleteLabels[name] = true
 }
 
 // Dataset creates a handle to a BigQuery dataset in the client's project.
@@ -68,6 +103,14 @@ func (d *Dataset) Delete(ctx context.Context) error {
 // Metadata fetches the metadata for the dataset.
 func (d *Dataset) Metadata(ctx context.Context) (*DatasetMetadata, error) {
 	return d.c.service.getDatasetMetadata(ctx, d.ProjectID, d.DatasetID)
+}
+
+// Update modifies specific Dataset metadata fields.
+// To perform a read-modify-write that protects against intervening reads,
+// set the etag argument to the DatasetMetadata.ETag field from the read.
+// Pass the empty string for etag for a "blind write" that will always succeed.
+func (d *Dataset) Update(ctx context.Context, dm DatasetMetadataToUpdate, etag string) (*DatasetMetadata, error) {
+	return d.c.service.patchDataset(ctx, d.ProjectID, d.DatasetID, &dm, etag)
 }
 
 // Table creates a handle to a BigQuery table in the dataset.
@@ -126,17 +169,21 @@ func (it *TableIterator) fetch(pageSize int, pageToken string) (string, error) {
 	return tok, nil
 }
 
-// Datasets returns an iterator over the datasets in the Client's project.
+// Datasets returns an iterator over the datasets in a project.
+// The Client's project is used by default, but that can be
+// changed by setting ProjectID on the returned iterator before calling Next.
 func (c *Client) Datasets(ctx context.Context) *DatasetIterator {
 	return c.DatasetsInProject(ctx, c.projectID)
 }
 
 // DatasetsInProject returns an iterator over the datasets in the provided project.
+//
+// Deprecated: call Client.Datasets, then set ProjectID on the returned iterator.
 func (c *Client) DatasetsInProject(ctx context.Context, projectID string) *DatasetIterator {
 	it := &DatasetIterator{
 		ctx:       ctx,
 		c:         c,
-		projectID: projectID,
+		ProjectID: projectID,
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(
 		it.fetch,
@@ -148,18 +195,23 @@ func (c *Client) DatasetsInProject(ctx context.Context, projectID string) *Datas
 // DatasetIterator iterates over the datasets in a project.
 type DatasetIterator struct {
 	// ListHidden causes hidden datasets to be listed when set to true.
+	// Set before the first call to Next.
 	ListHidden bool
 
 	// Filter restricts the datasets returned by label. The filter syntax is described in
 	// https://cloud.google.com/bigquery/docs/labeling-datasets#filtering_datasets_using_labels
+	// Set before the first call to Next.
 	Filter string
 
-	ctx       context.Context
-	projectID string
-	c         *Client
-	pageInfo  *iterator.PageInfo
-	nextFunc  func() error
-	items     []*Dataset
+	// The project ID of the listed datasets.
+	// Set before the first call to Next.
+	ProjectID string
+
+	ctx      context.Context
+	c        *Client
+	pageInfo *iterator.PageInfo
+	nextFunc func() error
+	items    []*Dataset
 }
 
 // PageInfo supports pagination. See the google.golang.org/api/iterator package for details.
@@ -175,7 +227,7 @@ func (it *DatasetIterator) Next() (*Dataset, error) {
 }
 
 func (it *DatasetIterator) fetch(pageSize int, pageToken string) (string, error) {
-	datasets, nextPageToken, err := it.c.service.listDatasets(it.ctx, it.projectID,
+	datasets, nextPageToken, err := it.c.service.listDatasets(it.ctx, it.ProjectID,
 		pageSize, pageToken, it.ListHidden, it.Filter)
 	if err != nil {
 		return "", err

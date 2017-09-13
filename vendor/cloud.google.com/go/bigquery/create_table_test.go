@@ -108,3 +108,15 @@ func TestCreateTableOptions(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateTableOptionsLegacySQL(t *testing.T) {
+	c := &Client{
+		projectID: "p",
+		service:   &bigqueryService{},
+	}
+	ds := c.Dataset("d")
+	table := ds.Table("t")
+	if err := table.Create(context.Background(), UseStandardSQL(), UseLegacySQL()); err == nil {
+		t.Fatal("no error using both standard and legacy SQL options")
+	}
+}

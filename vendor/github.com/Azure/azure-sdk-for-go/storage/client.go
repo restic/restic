@@ -403,12 +403,7 @@ func (c Client) exec(verb, url string, headers map[string]string, body io.Reader
 	// and for those that it doesn't we will handle here.
 	if body != nil && req.ContentLength < 1 {
 		if lr, ok := body.(*io.LimitedReader); ok {
-			req.ContentLength = lr.N
-			snapshot := *lr
-			req.GetBody = func() (io.ReadCloser, error) {
-				r := snapshot
-				return ioutil.NopCloser(&r), nil
-			}
+			setContentLengthFromLimitedReader(req, lr)
 		}
 	}
 

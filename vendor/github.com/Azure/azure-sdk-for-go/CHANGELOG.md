@@ -1,5 +1,37 @@
 # CHANGELOG
 
+## `v10.3.1-beta`
+- Added Apache notice file.
+
+### ARM
+- Fixed package name on some `version.go` files.
+
+### Storage
+- Fixed bug related to SAS URI generation and storage emulator support.
+
+### Generated code notes
+- [Azure REST API specs](https://github.com/Azure/azure-rest-api-specs) commit: ad55af74f3f0e2b390a4306532528168ba742fef
+- [AutoRest Go extension](https://github.com/Azure/autorest.go) commit: 28a531c59c82cf67bc90c87095c1d34a936461b4
+
+## `v10.3.0-beta`
+### ARM
+
+| api                                 | version            | note                                |
+|:------------------------------------|:-------------------|:------------------------------------|
+| arm/containerinstance               | 2017-08-01-preview | new                                 |
+| arm/eventgrid                       | 2017-06-15-preview | new                                 |
+
+### ASM
+- Marked as in mainteinance mode.
+- Added Go 1.7 build tags.
+
+### Storage
+- Support for Go 1.7 and Go 1.6 (except table batch operation tests).
+
+### Generated code notes
+- [Azure REST API specs](https://github.com/Azure/azure-rest-api-specs) commit: ad55af74f3f0e2b390a4306532528168ba742fef
+- [AutoRest](https://github.com/Azure/autorest) commit: cfb296f153f948f85afab637f7212fcfdc4a8bbb
+
 ## `v10.2.1-beta`
 - Fixes polymorphic structs in `mysql` and `postgresql` packages.
 

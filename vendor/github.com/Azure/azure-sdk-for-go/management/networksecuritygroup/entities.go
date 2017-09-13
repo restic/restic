@@ -1,3 +1,5 @@
+// +build go1.7
+
 // Package networksecuritygroup implements operations for managing network security groups
 // using the Service Management REST API
 //

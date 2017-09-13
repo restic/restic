@@ -52,8 +52,7 @@ func credFileTokenSource(ctx context.Context, filename string, scope ...string) 
 	if ok {
 		return &google.DefaultCredentials{
 			TokenSource: ts,
-			// TODO(jba): uncomment after https://go-review.googlesource.com/c/51111 is in.
-			// JSON: data,
+			JSON:        data,
 		}, nil
 	}
 
@@ -72,8 +71,7 @@ func credFileTokenSource(ctx context.Context, filename string, scope ...string) 
 	return &google.DefaultCredentials{
 		ProjectID:   pid.ProjectID,
 		TokenSource: cfg.TokenSource(ctx),
-		// TODO(jba): uncomment after https://go-review.googlesource.com/c/51111 is in.
-		// JSON: data,
+		JSON:        data,
 	}, nil
 }
 

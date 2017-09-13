@@ -1633,6 +1633,9 @@ type Person struct {
 	// Urls: The person's associated URLs.
 	Urls []*Url `json:"urls,omitempty"`
 
+	// UserDefined: The person's user defined data.
+	UserDefined []*UserDefined `json:"userDefined,omitempty"`
+
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`
@@ -1839,6 +1842,10 @@ func (s *PhoneNumber) MarshalJSON() ([]byte, error) {
 // person's name to
 // help others recognize the person.
 type Photo struct {
+	// Default: True if the photo is a default photo;
+	// false if the photo is a user-provided photo.
+	Default bool `json:"default,omitempty"`
+
 	// Metadata: Metadata about the photo.
 	Metadata *FieldMetadata `json:"metadata,omitempty"`
 
@@ -1850,7 +1857,7 @@ type Photo struct {
 	// AAAAAAABa8/00gzXvDBYqw/s100/photo.jpg?sz=50`
 	Url string `json:"url,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "Metadata") to
+	// ForceSendFields is a list of field names (e.g. "Default") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -1858,7 +1865,7 @@ type Photo struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Metadata") to include in
+	// NullFields is a list of field names (e.g. "Default") to include in
 	// API requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
@@ -2429,6 +2436,40 @@ type Url struct {
 
 func (s *Url) MarshalJSON() ([]byte, error) {
 	type noMethod Url
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// UserDefined: Arbitrary user data that is populated by the end users.
+type UserDefined struct {
+	// Key: The end user specified key of the user defined data.
+	Key string `json:"key,omitempty"`
+
+	// Metadata: Metadata about the user defined data.
+	Metadata *FieldMetadata `json:"metadata,omitempty"`
+
+	// Value: The end user specified value of the user defined data.
+	Value string `json:"value,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Key") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Key") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UserDefined) MarshalJSON() ([]byte, error) {
+	type noMethod UserDefined
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }

@@ -58,6 +58,7 @@ func New(client *http.Client) (*Service, error) {
 	s := &Service{client: client, BasePath: basePath}
 	s.Content = NewContentService(s)
 	s.Inspect = NewInspectService(s)
+	s.RiskAnalysis = NewRiskAnalysisService(s)
 	s.RootCategories = NewRootCategoriesService(s)
 	return s, nil
 }
@@ -70,6 +71,8 @@ type Service struct {
 	Content *ContentService
 
 	Inspect *InspectService
+
+	RiskAnalysis *RiskAnalysisService
 
 	RootCategories *RootCategoriesService
 }
@@ -132,6 +135,27 @@ func NewInspectResultsFindingsService(s *Service) *InspectResultsFindingsService
 }
 
 type InspectResultsFindingsService struct {
+	s *Service
+}
+
+func NewRiskAnalysisService(s *Service) *RiskAnalysisService {
+	rs := &RiskAnalysisService{s: s}
+	rs.Operations = NewRiskAnalysisOperationsService(s)
+	return rs
+}
+
+type RiskAnalysisService struct {
+	s *Service
+
+	Operations *RiskAnalysisOperationsService
+}
+
+func NewRiskAnalysisOperationsService(s *Service) *RiskAnalysisOperationsService {
+	rs := &RiskAnalysisOperationsService{s: s}
+	return rs
+}
+
+type RiskAnalysisOperationsService struct {
 	s *Service
 }
 
@@ -204,8 +228,8 @@ func (s *GoogleLongrunningListOperationsResponse) MarshalJSON() ([]byte, error) 
 type GoogleLongrunningOperation struct {
 	// Done: If the value is `false`, it means the operation is still in
 	// progress.
-	// If true, the operation is completed, and either `error` or `response`
-	// is
+	// If `true`, the operation is completed, and either `error` or
+	// `response` is
 	// available.
 	Done bool `json:"done,omitempty"`
 
@@ -256,7 +280,8 @@ func (s *GoogleLongrunningOperation) MarshalJSON() ([]byte, error) {
 type GooglePrivacyDlpV2beta1BigQueryOptions struct {
 	// IdentifyingFields: References to fields uniquely identifying rows
 	// within the table.
-	// Nested fields in the format like person.birthdate.year are allowed.
+	// Nested fields in the format, like `person.birthdate.year`, are
+	// allowed.
 	IdentifyingFields []*GooglePrivacyDlpV2beta1FieldId `json:"identifyingFields,omitempty"`
 
 	// TableReference: Complete BigQuery table reference.
@@ -288,13 +313,20 @@ func (s *GooglePrivacyDlpV2beta1BigQueryOptions) MarshalJSON() ([]byte, error) {
 
 // GooglePrivacyDlpV2beta1BigQueryTable: Message defining the location
 // of a BigQuery table. A table is uniquely
-// identified  by its project_id, dataset_id, and table_name.
+// identified  by its project_id, dataset_id, and table_name. Within a
+// query
+// a table is often referenced with a string in the format
+// of:
+// `<project_id>:<dataset_id>.<table_id>`
+// or
+// `<project_id>.<dataset_id>.<table_id>`.
 type GooglePrivacyDlpV2beta1BigQueryTable struct {
 	// DatasetId: Dataset ID of the table.
 	DatasetId string `json:"datasetId,omitempty"`
 
-	// ProjectId: The GCP project id of the project containing the table.
-	// If omitted, project id is inferred from the API call.
+	// ProjectId: The Google Cloud Platform project ID of the project
+	// containing the table.
+	// If omitted, project ID is inferred from the API call.
 	ProjectId string `json:"projectId,omitempty"`
 
 	// TableId: Name of the table.
@@ -506,6 +538,9 @@ type GooglePrivacyDlpV2beta1ContentItem struct {
 	// Data: Content data to inspect or redact.
 	Data string `json:"data,omitempty"`
 
+	// Table: Structured content for inspection.
+	Table *GooglePrivacyDlpV2beta1Table `json:"table,omitempty"`
+
 	// Type: Type of the content, as defined in Content-Type HTTP
 	// header.
 	// Supported types are: all "text" types, octet streams, PNG
@@ -547,12 +582,16 @@ type GooglePrivacyDlpV2beta1CreateInspectOperationRequest struct {
 	// InspectConfig: Configuration for the inspector.
 	InspectConfig *GooglePrivacyDlpV2beta1InspectConfig `json:"inspectConfig,omitempty"`
 
+	// OperationConfig: Additional configuration settings for long running
+	// operations.
+	OperationConfig *GooglePrivacyDlpV2beta1OperationConfig `json:"operationConfig,omitempty"`
+
 	// OutputConfig: Optional location to store findings. The bucket must
 	// already exist and
 	// the Google APIs service account for DLP must have write permission
 	// to
 	// write to the given bucket.
-	// <p>Results are split over multiple csv files with each file name
+	// Results are split over multiple csv files with each file name
 	// matching
 	// the pattern "[operation_id]_[count].csv", for
 	// example
@@ -560,18 +599,32 @@ type GooglePrivacyDlpV2beta1CreateInspectOperationRequest struct {
 	// the
 	// identifier for the Operation, and the `count` is a counter used
 	// for
-	// tracking the number of files written. <p>The CSV file(s) contain
-	// the
-	// following columns regardless of storage type scanned: <li>id
-	// <li>info_type
-	// <li>likelihood <li>byte size of finding <li>quote
-	// <li>time_stamp<br/>
-	// <p>For Cloud Storage the next columns are:
-	// <li>file_path
-	// <li>start_offset<br/>
-	// <p>For Cloud Datastore the next columns are:
-	// <li>project_id
-	// <li>namespace_id <li>path <li>column_name <li>offset
+	// tracking the number of files written.
+	// The CSV file(s) contain the
+	// following columns regardless of storage type scanned:
+	// - id
+	// - info_type
+	// - likelihood
+	// - byte size of finding
+	// - quote
+	// - timestamp
+	//
+	// For Cloud Storage the next columns are:
+	// - file_path
+	// - start_offset
+	//
+	// For Cloud Datastore the next columns are:
+	// - project_id
+	// - namespace_id
+	// - path
+	// - column_name
+	// - offset
+	//
+	// For BigQuery the next columns are:
+	// - row_number
+	// - project_id
+	// - dataset_id
+	// - table_id
 	OutputConfig *GooglePrivacyDlpV2beta1OutputStorageConfig `json:"outputConfig,omitempty"`
 
 	// StorageConfig: Specification of the data set to process.
@@ -821,15 +874,15 @@ func (s *GooglePrivacyDlpV2beta1ImageLocation) MarshalJSON() ([]byte, error) {
 type GooglePrivacyDlpV2beta1ImageRedactionConfig struct {
 	// InfoType: Only one per info_type should be provided per request. If
 	// not
-	// specified, and redact_all_text is false, the DLP API will redacts
+	// specified, and redact_all_text is false, the DLP API will redact
 	// all
 	// text that it matches against all info_types that are found, but
 	// not
 	// specified in another ImageRedactionConfig.
 	InfoType *GooglePrivacyDlpV2beta1InfoType `json:"infoType,omitempty"`
 
-	// RedactAllText: If true, all text found in the image, regardless if it
-	// matches an
+	// RedactAllText: If true, all text found in the image, regardless
+	// whether it matches an
 	// info_type, is redacted.
 	RedactAllText bool `json:"redactAllText,omitempty"`
 
@@ -924,6 +977,45 @@ func (s *GooglePrivacyDlpV2beta1InfoTypeDescription) MarshalJSON() ([]byte, erro
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// GooglePrivacyDlpV2beta1InfoTypeLimit: Max findings configuration per
+// info type, per content item or long running
+// operation.
+type GooglePrivacyDlpV2beta1InfoTypeLimit struct {
+	// InfoType: Type of information the findings limit applies to. Only one
+	// limit per
+	// info_type should be provided. If InfoTypeLimit does not have
+	// an
+	// info_type, the DLP API applies the limit against all info_types that
+	// are
+	// found but not specified in another InfoTypeLimit.
+	InfoType *GooglePrivacyDlpV2beta1InfoType `json:"infoType,omitempty"`
+
+	// MaxFindings: Max findings limit for the given infoType.
+	MaxFindings int64 `json:"maxFindings,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "InfoType") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "InfoType") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1InfoTypeLimit) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1InfoTypeLimit
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // GooglePrivacyDlpV2beta1InfoTypeStatistics: Statistics regarding a
 // specific InfoType.
 type GooglePrivacyDlpV2beta1InfoTypeStatistics struct {
@@ -969,6 +1061,10 @@ type GooglePrivacyDlpV2beta1InspectConfig struct {
 	// triggered a finding is
 	// included in the response; see Finding.quote.
 	IncludeQuote bool `json:"includeQuote,omitempty"`
+
+	// InfoTypeLimits: Configuration of findings limit given for specified
+	// info types.
+	InfoTypeLimits []*GooglePrivacyDlpV2beta1InfoTypeLimit `json:"infoTypeLimits,omitempty"`
 
 	// InfoTypes: Restricts what info_types to look for. The values must
 	// correspond to
@@ -1414,6 +1510,9 @@ type GooglePrivacyDlpV2beta1Location struct {
 	// RecordKey: Key of the finding.
 	RecordKey *GooglePrivacyDlpV2beta1RecordKey `json:"recordKey,omitempty"`
 
+	// TableLocation: Location within a `ContentItem.Table`.
+	TableLocation *GooglePrivacyDlpV2beta1TableLocation `json:"tableLocation,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "ByteRange") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -1433,6 +1532,37 @@ type GooglePrivacyDlpV2beta1Location struct {
 
 func (s *GooglePrivacyDlpV2beta1Location) MarshalJSON() ([]byte, error) {
 	type noMethod GooglePrivacyDlpV2beta1Location
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1OperationConfig: Additional configuration for
+// inspect long running operations.
+type GooglePrivacyDlpV2beta1OperationConfig struct {
+	// MaxItemFindings: Max number of findings per file, Datastore entity,
+	// or database row.
+	MaxItemFindings int64 `json:"maxItemFindings,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "MaxItemFindings") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "MaxItemFindings") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1OperationConfig) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1OperationConfig
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1792,6 +1922,32 @@ func (s *GooglePrivacyDlpV2beta1ReplaceConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+type GooglePrivacyDlpV2beta1Row struct {
+	Values []*GooglePrivacyDlpV2beta1Value `json:"values,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Values") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Values") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1Row) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1Row
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // GooglePrivacyDlpV2beta1StorageConfig: Shared message indicating Cloud
 // storage type.
 type GooglePrivacyDlpV2beta1StorageConfig struct {
@@ -1826,6 +1982,120 @@ func (s *GooglePrivacyDlpV2beta1StorageConfig) MarshalJSON() ([]byte, error) {
 	type noMethod GooglePrivacyDlpV2beta1StorageConfig
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1Table: Structured content to inspect. Up to
+// 50,000 `Value`s per request allowed.
+type GooglePrivacyDlpV2beta1Table struct {
+	Headers []*GooglePrivacyDlpV2beta1FieldId `json:"headers,omitempty"`
+
+	Rows []*GooglePrivacyDlpV2beta1Row `json:"rows,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Headers") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Headers") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1Table) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1Table
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1TableLocation: Location of a finding within a
+// `ContentItem.Table`.
+type GooglePrivacyDlpV2beta1TableLocation struct {
+	// RowIndex: The zero-based index of the row where the finding is
+	// located.
+	RowIndex int64 `json:"rowIndex,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "RowIndex") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "RowIndex") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1TableLocation) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1TableLocation
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1Value: Set of primitive values supported by
+// the system.
+type GooglePrivacyDlpV2beta1Value struct {
+	BooleanValue bool `json:"booleanValue,omitempty"`
+
+	DateValue *GoogleTypeDate `json:"dateValue,omitempty"`
+
+	FloatValue float64 `json:"floatValue,omitempty"`
+
+	IntegerValue int64 `json:"integerValue,omitempty,string"`
+
+	StringValue string `json:"stringValue,omitempty"`
+
+	TimeValue *GoogleTypeTimeOfDay `json:"timeValue,omitempty"`
+
+	TimestampValue string `json:"timestampValue,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BooleanValue") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BooleanValue") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1Value) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1Value
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+func (s *GooglePrivacyDlpV2beta1Value) UnmarshalJSON(data []byte) error {
+	type noMethod GooglePrivacyDlpV2beta1Value
+	var s1 struct {
+		FloatValue gensupport.JSONFloat64 `json:"floatValue"`
+		*noMethod
+	}
+	s1.noMethod = (*noMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.FloatValue = float64(s1.FloatValue)
+	return nil
 }
 
 // GoogleProtobufEmpty: A generic empty message that you can re-use to
@@ -1961,6 +2231,103 @@ type GoogleRpcStatus struct {
 
 func (s *GoogleRpcStatus) MarshalJSON() ([]byte, error) {
 	type noMethod GoogleRpcStatus
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GoogleTypeDate: Represents a whole calendar date, e.g. date of birth.
+// The time of day and
+// time zone are either specified elsewhere or are not significant. The
+// date
+// is relative to the Proleptic Gregorian Calendar. The day may be 0
+// to
+// represent a year and month where the day is not significant, e.g.
+// credit card
+// expiration date. The year may be 0 to represent a month and day
+// independent
+// of year, e.g. anniversary date. Related types are
+// google.type.TimeOfDay
+// and `google.protobuf.Timestamp`.
+type GoogleTypeDate struct {
+	// Day: Day of month. Must be from 1 to 31 and valid for the year and
+	// month, or 0
+	// if specifying a year/month where the day is not significant.
+	Day int64 `json:"day,omitempty"`
+
+	// Month: Month of year. Must be from 1 to 12.
+	Month int64 `json:"month,omitempty"`
+
+	// Year: Year of date. Must be from 1 to 9999, or 0 if specifying a date
+	// without
+	// a year.
+	Year int64 `json:"year,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Day") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Day") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleTypeDate) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleTypeDate
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GoogleTypeTimeOfDay: Represents a time of day. The date and time zone
+// are either not significant
+// or are specified elsewhere. An API may choose to allow leap seconds.
+// Related
+// types are google.type.Date and `google.protobuf.Timestamp`.
+type GoogleTypeTimeOfDay struct {
+	// Hours: Hours of day in 24 hour format. Should be from 0 to 23. An API
+	// may choose
+	// to allow the value "24:00:00" for scenarios like business closing
+	// time.
+	Hours int64 `json:"hours,omitempty"`
+
+	// Minutes: Minutes of hour of day. Must be from 0 to 59.
+	Minutes int64 `json:"minutes,omitempty"`
+
+	// Nanos: Fractions of seconds in nanoseconds. Must be from 0 to
+	// 999,999,999.
+	Nanos int64 `json:"nanos,omitempty"`
+
+	// Seconds: Seconds of minutes of the time. Must normally be from 0 to
+	// 59. An API may
+	// allow the value 60 if it allows leap-seconds.
+	Seconds int64 `json:"seconds,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Hours") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Hours") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GoogleTypeTimeOfDay) MarshalJSON() ([]byte, error) {
+	type noMethod GoogleTypeTimeOfDay
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2960,17 +3327,13 @@ func (r *InspectResultsFindingsService) List(name string) *InspectResultsFinding
 }
 
 // Filter sets the optional parameter "filter": Restricts findings to
-// items that match. Supports info_type and
-// likelihood.
-// <p>Examples:<br/>
-// <li>info_type=EMAIL_ADDRESS
-// <li>info_typ
-// e=PHONE_NUMBER,EMAIL_ADDRESS
-// <li>likelihood=VERY_LIKELY
-// <li>likelihood
-// =VERY_LIKELY,LIKELY
-// <li>info_type=EMAIL_ADDRESS,likelihood=VERY_LIKELY
-// ,LIKELY
+// items that match. Supports info_type and likelihood.
+// Examples:
+// - info_type=EMAIL_ADDRESS
+// - info_type=PHONE_NUMBER,EMAIL_ADDRESS
+// - likelihood=VERY_LIKELY
+// - likelihood=VERY_LIKELY,LIKELY
+// - info_type=EMAIL_ADDRESS,likelihood=VERY_LIKELY,LIKELY
 func (c *InspectResultsFindingsListCall) Filter(filter string) *InspectResultsFindingsListCall {
 	c.urlParams_.Set("filter", filter)
 	return c
@@ -3099,12 +3462,12 @@ func (c *InspectResultsFindingsListCall) Do(opts ...googleapi.CallOption) (*Goog
 	//   ],
 	//   "parameters": {
 	//     "filter": {
-	//       "description": "Restricts findings to items that match. Supports info_type and likelihood.\n\u003cp\u003eExamples:\u003cbr/\u003e\n\u003cli\u003einfo_type=EMAIL_ADDRESS\n\u003cli\u003einfo_type=PHONE_NUMBER,EMAIL_ADDRESS\n\u003cli\u003elikelihood=VERY_LIKELY\n\u003cli\u003elikelihood=VERY_LIKELY,LIKELY\n\u003cli\u003einfo_type=EMAIL_ADDRESS,likelihood=VERY_LIKELY,LIKELY",
+	//       "description": "Restricts findings to items that match. Supports info_type and likelihood.\nExamples:\n- info_type=EMAIL_ADDRESS\n- info_type=PHONE_NUMBER,EMAIL_ADDRESS\n- likelihood=VERY_LIKELY\n- likelihood=VERY_LIKELY,LIKELY\n- info_type=EMAIL_ADDRESS,likelihood=VERY_LIKELY,LIKELY",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "name": {
-	//       "description": "Identifier of the results set returned as metadata of\nthe longrunning operation created by a call to CreateInspectOperation.\nShould be in the format of `inspect/results/{id}`.",
+	//       "description": "Identifier of the results set returned as metadata of\nthe longrunning operation created by a call to InspectDataSource.\nShould be in the format of `inspect/results/{id}`.",
 	//       "location": "path",
 	//       "pattern": "^inspect/results/[^/]+$",
 	//       "required": true,
@@ -3137,6 +3500,610 @@ func (c *InspectResultsFindingsListCall) Do(opts ...googleapi.CallOption) (*Goog
 // A non-nil error returned from f will halt the iteration.
 // The provided context supersedes any context provided to the Context method.
 func (c *InspectResultsFindingsListCall) Pages(ctx context.Context, f func(*GooglePrivacyDlpV2beta1ListInspectFindingsResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
+// method id "dlp.riskAnalysis.operations.cancel":
+
+type RiskAnalysisOperationsCancelCall struct {
+	s                                       *Service
+	name                                    string
+	googlelongrunningcanceloperationrequest *GoogleLongrunningCancelOperationRequest
+	urlParams_                              gensupport.URLParams
+	ctx_                                    context.Context
+	header_                                 http.Header
+}
+
+// Cancel: Cancels an operation. Use the get method to check whether the
+// cancellation succeeded or whether the operation completed despite
+// cancellation.
+func (r *RiskAnalysisOperationsService) Cancel(name string, googlelongrunningcanceloperationrequest *GoogleLongrunningCancelOperationRequest) *RiskAnalysisOperationsCancelCall {
+	c := &RiskAnalysisOperationsCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.googlelongrunningcanceloperationrequest = googlelongrunningcanceloperationrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *RiskAnalysisOperationsCancelCall) Fields(s ...googleapi.Field) *RiskAnalysisOperationsCancelCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RiskAnalysisOperationsCancelCall) Context(ctx context.Context) *RiskAnalysisOperationsCancelCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *RiskAnalysisOperationsCancelCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RiskAnalysisOperationsCancelCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googlelongrunningcanceloperationrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2beta1/{+name}:cancel")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "dlp.riskAnalysis.operations.cancel" call.
+// Exactly one of *GoogleProtobufEmpty or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *GoogleProtobufEmpty.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RiskAnalysisOperationsCancelCall) Do(opts ...googleapi.CallOption) (*GoogleProtobufEmpty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &GoogleProtobufEmpty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Cancels an operation. Use the get method to check whether the cancellation succeeded or whether the operation completed despite cancellation.",
+	//   "flatPath": "v2beta1/riskAnalysis/operations/{operationsId}:cancel",
+	//   "httpMethod": "POST",
+	//   "id": "dlp.riskAnalysis.operations.cancel",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "The name of the operation resource to be cancelled.",
+	//       "location": "path",
+	//       "pattern": "^riskAnalysis/operations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v2beta1/{+name}:cancel",
+	//   "request": {
+	//     "$ref": "GoogleLongrunningCancelOperationRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "GoogleProtobufEmpty"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "dlp.riskAnalysis.operations.delete":
+
+type RiskAnalysisOperationsDeleteCall struct {
+	s          *Service
+	name       string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// Delete: This method is not supported and the server returns
+// `UNIMPLEMENTED`.
+func (r *RiskAnalysisOperationsService) Delete(name string) *RiskAnalysisOperationsDeleteCall {
+	c := &RiskAnalysisOperationsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *RiskAnalysisOperationsDeleteCall) Fields(s ...googleapi.Field) *RiskAnalysisOperationsDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RiskAnalysisOperationsDeleteCall) Context(ctx context.Context) *RiskAnalysisOperationsDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *RiskAnalysisOperationsDeleteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RiskAnalysisOperationsDeleteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2beta1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "dlp.riskAnalysis.operations.delete" call.
+// Exactly one of *GoogleProtobufEmpty or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *GoogleProtobufEmpty.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RiskAnalysisOperationsDeleteCall) Do(opts ...googleapi.CallOption) (*GoogleProtobufEmpty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &GoogleProtobufEmpty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "This method is not supported and the server returns `UNIMPLEMENTED`.",
+	//   "flatPath": "v2beta1/riskAnalysis/operations/{operationsId}",
+	//   "httpMethod": "DELETE",
+	//   "id": "dlp.riskAnalysis.operations.delete",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "The name of the operation resource to be deleted.",
+	//       "location": "path",
+	//       "pattern": "^riskAnalysis/operations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v2beta1/{+name}",
+	//   "response": {
+	//     "$ref": "GoogleProtobufEmpty"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "dlp.riskAnalysis.operations.get":
+
+type RiskAnalysisOperationsGetCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Gets the latest state of a long-running operation.  Clients can
+// use this
+// method to poll the operation result at intervals as recommended by
+// the API
+// service.
+func (r *RiskAnalysisOperationsService) Get(name string) *RiskAnalysisOperationsGetCall {
+	c := &RiskAnalysisOperationsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *RiskAnalysisOperationsGetCall) Fields(s ...googleapi.Field) *RiskAnalysisOperationsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RiskAnalysisOperationsGetCall) IfNoneMatch(entityTag string) *RiskAnalysisOperationsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RiskAnalysisOperationsGetCall) Context(ctx context.Context) *RiskAnalysisOperationsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *RiskAnalysisOperationsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RiskAnalysisOperationsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2beta1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "dlp.riskAnalysis.operations.get" call.
+// Exactly one of *GoogleLongrunningOperation or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *GoogleLongrunningOperation.ServerResponse.Header or (if a response
+// was returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RiskAnalysisOperationsGetCall) Do(opts ...googleapi.CallOption) (*GoogleLongrunningOperation, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &GoogleLongrunningOperation{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Gets the latest state of a long-running operation.  Clients can use this\nmethod to poll the operation result at intervals as recommended by the API\nservice.",
+	//   "flatPath": "v2beta1/riskAnalysis/operations/{operationsId}",
+	//   "httpMethod": "GET",
+	//   "id": "dlp.riskAnalysis.operations.get",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "The name of the operation resource.",
+	//       "location": "path",
+	//       "pattern": "^riskAnalysis/operations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v2beta1/{+name}",
+	//   "response": {
+	//     "$ref": "GoogleLongrunningOperation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "dlp.riskAnalysis.operations.list":
+
+type RiskAnalysisOperationsListCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Fetch the list of long running operations.
+func (r *RiskAnalysisOperationsService) List(name string) *RiskAnalysisOperationsListCall {
+	c := &RiskAnalysisOperationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Filter sets the optional parameter "filter": This parameter supports
+// filtering by done, ie done=true or done=false.
+func (c *RiskAnalysisOperationsListCall) Filter(filter string) *RiskAnalysisOperationsListCall {
+	c.urlParams_.Set("filter", filter)
+	return c
+}
+
+// PageSize sets the optional parameter "pageSize": The list page size.
+// The max allowed value is 256 and default is 100.
+func (c *RiskAnalysisOperationsListCall) PageSize(pageSize int64) *RiskAnalysisOperationsListCall {
+	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": The standard list
+// page token.
+func (c *RiskAnalysisOperationsListCall) PageToken(pageToken string) *RiskAnalysisOperationsListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *RiskAnalysisOperationsListCall) Fields(s ...googleapi.Field) *RiskAnalysisOperationsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *RiskAnalysisOperationsListCall) IfNoneMatch(entityTag string) *RiskAnalysisOperationsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RiskAnalysisOperationsListCall) Context(ctx context.Context) *RiskAnalysisOperationsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *RiskAnalysisOperationsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RiskAnalysisOperationsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2beta1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "dlp.riskAnalysis.operations.list" call.
+// Exactly one of *GoogleLongrunningListOperationsResponse or error will
+// be non-nil. Any non-2xx status code is an error. Response headers are
+// in either
+// *GoogleLongrunningListOperationsResponse.ServerResponse.Header or (if
+// a response was returned at all) in error.(*googleapi.Error).Header.
+// Use googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RiskAnalysisOperationsListCall) Do(opts ...googleapi.CallOption) (*GoogleLongrunningListOperationsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &GoogleLongrunningListOperationsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Fetch the list of long running operations.",
+	//   "flatPath": "v2beta1/riskAnalysis/operations",
+	//   "httpMethod": "GET",
+	//   "id": "dlp.riskAnalysis.operations.list",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "filter": {
+	//       "description": "This parameter supports filtering by done, ie done=true or done=false.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "name": {
+	//       "description": "The name of the operation's parent resource.",
+	//       "location": "path",
+	//       "pattern": "^riskAnalysis/operations$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "pageSize": {
+	//       "description": "The list page size. The max allowed value is 256 and default is 100.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "pageToken": {
+	//       "description": "The standard list page token.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v2beta1/{+name}",
+	//   "response": {
+	//     "$ref": "GoogleLongrunningListOperationsResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *RiskAnalysisOperationsListCall) Pages(ctx context.Context, f func(*GoogleLongrunningListOperationsResponse) error) error {
 	c.ctx_ = ctx
 	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
 	for {

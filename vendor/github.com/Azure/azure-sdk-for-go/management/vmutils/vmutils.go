@@ -1,3 +1,5 @@
+// +build go1.7
+
 // Package vmutils provides convenience methods for creating Virtual
 // Machine Role configurations.
 package vmutils

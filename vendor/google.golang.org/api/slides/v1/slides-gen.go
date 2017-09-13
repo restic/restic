@@ -469,6 +469,8 @@ type CreateImageRequest struct {
 	// cannot exceed 25 megapixels, and must be in either in PNG, JPEG, or
 	// GIF
 	// format.
+	//
+	// The provided URL can be at maximum 2K bytes large.
 	Url string `json:"url,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ElementProperties")
@@ -640,7 +642,7 @@ type CreateParagraphBulletsRequest struct {
 	// `DIAMOND` and `DISC` bullet glyph for
 	// the first 3 list nesting levels.
 	//   "BULLET_STAR_CIRCLE_SQUARE" - A bulleted list with a `STAR`,
-	// `CIRCLE` and `DISC` bullet glyph for
+	// `CIRCLE` and `SQUARE` bullet glyph for
 	// the first 3 list nesting levels.
 	//   "BULLET_ARROW3D_CIRCLE_SQUARE" - A bulleted list with a `ARROW3D`,
 	// `CIRCLE` and `SQUARE` bullet glyph for
@@ -3116,7 +3118,7 @@ func (s *Page) MarshalJSON() ([]byte, error) {
 type PageBackgroundFill struct {
 	// PropertyState: The background fill property state.
 	//
-	// Updating the the fill on a page will implicitly update this field
+	// Updating the fill on a page will implicitly update this field
 	// to
 	// `RENDERED`, unless another value is specified in the same request.
 	// To
@@ -3222,6 +3224,19 @@ type PageElement struct {
 	Title string `json:"title,omitempty"`
 
 	// Transform: The transform of the page element.
+	//
+	// The visual appearance of the page element is determined by its
+	// absolute
+	// transform. To compute the absolute transform, preconcatenate a
+	// page
+	// element's transform with the transforms of all of its parent groups.
+	// If the
+	// page element is not in a group, its absolute transform is the same as
+	// the
+	// value in this field.
+	//
+	// The initial transform for the newly created Group is always the
+	// identity transform.
 	Transform *AffineTransform `json:"transform,omitempty"`
 
 	// Video: A video page element.
@@ -3894,6 +3909,8 @@ type ReplaceAllShapesWithImageRequest struct {
 	// cannot exceed 25 megapixels, and must be in either in PNG, JPEG, or
 	// GIF
 	// format.
+	//
+	// The provided URL can be at maximum 2K bytes large.
 	ImageUrl string `json:"imageUrl,omitempty"`
 
 	// PageObjectIds: If non-empty, limits the matches to page elements only
@@ -5255,6 +5272,8 @@ type StretchedPictureFill struct {
 	// cannot exceed 25 megapixels, and must be in either in PNG, JPEG, or
 	// GIF
 	// format.
+	//
+	// The provided URL can be at maximum 2K bytes large.
 	ContentUrl string `json:"contentUrl,omitempty"`
 
 	// Size: The original size of the picture fill. This field is read-only.
@@ -6177,6 +6196,12 @@ func (s *UpdateLinePropertiesRequest) MarshalJSON() ([]byte, error) {
 
 // UpdatePageElementTransformRequest: Updates the transform of a page
 // element.
+//
+// Updating the transform of a group will change the absolute transform
+// of the
+// page elements in that group, which can change their visual
+// appearance. See
+// the documentation for PageElement.transform for more details.
 type UpdatePageElementTransformRequest struct {
 	// ApplyMode: The apply mode of the transform update.
 	//

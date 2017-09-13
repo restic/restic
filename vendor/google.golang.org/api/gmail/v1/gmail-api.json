@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/Kao4BYxqk4XjAGvTP0MqtIG26pc\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/uYcO_Bfzv01oUg-u_-w9YZWy7FQ\"",
  "discoveryVersion": "v1",
  "id": "gmail:v1",
  "name": "gmail",
  "version": "v1",
- "revision": "20170516",
+ "revision": "20170905",
  "title": "Gmail API",
  "description": "Access Gmail mailboxes including sending user email.",
  "ownerDomain": "google.com",
@@ -457,6 +457,10 @@
    "type": "object",
    "description": "Labels are used to categorize messages and threads within the user's mailbox.",
    "properties": {
+    "color": {
+     "$ref": "LabelColor",
+     "description": "Color to assign to the label. This field is hidden behind an API server mendel experiment and only available for user-defined labels. Will be unset if the label doesn't have a color configured."
+    },
     "id": {
      "type": "string",
      "description": "The immutable ID of the label.",
@@ -545,6 +549,20 @@
       "",
       ""
      ]
+    }
+   }
+  },
+  "LabelColor": {
+   "id": "LabelColor",
+   "type": "object",
+   "properties": {
+    "backgroundColor": {
+     "type": "string",
+     "description": "Background color represented as hex string #RRGGBB (ex #000000). Only a restricted predefined set of color values are allowed. See (go/gmail-api-label-colors)."
+    },
+    "textColor": {
+     "type": "string",
+     "description": "Text color represented as hex string #RRGGBB (ex #000000). Only a restricted predefined set of color values are allowed. See (go/gmail-api-label-colors)."
     }
    }
   },

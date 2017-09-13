@@ -17,10 +17,12 @@ package profiler
 import (
 	"errors"
 	"io"
+	"runtime/pprof"
 	"strings"
 	"testing"
 	"time"
 
+	gcemd "cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/internal/testutil"
 	"cloud.google.com/go/profiler/mocks"
 	"github.com/golang/mock/gomock"
@@ -36,30 +38,33 @@ import (
 )
 
 const (
-	testProjectID    = "test-project-ID"
-	testInstanceName = "test-instance-name"
-	testZoneName     = "test-zone-name"
-	testTarget       = "test-target"
+	testProjectID      = "test-project-ID"
+	testInstanceName   = "test-instance-name"
+	testZoneName       = "test-zone-name"
+	testTarget         = "test-target"
+	testService        = "test-service"
+	testServiceVersion = "test-service-version"
 )
 
 func createTestDeployment() *pb.Deployment {
-	labels := make(map[string]string)
-	labels[zoneNameLabel] = testZoneName
-	labels[instanceLabel] = testInstanceName
+	labels := map[string]string{
+		zoneNameLabel: testZoneName,
+		versionLabel:  testServiceVersion,
+	}
 	return &pb.Deployment{
 		ProjectId: testProjectID,
-		Target:    testTarget,
+		Target:    testService,
 		Labels:    labels,
 	}
 }
 
 func createTestAgent(psc pb.ProfilerServiceClient) *agent {
 	c := &client{client: psc}
-	a := &agent{
-		client:     c,
-		deployment: createTestDeployment(),
+	return &agent{
+		client:        c,
+		deployment:    createTestDeployment(),
+		profileLabels: map[string]string{instanceLabel: testInstanceName},
 	}
-	return a
 }
 
 func createTrailers(dur time.Duration) map[string]string {
@@ -93,6 +98,13 @@ func TestCreateProfile(t *testing.T) {
 }
 
 func TestProfileAndUpload(t *testing.T) {
+	defer func() {
+		startCPUProfile = pprof.StartCPUProfile
+		stopCPUProfile = pprof.StopCPUProfile
+		writeHeapProfile = pprof.WriteHeapProfile
+		sleep = gax.Sleep
+	}()
+
 	ctx := context.Background()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -188,12 +200,12 @@ func TestProfileAndUpload(t *testing.T) {
 		if tt.duration != nil {
 			p.Duration = ptypes.DurationProto(*tt.duration)
 		}
-
 		if tt.wantBytes != nil {
 			wantProfile := &pb.Profile{
 				ProfileType:  p.ProfileType,
 				Duration:     p.Duration,
 				ProfileBytes: tt.wantBytes,
+				Labels:       a.profileLabels,
 			}
 			wantRequest := pb.UpdateProfileRequest{
 				Profile: wantProfile,
@@ -296,9 +308,11 @@ func TestRetry(t *testing.T) {
 
 func TestInitializeResources(t *testing.T) {
 	d := createTestDeployment()
+	l := map[string]string{instanceLabel: testInstanceName}
+
 	ctx := context.Background()
 
-	a, ctx := initializeResources(ctx, nil, d)
+	a, ctx := initializeResources(ctx, nil, d, l)
 
 	if xg := a.client.xGoogHeader; len(xg) == 0 {
 		t.Errorf("initializeResources() sets empty xGoogHeader")
@@ -317,44 +331,93 @@ func TestInitializeResources(t *testing.T) {
 		}
 	}
 
-	wantPH := "test-project-ID##test-target##instance|test-instance-name#zone|test-zone-name"
-	if ph := a.client.profilerHeader; len(ph) == 0 {
-		t.Errorf("initializeResources() sets empty profilerHeader")
-	} else if ph[0] != wantPH {
-		t.Errorf("initializeResources() sets wrong profilerHeader, got: %v, want: %v", ph[0], wantPH)
-	}
-
 	md, _ := grpcmd.FromOutgoingContext(ctx)
 
 	if !testutil.Equal(md[xGoogAPIMetadata], a.client.xGoogHeader) {
 		t.Errorf("md[%v] = %v, want equal xGoogHeader = %v", xGoogAPIMetadata, md[xGoogAPIMetadata], a.client.xGoogHeader)
 	}
-	if !testutil.Equal(md[deploymentKeyMetadata], a.client.profilerHeader) {
-		t.Errorf("md[%v] = %v, want equal profilerHeader = %v", deploymentKeyMetadata, md[deploymentKeyMetadata], a.client.profilerHeader)
-	}
 }
 
 func TestInitializeDeployment(t *testing.T) {
+	defer func() {
+		getProjectID = gcemd.ProjectID
+		getZone = gcemd.Zone
+		config = Config{}
+	}()
+
 	getProjectID = func() (string, error) {
 		return testProjectID, nil
-	}
-	getInstanceName = func() (string, error) {
-		return testInstanceName, nil
 	}
 	getZone = func() (string, error) {
 		return testZoneName, nil
 	}
 
-	config = &Config{Target: testTarget}
+	cfg := Config{Service: testService, ServiceVersion: testServiceVersion}
+	initializeConfig(cfg)
 	d, err := initializeDeployment()
-
 	if err != nil {
 		t.Errorf("initializeDeployment() got error: %v, want no error", err)
 	}
 
-	want := createTestDeployment()
+	if want := createTestDeployment(); !testutil.Equal(d, want) {
+		t.Errorf("initializeDeployment() got: %v, want %v", d, want)
+	}
+}
 
-	if !testutil.Equal(d, want) {
-		t.Errorf("initializeDeployment() got wrong deployment, got: %v, want %v", d, want)
+func TestInitializeConfig(t *testing.T) {
+	oldConfig := config
+	defer func() {
+		config = oldConfig
+	}()
+
+	for _, tt := range []struct {
+		config          Config
+		wantTarget      string
+		wantErrorString string
+	}{
+		{
+			Config{Service: testService},
+			testService,
+			"",
+		},
+		{
+			Config{Target: testTarget},
+			testTarget,
+			"",
+		},
+		{
+			Config{},
+			"",
+			"service name must be specified in the configuration",
+		},
+	} {
+		errorString := ""
+		if err := initializeConfig(tt.config); err != nil {
+			errorString = err.Error()
+		}
+
+		if errorString != tt.wantErrorString {
+			t.Errorf("initializeConfig(%v) got error: %v, want %v", tt.config, errorString, tt.wantErrorString)
+		}
+
+		if config.Target != tt.wantTarget {
+			t.Errorf("initializeConfig(%v) got target: %v, want %v", tt.config, config.Target, tt.wantTarget)
+		}
+	}
+}
+
+func TestInitializeProfileLabels(t *testing.T) {
+	defer func() {
+		getInstanceName = gcemd.InstanceName
+	}()
+
+	getInstanceName = func() (string, error) {
+		return testInstanceName, nil
+	}
+
+	l := initializeProfileLabels()
+	want := map[string]string{instanceLabel: testInstanceName}
+	if !testutil.Equal(l, want) {
+		t.Errorf("initializeProfileLabels() got: %v, want %v", l, want)
 	}
 }

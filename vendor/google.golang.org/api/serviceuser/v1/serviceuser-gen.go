@@ -521,6 +521,68 @@ func (s *AuthorizationConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// AuthorizationRule: Authorization rule for API services.
+//
+// It specifies the permission(s) required for an API element for the
+// overall
+// API request to succeed. It is typically used to mark request message
+// fields
+// that contain the name of the resource and indicates the permissions
+// that
+// will be checked on that resource.
+//
+// For example:
+//
+//     package google.storage.v1;
+//
+//     message CopyObjectRequest {
+//       string source = 1 [
+//         (google.api.authz).permissions = "storage.objects.get"];
+//
+//       string destination = 2 [
+//         (google.api.authz).permissions =
+//             "storage.objects.create,storage.objects.update"];
+//     }
+type AuthorizationRule struct {
+	// Permissions: The required permissions. The acceptable values vary
+	// depend on the
+	// authorization system used. For Google APIs, it should be a
+	// comma-separated
+	// Google IAM permission values. When multiple permissions are listed,
+	// the
+	// semantics is not defined by the system. Additional documentation
+	// must
+	// be provided manually.
+	Permissions string `json:"permissions,omitempty"`
+
+	// Selector: Selects the API elements to which this rule applies.
+	//
+	// Refer to selector for syntax details.
+	Selector string `json:"selector,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Permissions") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Permissions") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *AuthorizationRule) MarshalJSON() ([]byte, error) {
+	type noMethod AuthorizationRule
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Backend: `Backend` defines the backend configuration for a service.
 type Backend struct {
 	// Rules: A list of API backend rules that apply to individual API
@@ -560,8 +622,8 @@ type BackendRule struct {
 	Address string `json:"address,omitempty"`
 
 	// Deadline: The number of seconds to wait for a response from a
-	// request.  The
-	// default depends on the deployment context.
+	// request.  The default
+	// deadline for gRPC and HTTP requests is 5 seconds.
 	Deadline float64 `json:"deadline,omitempty"`
 
 	// MinDeadline: Minimum deadline in seconds needed for this method.
@@ -1680,6 +1742,15 @@ type HttpRule struct {
 	// not contain an `additional_bindings` field themselves (that is,
 	// the nesting may only be one level deep).
 	AdditionalBindings []*HttpRule `json:"additionalBindings,omitempty"`
+
+	// Authorizations: Specifies the permission(s) required for an API
+	// element for the overall
+	// API request to succeed. It is typically used to mark request message
+	// fields
+	// that contain the name of the resource and indicates the permissions
+	// that
+	// will be checked on that resource.
+	Authorizations []*AuthorizationRule `json:"authorizations,omitempty"`
 
 	// Body: The name of the request field whose value is mapped to the HTTP
 	// body, or
@@ -2857,8 +2928,8 @@ func (s *OAuthRequirements) MarshalJSON() ([]byte, error) {
 type Operation struct {
 	// Done: If the value is `false`, it means the operation is still in
 	// progress.
-	// If true, the operation is completed, and either `error` or `response`
-	// is
+	// If `true`, the operation is completed, and either `error` or
+	// `response` is
 	// available.
 	Done bool `json:"done,omitempty"`
 

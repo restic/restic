@@ -73,6 +73,7 @@ func TestBQTableToMetadata(t *testing.T) {
 					EstimatedRows:   3,
 					OldestEntryTime: aTime,
 				},
+				ETag: "etag",
 			},
 		},
 	} {
@@ -80,5 +81,28 @@ func TestBQTableToMetadata(t *testing.T) {
 		if !testutil.Equal(got, test.want) {
 			t.Errorf("%v:\ngot  %+v\nwant %+v", test.in, got, test.want)
 		}
+	}
+}
+
+func TestBQDatasetFromMetadata(t *testing.T) {
+	dm := DatasetMetadataToUpdate{
+		Description: "desc",
+		Name:        "name",
+		DefaultTableExpiration: time.Hour,
+	}
+	dm.SetLabel("label", "value")
+	dm.DeleteLabel("del")
+
+	got := bqDatasetFromMetadata(&dm)
+	want := &bq.Dataset{
+		Description:              "desc",
+		FriendlyName:             "name",
+		DefaultTableExpirationMs: 60 * 60 * 1000,
+		Labels:          map[string]string{"label": "value"},
+		ForceSendFields: []string{"Description", "FriendlyName"},
+		NullFields:      []string{"Labels.del"},
+	}
+	if diff := testutil.Diff(got, want); diff != "" {
+		t.Errorf("-got, +want:\n%s", diff)
 	}
 }

@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/KVWstiyukW4qKD4UlqZ-vWrz9IA\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/oRWw5OqIvzBrnyAI_p6qB5VpgEM\"",
  "discoveryVersion": "v1",
  "id": "toolresults:v1beta3firstparty",
  "name": "toolresults",
  "canonicalName": "Tool Results",
  "version": "v1beta3firstparty",
- "revision": "20170803",
+ "revision": "20170911",
  "title": "Cloud Tool Results firstparty API",
  "description": "Reads and publishes results from Firebase Test Lab.",
  "ownerDomain": "google.com",
@@ -542,6 +542,19 @@
     }
    }
   },
+  "ListScreenshotClustersResponse": {
+   "id": "ListScreenshotClustersResponse",
+   "type": "object",
+   "properties": {
+    "clusters": {
+     "type": "array",
+     "description": "The set of clustres associated with an execution Always set",
+     "items": {
+      "$ref": "ScreenshotCluster"
+     }
+    }
+   }
+  },
   "ListStepThumbnailsResponse": {
    "id": "ListStepThumbnailsResponse",
    "type": "object",
@@ -773,6 +786,53 @@
      "description": "URI of the Xunit XML files to publish.\n\nThe maximum size of the file this reference is pointing to is 50MB.\n\nRequired.",
      "items": {
       "$ref": "FileReference"
+     }
+    }
+   }
+  },
+  "Screen": {
+   "id": "Screen",
+   "type": "object",
+   "properties": {
+    "fileReference": {
+     "type": "string",
+     "description": "File reference of the png file. Required."
+    },
+    "locale": {
+     "type": "string",
+     "description": "Locale of the device that the screenshot was taken on. Required."
+    },
+    "model": {
+     "type": "string",
+     "description": "Model of the device that the screenshot was taken on. Required."
+    },
+    "version": {
+     "type": "string",
+     "description": "OS version of the device that the screenshot was taken on. Required."
+    }
+   }
+  },
+  "ScreenshotCluster": {
+   "id": "ScreenshotCluster",
+   "type": "object",
+   "properties": {
+    "activity": {
+     "type": "string",
+     "description": "A string that describes the activity of every screen in the cluster."
+    },
+    "clusterId": {
+     "type": "string",
+     "description": "A unique identifier for the cluster."
+    },
+    "keyScreen": {
+     "$ref": "Screen",
+     "description": "A singular screen that represents the cluster as a whole. This screen will act as the \"cover\" of the entire cluster. When users look at the clusters, only the key screen from each cluster will be shown. Which screen is the key screen is determined by the ClusteringAlgorithm"
+    },
+    "screens": {
+     "type": "array",
+     "description": "Full list of screens.",
+     "items": {
+      "$ref": "Screen"
      }
     }
    }
@@ -1014,15 +1074,51 @@
   "TestIssue": {
    "id": "TestIssue",
    "type": "object",
-   "description": "An abnormal event observed during the test execution.",
+   "description": "An issue detected occurring during a test execution.",
    "properties": {
     "errorMessage": {
      "type": "string",
-     "description": "A brief human-readable message describing the abnormal event.\n\nRequired."
+     "description": "A brief human-readable message describing the issue. Required."
+    },
+    "severity": {
+     "type": "string",
+     "description": "Severity of issue. Required.",
+     "enum": [
+      "info",
+      "severe",
+      "unspecifiedSeverity",
+      "warning"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      "",
+      ""
+     ]
     },
     "stackTrace": {
      "$ref": "StackTrace",
-     "description": "Optional."
+     "description": "Deprecated in favor of stack trace fields inside specific warnings."
+    },
+    "type": {
+     "type": "string",
+     "description": "Type of issue. Required.",
+     "enum": [
+      "anr",
+      "fatalException",
+      "nativeCrash",
+      "unspecifiedType"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    "warning": {
+     "$ref": "Any",
+     "description": "Warning message with additional details of the issue. Should always be a message from com.google.devtools.toolresults.v1.warnings Required."
     }
    }
   },
@@ -1483,6 +1579,85 @@
         }
        },
        "resources": {
+        "clusters": {
+         "methods": {
+          "get": {
+           "id": "toolresults.projects.histories.executions.clusters.get",
+           "path": "{projectId}/histories/{historyId}/executions/{executionId}/clusters/{clusterId}",
+           "httpMethod": "GET",
+           "description": "Retrieves a single screenshot cluster by its ID",
+           "parameters": {
+            "clusterId": {
+             "type": "string",
+             "description": "A Cluster id\n\nRequired.",
+             "required": true,
+             "location": "path"
+            },
+            "executionId": {
+             "type": "string",
+             "description": "An Execution id.\n\nRequired.",
+             "required": true,
+             "location": "path"
+            },
+            "historyId": {
+             "type": "string",
+             "description": "A History id.\n\nRequired.",
+             "required": true,
+             "location": "path"
+            },
+            "projectId": {
+             "type": "string",
+             "description": "A Project id.\n\nRequired.",
+             "required": true,
+             "location": "path"
+            }
+           },
+           "parameterOrder": [
+            "projectId",
+            "historyId",
+            "executionId",
+            "clusterId"
+           ],
+           "response": {
+            "$ref": "ScreenshotCluster"
+           }
+          },
+          "list": {
+           "id": "toolresults.projects.histories.executions.clusters.list",
+           "path": "{projectId}/histories/{historyId}/executions/{executionId}/clusters",
+           "httpMethod": "GET",
+           "description": "Lists Screenshot Clusters\n\nReturns the list of screenshot clusters corresponding to an execution. Screenshot clusters are created after the execution is finished. Clusters are created from a set of screenshots. Between any two screenshots, a matching score is calculated based off their metadata that determines how similar they are. Screenshots are placed in the cluster that has screens which have the highest matching scores.",
+           "parameters": {
+            "executionId": {
+             "type": "string",
+             "description": "An Execution id.\n\nRequired.",
+             "required": true,
+             "location": "path"
+            },
+            "historyId": {
+             "type": "string",
+             "description": "A History id.\n\nRequired.",
+             "required": true,
+             "location": "path"
+            },
+            "projectId": {
+             "type": "string",
+             "description": "A Project id.\n\nRequired.",
+             "required": true,
+             "location": "path"
+            }
+           },
+           "parameterOrder": [
+            "projectId",
+            "historyId",
+            "executionId"
+           ],
+           "response": {
+            "$ref": "ListScreenshotClustersResponse"
+           }
+          }
+         }
+        },
         "steps": {
          "methods": {
           "create": {
@@ -1755,7 +1930,7 @@
              "id": "toolresults.projects.histories.executions.steps.perfMetricsSummary.create",
              "path": "{projectId}/histories/{historyId}/executions/{executionId}/steps/{stepId}/perfMetricsSummary",
              "httpMethod": "POST",
-             "description": "Creates a PerfMetricsSummary resource.\n\nMay return any of the following error code(s): - ALREADY_EXISTS - A PerfMetricSummary already exists for the given Step - NOT_FOUND - The containing Step does not exist",
+             "description": "Creates a PerfMetricsSummary resource. Returns the existing one if it has already been created.\n\nMay return any of the following error code(s): - NOT_FOUND - The containing Step does not exist",
              "parameters": {
               "executionId": {
                "type": "string",

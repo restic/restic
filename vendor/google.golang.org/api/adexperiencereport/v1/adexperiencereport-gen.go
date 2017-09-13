@@ -99,6 +99,14 @@ type ViolatingSitesService struct {
 // PlatformSummary: Summary of the ad experience rating of a site for a
 // specific platform.
 type PlatformSummary struct {
+	// AbusiveStatus: The status of the site reviewed for abusive ads.
+	//
+	// Possible values:
+	//   "UNKNOWN" - Not reviewed.
+	//   "PASSING" - Passing.
+	//   "FAILING" - Failing.
+	AbusiveStatus string `json:"abusiveStatus,omitempty"`
+
 	// BetterAdsStatus: The status of the site reviewed for the Better Ads
 	// Standards.
 	//
@@ -108,14 +116,6 @@ type PlatformSummary struct {
 	//   "WARNING" - Warning.
 	//   "FAILING" - Failing.
 	BetterAdsStatus string `json:"betterAdsStatus,omitempty"`
-
-	// EgregiousStatus: The status of the site reviewed for egregious ads.
-	//
-	// Possible values:
-	//   "UNKNOWN" - Not reviewed.
-	//   "PASSING" - Passing.
-	//   "FAILING" - Failing.
-	EgregiousStatus string `json:"egregiousStatus,omitempty"`
 
 	// EnforcementTime: The date on which ad filtering begins.
 	EnforcementTime string `json:"enforcementTime,omitempty"`
@@ -147,7 +147,7 @@ type PlatformSummary struct {
 	// UnderReview: Whether the site is currently under review.
 	UnderReview bool `json:"underReview,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "BetterAdsStatus") to
+	// ForceSendFields is a list of field names (e.g. "AbusiveStatus") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -155,13 +155,12 @@ type PlatformSummary struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "BetterAdsStatus") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
+	// NullFields is a list of field names (e.g. "AbusiveStatus") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
 }
 
@@ -364,7 +363,7 @@ func (c *SitesGetCall) Do(opts ...googleapi.CallOption) (*SiteSummaryResponse, e
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The required site name. It should be the site property whose ad experiences\nmay have been reviewed, and it should be URL encoded. For example,\nhttps%3A%2F%2Fwww.google.com. The server will return an error of\nBAD_REQUEST if this field is not filled in. Note that if the site property\nis not yet verified in Search Console, the reportUrl field returned by the\nAPI will lead to the verification page, prompting the user to go through\nthat process before they can gain access to the Ad Experience Report.",
+	//       "description": "The required site name. It should be the site property whose ad experiences\nmay have been reviewed, and it should be URL-encoded. For example,\nsites/https%3A%2F%2Fwww.google.com. The server will return an error of\nBAD_REQUEST if this field is not filled in. Note that if the site property\nis not yet verified in Search Console, the reportUrl field returned by the\nAPI will lead to the verification page, prompting the user to go through\nthat process before they can gain access to the Ad Experience Report.",
 	//       "location": "path",
 	//       "pattern": "^sites/[^/]+$",
 	//       "required": true,

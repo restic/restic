@@ -220,10 +220,8 @@ func TestLanguageServiceAnalyzeEntities(t *testing.T) {
 	mockLanguage.resps = append(mockLanguage.resps[:0], expectedResponse)
 
 	var document *languagepb.Document = &languagepb.Document{}
-	var encodingType languagepb.EncodingType = languagepb.EncodingType_NONE
 	var request = &languagepb.AnalyzeEntitiesRequest{
-		Document:     document,
-		EncodingType: encodingType,
+		Document: document,
 	}
 
 	c, err := NewClient(context.Background(), clientOpt)
@@ -251,10 +249,8 @@ func TestLanguageServiceAnalyzeEntitiesError(t *testing.T) {
 	mockLanguage.err = gstatus.Error(errCode, "test error")
 
 	var document *languagepb.Document = &languagepb.Document{}
-	var encodingType languagepb.EncodingType = languagepb.EncodingType_NONE
 	var request = &languagepb.AnalyzeEntitiesRequest{
-		Document:     document,
-		EncodingType: encodingType,
+		Document: document,
 	}
 
 	c, err := NewClient(context.Background(), clientOpt)
@@ -283,10 +279,8 @@ func TestLanguageServiceAnalyzeEntitySentiment(t *testing.T) {
 	mockLanguage.resps = append(mockLanguage.resps[:0], expectedResponse)
 
 	var document *languagepb.Document = &languagepb.Document{}
-	var encodingType languagepb.EncodingType = languagepb.EncodingType_NONE
 	var request = &languagepb.AnalyzeEntitySentimentRequest{
-		Document:     document,
-		EncodingType: encodingType,
+		Document: document,
 	}
 
 	c, err := NewClient(context.Background(), clientOpt)
@@ -314,10 +308,8 @@ func TestLanguageServiceAnalyzeEntitySentimentError(t *testing.T) {
 	mockLanguage.err = gstatus.Error(errCode, "test error")
 
 	var document *languagepb.Document = &languagepb.Document{}
-	var encodingType languagepb.EncodingType = languagepb.EncodingType_NONE
 	var request = &languagepb.AnalyzeEntitySentimentRequest{
-		Document:     document,
-		EncodingType: encodingType,
+		Document: document,
 	}
 
 	c, err := NewClient(context.Background(), clientOpt)
@@ -346,10 +338,8 @@ func TestLanguageServiceAnalyzeSyntax(t *testing.T) {
 	mockLanguage.resps = append(mockLanguage.resps[:0], expectedResponse)
 
 	var document *languagepb.Document = &languagepb.Document{}
-	var encodingType languagepb.EncodingType = languagepb.EncodingType_NONE
 	var request = &languagepb.AnalyzeSyntaxRequest{
-		Document:     document,
-		EncodingType: encodingType,
+		Document: document,
 	}
 
 	c, err := NewClient(context.Background(), clientOpt)
@@ -377,10 +367,8 @@ func TestLanguageServiceAnalyzeSyntaxError(t *testing.T) {
 	mockLanguage.err = gstatus.Error(errCode, "test error")
 
 	var document *languagepb.Document = &languagepb.Document{}
-	var encodingType languagepb.EncodingType = languagepb.EncodingType_NONE
 	var request = &languagepb.AnalyzeSyntaxRequest{
-		Document:     document,
-		EncodingType: encodingType,
+		Document: document,
 	}
 
 	c, err := NewClient(context.Background(), clientOpt)
@@ -410,11 +398,9 @@ func TestLanguageServiceAnnotateText(t *testing.T) {
 
 	var document *languagepb.Document = &languagepb.Document{}
 	var features *languagepb.AnnotateTextRequest_Features = &languagepb.AnnotateTextRequest_Features{}
-	var encodingType languagepb.EncodingType = languagepb.EncodingType_NONE
 	var request = &languagepb.AnnotateTextRequest{
-		Document:     document,
-		Features:     features,
-		EncodingType: encodingType,
+		Document: document,
+		Features: features,
 	}
 
 	c, err := NewClient(context.Background(), clientOpt)
@@ -443,11 +429,9 @@ func TestLanguageServiceAnnotateTextError(t *testing.T) {
 
 	var document *languagepb.Document = &languagepb.Document{}
 	var features *languagepb.AnnotateTextRequest_Features = &languagepb.AnnotateTextRequest_Features{}
-	var encodingType languagepb.EncodingType = languagepb.EncodingType_NONE
 	var request = &languagepb.AnnotateTextRequest{
-		Document:     document,
-		Features:     features,
-		EncodingType: encodingType,
+		Document: document,
+		Features: features,
 	}
 
 	c, err := NewClient(context.Background(), clientOpt)

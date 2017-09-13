@@ -1623,7 +1623,7 @@ type SoftwareConfig struct {
 	// mapred: mapred-site.xml
 	// pig: pig.properties
 	// spark: spark-defaults.conf
-	// yarn: yarn-site.xml
+	// yarn: yarn-site.xmlFor more information, see Cluster properties.
 	Properties map[string]string `json:"properties,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ImageVersion") to

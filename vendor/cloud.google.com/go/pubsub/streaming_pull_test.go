@@ -58,9 +58,6 @@ func TestStreamingPullMultipleFetches(t *testing.T) {
 }
 
 func testStreamingPullIteration(t *testing.T, client *Client, server *fakeServer, msgs []*pb.ReceivedMessage) {
-	if !useStreamingPull {
-		t.SkipNow()
-	}
 	sub := client.Subscription("s")
 	gotMsgs, err := pullN(context.Background(), sub, len(msgs), func(_ context.Context, m *Message) {
 		id, err := strconv.Atoi(m.ackID)
@@ -116,9 +113,6 @@ func TestStreamingPullError(t *testing.T) {
 	// If an RPC to the service returns a non-retryable error, Pull should
 	// return after all callbacks return, without waiting for messages to be
 	// acked.
-	if !useStreamingPull {
-		t.SkipNow()
-	}
 	client, server := newFake(t)
 	server.addStreamingPullMessages(testMessages[:1])
 	server.addStreamingPullError(grpc.Errorf(codes.Unknown, ""))
@@ -148,9 +142,6 @@ func TestStreamingPullError(t *testing.T) {
 func TestStreamingPullCancel(t *testing.T) {
 	// If Receive's context is canceled, it should return after all callbacks
 	// return and all messages have been acked.
-	if !useStreamingPull {
-		t.SkipNow()
-	}
 	client, server := newFake(t)
 	server.addStreamingPullMessages(testMessages)
 	sub := client.Subscription("s")
@@ -171,9 +162,6 @@ func TestStreamingPullCancel(t *testing.T) {
 }
 
 func TestStreamingPullRetry(t *testing.T) {
-	if !useStreamingPull {
-		t.SkipNow()
-	}
 	// Check that we retry on io.EOF or Unavailable.
 	client, server := newFake(t)
 	server.addStreamingPullMessages(testMessages[:1])
@@ -189,9 +177,6 @@ func TestStreamingPullRetry(t *testing.T) {
 
 func TestStreamingPullOneActive(t *testing.T) {
 	// Only one call to Pull can be active at a time.
-	if !useStreamingPull {
-		t.SkipNow()
-	}
 	client, srv := newFake(t)
 	srv.addStreamingPullMessages(testMessages[:1])
 	sub := client.Subscription("s")
@@ -210,9 +195,6 @@ func TestStreamingPullOneActive(t *testing.T) {
 }
 
 func TestStreamingPullConcurrent(t *testing.T) {
-	if !useStreamingPull {
-		t.SkipNow()
-	}
 	newMsg := func(i int) *pb.ReceivedMessage {
 		return &pb.ReceivedMessage{
 			AckId:   strconv.Itoa(i),
@@ -249,9 +231,6 @@ func TestStreamingPullConcurrent(t *testing.T) {
 
 func TestStreamingPullFlowControl(t *testing.T) {
 	// Callback invocations should not occur if flow control limits are exceeded.
-	if !useStreamingPull {
-		t.SkipNow()
-	}
 	client, server := newFake(t)
 	server.addStreamingPullMessages(testMessages)
 	sub := client.Subscription("s")

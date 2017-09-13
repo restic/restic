@@ -20,13 +20,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 )
 
 const (
@@ -265,6 +267,121 @@ func TestStorage(t *testing.T) {
 	// b2_get_download_authorization
 	if _, err := bucket.GetDownloadAuthorization(ctx, "foo/", 24*time.Hour); err != nil {
 		t.Errorf("failed to get download auth token: %v", err)
+	}
+}
+
+// This slow motion train wreck of a type exists to axe a net connection after
+// N bytes have been written.  Because of the specific bug it's built to test,
+// it can't just *close* the connection, so it just sleeps forever.
+type wonkyNetConn struct {
+	net.Conn
+	ctx context.Context // implode once cancelled
+	die *bool           // only implode once
+	n   int             // bytes to allow before imploding, roughly
+	i   int             // bytes written
+}
+
+func (w *wonkyNetConn) Write(b []byte) (int, error) {
+	if w.i > w.n && w.ctx.Err() != nil && *w.die {
+		*w.die = false
+		select {}
+	}
+	n, err := w.Conn.Write(b)
+	w.i += n
+	return n, err
+}
+
+func newWonkyNetConn(ctx context.Context, die *bool, n int, netw, addr string) (net.Conn, error) {
+	conn, err := net.Dial(netw, addr)
+	if err != nil {
+		return nil, err
+	}
+	return &wonkyNetConn{
+		Conn: conn,
+		ctx:  ctx,
+		n:    n,
+		die:  die,
+	}, nil
+}
+
+func makeBadDialContext(ctx context.Context) func(context.Context, string, string) (net.Conn, error) {
+	die := true
+	return func(noCtx context.Context, network, addr string) (net.Conn, error) {
+		return newWonkyNetConn(ctx, &die, 10000, network, addr)
+	}
+}
+
+func TestBadUpload(t *testing.T) {
+	id := os.Getenv(apiID)
+	key := os.Getenv(apiKey)
+	if id == "" || key == "" {
+		t.Skipf("B2_ACCOUNT_ID or B2_SECRET_KEY unset; skipping integration tests")
+	}
+	ctx := context.Background()
+
+	octx, ocancel := context.WithCancel(ctx)
+	defer ocancel()
+
+	badTransport := &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
+		DialContext:           makeBadDialContext(octx),
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
+	b2, err := AuthorizeAccount(ctx, id, key, Transport(badTransport))
+	if err != nil {
+		t.Fatal(err)
+	}
+	bname := id + "-" + bucketName
+	bucket, err := b2.CreateBucket(ctx, bname, "", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := bucket.DeleteBucket(ctx); err != nil {
+			t.Error(err)
+		}
+	}()
+	ue, err := bucket.GetUploadURL(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	smallFile := io.LimitReader(zReader{}, 1024*50) // 50k
+	hash := sha1.New()
+	buf := &bytes.Buffer{}
+	w := io.MultiWriter(hash, buf)
+	if _, err := io.Copy(w, smallFile); err != nil {
+		t.Error(err)
+	}
+	smallSHA1 := fmt.Sprintf("%x", hash.Sum(nil))
+	ocancel()
+	go func() {
+		ue.UploadFile(ctx, buf, buf.Len(), smallFileName, "application/octet-stream", smallSHA1, nil)
+		t.Fatal("this ought not to be reachable")
+	}()
+
+	time.Sleep(time.Second) // give this a chance to hang
+
+	// Do the whole thing again with the same upload auth, before the remote end
+	// notices we're gone.
+	smallFile = io.LimitReader(zReader{}, 1024*50) // 50k again
+	buf.Reset()
+	if _, err := io.Copy(buf, smallFile); err != nil {
+		t.Error(err)
+	}
+	file, err := ue.UploadFile(ctx, buf, buf.Len(), smallFileName, "application/octet-stream", smallSHA1, nil)
+	if err == nil {
+		t.Error("expected an error, got none")
+		if err := file.DeleteFileVersion(ctx); err != nil {
+			t.Error(err)
+		}
+	}
+	if Action(err) != AttemptNewUpload {
+		t.Error("Action(%v): got %v, want AttemptNewUpload", err, Action(err))
 	}
 }
 

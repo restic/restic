@@ -13,7 +13,6 @@
 package unix
 
 import (
-	"sync/atomic"
 	"syscall"
 	"unsafe"
 )
@@ -581,6 +580,7 @@ func IoctlGetTermio(fd int, req uint) (*Termio, error) {
 //sys	Fchown(fd int, uid int, gid int) (err error)
 //sys	Fchownat(dirfd int, path string, uid int, gid int, flags int) (err error)
 //sys	Fdatasync(fd int) (err error)
+//sys Flock(fd int, how int) (err error)
 //sys	Fpathconf(fd int, name int) (val int, err error)
 //sys	Fstat(fd int, stat *Stat_t) (err error)
 //sys	Fstatvfs(fd int, vfsstat *Statvfs_t) (err error)
@@ -697,19 +697,4 @@ func Mmap(fd int, offset int64, length int, prot int, flags int) (data []byte, e
 
 func Munmap(b []byte) (err error) {
 	return mapper.Munmap(b)
-}
-
-//sys	sysconf(name int) (n int64, err error)
-
-// pageSize caches the value of Getpagesize, since it can't change
-// once the system is booted.
-var pageSize int64 // accessed atomically
-
-func Getpagesize() int {
-	n := atomic.LoadInt64(&pageSize)
-	if n == 0 {
-		n, _ = sysconf(_SC_PAGESIZE)
-		atomic.StoreInt64(&pageSize, n)
-	}
-	return int(n)
 }
