@@ -83,6 +83,12 @@ func Action(err error) ErrAction {
 			return AttemptNewUpload
 		}
 		return ReAuthenticate
+	case 400:
+		// See restic/restic#1207
+		if e.method == "b2_upload_file" && strings.HasPrefix(e.msg, "more than one upload using auth token") {
+			return AttemptNewUpload
+		}
+		return Punt
 	case 408:
 		return AttemptNewUpload
 	case 429, 500, 503:

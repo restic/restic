@@ -324,9 +324,22 @@ type AuthenticationInfo struct {
 	// authority.
 	AuthoritySelector string `json:"authoritySelector,omitempty"`
 
-	// PrincipalEmail: The email address of the authenticated user making
-	// the request.
+	// PrincipalEmail: The email address of the authenticated user (or
+	// service account on behalf
+	// of third party principal) making the request. For privacy reasons,
+	// the
+	// principal email address is redacted for all read-only operations that
+	// fail
+	// with a "permission denied" error.
 	PrincipalEmail string `json:"principalEmail,omitempty"`
+
+	// ThirdPartyPrincipal: The third party identification (if any) of the
+	// authenticated user making
+	// the request.
+	// When the JSON object represented here has a proto equivalent, the
+	// proto
+	// name will be indicated in the `@type` property.
+	ThirdPartyPrincipal googleapi.RawMessage `json:"thirdPartyPrincipal,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "AuthoritySelector")
 	// to unconditionally include in API requests. By default, fields with
@@ -1054,8 +1067,9 @@ type LogEntry struct {
 
 	// ProtoPayload: The log entry payload, represented as a protocol buffer
 	// that is
-	// expressed as a JSON object. You can only pass `protoPayload`
-	// values that belong to a set of approved types.
+	// expressed as a JSON object. The only accepted type currently
+	// is
+	// AuditLog.
 	ProtoPayload googleapi.RawMessage `json:"protoPayload,omitempty"`
 
 	// Severity: The severity of the log entry. The default value
@@ -1384,6 +1398,10 @@ type Operation struct {
 	//     - “organizations/<organization-id>”
 	ResourceContainer string `json:"resourceContainer,omitempty"`
 
+	// ResourceContainers: DO NOT USE.
+	// This field is not ready for use yet.
+	ResourceContainers []string `json:"resourceContainers,omitempty"`
+
 	// StartTime: Required. Start time of the operation.
 	StartTime string `json:"startTime,omitempty"`
 
@@ -1503,7 +1521,15 @@ type QuotaInfo struct {
 	// quota check was not successful, then this will not be populated due
 	// to no
 	// quota consumption.
-	// Deprecated: Use quota_metrics to get per quota group usage.
+	//
+	// We are not merging this field with 'quota_metrics' field because of
+	// the
+	// complexity of scaling in Chemist client code base. For simplicity, we
+	// will
+	// keep this field for Castor (that scales quota usage) and
+	// 'quota_metrics'
+	// for SuperQuota (that doesn't scale quota usage).
+	//
 	QuotaConsumed map[string]int64 `json:"quotaConsumed,omitempty"`
 
 	// QuotaMetrics: Quota metrics to indicate the usage. Depending on the
@@ -1578,13 +1604,11 @@ type QuotaOperation struct {
 	//     google.example.library.v1.LibraryService.CreateShelf
 	MethodName string `json:"methodName,omitempty"`
 
-	// OperationId: Identity of the operation. This must be unique within
-	// the scope of the
-	// service that generated the operation. If the service calls
-	// AllocateQuota
-	// and ReleaseQuota on the same operation, the two calls should carry
-	// the
-	// same ID.
+	// OperationId: Identity of the operation. This is expected to be unique
+	// within the scope
+	// of the service that generated the operation, and guarantees
+	// idempotency in
+	// case of retries.
 	//
 	// UUID version 4 is recommended, though not required. In scenarios
 	// where an
@@ -1850,13 +1874,13 @@ func (s *ReleaseQuotaResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// ReportError: Represents the processing error of one `Operation` in
-// the request.
+// ReportError: Represents the processing error of one Operation in the
+// request.
 type ReportError struct {
 	// OperationId: The Operation.operation_id value from the request.
 	OperationId string `json:"operationId,omitempty"`
 
-	// Status: Details of the error when processing the `Operation`.
+	// Status: Details of the error when processing the Operation.
 	Status *Status `json:"status,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "OperationId") to
@@ -2476,7 +2500,7 @@ type ServicesCheckCall struct {
 // cached
 // results for longer time.
 //
-// NOTE: the `CheckRequest` has the size limit of 64KB.
+// NOTE: the CheckRequest has the size limit of 64KB.
 //
 // This method requires the `servicemanagement.services.check`
 // permission
@@ -2575,7 +2599,7 @@ func (c *ServicesCheckCall) Do(opts ...googleapi.CallOption) (*CheckResponse, er
 	}
 	return ret, nil
 	// {
-	//   "description": "Checks an operation with Google Service Control to decide whether\nthe given operation should proceed. It should be called before the\noperation is executed.\n\nIf feasible, the client should cache the check results and reuse them for\n60 seconds. In case of server errors, the client can rely on the cached\nresults for longer time.\n\nNOTE: the `CheckRequest` has the size limit of 64KB.\n\nThis method requires the `servicemanagement.services.check` permission\non the specified service. For more information, see\n[Google Cloud IAM](https://cloud.google.com/iam).",
+	//   "description": "Checks an operation with Google Service Control to decide whether\nthe given operation should proceed. It should be called before the\noperation is executed.\n\nIf feasible, the client should cache the check results and reuse them for\n60 seconds. In case of server errors, the client can rely on the cached\nresults for longer time.\n\nNOTE: the CheckRequest has the size limit of 64KB.\n\nThis method requires the `servicemanagement.services.check` permission\non the specified service. For more information, see\n[Google Cloud IAM](https://cloud.google.com/iam).",
 	//   "flatPath": "v1/services/{serviceName}:check",
 	//   "httpMethod": "POST",
 	//   "id": "servicecontrol.services.check",
@@ -2584,7 +2608,7 @@ func (c *ServicesCheckCall) Do(opts ...googleapi.CallOption) (*CheckResponse, er
 	//   ],
 	//   "parameters": {
 	//     "serviceName": {
-	//       "description": "The service name as specified in its service configuration. For example,\n`\"pubsub.googleapis.com\"`.\n\nSee google.api.Service for the definition of a service name.",
+	//       "description": "The service name as specified in its service configuration. For example,\n`\"pubsub.googleapis.com\"`.\n\nSee\n[google.api.Service](https://cloud.google.com/service-management/reference/rpc/google.api#google.api.Service)\nfor the definition of a service name.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
@@ -2926,7 +2950,7 @@ type ServicesReportCall struct {
 // 0.01%
 // for business and compliance reasons.
 //
-// NOTE: the `ReportRequest` has the size limit of 1MB.
+// NOTE: the ReportRequest has the size limit of 1MB.
 //
 // This method requires the `servicemanagement.services.report`
 // permission
@@ -3025,7 +3049,7 @@ func (c *ServicesReportCall) Do(opts ...googleapi.CallOption) (*ReportResponse, 
 	}
 	return ret, nil
 	// {
-	//   "description": "Reports operation results to Google Service Control, such as logs and\nmetrics. It should be called after an operation is completed.\n\nIf feasible, the client should aggregate reporting data for up to 5\nseconds to reduce API traffic. Limiting aggregation to 5 seconds is to\nreduce data loss during client crashes. Clients should carefully choose\nthe aggregation time window to avoid data loss risk more than 0.01%\nfor business and compliance reasons.\n\nNOTE: the `ReportRequest` has the size limit of 1MB.\n\nThis method requires the `servicemanagement.services.report` permission\non the specified service. For more information, see\n[Google Cloud IAM](https://cloud.google.com/iam).",
+	//   "description": "Reports operation results to Google Service Control, such as logs and\nmetrics. It should be called after an operation is completed.\n\nIf feasible, the client should aggregate reporting data for up to 5\nseconds to reduce API traffic. Limiting aggregation to 5 seconds is to\nreduce data loss during client crashes. Clients should carefully choose\nthe aggregation time window to avoid data loss risk more than 0.01%\nfor business and compliance reasons.\n\nNOTE: the ReportRequest has the size limit of 1MB.\n\nThis method requires the `servicemanagement.services.report` permission\non the specified service. For more information, see\n[Google Cloud IAM](https://cloud.google.com/iam).",
 	//   "flatPath": "v1/services/{serviceName}:report",
 	//   "httpMethod": "POST",
 	//   "id": "servicecontrol.services.report",
@@ -3034,7 +3058,7 @@ func (c *ServicesReportCall) Do(opts ...googleapi.CallOption) (*ReportResponse, 
 	//   ],
 	//   "parameters": {
 	//     "serviceName": {
-	//       "description": "The service name as specified in its service configuration. For example,\n`\"pubsub.googleapis.com\"`.\n\nSee google.api.Service for the definition of a service name.",
+	//       "description": "The service name as specified in its service configuration. For example,\n`\"pubsub.googleapis.com\"`.\n\nSee\n[google.api.Service](https://cloud.google.com/service-management/reference/rpc/google.api#google.api.Service)\nfor the definition of a service name.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"

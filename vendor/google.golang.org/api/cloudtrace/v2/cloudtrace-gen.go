@@ -481,12 +481,13 @@ func (s *Module) MarshalJSON() ([]byte, error) {
 // NetworkEvent: An event describing an RPC message sent or received on
 // the network.
 type NetworkEvent struct {
+	// CompressedMessageSize: The number of compressed bytes sent or
+	// received.
+	CompressedMessageSize uint64 `json:"compressedMessageSize,omitempty,string"`
+
 	// MessageId: An identifier for the message, which must be unique in
 	// this span.
 	MessageId uint64 `json:"messageId,omitempty,string"`
-
-	// MessageSize: The number of bytes sent or received.
-	MessageSize uint64 `json:"messageSize,omitempty,string"`
 
 	// Time: For sent messages, this is the time at which the first bit was
 	// sent.
@@ -505,20 +506,26 @@ type NetworkEvent struct {
 	//   "RECV" - Indicates a received RPC message.
 	Type string `json:"type,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "MessageId") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
+	// UncompressedMessageSize: The number of uncompressed bytes sent or
+	// received.
+	UncompressedMessageSize uint64 `json:"uncompressedMessageSize,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "CompressedMessageSize") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "MessageId") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "CompressedMessageSize") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 

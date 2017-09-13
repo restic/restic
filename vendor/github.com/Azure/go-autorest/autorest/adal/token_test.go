@@ -133,6 +133,67 @@ func TestServicePrincipalTokenRefreshUsesPOST(t *testing.T) {
 	}
 }
 
+func TestServicePrincipalTokenFromMSIRefreshUsesPOST(t *testing.T) {
+	resource := "https://resource"
+
+	cb := func(token Token) error { return nil }
+	tempSettingsFile, err := ioutil.TempFile("", "ManagedIdentity-Settings")
+	if err != nil {
+		t.Fatal("Couldn't write temp settings file")
+	}
+	defer os.Remove(tempSettingsFile.Name())
+
+	settingsContents := []byte(`{
+		"url": "http://msiendpoint/"
+	}`)
+
+	if _, err := tempSettingsFile.Write(settingsContents); err != nil {
+		t.Fatal("Couldn't fill temp settings file")
+	}
+
+	oauthConfig, err := NewOAuthConfig("http://adendpoint", "1-2-3-4")
+	if err != nil {
+		t.Fatal("Failed to construct oauthconfig")
+	}
+
+	spt, err := newServicePrincipalTokenFromMSI(
+		*oauthConfig,
+		resource,
+		tempSettingsFile.Name(),
+		cb)
+	if err != nil {
+		t.Fatalf("Failed to get MSI SPT: %v", err)
+	}
+
+	body := mocks.NewBody(newTokenJSON("test", "test"))
+	resp := mocks.NewResponseWithBodyAndStatus(body, http.StatusOK, "OK")
+
+	c := mocks.NewSender()
+	s := DecorateSender(c,
+		(func() SendDecorator {
+			return func(s Sender) Sender {
+				return SenderFunc(func(r *http.Request) (*http.Response, error) {
+					if r.Method != "POST" {
+						t.Fatalf("adal: ServicePrincipalToken#Refresh did not correctly set HTTP method -- expected %v, received %v", "POST", r.Method)
+					}
+					if h := r.Header.Get("Metadata"); h != "true" {
+						t.Fatalf("adal: ServicePrincipalToken#Refresh did not correctly set Metadata header for MSI")
+					}
+					return resp, nil
+				})
+			}
+		})())
+	spt.SetSender(s)
+	err = spt.Refresh()
+	if err != nil {
+		t.Fatalf("adal: ServicePrincipalToken#Refresh returned an unexpected error (%v)", err)
+	}
+
+	if body.IsOpen() {
+		t.Fatalf("the response was not closed!")
+	}
+}
+
 func TestServicePrincipalTokenRefreshSetsMimeType(t *testing.T) {
 	spt := newServicePrincipalToken()
 

@@ -73,6 +73,31 @@ type Marshaler struct {
 
 	// Whether to use the original (.proto) name for fields.
 	OrigName bool
+
+	// A custom URL resolver to use when marshaling Any messages to JSON.
+	// If unset, the default resolution strategy is to extract the
+	// fully-qualified type name from the type URL and pass that to
+	// proto.MessageType(string).
+	AnyResolver AnyResolver
+}
+
+// AnyResolver takes a type URL, present in an Any message, and resolves it into
+// an instance of the associated message.
+type AnyResolver interface {
+	Resolve(typeUrl string) (proto.Message, error)
+}
+
+func defaultResolveAny(typeUrl string) (proto.Message, error) {
+	// Only the part of typeUrl after the last slash is relevant.
+	mname := typeUrl
+	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
+		mname = mname[slash+1:]
+	}
+	mt := proto.MessageType(mname)
+	if mt == nil {
+		return nil, fmt.Errorf("unknown message type %q", mname)
+	}
+	return reflect.New(mt.Elem()).Interface().(proto.Message), nil
 }
 
 // JSONPBMarshaler is implemented by protobuf messages that customize the
@@ -344,16 +369,17 @@ func (m *Marshaler) marshalAny(out *errWriter, any proto.Message, indent string)
 	turl := v.Field(0).String()
 	val := v.Field(1).Bytes()
 
-	// Only the part of type_url after the last slash is relevant.
-	mname := turl
-	if slash := strings.LastIndex(mname, "/"); slash >= 0 {
-		mname = mname[slash+1:]
+	var msg proto.Message
+	var err error
+	if m.AnyResolver != nil {
+		msg, err = m.AnyResolver.Resolve(turl)
+	} else {
+		msg, err = defaultResolveAny(turl)
 	}
-	mt := proto.MessageType(mname)
-	if mt == nil {
-		return fmt.Errorf("unknown message type %q", mname)
+	if err != nil {
+		return err
 	}
-	msg := reflect.New(mt.Elem()).Interface().(proto.Message)
+
 	if err := proto.Unmarshal(val, msg); err != nil {
 		return err
 	}
@@ -590,6 +616,12 @@ type Unmarshaler struct {
 	// Whether to allow messages to contain unknown fields, as opposed to
 	// failing to unmarshal.
 	AllowUnknownFields bool
+
+	// A custom URL resolver to use when unmarshaling Any messages from JSON.
+	// If unset, the default resolution strategy is to extract the
+	// fully-qualified type name from the type URL and pass that to
+	// proto.MessageType(string).
+	AnyResolver AnyResolver
 }
 
 // UnmarshalNext unmarshals the next protocol buffer from a JSON object stream.
@@ -679,16 +711,17 @@ func (u *Unmarshaler) unmarshalValue(target reflect.Value, inputValue json.RawMe
 			}
 			target.Field(0).SetString(turl)
 
-			mname := turl
-			if slash := strings.LastIndex(mname, "/"); slash >= 0 {
-				mname = mname[slash+1:]
+			var m proto.Message
+			var err error
+			if u.AnyResolver != nil {
+				m, err = u.AnyResolver.Resolve(turl)
+			} else {
+				m, err = defaultResolveAny(turl)
 			}
-			mt := proto.MessageType(mname)
-			if mt == nil {
-				return fmt.Errorf("unknown message type %q", mname)
+			if err != nil {
+				return err
 			}
 
-			m := reflect.New(mt.Elem()).Interface().(proto.Message)
 			if _, ok := m.(wkt); ok {
 				val, ok := jsonFields["value"]
 				if !ok {
@@ -919,11 +952,13 @@ func (u *Unmarshaler) unmarshalValue(target reflect.Value, inputValue json.RawMe
 		if err := json.Unmarshal(inputValue, &slc); err != nil {
 			return err
 		}
-		len := len(slc)
-		target.Set(reflect.MakeSlice(targetType, len, len))
-		for i := 0; i < len; i++ {
-			if err := u.unmarshalValue(target.Index(i), slc[i], prop); err != nil {
-				return err
+		if slc != nil {
+			l := len(slc)
+			target.Set(reflect.MakeSlice(targetType, l, l))
+			for i := 0; i < l; i++ {
+				if err := u.unmarshalValue(target.Index(i), slc[i], prop); err != nil {
+					return err
+				}
 			}
 		}
 		return nil
@@ -935,33 +970,35 @@ func (u *Unmarshaler) unmarshalValue(target reflect.Value, inputValue json.RawMe
 		if err := json.Unmarshal(inputValue, &mp); err != nil {
 			return err
 		}
-		target.Set(reflect.MakeMap(targetType))
-		var keyprop, valprop *proto.Properties
-		if prop != nil {
-			// These could still be nil if the protobuf metadata is broken somehow.
-			// TODO: This won't work because the fields are unexported.
-			// We should probably just reparse them.
-			//keyprop, valprop = prop.mkeyprop, prop.mvalprop
-		}
-		for ks, raw := range mp {
-			// Unmarshal map key. The core json library already decoded the key into a
-			// string, so we handle that specially. Other types were quoted post-serialization.
-			var k reflect.Value
-			if targetType.Key().Kind() == reflect.String {
-				k = reflect.ValueOf(ks)
-			} else {
-				k = reflect.New(targetType.Key()).Elem()
-				if err := u.unmarshalValue(k, json.RawMessage(ks), keyprop); err != nil {
+		if mp != nil {
+			target.Set(reflect.MakeMap(targetType))
+			var keyprop, valprop *proto.Properties
+			if prop != nil {
+				// These could still be nil if the protobuf metadata is broken somehow.
+				// TODO: This won't work because the fields are unexported.
+				// We should probably just reparse them.
+				//keyprop, valprop = prop.mkeyprop, prop.mvalprop
+			}
+			for ks, raw := range mp {
+				// Unmarshal map key. The core json library already decoded the key into a
+				// string, so we handle that specially. Other types were quoted post-serialization.
+				var k reflect.Value
+				if targetType.Key().Kind() == reflect.String {
+					k = reflect.ValueOf(ks)
+				} else {
+					k = reflect.New(targetType.Key()).Elem()
+					if err := u.unmarshalValue(k, json.RawMessage(ks), keyprop); err != nil {
+						return err
+					}
+				}
+
+				// Unmarshal map value.
+				v := reflect.New(targetType.Elem()).Elem()
+				if err := u.unmarshalValue(v, raw, valprop); err != nil {
 					return err
 				}
+				target.SetMapIndex(k, v)
 			}
-
-			// Unmarshal map value.
-			v := reflect.New(targetType.Elem()).Elem()
-			if err := u.unmarshalValue(v, raw, valprop); err != nil {
-				return err
-			}
-			target.SetMapIndex(k, v)
 		}
 		return nil
 	}

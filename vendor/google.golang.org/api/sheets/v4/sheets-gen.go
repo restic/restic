@@ -690,7 +690,6 @@ func (s *AutoFillRequest) MarshalJSON() ([]byte, error) {
 // of the cells in that dimension.
 type AutoResizeDimensionsRequest struct {
 	// Dimensions: The dimensions to automatically resize.
-	// Only COLUMNS are supported.
 	Dimensions *DimensionRange `json:"dimensions,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Dimensions") to

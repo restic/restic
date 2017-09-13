@@ -577,7 +577,7 @@ func (s *Photo) MarshalJSON() ([]byte, error) {
 
 // PhotoId: Identifier for a Photo.
 type PhotoId struct {
-	// Id: Required. A base64 encoded identifier.
+	// Id: Required. A unique identifier for a photo.
 	Id string `json:"id,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Id") to
@@ -884,15 +884,7 @@ func (s *Status) MarshalJSON() ([]byte, error) {
 // is not supported.
 type UpdatePhotoRequest struct {
 	// Photo: Required. Photo object containing the
-	// new metadata. Only the fields specified in
-	// updateMask
-	// field are used. If `updateMask` is not present, the update applies to
-	// all
-	// fields. <aside class="note"><b>Note:</b> To
-	// update
-	// Pose.altitude,
-	// Pose.latLngPair has to be
-	// filled as well. Otherwise, the request will fail.
+	// new metadata.
 	Photo *Photo `json:"photo,omitempty"`
 
 	// UpdateMask: Mask that identifies fields on the photo metadata to
@@ -907,7 +899,7 @@ type UpdatePhotoRequest struct {
 	// The following fields are valid:
 	//
 	// * `pose.heading`
-	// * `pose.latlngpair`
+	// * `pose.latLngPair`
 	// * `pose.pitch`
 	// * `pose.roll`
 	// * `pose.level`
@@ -922,11 +914,9 @@ type UpdatePhotoRequest struct {
 	// new
 	// contents. For example, if
 	// updateMask
-	// contains `connections`
-	// and
-	// google.streetview.publish.v1.UpdatePhotoRequest.photo.connections
-	// is
-	// empty, all connections will be removed.</aside>
+	// contains `connections` and `UpdatePhotoRequest.photo.connections` is
+	// empty,
+	// all connections will be removed.</aside>
 	UpdateMask string `json:"updateMask,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Photo") to
@@ -1582,6 +1572,18 @@ type PhotoUpdateCall struct {
 // a
 // photo is not supported.
 //
+// Only the fields specified in
+// updateMask
+// field are used. If `updateMask` is not present, the update applies to
+// all
+// fields.
+//
+// <aside class="note"><b>Note:</b> To
+// update
+// Pose.altitude,
+// Pose.latLngPair has to be
+// filled as well. Otherwise, the request will fail.</aside>
+//
 // This method returns the following error codes:
 //
 // * google.rpc.Code.PERMISSION_DENIED if the requesting user did
@@ -1608,7 +1610,7 @@ func (r *PhotoService) Update(id string, photo *Photo) *PhotoUpdateCall {
 // The following fields are valid:
 //
 // * `pose.heading`
-// * `pose.latlngpair`
+// * `pose.latLngPair`
 // * `pose.pitch`
 // * `pose.roll`
 // * `pose.level`
@@ -1623,11 +1625,9 @@ func (r *PhotoService) Update(id string, photo *Photo) *PhotoUpdateCall {
 // new
 // contents. For example, if
 // updateMask
-// contains `connections`
-// and
-// google.streetview.publish.v1.UpdatePhotoRequest.photo.connections
-// is
-// empty, all connections will be removed.</aside>
+// contains `connections` and `UpdatePhotoRequest.photo.connections` is
+// empty,
+// all connections will be removed.</aside>
 func (c *PhotoUpdateCall) UpdateMask(updateMask string) *PhotoUpdateCall {
 	c.urlParams_.Set("updateMask", updateMask)
 	return c
@@ -1719,7 +1719,7 @@ func (c *PhotoUpdateCall) Do(opts ...googleapi.CallOption) (*Photo, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates the metadata of a Photo, such\nas pose, place association, connections, etc. Changing the pixels of a\nphoto is not supported.\n\nThis method returns the following error codes:\n\n* google.rpc.Code.PERMISSION_DENIED if the requesting user did not\ncreate the requested photo.\n* google.rpc.Code.INVALID_ARGUMENT if the request is malformed.\n* google.rpc.Code.NOT_FOUND if the requested photo does not exist.",
+	//   "description": "Updates the metadata of a Photo, such\nas pose, place association, connections, etc. Changing the pixels of a\nphoto is not supported.\n\nOnly the fields specified in\nupdateMask\nfield are used. If `updateMask` is not present, the update applies to all\nfields.\n\n\u003caside class=\"note\"\u003e\u003cb\u003eNote:\u003c/b\u003e To update\nPose.altitude,\nPose.latLngPair has to be\nfilled as well. Otherwise, the request will fail.\u003c/aside\u003e\n\nThis method returns the following error codes:\n\n* google.rpc.Code.PERMISSION_DENIED if the requesting user did not\ncreate the requested photo.\n* google.rpc.Code.INVALID_ARGUMENT if the request is malformed.\n* google.rpc.Code.NOT_FOUND if the requested photo does not exist.",
 	//   "flatPath": "v1/photo/{id}",
 	//   "httpMethod": "PUT",
 	//   "id": "streetviewpublish.photo.update",
@@ -1728,13 +1728,13 @@ func (c *PhotoUpdateCall) Do(opts ...googleapi.CallOption) (*Photo, error) {
 	//   ],
 	//   "parameters": {
 	//     "id": {
-	//       "description": "Required. A base64 encoded identifier.",
+	//       "description": "Required. A unique identifier for a photo.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "updateMask": {
-	//       "description": "Mask that identifies fields on the photo metadata to update.\nIf not present, the old Photo metadata will be entirely replaced with the\nnew Photo metadata in this request. The update fails if invalid fields are\nspecified. Multiple fields can be specified in a comma-delimited list.\n\nThe following fields are valid:\n\n* `pose.heading`\n* `pose.latlngpair`\n* `pose.pitch`\n* `pose.roll`\n* `pose.level`\n* `pose.altitude`\n* `connections`\n* `places`\n\n\n\u003caside class=\"note\"\u003e\u003cb\u003eNote:\u003c/b\u003e Repeated fields in\nupdateMask\nmean the entire set of repeated values will be replaced with the new\ncontents. For example, if\nupdateMask\ncontains `connections` and\ngoogle.streetview.publish.v1.UpdatePhotoRequest.photo.connections is\nempty, all connections will be removed.\u003c/aside\u003e",
+	//       "description": "Mask that identifies fields on the photo metadata to update.\nIf not present, the old Photo metadata will be entirely replaced with the\nnew Photo metadata in this request. The update fails if invalid fields are\nspecified. Multiple fields can be specified in a comma-delimited list.\n\nThe following fields are valid:\n\n* `pose.heading`\n* `pose.latLngPair`\n* `pose.pitch`\n* `pose.roll`\n* `pose.level`\n* `pose.altitude`\n* `connections`\n* `places`\n\n\n\u003caside class=\"note\"\u003e\u003cb\u003eNote:\u003c/b\u003e Repeated fields in\nupdateMask\nmean the entire set of repeated values will be replaced with the new\ncontents. For example, if\nupdateMask\ncontains `connections` and `UpdatePhotoRequest.photo.connections` is empty,\nall connections will be removed.\u003c/aside\u003e",
 	//       "format": "google-fieldmask",
 	//       "location": "query",
 	//       "type": "string"
@@ -1764,7 +1764,8 @@ type PhotosBatchDeleteCall struct {
 	header_                  http.Header
 }
 
-// BatchDelete: Deletes a list of Photos and their metadata.
+// BatchDelete: Deletes a list of Photos and their
+// metadata.
 //
 // Note that if
 // BatchDeletePhotos
@@ -1872,7 +1873,7 @@ func (c *PhotosBatchDeleteCall) Do(opts ...googleapi.CallOption) (*BatchDeletePh
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes a list of Photos and their metadata.\n\nNote that if\nBatchDeletePhotos\nfails, either critical fields are missing or there was an authentication\nerror. Even if\nBatchDeletePhotos\nsucceeds, there may have been failures for single photos in the batch.\nThese failures will be specified in each\nPhotoResponse.status\nin\nBatchDeletePhotosResponse.results.\nSee\nDeletePhoto\nfor specific failures that can occur per photo.",
+	//   "description": "Deletes a list of Photos and their\nmetadata.\n\nNote that if\nBatchDeletePhotos\nfails, either critical fields are missing or there was an authentication\nerror. Even if\nBatchDeletePhotos\nsucceeds, there may have been failures for single photos in the batch.\nThese failures will be specified in each\nPhotoResponse.status\nin\nBatchDeletePhotosResponse.results.\nSee\nDeletePhoto\nfor specific failures that can occur per photo.",
 	//   "flatPath": "v1/photos:batchDelete",
 	//   "httpMethod": "POST",
 	//   "id": "streetviewpublish.photos.batchDelete",
@@ -2105,6 +2106,18 @@ type PhotosBatchUpdateCall struct {
 // Up
 // datePhoto
 // for specific failures that can occur per photo.
+//
+// Only the fields specified in
+// updateMask
+// field are used. If `updateMask` is not present, the update applies to
+// all
+// fields.
+//
+// <aside class="note"><b>Note:</b> To
+// update
+// Pose.altitude,
+// Pose.latLngPair has to be
+// filled as well. Otherwise, the request will fail.</aside>
 func (r *PhotosService) BatchUpdate(batchupdatephotosrequest *BatchUpdatePhotosRequest) *PhotosBatchUpdateCall {
 	c := &PhotosBatchUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.batchupdatephotosrequest = batchupdatephotosrequest
@@ -2194,7 +2207,7 @@ func (c *PhotosBatchUpdateCall) Do(opts ...googleapi.CallOption) (*BatchUpdatePh
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates the metadata of Photos, such\nas pose, place association, connections, etc. Changing the pixels of photos\nis not supported.\n\nNote that if\nBatchUpdatePhotos\nfails, either critical fields are missing or there was an authentication\nerror. Even if\nBatchUpdatePhotos\nsucceeds, there may have been failures for single photos in the batch.\nThese failures will be specified in each\nPhotoResponse.status\nin\nBatchUpdatePhotosResponse.results.\nSee\nUpdatePhoto\nfor specific failures that can occur per photo.",
+	//   "description": "Updates the metadata of Photos, such\nas pose, place association, connections, etc. Changing the pixels of photos\nis not supported.\n\nNote that if\nBatchUpdatePhotos\nfails, either critical fields are missing or there was an authentication\nerror. Even if\nBatchUpdatePhotos\nsucceeds, there may have been failures for single photos in the batch.\nThese failures will be specified in each\nPhotoResponse.status\nin\nBatchUpdatePhotosResponse.results.\nSee\nUpdatePhoto\nfor specific failures that can occur per photo.\n\nOnly the fields specified in\nupdateMask\nfield are used. If `updateMask` is not present, the update applies to all\nfields.\n\n\u003caside class=\"note\"\u003e\u003cb\u003eNote:\u003c/b\u003e To update\nPose.altitude,\nPose.latLngPair has to be\nfilled as well. Otherwise, the request will fail.\u003c/aside\u003e",
 	//   "flatPath": "v1/photos:batchUpdate",
 	//   "httpMethod": "POST",
 	//   "id": "streetviewpublish.photos.batchUpdate",
@@ -2224,7 +2237,8 @@ type PhotosListCall struct {
 	header_      http.Header
 }
 
-// List: Lists all the Photos that belong to the user.
+// List: Lists all the Photos that belong to
+// the user.
 func (r *PhotosService) List() *PhotosListCall {
 	c := &PhotosListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	return c
@@ -2365,7 +2379,7 @@ func (c *PhotosListCall) Do(opts ...googleapi.CallOption) (*ListPhotosResponse, 
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists all the Photos that belong to the user.",
+	//   "description": "Lists all the Photos that belong to\nthe user.",
 	//   "flatPath": "v1/photos",
 	//   "httpMethod": "GET",
 	//   "id": "streetviewpublish.photos.list",

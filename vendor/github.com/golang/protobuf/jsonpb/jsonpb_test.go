@@ -379,9 +379,9 @@ var marshalingTests = []struct {
 		&pb.Mappy{Strry: map[string]string{`"one"`: "two", "three": "four"}},
 		`{"strry":{"\"one\"":"two","three":"four"}}`},
 	{"map<int32, Object>", marshaler,
-		&pb.Mappy{Objjy: map[int32]*pb.Simple3{1: &pb.Simple3{Dub: 1}}}, `{"objjy":{"1":{"dub":1}}}`},
+		&pb.Mappy{Objjy: map[int32]*pb.Simple3{1: {Dub: 1}}}, `{"objjy":{"1":{"dub":1}}}`},
 	{"map<int32, Object>", marshalerAllOptions,
-		&pb.Mappy{Objjy: map[int32]*pb.Simple3{1: &pb.Simple3{Dub: 1}}}, objjyPrettyJSON},
+		&pb.Mappy{Objjy: map[int32]*pb.Simple3{1: {Dub: 1}}}, objjyPrettyJSON},
 	{"map<int64, string>", marshaler, &pb.Mappy{Buggy: map[int64]string{1234: "yup"}},
 		`{"buggy":{"1234":"yup"}}`},
 	{"map<bool, bool>", marshaler, &pb.Mappy{Booly: map[bool]bool{false: true}}, `{"booly":{"false":true}}`},
@@ -395,7 +395,7 @@ var marshalingTests = []struct {
 	{"proto2 map<int64, string>", marshaler, &pb.Maps{MInt64Str: map[int64]string{213: "cat"}},
 		`{"mInt64Str":{"213":"cat"}}`},
 	{"proto2 map<bool, Object>", marshaler,
-		&pb.Maps{MBoolSimple: map[bool]*pb.Simple{true: &pb.Simple{OInt32: proto.Int32(1)}}},
+		&pb.Maps{MBoolSimple: map[bool]*pb.Simple{true: {OInt32: proto.Int32(1)}}},
 		`{"mBoolSimple":{"true":{"oInt32":1}}}`},
 	{"oneof, not set", marshaler, &pb.MsgWithOneof{}, `{}`},
 	{"oneof, set", marshaler, &pb.MsgWithOneof{Union: &pb.MsgWithOneof_Title{"Grand Poobah"}}, `{"title":"Grand Poobah"}`},
@@ -486,7 +486,7 @@ func TestMarshalAnyJSONPBMarshaler(t *testing.T) {
 	}
 	// after custom marshaling, it's round-tripped through JSON decoding/encoding already,
 	// so the keys are sorted, whitespace is compacted, and "@type" key has been added
-	expected := `{"@type":"type.googleapis.com/` + dynamicMessageName +`","baz":[0,1,2,3],"foo":"bar"}`
+	expected := `{"@type":"type.googleapis.com/` + dynamicMessageName + `","baz":[0,1,2,3],"foo":"bar"}`
 	if str != expected {
 		t.Errorf("marshalling JSON produced incorrect output: got %s, wanted %s", str, expected)
 	}
@@ -535,7 +535,7 @@ var unmarshalingTests = []struct {
 	{"-Inf", Unmarshaler{}, `{"oDouble":"-Infinity"}`, &pb.Simple{ODouble: proto.Float64(math.Inf(-1))}},
 	{"map<int64, int32>", Unmarshaler{}, `{"nummy":{"1":2,"3":4}}`, &pb.Mappy{Nummy: map[int64]int32{1: 2, 3: 4}}},
 	{"map<string, string>", Unmarshaler{}, `{"strry":{"\"one\"":"two","three":"four"}}`, &pb.Mappy{Strry: map[string]string{`"one"`: "two", "three": "four"}}},
-	{"map<int32, Object>", Unmarshaler{}, `{"objjy":{"1":{"dub":1}}}`, &pb.Mappy{Objjy: map[int32]*pb.Simple3{1: &pb.Simple3{Dub: 1}}}},
+	{"map<int32, Object>", Unmarshaler{}, `{"objjy":{"1":{"dub":1}}}`, &pb.Mappy{Objjy: map[int32]*pb.Simple3{1: {Dub: 1}}}},
 	{"proto2 extension", Unmarshaler{}, realNumberJSON, realNumber},
 	{"Any with message", Unmarshaler{}, anySimpleJSON, anySimple},
 	{"Any with message and indent", Unmarshaler{}, anySimplePrettyJSON, anySimple},
@@ -645,6 +645,26 @@ func TestUnmarshaling(t *testing.T) {
 	}
 }
 
+func TestUnmarshalNullArray(t *testing.T) {
+	var repeats pb.Repeats
+	if err := UnmarshalString(`{"rBool":null}`, &repeats); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(repeats, pb.Repeats{}) {
+		t.Errorf("got non-nil fields in [%#v]", repeats)
+	}
+}
+
+func TestUnmarshalNullObject(t *testing.T) {
+	var maps pb.Maps
+	if err := UnmarshalString(`{"mInt64Str":null}`, &maps); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(maps, pb.Maps{}) {
+		t.Errorf("got non-nil fields in [%#v]", maps)
+	}
+}
+
 func TestUnmarshalNext(t *testing.T) {
 	// We only need to check against a few, not all of them.
 	tests := unmarshalingTests[:5]
@@ -701,6 +721,65 @@ func TestUnmarshalingBadInput(t *testing.T) {
 	}
 }
 
+type funcResolver func(turl string) (proto.Message, error)
+
+func (fn funcResolver) Resolve(turl string) (proto.Message, error) {
+	return fn(turl)
+}
+
+func TestAnyWithCustomResolver(t *testing.T) {
+	var resolvedTypeUrls []string
+	resolver := funcResolver(func(turl string) (proto.Message, error) {
+		resolvedTypeUrls = append(resolvedTypeUrls, turl)
+		return new(pb.Simple), nil
+	})
+	msg := &pb.Simple{
+		OBytes:  []byte{1, 2, 3, 4},
+		OBool:   proto.Bool(true),
+		OString: proto.String("foobar"),
+		OInt64:  proto.Int64(1020304),
+	}
+	msgBytes, err := proto.Marshal(msg)
+	if err != nil {
+		t.Errorf("an unexpected error occurred when marshaling message: %v", err)
+	}
+	// make an Any with a type URL that won't resolve w/out custom resolver
+	any := &anypb.Any{
+		TypeUrl: "https://foobar.com/some.random.MessageKind",
+		Value:   msgBytes,
+	}
+
+	m := Marshaler{AnyResolver: resolver}
+	js, err := m.MarshalToString(any)
+	if err != nil {
+		t.Errorf("an unexpected error occurred when marshaling any to JSON: %v", err)
+	}
+	if len(resolvedTypeUrls) != 1 {
+		t.Errorf("custom resolver was not invoked during marshaling")
+	} else if resolvedTypeUrls[0] != "https://foobar.com/some.random.MessageKind" {
+		t.Errorf("custom resolver was invoked with wrong URL: got %q, wanted %q", resolvedTypeUrls[0], "https://foobar.com/some.random.MessageKind")
+	}
+	wanted := `{"@type":"https://foobar.com/some.random.MessageKind","oBool":true,"oInt64":"1020304","oString":"foobar","oBytes":"AQIDBA=="}`
+	if js != wanted {
+		t.Errorf("marshalling JSON produced incorrect output: got %s, wanted %s", js, wanted)
+	}
+
+	u := Unmarshaler{AnyResolver: resolver}
+	roundTrip := &anypb.Any{}
+	err = u.Unmarshal(bytes.NewReader([]byte(js)), roundTrip)
+	if err != nil {
+		t.Errorf("an unexpected error occurred when unmarshaling any from JSON: %v", err)
+	}
+	if len(resolvedTypeUrls) != 2 {
+		t.Errorf("custom resolver was not invoked during marshaling")
+	} else if resolvedTypeUrls[1] != "https://foobar.com/some.random.MessageKind" {
+		t.Errorf("custom resolver was invoked with wrong URL: got %q, wanted %q", resolvedTypeUrls[1], "https://foobar.com/some.random.MessageKind")
+	}
+	if !proto.Equal(any, roundTrip) {
+		t.Errorf("message contents not set correctly after unmarshalling JSON: got %s, wanted %s", roundTrip, any)
+	}
+}
+
 func TestUnmarshalJSONPBUnmarshaler(t *testing.T) {
 	rawJson := `{ "foo": "bar", "baz": [0, 1, 2, 3] }`
 	var msg dynamicMessage
@@ -736,6 +815,7 @@ func TestUnmarshalAnyJSONPBUnmarshaler(t *testing.T) {
 const (
 	dynamicMessageName = "google.protobuf.jsonpb.testing.dynamicMessage"
 )
+
 func init() {
 	// we register the custom type below so that we can use it in Any types
 	proto.RegisterType((*dynamicMessage)(nil), dynamicMessageName)

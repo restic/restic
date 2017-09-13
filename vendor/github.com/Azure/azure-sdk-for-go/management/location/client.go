@@ -1,3 +1,5 @@
+// +build go1.7
+
 // Package location provides a client for Locations.
 package location
 

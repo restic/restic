@@ -274,8 +274,8 @@ type DataSource struct {
 	// so it's useful to refresh data automatically.
 	//
 	// Possible values:
-	//   "NONE" - The data source won't support data auto refresh, which is
-	// default value.
+	//   "DATA_REFRESH_TYPE_UNSPECIFIED" - The data source won't support
+	// data auto refresh, which is default value.
 	//   "SLIDING_WINDOW" - The data source supports data auto refresh, and
 	// runs will be scheduled
 	// for the past few days. Does not allow custom values to be set for
@@ -317,6 +317,10 @@ type DataSource struct {
 	// for the data source.
 	ManualRunsDisabled bool `json:"manualRunsDisabled,omitempty"`
 
+	// MinimumScheduleInterval: The minimum interval between two consecutive
+	// scheduled runs.
+	MinimumScheduleInterval string `json:"minimumScheduleInterval,omitempty"`
+
 	// Name: Data source resource name.
 	Name string `json:"name,omitempty"`
 
@@ -330,11 +334,6 @@ type DataSource struct {
 	// by a data source to prepare data and ingest them into BigQuery,
 	// e.g., https://www.googleapis.com/auth/bigquery
 	Scopes []string `json:"scopes,omitempty"`
-
-	// StatusUpdateDeadlineSeconds: The number of seconds to wait for a
-	// status update from the data source
-	// before BigQuery marks the transfer as failed.
-	StatusUpdateDeadlineSeconds int64 `json:"statusUpdateDeadlineSeconds,omitempty"`
 
 	// SupportsCustomSchedule: Specifies whether the data source supports a
 	// user defined schedule, or
@@ -360,6 +359,11 @@ type DataSource struct {
 	// currently doesn't
 	// support multiple transfer configs per project.
 	TransferType string `json:"transferType,omitempty"`
+
+	// UpdateDeadlineSeconds: The number of seconds to wait for an update
+	// from the data source
+	// before BigQuery marks the transfer as failed.
+	UpdateDeadlineSeconds int64 `json:"updateDeadlineSeconds,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
@@ -646,12 +650,11 @@ type ListTransferConfigsResponse struct {
 	// the
 	// `ListTransferConfigsRequest.page_token`
 	// to request the next page of list results.
-	// @OutputOnly
+	// Output only.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
-	// TransferConfigs: The stored pipeline transfer
-	// configurations.
-	// @OutputOnly
+	// TransferConfigs: The stored pipeline transfer configurations.
+	// Output only.
 	TransferConfigs []*TransferConfig `json:"transferConfigs,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -689,11 +692,11 @@ type ListTransferLogsResponse struct {
 	// the
 	// `GetTransferRunLogRequest.page_token`
 	// to request the next page of list results.
-	// @OutputOnly
+	// Output only.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// TransferMessages: The stored pipeline transfer messages.
-	// @OutputOnly
+	// Output only.
 	TransferMessages []*TransferMessage `json:"transferMessages,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -731,11 +734,11 @@ type ListTransferRunsResponse struct {
 	// this token can be used as the
 	// `ListTransferRunsRequest.page_token`
 	// to request the next page of list results.
-	// @OutputOnly
+	// Output only.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// TransferRuns: The stored pipeline transfer runs.
-	// @OutputOnly
+	// Output only.
 	TransferRuns []*TransferRun `json:"transferRuns,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -938,7 +941,7 @@ type TransferConfig struct {
 	// DatasetRegion: Region in which BigQuery dataset is located. Currently
 	// possible values are:
 	// "US" and "EU".
-	// @OutputOnly
+	// Output only.
 	DatasetRegion string `json:"datasetRegion,omitempty"`
 
 	// DestinationDatasetId: The BigQuery target dataset id.
@@ -961,33 +964,36 @@ type TransferConfig struct {
 	// run.
 	Name string `json:"name,omitempty"`
 
-	// NextRunTime: Next time when data transfer will run. Output only.
-	// Applicable
-	// only for batch data transfers.
-	// @OutputOnly
+	// NextRunTime: Next time when data transfer will run.
+	// Output only.
 	NextRunTime string `json:"nextRunTime,omitempty"`
 
 	// Params: Data transfer specific parameters.
 	Params googleapi.RawMessage `json:"params,omitempty"`
 
-	// Schedule: Data transfer schedule in GROC format.
+	// Schedule: Data transfer schedule.
 	// If the data source does not support a custom schedule, this should
 	// be
 	// empty. If it is empty, the default value for the data source will
 	// be
 	// used.
 	// The specified times are in UTC.
-	// Examples of valid GROC include:
+	// Examples of valid format:
 	// `1st,3rd monday of month 15:30`,
 	// `every wed,fri of jan,jun 13:15`, and
 	// `first sunday of quarter 00:00`.
+	// See more explanation about the format
+	// here:
+	// https://cloud.google.com/appengine/docs/flexible/python/scheduli
+	// ng-jobs-with-cron-yaml#the_schedule_format
+	// NOTE: the granularity should be at least 8 hours, or less frequent.
 	Schedule string `json:"schedule,omitempty"`
 
-	// Status: Status of the most recently updated transfer run.
-	// @OutputOnly
+	// State: State of the most recently updated transfer run.
+	// Output only.
 	//
 	// Possible values:
-	//   "TRANSFER_STATUS_UNSPECIFIED" - Status placeholder.
+	//   "TRANSFER_STATE_UNSPECIFIED" - State placeholder.
 	//   "INACTIVE" - Data transfer is inactive.
 	//   "PENDING" - Data transfer is scheduled and is waiting to be picked
 	// up by
@@ -996,11 +1002,11 @@ type TransferConfig struct {
 	//   "SUCCEEDED" - Data transfer completed successsfully.
 	//   "FAILED" - Data transfer failed.
 	//   "CANCELLED" - Data transfer is cancelled.
-	Status string `json:"status,omitempty"`
+	State string `json:"state,omitempty"`
 
 	// UpdateTime: Data transfer modification time. Ignored by server on
 	// input.
-	// @OutputOnly
+	// Output only.
 	UpdateTime string `json:"updateTime,omitempty"`
 
 	// UserId: GaiaID of the user on whose behalf transfer is done.
@@ -1008,7 +1014,7 @@ type TransferConfig struct {
 	// to data sources that do not support service accounts. When set to
 	// 0,
 	// the data source service account credentials are used.
-	// @OutputOnly
+	// Output only.
 	UserId int64 `json:"userId,omitempty,string"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1084,13 +1090,13 @@ func (s *TransferMessage) MarshalJSON() ([]byte, error) {
 // TransferRun: Represents a data transfer run.
 type TransferRun struct {
 	// DataSourceId: Data source id.
-	// @OutputOnly
+	// Output only.
 	DataSourceId string `json:"dataSourceId,omitempty"`
 
 	// DatasetRegion: Region in which BigQuery dataset is located. Currently
 	// possible values are:
 	// "US" and "EU".
-	// @OutputOnly
+	// Output only.
 	DatasetRegion string `json:"datasetRegion,omitempty"`
 
 	// DestinationDatasetId: The BigQuery target dataset id.
@@ -1099,7 +1105,7 @@ type TransferRun struct {
 	// EndTime: Time when transfer run ended. Parameter ignored by server
 	// for input
 	// requests.
-	// @OutputOnly
+	// Output only.
 	EndTime string `json:"endTime,omitempty"`
 
 	// Name: The resource name of the transfer run.
@@ -1125,9 +1131,8 @@ type TransferRun struct {
 	// this is empty.
 	// NOTE: the system might choose to delay the schedule depending on
 	// the
-	// current load, so `schedule_time` doesn't always matches
-	// this.
-	// @OutputOnly
+	// current load, so `schedule_time` doesn't always matches this.
+	// Output only.
 	Schedule string `json:"schedule,omitempty"`
 
 	// ScheduleTime: Minimum time after which a transfer run can be started.
@@ -1136,15 +1141,14 @@ type TransferRun struct {
 	// StartTime: Time when transfer run was started. Parameter ignored by
 	// server for input
 	// requests.
-	// @OutputOnly
+	// Output only.
 	StartTime string `json:"startTime,omitempty"`
 
-	// Status: Data transfer run status. Ignored for input
-	// requests.
-	// @OutputOnly
+	// State: Data transfer run state. Ignored for input requests.
+	// Output only.
 	//
 	// Possible values:
-	//   "TRANSFER_STATUS_UNSPECIFIED" - Status placeholder.
+	//   "TRANSFER_STATE_UNSPECIFIED" - State placeholder.
 	//   "INACTIVE" - Data transfer is inactive.
 	//   "PENDING" - Data transfer is scheduled and is waiting to be picked
 	// up by
@@ -1153,15 +1157,14 @@ type TransferRun struct {
 	//   "SUCCEEDED" - Data transfer completed successsfully.
 	//   "FAILED" - Data transfer failed.
 	//   "CANCELLED" - Data transfer is cancelled.
-	Status string `json:"status,omitempty"`
+	State string `json:"state,omitempty"`
 
-	// UpdateTime: Last time the data transfer run status was
-	// updated.
-	// @OutputOnly
+	// UpdateTime: Last time the data transfer run state was updated.
+	// Output only.
 	UpdateTime string `json:"updateTime,omitempty"`
 
 	// UserId: The user id for this transfer run.
-	// @OutputOnly
+	// Output only.
 	UserId int64 `json:"userId,omitempty,string"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -4320,19 +4323,19 @@ func (c *ProjectsLocationsTransferConfigsRunsListCall) RunAttempt(runAttempt str
 	return c
 }
 
-// Statuses sets the optional parameter "statuses": When specified, only
-// transfer runs with requested statuses are returned.
+// States sets the optional parameter "states": When specified, only
+// transfer runs with requested states are returned.
 //
 // Possible values:
-//   "TRANSFER_STATUS_UNSPECIFIED"
+//   "TRANSFER_STATE_UNSPECIFIED"
 //   "INACTIVE"
 //   "PENDING"
 //   "RUNNING"
 //   "SUCCEEDED"
 //   "FAILED"
 //   "CANCELLED"
-func (c *ProjectsLocationsTransferConfigsRunsListCall) Statuses(statuses ...string) *ProjectsLocationsTransferConfigsRunsListCall {
-	c.urlParams_.SetMulti("statuses", append([]string{}, statuses...))
+func (c *ProjectsLocationsTransferConfigsRunsListCall) States(states ...string) *ProjectsLocationsTransferConfigsRunsListCall {
+	c.urlParams_.SetMulti("states", append([]string{}, states...))
 	return c
 }
 
@@ -4465,10 +4468,10 @@ func (c *ProjectsLocationsTransferConfigsRunsListCall) Do(opts ...googleapi.Call
 	//       "location": "query",
 	//       "type": "string"
 	//     },
-	//     "statuses": {
-	//       "description": "When specified, only transfer runs with requested statuses are returned.",
+	//     "states": {
+	//       "description": "When specified, only transfer runs with requested states are returned.",
 	//       "enum": [
-	//         "TRANSFER_STATUS_UNSPECIFIED",
+	//         "TRANSFER_STATE_UNSPECIFIED",
 	//         "INACTIVE",
 	//         "PENDING",
 	//         "RUNNING",
@@ -6018,19 +6021,19 @@ func (c *ProjectsTransferConfigsRunsListCall) RunAttempt(runAttempt string) *Pro
 	return c
 }
 
-// Statuses sets the optional parameter "statuses": When specified, only
-// transfer runs with requested statuses are returned.
+// States sets the optional parameter "states": When specified, only
+// transfer runs with requested states are returned.
 //
 // Possible values:
-//   "TRANSFER_STATUS_UNSPECIFIED"
+//   "TRANSFER_STATE_UNSPECIFIED"
 //   "INACTIVE"
 //   "PENDING"
 //   "RUNNING"
 //   "SUCCEEDED"
 //   "FAILED"
 //   "CANCELLED"
-func (c *ProjectsTransferConfigsRunsListCall) Statuses(statuses ...string) *ProjectsTransferConfigsRunsListCall {
-	c.urlParams_.SetMulti("statuses", append([]string{}, statuses...))
+func (c *ProjectsTransferConfigsRunsListCall) States(states ...string) *ProjectsTransferConfigsRunsListCall {
+	c.urlParams_.SetMulti("states", append([]string{}, states...))
 	return c
 }
 
@@ -6163,10 +6166,10 @@ func (c *ProjectsTransferConfigsRunsListCall) Do(opts ...googleapi.CallOption) (
 	//       "location": "query",
 	//       "type": "string"
 	//     },
-	//     "statuses": {
-	//       "description": "When specified, only transfer runs with requested statuses are returned.",
+	//     "states": {
+	//       "description": "When specified, only transfer runs with requested states are returned.",
 	//       "enum": [
-	//         "TRANSFER_STATUS_UNSPECIFIED",
+	//         "TRANSFER_STATE_UNSPECIFIED",
 	//         "INACTIVE",
 	//         "PENDING",
 	//         "RUNNING",

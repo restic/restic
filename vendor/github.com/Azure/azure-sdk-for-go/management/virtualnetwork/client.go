@@ -1,3 +1,5 @@
+// +build go1.7
+
 // Package virtualnetwork provides a client for Virtual Networks.
 package virtualnetwork
 

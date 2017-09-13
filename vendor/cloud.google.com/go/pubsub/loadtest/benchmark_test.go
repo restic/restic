@@ -102,7 +102,11 @@ func perfClient(pubDelay time.Duration, nConns int, f interface {
 	}
 	conn, err := gtransport.DialInsecure(ctx,
 		option.WithEndpoint(srv.Addr),
-		option.WithGRPCConnectionPool(nConns))
+		option.WithGRPCConnectionPool(nConns),
+
+		// TODO(grpc/grpc-go#1388) using connection pool without WithBlock
+		// can cause RPCs to fail randomly. We can delete this after the issue is fixed.
+		option.WithGRPCDialOption(grpc.WithBlock()))
 	if err != nil {
 		f.Fatal(err)
 	}

@@ -837,6 +837,10 @@ type CounterStructuredName struct {
 	// counter's origin.
 	OriginNamespace string `json:"originNamespace,omitempty"`
 
+	// OriginalShuffleStepName: The GroupByKey step name from the original
+	// graph.
+	OriginalShuffleStepName string `json:"originalShuffleStepName,omitempty"`
+
 	// OriginalStepName: System generated name of the original step in the
 	// user's graph, before
 	// optimization.
@@ -849,6 +853,15 @@ type CounterStructuredName struct {
 	//   "KEY" - Counter reports a key.
 	//   "VALUE" - Counter reports a value.
 	Portion string `json:"portion,omitempty"`
+
+	// SideInput: ID of a side input being read from/written to. Side inputs
+	// are identified
+	// by a pair of (reader, input_index). The reader is usually equal to
+	// the
+	// original name, but it may be different, if a ParDo emits it's
+	// Iterator /
+	// Map side input object.
+	SideInput *SideInputId `json:"sideInput,omitempty"`
 
 	// WorkerId: ID of a particular worker.
 	WorkerId string `json:"workerId,omitempty"`
@@ -4176,6 +4189,40 @@ func (s *ShellTask) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// SideInputId: Uniquely identifies a side input.
+type SideInputId struct {
+	// DeclaringStepName: The step that receives and usually consumes this
+	// side input.
+	DeclaringStepName string `json:"declaringStepName,omitempty"`
+
+	// InputIndex: The index of the side input, from the list of
+	// non_parallel_inputs.
+	InputIndex int64 `json:"inputIndex,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DeclaringStepName")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DeclaringStepName") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SideInputId) MarshalJSON() ([]byte, error) {
+	type noMethod SideInputId
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // SideInputInfo: Information about a side input of a DoFn or an input
 // of a SeqDoFn.
 type SideInputInfo struct {
@@ -6057,6 +6104,9 @@ type WorkerMessage struct {
 	// WorkerMetrics: Resource metrics reported by workers.
 	WorkerMetrics *ResourceUtilizationReport `json:"workerMetrics,omitempty"`
 
+	// WorkerShutdownNotice: Shutdown notice by workers.
+	WorkerShutdownNotice *WorkerShutdownNotice `json:"workerShutdownNotice,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "Labels") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -6176,6 +6226,10 @@ type WorkerMessageResponse struct {
 	// WorkerMetricsResponse: Service's response to reporting worker metrics
 	// (currently empty).
 	WorkerMetricsResponse *ResourceUtilizationReportResponse `json:"workerMetricsResponse,omitempty"`
+
+	// WorkerShutdownNoticeResponse: Service's response to shutdown notice
+	// (currently empty).
+	WorkerShutdownNoticeResponse *WorkerShutdownNoticeResponse `json:"workerShutdownNoticeResponse,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
 	// "WorkerHealthReportResponse") to unconditionally include in API
@@ -6448,6 +6502,46 @@ func (s *WorkerSettings) MarshalJSON() ([]byte, error) {
 	type noMethod WorkerSettings
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// WorkerShutdownNotice: Shutdown notification from workers. This is to
+// be sent by the shutdown
+// script of the worker VM so that the backend knows that the VM is
+// being
+// shut down.
+type WorkerShutdownNotice struct {
+	// Reason: Optional reason to be attached for the shutdown notice.
+	// For example: "PREEMPTION" would indicate the VM is being shut down
+	// because
+	// of preemption. Other possible reasons may be added in the future.
+	Reason string `json:"reason,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Reason") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Reason") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *WorkerShutdownNotice) MarshalJSON() ([]byte, error) {
+	type noMethod WorkerShutdownNotice
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// WorkerShutdownNoticeResponse: Service-side response to WorkerMessage
+// issuing shutdown notice.
+type WorkerShutdownNoticeResponse struct {
 }
 
 // WriteInstruction: An instruction that writes records.

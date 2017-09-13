@@ -45,6 +45,12 @@ const apiName = "androidmanagement"
 const apiVersion = "v1"
 const basePath = "https://androidmanagement.googleapis.com/"
 
+// OAuth2 scopes used by this API.
+const (
+	// Manage Android devices and apps for your customers
+	AndroidmanagementScope = "https://www.googleapis.com/auth/androidmanagement"
+)
+
 func New(client *http.Client) (*Service, error) {
 	if client == nil {
 		return nil, errors.New("client is nil")
@@ -163,16 +169,13 @@ type SignupUrlsService struct {
 }
 
 // ApiLevelCondition: A compliance rule condition which is satisfied if
-// the Android Framework API
-// level on the device does not meet a minimum requirement. There can
-// only be
-// one rule with this type of condition per policy.
+// the Android Framework API level on the device does not meet a minimum
+// requirement. There can only be one rule with this type of condition
+// per policy.
 type ApiLevelCondition struct {
 	// MinApiLevel: The minimum desired Android Framework API level. If the
-	// device does not
-	// meet the minimum requirement, this condition is satisfied. Must be
-	// greater
-	// than zero.
+	// device does not meet the minimum requirement, this condition is
+	// satisfied. Must be greater than zero.
 	MinApiLevel int64 `json:"minApiLevel,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "MinApiLevel") to
@@ -201,13 +204,11 @@ func (s *ApiLevelCondition) MarshalJSON() ([]byte, error) {
 // Application: Application information.
 type Application struct {
 	// ManagedProperties: The set of managed properties available to be
-	// pre-configured for the
-	// application.
+	// pre-configured for the application.
 	ManagedProperties []*ManagedProperty `json:"managedProperties,omitempty"`
 
-	// Name: The name of the application in the
-	// form
-	// `enterprises/{enterpriseId}/applications/{package_name}`
+	// Name: The name of the application in the form
+	// enterprises/{enterpriseId}/applications/{package_name}
 	Name string `json:"name,omitempty"`
 
 	// Permissions: The permissions required by the app.
@@ -247,8 +248,7 @@ func (s *Application) MarshalJSON() ([]byte, error) {
 // ApplicationPermission: Application permission.
 type ApplicationPermission struct {
 	// Description: A longer description of the permission, giving more
-	// details of
-	// what it affects. Localized.
+	// details of what it affects. Localized.
 	Description string `json:"description,omitempty"`
 
 	// Name: The name of the permission. Localized.
@@ -284,15 +284,13 @@ func (s *ApplicationPermission) MarshalJSON() ([]byte, error) {
 // ApplicationPolicy: Policy for an individual app.
 type ApplicationPolicy struct {
 	// DefaultPermissionPolicy: The default policy for all permissions
-	// requested by the app. If specified,
-	// this overrides the policy-level `default_permission_policy` which
-	// applies
-	// to all apps.
+	// requested by the app. If specified, this overrides the policy-level
+	// default_permission_policy which applies to all apps.
 	//
 	// Possible values:
 	//   "PERMISSION_POLICY_UNSPECIFIED" - Policy not specified. If no
-	// policy is specified for a permission at any
-	// level, then the `PROMPT` behavior is used by default.
+	// policy is specified for a permission at any level, then the PROMPT
+	// behavior is used by default.
 	//   "PROMPT" - Prompt the user to grant a permission.
 	//   "GRANT" - Automatically grant a permission.
 	//   "DENY" - Automatically deny a permission.
@@ -302,14 +300,12 @@ type ApplicationPolicy struct {
 	//
 	// Possible values:
 	//   "INSTALL_TYPE_UNSPECIFIED" - No automatic installation is
-	// performed. Any other app policies will be
-	// applied if the user installs the app.
+	// performed. Any other app policies will be applied if the user
+	// installs the app.
 	//   "PREINSTALLED" - The application is automatically installed and can
-	// be removed by the
-	// user.
+	// be removed by the user.
 	//   "FORCE_INSTALLED" - The application is automatically installed and
-	// cannot be removed by the
-	// user.
+	// cannot be removed by the user.
 	InstallType string `json:"installType,omitempty"`
 
 	// LockTaskAllowed: Whether the application is allowed to lock itself in
@@ -317,43 +313,26 @@ type ApplicationPolicy struct {
 	LockTaskAllowed bool `json:"lockTaskAllowed,omitempty"`
 
 	// ManagedConfiguration: Managed configuration applied to the app. The
-	// format for the configuration
-	// is dictated by
-	// the
-	// [`ManagedProperty`](/android/management/reference/rest/v1/enterpri
-	// ses.applications#ManagedProperty)
+	// format for the configuration is dictated by the ManagedProperty
 	// values supported by the app. Each field name in the managed
-	// configuration
-	// must match the `key` field of the `ManagedProperty`. The field value
-	// must
-	// be compatible with the `type` of the
-	// `ManagedProperty`:
-	// <table>
-	// <tr><td><i>type</i></td><td><i>JSON
-	// value</i></td></tr>
-	// <tr><td>`BOOL`</td><td>`true` or
-	// `false`</td></tr>
-	// <tr><td>`STRING`</td><td>string</td></tr>
-	// <tr><td>`I
-	// NTEGER`</td><td>number</td></tr>
-	// <tr><td>`CHOICE`</td><td>string</td><
-	// /tr>
-	// <tr><td>`MULTISELECT`</td><td>array of
-	// strings</td></tr>
-	// <tr><td>`HIDDEN`</td><td>string</td></tr>
-	// <tr><td>`B
-	// UNDLE_ARRAY`</td><td>array of objects</td></tr>
-	// </table>
+	// configuration must match the key field of the ManagedProperty. The
+	// field value must be compatible with the type of the ManagedProperty:
+	// <table> <tr><td><i>type</i></td><td><i>JSON value</i></td></tr>
+	// <tr><td>BOOL</td><td>true or false</td></tr>
+	// <tr><td>STRING</td><td>string</td></tr>
+	// <tr><td>INTEGER</td><td>number</td></tr>
+	// <tr><td>CHOICE</td><td>string</td></tr>
+	// <tr><td>MULTISELECT</td><td>array of strings</td></tr>
+	// <tr><td>HIDDEN</td><td>string</td></tr>
+	// <tr><td>BUNDLE_ARRAY</td><td>array of objects</td></tr> </table>
 	ManagedConfiguration googleapi.RawMessage `json:"managedConfiguration,omitempty"`
 
 	// PackageName: The package name of the app, e.g.
-	// `com.google.android.youtube` for the
-	// YouTube app.
+	// com.google.android.youtube for the YouTube app.
 	PackageName string `json:"packageName,omitempty"`
 
 	// PermissionGrants: Explicit permission grants or denials for the app.
-	// These values override
-	// the `default_permission_policy`.
+	// These values override the default_permission_policy.
 	PermissionGrants []*PermissionGrant `json:"permissionGrants,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
@@ -384,30 +363,26 @@ func (s *ApplicationPolicy) MarshalJSON() ([]byte, error) {
 // Command: A command.
 type Command struct {
 	// CreateTime: The timestamp at which the command was created. The
-	// timestamp is
-	// automatically generated by the server.
+	// timestamp is automatically generated by the server.
 	CreateTime string `json:"createTime,omitempty"`
 
 	// Duration: The duration for which the command is valid. The command
-	// will expire if not
-	// executed by the device during this time.  The default duration
-	// if
-	// unspecified is ten minutes. There is no maximum duration.
+	// will expire if not executed by the device during this time. The
+	// default duration if unspecified is ten minutes. There is no maximum
+	// duration.
 	Duration string `json:"duration,omitempty"`
 
-	// NewPassword: For commands of type `RESET_PASSWORD`, optionally
-	// specifies the new
-	// password.
+	// NewPassword: For commands of type RESET_PASSWORD, optionally
+	// specifies the new password.
 	NewPassword string `json:"newPassword,omitempty"`
 
-	// ResetPasswordFlags: For commands of type `RESET_PASSWORD`, optionally
+	// ResetPasswordFlags: For commands of type RESET_PASSWORD, optionally
 	// specifies flags.
 	//
 	// Possible values:
 	//   "RESET_PASSWORD_FLAG_UNSPECIFIED" - This value is ignored.
 	//   "REQUIRE_ENTRY" - Don't allow other admins to change the password
-	// again until the user has
-	// entered it.
+	// again until the user has entered it.
 	//   "DO_NOT_ASK_CREDENTIALS_ON_BOOT" - Don't ask for user credentials
 	// on device boot.
 	ResetPasswordFlags []string `json:"resetPasswordFlags,omitempty"`
@@ -446,41 +421,27 @@ func (s *Command) MarshalJSON() ([]byte, error) {
 }
 
 // ComplianceRule: A rule declaring which mitigating actions to take
-// when a device is not
-// compliant with its policy. For every rule, there is always an
-// implicit
-// mitigating action to set `policy_compliant` to false for
-// the
-// [`Device`](/android/management/reference/rest/v1/enterprises.devic
-// es#Device)
-// resource, and display a message on the device indicating that the
-// device is
-// not compliant with its policy. Other mitigating actions may
-// optionally be
-// taken as well, depending on the field values in the rule.
+// when a device is not compliant with its policy. For every rule, there
+// is always an implicit mitigating action to set policy_compliant to
+// false for the Device resource, and display a message on the device
+// indicating that the device is not compliant with its policy. Other
+// mitigating actions may optionally be taken as well, depending on the
+// field values in the rule.
 type ComplianceRule struct {
 	// ApiLevelCondition: A condition which is satisfied if the Android
-	// Framework API level on the
-	// device does not meet a minimum requirement.
+	// Framework API level on the device does not meet a minimum
+	// requirement.
 	ApiLevelCondition *ApiLevelCondition `json:"apiLevelCondition,omitempty"`
 
 	// DisableApps: If set to true, the rule includes a mitigating action to
-	// disable
-	// applications so that the device is effectively disabled, but
-	// application
-	// data is preserved. If the device is running an app in locked task
-	// mode, the
-	// app will be closed and a UI showing the reason for non-compliance
-	// will be
-	// displayed.
+	// disable applications so that the device is effectively disabled, but
+	// application data is preserved. If the device is running an app in
+	// locked task mode, the app will be closed and a UI showing the reason
+	// for non-compliance will be displayed.
 	DisableApps bool `json:"disableApps,omitempty"`
 
 	// NonComplianceDetailCondition: A condition which is satisfied if there
-	// exists *any*
-	// matching
-	// [`NonComplianceDetail`](/android/management/reference/rest/v1
-	// /enterprises.devices#NonComplianceDetail)
-	// for the device.
+	// exists any matching NonComplianceDetail for the device.
 	NonComplianceDetailCondition *NonComplianceDetailCondition `json:"nonComplianceDetailCondition,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ApiLevelCondition")
@@ -507,10 +468,9 @@ func (s *ComplianceRule) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Device: A device owned by an enterprise.
-// Unless otherwise noted, all fields are read-only and cannot be
-// modified by
-// an update device request.
+// Device: A device owned by an enterprise. Unless otherwise noted, all
+// fields are read-only and cannot be modified by an update device
+// request.
 type Device struct {
 	// ApiLevel: The API level of the Android platform version running on
 	// the device.
@@ -531,47 +491,39 @@ type Device struct {
 	//   "ACTIVE" - The device is active.
 	//   "DISABLED" - The device is disabled.
 	//   "DELETED" - The device was deleted. This state will never be
-	// returned by an API call,
-	// but will be used in the final policy compliance report published to
-	// Cloud
-	// Pub/Sub when the device acknowledges the deletion.
+	// returned by an API call, but will be used in the final policy
+	// compliance report published to Cloud Pub/Sub when the device
+	// acknowledges the deletion.
 	//   "PROVISIONING" - The device is being provisioned. Newly enrolled
-	// devices will be in this
-	// state until they have applied policy.
+	// devices will be in this state until they have applied policy.
 	AppliedState string `json:"appliedState,omitempty"`
 
-	// DisabledReason: If the device state is `DISABLED`, an optional
-	// message that is displayed on
-	// the device indicating the reason the device is disabled. This field
-	// may be
-	// modified by an update request.
+	// DisabledReason: If the device state is DISABLED, an optional message
+	// that is displayed on the device indicating the reason the device is
+	// disabled. This field may be modified by an update request.
 	DisabledReason *UserFacingMessage `json:"disabledReason,omitempty"`
 
 	// Displays: Displays on the device. This information is only available
-	// when
-	// `displayInfoEnabled` is true in the device's policy.
+	// when displayInfoEnabled is true in the device's policy.
 	Displays []*Display `json:"displays,omitempty"`
 
 	// EnrollmentTime: The time of device enrollment.
 	EnrollmentTime string `json:"enrollmentTime,omitempty"`
 
 	// EnrollmentTokenData: If this device was enrolled with an enrollment
-	// token with additional data
-	// provided, this field contains that data.
+	// token with additional data provided, this field contains that data.
 	EnrollmentTokenData string `json:"enrollmentTokenData,omitempty"`
 
 	// EnrollmentTokenName: If this device was enrolled with an enrollment
-	// token, this field contains
-	// the name of the token.
+	// token, this field contains the name of the token.
 	EnrollmentTokenName string `json:"enrollmentTokenName,omitempty"`
 
 	// HardwareInfo: Detailed information about the device hardware.
 	HardwareInfo *HardwareInfo `json:"hardwareInfo,omitempty"`
 
 	// HardwareStatusSamples: Hardware status samples in chronological
-	// order. This information is only
-	// available when `hardwareStatusEnabled` is true in the device's
-	// policy.
+	// order. This information is only available when hardwareStatusEnabled
+	// is true in the device's policy.
 	HardwareStatusSamples []*HardwareStatus `json:"hardwareStatusSamples,omitempty"`
 
 	// LastPolicyComplianceReportTime: The last time the device sent a
@@ -585,25 +537,20 @@ type Device struct {
 	LastStatusReportTime string `json:"lastStatusReportTime,omitempty"`
 
 	// MemoryEvents: Events related to memory and storage measurements in
-	// chronological order.
-	// This information is only available when `memoryInfoEnabled` is true
-	// in the
-	// device's policy.
+	// chronological order. This information is only available when
+	// memoryInfoEnabled is true in the device's policy.
 	MemoryEvents []*MemoryEvent `json:"memoryEvents,omitempty"`
 
 	// MemoryInfo: Memory information. This information is only available
-	// when
-	// `memoryInfoEnabled` is true in the device's policy.
+	// when memoryInfoEnabled is true in the device's policy.
 	MemoryInfo *MemoryInfo `json:"memoryInfo,omitempty"`
 
-	// Name: The name of the device in the
-	// form
-	// `enterprises/{enterpriseId}/devices/{deviceId}`
+	// Name: The name of the device in the form
+	// enterprises/{enterpriseId}/devices/{deviceId}
 	Name string `json:"name,omitempty"`
 
 	// NetworkInfo: Device network information. This information is only
-	// available when
-	// `networkInfoEnabled` is true in the device's policy.
+	// available when networkInfoEnabled is true in the device's policy.
 	NetworkInfo *NetworkInfo `json:"networkInfo,omitempty"`
 
 	// NonComplianceDetails: Details about policy settings for which the
@@ -614,69 +561,50 @@ type Device struct {
 	PolicyCompliant bool `json:"policyCompliant,omitempty"`
 
 	// PolicyName: The name of the policy that is intended to be applied to
-	// the device. If
-	// empty, the policy with id `default` is applied.
-	// This field may be modified by an update request.
-	// The name of the policy is in the
-	// form
-	// `enterprises/{enterpriseId}/policies/{policyId}`.
-	// It is also permissible to only specify the `policyId` when updating
-	// this
-	// field as long as the `policyId` contains no slashes since the rest of
-	// the
-	// policy name can be inferred from context.
+	// the device. If empty, the policy with id default is applied. This
+	// field may be modified by an update request. The name of the policy is
+	// in the form enterprises/{enterpriseId}/policies/{policyId}. It is
+	// also permissible to only specify the policyId when updating this
+	// field as long as the policyId contains no slashes since the rest of
+	// the policy name can be inferred from context.
 	PolicyName string `json:"policyName,omitempty"`
 
 	// PowerManagementEvents: Power management events on the device in
-	// chronological order. This
-	// information is only available when `powerManagementEventsEnabled` is
-	// true
-	// in the device's policy.
+	// chronological order. This information is only available when
+	// powerManagementEventsEnabled is true in the device's policy.
 	PowerManagementEvents []*PowerManagementEvent `json:"powerManagementEvents,omitempty"`
 
 	// PreviousDeviceNames: The previous device names used for the same
-	// physical device when it has
-	// been enrolled multiple times. The serial number is used as the
-	// unique
-	// identifier to determine if the same physical device has
-	// enrolled
-	// previously. The names are in chronological order.
+	// physical device when it has been enrolled multiple times. The serial
+	// number is used as the unique identifier to determine if the same
+	// physical device has enrolled previously. The names are in
+	// chronological order.
 	PreviousDeviceNames []string `json:"previousDeviceNames,omitempty"`
 
 	// SoftwareInfo: Detailed information about the device software. This
-	// information is only
-	// available when `softwareInfoEnabled` is true in the device's policy.
+	// information is only available when softwareInfoEnabled is true in the
+	// device's policy.
 	SoftwareInfo *SoftwareInfo `json:"softwareInfo,omitempty"`
 
 	// State: The state that is intended to be applied to the device. This
-	// field may be
-	// modified by an update request.
-	// Note that UpdateDevice only handles toggling between `ACTIVE`
-	// and
-	// `DISABLED` states. Use the
-	// [delete device
-	// method](/android/management/reference/rest/v1/enterprises.devices/dele
-	// te)
-	// to cause the device to enter the `DELETED` state.
+	// field may be modified by an update request. Note that UpdateDevice
+	// only handles toggling between ACTIVE and DISABLED states. Use the
+	// delete device method to cause the device to enter the DELETED state.
 	//
 	// Possible values:
 	//   "DEVICE_STATE_UNSPECIFIED" - This value is disallowed.
 	//   "ACTIVE" - The device is active.
 	//   "DISABLED" - The device is disabled.
 	//   "DELETED" - The device was deleted. This state will never be
-	// returned by an API call,
-	// but will be used in the final policy compliance report published to
-	// Cloud
-	// Pub/Sub when the device acknowledges the deletion.
+	// returned by an API call, but will be used in the final policy
+	// compliance report published to Cloud Pub/Sub when the device
+	// acknowledges the deletion.
 	//   "PROVISIONING" - The device is being provisioned. Newly enrolled
-	// devices will be in this
-	// state until they have applied policy.
+	// devices will be in this state until they have applied policy.
 	State string `json:"state,omitempty"`
 
-	// UserName: The resource name of the user of the device in the
-	// form
-	// `enterprises/{enterpriseId}/users/{userId}`. This is the name of
-	// the
+	// UserName: The resource name of the user of the device in the form
+	// enterprises/{enterpriseId}/users/{userId}. This is the name of the
 	// device account automatically created for this device.
 	UserName string `json:"userName,omitempty"`
 
@@ -761,17 +689,14 @@ func (s *Display) MarshalJSON() ([]byte, error) {
 }
 
 // Empty: A generic empty message that you can re-use to avoid defining
-// duplicated
-// empty messages in your APIs. A typical example is to use it as the
-// request
-// or the response type of an API method. For instance:
-//
-//     service Foo {
-//       rpc Bar(google.protobuf.Empty) returns
+// duplicated empty messages in your APIs. A typical example is to use
+// it as the request or the response type of an API method. For
+// instance:
+// service Foo {
+//   rpc Bar(google.protobuf.Empty) returns
 // (google.protobuf.Empty);
-//     }
-//
-// The JSON representation for `Empty` is empty JSON object `{}`.
+// }
+// The JSON representation for Empty is empty JSON object {}.
 type Empty struct {
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
@@ -781,62 +706,44 @@ type Empty struct {
 // EnrollmentToken: An enrollment token.
 type EnrollmentToken struct {
 	// AdditionalData: Optional, arbitrary data associated with the
-	// enrollment token.
-	// This could contain, for example, the id of an org unit to which the
-	// device
-	// is assigned after enrollment.
-	// After a device enrolls with the token, this data will be exposed in
-	// the
-	// `enrollment_token_data` field of
-	// the
-	// [`Device`](/android/management/reference/rest/v1/enterprises.devic
-	// es#Device)
-	// resource. The data must be 1024 characters or less; otherwise, the
-	// creation
-	// request will fail.
+	// enrollment token. This could contain, for example, the id of an org
+	// unit to which the device is assigned after enrollment. After a device
+	// enrolls with the token, this data will be exposed in the
+	// enrollment_token_data field of the Device resource. The data must be
+	// 1024 characters or less; otherwise, the creation request will fail.
 	AdditionalData string `json:"additionalData,omitempty"`
 
 	// Duration: The duration of the token. If not specified, the duration
-	// will be 1 hour.
-	// The allowed range is 1 minute to 30 days.
+	// will be 1 hour. The allowed range is 1 minute to 30 days.
 	Duration string `json:"duration,omitempty"`
 
 	// ExpirationTimestamp: The expiration time of the token. This is a
-	// read-only field generated by
-	// the server.
+	// read-only field generated by the server.
 	ExpirationTimestamp string `json:"expirationTimestamp,omitempty"`
 
 	// Name: The name of the enrollment token, which is generated by the
-	// server during
-	// creation, in the
-	// form
-	// `enterprises/{enterpriseId}/enrollmentTokens/{enrollmentTokenId}`
+	// server during creation, in the form
+	// enterprises/{enterpriseId}/enrollmentTokens/{enrollmentTokenId}
 	Name string `json:"name,omitempty"`
 
 	// PolicyName: The name of the policy that will be initially applied to
-	// the enrolled
-	// device in the form
-	// `enterprises/{enterpriseId}/policies/{policyId}`.
-	// If not specified, the policy with id `default` is applied.
-	// It is permissible to only specify the `policyId` when updating
-	// this
-	// field as long as the `policyId` contains no slashes since the rest of
-	// the
-	// policy name can be inferred from context.
+	// the enrolled device in the form
+	// enterprises/{enterpriseId}/policies/{policyId}. If not specified, the
+	// policy with id default is applied. It is permissible to only specify
+	// the policyId when updating this field as long as the policyId
+	// contains no slashes since the rest of the policy name can be inferred
+	// from context.
 	PolicyName string `json:"policyName,omitempty"`
 
 	// QrCode: A JSON string whose UTF-8 representation can be used to
-	// generate a QR code
-	// to enroll a device with this enrollment token. To enroll a device
-	// using
-	// NFC, the NFC record must contain a serialized
-	// `java.util.Properties`
-	// representation of the properties in the JSON.
+	// generate a QR code to enroll a device with this enrollment token. To
+	// enroll a device using NFC, the NFC record must contain a serialized
+	// java.util.Properties representation of the properties in the JSON.
 	QrCode string `json:"qrCode,omitempty"`
 
 	// Value: The token value which is passed to the device and authorizes
-	// the device to
-	// enroll. This is a read-only field generated by the server.
+	// the device to enroll. This is a read-only field generated by the
+	// server.
 	Value string `json:"value,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -870,14 +777,10 @@ func (s *EnrollmentToken) MarshalJSON() ([]byte, error) {
 // Enterprise: The configuration applied to an enterprise.
 type Enterprise struct {
 	// AppAutoApprovalEnabled: Whether app auto-approval is enabled. When
-	// enabled, apps installed via
-	// policy for this enterprise have all permissions automatically
-	// approved.
-	// When enabled, it is the caller's responsibility to display the
-	// permissions
-	// required by an app to the enterprise admin before setting the app to
-	// be
-	// installed in a policy.
+	// enabled, apps installed via policy for this enterprise have all
+	// permissions automatically approved. When enabled, it is the caller's
+	// responsibility to display the permissions required by an app to the
+	// enterprise admin before setting the app to be installed in a policy.
 	AppAutoApprovalEnabled bool `json:"appAutoApprovalEnabled,omitempty"`
 
 	// EnabledNotificationTypes: The notification types to enable via Google
@@ -899,35 +802,25 @@ type Enterprise struct {
 	EnterpriseDisplayName string `json:"enterpriseDisplayName,omitempty"`
 
 	// Logo: An image displayed as a logo during device provisioning.
-	// Supported types
-	// are: image/bmp, image/gif, image/x-ico, image/jpeg, image/png,
-	// image/webp,
-	// image/vnd.wap.wbmp, image/x-adobe-dng.
+	// Supported types are: image/bmp, image/gif, image/x-ico, image/jpeg,
+	// image/png, image/webp, image/vnd.wap.wbmp, image/x-adobe-dng.
 	Logo *ExternalData `json:"logo,omitempty"`
 
 	// Name: The name of the enterprise which is generated by the server
-	// during
-	// creation, in the form
-	// `enterprises/{enterpriseId}`
+	// during creation, in the form enterprises/{enterpriseId}
 	Name string `json:"name,omitempty"`
 
 	// PrimaryColor: A color in RGB format indicating the predominant color
-	// to display in the
-	// device management app UI. The color components are stored as
-	// follows:
-	// `(red << 16) | (green << 8) | blue`, where each component may take a
-	// value
-	// between 0 and 255 inclusive.
+	// to display in the device management app UI. The color components are
+	// stored as follows: (red << 16) | (green << 8) | blue, where each
+	// component may take a value between 0 and 255 inclusive.
 	PrimaryColor int64 `json:"primaryColor,omitempty"`
 
 	// PubsubTopic: When Cloud Pub/Sub notifications are enabled, this field
-	// is required to
-	// indicate the topic to which the notifications will be published. The
-	// format
-	// of this field is `projects/{project}/topics/{topic}`. You must have
-	// granted
-	// the publish permission on this topic
-	// to
+	// is required to indicate the topic to which the notifications will be
+	// published. The format of this field is
+	// projects/{project}/topics/{topic}. You must have granted the publish
+	// permission on this topic to
 	// android-cloud-policy@system.gserviceaccount.com
 	PubsubTopic string `json:"pubsubTopic,omitempty"`
 
@@ -961,25 +854,18 @@ func (s *Enterprise) MarshalJSON() ([]byte, error) {
 }
 
 // ExternalData: Data hosted at an external location. The data is to be
-// downloaded by Android
-// Device Policy and verified against the hash.
+// downloaded by Android Device Policy and verified against the hash.
 type ExternalData struct {
 	// Sha256Hash: The base-64 encoded SHA-256 hash of the content hosted at
-	// url. If the
-	// content does not match this hash, Android Device Policy will not use
-	// the
-	// data.
+	// url. If the content does not match this hash, Android Device Policy
+	// will not use the data.
 	Sha256Hash string `json:"sha256Hash,omitempty"`
 
 	// Url: The absolute URL to the data, which must use either the http or
-	// https
-	// scheme. Android Device Policy does not provide any credentials in the
-	// GET
-	// request, so the URL must be publicly accessible. Including a long,
-	// random
-	// component in the URL may be used to prevent attackers from
-	// discovering the
-	// URL.
+	// https scheme. Android Device Policy does not provide any credentials
+	// in the GET request, so the URL must be publicly accessible. Including
+	// a long, random component in the URL may be used to prevent attackers
+	// from discovering the URL.
 	Url string `json:"url,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Sha256Hash") to
@@ -1006,22 +892,18 @@ func (s *ExternalData) MarshalJSON() ([]byte, error) {
 }
 
 // HardwareInfo: Information about device hardware. The fields related
-// to temperature
-// thresholds are only available when hardwareStatusEnabled is true in
-// the
-// device's policy.
+// to temperature thresholds are only available when
+// hardwareStatusEnabled is true in the device's policy.
 type HardwareInfo struct {
 	// BatteryShutdownTemperatures: Battery shutdown temperature thresholds
-	// in Celsius for each battery on the
-	// device.
+	// in Celsius for each battery on the device.
 	BatteryShutdownTemperatures []float64 `json:"batteryShutdownTemperatures,omitempty"`
 
 	// BatteryThrottlingTemperatures: Battery throttling temperature
-	// thresholds in Celsius for each battery on
-	// the device.
+	// thresholds in Celsius for each battery on the device.
 	BatteryThrottlingTemperatures []float64 `json:"batteryThrottlingTemperatures,omitempty"`
 
-	// Brand: Brand of the device, e.g. `Google`.
+	// Brand: Brand of the device, e.g. Google.
 	Brand string `json:"brand,omitempty"`
 
 	// CpuShutdownTemperatures: CPU shutdown temperature thresholds in
@@ -1029,12 +911,11 @@ type HardwareInfo struct {
 	CpuShutdownTemperatures []float64 `json:"cpuShutdownTemperatures,omitempty"`
 
 	// CpuThrottlingTemperatures: CPU throttling temperature thresholds in
-	// Celsius for each CPU on the
-	// device.
+	// Celsius for each CPU on the device.
 	CpuThrottlingTemperatures []float64 `json:"cpuThrottlingTemperatures,omitempty"`
 
 	// DeviceBasebandVersion: Baseband version, e.g.
-	// `MDM9625_104662.22.05.34p`.
+	// MDM9625_104662.22.05.34p.
 	DeviceBasebandVersion string `json:"deviceBasebandVersion,omitempty"`
 
 	// GpuShutdownTemperatures: GPU shutdown temperature thresholds in
@@ -1042,17 +923,16 @@ type HardwareInfo struct {
 	GpuShutdownTemperatures []float64 `json:"gpuShutdownTemperatures,omitempty"`
 
 	// GpuThrottlingTemperatures: GPU throttling temperature thresholds in
-	// Celsius for each GPU on the
-	// device.
+	// Celsius for each GPU on the device.
 	GpuThrottlingTemperatures []float64 `json:"gpuThrottlingTemperatures,omitempty"`
 
-	// Hardware: Name of the hardware, e.g. `Angler`.
+	// Hardware: Name of the hardware, e.g. Angler.
 	Hardware string `json:"hardware,omitempty"`
 
-	// Manufacturer: Manufacturer, e.g. `Motorola`.
+	// Manufacturer: Manufacturer, e.g. Motorola.
 	Manufacturer string `json:"manufacturer,omitempty"`
 
-	// Model: The model of the device, e.g. `Asus Nexus 7`.
+	// Model: The model of the device, e.g. Asus Nexus 7.
 	Model string `json:"model,omitempty"`
 
 	// SerialNumber: The device serial number.
@@ -1092,8 +972,8 @@ func (s *HardwareInfo) MarshalJSON() ([]byte, error) {
 }
 
 // HardwareStatus: Hardware status. Temperatures may be compared to the
-// temperature thresholds
-// available in `hardwareInfo` to determine hardware health.
+// temperature thresholds available in hardwareInfo to determine
+// hardware health.
 type HardwareStatus struct {
 	// BatteryTemperatures: Current battery temperatures in Celsius for each
 	// battery on the device.
@@ -1104,18 +984,16 @@ type HardwareStatus struct {
 	CpuTemperatures []float64 `json:"cpuTemperatures,omitempty"`
 
 	// CpuUsages: CPU usages in percentage for each core available on the
-	// device.
-	// Usage is 0 for each unplugged core. Empty array implies that CPU
-	// usage
-	// is not supported in the system.
+	// device. Usage is 0 for each unplugged core. Empty array implies that
+	// CPU usage is not supported in the system.
 	CpuUsages []float64 `json:"cpuUsages,omitempty"`
 
 	// CreateTime: The time the measurements were taken.
 	CreateTime string `json:"createTime,omitempty"`
 
 	// FanSpeeds: Fan speeds in RPM for each fan on the device. Empty array
-	// means that there
-	// are no fans or fan speed is not supported on the system.
+	// means that there are no fans or fan speed is not supported on the
+	// system.
 	FanSpeeds []float64 `json:"fanSpeeds,omitempty"`
 
 	// GpuTemperatures: Current GPU temperatures in Celsius for each GPU on
@@ -1262,28 +1140,24 @@ func (s *ListPoliciesResponse) MarshalJSON() ([]byte, error) {
 
 // ManagedProperty: Managed property.
 type ManagedProperty struct {
-	// DefaultValue: The default value of the properties. `BUNDLE_ARRAY`
-	// properties
-	// never have a default value.
+	// DefaultValue: The default value of the properties. BUNDLE_ARRAY
+	// properties never have a default value.
 	DefaultValue interface{} `json:"defaultValue,omitempty"`
 
 	// Description: A longer description of the property, giving more detail
-	// of what it
-	// affects. Localized.
+	// of what it affects. Localized.
 	Description string `json:"description,omitempty"`
 
-	// Entries: For `CHOICE` or `MULTISELECT` properties, the list
-	// of possible entries.
+	// Entries: For CHOICE or MULTISELECT properties, the list of possible
+	// entries.
 	Entries []*ManagedPropertyEntry `json:"entries,omitempty"`
 
 	// Key: The unique key that the application uses to identify the
-	// property,
-	// e.g. "com.google.android.gm.fieldname".
+	// property, e.g. "com.google.android.gm.fieldname".
 	Key string `json:"key,omitempty"`
 
-	// NestedProperties: For `BUNDLE_ARRAY` properties, the list of nested
-	// properties. A
-	// `BUNDLE_ARRAY` property is at most two levels deep.
+	// NestedProperties: For BUNDLE_ARRAY properties, the list of nested
+	// properties. A BUNDLE_ARRAY property is at most two levels deep.
 	NestedProperties []*ManagedProperty `json:"nestedProperties,omitempty"`
 
 	// Title: The name of the property. Localized.
@@ -1299,10 +1173,8 @@ type ManagedProperty struct {
 	//   "CHOICE" - A choice of one item from a set.
 	//   "MULTISELECT" - A choice of multiple items from a set.
 	//   "HIDDEN" - A hidden restriction of string type (the default value
-	// can be used
-	// to pass along information that cannot be modified, such as a
-	// version
-	// code).
+	// can be used to pass along information that cannot be modified, such
+	// as a version code).
 	//   "BUNDLE_ARRAY" - An array of property bundles.
 	Type string `json:"type,omitempty"`
 
@@ -1335,8 +1207,7 @@ type ManagedPropertyEntry struct {
 	Name string `json:"name,omitempty"`
 
 	// Value: The machine-readable value of the entry, which should be used
-	// in the
-	// configuration. Not localized.
+	// in the configuration. Not localized.
 	Value string `json:"value,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Name") to
@@ -1365,8 +1236,8 @@ func (s *ManagedPropertyEntry) MarshalJSON() ([]byte, error) {
 // MemoryEvent: An event related to memory and storage measurements.
 type MemoryEvent struct {
 	// ByteCount: The number of free bytes in the medium, or for
-	// `EXTERNAL_STORAGE_DETECTED`,
-	// the total capacity in bytes of the storage medium.
+	// EXTERNAL_STORAGE_DETECTED, the total capacity in bytes of the storage
+	// medium.
 	ByteCount int64 `json:"byteCount,omitempty,string"`
 
 	// CreateTime: The creation time of the event.
@@ -1381,8 +1252,8 @@ type MemoryEvent struct {
 	//   "INTERNAL_STORAGE_MEASURED" - Free space in internal storage was
 	// measured.
 	//   "EXTERNAL_STORAGE_DETECTED" - A new external storage medium was
-	// detected. The reported byte count is
-	// the total capacity of the storage medium.
+	// detected. The reported byte count is the total capacity of the
+	// storage medium.
 	//   "EXTERNAL_STORAGE_REMOVED" - An external storage medium was
 	// removed. The reported byte count is zero.
 	//   "EXTERNAL_STORAGE_MEASURED" - Free space in an external storage
@@ -1447,14 +1318,14 @@ func (s *MemoryInfo) MarshalJSON() ([]byte, error) {
 
 // NetworkInfo: Device network info.
 type NetworkInfo struct {
-	// Imei: IMEI number of the GSM device, e.g. `A1000031212`.
+	// Imei: IMEI number of the GSM device, e.g. A1000031212.
 	Imei string `json:"imei,omitempty"`
 
-	// Meid: MEID number of the CDMA device, e.g. `A00000292788E1`.
+	// Meid: MEID number of the CDMA device, e.g. A00000292788E1.
 	Meid string `json:"meid,omitempty"`
 
 	// WifiMacAddress: WiFi MAC address of the device, e.g.
-	// `7c:11:11:11:11:11`.
+	// 7c:11:11:11:11:11.
 	WifiMacAddress string `json:"wifiMacAddress,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Imei") to
@@ -1484,44 +1355,32 @@ func (s *NetworkInfo) MarshalJSON() ([]byte, error) {
 // policy setting.
 type NonComplianceDetail struct {
 	// CurrentValue: If the policy setting could not be applied, the current
-	// value of the
-	// setting on the device.
+	// value of the setting on the device.
 	CurrentValue interface{} `json:"currentValue,omitempty"`
 
 	// FieldPath: For settings with nested fields, if a particular nested
-	// field is out of
-	// compliance, this specifies the full path to the offending field. The
-	// path
-	// is formatted in the same way the policy JSON field would be
-	// referenced in
-	// JavaScript, that is:
-	// 1) For object-typed fields, the field name is followed by a dot then
-	// by a
-	//    subfield name.
-	// 2) For array-typed fields, the field name is followed by the array
-	// index
-	//    enclosed in brackets.
-	// For example, to indicate a problem with the `url` field in
-	// the
-	// `externalData` field in the 3rd application, the path would
-	// be
-	// `applications[2].externalData.url`
+	// field is out of compliance, this specifies the full path to the
+	// offending field. The path is formatted in the same way the policy
+	// JSON field would be referenced in JavaScript, that is: 1) For
+	// object-typed fields, the field name is followed by a dot then by a
+	// subfield name. 2) For array-typed fields, the field name is followed
+	// by the array index  enclosed in brackets. For example, to indicate a
+	// problem with the url field in the externalData field in the 3rd
+	// application, the path would be applications[2].externalData.url
 	FieldPath string `json:"fieldPath,omitempty"`
 
-	// InstallationFailureReason: If `package_name` is set and the
-	// non-compliance reason is
-	// `APP_NOT_INSTALLED`, the detailed reason the app cannot be installed.
+	// InstallationFailureReason: If package_name is set and the
+	// non-compliance reason is APP_NOT_INSTALLED, the detailed reason the
+	// app cannot be installed.
 	//
 	// Possible values:
 	//   "INSTALLATION_FAILURE_REASON_UNSPECIFIED" - This value is
 	// disallowed.
 	//   "INSTALLATION_FAILURE_REASON_UNKNOWN" - An unknown condition is
-	// preventing the app from being installed. Some
-	// potential reaons are that the device does not have enough storage,
-	// the
-	// device network connection is unreliable, or the installation is
-	// taking
-	// longer than expected. The installation will be retried automatically.
+	// preventing the app from being installed. Some potential reaons are
+	// that the device does not have enough storage, the device network
+	// connection is unreliable, or the installation is taking longer than
+	// expected. The installation will be retried automatically.
 	//   "IN_PROGRESS" - The installation is still in progress.
 	//   "NOT_FOUND" - The app was not found in Play.
 	//   "NOT_COMPATIBLE_WITH_DEVICE" - The app is incompatible with the
@@ -1534,8 +1393,7 @@ type NonComplianceDetail struct {
 	//   "NO_LICENSES_REMAINING" - There are no more licenses to assign to
 	// the user.
 	//   "NOT_ENROLLED" - The enterprise is no longer enrolled with Play for
-	// Work or Android Device
-	// Policy is not enabled for the enterprise.
+	// Work or Android Device Policy is not enabled for the enterprise.
 	//   "USER_INVALID" - The user is no longer valid. The user may have
 	// been deleted or disabled.
 	InstallationFailureReason string `json:"installationFailureReason,omitempty"`
@@ -1546,39 +1404,31 @@ type NonComplianceDetail struct {
 	// Possible values:
 	//   "NON_COMPLIANCE_REASON_UNSPECIFIED" - This value is disallowed.
 	//   "API_LEVEL" - The setting is not supported in the API level of
-	// Android OS version the
-	// device is running.
+	// Android OS version the device is running.
 	//   "ADMIN_TYPE" - The admin type (profile owner, device owner, etc.)
-	// does not support the
-	// setting.
+	// does not support the setting.
 	//   "USER_ACTION" - The user has not taken required action to comply
 	// with the setting.
 	//   "INVALID_VALUE" - The setting has an invalid value.
 	//   "APP_NOT_INSTALLED" - The application required to implement the
 	// policy is not installed.
 	//   "UNSUPPORTED" - The policy is not supported by the version of
-	// Android Device Policy on
-	// the device.
+	// Android Device Policy on the device.
 	//   "APP_INSTALLED" - A blocked application is installed.
 	//   "PENDING" - The setting was not applied yet at the time of the
-	// report, but is
-	// expected to be applied shortly.
+	// report, but is expected to be applied shortly.
 	//   "APP_INCOMPATIBLE" - The setting cannot be applied to the
-	// application because its target SDK
-	// version is not high enough.
+	// application because its target SDK version is not high enough.
+	//   "APP_NOT_UPDATED" - The application is installed but not updated to
+	// the minimum version code specified by policy
 	NonComplianceReason string `json:"nonComplianceReason,omitempty"`
 
 	// PackageName: The package name indicating which application is out of
-	// compliance, if
-	// applicable.
+	// compliance, if applicable.
 	PackageName string `json:"packageName,omitempty"`
 
 	// SettingName: The name of the policy setting. This is the JSON field
-	// name of a
-	// top-level
-	// [`Policy`](/android/management/reference/rest/v1/enterprises
-	// .policies#Policy)
-	//  field.
+	// name of a top-level Policy  field.
 	SettingName string `json:"settingName,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "CurrentValue") to
@@ -1605,63 +1455,46 @@ func (s *NonComplianceDetail) MarshalJSON() ([]byte, error) {
 }
 
 // NonComplianceDetailCondition: A compliance rule condition which is
-// satisfied if there exists
-// *any*
-// matching
-// [`NonComplianceDetail`](/android/management/reference/r
-// est/v1/enterprises.devices#NonComplianceDetail)
-// for the device. A `NonComplianceDetail` matches
-// a
-// `NonComplianceDetailCondition` if *all* the fields which are set
-// within the
-// `NonComplianceDetailCondition` match the corresponding
-// `NonComplianceDetail`
-// fields.
+// satisfied if there exists any matching NonComplianceDetail for the
+// device. A NonComplianceDetail matches a NonComplianceDetailCondition
+// if all the fields which are set within the
+// NonComplianceDetailCondition match the corresponding
+// NonComplianceDetail fields.
 type NonComplianceDetailCondition struct {
 	// NonComplianceReason: The reason the device is not in compliance with
-	// the setting. If not set,
-	// then this condition matches any reason.
+	// the setting. If not set, then this condition matches any reason.
 	//
 	// Possible values:
 	//   "NON_COMPLIANCE_REASON_UNSPECIFIED" - This value is disallowed.
 	//   "API_LEVEL" - The setting is not supported in the API level of
-	// Android OS version the
-	// device is running.
+	// Android OS version the device is running.
 	//   "ADMIN_TYPE" - The admin type (profile owner, device owner, etc.)
-	// does not support the
-	// setting.
+	// does not support the setting.
 	//   "USER_ACTION" - The user has not taken required action to comply
 	// with the setting.
 	//   "INVALID_VALUE" - The setting has an invalid value.
 	//   "APP_NOT_INSTALLED" - The application required to implement the
 	// policy is not installed.
 	//   "UNSUPPORTED" - The policy is not supported by the version of
-	// Android Device Policy on
-	// the device.
+	// Android Device Policy on the device.
 	//   "APP_INSTALLED" - A blocked application is installed.
 	//   "PENDING" - The setting was not applied yet at the time of the
-	// report, but is
-	// expected to be applied shortly.
+	// report, but is expected to be applied shortly.
 	//   "APP_INCOMPATIBLE" - The setting cannot be applied to the
-	// application because its target SDK
-	// version is not high enough.
+	// application because its target SDK version is not high enough.
+	//   "APP_NOT_UPDATED" - The application is installed but not updated to
+	// the minimum version code specified by policy
 	NonComplianceReason string `json:"nonComplianceReason,omitempty"`
 
 	// PackageName: The package name indicating which application is out of
-	// compliance. If not
-	// set, then this condition matches any package name. If this field is
-	// set,
-	// then `setting_name` must be unset or set to `applications`;
-	// otherwise, the
-	// condition would never be satisfied.
+	// compliance. If not set, then this condition matches any package name.
+	// If this field is set, then setting_name must be unset or set to
+	// applications; otherwise, the condition would never be satisfied.
 	PackageName string `json:"packageName,omitempty"`
 
 	// SettingName: The name of the policy setting. This is the JSON field
-	// name of a
-	// top-level
-	// [`Policy`](/android/management/reference/rest/v1/enterprises
-	// .policies#Policy)
-	// field. If not set, then this condition matches any setting name.
+	// name of a top-level Policy field. If not set, then this condition
+	// matches any setting name.
 	SettingName string `json:"settingName,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "NonComplianceReason")
@@ -1689,51 +1522,37 @@ func (s *NonComplianceDetailCondition) MarshalJSON() ([]byte, error) {
 }
 
 // Operation: This resource represents a long-running operation that is
-// the result of a
-// network API call.
+// the result of a network API call.
 type Operation struct {
-	// Done: If the value is `false`, it means the operation is still in
-	// progress.
-	// If true, the operation is completed, and either `error` or `response`
-	// is
-	// available.
+	// Done: If the value is false, it means the operation is still in
+	// progress. If true, the operation is completed, and either error or
+	// response is available.
 	Done bool `json:"done,omitempty"`
 
 	// Error: The error result of the operation in case of failure or
 	// cancellation.
 	Error *Status `json:"error,omitempty"`
 
-	// Metadata: Service-specific metadata associated with the operation.
-	// It typically
-	// contains progress information and common metadata such as create
-	// time.
-	// Some services might not provide such metadata.  Any method that
-	// returns a
-	// long-running operation should document the metadata type, if any.
+	// Metadata: Service-specific metadata associated with the operation. It
+	// typically contains progress information and common metadata such as
+	// create time. Some services might not provide such metadata. Any
+	// method that returns a long-running operation should document the
+	// metadata type, if any.
 	Metadata googleapi.RawMessage `json:"metadata,omitempty"`
 
 	// Name: The server-assigned name, which is only unique within the same
-	// service that
-	// originally returns it. If you use the default HTTP mapping,
-	// the
-	// `name` should have the format of `operations/some/unique/name`.
+	// service that originally returns it. If you use the default HTTP
+	// mapping, the name should have the format of
+	// operations/some/unique/name.
 	Name string `json:"name,omitempty"`
 
-	// Response: The normal response of the operation in case of success.
-	// If the original
-	// method returns no data on success, such as `Delete`, the response
-	// is
-	// `google.protobuf.Empty`.  If the original method is
-	// standard
-	// `Get`/`Create`/`Update`, the response should be the resource.  For
-	// other
-	// methods, the response should have the type `XxxResponse`, where
-	// `Xxx`
-	// is the original method name.  For example, if the original method
-	// name
-	// is `TakeSnapshot()`, the inferred response type
-	// is
-	// `TakeSnapshotResponse`.
+	// Response: The normal response of the operation in case of success. If
+	// the original method returns no data on success, such as Delete, the
+	// response is google.protobuf.Empty. If the original method is standard
+	// Get/Create/Update, the response should be the resource. For other
+	// methods, the response should have the type XxxResponse, where Xxx is
+	// the original method name. For example, if the original method name is
+	// TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
 	Response googleapi.RawMessage `json:"response,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1767,57 +1586,50 @@ func (s *Operation) MarshalJSON() ([]byte, error) {
 // device.
 type PasswordRequirements struct {
 	// MaximumFailedPasswordsForWipe: A device will be wiped after too many
-	// incorrect device-unlock passwords
-	// have been entered. A value of 0 means there is no restriction.
+	// incorrect device-unlock passwords have been entered. A value of 0
+	// means there is no restriction.
 	MaximumFailedPasswordsForWipe int64 `json:"maximumFailedPasswordsForWipe,omitempty"`
 
 	// PasswordExpirationTimeout: Password expiration timeout.
 	PasswordExpirationTimeout string `json:"passwordExpirationTimeout,omitempty"`
 
 	// PasswordHistoryLength: The length of the password history. After
-	// setting this, the user will
-	// not be able to enter a new password that is the same as any password
-	// in
-	// the history. A value of 0 means there is no restriction.
+	// setting this, the user will not be able to enter a new password that
+	// is the same as any password in the history. A value of 0 means there
+	// is no restriction.
 	PasswordHistoryLength int64 `json:"passwordHistoryLength,omitempty"`
 
 	// PasswordMinimumLength: The minimum allowed password length. A value
-	// of 0 means there is no
-	// restriction.
-	// Only enforced when `password_quality` is `NUMERIC`,
-	// `NUMERIC_COMPLEX`,
-	// `ALPHABETIC`, `ALPHANUMERIC`, or `COMPLEX`.
+	// of 0 means there is no restriction. Only enforced when
+	// password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC,
+	// ALPHANUMERIC, or COMPLEX.
 	PasswordMinimumLength int64 `json:"passwordMinimumLength,omitempty"`
 
 	// PasswordMinimumLetters: Minimum number of letters required in the
-	// password.
-	// Only enforced when `password_quality` is `COMPLEX`.
+	// password. Only enforced when password_quality is COMPLEX.
 	PasswordMinimumLetters int64 `json:"passwordMinimumLetters,omitempty"`
 
 	// PasswordMinimumLowerCase: Minimum number of lower case letters
-	// required in the password.
-	// Only enforced when `password_quality` is `COMPLEX`.
+	// required in the password. Only enforced when password_quality is
+	// COMPLEX.
 	PasswordMinimumLowerCase int64 `json:"passwordMinimumLowerCase,omitempty"`
 
 	// PasswordMinimumNonLetter: Minimum number of non-letter characters
-	// (numerical digits or symbols)
-	// required in the password.
-	// Only enforced when `password_quality` is `COMPLEX`.
+	// (numerical digits or symbols) required in the password. Only enforced
+	// when password_quality is COMPLEX.
 	PasswordMinimumNonLetter int64 `json:"passwordMinimumNonLetter,omitempty"`
 
 	// PasswordMinimumNumeric: Minimum number of numerical digits required
-	// in the password.
-	// Only enforced when `password_quality` is `COMPLEX`.
+	// in the password. Only enforced when password_quality is COMPLEX.
 	PasswordMinimumNumeric int64 `json:"passwordMinimumNumeric,omitempty"`
 
 	// PasswordMinimumSymbols: Minimum number of symbols required in the
-	// password.
-	// Only enforced when `password_quality` is `COMPLEX`.
+	// password. Only enforced when password_quality is COMPLEX.
 	PasswordMinimumSymbols int64 `json:"passwordMinimumSymbols,omitempty"`
 
 	// PasswordMinimumUpperCase: Minimum number of upper case letters
-	// required in the password.
-	// Only enforced when `password_quality` is `COMPLEX`.
+	// required in the password. Only enforced when password_quality is
+	// COMPLEX.
 	PasswordMinimumUpperCase int64 `json:"passwordMinimumUpperCase,omitempty"`
 
 	// PasswordQuality: The required password quality.
@@ -1826,22 +1638,17 @@ type PasswordRequirements struct {
 	//   "PASSWORD_QUALITY_UNSPECIFIED" - There are no requirements for the
 	// password.
 	//   "SOMETHING" - There must be a password, but there are no
-	// restrictions on its
-	// characters.
+	// restrictions on its characters.
 	//   "NUMERIC" - The password must contain numeric characters.
 	//   "NUMERIC_COMPLEX" - The password must contain numeric characters
-	// with no repeating (4444) or
-	// ordered (1234, 4321, 2468) sequences.
+	// with no repeating (4444) or ordered (1234, 4321, 2468) sequences.
 	//   "ALPHABETIC" - The password must contain alphabetic (or symbol)
 	// characters.
 	//   "ALPHANUMERIC" - The password must contain at both numeric and
-	// alphabetic (or symbol)
-	// characters.
+	// alphabetic (or symbol) characters.
 	//   "COMPLEX" - The password must contain at least a letter, a
-	// numerical digit and a
-	// special symbol. Other password constraints, for
-	// example,
-	// `password_minimum_letters` are enforced.
+	// numerical digit and a special symbol. Other password constraints, for
+	// example, password_minimum_letters are enforced.
 	PasswordQuality string `json:"passwordQuality,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
@@ -1873,15 +1680,15 @@ func (s *PasswordRequirements) MarshalJSON() ([]byte, error) {
 // grant state.
 type PermissionGrant struct {
 	// Permission: The android permission, e.g.
-	// `android.permission.READ_CALENDAR`.
+	// android.permission.READ_CALENDAR.
 	Permission string `json:"permission,omitempty"`
 
 	// Policy: The policy for granting the permission.
 	//
 	// Possible values:
 	//   "PERMISSION_POLICY_UNSPECIFIED" - Policy not specified. If no
-	// policy is specified for a permission at any
-	// level, then the `PROMPT` behavior is used by default.
+	// policy is specified for a permission at any level, then the PROMPT
+	// behavior is used by default.
 	//   "PROMPT" - Prompt the user to grant a permission.
 	//   "GRANT" - Automatically grant a permission.
 	//   "DENY" - Automatically deny a permission.
@@ -1911,34 +1718,26 @@ func (s *PermissionGrant) MarshalJSON() ([]byte, error) {
 }
 
 // PersistentPreferredActivity: A default activity for handling intents
-// that match a particular intent
-// filter.
+// that match a particular intent filter.
 type PersistentPreferredActivity struct {
-	// Actions: The intent actions to match in the filter.  If any actions
-	// are included in
-	// the filter, then an intent's action must be one of those values for
-	// it to
-	// match. If no actions are included, the intent action is ignored.
+	// Actions: The intent actions to match in the filter. If any actions
+	// are included in the filter, then an intent's action must be one of
+	// those values for it to match. If no actions are included, the intent
+	// action is ignored.
 	Actions []string `json:"actions,omitempty"`
 
-	// Categories: The intent categories to match in the filter.  An intent
-	// includes the
-	// categories that it requires, all of which must be included in the
-	// filter in
-	// order to match. In other words, adding a category to the filter has
-	// no
-	// impact on matching unless that category is specified in the intent.
+	// Categories: The intent categories to match in the filter. An intent
+	// includes the categories that it requires, all of which must be
+	// included in the filter in order to match. In other words, adding a
+	// category to the filter has no impact on matching unless that category
+	// is specified in the intent.
 	Categories []string `json:"categories,omitempty"`
 
 	// ReceiverActivity: The activity that should be the default intent
-	// handler. This should be an
-	// Android component name, e.g.
-	// `com.android.enterprise.app/.MainActivity`.
-	// Alternatively, the value may be the package name of an app, which
-	// causes
-	// Android Device Policy to choose an appropriate activity from the app
-	// to
-	// handle the intent.
+	// handler. This should be an Android component name, e.g.
+	// com.android.enterprise.app/.MainActivity. Alternatively, the value
+	// may be the package name of an app, which causes Android Device Policy
+	// to choose an appropriate activity from the app to handle the intent.
 	ReceiverActivity string `json:"receiverActivity,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Actions") to
@@ -1976,25 +1775,23 @@ type Policy struct {
 	// Applications: Policy applied to apps.
 	Applications []*ApplicationPolicy `json:"applications,omitempty"`
 
+	// AutoTimeRequired: Whether auto time is required, which prevents the
+	// user from manually setting the date and time.
+	AutoTimeRequired bool `json:"autoTimeRequired,omitempty"`
+
 	// BlockApplicationsEnabled: Whether applications other than the ones
-	// configured in `applications` are
-	// blocked from being installed. When set, applications that
-	// were
-	// installed under a previous policy but no longer appear in the policy
-	// are
-	// automatically uninstalled.
+	// configured in applications are blocked from being installed. When
+	// set, applications that were installed under a previous policy but no
+	// longer appear in the policy are automatically uninstalled.
 	BlockApplicationsEnabled bool `json:"blockApplicationsEnabled,omitempty"`
 
 	// CameraDisabled: Whether all cameras on the device are disabled.
 	CameraDisabled bool `json:"cameraDisabled,omitempty"`
 
 	// ComplianceRules: Rules declaring which mitigating actions to take
-	// when a device is not
-	// compliant with its policy. When the conditions for multiple rules
-	// are
-	// satisfied, all of the mitigating actions for the rules are taken.
-	// There is
-	// a maximum limit of 100 rules.
+	// when a device is not compliant with its policy. When the conditions
+	// for multiple rules are satisfied, all of the mitigating actions for
+	// the rules are taken. There is a maximum limit of 100 rules.
 	ComplianceRules []*ComplianceRule `json:"complianceRules,omitempty"`
 
 	// DebuggingFeaturesAllowed: Whether the user is allowed to enable
@@ -2006,8 +1803,8 @@ type Policy struct {
 	//
 	// Possible values:
 	//   "PERMISSION_POLICY_UNSPECIFIED" - Policy not specified. If no
-	// policy is specified for a permission at any
-	// level, then the `PROMPT` behavior is used by default.
+	// policy is specified for a permission at any level, then the PROMPT
+	// behavior is used by default.
 	//   "PROMPT" - Prompt the user to grant a permission.
 	//   "GRANT" - Automatically grant a permission.
 	//   "DENY" - Automatically deny a permission.
@@ -2018,60 +1815,48 @@ type Policy struct {
 	FactoryResetDisabled bool `json:"factoryResetDisabled,omitempty"`
 
 	// FrpAdminEmails: Email addresses of device administrators for factory
-	// reset protection.
-	// When the device is factory reset, it will require one of these admins
-	// to
-	// log in with the Google account email and password to unlock the
-	// device.
-	// If no admins are specified, the device will not provide factory
-	// reset
-	// protection.
+	// reset protection. When the device is factory reset, it will require
+	// one of these admins to log in with the Google account email and
+	// password to unlock the device. If no admins are specified, the device
+	// will not provide factory reset protection.
 	FrpAdminEmails []string `json:"frpAdminEmails,omitempty"`
 
 	// FunDisabled: Whether the user is allowed to have fun. Controls
-	// whether the Easter egg
-	// game in Settings is disabled.
+	// whether the Easter egg game in Settings is disabled.
 	FunDisabled bool `json:"funDisabled,omitempty"`
 
 	// InstallUnknownSourcesAllowed: Whether the user is allowed to enable
-	// the "Unknown Sources" setting,
-	// which allows installation of apps from unknown sources.
+	// the "Unknown Sources" setting, which allows installation of apps from
+	// unknown sources.
 	InstallUnknownSourcesAllowed bool `json:"installUnknownSourcesAllowed,omitempty"`
 
 	// KeyguardDisabled: Whether the keyguard is disabled.
 	KeyguardDisabled bool `json:"keyguardDisabled,omitempty"`
 
 	// MaximumTimeToLock: Maximum time in milliseconds for user activity
-	// until the device will lock.
-	// A value of 0 means there is no restriction.
+	// until the device will lock. A value of 0 means there is no
+	// restriction.
 	MaximumTimeToLock int64 `json:"maximumTimeToLock,omitempty,string"`
 
 	// ModifyAccountsDisabled: Whether adding or removing accounts is
 	// disabled.
 	ModifyAccountsDisabled bool `json:"modifyAccountsDisabled,omitempty"`
 
-	// Name: The name of the policy in the
-	// form
-	// `enterprises/{enterpriseId}/policies/{policyId}`
+	// Name: The name of the policy in the form
+	// enterprises/{enterpriseId}/policies/{policyId}
 	Name string `json:"name,omitempty"`
 
 	// NetworkEscapeHatchEnabled: Flag to specify if network escape hatch is
-	// enabled. If this flag has been
-	// enabled then upon device boot if device has no network connection,
-	// then an
-	// activity will be shown that allows the user to temporarily connect to
-	// a
-	// network to fetch the latest policy. The launched activity will time
-	// out if
-	// no network has been connected for a given while and will return to
-	// the
-	// previous activity that was shown.
+	// enabled. If this flag has been enabled then upon device boot if
+	// device has no network connection, then an activity will be shown that
+	// allows the user to temporarily connect to a network to fetch the
+	// latest policy. The launched activity will time out if no network has
+	// been connected for a given while and will return to the previous
+	// activity that was shown.
 	NetworkEscapeHatchEnabled bool `json:"networkEscapeHatchEnabled,omitempty"`
 
-	// OpenNetworkConfiguration: Network configuration for the device.
-	// See
-	// [configure networks](/android/management/configure-networks)
-	// for more information.
+	// OpenNetworkConfiguration: Network configuration for the device. See
+	// configure networks for more information.
 	OpenNetworkConfiguration googleapi.RawMessage `json:"openNetworkConfiguration,omitempty"`
 
 	// PasswordRequirements: Password requirements.
@@ -2091,19 +1876,17 @@ type Policy struct {
 	ScreenCaptureDisabled bool `json:"screenCaptureDisabled,omitempty"`
 
 	// StatusBarDisabled: Whether the status bar is disabled. This disables
-	// notifications, quick
-	// settings and other screen overlays that allow escape from full-screen
-	// mode.
+	// notifications, quick settings and other screen overlays that allow
+	// escape from full-screen mode.
 	StatusBarDisabled bool `json:"statusBarDisabled,omitempty"`
 
 	// StatusReportingSettings: Status reporting settings
 	StatusReportingSettings *StatusReportingSettings `json:"statusReportingSettings,omitempty"`
 
 	// StayOnPluggedModes: The battery plugged in modes for which the device
-	// stays on. When using this
-	// setting, it is recommended to clear `maximum_time_to_lock` so that
-	// the
-	// device doesn't lock itself while it stays on.
+	// stays on. When using this setting, it is recommended to clear
+	// maximum_time_to_lock so that the device doesn't lock itself while it
+	// stays on.
 	//
 	// Possible values:
 	//   "BATTERY_PLUGGED_MODE_UNSPECIFIED" - This value is ignored.
@@ -2113,21 +1896,27 @@ type Policy struct {
 	StayOnPluggedModes []string `json:"stayOnPluggedModes,omitempty"`
 
 	// SystemUpdate: The system update policy, which controls how OS updates
-	// are applied. If the
-	// update type is `WINDOWED` and the device has a device account, the
-	// update
-	// window will automatically apply to Play app updates as well.
+	// are applied. If the update type is WINDOWED and the device has a
+	// device account, the update window will automatically apply to Play
+	// app updates as well.
 	SystemUpdate *SystemUpdate `json:"systemUpdate,omitempty"`
 
 	// UnmuteMicrophoneDisabled: Whether the microphone is muted and
-	// adjusting microphone volume is
-	// disabled.
+	// adjusting microphone volume is disabled.
 	UnmuteMicrophoneDisabled bool `json:"unmuteMicrophoneDisabled,omitempty"`
 
 	// Version: The version of the policy. This is a read-only field. The
-	// version is
-	// incremented each time the policy is updated.
+	// version is incremented each time the policy is updated.
 	Version int64 `json:"version,omitempty,string"`
+
+	// WifiConfigDisabled: Whether configuring WiFi access points is
+	// disabled.
+	WifiConfigDisabled bool `json:"wifiConfigDisabled,omitempty"`
+
+	// WifiConfigsLockdownEnabled: Whether WiFi networks defined in Open
+	// Network Configuration are locked so they cannot be edited by the
+	// user.
+	WifiConfigsLockdownEnabled bool `json:"wifiConfigsLockdownEnabled,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
@@ -2159,7 +1948,7 @@ func (s *Policy) MarshalJSON() ([]byte, error) {
 
 // PowerManagementEvent: A power management event.
 type PowerManagementEvent struct {
-	// BatteryLevel: For `BATTERY_LEVEL_COLLECTED` events, the battery level
+	// BatteryLevel: For BATTERY_LEVEL_COLLECTED events, the battery level
 	// as a percentage.
 	BatteryLevel float64 `json:"batteryLevel,omitempty"`
 
@@ -2219,15 +2008,12 @@ func (s *PowerManagementEvent) UnmarshalJSON(data []byte) error {
 
 // SignupUrl: An enterprise signup URL.
 type SignupUrl struct {
-	// Name: The name of the resource. This must be included in the
-	// [create
-	// enterprise](/android/management/reference/rest/v1/enterprises/create)
-	//
-	// request at the end of the signup flow.
+	// Name: The name of the resource. This must be included in the create
+	// enterprise request at the end of the signup flow.
 	Name string `json:"name,omitempty"`
 
-	// Url: A URL under which the Admin can sign up for an enterprise.
-	// The page pointed to cannot be rendered in an iframe.
+	// Url: A URL under which the Admin can sign up for an enterprise. The
+	// page pointed to cannot be rendered in an iframe.
 	Url string `json:"url,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -2260,25 +2046,22 @@ func (s *SignupUrl) MarshalJSON() ([]byte, error) {
 // SoftwareInfo: Information about device software.
 type SoftwareInfo struct {
 	// AndroidBuildNumber: Android build Id string meant for displaying to
-	// the user,
-	// e.g. `shamu-userdebug 6.0.1 MOB30I 2756745 dev-keys`.
+	// the user, e.g. shamu-userdebug 6.0.1 MOB30I 2756745 dev-keys.
 	AndroidBuildNumber string `json:"androidBuildNumber,omitempty"`
 
 	// AndroidBuildTime: Build time.
 	AndroidBuildTime string `json:"androidBuildTime,omitempty"`
 
-	// AndroidVersion: The user visible Android version string, e.g.
-	// `6.0.1`.
+	// AndroidVersion: The user visible Android version string, e.g. 6.0.1.
 	AndroidVersion string `json:"androidVersion,omitempty"`
 
-	// BootloaderVersion: The system bootloader version number, e.g.
-	// `0.6.7`.
+	// BootloaderVersion: The system bootloader version number, e.g. 0.6.7.
 	BootloaderVersion string `json:"bootloaderVersion,omitempty"`
 
-	// DeviceKernelVersion: Kernel version, e.g. `2.6.32.9-g103d848`.
+	// DeviceKernelVersion: Kernel version, e.g. 2.6.32.9-g103d848.
 	DeviceKernelVersion string `json:"deviceKernelVersion,omitempty"`
 
-	// SecurityPatchLevel: Security patch level, e.g. `2016-05-01`.
+	// SecurityPatchLevel: Security patch level, e.g. 2016-05-01.
 	SecurityPatchLevel string `json:"securityPatchLevel,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "AndroidBuildNumber")
@@ -2305,100 +2088,57 @@ func (s *SoftwareInfo) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Status: The `Status` type defines a logical error model that is
-// suitable for different
-// programming environments, including REST APIs and RPC APIs. It is
-// used by
-// [gRPC](https://github.com/grpc). The error model is designed to
-// be:
-//
-// - Simple to use and understand for most users
-// - Flexible enough to meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code, error
-// message,
-// and error details. The error code should be an enum value
-// of
-// google.rpc.Code, but it may accept additional error codes if needed.
-// The
-// error message should be a developer-facing English message that
-// helps
-// developers *understand* and *resolve* the error. If a localized
-// user-facing
-// error message is needed, put the localized message in the error
-// details or
+// Status: The Status type defines a logical error model that is
+// suitable for different programming environments, including REST APIs
+// and RPC APIs. It is used by gRPC (https://github.com/grpc). The error
+// model is designed to be:
+// Simple to use and understand for most users
+// Flexible enough to meet unexpected needsOverviewThe Status message
+// contains three pieces of data: error code, error message, and error
+// details. The error code should be an enum value of google.rpc.Code,
+// but it may accept additional error codes if needed. The error message
+// should be a developer-facing English message that helps developers
+// understand and resolve the error. If a localized user-facing error
+// message is needed, put the localized message in the error details or
 // localize it in the client. The optional error details may contain
-// arbitrary
-// information about the error. There is a predefined set of error
-// detail types
-// in the package `google.rpc` that can be used for common error
-// conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error
-// model, but it
-// is not necessarily the actual wire format. When the `Status` message
-// is
-// exposed in different client libraries and different wire protocols,
-// it can be
+// arbitrary information about the error. There is a predefined set of
+// error detail types in the package google.rpc that can be used for
+// common error conditions.Language mappingThe Status message is the
+// logical representation of the error model, but it is not necessarily
+// the actual wire format. When the Status message is exposed in
+// different client libraries and different wire protocols, it can be
 // mapped differently. For example, it will likely be mapped to some
-// exceptions
-// in Java, but more likely mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety
-// of
-// environments, either with or without APIs, to provide a
-// consistent developer experience across different
-// environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the
-// client,
-//     it may embed the `Status` in the normal response to indicate the
-// partial
-//     errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step
-// may
-//     have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch
-// response, the
-//     `Status` message should be used directly inside batch response,
-// one for
-//     each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous
-// operation
-//     results in its response, the status of those operations should
-// be
-//     represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message
-// `Status` could
-//     be used directly after any stripping needed for security/privacy
-// reasons.
+// exceptions in Java, but more likely mapped to some error codes in
+// C.Other usesThe error model and the Status message can be used in a
+// variety of environments, either with or without APIs, to provide a
+// consistent developer experience across different environments.Example
+// uses of this error model include:
+// Partial errors. If a service needs to return partial errors to the
+// client, it may embed the Status in the normal response to indicate
+// the partial errors.
+// Workflow errors. A typical workflow has multiple steps. Each step may
+// have a Status message for error reporting.
+// Batch operations. If a client uses batch request and batch response,
+// the Status message should be used directly inside batch response, one
+// for each error sub-response.
+// Asynchronous operations. If an API call embeds asynchronous operation
+// results in its response, the status of those operations should be
+// represented directly using the Status message.
+// Logging. If some API errors are stored in logs, the message Status
+// could be used directly after any stripping needed for
+// security/privacy reasons.
 type Status struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.
 	Code int64 `json:"code,omitempty"`
 
-	// Details: A list of messages that carry the error details.  There is a
-	// common set of
-	// message types for APIs to use.
+	// Details: A list of messages that carry the error details. There is a
+	// common set of message types for APIs to use.
 	Details []googleapi.RawMessage `json:"details,omitempty"`
 
 	// Message: A developer-facing error message, which should be in
-	// English. Any
-	// user-facing error message should be localized and sent in
-	// the
-	// google.rpc.Status.details field, or localized by the client.
+	// English. Any user-facing error message should be localized and sent
+	// in the google.rpc.Status.details field, or localized by the client.
 	Message string `json:"message,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Code") to
@@ -2472,43 +2212,33 @@ func (s *StatusReportingSettings) MarshalJSON() ([]byte, error) {
 
 // SystemUpdate: Configuration for managing system updates
 type SystemUpdate struct {
-	// EndMinutes: If the type is `WINDOWED`, the end of the maintenance
-	// window, measured as
-	// the number of minutes after midnight in device local time. This value
-	// must
-	// be between 0 and 1439, inclusive. If this value is less
-	// than
-	// `start_minutes`, then the maintenance window spans midnight. If
-	// the
-	// maintenance window specified is smaller than 30 minutes, the actual
-	// window
-	// is extended to 30 minutes beyond the start time.
+	// EndMinutes: If the type is WINDOWED, the end of the maintenance
+	// window, measured as the number of minutes after midnight in device
+	// local time. This value must be between 0 and 1439, inclusive. If this
+	// value is less than start_minutes, then the maintenance window spans
+	// midnight. If the maintenance window specified is smaller than 30
+	// minutes, the actual window is extended to 30 minutes beyond the start
+	// time.
 	EndMinutes int64 `json:"endMinutes,omitempty"`
 
-	// StartMinutes: If the type is `WINDOWED`, the start of the maintenance
-	// window, measured as
-	// the number of minutes after midnight in device local time. This value
-	// must
-	// be between 0 and 1439, inclusive.
+	// StartMinutes: If the type is WINDOWED, the start of the maintenance
+	// window, measured as the number of minutes after midnight in device
+	// local time. This value must be between 0 and 1439, inclusive.
 	StartMinutes int64 `json:"startMinutes,omitempty"`
 
 	// Type: The type of system update to configure.
 	//
 	// Possible values:
 	//   "SYSTEM_UPDATE_TYPE_UNSPECIFIED" - Follow the default update
-	// behavior for the device, which typically
-	// requires the user to accept system updates.
+	// behavior for the device, which typically requires the user to accept
+	// system updates.
 	//   "AUTOMATIC" - Install automatically as soon as an update is
 	// available.
 	//   "WINDOWED" - Install automatically within a daily maintenance
-	// window. If the device
-	// has a device account, this also configures Play apps to be updated
-	// within
-	// the window. This is strongly recommended for kiosk devices because
-	// this
-	// is the only way apps persistently pinned to the foreground can be
-	// updated
-	// by Play.
+	// window. If the device has a device account, this also configures Play
+	// apps to be updated within the window. This is strongly recommended
+	// for kiosk devices because this is the only way apps persistently
+	// pinned to the foreground can be updated by Play.
 	//   "POSTPONE" - Postpone automatic install up to a maximum of 30 days.
 	Type string `json:"type,omitempty"`
 
@@ -2536,20 +2266,16 @@ func (s *SystemUpdate) MarshalJSON() ([]byte, error) {
 }
 
 // UserFacingMessage: Provides user facing message with locale info. The
-// maximum message length is
-// 4096 characters.
+// maximum message length is 4096 characters.
 type UserFacingMessage struct {
 	// DefaultMessage: The default message that gets displayed if no
-	// localized message is
-	// specified, or the user's locale does not match with any of the
-	// localized
-	// messages. A default message must be provided if any localized
-	// messages are
-	// provided.
+	// localized message is specified, or the user's locale does not match
+	// with any of the localized messages. A default message must be
+	// provided if any localized messages are provided.
 	DefaultMessage string `json:"defaultMessage,omitempty"`
 
-	// LocalizedMessages: A map which contains <locale, message> pairs.
-	// The locale is a BCP 47 language code, e.g. en-US, es-ES, fr.
+	// LocalizedMessages: A map which contains <locale, message> pairs. The
+	// locale is a BCP 47 language code, e.g. en-US, es-ES, fr.
 	LocalizedMessages map[string]string `json:"localizedMessages,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "DefaultMessage") to
@@ -2580,22 +2306,17 @@ func (s *UserFacingMessage) MarshalJSON() ([]byte, error) {
 // Play web UI.
 type WebToken struct {
 	// Name: The name of the web token, which is generated by the server
-	// during
-	// creation, in the
-	// form
-	// `enterprises/{enterpriseId}/webTokens/{webTokenId}`.
+	// during creation, in the form
+	// enterprises/{enterpriseId}/webTokens/{webTokenId}.
 	Name string `json:"name,omitempty"`
 
 	// ParentFrameUrl: The URL of the parent frame hosting the iframe with
-	// the embedded UI. To
-	// prevent XSS, the iframe may not be hosted at other URLs. The URL must
-	// use
-	// the https scheme.
+	// the embedded UI. To prevent XSS, the iframe may not be hosted at
+	// other URLs. The URL must use the https scheme.
 	ParentFrameUrl string `json:"parentFrameUrl,omitempty"`
 
 	// Permissions: Permissions the admin may exercise in the embedded UI.
-	// The admin must have
-	// all of these permissions in order to view the UI.
+	// The admin must have all of these permissions in order to view the UI.
 	//
 	// Possible values:
 	//   "WEB_TOKEN_PERMISSION_UNSPECIFIED" - This value is ignored.
@@ -2603,9 +2324,8 @@ type WebToken struct {
 	Permissions []string `json:"permissions,omitempty"`
 
 	// Value: The token value which is used in the hosting page to generate
-	// the iframe
-	// with the embedded UI. This is a read-only field generated by the
-	// server.
+	// the iframe with the embedded UI. This is a read-only field generated
+	// by the server.
 	Value string `json:"value,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -2668,11 +2388,7 @@ func (c *EnterprisesCreateCall) ProjectId(projectId string) *EnterprisesCreateCa
 }
 
 // SignupUrlName sets the optional parameter "signupUrlName": The name
-// of
-// the
-// [`SignupUrl`](/android/management/reference/rest/v1/signupUrls#Sig
-// nupUrl)
-// used to sign up for the enterprise.
+// of the SignupUrl used to sign up for the enterprise.
 func (c *EnterprisesCreateCall) SignupUrlName(signupUrlName string) *EnterprisesCreateCall {
 	c.urlParams_.Set("signupUrlName", signupUrlName)
 	return c
@@ -2778,7 +2494,7 @@ func (c *EnterprisesCreateCall) Do(opts ...googleapi.CallOption) (*Enterprise, e
 	//       "type": "string"
 	//     },
 	//     "signupUrlName": {
-	//       "description": "The name of the\n[`SignupUrl`](/android/management/reference/rest/v1/signupUrls#SignupUrl)\nused to sign up for the enterprise.",
+	//       "description": "The name of the SignupUrl used to sign up for the enterprise.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -2789,7 +2505,10 @@ func (c *EnterprisesCreateCall) Do(opts ...googleapi.CallOption) (*Enterprise, e
 	//   },
 	//   "response": {
 	//     "$ref": "Enterprise"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -2915,7 +2634,7 @@ func (c *EnterprisesGetCall) Do(opts ...googleapi.CallOption) (*Enterprise, erro
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the enterprise in the form\n`enterprises/{enterpriseId}`",
+	//       "description": "The name of the enterprise in the form enterprises/{enterpriseId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+$",
 	//       "required": true,
@@ -2925,7 +2644,10 @@ func (c *EnterprisesGetCall) Do(opts ...googleapi.CallOption) (*Enterprise, erro
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Enterprise"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -2950,8 +2672,8 @@ func (r *EnterprisesService) Patch(name string, enterprise *Enterprise) *Enterpr
 }
 
 // UpdateMask sets the optional parameter "updateMask": The field mask
-// indicating the fields to update.
-// If not set, all modifiable fields will be modified.
+// indicating the fields to update. If not set, all modifiable fields
+// will be modified.
 func (c *EnterprisesPatchCall) UpdateMask(updateMask string) *EnterprisesPatchCall {
 	c.urlParams_.Set("updateMask", updateMask)
 	return c
@@ -3052,14 +2774,14 @@ func (c *EnterprisesPatchCall) Do(opts ...googleapi.CallOption) (*Enterprise, er
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the enterprise in the form\n`enterprises/{enterpriseId}`",
+	//       "description": "The name of the enterprise in the form enterprises/{enterpriseId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "updateMask": {
-	//       "description": "The field mask indicating the fields to update.\nIf not set, all modifiable fields will be modified.",
+	//       "description": "The field mask indicating the fields to update. If not set, all modifiable fields will be modified.",
 	//       "format": "google-fieldmask",
 	//       "location": "query",
 	//       "type": "string"
@@ -3071,7 +2793,10 @@ func (c *EnterprisesPatchCall) Do(opts ...googleapi.CallOption) (*Enterprise, er
 	//   },
 	//   "response": {
 	//     "$ref": "Enterprise"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -3095,10 +2820,8 @@ func (r *EnterprisesApplicationsService) Get(name string) *EnterprisesApplicatio
 }
 
 // LanguageCode sets the optional parameter "languageCode": The
-// preferred language for localized application info, as a BCP47
-// tag
-// (e.g. "en-US", "de"). If not specified the default language of
-// the
+// preferred language for localized application info, as a BCP47 tag
+// (e.g. "en-US", "de"). If not specified the default language of the
 // application will be used.
 func (c *EnterprisesApplicationsGetCall) LanguageCode(languageCode string) *EnterprisesApplicationsGetCall {
 	c.urlParams_.Set("languageCode", languageCode)
@@ -3208,12 +2931,12 @@ func (c *EnterprisesApplicationsGetCall) Do(opts ...googleapi.CallOption) (*Appl
 	//   ],
 	//   "parameters": {
 	//     "languageCode": {
-	//       "description": "The preferred language for localized application info, as a BCP47 tag\n(e.g. \"en-US\", \"de\"). If not specified the default language of the\napplication will be used.",
+	//       "description": "The preferred language for localized application info, as a BCP47 tag (e.g. \"en-US\", \"de\"). If not specified the default language of the application will be used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "name": {
-	//       "description": "The name of the application in the form\n`enterprises/{enterpriseId}/applications/{package_name}`",
+	//       "description": "The name of the application in the form enterprises/{enterpriseId}/applications/{package_name}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/applications/[^/]+$",
 	//       "required": true,
@@ -3223,7 +2946,10 @@ func (c *EnterprisesApplicationsGetCall) Do(opts ...googleapi.CallOption) (*Appl
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Application"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -3335,7 +3061,7 @@ func (c *EnterprisesDevicesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty,
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the device in the form\n`enterprises/{enterpriseId}/devices/{deviceId}`",
+	//       "description": "The name of the device in the form enterprises/{enterpriseId}/devices/{deviceId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/devices/[^/]+$",
 	//       "required": true,
@@ -3345,7 +3071,10 @@ func (c *EnterprisesDevicesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty,
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Empty"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -3471,7 +3200,7 @@ func (c *EnterprisesDevicesGetCall) Do(opts ...googleapi.CallOption) (*Device, e
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the device in the form\n`enterprises/{enterpriseId}/devices/{deviceId}`",
+	//       "description": "The name of the device in the form enterprises/{enterpriseId}/devices/{deviceId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/devices/[^/]+$",
 	//       "required": true,
@@ -3481,7 +3210,10 @@ func (c *EnterprisesDevicesGetCall) Do(opts ...googleapi.CallOption) (*Device, e
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Device"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -3497,20 +3229,9 @@ type EnterprisesDevicesIssueCommandCall struct {
 	header_    http.Header
 }
 
-// IssueCommand: Issues a command to a device.
-// The
-// [`Operation`](/android/management/reference/rest/v1/enterprises.de
-// vices.operations#Operation)
-// resource returned contains
-// a
-// [`Command`](/android/management/reference/rest/v1/enterprises.device
-// s/issueCommand#Command)
-// in its `metadata` field.
-// Use the
-// [get operation
-// method](/android/management/reference/rest/v1/enterprises.devices.oper
-// ations/get)
-// to get the status of the command.
+// IssueCommand: Issues a command to a device. The Operation resource
+// returned contains a Command in its metadata field. Use the get
+// operation method to get the status of the command.
 func (r *EnterprisesDevicesService) IssueCommand(name string, command *Command) *EnterprisesDevicesIssueCommandCall {
 	c := &EnterprisesDevicesIssueCommandCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -3604,7 +3325,7 @@ func (c *EnterprisesDevicesIssueCommandCall) Do(opts ...googleapi.CallOption) (*
 	}
 	return ret, nil
 	// {
-	//   "description": "Issues a command to a device. The\n[`Operation`](/android/management/reference/rest/v1/enterprises.devices.operations#Operation)\nresource returned contains a\n[`Command`](/android/management/reference/rest/v1/enterprises.devices/issueCommand#Command)\nin its `metadata` field.\nUse the\n[get operation method](/android/management/reference/rest/v1/enterprises.devices.operations/get)\nto get the status of the command.",
+	//   "description": "Issues a command to a device. The Operation resource returned contains a Command in its metadata field. Use the get operation method to get the status of the command.",
 	//   "flatPath": "v1/enterprises/{enterprisesId}/devices/{devicesId}:issueCommand",
 	//   "httpMethod": "POST",
 	//   "id": "androidmanagement.enterprises.devices.issueCommand",
@@ -3613,7 +3334,7 @@ func (c *EnterprisesDevicesIssueCommandCall) Do(opts ...googleapi.CallOption) (*
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the device in the form\n`enterprises/{enterpriseId}/devices/{deviceId}`",
+	//       "description": "The name of the device in the form enterprises/{enterpriseId}/devices/{deviceId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/devices/[^/]+$",
 	//       "required": true,
@@ -3626,7 +3347,10 @@ func (c *EnterprisesDevicesIssueCommandCall) Do(opts ...googleapi.CallOption) (*
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -3650,8 +3374,7 @@ func (r *EnterprisesDevicesService) List(parent string) *EnterprisesDevicesListC
 }
 
 // PageSize sets the optional parameter "pageSize": The requested page
-// size. The actual page size may be fixed to a min or max
-// value.
+// size. The actual page size may be fixed to a min or max value.
 func (c *EnterprisesDevicesListCall) PageSize(pageSize int64) *EnterprisesDevicesListCall {
 	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
 	return c
@@ -3767,7 +3490,7 @@ func (c *EnterprisesDevicesListCall) Do(opts ...googleapi.CallOption) (*ListDevi
 	//   ],
 	//   "parameters": {
 	//     "pageSize": {
-	//       "description": "The requested page size. The actual page size may be fixed to a min or max\nvalue.",
+	//       "description": "The requested page size. The actual page size may be fixed to a min or max value.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
@@ -3778,7 +3501,7 @@ func (c *EnterprisesDevicesListCall) Do(opts ...googleapi.CallOption) (*ListDevi
 	//       "type": "string"
 	//     },
 	//     "parent": {
-	//       "description": "The name of the enterprise in the form\n`enterprises/{enterpriseId}`",
+	//       "description": "The name of the enterprise in the form enterprises/{enterpriseId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+$",
 	//       "required": true,
@@ -3788,7 +3511,10 @@ func (c *EnterprisesDevicesListCall) Do(opts ...googleapi.CallOption) (*ListDevi
 	//   "path": "v1/{+parent}/devices",
 	//   "response": {
 	//     "$ref": "ListDevicesResponse"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -3834,8 +3560,8 @@ func (r *EnterprisesDevicesService) Patch(name string, device *Device) *Enterpri
 }
 
 // UpdateMask sets the optional parameter "updateMask": The field mask
-// indicating the fields to update.
-// If not set, all modifiable fields will be modified.
+// indicating the fields to update. If not set, all modifiable fields
+// will be modified.
 func (c *EnterprisesDevicesPatchCall) UpdateMask(updateMask string) *EnterprisesDevicesPatchCall {
 	c.urlParams_.Set("updateMask", updateMask)
 	return c
@@ -3936,14 +3662,14 @@ func (c *EnterprisesDevicesPatchCall) Do(opts ...googleapi.CallOption) (*Device,
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the device in the form\n`enterprises/{enterpriseId}/devices/{deviceId}`",
+	//       "description": "The name of the device in the form enterprises/{enterpriseId}/devices/{deviceId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/devices/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "updateMask": {
-	//       "description": "The field mask indicating the fields to update.\nIf not set, all modifiable fields will be modified.",
+	//       "description": "The field mask indicating the fields to update. If not set, all modifiable fields will be modified.",
 	//       "format": "google-fieldmask",
 	//       "location": "query",
 	//       "type": "string"
@@ -3955,7 +3681,10 @@ func (c *EnterprisesDevicesPatchCall) Do(opts ...googleapi.CallOption) (*Device,
 	//   },
 	//   "response": {
 	//     "$ref": "Device"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -3971,23 +3700,15 @@ type EnterprisesDevicesOperationsCancelCall struct {
 }
 
 // Cancel: Starts asynchronous cancellation on a long-running operation.
-//  The server
-// makes a best effort to cancel the operation, but success is
-// not
-// guaranteed.  If the server doesn't support this method, it
-// returns
-// `google.rpc.Code.UNIMPLEMENTED`.  Clients can
-// use
-// Operations.GetOperation or
-// other methods to check whether the cancellation succeeded or whether
-// the
-// operation completed despite cancellation. On successful
-// cancellation,
-// the operation is not deleted; instead, it becomes an operation
-// with
-// an Operation.error value with a google.rpc.Status.code of
-// 1,
-// corresponding to `Code.CANCELLED`.
+// The server makes a best effort to cancel the operation, but success
+// is not guaranteed. If the server doesn't support this method, it
+// returns google.rpc.Code.UNIMPLEMENTED. Clients can use
+// Operations.GetOperation or other methods to check whether the
+// cancellation succeeded or whether the operation completed despite
+// cancellation. On successful cancellation, the operation is not
+// deleted; instead, it becomes an operation with an Operation.error
+// value with a google.rpc.Status.code of 1, corresponding to
+// Code.CANCELLED.
 func (r *EnterprisesDevicesOperationsService) Cancel(name string) *EnterprisesDevicesOperationsCancelCall {
 	c := &EnterprisesDevicesOperationsCancelCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -4075,7 +3796,7 @@ func (c *EnterprisesDevicesOperationsCancelCall) Do(opts ...googleapi.CallOption
 	}
 	return ret, nil
 	// {
-	//   "description": "Starts asynchronous cancellation on a long-running operation.  The server\nmakes a best effort to cancel the operation, but success is not\nguaranteed.  If the server doesn't support this method, it returns\n`google.rpc.Code.UNIMPLEMENTED`.  Clients can use\nOperations.GetOperation or\nother methods to check whether the cancellation succeeded or whether the\noperation completed despite cancellation. On successful cancellation,\nthe operation is not deleted; instead, it becomes an operation with\nan Operation.error value with a google.rpc.Status.code of 1,\ncorresponding to `Code.CANCELLED`.",
+	//   "description": "Starts asynchronous cancellation on a long-running operation. The server makes a best effort to cancel the operation, but success is not guaranteed. If the server doesn't support this method, it returns google.rpc.Code.UNIMPLEMENTED. Clients can use Operations.GetOperation or other methods to check whether the cancellation succeeded or whether the operation completed despite cancellation. On successful cancellation, the operation is not deleted; instead, it becomes an operation with an Operation.error value with a google.rpc.Status.code of 1, corresponding to Code.CANCELLED.",
 	//   "flatPath": "v1/enterprises/{enterprisesId}/devices/{devicesId}/operations/{operationsId}:cancel",
 	//   "httpMethod": "POST",
 	//   "id": "androidmanagement.enterprises.devices.operations.cancel",
@@ -4094,7 +3815,10 @@ func (c *EnterprisesDevicesOperationsCancelCall) Do(opts ...googleapi.CallOption
 	//   "path": "v1/{+name}:cancel",
 	//   "response": {
 	//     "$ref": "Empty"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -4110,12 +3834,9 @@ type EnterprisesDevicesOperationsDeleteCall struct {
 }
 
 // Delete: Deletes a long-running operation. This method indicates that
-// the client is
-// no longer interested in the operation result. It does not cancel
-// the
-// operation. If the server doesn't support this method, it
-// returns
-// `google.rpc.Code.UNIMPLEMENTED`.
+// the client is no longer interested in the operation result. It does
+// not cancel the operation. If the server doesn't support this method,
+// it returns google.rpc.Code.UNIMPLEMENTED.
 func (r *EnterprisesDevicesOperationsService) Delete(name string) *EnterprisesDevicesOperationsDeleteCall {
 	c := &EnterprisesDevicesOperationsDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -4203,7 +3924,7 @@ func (c *EnterprisesDevicesOperationsDeleteCall) Do(opts ...googleapi.CallOption
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes a long-running operation. This method indicates that the client is\nno longer interested in the operation result. It does not cancel the\noperation. If the server doesn't support this method, it returns\n`google.rpc.Code.UNIMPLEMENTED`.",
+	//   "description": "Deletes a long-running operation. This method indicates that the client is no longer interested in the operation result. It does not cancel the operation. If the server doesn't support this method, it returns google.rpc.Code.UNIMPLEMENTED.",
 	//   "flatPath": "v1/enterprises/{enterprisesId}/devices/{devicesId}/operations/{operationsId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "androidmanagement.enterprises.devices.operations.delete",
@@ -4222,7 +3943,10 @@ func (c *EnterprisesDevicesOperationsDeleteCall) Do(opts ...googleapi.CallOption
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Empty"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -4238,11 +3962,9 @@ type EnterprisesDevicesOperationsGetCall struct {
 	header_      http.Header
 }
 
-// Get: Gets the latest state of a long-running operation.  Clients can
-// use this
-// method to poll the operation result at intervals as recommended by
-// the API
-// service.
+// Get: Gets the latest state of a long-running operation. Clients can
+// use this method to poll the operation result at intervals as
+// recommended by the API service.
 func (r *EnterprisesDevicesOperationsService) Get(name string) *EnterprisesDevicesOperationsGetCall {
 	c := &EnterprisesDevicesOperationsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -4343,7 +4065,7 @@ func (c *EnterprisesDevicesOperationsGetCall) Do(opts ...googleapi.CallOption) (
 	}
 	return ret, nil
 	// {
-	//   "description": "Gets the latest state of a long-running operation.  Clients can use this\nmethod to poll the operation result at intervals as recommended by the API\nservice.",
+	//   "description": "Gets the latest state of a long-running operation. Clients can use this method to poll the operation result at intervals as recommended by the API service.",
 	//   "flatPath": "v1/enterprises/{enterprisesId}/devices/{devicesId}/operations/{operationsId}",
 	//   "httpMethod": "GET",
 	//   "id": "androidmanagement.enterprises.devices.operations.get",
@@ -4362,7 +4084,10 @@ func (c *EnterprisesDevicesOperationsGetCall) Do(opts ...googleapi.CallOption) (
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Operation"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -4379,22 +4104,15 @@ type EnterprisesDevicesOperationsListCall struct {
 }
 
 // List: Lists operations that match the specified filter in the
-// request. If the
-// server doesn't support this method, it returns
-// `UNIMPLEMENTED`.
-//
-// NOTE: the `name` binding allows API services to override the
-// binding
-// to use different resource name schemes, such as `users/*/operations`.
-// To
-// override the binding, API services can add a binding such
-// as
-// "/v1/{name=users/*}/operations" to their service configuration.
-// For backwards compatibility, the default name includes the
-// operations
-// collection id, however overriding users must ensure the name
-// binding
-// is the parent resource, without the operations collection id.
+// request. If the server doesn't support this method, it returns
+// UNIMPLEMENTED.NOTE: the name binding allows API services to override
+// the binding to use different resource name schemes, such as
+// users/*/operations. To override the binding, API services can add a
+// binding such as "/v1/{name=users/*}/operations" to their service
+// configuration. For backwards compatibility, the default name includes
+// the operations collection id, however overriding users must ensure
+// the name binding is the parent resource, without the operations
+// collection id.
 func (r *EnterprisesDevicesOperationsService) List(name string) *EnterprisesDevicesOperationsListCall {
 	c := &EnterprisesDevicesOperationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -4516,7 +4234,7 @@ func (c *EnterprisesDevicesOperationsListCall) Do(opts ...googleapi.CallOption) 
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists operations that match the specified filter in the request. If the\nserver doesn't support this method, it returns `UNIMPLEMENTED`.\n\nNOTE: the `name` binding allows API services to override the binding\nto use different resource name schemes, such as `users/*/operations`. To\noverride the binding, API services can add a binding such as\n`\"/v1/{name=users/*}/operations\"` to their service configuration.\nFor backwards compatibility, the default name includes the operations\ncollection id, however overriding users must ensure the name binding\nis the parent resource, without the operations collection id.",
+	//   "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns UNIMPLEMENTED.NOTE: the name binding allows API services to override the binding to use different resource name schemes, such as users/*/operations. To override the binding, API services can add a binding such as \"/v1/{name=users/*}/operations\" to their service configuration. For backwards compatibility, the default name includes the operations collection id, however overriding users must ensure the name binding is the parent resource, without the operations collection id.",
 	//   "flatPath": "v1/enterprises/{enterprisesId}/devices/{devicesId}/operations",
 	//   "httpMethod": "GET",
 	//   "id": "androidmanagement.enterprises.devices.operations.list",
@@ -4551,7 +4269,10 @@ func (c *EnterprisesDevicesOperationsListCall) Do(opts ...googleapi.CallOption) 
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "ListOperationsResponse"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -4691,7 +4412,7 @@ func (c *EnterprisesEnrollmentTokensCreateCall) Do(opts ...googleapi.CallOption)
 	//   ],
 	//   "parameters": {
 	//     "parent": {
-	//       "description": "The name of the enterprise in the form\n`enterprises/{enterpriseId}`",
+	//       "description": "The name of the enterprise in the form enterprises/{enterpriseId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+$",
 	//       "required": true,
@@ -4704,7 +4425,10 @@ func (c *EnterprisesEnrollmentTokensCreateCall) Do(opts ...googleapi.CallOption)
 	//   },
 	//   "response": {
 	//     "$ref": "EnrollmentToken"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -4817,7 +4541,7 @@ func (c *EnterprisesEnrollmentTokensDeleteCall) Do(opts ...googleapi.CallOption)
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the enrollment token in the form\n`enterprises/{enterpriseId}/enrollmentTokens/{enrollmentTokenId}`",
+	//       "description": "The name of the enrollment token in the form enterprises/{enterpriseId}/enrollmentTokens/{enrollmentTokenId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/enrollmentTokens/[^/]+$",
 	//       "required": true,
@@ -4827,7 +4551,10 @@ func (c *EnterprisesEnrollmentTokensDeleteCall) Do(opts ...googleapi.CallOption)
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Empty"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -4843,8 +4570,7 @@ type EnterprisesPoliciesDeleteCall struct {
 }
 
 // Delete: Deletes a policy. This operation is only permitted if no
-// devices are
-// currently referencing the policy.
+// devices are currently referencing the policy.
 func (r *EnterprisesPoliciesService) Delete(name string) *EnterprisesPoliciesDeleteCall {
 	c := &EnterprisesPoliciesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -4932,7 +4658,7 @@ func (c *EnterprisesPoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes a policy. This operation is only permitted if no devices are\ncurrently referencing the policy.",
+	//   "description": "Deletes a policy. This operation is only permitted if no devices are currently referencing the policy.",
 	//   "flatPath": "v1/enterprises/{enterprisesId}/policies/{policiesId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "androidmanagement.enterprises.policies.delete",
@@ -4941,7 +4667,7 @@ func (c *EnterprisesPoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the policy in the form\n`enterprises/{enterpriseId}/policies/{policyId}`",
+	//       "description": "The name of the policy in the form enterprises/{enterpriseId}/policies/{policyId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/policies/[^/]+$",
 	//       "required": true,
@@ -4951,7 +4677,10 @@ func (c *EnterprisesPoliciesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Empty"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -5077,7 +4806,7 @@ func (c *EnterprisesPoliciesGetCall) Do(opts ...googleapi.CallOption) (*Policy, 
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the policy in the form\n`enterprises/{enterpriseId}/policies/{policyId}`",
+	//       "description": "The name of the policy in the form enterprises/{enterpriseId}/policies/{policyId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/policies/[^/]+$",
 	//       "required": true,
@@ -5087,7 +4816,10 @@ func (c *EnterprisesPoliciesGetCall) Do(opts ...googleapi.CallOption) (*Policy, 
 	//   "path": "v1/{+name}",
 	//   "response": {
 	//     "$ref": "Policy"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -5111,8 +4843,7 @@ func (r *EnterprisesPoliciesService) List(parent string) *EnterprisesPoliciesLis
 }
 
 // PageSize sets the optional parameter "pageSize": The requested page
-// size. The actual page size may be fixed to a min or max
-// value.
+// size. The actual page size may be fixed to a min or max value.
 func (c *EnterprisesPoliciesListCall) PageSize(pageSize int64) *EnterprisesPoliciesListCall {
 	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
 	return c
@@ -5228,7 +4959,7 @@ func (c *EnterprisesPoliciesListCall) Do(opts ...googleapi.CallOption) (*ListPol
 	//   ],
 	//   "parameters": {
 	//     "pageSize": {
-	//       "description": "The requested page size. The actual page size may be fixed to a min or max\nvalue.",
+	//       "description": "The requested page size. The actual page size may be fixed to a min or max value.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
@@ -5239,7 +4970,7 @@ func (c *EnterprisesPoliciesListCall) Do(opts ...googleapi.CallOption) (*ListPol
 	//       "type": "string"
 	//     },
 	//     "parent": {
-	//       "description": "The name of the enterprise in the form\n`enterprises/{enterpriseId}`",
+	//       "description": "The name of the enterprise in the form enterprises/{enterpriseId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+$",
 	//       "required": true,
@@ -5249,7 +4980,10 @@ func (c *EnterprisesPoliciesListCall) Do(opts ...googleapi.CallOption) (*ListPol
 	//   "path": "v1/{+parent}/policies",
 	//   "response": {
 	//     "$ref": "ListPoliciesResponse"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -5295,8 +5029,8 @@ func (r *EnterprisesPoliciesService) Patch(name string, policy *Policy) *Enterpr
 }
 
 // UpdateMask sets the optional parameter "updateMask": The field mask
-// indicating the fields to update.
-// If not set, all modifiable fields will be modified.
+// indicating the fields to update. If not set, all modifiable fields
+// will be modified.
 func (c *EnterprisesPoliciesPatchCall) UpdateMask(updateMask string) *EnterprisesPoliciesPatchCall {
 	c.urlParams_.Set("updateMask", updateMask)
 	return c
@@ -5397,14 +5131,14 @@ func (c *EnterprisesPoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Policy
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The name of the policy in the form\n`enterprises/{enterpriseId}/policies/{policyId}`",
+	//       "description": "The name of the policy in the form enterprises/{enterpriseId}/policies/{policyId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+/policies/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "updateMask": {
-	//       "description": "The field mask indicating the fields to update.\nIf not set, all modifiable fields will be modified.",
+	//       "description": "The field mask indicating the fields to update. If not set, all modifiable fields will be modified.",
 	//       "format": "google-fieldmask",
 	//       "location": "query",
 	//       "type": "string"
@@ -5416,7 +5150,10 @@ func (c *EnterprisesPoliciesPatchCall) Do(opts ...googleapi.CallOption) (*Policy
 	//   },
 	//   "response": {
 	//     "$ref": "Policy"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -5433,8 +5170,7 @@ type EnterprisesWebTokensCreateCall struct {
 }
 
 // Create: Creates a web token to access an embeddable managed Google
-// Play web UI for
-// a given enterprise.
+// Play web UI for a given enterprise.
 func (r *EnterprisesWebTokensService) Create(parent string, webtoken *WebToken) *EnterprisesWebTokensCreateCall {
 	c := &EnterprisesWebTokensCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -5528,7 +5264,7 @@ func (c *EnterprisesWebTokensCreateCall) Do(opts ...googleapi.CallOption) (*WebT
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a web token to access an embeddable managed Google Play web UI for\na given enterprise.",
+	//   "description": "Creates a web token to access an embeddable managed Google Play web UI for a given enterprise.",
 	//   "flatPath": "v1/enterprises/{enterprisesId}/webTokens",
 	//   "httpMethod": "POST",
 	//   "id": "androidmanagement.enterprises.webTokens.create",
@@ -5537,7 +5273,7 @@ func (c *EnterprisesWebTokensCreateCall) Do(opts ...googleapi.CallOption) (*WebT
 	//   ],
 	//   "parameters": {
 	//     "parent": {
-	//       "description": "The name of the enterprise in the form\n`enterprises/{enterpriseId}`",
+	//       "description": "The name of the enterprise in the form enterprises/{enterpriseId}",
 	//       "location": "path",
 	//       "pattern": "^enterprises/[^/]+$",
 	//       "required": true,
@@ -5550,7 +5286,10 @@ func (c *EnterprisesWebTokensCreateCall) Do(opts ...googleapi.CallOption) (*WebT
 	//   },
 	//   "response": {
 	//     "$ref": "WebToken"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }
@@ -5571,19 +5310,12 @@ func (r *SignupUrlsService) Create() *SignupUrlsCreateCall {
 }
 
 // CallbackUrl sets the optional parameter "callbackUrl": The callback
-// URL to which the admin will be redirected after successfully
-// creating an enterprise. Before redirecting there the system will add
-// a
-// query parameter to this URL named `enterpriseToken` which
-// will
-// contain an opaque token to be used for the
-// [create
-// enterprise](/android/management/reference/rest/v1/enterprises/create)
-//
-// request. The URL will be parsed then reformatted in order to add
-// the
-// `enterpriseToken` parameter, so there may be some minor formatting
-// changes.
+// URL to which the admin will be redirected after successfully creating
+// an enterprise. Before redirecting there the system will add a query
+// parameter to this URL named enterpriseToken which will contain an
+// opaque token to be used for the create enterprise request. The URL
+// will be parsed then reformatted in order to add the enterpriseToken
+// parameter, so there may be some minor formatting changes.
 func (c *SignupUrlsCreateCall) CallbackUrl(callbackUrl string) *SignupUrlsCreateCall {
 	c.urlParams_.Set("callbackUrl", callbackUrl)
 	return c
@@ -5681,7 +5413,7 @@ func (c *SignupUrlsCreateCall) Do(opts ...googleapi.CallOption) (*SignupUrl, err
 	//   "parameterOrder": [],
 	//   "parameters": {
 	//     "callbackUrl": {
-	//       "description": "The callback URL to which the admin will be redirected after successfully\ncreating an enterprise. Before redirecting there the system will add a\nquery parameter to this URL named `enterpriseToken` which will\ncontain an opaque token to be used for the\n[create enterprise](/android/management/reference/rest/v1/enterprises/create)\nrequest. The URL will be parsed then reformatted in order to add the\n`enterpriseToken` parameter, so there may be some minor formatting changes.",
+	//       "description": "The callback URL to which the admin will be redirected after successfully creating an enterprise. Before redirecting there the system will add a query parameter to this URL named enterpriseToken which will contain an opaque token to be used for the create enterprise request. The URL will be parsed then reformatted in order to add the enterpriseToken parameter, so there may be some minor formatting changes.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -5694,7 +5426,10 @@ func (c *SignupUrlsCreateCall) Do(opts ...googleapi.CallOption) (*SignupUrl, err
 	//   "path": "v1/signupUrls",
 	//   "response": {
 	//     "$ref": "SignupUrl"
-	//   }
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidmanagement"
+	//   ]
 	// }
 
 }

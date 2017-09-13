@@ -2172,6 +2172,11 @@ type ListCreativeStatusBreakdownByDetailResponse struct {
 	// see
 	// [ad-product-categories](https://developers.google.com/ad-exchange/
 	// rtb/downloads/ad-product-categories).
+	//   "DISAPPROVAL_REASON" - Indicates that the detail ID refers to a
+	// disapproval reason; see
+	// DisapprovalReason enum in
+	// [snippet-status-report-proto](https://developers.google.com/ad-exchang
+	// e/rtb/downloads/snippet-status-report-proto).
 	DetailType string `json:"detailType,omitempty"`
 
 	// FilteredBidDetailRows: List of rows, with counts of bids with a given
@@ -8415,7 +8420,7 @@ func (c *AccountsFilterSetsFilteredBidsDetailsListCall) Do(opts ...googleapi.Cal
 	//       "type": "string"
 	//     },
 	//     "creativeStatusId": {
-	//       "description": "The ID of the creative status for which to retrieve a breakdown by detail.\nSee\n[creative-status-codes](https://developers.google.com/ad-exchange/rtb/downloads/creative-status-codes).\nDetails are only available for statuses 14, 15, 17, 18, 19, 86, and 87.",
+	//       "description": "The ID of the creative status for which to retrieve a breakdown by detail.\nSee\n[creative-status-codes](https://developers.google.com/ad-exchange/rtb/downloads/creative-status-codes).\nDetails are only available for statuses 10, 14, 15, 17, 18, 19, 86, and 87.",
 	//       "format": "int32",
 	//       "location": "path",
 	//       "required": true,

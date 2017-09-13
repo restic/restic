@@ -270,15 +270,15 @@ func (m *MockCloudSpannerClient) StreamingRead(c context.Context, r *sppb.ReadRe
 		Table:   "t_mock",
 		Columns: []string{"col1", "col2"},
 		KeySet: &sppb.KeySet{
-			[]*proto3.ListValue{
+			Keys: []*proto3.ListValue{
 				&proto3.ListValue{
 					Values: []*proto3.Value{
 						&proto3.Value{Kind: &proto3.Value_StringValue{StringValue: "foo"}},
 					},
 				},
 			},
-			[]*sppb.KeyRange{},
-			false,
+			Ranges: []*sppb.KeyRange{},
+			All:    false,
 		},
 	}
 	if act.method == "StreamingIndexRead" {

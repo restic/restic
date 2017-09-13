@@ -485,9 +485,10 @@ type Course struct {
 	// * the email address of the user
 	// * the string literal "me", indicating the requesting user
 	//
-	// This must be set in a create request. Specifying this field in a
-	// course
-	// update mask results in an `INVALID_ARGUMENT` error.
+	// This must be set in a create request. Admins can also specify this
+	// field
+	// in a patch course request to
+	// transfer ownership. In other contexts, it is read-only.
 	OwnerId string `json:"ownerId,omitempty"`
 
 	// Room: Optional room location.
@@ -2095,7 +2096,9 @@ type StudentSubmission struct {
 	AlternateLink string `json:"alternateLink,omitempty"`
 
 	// AssignedGrade: Optional grade. If unset, no grade was set.
-	// This must be a non-negative integer value.
+	// This value must be non-negative. Decimal (i.e. non-integer) values
+	// are
+	// allowed, but will be rounded to two decimal places.
 	//
 	// This may be modified only by course teachers.
 	AssignedGrade float64 `json:"assignedGrade,omitempty"`
@@ -2147,7 +2150,9 @@ type StudentSubmission struct {
 	CreationTime string `json:"creationTime,omitempty"`
 
 	// DraftGrade: Optional pending grade. If unset, no grade was set.
-	// This must be a non-negative integer value.
+	// This value must be non-negative. Decimal (i.e. non-integer) values
+	// are
+	// allowed, but will be rounded to two decimal places.
 	//
 	// This is only visible to and modifiable by course teachers.
 	DraftGrade float64 `json:"draftGrade,omitempty"`
@@ -2923,7 +2928,9 @@ type CoursesListCall struct {
 
 // List: Returns a list of courses that the requesting user is permitted
 // to view,
-// restricted to those that match the request.
+// restricted to those that match the request. Returned courses are
+// ordered by
+// creation time, with the most recently created coming first.
 //
 // This method returns the following error codes:
 //
@@ -3091,7 +3098,7 @@ func (c *CoursesListCall) Do(opts ...googleapi.CallOption) (*ListCoursesResponse
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns a list of courses that the requesting user is permitted to view,\nrestricted to those that match the request.\n\nThis method returns the following error codes:\n\n* `PERMISSION_DENIED` for access errors.\n* `INVALID_ARGUMENT` if the query argument is malformed.\n* `NOT_FOUND` if any users specified in the query arguments do not exist.",
+	//   "description": "Returns a list of courses that the requesting user is permitted to view,\nrestricted to those that match the request. Returned courses are ordered by\ncreation time, with the most recently created coming first.\n\nThis method returns the following error codes:\n\n* `PERMISSION_DENIED` for access errors.\n* `INVALID_ARGUMENT` if the query argument is malformed.\n* `NOT_FOUND` if any users specified in the query arguments do not exist.",
 	//   "flatPath": "v1/courses",
 	//   "httpMethod": "GET",
 	//   "id": "classroom.courses.list",
@@ -3209,6 +3216,13 @@ func (r *CoursesService) Patch(id string, course *Course) *CoursesPatchCall {
 // * `description`
 // * `room`
 // * `courseState`
+// * `ownerId`
+//
+// Note: patches to ownerId are treated as being effective immediately,
+// but in
+// practice it may take some time for the ownership transfer of all
+// affected
+// resources to complete.
 //
 // When set in a query parameter, this field should be specified
 // as
@@ -3320,7 +3334,7 @@ func (c *CoursesPatchCall) Do(opts ...googleapi.CallOption) (*Course, error) {
 	//       "type": "string"
 	//     },
 	//     "updateMask": {
-	//       "description": "Mask that identifies which fields on the course to update.\nThis field is required to do an update. The update will fail if invalid\nfields are specified. The following fields are valid:\n\n* `name`\n* `section`\n* `descriptionHeading`\n* `description`\n* `room`\n* `courseState`\n\nWhen set in a query parameter, this field should be specified as\n\n`updateMask=\u003cfield1\u003e,\u003cfield2\u003e,...`",
+	//       "description": "Mask that identifies which fields on the course to update.\nThis field is required to do an update. The update will fail if invalid\nfields are specified. The following fields are valid:\n\n* `name`\n* `section`\n* `descriptionHeading`\n* `description`\n* `room`\n* `courseState`\n* `ownerId`\n\nNote: patches to ownerId are treated as being effective immediately, but in\npractice it may take some time for the ownership transfer of all affected\nresources to complete.\n\nWhen set in a query parameter, this field should be specified as\n\n`updateMask=\u003cfield1\u003e,\u003cfield2\u003e,...`",
 	//       "format": "google-fieldmask",
 	//       "location": "query",
 	//       "type": "string"
@@ -5291,7 +5305,7 @@ func (c *CoursesCourseWorkStudentSubmissionsListCall) Do(opts ...googleapi.CallO
 	//       "type": "string"
 	//     },
 	//     "courseWorkId": {
-	//       "description": "Identifer of the student work to request.\nThis may be set to the string literal `\"-\"` to request student work for\nall course work in the specified course.",
+	//       "description": "Identifier of the student work to request.\nThis may be set to the string literal `\"-\"` to request student work for\nall course work in the specified course.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"

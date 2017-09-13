@@ -1,3 +1,5 @@
+// +build go1.7
+
 // Package virtualmachinedisk provides a client for Virtual Machine Disks.
 package virtualmachinedisk
 

@@ -45,7 +45,7 @@ import (
 	"google.golang.org/api/option"
 )
 
-const testPrefix = "-go-cloud-storage-test"
+const testPrefix = "-go-test"
 
 // suffix is a timestamp-based suffix which is added to all buckets created by
 // tests. This reduces flakiness when the tests are run in parallel and allows
@@ -124,7 +124,7 @@ func TestBucketMethods(t *testing.T) {
 	b := client.Bucket(newBucket)
 	// Test Create and Delete.
 	if err := b.Create(ctx, projectID, nil); err != nil {
-		t.Errorf("Bucket(%v).Create(%v, %v) failed: %v", newBucket, projectID, nil, err)
+		t.Fatalf("Bucket(%v).Create(%v, %v) failed: %v", newBucket, projectID, nil, err)
 	}
 	attrs, err := b.Attrs(ctx)
 	if err != nil {
@@ -153,9 +153,35 @@ func TestBucketMethods(t *testing.T) {
 		StorageClass:      "NEARLINE",
 		VersioningEnabled: true,
 		Labels:            labels,
+		Lifecycle: Lifecycle{
+			Rules: []LifecycleRule{{
+				Action: LifecycleAction{
+					Type:         SetStorageClassAction,
+					StorageClass: "NEARLINE",
+				},
+				Condition: LifecycleCondition{
+					AgeInDays:             10,
+					Liveness:              Archived,
+					CreatedBefore:         time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC),
+					MatchesStorageClasses: []string{"MULTI_REGIONAL", "STANDARD"},
+					NumNewerVersions:      3,
+				},
+			}, {
+				Action: LifecycleAction{
+					Type: DeleteAction,
+				},
+				Condition: LifecycleCondition{
+					AgeInDays:             30,
+					Liveness:              Live,
+					CreatedBefore:         time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC),
+					MatchesStorageClasses: []string{"NEARLINE"},
+					NumNewerVersions:      10,
+				},
+			}},
+		},
 	}
 	if err := client.Bucket(newBucket).Create(ctx, projectID, attrs); err != nil {
-		t.Errorf("Bucket(%v).Create(%v, %v) failed: %v", newBucket, projectID, attrs, err)
+		t.Fatalf("Bucket(%v).Create(%v, %+v) failed: %v", newBucket, projectID, attrs, err)
 	}
 	attrs, err = b.Attrs(ctx)
 	if err != nil {
@@ -337,6 +363,9 @@ func TestObjects(t *testing.T) {
 		}
 		if got, want := rc.ContentType(), "text/plain"; got != want {
 			t.Errorf("ContentType (%q) = %q; want %q", obj, got, want)
+		}
+		if got, want := rc.CacheControl(), "public, max-age=60"; got != want {
+			t.Errorf("CacheControl (%q) = %q; want %q", obj, got, want)
 		}
 		rc.Close()
 
@@ -1422,6 +1451,7 @@ func TestIntegration_RequesterPays(t *testing.T) {
 func writeObject(ctx context.Context, obj *ObjectHandle, contentType string, contents []byte) error {
 	w := obj.NewWriter(ctx)
 	w.ContentType = contentType
+	w.CacheControl = "public, max-age=60"
 	if contents != nil {
 		if _, err := w.Write(contents); err != nil {
 			_ = w.Close()

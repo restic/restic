@@ -1,36 +1,24 @@
 {
-  "kind": "discovery#restDescription",
-  "description": "Searches the Google Knowledge Graph for entities.",
-  "servicePath": "",
-  "rootUrl": "https://kgsearch.googleapis.com/",
-  "basePath": "",
-  "ownerDomain": "google.com",
-  "name": "kgsearch",
-  "batchPath": "batch",
   "id": "kgsearch:v1",
   "documentationLink": "https://developers.google.com/knowledge-graph/",
   "revision": "20170109",
   "title": "Knowledge Graph Search API",
-  "ownerName": "Google",
   "discoveryVersion": "v1",
+  "ownerName": "Google",
   "version_module": "True",
   "resources": {
     "entities": {
       "methods": {
         "search": {
+          "id": "kgsearch.entities.search",
+          "path": "v1/entities:search",
           "description": "Searches Knowledge Graph for entities that match the constraints.\nA list of matched entities will be returned in response, which will be in\nJSON-LD format and compatible with http://schema.org",
           "response": {
             "$ref": "SearchResponse"
           },
-          "parameterOrder": [],
           "httpMethod": "GET",
+          "parameterOrder": [],
           "parameters": {
-            "limit": {
-              "location": "query",
-              "format": "int32",
-              "description": "Limits the number of entities to be returned.",
-              "type": "integer"
-            },
             "prefix": {
               "location": "query",
               "description": "Enables prefix match against names and aliases of entities",
@@ -42,15 +30,15 @@
               "location": "query"
             },
             "types": {
-              "type": "string",
               "repeated": true,
               "location": "query",
-              "description": "Restricts returned entities with these types, e.g. Person\n(as defined in http://schema.org/Person). If multiple types are specified,\nreturned entities will contain one or more of these types."
+              "description": "Restricts returned entities with these types, e.g. Person\n(as defined in http://schema.org/Person). If multiple types are specified,\nreturned entities will contain one or more of these types.",
+              "type": "string"
             },
             "indent": {
-              "location": "query",
               "description": "Enables indenting of json results.",
-              "type": "boolean"
+              "type": "boolean",
+              "location": "query"
             },
             "languages": {
               "repeated": true,
@@ -59,15 +47,19 @@
               "type": "string"
             },
             "ids": {
-              "location": "query",
               "description": "The list of entity id to be used for search instead of query string.\nTo specify multiple ids in the HTTP request, repeat the parameter in the\nURL as in ...?ids=A&ids=B",
               "type": "string",
-              "repeated": true
+              "repeated": true,
+              "location": "query"
+            },
+            "limit": {
+              "format": "int32",
+              "description": "Limits the number of entities to be returned.",
+              "type": "integer",
+              "location": "query"
             }
           },
-          "flatPath": "v1/entities:search",
-          "id": "kgsearch.entities.search",
-          "path": "v1/entities:search"
+          "flatPath": "v1/entities:search"
         }
       }
     }
@@ -79,9 +71,9 @@
       "type": "string"
     },
     "key": {
-      "type": "string",
       "location": "query",
-      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token."
+      "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+      "type": "string"
     },
     "quotaUser": {
       "location": "query",
@@ -110,10 +102,10 @@
       "location": "query"
     },
     "prettyPrint": {
+      "location": "query",
       "description": "Returns response with indentations and line breaks.",
       "default": "true",
-      "type": "boolean",
-      "location": "query"
+      "type": "boolean"
     },
     "uploadType": {
       "location": "query",
@@ -144,7 +136,6 @@
       "type": "string"
     },
     "alt": {
-      "location": "query",
       "description": "Data format for response.",
       "default": "json",
       "enum": [
@@ -157,11 +148,13 @@
         "Responses with Content-Type of application/json",
         "Media download with context-dependent Content-Type",
         "Responses with Content-Type of application/x-protobuf"
-      ]
+      ],
+      "location": "query"
     }
   },
   "schemas": {
     "SearchResponse": {
+      "id": "SearchResponse",
       "description": "Response message includes the context and a list of matching results\nwhich contain the detail of associated entities.",
       "type": "object",
       "properties": {
@@ -180,8 +173,7 @@
           "description": "The schema type of top-level JSON-LD object, e.g. ItemList.",
           "type": "any"
         }
-      },
-      "id": "SearchResponse"
+      }
     }
   },
   "protocol": "rest",
@@ -190,5 +182,13 @@
     "x16": "http://www.google.com/images/icons/product/search-16.gif"
   },
   "version": "v1",
-  "baseUrl": "https://kgsearch.googleapis.com/"
+  "baseUrl": "https://kgsearch.googleapis.com/",
+  "servicePath": "",
+  "description": "Searches the Google Knowledge Graph for entities.",
+  "kind": "discovery#restDescription",
+  "rootUrl": "https://kgsearch.googleapis.com/",
+  "basePath": "",
+  "ownerDomain": "google.com",
+  "name": "kgsearch",
+  "batchPath": "batch"
 }

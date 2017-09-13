@@ -241,8 +241,7 @@ type Empty struct {
 // corpus.
 type HeldAccount struct {
 	// AccountId: The account's ID as provided by the
-	// <a
-	// href="https://developers.google.com/admin-sdk/">Admin SDK</a>.
+	// <a href="https://developers.google.com/admin-sdk/">Admin SDK</a>.
 	AccountId string `json:"accountId,omitempty"`
 
 	// HoldTime: When the account was put on hold.
@@ -3181,8 +3180,8 @@ type MattersHoldsAccountsListCall struct {
 
 // List: Lists HeldAccounts for a hold. This will only list individually
 // specified
-// held accounts. If the hold is on an OU, then use the
-// <ahref="https://developers.google.com/admin-sdk/">Admin SDK</a>
+// held accounts. If the hold is on an OU, then use
+// <a href="https://developers.google.com/admin-sdk/">Admin SDK</a>
 // to enumerate its members.
 func (r *MattersHoldsAccountsService) List(matterId string, holdId string) *MattersHoldsAccountsListCall {
 	c := &MattersHoldsAccountsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
@@ -3286,7 +3285,7 @@ func (c *MattersHoldsAccountsListCall) Do(opts ...googleapi.CallOption) (*ListHe
 	}
 	return ret, nil
 	// {
-	//   "description": "Lists HeldAccounts for a hold. This will only list individually specified\nheld accounts. If the hold is on an OU, then use the \u003cahref=\"https://developers.google.com/admin-sdk/\"\u003eAdmin SDK\u003c/a\u003e\nto enumerate its members.",
+	//   "description": "Lists HeldAccounts for a hold. This will only list individually specified\nheld accounts. If the hold is on an OU, then use\n\u003ca href=\"https://developers.google.com/admin-sdk/\"\u003eAdmin SDK\u003c/a\u003e\nto enumerate its members.",
 	//   "flatPath": "v1/matters/{matterId}/holds/{holdId}/accounts",
 	//   "httpMethod": "GET",
 	//   "id": "vault.matters.holds.accounts.list",

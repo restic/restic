@@ -16,6 +16,9 @@ package bigquery
 
 import (
 	"errors"
+	"math/rand"
+	"os"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/internal"
@@ -46,6 +49,7 @@ func (c *Client) JobFromID(ctx context.Context, id string) (*Job, error) {
 	return job, nil
 }
 
+// ID returns the job's ID.
 func (j *Job) ID() string {
 	return j.jobID
 }
@@ -77,15 +81,33 @@ type JobStatus struct {
 // projectID must be non-empty.
 func setJobRef(job *bq.Job, jobID, projectID string) {
 	if jobID == "" {
-		return
+		// Generate an ID on the client so that insertJob can be idempotent.
+		jobID = randomJobID()
 	}
 	// We don't check whether projectID is empty; the server will return an
 	// error when it encounters the resulting JobReference.
-
 	job.JobReference = &bq.JobReference{
 		JobId:     jobID,
 		ProjectId: projectID,
 	}
+}
+
+const alphanum = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+
+var (
+	rngMu sync.Mutex
+	rng   = rand.New(rand.NewSource(time.Now().UnixNano() ^ int64(os.Getpid())))
+)
+
+func randomJobID() string {
+	// As of August 2017, the BigQuery service uses 27 alphanumeric characters.
+	var b [27]byte
+	rngMu.Lock()
+	for i := 0; i < len(b); i++ {
+		b[i] = alphanum[rng.Intn(len(alphanum))]
+	}
+	rngMu.Unlock()
+	return string(b[:])
 }
 
 // Done reports whether the job has completed.

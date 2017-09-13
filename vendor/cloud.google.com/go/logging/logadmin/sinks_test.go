@@ -152,7 +152,9 @@ func TestUpdateSink(t *testing.T) {
 		Filter:      testFilter,
 	}
 
-	// Updating a non-existent sink creates a new one.
+	if _, err := client.CreateSink(ctx, sink); err != nil {
+		t.Fatal(err)
+	}
 	got, err := client.UpdateSink(ctx, sink)
 	if err != nil {
 		t.Fatal(err)

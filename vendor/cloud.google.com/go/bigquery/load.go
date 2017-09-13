@@ -56,6 +56,8 @@ type LoadSource interface {
 
 // LoaderFrom returns a Loader which can be used to load data into a BigQuery table.
 // The returned Loader may optionally be further configured before its Run method is called.
+// See GCSReference and ReaderSource for additional configuration options that
+// affect loading.
 func (t *Table) LoaderFrom(src LoadSource) *Loader {
 	return &Loader{
 		c: t.c,

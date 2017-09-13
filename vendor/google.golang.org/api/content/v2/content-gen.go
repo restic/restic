@@ -741,6 +741,10 @@ type AccountsCustomBatchRequestEntry struct {
 	// BatchId: An entry ID, unique within the batch request.
 	BatchId int64 `json:"batchId,omitempty"`
 
+	// Force: Whether the account should be deleted if the account has
+	// offers. Only applicable if the method is delete.
+	Force bool `json:"force,omitempty"`
+
 	// MerchantId: The ID of the managing account.
 	MerchantId uint64 `json:"merchantId,omitempty,string"`
 
@@ -6023,6 +6027,11 @@ type Service struct {
 	// delivery of the product. Required.
 	DeliveryTime *DeliveryTime `json:"deliveryTime,omitempty"`
 
+	// MinimumOrderValue: Minimum order value for this service. If set,
+	// indicates that customers will have to spend at least this amount. All
+	// prices within a service must have the same currency.
+	MinimumOrderValue *Price `json:"minimumOrderValue,omitempty"`
+
 	// Name: Free-form name of the service. Must be unique within target
 	// account. Required.
 	Name string `json:"name,omitempty"`
@@ -6815,9 +6824,10 @@ func (r *AccountsService) Claimwebsite(merchantId uint64, accountId uint64) *Acc
 	return c
 }
 
-// Overwrite sets the optional parameter "overwrite": Flag to remove any
-// existing claim on the requested website by another account and
-// replace it with a claim from this account.
+// Overwrite sets the optional parameter "overwrite": Only available to
+// selected merchants. When set to True, this flag removes any existing
+// claim on the requested website by another account and replaces it
+// with a claim from this account.
 func (c *AccountsClaimwebsiteCall) Overwrite(overwrite bool) *AccountsClaimwebsiteCall {
 	c.urlParams_.Set("overwrite", fmt.Sprint(overwrite))
 	return c
@@ -6928,7 +6938,7 @@ func (c *AccountsClaimwebsiteCall) Do(opts ...googleapi.CallOption) (*AccountsCl
 	//       "type": "string"
 	//     },
 	//     "overwrite": {
-	//       "description": "Flag to remove any existing claim on the requested website by another account and replace it with a claim from this account.",
+	//       "description": "Only available to selected merchants. When set to True, this flag removes any existing claim on the requested website by another account and replaces it with a claim from this account.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -7103,6 +7113,14 @@ func (c *AccountsDeleteCall) DryRun(dryRun bool) *AccountsDeleteCall {
 	return c
 }
 
+// Force sets the optional parameter "force": Flag to delete
+// sub-accounts with products. The default value of false will become
+// active on September 28, 2017.
+func (c *AccountsDeleteCall) Force(force bool) *AccountsDeleteCall {
+	c.urlParams_.Set("force", fmt.Sprint(force))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -7177,6 +7195,12 @@ func (c *AccountsDeleteCall) Do(opts ...googleapi.CallOption) error {
 	//     },
 	//     "dryRun": {
 	//       "description": "Flag to run the request in dry-run mode.",
+	//       "location": "query",
+	//       "type": "boolean"
+	//     },
+	//     "force": {
+	//       "default": "true",
+	//       "description": "Flag to delete sub-accounts with products. The default value of false will become active on September 28, 2017.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     },

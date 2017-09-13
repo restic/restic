@@ -426,7 +426,7 @@ func (f *File) URL() string {
 	return f.fsc.client.getEndpoint(fileServiceName, f.buildPath(), nil)
 }
 
-// WriteRangeOptions includes opptions for a write file range operation
+// WriteRangeOptions includes options for a write file range operation
 type WriteRangeOptions struct {
 	Timeout    uint
 	ContentMD5 string

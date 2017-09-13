@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/DSQnXnJrdGCXbfLjaO33fHf1TP4\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/PsbV54STic97ire0OJuiC5JKfrE\"",
  "discoveryVersion": "v1",
  "id": "deploymentmanager:alpha",
  "name": "deploymentmanager",
  "canonicalName": "Deployment Manager Alpha",
  "version": "alpha",
- "revision": "20170615",
+ "revision": "20170907",
  "title": "Google Cloud Deployment Manager Alpha API",
  "description": "The Deployment Manager API allows users to declaratively configure, deploy and run complex solutions on the Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -126,6 +126,17 @@
     "logType": {
      "type": "string",
      "description": "The log type that this config enables."
+    }
+   }
+  },
+  "AuthorizationLoggingOptions": {
+   "id": "AuthorizationLoggingOptions",
+   "type": "object",
+   "description": "Authorization-related information used by Cloud Audit Logging.",
+   "properties": {
+    "permissionType": {
+     "type": "string",
+     "description": "The type of the permission that was checked."
     }
    }
   },
@@ -329,11 +340,19 @@
   "Credential": {
    "id": "Credential",
    "type": "object",
-   "description": "Credential used by ConfigurableResourceTypes.",
+   "description": "The credential used by Deployment Manager and TypeProvider. Only one of the options is permitted.",
    "properties": {
     "basicAuth": {
      "$ref": "BasicAuth",
-     "description": "Basic Auth Credentials for this Type."
+     "description": "Basic Auth Credential, only used by TypeProvider."
+    },
+    "serviceAccount": {
+     "$ref": "ServiceAccount",
+     "description": "Service Account Credential, only used by Deployment."
+    },
+    "useProjectDefault": {
+     "type": "boolean",
+     "description": "Specify to use the project default credential, only supported by Deployment."
     }
    }
   },
@@ -379,6 +398,13 @@
      "$ref": "Operation",
      "description": "[Output Only] The Operation that most recently ran, or is currently running, on this deployment."
     },
+    "outputs": {
+     "type": "array",
+     "description": "api-linter: output-only-format=disabled [Output Only] Map of outputs from the last manifest that deployed successfully.",
+     "items": {
+      "$ref": "DeploymentOutputsEntry"
+     }
+    },
     "selfLink": {
      "type": "string",
      "description": "[Output Only] Self link for the deployment."
@@ -395,6 +421,18 @@
   },
   "DeploymentLabelEntry": {
    "id": "DeploymentLabelEntry",
+   "type": "object",
+   "properties": {
+    "key": {
+     "type": "string"
+    },
+    "value": {
+     "type": "string"
+    }
+   }
+  },
+  "DeploymentOutputsEntry": {
+   "id": "DeploymentOutputsEntry",
    "type": "object",
    "properties": {
     "key": {
@@ -554,6 +592,10 @@
     "counter": {
      "$ref": "LogConfigCounterOptions",
      "description": "Counter options."
+    },
+    "dataAccess": {
+     "$ref": "LogConfigDataAccessOptions",
+     "description": "Data access options."
     }
    }
   },
@@ -562,6 +604,10 @@
    "type": "object",
    "description": "Write a Cloud Audit log",
    "properties": {
+    "authorizationLoggingOptions": {
+     "$ref": "AuthorizationLoggingOptions",
+     "description": "Information used by the Cloud Audit Logging pipeline."
+    },
     "logName": {
      "type": "string",
      "description": "The log_name to populate in the Cloud Audit Record."
@@ -571,7 +617,7 @@
   "LogConfigCounterOptions": {
    "id": "LogConfigCounterOptions",
    "type": "object",
-   "description": "Options for counters",
+   "description": "Increment a streamz counter with the specified metric and field names.\n\nMetric names should start with a '/', generally be lowercase-only, and end in \"_count\". Field names should not contain an initial slash. The actual exported metric names will have \"/iam/policy\" prepended.\n\nField names correspond to IAM request parameters and field values are their respective values.\n\nAt present the only supported field names are - \"iam_principal\", corresponding to IAMContext.principal; - \"\" (empty string), resulting in one aggretated counter with no field.\n\nExamples: counter { metric: \"/debug_access_count\" field: \"iam_principal\" } ==\u003e increment counter /iam/policy/backend_debug_access_count {iam_principal=[value of IAMContext.principal]}\n\nAt this time we do not support: * multiple field names (though this may be supported in the future) * decrementing the counter * incrementing it by anything other than 1",
    "properties": {
     "field": {
      "type": "string",
@@ -580,6 +626,17 @@
     "metric": {
      "type": "string",
      "description": "The metric to update."
+    }
+   }
+  },
+  "LogConfigDataAccessOptions": {
+   "id": "LogConfigDataAccessOptions",
+   "type": "object",
+   "description": "Write a Data Access (Gin) log",
+   "properties": {
+    "logMode": {
+     "type": "string",
+     "description": "Whether Gin logging should happen in a fail-closed manner at the caller. This is relevant only in the LocalIAM implementation, for now."
     }
    }
   },
@@ -1137,6 +1194,17 @@
      "items": {
       "type": "string"
      }
+    }
+   }
+  },
+  "ServiceAccount": {
+   "id": "ServiceAccount",
+   "type": "object",
+   "description": "Service Account used as a credential.",
+   "properties": {
+    "email": {
+     "type": "string",
+     "description": "The IAM service account email address like test@myproject.iam.gserviceaccount.com"
     }
    }
   },
@@ -1816,7 +1884,7 @@
        "type": "string",
        "description": "Name of the resource for this request.",
        "required": true,
-       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
+       "pattern": "[a-z0-9](?:[-a-z0-9_]{0,61}[a-z0-9])?",
        "location": "path"
       }
      },
@@ -2002,7 +2070,7 @@
        "type": "string",
        "description": "Name of the resource for this request.",
        "required": true,
-       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
+       "pattern": "[a-z0-9](?:[-a-z0-9_]{0,61}[a-z0-9])?",
        "location": "path"
       }
      },
@@ -2074,7 +2142,7 @@
        "type": "string",
        "description": "Name of the resource for this request.",
        "required": true,
-       "pattern": "[a-z](?:[-a-z0-9_]{0,61}[a-z0-9])?",
+       "pattern": "(?:[-a-z0-9_]{0,62}[a-z0-9])?",
        "location": "path"
       }
      },

@@ -806,6 +806,7 @@ func TestStressSessionPool(t *testing.T) {
 			}
 			idleSessions[s.getID()] = true
 		}
+		sp.mu.Lock()
 		if int(sp.numOpened) != len(idleSessions) {
 			t.Errorf("%v: number of opened sessions (%v) != number of idle sessions (%v)", ti, sp.numOpened, len(idleSessions))
 		}
@@ -819,6 +820,8 @@ func TestStressSessionPool(t *testing.T) {
 			}
 			hcSessions[s.getID()] = true
 		}
+		sp.mu.Unlock()
+
 		// Verify that idleSessions == hcSessions == mockSessions.
 		if !reflect.DeepEqual(idleSessions, hcSessions) {
 			t.Errorf("%v: sessions in idle list (%v) != sessions in healthcheck queue (%v)", ti, idleSessions, hcSessions)
@@ -853,9 +856,11 @@ func TestMaintainer(t *testing.T) {
 	defer cancel()
 
 	<-time.After(sampleInterval * 1)
+	sp.mu.Lock()
 	if sp.numOpened != 5 {
 		t.Errorf("Replenish. Expect %d open, got %d", sp.MinOpened, sp.numOpened)
 	}
+	sp.mu.Unlock()
 
 	// To save test time, we are not creating many sessions, because the time to create sessions will have impact on the decision on sessionsToKeep. We also parallelize the take and recycle process.
 	shs := make([]*sessionHandle, 10)

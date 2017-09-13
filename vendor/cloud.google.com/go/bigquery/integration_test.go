@@ -43,7 +43,10 @@ var (
 	dataset *Dataset
 	schema  = Schema{
 		{Name: "name", Type: StringFieldType},
-		{Name: "num", Type: IntegerFieldType},
+		{Name: "nums", Type: IntegerFieldType, Repeated: true},
+		{Name: "rec", Type: RecordFieldType, Schema: Schema{
+			{Name: "bool", Type: BooleanFieldType},
+		}},
 	}
 	testTableExpiration time.Time
 )
@@ -218,6 +221,119 @@ func TestIntegration_DatasetDelete(t *testing.T) {
 	}
 }
 
+func TestIntegration_DatasetUpdateETags(t *testing.T) {
+	if client == nil {
+		t.Skip("Integration tests skipped")
+	}
+
+	check := func(md *DatasetMetadata, wantDesc, wantName string) {
+		if md.Description != wantDesc {
+			t.Errorf("description: got %q, want %q", md.Description, wantDesc)
+		}
+		if md.Name != wantName {
+			t.Errorf("name: got %q, want %q", md.Name, wantName)
+		}
+	}
+
+	ctx := context.Background()
+	md, err := dataset.Metadata(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if md.ETag == "" {
+		t.Fatal("empty ETag")
+	}
+	// Write without ETag succeeds.
+	desc := md.Description + "d2"
+	name := md.Name + "n2"
+	md2, err := dataset.Update(ctx, DatasetMetadataToUpdate{Description: desc, Name: name}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(md2, desc, name)
+
+	// Write with original ETag fails because of intervening write.
+	_, err = dataset.Update(ctx, DatasetMetadataToUpdate{Description: "d", Name: "n"}, md.ETag)
+	if err == nil {
+		t.Fatal("got nil, want error")
+	}
+
+	// Write with most recent ETag succeeds.
+	md3, err := dataset.Update(ctx, DatasetMetadataToUpdate{Description: "", Name: ""}, md2.ETag)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(md3, "", "")
+}
+
+func TestIntegration_DatasetUpdateDefaultExpiration(t *testing.T) {
+	if client == nil {
+		t.Skip("Integration tests skipped")
+	}
+	ctx := context.Background()
+	md, err := dataset.Metadata(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Set the default expiration time.
+	md, err = dataset.Update(ctx,
+		DatasetMetadataToUpdate{DefaultTableExpiration: time.Hour}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if md.DefaultTableExpiration != time.Hour {
+		t.Fatalf("got %s, want 1h", md.DefaultTableExpiration)
+	}
+	// Omitting DefaultTableExpiration doesn't change it.
+	md, err = dataset.Update(ctx, DatasetMetadataToUpdate{Name: "xyz"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if md.DefaultTableExpiration != time.Hour {
+		t.Fatalf("got %s, want 1h", md.DefaultTableExpiration)
+	}
+	// Setting it to 0 deletes it (which looks like a 0 duration).
+	md, err = dataset.Update(ctx,
+		DatasetMetadataToUpdate{DefaultTableExpiration: time.Duration(0)}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if md.DefaultTableExpiration != 0 {
+		t.Fatalf("got %s, want 0", md.DefaultTableExpiration)
+	}
+}
+
+func TestIntegration_DatasetUpdateLabels(t *testing.T) {
+	if client == nil {
+		t.Skip("Integration tests skipped")
+	}
+	ctx := context.Background()
+	md, err := dataset.Metadata(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// TODO(jba): use a separate dataset for each test run so
+	// tests don't interfere with each other.
+	var dm DatasetMetadataToUpdate
+	dm.SetLabel("label", "value")
+	md, err = dataset.Update(ctx, dm, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := md.Labels["label"], "value"; got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	dm = DatasetMetadataToUpdate{}
+	dm.DeleteLabel("label")
+	md, err = dataset.Update(ctx, dm, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := md.Labels["label"]; ok {
+		t.Error("label still present after deletion")
+	}
+}
+
 func TestIntegration_Tables(t *testing.T) {
 	if client == nil {
 		t.Skip("Integration tests skipped")
@@ -274,7 +390,7 @@ func TestIntegration_UploadAndRead(t *testing.T) {
 		saverRows []*ValuesSaver
 	)
 	for i, name := range []string{"a", "b", "c"} {
-		row := []Value{name, int64(i)}
+		row := []Value{name, []Value{int64(i)}, []Value{true}}
 		wantRows = append(wantRows, row)
 		saverRows = append(saverRows, &ValuesSaver{
 			Schema:   schema,
@@ -296,7 +412,8 @@ func TestIntegration_UploadAndRead(t *testing.T) {
 	checkRead(t, "upload", table.Read(ctx), wantRows)
 
 	// Query the table.
-	q := client.Query(fmt.Sprintf("select name, num from %s", table.TableID))
+	q := client.Query(fmt.Sprintf("select name, nums, rec from %s", table.TableID))
+	q.UseStandardSQL = true
 	q.DefaultProjectID = dataset.ProjectID
 	q.DefaultDatasetID = dataset.DatasetID
 
@@ -361,9 +478,11 @@ func TestIntegration_UploadAndRead(t *testing.T) {
 		if got, want := len(vm), len(vl); got != want {
 			t.Fatalf("valueMap len: got %d, want %d", got, want)
 		}
+		// With maps, structs become nested maps.
+		vl[2] = map[string]Value{"bool": vl[2].([]Value)[0]}
 		for i, v := range vl {
-			if got, want := vm[schema[i].Name], v; got != want {
-				t.Errorf("%d, name=%s: got %v, want %v",
+			if got, want := vm[schema[i].Name], v; !testutil.Equal(got, want) {
+				t.Errorf("%d, name=%s: got %#v, want %#v",
 					i, schema[i].Name, got, want)
 			}
 		}
@@ -520,7 +639,7 @@ func (b byName) Len() int           { return len(b) }
 func (b byName) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 func (b byName) Less(i, j int) bool { return b[i].Name < b[j].Name }
 
-func TestIntegration_Update(t *testing.T) {
+func TestIntegration_TableUpdate(t *testing.T) {
 	if client == nil {
 		t.Skip("Integration tests skipped")
 	}
@@ -535,10 +654,12 @@ func TestIntegration_Update(t *testing.T) {
 	}
 	wantDescription := tm.Description + "more"
 	wantName := tm.Name + "more"
+	wantExpiration := tm.ExpirationTime.Add(time.Hour * 24)
 	got, err := table.Update(ctx, TableMetadataToUpdate{
-		Description: wantDescription,
-		Name:        wantName,
-	})
+		Description:    wantDescription,
+		Name:           wantName,
+		ExpirationTime: wantExpiration,
+	}, tm.ETag)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -548,8 +669,22 @@ func TestIntegration_Update(t *testing.T) {
 	if got.Name != wantName {
 		t.Errorf("Name: got %q, want %q", got.Name, wantName)
 	}
+	if got.ExpirationTime != wantExpiration {
+		t.Errorf("ExpirationTime: got %q, want %q", got.ExpirationTime, wantExpiration)
+	}
 	if !testutil.Equal(got.Schema, schema) {
 		t.Errorf("Schema: got %v, want %v", pretty.Value(got.Schema), pretty.Value(schema))
+	}
+
+	// Blind write succeeds.
+	_, err = table.Update(ctx, TableMetadataToUpdate{Name: "x"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Write with old etag fails.
+	_, err = table.Update(ctx, TableMetadataToUpdate{Name: "y"}, got.ETag)
+	if err == nil {
+		t.Fatal("Update with old ETag succeeded, wanted failure")
 	}
 
 	// Test schema update.
@@ -561,24 +696,25 @@ func TestIntegration_Update(t *testing.T) {
 	}
 	schema2 := Schema{
 		schema[0],
-		{Name: "rec", Type: RecordFieldType, Schema: nested},
+		{Name: "rec2", Type: RecordFieldType, Schema: nested},
 		schema[1],
+		schema[2],
 	}
 
-	got, err = table.Update(ctx, TableMetadataToUpdate{Schema: schema2})
+	got, err = table.Update(ctx, TableMetadataToUpdate{Schema: schema2}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Wherever you add the column, it appears at the end.
-	schema3 := Schema{schema2[0], schema2[2], schema2[1]}
+	schema3 := Schema{schema2[0], schema2[2], schema2[3], schema2[1]}
 	if !testutil.Equal(got.Schema, schema3) {
 		t.Errorf("add field:\ngot  %v\nwant %v",
 			pretty.Value(got.Schema), pretty.Value(schema3))
 	}
 
 	// Updating with the empty schema succeeds, but is a no-op.
-	got, err = table.Update(ctx, TableMetadataToUpdate{Schema: Schema{}})
+	got, err = table.Update(ctx, TableMetadataToUpdate{Schema: Schema{}}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -587,30 +723,31 @@ func TestIntegration_Update(t *testing.T) {
 			pretty.Value(got.Schema), pretty.Value(schema3))
 	}
 
-	// Error cases.
+	// Error cases when updating schema.
 	for _, test := range []struct {
 		desc   string
 		fields []*FieldSchema
 	}{
 		{"change from optional to required", []*FieldSchema{
-			schema3[0],
-			{Name: "num", Type: IntegerFieldType, Required: true},
+			{Name: "name", Type: StringFieldType, Required: true},
+			schema3[1],
 			schema3[2],
+			schema3[3],
 		}},
 		{"add a required field", []*FieldSchema{
-			schema3[0], schema3[1], schema3[2],
+			schema3[0], schema3[1], schema3[2], schema3[3],
 			{Name: "req", Type: StringFieldType, Required: true},
 		}},
-		{"remove a field", []*FieldSchema{schema3[0], schema3[1]}},
+		{"remove a field", []*FieldSchema{schema3[0], schema3[1], schema3[2]}},
 		{"remove a nested field", []*FieldSchema{
-			schema3[0], schema3[1],
-			{Name: "rec", Type: RecordFieldType, Schema: Schema{nested[0]}}}},
+			schema3[0], schema3[1], schema3[2],
+			{Name: "rec2", Type: RecordFieldType, Schema: Schema{nested[0]}}}},
 		{"remove all nested fields", []*FieldSchema{
-			schema3[0], schema3[1],
-			{Name: "rec", Type: RecordFieldType, Schema: Schema{}}}},
+			schema3[0], schema3[1], schema3[2],
+			{Name: "rec2", Type: RecordFieldType, Schema: Schema{}}}},
 	} {
 		for {
-			_, err = table.Update(ctx, TableMetadataToUpdate{Schema: Schema(test.fields)})
+			_, err = table.Update(ctx, TableMetadataToUpdate{Schema: Schema(test.fields)}, "")
 			if !hasStatusCode(err, 403) {
 				break
 			}
@@ -631,7 +768,11 @@ func TestIntegration_Load(t *testing.T) {
 		t.Skip("Integration tests skipped")
 	}
 	ctx := context.Background()
-	table := newTable(t, schema)
+	// CSV data can't be loaded into a repeated field, so we use a different schema.
+	table := newTable(t, Schema{
+		{Name: "name", Type: StringFieldType},
+		{Name: "nums", Type: IntegerFieldType},
+	})
 	defer table.Delete(ctx)
 
 	// Load the table from a reader.
@@ -666,20 +807,22 @@ func TestIntegration_DML(t *testing.T) {
 
 		// Use DML to insert.
 		wantRows := [][]Value{
-			[]Value{"a", int64(0)},
-			[]Value{"b", int64(1)},
-			[]Value{"c", int64(2)},
+			[]Value{"a", []Value{int64(0)}, []Value{true}},
+			[]Value{"b", []Value{int64(1)}, []Value{false}},
+			[]Value{"c", []Value{int64(2)}, []Value{true}},
 		}
-		query := fmt.Sprintf("INSERT bigquery_integration_test.%s (name, num) "+
-			"VALUES ('a', 0), ('b', 1), ('c', 2)",
+		query := fmt.Sprintf("INSERT bigquery_integration_test.%s (name, nums, rec) "+
+			"VALUES ('a', [0], STRUCT<BOOL>(TRUE)), ('b', [1], STRUCT<BOOL>(FALSE)), ('c', [2], STRUCT<BOOL>(TRUE))",
 			table.TableID)
 		q := client.Query(query)
 		q.UseStandardSQL = true // necessary for DML
 		job, err := q.Run(ctx)
 		if err != nil {
+			fmt.Printf("q.Run: %v\n", err)
 			return false, err
 		}
 		if err := wait(ctx, job); err != nil {
+			fmt.Printf("wait: %v\n", err)
 			return false, err
 		}
 		if msg, ok := compareRead(table.Read(ctx), wantRows); !ok {
@@ -890,7 +1033,7 @@ func TestIntegration_ReadNullIntoStruct(t *testing.T) {
 	upl := table.Uploader()
 	row := &ValuesSaver{
 		Schema: schema,
-		Row:    []Value{"name", nil},
+		Row:    []Value{nil, []Value{}, []Value{nil}},
 	}
 	if err := upl.Put(ctx, []*ValuesSaver{row}); err != nil {
 		t.Fatal(putError(err))
@@ -899,17 +1042,88 @@ func TestIntegration_ReadNullIntoStruct(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	q := client.Query(fmt.Sprintf("select name, num from %s", table.TableID))
+	q := client.Query(fmt.Sprintf("select name from %s", table.TableID))
 	q.DefaultProjectID = dataset.ProjectID
 	q.DefaultDatasetID = dataset.DatasetID
 	it, err := q.Read(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	type S struct{ Num int64 }
+	type S struct{ Name string }
 	var s S
 	if err := it.Next(&s); err == nil {
 		t.Fatal("got nil, want error")
+	}
+}
+
+const (
+	stdName    = "`bigquery-public-data.samples.shakespeare`"
+	legacyName = "[bigquery-public-data:samples.shakespeare]"
+)
+
+// These tests exploit the fact that the two SQL versions have different syntaxes for
+// fully-qualified table names.
+var useLegacySqlTests = []struct {
+	t           string // name of table
+	std, legacy bool   // use standard/legacy SQL
+	err         bool   // do we expect an error?
+}{
+	{t: legacyName, std: false, legacy: true, err: false},
+	{t: legacyName, std: true, legacy: false, err: true},
+	{t: legacyName, std: false, legacy: false, err: false}, // legacy SQL is default
+	{t: legacyName, std: true, legacy: true, err: true},
+	{t: stdName, std: false, legacy: true, err: true},
+	{t: stdName, std: true, legacy: false, err: false},
+	{t: stdName, std: false, legacy: false, err: true}, // legacy SQL is default
+	{t: stdName, std: true, legacy: true, err: true},
+}
+
+func TestIntegration_QueryUseLegacySQL(t *testing.T) {
+	// Test the UseLegacySQL and UseStandardSQL options for queries.
+	if client == nil {
+		t.Skip("Integration tests skipped")
+	}
+	ctx := context.Background()
+	for _, test := range useLegacySqlTests {
+		q := client.Query(fmt.Sprintf("select word from %s limit 1", test.t))
+		q.UseStandardSQL = test.std
+		q.UseLegacySQL = test.legacy
+		_, err := q.Read(ctx)
+		gotErr := err != nil
+		if gotErr && !test.err {
+			t.Errorf("%+v:\nunexpected error: %v", test, err)
+		} else if !gotErr && test.err {
+			t.Errorf("%+v:\nsucceeded, but want error", test)
+		}
+	}
+}
+
+func TestIntegration_TableUseLegacySQL(t *testing.T) {
+	// Test the UseLegacySQL and UseStandardSQL options for CreateTable.
+	if client == nil {
+		t.Skip("Integration tests skipped")
+	}
+	ctx := context.Background()
+	table := newTable(t, schema)
+	defer table.Delete(ctx)
+	for i, test := range useLegacySqlTests {
+		view := dataset.Table(fmt.Sprintf("t_view_%d", i))
+		vq := ViewQuery(fmt.Sprintf("SELECT word from %s", test.t))
+		opts := []CreateTableOption{vq}
+		if test.std {
+			opts = append(opts, UseStandardSQL())
+		}
+		if test.legacy {
+			opts = append(opts, UseLegacySQL())
+		}
+		err := view.Create(ctx, opts...)
+		gotErr := err != nil
+		if gotErr && !test.err {
+			t.Errorf("%+v:\nunexpected error: %v", test, err)
+		} else if !gotErr && test.err {
+			t.Errorf("%+v:\nsucceeded, but want error", test)
+		}
+		view.Delete(ctx)
 	}
 }
 
@@ -943,7 +1157,7 @@ func compareRead(it *RowIterator, want [][]Value) (msg string, ok bool) {
 		gotRow := []Value(r)
 		wantRow := want[i]
 		if !testutil.Equal(gotRow, wantRow) {
-			return fmt.Sprintf("#%d: got %v, want %v", i, gotRow, wantRow), false
+			return fmt.Sprintf("#%d: got %#v, want %#v", i, gotRow, wantRow), false
 		}
 	}
 	return "", true

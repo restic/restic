@@ -117,7 +117,7 @@ func (s *fakeServer) StreamingPull(stream pb.Subscriber_StreamingPullServer) err
 			// Add a slight delay to ensure the server receives any
 			// messages en route from the client before shutting down the stream.
 			// This reduces flakiness of tests involving retry.
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 		}
 		if pr.err == io.EOF {
 			return nil
