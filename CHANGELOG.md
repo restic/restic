@@ -88,6 +88,12 @@ Small changes
    externally by passing `--time` to the `backup` command.
    https://github.com/restic/restic/pull/1205
 
+ * The option `--compact` was added to the `snapshots` command to get a better
+   overview of the snapshots in a repo. It limits each snapshot to a single
+   line.
+   https://github.com/restic/restic/issues/1218
+   https://github.com/restic/restic/pull/1223
+
 
 Important Changes in 0.7.1
 ==========================
