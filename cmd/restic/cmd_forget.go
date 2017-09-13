@@ -204,13 +204,13 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 		if len(keep) != 0 && !gopts.Quiet {
 			Printf("keep %d snapshots:\n", len(keep))
-			PrintSnapshots(globalOptions.stdout, keep)
+			PrintSnapshots(globalOptions.stdout, keep, false)
 			Printf("\n")
 		}
 
 		if len(remove) != 0 && !gopts.Quiet {
 			Printf("remove %d snapshots:\n", len(remove))
-			PrintSnapshots(globalOptions.stdout, remove)
+			PrintSnapshots(globalOptions.stdout, remove, false)
 			Printf("\n")
 		}
 

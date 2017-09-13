@@ -25,9 +25,10 @@ The "snapshots" command lists all snapshots stored in the repository.
 
 // SnapshotOptions bundles all options for the snapshots command.
 type SnapshotOptions struct {
-	Host  string
-	Tags  restic.TagLists
-	Paths []string
+	Host    string
+	Tags    restic.TagLists
+	Paths   []string
+	Compact bool
 }
 
 var snapshotOptions SnapshotOptions
@@ -39,6 +40,7 @@ func init() {
 	f.StringVarP(&snapshotOptions.Host, "host", "H", "", "only consider snapshots for this `host`")
 	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` (can be specified multiple times)")
 	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
+	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact format")
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
@@ -71,13 +73,13 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 		}
 		return nil
 	}
-	PrintSnapshots(gopts.stdout, list)
+	PrintSnapshots(gopts.stdout, list, opts.Compact)
 
 	return nil
 }
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
-func PrintSnapshots(stdout io.Writer, list restic.Snapshots) {
+func PrintSnapshots(stdout io.Writer, list restic.Snapshots, compact bool) {
 
 	// Determine the max widths for host and tag.
 	maxHost, maxTag := 10, 6
@@ -93,8 +95,13 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots) {
 	}
 
 	tab := NewTable()
-	tab.Header = fmt.Sprintf("%-8s  %-19s  %-*s  %-*s  %-3s %s", "ID", "Date", -maxHost, "Host", -maxTag, "Tags", "", "Directory")
-	tab.RowFormat = fmt.Sprintf("%%-8s  %%-19s  %%%ds  %%%ds  %%-3s %%s", -maxHost, -maxTag)
+	if !compact {
+		tab.Header = fmt.Sprintf("%-8s  %-19s  %-*s  %-*s  %-3s %s", "ID", "Date", -maxHost, "Host", -maxTag, "Tags", "", "Directory")
+		tab.RowFormat = fmt.Sprintf("%%-8s  %%-19s  %%%ds  %%%ds  %%-3s %%s", -maxHost, -maxTag)
+	} else {
+		tab.Header = fmt.Sprintf("%-8s  %-19s  %-*s  %-*s", "ID", "Date", -maxHost, "Host", -maxTag, "Tags")
+		tab.RowFormat = fmt.Sprintf("%%-8s  %%-19s  %%%ds  %%s", -maxHost)
+	}
 
 	for _, sn := range list {
 		if len(sn.Paths) == 0 {
@@ -116,7 +123,16 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots) {
 			treeElement = "┌──"
 		}
 
-		tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, firstTag, treeElement, sn.Paths[0]})
+		if !compact {
+			tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, firstTag, treeElement, sn.Paths[0]})
+		} else {
+			allTags := ""
+			for _, tag := range sn.Tags {
+				allTags += tag + " "
+			}
+			tab.Rows = append(tab.Rows, []interface{}{sn.ID().Str(), sn.Time.Format(TimeFormat), sn.Hostname, allTags})
+			continue
+		}
 
 		if len(sn.Tags) > rows {
 			rows = len(sn.Tags)
