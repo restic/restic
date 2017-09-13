@@ -104,6 +104,20 @@ func openclose(t testing.TB, dir string) {
 	}
 }
 
+func mkdir(t testing.TB, dir string) {
+	err := os.Mkdir(dir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func removeAll(t testing.TB, dir string) {
+	err := os.RemoveAll(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestOpenNotExistingDirectory(t *testing.T) {
 	dir, cleanup := TempDir(t)
 	defer cleanup()
@@ -113,5 +127,10 @@ func TestOpenNotExistingDirectory(t *testing.T) {
 	empty(t, dir)
 
 	openclose(t, dir)
+	empty(t, dir)
+
+	mkdir(t, filepath.Join(dir, "data"))
+	openclose(t, dir)
+	removeAll(t, filepath.Join(dir, "data"))
 	empty(t, dir)
 }

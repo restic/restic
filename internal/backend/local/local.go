@@ -57,11 +57,14 @@ func Open(cfg Config) (*Local, error) {
 	// if data dir exists, make sure that all subdirs also exist
 	datadir := be.Dirname(restic.Handle{Type: restic.DataFile})
 	if dirExists(datadir) {
+		debug.Log("datadir %v exists", datadir)
 		for _, d := range be.Paths() {
-			if _, err := filepath.Rel(datadir, d); err != nil {
+			if !fs.HasPathPrefix(datadir, d) {
+				debug.Log("%v is not subdir of datadir %v", d, datadir)
 				continue
 			}
 
+			debug.Log("MkdirAll %v", d)
 			err := fs.MkdirAll(d, backend.Modes.Dir)
 			if err != nil {
 				return nil, errors.Wrap(err, "MkdirAll")
