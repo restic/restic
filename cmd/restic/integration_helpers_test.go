@@ -71,7 +71,7 @@ func sameModTime(fi1, fi2 os.FileInfo) bool {
 		}
 	}
 
-	return fi1.ModTime() == fi2.ModTime()
+	return fi1.ModTime().Equal(fi2.ModTime())
 }
 
 // directoriesEqualContents checks if both directories contain exactly the same

@@ -134,7 +134,7 @@ func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*res
 		return nil, errors.Wrap(err, "restic.Stat")
 	}
 
-	if fi.ModTime() == node.ModTime {
+	if fi.ModTime().Equal(node.ModTime) {
 		return node, nil
 	}
 
