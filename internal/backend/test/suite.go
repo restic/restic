@@ -34,6 +34,9 @@ type Suite struct {
 	// suite to wait for this amount of time until a file that was removed
 	// really disappeared.
 	WaitForDelayedRemoval time.Duration
+
+	// ErrorHandler allows ignoring certain errors.
+	ErrorHandler func(testing.TB, restic.Backend, error) error
 }
 
 // RunTests executes all defined tests as subtests of t.
