@@ -162,6 +162,7 @@ func (arch *Archiver) saveChunk(ctx context.Context, chunk chunker.Chunk, p *res
 	// TODO handle error
 	if err != nil {
 		debug.Log("Save(%v) failed: %v", id.Str(), err)
+		fmt.Printf("\nerror while saving data to the repo: %+v\n", err)
 		panic(err)
 	}
 
