@@ -4,8 +4,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var autocompleteTarget string
-
 var cmdAutocomplete = &cobra.Command{
 	Use:   "autocomplete",
 	Short: "Generate shell autocompletion script",
@@ -28,10 +26,12 @@ $ sudo restic autocomplete`,
 	},
 }
 
+var autocompleteTarget string
+
 func init() {
 	cmdRoot.AddCommand(cmdAutocomplete)
 
-	cmdAutocomplete.Flags().StringVarP(&autocompleteTarget, "completionfile", "", "/etc/bash_completion.d/restic.sh", "autocompletion file")
+	cmdAutocomplete.Flags().StringVarP(&autocompleteTarget, "completionfile", "", "/usr/share/bash-completion/completions/restic", "autocompletion file")
 	// For bash-completion
 	cmdAutocomplete.Flags().SetAnnotation("completionfile", cobra.BashCompFilenameExt, []string{})
 }
