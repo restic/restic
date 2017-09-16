@@ -331,7 +331,7 @@ func (s *Suite) TestSave(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = delayedRemove(t, b, s.WaitForDelayedRemoval, h)
+	err = s.delayedRemove(t, b, h)
 	if err != nil {
 		t.Fatalf("error removing item: %+v", err)
 	}
@@ -436,12 +436,15 @@ func testLoad(b restic.Backend, h restic.Handle, length int, offset int64) error
 	return err
 }
 
-func delayedRemove(t testing.TB, be restic.Backend, maxwait time.Duration, handles ...restic.Handle) error {
+func (s *Suite) delayedRemove(t testing.TB, be restic.Backend, handles ...restic.Handle) error {
 	// Some backend (swift, I'm looking at you) may implement delayed
 	// removal of data. Let's wait a bit if this happens.
 
 	for _, h := range handles {
 		err := be.Remove(context.TODO(), h)
+		if s.ErrorHandler != nil {
+			err = s.ErrorHandler(t, be, err)
+		}
 		if err != nil {
 			return err
 		}
@@ -452,8 +455,11 @@ func delayedRemove(t testing.TB, be restic.Backend, maxwait time.Duration, handl
 		attempt := 0
 		var found bool
 		var err error
-		for time.Since(start) <= maxwait {
+		for time.Since(start) <= s.WaitForDelayedRemoval {
 			found, err = be.Test(context.TODO(), h)
+			if s.ErrorHandler != nil {
+				err = s.ErrorHandler(t, be, err)
+			}
 			if err != nil {
 				return err
 			}
@@ -564,7 +570,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 		test.Assert(t, err != nil, "expected error for %v, got %v", h, err)
 
 		// remove and recreate
-		err = delayedRemove(t, b, s.WaitForDelayedRemoval, h)
+		err = s.delayedRemove(t, b, h)
 		test.OK(t, err)
 
 		// test that the blob is gone
@@ -613,7 +619,7 @@ func (s *Suite) TestBackend(t *testing.T) {
 				handles = append(handles, h)
 			}
 
-			test.OK(t, delayedRemove(t, b, s.WaitForDelayedRemoval, handles...))
+			test.OK(t, s.delayedRemove(t, b, handles...))
 		}
 	}
 }

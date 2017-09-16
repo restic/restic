@@ -20,8 +20,21 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		// do not use excessive data
 		MinimalData: true,
 
-		// wait for removals for at least 60s
-		WaitForDelayedRemoval: 60 * time.Second,
+		// wait for removals for at least 5m
+		WaitForDelayedRemoval: 5 * time.Minute,
+
+		ErrorHandler: func(t testing.TB, be restic.Backend, err error) error {
+			if err == nil {
+				return nil
+			}
+
+			if be.IsNotExist(err) {
+				t.Logf("swift: ignoring error %v", err)
+				return nil
+			}
+
+			return err
+		},
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
