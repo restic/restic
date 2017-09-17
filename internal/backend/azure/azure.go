@@ -264,25 +264,39 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 		prefix += "/"
 	}
 
+	params := storage.ListBlobsParameters{
+		MaxResults: 1000,
+		Prefix:     prefix,
+	}
+
 	go func() {
 		defer close(ch)
 
-		obj, err := be.container.ListBlobs(storage.ListBlobsParameters{Prefix: prefix})
-		if err != nil {
-			return
-		}
-
-		for _, item := range obj.Blobs {
-			m := strings.TrimPrefix(item.Name, prefix)
-			if m == "" {
-				continue
-			}
-
-			select {
-			case ch <- path.Base(m):
-			case <-ctx.Done():
+		for {
+			obj, err := be.container.ListBlobs(params)
+			if err != nil {
 				return
 			}
+
+			debug.Log("got %v objects", len(obj.Blobs))
+
+			for _, item := range obj.Blobs {
+				m := strings.TrimPrefix(item.Name, prefix)
+				if m == "" {
+					continue
+				}
+
+				select {
+				case ch <- path.Base(m):
+				case <-ctx.Done():
+					return
+				}
+			}
+
+			if obj.NextMarker == "" {
+				break
+			}
+			params.Marker = obj.NextMarker
 		}
 	}()
 
