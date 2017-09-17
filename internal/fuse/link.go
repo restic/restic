@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Statically ensure that *file implements the given interface
+// Statically ensure that *link implements the given interface
 var _ = fs.NodeReadlinker(&link{})
 
 type link struct {
