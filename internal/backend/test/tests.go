@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -250,14 +251,37 @@ func (s *Suite) TestList(t *testing.T) {
 	const numTestFiles = 1233
 	list1 := restic.NewIDSet()
 
+	var wg sync.WaitGroup
+	input := make(chan int, numTestFiles)
 	for i := 0; i < numTestFiles; i++ {
-		data := []byte(fmt.Sprintf("random test blob %v", i))
-		id := restic.Hash(data)
-		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-		err := b.Save(context.TODO(), h, bytes.NewReader(data))
-		if err != nil {
-			t.Fatal(err)
-		}
+		input <- i
+	}
+	close(input)
+
+	output := make(chan restic.ID, numTestFiles)
+
+	for worker := 0; worker < 5; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			for i := range input {
+				data := []byte(fmt.Sprintf("random test blob %v", i))
+				id := restic.Hash(data)
+				h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+				err := b.Save(context.TODO(), h, bytes.NewReader(data))
+				if err != nil {
+					t.Fatal(err)
+				}
+				output <- id
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(output)
+
+	for id := range output {
 		list1.Insert(id)
 	}
 
