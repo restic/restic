@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
@@ -132,59 +131,6 @@ func (be *Backend) IsNotExist(err error) bool {
 // Join combines path components with slashes.
 func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
-}
-
-type fileInfo struct {
-	name    string
-	size    int64
-	mode    os.FileMode
-	modTime time.Time
-	isDir   bool
-}
-
-func (fi fileInfo) Name() string       { return fi.name }    // base name of the file
-func (fi fileInfo) Size() int64        { return fi.size }    // length in bytes for regular files; system-dependent for others
-func (fi fileInfo) Mode() os.FileMode  { return fi.mode }    // file mode bits
-func (fi fileInfo) ModTime() time.Time { return fi.modTime } // modification time
-func (fi fileInfo) IsDir() bool        { return fi.isDir }   // abbreviation for Mode().IsDir()
-func (fi fileInfo) Sys() interface{}   { return nil }        // underlying data source (can return nil)
-
-// ReadDir returns the entries for a directory.
-func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
-	debug.Log("ReadDir(%v)", dir)
-
-	// make sure dir ends with a slash
-	if dir[len(dir)-1] != '/' {
-		dir += "/"
-	}
-
-	obj, err := be.service.Objects.List(be.bucketName).Prefix(dir).Delimiter("/").Do()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range obj.Prefixes {
-		entry := fileInfo{
-			name:  strings.TrimPrefix(item, dir),
-			isDir: true,
-			mode:  os.ModeDir | 0755,
-		}
-		list = append(list, entry)
-	}
-	for _, item := range obj.Items {
-		entry := fileInfo{
-			name:  strings.TrimPrefix(item.Name, dir),
-			isDir: false,
-			mode:  0644,
-			size:  int64(item.Size),
-			//modTime: item.Updated,
-		}
-		if entry.name != "" {
-			list = append(list, entry)
-		}
-	}
-
-	return list, nil
 }
 
 // Location returns this backend's location (the bucket name).
