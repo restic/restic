@@ -240,6 +240,53 @@ func (s *Suite) TestLoad(t *testing.T) {
 	test.OK(t, b.Remove(context.TODO(), handle))
 }
 
+// TestList makes sure that the backend can list more than a thousand files.
+func (s *Suite) TestList(t *testing.T) {
+	seedRand(t)
+
+	b := s.open(t)
+	defer s.close(t, b)
+
+	const numTestFiles = 1233
+	list1 := restic.NewIDSet()
+
+	for i := 0; i < numTestFiles; i++ {
+		data := []byte(fmt.Sprintf("random test blob %v", i))
+		id := restic.Hash(data)
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		err := b.Save(context.TODO(), h, bytes.NewReader(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+		list1.Insert(id)
+	}
+
+	t.Logf("wrote %v files", len(list1))
+
+	list2 := restic.NewIDSet()
+	for name := range b.List(context.TODO(), restic.DataFile) {
+		id, err := restic.ParseID(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		list2.Insert(id)
+	}
+
+	t.Logf("loaded %v IDs from backend", len(list2))
+
+	if !list1.Equals(list2) {
+		t.Errorf("lists are not equal, list1 %d entries, list2 %d entries", len(list1), len(list2))
+	}
+
+	for id := range list1 {
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		err := s.delayedRemove(t, b, h)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 type errorCloser struct {
 	io.Reader
 	l int
