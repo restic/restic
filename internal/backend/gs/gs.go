@@ -298,22 +298,33 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 	go func() {
 		defer close(ch)
 
-		obj, err := be.service.Objects.List(be.bucketName).Prefix(prefix).Do()
-		if err != nil {
-			return
-		}
-
-		for _, item := range obj.Items {
-			m := strings.TrimPrefix(item.Name, prefix)
-			if m == "" {
-				continue
-			}
-
-			select {
-			case ch <- path.Base(m):
-			case <-ctx.Done():
+		listReq := be.service.Objects.List(be.bucketName).Prefix(prefix)
+		for {
+			obj, err := listReq.Do()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error listing %v: %v\n", prefix, err)
 				return
 			}
+
+			debug.Log("returned %v items", len(obj.Items))
+
+			for _, item := range obj.Items {
+				m := strings.TrimPrefix(item.Name, prefix)
+				if m == "" {
+					continue
+				}
+
+				select {
+				case ch <- path.Base(m):
+				case <-ctx.Done():
+					return
+				}
+			}
+
+			if obj.NextPageToken == "" {
+				break
+			}
+			listReq.PageToken(obj.NextPageToken)
 		}
 	}()
 
