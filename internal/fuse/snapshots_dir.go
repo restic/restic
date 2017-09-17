@@ -25,7 +25,7 @@ type SnapshotsDir struct {
 	names     map[string]*restic.Snapshot
 }
 
-// ensure that *DirSnapshots implements these interfaces
+// ensure that *SnapshotsDir implements these interfaces
 var _ = fs.HandleReadDirAller(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
 
