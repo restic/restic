@@ -15,7 +15,7 @@ matrix:
   include:
     - os: linux
       go: 1.9.x
-      sudo: true
+      sudo: false
       env:
         RESTIC_TEST_FUSE=1
 
