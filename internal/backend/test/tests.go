@@ -267,8 +267,7 @@ func (s *Suite) TestList(t *testing.T) {
 	var tests = []struct {
 		maxItems int
 	}{
-		{3}, {8}, {11}, {13}, {23},
-		{numTestFiles}, {numTestFiles + 7}, {numTestFiles + 10}, {numTestFiles + 1123},
+		{11}, {23}, {numTestFiles}, {numTestFiles + 10}, {numTestFiles + 1123},
 	}
 
 	for _, test := range tests {
@@ -302,12 +301,14 @@ func (s *Suite) TestList(t *testing.T) {
 	}
 
 	t.Logf("remove %d files", numTestFiles)
+	handles := make([]restic.Handle, 0, len(list1))
 	for id := range list1 {
-		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-		err := s.delayedRemove(t, b, h)
-		if err != nil {
-			t.Fatal(err)
-		}
+		handles = append(handles, restic.Handle{Type: restic.DataFile, Name: id.String()})
+	}
+
+	err := s.delayedRemove(t, b, handles...)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
