@@ -45,7 +45,10 @@ install:
   - go env
 
 script:
-  - go run run_integration_tests.go
+  - DEBUG_LOG=debug.log go test -tags debug -v -run TestBackendSwift/TestSwift internal/backend/swift
+
+after_failure:
+  - cat debug.log
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -f all.cov
