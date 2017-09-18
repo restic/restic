@@ -30,7 +30,7 @@ cause of this bug is not yet known.
 How can I specify encryption passwords automatically?
 -----------------------------------------------------
 
-When you run ``restict create``, you need to enter the passphrase on
+When you run ``restic backup``, you need to enter the passphrase on
 the console. This is not very convenient for automated backups, so you
 can also provide the password through the ``--password-file`` option
 or ``RESTIC_PASSWORD`` environment. A discussion is in progress over
@@ -43,6 +43,9 @@ implementing unattended backups happens in :issue:`533`.
                directly and they will be readable to all users on a
                system. Using export in a shell script file should be
                safe, however, as the environment of a process is
-               `accessible only to that user`_.
+               `accessible only to that user`_. Please make sure that
+               the permissions on the files where the password is
+               eventually stored are safe (e.g. `0600` and owned by
+               root).
 
 .. _accessible only to that user: https://security.stackexchange.com/questions/14000/environment-variable-accessibility-in-linux/14009#14009
