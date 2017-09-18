@@ -2,22 +2,16 @@ language: go
 sudo: false
 
 go:
-  - 1.8.x
   - 1.9.x
 
 os:
-  - osx
+  - linux
 
 env:
   matrix:
     RESTIC_TEST_FUSE=0
 
 matrix:
-  exclude:
-    - os: osx
-      go: 1.8.x
-    - os: linux
-      go: 1.9.x
   include:
     - os: linux
       go: 1.9.x
