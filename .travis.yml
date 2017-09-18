@@ -6,7 +6,6 @@ go:
   - 1.9.x
 
 os:
-  - linux
   - osx
 
 env:
@@ -45,7 +44,7 @@ install:
   - go env
 
 script:
-  - DEBUG_LOG=debug.log go test -tags debug -v -run TestBackendSwift/TestSwift internal/backend/swift
+  - DEBUG_LOG=debug.log go test -tags debug -v -run TestBackendSwift/TestSwift ./internal/backend/swift
 
 after_failure:
   - cat debug.log
