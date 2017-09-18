@@ -360,6 +360,49 @@ func (s *Suite) TestSave(t *testing.T) {
 	}
 }
 
+// TestSwiftCreateDelete checks that the swift backend correctly creates and deletes files.
+func (s *Suite) TestSwiftCreateDelete(t *testing.T) {
+	b := s.open(t)
+	defer s.close(t, b)
+
+	data := []byte("foo")
+	id := restic.Hash(data)
+
+	for i := 0; i < 50; i++ {
+		h := restic.Handle{Type: restic.DataFile, Name: fmt.Sprintf("%s-%d", id, i)}
+		err := b.Save(context.TODO(), h, bytes.NewReader(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ok, err := b.Test(context.TODO(), h)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !ok {
+			t.Errorf("file %v not present", h)
+		}
+	}
+
+	for i := 0; i < 50; i++ {
+		h := restic.Handle{Type: restic.DataFile, Name: fmt.Sprintf("%s-%d", id, i)}
+		err := b.Remove(context.TODO(), h)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ok, err := b.Test(context.TODO(), h)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if ok {
+			t.Errorf("file %v still present", h)
+		}
+	}
+}
+
 var filenameTests = []struct {
 	name string
 	data string
