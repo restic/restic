@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -241,67 +240,68 @@ func (s *Suite) TestLoad(t *testing.T) {
 	test.OK(t, b.Remove(context.TODO(), handle))
 }
 
-// TestList makes sure that the backend can list more than a thousand files.
+// TestList makes sure that the backend implements List() pagination correctly.
 func (s *Suite) TestList(t *testing.T) {
 	seedRand(t)
+
+	numTestFiles := rand.Intn(20) + 20
 
 	b := s.open(t)
 	defer s.close(t, b)
 
-	const numTestFiles = 1233
 	list1 := restic.NewIDSet()
 
-	var wg sync.WaitGroup
-	input := make(chan int, numTestFiles)
 	for i := 0; i < numTestFiles; i++ {
-		input <- i
-	}
-	close(input)
-
-	output := make(chan restic.ID, numTestFiles)
-
-	for worker := 0; worker < 5; worker++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			for i := range input {
-				data := []byte(fmt.Sprintf("random test blob %v", i))
-				id := restic.Hash(data)
-				h := restic.Handle{Type: restic.DataFile, Name: id.String()}
-				err := b.Save(context.TODO(), h, bytes.NewReader(data))
-				if err != nil {
-					t.Fatal(err)
-				}
-				output <- id
-			}
-		}()
-	}
-
-	wg.Wait()
-	close(output)
-
-	for id := range output {
+		data := []byte(fmt.Sprintf("random test blob %v", i))
+		id := restic.Hash(data)
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		err := b.Save(context.TODO(), h, bytes.NewReader(data))
+		if err != nil {
+			t.Fatal(err)
+		}
 		list1.Insert(id)
 	}
 
 	t.Logf("wrote %v files", len(list1))
 
-	list2 := restic.NewIDSet()
-	for name := range b.List(context.TODO(), restic.DataFile) {
-		id, err := restic.ParseID(name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		list2.Insert(id)
+	var tests = []struct {
+		maxItems int
+	}{
+		{3}, {8}, {11}, {13}, {23},
+		{numTestFiles}, {numTestFiles + 7}, {numTestFiles + 10}, {numTestFiles + 1123},
 	}
 
-	t.Logf("loaded %v IDs from backend", len(list2))
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("max-%v", test.maxItems), func(t *testing.T) {
+			list2 := restic.NewIDSet()
 
-	if !list1.Equals(list2) {
-		t.Errorf("lists are not equal, list1 %d entries, list2 %d entries", len(list1), len(list2))
+			type setter interface {
+				SetListMaxItems(int)
+			}
+
+			if s, ok := b.(setter); ok {
+				t.Logf("setting max list items to %d", test.maxItems)
+				s.SetListMaxItems(test.maxItems)
+			}
+
+			for name := range b.List(context.TODO(), restic.DataFile) {
+				id, err := restic.ParseID(name)
+				if err != nil {
+					t.Fatal(err)
+				}
+				list2.Insert(id)
+			}
+
+			t.Logf("loaded %v IDs from backend", len(list2))
+
+			if !list1.Equals(list2) {
+				t.Errorf("lists are not equal, list1 %d entries, list2 %d entries",
+					len(list1), len(list2))
+			}
+		})
 	}
 
+	t.Logf("remove %d files", numTestFiles)
 	for id := range list1 {
 		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 		err := s.delayedRemove(t, b, h)

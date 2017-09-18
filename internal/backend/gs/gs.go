@@ -22,11 +22,12 @@ import (
 
 // Backend stores data on an gs endpoint.
 type Backend struct {
-	service    *storage.Service
-	projectID  string
-	sem        *backend.Semaphore
-	bucketName string
-	prefix     string
+	service      *storage.Service
+	projectID    string
+	sem          *backend.Semaphore
+	bucketName   string
+	prefix       string
+	listMaxItems int
 	backend.Layout
 }
 
@@ -55,6 +56,8 @@ func getStorageService(jsonKeyPath string) (*storage.Service, error) {
 	return service, nil
 }
 
+const defaultListMaxItems = 1000
+
 func open(cfg Config) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
@@ -78,6 +81,7 @@ func open(cfg Config) (*Backend, error) {
 			Path: cfg.Prefix,
 			Join: path.Join,
 		},
+		listMaxItems: defaultListMaxItems,
 	}
 
 	return be, nil
@@ -109,6 +113,11 @@ func Create(cfg Config) (restic.Backend, error) {
 	}
 
 	return be, nil
+}
+
+// SetListMaxItems sets the number of list items to load per request.
+func (be *Backend) SetListMaxItems(i int) {
+	be.listMaxItems = i
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -298,7 +307,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 	go func() {
 		defer close(ch)
 
-		listReq := be.service.Objects.List(be.bucketName).Prefix(prefix)
+		listReq := be.service.Objects.List(be.bucketName).Prefix(prefix).MaxResults(int64(be.listMaxItems))
 		for {
 			obj, err := listReq.Do()
 			if err != nil {

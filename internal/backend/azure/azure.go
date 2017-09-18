@@ -17,12 +17,15 @@ import (
 
 // Backend stores data on an azure endpoint.
 type Backend struct {
-	accountName string
-	container   *storage.Container
-	sem         *backend.Semaphore
-	prefix      string
+	accountName  string
+	container    *storage.Container
+	sem          *backend.Semaphore
+	prefix       string
+	listMaxItems int
 	backend.Layout
 }
+
+const defaultListMaxItems = 5000
 
 // make sure that *Backend implements backend.Backend
 var _ restic.Backend = &Backend{}
@@ -53,6 +56,7 @@ func open(cfg Config) (*Backend, error) {
 			Path: cfg.Prefix,
 			Join: path.Join,
 		},
+		listMaxItems: defaultListMaxItems,
 	}
 
 	return be, nil
@@ -82,6 +86,11 @@ func Create(cfg Config) (restic.Backend, error) {
 	}
 
 	return be, nil
+}
+
+// SetListMaxItems sets the number of list items to load per request.
+func (be *Backend) SetListMaxItems(i int) {
+	be.listMaxItems = i
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -265,7 +274,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 	}
 
 	params := storage.ListBlobsParameters{
-		MaxResults: 1000,
+		MaxResults: uint(be.listMaxItems),
 		Prefix:     prefix,
 	}
 
