@@ -38,10 +38,10 @@ install:
   - go env
 
 script:
-  - DEBUG_LOG=debug.log go test -tags debug -v -run TestBackendSwift/TestSwift ./internal/backend/swift
+  - DEBUG_LOG=/tmp/debug.log go test -tags debug -v -run TestBackendSwift/TestSwift ./internal/backend/swift
 
 after_failure:
-  - cat debug.log
+  - cat /tmp/debug.log
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -f all.cov
