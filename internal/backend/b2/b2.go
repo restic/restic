@@ -16,12 +16,15 @@ import (
 
 // b2Backend is a backend which stores its data on Backblaze B2.
 type b2Backend struct {
-	client *b2.Client
-	bucket *b2.Bucket
-	cfg    Config
+	client       *b2.Client
+	bucket       *b2.Bucket
+	cfg          Config
+	listMaxItems int
 	backend.Layout
 	sem *backend.Semaphore
 }
+
+const defaultListMaxItems = 1000
 
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
@@ -119,6 +122,11 @@ func Create(cfg Config) (restic.Backend, error) {
 	}
 
 	return be, nil
+}
+
+// SetListMaxItems sets the number of list items to load per request.
+func (be *b2Backend) SetListMaxItems(i int) {
+	be.listMaxItems = i
 }
 
 // Location returns the location for the backend.
@@ -307,10 +315,11 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType) <-chan string 
 		cur := &b2.Cursor{Prefix: prefix}
 
 		for {
-			objs, c, err := be.bucket.ListCurrentObjects(ctx, 1000, cur)
+			objs, c, err := be.bucket.ListCurrentObjects(ctx, be.listMaxItems, cur)
 			if err != nil && err != io.EOF {
 				return
 			}
+			debug.Log("returned %v items", len(objs))
 			for _, obj := range objs {
 				// Skip objects returned that do not have the specified prefix.
 				if !strings.HasPrefix(obj.Name(), prefix) {
