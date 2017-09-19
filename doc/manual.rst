@@ -1075,8 +1075,11 @@ statements originating in functions that match the pattern ``*unlock*``
 
     $ DEBUG_FUNCS=*unlock* restic check
 
-Under the hood: Browse repository objects
------------------------------------------
+Under the hood
+--------------
+
+Browse repository objects
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Internally, a repository stores data of several different types
 described in the `design
@@ -1120,6 +1123,33 @@ objects or its raw content.
       "uid": 501,
       "gid": 20
     }
+
+Metadata handling
+~~~~~~~~~~~~~~~~~
+
+Restic saves and restores most default attributes, including extended attributes like ACLs.
+Sparse files are not handled in a special way yet, and aren't restored.
+
+The following metadata is handled by restic:
+
+- Name
+- Type
+- Mode
+- ModTime
+- AccessTime
+- ChangeTime
+- UID
+- GID
+- User
+- Group
+- Inode
+- Size
+- Links
+- LinkTarget
+- Device
+- Content
+- Subtree
+- ExtendedAttributes
 
 Scripting
 ---------
