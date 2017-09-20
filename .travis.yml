@@ -2,27 +2,20 @@ language: go
 sudo: false
 
 go:
-  - 1.8.x
   - 1.9.x
 
 os:
   - linux
-  - osx
 
 env:
   matrix:
     RESTIC_TEST_FUSE=0
 
 matrix:
-  exclude:
-    - os: osx
-      go: 1.8.x
-    - os: linux
-      go: 1.9.x
   include:
     - os: linux
       go: 1.9.x
-      sudo: true
+      sudo: false
       env:
         RESTIC_TEST_FUSE=1
 
@@ -45,7 +38,10 @@ install:
   - go env
 
 script:
-  - go run run_integration_tests.go
+  - DEBUG_LOG=/tmp/debug.log go test -tags debug -v -run TestBackendSwift/TestSwift ./internal/backend/swift
+
+after_failure:
+  - cat /tmp/debug.log
 
 after_success:
   - bash <(curl -s https://codecov.io/bash) -f all.cov
