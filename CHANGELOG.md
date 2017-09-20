@@ -1,6 +1,21 @@
 This file describes changes relevant to all users that are made in each
 released version of restic from the perspective of the user.
 
+Important Changes in 0.X.Y
+==========================
+
+ * For large backups stored in Google Cloud Storage, the `prune` command fails
+   because listing only returns the first 1000 files. This has been corrected,
+   no data is lost in the process. In addition, a plausibility check was added
+   to `prune`.
+   https://github.com/restic/restic/issues/1246
+   https://github.com/restic/restic/pull/1247
+
+
+Small changes
+-------------
+
+
 Important Changes in 0.7.2
 ==========================
 
