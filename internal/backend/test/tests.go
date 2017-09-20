@@ -240,6 +240,78 @@ func (s *Suite) TestLoad(t *testing.T) {
 	test.OK(t, b.Remove(context.TODO(), handle))
 }
 
+// TestList makes sure that the backend implements List() pagination correctly.
+func (s *Suite) TestList(t *testing.T) {
+	seedRand(t)
+
+	numTestFiles := rand.Intn(20) + 20
+
+	b := s.open(t)
+	defer s.close(t, b)
+
+	list1 := restic.NewIDSet()
+
+	for i := 0; i < numTestFiles; i++ {
+		data := []byte(fmt.Sprintf("random test blob %v", i))
+		id := restic.Hash(data)
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		err := b.Save(context.TODO(), h, bytes.NewReader(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+		list1.Insert(id)
+	}
+
+	t.Logf("wrote %v files", len(list1))
+
+	var tests = []struct {
+		maxItems int
+	}{
+		{11}, {23}, {numTestFiles}, {numTestFiles + 10}, {numTestFiles + 1123},
+	}
+
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("max-%v", test.maxItems), func(t *testing.T) {
+			list2 := restic.NewIDSet()
+
+			type setter interface {
+				SetListMaxItems(int)
+			}
+
+			if s, ok := b.(setter); ok {
+				t.Logf("setting max list items to %d", test.maxItems)
+				s.SetListMaxItems(test.maxItems)
+			}
+
+			for name := range b.List(context.TODO(), restic.DataFile) {
+				id, err := restic.ParseID(name)
+				if err != nil {
+					t.Fatal(err)
+				}
+				list2.Insert(id)
+			}
+
+			t.Logf("loaded %v IDs from backend", len(list2))
+
+			if !list1.Equals(list2) {
+				t.Errorf("lists are not equal, list1 %d entries, list2 %d entries",
+					len(list1), len(list2))
+			}
+		})
+	}
+
+	t.Logf("remove %d files", numTestFiles)
+	handles := make([]restic.Handle, 0, len(list1))
+	for id := range list1 {
+		handles = append(handles, restic.Handle{Type: restic.DataFile, Name: id.String()})
+	}
+
+	err := s.delayedRemove(t, b, handles...)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 type errorCloser struct {
 	io.Reader
 	l int
