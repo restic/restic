@@ -82,7 +82,7 @@ func listSnapshots(t testing.TB, dir string) []string {
 	return names
 }
 
-func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Repository, mountpoint, repodir string, snapshotIDs restic.IDs) {
+func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Repository, mountpoint, repodir string, snapshotIDs restic.IDs, expectedSnapshotsInFuseDir int) {
 	t.Logf("checking for %d snapshots: %v", len(snapshotIDs), snapshotIDs)
 
 	go testRunMount(t, global, mountpoint)
@@ -99,12 +99,22 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 	namesInSnapshots := listSnapshots(t, mountpoint)
 	t.Logf("found %v snapshots in fuse mount: %v", len(namesInSnapshots), namesInSnapshots)
 	Assert(t,
-		len(namesInSnapshots) == len(snapshotIDs),
-		"Invalid number of snapshots: expected %d, got %d", len(snapshotIDs), len(namesInSnapshots))
+		expectedSnapshotsInFuseDir == len(namesInSnapshots),
+		"Invalid number of snapshots: expected %d, got %d", expectedSnapshotsInFuseDir, len(namesInSnapshots))
 
 	namesMap := make(map[string]bool)
 	for _, name := range namesInSnapshots {
 		namesMap[name] = false
+	}
+
+	// Is "latest" present?
+	if len(namesMap) != 0 {
+		_, ok := namesMap["latest"]
+		if !ok {
+			t.Errorf("Symlink latest isn't present in fuse dir")
+		} else {
+			namesMap["latest"] = true
+		}
 	}
 
 	for _, id := range snapshotIDs {
@@ -153,7 +163,7 @@ func TestMount(t *testing.T) {
 	// We remove the mountpoint now to check that cmdMount creates it
 	RemoveAll(t, env.mountpoint)
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, []restic.ID{})
+	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, []restic.ID{}, 0)
 
 	SetupTarTestFixture(t, env.testdata, filepath.Join("testdata", "backup-data.tar.gz"))
 
@@ -163,7 +173,7 @@ func TestMount(t *testing.T) {
 	Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs)
+	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 2)
 
 	// second backup, implicit incremental
 	testRunBackup(t, []string{env.testdata}, BackupOptions{}, env.gopts)
@@ -171,7 +181,7 @@ func TestMount(t *testing.T) {
 	Assert(t, len(snapshotIDs) == 2,
 		"expected two snapshots, got %v", snapshotIDs)
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs)
+	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 3)
 
 	// third backup, explicit incremental
 	bopts := BackupOptions{Parent: snapshotIDs[0].String()}
@@ -180,7 +190,7 @@ func TestMount(t *testing.T) {
 	Assert(t, len(snapshotIDs) == 3,
 		"expected three snapshots, got %v", snapshotIDs)
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs)
+	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 4)
 }
 
 func TestMountSameTimestamps(t *testing.T) {
@@ -202,5 +212,5 @@ func TestMountSameTimestamps(t *testing.T) {
 		restic.TestParseID("5fd0d8b2ef0fa5d23e58f1e460188abb0f525c0f0c4af8365a1280c807a80a1b"),
 	}
 
-	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, ids)
+	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, ids, 4)
 }
