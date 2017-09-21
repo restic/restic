@@ -57,6 +57,8 @@ Important Changes in 0.7.2
    https://github.com/restic/restic/issues/1179
    https://github.com/restic/restic/pull/1209
 
+ * The `backup` command now allows setting the hostname via the
+   `RESTIC_HOSTNAME` environment variable (already available as `--hostname`).
 
 Small changes
 -------------
