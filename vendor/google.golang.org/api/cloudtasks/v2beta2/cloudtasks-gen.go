@@ -395,35 +395,10 @@ func (s *AppEngineHttpTarget) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// AppEngineQueueConfig: App Engine queue config.
-//
-// An App Engine queue is a queue that has AppEngineQueueConfig
-// set.
-//
-// The task will be delivered to the App Engine application
-// URL
-// specified by its AppEngineQueueConfig and AppEngineTaskTarget.
-// The documentation for AppEngineTaskTarget explains how the
-// task's host URL is constructed.
-//
-// Using this type of queue configuration
-// requires
-// [`appengine.applications.get`](/appengine/docs/admin-api/acce
-// ss-control)
-// Google IAM permission for the project
-// and the following
-// scope:
-//
-// `https://www.googleapis.com/auth/cloud-platform`
+// AppEngineQueueConfig: Deprecated. Use AppEngineTarget.
 type AppEngineQueueConfig struct {
-	// AppEngineRoutingOverride: Overrides for the
-	// task-level app_engine_routing.
-	//
-	// If set, AppEngineQueueConfig.app_engine_routing_override is used
-	// for
-	// all tasks in the queue, no matter what the setting is for
-	// the
-	// task-level app_engine_routing.
+	// AppEngineRoutingOverride: Deprecated. Use
+	// AppEngineTarget.app_engine_routing_override.
 	AppEngineRoutingOverride *AppEngineRouting `json:"appEngineRoutingOverride,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
@@ -621,140 +596,16 @@ func (s *AppEngineRouting) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// AppEngineTaskTarget: App Engine task target.
-//
-// An App Engine task is a task that has AppEngineTaskTarget set.
-//
-// This proto can only be used for tasks in a queue which
-// has
-// Queue.app_engine_queue_config set.
-//
-// Using this type of task target
-// requires
-// [`appengine.applications.get`](/appengine/docs/admin-api/acce
-// ss-control)
-// Google IAM permission for the project
-// and the following
-// scope:
-//
-// `https://www.googleapis.com/auth/cloud-platform`
-//
-// The task will be delivered to the URL specified by
-// the
-// AppEngineQueueConfig and AppEngineTaskTarget in the App Engine
-// app
-// which belongs to the same project as the queue. For more information,
-// see
-// [How Requests are
-// Routed](/appengine/docs/standard/python/how-requests-are-routed)
-// and how routing is affected by
-// [dispatch files](/appengine/docs/python/config/dispatchref).
-//
-// The AppEngineRouting used to construct the URL can be set at
-// the queue-level or task-level:
-//
-// *  If set, AppEngineQueueConfig.app_engine_routing_override is used
-// for
-//    all tasks in the queue, no matter what the setting is for the
-//    task-level app_engine_routing.
-//
-//
-// The `url` that the task will be sent to is:
-//
-// * `url =` AppEngineRouting.host `+`
-// AppEngineTaskTarget.relative_url
-//
-// The task will be sent to a task handler by an HTTP
-// request using the specified AppEngineTaskTarget.http_method (for
-// example
-// POST, HTTP GET, etc). The task attempt has succeeded if the task
-// handler
-// returns an HTTP response code in the range [200 - 299]. Error 503
-// is
-// considered an App Engine system error instead of an application
-// error.
-// Requests returning error 503 will be retried regardless of
-// retry
-// configuration and not counted against retry counts.
-// Any other response code or a failure to receive a response before
-// the
-// deadline is a failed attempt.
+// AppEngineTaskTarget: Deprecated. Use AppEngineHttpRequest.
 type AppEngineTaskTarget struct {
-	// AppEngineRouting: Task-level setting for App Engine routing.
-	//
-	// If set, AppEngineQueueConfig.app_engine_routing_override is used
-	// for
-	// all tasks in the queue, no matter what the setting is for
-	// the
-	// task-level app_engine_routing.
+	// AppEngineRouting: Deprecated. Use
+	// AppEngineHttpRequest.app_engine_routing.
 	AppEngineRouting *AppEngineRouting `json:"appEngineRouting,omitempty"`
 
-	// Headers: HTTP request headers.
-	//
-	// This map contains the header field names and values.
-	// Headers can be set when the
-	// [task is
-	// created](google.cloud.tasks.v2beta2.CloudTasks.CreateTask).
-	// Repeated headers are not supported but a header value can contain
-	// commas.
-	//
-	// Cloud Tasks sets some headers to default values:
-	//
-	// * `User-Agent`: By default, this header is
-	//   "AppEngine-Google; (+http://code.google.com/appengine)".
-	//   This header can be modified, but Cloud Tasks will append
-	//   "AppEngine-Google; (+http://code.google.com/appengine)" to the
-	//   modified `User-Agent`.
-	//
-	// If the task has an AppEngineTaskTarget.payload, Cloud Tasks sets
-	// the
-	// following headers:
-	//
-	// * `Content-Type`: By default, the `Content-Type` header is set to
-	//   "application/octet-stream". The default can be overridden by
-	// explictly
-	//   setting `Content-Type` to a particular media type when the
-	//   [task is
-	// created](google.cloud.tasks.v2beta2.CloudTasks.CreateTask).
-	//   For example, `Content-Type` can be set to "application/json".
-	// * `Content-Length`: This is computed by Cloud Tasks. This value is
-	//   output only. It cannot be changed.
-	//
-	// The headers below cannot be set or overridden:
-	//
-	// * `Host`
-	// * `X-Google-*`
-	// * `X-AppEngine-*`
-	//
-	// In addition, some App Engine headers, which contain
-	// task-specific information, are also be sent to the task handler;
-	// see
-	// [request
-	// headers](/appengine/docs/python/taskqueue/push/creating-handlers#readi
-	// ng_request_headers).
+	// Headers: Deprecated. Use AppEngineHttpRequest.headers.
 	Headers map[string]string `json:"headers,omitempty"`
 
-	// HttpMethod: The HTTP method to use for the request. The default is
-	// POST.
-	//
-	// The app's request handler for the task's target URL must be able to
-	// handle
-	// HTTP requests with this http_method, otherwise the task attempt will
-	// fail
-	// with error code 405 "Method Not Allowed" because "the method
-	// specified in
-	// the Request-Line is not allowed for the resource identified by
-	// the
-	// Request-URI". See
-	// [Writing a push task request
-	// handler](/appengine/docs/java/taskqueue/push/creating-handlers#writing
-	// _a_push_task_request_handler)
-	// and the documentation for the request handlers in the language your
-	// app is
-	// written in e.g.
-	// [python
-	// RequestHandler](/appengine/docs/python/tools/webapp/requesthandlerclas
-	// s).
+	// HttpMethod: Deprecated. Use AppEngineHttpRequest.http_method.
 	//
 	// Possible values:
 	//   "HTTP_METHOD_UNSPECIFIED" - HTTP method unspecified
@@ -765,22 +616,10 @@ type AppEngineTaskTarget struct {
 	//   "DELETE" - HTTP Delete
 	HttpMethod string `json:"httpMethod,omitempty"`
 
-	// Payload: Payload.
-	//
-	// The payload will be sent as the HTTP message body. A message
-	// body, and thus a payload, is allowed only if the HTTP method is
-	// POST or PUT. It is an error to set a data payload on a task with
-	// an incompatible HttpMethod.
+	// Payload: Deprecated. Use AppEngineHttpRequest.payload.
 	Payload string `json:"payload,omitempty"`
 
-	// RelativeUrl: The relative URL.
-	//
-	// The relative URL must begin with "/" and must be a valid HTTP
-	// relative URL.
-	// It can contain a path, query string arguments, and `#` fragments.
-	// If the relative URL is empty, then the root path "/" will be used.
-	// No spaces are allowed, and the maximum length allowed is 2083
-	// characters.
+	// RelativeUrl: Deprecated. Use AppEngineHttpRequest.relative_url.
 	RelativeUrl string `json:"relativeUrl,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "AppEngineRouting") to
@@ -1120,6 +959,43 @@ type Empty struct {
 type GetIamPolicyRequest struct {
 }
 
+// ListLocationsResponse: The response message for
+// Locations.ListLocations.
+type ListLocationsResponse struct {
+	// Locations: A list of locations that matches the specified filter in
+	// the request.
+	Locations []*Location `json:"locations,omitempty"`
+
+	// NextPageToken: The standard List next-page token.
+	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Locations") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Locations") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ListLocationsResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ListLocationsResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // ListQueuesResponse: Response message for CloudTasks.ListQueues.
 type ListQueuesResponse struct {
 	// NextPageToken: A token to retrieve next page of results.
@@ -1203,6 +1079,54 @@ type ListTasksResponse struct {
 
 func (s *ListTasksResponse) MarshalJSON() ([]byte, error) {
 	type noMethod ListTasksResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Location: A resource that represents Google Cloud Platform location.
+type Location struct {
+	// Labels: Cross-service attributes for the location. For example
+	//
+	//     {"cloud.googleapis.com/region": "us-east1"}
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// LocationId: The canonical id for this location. For example:
+	// "us-east1".
+	LocationId string `json:"locationId,omitempty"`
+
+	// Metadata: Service-specific metadata. For example the available
+	// capacity at the given
+	// location.
+	Metadata googleapi.RawMessage `json:"metadata,omitempty"`
+
+	// Name: Resource name for the location, which may vary between
+	// implementations.
+	// For example: "projects/example-project/locations/us-east1"
+	Name string `json:"name,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Labels") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Labels") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Location) MarshalJSON() ([]byte, error) {
+	type noMethod Location
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1346,9 +1270,7 @@ func (s *PullMessage) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// PullQueueConfig: Pull queue config.
-//
-// A pull queue is a queue that has PullQueueConfig set.
+// PullQueueConfig: Deprecated. Use PullTarget.
 type PullQueueConfig struct {
 }
 
@@ -1356,25 +1278,12 @@ type PullQueueConfig struct {
 type PullTarget struct {
 }
 
-// PullTaskTarget: Pull task target.
-//
-// A pull task is a task that has PullTaskTarget set.
-//
-// This proto can only be used for tasks in a queue which
-// has
-// Queue.pull_queue_config set.
+// PullTaskTarget: Deprecated. Use PullMessage.
 type PullTaskTarget struct {
-	// Payload: A data payload consumed by the task worker to execute the
-	// task.
+	// Payload: Deprecated. Use PullMessage.payload.
 	Payload string `json:"payload,omitempty"`
 
-	// Tag: A meta-data tag for this task.
-	//
-	// This value is used by CloudTasks.PullTasks calls
-	// when
-	// PullTasksRequest.filter is `tag=<tag>`.
-	//
-	// The tag must be less than 500 bytes.
+	// Tag: Deprecated. Use PullMessage.tag.
 	Tag string `json:"tag,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Payload") to
@@ -1408,7 +1317,7 @@ type PullTasksRequest struct {
 	//
 	// When `filter` is set to `tag=<my-tag>` then the
 	// PullTasksResponse will contain only tasks whose
-	// PullTaskTarget.tag is equal to `<my-tag>`. `<my-tag>` can be
+	// PullMessage.tag is equal to `<my-tag>`. `<my-tag>` can be
 	// a bytes encoded as a string and must be less than 500 bytes.
 	// If `<my-tag>` includes whitespace or special characters (characters
 	// which
@@ -1578,8 +1487,7 @@ type Queue struct {
 	// An App Engine queue is a queue that has an AppEngineHttpTarget.
 	AppEngineHttpTarget *AppEngineHttpTarget `json:"appEngineHttpTarget,omitempty"`
 
-	// AppEngineQueueConfig:
-	// App Engine queue config.
+	// AppEngineQueueConfig: Deprecated. Use Queue.app_engine_http_target.
 	AppEngineQueueConfig *AppEngineQueueConfig `json:"appEngineQueueConfig,omitempty"`
 
 	// Name: The queue name.
@@ -1601,8 +1509,7 @@ type Queue struct {
 	// it becomes output only.
 	Name string `json:"name,omitempty"`
 
-	// PullQueueConfig:
-	// Pull queue config.
+	// PullQueueConfig: Deprecated. Use Queue.pull_target.
 	PullQueueConfig *PullQueueConfig `json:"pullQueueConfig,omitempty"`
 
 	// PullTarget: Pull target.
@@ -1644,13 +1551,15 @@ type Queue struct {
 	// still be added to it by the user. When a pull queue is paused,
 	// all CloudTasks.PullTasks calls will return a
 	// `FAILED_PRECONDITION` error.
-	//   "DISABLED" - Disabled indicates that queue has been removed from
-	// queue.yaml.
+	//   "DISABLED" - The queue is disabled.
 	//
-	// When you remove a queue
-	// from
-	// [queue.yaml](/appengine/docs/python/config/queueref),
-	// it is marked as `DISABLED`. You cannot directly disable a
+	// A queue becomes `DISABLED`
+	// when
+	// [queue.yaml](/appengine/docs/python/config/queueref)
+	// or
+	// [queue.xml](appengine/docs/standard/java/config/queueref) is
+	// uploaded
+	// which does not contain the queue. You cannot directly disable a
 	// queue.
 	//
 	// When a queue is disabled, tasks can still be added to a queue
@@ -2122,10 +2031,7 @@ type Task struct {
 	// An App Engine task is a task that has AppEngineHttpRequest set.
 	AppEngineHttpRequest *AppEngineHttpRequest `json:"appEngineHttpRequest,omitempty"`
 
-	// AppEngineTaskTarget:
-	// App Engine task target. Can be set only
-	// if
-	// Queue.app_engine_queue_config is set.
+	// AppEngineTaskTarget: Deprecated. Use Task.app_engine_http_request.
 	AppEngineTaskTarget *AppEngineTaskTarget `json:"appEngineTaskTarget,omitempty"`
 
 	// CreateTime: Output only.
@@ -2166,8 +2072,7 @@ type Task struct {
 	// A pull task is a task that has PullMessage set.
 	PullMessage *PullMessage `json:"pullMessage,omitempty"`
 
-	// PullTaskTarget:
-	// Pull task target. Can be set only if Queue.pull_queue_config is set.
+	// PullTaskTarget: Deprecated. Use Task.pull_message.
 	PullTaskTarget *PullTaskTarget `json:"pullTaskTarget,omitempty"`
 
 	// ScheduleTime: The time when the task is scheduled to be
@@ -2405,7 +2310,7 @@ type ThrottleConfig struct {
 	// [bucket_size in
 	// queue.yaml](/appengine/docs/standard/python/config/queueref#bucket_siz
 	// e).
-	MaxBurstSize float64 `json:"maxBurstSize,omitempty"`
+	MaxBurstSize int64 `json:"maxBurstSize,omitempty"`
 
 	// MaxOutstandingTasks: The maximum number of outstanding tasks that
 	// Cloud Tasks allows
@@ -2467,7 +2372,6 @@ func (s *ThrottleConfig) MarshalJSON() ([]byte, error) {
 func (s *ThrottleConfig) UnmarshalJSON(data []byte) error {
 	type noMethod ThrottleConfig
 	var s1 struct {
-		MaxBurstSize                gensupport.JSONFloat64 `json:"maxBurstSize"`
 		MaxTasksDispatchedPerSecond gensupport.JSONFloat64 `json:"maxTasksDispatchedPerSecond"`
 		*noMethod
 	}
@@ -2475,9 +2379,345 @@ func (s *ThrottleConfig) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
-	s.MaxBurstSize = float64(s1.MaxBurstSize)
 	s.MaxTasksDispatchedPerSecond = float64(s1.MaxTasksDispatchedPerSecond)
 	return nil
+}
+
+// method id "cloudtasks.projects.locations.get":
+
+type ProjectsLocationsGetCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Get: Get information about a location.
+func (r *ProjectsLocationsService) Get(name string) *ProjectsLocationsGetCall {
+	c := &ProjectsLocationsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsGetCall) Fields(s ...googleapi.Field) *ProjectsLocationsGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsLocationsGetCall) IfNoneMatch(entityTag string) *ProjectsLocationsGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsGetCall) Context(ctx context.Context) *ProjectsLocationsGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2beta2/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudtasks.projects.locations.get" call.
+// Exactly one of *Location or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Location.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *ProjectsLocationsGetCall) Do(opts ...googleapi.CallOption) (*Location, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Location{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Get information about a location.",
+	//   "flatPath": "v2beta2/projects/{projectsId}/locations/{locationsId}",
+	//   "httpMethod": "GET",
+	//   "id": "cloudtasks.projects.locations.get",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Resource name for the location.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v2beta2/{+name}",
+	//   "response": {
+	//     "$ref": "Location"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "cloudtasks.projects.locations.list":
+
+type ProjectsLocationsListCall struct {
+	s            *Service
+	name         string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists information about the supported locations for this
+// service.
+func (r *ProjectsLocationsService) List(name string) *ProjectsLocationsListCall {
+	c := &ProjectsLocationsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	return c
+}
+
+// Filter sets the optional parameter "filter": The standard list
+// filter.
+func (c *ProjectsLocationsListCall) Filter(filter string) *ProjectsLocationsListCall {
+	c.urlParams_.Set("filter", filter)
+	return c
+}
+
+// PageSize sets the optional parameter "pageSize": The standard list
+// page size.
+func (c *ProjectsLocationsListCall) PageSize(pageSize int64) *ProjectsLocationsListCall {
+	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": The standard list
+// page token.
+func (c *ProjectsLocationsListCall) PageToken(pageToken string) *ProjectsLocationsListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsLocationsListCall) Fields(s ...googleapi.Field) *ProjectsLocationsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsLocationsListCall) IfNoneMatch(entityTag string) *ProjectsLocationsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsLocationsListCall) Context(ctx context.Context) *ProjectsLocationsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsLocationsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsLocationsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2beta2/{+name}/locations")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "cloudtasks.projects.locations.list" call.
+// Exactly one of *ListLocationsResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ListLocationsResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsLocationsListCall) Do(opts ...googleapi.CallOption) (*ListLocationsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &ListLocationsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists information about the supported locations for this service.",
+	//   "flatPath": "v2beta2/projects/{projectsId}/locations",
+	//   "httpMethod": "GET",
+	//   "id": "cloudtasks.projects.locations.list",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "filter": {
+	//       "description": "The standard list filter.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "name": {
+	//       "description": "The resource that owns the locations collection, if applicable.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "pageSize": {
+	//       "description": "The standard list page size.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "pageToken": {
+	//       "description": "The standard list page token.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v2beta2/{+name}/locations",
+	//   "response": {
+	//     "$ref": "ListLocationsResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ProjectsLocationsListCall) Pages(ctx context.Context, f func(*ListLocationsResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
 }
 
 // method id "cloudtasks.projects.locations.queues.create":
@@ -3072,7 +3312,7 @@ func (r *ProjectsLocationsQueuesService) List(parent string) *ProjectsLocationsQ
 // [Stackdriver's Advanced Logs
 // Filters](/logging/docs/view/advanced_filters).
 //
-// Sample filter "app_engine_queue_config: *".
+// Sample filter "app_engine_http_target: *".
 //
 // Note that using filters might cause fewer queues than
 // the
@@ -3214,7 +3454,7 @@ func (c *ProjectsLocationsQueuesListCall) Do(opts ...googleapi.CallOption) (*Lis
 	//   ],
 	//   "parameters": {
 	//     "filter": {
-	//       "description": "`filter` can be used to specify a subset of queues. Any Queue\nfield can be used as a filter and several operators as supported.\nFor example: `\u003c=, \u003c, \u003e=, \u003e, !=, =, :`. The filter syntax is the same as\ndescribed in\n[Stackdriver's Advanced Logs Filters](/logging/docs/view/advanced_filters).\n\nSample filter \"app_engine_queue_config: *\".\n\nNote that using filters might cause fewer queues than the\nrequested_page size to be returned.",
+	//       "description": "`filter` can be used to specify a subset of queues. Any Queue\nfield can be used as a filter and several operators as supported.\nFor example: `\u003c=, \u003c, \u003e=, \u003e, !=, =, :`. The filter syntax is the same as\ndescribed in\n[Stackdriver's Advanced Logs Filters](/logging/docs/view/advanced_filters).\n\nSample filter \"app_engine_http_target: *\".\n\nNote that using filters might cause fewer queues than the\nrequested_page size to be returned.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -4932,7 +5172,7 @@ func (r *ProjectsLocationsQueuesTasksService) List(parent string) *ProjectsLocat
 
 // OrderBy sets the optional parameter "orderBy": Sort order used for
 // the query. The fields supported for sorting
-// are Task.schedule_time and PullTaskTarget.tag. All results will
+// are Task.schedule_time and PullMessage.tag. All results will
 // be
 // returned in ascending order. The default ordering is
 // by
@@ -5101,7 +5341,7 @@ func (c *ProjectsLocationsQueuesTasksListCall) Do(opts ...googleapi.CallOption) 
 	//   ],
 	//   "parameters": {
 	//     "orderBy": {
-	//       "description": "\nSort order used for the query. The fields supported for sorting\nare Task.schedule_time and PullTaskTarget.tag. All results will be\nreturned in ascending order. The default ordering is by\nTask.schedule_time.",
+	//       "description": "\nSort order used for the query. The fields supported for sorting\nare Task.schedule_time and PullMessage.tag. All results will be\nreturned in ascending order. The default ordering is by\nTask.schedule_time.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },

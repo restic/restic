@@ -520,10 +520,10 @@ type GoogleDatastoreAdminV1beta1CommonMetadata struct {
 
 	// Labels: The client-assigned labels which were provided when the
 	// operation was
-	// created.  May also include additional labels.
+	// created. May also include additional labels.
 	Labels map[string]string `json:"labels,omitempty"`
 
-	// OperationType: The type of the operation.  Can be used as a filter
+	// OperationType: The type of the operation. Can be used as a filter
 	// in
 	// ListOperationsRequest.
 	//
@@ -531,8 +531,6 @@ type GoogleDatastoreAdminV1beta1CommonMetadata struct {
 	//   "OPERATION_TYPE_UNSPECIFIED" - Unspecified.
 	//   "EXPORT_ENTITIES" - ExportEntities.
 	//   "IMPORT_ENTITIES" - ImportEntities.
-	//   "BUILD_INDEX" - Build an index.
-	//   "CLEAR_INDEX" - Clear an index.
 	OperationType string `json:"operationType,omitempty"`
 
 	// StartTime: The time that work began on the operation.
@@ -546,7 +544,7 @@ type GoogleDatastoreAdminV1beta1CommonMetadata struct {
 	//   "PROCESSING" - Request is actively being processed.
 	//   "CANCELLING" - Request is in the process of being cancelled after
 	// user called
-	// longrunning.Operations.CancelOperation on the operation.
+	// google.longrunning.Operations.CancelOperation on the operation.
 	//   "FINALIZING" - Request has been processed and is in its
 	// finalization stage.
 	//   "SUCCESSFUL" - Request has completed successfully.
@@ -554,7 +552,7 @@ type GoogleDatastoreAdminV1beta1CommonMetadata struct {
 	// error.
 	//   "CANCELLED" - Request has finished being cancelled after user
 	// called
-	// longrunning.Operations.CancelOperation.
+	// google.longrunning.Operations.CancelOperation.
 	State string `json:"state,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "EndTime") to
@@ -581,9 +579,9 @@ func (s *GoogleDatastoreAdminV1beta1CommonMetadata) MarshalJSON() ([]byte, error
 }
 
 // GoogleDatastoreAdminV1beta1EntityFilter: Identifies a subset of
-// entities in a project.  This is specified as
-// combinations of kind + namespace (either or both of which may be all,
-// as
+// entities in a project. This is specified as
+// combinations of kinds and namespaces (either or both of which may be
+// all, as
 // described in the following examples).
 // Example usage:
 //
@@ -605,12 +603,12 @@ type GoogleDatastoreAdminV1beta1EntityFilter struct {
 	// Kinds: If empty, then this represents all kinds.
 	Kinds []string `json:"kinds,omitempty"`
 
-	// NamespaceIds: An empty list represents all namespaces.  This is the
+	// NamespaceIds: An empty list represents all namespaces. This is the
 	// preferred
 	// usage for projects that don't use namespaces.
 	//
-	// An empty string element represents the default namespace.  This
-	// should be
+	// An empty string element represents the default namespace. This should
+	// be
 	// used if the project has data in non-default namespaces, but doesn't
 	// want to
 	// include them.
@@ -774,7 +772,9 @@ func (s *GoogleDatastoreAdminV1beta1ImportEntitiesMetadata) MarshalJSON() ([]byt
 // GoogleDatastoreAdminV1beta1Progress: Measures the progress of a
 // particular metric.
 type GoogleDatastoreAdminV1beta1Progress struct {
-	// WorkCompleted: Note that this may be greater than work_estimated.
+	// WorkCompleted: The amount of work that has been completed. Note that
+	// this may be greater
+	// than work_estimated.
 	WorkCompleted int64 `json:"workCompleted,omitempty,string"`
 
 	// WorkEstimated: An estimate of how much work needs to be performed.

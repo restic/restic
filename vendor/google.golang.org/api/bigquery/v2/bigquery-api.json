@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/9Y-B0QHiU2mw4FGTgPCBJA_ja7U\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/RJ9KKUbfMw7IvtOPKrwn45TxAuo\"",
  "discoveryVersion": "v1",
  "id": "bigquery:v2",
  "name": "bigquery",
  "version": "v2",
- "revision": "20170903",
+ "revision": "20170910",
  "title": "BigQuery API",
  "description": "A data platform for customers to create, manage, share and query data.",
  "ownerDomain": "google.com",
@@ -1240,6 +1240,11 @@
     "totalBytesProcessed": {
      "type": "string",
      "description": "[Output-only] Total bytes processed for the job.",
+     "format": "int64"
+    },
+    "totalSlotMs": {
+     "type": "string",
+     "description": "[Output-only] Slot-milliseconds for the job.",
      "format": "int64"
     },
     "undeclaredQueryParameters": {

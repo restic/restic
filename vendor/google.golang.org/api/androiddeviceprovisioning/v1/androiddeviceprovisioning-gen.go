@@ -220,28 +220,37 @@ func (s *ClaimDevicesRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Company: Company
+// Company: A customer resource in the zero-touch enrollment API.
 type Company struct {
-	// AdminEmails: Admin emails.
-	// Admins are able to operate on the portal.
-	// This field is a write-only field at creation time.
+	// AdminEmails: Input only. Optional. Email address of customer's users
+	// in the admin role.
+	// Each email address must be associated with a Google Account.
 	AdminEmails []string `json:"adminEmails,omitempty"`
 
-	// CompanyId: Company ID.
+	// CompanyId: Output only. The ID of the company. Assigned by the
+	// server.
 	CompanyId int64 `json:"companyId,omitempty,string"`
 
-	// CompanyName: Company name.
+	// CompanyName: Required. The name of the company. For example _XYZ
+	// Corp_. Characters
+	// allowed are: Latin letters, numerals, hyphens, and spaces. Displayed
+	// to the
+	// customer's employees in the zero-touch enrollment portal.
 	CompanyName string `json:"companyName,omitempty"`
 
-	// Name: The API resource name of the company in the
+	// Name: Output only. The API resource name of the company in the
 	// format
-	// `partners/[PARTNER_ID]/customers/[CUSTOMER_ID]`.
+	// `partners/[PARTNER_ID]/customers/[CUSTOMER_ID]`. Assigned by the
+	// server.
 	Name string `json:"name,omitempty"`
 
-	// OwnerEmails: Owner emails.
-	// Owners are able to operate on the portal, and modify admins or
-	// other
-	// owners. This field is a write-only field at creation time.
+	// OwnerEmails: Input only. Email address of customer's users in the
+	// owner role. At least
+	// one `owner_email` is required. Each email address must be associated
+	// with a
+	// Google Account. Owners share the same access as admins but can also
+	// add,
+	// delete, and edit your organization's portal users.
 	OwnerEmails []string `json:"ownerEmails,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -273,7 +282,12 @@ func (s *Company) MarshalJSON() ([]byte, error) {
 
 // CreateCustomerRequest: Request message to create a customer.
 type CreateCustomerRequest struct {
-	// Customer: The customer to create.
+	// Customer: Required. The company data to populate the new customer.
+	// Must contain a
+	// value for `companyName` and at least one `owner_email` that's
+	// associated
+	// with a Google Account. The values for `companyId` and `name` must be
+	// empty.
 	Customer *Company `json:"customer,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Customer") to
@@ -1392,10 +1406,13 @@ type PartnersCustomersCreateCall struct {
 	header_               http.Header
 }
 
-// Create: A customer for Zero Touch Provisioning will be created.
-// After a Customer is created, their admins and owners will be able to
-// manage
-// devices on partner.android.com/zerotouch or via their API.
+// Create: Creates a customer for zero-touch enrollment. After the
+// method returns
+// successfully, admin and owner roles can manage devices and EMM
+// configs
+// by calling API methods or using their zero-touch enrollment portal.
+// The API
+// doesn't notify the customer that they have access.
 func (r *PartnersCustomersService) Create(parent string, createcustomerrequest *CreateCustomerRequest) *PartnersCustomersCreateCall {
 	c := &PartnersCustomersCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -1489,7 +1506,7 @@ func (c *PartnersCustomersCreateCall) Do(opts ...googleapi.CallOption) (*Company
 	}
 	return ret, nil
 	// {
-	//   "description": "A customer for Zero Touch Provisioning will be created.\nAfter a Customer is created, their admins and owners will be able to manage\ndevices on partner.android.com/zerotouch or via their API.",
+	//   "description": "Creates a customer for zero-touch enrollment. After the method returns\nsuccessfully, admin and owner roles can manage devices and EMM configs\nby calling API methods or using their zero-touch enrollment portal. The API\ndoesn't notify the customer that they have access.",
 	//   "flatPath": "v1/partners/{partnersId}/customers",
 	//   "httpMethod": "POST",
 	//   "id": "androiddeviceprovisioning.partners.customers.create",
@@ -1498,7 +1515,7 @@ func (c *PartnersCustomersCreateCall) Do(opts ...googleapi.CallOption) (*Company
 	//   ],
 	//   "parameters": {
 	//     "parent": {
-	//       "description": "The parent resource in format `partners/[PARTNER_ID]'.",
+	//       "description": "Required. The parent resource ID in format `partners/[PARTNER_ID]` that\nidentifies the reseller.",
 	//       "location": "path",
 	//       "pattern": "^partners/[^/]+$",
 	//       "required": true,
@@ -1527,8 +1544,8 @@ type PartnersCustomersListCall struct {
 	header_      http.Header
 }
 
-// List: List the customers that are enrolled to the reseller identified
-// by the
+// List: Lists the customers that are enrolled to the reseller
+// identified by the
 // `partnerId` argument. This list includes customers that the
 // reseller
 // created and customers that enrolled themselves using the portal.
@@ -1632,7 +1649,7 @@ func (c *PartnersCustomersListCall) Do(opts ...googleapi.CallOption) (*ListCusto
 	}
 	return ret, nil
 	// {
-	//   "description": "List the customers that are enrolled to the reseller identified by the\n`partnerId` argument. This list includes customers that the reseller\ncreated and customers that enrolled themselves using the portal.",
+	//   "description": "Lists the customers that are enrolled to the reseller identified by the\n`partnerId` argument. This list includes customers that the reseller\ncreated and customers that enrolled themselves using the portal.",
 	//   "flatPath": "v1/partners/{partnersId}/customers",
 	//   "httpMethod": "GET",
 	//   "id": "androiddeviceprovisioning.partners.customers.list",

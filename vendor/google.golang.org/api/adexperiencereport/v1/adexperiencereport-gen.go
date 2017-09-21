@@ -99,14 +99,6 @@ type ViolatingSitesService struct {
 // PlatformSummary: Summary of the ad experience rating of a site for a
 // specific platform.
 type PlatformSummary struct {
-	// AbusiveStatus: The status of the site reviewed for abusive ads.
-	//
-	// Possible values:
-	//   "UNKNOWN" - Not reviewed.
-	//   "PASSING" - Passing.
-	//   "FAILING" - Failing.
-	AbusiveStatus string `json:"abusiveStatus,omitempty"`
-
 	// BetterAdsStatus: The status of the site reviewed for the Better Ads
 	// Standards.
 	//
@@ -147,7 +139,7 @@ type PlatformSummary struct {
 	// UnderReview: Whether the site is currently under review.
 	UnderReview bool `json:"underReview,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "AbusiveStatus") to
+	// ForceSendFields is a list of field names (e.g. "BetterAdsStatus") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -155,12 +147,13 @@ type PlatformSummary struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "AbusiveStatus") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "BetterAdsStatus") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 

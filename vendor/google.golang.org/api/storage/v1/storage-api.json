@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/dkoYxqfGO2jaG60VA5h0K8BOG4k\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/aAU6-GJtzQTwC546w_DsCPIRIUA\"",
  "discoveryVersion": "v1",
  "id": "storage:v1",
  "name": "storage",
  "version": "v1",
- "revision": "20170824",
+ "revision": "20170915",
  "title": "Cloud Storage JSON API",
  "description": "Stores and retrieves potentially large, immutable data objects.",
  "ownerDomain": "google.com",
@@ -1474,6 +1474,11 @@
         "Omit owner, acl and defaultObjectAcl properties."
        ],
        "location": "query"
+      },
+      "userProject": {
+       "type": "string",
+       "description": "The project to be billed for this request, for Requester Pays buckets.",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -1532,6 +1537,11 @@
         "Include all properties.",
         "Omit owner, acl and defaultObjectAcl properties."
        ],
+       "location": "query"
+      },
+      "userProject": {
+       "type": "string",
+       "description": "The project to be billed for this request, for Requester Pays buckets.",
        "location": "query"
       }
      },
@@ -3116,7 +3126,7 @@
      "id": "storage.objects.patch",
      "path": "b/{bucket}/o/{object}",
      "httpMethod": "PATCH",
-     "description": "Patches an object's metadata.",
+     "description": "Updates an object's metadata. This method supports patch semantics.",
      "parameters": {
       "bucket": {
        "type": "string",
@@ -3213,9 +3223,7 @@
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/devstorage.full_control"
-     ],
-     "supportsMediaDownload": true,
-     "useMediaDownloadService": true
+     ]
     },
     "rewrite": {
      "id": "storage.objects.rewrite",
@@ -3674,6 +3682,11 @@
          "description": "Project ID",
          "required": true,
          "location": "path"
+        },
+        "userProject": {
+         "type": "string",
+         "description": "The project to be billed for this request, for Requester Pays buckets.",
+         "location": "query"
         }
        },
        "parameterOrder": [

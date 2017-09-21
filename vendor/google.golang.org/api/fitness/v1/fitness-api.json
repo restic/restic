@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/PSZLmkjt_9IWTJ6ZQ-VpYeFyZ2w\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/Iezg2N-GRRgP6nxERqABDosZ2Tk\"",
  "discoveryVersion": "v1",
  "id": "fitness:v1",
  "name": "fitness",
  "version": "v1",
- "revision": "20170731",
+ "revision": "20170830",
  "title": "Fitness",
  "description": "Stores and accesses user data in the fitness store from apps on any platform.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/fitness/v1/users/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "fitness/v1/users/",
- "batchPath": "batch",
+ "batchPath": "batch/fitness/v1",
  "parameters": {
   "alt": {
    "type": "string",
@@ -763,6 +763,34 @@
     }
    }
   },
+  "ListDataPointChangesResponse": {
+   "id": "ListDataPointChangesResponse",
+   "type": "object",
+   "properties": {
+    "dataSourceId": {
+     "type": "string",
+     "description": "The data stream ID of the data source with data point changes."
+    },
+    "deletedDataPoint": {
+     "type": "array",
+     "description": "Data points that have been removed and will not be included in any other request for dataset contents.",
+     "items": {
+      "$ref": "DataPoint"
+     }
+    },
+    "insertedDataPoint": {
+     "type": "array",
+     "description": "Data points listed.",
+     "items": {
+      "$ref": "DataPoint"
+     }
+    },
+    "nextPageToken": {
+     "type": "string",
+     "description": "The continuation token, which is used to page through large result sets. Provide this value in a subsequent request to return the next page of results."
+    }
+   }
+  },
   "ListDataSourcesResponse": {
    "id": "ListDataSourcesResponse",
    "type": "object",
@@ -1189,6 +1217,68 @@
       }
      },
      "resources": {
+      "dataPointChanges": {
+       "methods": {
+        "list": {
+         "id": "fitness.users.dataSources.dataPointChanges.list",
+         "path": "{userId}/dataSources/{dataSourceId}/dataPointChanges",
+         "httpMethod": "GET",
+         "description": "results ordered by descending end_time",
+         "parameters": {
+          "dataSourceId": {
+           "type": "string",
+           "description": "The data stream ID of the data source that created the dataset.",
+           "required": true,
+           "location": "path"
+          },
+          "limit": {
+           "type": "integer",
+           "description": "If specified, no more than this many data point changes will be included in the response. The default is 500 data point changes.",
+           "format": "int32",
+           "location": "query"
+          },
+          "pageToken": {
+           "type": "string",
+           "description": "The continuation token, which is used to page through large result sets. To get the next page of results, set this parameter to the value of nextPageToken from the previous response.",
+           "location": "query"
+          },
+          "userId": {
+           "type": "string",
+           "description": "List data points for the person identified. Use \"me\" to indicate the authenticated user. Only \"me\" is supported at this time.",
+           "required": true,
+           "location": "path"
+          }
+         },
+         "parameterOrder": [
+          "userId",
+          "dataSourceId"
+         ],
+         "response": {
+          "$ref": "ListDataPointChangesResponse"
+         },
+         "scopes": [
+          "https://www.googleapis.com/auth/fitness.activity.read",
+          "https://www.googleapis.com/auth/fitness.activity.write",
+          "https://www.googleapis.com/auth/fitness.blood_glucose.read",
+          "https://www.googleapis.com/auth/fitness.blood_glucose.write",
+          "https://www.googleapis.com/auth/fitness.blood_pressure.read",
+          "https://www.googleapis.com/auth/fitness.blood_pressure.write",
+          "https://www.googleapis.com/auth/fitness.body.read",
+          "https://www.googleapis.com/auth/fitness.body.write",
+          "https://www.googleapis.com/auth/fitness.body_temperature.read",
+          "https://www.googleapis.com/auth/fitness.body_temperature.write",
+          "https://www.googleapis.com/auth/fitness.location.read",
+          "https://www.googleapis.com/auth/fitness.location.write",
+          "https://www.googleapis.com/auth/fitness.nutrition.read",
+          "https://www.googleapis.com/auth/fitness.nutrition.write",
+          "https://www.googleapis.com/auth/fitness.oxygen_saturation.read",
+          "https://www.googleapis.com/auth/fitness.oxygen_saturation.write",
+          "https://www.googleapis.com/auth/fitness.reproductive_health.read",
+          "https://www.googleapis.com/auth/fitness.reproductive_health.write"
+         ]
+        }
+       }
+      },
       "datasets": {
        "methods": {
         "delete": {

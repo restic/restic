@@ -1418,7 +1418,8 @@ type NonComplianceDetail struct {
 	//   "PENDING" - The setting was not applied yet at the time of the
 	// report, but is expected to be applied shortly.
 	//   "APP_INCOMPATIBLE" - The setting cannot be applied to the
-	// application because its target SDK version is not high enough.
+	// application because the application doesn't support it, for example
+	// because its target SDK version is not high enough.
 	//   "APP_NOT_UPDATED" - The application is installed but not updated to
 	// the minimum version code specified by policy
 	NonComplianceReason string `json:"nonComplianceReason,omitempty"`
@@ -1481,15 +1482,14 @@ type NonComplianceDetailCondition struct {
 	//   "PENDING" - The setting was not applied yet at the time of the
 	// report, but is expected to be applied shortly.
 	//   "APP_INCOMPATIBLE" - The setting cannot be applied to the
-	// application because its target SDK version is not high enough.
+	// application because the application doesn't support it, for example
+	// because its target SDK version is not high enough.
 	//   "APP_NOT_UPDATED" - The application is installed but not updated to
 	// the minimum version code specified by policy
 	NonComplianceReason string `json:"nonComplianceReason,omitempty"`
 
 	// PackageName: The package name indicating which application is out of
 	// compliance. If not set, then this condition matches any package name.
-	// If this field is set, then setting_name must be unset or set to
-	// applications; otherwise, the condition would never be satisfied.
 	PackageName string `json:"packageName,omitempty"`
 
 	// SettingName: The name of the policy setting. This is the JSON field
@@ -1846,13 +1846,15 @@ type Policy struct {
 	// enterprises/{enterpriseId}/policies/{policyId}
 	Name string `json:"name,omitempty"`
 
-	// NetworkEscapeHatchEnabled: Flag to specify if network escape hatch is
-	// enabled. If this flag has been enabled then upon device boot if
-	// device has no network connection, then an activity will be shown that
-	// allows the user to temporarily connect to a network to fetch the
-	// latest policy. The launched activity will time out if no network has
-	// been connected for a given while and will return to the previous
-	// activity that was shown.
+	// NetworkEscapeHatchEnabled: Whether the network escape hatch is
+	// enabled. If a network connection can't be made at boot time, the
+	// escape hatch prompts the user to temporarily connect to a network in
+	// order to refresh the device policy. After applying policy, the
+	// temporary network will be forgotten and the device will continue
+	// booting. This prevents being unable to connect to a network if there
+	// is no suitable network in the last policy and the device boots into
+	// an app in lock task mode, or the user is otherwise unable to reach
+	// device settings.
 	NetworkEscapeHatchEnabled bool `json:"networkEscapeHatchEnabled,omitempty"`
 
 	// OpenNetworkConfiguration: Network configuration for the device. See

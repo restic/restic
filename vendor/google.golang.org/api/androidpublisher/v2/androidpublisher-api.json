@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/e4AtolObWHB9RMWbWiGGnmazpNA\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/QjVvqrUMRW1tTVdJHVqdnKd9gLQ\"",
  "discoveryVersion": "v1",
  "id": "androidpublisher:v2",
  "name": "androidpublisher",
  "canonicalName": "Android Publisher",
  "version": "v2",
- "revision": "20170815",
+ "revision": "20170913",
  "title": "Google Play Developer API",
  "description": "Lets Android application developers access their Google Play accounts.",
  "ownerDomain": "google.com",
@@ -21,7 +21,7 @@
  "basePath": "/androidpublisher/v2/applications/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "androidpublisher/v2/applications/",
- "batchPath": "batch",
+ "batchPath": "batch/androidpublisher/v2",
  "parameters": {
   "alt": {
    "type": "string",
@@ -985,7 +985,7 @@
     },
     "cancelReason": {
      "type": "integer",
-     "description": "The reason why a subscription was cancelled or is not auto-renewing. Possible values are:  \n- User cancelled the subscription \n- Subscription was cancelled by the system, for example because of a billing problem",
+     "description": "The reason why a subscription was cancelled or is not auto-renewing. Possible values are:  \n- User cancelled the subscription \n- Subscription was cancelled by the system, for example because of a billing problem \n- Subscription was replaced with a new subscription",
      "format": "int32"
     },
     "countryCode": {

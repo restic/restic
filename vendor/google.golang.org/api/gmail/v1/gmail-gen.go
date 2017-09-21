@@ -789,11 +789,6 @@ func (s *ImapSettings) MarshalJSON() ([]byte, error) {
 // Label: Labels are used to categorize messages and threads within the
 // user's mailbox.
 type Label struct {
-	// Color: Color to assign to the label. This field is hidden behind an
-	// API server mendel experiment and only available for user-defined
-	// labels. Will be unset if the label doesn't have a color configured.
-	Color *LabelColor `json:"color,omitempty"`
-
 	// Id: The immutable ID of the label.
 	Id string `json:"id,omitempty"`
 
@@ -848,7 +843,7 @@ type Label struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "Color") to
+	// ForceSendFields is a list of field names (e.g. "Id") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -856,7 +851,7 @@ type Label struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Color") to include in API
+	// NullFields is a list of field names (e.g. "Id") to include in API
 	// requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
@@ -867,41 +862,6 @@ type Label struct {
 
 func (s *Label) MarshalJSON() ([]byte, error) {
 	type noMethod Label
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type LabelColor struct {
-	// BackgroundColor: Background color represented as hex string #RRGGBB
-	// (ex #000000). Only a restricted predefined set of color values are
-	// allowed. See (go/gmail-api-label-colors).
-	BackgroundColor string `json:"backgroundColor,omitempty"`
-
-	// TextColor: Text color represented as hex string #RRGGBB (ex #000000).
-	// Only a restricted predefined set of color values are allowed. See
-	// (go/gmail-api-label-colors).
-	TextColor string `json:"textColor,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "BackgroundColor") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "BackgroundColor") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *LabelColor) MarshalJSON() ([]byte, error) {
-	type noMethod LabelColor
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }

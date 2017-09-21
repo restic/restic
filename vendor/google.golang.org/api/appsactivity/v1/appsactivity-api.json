@@ -20,7 +20,7 @@
  "basePath": "/appsactivity/v1/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "appsactivity/v1/",
- "batchPath": "batch",
+ "batchPath": "batch/appsactivity/v1",
  "parameters": {
   "alt": {
    "type": "string",

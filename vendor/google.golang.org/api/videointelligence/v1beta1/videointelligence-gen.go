@@ -1,4 +1,4 @@
-// Package videointelligence provides access to the Google Cloud Video Intelligence API.
+// Package videointelligence provides access to the Cloud Video Intelligence API.
 //
 // See https://cloud.google.com/video-intelligence/docs/
 //

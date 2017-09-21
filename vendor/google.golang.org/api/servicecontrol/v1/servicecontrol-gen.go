@@ -1398,9 +1398,7 @@ type Operation struct {
 	//     - “organizations/<organization-id>”
 	ResourceContainer string `json:"resourceContainer,omitempty"`
 
-	// ResourceContainers: DO NOT USE.
-	// This field is not ready for use yet.
-	ResourceContainers []string `json:"resourceContainers,omitempty"`
+	Resources []*ResourceInfo `json:"resources,omitempty"`
 
 	// StartTime: Required. Start time of the operation.
 	StartTime string `json:"startTime,omitempty"`
@@ -2106,6 +2104,45 @@ type RequestMetadata struct {
 
 func (s *RequestMetadata) MarshalJSON() ([]byte, error) {
 	type noMethod RequestMetadata
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ResourceInfo: DO NOT USE.
+// This definition is not ready for use yet.
+type ResourceInfo struct {
+	// ResourceContainer: The identifier of the parent of this resource
+	// instance.
+	// Must be in one of the following formats:
+	//     - “projects/<project-id or project-number>”
+	//     - “folders/<folder-id>”
+	//     - “organizations/<organization-id>”
+	ResourceContainer string `json:"resourceContainer,omitempty"`
+
+	// ResourceName: Name of the resource. This is used for auditing
+	// purposes.
+	ResourceName string `json:"resourceName,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ResourceContainer")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ResourceContainer") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ResourceInfo) MarshalJSON() ([]byte, error) {
+	type noMethod ResourceInfo
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
