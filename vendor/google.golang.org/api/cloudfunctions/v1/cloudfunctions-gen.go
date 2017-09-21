@@ -320,6 +320,11 @@ type OperationMetadataV1Beta2 struct {
 	//   "DELETE_FUNCTION" - Triggered by DeleteFunction call.
 	Type string `json:"type,omitempty"`
 
+	// VersionId: Version id of the function created or updated by an API
+	// call.
+	// This field is only pupulated for Create and Update operations.
+	VersionId int64 `json:"versionId,omitempty,string"`
+
 	// ForceSendFields is a list of field names (e.g. "Request") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,

@@ -2802,7 +2802,7 @@ func (s *CommentThreadSnippet) MarshalJSON() ([]byte, error) {
 }
 
 // ContentRating: Ratings schemes. The country-specific ratings are
-// mostly for movies and shows. NEXT_ID: 69
+// mostly for movies and shows. NEXT_ID: 71
 type ContentRating struct {
 	// AcbRating: The video's Australian Classification Board (ACB) or
 	// Australian Communications and Media Authority (ACMA) rating. ACMA
@@ -3408,6 +3408,17 @@ type ContentRating struct {
 	//   "mekuUnrated"
 	MekuRating string `json:"mekuRating,omitempty"`
 
+	// MenaMpaaRating: The rating system for MENA countries, a clone of
+	// MPAA. It is needed to
+	//
+	// Possible values:
+	//   "menaMpaaG"
+	//   "menaMpaaPg"
+	//   "menaMpaaPg13"
+	//   "menaMpaaR"
+	//   "menaMpaaUnrated"
+	MenaMpaaRating string `json:"menaMpaaRating,omitempty"`
+
 	// MibacRating: The video's rating from the Ministero dei Beni e delle
 	// Attività Culturali e del Turismo (Italy).
 	//
@@ -3458,6 +3469,14 @@ type ContentRating struct {
 	//   "mpaaR"
 	//   "mpaaUnrated"
 	MpaaRating string `json:"mpaaRating,omitempty"`
+
+	// MpaatRating: The rating system for trailer, DVD, and Ad in the US.
+	// See http://movielabs.com/md/ratings/v2.3/html/US_MPAAT_Ratings.html.
+	//
+	// Possible values:
+	//   "mpaatGb"
+	//   "mpaatRb"
+	MpaatRating string `json:"mpaatRating,omitempty"`
 
 	// MtrcbRating: The video's rating from the Movie and Television Review
 	// and Classification Board (Philippines).
@@ -4659,8 +4678,6 @@ type LiveBroadcast struct {
 	// status.
 	Status *LiveBroadcastStatus `json:"status,omitempty"`
 
-	TopicDetails *LiveBroadcastTopicDetails `json:"topicDetails,omitempty"`
-
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`
@@ -4740,6 +4757,8 @@ type LiveBroadcastContentDetails struct {
 	// enabled.
 	EnableLowLatency bool `json:"enableLowLatency,omitempty"`
 
+	Mesh string `json:"mesh,omitempty"`
+
 	// MonitorStream: The monitorStream object contains information about
 	// the monitor stream, which the broadcaster can use to review the event
 	// content before the broadcast stream is shown publicly.
@@ -4750,6 +4769,7 @@ type LiveBroadcastContentDetails struct {
 	//
 	// Possible values:
 	//   "360"
+	//   "mesh"
 	//   "rectangular"
 	Projection string `json:"projection,omitempty"`
 
@@ -5043,100 +5063,6 @@ type LiveBroadcastStatus struct {
 
 func (s *LiveBroadcastStatus) MarshalJSON() ([]byte, error) {
 	type noMethod LiveBroadcastStatus
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type LiveBroadcastTopic struct {
-	// Snippet: Information about the topic matched.
-	Snippet *LiveBroadcastTopicSnippet `json:"snippet,omitempty"`
-
-	// Type: The type of the topic.
-	//
-	// Possible values:
-	//   "videoGame"
-	Type string `json:"type,omitempty"`
-
-	// Unmatched: If this flag is set it means that we have not been able to
-	// match the topic title and type provided to a known entity.
-	Unmatched bool `json:"unmatched,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Snippet") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Snippet") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *LiveBroadcastTopic) MarshalJSON() ([]byte, error) {
-	type noMethod LiveBroadcastTopic
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type LiveBroadcastTopicDetails struct {
-	Topics []*LiveBroadcastTopic `json:"topics,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Topics") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Topics") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *LiveBroadcastTopicDetails) MarshalJSON() ([]byte, error) {
-	type noMethod LiveBroadcastTopicDetails
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-type LiveBroadcastTopicSnippet struct {
-	// Name: The name of the topic.
-	Name string `json:"name,omitempty"`
-
-	// ReleaseDate: The date at which the topic was released. Filled for
-	// types: videoGame
-	ReleaseDate string `json:"releaseDate,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Name") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Name") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *LiveBroadcastTopicSnippet) MarshalJSON() ([]byte, error) {
-	type noMethod LiveBroadcastTopicSnippet
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -9594,6 +9520,7 @@ type VideoSuggestions struct {
 	// ability to process the video.
 	//
 	// Possible values:
+	//   "hdrVideo"
 	//   "nonStreamableMov"
 	//   "sendBestQualityVideo"
 	//   "spatialAudio"
@@ -9613,10 +9540,13 @@ type VideoSuggestions struct {
 	//   "hasEditlist"
 	//   "inconsistentResolution"
 	//   "problematicAudioCodec"
+	//   "problematicHdrLookupTable"
 	//   "problematicVideoCodec"
 	//   "unknownAudioCodec"
 	//   "unknownContainer"
 	//   "unknownVideoCodec"
+	//   "unsupportedHdrColorMetadata"
+	//   "unsupportedHdrPixelFormat"
 	//   "unsupportedSphericalProjectionType"
 	//   "unsupportedVrStereoMode"
 	ProcessingWarnings []string `json:"processingWarnings,omitempty"`
@@ -11300,6 +11230,21 @@ func (r *ChannelBannersService) Insert(channelbannerresource *ChannelBannerResou
 	return c
 }
 
+// ChannelId sets the optional parameter "channelId": The channelId
+// parameter identifies the YouTube channel to which the banner is
+// uploaded. The channelId parameter was introduced as a required
+// parameter in May 2017. As this was a backward-incompatible change,
+// channelBanners.insert requests that do not specify this parameter
+// will not return an error until six months have passed from the time
+// that the parameter was introduced. Please see the API Terms of
+// Service for the official policy regarding backward incompatible
+// changes and the API revision history for the exact date that the
+// parameter was introduced.
+func (c *ChannelBannersInsertCall) ChannelId(channelId string) *ChannelBannersInsertCall {
+	c.urlParams_.Set("channelId", channelId)
+	return c
+}
+
 // OnBehalfOfContentOwner sets the optional parameter
 // "onBehalfOfContentOwner": Note: This parameter is intended
 // exclusively for YouTube content partners.
@@ -11489,6 +11434,11 @@ func (c *ChannelBannersInsertCall) Do(opts ...googleapi.CallOption) (*ChannelBan
 	//     }
 	//   },
 	//   "parameters": {
+	//     "channelId": {
+	//       "description": "The channelId parameter identifies the YouTube channel to which the banner is uploaded. The channelId parameter was introduced as a required parameter in May 2017. As this was a backward-incompatible change, channelBanners.insert requests that do not specify this parameter will not return an error until six months have passed from the time that the parameter was introduced. Please see the API Terms of Service for the official policy regarding backward incompatible changes and the API revision history for the exact date that the parameter was introduced.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "onBehalfOfContentOwner": {
 	//       "description": "Note: This parameter is intended exclusively for YouTube content partners.\n\nThe onBehalfOfContentOwner parameter indicates that the request's authorization credentials identify a YouTube CMS user who is acting on behalf of the content owner specified in the parameter value. This parameter is intended for YouTube content partners that own and manage many different YouTube channels. It allows content owners to authenticate once and get access to all their video and channel data, without having to provide authentication credentials for each individual channel. The CMS account that the user authenticates with must be linked to the specified YouTube content owner.",
 	//       "location": "query",
@@ -21365,7 +21315,7 @@ func (c *SuperChatEventsListCall) Do(opts ...googleapi.CallOption) (*SuperChatEv
 	//       "format": "uint32",
 	//       "location": "query",
 	//       "maximum": "50",
-	//       "minimum": "0",
+	//       "minimum": "1",
 	//       "type": "integer"
 	//     },
 	//     "pageToken": {

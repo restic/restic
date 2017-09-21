@@ -495,7 +495,7 @@
    "id": "bigquerydatatransfer:v1",
    "name": "bigquerydatatransfer",
    "version": "v1",
-   "title": "BigQuery Data Transfer Service API",
+   "title": "BigQuery Data Transfer API",
    "description": "Transfers data from partner SaaS applications to Google BigQuery on a scheduled, managed basis.",
    "discoveryRestUrl": "https://bigquerydatatransfer.googleapis.com/$discovery/rest?version=v1",
    "icons": {
@@ -774,6 +774,21 @@
   },
   {
    "kind": "discovery#directoryItem",
+   "id": "cloudtasks:v2beta2",
+   "name": "cloudtasks",
+   "version": "v2beta2",
+   "title": "Cloud Tasks API",
+   "description": "Manages the execution of large numbers of distributed requests. Cloud Tasks is in Alpha.",
+   "discoveryRestUrl": "https://cloudtasks.googleapis.com/$discovery/rest?version=v2beta2",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/cloud-tasks/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
    "id": "cloudtrace:v1",
    "name": "cloudtrace",
    "version": "v1",
@@ -928,21 +943,6 @@
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
    "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "container:v1alpha1",
-   "name": "container",
-   "version": "v1alpha1",
-   "title": "Google Container Engine API",
-   "description": "The Google Container Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
-   "discoveryRestUrl": "https://container.googleapis.com/$discovery/rest?version=v1alpha1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/container-engine/",
-   "preferred": false
   },
   {
    "kind": "discovery#directoryItem",
@@ -1803,6 +1803,21 @@
    },
    "documentationLink": "https://cloud.google.com/compute/docs/oslogin/rest/",
    "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "oslogin:v1beta",
+   "name": "oslogin",
+   "version": "v1beta",
+   "title": "Google Cloud OS Login API",
+   "description": "Manages OS login configuration for Directory API users.",
+   "discoveryRestUrl": "https://oslogin.googleapis.com/$discovery/rest?version=v1beta",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/compute/docs/oslogin/rest/",
+   "preferred": false
   },
   {
    "kind": "discovery#directoryItem",
@@ -2672,22 +2687,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "toolresults:v1beta3firstparty",
-   "name": "toolresults",
-   "version": "v1beta3firstparty",
-   "title": "Cloud Tool Results firstparty API",
-   "description": "Reads and publishes results from Firebase Test Lab.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/toolresults/v1beta3firstparty/rest",
-   "discoveryLink": "./apis/toolresults/v1beta3firstparty/rest",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://firebase.google.com/docs/test-lab/",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "toolresults:v1beta3",
    "name": "toolresults",
    "version": "v1beta3",
@@ -2739,13 +2738,13 @@
    "name": "vault",
    "version": "v1",
    "title": "Google Vault API",
-   "description": "",
+   "description": "Archiving and eDiscovery for G Suite.",
    "discoveryRestUrl": "https://vault.googleapis.com/$discovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
-   "documentationLink": "https://apps.google.com/products/vault/",
+   "documentationLink": "https://developers.google.com/vault",
    "preferred": true
   },
   {

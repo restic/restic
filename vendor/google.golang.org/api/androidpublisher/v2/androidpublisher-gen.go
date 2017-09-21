@@ -2022,6 +2022,7 @@ type SubscriptionPurchase struct {
 	// - User cancelled the subscription
 	// - Subscription was cancelled by the system, for example because of a
 	// billing problem
+	// - Subscription was replaced with a new subscription
 	CancelReason *int64 `json:"cancelReason,omitempty"`
 
 	// CountryCode: ISO 3166-1 alpha-2 billing country/region code of the

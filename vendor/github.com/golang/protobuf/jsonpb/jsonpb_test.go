@@ -791,6 +791,19 @@ func TestUnmarshalJSONPBUnmarshaler(t *testing.T) {
 	}
 }
 
+func TestUnmarshalNullWithJSONPBUnmarshaler(t *testing.T) {
+	rawJson := `{"stringField":null}`
+	var ptrFieldMsg ptrFieldMessage
+	if err := Unmarshal(strings.NewReader(rawJson), &ptrFieldMsg); err != nil {
+		t.Errorf("unmarshal error: %v", err)
+	}
+
+	want := ptrFieldMessage{StringField: &stringField{IsSet: true, StringValue: "null"}}
+	if !proto.Equal(&ptrFieldMsg, &want) {
+		t.Errorf("unmarshal result StringField: got %v, want %v", ptrFieldMsg, want)
+	}
+}
+
 func TestUnmarshalAnyJSONPBUnmarshaler(t *testing.T) {
 	rawJson := `{ "@type": "blah.com/` + dynamicMessageName + `", "foo": "bar", "baz": [0, 1, 2, 3] }`
 	var got anypb.Any
@@ -819,6 +832,41 @@ const (
 func init() {
 	// we register the custom type below so that we can use it in Any types
 	proto.RegisterType((*dynamicMessage)(nil), dynamicMessageName)
+}
+
+type ptrFieldMessage struct {
+	StringField *stringField `protobuf:"bytes,1,opt,name=stringField"`
+}
+
+func (m *ptrFieldMessage) Reset() {
+}
+
+func (m *ptrFieldMessage) String() string {
+	return m.StringField.StringValue
+}
+
+func (m *ptrFieldMessage) ProtoMessage() {
+}
+
+type stringField struct {
+	IsSet       bool   `protobuf:"varint,1,opt,name=isSet"`
+	StringValue string `protobuf:"bytes,2,opt,name=stringValue"`
+}
+
+func (s *stringField) Reset() {
+}
+
+func (s *stringField) String() string {
+	return s.StringValue
+}
+
+func (s *stringField) ProtoMessage() {
+}
+
+func (s *stringField) UnmarshalJSONPB(jum *Unmarshaler, js []byte) error {
+	s.IsSet = true
+	s.StringValue = string(js)
+	return nil
 }
 
 // dynamicMessage implements protobuf.Message but is not a normal generated message type.

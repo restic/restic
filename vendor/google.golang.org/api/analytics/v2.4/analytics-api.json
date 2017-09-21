@@ -20,7 +20,7 @@
  "basePath": "/analytics/v2.4/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "analytics/v2.4/",
- "batchPath": "batch",
+ "batchPath": "batch/analytics/v2.4",
  "parameters": {
   "alt": {
    "type": "string",

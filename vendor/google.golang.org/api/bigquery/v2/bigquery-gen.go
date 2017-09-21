@@ -1954,6 +1954,9 @@ type JobStatistics2 struct {
 	// TotalBytesProcessed: [Output-only] Total bytes processed for the job.
 	TotalBytesProcessed int64 `json:"totalBytesProcessed,omitempty,string"`
 
+	// TotalSlotMs: [Output-only] Slot-milliseconds for the job.
+	TotalSlotMs int64 `json:"totalSlotMs,omitempty,string"`
+
 	// UndeclaredQueryParameters: [Output-only, Experimental] Standard SQL
 	// only: list of undeclared query parameters detected during a dry run
 	// validation.

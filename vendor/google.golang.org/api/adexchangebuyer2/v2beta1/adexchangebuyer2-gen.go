@@ -5255,10 +5255,12 @@ func (c *AccountsCreativesListCall) PageToken(pageToken string) *AccountsCreativ
 //                           not_checked}
 // <li>attribute: {a numeric attribute from the list of
 // attributes}
-// <li>disapprovalReason: {a reason from
+// <li>disapprovalReason: {a reason
+// from
 // DisapprovalReason
 // </ul>
-// Example: 'accountId=12345 AND (dealsStatus:disapproved AND
+// Example: 'accountId=12345 AND (dealsStatus:disapproved
+// AND
 // disapprovalReason:unacceptable_content) OR attribute:47'
 func (c *AccountsCreativesListCall) Query(query string) *AccountsCreativesListCall {
 	c.urlParams_.Set("query", query)
@@ -5385,7 +5387,7 @@ func (c *AccountsCreativesListCall) Do(opts ...googleapi.CallOption) (*ListCreat
 	//       "type": "string"
 	//     },
 	//     "query": {
-	//       "description": "An optional query string to filter creatives. If no filter is specified,\nall active creatives will be returned.\nSupported queries are:\n\u003cul\u003e\n\u003cli\u003eaccountId=\u003ci\u003eaccount_id_string\u003c/i\u003e\n\u003cli\u003ecreativeId=\u003ci\u003ecreative_id_string\u003c/i\u003e\n\u003cli\u003edealsStatus: {approved, conditionally_approved, disapproved,\n                   not_checked}\n\u003cli\u003eopenAuctionStatus: {approved, conditionally_approved, disapproved,\n                          not_checked}\n\u003cli\u003eattribute: {a numeric attribute from the list of attributes}\n\u003cli\u003edisapprovalReason: {a reason from DisapprovalReason\n\u003c/ul\u003e\nExample: 'accountId=12345 AND (dealsStatus:disapproved AND disapprovalReason:unacceptable_content) OR attribute:47'",
+	//       "description": "An optional query string to filter creatives. If no filter is specified,\nall active creatives will be returned.\nSupported queries are:\n\u003cul\u003e\n\u003cli\u003eaccountId=\u003ci\u003eaccount_id_string\u003c/i\u003e\n\u003cli\u003ecreativeId=\u003ci\u003ecreative_id_string\u003c/i\u003e\n\u003cli\u003edealsStatus: {approved, conditionally_approved, disapproved,\n                   not_checked}\n\u003cli\u003eopenAuctionStatus: {approved, conditionally_approved, disapproved,\n                          not_checked}\n\u003cli\u003eattribute: {a numeric attribute from the list of attributes}\n\u003cli\u003edisapprovalReason: {a reason from\nDisapprovalReason\n\u003c/ul\u003e\nExample: 'accountId=12345 AND (dealsStatus:disapproved AND\ndisapprovalReason:unacceptable_content) OR attribute:47'",
 	//       "location": "query",
 	//       "type": "string"
 	//     }

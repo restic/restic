@@ -20,7 +20,7 @@
  "basePath": "/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "",
- "batchPath": "batch",
+ "batchPath": "batch/oauth2/v2",
  "parameters": {
   "alt": {
    "type": "string",

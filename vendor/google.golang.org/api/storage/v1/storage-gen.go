@@ -3274,6 +3274,13 @@ func (c *BucketsInsertCall) Projection(projection string) *BucketsInsertCall {
 	return c
 }
 
+// UserProject sets the optional parameter "userProject": The project to
+// be billed for this request, for Requester Pays buckets.
+func (c *BucketsInsertCall) UserProject(userProject string) *BucketsInsertCall {
+	c.urlParams_.Set("userProject", userProject)
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -3422,6 +3429,11 @@ func (c *BucketsInsertCall) Do(opts ...googleapi.CallOption) (*Bucket, error) {
 	//       ],
 	//       "location": "query",
 	//       "type": "string"
+	//     },
+	//     "userProject": {
+	//       "description": "The project to be billed for this request, for Requester Pays buckets.",
+	//       "location": "query",
+	//       "type": "string"
 	//     }
 	//   },
 	//   "path": "b",
@@ -3488,6 +3500,13 @@ func (c *BucketsListCall) Prefix(prefix string) *BucketsListCall {
 //   "noAcl" - Omit owner, acl and defaultObjectAcl properties.
 func (c *BucketsListCall) Projection(projection string) *BucketsListCall {
 	c.urlParams_.Set("projection", projection)
+	return c
+}
+
+// UserProject sets the optional parameter "userProject": The project to
+// be billed for this request, for Requester Pays buckets.
+func (c *BucketsListCall) UserProject(userProject string) *BucketsListCall {
+	c.urlParams_.Set("userProject", userProject)
 	return c
 }
 
@@ -3623,6 +3642,11 @@ func (c *BucketsListCall) Do(opts ...googleapi.CallOption) (*Buckets, error) {
 	//         "Include all properties.",
 	//         "Omit owner, acl and defaultObjectAcl properties."
 	//       ],
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "userProject": {
+	//       "description": "The project to be billed for this request, for Requester Pays buckets.",
 	//       "location": "query",
 	//       "type": "string"
 	//     }
@@ -9164,7 +9188,8 @@ type ObjectsPatchCall struct {
 	header_    http.Header
 }
 
-// Patch: Patches an object's metadata.
+// Patch: Updates an object's metadata. This method supports patch
+// semantics.
 func (r *ObjectsService) Patch(bucket string, object string, object2 *Object) *ObjectsPatchCall {
 	c := &ObjectsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.bucket = bucket
@@ -9263,9 +9288,9 @@ func (c *ObjectsPatchCall) Fields(s ...googleapi.Field) *ObjectsPatchCall {
 	return c
 }
 
-// Context sets the context to be used in this call's Do and Download
-// methods. Any pending HTTP request will be aborted if the provided
-// context is canceled.
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
 func (c *ObjectsPatchCall) Context(ctx context.Context) *ObjectsPatchCall {
 	c.ctx_ = ctx
 	return c
@@ -9302,22 +9327,6 @@ func (c *ObjectsPatchCall) doRequest(alt string) (*http.Response, error) {
 		"object": c.object,
 	})
 	return gensupport.SendRequest(c.ctx_, c.s.client, req)
-}
-
-// Download fetches the API endpoint's "media" value, instead of the normal
-// API response value. If the returned error is nil, the Response is guaranteed to
-// have a 2xx status code. Callers must close the Response.Body as usual.
-func (c *ObjectsPatchCall) Download(opts ...googleapi.CallOption) (*http.Response, error) {
-	gensupport.SetOptions(c.urlParams_, opts...)
-	res, err := c.doRequest("media")
-	if err != nil {
-		return nil, err
-	}
-	if err := googleapi.CheckMediaResponse(res); err != nil {
-		res.Body.Close()
-		return nil, err
-	}
-	return res, nil
 }
 
 // Do executes the "storage.objects.patch" call.
@@ -9358,7 +9367,7 @@ func (c *ObjectsPatchCall) Do(opts ...googleapi.CallOption) (*Object, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "Patches an object's metadata.",
+	//   "description": "Updates an object's metadata. This method supports patch semantics.",
 	//   "httpMethod": "PATCH",
 	//   "id": "storage.objects.patch",
 	//   "parameterOrder": [
@@ -9458,9 +9467,7 @@ func (c *ObjectsPatchCall) Do(opts ...googleapi.CallOption) (*Object, error) {
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
 	//     "https://www.googleapis.com/auth/devstorage.full_control"
-	//   ],
-	//   "supportsMediaDownload": true,
-	//   "useMediaDownloadService": true
+	//   ]
 	// }
 
 }
@@ -10833,6 +10840,13 @@ func (r *ProjectsServiceAccountService) Get(projectId string) *ProjectsServiceAc
 	return c
 }
 
+// UserProject sets the optional parameter "userProject": The project to
+// be billed for this request, for Requester Pays buckets.
+func (c *ProjectsServiceAccountGetCall) UserProject(userProject string) *ProjectsServiceAccountGetCall {
+	c.urlParams_.Set("userProject", userProject)
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -10938,6 +10952,11 @@ func (c *ProjectsServiceAccountGetCall) Do(opts ...googleapi.CallOption) (*Servi
 	//       "description": "Project ID",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "userProject": {
+	//       "description": "The project to be billed for this request, for Requester Pays buckets.",
+	//       "location": "query",
 	//       "type": "string"
 	//     }
 	//   },

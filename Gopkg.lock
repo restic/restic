@@ -22,8 +22,8 @@
 [[projects]]
   name = "github.com/Azure/go-autorest"
   packages = ["autorest","autorest/adal","autorest/azure","autorest/date"]
-  revision = "5432abe734f8d95c78340cd56712f912906e6514"
-  version = "v8.3.1"
+  revision = "f6be1abbb5abd0517522f850dd785990d373da7e"
+  version = "v8.4.0"
 
 [[projects]]
   name = "github.com/cpuguy83/go-md2man"
@@ -59,7 +59,7 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "17ce1425424ab154092bbb43af630bd647f3bb0d"
+  revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -161,13 +161,13 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
-  revision = "faadfbdc035307d901e69eea569f5dda451a3ee3"
+  revision = "7d9177d70076375b9a59c8fde23d52d9c4a7ecd5"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp"]
-  revision = "b129b8e0fbeb39c8358e51a07ab6c50ad415e72e"
+  revision = "b60f3a92103dfd93dfcb900ec77c6d0643510868"
 
 [[projects]]
   branch = "master"
@@ -179,13 +179,13 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "062cd7e4e68206d8bab9b18396626e855c992658"
+  revision = "b6e1ae21643682ce023deb8d152024597b0e9bb4"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
   packages = ["gensupport","googleapi","googleapi/internal/uritemplates","storage/v1"]
-  revision = "2fe03ca2dc379c00d654a4459d1a50812cac2848"
+  revision = "586095a6e4078caf0dc0b64f8545fa8679442013"
 
 [[projects]]
   name = "google.golang.org/appengine"

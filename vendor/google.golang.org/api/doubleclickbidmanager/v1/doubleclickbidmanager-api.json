@@ -24,7 +24,7 @@
  "basePath": "/doubleclickbidmanager/v1/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "doubleclickbidmanager/v1/",
- "batchPath": "batch",
+ "batchPath": "batch/doubleclickbidmanager/v1",
  "parameters": {
   "alt": {
    "type": "string",

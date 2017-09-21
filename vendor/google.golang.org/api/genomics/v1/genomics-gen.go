@@ -1757,7 +1757,7 @@ type Operation struct {
 
 	// Response: If importing ReadGroupSets, an ImportReadGroupSetsResponse
 	// is returned. If importing Variants, an ImportVariantsResponse is
-	// returned. For pipelines and exports, an empty response is returned.
+	// returned. For pipelines and exports, an Empty response is returned.
 	Response googleapi.RawMessage `json:"response,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the

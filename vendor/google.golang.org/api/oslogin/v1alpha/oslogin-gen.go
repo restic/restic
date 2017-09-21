@@ -202,7 +202,7 @@ type PosixAccount struct {
 	Gecos string `json:"gecos,omitempty"`
 
 	// Gid: The default group ID.
-	Gid int64 `json:"gid,omitempty"`
+	Gid int64 `json:"gid,omitempty,string"`
 
 	// HomeDirectory: The path to the home directory for this account.
 	HomeDirectory string `json:"homeDirectory,omitempty"`
@@ -219,7 +219,7 @@ type PosixAccount struct {
 	SystemId string `json:"systemId,omitempty"`
 
 	// Uid: The user ID.
-	Uid int64 `json:"uid,omitempty"`
+	Uid int64 `json:"uid,omitempty,string"`
 
 	// Username: The username of the POSIX account.
 	Username string `json:"username,omitempty"`
@@ -253,8 +253,8 @@ type SshPublicKey struct {
 	// ExpirationTimeUsec: An expiration time in microseconds since epoch.
 	ExpirationTimeUsec int64 `json:"expirationTimeUsec,omitempty,string"`
 
-	// Fingerprint: [Output Only] The SHA-256 fingerprint of the SSH public
-	// key.
+	// Fingerprint: The SHA-256 fingerprint of the SSH public key.
+	// Output only.
 	Fingerprint string `json:"fingerprint,omitempty"`
 
 	// Key: Public key text in SSH format, defined by

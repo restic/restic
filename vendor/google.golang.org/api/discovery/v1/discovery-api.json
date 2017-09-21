@@ -19,7 +19,7 @@
  "basePath": "/discovery/v1/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "discovery/v1/",
- "batchPath": "batch",
+ "batchPath": "batch/discovery/v1",
  "parameters": {
   "alt": {
    "type": "string",
