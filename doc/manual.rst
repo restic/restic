@@ -564,6 +564,16 @@ args:
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 
+
+Backing up special items
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Symlinks** are archieved as symlinks, ``restic``does not follow them.
+When you restore, you get the same symlink again, with the same link target
+and the same timestamps.
+
+If there is a **bind-mount** below a directory that is to be saved, restic descends into it.
+
 Reading data from stdin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
