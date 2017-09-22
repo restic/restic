@@ -122,7 +122,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		stats.bytes += pack.Size
 		blobs += len(pack.Entries)
 	}
-	Verbosef("repository contains %v packs (%v blobs) with %v bytes\n",
+	Verbosef("repository contains %v packs (%v blobs) with %v\n",
 		len(idx.Packs), blobs, formatBytes(uint64(stats.bytes)))
 
 	blobCount := make(map[restic.BlobHandle]int)
