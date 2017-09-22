@@ -72,7 +72,7 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 		l := rnd.rand.Intn(1 << 20)
 		seed := rnd.rand.Int63()
 
-		packer, err := pm.findPacker(uint(l))
+		packer, err := pm.findPacker()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -91,7 +91,7 @@ func fillPacks(t testing.TB, rnd *randReader, be Saver, pm *packerManager, buf [
 		}
 		bytes += l
 
-		if packer.Size() < minPackSize && pm.countPacker() < maxPackers {
+		if packer.Size() < minPackSize {
 			pm.insertPacker(packer)
 			continue
 		}
