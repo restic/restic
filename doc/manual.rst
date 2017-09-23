@@ -564,6 +564,21 @@ args:
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 
+
+Backing up special items
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Symlinks** are archieved as symlinks, ``restic``does not follow them.
+When you restore, you get the same symlink again, with the same link target
+and the same timestamps.
+
+If there is a **bind-mount** below a directory that is to be saved, restic descends into it.
+
+**Device files** are saved and restored as device files. This means that e.g. ``/dev/sda`` is
+archived as a block device file and restored as such. This also means that the content of the
+corresponding disk is not read, at least not from the device file.
+
+
 Reading data from stdin
 ~~~~~~~~~~~~~~~~~~~~~~~
 
