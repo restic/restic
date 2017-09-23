@@ -512,6 +512,10 @@ find the old snapshot in the repo and by default only reads those files
 that are new or have been modified since the last snapshot. This is
 decided based on the modify date of the file in the file system.
 
+Now is a good time to run ``restic check`` to verify that all data
+is properly stored in the repository. You should run this command regularly
+to make sure the internal structure of the repository is free of errors.
+
 You can exclude folders and files by specifying exclude-patterns. Either
 specify them with multiple ``--exclude``'s or one ``--exclude-file``
 
@@ -825,6 +829,10 @@ remove operations, two commands need to be called in sequence:
 data that was referenced by the snapshot from the repository. This can
 be automated with the ``--prune`` option of the ``forget`` command,
 which runs ``prune`` automatically if snapshots have been removed.
+
+It is advisable to run ``restic check`` after pruning, to make sure
+you are alerted, should the internal data structures of the repository
+be damaged.
 
 Remove a single snapshot
 ~~~~~~~~~~~~~~~~~~~~~~~~
