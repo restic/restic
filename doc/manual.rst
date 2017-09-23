@@ -119,8 +119,8 @@ able to access data stored in the repository.
 
 For automated backups, restic accepts the repository location in the
 environment variable ``RESTIC_REPOSITORY``. The password can be read
-from a file (via the option ``--password-file``) or the environment
-variable ``RESTIC_PASSWORD``.
+from a file (via the option ``--password-file`` or the environment variable
+``RESTIC_PASSWORD_FILE``) or the environment variable ``RESTIC_PASSWORD``.
 
 SFTP
 ~~~~
