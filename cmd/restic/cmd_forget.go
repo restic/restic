@@ -35,9 +35,10 @@ type ForgetOptions struct {
 	Yearly   int
 	KeepTags restic.TagLists
 
-	Host  string
-	Tags  restic.TagLists
-	Paths []string
+	Host    string
+	Tags    restic.TagLists
+	Paths   []string
+	Compact bool
 
 	// Grouping
 	GroupBy string
@@ -65,6 +66,7 @@ func init() {
 	f.StringVar(&forgetOptions.Host, "hostname", "", "only consider snapshots with the given `hostname` (deprecated)")
 	f.Var(&forgetOptions.Tags, "tag", "only consider snapshots which include this `taglist` in the format `tag[,tag,...]` (can be specified multiple times)")
 	f.StringArrayVar(&forgetOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` (can be specified multiple times)")
+	f.BoolVarP(&forgetOptions.Compact, "compact", "c", false, "use compact format")
 
 	f.StringVarP(&forgetOptions.GroupBy, "group-by", "g", "host,paths", "string for grouping snapshots by host,paths,tags")
 	f.BoolVarP(&forgetOptions.DryRun, "dry-run", "n", false, "do not delete anything, just print what would be done")
@@ -204,13 +206,13 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 
 		if len(keep) != 0 && !gopts.Quiet {
 			Printf("keep %d snapshots:\n", len(keep))
-			PrintSnapshots(globalOptions.stdout, keep, false)
+			PrintSnapshots(globalOptions.stdout, keep, opts.Compact)
 			Printf("\n")
 		}
 
 		if len(remove) != 0 && !gopts.Quiet {
 			Printf("remove %d snapshots:\n", len(remove))
-			PrintSnapshots(globalOptions.stdout, remove, false)
+			PrintSnapshots(globalOptions.stdout, remove, opts.Compact)
 			Printf("\n")
 		}
 
