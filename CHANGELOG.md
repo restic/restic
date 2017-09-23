@@ -21,6 +21,11 @@ Small changes
    https://github.com/restic/restic/issues/1256
    https://github.com/restic/restic/pull/1267
 
+ * The sftp backend now prompts for the password if a password is necessary for
+   login.
+   https://github.com/restic/restic/issues/448
+   https://github.com/restic/restic/pull/1270
+
 Important Changes in 0.7.3
 ==========================
 
