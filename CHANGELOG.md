@@ -12,6 +12,14 @@ Small changes
    which points to the latest snapshot in that particular directory.
    https://github.com/restic/restic/pull/1249
 
+ * The option `--compact` was added to the `forget` command to provide the same
+   compact view as the `snapshots` command.
+   https://github.com/restic/restic/pull/1269
+
+ * We've re-enabled a workaround for `minio-go` (the library we're using to
+   access s3 backends), this reduces memory usage.
+   https://github.com/restic/restic/issues/1256
+   https://github.com/restic/restic/pull/1267
 
 Important Changes in 0.7.3
 ==========================
