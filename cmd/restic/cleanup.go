@@ -12,17 +12,27 @@ import (
 
 var cleanupHandlers struct {
 	sync.Mutex
-	list []func() error
-	done bool
+	list     []func() error
+	done     bool
+	sigintCh chan os.Signal
 }
 
 var stderr = os.Stderr
 
 func init() {
-	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGINT)
+	cleanupHandlers.sigintCh = make(chan os.Signal)
+	go CleanupHandler(cleanupHandlers.sigintCh)
+	InstallSignalHandler()
+}
 
-	go CleanupHandler(c)
+// InstallSignalHandler listens for SIGINT and triggers the cleanup handlers.
+func InstallSignalHandler() {
+	signal.Notify(cleanupHandlers.sigintCh, syscall.SIGINT)
+}
+
+// SuspendSignalHandler removes the signal handler for SIGINT.
+func SuspendSignalHandler() {
+	signal.Reset(syscall.SIGINT)
 }
 
 // AddCleanupHandler adds the function f to the list of cleanup handlers so
