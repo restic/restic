@@ -1,3 +1,4 @@
+// Package gs provides a restic backend for Google Cloud Storage.
 package gs
 
 import (
@@ -20,7 +21,13 @@ import (
 	storage "google.golang.org/api/storage/v1"
 )
 
-// Backend stores data on an gs endpoint.
+// Backend stores data in a GCS bucket.
+//
+// The service account used to access the bucket must have these permissions:
+//  * storage.objects.create
+//  * storage.objects.delete
+//  * storage.objects.get
+//  * storage.objects.list
 type Backend struct {
 	service      *storage.Service
 	projectID    string
@@ -31,7 +38,7 @@ type Backend struct {
 	backend.Layout
 }
 
-// make sure that *Backend implements backend.Backend
+// Ensure that *Backend implements restic.Backend.
 var _ restic.Backend = &Backend{}
 
 func getStorageService(jsonKeyPath string) (*storage.Service, error) {
@@ -87,21 +94,25 @@ func open(cfg Config) (*Backend, error) {
 	return be, nil
 }
 
-// Open opens the gs backend at bucket and region.
+// Open opens the gs backend at the specified bucket.
 func Open(cfg Config) (restic.Backend, error) {
 	return open(cfg)
 }
 
-// Create opens the S3 backend at bucket and region and creates the bucket if
-// it does not exist yet.
+// Create opens the gs backend at the specified bucket and creates the bucket
+// if it does not exist yet.
+//
+// In addition to the permissions required by Backend, Create requires these
+// permissions:
+//  * storage.buckets.get
+//  * storage.buckets.create (if the bucket doesn't exist)
 func Create(cfg Config) (restic.Backend, error) {
 	be, err := open(cfg)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
 
-	// Create bucket if not exists
+	// Create bucket if it doesn't exist.
 	if _, err := be.service.Buckets.Get(be.bucketName).Do(); err != nil {
 		bucket := &storage.Bucket{
 			Name: be.bucketName,
@@ -371,5 +382,5 @@ func (be *Backend) Delete(ctx context.Context) error {
 	return be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
 }
 
-// Close does nothing
+// Close does nothing.
 func (be *Backend) Close() error { return nil }

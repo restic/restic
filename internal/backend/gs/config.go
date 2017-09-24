@@ -8,8 +8,8 @@ import (
 	"github.com/restic/restic/internal/options"
 )
 
-// Config contains all configuration necessary to connect to an gcs compatible
-// server.
+// Config contains all configuration necessary to connect to a Google Cloud
+// Storage bucket.
 type Config struct {
 	ProjectID   string
 	JSONKeyPath string

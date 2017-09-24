@@ -405,11 +405,22 @@ established.
 Google Cloud Storage
 ~~~~~~~~~~~~~~~~~~~~
 
-Restic supports Google Cloud Storage as a backend. In order for this to work
-you first need create a "service account" and download the JSON key file for
-it. In addition, you need the Google Project ID that you can see in the Google
+Restic supports Google Cloud Storage as a backend.
+
+Restic connects to Google Cloud Storage via a `service account`_.
+
+For normal restic operation, the service account must have the
+``storage.objects.{create,delete,get,list}`` permissions for the bucket. These
+are included in the "Storage Object Admin" role. For ``restic init``, the
+service account must also have the ``storage.buckets.get`` and
+``storage.buckets.create`` (if the bucket does not exist) permissions. These
+are included in the "Storage Admin" role.
+
+`Create a service account key`_ and download the JSON credentials file.
+
+In addition, you need the Google Project ID that you can see in the Google
 Cloud Platform console at the "Storage/Settings" menu. Export the path to the
-JSON credentials file and the project ID as follows:
+JSON key file and the project ID as follows:
 
 .. code-block:: console
 
@@ -431,6 +442,9 @@ bucket `foo` at the root path:
 The number of concurrent connections to the GCS service can be set with the
 `-o gs.connections=10`. By default, at most five parallel connections are
 established.
+
+.. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
+.. _Create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 
 
 Password prompt on Windows
