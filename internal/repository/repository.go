@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -421,6 +422,28 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 		err = r.Cache.Clear(restic.DataFile, packs)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error clearing data files in cache: %v\n", err)
+		}
+
+		treePacks := restic.NewIDSet()
+		for _, idx := range r.idx.All() {
+			for _, id := range idx.TreePacks() {
+				treePacks.Insert(id)
+			}
+		}
+
+		// use readahead
+		cache := r.Cache.(*cache.Cache)
+		cache.PerformReadahead = func(h restic.Handle) bool {
+			if h.Type != restic.DataFile {
+				return false
+			}
+
+			id, err := restic.ParseID(h.Name)
+			if err != nil {
+				return false
+			}
+
+			return treePacks.Has(id)
 		}
 	}
 
