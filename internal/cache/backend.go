@@ -50,14 +50,14 @@ var autoCacheTypes = map[restic.FileType]struct{}{
 
 // Save stores a new file is the backend and the cache.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
-	debug.Log("cache Save(%v)", h)
 	if _, ok := autoCacheTypes[h.Type]; !ok {
 		return b.Backend.Save(ctx, h, rd)
 	}
 
+	debug.Log("Save(%v): auto-store in the cache", h)
 	wr, err := b.Cache.SaveWriter(h)
 	if err != nil {
-		debug.Log("unable to save object to cache: %v", err)
+		debug.Log("unable to save %v to cache: %v", h, err)
 		return b.Backend.Save(ctx, h, rd)
 	}
 
@@ -72,7 +72,7 @@ func (b *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err 
 	err = wr.Close()
 	if err != nil {
 		debug.Log("cache writer returned error: %v", err)
-		b.Cache.Remove(h)
+		_ = b.Cache.Remove(h)
 	}
 	return nil
 }
@@ -89,7 +89,12 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		return b.Cache.Load(h, length, offset)
 	}
 
-	debug.Log("Load(%v, %v, %v) delegated to backend", h, length, offset)
+	// partial file requested
+	if offset != 0 || length != 0 {
+		debug.Log("Load(%v, %v, %v): partial file requested, delegating to backend", h, length, offset)
+		return b.Backend.Load(ctx, h, length, offset)
+	}
+
 	rd, err := b.Backend.Load(ctx, h, length, offset)
 	if err != nil {
 		if b.Backend.IsNotExist(err) {
@@ -100,14 +105,7 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		return nil, err
 	}
 
-	// only cache complete files
-	if offset != 0 || length != 0 {
-		debug.Log("won't store partial file %v", h)
-		return rd, err
-	}
-
 	if _, ok := autoCacheFiles[h.Type]; !ok {
-		debug.Log("wrong type for auto store %v", h)
 		return rd, nil
 	}
 
