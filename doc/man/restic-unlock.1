@@ -30,8 +30,16 @@ The "unlock" command removes stale locks that have been created by other restic 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
+\fB\-\-cache\-dir\fP=""
+    set the cache directory
+
+.PP
 \fB\-\-json\fP[=false]
     set output mode to JSON for commands that support it
+
+.PP
+\fB\-\-no\-cache\fP[=false]
+    do not use a local cache
 
 .PP
 \fB\-\-no\-lock\fP[=false]
