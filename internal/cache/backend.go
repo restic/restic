@@ -105,7 +105,11 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	if b.Cache.Has(h) {
 		debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
-		return b.Cache.Load(h, length, offset)
+		rd, err := b.Cache.Load(h, length, offset)
+		if err == nil {
+			return rd, nil
+		}
+		debug.Log("error loading %v from cache: %v", h, err)
 	}
 
 	// partial file requested
