@@ -11,7 +11,7 @@ import (
 // Backend wraps a restic.Backend and adds a cache.
 type Backend struct {
 	restic.Backend
-	restic.Cache
+	*Cache
 }
 
 // ensure cachedBackend implements restic.Backend

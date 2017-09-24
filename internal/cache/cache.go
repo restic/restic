@@ -15,8 +15,9 @@ import (
 
 // Cache manages a local cache.
 type Cache struct {
-	Path string
-	Base string
+	Path             string
+	Base             string
+	PerformReadahead func(restic.Handle) bool
 }
 
 const dirMode = 0700
@@ -78,6 +79,9 @@ func writeCachedirTag(dir string) error {
 
 // New returns a new cache for the repo ID at basedir. If basedir is the empty
 // string, the default cache location (according to the XDG standard) is used.
+//
+// For partial files, the complete file is loaded and stored in the cache when
+// performReadahead returns true.
 func New(id string, basedir string) (c *Cache, err error) {
 	if basedir == "" {
 		basedir, err = getXDGCacheDir()
@@ -124,6 +128,10 @@ func New(id string, basedir string) (c *Cache, err error) {
 	c = &Cache{
 		Path: cachedir,
 		Base: basedir,
+		PerformReadahead: func(restic.Handle) bool {
+			// do not perform readahead by default
+			return false
+		},
 	}
 
 	return c, nil
