@@ -21,7 +21,13 @@ import (
 	storage "google.golang.org/api/storage/v1"
 )
 
-// Backend stores data on an gs endpoint.
+// Backend stores data in a GCS bucket.
+//
+// The service account used to access the bucket must have these permissions:
+//  * storage.objects.create
+//  * storage.objects.delete
+//  * storage.objects.get
+//  * storage.objects.list
 type Backend struct {
 	service      *storage.Service
 	projectID    string
@@ -95,6 +101,11 @@ func Open(cfg Config) (restic.Backend, error) {
 
 // Create opens the gs backend at the specified bucket and creates the bucket
 // if it does not exist yet.
+//
+// In addition to the permissions required by Backend, Create requires these
+// permissions:
+//  * storage.buckets.get
+//  * storage.buckets.create (if the bucket doesn't exist)
 func Create(cfg Config) (restic.Backend, error) {
 	be, err := open(cfg)
 	if err != nil {
