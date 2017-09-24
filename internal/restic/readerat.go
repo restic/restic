@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 )
 
 type backendReaderAt struct {
@@ -37,5 +38,5 @@ func ReadAt(ctx context.Context, be Backend, h Handle, offset int64, p []byte) (
 
 	debug.Log("ReadAt(%v) ReadFull returned %v bytes", h, n)
 
-	return n, err
+	return n, errors.Wrapf(err, "ReadFull(%v)", h)
 }
