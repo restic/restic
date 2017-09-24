@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/restic"
@@ -48,6 +49,18 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 	f, err := fs.Open(c.filename(h))
 	if err != nil {
 		return nil, errors.Wrap(err, "Open")
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		_ = f.Close()
+		return nil, errors.Wrap(err, "Stat")
+	}
+
+	if fi.Size() <= crypto.Extension {
+		_ = f.Close()
+		_ = c.Remove(h)
+		return nil, errors.New("cached file is truncated, removing")
 	}
 
 	if offset > 0 {
