@@ -82,6 +82,25 @@ var autoCacheFiles = map[restic.FileType]bool{
 	restic.SnapshotFile: true,
 }
 
+func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
+	rd, err := b.Backend.Load(ctx, h, 0, 0)
+	if err != nil {
+		return err
+	}
+
+	if err = b.Cache.Save(h, rd); err != nil {
+		return err
+	}
+
+	if err = rd.Close(); err != nil {
+		// try to remove from the cache, ignore errors
+		_ = b.Cache.Remove(h)
+		return err
+	}
+
+	return nil
+}
+
 // Load loads a file from the cache or the backend.
 func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 	if b.Cache.Has(h) {
@@ -91,39 +110,36 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 
 	// partial file requested
 	if offset != 0 || length != 0 {
+		if b.Cache.PerformReadahead(h) {
+			debug.Log("performing readahead for %v", h)
+			err := b.cacheFile(ctx, h)
+			if err == nil {
+				return b.Cache.Load(h, length, offset)
+			}
+
+			debug.Log("error caching %v: %v", h, err)
+		}
+
 		debug.Log("Load(%v, %v, %v): partial file requested, delegating to backend", h, length, offset)
 		return b.Backend.Load(ctx, h, length, offset)
 	}
 
-	rd, err := b.Backend.Load(ctx, h, length, offset)
-	if err != nil {
-		if b.Backend.IsNotExist(err) {
-			// try to remove from the cache, ignore errors
-			_ = b.Cache.Remove(h)
-		}
-
-		return nil, err
-	}
-
+	// if we don't automatically cache this file type, fall back to the backend
 	if _, ok := autoCacheFiles[h.Type]; !ok {
-		return rd, nil
+		debug.Log("Load(%v, %v, %v): delegating to backend", h, length, offset)
+		return b.Backend.Load(ctx, h, length, offset)
 	}
 
 	debug.Log("auto-store %v in the cache", h)
+	err := b.cacheFile(ctx, h)
 
-	// cache the file, then return cached copy
-	if err = b.Cache.Save(h, rd); err != nil {
-		return nil, err
+	if err == nil {
+		// load the cached version
+		return b.Cache.Load(h, 0, 0)
 	}
 
-	if err = rd.Close(); err != nil {
-		// try to remove from the cache, ignore errors
-		_ = b.Cache.Remove(h)
-		return nil, err
-	}
-
-	// load from the cache and save in the backend
-	return b.Cache.Load(h, 0, 0)
+	debug.Log("error caching %v: %v, falling back to backend", h, err)
+	return b.Backend.Load(ctx, h, length, offset)
 }
 
 // Stat tests whether the backend has a file. If it does not exist but still
