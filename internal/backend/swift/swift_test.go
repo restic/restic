@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/errors"
@@ -15,6 +16,11 @@ import (
 )
 
 func newSwiftTestSuite(t testing.TB) *test.Suite {
+	tr, err := backend.Transport(nil)
+	if err != nil {
+		t.Fatalf("cannot create transport for tests: %v", err)
+	}
+
 	return &test.Suite{
 		// do not use excessive data
 		MinimalData: true,
@@ -55,7 +61,7 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(swift.Config)
 
-			be, err := swift.Open(cfg)
+			be, err := swift.Open(cfg, tr)
 			if err != nil {
 				return nil, err
 			}
@@ -75,14 +81,14 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(swift.Config)
-			return swift.Open(cfg)
+			return swift.Open(cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(swift.Config)
 
-			be, err := swift.Open(cfg)
+			be, err := swift.Open(cfg, tr)
 			if err != nil {
 				return err
 			}

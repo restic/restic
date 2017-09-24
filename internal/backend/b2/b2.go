@@ -3,6 +3,7 @@ package b2
 import (
 	"context"
 	"io"
+	"net/http"
 	"path"
 	"strings"
 
@@ -29,8 +30,8 @@ const defaultListMaxItems = 1000
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
 
-func newClient(ctx context.Context, cfg Config) (*b2.Client, error) {
-	opts := []b2.ClientOption{b2.Transport(backend.Transport())}
+func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
+	opts := []b2.ClientOption{b2.Transport(rt)}
 
 	c, err := b2.NewClient(ctx, cfg.AccountID, cfg.Key, opts...)
 	if err != nil {
@@ -40,13 +41,13 @@ func newClient(ctx context.Context, cfg Config) (*b2.Client, error) {
 }
 
 // Open opens a connection to the B2 service.
-func Open(cfg Config) (restic.Backend, error) {
+func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("cfg %#v", cfg)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
-	client, err := newClient(ctx, cfg)
+	client, err := newClient(ctx, cfg, rt)
 	if err != nil {
 		return nil, err
 	}
@@ -77,13 +78,13 @@ func Open(cfg Config) (restic.Backend, error) {
 
 // Create opens a connection to the B2 service. If the bucket does not exist yet,
 // it is created.
-func Create(cfg Config) (restic.Backend, error) {
+func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("cfg %#v", cfg)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
-	client, err := newClient(ctx, cfg)
+	client, err := newClient(ctx, cfg, rt)
 	if err != nil {
 		return nil, err
 	}

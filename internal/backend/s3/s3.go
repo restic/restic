@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -32,7 +33,7 @@ var _ restic.Backend = &Backend{}
 
 const defaultLayout = "default"
 
-func open(cfg Config) (*Backend, error) {
+func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
 	if cfg.MaxRetries > 0 {
@@ -70,7 +71,7 @@ func open(cfg Config) (*Backend, error) {
 		cfg:    cfg,
 	}
 
-	client.SetCustomTransport(backend.Transport())
+	client.SetCustomTransport(rt)
 
 	l, err := backend.ParseLayout(be, cfg.Layout, defaultLayout, cfg.Prefix)
 	if err != nil {
@@ -84,14 +85,14 @@ func open(cfg Config) (*Backend, error) {
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
-func Open(cfg Config) (restic.Backend, error) {
-	return open(cfg)
+func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	return open(cfg, rt)
 }
 
 // Create opens the S3 backend at bucket and region and creates the bucket if
 // it does not exist yet.
-func Create(cfg Config) (restic.Backend, error) {
-	be, err := open(cfg)
+func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
