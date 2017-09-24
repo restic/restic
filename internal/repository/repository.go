@@ -371,8 +371,20 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 			ParallelWorkFuncParseID(worker))
 	}()
 
+	validIndex := restic.NewIDSet()
 	for idx := range indexes {
+		id, err := idx.ID()
+		if err == nil {
+			validIndex.Insert(id)
+		}
 		r.idx.Insert(idx)
+	}
+
+	if r.Cache != nil {
+		err := r.Cache.Clear(restic.IndexFile, validIndex)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error clearing index files in cache: %v\n", err)
+		}
 	}
 
 	if err := <-errCh; err != nil {
