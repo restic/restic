@@ -81,6 +81,11 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
 func PrintSnapshots(stdout io.Writer, list restic.Snapshots, compact bool) {
 
+	// always sort the snapshots so that the newer ones are listed last
+	sort.SliceStable(list, func(i, j int) bool {
+		return list[i].Time.Before(list[j].Time)
+	})
+
 	// Determine the max widths for host and tag.
 	maxHost, maxTag := 10, 6
 	for _, sn := range list {
