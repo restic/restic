@@ -85,6 +85,25 @@ func runPrune(gopts GlobalOptions) error {
 	return pruneRepository(gopts, repo)
 }
 
+func mixedBlobs(list []restic.Blob) bool {
+	var tree, data bool
+
+	for _, pb := range list {
+		switch pb.Type {
+		case restic.TreeBlob:
+			tree = true
+		case restic.DataBlob:
+			data = true
+		}
+
+		if tree && data {
+			return true
+		}
+	}
+
+	return false
+}
+
 func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	ctx := gopts.ctx
 
@@ -191,6 +210,11 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	// find packs that need a rewrite
 	rewritePacks := restic.NewIDSet()
 	for _, pack := range idx.Packs {
+		if mixedBlobs(pack.Entries) {
+			rewritePacks.Insert(pack.ID)
+			continue
+		}
+
 		for _, blob := range pack.Entries {
 			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 			if !usedBlobs.Has(h) {

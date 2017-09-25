@@ -12,6 +12,7 @@ import (
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/filter"
 	"github.com/restic/restic/internal/fs"
+	"github.com/restic/restic/internal/repository"
 )
 
 // RejectFunc is a function that takes a filename and os.FileInfo of a
@@ -175,5 +176,29 @@ func rejectByDevice(samples []string) (RejectFunc, error) {
 		}
 
 		panic(fmt.Sprintf("item %v, device id %v not found, allowedDevs: %v", item, id, allowed))
+	}, nil
+}
+
+// rejectResticCache returns a RejectFunc that rejects the restic cache
+// directory (if set).
+func rejectResticCache(repo *repository.Repository) (RejectFunc, error) {
+	if repo.Cache == nil {
+		return func(string, os.FileInfo) bool {
+			return false
+		}, nil
+	}
+	cacheBase := repo.Cache.BaseDir()
+
+	if cacheBase == "" {
+		return nil, errors.New("cacheBase is empty string")
+	}
+
+	return func(item string, _ os.FileInfo) bool {
+		if fs.HasPathPrefix(cacheBase, item) {
+			debug.Log("rejecting restic cache directory %v", item)
+			return true
+		}
+
+		return false
 	}, nil
 }

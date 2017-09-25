@@ -89,8 +89,8 @@ func (r *packerManager) insertPacker(p *Packer) {
 }
 
 // savePacker stores p in the backend.
-func (r *Repository) savePacker(p *Packer) error {
-	debug.Log("save packer with %d blobs (%d bytes)\n", p.Packer.Count(), p.Packer.Size())
+func (r *Repository) savePacker(t restic.BlobType, p *Packer) error {
+	debug.Log("save packer for %v with %d blobs (%d bytes)\n", t, p.Packer.Count(), p.Packer.Size())
 	_, err := p.Packer.Finalize()
 	if err != nil {
 		return err
@@ -111,6 +111,20 @@ func (r *Repository) savePacker(p *Packer) error {
 	}
 
 	debug.Log("saved as %v", h)
+
+	if t == restic.TreeBlob && r.Cache != nil {
+		debug.Log("saving tree pack file in cache")
+
+		_, err = p.tmpfile.Seek(0, 0)
+		if err != nil {
+			return errors.Wrap(err, "Seek")
+		}
+
+		err := r.Cache.Save(h, p.tmpfile)
+		if err != nil {
+			return err
+		}
+	}
 
 	err = p.tmpfile.Close()
 	if err != nil {
