@@ -155,10 +155,7 @@ func (c *Cache) IsNotExist(err error) bool {
 
 // Wrap returns a backend with a cache.
 func (c *Cache) Wrap(be restic.Backend) restic.Backend {
-	return &Backend{
-		Backend: be,
-		Cache:   c,
-	}
+	return newBackend(be, c)
 }
 
 // BaseDir returns the base directory.
