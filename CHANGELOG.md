@@ -4,6 +4,23 @@ released version of restic from the perspective of the user.
 Important Changes in 0.X.Y
 ==========================
 
+ * We've added a local cache for metadata so that restic doesn't need to load
+   all metadata (snapshots, indexes, ...) from the repo each time it starts. By
+   default the cache is active, but there's a new global option `--no-cache`
+   that can be used to disable the cache. The cache location is
+   `~/.cache/restic` by default, which can be overridden with `--cache-dir` or
+   the environment variable `XDG_CACHE_HOME`. The cache will automatically
+   populate, indexes and snapshots are saved as they are loaded.
+   https://github.com/restic/restic/pull/1040
+   https://github.com/restic/restic/issues/29
+   https://github.com/restic/restic/issues/738
+   https://github.com/restic/restic/issues/282
+
+ * A related change was to by default create pack files in the repo that
+   contain either data or metadata, not both mixed together. This allows easy
+   caching of only the metadata files. The next run of `restic prune` will
+   untangle mixed files automatically.
+   https://github.com/restic/restic/pull/1265
 
 Small changes
 -------------
