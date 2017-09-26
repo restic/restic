@@ -48,6 +48,13 @@ Small changes
    https://github.com/restic/restic/issues/448
    https://github.com/restic/restic/pull/1270
 
+ * The `generate` command has been added, which replaces the now removed
+   commands `manpage` and `autocomplete`. This release of restic contains the
+   most recent manpages in `doc/man` and the auto-completion files for bash and
+   zsh in `doc/bash-completion.sh` and `doc/zsh-completion.zsh`
+   https://github.com/restic/restic/issues/1274
+   https://github.com/restic/restic/pull/1282
+
 Important Changes in 0.7.3
 ==========================
 
