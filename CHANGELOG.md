@@ -22,6 +22,11 @@ Important Changes in 0.X.Y
    untangle mixed files automatically.
    https://github.com/restic/restic/pull/1265
 
+ * The Google Cloud Storage backend no longer requires the service account to
+   have the `storage.buckets.get` permission ("Storage Admin" role) in `restic
+   init` if the bucket already exists.
+   https://github.com/restic/restic/pull/1281
+
 Small changes
 -------------
 
