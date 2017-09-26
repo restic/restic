@@ -280,14 +280,6 @@ func (env *TravisEnvironment) RunTests() error {
 		return err
 	}
 
-	if err := run("./restic", "manpage", "--output-dir", manpath); err != nil {
-		return err
-	}
-
-	if err := run("diff", "-aur", filepath.Join("doc/man"), manpath); err != nil {
-		return fmt.Errorf("========== man pages are not up to date\nplease run `restic manpage --output-dir doc/man`\n%v", err)
-	}
-
 	return nil
 }
 
