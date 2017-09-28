@@ -15,15 +15,26 @@ If you are using Mac OS X, you can install restic using the
     $ brew tap restic/restic
     $ brew install restic
 
-archlinux
-~~~~~~~~~
+Arch Linux
+~~~~~~~~~~
 
-On archlinux, there is a package called ``restic-git`` which can be
+On `Arch Linux <https://www.archlinux.org/>`__, there is a package called ``restic-git`` which can be
 installed from AUR, e.g. with ``pacaur``:
 
 .. code-block:: console
 
     $ pacaur -S restic-git
+    
+Nix & NixOS
+~~~~~~~~~~~
+
+If you are using `Nix <https://nixos.org/nix/>`__ or `NixOS <https://nixos.org/>`__
+there is a package available named ``restic``.
+It can be installed uisng `nix-env`:
+
+.. code-block:: console
+
+    $ nix-env --install restic 
 
 Pre-compiled Binary
 -------------------
