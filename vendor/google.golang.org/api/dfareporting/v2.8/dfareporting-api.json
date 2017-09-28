@@ -20,7 +20,7 @@
  "basePath": "/dfareporting/v2.8/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "dfareporting/v2.8/",
- "batchPath": "batch",
+ "batchPath": "batch/dfareporting/v2.8",
  "parameters": {
   "alt": {
    "type": "string",

@@ -35,13 +35,9 @@ type packerManager struct {
 	key     *crypto.Key
 	pm      sync.Mutex
 	packers []*Packer
-
-	pool sync.Pool
 }
 
 const minPackSize = 4 * 1024 * 1024
-const maxPackSize = 16 * 1024 * 1024
-const maxPackers = 200
 
 // newPackerManager returns an new packer manager which writes temporary files
 // to a temporary directory
@@ -49,35 +45,24 @@ func newPackerManager(be Saver, key *crypto.Key) *packerManager {
 	return &packerManager{
 		be:  be,
 		key: key,
-		pool: sync.Pool{
-			New: func() interface{} {
-				return make([]byte, (minPackSize+maxPackSize)/2)
-			},
-		},
 	}
 }
 
 // findPacker returns a packer for a new blob of size bytes. Either a new one is
 // created or one is returned that already has some blobs.
-func (r *packerManager) findPacker(size uint) (packer *Packer, err error) {
+func (r *packerManager) findPacker() (packer *Packer, err error) {
 	r.pm.Lock()
 	defer r.pm.Unlock()
 
 	// search for a suitable packer
 	if len(r.packers) > 0 {
-		debug.Log("searching packer for %d bytes\n", size)
-		for i, p := range r.packers {
-			if p.Packer.Size()+size < maxPackSize {
-				debug.Log("found packer %v", p)
-				// remove from list
-				r.packers = append(r.packers[:i], r.packers[i+1:]...)
-				return p, nil
-			}
-		}
+		p := r.packers[0]
+		r.packers = r.packers[1:]
+		return p, nil
 	}
 
 	// no suitable packer found, return new
-	debug.Log("create new pack for %d bytes", size)
+	debug.Log("create new pack")
 	tmpfile, err := fs.TempFile("", "restic-temp-pack-")
 	if err != nil {
 		return nil, errors.Wrap(err, "fs.TempFile")
@@ -104,8 +89,8 @@ func (r *packerManager) insertPacker(p *Packer) {
 }
 
 // savePacker stores p in the backend.
-func (r *Repository) savePacker(p *Packer) error {
-	debug.Log("save packer with %d blobs (%d bytes)\n", p.Packer.Count(), p.Packer.Size())
+func (r *Repository) savePacker(t restic.BlobType, p *Packer) error {
+	debug.Log("save packer for %v with %d blobs (%d bytes)\n", t, p.Packer.Count(), p.Packer.Size())
 	_, err := p.Packer.Finalize()
 	if err != nil {
 		return err
@@ -126,6 +111,20 @@ func (r *Repository) savePacker(p *Packer) error {
 	}
 
 	debug.Log("saved as %v", h)
+
+	if t == restic.TreeBlob && r.Cache != nil {
+		debug.Log("saving tree pack file in cache")
+
+		_, err = p.tmpfile.Seek(0, 0)
+		if err != nil {
+			return errors.Wrap(err, "Seek")
+		}
+
+		err := r.Cache.Save(h, p.tmpfile)
+		if err != nil {
+			return err
+		}
+	}
 
 	err = p.tmpfile.Close()
 	if err != nil {

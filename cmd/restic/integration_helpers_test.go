@@ -199,6 +199,7 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	env.gopts = GlobalOptions{
 		Repo:     env.repo,
 		Quiet:    true,
+		CacheDir: env.cache,
 		ctx:      context.Background(),
 		password: TestPassword,
 		stdout:   os.Stdout,

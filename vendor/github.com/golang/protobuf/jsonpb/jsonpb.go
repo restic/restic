@@ -673,7 +673,8 @@ func (u *Unmarshaler) unmarshalValue(target reflect.Value, inputValue json.RawMe
 	if targetType.Kind() == reflect.Ptr {
 		// If input value is "null" and target is a pointer type, then the field should be treated as not set
 		// UNLESS the target is structpb.Value, in which case it should be set to structpb.NullValue.
-		if string(inputValue) == "null" && targetType != reflect.TypeOf(&stpb.Value{}) {
+		_, isJSONPBUnmarshaler := target.Interface().(JSONPBUnmarshaler)
+		if string(inputValue) == "null" && targetType != reflect.TypeOf(&stpb.Value{}) && !isJSONPBUnmarshaler {
 			return nil
 		}
 		target.Set(reflect.New(targetType.Elem()))

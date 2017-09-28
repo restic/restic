@@ -21,7 +21,7 @@
  "basePath": "/identitytoolkit/v3/relyingparty/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "identitytoolkit/v3/relyingparty/",
- "batchPath": "batch",
+ "batchPath": "batch/identitytoolkit/v3",
  "parameters": {
   "alt": {
    "type": "string",

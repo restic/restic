@@ -426,11 +426,11 @@ type Deployment struct {
 	// fingerprint value, perform a get() request to a deployment.
 	Fingerprint string `json:"fingerprint,omitempty"`
 
-	// Id: [Output Only] Unique identifier for the resource; defined by the
+	// Id: Output only. Unique identifier for the resource; defined by the
 	// server.
 	Id uint64 `json:"id,omitempty,string"`
 
-	// InsertTime: [Output Only] Timestamp when the deployment was created,
+	// InsertTime: Output only. Timestamp when the deployment was created,
 	// in RFC3339 text format .
 	InsertTime string `json:"insertTime,omitempty"`
 
@@ -442,7 +442,7 @@ type Deployment struct {
 	// ([a-z]([-a-z0-9]*[a-z0-9])?)?
 	Labels []*DeploymentLabelEntry `json:"labels,omitempty"`
 
-	// Manifest: [Output Only] URL of the manifest representing the last
+	// Manifest: Output only. URL of the manifest representing the last
 	// manifest that was successfully deployed.
 	Manifest string `json:"manifest,omitempty"`
 
@@ -455,18 +455,18 @@ type Deployment struct {
 	// last character, which cannot be a dash.
 	Name string `json:"name,omitempty"`
 
-	// Operation: [Output Only] The Operation that most recently ran, or is
+	// Operation: Output only. The Operation that most recently ran, or is
 	// currently running, on this deployment.
 	Operation *Operation `json:"operation,omitempty"`
 
-	// SelfLink: [Output Only] Self link for the deployment.
+	// SelfLink: Output only. Self link for the deployment.
 	SelfLink string `json:"selfLink,omitempty"`
 
 	// Target: [Input Only] The parameters that define your deployment,
 	// including the deployment configuration and relevant templates.
 	Target *TargetConfiguration `json:"target,omitempty"`
 
-	// Update: [Output Only] If Deployment Manager is currently updating or
+	// Update: Output only. If Deployment Manager is currently updating or
 	// previewing an update to this deployment, the updated configuration
 	// appears here.
 	Update *DeploymentUpdate `json:"update,omitempty"`
@@ -527,11 +527,11 @@ func (s *DeploymentLabelEntry) MarshalJSON() ([]byte, error) {
 }
 
 type DeploymentUpdate struct {
-	// Description: [Output Only] An optional user-provided description of
+	// Description: Output only. An optional user-provided description of
 	// the deployment after the current update has been applied.
 	Description string `json:"description,omitempty"`
 
-	// Labels: [Output Only] Map of labels; provided by the client when the
+	// Labels: Output only. Map of labels; provided by the client when the
 	// resource is created or updated. Specifically: Label keys must be
 	// between 1 and 63 characters long and must conform to the following
 	// regular expression: [a-z]([-a-z0-9]*[a-z0-9])? Label values must be
@@ -539,7 +539,7 @@ type DeploymentUpdate struct {
 	// expression ([a-z]([-a-z0-9]*[a-z0-9])?)?
 	Labels []*DeploymentUpdateLabelEntry `json:"labels,omitempty"`
 
-	// Manifest: [Output Only] URL of the manifest representing the update
+	// Manifest: Output only. URL of the manifest representing the update
 	// configuration of this deployment.
 	Manifest string `json:"manifest,omitempty"`
 
@@ -635,12 +635,11 @@ func (s *DeploymentsCancelPreviewRequest) MarshalJSON() ([]byte, error) {
 // deployments and a page token used to build the next request if the
 // request has been truncated.
 type DeploymentsListResponse struct {
-	// Deployments: [Output Only] The deployments contained in this
-	// response.
+	// Deployments: Output only. The deployments contained in this response.
 	Deployments []*Deployment `json:"deployments,omitempty"`
 
-	// NextPageToken: [Output Only] A token used to continue a truncated
-	// list request.
+	// NextPageToken: Output only. A token used to continue a truncated list
+	// request.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -939,31 +938,33 @@ func (s *LogConfigDataAccessOptions) MarshalJSON() ([]byte, error) {
 }
 
 type Manifest struct {
-	// Config: [Output Only] The YAML configuration for this manifest.
+	// Config: Output only. The YAML configuration for this manifest.
 	Config *ConfigFile `json:"config,omitempty"`
 
-	// ExpandedConfig: [Output Only] The fully-expanded configuration file,
+	// ExpandedConfig: Output only. The fully-expanded configuration file,
 	// including any templates and references.
 	ExpandedConfig string `json:"expandedConfig,omitempty"`
 
-	// Id: [Output Only] Unique identifier for the resource; defined by the
+	// Id: Output only. Unique identifier for the resource; defined by the
 	// server.
 	Id uint64 `json:"id,omitempty,string"`
 
-	// Imports: [Output Only] The imported files for this manifest.
+	// Imports: Output only. The imported files for this manifest.
 	Imports []*ImportFile `json:"imports,omitempty"`
 
-	// InsertTime: [Output Only] Timestamp when the manifest was created, in
+	// InsertTime: Output only. Timestamp when the manifest was created, in
 	// RFC3339 text format.
 	InsertTime string `json:"insertTime,omitempty"`
 
-	// Layout: [Output Only] The YAML layout for this manifest.
+	// Layout: Output only. The YAML layout for this manifest.
 	Layout string `json:"layout,omitempty"`
 
-	// Name: [Output Only] The name of the manifest.
+	// Name: Output only.
+	//
+	// The name of the manifest.
 	Name string `json:"name,omitempty"`
 
-	// SelfLink: [Output Only] Self link for the manifest.
+	// SelfLink: Output only. Self link for the manifest.
 	SelfLink string `json:"selfLink,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -997,11 +998,11 @@ func (s *Manifest) MarshalJSON() ([]byte, error) {
 // manifests and a page token used to build the next request if the
 // request has been truncated.
 type ManifestsListResponse struct {
-	// Manifests: [Output Only] Manifests contained in this list response.
+	// Manifests: Output only. Manifests contained in this list response.
 	Manifests []*Manifest `json:"manifests,omitempty"`
 
-	// NextPageToken: [Output Only] A token used to continue a truncated
-	// list request.
+	// NextPageToken: Output only. A token used to continue a truncated list
+	// request.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1298,11 +1299,11 @@ func (s *OperationWarningsData) MarshalJSON() ([]byte, error) {
 // operations and a page token used to build the next request if the
 // request has been truncated.
 type OperationsListResponse struct {
-	// NextPageToken: [Output Only] A token used to continue a truncated
-	// list request.
+	// NextPageToken: Output only. A token used to continue a truncated list
+	// request.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
-	// Operations: [Output Only] Operations contained in this list response.
+	// Operations: Output only. Operations contained in this list response.
 	Operations []*Operation `json:"operations,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1422,48 +1423,48 @@ type Resource struct {
 	// AccessControl: The Access Control Policy set on this resource.
 	AccessControl *ResourceAccessControl `json:"accessControl,omitempty"`
 
-	// FinalProperties: [Output Only] The evaluated properties of the
+	// FinalProperties: Output only. The evaluated properties of the
 	// resource with references expanded. Returned as serialized YAML.
 	FinalProperties string `json:"finalProperties,omitempty"`
 
-	// Id: [Output Only] Unique identifier for the resource; defined by the
+	// Id: Output only. Unique identifier for the resource; defined by the
 	// server.
 	Id uint64 `json:"id,omitempty,string"`
 
-	// InsertTime: [Output Only] Timestamp when the resource was created or
+	// InsertTime: Output only. Timestamp when the resource was created or
 	// acquired, in RFC3339 text format .
 	InsertTime string `json:"insertTime,omitempty"`
 
-	// Manifest: [Output Only] URL of the manifest representing the current
+	// Manifest: Output only. URL of the manifest representing the current
 	// configuration of this resource.
 	Manifest string `json:"manifest,omitempty"`
 
-	// Name: [Output Only] The name of the resource as it appears in the
-	// YAML config.
+	// Name: Output only. The name of the resource as it appears in the YAML
+	// config.
 	Name string `json:"name,omitempty"`
 
-	// Properties: [Output Only] The current properties of the resource
+	// Properties: Output only. The current properties of the resource
 	// before any references have been filled in. Returned as serialized
 	// YAML.
 	Properties string `json:"properties,omitempty"`
 
-	// Type: [Output Only] The type of the resource, for example
+	// Type: Output only. The type of the resource, for example
 	// compute.v1.instance, or cloudfunctions.v1beta1.function.
 	Type string `json:"type,omitempty"`
 
-	// Update: [Output Only] If Deployment Manager is currently updating or
+	// Update: Output only. If Deployment Manager is currently updating or
 	// previewing an update to this resource, the updated configuration
 	// appears here.
 	Update *ResourceUpdate `json:"update,omitempty"`
 
-	// UpdateTime: [Output Only] Timestamp when the resource was updated, in
+	// UpdateTime: Output only. Timestamp when the resource was updated, in
 	// RFC3339 text format .
 	UpdateTime string `json:"updateTime,omitempty"`
 
-	// Url: [Output Only] The URL of the actual resource.
+	// Url: Output only. The URL of the actual resource.
 	Url string `json:"url,omitempty"`
 
-	// Warnings: [Output Only] If warning messages are generated during
+	// Warnings: Output only. If warning messages are generated during
 	// processing of this resource, this field will be populated.
 	Warnings []*ResourceWarnings `json:"warnings,omitempty"`
 
@@ -1602,31 +1603,31 @@ type ResourceUpdate struct {
 	// after updating the resource itself.
 	AccessControl *ResourceAccessControl `json:"accessControl,omitempty"`
 
-	// Error: [Output Only] If errors are generated during update of the
+	// Error: Output only. If errors are generated during update of the
 	// resource, this field will be populated.
 	Error *ResourceUpdateError `json:"error,omitempty"`
 
-	// FinalProperties: [Output Only] The expanded properties of the
-	// resource with reference values expanded. Returned as serialized YAML.
+	// FinalProperties: Output only. The expanded properties of the resource
+	// with reference values expanded. Returned as serialized YAML.
 	FinalProperties string `json:"finalProperties,omitempty"`
 
-	// Intent: [Output Only] The intent of the resource: PREVIEW, UPDATE, or
+	// Intent: Output only. The intent of the resource: PREVIEW, UPDATE, or
 	// CANCEL.
 	Intent string `json:"intent,omitempty"`
 
-	// Manifest: [Output Only] URL of the manifest representing the update
+	// Manifest: Output only. URL of the manifest representing the update
 	// configuration of this resource.
 	Manifest string `json:"manifest,omitempty"`
 
-	// Properties: [Output Only] The set of updated properties for this
+	// Properties: Output only. The set of updated properties for this
 	// resource, before references are expanded. Returned as serialized
 	// YAML.
 	Properties string `json:"properties,omitempty"`
 
-	// State: [Output Only] The state of the resource.
+	// State: Output only. The state of the resource.
 	State string `json:"state,omitempty"`
 
-	// Warnings: [Output Only] If warning messages are generated during
+	// Warnings: Output only. If warning messages are generated during
 	// processing of this resource, this field will be populated.
 	Warnings []*ResourceUpdateWarnings `json:"warnings,omitempty"`
 
@@ -1653,7 +1654,7 @@ func (s *ResourceUpdate) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// ResourceUpdateError: [Output Only] If errors are generated during
+// ResourceUpdateError: Output only. If errors are generated during
 // update of the resource, this field will be populated.
 type ResourceUpdateError struct {
 	// Errors: [Output Only] The array of errors encountered while
@@ -1976,22 +1977,22 @@ func (s *TestPermissionsResponse) MarshalJSON() ([]byte, error) {
 
 // Type: A resource type supported by Deployment Manager.
 type Type struct {
-	// Id: [Output Only] Unique identifier for the resource; defined by the
+	// Id: Output only. Unique identifier for the resource; defined by the
 	// server.
 	Id uint64 `json:"id,omitempty,string"`
 
-	// InsertTime: [Output Only] Timestamp when the type was created, in
+	// InsertTime: Output only. Timestamp when the type was created, in
 	// RFC3339 text format.
 	InsertTime string `json:"insertTime,omitempty"`
 
 	// Name: Name of the type.
 	Name string `json:"name,omitempty"`
 
-	// Operation: [Output Only] The Operation that most recently ran, or is
+	// Operation: Output only. The Operation that most recently ran, or is
 	// currently running, on this type.
 	Operation *Operation `json:"operation,omitempty"`
 
-	// SelfLink: [Output Only] Self link for the type.
+	// SelfLink: Output only. Self link for the type.
 	SelfLink string `json:"selfLink,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Id") to
@@ -2023,7 +2024,7 @@ type TypesListResponse struct {
 	// NextPageToken: A token used to continue a truncated list request.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
-	// Types: [Output Only] A list of resource types supported by Deployment
+	// Types: Output only. A list of resource types supported by Deployment
 	// Manager.
 	Types []*Type `json:"types,omitempty"`
 

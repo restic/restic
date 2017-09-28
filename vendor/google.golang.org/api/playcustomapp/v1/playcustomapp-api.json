@@ -20,7 +20,7 @@
  "basePath": "/playcustomapp/v1/accounts/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "playcustomapp/v1/accounts/",
- "batchPath": "batch",
+ "batchPath": "batch/playcustomapp/v1",
  "parameters": {
   "alt": {
    "type": "string",

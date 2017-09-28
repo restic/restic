@@ -1237,11 +1237,9 @@ type TransferJob struct {
 
 	// ProjectId: The ID of the Google Cloud Platform Console project that
 	// owns the job.
-	// Required.
 	ProjectId string `json:"projectId,omitempty"`
 
 	// Schedule: Schedule specification.
-	// Required.
 	Schedule *Schedule `json:"schedule,omitempty"`
 
 	// Status: Status of the job. This value MUST be specified
@@ -1267,7 +1265,6 @@ type TransferJob struct {
 	Status string `json:"status,omitempty"`
 
 	// TransferSpec: Transfer specification.
-	// Required.
 	TransferSpec *TransferSpec `json:"transferSpec,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the

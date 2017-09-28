@@ -163,7 +163,7 @@ func (sn *Snapshot) HasTagList(l []TagList) bool {
 
 	for _, tags := range l {
 		if sn.HasTags(tags) {
-			debug.Log("  snapshot satisfies %v", tags, l)
+			debug.Log("  snapshot satisfies %v %v", tags, l)
 			return true
 		}
 	}

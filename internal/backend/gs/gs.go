@@ -1,3 +1,4 @@
+// Package gs provides a restic backend for Google Cloud Storage.
 package gs
 
 import (
@@ -7,7 +8,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/backend"
@@ -21,17 +21,24 @@ import (
 	storage "google.golang.org/api/storage/v1"
 )
 
-// Backend stores data on an gs endpoint.
+// Backend stores data in a GCS bucket.
+//
+// The service account used to access the bucket must have these permissions:
+//  * storage.objects.create
+//  * storage.objects.delete
+//  * storage.objects.get
+//  * storage.objects.list
 type Backend struct {
-	service    *storage.Service
-	projectID  string
-	sem        *backend.Semaphore
-	bucketName string
-	prefix     string
+	service      *storage.Service
+	projectID    string
+	sem          *backend.Semaphore
+	bucketName   string
+	prefix       string
+	listMaxItems int
 	backend.Layout
 }
 
-// make sure that *Backend implements backend.Backend
+// Ensure that *Backend implements restic.Backend.
 var _ restic.Backend = &Backend{}
 
 func getStorageService(jsonKeyPath string) (*storage.Service, error) {
@@ -56,6 +63,8 @@ func getStorageService(jsonKeyPath string) (*storage.Service, error) {
 	return service, nil
 }
 
+const defaultListMaxItems = 1000
+
 func open(cfg Config) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
@@ -79,37 +88,78 @@ func open(cfg Config) (*Backend, error) {
 			Path: cfg.Prefix,
 			Join: path.Join,
 		},
+		listMaxItems: defaultListMaxItems,
 	}
 
 	return be, nil
 }
 
-// Open opens the gs backend at bucket and region.
+// Open opens the gs backend at the specified bucket.
 func Open(cfg Config) (restic.Backend, error) {
 	return open(cfg)
 }
 
-// Create opens the S3 backend at bucket and region and creates the bucket if
-// it does not exist yet.
+// Create opens the gs backend at the specified bucket and attempts to creates
+// the bucket if it does not exist yet.
+//
+// The service account must have the "storage.buckets.create" permission to
+// create a bucket the does not yet exist.
 func Create(cfg Config) (restic.Backend, error) {
 	be, err := open(cfg)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
 
-	// Create bucket if not exists
+	// Try to determine if the bucket exists. If it does not, try to create it.
+	//
+	// A Get call has three typical error cases:
+	//
+	// * nil: Bucket exists and we have access to the metadata (returned).
+	//
+	// * 403: Bucket exists and we do not have access to the metadata. We
+	// don't have storage.buckets.get permission to the bucket, but we may
+	// still be able to access objects in the bucket.
+	//
+	// * 404: Bucket doesn't exist.
+	//
+	// Determining if the bucket is accessible is best-effort because the
+	// 403 case is ambiguous.
 	if _, err := be.service.Buckets.Get(be.bucketName).Do(); err != nil {
-		bucket := &storage.Bucket{
-			Name: be.bucketName,
+		gerr, ok := err.(*googleapi.Error)
+		if !ok {
+			// Don't know what to do with this error.
+			return nil, errors.Wrap(err, "service.Buckets.Get")
 		}
 
-		if _, err := be.service.Buckets.Insert(be.projectID, bucket).Do(); err != nil {
-			return nil, errors.Wrap(err, "service.Buckets.Insert")
+		switch gerr.Code {
+		case 403:
+			// Bucket exists, but we don't know if it is
+			// accessible. Optimistically assume it is; if not,
+			// future Backend calls will fail.
+			debug.Log("Unable to determine if bucket %s is accessible (err %v). Continuing as if it is.", be.bucketName, err)
+		case 404:
+			// Bucket doesn't exist, try to create it.
+			bucket := &storage.Bucket{
+				Name: be.bucketName,
+			}
+
+			if _, err := be.service.Buckets.Insert(be.projectID, bucket).Do(); err != nil {
+				// Always an error, as the bucket definitely
+				// doesn't exist.
+				return nil, errors.Wrap(err, "service.Buckets.Insert")
+			}
+		default:
+			// Don't know what to do with this error.
+			return nil, errors.Wrap(err, "service.Buckets.Get")
 		}
 	}
 
 	return be, nil
+}
+
+// SetListMaxItems sets the number of list items to load per request.
+func (be *Backend) SetListMaxItems(i int) {
+	be.listMaxItems = i
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -132,59 +182,6 @@ func (be *Backend) IsNotExist(err error) bool {
 // Join combines path components with slashes.
 func (be *Backend) Join(p ...string) string {
 	return path.Join(p...)
-}
-
-type fileInfo struct {
-	name    string
-	size    int64
-	mode    os.FileMode
-	modTime time.Time
-	isDir   bool
-}
-
-func (fi fileInfo) Name() string       { return fi.name }    // base name of the file
-func (fi fileInfo) Size() int64        { return fi.size }    // length in bytes for regular files; system-dependent for others
-func (fi fileInfo) Mode() os.FileMode  { return fi.mode }    // file mode bits
-func (fi fileInfo) ModTime() time.Time { return fi.modTime } // modification time
-func (fi fileInfo) IsDir() bool        { return fi.isDir }   // abbreviation for Mode().IsDir()
-func (fi fileInfo) Sys() interface{}   { return nil }        // underlying data source (can return nil)
-
-// ReadDir returns the entries for a directory.
-func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
-	debug.Log("ReadDir(%v)", dir)
-
-	// make sure dir ends with a slash
-	if dir[len(dir)-1] != '/' {
-		dir += "/"
-	}
-
-	obj, err := be.service.Objects.List(be.bucketName).Prefix(dir).Delimiter("/").Do()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, item := range obj.Prefixes {
-		entry := fileInfo{
-			name:  strings.TrimPrefix(item, dir),
-			isDir: true,
-			mode:  os.ModeDir | 0755,
-		}
-		list = append(list, entry)
-	}
-	for _, item := range obj.Items {
-		entry := fileInfo{
-			name:  strings.TrimPrefix(item.Name, dir),
-			isDir: false,
-			mode:  0644,
-			size:  int64(item.Size),
-			//modTime: item.Updated,
-		}
-		if entry.name != "" {
-			list = append(list, entry)
-		}
-	}
-
-	return list, nil
 }
 
 // Location returns this backend's location (the bucket name).
@@ -352,22 +349,33 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 	go func() {
 		defer close(ch)
 
-		obj, err := be.service.Objects.List(be.bucketName).Prefix(prefix).Do()
-		if err != nil {
-			return
-		}
-
-		for _, item := range obj.Items {
-			m := strings.TrimPrefix(item.Name, prefix)
-			if m == "" {
-				continue
-			}
-
-			select {
-			case ch <- path.Base(m):
-			case <-ctx.Done():
+		listReq := be.service.Objects.List(be.bucketName).Prefix(prefix).MaxResults(int64(be.listMaxItems))
+		for {
+			obj, err := listReq.Do()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error listing %v: %v\n", prefix, err)
 				return
 			}
+
+			debug.Log("returned %v items", len(obj.Items))
+
+			for _, item := range obj.Items {
+				m := strings.TrimPrefix(item.Name, prefix)
+				if m == "" {
+					continue
+				}
+
+				select {
+				case ch <- path.Base(m):
+				case <-ctx.Done():
+					return
+				}
+			}
+
+			if obj.NextPageToken == "" {
+				break
+			}
+			listReq.PageToken(obj.NextPageToken)
 		}
 	}()
 
@@ -405,5 +413,5 @@ func (be *Backend) Delete(ctx context.Context) error {
 	return be.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
 }
 
-// Close does nothing
+// Close does nothing.
 func (be *Backend) Close() error { return nil }

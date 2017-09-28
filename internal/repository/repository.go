@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
@@ -23,16 +24,19 @@ type Repository struct {
 	key     *crypto.Key
 	keyName string
 	idx     *MasterIndex
+	restic.Cache
 
-	*packerManager
+	treePM *packerManager
+	dataPM *packerManager
 }
 
 // New returns a new repository with backend be.
 func New(be restic.Backend) *Repository {
 	repo := &Repository{
-		be:            be,
-		idx:           NewMasterIndex(),
-		packerManager: newPackerManager(be, nil),
+		be:     be,
+		idx:    NewMasterIndex(),
+		dataPM: newPackerManager(be, nil),
+		treePM: newPackerManager(be, nil),
 	}
 
 	return repo
@@ -43,6 +47,16 @@ func (r *Repository) Config() restic.Config {
 	return r.cfg
 }
 
+// UseCache replaces the backend with the wrapped cache.
+func (r *Repository) UseCache(c restic.Cache) {
+	if c == nil {
+		return
+	}
+	debug.Log("using cache")
+	r.Cache = c
+	r.be = c.Wrap(r.be)
+}
+
 // PrefixLength returns the number of bytes required so that all prefixes of
 // all IDs of type t are unique.
 func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
@@ -51,11 +65,11 @@ func (r *Repository) PrefixLength(t restic.FileType) (int, error) {
 
 // LoadAndDecrypt loads and decrypts data identified by t and id from the
 // backend.
-func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id restic.ID) ([]byte, error) {
+func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id restic.ID) (buf []byte, err error) {
 	debug.Log("load %v with id %v", t, id.Str())
 
 	h := restic.Handle{Type: t, Name: id.String()}
-	buf, err := backend.LoadAll(ctx, r.be, h)
+	buf, err = backend.LoadAll(ctx, r.be, h)
 	if err != nil {
 		debug.Log("error loading %v: %v", h, err)
 		return nil, err
@@ -74,6 +88,26 @@ func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id r
 	return buf[:n], nil
 }
 
+// sortCachedPacks moves all cached pack files to the front of blobs.
+func (r *Repository) sortCachedPacks(blobs []restic.PackedBlob) []restic.PackedBlob {
+	if r.Cache == nil {
+		return blobs
+	}
+
+	cached := make([]restic.PackedBlob, 0, len(blobs)/2)
+	noncached := make([]restic.PackedBlob, 0, len(blobs)/2)
+
+	for _, blob := range blobs {
+		if r.Cache.Has(restic.Handle{Type: restic.DataFile, Name: blob.PackID.String()}) {
+			cached = append(cached, blob)
+			continue
+		}
+		noncached = append(noncached, blob)
+	}
+
+	return append(cached, noncached...)
+}
+
 // loadBlob tries to load and decrypt content identified by t and id from a
 // pack from the backend, the result is stored in plaintextBuf, which must be
 // large enough to hold the complete blob.
@@ -87,9 +121,12 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 		return 0, err
 	}
 
+	// try cached pack files first
+	blobs = r.sortCachedPacks(blobs)
+
 	var lastError error
 	for _, blob := range blobs {
-		debug.Log("id %v found: %v", id.Str(), blob)
+		debug.Log("blob %v/%v found: %v", t, id.Str(), blob)
 
 		if blob.Type != t {
 			debug.Log("blob %v has wrong block type, want %v", blob, t)
@@ -180,7 +217,18 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// find suitable packer and add blob
-	packer, err := r.findPacker(uint(len(ciphertext)))
+	var pm *packerManager
+
+	switch t {
+	case restic.TreeBlob:
+		pm = r.treePM
+	case restic.DataBlob:
+		pm = r.dataPM
+	default:
+		panic(fmt.Sprintf("invalid type: %v", t))
+	}
+
+	packer, err := pm.findPacker()
 	if err != nil {
 		return restic.ID{}, err
 	}
@@ -191,16 +239,15 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 		return restic.ID{}, err
 	}
 
-	// if the pack is not full enough and there are less than maxPackers
-	// packers, put back to the list
-	if packer.Size() < minPackSize && r.countPacker() < maxPackers {
+	// if the pack is not full enough, put back to the list
+	if packer.Size() < minPackSize {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
-		r.insertPacker(packer)
+		pm.insertPacker(packer)
 		return *id, nil
 	}
 
 	// else write the pack to the backend
-	return *id, r.savePacker(packer)
+	return *id, r.savePacker(t, packer)
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
@@ -239,18 +286,29 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 
 // Flush saves all remaining packs.
 func (r *Repository) Flush() error {
-	r.pm.Lock()
-	defer r.pm.Unlock()
-
-	debug.Log("manually flushing %d packs", len(r.packerManager.packers))
-
-	for _, p := range r.packerManager.packers {
-		err := r.savePacker(p)
-		if err != nil {
-			return err
-		}
+	pms := []struct {
+		t  restic.BlobType
+		pm *packerManager
+	}{
+		{restic.DataBlob, r.dataPM},
+		{restic.TreeBlob, r.treePM},
 	}
-	r.packerManager.packers = r.packerManager.packers[:0]
+
+	for _, p := range pms {
+		p.pm.pm.Lock()
+
+		debug.Log("manually flushing %d packs", len(p.pm.packers))
+		for _, packer := range p.pm.packers {
+			err := r.savePacker(p.t, packer)
+			if err != nil {
+				p.pm.pm.Unlock()
+				return err
+			}
+		}
+		p.pm.packers = p.pm.packers[:0]
+		p.pm.pm.Unlock()
+	}
+
 	return nil
 }
 
@@ -337,8 +395,56 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 			ParallelWorkFuncParseID(worker))
 	}()
 
+	validIndex := restic.NewIDSet()
 	for idx := range indexes {
+		id, err := idx.ID()
+		if err == nil {
+			validIndex.Insert(id)
+		}
 		r.idx.Insert(idx)
+	}
+
+	if r.Cache != nil {
+		// clear old index files
+		err := r.Cache.Clear(restic.IndexFile, validIndex)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error clearing index files in cache: %v\n", err)
+		}
+
+		packs := restic.NewIDSet()
+		for _, idx := range r.idx.All() {
+			for id := range idx.Packs() {
+				packs.Insert(id)
+			}
+		}
+
+		// clear old data files
+		err = r.Cache.Clear(restic.DataFile, packs)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error clearing data files in cache: %v\n", err)
+		}
+
+		treePacks := restic.NewIDSet()
+		for _, idx := range r.idx.All() {
+			for _, id := range idx.TreePacks() {
+				treePacks.Insert(id)
+			}
+		}
+
+		// use readahead
+		cache := r.Cache.(*cache.Cache)
+		cache.PerformReadahead = func(h restic.Handle) bool {
+			if h.Type != restic.DataFile {
+				return false
+			}
+
+			id, err := restic.ParseID(h.Name)
+			if err != nil {
+				return false
+			}
+
+			return treePacks.Has(id)
+		}
 	}
 
 	if err := <-errCh; err != nil {
@@ -372,7 +478,8 @@ func (r *Repository) SearchKey(ctx context.Context, password string, maxKeys int
 	}
 
 	r.key = key.master
-	r.packerManager.key = key.master
+	r.dataPM.key = key.master
+	r.treePM.key = key.master
 	r.keyName = key.Name()
 	r.cfg, err = restic.LoadConfig(ctx, r)
 	return err
@@ -406,7 +513,8 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	}
 
 	r.key = key.master
-	r.packerManager.key = key.master
+	r.dataPM.key = key.master
+	r.treePM.key = key.master
 	r.keyName = key.Name()
 	r.cfg = cfg
 	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)

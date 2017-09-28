@@ -15,8 +15,9 @@ import (
 
 // Index holds a lookup table for id -> pack.
 type Index struct {
-	m    sync.Mutex
-	pack map[restic.BlobHandle][]indexEntry
+	m         sync.Mutex
+	pack      map[restic.BlobHandle][]indexEntry
+	treePacks restic.IDs
 
 	final      bool      // set to true for all indexes read from the backend ("finalized")
 	id         restic.ID // set to the ID of the index when it's finalized
@@ -437,6 +438,11 @@ func (idx *Index) Dump(w io.Writer) error {
 	return nil
 }
 
+// TreePacks returns a list of packs that contain only tree blobs.
+func (idx *Index) TreePacks() restic.IDs {
+	return idx.treePacks
+}
+
 // isErrOldIndex returns true if the error may be caused by an old index
 // format.
 func isErrOldIndex(err error) bool {
@@ -469,6 +475,8 @@ func DecodeIndex(buf []byte) (idx *Index, err error) {
 
 	idx = NewIndex()
 	for _, pack := range idxJSON.Packs {
+		var data, tree bool
+
 		for _, blob := range pack.Blobs {
 			idx.store(restic.PackedBlob{
 				Blob: restic.Blob{
@@ -479,6 +487,17 @@ func DecodeIndex(buf []byte) (idx *Index, err error) {
 				},
 				PackID: pack.ID,
 			})
+
+			switch blob.Type {
+			case restic.DataBlob:
+				data = true
+			case restic.TreeBlob:
+				tree = true
+			}
+		}
+
+		if !data && tree {
+			idx.treePacks = append(idx.treePacks, pack.ID)
 		}
 	}
 	idx.supersedes = idxJSON.Supersedes
@@ -501,6 +520,8 @@ func DecodeOldIndex(buf []byte) (idx *Index, err error) {
 
 	idx = NewIndex()
 	for _, pack := range list {
+		var data, tree bool
+
 		for _, blob := range pack.Blobs {
 			idx.store(restic.PackedBlob{
 				Blob: restic.Blob{
@@ -511,6 +532,17 @@ func DecodeOldIndex(buf []byte) (idx *Index, err error) {
 				},
 				PackID: pack.ID,
 			})
+
+			switch blob.Type {
+			case restic.DataBlob:
+				data = true
+			case restic.TreeBlob:
+				tree = true
+			}
+		}
+
+		if !data && tree {
+			idx.treePacks = append(idx.treePacks, pack.ID)
 		}
 	}
 	idx.final = true

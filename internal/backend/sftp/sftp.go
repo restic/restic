@@ -36,7 +36,7 @@ var _ restic.Backend = &SFTP{}
 
 const defaultLayout = "default"
 
-func startClient(program string, args ...string) (*SFTP, error) {
+func startClient(preExec, postExec func(), program string, args ...string) (*SFTP, error) {
 	debug.Log("start client %v %v", program, args)
 	// Connect to a remote host and request the sftp subsystem via the 'ssh'
 	// command.  This assumes that passwordless login is correctly configured.
@@ -55,9 +55,6 @@ func startClient(program string, args ...string) (*SFTP, error) {
 		}
 	}()
 
-	// ignore signals sent to the parent (e.g. SIGINT)
-	cmd.SysProcAttr = ignoreSigIntProcAttr()
-
 	// get stdin and stdout
 	wr, err := cmd.StdinPipe()
 	if err != nil {
@@ -68,9 +65,17 @@ func startClient(program string, args ...string) (*SFTP, error) {
 		return nil, errors.Wrap(err, "cmd.StdoutPipe")
 	}
 
+	if preExec != nil {
+		preExec()
+	}
+
 	// start the process
 	if err := cmd.Start(); err != nil {
 		return nil, errors.Wrap(err, "cmd.Start")
+	}
+
+	if postExec != nil {
+		postExec()
 	}
 
 	// wait in a different goroutine
@@ -104,8 +109,9 @@ func (r *SFTP) clientError() error {
 }
 
 // Open opens an sftp backend as described by the config by running
-// "ssh" with the appropriate arguments (or cfg.Command, if set).
-func Open(cfg Config) (*SFTP, error) {
+// "ssh" with the appropriate arguments (or cfg.Command, if set). The function
+// preExec is run just before, postExec just after starting a program.
+func Open(cfg Config, preExec, postExec func()) (*SFTP, error) {
 	debug.Log("open backend with config %#v", cfg)
 
 	cmd, args, err := buildSSHCommand(cfg)
@@ -113,7 +119,7 @@ func Open(cfg Config) (*SFTP, error) {
 		return nil, err
 	}
 
-	sftp, err := startClient(cmd, args...)
+	sftp, err := startClient(preExec, postExec, cmd, args...)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
 		return nil, err
@@ -225,15 +231,16 @@ func buildSSHCommand(cfg Config) (cmd string, args []string, err error) {
 	return cmd, args, nil
 }
 
-// Create creates an sftp backend as described by the config by running
-// "ssh" with the appropriate arguments (or cfg.Command, if set).
-func Create(cfg Config) (*SFTP, error) {
+// Create creates an sftp backend as described by the config by running "ssh"
+// with the appropriate arguments (or cfg.Command, if set). The function
+// preExec is run just before, postExec just after starting a program.
+func Create(cfg Config, preExec, postExec func()) (*SFTP, error) {
 	cmd, args, err := buildSSHCommand(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	sftp, err := startClient(cmd, args...)
+	sftp, err := startClient(preExec, postExec, cmd, args...)
 	if err != nil {
 		debug.Log("unable to start program: %v", err)
 		return nil, err
@@ -261,7 +268,7 @@ func Create(cfg Config) (*SFTP, error) {
 	}
 
 	// open backend
-	return Open(cfg)
+	return Open(cfg, preExec, postExec)
 }
 
 // Location returns this backend's location (the directory name).
@@ -348,14 +355,7 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err err
 		return errors.Wrap(err, "Close")
 	}
 
-	// set mode to read-only
-	fi, err := r.c.Lstat(filename)
-	if err != nil {
-		return errors.Wrap(err, "Lstat")
-	}
-
-	err = r.c.Chmod(filename, fi.Mode()&os.FileMode(^uint32(0222)))
-	return errors.Wrap(err, "Chmod")
+	return errors.Wrap(r.c.Chmod(filename, backend.Modes.File), "Chmod")
 }
 
 // Load returns a reader that yields the contents of the file at h at the

@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/NmnDcMrRPBfXrpllirstA-3cT3k\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/bvUbOBPnfuX4gDZ5aBr7PZU4ZJM\"",
  "discoveryVersion": "v1",
  "id": "compute:v1",
  "name": "compute",
  "version": "v1",
- "revision": "20170816",
+ "revision": "20170905",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -591,7 +591,7 @@
     },
     "index": {
      "type": "integer",
-     "description": "Assigns a zero-based index to this disk, where 0 is reserved for the boot disk. For example, if you have many disks attached to an instance, each disk would have a unique index number. If not specified, the server will choose an appropriate value.",
+     "description": "[Output Only] A zero-based index to this disk, where 0 is reserved for the boot disk. If you have many disks attached to an instance, each disk would have a unique index number.",
      "format": "int32"
     },
     "initializeParams": {

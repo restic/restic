@@ -549,6 +549,34 @@ func (s *CreateInstanceRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// CreateSessionRequest: The request for CreateSession.
+type CreateSessionRequest struct {
+	// Session: The session to create.
+	Session *Session `json:"session,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Session") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Session") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *CreateSessionRequest) MarshalJSON() ([]byte, error) {
+	type noMethod CreateSessionRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Database: A Cloud Spanner database.
 type Database struct {
 	// Name: Required. The name of the database. Values are of the
@@ -1340,6 +1368,44 @@ func (s *ListOperationsResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// ListSessionsResponse: The response for ListSessions.
+type ListSessionsResponse struct {
+	// NextPageToken: `next_page_token` can be sent in a
+	// subsequent
+	// ListSessions call to fetch more of the matching
+	// sessions.
+	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// Sessions: The list of requested sessions.
+	Sessions []*Session `json:"sessions,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "NextPageToken") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "NextPageToken") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ListSessionsResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ListSessionsResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Mutation: A modification to one or more Cloud Spanner rows.
 // Mutations can be
 // applied to a Cloud Spanner database by sending them in a
@@ -1403,8 +1469,8 @@ func (s *Mutation) MarshalJSON() ([]byte, error) {
 type Operation struct {
 	// Done: If the value is `false`, it means the operation is still in
 	// progress.
-	// If true, the operation is completed, and either `error` or `response`
-	// is
+	// If `true`, the operation is completed, and either `error` or
+	// `response` is
 	// available.
 	Done bool `json:"done,omitempty"`
 
@@ -1956,6 +2022,7 @@ type ReadRequest struct {
 	// Limit: If greater than zero, only the first `limit` rows are yielded.
 	// If `limit`
 	// is zero, the default is no limit.
+	// A limit cannot be specified if partition_token is set.
 	Limit int64 `json:"limit,omitempty,string"`
 
 	// ResumeToken: If this request is resuming a previously interrupted
@@ -2168,27 +2235,48 @@ func (s *RollbackRequest) MarshalJSON() ([]byte, error) {
 
 // Session: A session in the Cloud Spanner API.
 type Session struct {
-	// Name: Required. The name of the session.
+	// ApproximateLastUseTime: Output only. The approximate timestamp when
+	// the session is last used. It is
+	// typically earlier than the actual last use time.
+	ApproximateLastUseTime string `json:"approximateLastUseTime,omitempty"`
+
+	// CreateTime: Output only. The timestamp when the session is created.
+	CreateTime string `json:"createTime,omitempty"`
+
+	// Labels: The labels for the session.
+	//
+	//  * Label keys must be between 1 and 63 characters long and must
+	// conform to
+	//    the following regular expression: `[a-z]([-a-z0-9]*[a-z0-9])?`.
+	//  * Label values must be between 0 and 63 characters long and must
+	// conform
+	//    to the regular expression `([a-z]([-a-z0-9]*[a-z0-9])?)?`.
+	//  * No more than 20 labels can be associated with a given session.
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// Name: The name of the session.
 	Name string `json:"name,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "Name") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
+	// ForceSendFields is a list of field names (e.g.
+	// "ApproximateLastUseTime") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Name") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "ApproximateLastUseTime")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -7096,11 +7184,12 @@ func (c *ProjectsInstancesDatabasesSessionsCommitCall) Do(opts ...googleapi.Call
 // method id "spanner.projects.instances.databases.sessions.create":
 
 type ProjectsInstancesDatabasesSessionsCreateCall struct {
-	s          *Service
-	database   string
-	urlParams_ gensupport.URLParams
-	ctx_       context.Context
-	header_    http.Header
+	s                    *Service
+	database             string
+	createsessionrequest *CreateSessionRequest
+	urlParams_           gensupport.URLParams
+	ctx_                 context.Context
+	header_              http.Header
 }
 
 // Create: Creates a new session. A session can be used to
@@ -7134,9 +7223,10 @@ type ProjectsInstancesDatabasesSessionsCreateCall struct {
 // Idle sessions can be kept alive by sending a trivial SQL
 // query
 // periodically, e.g., "SELECT 1".
-func (r *ProjectsInstancesDatabasesSessionsService) Create(database string) *ProjectsInstancesDatabasesSessionsCreateCall {
+func (r *ProjectsInstancesDatabasesSessionsService) Create(database string, createsessionrequest *CreateSessionRequest) *ProjectsInstancesDatabasesSessionsCreateCall {
 	c := &ProjectsInstancesDatabasesSessionsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.database = database
+	c.createsessionrequest = createsessionrequest
 	return c
 }
 
@@ -7172,6 +7262,11 @@ func (c *ProjectsInstancesDatabasesSessionsCreateCall) doRequest(alt string) (*h
 	}
 	reqHeaders.Set("User-Agent", c.s.userAgent())
 	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.createsessionrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
 	c.urlParams_.Set("alt", alt)
 	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+database}/sessions")
 	urls += "?" + c.urlParams_.Encode()
@@ -7238,6 +7333,9 @@ func (c *ProjectsInstancesDatabasesSessionsCreateCall) Do(opts ...googleapi.Call
 	//     }
 	//   },
 	//   "path": "v1/{+database}/sessions",
+	//   "request": {
+	//     "$ref": "CreateSessionRequest"
+	//   },
 	//   "response": {
 	//     "$ref": "Session"
 	//   },
@@ -7808,6 +7906,217 @@ func (c *ProjectsInstancesDatabasesSessionsGetCall) Do(opts ...googleapi.CallOpt
 	//   ]
 	// }
 
+}
+
+// method id "spanner.projects.instances.databases.sessions.list":
+
+type ProjectsInstancesDatabasesSessionsListCall struct {
+	s            *Service
+	database     string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists all sessions in a given database.
+func (r *ProjectsInstancesDatabasesSessionsService) List(database string) *ProjectsInstancesDatabasesSessionsListCall {
+	c := &ProjectsInstancesDatabasesSessionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.database = database
+	return c
+}
+
+// Filter sets the optional parameter "filter": An expression for
+// filtering the results of the request. Filter rules are
+// case insensitive. The fields eligible for filtering are:
+//
+//   * labels.key where key is the name of a label
+//
+// Some examples of using filters are:
+//
+//   * labels.env:* --> The session has the label "env".
+//   * labels.env:dev --> The session has the label "env" and the value
+// of
+//                        the label contains the string "dev".
+func (c *ProjectsInstancesDatabasesSessionsListCall) Filter(filter string) *ProjectsInstancesDatabasesSessionsListCall {
+	c.urlParams_.Set("filter", filter)
+	return c
+}
+
+// PageSize sets the optional parameter "pageSize": Number of sessions
+// to be returned in the response. If 0 or less, defaults
+// to the server's maximum allowed page size.
+func (c *ProjectsInstancesDatabasesSessionsListCall) PageSize(pageSize int64) *ProjectsInstancesDatabasesSessionsListCall {
+	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": If non-empty,
+// `page_token` should contain a
+// next_page_token from a previous
+// ListSessionsResponse.
+func (c *ProjectsInstancesDatabasesSessionsListCall) PageToken(pageToken string) *ProjectsInstancesDatabasesSessionsListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsInstancesDatabasesSessionsListCall) Fields(s ...googleapi.Field) *ProjectsInstancesDatabasesSessionsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ProjectsInstancesDatabasesSessionsListCall) IfNoneMatch(entityTag string) *ProjectsInstancesDatabasesSessionsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsInstancesDatabasesSessionsListCall) Context(ctx context.Context) *ProjectsInstancesDatabasesSessionsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsInstancesDatabasesSessionsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsInstancesDatabasesSessionsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+database}/sessions")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"database": c.database,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "spanner.projects.instances.databases.sessions.list" call.
+// Exactly one of *ListSessionsResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *ListSessionsResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsInstancesDatabasesSessionsListCall) Do(opts ...googleapi.CallOption) (*ListSessionsResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &ListSessionsResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists all sessions in a given database.",
+	//   "flatPath": "v1/projects/{projectsId}/instances/{instancesId}/databases/{databasesId}/sessions",
+	//   "httpMethod": "GET",
+	//   "id": "spanner.projects.instances.databases.sessions.list",
+	//   "parameterOrder": [
+	//     "database"
+	//   ],
+	//   "parameters": {
+	//     "database": {
+	//       "description": "Required. The database in which to list sessions.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/instances/[^/]+/databases/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "filter": {
+	//       "description": "An expression for filtering the results of the request. Filter rules are\ncase insensitive. The fields eligible for filtering are:\n\n  * labels.key where key is the name of a label\n\nSome examples of using filters are:\n\n  * labels.env:* --\u003e The session has the label \"env\".\n  * labels.env:dev --\u003e The session has the label \"env\" and the value of\n                       the label contains the string \"dev\".",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "pageSize": {
+	//       "description": "Number of sessions to be returned in the response. If 0 or less, defaults\nto the server's maximum allowed page size.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "pageToken": {
+	//       "description": "If non-empty, `page_token` should contain a\nnext_page_token from a previous\nListSessionsResponse.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+database}/sessions",
+	//   "response": {
+	//     "$ref": "ListSessionsResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/spanner.data"
+	//   ]
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *ProjectsInstancesDatabasesSessionsListCall) Pages(ctx context.Context, f func(*ListSessionsResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
 }
 
 // method id "spanner.projects.instances.databases.sessions.read":

@@ -1,6 +1,71 @@
 This file describes changes relevant to all users that are made in each
 released version of restic from the perspective of the user.
 
+Important Changes in 0.X.Y
+==========================
+
+ * We've added a local cache for metadata so that restic doesn't need to load
+   all metadata (snapshots, indexes, ...) from the repo each time it starts. By
+   default the cache is active, but there's a new global option `--no-cache`
+   that can be used to disable the cache. The cache location is
+   `~/.cache/restic` by default, which can be overridden with `--cache-dir` or
+   the environment variable `XDG_CACHE_HOME`. The cache will automatically
+   populate, indexes and snapshots are saved as they are loaded.
+   https://github.com/restic/restic/pull/1040
+   https://github.com/restic/restic/issues/29
+   https://github.com/restic/restic/issues/738
+   https://github.com/restic/restic/issues/282
+
+ * A related change was to by default create pack files in the repo that
+   contain either data or metadata, not both mixed together. This allows easy
+   caching of only the metadata files. The next run of `restic prune` will
+   untangle mixed files automatically.
+   https://github.com/restic/restic/pull/1265
+
+ * The Google Cloud Storage backend no longer requires the service account to
+   have the `storage.buckets.get` permission ("Storage Admin" role) in `restic
+   init` if the bucket already exists.
+   https://github.com/restic/restic/pull/1281
+
+Small changes
+-------------
+
+ * The directory structure in the fuse mount now exposes a symlink `latest`
+   which points to the latest snapshot in that particular directory.
+   https://github.com/restic/restic/pull/1249
+
+ * The option `--compact` was added to the `forget` command to provide the same
+   compact view as the `snapshots` command.
+   https://github.com/restic/restic/pull/1269
+
+ * We've re-enabled a workaround for `minio-go` (the library we're using to
+   access s3 backends), this reduces memory usage.
+   https://github.com/restic/restic/issues/1256
+   https://github.com/restic/restic/pull/1267
+
+ * The sftp backend now prompts for the password if a password is necessary for
+   login.
+   https://github.com/restic/restic/issues/448
+   https://github.com/restic/restic/pull/1270
+
+ * The `generate` command has been added, which replaces the now removed
+   commands `manpage` and `autocomplete`. This release of restic contains the
+   most recent manpages in `doc/man` and the auto-completion files for bash and
+   zsh in `doc/bash-completion.sh` and `doc/zsh-completion.zsh`
+   https://github.com/restic/restic/issues/1274
+   https://github.com/restic/restic/pull/1282
+
+Important Changes in 0.7.3
+==========================
+
+ * For large backups stored in Google Cloud Storage, the `prune` command fails
+   because listing only returns the first 1000 files. This has been corrected,
+   no data is lost in the process. In addition, a plausibility check was added
+   to `prune`.
+   https://github.com/restic/restic/issues/1246
+   https://github.com/restic/restic/pull/1247
+
+
 Important Changes in 0.7.2
 ==========================
 

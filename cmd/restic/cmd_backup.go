@@ -84,7 +84,7 @@ func init() {
 	f.BoolVar(&backupOptions.Stdin, "stdin", false, "read backup from stdin")
 	f.StringVar(&backupOptions.StdinFilename, "stdin-filename", "stdin", "file name to use when reading from stdin")
 	f.StringArrayVar(&backupOptions.Tags, "tag", nil, "add a `tag` for the new snapshot (can be specified multiple times)")
-	f.StringVar(&backupOptions.Hostname, "hostname", "", "set the `hostname` for the snapshot manually")
+	f.StringVar(&backupOptions.Hostname, "hostname", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
 }
@@ -392,6 +392,16 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	defer unlockRepo(lock)
 	if err != nil {
 		return err
+	}
+
+	// exclude restic cache
+	if repo.Cache != nil {
+		f, err := rejectResticCache(repo)
+		if err != nil {
+			return err
+		}
+
+		rejectFuncs = append(rejectFuncs, f)
 	}
 
 	err = repo.LoadIndex(context.TODO())

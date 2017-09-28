@@ -85,6 +85,25 @@ func runPrune(gopts GlobalOptions) error {
 	return pruneRepository(gopts, repo)
 }
 
+func mixedBlobs(list []restic.Blob) bool {
+	var tree, data bool
+
+	for _, pb := range list {
+		switch pb.Type {
+		case restic.TreeBlob:
+			tree = true
+		case restic.DataBlob:
+			data = true
+		}
+
+		if tree && data {
+			return true
+		}
+	}
+
+	return false
+}
+
 func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	ctx := gopts.ctx
 
@@ -122,7 +141,7 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 		stats.bytes += pack.Size
 		blobs += len(pack.Entries)
 	}
-	Verbosef("repository contains %v packs (%v blobs) with %v bytes\n",
+	Verbosef("repository contains %v packs (%v blobs) with %v\n",
 		len(idx.Packs), blobs, formatBytes(uint64(stats.bytes)))
 
 	blobCount := make(map[restic.BlobHandle]int)
@@ -179,12 +198,23 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 	bar.Done()
 
+	if len(usedBlobs) > stats.blobs {
+		return errors.Fatalf("number of used blobs is larger than number of available blobs!\n" +
+			"Please report this error (along with the output of the 'prune' run) at\n" +
+			"https://github.com/restic/restic/issues/new")
+	}
+
 	Verbosef("found %d of %d data blobs still in use, removing %d blobs\n",
 		len(usedBlobs), stats.blobs, stats.blobs-len(usedBlobs))
 
 	// find packs that need a rewrite
 	rewritePacks := restic.NewIDSet()
 	for _, pack := range idx.Packs {
+		if mixedBlobs(pack.Entries) {
+			rewritePacks.Insert(pack.ID)
+			continue
+		}
+
 		for _, blob := range pack.Entries {
 			h := restic.BlobHandle{ID: blob.ID, Type: blob.Type}
 			if !usedBlobs.Has(h) {

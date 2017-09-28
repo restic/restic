@@ -119,8 +119,8 @@ able to access data stored in the repository.
 
 For automated backups, restic accepts the repository location in the
 environment variable ``RESTIC_REPOSITORY``. The password can be read
-from a file (via the option ``--password-file``) or the environment
-variable ``RESTIC_PASSWORD``.
+from a file (via the option ``--password-file`` or the environment variable
+``RESTIC_PASSWORD_FILE``) or the environment variable ``RESTIC_PASSWORD``.
 
 SFTP
 ~~~~
@@ -405,11 +405,24 @@ established.
 Google Cloud Storage
 ~~~~~~~~~~~~~~~~~~~~
 
-Restic supports Google Cloud Storage as a backend. In order for this to work
-you first need create a "service account" and download the JSON key file for
-it. In addition, you need the Google Project ID that you can see in the Google
-Cloud Platform console at the "Storage/Settings" menu. Export the path to the
-JSON credentials file and the project ID as follows:
+Restic supports Google Cloud Storage as a backend.
+
+Restic connects to Google Cloud Storage via a `service account`_.
+
+For normal restic operation, the service account must have the
+``storage.objects.{create,delete,get,list}`` permissions for the bucket. These
+are included in the "Storage Object Admin" role.
+
+``restic init`` can create the repository bucket. Doing so requires the
+``storage.buckets.create`` permission ("Storage Admin" role). If the bucket
+already exists that permission is unnecessary.
+
+To use the Google Cloud Storage backend, first `create a service account key`_
+and download the JSON credentials file.
+
+Second, find the Google Project ID that you can see in the Google Cloud
+Platform console at the "Storage/Settings" menu. Export the path to the JSON
+key file and the project ID as follows:
 
 .. code-block:: console
 
@@ -425,12 +438,15 @@ bucket `foo` at the root path:
     enter password for new backend:
     enter password again:
 
-    created restic backend bde47d6254 at gs:restic-dev-an:foo2
+    created restic backend bde47d6254 at gs:foo:/
     [...]
 
 The number of concurrent connections to the GCS service can be set with the
 `-o gs.connections=10`. By default, at most five parallel connections are
 established.
+
+.. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
+.. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 
 
 Password prompt on Windows
@@ -512,6 +528,10 @@ find the old snapshot in the repo and by default only reads those files
 that are new or have been modified since the last snapshot. This is
 decided based on the modify date of the file in the file system.
 
+Now is a good time to run ``restic check`` to verify that all data
+is properly stored in the repository. You should run this command regularly
+to make sure the internal structure of the repository is free of errors.
+
 You can exclude folders and files by specifying exclude-patterns. Either
 specify them with multiple ``--exclude``'s or one ``--exclude-file``
 
@@ -563,6 +583,21 @@ args:
 .. code-block:: console
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
+
+
+Backing up special items
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+**Symlinks** are archieved as symlinks, ``restic``does not follow them.
+When you restore, you get the same symlink again, with the same link target
+and the same timestamps.
+
+If there is a **bind-mount** below a directory that is to be saved, restic descends into it.
+
+**Device files** are saved and restored as device files. This means that e.g. ``/dev/sda`` is
+archived as a block device file and restored as such. This also means that the content of the
+corresponding disk is not read, at least not from the device file.
+
 
 Reading data from stdin
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -810,6 +845,10 @@ remove operations, two commands need to be called in sequence:
 data that was referenced by the snapshot from the repository. This can
 be automated with the ``--prune`` option of the ``forget`` command,
 which runs ``prune`` automatically if snapshots have been removed.
+
+It is advisable to run ``restic check`` after pruning, to make sure
+you are alerted, should the internal data structures of the repository
+be damaged.
 
 Remove a single snapshot
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1075,8 +1114,11 @@ statements originating in functions that match the pattern ``*unlock*``
 
     $ DEBUG_FUNCS=*unlock* restic check
 
-Under the hood: Browse repository objects
------------------------------------------
+Under the hood
+--------------
+
+Browse repository objects
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Internally, a repository stores data of several different types
 described in the `design
@@ -1120,6 +1162,33 @@ objects or its raw content.
       "uid": 501,
       "gid": 20
     }
+
+Metadata handling
+~~~~~~~~~~~~~~~~~
+
+Restic saves and restores most default attributes, including extended attributes like ACLs.
+Sparse files are not handled in a special way yet, and aren't restored.
+
+The following metadata is handled by restic:
+
+- Name
+- Type
+- Mode
+- ModTime
+- AccessTime
+- ChangeTime
+- UID
+- GID
+- User
+- Group
+- Inode
+- Size
+- Links
+- LinkTarget
+- Device
+- Content
+- Subtree
+- ExtendedAttributes
 
 Scripting
 ---------
@@ -1173,3 +1242,19 @@ instead of the default, set the environment variable like this:
 
     $ export TMPDIR=/var/tmp/restic-tmp
     $ restic -r /tmp/backup backup ~/work
+
+Caching
+-------
+
+Restic keeps a cache with some files from the repository on the local machine.
+This allows faster operations, since meta data does not need to be loaded from
+a remote repository. The cache is automatically created, usually in the
+directory ``.cache/restic`` in the user's home directory. The environment
+variable ``XDG_CACHE_DIR`` or the command line parameter ``--cache-dir`` can
+each be used to specify where the cache is located. The parameter
+``--no-cache`` disables the cache entirely. In this case, all data is loaded
+from the repo.
+
+The cache is ephemeral: When a file cannot be read from the cache, it is loaded
+from the repository.
+

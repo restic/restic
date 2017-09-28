@@ -23,11 +23,13 @@ type SnapshotsDir struct {
 	root      *Root
 	snapshots restic.Snapshots
 	names     map[string]*restic.Snapshot
+	latest    string
 }
 
 // ensure that *SnapshotsDir implements these interfaces
 var _ = fs.HandleReadDirAller(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
+var _ = fs.NodeReadlinker(&snapshotLink{})
 
 // NewSnapshotsDir returns a new directory containing snapshots.
 func NewSnapshotsDir(root *Root, inode uint64, snapshots restic.Snapshots) *SnapshotsDir {
@@ -39,8 +41,16 @@ func NewSnapshotsDir(root *Root, inode uint64, snapshots restic.Snapshots) *Snap
 		names:     make(map[string]*restic.Snapshot, len(snapshots)),
 	}
 
+	// Track latest Snapshot
+	var latestTime time.Time
+	d.latest = ""
+
 	for _, sn := range snapshots {
 		name := sn.Time.Format(time.RFC3339)
+		if d.latest == "" || !sn.Time.Before(latestTime) {
+			latestTime = sn.Time
+			d.latest = name
+		}
 		for i := 1; ; i++ {
 			if _, ok := d.names[name]; !ok {
 				break
@@ -93,7 +103,47 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		})
 	}
 
+	// Latest
+	if d.latest != "" {
+		items = append(items, fuse.Dirent{
+			Inode: fs.GenerateDynamicInode(d.inode, "latest"),
+			Name:  "latest",
+			Type:  fuse.DT_Link,
+		})
+	}
 	return items, nil
+}
+
+type snapshotLink struct {
+	root     *Root
+	inode    uint64
+	target   string
+	snapshot *restic.Snapshot
+}
+
+func newSnapshotLink(ctx context.Context, root *Root, inode uint64, target string, snapshot *restic.Snapshot) (*snapshotLink, error) {
+	return &snapshotLink{root: root, inode: inode, target: target, snapshot: snapshot}, nil
+}
+
+func (l *snapshotLink) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string, error) {
+	return l.target, nil
+}
+
+func (l *snapshotLink) Attr(ctx context.Context, a *fuse.Attr) error {
+	a.Inode = l.inode
+	a.Mode = os.ModeSymlink | 0777
+
+	if !l.root.cfg.OwnerIsRoot {
+		a.Uid = uint32(os.Getuid())
+		a.Gid = uint32(os.Getgid())
+	}
+	a.Atime = l.snapshot.Time
+	a.Ctime = l.snapshot.Time
+	a.Mtime = l.snapshot.Time
+
+	a.Nlink = 1
+
+	return nil
 }
 
 // Lookup returns a specific entry from the root node.
@@ -102,6 +152,16 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 
 	sn, ok := d.names[name]
 	if !ok {
+		if name == "latest" && d.latest != "" {
+			sn2, ok2 := d.names[d.latest]
+
+			// internal error
+			if !ok2 {
+				return nil, fuse.ENOENT
+			}
+
+			return newSnapshotLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), d.latest, sn2)
+		}
 		return nil, fuse.ENOENT
 	}
 

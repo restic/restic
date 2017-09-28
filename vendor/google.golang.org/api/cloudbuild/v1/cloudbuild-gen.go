@@ -141,6 +141,7 @@ type ProjectsTriggersService struct {
 // - $REVISION_ID or $COMMIT_SHA: the commit SHA specified by RepoSource
 // or
 //   resolved from the specified branch or tag.
+// - $SHORT_SHA: first 7 characters of $REVISION_ID or $COMMIT_SHA.
 type Build struct {
 	// BuildTriggerId: The ID of the BuildTrigger that triggered this build,
 	// if it was

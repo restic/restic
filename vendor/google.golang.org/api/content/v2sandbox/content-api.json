@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/R4bc8bYIPV7Xpbth35g-aCtObI0\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/w6LYVfU7tamoBXESYq-QJFacBzs\"",
  "discoveryVersion": "v1",
  "id": "content:v2sandbox",
  "name": "content",
  "canonicalName": "Shopping Content",
  "version": "v2sandbox",
- "revision": "20170905",
+ "revision": "20170912",
  "title": "Content API for Shopping",
  "description": "Manages product items, inventory, and Merchant Center accounts for Google Shopping.",
  "ownerDomain": "google.com",
@@ -21,7 +21,7 @@
  "basePath": "/content/v2sandbox/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "content/v2sandbox/",
- "batchPath": "batch",
+ "batchPath": "batch/content/v2sandbox",
  "parameters": {
   "alt": {
    "type": "string",
