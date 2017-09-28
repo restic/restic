@@ -3,27 +3,68 @@ package cache
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
 )
 
-// getXDGCacheDir returns the cache directory according to XDG basedir spec, see
+// xdgCacheDir returns the cache directory according to XDG basedir spec, see
 // http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
-func getXDGCacheDir() (string, error) {
+func xdgCacheDir() (string, error) {
 	xdgcache := os.Getenv("XDG_CACHE_HOME")
 	home := os.Getenv("HOME")
 
-	if xdgcache == "" && home == "" {
-		return "", errors.New("unable to locate cache directory (XDG_CACHE_HOME and HOME unset)")
+	if xdgcache != "" {
+		return filepath.Join(xdgcache, "restic"), nil
+	} else if home != "" {
+		return filepath.Join(home, ".cache", "restic"), nil
 	}
 
-	cachedir := ""
-	if xdgcache != "" {
-		cachedir = filepath.Join(xdgcache, "restic")
-	} else if home != "" {
-		cachedir = filepath.Join(home, ".cache", "restic")
+	return "", errors.New("unable to locate cache directory (XDG_CACHE_HOME and HOME unset)")
+}
+
+// windowsCacheDir returns the cache directory for Windows.
+//
+// Uses LOCALAPPDATA, where application data not synchronized between machines
+// is stored. (Browser caches stored here).
+func windowsCacheDir() (string, error) {
+	appdata := os.Getenv("LOCALAPPDATA")
+	if appdata == "" {
+		return "", errors.New("unable to locate cache directory (APPDATA unset)")
+	}
+	return filepath.Join(appdata, "restic"), nil
+}
+
+// darwinCacheDir returns the cache directory for darwin.
+//
+// Uses ~/Library/Caches/, which is recommended by Apple, see
+// https://developer.apple.com/library/content/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/MacOSXDirectories/MacOSXDirectories.html
+func darwinCacheDir() (string, error) {
+	home := os.Getenv("HOME")
+	if home == "" {
+		return "", errors.New("unable to locate cache directory (HOME unset)")
+	}
+	return filepath.Join(home, "Library", "Caches", "restic"), nil
+}
+
+// defaultCacheDir determines and creates the default cache directory for this
+// system.
+func defaultCacheDir() (string, error) {
+	var cachedir string
+	var err error
+	switch runtime.GOOS {
+	case "darwin":
+		cachedir, err = darwinCacheDir()
+	case "windows":
+		cachedir, err = windowsCacheDir()
+	default:
+		// Default to XDG for Linux and any other OSes.
+		cachedir, err = xdgCacheDir()
+	}
+	if err != nil {
+		return "", err
 	}
 
 	fi, err := fs.Stat(cachedir)

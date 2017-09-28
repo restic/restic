@@ -84,7 +84,7 @@ func writeCachedirTag(dir string) error {
 // performReadahead returns true.
 func New(id string, basedir string) (c *Cache, err error) {
 	if basedir == "" {
-		basedir, err = getXDGCacheDir()
+		basedir, err = defaultCacheDir()
 		if err != nil {
 			return nil, err
 		}
