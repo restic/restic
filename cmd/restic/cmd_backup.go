@@ -65,6 +65,7 @@ type BackupOptions struct {
 	Hostname         string
 	FilesFrom        string
 	TimeStamp        string
+	NoProgressStatus bool
 }
 
 var backupOptions BackupOptions
@@ -87,6 +88,7 @@ func init() {
 	f.StringVar(&backupOptions.Hostname, "hostname", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
+	f.BoolVar(&backupOptions.NoProgressStatus, "no-progress", false, "disable output of progress output (default: show progress)")
 }
 
 func newScanProgress(gopts GlobalOptions) *restic.Progress {
@@ -100,24 +102,27 @@ func newScanProgress(gopts GlobalOptions) *restic.Progress {
 			return
 		}
 
-		progressStatus = NewProgressStatus(d, s.Dirs, s.Files, s.Bytes)
-		progressStatus.UpdateScanStatus(d, s.Dirs, s.Files, s.Bytes)
-		if globalOptions.JSON == true {
-			progressStatus.PrintJSON()
-		} else {
-			progressStatus.PrintScannerProgress()
+		if !backupOptions.NoProgressStatus {
+			progressStatus = NewProgressStatus(d, s.Dirs, s.Files, s.Bytes)
+			progressStatus.UpdateScanStatus(d, s.Dirs, s.Files, s.Bytes)
+			if globalOptions.JSON == true {
+				progressStatus.PrintJSON()
+			} else {
+				progressStatus.PrintScannerProgress()
+			}
 		}
 
 	}
 
 	p.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		progressStatus.UpdateScanStatus(d, s.Dirs, s.Files, s.Bytes)
-		if globalOptions.JSON == true {
-			progressStatus.PrintJSON()
-		} else {
-			progressStatus.PrintScannerDone()
+		if !backupOptions.NoProgressStatus {
+			progressStatus.UpdateScanStatus(d, s.Dirs, s.Files, s.Bytes)
+			if globalOptions.JSON == true {
+				progressStatus.PrintJSON()
+			} else {
+				progressStatus.PrintScannerDone()
+			}
 		}
-
 	}
 
 	return p
@@ -149,24 +154,26 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 		}
 
 		itemsDone := s.Files + s.Dirs
+		if !backupOptions.NoProgressStatus {
+			progressStatus.UpdateProgressStatus(d, s.Bytes, todo.Bytes, bps, s.Bytes, todo.Bytes, itemsDone, itemsTodo, eta, s.Errors)
 
-		progressStatus.UpdateProgressStatus(d, s.Bytes, todo.Bytes, bps, s.Bytes, todo.Bytes, itemsDone, itemsTodo, eta, s.Errors)
+			if globalOptions.JSON == true {
+				progressStatus.PrintJSON()
 
-		if globalOptions.JSON == true {
-			progressStatus.PrintJSON()
-
-		} else {
-			progressStatus.PrintArchiveProgress()
+			} else {
+				progressStatus.PrintArchiveProgress()
+			}
 		}
-
 	}
 
 	archiveProgress.OnDone = func(s restic.Stat, d time.Duration, ticker bool) {
-		progressStatus.UpdateProgressStatus(d, s.Bytes, 0, 0, 0, todo.Bytes, 0, 0, 0, s.Errors)
-		if globalOptions.JSON == true {
-			progressStatus.PrintJSON()
-		} else {
-			progressStatus.PrintArchiveDoneProgress()
+		if !backupOptions.NoProgressStatus {
+			progressStatus.UpdateProgressStatus(d, s.Bytes, 0, 0, 0, todo.Bytes, 0, 0, 0, s.Errors)
+			if globalOptions.JSON == true {
+				progressStatus.PrintJSON()
+			} else {
+				progressStatus.PrintArchiveDoneProgress()
+			}
 		}
 	}
 
@@ -473,7 +480,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	Verbosef("snapshot %s saved\n", id.Str())
+	Verbosef("\nsnapshot %s saved\n", id.Str())
 
 	return nil
 }

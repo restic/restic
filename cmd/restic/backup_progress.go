@@ -46,7 +46,7 @@ const (
 	ScanProgressDoneTemplate        = `scanned {{.Directories}} directories, {{.Files}} files in {{duration .Duration}}\n`
 	ArchiveProgressUpdateTemplate   = `[{{duration .Duration}}] {{percent .Completed .Total}}  {{bytes .Bps}}/s  {{bytes .CompletedBytes}} / {{bytes .TotalBytes}}  {{.ItemsDone}} / {{.ItemsTotal}} items  {{.Errors}} errors  `
 	ArchiveProgressEstimateTemplate = `ETA {{seconds .ETA}}`
-	ArchiveProgressDoneTemplate     = `\nduration {{duration .Duration}}, {{rate .TotalBytes .Duration}}\n`
+	ArchiveProgressDoneTemplate     = `duration {{duration .Duration}}, {{rate .TotalBytes .Duration}}`
 )
 
 var scanProgressUpdateTemplate,
@@ -138,7 +138,7 @@ func (ps *ProgressStatus) PrintScannerProgress() {
 func (ps *ProgressStatus) PrintScannerDone() {
 	var result bytes.Buffer
 	_ = scanProgressDoneTemplate.Execute(&result, ps)
-	fmt.Printf("\n%s", result.String())
+	fmt.Printf("\n%s\n", result.String())
 }
 
 // PrintArchiveProgress will print current archive progress
@@ -172,5 +172,5 @@ func (ps *ProgressStatus) PrintArchiveDoneProgress() {
 	var result bytes.Buffer
 	_ = archiveProgressDoneTemplate.Execute(&result, ps)
 	// PrintProgress(result.String())
-	fmt.Printf("\n%s", result.String())
+	fmt.Printf("\n%s\n", result.String())
 }
