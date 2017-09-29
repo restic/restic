@@ -64,7 +64,7 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 		supersedes = append(supersedes, id)
 	}
 
-	id, err := idx.Save(ctx, repo, supersedes)
+	id, _, err := idx.Save(ctx, repo, supersedes)
 	if err != nil {
 		return err
 	}

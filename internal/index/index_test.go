@@ -172,7 +172,7 @@ func BenchmarkIndexSave(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		id, err := idx.Save(context.TODO(), repo, nil)
+		id, _, err := idx.Save(context.TODO(), repo, nil)
 		if err != nil {
 			b.Fatalf("New() returned error %v", err)
 		}
@@ -227,7 +227,7 @@ func TestSave(t *testing.T) {
 
 	t.Logf("save %d/%d packs in a new index\n", len(packs), len(idx.Packs))
 
-	id, err := Save(context.TODO(), repo, packs, idx.IndexIDs.List())
+	id, _, err := Save(context.TODO(), repo, packs, idx.IndexIDs.List())
 	if err != nil {
 		t.Fatalf("unable to save new index: %v", err)
 	}
@@ -269,7 +269,7 @@ func TestIndexSave(t *testing.T) {
 
 	idx := loadIndex(t, repo)
 
-	id, err := idx.Save(context.TODO(), repo, idx.IndexIDs.List())
+	id, _, err := idx.Save(context.TODO(), repo, idx.IndexIDs.List())
 	if err != nil {
 		t.Fatalf("unable to save new index: %v", err)
 	}
@@ -366,7 +366,7 @@ func TestIndexLoadDocReference(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	id, err := repo.SaveUnpacked(context.TODO(), restic.IndexFile, docExample)
+	id, _, err := repo.SaveUnpacked(context.TODO(), restic.IndexFile, docExample)
 	if err != nil {
 		t.Fatalf("SaveUnpacked() returned error %v", err)
 	}

@@ -170,7 +170,7 @@ func eachLock(ctx context.Context, repo Repository, f func(ID, *Lock, error) err
 
 // createLock acquires the lock by creating a file in the repository.
 func (l *Lock) createLock(ctx context.Context) (ID, error) {
-	id, err := l.repo.SaveJSONUnpacked(ctx, LockFile, l)
+	id, _, err := l.repo.SaveJSONUnpacked(ctx, LockFile, l)
 	if err != nil {
 		return ID{}, err
 	}

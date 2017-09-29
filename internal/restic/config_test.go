@@ -8,9 +8,9 @@ import (
 	. "github.com/restic/restic/internal/test"
 )
 
-type saver func(restic.FileType, interface{}) (restic.ID, error)
+type saver func(restic.FileType, interface{}) (restic.ID, uint64, error)
 
-func (s saver) SaveJSONUnpacked(t restic.FileType, arg interface{}) (restic.ID, error) {
+func (s saver) SaveJSONUnpacked(t restic.FileType, arg interface{}) (restic.ID, uint64, error) {
 	return s(t, arg)
 }
 
@@ -22,20 +22,20 @@ func (l loader) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id rest
 
 func TestConfig(t *testing.T) {
 	resultConfig := restic.Config{}
-	save := func(tpe restic.FileType, arg interface{}) (restic.ID, error) {
+	save := func(tpe restic.FileType, arg interface{}) (restic.ID, uint64, error) {
 		Assert(t, tpe == restic.ConfigFile,
 			"wrong backend type: got %v, wanted %v",
 			tpe, restic.ConfigFile)
 
 		cfg := arg.(restic.Config)
 		resultConfig = cfg
-		return restic.ID{}, nil
+		return restic.ID{}, 0, nil
 	}
 
 	cfg1, err := restic.CreateConfig()
 	OK(t, err)
 
-	_, err = saver(save).SaveJSONUnpacked(restic.ConfigFile, cfg1)
+	_, _, err = saver(save).SaveJSONUnpacked(restic.ConfigFile, cfg1)
 
 	load := func(ctx context.Context, tpe restic.FileType, id restic.ID, arg interface{}) error {
 		Assert(t, tpe == restic.ConfigFile,

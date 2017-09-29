@@ -92,10 +92,10 @@ func TestExclusiveLockOnLockedRepo(t *testing.T) {
 	OK(t, elock.Unlock())
 }
 
-func createFakeLock(repo restic.Repository, t time.Time, pid int) (restic.ID, error) {
+func createFakeLock(repo restic.Repository, t time.Time, pid int) (restic.ID, uint64, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
-		return restic.ID{}, err
+		return restic.ID{}, 0, err
 	}
 
 	newLock := &restic.Lock{Time: t, PID: pid, Hostname: hostname}
@@ -175,13 +175,13 @@ func TestLockWithStaleLock(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
+	id1, _, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
 	OK(t, err)
 
-	id2, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
+	id2, _, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
 	OK(t, err)
 
-	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
+	id3, _, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
 	OK(t, err)
 
 	OK(t, restic.RemoveStaleLocks(context.TODO(), repo))
@@ -200,13 +200,13 @@ func TestRemoveAllLocks(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	id1, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
+	id1, _, err := createFakeLock(repo, time.Now().Add(-time.Hour), os.Getpid())
 	OK(t, err)
 
-	id2, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
+	id2, _, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid())
 	OK(t, err)
 
-	id3, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
+	id3, _, err := createFakeLock(repo, time.Now().Add(-time.Minute), os.Getpid()+500000)
 	OK(t, err)
 
 	OK(t, restic.RemoveAllLocks(context.TODO(), repo))

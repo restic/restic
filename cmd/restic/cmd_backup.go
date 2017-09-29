@@ -136,12 +136,13 @@ func newArchiveProgress(gopts GlobalOptions, todo restic.Stat) *restic.Progress 
 
 		itemsDone := s.Files + s.Dirs
 
-		status1 := fmt.Sprintf("[%s] %s  %s/s  %s / %s  %d / %d items  %d errors  ",
+		status1 := fmt.Sprintf("[%s] %s  %s/s  %s / %s  %d / %d items  %s written  %d errors  ",
 			formatDuration(d),
 			formatPercent(s.Bytes, todo.Bytes),
 			formatBytes(bps),
 			formatBytes(s.Bytes), formatBytes(todo.Bytes),
 			itemsDone, itemsTodo,
+			formatBytes(s.BytesWritten),
 			s.Errors)
 		status2 := fmt.Sprintf("ETA %s ", formatSeconds(eta))
 
@@ -461,12 +462,12 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	_, id, err := arch.Snapshot(context.TODO(), newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID, timeStamp)
+	_, id, bytesWritten, err := arch.Snapshot(context.TODO(), newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID, timeStamp)
 	if err != nil {
 		return err
 	}
 
-	Verbosef("snapshot %s saved\n", id.Str())
+	Verbosef("snapshot %s saved, %s written\n", id.Str(), formatBytes(bytesWritten))
 
 	return nil
 }

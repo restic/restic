@@ -101,7 +101,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 					h, tempfile.Name(), id)
 			}
 
-			_, err = repo.SaveBlob(ctx, entry.Type, buf, entry.ID)
+			_, _, err = repo.SaveBlob(ctx, entry.Type, buf, entry.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -123,7 +123,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		}
 	}
 
-	if err := repo.Flush(); err != nil {
+	if _, err := repo.Flush(); err != nil {
 		return nil, err
 	}
 
