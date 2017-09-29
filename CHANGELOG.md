@@ -15,6 +15,7 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/issues/29
    https://github.com/restic/restic/issues/738
    https://github.com/restic/restic/issues/282
+   https://github.com/restic/restic/pull/1287
 
  * A related change was to by default create pack files in the repo that
    contain either data or metadata, not both mixed together. This allows easy
