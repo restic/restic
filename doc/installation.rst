@@ -30,7 +30,7 @@ Nix & NixOS
 
 If you are using `Nix <https://nixos.org/nix/>`__ or `NixOS <https://nixos.org/>`__
 there is a package available named ``restic``.
-It can be installed uisng `nix-env`:
+It can be installed uisng ``nix-env``:
 
 .. code-block:: console
 
