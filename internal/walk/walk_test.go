@@ -25,11 +25,12 @@ func TestWalkTree(t *testing.T) {
 
 	// archive a few files
 	arch := archiver.New(repo)
-	sn, _, err := arch.Snapshot(context.TODO(), nil, dirs, nil, "localhost", nil, time.Now())
+	sn, _, _, err := arch.Snapshot(context.TODO(), nil, dirs, nil, "localhost", nil, time.Now())
 	OK(t, err)
 
 	// flush repo, write all packs
-	OK(t, repo.Flush())
+	_, err = repo.Flush()
+	OK(t, err)
 
 	// start tree walker
 	treeJobs := make(chan walk.TreeJob)

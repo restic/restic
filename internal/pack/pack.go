@@ -63,11 +63,11 @@ type headerEntry struct {
 // Finalize writes the header for all added blobs and finalizes the pack.
 // Returned are the number of bytes written, including the header. If the
 // underlying writer implements io.Closer, it is closed.
-func (p *Packer) Finalize() (uint, error) {
+func (p *Packer) Finalize() (uint64, error) {
 	p.m.Lock()
 	defer p.m.Unlock()
 
-	bytesWritten := p.bytes
+	bytesWritten := uint64(p.bytes)
 
 	hdrBuf := bytes.NewBuffer(nil)
 	bytesHeader, err := p.writeHeader(hdrBuf)
@@ -91,14 +91,14 @@ func (p *Packer) Finalize() (uint, error) {
 		return 0, errors.New("wrong number of bytes written")
 	}
 
-	bytesWritten += uint(hdrBytes)
+	bytesWritten += uint64(hdrBytes)
 
 	// write length
 	err = binary.Write(p.wr, binary.LittleEndian, uint32(restic.CiphertextLength(len(p.blobs)*int(entrySize))))
 	if err != nil {
 		return 0, errors.Wrap(err, "binary.Write")
 	}
-	bytesWritten += uint(binary.Size(uint32(0)))
+	bytesWritten += uint64(binary.Size(uint32(0)))
 
 	p.bytes = uint(bytesWritten)
 

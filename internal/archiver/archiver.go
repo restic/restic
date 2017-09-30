@@ -93,36 +93,38 @@ func (arch *Archiver) isKnownBlob(id restic.ID, t restic.BlobType) bool {
 }
 
 // Save stores a blob read from rd in the repository.
-func (arch *Archiver) Save(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) error {
+func (arch *Archiver) Save(ctx context.Context, t restic.BlobType, data []byte, id restic.ID) (uint64, error) {
+	var bytesWritten uint64
 	debug.Log("Save(%v, %v)\n", t, id.Str())
 
 	if arch.isKnownBlob(id, restic.DataBlob) {
 		debug.Log("blob %v is known\n", id.Str())
-		return nil
+		return bytesWritten, nil
 	}
 
-	_, err := arch.repo.SaveBlob(ctx, t, data, id)
+	_, bytesWritten, err := arch.repo.SaveBlob(ctx, t, data, id)
 	if err != nil {
 		debug.Log("Save(%v, %v): error %v\n", t, id.Str(), err)
-		return err
+		return bytesWritten, err
 	}
 
 	debug.Log("Save(%v, %v): new blob\n", t, id.Str())
-	return nil
+	return bytesWritten, nil
 }
 
 // SaveTreeJSON stores a tree in the repository.
-func (arch *Archiver) SaveTreeJSON(ctx context.Context, tree *restic.Tree) (restic.ID, error) {
+func (arch *Archiver) SaveTreeJSON(ctx context.Context, tree *restic.Tree) (restic.ID, uint64, error) {
+	var bytesWritten uint64
 	data, err := json.Marshal(tree)
 	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "Marshal")
+		return restic.ID{}, bytesWritten, errors.Wrap(err, "Marshal")
 	}
 	data = append(data, '\n')
 
 	// check if tree has been saved before
 	id := restic.Hash(data)
 	if arch.isKnownBlob(id, restic.TreeBlob) {
-		return id, nil
+		return id, bytesWritten, nil
 	}
 
 	return arch.repo.SaveBlob(ctx, restic.TreeBlob, data, id)
@@ -154,11 +156,11 @@ type saveResult struct {
 	bytes uint64
 }
 
-func (arch *Archiver) saveChunk(ctx context.Context, chunk chunker.Chunk, p *restic.Progress, token struct{}, file fs.File, resultChannel chan<- saveResult) {
+func (arch *Archiver) saveChunk(ctx context.Context, chunk chunker.Chunk, p *restic.Progress, token struct{}, file fs.File, resultChannel chan<- saveResult) uint64 {
 	defer freeBuf(chunk.Data)
 
 	id := restic.Hash(chunk.Data)
-	err := arch.Save(ctx, restic.DataBlob, chunk.Data, id)
+	bytesWritten, err := arch.Save(ctx, restic.DataBlob, chunk.Data, id)
 	// TODO handle error
 	if err != nil {
 		debug.Log("Save(%v) failed: %v", id.Str(), err)
@@ -166,9 +168,11 @@ func (arch *Archiver) saveChunk(ctx context.Context, chunk chunker.Chunk, p *res
 		panic(err)
 	}
 
-	p.Report(restic.Stat{Bytes: uint64(chunk.Length)})
+	p.Report(restic.Stat{Bytes: uint64(chunk.Length), BytesWritten: bytesWritten})
 	arch.blobToken <- token
 	resultChannel <- saveResult{id: id, bytes: uint64(chunk.Length)}
+
+	return bytesWritten
 }
 
 func waitForResults(resultChannels [](<-chan saveResult)) ([]saveResult, error) {
@@ -416,7 +420,7 @@ func (arch *Archiver) dirWorker(ctx context.Context, wg *sync.WaitGroup, p *rest
 				node.Error = err.Error()
 			}
 
-			id, err := arch.SaveTreeJSON(ctx, tree)
+			id, _, err := arch.SaveTreeJSON(ctx, tree)
 			if err != nil {
 				panic(err)
 			}
@@ -615,7 +619,7 @@ func (arch *Archiver) saveIndexes(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		case <-ticker.C:
 			debug.Log("saving full indexes")
-			err := arch.repo.SaveFullIndex(ctx)
+			_, err := arch.repo.SaveFullIndex(ctx)
 			if err != nil {
 				debug.Log("save indexes returned an error: %v", err)
 				fmt.Fprintf(os.Stderr, "error saving preliminary index: %v\n", err)
@@ -652,7 +656,8 @@ func (p baseNameSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 // Snapshot creates a snapshot of the given paths. If parentrestic.ID is set, this is
 // used to compare the files to the ones archived at the time this snapshot was
 // taken.
-func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, tags []string, hostname string, parentID *restic.ID, time time.Time) (*restic.Snapshot, restic.ID, error) {
+func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, tags []string, hostname string, parentID *restic.ID, time time.Time) (*restic.Snapshot, restic.ID, uint64, error) {
+	var bytesWrittenSum uint64
 	paths = unique(paths)
 	sort.Sort(baseNameSlice(paths))
 
@@ -669,7 +674,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, t
 	// create new snapshot
 	sn, err := restic.NewSnapshot(paths, tags, hostname, time)
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, bytesWrittenSum + p.BytesWritten(), err
 	}
 	sn.Excludes = arch.Excludes
 
@@ -682,7 +687,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, t
 		// load parent snapshot
 		parent, err := restic.LoadSnapshot(ctx, arch.repo, *parentID)
 		if err != nil {
-			return nil, restic.ID{}, err
+			return nil, restic.ID{}, bytesWrittenSum + p.BytesWritten(), err
 		}
 
 		// start walker on old tree
@@ -746,10 +751,12 @@ func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, t
 	debug.Log("workers terminated")
 
 	// flush repository
-	err = arch.repo.Flush()
+	var bytesWritten uint64
+	bytesWritten, err = arch.repo.Flush()
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, bytesWrittenSum + p.BytesWritten(), err
 	}
+	bytesWrittenSum += bytesWritten
 
 	// receive the top-level tree
 	root := (<-resCh).(*restic.Node)
@@ -759,31 +766,33 @@ func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, t
 	// load top-level tree again to see if it is empty
 	toptree, err := arch.repo.LoadTree(ctx, *root.Subtree)
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, bytesWrittenSum + p.BytesWritten(), err
 	}
 
 	if len(toptree.Nodes) == 0 {
-		return nil, restic.ID{}, errors.Fatal("no files/dirs saved, refusing to create empty snapshot")
+		return nil, restic.ID{}, bytesWrittenSum + p.BytesWritten(), errors.Fatal("no files/dirs saved, refusing to create empty snapshot")
 	}
 
 	// save index
-	err = arch.repo.SaveIndex(ctx)
+	bytesWritten, err = arch.repo.SaveIndex(ctx)
 	if err != nil {
 		debug.Log("error saving index: %v", err)
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, bytesWrittenSum + p.BytesWritten(), err
 	}
+	bytesWrittenSum += bytesWritten
 
 	debug.Log("saved indexes")
 
 	// save snapshot
-	id, err := arch.repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+	id, bytesWritten, err := arch.repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
 	if err != nil {
-		return nil, restic.ID{}, err
+		return nil, restic.ID{}, bytesWrittenSum + p.BytesWritten(), err
 	}
+	bytesWrittenSum += bytesWritten
 
 	debug.Log("saved snapshot %v", id.Str())
 
-	return sn, id, nil
+	return sn, id, bytesWrittenSum + p.BytesWritten(), nil
 }
 
 func isRegularFile(fi os.FileInfo) bool {

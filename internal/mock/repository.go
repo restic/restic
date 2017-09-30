@@ -27,17 +27,17 @@ type Repository struct {
 
 	FlushFn func() error
 
-	SaveUnpackedFn     func(restic.FileType, []byte) (restic.ID, error)
-	SaveJSONUnpackedFn func(restic.FileType, interface{}) (restic.ID, error)
+	SaveUnpackedFn     func(restic.FileType, []byte) (restic.ID, uint64, error)
+	SaveJSONUnpackedFn func(restic.FileType, interface{}) (restic.ID, uint64, error)
 
 	LoadJSONUnpackedFn func(restic.FileType, restic.ID, interface{}) error
 	LoadAndDecryptFn   func(restic.FileType, restic.ID) ([]byte, error)
 
 	LoadBlobFn func(restic.BlobType, restic.ID, []byte) (int, error)
-	SaveBlobFn func(restic.BlobType, []byte, restic.ID) (restic.ID, error)
+	SaveBlobFn func(restic.BlobType, []byte, restic.ID) (restic.ID, uint64, error)
 
 	LoadTreeFn func(restic.ID) (*restic.Tree, error)
-	SaveTreeFn func(t *restic.Tree) (restic.ID, error)
+	SaveTreeFn func(t *restic.Tree) (restic.ID, uint64, error)
 }
 
 // Backend is a stub method.
@@ -101,12 +101,12 @@ func (repo Repository) Flush() error {
 }
 
 // SaveUnpacked is a stub method.
-func (repo Repository) SaveUnpacked(t restic.FileType, buf []byte) (restic.ID, error) {
+func (repo Repository) SaveUnpacked(t restic.FileType, buf []byte) (restic.ID, uint64, error) {
 	return repo.SaveUnpackedFn(t, buf)
 }
 
 // SaveJSONUnpacked is a stub method.
-func (repo Repository) SaveJSONUnpacked(t restic.FileType, item interface{}) (restic.ID, error) {
+func (repo Repository) SaveJSONUnpacked(t restic.FileType, item interface{}) (restic.ID, uint64, error) {
 	return repo.SaveJSONUnpackedFn(t, item)
 }
 
@@ -126,7 +126,7 @@ func (repo Repository) LoadBlob(t restic.BlobType, id restic.ID, buf []byte) (in
 }
 
 // SaveBlob is a stub method.
-func (repo Repository) SaveBlob(t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
+func (repo Repository) SaveBlob(t restic.BlobType, buf []byte, id restic.ID) (restic.ID, uint64, error) {
 	return repo.SaveBlobFn(t, buf, id)
 }
 
@@ -136,6 +136,6 @@ func (repo Repository) LoadTree(id restic.ID) (*restic.Tree, error) {
 }
 
 // SaveTree is a stub method.
-func (repo Repository) SaveTree(t *restic.Tree) (restic.ID, error) {
+func (repo Repository) SaveTree(t *restic.Tree) (restic.ID, uint64, error) {
 	return repo.SaveTreeFn(t)
 }

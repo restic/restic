@@ -197,7 +197,8 @@ func (r *Repository) LookupBlobSize(id restic.ID, tpe restic.BlobType) (uint, er
 
 // SaveAndEncrypt encrypts data and stores it to the backend as type t. If data
 // is small enough, it will be packed together with other small blobs.
-func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id *restic.ID) (restic.ID, error) {
+func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data []byte, id *restic.ID) (restic.ID, uint64, error) {
+	var bytesWritten uint64
 	if id == nil {
 		// compute plaintext hash
 		hashedID := restic.Hash(data)
@@ -213,7 +214,7 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	// encrypt blob
 	ciphertext, err := r.Encrypt(ciphertext, data)
 	if err != nil {
-		return restic.ID{}, err
+		return restic.ID{}, bytesWritten, err
 	}
 
 	// find suitable packer and add blob
@@ -230,33 +231,35 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 
 	packer, err := pm.findPacker()
 	if err != nil {
-		return restic.ID{}, err
+		return restic.ID{}, bytesWritten, err
 	}
 
 	// save ciphertext
 	_, err = packer.Add(t, *id, ciphertext)
 	if err != nil {
-		return restic.ID{}, err
+		return restic.ID{}, bytesWritten, err
 	}
 
 	// if the pack is not full enough, put back to the list
 	if packer.Size() < minPackSize {
 		debug.Log("pack is not full enough (%d bytes)", packer.Size())
 		pm.insertPacker(packer)
-		return *id, nil
+		return *id, bytesWritten, nil
 	}
 
 	// else write the pack to the backend
-	return *id, r.savePacker(t, packer)
+	bytesWritten, err = r.savePacker(t, packer)
+	return *id, bytesWritten, err
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
 // backend as type t, without a pack. It returns the storage hash.
-func (r *Repository) SaveJSONUnpacked(ctx context.Context, t restic.FileType, item interface{}) (restic.ID, error) {
+func (r *Repository) SaveJSONUnpacked(ctx context.Context, t restic.FileType, item interface{}) (restic.ID, uint64, error) {
+	var bytesWritten uint64
 	debug.Log("save new blob %v", t)
 	plaintext, err := json.Marshal(item)
 	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "json.Marshal")
+		return restic.ID{}, bytesWritten, errors.Wrap(err, "json.Marshal")
 	}
 
 	return r.SaveUnpacked(ctx, t, plaintext)
@@ -264,11 +267,11 @@ func (r *Repository) SaveJSONUnpacked(ctx context.Context, t restic.FileType, it
 
 // SaveUnpacked encrypts data and stores it in the backend. Returned is the
 // storage hash.
-func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []byte) (id restic.ID, err error) {
+func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []byte) (id restic.ID, bytesWritten uint64, err error) {
 	ciphertext := restic.NewBlobBuffer(len(p))
 	ciphertext, err = r.Encrypt(ciphertext, p)
 	if err != nil {
-		return restic.ID{}, err
+		return restic.ID{}, bytesWritten, err
 	}
 
 	id = restic.Hash(ciphertext)
@@ -277,15 +280,15 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 	err = r.be.Save(ctx, h, bytes.NewReader(ciphertext))
 	if err != nil {
 		debug.Log("error saving blob %v: %v", h, err)
-		return restic.ID{}, err
+		return restic.ID{}, bytesWritten, err
 	}
 
 	debug.Log("blob %v saved", h)
-	return id, nil
+	return id, uint64(len(ciphertext)), nil
 }
 
 // Flush saves all remaining packs.
-func (r *Repository) Flush() error {
+func (r *Repository) Flush() (uint64, error) {
 	pms := []struct {
 		t  restic.BlobType
 		pm *packerManager
@@ -294,22 +297,24 @@ func (r *Repository) Flush() error {
 		{restic.TreeBlob, r.treePM},
 	}
 
+	var bytesWrittenTotal uint64
 	for _, p := range pms {
 		p.pm.pm.Lock()
 
 		debug.Log("manually flushing %d packs", len(p.pm.packers))
 		for _, packer := range p.pm.packers {
-			err := r.savePacker(p.t, packer)
+			bytesWritten, err := r.savePacker(p.t, packer)
+			bytesWrittenTotal += bytesWritten
 			if err != nil {
 				p.pm.pm.Unlock()
-				return err
+				return bytesWrittenTotal, err
 			}
 		}
 		p.pm.packers = p.pm.packers[:0]
 		p.pm.pm.Unlock()
 	}
 
-	return nil
+	return bytesWrittenTotal, nil
 }
 
 // Backend returns the backend for the repository.
@@ -328,40 +333,43 @@ func (r *Repository) SetIndex(i restic.Index) {
 }
 
 // SaveIndex saves an index in the repository.
-func SaveIndex(ctx context.Context, repo restic.Repository, index *Index) (restic.ID, error) {
+func SaveIndex(ctx context.Context, repo restic.Repository, index *Index) (restic.ID, uint64, error) {
+	var bytesWritten uint64
 	buf := bytes.NewBuffer(nil)
 
 	err := index.Finalize(buf)
 	if err != nil {
-		return restic.ID{}, err
+		return restic.ID{}, bytesWritten, err
 	}
 
 	return repo.SaveUnpacked(ctx, restic.IndexFile, buf.Bytes())
 }
 
 // saveIndex saves all indexes in the backend.
-func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) error {
+func (r *Repository) saveIndex(ctx context.Context, indexes ...*Index) (uint64, error) {
+	var bytesWrittenTotal uint64
 	for i, idx := range indexes {
 		debug.Log("Saving index %d", i)
 
-		sid, err := SaveIndex(ctx, r, idx)
+		sid, bytesWritten, err := SaveIndex(ctx, r, idx)
+		bytesWrittenTotal += bytesWritten
 		if err != nil {
-			return err
+			return bytesWrittenTotal, err
 		}
 
 		debug.Log("Saved index %d as %v", i, sid.Str())
 	}
 
-	return nil
+	return bytesWrittenTotal, nil
 }
 
 // SaveIndex saves all new indexes in the backend.
-func (r *Repository) SaveIndex(ctx context.Context) error {
+func (r *Repository) SaveIndex(ctx context.Context) (uint64, error) {
 	return r.saveIndex(ctx, r.idx.NotFinalIndexes()...)
 }
 
 // SaveFullIndex saves all full indexes in the backend.
-func (r *Repository) SaveFullIndex(ctx context.Context) error {
+func (r *Repository) SaveFullIndex(ctx context.Context) (uint64, error) {
 	return r.saveIndex(ctx, r.idx.FullIndexes()...)
 }
 
@@ -517,7 +525,7 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	r.treePM.key = key.master
 	r.keyName = key.Name()
 	r.cfg = cfg
-	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
+	_, _, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
 	return err
 }
 
@@ -629,7 +637,7 @@ func (r *Repository) LoadBlob(ctx context.Context, t restic.BlobType, id restic.
 
 // SaveBlob saves a blob of type t into the repository. If id is the null id, it
 // will be computed and returned.
-func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID) (restic.ID, error) {
+func (r *Repository) SaveBlob(ctx context.Context, t restic.BlobType, buf []byte, id restic.ID) (restic.ID, uint64, error) {
 	var i *restic.ID
 	if !id.IsNull() {
 		i = &id
@@ -667,10 +675,11 @@ func (r *Repository) LoadTree(ctx context.Context, id restic.ID) (*restic.Tree, 
 // SaveTree stores a tree into the repository and returns the ID. The ID is
 // checked against the index. The tree is only stored when the index does not
 // contain the ID.
-func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, error) {
+func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, uint64, error) {
+	var bytesWritten uint64
 	buf, err := json.Marshal(t)
 	if err != nil {
-		return restic.ID{}, errors.Wrap(err, "MarshalJSON")
+		return restic.ID{}, bytesWritten, errors.Wrap(err, "MarshalJSON")
 	}
 
 	// append a newline so that the data is always consistent (json.Encoder
@@ -679,9 +688,9 @@ func (r *Repository) SaveTree(ctx context.Context, t *restic.Tree) (restic.ID, e
 
 	id := restic.Hash(buf)
 	if r.idx.Has(id, restic.TreeBlob) {
-		return id, nil
+		return id, bytesWritten, nil
 	}
 
-	_, err = r.SaveBlob(ctx, restic.TreeBlob, buf, id)
-	return id, err
+	_, bytesWritten, err = r.SaveBlob(ctx, restic.TreeBlob, buf, id)
+	return id, bytesWritten, err
 }

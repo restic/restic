@@ -49,19 +49,19 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 			continue
 		}
 
-		_, err := repo.SaveBlob(context.TODO(), tpe, buf, id)
+		_, _, err := repo.SaveBlob(context.TODO(), tpe, buf, id)
 		if err != nil {
 			t.Fatalf("SaveFrom() error %v", err)
 		}
 
 		if rand.Float32() < 0.2 {
-			if err = repo.Flush(); err != nil {
+			if _, err = repo.Flush(); err != nil {
 				t.Fatalf("repo.Flush() returned error %v", err)
 			}
 		}
 	}
 
-	if err := repo.Flush(); err != nil {
+	if _, err := repo.Flush(); err != nil {
 		t.Fatalf("repo.Flush() returned error %v", err)
 	}
 }
@@ -142,7 +142,7 @@ func repack(t *testing.T, repo restic.Repository, packs restic.IDSet, blobs rest
 }
 
 func saveIndex(t *testing.T, repo restic.Repository) {
-	if err := repo.SaveIndex(context.TODO()); err != nil {
+	if _, err := repo.SaveIndex(context.TODO()); err != nil {
 		t.Fatalf("repo.SaveIndex() %v", err)
 	}
 }
@@ -164,7 +164,7 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 		}
 	}
 
-	_, err = idx.Save(context.TODO(), repo, nil)
+	_, _, err = idx.Save(context.TODO(), repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

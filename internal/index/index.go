@@ -254,7 +254,7 @@ func (idx *Index) FindBlob(h restic.BlobHandle) (result []Location, err error) {
 }
 
 // Save writes the complete index to the repo.
-func (idx *Index) Save(ctx context.Context, repo restic.Repository, supersedes restic.IDs) (restic.ID, error) {
+func (idx *Index) Save(ctx context.Context, repo restic.Repository, supersedes restic.IDs) (restic.ID, uint64, error) {
 	packs := make(map[restic.ID][]restic.Blob, len(idx.Packs))
 	for id, p := range idx.Packs {
 		packs[id] = p.Entries
@@ -264,7 +264,7 @@ func (idx *Index) Save(ctx context.Context, repo restic.Repository, supersedes r
 }
 
 // Save writes a new index containing the given packs.
-func Save(ctx context.Context, repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes restic.IDs) (restic.ID, error) {
+func Save(ctx context.Context, repo restic.Repository, packs map[restic.ID][]restic.Blob, supersedes restic.IDs) (restic.ID, uint64, error) {
 	idx := &indexJSON{
 		Supersedes: supersedes,
 		Packs:      make([]*packJSON, 0, len(packs)),

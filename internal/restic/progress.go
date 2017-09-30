@@ -35,12 +35,13 @@ type Progress struct {
 
 // Stat captures newly done parts of the operation.
 type Stat struct {
-	Files  uint64
-	Dirs   uint64
-	Bytes  uint64
-	Trees  uint64
-	Blobs  uint64
-	Errors uint64
+	Files        uint64
+	Dirs         uint64
+	Bytes        uint64
+	Trees        uint64
+	Blobs        uint64
+	BytesWritten uint64
+	Errors       uint64
 }
 
 // ProgressFunc is used to report progress back to the user.
@@ -194,6 +195,7 @@ func (s *Stat) Add(other Stat) {
 	s.Files += other.Files
 	s.Trees += other.Trees
 	s.Blobs += other.Blobs
+	s.BytesWritten += other.BytesWritten
 	s.Errors += other.Errors
 }
 
@@ -214,6 +216,15 @@ func (s Stat) String() string {
 		str = fmt.Sprintf("%dB", s.Bytes)
 	}
 
-	return fmt.Sprintf("Stat(%d files, %d dirs, %v trees, %v blobs, %d errors, %v)",
-		s.Files, s.Dirs, s.Trees, s.Blobs, s.Errors, str)
+	return fmt.Sprintf("Stat(%d files, %d dirs, %v trees, %v blobs, %d bytes written, %d errors, %v)",
+		s.Files, s.Dirs, s.Trees, s.Blobs, s.BytesWritten, s.Errors, str)
+}
+
+// BytesWritten returns the bytes written to the backend so far
+func (p *Progress) BytesWritten() uint64 {
+	if p == nil {
+		return 0
+	}
+
+	return p.cur.BytesWritten
 }

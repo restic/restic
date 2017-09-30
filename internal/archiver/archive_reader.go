@@ -55,7 +55,7 @@ func (r *Reader) Archive(ctx context.Context, name string, rd io.Reader, p *rest
 		id := restic.Hash(chunk.Data)
 
 		if !repo.Index().Has(id, restic.DataBlob) {
-			_, err := repo.SaveBlob(ctx, restic.DataBlob, chunk.Data, id)
+			_, _, err := repo.SaveBlob(ctx, restic.DataBlob, chunk.Data, id)
 			if err != nil {
 				return nil, restic.ID{}, err
 			}
@@ -89,26 +89,26 @@ func (r *Reader) Archive(ctx context.Context, name string, rd io.Reader, p *rest
 		},
 	}
 
-	treeID, err := repo.SaveTree(ctx, tree)
+	treeID, _, err := repo.SaveTree(ctx, tree)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
 	sn.Tree = &treeID
 	debug.Log("tree saved as %v", treeID.Str())
 
-	id, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
+	id, _, err := repo.SaveJSONUnpacked(ctx, restic.SnapshotFile, sn)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
 
 	debug.Log("snapshot saved as %v", id.Str())
 
-	err = repo.Flush()
+	_, err = repo.Flush()
 	if err != nil {
 		return nil, restic.ID{}, err
 	}
 
-	err = repo.SaveIndex(ctx)
+	_, err = repo.SaveIndex(ctx)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

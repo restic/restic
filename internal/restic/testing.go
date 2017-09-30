@@ -54,7 +54,7 @@ func (fs *fakeFileSystem) saveFile(ctx context.Context, rd io.Reader) (blobs IDs
 
 		id := Hash(chunk.Data)
 		if !fs.blobIsKnown(id, DataBlob) {
-			_, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id)
+			_, _, err := fs.repo.SaveBlob(ctx, DataBlob, chunk.Data, id)
 			if err != nil {
 				fs.t.Fatalf("error saving chunk: %v", err)
 			}
@@ -146,7 +146,7 @@ func (fs *fakeFileSystem) saveTree(ctx context.Context, seed int64, depth int) I
 		return id
 	}
 
-	_, err := fs.repo.SaveBlob(ctx, TreeBlob, buf, id)
+	_, _, err := fs.repo.SaveBlob(ctx, TreeBlob, buf, id)
 	if err != nil {
 		fs.t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 	treeID := fs.saveTree(context.TODO(), seed, depth)
 	snapshot.Tree = &treeID
 
-	id, err := repo.SaveJSONUnpacked(context.TODO(), SnapshotFile, snapshot)
+	id, _, err := repo.SaveJSONUnpacked(context.TODO(), SnapshotFile, snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,12 +189,12 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 
 	t.Logf("saved snapshot %v", id.Str())
 
-	err = repo.Flush()
+	_, err = repo.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = repo.SaveIndex(context.TODO())
+	_, err = repo.SaveIndex(context.TODO())
 	if err != nil {
 		t.Fatal(err)
 	}

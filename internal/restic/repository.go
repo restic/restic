@@ -18,8 +18,8 @@ type Repository interface {
 	SetIndex(Index)
 
 	Index() Index
-	SaveFullIndex(context.Context) error
-	SaveIndex(context.Context) error
+	SaveFullIndex(context.Context) (uint64, error)
+	SaveIndex(context.Context) (uint64, error)
 	LoadIndex(context.Context) error
 
 	Config() Config
@@ -29,19 +29,19 @@ type Repository interface {
 	List(context.Context, FileType) <-chan ID
 	ListPack(context.Context, ID) ([]Blob, int64, error)
 
-	Flush() error
+	Flush() (uint64, error)
 
-	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
-	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, error)
+	SaveUnpacked(context.Context, FileType, []byte) (ID, uint64, error)
+	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, uint64, error)
 
 	LoadJSONUnpacked(context.Context, FileType, ID, interface{}) error
 	LoadAndDecrypt(context.Context, FileType, ID) ([]byte, error)
 
 	LoadBlob(context.Context, BlobType, ID, []byte) (int, error)
-	SaveBlob(context.Context, BlobType, []byte, ID) (ID, error)
+	SaveBlob(context.Context, BlobType, []byte, ID) (ID, uint64, error)
 
 	LoadTree(context.Context, ID) (*Tree, error)
-	SaveTree(context.Context, *Tree) (ID, error)
+	SaveTree(context.Context, *Tree) (ID, uint64, error)
 }
 
 // Deleter removes all data stored in a backend/repo.

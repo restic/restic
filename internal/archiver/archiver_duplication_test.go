@@ -109,7 +109,7 @@ func testArchiverDuplication(t *testing.T) {
 
 				buf := make([]byte, 50)
 
-				err := arch.Save(context.TODO(), restic.DataBlob, buf, id)
+				_, err := arch.Save(context.TODO(), restic.DataBlob, buf, id)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -128,7 +128,7 @@ func testArchiverDuplication(t *testing.T) {
 			case <-done:
 				return
 			case <-ticker.C:
-				err := repo.SaveFullIndex(context.TODO())
+				_, err := repo.SaveFullIndex(context.TODO())
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -144,7 +144,7 @@ func testArchiverDuplication(t *testing.T) {
 
 	wg.Wait()
 
-	err = repo.Flush()
+	_, err = repo.Flush()
 	if err != nil {
 		t.Fatal(err)
 	}
