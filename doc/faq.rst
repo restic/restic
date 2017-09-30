@@ -33,9 +33,9 @@ How can I specify encryption passwords automatically?
 When you run ``restic backup``, you need to enter the passphrase on
 the console. This is not very convenient for automated backups, so you
 can also provide the password through the ``--password-file`` option, or one of
-the environment variables ``RESTIC_PASSWORD`` or ``RESTIC_PASSWORD_FILE``
-environment variables. A discussion is in progress over implementing unattended
-backups happens in :issue:`533`.
+the environment variables ``RESTIC_PASSWORD`` or ``RESTIC_PASSWORD_FILE``.
+A discussion is in progress over implementing unattended backups happens in
+:issue:`533`.
 
 .. important:: Be careful how you set the environment; using the env
                command, a `system()` call or using inline shell
@@ -90,3 +90,28 @@ scheduling algorithm to give it the least favorable niceness (19).
 
 The above example makes sure that the system the backup runs on
 is not slowed down, which is particularly useful for servers.
+
+Creating new repo on a Synology NAS via sftp fails
+--------------------------------------------------
+
+Sometimes creating a new restic repository on a Synology NAS via sftp fails
+with an error similar to the following:
+
+::
+
+    $ restic init -r sftp:user@nas:/volume1/restic-repo init
+    create backend at sftp:user@nas:/volume1/restic-repo/ failed:
+        mkdirAll(/volume1/restic-repo/index): unable to create directories: [...]
+
+Although you can log into the NAS via SSH and see that the directory structure
+is there.
+
+The reason for this behavior is that apparently Synology NAS expose a different
+directory structure via sftp, so the path that needs to be specified is
+different than the directory structure on the device and maybe even as exposed
+via other protocols.
+
+The following may work:
+
+::
+    $ restic init -r sftp:user@nas:/restic-repo init
