@@ -66,6 +66,26 @@ func NewSnapshotsDir(root *Root, inode uint64, snapshots restic.Snapshots) *Snap
 	return d
 }
 
+// NewSnapshotsIDSDir returns a new directory containing snapshots named by ids.
+func NewSnapshotsIDSDir(root *Root, inode uint64, snapshots restic.Snapshots) *SnapshotsDir {
+	debug.Log("create snapshots ids dir with %d snapshots, inode %d", len(snapshots), inode)
+	d := &SnapshotsDir{
+		root:      root,
+		inode:     inode,
+		snapshots: snapshots,
+		names:     make(map[string]*restic.Snapshot, len(snapshots)),
+	}
+
+	for _, sn := range snapshots {
+		name := sn.ID().Str()
+
+		d.names[name] = sn
+		debug.Log("  add snapshot %v", name)
+	}
+
+	return d
+}
+
 // Attr returns the attributes for the root node.
 func (d *SnapshotsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	attr.Inode = d.inode
