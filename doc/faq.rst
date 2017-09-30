@@ -33,9 +33,9 @@ How can I specify encryption passwords automatically?
 When you run ``restic backup``, you need to enter the passphrase on
 the console. This is not very convenient for automated backups, so you
 can also provide the password through the ``--password-file`` option, or one of
-the environment variables ``RESTIC_PASSWORD`` or ``RESTIC_PASSWORD_FILE``
-environment variables. A discussion is in progress over implementing unattended
-backups happens in :issue:`533`.
+the environment variables ``RESTIC_PASSWORD`` or ``RESTIC_PASSWORD_FILE``.
+A discussion is in progress over implementing unattended backups happens in
+:issue:`533`.
 
 .. important:: Be careful how you set the environment; using the env
                command, a `system()` call or using inline shell
