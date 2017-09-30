@@ -146,6 +146,11 @@ You can also specify a relative (read: no slash (``/``) character at the
 beginning) directory, in this case the dir is relative to the remote
 user's home directory.
 
+.. note:: Please be aware that sftp servers do not expand the tilde characte
+          (``~``) normally used as an alias for a user's home directory. If you
+          want to specify a path relative to the user's home directory, pass a
+          relative path to the sftp backend.
+
 The backend config string does not allow specifying a port. If you need
 to contact an sftp server on a different port, you can create an entry
 in the ``ssh`` file, usually located in your user's home directory at
