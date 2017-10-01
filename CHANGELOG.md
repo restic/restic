@@ -56,6 +56,12 @@ Small changes
    https://github.com/restic/restic/issues/1274
    https://github.com/restic/restic/pull/1282
 
+ * A bug was discovered in the library we're using to access Backblaze, it now
+   reuses already established TCP connections which should be a lot faster and
+   not cause network failures any more.
+   https://github.com/restic/restic/issues/1291
+   https://github.com/restic/restic/pull/1301
+
 Important Changes in 0.7.3
 ==========================
 
