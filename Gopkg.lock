@@ -10,14 +10,14 @@
 [[projects]]
   name = "cloud.google.com/go"
   packages = ["compute/metadata"]
-  revision = "5a9e19d4e1e41a734154e44a2132b358afb49a03"
-  version = "v0.13.0"
+  revision = "f6de2c509ed9d2af648c3c147207eaaf97149aed"
+  version = "v0.14.0"
 
 [[projects]]
   name = "github.com/Azure/azure-sdk-for-go"
   packages = ["storage"]
-  revision = "df4dd90d076ebbf6e87d08d3f00bfac8ff4bde1a"
-  version = "v10.3.1-beta"
+  revision = "2592daf71ab6b95dcfc7f7437ecc1afb9ddb7360"
+  version = "v11.0.0-beta"
 
 [[projects]]
   name = "github.com/Azure/go-autorest"
@@ -76,8 +76,8 @@
 [[projects]]
   name = "github.com/kurin/blazer"
   packages = ["b2","base","internal/b2types","internal/blog"]
-  revision = "1a870c3ee8b83e17d762307c6eae8f390ac3f4a0"
-  version = "v0.1.1"
+  revision = "cad56a04490fe20c43548d70a5a9af2be53ff14e"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -149,7 +149,7 @@
   branch = "master"
   name = "github.com/spf13/cobra"
   packages = [".","doc"]
-  revision = "b78744579491c1ceeaaa3b40205e56b0591b93a3"
+  revision = "e5f66de850af3302fbe378c8acded2b0fa55472c"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -161,31 +161,31 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["curve25519","ed25519","ed25519/internal/edwards25519","pbkdf2","poly1305","scrypt","ssh","ssh/terminal"]
-  revision = "7d9177d70076375b9a59c8fde23d52d9c4a7ecd5"
+  revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp"]
-  revision = "b60f3a92103dfd93dfcb900ec77c6d0643510868"
+  revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
   packages = [".","google","internal","jws","jwt"]
-  revision = "13449ad91cb26cb47661c1b080790392170385fd"
+  revision = "bb50c06baba3d0c76f9d125c0719093e315b5b44"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "b6e1ae21643682ce023deb8d152024597b0e9bb4"
+  revision = "314a259e304ff91bd6985da2a7149bbf91237993"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/api"
   packages = ["gensupport","googleapi","googleapi/internal/uritemplates","storage/v1"]
-  revision = "586095a6e4078caf0dc0b64f8545fa8679442013"
+  revision = "906273f42cdebd65de3a53f30dd9e23de1b55ba9"
 
 [[projects]]
   name = "google.golang.org/appengine"
@@ -202,6 +202,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "53e4779dc4c7de2cd8b195f13c215c24da5efc5e33acf584615b5c43bfefd2db"
+  inputs-digest = "2dcd9dd39ea4ddc31d36a6ed04dec261ab34484e350fba08a44f8cc5366d4d3f"
   solver-name = "gps-cdcl"
   solver-version = 1

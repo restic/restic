@@ -87,7 +87,7 @@ func (w *Writer) open() error {
 	w.opened = true
 
 	if w.ChunkSize < 0 {
-		return errors.New("storage: Writer.ChunkSize must non-negative")
+		return errors.New("storage: Writer.ChunkSize must be non-negative")
 	}
 	mediaOpts := []googleapi.MediaOption{
 		googleapi.ChunkSize(w.ChunkSize),
@@ -125,14 +125,21 @@ func (w *Writer) open() error {
 				call.UserProject(w.o.userProject)
 			}
 			setClientHeader(call.Header())
-			// We will only retry here if the initial POST, which obtains a URI for
-			// the resumable upload, fails with a retryable error. The upload itself
-			// has its own retry logic.
-			err = runWithRetry(w.ctx, func() error {
-				var err2 error
-				resp, err2 = call.Do()
-				return err2
-			})
+			// If the chunk size is zero, then no chunking is done on the Reader,
+			// which means we cannot retry: the first call will read the data, and if
+			// it fails, there is no way to re-read.
+			if w.ChunkSize == 0 {
+				resp, err = call.Do()
+			} else {
+				// We will only retry here if the initial POST, which obtains a URI for
+				// the resumable upload, fails with a retryable error. The upload itself
+				// has its own retry logic.
+				err = runWithRetry(w.ctx, func() error {
+					var err2 error
+					resp, err2 = call.Do()
+					return err2
+				})
+			}
 		}
 		if err != nil {
 			w.err = err

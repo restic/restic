@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/daUhnbBTIdWllhB4C_Sl3rPArXs\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/4coXG-kLdOLe0xqn_lc-mbxcObg\"",
  "discoveryVersion": "v1",
  "id": "deploymentmanager:v2",
  "name": "deploymentmanager",
  "canonicalName": "Deployment Manager",
  "version": "v2",
- "revision": "20170914",
+ "revision": "20170925",
  "title": "Google Cloud Deployment Manager API",
  "description": "Declares, configures, and deploys complex solutions on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -945,7 +945,7 @@
     },
     "conditions": {
      "type": "array",
-     "description": "Additional restrictions that must be met",
+     "description": "Additional restrictions that must be met. All conditions must pass for the rule to match.",
      "items": {
       "$ref": "Condition"
      }

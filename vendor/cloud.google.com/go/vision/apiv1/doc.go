@@ -14,14 +14,12 @@
 
 // AUTO-GENERATED CODE. DO NOT EDIT.
 
-// Package vision is an experimental, auto-generated package for the
+// Package vision is an auto-generated package for the
 // Google Cloud Vision API.
 //
 // Integrates Google Vision features, including image labeling, face, logo,
 // and landmark detection, optical character recognition (OCR), and detection
 // of explicit content, into applications.
-//
-// Use the client at cloud.google.com/go/vision in preference to this.
 package vision // import "cloud.google.com/go/vision/apiv1"
 
 import (

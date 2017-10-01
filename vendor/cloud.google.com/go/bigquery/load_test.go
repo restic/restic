@@ -25,7 +25,7 @@ import (
 
 func defaultLoadJob() *bq.Job {
 	return &bq.Job{
-		JobReference: &bq.JobReference{ProjectId: "client-project-id"},
+		JobReference: &bq.JobReference{JobId: "RANDOM", ProjectId: "client-project-id"},
 		Configuration: &bq.JobConfiguration{
 			Load: &bq.JobConfigurationLoad{
 				DestinationTable: &bq.TableReference{
@@ -67,6 +67,7 @@ func bqNestedFieldSchema() *bq.TableFieldSchema {
 }
 
 func TestLoad(t *testing.T) {
+	defer fixRandomJobID("RANDOM")()
 	c := &Client{projectID: "client-project-id"}
 
 	testCases := []struct {

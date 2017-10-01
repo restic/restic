@@ -57,7 +57,7 @@ func TestStorage(t *testing.T) {
 	ctx := context.Background()
 
 	// b2_authorize_account
-	b2, err := AuthorizeAccount(ctx, id, key)
+	b2, err := AuthorizeAccount(ctx, id, key, UserAgent("blazer-base-test"))
 	if err != nil {
 		t.Fatal(err)
 	}

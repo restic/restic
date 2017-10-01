@@ -15,6 +15,7 @@
 package b2
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -23,8 +24,6 @@ import (
 	"time"
 
 	"github.com/kurin/blazer/internal/blog"
-
-	"golang.org/x/net/context"
 )
 
 // Writer writes data into Backblaze.  It automatically switches to the large
@@ -75,6 +74,7 @@ type Writer struct {
 	file        beLargeFileInterface
 	seen        map[int]string
 	everStarted bool
+	newBuffer   func() (writeBuffer, error)
 
 	o    *Object
 	name string
@@ -94,15 +94,8 @@ type chunk struct {
 	buf writeBuffer
 }
 
-func (w *Writer) getBuffer() (writeBuffer, error) {
-	if !w.UseFileBuffer {
-		return newMemoryBuffer(), nil
-	}
-	return newFileBuffer(w.FileBufferDir)
-}
-
 func (w *Writer) setErr(err error) {
-	if err == nil {
+	if err == nil || err == io.EOF {
 		return
 	}
 	w.emux.Lock()
@@ -200,8 +193,7 @@ func (w *Writer) thread() {
 	}()
 }
 
-// Write satisfies the io.Writer interface.
-func (w *Writer) Write(p []byte) (int, error) {
+func (w *Writer) init() {
 	w.start.Do(func() {
 		w.everStarted = true
 		w.smux.Lock()
@@ -212,13 +204,24 @@ func (w *Writer) Write(p []byte) (int, error) {
 		if w.csize == 0 {
 			w.csize = 1e8
 		}
-		v, err := w.getBuffer()
+		if w.newBuffer == nil {
+			w.newBuffer = func() (writeBuffer, error) { return newMemoryBuffer(), nil }
+			if w.UseFileBuffer {
+				w.newBuffer = func() (writeBuffer, error) { return newFileBuffer(w.FileBufferDir) }
+			}
+		}
+		v, err := w.newBuffer()
 		if err != nil {
 			w.setErr(err)
 			return
 		}
 		w.w = v
 	})
+}
+
+// Write satisfies the io.Writer interface.
+func (w *Writer) Write(p []byte) (int, error) {
+	w.init()
 	if err := w.getErr(); err != nil {
 		return 0, err
 	}
@@ -263,7 +266,7 @@ redo:
 	f, err := ue.uploadFile(w.ctx, mr, int(w.w.Len()), w.name, ctype, sha1, w.info)
 	if err != nil {
 		if w.o.b.r.reupload(err) {
-			blog.V(1).Infof("b2 writer: %v; retrying", err)
+			blog.V(2).Infof("b2 writer: %v; retrying", err)
 			u, err := w.o.b.b.getUploadURL(w.ctx)
 			if err != nil {
 				return err
@@ -352,7 +355,7 @@ func (w *Writer) sendChunk() error {
 		return w.ctx.Err()
 	}
 	w.cidx++
-	v, err := w.getBuffer()
+	v, err := w.newBuffer()
 	if err != nil {
 		return err
 	}
@@ -360,15 +363,83 @@ func (w *Writer) sendChunk() error {
 	return nil
 }
 
+// ReadFrom reads all of r into w, returning the first error or no error if r
+// returns io.EOF.  If r is also an io.Seeker, ReadFrom will stream r directly
+// over the wire instead of buffering it locally.  This reduces memory usage.
+//
+// Do not issue multiple calls to ReadFrom, or mix ReadFrom and Write.  If you
+// have multiple readers you want to concatenate into the same B2 object, use
+// an io.MultiReader.
+//
+// Note that io.Copy will automatically choose to use ReadFrom.
+//
+// ReadFrom currently doesn't handle w.Resume; if w.Resume is true, ReadFrom
+// will act as if r is not an io.Seeker.
+func (w *Writer) ReadFrom(r io.Reader) (int64, error) {
+	rs, ok := r.(io.ReadSeeker)
+	if !ok || w.Resume {
+		return copyContext(w.ctx, w, r)
+	}
+	blog.V(2).Info("streaming without buffer")
+	size, err := rs.Seek(0, io.SeekEnd)
+	if err != nil {
+		return 0, err
+	}
+	var ra io.ReaderAt
+	if rat, ok := r.(io.ReaderAt); ok {
+		ra = rat
+	} else {
+		ra = enReaderAt(rs)
+	}
+	var offset int64
+	var wrote int64
+	w.newBuffer = func() (writeBuffer, error) {
+		left := size - offset
+		if left <= 0 {
+			// We're done sending real chunks; send empty chunks from now on so that
+			// Close() works.
+			w.newBuffer = func() (writeBuffer, error) { return newMemoryBuffer(), nil }
+			w.w = newMemoryBuffer()
+			return nil, io.EOF
+		}
+		csize := int64(w.csize)
+		if left < csize {
+			csize = left
+		}
+		nb := newNonBuffer(ra, offset, csize)
+		wrote += csize // TODO: this is kind of a total lie
+		offset += csize
+		return nb, nil
+	}
+	w.init()
+	if size < int64(w.csize) {
+		// the magic happens on w.Close()
+		return size, nil
+	}
+	for {
+		if err := w.sendChunk(); err != nil {
+			if err != io.EOF {
+				return wrote, err
+			}
+			return wrote, nil
+		}
+	}
+}
+
 // Close satisfies the io.Closer interface.  It is critical to check the return
-// value of Close on all writers.
+// value of Close for all writers.
 func (w *Writer) Close() error {
 	w.done.Do(func() {
 		if !w.everStarted {
 			return
 		}
 		defer w.o.b.c.removeWriter(w)
-		defer w.w.Close() // TODO: log error
+		defer func() {
+			if err := w.w.Close(); err != nil {
+				// this is non-fatal, but alarming
+				blog.V(1).Infof("close %s: %v", w.name, err)
+			}
+		}()
 		if w.cidx == 0 {
 			w.setErr(w.simpleWriteFile())
 			return
@@ -423,7 +494,7 @@ func (w *Writer) status() *WriterStatus {
 type meteredReader struct {
 	read int64
 	size int
-	r    io.ReadSeeker
+	r    readResetter
 	mux  sync.Mutex
 }
 
@@ -435,11 +506,11 @@ func (mr *meteredReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-func (mr *meteredReader) Seek(offset int64, whence int) (int64, error) {
+func (mr *meteredReader) Reset() error {
 	mr.mux.Lock()
 	defer mr.mux.Unlock()
-	mr.read = offset
-	return mr.r.Seek(offset, whence)
+	mr.read = 0
+	return mr.r.Reset()
 }
 
 func (mr *meteredReader) done() float64 {

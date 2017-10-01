@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/BU-bM3BCaK0APJI5VR6Pk7xHsLc\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/AIWw-yWxHTNchYNbx8LfngbqcZ8\"",
  "discoveryVersion": "v1",
  "id": "youtube:v3",
  "name": "youtube",
  "canonicalName": "YouTube",
  "version": "v3",
- "revision": "20170903",
+ "revision": "20170918",
  "title": "YouTube Data API",
  "description": "Supports core YouTube features, such as uploading videos, creating and managing playlists, searching for content, and much more.",
  "ownerDomain": "google.com",
@@ -3973,6 +3973,20 @@
     "enableLowLatency": {
      "type": "boolean",
      "description": "Indicates whether this broadcast has low latency enabled."
+    },
+    "latencyPreference": {
+     "type": "string",
+     "description": "If both this and enable_low_latency are set, they must match. LATENCY_NORMAL should match enable_low_latency=false LATENCY_LOW should match enable_low_latency=true LATENCY_ULTRA_LOW should have enable_low_latency omitted.",
+     "enum": [
+      "low",
+      "normal",
+      "ultraLow"
+     ],
+     "enumDescriptions": [
+      "",
+      "",
+      ""
+     ]
     },
     "mesh": {
      "type": "string",

@@ -30,10 +30,6 @@
   branch = "master"
 
 [[constraint]]
-  name = "github.com/kurin/blazer"
-  version = "0.1.0"
-
-[[constraint]]
   name = "github.com/minio/minio-go"
   version = "3.0.0"
 

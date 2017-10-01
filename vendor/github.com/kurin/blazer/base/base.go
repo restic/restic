@@ -23,6 +23,7 @@ package base
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -38,12 +39,11 @@ import (
 
 	"github.com/kurin/blazer/internal/b2types"
 	"github.com/kurin/blazer/internal/blog"
-
-	"golang.org/x/net/context"
 )
 
-var (
-	APIBase = "https://api.backblazeb2.com"
+const (
+	APIBase          = "https://api.backblazeb2.com"
+	DefaultUserAgent = "blazer/0.1.1"
 )
 
 type b2err struct {
@@ -218,6 +218,22 @@ type b2Options struct {
 	failSomeUploads bool
 	expireTokens    bool
 	capExceeded     bool
+	apiBase         string
+	userAgent       string
+}
+
+func (o *b2Options) getAPIBase() string {
+	if o.apiBase != "" {
+		return o.apiBase
+	}
+	return APIBase
+}
+
+func (o *b2Options) getUserAgent() string {
+	if o.userAgent != "" {
+		return fmt.Sprintf("%s %s", o.userAgent, DefaultUserAgent)
+	}
+	return DefaultUserAgent
 }
 
 func (o *b2Options) getTransport() http.RoundTripper {
@@ -281,6 +297,34 @@ func (rb *requestBody) getBody() io.Reader {
 	return rb.body
 }
 
+type keepFinalBytes struct {
+	r      io.Reader
+	remain int
+	sha    [40]byte
+}
+
+func (k *keepFinalBytes) Read(p []byte) (int, error) {
+	n, err := k.r.Read(p)
+	if k.remain-n > 40 {
+		k.remain -= n
+		return n, err
+	}
+	// This was a whole lot harder than it looks.
+	pi := -40 + k.remain
+	if pi < 0 {
+		pi = 0
+	}
+	pe := n
+	ki := 40 - k.remain
+	if ki < 0 {
+		ki = 0
+	}
+	ke := n - k.remain + 40
+	copy(k.sha[ki:ke], p[pi:pe])
+	k.remain -= n
+	return n, err
+}
+
 var reqID int64
 
 func (o *b2Options) makeRequest(ctx context.Context, method, verb, uri string, b2req, b2resp interface{}, headers map[string]string, body *requestBody) error {
@@ -307,6 +351,7 @@ func (o *b2Options) makeRequest(ctx context.Context, method, verb, uri string, b
 		}
 		req.Header.Set(k, v)
 	}
+	req.Header.Set("User-Agent", o.getUserAgent())
 	req.Header.Set("X-Blazer-Request-ID", fmt.Sprintf("%d", atomic.AddInt64(&reqID, 1)))
 	req.Header.Set("X-Blazer-Method", method)
 	if o.failSomeUploads {
@@ -372,7 +417,7 @@ func AuthorizeAccount(ctx context.Context, account, key string, opts ...AuthOpti
 	for _, f := range opts {
 		f(b2opts)
 	}
-	if err := b2opts.makeRequest(ctx, "b2_authorize_account", "GET", APIBase+b2types.V1api+"b2_authorize_account", nil, b2resp, headers, nil); err != nil {
+	if err := b2opts.makeRequest(ctx, "b2_authorize_account", "GET", b2opts.getAPIBase()+b2types.V1api+"b2_authorize_account", nil, b2resp, headers, nil); err != nil {
 		return nil, err
 	}
 	return &B2{
@@ -387,6 +432,19 @@ func AuthorizeAccount(ctx context.Context, account, key string, opts ...AuthOpti
 
 // An AuthOption allows callers to choose per-session settings.
 type AuthOption func(*b2Options)
+
+// UserAgent sets the User-Agent HTTP header.  The default header is
+// "blazer/<version>"; the value set here will be prepended to that.  This can
+// be set multiple times.
+func UserAgent(agent string) AuthOption {
+	return func(o *b2Options) {
+		if o.userAgent == "" {
+			o.userAgent = agent
+			return
+		}
+		o.userAgent = fmt.Sprintf("%s %s", agent, o.userAgent)
+	}
+}
 
 // Transport returns an AuthOption that sets the underlying HTTP mechanism.
 func Transport(rt http.RoundTripper) AuthOption {
@@ -817,10 +875,16 @@ func (fc *FileChunk) UploadPart(ctx context.Context, r io.Reader, sha1 string, s
 		"Content-Length":    fmt.Sprintf("%d", size),
 		"X-Bz-Content-Sha1": sha1,
 	}
+	if sha1 == "hex_digits_at_end" {
+		r = &keepFinalBytes{r: r, remain: size}
+	}
 	if err := fc.file.b2.opts.makeRequest(ctx, "b2_upload_part", "POST", fc.url, nil, nil, headers, &requestBody{body: r, size: int64(size)}); err != nil {
 		return 0, err
 	}
 	fc.file.mu.Lock()
+	if sha1 == "hex_digits_at_end" {
+		sha1 = string(r.(*keepFinalBytes).sha[:])
+	}
 	fc.file.hashes[index] = sha1
 	fc.file.size += int64(size)
 	fc.file.mu.Unlock()
@@ -1003,35 +1067,36 @@ func (b *Bucket) DownloadFileByName(ctx context.Context, name string, offset, si
 	resp := reply.resp
 	logResponse(resp, nil)
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
+		defer resp.Body.Close()
 		return nil, mkErr(resp)
 	}
-	clen, err := strconv.ParseInt(reply.resp.Header.Get("Content-Length"), 10, 64)
+	clen, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
 	if err != nil {
-		reply.resp.Body.Close()
+		resp.Body.Close()
 		return nil, err
 	}
 	info := make(map[string]string)
-	for key := range reply.resp.Header {
+	for key := range resp.Header {
 		if !strings.HasPrefix(key, "X-Bz-Info-") {
 			continue
 		}
 		name, err := unescape(strings.TrimPrefix(key, "X-Bz-Info-"))
 		if err != nil {
-			reply.resp.Body.Close()
+			resp.Body.Close()
 			return nil, err
 		}
-		val, err := unescape(reply.resp.Header.Get(key))
+		val, err := unescape(resp.Header.Get(key))
 		if err != nil {
-			reply.resp.Body.Close()
+			resp.Body.Close()
 			return nil, err
 		}
 		info[name] = val
 	}
 	return &FileReader{
-		ReadCloser:    reply.resp.Body,
-		SHA1:          reply.resp.Header.Get("X-Bz-Content-Sha1"),
-		ID:            reply.resp.Header.Get("X-Bz-File-Id"),
-		ContentType:   reply.resp.Header.Get("Content-Type"),
+		ReadCloser:    resp.Body,
+		SHA1:          resp.Header.Get("X-Bz-Content-Sha1"),
+		ID:            resp.Header.Get("X-Bz-File-Id"),
+		ContentType:   resp.Header.Get("Content-Type"),
 		ContentLength: int(clen),
 		Info:          info,
 	}, nil

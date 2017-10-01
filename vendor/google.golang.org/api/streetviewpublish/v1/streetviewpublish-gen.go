@@ -541,8 +541,8 @@ type Photo struct {
 	ThumbnailUrl string `json:"thumbnailUrl,omitempty"`
 
 	// UploadReference: Required when creating a photo. Input only. The
-	// resource URL where the photo
-	// bytes are uploaded to.
+	// resource URL where the
+	// photo bytes are uploaded to.
 	UploadReference *UploadRef `json:"uploadReference,omitempty"`
 
 	// ViewCount: Output only. View count of the photo.
@@ -644,7 +644,7 @@ func (s *PhotoResponse) MarshalJSON() ([]byte, error) {
 
 // Place: Place metadata for an entity.
 type Place struct {
-	// PlaceId: Required. Place identifier, as described
+	// PlaceId: Place identifier, as described
 	// in
 	// https://developers.google.com/places/place-id.
 	PlaceId string `json:"placeId,omitempty"`
@@ -996,6 +996,18 @@ type PhotoCreateCall struct {
 // publishes the uploaded Photo to
 // Street View on Google Maps.
 //
+// Currently, the only way to set heading, pitch, and roll in
+// CreatePhoto is
+// through the [Photo Sphere
+// XMP
+// metadata](https://developers.google.com/streetview/spherical-metad
+// ata) in
+// the photo bytes. The `pose.heading`, `pose.pitch`,
+// `pose.roll`,
+// `pose.altitude`, and `pose.level` fields in Pose are ignored
+// for
+// CreatePhoto.
+//
 // This method returns the following error codes:
 //
 // * google.rpc.Code.INVALID_ARGUMENT if the request is malformed.
@@ -1092,7 +1104,7 @@ func (c *PhotoCreateCall) Do(opts ...googleapi.CallOption) (*Photo, error) {
 	}
 	return ret, nil
 	// {
-	//   "description": "After the client finishes uploading the photo with the returned\nUploadRef,\nCreatePhoto\npublishes the uploaded Photo to\nStreet View on Google Maps.\n\nThis method returns the following error codes:\n\n* google.rpc.Code.INVALID_ARGUMENT if the request is malformed.\n* google.rpc.Code.NOT_FOUND if the upload reference does not exist.\n* google.rpc.Code.RESOURCE_EXHAUSTED if the account has reached the\nstorage limit.",
+	//   "description": "After the client finishes uploading the photo with the returned\nUploadRef,\nCreatePhoto\npublishes the uploaded Photo to\nStreet View on Google Maps.\n\nCurrently, the only way to set heading, pitch, and roll in CreatePhoto is\nthrough the [Photo Sphere XMP\nmetadata](https://developers.google.com/streetview/spherical-metadata) in\nthe photo bytes. The `pose.heading`, `pose.pitch`, `pose.roll`,\n`pose.altitude`, and `pose.level` fields in Pose are ignored for\nCreatePhoto.\n\nThis method returns the following error codes:\n\n* google.rpc.Code.INVALID_ARGUMENT if the request is malformed.\n* google.rpc.Code.NOT_FOUND if the upload reference does not exist.\n* google.rpc.Code.RESOURCE_EXHAUSTED if the account has reached the\nstorage limit.",
 	//   "flatPath": "v1/photo",
 	//   "httpMethod": "POST",
 	//   "id": "streetviewpublish.photo.create",
@@ -2246,6 +2258,8 @@ func (r *PhotosService) List() *PhotosListCall {
 
 // Filter sets the optional parameter "filter": The filter expression.
 // For example: `placeId=ChIJj61dQgK6j4AR4GeTYWZsKWw`.
+//
+// The only filter supported at the moment is `placeId`.
 func (c *PhotosListCall) Filter(filter string) *PhotosListCall {
 	c.urlParams_.Set("filter", filter)
 	return c
@@ -2386,7 +2400,7 @@ func (c *PhotosListCall) Do(opts ...googleapi.CallOption) (*ListPhotosResponse, 
 	//   "parameterOrder": [],
 	//   "parameters": {
 	//     "filter": {
-	//       "description": "The filter expression. For example: `placeId=ChIJj61dQgK6j4AR4GeTYWZsKWw`.",
+	//       "description": "The filter expression. For example: `placeId=ChIJj61dQgK6j4AR4GeTYWZsKWw`.\n\nThe only filter supported at the moment is `placeId`.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },

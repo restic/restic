@@ -385,6 +385,7 @@ type Command struct {
 	// again until the user has entered it.
 	//   "DO_NOT_ASK_CREDENTIALS_ON_BOOT" - Don't ask for user credentials
 	// on device boot.
+	//   "LOCK_NOW" - Lock the device after password reset.
 	ResetPasswordFlags []string `json:"resetPasswordFlags,omitempty"`
 
 	// Type: The type of the command.
@@ -1370,8 +1371,8 @@ type NonComplianceDetail struct {
 	FieldPath string `json:"fieldPath,omitempty"`
 
 	// InstallationFailureReason: If package_name is set and the
-	// non-compliance reason is APP_NOT_INSTALLED, the detailed reason the
-	// app cannot be installed.
+	// non-compliance reason is APP_NOT_INSTALLED or APP_NOT_UPDATED, the
+	// detailed reason the app cannot be installed or updated.
 	//
 	// Possible values:
 	//   "INSTALLATION_FAILURE_REASON_UNSPECIFIED" - This value is

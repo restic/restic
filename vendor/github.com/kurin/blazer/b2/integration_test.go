@@ -16,6 +16,7 @@ package b2
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha1"
 	"fmt"
 	"io"
@@ -23,10 +24,9 @@ import (
 	"os"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 const (
@@ -79,6 +79,86 @@ func TestReadWriteLive(t *testing.T) {
 	}
 }
 
+func TestReaderFromLive(t *testing.T) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+
+	bucket, done := startLiveTest(ctx, t)
+	defer done()
+
+	table := []struct {
+		size, pos      int64
+		csize, writers int
+	}{
+		{
+			// that it works at all
+			size: 10,
+		},
+		{
+			// large uploads
+			size:    15e6 + 10,
+			csize:   5e6,
+			writers: 2,
+		},
+		{
+			// an excess of writers
+			size:    50e6,
+			csize:   5e6,
+			writers: 12,
+		},
+		{
+			// with offset, seeks back to start after turning it into a ReaderAt
+			size: 250,
+			pos:  50,
+		},
+	}
+
+	for i, e := range table {
+		rs := &zReadSeeker{pos: e.pos, size: e.size}
+		o := bucket.Object(fmt.Sprintf("writer.%d", i))
+		w := o.NewWriter(ctx)
+		w.ChunkSize = e.csize
+		w.ConcurrentUploads = e.writers
+		n, err := w.ReadFrom(rs)
+		if err != nil {
+			t.Errorf("ReadFrom(): %v", err)
+		}
+		if n != e.size {
+			t.Errorf("ReadFrom(): got %d bytes, wanted %d bytes", n, e.size)
+		}
+		if err := w.Close(); err != nil {
+			t.Errorf("w.Close(): %v", err)
+			continue
+		}
+
+		r := o.NewReader(ctx)
+		h := sha1.New()
+		rn, err := io.Copy(h, r)
+		if err != nil {
+			t.Errorf("Read from B2: %v", err)
+		}
+		if rn != n {
+			t.Errorf("Read from B2: got %d bytes, want %d bytes", rn, n)
+		}
+		if err := r.Close(); err != nil {
+			t.Errorf("r.Close(): %v", err)
+		}
+
+		hex := fmt.Sprintf("%x", h.Sum(nil))
+		attrs, err := o.Attrs(ctx)
+		if err != nil {
+			t.Errorf("Attrs(): %v", err)
+			continue
+		}
+		if attrs.SHA1 == "none" {
+			continue
+		}
+		if hex != attrs.SHA1 {
+			t.Errorf("SHA1: got %q, want %q", hex, attrs.SHA1)
+		}
+	}
+}
 func TestHideShowLive(t *testing.T) {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
@@ -200,7 +280,6 @@ func TestResumeWriter(t *testing.T) {
 }
 
 func TestAttrs(t *testing.T) {
-	// TODO: test is flaky
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
@@ -765,6 +844,74 @@ func listObjects(ctx context.Context, f func(context.Context, int, *Cursor) ([]*
 
 var transport = http.DefaultTransport
 
+type eofTripper struct {
+	rt http.RoundTripper
+	t  *testing.T
+}
+
+func (et eofTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := et.rt.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	resp.Body = &eofReadCloser{rc: resp.Body, t: et.t}
+	return resp, nil
+}
+
+type eofReadCloser struct {
+	rc  io.ReadCloser
+	eof bool
+	t   *testing.T
+}
+
+func (eof *eofReadCloser) Read(p []byte) (int, error) {
+	n, err := eof.rc.Read(p)
+	if err == io.EOF {
+		eof.eof = true
+	}
+	return n, err
+}
+
+func (eof *eofReadCloser) Close() error {
+	if !eof.eof {
+		eof.t.Error("http body closed with bytes unread")
+	}
+	return eof.rc.Close()
+}
+
+// Checks that close is called.
+type ccTripper struct {
+	t     *testing.T
+	rt    http.RoundTripper
+	trips int64
+}
+
+func (cc *ccTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := cc.rt.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+	atomic.AddInt64(&cc.trips, 1)
+	resp.Body = &ccRC{ReadCloser: resp.Body, c: &cc.trips}
+	return resp, err
+}
+
+func (cc *ccTripper) done() {
+	if cc.trips != 0 {
+		cc.t.Errorf("failed to close %d HTTP bodies", cc.trips)
+	}
+}
+
+type ccRC struct {
+	io.ReadCloser
+	c *int64
+}
+
+func (cc *ccRC) Close() error {
+	atomic.AddInt64(cc.c, -1)
+	return cc.ReadCloser.Close()
+}
+
 func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 	id := os.Getenv(apiID)
 	key := os.Getenv(apiKey)
@@ -772,7 +919,9 @@ func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 		t.Skipf("B2_ACCOUNT_ID or B2_SECRET_KEY unset; skipping integration tests")
 		return nil, nil
 	}
-	client, err := NewClient(ctx, id, key, FailSomeUploads(), ExpireSomeAuthTokens(), Transport(transport))
+	ccport := &ccTripper{rt: transport, t: t}
+	tport := eofTripper{rt: ccport, t: t}
+	client, err := NewClient(ctx, id, key, FailSomeUploads(), ExpireSomeAuthTokens(), Transport(tport), UserAgent("b2-test"), UserAgent("integration-test"))
 	if err != nil {
 		t.Fatal(err)
 		return nil, nil
@@ -783,6 +932,7 @@ func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 		return nil, nil
 	}
 	f := func() {
+		defer ccport.done()
 		for c := range listObjects(ctx, bucket.ListObjects) {
 			if c.err != nil {
 				continue

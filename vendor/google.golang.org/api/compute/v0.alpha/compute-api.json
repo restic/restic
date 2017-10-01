@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/CwN9bOpaV-xhJ_YHqke_sIbhsB0\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/3cMXWrWKedeDcxyJugoWfBBTcik\"",
  "discoveryVersion": "v1",
  "id": "compute:alpha",
  "name": "compute",
  "version": "alpha",
- "revision": "20170905",
+ "revision": "20170908",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -504,7 +504,7 @@
    "properties": {
     "address": {
      "type": "string",
-     "description": "The static external IP address represented by this resource."
+     "description": "The static IP address represented by this resource."
     },
     "addressType": {
      "type": "string",
@@ -1941,6 +1941,10 @@
      "description": "Lifetime of cookies in seconds if session_affinity is GENERATED_COOKIE. If set to 0, the cookie is non-persistent and lasts only until the end of the browser session (or equivalent). The maximum allowed value for TTL is one day.\n\nWhen the load balancing scheme is INTERNAL, this field is not used.",
      "format": "int32"
     },
+    "appEngineBackend": {
+     "$ref": "BackendServiceAppEngineBackend",
+     "description": "Directs request to an App Engine app. cloudFunctionBackend and backends[] must be empty if this is set."
+    },
     "backends": {
      "type": "array",
      "description": "The list of backends that serve this BackendService.",
@@ -1951,6 +1955,10 @@
     "cdnPolicy": {
      "$ref": "BackendServiceCdnPolicy",
      "description": "Cloud CDN configuration for this BackendService."
+    },
+    "cloudFunctionBackend": {
+     "$ref": "BackendServiceCloudFunctionBackend",
+     "description": "Directs request to a cloud function. appEngineBackend and backends[] must be empty if this is set."
     },
     "connectionDraining": {
      "$ref": "ConnectionDraining"
@@ -2188,6 +2196,25 @@
     }
    }
   },
+  "BackendServiceAppEngineBackend": {
+   "id": "BackendServiceAppEngineBackend",
+   "type": "object",
+   "description": "Configuration of a App Engine backend.",
+   "properties": {
+    "appEngineService": {
+     "type": "string",
+     "description": "Optional. App Engine app service name."
+    },
+    "targetProject": {
+     "type": "string",
+     "description": "Required. Project ID of the project hosting the app. This is the project ID of this project. Reference to another project is not allowed."
+    },
+    "version": {
+     "type": "string",
+     "description": "Optional. Version of App Engine app service. When empty, App Engine will do its normal traffic split."
+    }
+   }
+  },
   "BackendServiceCdnPolicy": {
    "id": "BackendServiceCdnPolicy",
    "type": "object",
@@ -2208,6 +2235,21 @@
      "items": {
       "type": "string"
      }
+    }
+   }
+  },
+  "BackendServiceCloudFunctionBackend": {
+   "id": "BackendServiceCloudFunctionBackend",
+   "type": "object",
+   "description": "Configuration of a Cloud Function backend.",
+   "properties": {
+    "functionName": {
+     "type": "string",
+     "description": "Required. A cloud function name. Special value ?*? represents all cloud functions in the project."
+    },
+    "targetProject": {
+     "type": "string",
+     "description": "Required. Project ID of the project hosting the cloud function."
     }
    }
   },
@@ -4688,7 +4730,7 @@
    "properties": {
     "type": {
      "type": "string",
-     "description": "The type of supported feature. Currently only VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image. This value is purely informational and does not enable or disable any features.",
+     "description": "The type of supported feature. Currently only VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image.",
      "enum": [
       "FEATURE_TYPE_UNSPECIFIED",
       "MULTI_IP_SUBNET",
@@ -6227,7 +6269,7 @@
     },
     "guestOsFeatures": {
      "type": "array",
-     "description": "A list of features to enable on the guest OS. Applicable for bootable images only. Currently, only one feature can be enabled, VIRTIO_SCSI_MULTIQUEUE, which allows each virtual CPU to have its own queue. For Windows images, you can only enable VIRTIO_SCSI_MULTIQUEUE on images with driver version 1.2.0.1621 or higher. Linux images with kernel versions 3.17 and higher will support VIRTIO_SCSI_MULTIQUEUE.\n\nFor new Windows images, the server might also populate this field with the value WINDOWS, to indicate that this is a Windows image. This value is purely informational and does not enable or disable any features.",
+     "description": "A list of features to enable on the guest OS. Applicable for bootable images only. Currently, only one feature can be enabled, VIRTIO_SCSI_MULTIQUEUE, which allows each virtual CPU to have its own queue. For Windows images, you can only enable VIRTIO_SCSI_MULTIQUEUE on images with driver version 1.2.0.1621 or higher. Linux images with kernel versions 3.17 and higher will support VIRTIO_SCSI_MULTIQUEUE.\n\nFor newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image.",
      "items": {
       "$ref": "GuestOsFeature"
      }
@@ -15171,7 +15213,7 @@
     },
     "storageBytes": {
      "type": "string",
-     "description": "[Output Only] A size of the the storage used by the snapshot. As snapshots share storage, this number is expected to change with snapshot creation/deletion.",
+     "description": "[Output Only] A size of the storage used by the snapshot. As snapshots share storage, this number is expected to change with snapshot creation/deletion.",
      "format": "int64"
     },
     "storageBytesStatus": {
@@ -29021,6 +29063,113 @@
      ],
      "response": {
       "$ref": "LicenseCode"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "getIamPolicy": {
+     "id": "compute.licenseCodes.getIamPolicy",
+     "path": "{project}/global/licenseCodes/{resource}/getIamPolicy",
+     "httpMethod": "GET",
+     "description": "Gets the access control policy for a resource. May be empty if no such policy or resource exists.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "[a-z0-9](?:[-a-z0-9_]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "resource"
+     ],
+     "response": {
+      "$ref": "Policy"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/compute.readonly"
+     ]
+    },
+    "setIamPolicy": {
+     "id": "compute.licenseCodes.setIamPolicy",
+     "path": "{project}/global/licenseCodes/{resource}/setIamPolicy",
+     "httpMethod": "POST",
+     "description": "Sets the access control policy on the specified resource. Replaces any existing policy.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "[a-z0-9](?:[-a-z0-9_]{0,61}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "resource"
+     ],
+     "request": {
+      "$ref": "Policy"
+     },
+     "response": {
+      "$ref": "Policy"
+     },
+     "scopes": [
+      "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/compute"
+     ]
+    },
+    "testIamPermissions": {
+     "id": "compute.licenseCodes.testIamPermissions",
+     "path": "{project}/global/licenseCodes/{resource}/testIamPermissions",
+     "httpMethod": "POST",
+     "description": "Returns permissions that a caller has on the specified resource.",
+     "parameters": {
+      "project": {
+       "type": "string",
+       "description": "Project ID for this request.",
+       "required": true,
+       "pattern": "(?:(?:[-a-z0-9]{1,63}\\.)*(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?):)?(?:[0-9]{1,19}|(?:[a-z0-9](?:[-a-z0-9]{0,61}[a-z0-9])?))",
+       "location": "path"
+      },
+      "resource": {
+       "type": "string",
+       "description": "Name of the resource for this request.",
+       "required": true,
+       "pattern": "(?:[-a-z0-9_]{0,62}[a-z0-9])?",
+       "location": "path"
+      }
+     },
+     "parameterOrder": [
+      "project",
+      "resource"
+     ],
+     "request": {
+      "$ref": "TestPermissionsRequest"
+     },
+     "response": {
+      "$ref": "TestPermissionsResponse"
      },
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",

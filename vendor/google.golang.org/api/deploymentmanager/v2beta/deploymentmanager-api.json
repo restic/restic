@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/pNhnika0vHNoLBFUO60LmseDNyE\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/fjbnlFC4GTEIX5zCJ4_9R1qQWCw\"",
  "discoveryVersion": "v1",
  "id": "deploymentmanager:v2beta",
  "name": "deploymentmanager",
  "canonicalName": "Deployment Manager V2Beta",
  "version": "v2beta",
- "revision": "20170914",
+ "revision": "20170925",
  "title": "Google Cloud Deployment Manager API V2Beta Methods",
  "description": "The Deployment Manager API allows users to declaratively configure, deploy and run complex solutions on the Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -1139,7 +1139,7 @@
     },
     "conditions": {
      "type": "array",
-     "description": "Additional restrictions that must be met",
+     "description": "Additional restrictions that must be met. All conditions must pass for the rule to match.",
      "items": {
       "$ref": "Condition"
      }

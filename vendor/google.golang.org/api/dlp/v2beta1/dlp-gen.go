@@ -1025,50 +1025,7 @@ type GooglePrivacyDlpV2beta1CreateInspectOperationRequest struct {
 	// operations.
 	OperationConfig *GooglePrivacyDlpV2beta1OperationConfig `json:"operationConfig,omitempty"`
 
-	// OutputConfig: Optional location to store findings. The bucket must
-	// already exist and
-	// the Google APIs service account for DLP must have write permission
-	// to
-	// write to the given bucket.
-	// Results are split over multiple csv files with each file name
-	// matching
-	// the pattern "[operation_id]_[count].csv", for
-	// example
-	// `3094877188788974909_1.csv`. The `operation_id` matches
-	// the
-	// identifier for the Operation, and the `count` is a counter used
-	// for
-	// tracking the number of files written.
-	//
-	// The CSV file(s) contain the following columns regardless of storage
-	// type
-	// scanned:
-	// - id
-	// - info_type
-	// - likelihood
-	// - byte size of finding
-	// - quote
-	// - timestamp
-	//
-	// For Cloud Storage the next columns are:
-	//
-	// - file_path
-	// - start_offset
-	//
-	// For Cloud Datastore the next columns are:
-	//
-	// - project_id
-	// - namespace_id
-	// - path
-	// - column_name
-	// - offset
-	//
-	// For BigQuery the next columns are:
-	//
-	// - row_number
-	// - project_id
-	// - dataset_id
-	// - table_id
+	// OutputConfig: Optional location to store findings.
 	OutputConfig *GooglePrivacyDlpV2beta1OutputStorageConfig `json:"outputConfig,omitempty"`
 
 	// StorageConfig: Specification of the data set to process.
@@ -1170,7 +1127,8 @@ func (s *GooglePrivacyDlpV2beta1CryptoKey) MarshalJSON() ([]byte, error) {
 // GooglePrivacyDlpV2beta1CryptoReplaceFfxFpeConfig: Replaces an
 // identifier with an surrogate using FPE with the FFX
 // mode of operation.
-// The identifier must be encoded as ASCII.
+// The identifier must be representable by the US-ASCII character
+// set.
 // For a given crypto key and context, the same identifier will
 // be
 // replaced with the same surrogate.
@@ -3031,6 +2989,49 @@ func (s *GooglePrivacyDlpV2beta1OperationConfig) MarshalJSON() ([]byte, error) {
 type GooglePrivacyDlpV2beta1OutputStorageConfig struct {
 	// StoragePath: The path to a Google Cloud Storage location to store
 	// output.
+	// The bucket must already exist and
+	// the Google APIs service account for DLP must have write permission
+	// to
+	// write to the given bucket.
+	// Results are split over multiple csv files with each file name
+	// matching
+	// the pattern "[operation_id]_[count].csv", for
+	// example
+	// `3094877188788974909_1.csv`. The `operation_id` matches
+	// the
+	// identifier for the Operation, and the `count` is a counter used
+	// for
+	// tracking the number of files written.
+	//
+	// The CSV file(s) contain the following columns regardless of storage
+	// type
+	// scanned:
+	// - id
+	// - info_type
+	// - likelihood
+	// - byte size of finding
+	// - quote
+	// - timestamp
+	//
+	// For Cloud Storage the next columns are:
+	//
+	// - file_path
+	// - start_offset
+	//
+	// For Cloud Datastore the next columns are:
+	//
+	// - project_id
+	// - namespace_id
+	// - path
+	// - column_name
+	// - offset
+	//
+	// For BigQuery the next columns are:
+	//
+	// - row_number
+	// - project_id
+	// - dataset_id
+	// - table_id
 	StoragePath *GooglePrivacyDlpV2beta1CloudStoragePath `json:"storagePath,omitempty"`
 
 	// Table: Store findings in a new table in the dataset.

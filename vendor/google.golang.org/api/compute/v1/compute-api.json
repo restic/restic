@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/bvUbOBPnfuX4gDZ5aBr7PZU4ZJM\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/cngOjaowRI92cKIanqfdVBHzE7E\"",
  "discoveryVersion": "v1",
  "id": "compute:v1",
  "name": "compute",
  "version": "v1",
- "revision": "20170905",
+ "revision": "20170908",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -20,7 +20,7 @@
  "basePath": "/compute/v1/projects/",
  "rootUrl": "https://www.googleapis.com/",
  "servicePath": "compute/v1/projects/",
- "batchPath": "batch",
+ "batchPath": "batch/compute/v1",
  "parameters": {
   "alt": {
    "type": "string",
@@ -336,7 +336,7 @@
    "properties": {
     "address": {
      "type": "string",
-     "description": "The static external IP address represented by this resource."
+     "description": "The static IP address represented by this resource."
     },
     "creationTimestamp": {
      "type": "string",
@@ -2805,7 +2805,7 @@
    "properties": {
     "type": {
      "type": "string",
-     "description": "The type of supported feature. Currently only VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image. This value is purely informational and does not enable or disable any features.",
+     "description": "The type of supported feature. Currently only VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image.",
      "enum": [
       "FEATURE_TYPE_UNSPECIFIED",
       "VIRTIO_SCSI_MULTIQUEUE",
@@ -3296,7 +3296,7 @@
     },
     "guestOsFeatures": {
      "type": "array",
-     "description": "A list of features to enable on the guest OS. Applicable for bootable images only. Currently, only one feature can be enabled, VIRTIO_SCSI_MULTIQUEUE, which allows each virtual CPU to have its own queue. For Windows images, you can only enable VIRTIO_SCSI_MULTIQUEUE on images with driver version 1.2.0.1621 or higher. Linux images with kernel versions 3.17 and higher will support VIRTIO_SCSI_MULTIQUEUE.\n\nFor new Windows images, the server might also populate this field with the value WINDOWS, to indicate that this is a Windows image. This value is purely informational and does not enable or disable any features.",
+     "description": "A list of features to enable on the guest OS. Applicable for bootable images only. Currently, only one feature can be enabled, VIRTIO_SCSI_MULTIQUEUE, which allows each virtual CPU to have its own queue. For Windows images, you can only enable VIRTIO_SCSI_MULTIQUEUE on images with driver version 1.2.0.1621 or higher. Linux images with kernel versions 3.17 and higher will support VIRTIO_SCSI_MULTIQUEUE.\n\nFor newer Windows images, the server might also populate this property with the value WINDOWS to indicate that this is a Windows image.",
      "items": {
       "$ref": "GuestOsFeature"
      }
@@ -3389,6 +3389,18 @@
     "sourceDiskId": {
      "type": "string",
      "description": "The ID value of the disk used to create this image. This value may be used to determine whether the image was taken from the current or a previous instance of a given disk name."
+    },
+    "sourceImage": {
+     "type": "string",
+     "description": "URL of the source image used to create this image. This can be a full or valid partial URL. You must provide exactly one of:  \n- this property, or  \n- the rawDisk.source property, or  \n- the sourceDisk property   in order to create an image."
+    },
+    "sourceImageEncryptionKey": {
+     "$ref": "CustomerEncryptionKey",
+     "description": "The customer-supplied encryption key of the source image. Required if the source image is protected by a customer-supplied encryption key."
+    },
+    "sourceImageId": {
+     "type": "string",
+     "description": "[Output Only] The ID value of the image used to create this image. This value may be used to determine whether the image was taken from the current or a previous instance of a given image name."
     },
     "sourceType": {
      "type": "string",
@@ -7117,7 +7129,7 @@
     },
     "storageBytes": {
      "type": "string",
-     "description": "[Output Only] A size of the the storage used by the snapshot. As snapshots share storage, this number is expected to change with snapshot creation/deletion.",
+     "description": "[Output Only] A size of the storage used by the snapshot. As snapshots share storage, this number is expected to change with snapshot creation/deletion.",
      "format": "int64"
     },
     "storageBytesStatus": {

@@ -41,9 +41,10 @@ type service interface {
 	getJob(ctx context.Context, projectId, jobID string) (*Job, error)
 	jobCancel(ctx context.Context, projectId, jobID string) error
 	jobStatus(ctx context.Context, projectId, jobID string) (*JobStatus, error)
+	listJobs(ctx context.Context, projectId string, maxResults int, pageToken string, all bool, state string) ([]JobInfo, string, error)
 
 	// Tables
-	createTable(ctx context.Context, conf *createTableConf) error
+	createTable(ctx context.Context, projectID, datasetID, tableID string, tm *TableMetadata) error
 	getTableMetadata(ctx context.Context, projectID, datasetID, tableID string) (*TableMetadata, error)
 	deleteTable(ctx context.Context, projectID, datasetID, tableID string) error
 
@@ -56,7 +57,7 @@ type service interface {
 	insertRows(ctx context.Context, projectID, datasetID, tableID string, rows []*insertionRow, conf *insertRowsConf) error
 
 	// Datasets
-	insertDataset(ctx context.Context, datasetID, projectID string) error
+	insertDataset(ctx context.Context, datasetID, projectID string, dm *DatasetMetadata) error
 	deleteDataset(ctx context.Context, datasetID, projectID string) error
 	getDatasetMetadata(ctx context.Context, projectID, datasetID string) (*DatasetMetadata, error)
 	patchDataset(ctx context.Context, projectID, datasetID string, dm *DatasetMetadataToUpdate, etag string) (*DatasetMetadata, error)
@@ -313,22 +314,11 @@ func (s *bigqueryService) insertRows(ctx context.Context, projectID, datasetID, 
 }
 
 func (s *bigqueryService) getJob(ctx context.Context, projectID, jobID string) (*Job, error) {
-	job, err := s.getJobInternal(ctx, projectID, jobID, "configuration")
+	bqjob, err := s.getJobInternal(ctx, projectID, jobID, "configuration", "jobReference")
 	if err != nil {
 		return nil, err
 	}
-	var isQuery bool
-	var dest *bq.TableReference
-	if job.Configuration.Query != nil {
-		isQuery = true
-		dest = job.Configuration.Query.DestinationTable
-	}
-	return &Job{
-		projectID:        projectID,
-		jobID:            jobID,
-		isQuery:          isQuery,
-		destinationTable: dest,
-	}, nil
+	return jobFromProtos(bqjob.JobReference, bqjob.Configuration), nil
 }
 
 func (s *bigqueryService) jobStatus(ctx context.Context, projectID, jobID string) (*JobStatus, error) {
@@ -346,9 +336,10 @@ func (s *bigqueryService) jobStatus(ctx context.Context, projectID, jobID string
 
 func (s *bigqueryService) getJobInternal(ctx context.Context, projectID, jobID string, fields ...googleapi.Field) (*bq.Job, error) {
 	var job *bq.Job
-	call := s.s.Jobs.Get(projectID, jobID).
-		Fields(fields...).
-		Context(ctx)
+	call := s.s.Jobs.Get(projectID, jobID).Context(ctx)
+	if len(fields) > 0 {
+		call = call.Fields(fields...)
+	}
 	setClientHeader(call.Header())
 	err := runWithRetry(ctx, func() (err error) {
 		job, err = call.Do()
@@ -374,6 +365,21 @@ func (s *bigqueryService) jobCancel(ctx context.Context, projectID, jobID string
 		_, err := call.Do()
 		return err
 	})
+}
+
+func jobFromProtos(jr *bq.JobReference, config *bq.JobConfiguration) *Job {
+	var isQuery bool
+	var dest *bq.TableReference
+	if config.Query != nil {
+		isQuery = true
+		dest = config.Query.DestinationTable
+	}
+	return &Job{
+		projectID:        jr.ProjectId,
+		jobID:            jr.JobId,
+		isQuery:          isQuery,
+		destinationTable: dest,
+	}
 }
 
 var stateMap = map[string]State{"PENDING": Pending, "RUNNING": Running, "DONE": Done}
@@ -496,63 +502,88 @@ func (s *bigqueryService) listTables(ctx context.Context, projectID, datasetID s
 	return tables, res.NextPageToken, nil
 }
 
-type createTableConf struct {
-	projectID, datasetID, tableID string
-	expiration                    time.Time
-	viewQuery                     string
-	schema                        *bq.TableSchema
-	useStandardSQL                bool
-	useLegacySQL                  bool
-	timePartitioning              *TimePartitioning
-}
-
 // createTable creates a table in the BigQuery service.
-// expiration is an optional time after which the table will be deleted and its storage reclaimed.
-// If viewQuery is non-empty, the created table will be of type VIEW.
+// If tm.ViewQuery is non-empty, the created table will be of type VIEW.
 // Note: expiration can only be set during table creation.
 // Note: after table creation, a view can be modified only if its table was initially created with a view.
-func (s *bigqueryService) createTable(ctx context.Context, conf *createTableConf) error {
-	if conf.useStandardSQL && conf.useLegacySQL {
-		return errors.New("bigquery: cannot provide both UseStandardSQL and UseLegacySQL")
+func (s *bigqueryService) createTable(ctx context.Context, projectID, datasetID, tableID string, tm *TableMetadata) error {
+	table, err := bqTableFromMetadata(tm)
+	if err != nil {
+		return err
 	}
-	table := &bq.Table{
-		// TODO(jba): retry? Is this always idempotent?
-		TableReference: &bq.TableReference{
-			ProjectId: conf.projectID,
-			DatasetId: conf.datasetID,
-			TableId:   conf.tableID,
-		},
+	table.TableReference = &bq.TableReference{
+		ProjectId: projectID,
+		DatasetId: datasetID,
+		TableId:   tableID,
 	}
-	if !conf.expiration.IsZero() {
-		table.ExpirationTime = conf.expiration.UnixNano() / 1e6
+	req := s.s.Tables.Insert(projectID, datasetID, table).Context(ctx)
+	setClientHeader(req.Header())
+	_, err = req.Do()
+	return err
+}
+
+func bqTableFromMetadata(tm *TableMetadata) (*bq.Table, error) {
+	t := &bq.Table{}
+	if tm == nil {
+		return t, nil
 	}
-	// TODO(jba): make it impossible to provide both a view query and a schema.
-	if conf.viewQuery != "" {
-		table.View = &bq.ViewDefinition{
-			Query: conf.viewQuery,
+	if tm.Schema != nil && tm.ViewQuery != "" {
+		return nil, errors.New("bigquery: provide Schema or ViewQuery, not both")
+	}
+	t.FriendlyName = tm.Name
+	t.Description = tm.Description
+	if tm.Schema != nil {
+		t.Schema = tm.Schema.asTableSchema()
+	}
+	if tm.ViewQuery != "" {
+		if tm.UseStandardSQL && tm.UseLegacySQL {
+			return nil, errors.New("bigquery: cannot provide both UseStandardSQL and UseLegacySQL")
 		}
-		if conf.useStandardSQL {
-			table.View.UseLegacySql = false
-			table.View.ForceSendFields = append(table.View.ForceSendFields, "UseLegacySql")
+		t.View = &bq.ViewDefinition{Query: tm.ViewQuery}
+		if tm.UseLegacySQL {
+			t.View.UseLegacySql = true
+		} else {
+			t.View.UseLegacySql = false
+			t.View.ForceSendFields = append(t.View.ForceSendFields, "UseLegacySql")
 		}
-		if conf.useLegacySQL {
-			table.View.UseLegacySql = true
-		}
+	} else if tm.UseLegacySQL || tm.UseStandardSQL {
+		return nil, errors.New("bigquery: UseLegacy/StandardSQL requires ViewQuery")
 	}
-	if conf.schema != nil {
-		table.Schema = conf.schema
-	}
-	if conf.timePartitioning != nil {
-		table.TimePartitioning = &bq.TimePartitioning{
+	if tm.TimePartitioning != nil {
+		t.TimePartitioning = &bq.TimePartitioning{
 			Type:         "DAY",
-			ExpirationMs: int64(conf.timePartitioning.Expiration.Seconds() * 1000),
+			ExpirationMs: int64(tm.TimePartitioning.Expiration / time.Millisecond),
 		}
+	}
+	if !tm.ExpirationTime.IsZero() {
+		t.ExpirationTime = tm.ExpirationTime.UnixNano() / 1e6
 	}
 
-	req := s.s.Tables.Insert(conf.projectID, conf.datasetID, table).Context(ctx)
-	setClientHeader(req.Header())
-	_, err := req.Do()
-	return err
+	if tm.FullID != "" {
+		return nil, errors.New("cannot set FullID on create")
+	}
+	if tm.Type != "" {
+		return nil, errors.New("cannot set Type on create")
+	}
+	if !tm.CreationTime.IsZero() {
+		return nil, errors.New("cannot set CreationTime on create")
+	}
+	if !tm.LastModifiedTime.IsZero() {
+		return nil, errors.New("cannot set LastModifiedTime on create")
+	}
+	if tm.NumBytes != 0 {
+		return nil, errors.New("cannot set NumBytes on create")
+	}
+	if tm.NumRows != 0 {
+		return nil, errors.New("cannot set NumRows on create")
+	}
+	if tm.StreamingBuffer != nil {
+		return nil, errors.New("cannot set StreamingBuffer on create")
+	}
+	if tm.ETag != "" {
+		return nil, errors.New("cannot set ETag on create")
+	}
+	return t, nil
 }
 
 func (s *bigqueryService) getTableMetadata(ctx context.Context, projectID, datasetID, tableID string) (*TableMetadata, error) {
@@ -580,7 +611,7 @@ func bqTableToMetadata(t *bq.Table) *TableMetadata {
 		Description:      t.Description,
 		Name:             t.FriendlyName,
 		Type:             TableType(t.Type),
-		ID:               t.Id,
+		FullID:           t.Id,
 		NumBytes:         t.NumBytes,
 		NumRows:          t.NumRows,
 		ExpirationTime:   unixMillisToTime(t.ExpirationTime),
@@ -592,7 +623,8 @@ func bqTableToMetadata(t *bq.Table) *TableMetadata {
 		md.Schema = convertTableSchema(t.Schema)
 	}
 	if t.View != nil {
-		md.View = t.View.Query
+		md.ViewQuery = t.View.Query
+		md.UseLegacySQL = t.View.UseLegacySql
 	}
 	if t.TimePartitioning != nil {
 		md.TimePartitioning = &TimePartitioning{
@@ -617,7 +649,7 @@ func bqDatasetToMetadata(d *bq.Dataset) *DatasetMetadata {
 		DefaultTableExpiration: time.Duration(d.DefaultTableExpirationMs) * time.Millisecond,
 		Description:            d.Description,
 		Name:                   d.FriendlyName,
-		ID:                     d.Id,
+		FullID:                 d.Id,
 		Location:               d.Location,
 		Labels:                 d.Labels,
 		ETag:                   d.Etag,
@@ -678,39 +710,72 @@ func (s *bigqueryService) patchTable(ctx context.Context, projectID, datasetID, 
 	if etag != "" {
 		call.Header().Set("If-Match", etag)
 	}
-	table, err := call.Do()
-	if err != nil {
+	var table *bq.Table
+	if err := runWithRetry(ctx, func() (err error) {
+		table, err = call.Do()
+		return err
+	}); err != nil {
 		return nil, err
 	}
 	return bqTableToMetadata(table), nil
 }
 
-func (s *bigqueryService) insertDataset(ctx context.Context, datasetID, projectID string) error {
+func (s *bigqueryService) insertDataset(ctx context.Context, datasetID, projectID string, dm *DatasetMetadata) error {
 	// TODO(jba): retry?
-	ds := &bq.Dataset{
-		DatasetReference: &bq.DatasetReference{DatasetId: datasetID},
+	ds, err := bqDatasetFromMetadata(dm)
+	if err != nil {
+		return err
 	}
+	ds.DatasetReference = &bq.DatasetReference{DatasetId: datasetID}
 	req := s.s.Datasets.Insert(projectID, ds).Context(ctx)
 	setClientHeader(req.Header())
-	_, err := req.Do()
+	_, err = req.Do()
 	return err
 }
 
 func (s *bigqueryService) patchDataset(ctx context.Context, projectID, datasetID string, dm *DatasetMetadataToUpdate, etag string) (*DatasetMetadata, error) {
-	ds := bqDatasetFromMetadata(dm)
+	ds := bqDatasetFromUpdateMetadata(dm)
 	call := s.s.Datasets.Patch(projectID, datasetID, ds).Context(ctx)
 	setClientHeader(call.Header())
 	if etag != "" {
 		call.Header().Set("If-Match", etag)
 	}
-	ds2, err := call.Do()
-	if err != nil {
+	var ds2 *bq.Dataset
+	if err := runWithRetry(ctx, func() (err error) {
+		ds2, err = call.Do()
+		return err
+	}); err != nil {
 		return nil, err
 	}
 	return bqDatasetToMetadata(ds2), nil
 }
 
-func bqDatasetFromMetadata(dm *DatasetMetadataToUpdate) *bq.Dataset {
+func bqDatasetFromMetadata(dm *DatasetMetadata) (*bq.Dataset, error) {
+	ds := &bq.Dataset{}
+	if dm == nil {
+		return ds, nil
+	}
+	ds.FriendlyName = dm.Name
+	ds.Description = dm.Description
+	ds.Location = dm.Location
+	ds.DefaultTableExpirationMs = int64(dm.DefaultTableExpiration / time.Millisecond)
+	ds.Labels = dm.Labels
+	if !dm.CreationTime.IsZero() {
+		return nil, errors.New("bigquery: Dataset.CreationTime is not writable")
+	}
+	if !dm.LastModifiedTime.IsZero() {
+		return nil, errors.New("bigquery: Dataset.LastModifiedTime is not writable")
+	}
+	if dm.FullID != "" {
+		return nil, errors.New("bigquery: Dataset.FullID is not writable")
+	}
+	if dm.ETag != "" {
+		return nil, errors.New("bigquery: Dataset.ETag is not writable")
+	}
+	return ds, nil
+}
+
+func bqDatasetFromUpdateMetadata(dm *DatasetMetadataToUpdate) *bq.Dataset {
 	ds := &bq.Dataset{}
 	forceSend := func(field string) {
 		ds.ForceSendFields = append(ds.ForceSendFields, field)
@@ -730,7 +795,7 @@ func bqDatasetFromMetadata(dm *DatasetMetadataToUpdate) *bq.Dataset {
 			// Send a null to delete the field.
 			ds.NullFields = append(ds.NullFields, "DefaultTableExpirationMs")
 		} else {
-			ds.DefaultTableExpirationMs = int64(dur.Seconds() * 1000)
+			ds.DefaultTableExpirationMs = int64(dur / time.Millisecond)
 		}
 	}
 	if dm.setLabels != nil || dm.deleteLabels != nil {
@@ -801,13 +866,54 @@ func (s *bigqueryService) convertListedDataset(d *bq.DatasetListDatasets) *Datas
 	}
 }
 
+func (s *bigqueryService) listJobs(ctx context.Context, projectID string, maxResults int, pageToken string, all bool, state string) ([]JobInfo, string, error) {
+	req := s.s.Jobs.List(projectID).
+		Context(ctx).
+		PageToken(pageToken).
+		Projection("full").
+		AllUsers(all)
+	if state != "" {
+		req.StateFilter(state)
+	}
+	setClientHeader(req.Header())
+	if maxResults > 0 {
+		req.MaxResults(int64(maxResults))
+	}
+	res, err := req.Do()
+	if err != nil {
+		return nil, "", err
+	}
+	var jobInfos []JobInfo
+	for _, j := range res.Jobs {
+		ji, err := s.convertListedJob(j)
+		if err != nil {
+			return nil, "", err
+		}
+		jobInfos = append(jobInfos, ji)
+	}
+	return jobInfos, res.NextPageToken, nil
+}
+
+func (s *bigqueryService) convertListedJob(j *bq.JobListJobs) (JobInfo, error) {
+	st, err := jobStatusFromProto(j.Status)
+	if err != nil {
+		return JobInfo{}, err
+	}
+	st.Statistics = jobStatisticsFromProto(j.Statistics)
+	return JobInfo{
+		Job:    jobFromProtos(j.JobReference, j.Configuration),
+		Status: st,
+	}, nil
+}
+
 // runWithRetry calls the function until it returns nil or a non-retryable error, or
 // the context is done.
 // See the similar function in ../storage/invoke.go. The main difference is the
 // reason for retrying.
 func runWithRetry(ctx context.Context, call func() error) error {
+	// These parameters match the suggestions in https://cloud.google.com/bigquery/sla.
 	backoff := gax.Backoff{
-		Initial:    2 * time.Second,
+		Initial:    1 * time.Second,
 		Max:        32 * time.Second,
 		Multiplier: 2,
 	}
@@ -820,7 +926,7 @@ func runWithRetry(ctx context.Context, call func() error) error {
 	})
 }
 
-// Use the criteria in https://cloud.google.com/bigquery/troubleshooting-errors.
+// This is the correct definition of retryable according to the BigQuery team.
 func retryableError(err error) bool {
 	e, ok := err.(*googleapi.Error)
 	if !ok {
@@ -830,5 +936,5 @@ func retryableError(err error) bool {
 	if len(e.Errors) > 0 {
 		reason = e.Errors[0].Reason
 	}
-	return reason == "backendError" && (e.Code == 500 || e.Code == 503)
+	return reason == "backendError" || reason == "rateLimitExceeded"
 }

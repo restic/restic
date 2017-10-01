@@ -14,7 +14,7 @@
 
 // AUTO-GENERATED CODE. DO NOT EDIT.
 
-// Package speech is an experimental, auto-generated package for the
+// Package speech is an auto-generated package for the
 // Google Cloud Speech API.
 //
 // Google Cloud Speech API.

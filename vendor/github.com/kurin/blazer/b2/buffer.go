@@ -17,20 +17,82 @@ package b2
 import (
 	"bytes"
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"sync"
 )
+
+type readResetter interface {
+	Read([]byte) (int, error)
+	Reset() error
+}
+
+type resetter struct {
+	rs io.ReadSeeker
+}
+
+func (r resetter) Read(p []byte) (int, error) { return r.rs.Read(p) }
+func (r resetter) Reset() error               { _, err := r.rs.Seek(0, 0); return err }
+
+func newResetter(p []byte) readResetter { return resetter{rs: bytes.NewReader(p)} }
 
 type writeBuffer interface {
 	io.Writer
 	Len() int
-	Reader() (io.ReadSeeker, error)
+	Reader() (readResetter, error)
 	Hash() string // sha1 or whatever it is
 	Close() error
+}
+
+// nonBuffer doesn't buffer anything, but passes values directly from the
+// source readseeker.  Many nonBuffers can point at different parts of the same
+// underlying source, and be accessed by multiple goroutines simultaneously.
+func newNonBuffer(rs io.ReaderAt, offset, size int64) writeBuffer {
+	return &nonBuffer{
+		r:    io.NewSectionReader(rs, offset, size),
+		size: int(size),
+		hsh:  sha1.New(),
+	}
+}
+
+type nonBuffer struct {
+	r    *io.SectionReader
+	size int
+	hsh  hash.Hash
+
+	isEOF bool
+	buf   *strings.Reader
+}
+
+func (nb *nonBuffer) Len() int                      { return nb.size + 40 }
+func (nb *nonBuffer) Hash() string                  { return "hex_digits_at_end" }
+func (nb *nonBuffer) Close() error                  { return nil }
+func (nb *nonBuffer) Reader() (readResetter, error) { return nb, nil }
+func (nb *nonBuffer) Write([]byte) (int, error)     { return 0, errors.New("writes not supported") }
+
+func (nb *nonBuffer) Read(p []byte) (int, error) {
+	if nb.isEOF {
+		return nb.buf.Read(p)
+	}
+	n, err := io.TeeReader(nb.r, nb.hsh).Read(p)
+	if err == io.EOF {
+		err = nil
+		nb.isEOF = true
+		nb.buf = strings.NewReader(fmt.Sprintf("%x", nb.hsh.Sum(nil)))
+	}
+	return n, err
+}
+
+func (nb *nonBuffer) Reset() error {
+	nb.hsh.Reset()
+	nb.isEOF = false
+	_, err := nb.r.Seek(0, 0)
+	return err
 }
 
 type memoryBuffer struct {
@@ -56,15 +118,10 @@ func newMemoryBuffer() *memoryBuffer {
 	return mb
 }
 
-type thing struct {
-	rs io.ReadSeeker
-	t  int
-}
-
-func (mb *memoryBuffer) Write(p []byte) (int, error)    { return mb.w.Write(p) }
-func (mb *memoryBuffer) Len() int                       { return mb.buf.Len() }
-func (mb *memoryBuffer) Reader() (io.ReadSeeker, error) { return bytes.NewReader(mb.buf.Bytes()), nil }
-func (mb *memoryBuffer) Hash() string                   { return fmt.Sprintf("%x", mb.hsh.Sum(nil)) }
+func (mb *memoryBuffer) Write(p []byte) (int, error)   { return mb.w.Write(p) }
+func (mb *memoryBuffer) Len() int                      { return mb.buf.Len() }
+func (mb *memoryBuffer) Reader() (readResetter, error) { return newResetter(mb.buf.Bytes()), nil }
+func (mb *memoryBuffer) Hash() string                  { return fmt.Sprintf("%x", mb.hsh.Sum(nil)) }
 
 func (mb *memoryBuffer) Close() error {
 	mb.mux.Lock()
@@ -107,7 +164,7 @@ func (fb *fileBuffer) Write(p []byte) (int, error) {
 func (fb *fileBuffer) Len() int     { return fb.s }
 func (fb *fileBuffer) Hash() string { return fmt.Sprintf("%x", fb.hsh.Sum(nil)) }
 
-func (fb *fileBuffer) Reader() (io.ReadSeeker, error) {
+func (fb *fileBuffer) Reader() (readResetter, error) {
 	if _, err := fb.f.Seek(0, 0); err != nil {
 		return nil, err
 	}
@@ -124,5 +181,5 @@ type fr struct {
 	f *os.File
 }
 
-func (r *fr) Read(p []byte) (int, error)         { return r.f.Read(p) }
-func (r *fr) Seek(a int64, b int) (int64, error) { return r.f.Seek(a, b) }
+func (r *fr) Read(p []byte) (int, error) { return r.f.Read(p) }
+func (r *fr) Reset() error               { _, err := r.f.Seek(0, 0); return err }

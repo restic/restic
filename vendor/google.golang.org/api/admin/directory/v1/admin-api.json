@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/O3yStPLO-_BtPqwnPm5OpyYaKQ4\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/JB19efQGH5f-JRT49yZz7BTyNQU\"",
  "discoveryVersion": "v1",
  "id": "admin:directory_v1",
  "name": "admin",
  "canonicalName": "directory",
  "version": "directory_v1",
- "revision": "20170723",
+ "revision": "20170830",
  "title": "Admin Directory API",
  "description": "The Admin SDK Directory API lets you view and manage enterprise resources such as users and groups, administrative notifications, security features, and more.",
  "ownerDomain": "google.com",
@@ -277,6 +277,10 @@
      "type": "string",
      "description": "ETag of the resource."
     },
+    "generatedResourceName": {
+     "type": "string",
+     "description": "The auto-generated name of the calendar resource which includes metadata about the resource such as building name, floor, capacity, etc. For example, NYC-2-Training Room 1A (16)"
+    },
     "kind": {
      "type": "string",
      "description": "The type of the resource. For calendar resources, the value is admin#directory#resources#calendars#CalendarResource.",
@@ -292,21 +296,11 @@
     },
     "resourceId": {
      "type": "string",
-     "description": "The unique ID for the calendar resource.",
-     "annotations": {
-      "required": [
-       "directory.resources.calendars.insert"
-      ]
-     }
+     "description": "The unique ID for the calendar resource."
     },
     "resourceName": {
      "type": "string",
-     "description": "The name of the calendar resource. For example, Training Room 1A",
-     "annotations": {
-      "required": [
-       "directory.resources.calendars.insert"
-      ]
-     }
+     "description": "The name of the calendar resource. For example, Training Room 1A"
     },
     "resourceType": {
      "type": "string",
@@ -1843,6 +1837,9 @@
     "externalIds": {
      "type": "any"
     },
+    "gender": {
+     "type": "any"
+    },
     "hashFunction": {
      "type": "string",
      "description": "Hash function name for password. Supported are MD5, SHA-1 and crypt"
@@ -2110,6 +2107,24 @@
     "value": {
      "type": "string",
      "description": "The value of the id."
+    }
+   }
+  },
+  "UserGender": {
+   "id": "UserGender",
+   "type": "object",
+   "properties": {
+    "addressMeAs": {
+     "type": "string",
+     "description": "AddressMeAs. A human-readable string containing the proper way to refer to the profile owner by humans, for example \"he/him/his\" or \"they/them/their\"."
+    },
+    "customGender": {
+     "type": "string",
+     "description": "Custom gender."
+    },
+    "type": {
+     "type": "string",
+     "description": "Gender."
     }
    }
   },
@@ -2395,9 +2410,9 @@
      "description": "The GECOS (user information) for this account."
     },
     "gid": {
-     "type": "integer",
+     "type": "string",
      "description": "The default group ID.",
-     "format": "int32"
+     "format": "uint64"
     },
     "homeDirectory": {
      "type": "string",
@@ -2416,9 +2431,9 @@
      "description": "System identifier for which account Username or Uid apply to."
     },
     "uid": {
-     "type": "integer",
+     "type": "string",
      "description": "The POSIX compliant user ID.",
-     "format": "int32"
+     "format": "uint64"
     },
     "username": {
      "type": "string",

@@ -521,68 +521,6 @@ func (s *AuthorizationConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// AuthorizationRule: Authorization rule for API services.
-//
-// It specifies the permission(s) required for an API element for the
-// overall
-// API request to succeed. It is typically used to mark request message
-// fields
-// that contain the name of the resource and indicates the permissions
-// that
-// will be checked on that resource.
-//
-// For example:
-//
-//     package google.storage.v1;
-//
-//     message CopyObjectRequest {
-//       string source = 1 [
-//         (google.api.authz).permissions = "storage.objects.get"];
-//
-//       string destination = 2 [
-//         (google.api.authz).permissions =
-//             "storage.objects.create,storage.objects.update"];
-//     }
-type AuthorizationRule struct {
-	// Permissions: The required permissions. The acceptable values vary
-	// depend on the
-	// authorization system used. For Google APIs, it should be a
-	// comma-separated
-	// Google IAM permission values. When multiple permissions are listed,
-	// the
-	// semantics is not defined by the system. Additional documentation
-	// must
-	// be provided manually.
-	Permissions string `json:"permissions,omitempty"`
-
-	// Selector: Selects the API elements to which this rule applies.
-	//
-	// Refer to selector for syntax details.
-	Selector string `json:"selector,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "Permissions") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "Permissions") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *AuthorizationRule) MarshalJSON() ([]byte, error) {
-	type noMethod AuthorizationRule
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
 // Backend: `Backend` defines the backend configuration for a service.
 type Backend struct {
 	// Rules: A list of API backend rules that apply to individual API
@@ -674,6 +612,100 @@ func (s *BackendRule) UnmarshalJSON(data []byte) error {
 	s.Deadline = float64(s1.Deadline)
 	s.MinDeadline = float64(s1.MinDeadline)
 	return nil
+}
+
+// Billing: Billing related configuration of the service.
+//
+// The following example shows how to configure monitored resources and
+// metrics
+// for billing:
+//     monitored_resources:
+//     - type: library.googleapis.com/branch
+//       labels:
+//       - key: /city
+//         description: The city where the library branch is located
+// in.
+//       - key: /name
+//         description: The name of the branch.
+//     metrics:
+//     - name: library.googleapis.com/book/borrowed_count
+//       metric_kind: DELTA
+//       value_type: INT64
+//     billing:
+//       consumer_destinations:
+//       - monitored_resource: library.googleapis.com/branch
+//         metrics:
+//         - library.googleapis.com/book/borrowed_count
+type Billing struct {
+	// ConsumerDestinations: Billing configurations for sending metrics to
+	// the consumer project.
+	// There can be multiple consumer destinations per service, each one
+	// must have
+	// a different monitored resource type. A metric can be used in at
+	// most
+	// one consumer destination.
+	ConsumerDestinations []*BillingDestination `json:"consumerDestinations,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "ConsumerDestinations") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ConsumerDestinations") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Billing) MarshalJSON() ([]byte, error) {
+	type noMethod Billing
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BillingDestination: Configuration of a specific billing destination
+// (Currently only support
+// bill against consumer project).
+type BillingDestination struct {
+	// Metrics: Names of the metrics to report to this billing
+	// destination.
+	// Each name must be defined in Service.metrics section.
+	Metrics []string `json:"metrics,omitempty"`
+
+	// MonitoredResource: The monitored resource type. The type must be
+	// defined in
+	// Service.monitored_resources section.
+	MonitoredResource string `json:"monitoredResource,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Metrics") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Metrics") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BillingDestination) MarshalJSON() ([]byte, error) {
+	type noMethod BillingDestination
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // Context: `Context` defines which contexts an API
@@ -1744,15 +1776,6 @@ type HttpRule struct {
 	// the nesting may only be one level deep).
 	AdditionalBindings []*HttpRule `json:"additionalBindings,omitempty"`
 
-	// Authorizations: Specifies the permission(s) required for an API
-	// element for the overall
-	// API request to succeed. It is typically used to mark request message
-	// fields
-	// that contain the name of the resource and indicates the permissions
-	// that
-	// will be checked on that resource.
-	Authorizations []*AuthorizationRule `json:"authorizations,omitempty"`
-
 	// Body: The name of the request field whose value is mapped to the HTTP
 	// body, or
 	// `*` for mapping all fields not captured by the path pattern to the
@@ -1810,54 +1833,6 @@ type HttpRule struct {
 	// present
 	// at the top-level of response message type.
 	ResponseBody string `json:"responseBody,omitempty"`
-
-	// RestCollection: DO NOT USE. This is an experimental field.
-	//
-	// Optional. The REST collection name is by default derived from the
-	// URL
-	// pattern. If specified, this field overrides the default collection
-	// name.
-	// Example:
-	//
-	//     rpc AddressesAggregatedList(AddressesAggregatedListRequest)
-	//         returns (AddressesAggregatedListResponse) {
-	//       option (google.api.http) = {
-	//         get: "/v1/projects/{project_id}/aggregated/addresses"
-	//         rest_collection: "projects.addresses"
-	//       };
-	//     }
-	//
-	// This method has the automatically derived collection
-	// name
-	// "projects.aggregated". Because, semantically, this rpc is actually
-	// an
-	// operation on the "projects.addresses" collection, the
-	// `rest_collection`
-	// field is configured to override the derived collection name.
-	RestCollection string `json:"restCollection,omitempty"`
-
-	// RestMethodName: DO NOT USE. This is an experimental field.
-	//
-	// Optional. The rest method name is by default derived from the
-	// URL
-	// pattern. If specified, this field overrides the default method
-	// name.
-	// Example:
-	//
-	//     rpc CreateResource(CreateResourceRequest)
-	//         returns (CreateResourceResponse) {
-	//       option (google.api.http) = {
-	//         post: "/v1/resources",
-	//         body: "resource",
-	//         rest_method_name: "insert"
-	//       };
-	//     }
-	//
-	// This method has the automatically derived rest method name
-	// "create", but for backwards compatibility with apiary, it is
-	// specified as
-	// insert.
-	RestMethodName string `json:"restMethodName,omitempty"`
 
 	// Selector: Selects methods to which this rule applies.
 	//
@@ -3514,6 +3489,9 @@ type Service struct {
 
 	// Backend: API backend configuration.
 	Backend *Backend `json:"backend,omitempty"`
+
+	// Billing: Billing configuration.
+	Billing *Billing `json:"billing,omitempty"`
 
 	// ConfigVersion: The semantic version of the service configuration. The
 	// config version

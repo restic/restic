@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/lQo0mHP8UNg2mFCLeIXYgmR2aTQ\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/_YIg1ZU-z6xEn8qUWJtIDhiIaWM\"",
  "discoveryVersion": "v1",
  "id": "deploymentmanager:alpha",
  "name": "deploymentmanager",
  "canonicalName": "Deployment Manager Alpha",
  "version": "alpha",
- "revision": "20170914",
+ "revision": "20170925",
  "title": "Google Cloud Deployment Manager Alpha API",
  "description": "The Deployment Manager API allows users to declaratively configure, deploy and run complex solutions on the Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -361,6 +361,10 @@
    "type": "object",
    "description": "",
    "properties": {
+    "credential": {
+     "$ref": "Credential",
+     "description": "User provided default credential for the deployment."
+    },
     "description": {
      "type": "string",
      "description": "An optional user-provided description of the deployment."
@@ -448,6 +452,10 @@
    "type": "object",
    "description": "",
    "properties": {
+    "credential": {
+     "$ref": "Credential",
+     "description": "Output only. The user-provided default credential to use when deploying this preview."
+    },
     "description": {
      "type": "string",
      "description": "Output only. An optional user-provided description of the deployment after the current update has been applied."
@@ -962,6 +970,10 @@
      "type": "string",
      "description": "Output only. Timestamp when the resource was created or acquired, in RFC3339 text format ."
     },
+    "lastUsedCredential": {
+     "$ref": "Credential",
+     "description": "Output only. The last used credential that successfully created/updated the resource."
+    },
     "manifest": {
      "type": "string",
      "description": "Output only. URL of the manifest representing the current configuration of this resource."
@@ -1045,6 +1057,10 @@
     "accessControl": {
      "$ref": "ResourceAccessControl",
      "description": "The Access Control Policy to set on this resource after updating the resource itself."
+    },
+    "credential": {
+     "$ref": "Credential",
+     "description": "Output only. The credential that will be used creating/updating this resource."
     },
     "error": {
      "type": "object",
@@ -1158,7 +1174,7 @@
     },
     "conditions": {
      "type": "array",
-     "description": "Additional restrictions that must be met",
+     "description": "Additional restrictions that must be met. All conditions must pass for the rule to match.",
      "items": {
       "$ref": "Condition"
      }
