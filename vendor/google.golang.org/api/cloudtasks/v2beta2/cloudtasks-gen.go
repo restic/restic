@@ -166,7 +166,7 @@ func (s *AcknowledgeTaskRequest) MarshalJSON() ([]byte, error) {
 // has
 // Queue.app_engine_http_target set.
 //
-// Using this type of target
+// Using AppEngineHttpRequest
 // requires
 // [`appengine.applications.get`](/appengine/docs/admin-api/acce
 // ss-control)
@@ -350,7 +350,7 @@ func (s *AppEngineHttpRequest) MarshalJSON() ([]byte, error) {
 // The documentation for AppEngineHttpRequest explains how the
 // task's host URL is constructed.
 //
-// Using this type of queue configuration
+// Using AppEngineHttpTarget
 // requires
 // [`appengine.applications.get`](/appengine/docs/admin-api/acce
 // ss-control)
@@ -3160,6 +3160,7 @@ type ProjectsLocationsQueuesGetIamPolicyCall struct {
 // specified resource parent:
 //
 // * `cloudtasks.queues.getIamPolicy`
+//
 func (r *ProjectsLocationsQueuesService) GetIamPolicy(resource string, getiampolicyrequest *GetIamPolicyRequest) *ProjectsLocationsQueuesGetIamPolicyCall {
 	c := &ProjectsLocationsQueuesGetIamPolicyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -3253,7 +3254,7 @@ func (c *ProjectsLocationsQueuesGetIamPolicyCall) Do(opts ...googleapi.CallOptio
 	}
 	return ret, nil
 	// {
-	//   "description": "Gets the access control policy for a Queue.\nReturns an empty policy if the resource exists and does not have a policy\nset.\n\nAuthorization requires the following [Google IAM](/iam) permission on the\nspecified resource parent:\n\n* `cloudtasks.queues.getIamPolicy`",
+	//   "description": "Gets the access control policy for a Queue.\nReturns an empty policy if the resource exists and does not have a policy\nset.\n\nAuthorization requires the following [Google IAM](/iam) permission on the\nspecified resource parent:\n\n* `cloudtasks.queues.getIamPolicy`\n",
 	//   "flatPath": "v2beta2/projects/{projectsId}/locations/{locationsId}/queues/{queuesId}:getIamPolicy",
 	//   "httpMethod": "POST",
 	//   "id": "cloudtasks.projects.locations.queues.getIamPolicy",
@@ -4139,6 +4140,7 @@ type ProjectsLocationsQueuesSetIamPolicyCall struct {
 // specified resource parent:
 //
 // * `cloudtasks.queues.setIamPolicy`
+//
 func (r *ProjectsLocationsQueuesService) SetIamPolicy(resource string, setiampolicyrequest *SetIamPolicyRequest) *ProjectsLocationsQueuesSetIamPolicyCall {
 	c := &ProjectsLocationsQueuesSetIamPolicyCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -4232,7 +4234,7 @@ func (c *ProjectsLocationsQueuesSetIamPolicyCall) Do(opts ...googleapi.CallOptio
 	}
 	return ret, nil
 	// {
-	//   "description": "Sets the access control policy for a Queue. Replaces any existing\npolicy.\n\nAuthorization requires the following [Google IAM](/iam) permission on the\nspecified resource parent:\n\n* `cloudtasks.queues.setIamPolicy`",
+	//   "description": "Sets the access control policy for a Queue. Replaces any existing\npolicy.\n\nAuthorization requires the following [Google IAM](/iam) permission on the\nspecified resource parent:\n\n* `cloudtasks.queues.setIamPolicy`\n",
 	//   "flatPath": "v2beta2/projects/{projectsId}/locations/{locationsId}/queues/{queuesId}:setIamPolicy",
 	//   "httpMethod": "POST",
 	//   "id": "cloudtasks.projects.locations.queues.setIamPolicy",
@@ -4284,6 +4286,7 @@ type ProjectsLocationsQueuesTestIamPermissionsCall struct {
 // UIs and command-line tools, not for authorization checking. This
 // operation
 // may "fail open" without warning.
+//
 func (r *ProjectsLocationsQueuesService) TestIamPermissions(resource string, testiampermissionsrequest *TestIamPermissionsRequest) *ProjectsLocationsQueuesTestIamPermissionsCall {
 	c := &ProjectsLocationsQueuesTestIamPermissionsCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.resource = resource
@@ -4377,7 +4380,7 @@ func (c *ProjectsLocationsQueuesTestIamPermissionsCall) Do(opts ...googleapi.Cal
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns permissions that a caller has on a Queue.\nIf the resource does not exist, this will return an empty set of\npermissions, not a google.rpc.Code.NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.",
+	//   "description": "Returns permissions that a caller has on a Queue.\nIf the resource does not exist, this will return an empty set of\npermissions, not a google.rpc.Code.NOT_FOUND error.\n\nNote: This operation is designed to be used for building permission-aware\nUIs and command-line tools, not for authorization checking. This operation\nmay \"fail open\" without warning.\n",
 	//   "flatPath": "v2beta2/projects/{projectsId}/locations/{locationsId}/queues/{queuesId}:testIamPermissions",
 	//   "httpMethod": "POST",
 	//   "id": "cloudtasks.projects.locations.queues.testIamPermissions",

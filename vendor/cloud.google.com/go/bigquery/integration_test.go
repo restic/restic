@@ -49,6 +49,7 @@ var (
 		}},
 	}
 	testTableExpiration time.Time
+	datasetIDs          = testutil.NewUIDSpace("dataset")
 )
 
 func TestMain(m *testing.M) {
@@ -82,13 +83,13 @@ func initIntegrationTest() {
 		log.Fatalf("NewClient: %v", err)
 	}
 	dataset = client.Dataset("bigquery_integration_test")
-	if err := dataset.Create(ctx); err != nil && !hasStatusCode(err, http.StatusConflict) { // AlreadyExists is 409
+	if err := dataset.Create(ctx, nil); err != nil && !hasStatusCode(err, http.StatusConflict) { // AlreadyExists is 409
 		log.Fatalf("creating dataset: %v", err)
 	}
 	testTableExpiration = time.Now().Add(10 * time.Minute).Round(time.Second)
 }
 
-func TestIntegration_Create(t *testing.T) {
+func TestIntegration_TableCreate(t *testing.T) {
 	// Check that creating a record field with an empty schema is an error.
 	if client == nil {
 		t.Skip("Integration tests skipped")
@@ -97,7 +98,10 @@ func TestIntegration_Create(t *testing.T) {
 	schema := Schema{
 		{Name: "rec", Type: RecordFieldType, Schema: Schema{}},
 	}
-	err := table.Create(context.Background(), schema, TableExpiration(time.Now().Add(5*time.Minute)))
+	err := table.Create(context.Background(), &TableMetadata{
+		Schema:         schema,
+		ExpirationTime: time.Now().Add(5 * time.Minute),
+	})
 	if err == nil {
 		t.Fatal("want error, got nil")
 	}
@@ -106,7 +110,7 @@ func TestIntegration_Create(t *testing.T) {
 	}
 }
 
-func TestIntegration_CreateView(t *testing.T) {
+func TestIntegration_TableCreateView(t *testing.T) {
 	if client == nil {
 		t.Skip("Integration tests skipped")
 	}
@@ -116,8 +120,12 @@ func TestIntegration_CreateView(t *testing.T) {
 
 	// Test that standard SQL views work.
 	view := dataset.Table("t_view_standardsql")
-	query := ViewQuery(fmt.Sprintf("SELECT APPROX_COUNT_DISTINCT(name) FROM `%s.%s.%s`", dataset.ProjectID, dataset.DatasetID, table.TableID))
-	err := view.Create(context.Background(), UseStandardSQL(), query)
+	query := fmt.Sprintf("SELECT APPROX_COUNT_DISTINCT(name) FROM `%s.%s.%s`",
+		dataset.ProjectID, dataset.DatasetID, table.TableID)
+	err := view.Create(context.Background(), &TableMetadata{
+		ViewQuery:      query,
+		UseStandardSQL: true,
+	})
 	if err != nil {
 		t.Fatalf("table.create: Did not expect an error, got: %v", err)
 	}
@@ -137,8 +145,8 @@ func TestIntegration_TableMetadata(t *testing.T) {
 		t.Fatal(err)
 	}
 	// TODO(jba): check md more thorougly.
-	if got, want := md.ID, fmt.Sprintf("%s:%s.%s", dataset.ProjectID, dataset.DatasetID, table.TableID); got != want {
-		t.Errorf("metadata.ID: got %q, want %q", got, want)
+	if got, want := md.FullID, fmt.Sprintf("%s:%s.%s", dataset.ProjectID, dataset.DatasetID, table.TableID); got != want {
+		t.Errorf("metadata.FullID: got %q, want %q", got, want)
 	}
 	if got, want := md.Type, RegularTable; got != want {
 		t.Errorf("metadata.Type: got %v, want %v", got, want)
@@ -162,7 +170,11 @@ func TestIntegration_TableMetadata(t *testing.T) {
 	}
 	for i, c := range partitionCases {
 		table := dataset.Table(fmt.Sprintf("t_metadata_partition_%v", i))
-		err = table.Create(context.Background(), schema, c.timePartitioning, TableExpiration(time.Now().Add(5*time.Minute)))
+		err = table.Create(context.Background(), &TableMetadata{
+			Schema:           schema,
+			TimePartitioning: &c.timePartitioning,
+			ExpirationTime:   time.Now().Add(5 * time.Minute),
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -180,6 +192,33 @@ func TestIntegration_TableMetadata(t *testing.T) {
 	}
 }
 
+func TestIntegration_DatasetCreate(t *testing.T) {
+	if client == nil {
+		t.Skip("Integration tests skipped")
+	}
+	ctx := context.Background()
+	uid := strings.Replace(datasetIDs.New(), "-", "_", -1)
+	ds := client.Dataset(uid)
+	wmd := &DatasetMetadata{Name: "name", Location: "EU"}
+	err := ds.Create(ctx, wmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gmd, err := ds.Metadata(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := gmd.Name, wmd.Name; got != want {
+		t.Errorf("name: got %q, want %q", got, want)
+	}
+	if got, want := gmd.Location, wmd.Location; got != want {
+		t.Errorf("location: got %q, want %q", got, want)
+	}
+	if err := ds.Delete(ctx); err != nil {
+		t.Fatalf("deleting dataset %s: %v", ds, err)
+	}
+}
+
 func TestIntegration_DatasetMetadata(t *testing.T) {
 	if client == nil {
 		t.Skip("Integration tests skipped")
@@ -189,8 +228,8 @@ func TestIntegration_DatasetMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := md.ID, fmt.Sprintf("%s:%s", dataset.ProjectID, dataset.DatasetID); got != want {
-		t.Errorf("ID: got %q, want %q", got, want)
+	if got, want := md.FullID, fmt.Sprintf("%s:%s", dataset.ProjectID, dataset.DatasetID); got != want {
+		t.Errorf("FullID: got %q, want %q", got, want)
 	}
 	jan2016 := time.Date(2016, 1, 1, 0, 0, 0, 0, time.UTC)
 	if md.CreationTime.Before(jan2016) {
@@ -213,7 +252,7 @@ func TestIntegration_DatasetDelete(t *testing.T) {
 	}
 	ctx := context.Background()
 	ds := client.Dataset("delete_test")
-	if err := ds.Create(ctx); err != nil && !hasStatusCode(err, http.StatusConflict) { // AlreadyExists is 409
+	if err := ds.Create(ctx, nil); err != nil && !hasStatusCode(err, http.StatusConflict) { // AlreadyExists is 409
 		t.Fatalf("creating dataset %s: %v", ds, err)
 	}
 	if err := ds.Delete(ctx); err != nil {
@@ -276,8 +315,7 @@ func TestIntegration_DatasetUpdateDefaultExpiration(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Set the default expiration time.
-	md, err = dataset.Update(ctx,
-		DatasetMetadataToUpdate{DefaultTableExpiration: time.Hour}, "")
+	md, err = dataset.Update(ctx, DatasetMetadataToUpdate{DefaultTableExpiration: time.Hour}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,8 +331,7 @@ func TestIntegration_DatasetUpdateDefaultExpiration(t *testing.T) {
 		t.Fatalf("got %s, want 1h", md.DefaultTableExpiration)
 	}
 	// Setting it to 0 deletes it (which looks like a 0 duration).
-	md, err = dataset.Update(ctx,
-		DatasetMetadataToUpdate{DefaultTableExpiration: time.Duration(0)}, "")
+	md, err = dataset.Update(ctx, DatasetMetadataToUpdate{DefaultTableExpiration: time.Duration(0)}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -746,15 +783,7 @@ func TestIntegration_TableUpdate(t *testing.T) {
 			schema3[0], schema3[1], schema3[2],
 			{Name: "rec2", Type: RecordFieldType, Schema: Schema{}}}},
 	} {
-		for {
-			_, err = table.Update(ctx, TableMetadataToUpdate{Schema: Schema(test.fields)}, "")
-			if !hasStatusCode(err, 403) {
-				break
-			}
-			// We've hit the rate limit for updates. Wait a bit and retry.
-			t.Logf("%s: retrying after getting %v", test.desc, err)
-			time.Sleep(4 * time.Second)
-		}
+		_, err = table.Update(ctx, TableMetadataToUpdate{Schema: Schema(test.fields)}, "")
 		if err == nil {
 			t.Errorf("%s: want error, got nil", test.desc)
 		} else if !hasStatusCode(err, 400) {
@@ -818,7 +847,9 @@ func TestIntegration_DML(t *testing.T) {
 		q.UseStandardSQL = true // necessary for DML
 		job, err := q.Run(ctx)
 		if err != nil {
-			fmt.Printf("q.Run: %v\n", err)
+			if e, ok := err.(*googleapi.Error); ok && e.Code < 500 {
+				return true, err // fail on 4xx
+			}
 			return false, err
 		}
 		if err := wait(ctx, job); err != nil {
@@ -961,6 +992,7 @@ func TestIntegration_LegacyQuery(t *testing.T) {
 	}
 	for _, c := range testCases {
 		q := client.Query(c.query)
+		q.UseLegacySQL = true
 		it, err := q.Read(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -1070,11 +1102,11 @@ var useLegacySqlTests = []struct {
 }{
 	{t: legacyName, std: false, legacy: true, err: false},
 	{t: legacyName, std: true, legacy: false, err: true},
-	{t: legacyName, std: false, legacy: false, err: false}, // legacy SQL is default
+	{t: legacyName, std: false, legacy: false, err: true}, // standard SQL is default
 	{t: legacyName, std: true, legacy: true, err: true},
 	{t: stdName, std: false, legacy: true, err: true},
 	{t: stdName, std: true, legacy: false, err: false},
-	{t: stdName, std: false, legacy: false, err: true}, // legacy SQL is default
+	{t: stdName, std: false, legacy: false, err: false}, // standard SQL is default
 	{t: stdName, std: true, legacy: true, err: true},
 }
 
@@ -1099,7 +1131,7 @@ func TestIntegration_QueryUseLegacySQL(t *testing.T) {
 }
 
 func TestIntegration_TableUseLegacySQL(t *testing.T) {
-	// Test the UseLegacySQL and UseStandardSQL options for CreateTable.
+	// Test UseLegacySQL and UseStandardSQL for Table.Create.
 	if client == nil {
 		t.Skip("Integration tests skipped")
 	}
@@ -1108,15 +1140,12 @@ func TestIntegration_TableUseLegacySQL(t *testing.T) {
 	defer table.Delete(ctx)
 	for i, test := range useLegacySqlTests {
 		view := dataset.Table(fmt.Sprintf("t_view_%d", i))
-		vq := ViewQuery(fmt.Sprintf("SELECT word from %s", test.t))
-		opts := []CreateTableOption{vq}
-		if test.std {
-			opts = append(opts, UseStandardSQL())
+		tm := &TableMetadata{
+			ViewQuery:      fmt.Sprintf("SELECT word from %s", test.t),
+			UseStandardSQL: test.std,
+			UseLegacySQL:   test.legacy,
 		}
-		if test.legacy {
-			opts = append(opts, UseLegacySQL())
-		}
-		err := view.Create(ctx, opts...)
+		err := view.Create(ctx, tm)
 		gotErr := err != nil
 		if gotErr && !test.err {
 			t.Errorf("%+v:\nunexpected error: %v", test, err)
@@ -1127,11 +1156,46 @@ func TestIntegration_TableUseLegacySQL(t *testing.T) {
 	}
 }
 
+func TestIntegration_ListJobs(t *testing.T) {
+	// It's difficult to test the list of jobs, because we can't easily
+	// control what's in it. Also, there are many jobs in the test project,
+	// and it takes considerable time to list them all.
+	if client == nil {
+		t.Skip("Integration tests skipped")
+	}
+	ctx := context.Background()
+
+	// About all we can do is list a few jobs.
+	const max = 20
+	var jis []JobInfo
+	it := client.Jobs(ctx)
+	for {
+		ji, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		jis = append(jis, ji)
+		if len(jis) >= max {
+			break
+		}
+	}
+	// We expect that there is at least one job in the last few months.
+	if len(jis) == 0 {
+		t.Fatal("did not get any jobs")
+	}
+}
+
 // Creates a new, temporary table with a unique name and the given schema.
 func newTable(t *testing.T, s Schema) *Table {
 	name := fmt.Sprintf("t%d", time.Now().UnixNano())
 	table := dataset.Table(name)
-	err := table.Create(context.Background(), s, TableExpiration(testTableExpiration))
+	err := table.Create(context.Background(), &TableMetadata{
+		Schema:         s,
+		ExpirationTime: testTableExpiration,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

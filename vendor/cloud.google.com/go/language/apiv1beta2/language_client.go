@@ -35,6 +35,7 @@ type CallOptions struct {
 	AnalyzeEntities        []gax.CallOption
 	AnalyzeEntitySentiment []gax.CallOption
 	AnalyzeSyntax          []gax.CallOption
+	ClassifyText           []gax.CallOption
 	AnnotateText           []gax.CallOption
 }
 
@@ -65,6 +66,7 @@ func defaultCallOptions() *CallOptions {
 		AnalyzeEntities:        retry[[2]string{"default", "idempotent"}],
 		AnalyzeEntitySentiment: retry[[2]string{"default", "idempotent"}],
 		AnalyzeSyntax:          retry[[2]string{"default", "idempotent"}],
+		ClassifyText:           retry[[2]string{"default", "idempotent"}],
 		AnnotateText:           retry[[2]string{"default", "idempotent"}],
 	}
 }
@@ -192,8 +194,24 @@ func (c *Client) AnalyzeSyntax(ctx context.Context, req *languagepb.AnalyzeSynta
 	return resp, nil
 }
 
-// AnnotateText a convenience method that provides all syntax, sentiment, and entity
-// features in one call.
+// ClassifyText classifies a document into categories.
+func (c *Client) ClassifyText(ctx context.Context, req *languagepb.ClassifyTextRequest, opts ...gax.CallOption) (*languagepb.ClassifyTextResponse, error) {
+	ctx = insertXGoog(ctx, c.xGoogHeader)
+	opts = append(c.CallOptions.ClassifyText[0:len(c.CallOptions.ClassifyText):len(c.CallOptions.ClassifyText)], opts...)
+	var resp *languagepb.ClassifyTextResponse
+	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		var err error
+		resp, err = c.client.ClassifyText(ctx, req, settings.GRPC...)
+		return err
+	}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// AnnotateText a convenience method that provides all syntax, sentiment, entity, and
+// classification features in one call.
 func (c *Client) AnnotateText(ctx context.Context, req *languagepb.AnnotateTextRequest, opts ...gax.CallOption) (*languagepb.AnnotateTextResponse, error) {
 	ctx = insertXGoog(ctx, c.xGoogHeader)
 	opts = append(c.CallOptions.AnnotateText[0:len(c.CallOptions.AnnotateText):len(c.CallOptions.AnnotateText)], opts...)

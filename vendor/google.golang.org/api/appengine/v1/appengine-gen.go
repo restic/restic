@@ -86,6 +86,7 @@ func NewAppsService(s *APIService) *AppsService {
 	rs.AuthorizedCertificates = NewAppsAuthorizedCertificatesService(s)
 	rs.AuthorizedDomains = NewAppsAuthorizedDomainsService(s)
 	rs.DomainMappings = NewAppsDomainMappingsService(s)
+	rs.Firewall = NewAppsFirewallService(s)
 	rs.Locations = NewAppsLocationsService(s)
 	rs.Operations = NewAppsOperationsService(s)
 	rs.Services = NewAppsServicesService(s)
@@ -100,6 +101,8 @@ type AppsService struct {
 	AuthorizedDomains *AppsAuthorizedDomainsService
 
 	DomainMappings *AppsDomainMappingsService
+
+	Firewall *AppsFirewallService
 
 	Locations *AppsLocationsService
 
@@ -132,6 +135,27 @@ func NewAppsDomainMappingsService(s *APIService) *AppsDomainMappingsService {
 }
 
 type AppsDomainMappingsService struct {
+	s *APIService
+}
+
+func NewAppsFirewallService(s *APIService) *AppsFirewallService {
+	rs := &AppsFirewallService{s: s}
+	rs.IngressRules = NewAppsFirewallIngressRulesService(s)
+	return rs
+}
+
+type AppsFirewallService struct {
+	s *APIService
+
+	IngressRules *AppsFirewallIngressRulesService
+}
+
+func NewAppsFirewallIngressRulesService(s *APIService) *AppsFirewallIngressRulesService {
+	rs := &AppsFirewallIngressRulesService{s: s}
+	return rs
+}
+
+type AppsFirewallIngressRulesService struct {
 	s *APIService
 }
 
@@ -613,6 +637,69 @@ func (s *BasicScaling) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// BatchUpdateIngressRulesRequest: Request message for
+// Firewall.BatchUpdateIngressRules.
+type BatchUpdateIngressRulesRequest struct {
+	// IngressRules: A list of FirewallRules to replace the existing set.
+	IngressRules []*FirewallRule `json:"ingressRules,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "IngressRules") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "IngressRules") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BatchUpdateIngressRulesRequest) MarshalJSON() ([]byte, error) {
+	type noMethod BatchUpdateIngressRulesRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BatchUpdateIngressRulesResponse: Response message for
+// Firewall.UpdateAllIngressRules.
+type BatchUpdateIngressRulesResponse struct {
+	// IngressRules: The full list of ingress FirewallRules for this
+	// application.
+	IngressRules []*FirewallRule `json:"ingressRules,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "IngressRules") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "IngressRules") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BatchUpdateIngressRulesResponse) MarshalJSON() ([]byte, error) {
+	type noMethod BatchUpdateIngressRulesResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // CertificateRawData: An SSL certificate obtained from a certificate
 // authority.
 type CertificateRawData struct {
@@ -1070,6 +1157,66 @@ func (s *FileInfo) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// FirewallRule: A single firewall rule that is evaluated against
+// incoming traffic and provides an action to take on matched requests.
+type FirewallRule struct {
+	// Action: The action to take on matched requests.
+	//
+	// Possible values:
+	//   "UNSPECIFIED_ACTION"
+	//   "ALLOW" - Matching requests are allowed.
+	//   "DENY" - Matching requests are denied.
+	Action string `json:"action,omitempty"`
+
+	// Description: An optional string description of this rule. This field
+	// has a maximum length of 100 characters.
+	Description string `json:"description,omitempty"`
+
+	// Priority: A positive integer between 1, Int32.MaxValue-1 that defines
+	// the order of rule evaluation. Rules with the lowest priority are
+	// evaluated first.A default rule at priority Int32.MaxValue matches all
+	// IPv4 and IPv6 traffic when no previous rule matches. Only the action
+	// of this rule can be modified by the user.
+	Priority int64 `json:"priority,omitempty"`
+
+	// SourceRange: IP address or range, defined using CIDR notation, of
+	// requests that this rule applies to. You can use the wildcard
+	// character "*" to match all IPs equivalent to "0/0" and "::/0"
+	// together. Examples: 192.168.1.1 or 192.168.0.0/16 or 2001:db8::/32
+	// or 2001:0db8:0000:0042:0000:8a2e:0370:7334.<p>Truncation will be
+	// silently performed on addresses which are not properly truncated. For
+	// example, 1.2.3.4/24 is accepted as the same address as 1.2.3.0/24.
+	// Similarly, for IPv6, 2001:db8::1/32 is accepted as the same address
+	// as 2001:db8::/32.
+	SourceRange string `json:"sourceRange,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Action") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Action") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *FirewallRule) MarshalJSON() ([]byte, error) {
+	type noMethod FirewallRule
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // HealthCheck: Health checking configuration for VM instances.
 // Unhealthy instances are killed and replaced with new instances. Only
 // applicable for instances in App Engine flexible environment.
@@ -1421,6 +1568,43 @@ type ListDomainMappingsResponse struct {
 
 func (s *ListDomainMappingsResponse) MarshalJSON() ([]byte, error) {
 	type noMethod ListDomainMappingsResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ListIngressRulesResponse: Response message for
+// Firewall.ListIngressRules.
+type ListIngressRulesResponse struct {
+	// IngressRules: The ingress FirewallRules for this application.
+	IngressRules []*FirewallRule `json:"ingressRules,omitempty"`
+
+	// NextPageToken: Continuation token for fetching the next page of
+	// results.
+	NextPageToken string `json:"nextPageToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "IngressRules") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "IngressRules") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ListIngressRulesResponse) MarshalJSON() ([]byte, error) {
+	type noMethod ListIngressRulesResponse
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -5457,6 +5641,919 @@ func (c *AppsDomainMappingsPatchCall) Do(opts ...googleapi.CallOption) (*Operati
 	//   },
 	//   "response": {
 	//     "$ref": "Operation"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "appengine.apps.firewall.ingressRules.batchUpdate":
+
+type AppsFirewallIngressRulesBatchUpdateCall struct {
+	s                              *APIService
+	appsId                         string
+	batchupdateingressrulesrequest *BatchUpdateIngressRulesRequest
+	urlParams_                     gensupport.URLParams
+	ctx_                           context.Context
+	header_                        http.Header
+}
+
+// BatchUpdate: Replaces the entire firewall ruleset in one bulk
+// operation. This overrides and replaces the rules of an existing
+// firewall with the new rules.If the final rule does not match traffic
+// with the '*' wildcard IP range, then an "allow all" rule is
+// explicitly added to the end of the list.
+func (r *AppsFirewallIngressRulesService) BatchUpdate(appsId string, batchupdateingressrulesrequest *BatchUpdateIngressRulesRequest) *AppsFirewallIngressRulesBatchUpdateCall {
+	c := &AppsFirewallIngressRulesBatchUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.appsId = appsId
+	c.batchupdateingressrulesrequest = batchupdateingressrulesrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *AppsFirewallIngressRulesBatchUpdateCall) Fields(s ...googleapi.Field) *AppsFirewallIngressRulesBatchUpdateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AppsFirewallIngressRulesBatchUpdateCall) Context(ctx context.Context) *AppsFirewallIngressRulesBatchUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *AppsFirewallIngressRulesBatchUpdateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *AppsFirewallIngressRulesBatchUpdateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.batchupdateingressrulesrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/apps/{appsId}/firewall/ingressRules:batchUpdate")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"appsId": c.appsId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "appengine.apps.firewall.ingressRules.batchUpdate" call.
+// Exactly one of *BatchUpdateIngressRulesResponse or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *BatchUpdateIngressRulesResponse.ServerResponse.Header or (if
+// a response was returned at all) in error.(*googleapi.Error).Header.
+// Use googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *AppsFirewallIngressRulesBatchUpdateCall) Do(opts ...googleapi.CallOption) (*BatchUpdateIngressRulesResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &BatchUpdateIngressRulesResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Replaces the entire firewall ruleset in one bulk operation. This overrides and replaces the rules of an existing firewall with the new rules.If the final rule does not match traffic with the '*' wildcard IP range, then an \"allow all\" rule is explicitly added to the end of the list.",
+	//   "flatPath": "v1/apps/{appsId}/firewall/ingressRules:batchUpdate",
+	//   "httpMethod": "POST",
+	//   "id": "appengine.apps.firewall.ingressRules.batchUpdate",
+	//   "parameterOrder": [
+	//     "appsId"
+	//   ],
+	//   "parameters": {
+	//     "appsId": {
+	//       "description": "Part of `name`. Name of the Firewall collection to set. Example: apps/myapp/firewall/ingressRules.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/apps/{appsId}/firewall/ingressRules:batchUpdate",
+	//   "request": {
+	//     "$ref": "BatchUpdateIngressRulesRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "BatchUpdateIngressRulesResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "appengine.apps.firewall.ingressRules.create":
+
+type AppsFirewallIngressRulesCreateCall struct {
+	s            *APIService
+	appsId       string
+	firewallrule *FirewallRule
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Create: Creates a firewall rule for the application.
+func (r *AppsFirewallIngressRulesService) Create(appsId string, firewallrule *FirewallRule) *AppsFirewallIngressRulesCreateCall {
+	c := &AppsFirewallIngressRulesCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.appsId = appsId
+	c.firewallrule = firewallrule
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *AppsFirewallIngressRulesCreateCall) Fields(s ...googleapi.Field) *AppsFirewallIngressRulesCreateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AppsFirewallIngressRulesCreateCall) Context(ctx context.Context) *AppsFirewallIngressRulesCreateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *AppsFirewallIngressRulesCreateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *AppsFirewallIngressRulesCreateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.firewallrule)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/apps/{appsId}/firewall/ingressRules")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"appsId": c.appsId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "appengine.apps.firewall.ingressRules.create" call.
+// Exactly one of *FirewallRule or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *FirewallRule.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AppsFirewallIngressRulesCreateCall) Do(opts ...googleapi.CallOption) (*FirewallRule, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &FirewallRule{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Creates a firewall rule for the application.",
+	//   "flatPath": "v1/apps/{appsId}/firewall/ingressRules",
+	//   "httpMethod": "POST",
+	//   "id": "appengine.apps.firewall.ingressRules.create",
+	//   "parameterOrder": [
+	//     "appsId"
+	//   ],
+	//   "parameters": {
+	//     "appsId": {
+	//       "description": "Part of `parent`. Name of the parent Firewall collection in which to create a new rule. Example: apps/myapp/firewall/ingressRules.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/apps/{appsId}/firewall/ingressRules",
+	//   "request": {
+	//     "$ref": "FirewallRule"
+	//   },
+	//   "response": {
+	//     "$ref": "FirewallRule"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "appengine.apps.firewall.ingressRules.delete":
+
+type AppsFirewallIngressRulesDeleteCall struct {
+	s              *APIService
+	appsId         string
+	ingressRulesId string
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
+	header_        http.Header
+}
+
+// Delete: Deletes the specified firewall rule.
+func (r *AppsFirewallIngressRulesService) Delete(appsId string, ingressRulesId string) *AppsFirewallIngressRulesDeleteCall {
+	c := &AppsFirewallIngressRulesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.appsId = appsId
+	c.ingressRulesId = ingressRulesId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *AppsFirewallIngressRulesDeleteCall) Fields(s ...googleapi.Field) *AppsFirewallIngressRulesDeleteCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AppsFirewallIngressRulesDeleteCall) Context(ctx context.Context) *AppsFirewallIngressRulesDeleteCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *AppsFirewallIngressRulesDeleteCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *AppsFirewallIngressRulesDeleteCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"appsId":         c.appsId,
+		"ingressRulesId": c.ingressRulesId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "appengine.apps.firewall.ingressRules.delete" call.
+// Exactly one of *Empty or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Empty.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *AppsFirewallIngressRulesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Empty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Deletes the specified firewall rule.",
+	//   "flatPath": "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}",
+	//   "httpMethod": "DELETE",
+	//   "id": "appengine.apps.firewall.ingressRules.delete",
+	//   "parameterOrder": [
+	//     "appsId",
+	//     "ingressRulesId"
+	//   ],
+	//   "parameters": {
+	//     "appsId": {
+	//       "description": "Part of `name`. Name of the Firewall resource to delete. Example: apps/myapp/firewall/ingressRules/100.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "ingressRulesId": {
+	//       "description": "Part of `name`. See documentation of `appsId`.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}",
+	//   "response": {
+	//     "$ref": "Empty"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
+}
+
+// method id "appengine.apps.firewall.ingressRules.get":
+
+type AppsFirewallIngressRulesGetCall struct {
+	s              *APIService
+	appsId         string
+	ingressRulesId string
+	urlParams_     gensupport.URLParams
+	ifNoneMatch_   string
+	ctx_           context.Context
+	header_        http.Header
+}
+
+// Get: Gets the specified firewall rule.
+func (r *AppsFirewallIngressRulesService) Get(appsId string, ingressRulesId string) *AppsFirewallIngressRulesGetCall {
+	c := &AppsFirewallIngressRulesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.appsId = appsId
+	c.ingressRulesId = ingressRulesId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *AppsFirewallIngressRulesGetCall) Fields(s ...googleapi.Field) *AppsFirewallIngressRulesGetCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AppsFirewallIngressRulesGetCall) IfNoneMatch(entityTag string) *AppsFirewallIngressRulesGetCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AppsFirewallIngressRulesGetCall) Context(ctx context.Context) *AppsFirewallIngressRulesGetCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *AppsFirewallIngressRulesGetCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *AppsFirewallIngressRulesGetCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"appsId":         c.appsId,
+		"ingressRulesId": c.ingressRulesId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "appengine.apps.firewall.ingressRules.get" call.
+// Exactly one of *FirewallRule or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *FirewallRule.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AppsFirewallIngressRulesGetCall) Do(opts ...googleapi.CallOption) (*FirewallRule, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &FirewallRule{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Gets the specified firewall rule.",
+	//   "flatPath": "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}",
+	//   "httpMethod": "GET",
+	//   "id": "appengine.apps.firewall.ingressRules.get",
+	//   "parameterOrder": [
+	//     "appsId",
+	//     "ingressRulesId"
+	//   ],
+	//   "parameters": {
+	//     "appsId": {
+	//       "description": "Part of `name`. Name of the Firewall resource to retrieve. Example: apps/myapp/firewall/ingressRules/100.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "ingressRulesId": {
+	//       "description": "Part of `name`. See documentation of `appsId`.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}",
+	//   "response": {
+	//     "$ref": "FirewallRule"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/appengine.admin",
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-platform.read-only"
+	//   ]
+	// }
+
+}
+
+// method id "appengine.apps.firewall.ingressRules.list":
+
+type AppsFirewallIngressRulesListCall struct {
+	s            *APIService
+	appsId       string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists the firewall rules of an application.
+func (r *AppsFirewallIngressRulesService) List(appsId string) *AppsFirewallIngressRulesListCall {
+	c := &AppsFirewallIngressRulesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.appsId = appsId
+	return c
+}
+
+// MatchingAddress sets the optional parameter "matchingAddress": A
+// valid IP Address. If set, only rules matching this address will be
+// returned. The first returned rule will be the rule that fires on
+// requests from this IP.
+func (c *AppsFirewallIngressRulesListCall) MatchingAddress(matchingAddress string) *AppsFirewallIngressRulesListCall {
+	c.urlParams_.Set("matchingAddress", matchingAddress)
+	return c
+}
+
+// PageSize sets the optional parameter "pageSize": Maximum results to
+// return per page.
+func (c *AppsFirewallIngressRulesListCall) PageSize(pageSize int64) *AppsFirewallIngressRulesListCall {
+	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
+	return c
+}
+
+// PageToken sets the optional parameter "pageToken": Continuation token
+// for fetching the next page of results.
+func (c *AppsFirewallIngressRulesListCall) PageToken(pageToken string) *AppsFirewallIngressRulesListCall {
+	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *AppsFirewallIngressRulesListCall) Fields(s ...googleapi.Field) *AppsFirewallIngressRulesListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *AppsFirewallIngressRulesListCall) IfNoneMatch(entityTag string) *AppsFirewallIngressRulesListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AppsFirewallIngressRulesListCall) Context(ctx context.Context) *AppsFirewallIngressRulesListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *AppsFirewallIngressRulesListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *AppsFirewallIngressRulesListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/apps/{appsId}/firewall/ingressRules")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"appsId": c.appsId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "appengine.apps.firewall.ingressRules.list" call.
+// Exactly one of *ListIngressRulesResponse or error will be non-nil.
+// Any non-2xx status code is an error. Response headers are in either
+// *ListIngressRulesResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *AppsFirewallIngressRulesListCall) Do(opts ...googleapi.CallOption) (*ListIngressRulesResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &ListIngressRulesResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists the firewall rules of an application.",
+	//   "flatPath": "v1/apps/{appsId}/firewall/ingressRules",
+	//   "httpMethod": "GET",
+	//   "id": "appengine.apps.firewall.ingressRules.list",
+	//   "parameterOrder": [
+	//     "appsId"
+	//   ],
+	//   "parameters": {
+	//     "appsId": {
+	//       "description": "Part of `parent`. Name of the Firewall collection to retrieve. Example: apps/myapp/firewall/ingressRules.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "matchingAddress": {
+	//       "description": "A valid IP Address. If set, only rules matching this address will be returned. The first returned rule will be the rule that fires on requests from this IP.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "pageSize": {
+	//       "description": "Maximum results to return per page.",
+	//       "format": "int32",
+	//       "location": "query",
+	//       "type": "integer"
+	//     },
+	//     "pageToken": {
+	//       "description": "Continuation token for fetching the next page of results.",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/apps/{appsId}/firewall/ingressRules",
+	//   "response": {
+	//     "$ref": "ListIngressRulesResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/appengine.admin",
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-platform.read-only"
+	//   ]
+	// }
+
+}
+
+// Pages invokes f for each page of results.
+// A non-nil error returned from f will halt the iteration.
+// The provided context supersedes any context provided to the Context method.
+func (c *AppsFirewallIngressRulesListCall) Pages(ctx context.Context, f func(*ListIngressRulesResponse) error) error {
+	c.ctx_ = ctx
+	defer c.PageToken(c.urlParams_.Get("pageToken")) // reset paging to original point
+	for {
+		x, err := c.Do()
+		if err != nil {
+			return err
+		}
+		if err := f(x); err != nil {
+			return err
+		}
+		if x.NextPageToken == "" {
+			return nil
+		}
+		c.PageToken(x.NextPageToken)
+	}
+}
+
+// method id "appengine.apps.firewall.ingressRules.patch":
+
+type AppsFirewallIngressRulesPatchCall struct {
+	s              *APIService
+	appsId         string
+	ingressRulesId string
+	firewallrule   *FirewallRule
+	urlParams_     gensupport.URLParams
+	ctx_           context.Context
+	header_        http.Header
+}
+
+// Patch: Updates the specified firewall rule.
+func (r *AppsFirewallIngressRulesService) Patch(appsId string, ingressRulesId string, firewallrule *FirewallRule) *AppsFirewallIngressRulesPatchCall {
+	c := &AppsFirewallIngressRulesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.appsId = appsId
+	c.ingressRulesId = ingressRulesId
+	c.firewallrule = firewallrule
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": Standard field
+// mask for the set of fields to be updated.
+func (c *AppsFirewallIngressRulesPatchCall) UpdateMask(updateMask string) *AppsFirewallIngressRulesPatchCall {
+	c.urlParams_.Set("updateMask", updateMask)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *AppsFirewallIngressRulesPatchCall) Fields(s ...googleapi.Field) *AppsFirewallIngressRulesPatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *AppsFirewallIngressRulesPatchCall) Context(ctx context.Context) *AppsFirewallIngressRulesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *AppsFirewallIngressRulesPatchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *AppsFirewallIngressRulesPatchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.firewallrule)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PATCH", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"appsId":         c.appsId,
+		"ingressRulesId": c.ingressRulesId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "appengine.apps.firewall.ingressRules.patch" call.
+// Exactly one of *FirewallRule or error will be non-nil. Any non-2xx
+// status code is an error. Response headers are in either
+// *FirewallRule.ServerResponse.Header or (if a response was returned at
+// all) in error.(*googleapi.Error).Header. Use googleapi.IsNotModified
+// to check whether the returned error was because
+// http.StatusNotModified was returned.
+func (c *AppsFirewallIngressRulesPatchCall) Do(opts ...googleapi.CallOption) (*FirewallRule, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &FirewallRule{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates the specified firewall rule.",
+	//   "flatPath": "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}",
+	//   "httpMethod": "PATCH",
+	//   "id": "appengine.apps.firewall.ingressRules.patch",
+	//   "parameterOrder": [
+	//     "appsId",
+	//     "ingressRulesId"
+	//   ],
+	//   "parameters": {
+	//     "appsId": {
+	//       "description": "Part of `name`. Name of the Firewall resource to update. Example: apps/myapp/firewall/ingressRules/100.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "ingressRulesId": {
+	//       "description": "Part of `name`. See documentation of `appsId`.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "updateMask": {
+	//       "description": "Standard field mask for the set of fields to be updated.",
+	//       "format": "google-fieldmask",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/apps/{appsId}/firewall/ingressRules/{ingressRulesId}",
+	//   "request": {
+	//     "$ref": "FirewallRule"
+	//   },
+	//   "response": {
+	//     "$ref": "FirewallRule"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform"

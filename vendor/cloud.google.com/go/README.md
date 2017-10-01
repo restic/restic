@@ -33,6 +33,32 @@ make backwards-incompatible changes.
 
 ## News
 
+_September 28, 2017_
+
+*v0.14.0*
+
+- bigquery BREAKING CHANGES:
+  - Standard SQL is the default for queries and views.
+  - `Table.Create` takes `TableMetadata` as a second argument, instead of
+    options.
+  - `Dataset.Create` takes `DatasetMetadata` as a second argument.
+  - `DatasetMetadata` field `ID` renamed to `FullID`
+  - `TableMetadata` field `ID` renamed to `FullID`
+
+- Other bigquery changes:
+  - The client will append a random suffix to a provided job ID if you set
+    `AddJobIDSuffix` to true in a job config.
+  - Listing jobs is supported.
+  - Better retry logic.
+
+- vision, language, speech: clients are now stable
+
+- monitoring: client is now beta
+
+- profiler:
+  - Rename InstanceName to Instance, ZoneName to Zone
+  - Auto-detect service name and version on AppEngine.
+
 _September 8, 2017_
 
 *v0.13.0*
@@ -124,11 +150,11 @@ Google API                       | Status       | Package
 [Bigtable][cloud-bigtable]       | beta         | [`cloud.google.com/go/bigtable`][cloud-bigtable-ref]
 [BigQuery][cloud-bigquery]       | beta         | [`cloud.google.com/go/bigquery`][cloud-bigquery-ref]
 [Logging][cloud-logging]         | stable       | [`cloud.google.com/go/logging`][cloud-logging-ref]
-[Monitoring][cloud-monitoring]   | alpha        | [`cloud.google.com/go/monitoring/apiv3`][cloud-monitoring-ref]
+[Monitoring][cloud-monitoring]   | beta         | [`cloud.google.com/go/monitoring/apiv3`][cloud-monitoring-ref]
 [Pub/Sub][cloud-pubsub]          | beta         | [`cloud.google.com/go/pubsub`][cloud-pubsub-ref]
-[Vision][cloud-vision]           | beta         | [`cloud.google.com/go/vision/apiv1`][cloud-vision-ref]
-[Language][cloud-language]       | beta         | [`cloud.google.com/go/language/apiv1`][cloud-language-ref]
-[Speech][cloud-speech]           | beta         | [`cloud.google.com/go/speech/apiv1`][cloud-speech-ref]
+[Vision][cloud-vision]           | stable       | [`cloud.google.com/go/vision/apiv1`][cloud-vision-ref]
+[Language][cloud-language]       | stable       | [`cloud.google.com/go/language/apiv1`][cloud-language-ref]
+[Speech][cloud-speech]           | stable       | [`cloud.google.com/go/speech/apiv1`][cloud-speech-ref]
 [Spanner][cloud-spanner]         | beta         | [`cloud.google.com/go/spanner`][cloud-spanner-ref]
 [Translation][cloud-translation] | stable       | [`cloud.google.com/go/translate`][cloud-translation-ref]
 [Trace][cloud-trace]             | alpha        | [`cloud.google.com/go/trace`][cloud-trace-ref]

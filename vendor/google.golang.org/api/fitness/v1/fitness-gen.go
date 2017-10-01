@@ -998,11 +998,11 @@ type ListDataPointChangesResponse struct {
 	// changes.
 	DataSourceId string `json:"dataSourceId,omitempty"`
 
-	// DeletedDataPoint: Data points that have been removed and will not be
-	// included in any other request for dataset contents.
+	// DeletedDataPoint: Deleted data points for the user. Note, for
+	// modifications this should be parsed before handling insertions.
 	DeletedDataPoint []*DataPoint `json:"deletedDataPoint,omitempty"`
 
-	// InsertedDataPoint: Data points listed.
+	// InsertedDataPoint: Inserted data points for the user.
 	InsertedDataPoint []*DataPoint `json:"insertedDataPoint,omitempty"`
 
 	// NextPageToken: The continuation token, which is used to page through
@@ -2265,7 +2265,8 @@ type UsersDataSourcesDataPointChangesListCall struct {
 	header_      http.Header
 }
 
-// List: results ordered by descending end_time
+// List: Queries for user's data point changes for a particular data
+// source.
 func (r *UsersDataSourcesDataPointChangesService) List(userId string, dataSourceId string) *UsersDataSourcesDataPointChangesListCall {
 	c := &UsersDataSourcesDataPointChangesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.userId = userId
@@ -2274,8 +2275,7 @@ func (r *UsersDataSourcesDataPointChangesService) List(userId string, dataSource
 }
 
 // Limit sets the optional parameter "limit": If specified, no more than
-// this many data point changes will be included in the response. The
-// default is 500 data point changes.
+// this many data point changes will be included in the response.
 func (c *UsersDataSourcesDataPointChangesListCall) Limit(limit int64) *UsersDataSourcesDataPointChangesListCall {
 	c.urlParams_.Set("limit", fmt.Sprint(limit))
 	return c
@@ -2385,7 +2385,7 @@ func (c *UsersDataSourcesDataPointChangesListCall) Do(opts ...googleapi.CallOpti
 	}
 	return ret, nil
 	// {
-	//   "description": "results ordered by descending end_time",
+	//   "description": "Queries for user's data point changes for a particular data source.",
 	//   "httpMethod": "GET",
 	//   "id": "fitness.users.dataSources.dataPointChanges.list",
 	//   "parameterOrder": [
@@ -2400,7 +2400,7 @@ func (c *UsersDataSourcesDataPointChangesListCall) Do(opts ...googleapi.CallOpti
 	//       "type": "string"
 	//     },
 	//     "limit": {
-	//       "description": "If specified, no more than this many data point changes will be included in the response. The default is 500 data point changes.",
+	//       "description": "If specified, no more than this many data point changes will be included in the response.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
@@ -2411,7 +2411,7 @@ func (c *UsersDataSourcesDataPointChangesListCall) Do(opts ...googleapi.CallOpti
 	//       "type": "string"
 	//     },
 	//     "userId": {
-	//       "description": "List data points for the person identified. Use \"me\" to indicate the authenticated user. Only \"me\" is supported at this time.",
+	//       "description": "List data points for the person identified. Use me to indicate the authenticated user. Only me is supported at this time.",
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"

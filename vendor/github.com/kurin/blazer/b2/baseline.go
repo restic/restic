@@ -15,13 +15,12 @@
 package b2
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/kurin/blazer/base"
-
-	"golang.org/x/net/context"
 )
 
 // This file wraps the base package in a thin layer, for testing.  It should be
@@ -149,6 +148,9 @@ func (b *b2Root) authorizeAccount(ctx context.Context, account, key string, opts
 	}
 	if c.capExceeded {
 		aopts = append(aopts, base.ForceCapExceeded())
+	}
+	for _, agent := range c.userAgents {
+		aopts = append(aopts, base.UserAgent(agent))
 	}
 	nb, err := base.AuthorizeAccount(ctx, account, key, aopts...)
 	if err != nil {

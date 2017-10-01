@@ -608,6 +608,11 @@ type CalendarResource struct {
 	// Etags: ETag of the resource.
 	Etags string `json:"etags,omitempty"`
 
+	// GeneratedResourceName: The auto-generated name of the calendar
+	// resource which includes metadata about the resource such as building
+	// name, floor, capacity, etc. For example, NYC-2-Training Room 1A (16)
+	GeneratedResourceName string `json:"generatedResourceName,omitempty"`
+
 	// Kind: The type of the resource. For calendar resources, the value is
 	// admin#directory#resources#calendars#CalendarResource.
 	Kind string `json:"kind,omitempty"`
@@ -2649,6 +2654,8 @@ type User struct {
 
 	ExternalIds interface{} `json:"externalIds,omitempty"`
 
+	Gender interface{} `json:"gender,omitempty"`
+
 	// HashFunction: Hash function name for password. Supported are MD5,
 	// SHA-1 and crypt
 	HashFunction string `json:"hashFunction,omitempty"`
@@ -2938,6 +2945,41 @@ type UserExternalId struct {
 
 func (s *UserExternalId) MarshalJSON() ([]byte, error) {
 	type noMethod UserExternalId
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+type UserGender struct {
+	// AddressMeAs: AddressMeAs. A human-readable string containing the
+	// proper way to refer to the profile owner by humans, for example
+	// "he/him/his" or "they/them/their".
+	AddressMeAs string `json:"addressMeAs,omitempty"`
+
+	// CustomGender: Custom gender.
+	CustomGender string `json:"customGender,omitempty"`
+
+	// Type: Gender.
+	Type string `json:"type,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AddressMeAs") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "AddressMeAs") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UserGender) MarshalJSON() ([]byte, error) {
+	type noMethod UserGender
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -3352,7 +3394,7 @@ type UserPosixAccount struct {
 	Gecos string `json:"gecos,omitempty"`
 
 	// Gid: The default group ID.
-	Gid int64 `json:"gid,omitempty"`
+	Gid uint64 `json:"gid,omitempty,string"`
 
 	// HomeDirectory: The path to the home directory for this account.
 	HomeDirectory string `json:"homeDirectory,omitempty"`
@@ -3368,7 +3410,7 @@ type UserPosixAccount struct {
 	SystemId string `json:"systemId,omitempty"`
 
 	// Uid: The POSIX compliant user ID.
-	Uid int64 `json:"uid,omitempty"`
+	Uid uint64 `json:"uid,omitempty,string"`
 
 	// Username: The username of the account.
 	Username string `json:"username,omitempty"`

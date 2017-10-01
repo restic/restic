@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/aWMF4XLXFbkXgV-B1IIbWLjqgmo\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/UYGCzApTAApQ5LVMe3mi28BTsws\"",
  "discoveryVersion": "v1",
  "id": "toolresults:v1beta3",
  "name": "toolresults",
  "canonicalName": "Tool Results",
  "version": "v1beta3",
- "revision": "20170914",
+ "revision": "20170925",
  "title": "Cloud Tool Results API",
  "description": "Reads and publishes results from Firebase Test Lab.",
  "ownerDomain": "google.com",
@@ -400,7 +400,7 @@
    "properties": {
     "crashed": {
      "type": "boolean",
-     "description": "If the failure was severe because the system under test crashed."
+     "description": "If the failure was severe because the system (app) under test crashed."
     },
     "notInstalled": {
      "type": "boolean",
@@ -408,7 +408,7 @@
     },
     "otherNativeCrash": {
      "type": "boolean",
-     "description": "If a native process other than the app crashed."
+     "description": "If a native process (including any other than the app) crashed."
     },
     "timedOut": {
      "type": "boolean",

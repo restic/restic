@@ -17,6 +17,7 @@ package bigquery_test
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"cloud.google.com/go/bigquery"
 	"golang.org/x/net/context"
@@ -233,7 +234,8 @@ func ExampleDataset_Create() {
 	if err != nil {
 		// TODO: Handle error.
 	}
-	if err := client.Dataset("my_dataset").Create(ctx); err != nil {
+	ds := client.Dataset("my_dataset")
+	if err := ds.Create(ctx, &bigquery.DatasetMetadata{Location: "EU"}); err != nil {
 		// TODO: Handle error.
 	}
 }
@@ -389,13 +391,13 @@ func ExampleTable_Create() {
 		// TODO: Handle error.
 	}
 	t := client.Dataset("my_dataset").Table("new-table")
-	if err := t.Create(ctx); err != nil {
+	if err := t.Create(ctx, nil); err != nil {
 		// TODO: Handle error.
 	}
 }
 
-// If you know your table's schema initially, pass a Schema to Create.
-func ExampleTable_Create_schema() {
+// Initialize a new table by passing TableMetadata to Table.Create.
+func ExampleTable_Create_initialize() {
 	ctx := context.Background()
 	// Infer table schema from a Go type.
 	schema, err := bigquery.InferSchema(Item{})
@@ -407,7 +409,12 @@ func ExampleTable_Create_schema() {
 		// TODO: Handle error.
 	}
 	t := client.Dataset("my_dataset").Table("new-table")
-	if err := t.Create(ctx, schema); err != nil {
+	if err := t.Create(ctx,
+		&bigquery.TableMetadata{
+			Name:           "My New Table",
+			Schema:         schema,
+			ExpirationTime: time.Now().Add(24 * time.Hour),
+		}); err != nil {
 		// TODO: Handle error.
 	}
 }

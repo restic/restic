@@ -30,15 +30,19 @@ type Dataset struct {
 	c         *Client
 }
 
+// DatasetMetadata contains information about a BigQuery dataset.
 type DatasetMetadata struct {
-	CreationTime           time.Time
-	LastModifiedTime       time.Time     // When the dataset or any of its tables were modified.
-	DefaultTableExpiration time.Duration // The default expiration time for new tables.
-	Description            string        // The user-friendly description of this dataset.
-	Name                   string        // The user-friendly name for this dataset.
-	ID                     string
+	// These fields can be set when creating a dataset.
+	Name                   string            // The user-friendly name for this dataset.
+	Description            string            // The user-friendly description of this dataset.
 	Location               string            // The geo location of the dataset.
+	DefaultTableExpiration time.Duration     // The default expiration time for new tables.
 	Labels                 map[string]string // User-provided labels.
+
+	// These fields are read-only.
+	CreationTime     time.Time
+	LastModifiedTime time.Time // When the dataset or any of its tables were modified.
+	FullID           string    // The full dataset ID in the form projectID:datasetID.
 
 	// ETag is the ETag obtained when reading metadata. Pass it to Dataset.Update to
 	// ensure that the metadata hasn't changed since it was read.
@@ -46,6 +50,8 @@ type DatasetMetadata struct {
 	// TODO(jba): access rules
 }
 
+// DatasetMetadataToUpdate is used when updating a dataset's metadata.
+// Only non-nil fields will be updated.
 type DatasetMetadataToUpdate struct {
 	Description optional.String // The user-friendly description of this table.
 	Name        optional.String // The user-friendly name for this dataset.
@@ -89,10 +95,10 @@ func (c *Client) DatasetInProject(projectID, datasetID string) *Dataset {
 	}
 }
 
-// Create creates a dataset in the BigQuery service. An error will be returned
-// if the dataset already exists.
-func (d *Dataset) Create(ctx context.Context) error {
-	return d.c.service.insertDataset(ctx, d.DatasetID, d.ProjectID)
+// Create creates a dataset in the BigQuery service. An error will be returned if the
+// dataset already exists. Pass in a DatasetMetadata value to configure the dataset.
+func (d *Dataset) Create(ctx context.Context, md *DatasetMetadata) error {
+	return d.c.service.insertDataset(ctx, d.DatasetID, d.ProjectID, md)
 }
 
 // Delete deletes the dataset.

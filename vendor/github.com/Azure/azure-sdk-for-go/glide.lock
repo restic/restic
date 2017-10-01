@@ -1,8 +1,8 @@
-hash: f52476dff67b66fe9fffe35b63ac0c06962fcaacd326b66820a33edf53b01a16
-updated: 2017-09-01T13:52:16.3705168-07:00
+hash: ee3a7971ba1cf6d287128746a2dd954ea023d952aec65453c94323f26955e0ae
+updated: 2017-09-28T11:44:06.2382306-07:00
 imports:
 - name: github.com/Azure/go-autorest
-  version: 48a8154950f853ae1f2a9c409e0eb1fb71119bc8
+  version: f6be1abbb5abd0517522f850dd785990d373da7e
   subpackages:
   - autorest
   - autorest/adal
@@ -15,9 +15,9 @@ imports:
 - name: github.com/howeyc/gopass
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - name: github.com/mattn/go-colorable
-  version: 040dd0b833b34b4182673409ada4df2853b26537
+  version: ad5389df28cdac544c99bd7b9161a0b5b6ca9d1b
 - name: github.com/mattn/go-isatty
-  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
+  version: a5cdd64afdee435007ee3e9f6ed4684af949d568
 - name: github.com/mgutz/ansi
   version: 9520e82c474b0a04dd04f8a40959027271bab992
 - name: github.com/mgutz/minimist
@@ -31,21 +31,22 @@ imports:
 - name: github.com/nozzle/throttler
   version: d9b45f19996c645d38c9266d1f5cf1990e930119
 - name: github.com/satori/go.uuid
-  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+  version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/satori/uuid
   version: 5bf94b69c6b68ee1b541973bb8e1144db23a194b
 - name: github.com/shopspring/decimal
-  version: 3c692774ac4c47c7a296ec96e553719dba1a68fc
+  version: aed1bfe463fa3c9cc268d60dcc1491db613bff7e
 - name: golang.org/x/crypto
-  version: 558b6879de74bc843225cde5686419267ff707ca
+  version: 76eec36fa14229c4b25bb894c2d0e591527af429
   subpackages:
   - pkcs12
   - pkcs12/internal/rc2
   - ssh/terminal
 - name: golang.org/x/sys
-  version: 0f826bdd13b500be0f1d4004938ad978fcc6031e
+  version: 314a259e304ff91bd6985da2a7149bbf91237993
   subpackages:
   - unix
+  - windows
 - name: gopkg.in/check.v1
   version: 20d25e2804050c1cd24a7eea1e7a6447dd0e74ec
 - name: gopkg.in/godo.v2
@@ -62,4 +63,4 @@ testImports:
   - cassette
   - recorder
 - name: gopkg.in/yaml.v2
-  version: 25c4ec802a7d637f88d584ab26798e94ad14c13b
+  version: eb3733d160e74a9c7e442f435eb3bea458e1d19f

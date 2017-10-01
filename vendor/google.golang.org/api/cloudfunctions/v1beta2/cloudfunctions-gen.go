@@ -260,13 +260,13 @@ type CloudFunction struct {
 	// ions/*/paths/*`
 	// To refer to a moveable alias
 	// (branch):
-	// `https://source.developers.google.com/projects/*/repos/*/ali
-	// ases/movable/*/paths/*`
+	// `https://source.developers.google.com/projects/*/repos/*/mov
+	// eable-aliases/*/paths/*`
 	// In particular, to refer to HEAD use `master` moveable alias.
 	// To refer to a specific fixed alias
 	// (tag):
-	// `https://source.developers.google.com/projects/*/repos/*/aliase
-	// s/fixed/*/paths/*`
+	// `https://source.developers.google.com/projects/*/repos/*/fixed-
+	// aliases/*/paths/*`
 	//
 	// You may omit `paths/*` if you want to use the main directory.
 	SourceRepositoryUrl string `json:"sourceRepositoryUrl,omitempty"`
@@ -345,7 +345,7 @@ type EventTrigger struct {
 	//      `providers/cloud.storage/eventTypes/object.change`
 	//
 	//      Handle a write to the Firebase Realtime Database
-	//      `providers/firebase.database/eventTypes/data.write`
+	//      `providers/google.firebase.database/eventTypes/ref.write`
 	EventType string `json:"eventType,omitempty"`
 
 	// FailurePolicy: Specifies policy for failed executions.

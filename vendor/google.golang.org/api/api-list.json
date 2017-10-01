@@ -698,6 +698,36 @@
   },
   {
    "kind": "discovery#directoryItem",
+   "id": "cloudiot:v1",
+   "name": "cloudiot",
+   "version": "v1",
+   "title": "Google Cloud IoT API",
+   "description": "Registers and manages IoT (Internet of Things) devices that connect to the Google Cloud Platform.",
+   "discoveryRestUrl": "https://cloudiot.googleapis.com/$discovery/rest?version=v1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/iot",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "cloudiot:v1beta1",
+   "name": "cloudiot",
+   "version": "v1beta1",
+   "title": "Google Cloud IoT API",
+   "description": "Registers and manages IoT (Internet of Things) devices that connect to the Google Cloud Platform.",
+   "discoveryRestUrl": "https://cloudiot.googleapis.com/$discovery/rest?version=v1beta1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/iot",
+   "preferred": false
+  },
+  {
+   "kind": "discovery#directoryItem",
    "id": "cloudkms:v1",
    "name": "cloudkms",
    "version": "v1",
@@ -2265,7 +2295,7 @@
    "name": "script",
    "version": "v1",
    "title": "Google Apps Script Execution API",
-   "description": "Executes functions in Google Apps Script projects.",
+   "description": "An API for managing and executing Google Apps Script projects.",
    "discoveryRestUrl": "https://script.googleapis.com/$discovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",

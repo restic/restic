@@ -28,6 +28,7 @@
 package b2
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,8 +36,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 // Client is a Backblaze B2 client.
@@ -67,10 +66,22 @@ type clientOptions struct {
 	failSomeUploads bool
 	expireTokens    bool
 	capExceeded     bool
+	userAgents      []string
 }
 
 // A ClientOption allows callers to adjust various per-client settings.
 type ClientOption func(*clientOptions)
+
+// UserAgent sets the User-Agent HTTP header.  The default header is
+// "blazer/<version>"; the value set here will be prepended to that.  This can
+// be set multiple times.
+//
+// A user agent is generally of the form "<product>/<version> (<comments>)".
+func UserAgent(agent string) ClientOption {
+	return func(o *clientOptions) {
+		o.userAgents = append(o.userAgents, agent)
+	}
+}
 
 // Transport sets the underlying HTTP transport mechanism.  If unset,
 // http.DefaultTransport is used.
@@ -118,6 +129,7 @@ const (
 	UnknownType BucketType = ""
 	Private                = "allPrivate"
 	Public                 = "allPublic"
+	Snapshot               = "snapshot"
 )
 
 // BucketAttrs holds a bucket's metadata attributes.
@@ -582,11 +594,19 @@ func (b *Bucket) Reveal(ctx context.Context, name string) error {
 	return obj.Delete(ctx)
 }
 
+// I don't want to import all of ioutil for this.
+type discard struct{}
+
+func (discard) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
 func (b *Bucket) getObject(ctx context.Context, name string) (*Object, error) {
 	fr, err := b.b.downloadFileByName(ctx, name, 0, 1)
 	if err != nil {
 		return nil, err
 	}
+	io.Copy(discard{}, fr)
 	fr.Close()
 	return &Object{
 		name: name,

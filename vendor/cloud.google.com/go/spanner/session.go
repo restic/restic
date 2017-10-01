@@ -948,8 +948,12 @@ func (hc *healthChecker) worker(i int) {
 		ws := getNextForTx()
 		if ws != nil {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			ws.prepareForWrite(contextWithOutgoingMetadata(ctx, hc.pool.md))
+			err := ws.prepareForWrite(contextWithOutgoingMetadata(ctx, hc.pool.md))
+			cancel()
+			if err != nil {
+				// TODO(dixiao): handle error properly
+				log.Errorf("prepareForWrite failed: %v", err)
+			}
 			hc.pool.recycle(ws)
 			hc.pool.mu.Lock()
 			hc.pool.prepareReqs--

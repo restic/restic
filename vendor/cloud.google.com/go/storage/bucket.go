@@ -197,8 +197,10 @@ func (b *BucketHandle) newPatchCall(uattrs *BucketAttrsToUpdate) (*raw.BucketsPa
 }
 
 // BucketAttrs represents the metadata for a Google Cloud Storage bucket.
+// Read-only fields are ignored by BucketHandle.Create.
 type BucketAttrs struct {
 	// Name is the name of the bucket.
+	// This field is read-only.
 	Name string
 
 	// ACL is the list of access control rules on the bucket.
@@ -212,6 +214,7 @@ type BucketAttrs struct {
 	Location string
 
 	// MetaGeneration is the metadata generation of the bucket.
+	// This field is read-only.
 	MetaGeneration int64
 
 	// StorageClass is the default storage class of the bucket. This defines
@@ -224,10 +227,10 @@ type BucketAttrs struct {
 	StorageClass string
 
 	// Created is the creation time of the bucket.
+	// This field is read-only.
 	Created time.Time
 
 	// VersioningEnabled reports whether this bucket has versioning enabled.
-	// This field is read-only.
 	VersioningEnabled bool
 
 	// Labels are the bucket's labels.

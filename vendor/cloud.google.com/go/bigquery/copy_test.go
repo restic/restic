@@ -17,16 +17,13 @@ package bigquery
 import (
 	"testing"
 
-	"cloud.google.com/go/internal/testutil"
-
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"golang.org/x/net/context"
 	bq "google.golang.org/api/bigquery/v2"
 )
 
 func defaultCopyJob() *bq.Job {
 	return &bq.Job{
-		JobReference: &bq.JobReference{ProjectId: "client-project-id"},
+		JobReference: &bq.JobReference{JobId: "RANDOM", ProjectId: "client-project-id"},
 		Configuration: &bq.JobConfiguration{
 			Copy: &bq.JobConfigurationTableCopy{
 				DestinationTable: &bq.TableReference{
@@ -47,6 +44,7 @@ func defaultCopyJob() *bq.Job {
 }
 
 func TestCopy(t *testing.T) {
+	defer fixRandomJobID("RANDOM")()
 	testCases := []struct {
 		dst    *Table
 		srcs   []*Table
@@ -130,20 +128,5 @@ func TestCopy(t *testing.T) {
 			continue
 		}
 		checkJob(t, i, s.Job, tc.want)
-	}
-}
-
-func checkJob(t *testing.T, i int, got, want *bq.Job) {
-	if got.JobReference == nil {
-		t.Errorf("#%d: empty job  reference", i)
-		return
-	}
-	if got.JobReference.JobId == "" {
-		t.Errorf("#%d: empty job ID", i)
-		return
-	}
-	d := testutil.Diff(got, want, cmpopts.IgnoreFields(bq.JobReference{}, "JobId"))
-	if d != "" {
-		t.Errorf("#%d: (got=-, want=+) %s", i, d)
 	}
 }

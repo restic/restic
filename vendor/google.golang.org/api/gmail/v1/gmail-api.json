@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/la0JMEgDGXDvEQo21njsRq7Rg-c\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/yLmXjwrCZrd7tYs9N17TGZKIRRE\"",
  "discoveryVersion": "v1",
  "id": "gmail:v1",
  "name": "gmail",
@@ -88,7 +88,7 @@
      "description": "View and modify but not delete your email"
     },
     "https://www.googleapis.com/auth/gmail.readonly": {
-     "description": "View your emails messages and settings"
+     "description": "View your email messages and settings"
     },
     "https://www.googleapis.com/auth/gmail.send": {
      "description": "Send email on your behalf"

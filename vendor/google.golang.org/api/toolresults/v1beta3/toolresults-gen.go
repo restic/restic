@@ -858,8 +858,8 @@ func (s *Execution) MarshalJSON() ([]byte, error) {
 }
 
 type FailureDetail struct {
-	// Crashed: If the failure was severe because the system under test
-	// crashed.
+	// Crashed: If the failure was severe because the system (app) under
+	// test crashed.
 	Crashed bool `json:"crashed,omitempty"`
 
 	// NotInstalled: If an app is not installed and thus no test can be run
@@ -867,7 +867,8 @@ type FailureDetail struct {
 	// unsupported platform.
 	NotInstalled bool `json:"notInstalled,omitempty"`
 
-	// OtherNativeCrash: If a native process other than the app crashed.
+	// OtherNativeCrash: If a native process (including any other than the
+	// app) crashed.
 	OtherNativeCrash bool `json:"otherNativeCrash,omitempty"`
 
 	// TimedOut: If the test overran some time limit, and that is why it
