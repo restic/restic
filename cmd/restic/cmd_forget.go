@@ -131,7 +131,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 				Verbosef("would have removed snapshot %v\n", sn.ID().Str())
 			}
 		} else {
-			// Determing grouping-keys
+			// Determining grouping-keys
 			var tags []string
 			var hostname string
 			var paths []string
