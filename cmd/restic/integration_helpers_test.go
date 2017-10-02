@@ -11,7 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
-	. "github.com/restic/restic/internal/test"
+	"github.com/restic/restic/internal/test"
 )
 
 type dirEntry struct {
@@ -174,14 +174,14 @@ type testEnvironment struct {
 // withTestEnvironment creates a test environment and returns a cleanup
 // function which removes it.
 func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
-	if !RunIntegrationTest {
+	if !test.RunIntegrationTest {
 		t.Skip("integration tests disabled")
 	}
 
 	repository.TestUseLowSecurityKDFParameters(t)
 
-	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
-	OK(t, err)
+	tempdir, err := ioutil.TempDir(test.TestTempDir, "restic-test-")
+	test.OK(t, err)
 
 	env = &testEnvironment{
 		base:       tempdir,
@@ -191,17 +191,17 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		mountpoint: filepath.Join(tempdir, "mount"),
 	}
 
-	OK(t, os.MkdirAll(env.mountpoint, 0700))
-	OK(t, os.MkdirAll(env.testdata, 0700))
-	OK(t, os.MkdirAll(env.cache, 0700))
-	OK(t, os.MkdirAll(env.repo, 0700))
+	test.OK(t, os.MkdirAll(env.mountpoint, 0700))
+	test.OK(t, os.MkdirAll(env.testdata, 0700))
+	test.OK(t, os.MkdirAll(env.cache, 0700))
+	test.OK(t, os.MkdirAll(env.repo, 0700))
 
 	env.gopts = GlobalOptions{
 		Repo:     env.repo,
 		Quiet:    true,
 		CacheDir: env.cache,
 		ctx:      context.Background(),
-		password: TestPassword,
+		password: test.TestPassword,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,
 		extended: make(options.Options),
@@ -211,11 +211,11 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	globalOptions = env.gopts
 
 	cleanup = func() {
-		if !TestCleanupTempDirs {
+		if !test.TestCleanupTempDirs {
 			t.Logf("leaving temporary directory %v used for test", tempdir)
 			return
 		}
-		RemoveAll(t, tempdir)
+		test.RemoveAll(t, tempdir)
 	}
 
 	return env, cleanup

@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestDefaultLayout(t *testing.T) {
-	tempdir, cleanup := TempDir(t)
+	tempdir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -140,7 +140,7 @@ func TestDefaultLayout(t *testing.T) {
 }
 
 func TestRESTLayout(t *testing.T) {
-	path, cleanup := TempDir(t)
+	path, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -286,7 +286,7 @@ func TestRESTLayoutURLs(t *testing.T) {
 }
 
 func TestS3LegacyLayout(t *testing.T) {
-	path, cleanup := TempDir(t)
+	path, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -354,7 +354,7 @@ func TestS3LegacyLayout(t *testing.T) {
 }
 
 func TestDetectLayout(t *testing.T) {
-	path, cleanup := TempDir(t)
+	path, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -369,7 +369,7 @@ func TestDetectLayout(t *testing.T) {
 	for _, test := range tests {
 		for _, fs := range []Filesystem{fs, nil} {
 			t.Run(fmt.Sprintf("%v/fs-%T", test.filename, fs), func(t *testing.T) {
-				SetupTarTestFixture(t, path, filepath.Join("testdata", test.filename))
+				rtest.SetupTarTestFixture(t, path, filepath.Join("testdata", test.filename))
 
 				layout, err := DetectLayout(fs, filepath.Join(path, "repo"))
 				if err != nil {
@@ -385,14 +385,14 @@ func TestDetectLayout(t *testing.T) {
 					t.Fatalf("want layout %v, got %v", test.want, layoutName)
 				}
 
-				RemoveAll(t, filepath.Join(path, "repo"))
+				rtest.RemoveAll(t, filepath.Join(path, "repo"))
 			})
 		}
 	}
 }
 
 func TestParseLayout(t *testing.T) {
-	path, cleanup := TempDir(t)
+	path, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -405,7 +405,7 @@ func TestParseLayout(t *testing.T) {
 		{"", "", "*backend.DefaultLayout"},
 	}
 
-	SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-default.tar.gz"))
+	rtest.SetupTarTestFixture(t, path, filepath.Join("testdata", "repo-layout-default.tar.gz"))
 
 	for _, test := range tests {
 		t.Run(test.layoutName, func(t *testing.T) {
@@ -432,7 +432,7 @@ func TestParseLayout(t *testing.T) {
 }
 
 func TestParseLayoutInvalid(t *testing.T) {
-	path, cleanup := TempDir(t)
+	path, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	var invalidNames = []string{

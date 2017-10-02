@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 type saver func(restic.FileType, interface{}) (restic.ID, error)
@@ -23,7 +23,7 @@ func (l loader) LoadJSONUnpacked(ctx context.Context, t restic.FileType, id rest
 func TestConfig(t *testing.T) {
 	resultConfig := restic.Config{}
 	save := func(tpe restic.FileType, arg interface{}) (restic.ID, error) {
-		Assert(t, tpe == restic.ConfigFile,
+		rtest.Assert(t, tpe == restic.ConfigFile,
 			"wrong backend type: got %v, wanted %v",
 			tpe, restic.ConfigFile)
 
@@ -33,12 +33,12 @@ func TestConfig(t *testing.T) {
 	}
 
 	cfg1, err := restic.CreateConfig()
-	OK(t, err)
+	rtest.OK(t, err)
 
 	_, err = saver(save).SaveJSONUnpacked(restic.ConfigFile, cfg1)
 
 	load := func(ctx context.Context, tpe restic.FileType, id restic.ID, arg interface{}) error {
-		Assert(t, tpe == restic.ConfigFile,
+		rtest.Assert(t, tpe == restic.ConfigFile,
 			"wrong backend type: got %v, wanted %v",
 			tpe, restic.ConfigFile)
 
@@ -48,8 +48,8 @@ func TestConfig(t *testing.T) {
 	}
 
 	cfg2, err := restic.LoadConfig(context.TODO(), loader(load))
-	OK(t, err)
+	rtest.OK(t, err)
 
-	Assert(t, cfg1 == cfg2,
+	rtest.Assert(t, cfg1 == cfg2,
 		"configs aren't equal: %v != %v", cfg1, cfg2)
 }

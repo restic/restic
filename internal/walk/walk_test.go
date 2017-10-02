@@ -12,7 +12,7 @@ import (
 	"github.com/restic/restic/internal/pipe"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 	"github.com/restic/restic/internal/walk"
 )
 
@@ -20,16 +20,16 @@ func TestWalkTree(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	dirs, err := filepath.Glob(TestWalkerPath)
-	OK(t, err)
+	dirs, err := filepath.Glob(rtest.TestWalkerPath)
+	rtest.OK(t, err)
 
 	// archive a few files
 	arch := archiver.New(repo)
 	sn, _, err := arch.Snapshot(context.TODO(), nil, dirs, nil, "localhost", nil, time.Now())
-	OK(t, err)
+	rtest.OK(t, err)
 
 	// flush repo, write all packs
-	OK(t, repo.Flush())
+	rtest.OK(t, repo.Flush())
 
 	// start tree walker
 	treeJobs := make(chan walk.TreeJob)
@@ -47,10 +47,10 @@ func TestWalkTree(t *testing.T) {
 	for {
 		// receive fs job
 		fsJob, fsChOpen := <-fsJobs
-		Assert(t, !fsChOpen || fsJob != nil,
+		rtest.Assert(t, !fsChOpen || fsJob != nil,
 			"received nil job from filesystem: %v %v", fsJob, fsChOpen)
 		if fsJob != nil {
-			OK(t, fsJob.Error())
+			rtest.OK(t, fsJob.Error())
 		}
 
 		var path string
@@ -67,13 +67,13 @@ func TestWalkTree(t *testing.T) {
 		treeJob, treeChOpen := <-treeJobs
 		treeEntries := 1
 
-		OK(t, treeJob.Error)
+		rtest.OK(t, treeJob.Error)
 
 		if treeJob.Tree != nil {
 			treeEntries = len(treeJob.Tree.Nodes)
 		}
 
-		Assert(t, fsChOpen == treeChOpen,
+		rtest.Assert(t, fsChOpen == treeChOpen,
 			"one channel closed too early: fsChOpen %v, treeChOpen %v",
 			fsChOpen, treeChOpen)
 
@@ -81,10 +81,10 @@ func TestWalkTree(t *testing.T) {
 			break
 		}
 
-		Assert(t, filepath.Base(path) == filepath.Base(treeJob.Path),
+		rtest.Assert(t, filepath.Base(path) == filepath.Base(treeJob.Path),
 			"paths do not match: %q != %q", filepath.Base(path), filepath.Base(treeJob.Path))
 
-		Assert(t, fsEntries == treeEntries,
+		rtest.Assert(t, fsEntries == treeEntries,
 			"wrong number of entries: %v != %v", fsEntries, treeEntries)
 	}
 }
@@ -1340,14 +1340,14 @@ var walktreeTestItems = []string{
 }
 
 func TestDelayedWalkTree(t *testing.T) {
-	repodir, cleanup := Env(t, repoFixture)
+	repodir, cleanup := rtest.Env(t, repoFixture)
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
-	OK(t, repo.LoadIndex(context.TODO()))
+	rtest.OK(t, repo.LoadIndex(context.TODO()))
 
 	root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
-	OK(t, err)
+	rtest.OK(t, err)
 
 	dr := delayRepo{repo, 100 * time.Millisecond}
 
@@ -1370,14 +1370,14 @@ func TestDelayedWalkTree(t *testing.T) {
 }
 
 func BenchmarkDelayedWalkTree(t *testing.B) {
-	repodir, cleanup := Env(t, repoFixture)
+	repodir, cleanup := rtest.Env(t, repoFixture)
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
-	OK(t, repo.LoadIndex(context.TODO()))
+	rtest.OK(t, repo.LoadIndex(context.TODO()))
 
 	root, err := restic.ParseID("937a2f64f736c64ee700c6ab06f840c68c94799c288146a0e81e07f4c94254da")
-	OK(t, err)
+	rtest.OK(t, err)
 
 	dr := delayRepo{repo, 10 * time.Millisecond}
 

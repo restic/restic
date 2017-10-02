@@ -7,12 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/restic/restic/internal/errors"
-	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
-
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/backend/test"
+	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/restic"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func newSwiftTestSuite(t testing.TB) *test.Suite {
@@ -100,7 +99,7 @@ func newSwiftTestSuite(t testing.TB) *test.Suite {
 func TestBackendSwift(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/swift.TestBackendSwift")
+			rtest.SkipDisallowed(t, "restic/backend/swift.TestBackendSwift")
 		}
 	}()
 

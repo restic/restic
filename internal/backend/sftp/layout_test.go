@@ -8,7 +8,7 @@ import (
 
 	"github.com/restic/restic/internal/backend/sftp"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestLayout(t *testing.T) {
@@ -16,7 +16,7 @@ func TestLayout(t *testing.T) {
 		t.Skip("sftp server binary not available")
 	}
 
-	path, cleanup := TempDir(t)
+	path, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	var tests = []struct {
@@ -39,7 +39,7 @@ func TestLayout(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.filename, func(t *testing.T) {
-			SetupTarTestFixture(t, path, filepath.Join("..", "testdata", test.filename))
+			rtest.SetupTarTestFixture(t, path, filepath.Join("..", "testdata", test.filename))
 
 			repo := filepath.Join(path, "repo")
 			be, err := sftp.Open(sftp.Config{
@@ -82,7 +82,7 @@ func TestLayout(t *testing.T) {
 				t.Errorf("Close() returned error %v", err)
 			}
 
-			RemoveAll(t, filepath.Join(path, "repo"))
+			rtest.RemoveAll(t, filepath.Join(path, "repo"))
 		})
 	}
 }
