@@ -11,7 +11,7 @@ import (
 
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
-	"github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 type dirEntry struct {
@@ -174,14 +174,14 @@ type testEnvironment struct {
 // withTestEnvironment creates a test environment and returns a cleanup
 // function which removes it.
 func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
-	if !test.RunIntegrationTest {
+	if !rtest.RunIntegrationTest {
 		t.Skip("integration tests disabled")
 	}
 
 	repository.TestUseLowSecurityKDFParameters(t)
 
-	tempdir, err := ioutil.TempDir(test.TestTempDir, "restic-test-")
-	test.OK(t, err)
+	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
+	rtest.OK(t, err)
 
 	env = &testEnvironment{
 		base:       tempdir,
@@ -191,17 +191,17 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 		mountpoint: filepath.Join(tempdir, "mount"),
 	}
 
-	test.OK(t, os.MkdirAll(env.mountpoint, 0700))
-	test.OK(t, os.MkdirAll(env.testdata, 0700))
-	test.OK(t, os.MkdirAll(env.cache, 0700))
-	test.OK(t, os.MkdirAll(env.repo, 0700))
+	rtest.OK(t, os.MkdirAll(env.mountpoint, 0700))
+	rtest.OK(t, os.MkdirAll(env.testdata, 0700))
+	rtest.OK(t, os.MkdirAll(env.cache, 0700))
+	rtest.OK(t, os.MkdirAll(env.repo, 0700))
 
 	env.gopts = GlobalOptions{
 		Repo:     env.repo,
 		Quiet:    true,
 		CacheDir: env.cache,
 		ctx:      context.Background(),
-		password: test.TestPassword,
+		password: rtest.TestPassword,
 		stdout:   os.Stdout,
 		stderr:   os.Stderr,
 		extended: make(options.Options),
@@ -211,11 +211,11 @@ func withTestEnvironment(t testing.TB) (env *testEnvironment, cleanup func()) {
 	globalOptions = env.gopts
 
 	cleanup = func() {
-		if !test.TestCleanupTempDirs {
+		if !rtest.TestCleanupTempDirs {
 			t.Logf("leaving temporary directory %v used for test", tempdir)
 			return
 		}
-		test.RemoveAll(t, tempdir)
+		rtest.RemoveAll(t, tempdir)
 	}
 
 	return env, cleanup

@@ -13,7 +13,7 @@ import (
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	"github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 const (
@@ -56,7 +56,7 @@ func waitForMount(t testing.TB, dir string) {
 
 func testRunMount(t testing.TB, gopts GlobalOptions, dir string) {
 	opts := MountOptions{}
-	test.OK(t, runMount(opts, gopts, []string{dir}))
+	rtest.OK(t, runMount(opts, gopts, []string{dir}))
 }
 
 func testRunUmount(t testing.TB, gopts GlobalOptions, dir string) {
@@ -75,10 +75,10 @@ func testRunUmount(t testing.TB, gopts GlobalOptions, dir string) {
 
 func listSnapshots(t testing.TB, dir string) []string {
 	snapshotsDir, err := os.Open(filepath.Join(dir, "snapshots"))
-	test.OK(t, err)
+	rtest.OK(t, err)
 	names, err := snapshotsDir.Readdirnames(-1)
-	test.OK(t, err)
-	test.OK(t, snapshotsDir.Close())
+	rtest.OK(t, err)
+	rtest.OK(t, snapshotsDir.Close())
 	return names
 }
 
@@ -98,7 +98,7 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 
 	namesInSnapshots := listSnapshots(t, mountpoint)
 	t.Logf("found %v snapshots in fuse mount: %v", len(namesInSnapshots), namesInSnapshots)
-	test.Assert(t,
+	rtest.Assert(t,
 		expectedSnapshotsInFuseDir == len(namesInSnapshots),
 		"Invalid number of snapshots: expected %d, got %d", expectedSnapshotsInFuseDir, len(namesInSnapshots))
 
@@ -119,7 +119,7 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 
 	for _, id := range snapshotIDs {
 		snapshot, err := restic.LoadSnapshot(context.TODO(), repo, id)
-		test.OK(t, err)
+		rtest.OK(t, err)
 
 		ts := snapshot.Time.Format(time.RFC3339)
 		present, ok := namesMap[ts]
@@ -143,12 +143,12 @@ func checkSnapshots(t testing.TB, global GlobalOptions, repo *repository.Reposit
 	}
 
 	for name, present := range namesMap {
-		test.Assert(t, present, "Directory %s is present in fuse dir but is not a snapshot", name)
+		rtest.Assert(t, present, "Directory %s is present in fuse dir but is not a snapshot", name)
 	}
 }
 
 func TestMount(t *testing.T) {
-	if !test.RunFuseTest {
+	if !rtest.RunFuseTest {
 		t.Skip("Skipping fuse tests")
 	}
 
@@ -158,19 +158,19 @@ func TestMount(t *testing.T) {
 	testRunInit(t, env.gopts)
 
 	repo, err := OpenRepository(env.gopts)
-	test.OK(t, err)
+	rtest.OK(t, err)
 
 	// We remove the mountpoint now to check that cmdMount creates it
-	test.RemoveAll(t, env.mountpoint)
+	rtest.RemoveAll(t, env.mountpoint)
 
 	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, []restic.ID{}, 0)
 
-	test.SetupTarTestFixture(t, env.testdata, filepath.Join("testdata", "backup-data.tar.gz"))
+	rtest.SetupTarTestFixture(t, env.testdata, filepath.Join("testdata", "backup-data.tar.gz"))
 
 	// first backup
 	testRunBackup(t, []string{env.testdata}, BackupOptions{}, env.gopts)
 	snapshotIDs := testRunList(t, "snapshots", env.gopts)
-	test.Assert(t, len(snapshotIDs) == 1,
+	rtest.Assert(t, len(snapshotIDs) == 1,
 		"expected one snapshot, got %v", snapshotIDs)
 
 	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 2)
@@ -178,7 +178,7 @@ func TestMount(t *testing.T) {
 	// second backup, implicit incremental
 	testRunBackup(t, []string{env.testdata}, BackupOptions{}, env.gopts)
 	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	test.Assert(t, len(snapshotIDs) == 2,
+	rtest.Assert(t, len(snapshotIDs) == 2,
 		"expected two snapshots, got %v", snapshotIDs)
 
 	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 3)
@@ -187,24 +187,24 @@ func TestMount(t *testing.T) {
 	bopts := BackupOptions{Parent: snapshotIDs[0].String()}
 	testRunBackup(t, []string{env.testdata}, bopts, env.gopts)
 	snapshotIDs = testRunList(t, "snapshots", env.gopts)
-	test.Assert(t, len(snapshotIDs) == 3,
+	rtest.Assert(t, len(snapshotIDs) == 3,
 		"expected three snapshots, got %v", snapshotIDs)
 
 	checkSnapshots(t, env.gopts, repo, env.mountpoint, env.repo, snapshotIDs, 4)
 }
 
 func TestMountSameTimestamps(t *testing.T) {
-	if !test.RunFuseTest {
+	if !rtest.RunFuseTest {
 		t.Skip("Skipping fuse tests")
 	}
 
 	env, cleanup := withTestEnvironment(t)
 	defer cleanup()
 
-	test.SetupTarTestFixture(t, env.base, filepath.Join("testdata", "repo-same-timestamps.tar.gz"))
+	rtest.SetupTarTestFixture(t, env.base, filepath.Join("testdata", "repo-same-timestamps.tar.gz"))
 
 	repo, err := OpenRepository(env.gopts)
-	test.OK(t, err)
+	rtest.OK(t, err)
 
 	ids := []restic.ID{
 		restic.TestParseID("280303689e5027328889a06d718b729e96a1ce6ae9ef8290bff550459ae611ee"),
