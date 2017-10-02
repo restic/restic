@@ -163,7 +163,7 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, compact bool) {
 		}
 	}
 
-	tab.Footer = fmt.Sprintf("Amount of snapshots: %d", len(list))
+	tab.Footer = fmt.Sprintf("%d snapshots", len(list))
 
 	tab.Write(stdout)
 }
