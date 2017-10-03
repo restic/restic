@@ -67,6 +67,11 @@ Small changes
    should be forgotten are listed manually. This is corrected now.
    https://github.com/restic/restic/pull/1317
 
+ * The `check` command now explicetly prints `No errors were found` when no
+   errors could be found.
+   https://github.com/restic/restic/pull/1319
+   https://github.com/restic/restic/issues/1303
+
 Important Changes in 0.7.3
 ==========================
 
