@@ -176,5 +176,8 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	if errorsFound {
 		return errors.Fatal("repository contains errors")
 	}
+
+	Verbosef("No errors were found\n")
+
 	return nil
 }
