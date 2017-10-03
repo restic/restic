@@ -4,12 +4,16 @@ Restic Documentation
 .. toctree::
    :maxdepth: 2
 
-   installation
-   manual
+   010_introduction
+   020_installation
+   030_preparing_a_new_repo
+   040_backup
+   045_working_with_repos
+   050_restore
+   060_forget
+   070_encryption
+   080_examples
+   090_participating
+   100_references
    faq
-   tutorials
-   development
-   references
-   talks
-
-.. include:: ../README.rst
+   manual_rest

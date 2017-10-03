@@ -1,8 +1,25 @@
+..
+  Normally, there are no heading levels assigned to certain characters as the structure is
+  determined from the succession of headings. However, this convention is used in Python’s
+  Style Guide for documenting which you may follow:
+
+  # with overline, for parts
+  * for chapters
+  = for sections
+  - for subsections
+  ^ for subsubsections
+  " for paragraphs
+
+##########
+References
+##########
+
+******
 Design
-======
+******
 
 Terminology
------------
+===========
 
 This section introduces terminology used in this document.
 
@@ -26,7 +43,7 @@ the repository. This ID is required in order to load the file from the
 repository.
 
 Repository Format
------------------
+=================
 
 All data is stored in a restic repository. A repository is able to store
 data of several different types, which can later be requested based on
@@ -77,7 +94,7 @@ locally. The field ``chunker_polynomial`` contains a parameter that is
 used for splitting large files into smaller chunks (see below).
 
 Repository Layout
-~~~~~~~~~~~~~~~~~
+-----------------
 
 The ``local`` and ``sftp`` backends are implemented using files and
 directories stored in a file system. The directory layout is the same
@@ -125,7 +142,7 @@ the option ``-o local.layout=default``, valid values are ``default`` and
 s3 backend ``s3.layout``.
 
 S3 Legacy Layout
-~~~~~~~~~~~~~~~~
+----------------
 
 Unfortunately during development the AWS S3 backend uses slightly different
 paths (directory names use singular instead of plural for ``key``,
@@ -154,7 +171,7 @@ The S3 backend understands and accepts both forms, new backends are
 always created with the default layout for compatibility reasons.
 
 Pack Format
------------
+===========
 
 All files in the repository except Key and Pack files just contain raw
 data, stored as ``IV || Ciphertext || MAC``. Pack files may contain one
@@ -212,7 +229,7 @@ header. Afterwards, the header can be read and parsed, which yields all
 plaintext hashes, types, offsets and lengths of all included blobs.
 
 Indexing
---------
+========
 
 Index files contain information about Data and Tree Blobs and the Packs
 they are contained in and store this information in the repository. When
@@ -268,7 +285,7 @@ on non-disjoint sets of Packs. The number of packs described in a single
 file is chosen so that the file size is kept below 8 MiB.
 
 Keys, Encryption and MAC
-------------------------
+========================
 
 All data stored by restic in the repository is encrypted with AES-256 in
 counter mode and authenticated using Poly1305-AES. For encrypting new
@@ -347,7 +364,7 @@ each. This way, the password can be changed without having to re-encrypt
 all data.
 
 Snapshots
----------
+=========
 
 A snapshot represents a directory with all files and sub-directories at
 a given point in time. For each backup that is made, a new snapshot is
@@ -417,7 +434,7 @@ a Pack file , an index is used. If the index is not available, the
 header of all data Blobs can be read.
 
 Trees and Data
---------------
+==============
 
 A snapshot references a tree by the SHA-256 hash of the JSON string
 representation of its contents. Trees and data are saved in pack files
@@ -503,7 +520,7 @@ matches the plaintext hash from the map included in the tree above, so
 the correct data has been returned.
 
 Locks
------
+=====
 
 The restic repository structure is designed in a way that allows
 parallel access of multiple instance of restic and even parallel writes.
@@ -547,7 +564,7 @@ appeared in the repository. Depending on the type of the other locks and
 the lock to be created, restic either continues or fails.
 
 Backups and Deduplication
--------------------------
+=========================
 
 For creating a backup, restic scans the source directory for all files,
 sub-directories and other entries. The data from each file is split into
@@ -565,7 +582,7 @@ backup. This even works if bytes are inserted or removed at arbitrary
 positions within the file.
 
 Threat Model
-------------
+============
 
 The design goals for restic include being able to securely store backups
 in a location that is not completely trusted, e.g. a shared system where
@@ -607,3 +624,140 @@ stored files) which files belong to what snapshot. When only these files
 are deleted, the particular snapshot vanished and all snapshots
 depending on data that has been added in the snapshot cannot be restored
 completely. Restic is not designed to detect this attack.
+
+Local Cache
+===========
+
+In order to speed up certain operations, restic manages a local cache of data.
+This document describes the data structures for the local cache with version 1.
+
+Versions
+--------
+
+The cache directory is selected according to the `XDG base dir specification
+<http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html>`__.
+Each repository has its own cache sub-directory, consting of the repository ID
+which is chosen at ``init``. All cache directories for different repos are
+independent of each other.
+
+The cache dir for a repo contains a file named ``version``, which contains a
+single ASCII integer line that stands for the current version of the cache. If
+a lower version number is found the cache is recreated with the current
+version. If a higher version number is found the cache is ignored and left as
+is.
+
+Snapshots and Indexes
+---------------------
+
+Snapshot, Data and Index files are cached in the sub-directories ``snapshots``,
+``data`` and  ``index``, as read from the repository.
+
+
+************
+REST Backend
+************
+
+Restic can interact with HTTP Backend that respects the following REST
+API. The following values are valid for ``{type}``: ``data``, ``keys``,
+``locks``, ``snapshots``, ``index``, ``config``. ``{path}`` is a path to
+the repository, so that multiple different repositories can be accessed.
+The default path is ``/``.
+
+POST {path}?create=true
+=======================
+
+This request is used to initially create a new repository. The server
+responds with "200 OK" if the repository structure was created
+successfully or already exists, otherwise an error is returned.
+
+DELETE {path}
+=============
+
+Deletes the repository on the server side. The server responds with "200
+OK" if the repository was successfully removed. If this function is not
+implemented the server returns "501 Not Implemented", if this it is
+denied by the server it returns "403 Forbidden".
+
+HEAD {path}/config
+==================
+
+Returns "200 OK" if the repository has a configuration, an HTTP error
+otherwise.
+
+GET {path}/config
+=================
+
+Returns the content of the configuration file if the repository has a
+configuration, an HTTP error otherwise.
+
+Response format: binary/octet-stream
+
+POST {path}/config
+==================
+
+Returns "200 OK" if the configuration of the request body has been
+saved, an HTTP error otherwise.
+
+GET {path}/{type}/
+==================
+
+Returns a JSON array containing the names of all the blobs stored for a
+given type.
+
+Response format: JSON
+
+HEAD {path}/{type}/{name}
+=========================
+
+Returns "200 OK" if the blob with the given name and type is stored in
+the repository, "404 not found" otherwise. If the blob exists, the HTTP
+header ``Content-Length`` is set to the file size.
+
+GET {path}/{type}/{name}
+========================
+
+Returns the content of the blob with the given name and type if it is
+stored in the repository, "404 not found" otherwise.
+
+If the request specifies a partial read with a Range header field, then
+the status code of the response is 206 instead of 200 and the response
+only contains the specified range.
+
+Response format: binary/octet-stream
+
+POST {path}/{type}/{name}
+=========================
+
+Saves the content of the request body as a blob with the given name and
+type, an HTTP error otherwise.
+
+Request format: binary/octet-stream
+
+DELETE {path}/{type}/{name}
+===========================
+
+Returns "200 OK" if the blob with the given name and type has been
+deleted from the repository, an HTTP error otherwise.
+
+
+*****
+Talks
+*****
+
+The following talks will be or have been given about restic:
+
+-  2016-01-31: Lightning Talk at the Go Devroom at FOSDEM 2016,
+   Brussels, Belgium
+-  2016-01-29: `restic - Backups mal
+   richtig <https://media.ccc.de/v/c4.openchaos.2016.01.restic>`__:
+   Public lecture in German at `CCC Cologne
+   e.V. <https://koeln.ccc.de>`__ in Cologne, Germany
+-  2015-08-23: `A Solution to the Backup
+   Inconvenience <https://programm.froscon.de/2015/events/1515.html>`__:
+   Lecture at `FROSCON 2015 <https://www.froscon.de>`__ in Bonn, Germany
+-  2015-02-01: `Lightning Talk at FOSDEM
+   2015 <https://www.youtube.com/watch?v=oM-MfeflUZ8&t=11m40s>`__: A
+   short introduction (with slightly outdated command line)
+-  2015-01-27: `Talk about restic at CCC
+   Aachen <https://videoag.fsmpi.rwth-aachen.de/?view=player&lectureid=4442#content>`__
+   (in German)

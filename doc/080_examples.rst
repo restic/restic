@@ -1,15 +1,32 @@
+..
+  Normally, there are no heading levels assigned to certain characters as the structure is
+  determined from the succession of headings. However, this convention is used in Python’s
+  Style Guide for documenting which you may follow:
+
+  # with overline, for parts
+  * for chapters
+  = for sections
+  - for subsections
+  ^ for subsubsections
+  " for paragraphs
+
+########
+Examples
+########
+
+********************************
 Setting up restic with Amazon S3
-================================
+********************************
 
 Preface
--------
+=======
 
 This tutorial will show you how to use restic with AWS S3. It will show you how
 to navigate the AWS web interface, create an S3 bucket, create a user with
 access to only this bucket, and finally how to connect restic to this bucket.
 
 Prerequisites
--------------
+=============
 
 You should already have a ``restic`` binary available on your system that you can
 run. Furthermore, you should also have an account with
@@ -19,7 +36,7 @@ details for billing purposes, even if you use their
 
 
 Logging into AWS
-----------------
+================
 
 Point your browser to
 https://console.aws.amazon.com
@@ -39,7 +56,7 @@ Access Management (IAM) are relevant.
 
 
 Creating the bucket
--------------------
+===================
 
 First, a bucket to store your backups in must be created. Using the "Services"
 menu, navigate to S3. In case you already have some S3 buckets, you will see a
@@ -71,7 +88,7 @@ buckets:
    :alt: List With New Bucket
 
 Creating a user
----------------
+===============
 
 Use the "Services" menu of the AWS web interface to navigate to IAM. This will
 bring you to the IAM homepage. To create a new user, click on the "Users" menu
@@ -177,7 +194,7 @@ browser now.
 
 
 Initializing the restic repository
-----------------------------------
+==================================
 
 Open a terminal and make sure you have the ``restic`` binary ready. First, choose
 a password to encrypt your backups with. In this tutorial, ``apg`` is used for
