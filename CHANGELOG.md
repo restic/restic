@@ -72,6 +72,12 @@ Small changes
    https://github.com/restic/restic/pull/1319
    https://github.com/restic/restic/issues/1303
 
+ * The fuse mount now has an `ids` subdirectory which contains the snapshots
+   below their (short) IDs.
+   https://github.com/restic/restic/issues/1102
+   https://github.com/restic/restic/pull/1299
+   https://github.com/restic/restic/pull/1320
+
 Important Changes in 0.7.3
 ==========================
 
