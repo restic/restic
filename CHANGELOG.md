@@ -7,10 +7,10 @@ Important Changes in 0.X.Y
  * We've added a local cache for metadata so that restic doesn't need to load
    all metadata (snapshots, indexes, ...) from the repo each time it starts. By
    default the cache is active, but there's a new global option `--no-cache`
-   that can be used to disable the cache. The cache location is
-   `~/.cache/restic` by default, which can be overridden with `--cache-dir` or
-   the environment variable `XDG_CACHE_HOME`. The cache will automatically
-   populate, indexes and snapshots are saved as they are loaded.
+   that can be used to disable the cache. By deafult, the cache a standard
+   cache folder for the OS, which can be overridden with `--cache-dir`.  The
+   cache will automatically populate, indexes and snapshots are saved as they
+   are loaded.
    https://github.com/restic/restic/pull/1040
    https://github.com/restic/restic/issues/29
    https://github.com/restic/restic/issues/738
