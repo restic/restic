@@ -62,6 +62,11 @@ Small changes
    https://github.com/restic/restic/issues/1291
    https://github.com/restic/restic/pull/1301
 
+ * Another bug in the `forget` command caused `prune` not to be run when
+   `--prune` was specified without a policy, e.g. when only snapshot IDs that
+   should be forgotten are listed manually. This is corrected now.
+   https://github.com/restic/restic/pull/1317
+
 Important Changes in 0.7.3
 ==========================
 
