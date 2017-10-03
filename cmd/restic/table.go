@@ -10,6 +10,7 @@ import (
 type Table struct {
 	Header string
 	Rows   [][]interface{}
+	Footer string
 
 	RowFormat string
 }
@@ -21,13 +22,19 @@ func NewTable() Table {
 	}
 }
 
+func (t Table) printSeparationLine(w io.Writer) error {
+	_, err := fmt.Fprintln(w, strings.Repeat("-", 70))
+	return err
+}
+
 // Write prints the table to w.
 func (t Table) Write(w io.Writer) error {
 	_, err := fmt.Fprintln(w, t.Header)
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(w, strings.Repeat("-", 70))
+
+	err = t.printSeparationLine(w)
 	if err != nil {
 		return err
 	}
@@ -37,6 +44,16 @@ func (t Table) Write(w io.Writer) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	err = t.printSeparationLine(w)
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintln(w, t.Footer)
+	if err != nil {
+		return err
 	}
 
 	return nil
