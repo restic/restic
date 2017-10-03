@@ -56,6 +56,7 @@ func NewRoot(ctx context.Context, repo restic.Repository, cfg Config) (*Root, er
 		"snapshots": NewSnapshotsDir(root, fs.GenerateDynamicInode(root.inode, "snapshots"), snapshots),
 		"tags":      NewTagsDir(root, fs.GenerateDynamicInode(root.inode, "tags"), snapshots),
 		"hosts":     NewHostsDir(root, fs.GenerateDynamicInode(root.inode, "hosts"), snapshots),
+		"ids":       NewSnapshotsIDSDir(root, fs.GenerateDynamicInode(root.inode, "ids"), snapshots),
 	}
 
 	root.MetaDir = NewMetaDir(root, rootInode, entries)
