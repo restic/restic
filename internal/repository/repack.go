@@ -3,7 +3,9 @@ package repository
 import (
 	"context"
 	"crypto/sha256"
+	"fmt"
 	"io"
+	"os"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/fs"
@@ -97,7 +99,9 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 
 			id := restic.Hash(buf)
 			if !id.Equal(entry.ID) {
-				return nil, errors.Errorf("read blob %v from %v: wrong data returned, hash is %v",
+				debug.Log("read blob %v/%v from %v: wrong data returned, hash is %v",
+					h.Type, h.ID, tempfile.Name(), id)
+				fmt.Fprintf(os.Stderr, "read blob %v from %v: wrong data returned, hash is %v",
 					h, tempfile.Name(), id)
 			}
 
