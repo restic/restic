@@ -13,7 +13,7 @@ Quick start
 -----------
 
 Once you've `installed
-<http://restic.readthedocs.io/en/latest/020_installation.html>`__ restic, start
+<https://restic.readthedocs.io/en/latest/020_installation.html>`__ restic, start
 off with creating a repository for your backups:
 
 .. code-block:: console
