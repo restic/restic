@@ -541,7 +541,14 @@ func (node *Node) fillUser(stat statT) error {
 		return err
 	}
 
+	group, err := lookupGroup(strconv.Itoa(int(stat.gid())))
+	if err != nil {
+		return err
+	}
+
 	node.User = username
+	node.Group = group
+
 	return nil
 }
 
@@ -571,6 +578,34 @@ func lookupUsername(uid string) (string, error) {
 	uidLookupCacheMutex.Unlock()
 
 	return username, nil
+}
+
+var (
+	gidLookupCache      = make(map[string]string)
+	gidLookupCacheMutex = sync.RWMutex{}
+)
+
+func lookupGroup(gid string) (string, error) {
+	gidLookupCacheMutex.RLock()
+	value, ok := gidLookupCache[gid]
+	gidLookupCacheMutex.RUnlock()
+
+	if ok {
+		return value, nil
+	}
+
+	group := ""
+
+	g, err := user.LookupGroupId(gid)
+	if err == nil {
+		group = g.Name
+	}
+
+	gidLookupCacheMutex.Lock()
+	gidLookupCache[gid] = group
+	gidLookupCacheMutex.Unlock()
+
+	return group, nil
 }
 
 func (node *Node) fillExtra(path string, fi os.FileInfo) error {
