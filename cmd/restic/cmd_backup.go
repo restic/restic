@@ -367,8 +367,9 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
 	}
 
+	rc := &rejectionCache{}
 	for _, spec := range opts.ExcludeIfPresent {
-		f, err := rejectIfPresent(spec)
+		f, err := rejectIfPresent(spec, rc)
 		if err != nil {
 			return err
 		}

@@ -76,7 +76,7 @@ func TestIsExcludedByFile(t *testing.T) {
 			if tc.content == "" {
 				h = ""
 			}
-			if got := isExcludedByFile(foo, tagFilename, h); tc.want != got {
+			if got := isExcludedByFile(foo, tagFilename, h, nil); tc.want != got {
 				t.Fatalf("expected %v, got %v", tc.want, got)
 			}
 		})
