@@ -132,20 +132,6 @@ func restoreTerminal() {
 	})
 }
 
-// shouldOutputPasswordSuccessful returns true if the password is supplied
-// interactively and the stdout is a terminal.
-func shouldOutputPasswordSuccessful() bool {
-	if globalOptions.PasswordFile != "" {
-		return false
-	}
-
-	if os.Getenv("RESTIC_PASSWORD") != "" {
-		return false
-	}
-
-	return stdoutIsTerminal()
-}
-
 // ClearLine creates a platform dependent string to clear the current
 // line, so it can be overwritten. ANSI sequences are not supported on
 // current windows cmd shell.
@@ -340,7 +326,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, err
 	}
 
-	if shouldOutputPasswordSuccessful() {
+	if stdoutIsTerminal() {
 		Verbosef("password is correct\n")
 	}
 
