@@ -17,7 +17,7 @@ import (
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func mkdir(t testing.TB, dir string) {
@@ -124,7 +124,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 		NewConfig: func() (interface{}, error) {
 			cfg := MinioTestConfig{}
 
-			cfg.tempdir, cfg.removeTempdir = TempDir(t)
+			cfg.tempdir, cfg.removeTempdir = rtest.TempDir(t)
 			key, secret := newRandomCredentials(t)
 			cfg.stopServer = runMinio(ctx, t, cfg.tempdir, key, secret)
 
@@ -182,7 +182,7 @@ func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 func TestBackendMinio(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/s3.TestBackendMinio")
+			rtest.SkipDisallowed(t, "restic/backend/s3.TestBackendMinio")
 		}
 	}()
 
@@ -280,7 +280,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 func TestBackendS3(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/s3.TestBackendS3")
+			rtest.SkipDisallowed(t, "restic/backend/s3.TestBackendS3")
 		}
 	}()
 

@@ -17,7 +17,7 @@ import (
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
 
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func testRead(t testing.TB, f *file, offset, length int, data []byte) {
@@ -31,7 +31,7 @@ func testRead(t testing.TB, f *file, offset, length int, data []byte) {
 	resp := &fuse.ReadResponse{
 		Data: data,
 	}
-	OK(t, f.Read(ctx, req, resp))
+	rtest.OK(t, f.Read(ctx, req, resp))
 }
 
 func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
@@ -46,13 +46,13 @@ func firstSnapshotID(t testing.TB, repo restic.Repository) (first restic.ID) {
 func loadFirstSnapshot(t testing.TB, repo restic.Repository) *restic.Snapshot {
 	id := firstSnapshotID(t, repo)
 	sn, err := restic.LoadSnapshot(context.TODO(), repo, id)
-	OK(t, err)
+	rtest.OK(t, err)
 	return sn
 }
 
 func loadTree(t testing.TB, repo restic.Repository, id restic.ID) *restic.Tree {
 	tree, err := repo.LoadTree(context.TODO(), id)
-	OK(t, err)
+	rtest.OK(t, err)
 	return tree
 }
 
@@ -64,7 +64,7 @@ func TestFuseFile(t *testing.T) {
 	defer cancel()
 
 	timestamp, err := time.Parse(time.RFC3339, "2017-01-24T10:42:56+01:00")
-	OK(t, err)
+	rtest.OK(t, err)
 	restic.TestCreateSnapshot(t, repo, timestamp, 2, 0.1)
 
 	sn := loadFirstSnapshot(t, repo)
@@ -82,12 +82,12 @@ func TestFuseFile(t *testing.T) {
 	)
 	for _, id := range content {
 		size, err := repo.LookupBlobSize(id, restic.DataBlob)
-		OK(t, err)
+		rtest.OK(t, err)
 		filesize += uint64(size)
 
 		buf := restic.NewBlobBuffer(int(size))
 		n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if uint(n) != size {
 			t.Fatalf("not enough bytes read for id %v: want %v, got %v", id.Str(), size, n)
@@ -118,15 +118,15 @@ func TestFuseFile(t *testing.T) {
 
 	inode := fs.GenerateDynamicInode(1, "foo")
 	f, err := newFile(context.TODO(), root, inode, node)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	attr := fuse.Attr{}
-	OK(t, f.Attr(ctx, &attr))
+	rtest.OK(t, f.Attr(ctx, &attr))
 
-	Equals(t, inode, attr.Inode)
-	Equals(t, node.Mode, attr.Mode)
-	Equals(t, node.Size, attr.Size)
-	Equals(t, (node.Size/uint64(attr.BlockSize))+1, attr.Blocks)
+	rtest.Equals(t, inode, attr.Inode)
+	rtest.Equals(t, node.Mode, attr.Mode)
+	rtest.Equals(t, node.Size, attr.Size)
+	rtest.Equals(t, (node.Size/uint64(attr.BlockSize))+1, attr.Blocks)
 
 	for i := 0; i < 200; i++ {
 		offset := rand.Intn(int(filesize))
@@ -142,5 +142,5 @@ func TestFuseFile(t *testing.T) {
 		}
 	}
 
-	OK(t, f.Release(ctx, nil))
+	rtest.OK(t, f.Release(ctx, nil))
 }

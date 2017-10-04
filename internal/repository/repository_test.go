@@ -13,7 +13,7 @@ import (
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 var testSizes = []int{5, 23, 2<<18 + 23, 1 << 20}
@@ -27,30 +27,30 @@ func TestSave(t *testing.T) {
 	for _, size := range testSizes {
 		data := make([]byte, size)
 		_, err := io.ReadFull(rnd, data)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		id := restic.Hash(data)
 
 		// save
 		sid, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, restic.ID{})
-		OK(t, err)
+		rtest.OK(t, err)
 
-		Equals(t, id, sid)
+		rtest.Equals(t, id, sid)
 
-		OK(t, repo.Flush())
-		// OK(t, repo.SaveIndex())
+		rtest.OK(t, repo.Flush())
+		// rtest.OK(t, repo.SaveIndex())
 
 		// read back
 		buf := restic.NewBlobBuffer(size)
 		n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
-		OK(t, err)
-		Equals(t, len(buf), n)
+		rtest.OK(t, err)
+		rtest.Equals(t, len(buf), n)
 
-		Assert(t, len(buf) == len(data),
+		rtest.Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
 			len(data), len(buf))
 
-		Assert(t, bytes.Equal(buf, data),
+		rtest.Assert(t, bytes.Equal(buf, data),
 			"data does not match: expected %02x, got %02x",
 			data, buf)
 	}
@@ -63,28 +63,28 @@ func TestSaveFrom(t *testing.T) {
 	for _, size := range testSizes {
 		data := make([]byte, size)
 		_, err := io.ReadFull(rnd, data)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		id := restic.Hash(data)
 
 		// save
 		id2, err := repo.SaveBlob(context.TODO(), restic.DataBlob, data, id)
-		OK(t, err)
-		Equals(t, id, id2)
+		rtest.OK(t, err)
+		rtest.Equals(t, id, id2)
 
-		OK(t, repo.Flush())
+		rtest.OK(t, repo.Flush())
 
 		// read back
 		buf := restic.NewBlobBuffer(size)
 		n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
-		OK(t, err)
-		Equals(t, len(buf), n)
+		rtest.OK(t, err)
+		rtest.Equals(t, len(buf), n)
 
-		Assert(t, len(buf) == len(data),
+		rtest.Assert(t, len(buf) == len(data),
 			"number of bytes read back does not match: expected %d, got %d",
 			len(data), len(buf))
 
-		Assert(t, bytes.Equal(buf, data),
+		rtest.Assert(t, bytes.Equal(buf, data),
 			"data does not match: expected %02x, got %02x",
 			data, buf)
 	}
@@ -98,7 +98,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 
 	data := make([]byte, size)
 	_, err := io.ReadFull(rnd, data)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	id := restic.ID(sha256.Sum256(data))
 
@@ -108,7 +108,7 @@ func BenchmarkSaveAndEncrypt(t *testing.B) {
 	for i := 0; i < t.N; i++ {
 		// save
 		_, err = repo.SaveBlob(context.TODO(), restic.DataBlob, data, id)
-		OK(t, err)
+		rtest.OK(t, err)
 	}
 }
 
@@ -116,35 +116,35 @@ func TestLoadTree(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	if BenchArchiveDirectory == "" {
+	if rtest.BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
-	sn := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
-	OK(t, repo.Flush())
+	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
+	rtest.OK(t, repo.Flush())
 
 	_, err := repo.LoadTree(context.TODO(), *sn.Tree)
-	OK(t, err)
+	rtest.OK(t, err)
 }
 
 func BenchmarkLoadTree(t *testing.B) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	if BenchArchiveDirectory == "" {
+	if rtest.BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
 	// archive a few files
-	sn := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
-	OK(t, repo.Flush())
+	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
+	rtest.OK(t, repo.Flush())
 
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
 		_, err := repo.LoadTree(context.TODO(), *sn.Tree)
-		OK(t, err)
+		rtest.OK(t, err)
 	}
 }
 
@@ -155,11 +155,11 @@ func TestLoadBlob(t *testing.T) {
 	length := 1000000
 	buf := restic.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	id, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{})
-	OK(t, err)
-	OK(t, repo.Flush())
+	rtest.OK(t, err)
+	rtest.OK(t, repo.Flush())
 
 	// first, test with buffers that are too small
 	for _, testlength := range []int{length - 20, length, restic.CiphertextLength(length) - 1} {
@@ -200,18 +200,18 @@ func BenchmarkLoadBlob(b *testing.B) {
 	length := 1000000
 	buf := restic.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
-	OK(b, err)
+	rtest.OK(b, err)
 
 	id, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{})
-	OK(b, err)
-	OK(b, repo.Flush())
+	rtest.OK(b, err)
+	rtest.OK(b, repo.Flush())
 
 	b.ResetTimer()
 	b.SetBytes(int64(length))
 
 	for i := 0; i < b.N; i++ {
 		n, err := repo.LoadBlob(context.TODO(), restic.DataBlob, id, buf)
-		OK(b, err)
+		rtest.OK(b, err)
 		if n != length {
 			b.Errorf("wanted %d bytes, got %d", length, n)
 		}
@@ -230,20 +230,20 @@ func BenchmarkLoadAndDecrypt(b *testing.B) {
 	length := 1000000
 	buf := restic.NewBlobBuffer(length)
 	_, err := io.ReadFull(rnd, buf)
-	OK(b, err)
+	rtest.OK(b, err)
 
 	dataID := restic.Hash(buf)
 
 	storageID, err := repo.SaveUnpacked(context.TODO(), restic.DataFile, buf)
-	OK(b, err)
-	// OK(b, repo.Flush())
+	rtest.OK(b, err)
+	// rtest.OK(b, repo.Flush())
 
 	b.ResetTimer()
 	b.SetBytes(int64(length))
 
 	for i := 0; i < b.N; i++ {
 		data, err := repo.LoadAndDecrypt(context.TODO(), restic.DataFile, storageID)
-		OK(b, err)
+		rtest.OK(b, err)
 		if len(data) != length {
 			b.Errorf("wanted %d bytes, got %d", length, len(data))
 		}
@@ -259,7 +259,7 @@ func TestLoadJSONUnpacked(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	if BenchArchiveDirectory == "" {
+	if rtest.BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping")
 	}
 
@@ -269,26 +269,26 @@ func TestLoadJSONUnpacked(t *testing.T) {
 	sn.Username = "test!"
 
 	id, err := repo.SaveJSONUnpacked(context.TODO(), restic.SnapshotFile, &sn)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	var sn2 restic.Snapshot
 
 	// restore
 	err = repo.LoadJSONUnpacked(context.TODO(), restic.SnapshotFile, id, &sn2)
-	OK(t, err)
+	rtest.OK(t, err)
 
-	Equals(t, sn.Hostname, sn2.Hostname)
-	Equals(t, sn.Username, sn2.Username)
+	rtest.Equals(t, sn.Hostname, sn2.Hostname)
+	rtest.Equals(t, sn.Username, sn2.Username)
 }
 
 var repoFixture = filepath.Join("testdata", "test-repo.tar.gz")
 
 func TestRepositoryLoadIndex(t *testing.T) {
-	repodir, cleanup := Env(t, repoFixture)
+	repodir, cleanup := rtest.Env(t, repoFixture)
 	defer cleanup()
 
 	repo := repository.TestOpenLocal(t, repodir)
-	OK(t, repo.LoadIndex(context.TODO()))
+	rtest.OK(t, repo.LoadIndex(context.TODO()))
 }
 
 func BenchmarkLoadIndex(b *testing.B) {
@@ -312,18 +312,18 @@ func BenchmarkLoadIndex(b *testing.B) {
 	}
 
 	id, err := repository.SaveIndex(context.TODO(), repo, idx)
-	OK(b, err)
+	rtest.OK(b, err)
 
 	b.Logf("index saved as %v (%v entries)", id.Str(), idx.Count(restic.DataBlob))
 	fi, err := repo.Backend().Stat(context.TODO(), restic.Handle{Type: restic.IndexFile, Name: id.String()})
-	OK(b, err)
+	rtest.OK(b, err)
 	b.Logf("filesize is %v", fi.Size)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		_, err := repository.LoadIndex(context.TODO(), repo, id)
-		OK(b, err)
+		rtest.OK(b, err)
 	}
 }
 
@@ -334,10 +334,10 @@ func saveRandomDataBlobs(t testing.TB, repo restic.Repository, num int, sizeMax 
 
 		buf := make([]byte, size)
 		_, err := io.ReadFull(rnd, buf)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		_, err = repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{})
-		OK(t, err)
+		rtest.OK(t, err)
 	}
 }
 
@@ -352,26 +352,26 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 		// add 3 packs, write intermediate index
 		for i := 0; i < 3; i++ {
 			saveRandomDataBlobs(t, repo, 5, 1<<15)
-			OK(t, repo.Flush())
+			rtest.OK(t, repo.Flush())
 		}
 
-		OK(t, repo.SaveFullIndex(context.TODO()))
+		rtest.OK(t, repo.SaveFullIndex(context.TODO()))
 	}
 
 	// add another 5 packs
 	for i := 0; i < 5; i++ {
 		saveRandomDataBlobs(t, repo, 5, 1<<15)
-		OK(t, repo.Flush())
+		rtest.OK(t, repo.Flush())
 	}
 
 	// save final index
-	OK(t, repo.SaveIndex(context.TODO()))
+	rtest.OK(t, repo.SaveIndex(context.TODO()))
 
 	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 
 	for id := range repo.List(context.TODO(), restic.IndexFile) {
 		idx, err := repository.LoadIndex(context.TODO(), repo, id)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		for pb := range idx.Each(context.TODO()) {
 			if _, ok := packEntries[pb.PackID]; !ok {

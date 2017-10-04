@@ -11,7 +11,7 @@ import (
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/restic"
 
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func newB2TestSuite(t testing.TB) *test.Suite {
@@ -83,7 +83,7 @@ func testVars(t testing.TB) {
 func TestBackendB2(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/b2.TestBackendB2")
+			rtest.SkipDisallowed(t, "restic/backend/b2.TestBackendB2")
 		}
 	}()
 

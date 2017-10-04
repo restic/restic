@@ -12,12 +12,11 @@ import (
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func findSFTPServerBinary() string {
-	for _, dir := range strings.Split(TestSFTPPath, ":") {
+	for _, dir := range strings.Split(rtest.TestSFTPPath, ":") {
 		testpath := filepath.Join(dir, "sftp-server")
 		_, err := os.Stat(testpath)
 		if !os.IsNotExist(errors.Cause(err)) {
@@ -34,7 +33,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			dir, err := ioutil.TempDir(TestTempDir, "restic-test-sftp-")
+			dir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-sftp-")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -63,11 +62,11 @@ func newTestSuite(t testing.TB) *test.Suite {
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(sftp.Config)
-			if !TestCleanupTempDirs {
+			if !rtest.TestCleanupTempDirs {
 				t.Logf("leaving test backend dir at %v", cfg.Path)
 			}
 
-			RemoveAll(t, cfg.Path)
+			rtest.RemoveAll(t, cfg.Path)
 			return nil
 		},
 	}
@@ -76,7 +75,7 @@ func newTestSuite(t testing.TB) *test.Suite {
 func TestBackendSFTP(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/sftp.TestBackendSFTP")
+			rtest.SkipDisallowed(t, "restic/backend/sftp.TestBackendSFTP")
 		}
 	}()
 

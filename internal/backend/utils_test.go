@@ -9,7 +9,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/mem"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 const KiB = 1 << 10
@@ -19,14 +19,14 @@ func TestLoadAll(t *testing.T) {
 	b := mem.New()
 
 	for i := 0; i < 20; i++ {
-		data := Random(23+i, rand.Intn(MiB)+500*KiB)
+		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
 		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
-		OK(t, err)
+		rtest.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if len(buf) != len(data) {
 			t.Errorf("length of returned buffer does not match, want %d, got %d", len(data), len(buf))
@@ -44,14 +44,14 @@ func TestLoadSmallBuffer(t *testing.T) {
 	b := mem.New()
 
 	for i := 0; i < 20; i++ {
-		data := Random(23+i, rand.Intn(MiB)+500*KiB)
+		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
 		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
-		OK(t, err)
+		rtest.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if len(buf) != len(data) {
 			t.Errorf("length of returned buffer does not match, want %d, got %d", len(data), len(buf))
@@ -69,14 +69,14 @@ func TestLoadLargeBuffer(t *testing.T) {
 	b := mem.New()
 
 	for i := 0; i < 20; i++ {
-		data := Random(23+i, rand.Intn(MiB)+500*KiB)
+		data := rtest.Random(23+i, rand.Intn(MiB)+500*KiB)
 
 		id := restic.Hash(data)
 		err := b.Save(context.TODO(), restic.Handle{Name: id.String(), Type: restic.DataFile}, bytes.NewReader(data))
-		OK(t, err)
+		rtest.OK(t, err)
 
 		buf, err := backend.LoadAll(context.TODO(), b, restic.Handle{Type: restic.DataFile, Name: id.String()})
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if len(buf) != len(data) {
 			t.Errorf("length of returned buffer does not match, want %d, got %d", len(data), len(buf))

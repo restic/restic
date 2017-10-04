@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestRestoreLocalLayout(t *testing.T) {
@@ -24,7 +24,7 @@ func TestRestoreLocalLayout(t *testing.T) {
 	for _, test := range tests {
 		datafile := filepath.Join("..", "..", "internal", "backend", "testdata", test.filename)
 
-		SetupTarTestFixture(t, env.base, datafile)
+		rtest.SetupTarTestFixture(t, env.base, datafile)
 
 		env.gopts.extended["local.layout"] = test.layout
 
@@ -35,7 +35,7 @@ func TestRestoreLocalLayout(t *testing.T) {
 		target := filepath.Join(env.base, "restore")
 		testRunRestoreLatest(t, env.gopts, target, nil, "")
 
-		RemoveAll(t, filepath.Join(env.base, "repo"))
-		RemoveAll(t, target)
+		rtest.RemoveAll(t, filepath.Join(env.base, "repo"))
+		rtest.RemoveAll(t, target)
 	}
 }

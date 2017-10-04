@@ -10,7 +10,7 @@ import (
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/repository"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 type testIDs []string
@@ -102,7 +102,7 @@ func TestFilesInParallel(t *testing.T) {
 
 	for n := uint(1); n < 5; n++ {
 		err := repository.FilesInParallel(context.TODO(), lister, restic.DataFile, n*100, f)
-		OK(t, err)
+		rtest.OK(t, err)
 	}
 }
 
@@ -122,6 +122,6 @@ func TestFilesInParallelWithError(t *testing.T) {
 
 	for n := uint(1); n < 5; n++ {
 		err := repository.FilesInParallel(context.TODO(), lister, restic.DataFile, n*100, f)
-		Equals(t, errTest, err)
+		rtest.Equals(t, errTest, err)
 	}
 }
