@@ -326,6 +326,10 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, err
 	}
 
+	if stdoutIsTerminal() {
+		Verbosef("password is correct\n")
+	}
+
 	if opts.NoCache {
 		return s, nil
 	}
