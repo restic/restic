@@ -656,6 +656,7 @@ func TestBackupTags(t *testing.T) {
 	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
 	rtest.Assert(t, len(newest.Tags) == 0,
 		"expected no tags, got %v", newest.Tags)
+	parent := newest
 
 	opts.Tags = []string{"NL"}
 	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
@@ -664,6 +665,9 @@ func TestBackupTags(t *testing.T) {
 	rtest.Assert(t, newest != nil, "expected a new backup, got nil")
 	rtest.Assert(t, len(newest.Tags) == 1 && newest.Tags[0] == "NL",
 		"expected one NL tag, got %v", newest.Tags)
+	// Tagged backup should have untagged backup as parent.
+	rtest.Assert(t, parent.ID.Equal(*newest.Parent),
+		"expected parent to be %v, got %v", parent.ID, newest.Parent)
 }
 
 func testRunTag(t testing.TB, opts TagOptions, gopts GlobalOptions) {
