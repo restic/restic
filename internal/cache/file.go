@@ -60,7 +60,7 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 	if fi.Size() <= crypto.Extension {
 		_ = f.Close()
 		_ = c.Remove(h)
-		return nil, errors.New("cached file is truncated, removing")
+		return nil, errors.Errorf("cached file %v is truncated, removing", h)
 	}
 
 	if offset > 0 {
