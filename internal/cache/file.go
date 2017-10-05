@@ -111,13 +111,21 @@ func (c *Cache) Save(h restic.Handle, rd io.Reader) error {
 		return err
 	}
 
-	if _, err = io.Copy(f, rd); err != nil {
+	n, err := io.Copy(f, rd)
+	if err != nil {
 		_ = f.Close()
 		_ = c.Remove(h)
 		return errors.Wrap(err, "Copy")
 	}
 
+	if n <= crypto.Extension {
+		_ = f.Close()
+		_ = c.Remove(h)
+		return errors.Errorf("trying to cache truncated file %v", h)
+	}
+
 	if err = f.Close(); err != nil {
+		_ = c.Remove(h)
 		return errors.Wrap(err, "Close")
 	}
 
