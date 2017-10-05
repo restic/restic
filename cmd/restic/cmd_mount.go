@@ -67,6 +67,12 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		return err
 	}
 
+	lock, err := lockRepo(repo)
+	defer unlockRepo(lock)
+	if err != nil {
+		return err
+	}
+
 	err = repo.LoadIndex(context.TODO())
 	if err != nil {
 		return err

@@ -17,70 +17,128 @@ import (
 	"bazil.org/fuse/fs"
 )
 
-// SnapshotsDir is a fuse directory which contains snapshots.
+// SnapshotsDir is a fuse directory which contains snapshots named by timestamp.
 type SnapshotsDir struct {
-	inode     uint64
-	root      *Root
-	snapshots restic.Snapshots
-	names     map[string]*restic.Snapshot
-	latest    string
+	inode  uint64
+	root   *Root
+	names  map[string]*restic.Snapshot
+	latest string
+	tag    string
+	host   string
+}
+
+// SnapshotsIDSDir is a fuse directory which contains snapshots named by ids.
+type SnapshotsIDSDir struct {
+	inode uint64
+	root  *Root
+	names map[string]*restic.Snapshot
+}
+
+// HostsDir is a fuse directory which contains hosts.
+type HostsDir struct {
+	inode uint64
+	root  *Root
+	hosts map[string]bool
+}
+
+// TagsDir is a fuse directory which contains tags.
+type TagsDir struct {
+	inode uint64
+	root  *Root
+	tags  map[string]bool
+}
+
+// SnapshotLink
+type snapshotLink struct {
+	root     *Root
+	inode    uint64
+	target   string
+	snapshot *restic.Snapshot
 }
 
 // ensure that *SnapshotsDir implements these interfaces
 var _ = fs.HandleReadDirAller(&SnapshotsDir{})
 var _ = fs.NodeStringLookuper(&SnapshotsDir{})
+var _ = fs.HandleReadDirAller(&SnapshotsIDSDir{})
+var _ = fs.NodeStringLookuper(&SnapshotsIDSDir{})
+var _ = fs.HandleReadDirAller(&TagsDir{})
+var _ = fs.NodeStringLookuper(&TagsDir{})
+var _ = fs.HandleReadDirAller(&HostsDir{})
+var _ = fs.NodeStringLookuper(&HostsDir{})
 var _ = fs.NodeReadlinker(&snapshotLink{})
 
-// NewSnapshotsDir returns a new directory containing snapshots.
-func NewSnapshotsDir(root *Root, inode uint64, snapshots restic.Snapshots) *SnapshotsDir {
-	debug.Log("create snapshots dir with %d snapshots, inode %d", len(snapshots), inode)
-	d := &SnapshotsDir{
-		root:      root,
-		inode:     inode,
-		snapshots: snapshots,
-		names:     make(map[string]*restic.Snapshot, len(snapshots)),
+// read tag names from the current repository-state.
+func getTagNames(d *TagsDir) {
+	d.tags = make(map[string]bool, len(d.root.snapshots))
+	for _, snapshot := range d.root.snapshots {
+		for _, tag := range snapshot.Tags {
+			d.tags[tag] = true
+		}
 	}
+}
 
-	// Track latest Snapshot
-	var latestTime time.Time
-	d.latest = ""
+// read host names from the current repository-state.
+func getHostsNames(d *HostsDir) {
+	d.hosts = make(map[string]bool, len(d.root.snapshots))
+	for _, snapshot := range d.root.snapshots {
+		d.hosts[snapshot.Hostname] = true
+	}
+}
 
-	for _, sn := range snapshots {
-		name := sn.Time.Format(time.RFC3339)
-		if d.latest == "" || !sn.Time.Before(latestTime) {
-			latestTime = sn.Time
-			d.latest = name
-		}
-		for i := 1; ; i++ {
-			if _, ok := d.names[name]; !ok {
-				break
-			}
-
-			name = fmt.Sprintf("%s-%d", sn.Time.Format(time.RFC3339), i)
-		}
-
+// read snapshot id names from the current repository-state.
+func getSnapshotIDSNames(d *SnapshotsIDSDir) {
+	for _, sn := range d.root.snapshots {
+		name := sn.ID().Str()
 		d.names[name] = sn
-		debug.Log("  add snapshot %v as dir %v", sn.ID().Str(), name)
+	}
+}
+
+// NewSnapshotsDir returns a new directory containing snapshots.
+func NewSnapshotsDir(root *Root, inode uint64, tag string, host string) *SnapshotsDir {
+	debug.Log("create snapshots dir, inode %d", inode)
+	d := &SnapshotsDir{
+		root:   root,
+		inode:  inode,
+		names:  make(map[string]*restic.Snapshot),
+		latest: "",
+		tag:    tag,
+		host:   host,
 	}
 
 	return d
 }
 
 // NewSnapshotsIDSDir returns a new directory containing snapshots named by ids.
-func NewSnapshotsIDSDir(root *Root, inode uint64, snapshots restic.Snapshots) *SnapshotsDir {
-	debug.Log("create snapshots ids dir with %d snapshots, inode %d", len(snapshots), inode)
-	d := &SnapshotsDir{
-		root:      root,
-		inode:     inode,
-		snapshots: snapshots,
-		names:     make(map[string]*restic.Snapshot, len(snapshots)),
+func NewSnapshotsIDSDir(root *Root, inode uint64) *SnapshotsIDSDir {
+	debug.Log("create snapshots ids dir, inode %d", inode)
+	d := &SnapshotsIDSDir{
+		root:  root,
+		inode: inode,
+		names: make(map[string]*restic.Snapshot),
 	}
 
-	for _, sn := range snapshots {
-		name := sn.ID().Str()
+	return d
+}
 
-		d.names[name] = sn
-		debug.Log("  add snapshot %v", name)
+// NewHostsDir returns a new directory containing host names
+func NewHostsDir(root *Root, inode uint64) *HostsDir {
+	debug.Log("create hosts dir, inode %d", inode)
+	d := &HostsDir{
+		root:  root,
+		inode: inode,
+		hosts: make(map[string]bool),
+	}
+
+	return d
+}
+
+// NewTagsDir returns a new directory containing tag names
+func NewTagsDir(root *Root, inode uint64) *TagsDir {
+	debug.Log("create tags dir, inode %d", inode)
+	d := &TagsDir{
+		root:  root,
+		inode: inode,
+		tags:  make(map[string]bool),
 	}
 
 	return d
@@ -99,9 +157,91 @@ func (d *SnapshotsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
 	return nil
 }
 
-// ReadDirAll returns all entries of the root node.
+// Attr returns the attributes for the SnapshotsDir.
+func (d *SnapshotsIDSDir) Attr(ctx context.Context, attr *fuse.Attr) error {
+	attr.Inode = d.inode
+	attr.Mode = os.ModeDir | 0555
+
+	if !d.root.cfg.OwnerIsRoot {
+		attr.Uid = uint32(os.Getuid())
+		attr.Gid = uint32(os.Getgid())
+	}
+	debug.Log("attr: %v", attr)
+	return nil
+}
+
+// Attr returns the attributes for the HostsDir.
+func (d *HostsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
+	attr.Inode = d.inode
+	attr.Mode = os.ModeDir | 0555
+
+	if !d.root.cfg.OwnerIsRoot {
+		attr.Uid = uint32(os.Getuid())
+		attr.Gid = uint32(os.Getgid())
+	}
+	debug.Log("attr: %v", attr)
+	return nil
+}
+
+// Attr returns the attributes for the TagsDir.
+func (d *TagsDir) Attr(ctx context.Context, attr *fuse.Attr) error {
+	attr.Inode = d.inode
+	attr.Mode = os.ModeDir | 0555
+
+	if !d.root.cfg.OwnerIsRoot {
+		attr.Uid = uint32(os.Getuid())
+		attr.Gid = uint32(os.Getgid())
+	}
+	debug.Log("attr: %v", attr)
+	return nil
+}
+
+// search element in string list.
+func isElem(e string, list []string) bool {
+	for _, x := range list {
+		if e == x {
+			return true
+		}
+	}
+	return false
+}
+
+// read snapshot timestamps from the current repository-state.
+func getSnapshotNames(d *SnapshotsDir) {
+	var latestTime time.Time
+	d.latest = ""
+	d.names = make(map[string]*restic.Snapshot, len(d.root.snapshots))
+	for _, sn := range d.root.snapshots {
+		if d.tag == "" || isElem(d.tag, sn.Tags) {
+			if d.host == "" || d.host == sn.Hostname {
+				name := sn.Time.Format(time.RFC3339)
+				if d.latest == "" || !sn.Time.Before(latestTime) {
+					latestTime = sn.Time
+					d.latest = name
+				}
+				for i := 1; ; i++ {
+					if _, ok := d.names[name]; !ok {
+						break
+					}
+
+					name = fmt.Sprintf("%s-%d", sn.Time.Format(time.RFC3339), i)
+				}
+
+				d.names[name] = sn
+			}
+		}
+	}
+}
+
+// ReadDirAll returns all entries of the SnapshotsDir.
 func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("ReadDirAll()")
+
+	d.root.repo.LoadIndex(ctx)
+	d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+
+	getSnapshotNames(d)
+
 	items := []fuse.Dirent{
 		{
 			Inode: d.inode,
@@ -134,21 +274,116 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	return items, nil
 }
 
-type snapshotLink struct {
-	root     *Root
-	inode    uint64
-	target   string
-	snapshot *restic.Snapshot
+// ReadDirAll returns all entries of the SnapshotsIDSDir.
+func (d *SnapshotsIDSDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	debug.Log("ReadDirAll()")
+
+	d.root.repo.LoadIndex(ctx)
+	d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+
+	getSnapshotIDSNames(d)
+
+	items := []fuse.Dirent{
+		{
+			Inode: d.inode,
+			Name:  ".",
+			Type:  fuse.DT_Dir,
+		},
+		{
+			Inode: d.root.inode,
+			Name:  "..",
+			Type:  fuse.DT_Dir,
+		},
+	}
+
+	for name := range d.names {
+		items = append(items, fuse.Dirent{
+			Inode: fs.GenerateDynamicInode(d.inode, name),
+			Name:  name,
+			Type:  fuse.DT_Dir,
+		})
+	}
+
+	return items, nil
 }
 
+// ReadDirAll returns all entries of the HostsDir.
+func (d *HostsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	debug.Log("ReadDirAll()")
+
+	d.root.repo.LoadIndex(ctx)
+	d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+
+	getHostsNames(d)
+
+	items := []fuse.Dirent{
+		{
+			Inode: d.inode,
+			Name:  ".",
+			Type:  fuse.DT_Dir,
+		},
+		{
+			Inode: d.root.inode,
+			Name:  "..",
+			Type:  fuse.DT_Dir,
+		},
+	}
+
+	for host := range d.hosts {
+		items = append(items, fuse.Dirent{
+			Inode: fs.GenerateDynamicInode(d.inode, host),
+			Name:  host,
+			Type:  fuse.DT_Dir,
+		})
+	}
+
+	return items, nil
+}
+
+// ReadDirAll returns all entries of the TagsDir.
+func (d *TagsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
+	debug.Log("ReadDirAll()")
+
+	d.root.repo.LoadIndex(ctx)
+	d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+
+	getTagNames(d)
+
+	items := []fuse.Dirent{
+		{
+			Inode: d.inode,
+			Name:  ".",
+			Type:  fuse.DT_Dir,
+		},
+		{
+			Inode: d.root.inode,
+			Name:  "..",
+			Type:  fuse.DT_Dir,
+		},
+	}
+
+	for tag := range d.tags {
+		items = append(items, fuse.Dirent{
+			Inode: fs.GenerateDynamicInode(d.inode, tag),
+			Name:  tag,
+			Type:  fuse.DT_Dir,
+		})
+	}
+
+	return items, nil
+}
+
+// newSnapshotLink
 func newSnapshotLink(ctx context.Context, root *Root, inode uint64, target string, snapshot *restic.Snapshot) (*snapshotLink, error) {
 	return &snapshotLink{root: root, inode: inode, target: target, snapshot: snapshot}, nil
 }
 
+// Readlink
 func (l *snapshotLink) Readlink(ctx context.Context, req *fuse.ReadlinkRequest) (string, error) {
 	return l.target, nil
 }
 
+// Attr
 func (l *snapshotLink) Attr(ctx context.Context, a *fuse.Attr) error {
 	a.Inode = l.inode
 	a.Mode = os.ModeSymlink | 0777
@@ -166,24 +401,104 @@ func (l *snapshotLink) Attr(ctx context.Context, a *fuse.Attr) error {
 	return nil
 }
 
-// Lookup returns a specific entry from the root node.
+// Lookup returns a specific entry from the SnapshotsDir.
 func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	debug.Log("Lookup(%s)", name)
 
 	sn, ok := d.names[name]
 	if !ok {
+		// could not find entry. Updating repository-state
+		d.root.repo.LoadIndex(ctx)
+		d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+
+		getSnapshotNames(d)
+
+		sn, ok := d.names[name]
+		if ok {
+			return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), sn)
+		}
+
 		if name == "latest" && d.latest != "" {
-			sn2, ok2 := d.names[d.latest]
+			sn, ok := d.names[d.latest]
 
 			// internal error
-			if !ok2 {
+			if !ok {
 				return nil, fuse.ENOENT
 			}
 
-			return newSnapshotLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), d.latest, sn2)
+			return newSnapshotLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), d.latest, sn)
 		}
 		return nil, fuse.ENOENT
 	}
 
 	return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), sn)
+}
+
+// Lookup returns a specific entry from the SnapshotsIDSDir.
+func (d *SnapshotsIDSDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+	debug.Log("Lookup(%s)", name)
+
+	sn, ok := d.names[name]
+	if !ok {
+		// could not find entry. Updating repository-state
+		d.root.repo.LoadIndex(ctx)
+		d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+
+		getSnapshotIDSNames(d)
+
+		sn, ok := d.names[name]
+		if ok {
+			return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), sn)
+		}
+
+		return nil, fuse.ENOENT
+	}
+
+	return newDirFromSnapshot(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), sn)
+}
+
+// Lookup returns a specific entry from the HostsDir.
+func (d *HostsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+	debug.Log("Lookup(%s)", name)
+
+	_, ok := d.hosts[name]
+	if !ok {
+		// could not find entry. Updating repository-state
+		d.root.repo.LoadIndex(ctx)
+		d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+
+		getHostsNames(d)
+
+		_, ok := d.hosts[name]
+		if ok {
+			return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.root.inode, name), "", name), nil
+		}
+
+		return nil, fuse.ENOENT
+	}
+
+	return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.root.inode, name), "", name), nil
+}
+
+// Lookup returns a specific entry from the TagsDir.
+func (d *TagsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
+	debug.Log("Lookup(%s)", name)
+
+	_, ok := d.tags[name]
+	if !ok {
+		// could not find entry. Updating repository-state
+		d.root.repo.LoadIndex(ctx)
+		d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+
+		getTagNames(d)
+
+		_, ok := d.tags[name]
+		if ok {
+			return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.root.inode, name), name, ""), nil
+		}
+
+		return nil, fuse.ENOENT
+	}
+
+	return NewSnapshotsDir(d.root, fs.GenerateDynamicInode(d.root.inode, name), name, ""), nil
 }
