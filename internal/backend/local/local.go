@@ -23,6 +23,9 @@ type Local struct {
 // ensure statically that *Local implements restic.Backend.
 var _ restic.Backend = &Local{}
 
+// ensure statically that *Local implements restic.Writabler.
+var _ restic.Writabler = &Local{}
+
 const defaultLayout = "default"
 
 // dirExists returns true if the name exists and is a directory.
@@ -286,4 +289,15 @@ func (b *Local) Close() error {
 	// this does not need to do anything, all open files are closed within the
 	// same function.
 	return nil
+}
+
+// Writable returns whether the local backend b can be written to.
+func (b *Local) Writable() bool {
+	s, err := fs.Stat(b.Path)
+	if err != nil {
+		// how could the repo be opened in the first place?
+		// better consider it to be read-only
+		return false
+	}
+	return s.Mode()&0200 != 0
 }
