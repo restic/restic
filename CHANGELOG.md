@@ -78,6 +78,11 @@ Small changes
    https://github.com/restic/restic/pull/1299
    https://github.com/restic/restic/pull/1320
 
+ * The `backup` command was improved, it now caches the result of excludes for
+   a directory.
+   https://github.com/restic/restic/issues/1271
+   https://github.com/restic/restic/pull/1326
+
 Important Changes in 0.7.3
 ==========================
 
