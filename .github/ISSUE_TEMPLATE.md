@@ -14,8 +14,13 @@ better place.
 ## How did you run restic exactly?
 
 <!--
-Include the complete command line and any environment variables you used to
-configure restic's backend access. Make sure to replace sensitive values!
+This section should include at least:
+
+ * The complete command line and any environment variables you used to
+   configure restic's backend access. Make sure to replace sensitive values!
+
+ * The output of the commands, what restic prints gives may give us much
+   information to diagnose the problem!
 -->
 
 
@@ -24,11 +29,23 @@ configure restic's backend access. Make sure to replace sensitive values!
 
 ## Expected behavior
 
+<!--
+Describe what you'd like restic to do differently.
+-->
 
 ## Actual behavior
 
+<!--
+In this section, please try to concentrate on observations, so only describe
+what you observed directly.
+-->
 
 ## Steps to reproduce the behavior
+
+<!--
+The more time you spend describing an easy way to reproduce the behavior (if
+this is possible), the easier it is for the project developers to fix it!
+-->
 
 
 ## Do you have any idea what may have caused this?
