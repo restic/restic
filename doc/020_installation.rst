@@ -70,6 +70,13 @@ Pre-compiled Binary
 You can download the latest pre-compiled binary from the `restic release
 page <https://github.com/restic/restic/releases/latest>`__.
 
+Docker Container
+****************
+
+.. note::
+   | A docker container is available as a contribution (Thank you!).
+   | You can find it at https://github.com/Lobaro/restic-backup-docker
+
 From Source
 ***********
 
