@@ -28,6 +28,9 @@ Important Changes in 0.X.Y
    init` if the bucket already exists.
    https://github.com/restic/restic/pull/1281
 
+ * Added support for rate limiting through `--limit-upload` and
+   `--limit-download` flags.
+
 Small changes
 -------------
 

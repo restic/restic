@@ -22,6 +22,7 @@ import (
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/limiter"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -43,6 +44,9 @@ type GlobalOptions struct {
 	CacheDir     string
 	NoCache      bool
 	CACerts      []string
+
+	LimitUploadKb   int
+	LimitDownloadKb int
 
 	ctx      context.Context
 	password string
@@ -76,6 +80,8 @@ func init() {
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "path to load root certificates from (default: use system certificates)")
+	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
+	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 
 	restoreTerminal()
@@ -315,6 +321,11 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	be, err := open(opts.Repo, opts.extended)
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.LimitUploadKb > 0 || opts.LimitDownloadKb > 0 {
+		debug.Log("rate limiting backend to %d KiB/s upload and %d KiB/s download", opts.LimitUploadKb, opts.LimitDownloadKb)
+		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(opts.LimitUploadKb, opts.LimitDownloadKb))
 	}
 
 	s := repository.New(be)
