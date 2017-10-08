@@ -83,6 +83,12 @@ Small changes
    https://github.com/restic/restic/issues/1271
    https://github.com/restic/restic/pull/1326
 
+ * We've added the `--cacert` option which can be used to pass one (or more) CA
+   certificates to restic. These are used in addition to the system CA
+   certificates to verify HTTPS certificates (e.g. for the REST backend).
+   https://github.com/restic/restic/issues/1114
+   https://github.com/restic/restic/pull/1276
+
 Important Changes in 0.7.3
 ==========================
 
