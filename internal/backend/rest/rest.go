@@ -31,8 +31,8 @@ type restBackend struct {
 }
 
 // Open opens the REST backend with the given config.
-func Open(cfg Config) (restic.Backend, error) {
-	client := &http.Client{Transport: backend.Transport()}
+func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	client := &http.Client{Transport: rt}
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
 	if err != nil {
@@ -56,8 +56,8 @@ func Open(cfg Config) (restic.Backend, error) {
 }
 
 // Create creates a new REST on server configured in config.
-func Create(cfg Config) (restic.Backend, error) {
-	be, err := Open(cfg)
+func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	be, err := Open(cfg, rt)
 	if err != nil {
 		return nil, err
 	}

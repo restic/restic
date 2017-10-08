@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/restic"
@@ -61,6 +62,11 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 }
 
 func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
+	tr, err := backend.Transport(nil)
+	if err != nil {
+		t.Fatalf("cannot create transport for tests: %v", err)
+	}
+
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
@@ -84,13 +90,13 @@ func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(rest.Config)
-			return rest.Create(cfg)
+			return rest.Create(cfg, tr)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(rest.Config)
-			return rest.Open(cfg)
+			return rest.Open(cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.

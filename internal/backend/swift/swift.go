@@ -34,7 +34,7 @@ var _ restic.Backend = &beSwift{}
 
 // Open opens the swift backend at a container in region. The container is
 // created if it does not exist yet.
-func Open(cfg Config) (restic.Backend, error) {
+func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("config %#v", cfg)
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
@@ -58,7 +58,7 @@ func Open(cfg Config) (restic.Backend, error) {
 			ConnectTimeout: time.Minute,
 			Timeout:        time.Minute,
 
-			Transport: backend.Transport(),
+			Transport: rt,
 		},
 		sem:       sem,
 		container: cfg.Container,
