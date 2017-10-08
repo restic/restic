@@ -27,6 +27,7 @@ type Root struct {
 	inode         uint64
 	snapshots     restic.Snapshots
 	blobSizeCache *BlobSizeCache
+	snCount       int
 
 	*MetaDir
 }

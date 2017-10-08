@@ -19,33 +19,37 @@ import (
 
 // SnapshotsDir is a fuse directory which contains snapshots named by timestamp.
 type SnapshotsDir struct {
-	inode  uint64
-	root   *Root
-	names  map[string]*restic.Snapshot
-	latest string
-	tag    string
-	host   string
+	inode   uint64
+	root    *Root
+	names   map[string]*restic.Snapshot
+	latest  string
+	tag     string
+	host    string
+	snCount int
 }
 
 // SnapshotsIDSDir is a fuse directory which contains snapshots named by ids.
 type SnapshotsIDSDir struct {
-	inode uint64
-	root  *Root
-	names map[string]*restic.Snapshot
+	inode   uint64
+	root    *Root
+	names   map[string]*restic.Snapshot
+	snCount int
 }
 
 // HostsDir is a fuse directory which contains hosts.
 type HostsDir struct {
-	inode uint64
-	root  *Root
-	hosts map[string]bool
+	inode   uint64
+	root    *Root
+	hosts   map[string]bool
+	snCount int
 }
 
 // TagsDir is a fuse directory which contains tags.
 type TagsDir struct {
-	inode uint64
-	root  *Root
-	tags  map[string]bool
+	inode   uint64
+	root    *Root
+	tags    map[string]bool
+	snCount int
 }
 
 // SnapshotLink
@@ -68,28 +72,37 @@ var _ = fs.NodeStringLookuper(&HostsDir{})
 var _ = fs.NodeReadlinker(&snapshotLink{})
 
 // read tag names from the current repository-state.
-func getTagNames(d *TagsDir) {
-	d.tags = make(map[string]bool, len(d.root.snapshots))
-	for _, snapshot := range d.root.snapshots {
-		for _, tag := range snapshot.Tags {
-			d.tags[tag] = true
+func updateTagNames(d *TagsDir) {
+	if d.snCount != d.root.snCount {
+		d.snCount = d.root.snCount
+		d.tags = make(map[string]bool, len(d.root.snapshots))
+		for _, snapshot := range d.root.snapshots {
+			for _, tag := range snapshot.Tags {
+				d.tags[tag] = true
+			}
 		}
 	}
 }
 
 // read host names from the current repository-state.
-func getHostsNames(d *HostsDir) {
-	d.hosts = make(map[string]bool, len(d.root.snapshots))
-	for _, snapshot := range d.root.snapshots {
-		d.hosts[snapshot.Hostname] = true
+func updateHostsNames(d *HostsDir) {
+	if d.snCount != d.root.snCount {
+		d.snCount = d.root.snCount
+		d.hosts = make(map[string]bool, len(d.root.snapshots))
+		for _, snapshot := range d.root.snapshots {
+			d.hosts[snapshot.Hostname] = true
+		}
 	}
 }
 
 // read snapshot id names from the current repository-state.
-func getSnapshotIDSNames(d *SnapshotsIDSDir) {
-	for _, sn := range d.root.snapshots {
-		name := sn.ID().Str()
-		d.names[name] = sn
+func updateSnapshotIDSNames(d *SnapshotsIDSDir) {
+	if d.snCount != d.root.snCount {
+		d.snCount = d.root.snCount
+		for _, sn := range d.root.snapshots {
+			name := sn.ID().Str()
+			d.names[name] = sn
+		}
 	}
 }
 
@@ -206,28 +219,41 @@ func isElem(e string, list []string) bool {
 	return false
 }
 
+// update snapshots if repository has changed
+func updateSnapshots(ctx context.Context, root *Root) {
+	snapshots := restic.FindFilteredSnapshots(ctx, root.repo, root.cfg.Host, root.cfg.Tags, root.cfg.Paths)
+	if root.snCount != len(snapshots) {
+		root.snCount = len(snapshots)
+		root.repo.LoadIndex(ctx)
+		root.snapshots = snapshots
+	}
+}
+
 // read snapshot timestamps from the current repository-state.
-func getSnapshotNames(d *SnapshotsDir) {
-	var latestTime time.Time
-	d.latest = ""
-	d.names = make(map[string]*restic.Snapshot, len(d.root.snapshots))
-	for _, sn := range d.root.snapshots {
-		if d.tag == "" || isElem(d.tag, sn.Tags) {
-			if d.host == "" || d.host == sn.Hostname {
-				name := sn.Time.Format(time.RFC3339)
-				if d.latest == "" || !sn.Time.Before(latestTime) {
-					latestTime = sn.Time
-					d.latest = name
-				}
-				for i := 1; ; i++ {
-					if _, ok := d.names[name]; !ok {
-						break
+func updateSnapshotNames(d *SnapshotsDir) {
+	if d.snCount != d.root.snCount {
+		d.snCount = d.root.snCount
+		var latestTime time.Time
+		d.latest = ""
+		d.names = make(map[string]*restic.Snapshot, len(d.root.snapshots))
+		for _, sn := range d.root.snapshots {
+			if d.tag == "" || isElem(d.tag, sn.Tags) {
+				if d.host == "" || d.host == sn.Hostname {
+					name := sn.Time.Format(time.RFC3339)
+					if d.latest == "" || !sn.Time.Before(latestTime) {
+						latestTime = sn.Time
+						d.latest = name
+					}
+					for i := 1; ; i++ {
+						if _, ok := d.names[name]; !ok {
+							break
+						}
+
+						name = fmt.Sprintf("%s-%d", sn.Time.Format(time.RFC3339), i)
 					}
 
-					name = fmt.Sprintf("%s-%d", sn.Time.Format(time.RFC3339), i)
+					d.names[name] = sn
 				}
-
-				d.names[name] = sn
 			}
 		}
 	}
@@ -237,10 +263,11 @@ func getSnapshotNames(d *SnapshotsDir) {
 func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("ReadDirAll()")
 
-	d.root.repo.LoadIndex(ctx)
-	d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+	// update snapshots
+	updateSnapshots(ctx, d.root)
 
-	getSnapshotNames(d)
+	// update snapshot names
+	updateSnapshotNames(d)
 
 	items := []fuse.Dirent{
 		{
@@ -278,10 +305,11 @@ func (d *SnapshotsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 func (d *SnapshotsIDSDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("ReadDirAll()")
 
-	d.root.repo.LoadIndex(ctx)
-	d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+	// update snapshots
+	updateSnapshots(ctx, d.root)
 
-	getSnapshotIDSNames(d)
+	// update snapshot ids
+	updateSnapshotIDSNames(d)
 
 	items := []fuse.Dirent{
 		{
@@ -311,10 +339,11 @@ func (d *SnapshotsIDSDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error)
 func (d *HostsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("ReadDirAll()")
 
-	d.root.repo.LoadIndex(ctx)
-	d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+	// update snapshots
+	updateSnapshots(ctx, d.root)
 
-	getHostsNames(d)
+	// update host names
+	updateHostsNames(d)
 
 	items := []fuse.Dirent{
 		{
@@ -344,10 +373,11 @@ func (d *HostsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 func (d *TagsDir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	debug.Log("ReadDirAll()")
 
-	d.root.repo.LoadIndex(ctx)
-	d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+	// update snapshots
+	updateSnapshots(ctx, d.root)
 
-	getTagNames(d)
+	// update tag names
+	updateTagNames(d)
 
 	items := []fuse.Dirent{
 		{
@@ -408,10 +438,10 @@ func (d *SnapshotsDir) Lookup(ctx context.Context, name string) (fs.Node, error)
 	sn, ok := d.names[name]
 	if !ok {
 		// could not find entry. Updating repository-state
-		d.root.repo.LoadIndex(ctx)
-		d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+		updateSnapshots(ctx, d.root)
 
-		getSnapshotNames(d)
+		// update snapshot names
+		updateSnapshotNames(d)
 
 		sn, ok := d.names[name]
 		if ok {
@@ -441,10 +471,10 @@ func (d *SnapshotsIDSDir) Lookup(ctx context.Context, name string) (fs.Node, err
 	sn, ok := d.names[name]
 	if !ok {
 		// could not find entry. Updating repository-state
-		d.root.repo.LoadIndex(ctx)
-		d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+		updateSnapshots(ctx, d.root)
 
-		getSnapshotIDSNames(d)
+		// update snapshot ids
+		updateSnapshotIDSNames(d)
 
 		sn, ok := d.names[name]
 		if ok {
@@ -464,10 +494,10 @@ func (d *HostsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	_, ok := d.hosts[name]
 	if !ok {
 		// could not find entry. Updating repository-state
-		d.root.repo.LoadIndex(ctx)
-		d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+		updateSnapshots(ctx, d.root)
 
-		getHostsNames(d)
+		// update host names
+		updateHostsNames(d)
 
 		_, ok := d.hosts[name]
 		if ok {
@@ -487,10 +517,10 @@ func (d *TagsDir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	_, ok := d.tags[name]
 	if !ok {
 		// could not find entry. Updating repository-state
-		d.root.repo.LoadIndex(ctx)
-		d.root.snapshots = restic.FindFilteredSnapshots(ctx, d.root.repo, d.root.cfg.Host, d.root.cfg.Tags, d.root.cfg.Paths)
+		updateSnapshots(ctx, d.root)
 
-		getTagNames(d)
+		// update tag names
+		updateTagNames(d)
 
 		_, ok := d.tags[name]
 		if ok {
