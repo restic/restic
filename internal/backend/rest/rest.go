@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -22,6 +23,9 @@ import (
 
 // make sure the rest backend implements restic.Backend
 var _ restic.Backend = &restBackend{}
+
+// make sure the rest backend implements restic.Backend
+var _ restic.Writabler = &restBackend{}
 
 type restBackend struct {
 	url    *url.URL
@@ -348,4 +352,49 @@ func (b *restBackend) Close() error {
 	// this does not need to do anything, all open files are closed within the
 	// same function.
 	return nil
+}
+
+// Writable implements restic.Writabler for the REST backend and returns
+// whether the backend can be written to or must be considered as read-only.
+//
+// The methods probes the backend by writing to a temporary file and deleting
+// it wright away. If that fails for any reason, the backend is considered to
+// be read-only.
+func (b *restBackend) Writable() bool {
+	debug.Log("Writable()")
+
+	const probeFilename = ".resticWriteCheck"
+	h := restic.Handle{Type: restic.LockFile, Name: probeFilename}
+	f := b.Filename(h)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rd := bytes.NewReader([]byte("restic"))
+
+	b.sem.GetToken()
+	resp, err := ctxhttp.Post(ctx, b.client, f, "binary/octet-stream", rd)
+	fmt.Println(b.Layout.Paths())
+	b.sem.ReleaseToken()
+	if err != nil || resp.StatusCode != 200 {
+		return false
+	}
+	if resp.Body.Close() != nil {
+		return false
+	}
+	req, err := http.NewRequest("DELETE", f, nil)
+	if err != nil {
+		return false
+	}
+	b.sem.GetToken()
+	resp, err = ctxhttp.Do(ctx, b.client, req)
+	b.sem.ReleaseToken()
+
+	if err != nil || resp.StatusCode != 200 {
+		return false
+	}
+	if resp.Body.Close() != nil {
+		return false
+	}
+	return true
 }
