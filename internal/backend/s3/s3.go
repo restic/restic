@@ -40,24 +40,31 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 		minio.MaxRetry = int(cfg.MaxRetries)
 	}
 
-	var client *minio.Client
-	var err error
-
-	if cfg.KeyID == "" || cfg.Secret == "" {
-		debug.Log("key/secret not found, trying to get them from IAM")
-		creds := credentials.NewIAM("")
-		client, err = minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
-
-		if err != nil {
-			return nil, errors.Wrap(err, "minio.NewWithCredentials")
-		}
-	} else {
-		debug.Log("key/secret found")
-		client, err = minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "minio.New")
-		}
+	// Chains all credential types, starting with
+	// Static credentials provided by user.
+	// IAM profile based credentials. (performs an HTTP
+	// call to a pre-defined endpoint, only valid inside
+	// configured ec2 instances)
+	// AWS env variables such as AWS_ACCESS_KEY_ID
+	// Minio env variables such as MINIO_ACCESS_KEY
+	creds := credentials.NewChainCredentials([]credentials.Provider{
+		&credentials.Static{
+			Value: credentials.Value{
+				AccessKeyID:     cfg.KeyID,
+				SecretAccessKey: cfg.Secret,
+			},
+		},
+		&credentials.IAM{
+			Client: &http.Client{
+				Transport: http.DefaultTransport,
+			},
+		},
+		&credentials.EnvAWS{},
+		&credentials.EnvMinio{},
+	})
+	client, err := minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "minio.NewWithCredentials")
 	}
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
