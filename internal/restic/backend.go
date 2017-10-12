@@ -42,6 +42,17 @@ type Backend interface {
 	IsNotExist(err error) bool
 }
 
+// Writabler is the interface that wraps the basic Writable method.
+//
+// Writable returns true if the receiver of the method can be written to (i.e.
+// is not read-only). It is supposed to be used (and later even embedded) by
+// types that implement the Backend interface. The suggested use is that types
+// that do not implement Writabler are considered to be writeable to remain
+// backwards-compatible.
+type Writabler interface {
+	Writable() bool
+}
+
 // FileInfo is returned by Stat() and contains information about a file in the
 // backend.
 type FileInfo struct{ Size int64 }

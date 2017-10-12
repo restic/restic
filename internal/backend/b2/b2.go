@@ -30,6 +30,9 @@ const defaultListMaxItems = 1000
 // ensure statically that *b2Backend implements restic.Backend.
 var _ restic.Backend = &b2Backend{}
 
+// ensure statically that *b2Backend implements restic.Writable.
+var _ restic.Writabler = &b2Backend{}
+
 func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Client, error) {
 	opts := []b2.ClientOption{b2.Transport(rt)}
 
@@ -385,3 +388,10 @@ func (be *b2Backend) Delete(ctx context.Context) error {
 
 // Close does nothing
 func (be *b2Backend) Close() error { return nil }
+
+// Writable implements restic.Writabler for b2Backend. It always returns true
+// because without authorized credentials B2 will not even allow to list the
+// objects in the bucket.
+func (be *b2Backend) Writable() bool {
+	return true
+}

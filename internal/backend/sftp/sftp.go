@@ -34,6 +34,8 @@ type SFTP struct {
 
 var _ restic.Backend = &SFTP{}
 
+var _ restic.Writabler = &SFTP{}
+
 const defaultLayout = "default"
 
 func startClient(preExec, postExec func(), program string, args ...string) (*SFTP, error) {
@@ -498,4 +500,34 @@ func (r *SFTP) Close() error {
 	// get the error, but ignore it
 	<-r.result
 	return nil
+}
+
+// Writable implements restic.Writabler for the SFTP backend and returns
+// whether the backend can be written to or must be considered as read-only.
+//
+// The methods probes the backend by writing to a temporary file and deleting
+// it wright away. If that fails for any reason, the backend is considered to
+// be read-only.
+func (r *SFTP) Writable() bool {
+	debug.Log("Writable()")
+	if err := r.clientError(); err != nil {
+		return false
+	}
+	const probeFilename = ".resticWriteCheck"
+	f, err := r.c.OpenFile(probeFilename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+	if err != nil {
+		return false
+	}
+	b := true
+	if _, err := f.Write([]byte("restic")); err != nil {
+		b = false
+	}
+	if f.Close() != nil {
+		b = false
+	}
+	if r.c.Remove(probeFilename) != nil {
+		b = false
+	}
+	return b
+
 }
