@@ -19,6 +19,11 @@ import (
 	"github.com/restic/restic/internal/worker"
 )
 
+var cmdDebug = &cobra.Command{
+	Use:   "debug",
+	Short: "Debug commands",
+}
+
 var cmdDump = &cobra.Command{
 	Use:   "dump [indexes|snapshots|all|packs]",
 	Short: "Dump data structures",
@@ -32,7 +37,8 @@ is used for debugging purposes only.`,
 }
 
 func init() {
-	cmdRoot.AddCommand(cmdDump)
+	cmdRoot.AddCommand(cmdDebug)
+	cmdDebug.AddCommand(cmdDump)
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
