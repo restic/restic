@@ -30,6 +30,8 @@ Important Changes in 0.X.Y
 
  * Added support for rate limiting through `--limit-upload` and
    `--limit-download` flags.
+   https://github.com/restic/restic/issues/1216
+   https://github.com/restic/restic/pull/1336
 
 Small changes
 -------------
