@@ -693,8 +693,8 @@ func (s *Suite) TestBackend(t *testing.T) {
 	}
 }
 
-// TestDelete tests the Delete function.
-func (s *Suite) TestDelete(t *testing.T) {
+// TestZZZDelete tests the Delete function. The name ensures that this test is executed last.
+func (s *Suite) TestZZZDelete(t *testing.T) {
 	if !test.TestCleanupTempDirs {
 		t.Skipf("not removing backend, TestCleanupTempDirs is false")
 	}
@@ -702,12 +702,7 @@ func (s *Suite) TestDelete(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
-	be, ok := b.(restic.Deleter)
-	if !ok {
-		return
-	}
-
-	err := be.Delete(context.TODO())
+	err := b.Delete(context.TODO())
 	if err != nil {
 		t.Fatalf("error deleting backend: %+v", err)
 	}
