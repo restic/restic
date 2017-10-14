@@ -280,11 +280,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 				return err
 			}
 
-			if err := be.(restic.Deleter).Delete(context.TODO()); err != nil {
-				return err
-			}
-
-			return nil
+			return be.Delete(context.TODO())
 		},
 	}
 }

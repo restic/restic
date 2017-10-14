@@ -378,5 +378,9 @@ func (b *restBackend) Delete(ctx context.Context) error {
 		}
 	}
 
-	return b.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
+	err := b.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
+	if err != nil && b.IsNotExist(err) {
+		return nil
+	}
+	return err
 }
