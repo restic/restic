@@ -349,3 +349,34 @@ func (b *restBackend) Close() error {
 	// same function.
 	return nil
 }
+
+// Remove keys for a specified backend type.
+func (b *restBackend) removeKeys(ctx context.Context, t restic.FileType) error {
+	for key := range b.List(ctx, restic.DataFile) {
+		err := b.Remove(ctx, restic.Handle{Type: restic.DataFile, Name: key})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Delete removes all data in the backend.
+func (b *restBackend) Delete(ctx context.Context) error {
+	alltypes := []restic.FileType{
+		restic.DataFile,
+		restic.KeyFile,
+		restic.LockFile,
+		restic.SnapshotFile,
+		restic.IndexFile}
+
+	for _, t := range alltypes {
+		err := b.removeKeys(ctx, t)
+		if err != nil {
+			return nil
+		}
+	}
+
+	return b.Remove(ctx, restic.Handle{Type: restic.ConfigFile})
+}

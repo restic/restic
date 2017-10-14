@@ -499,3 +499,8 @@ func (r *SFTP) Close() error {
 	<-r.result
 	return nil
 }
+
+// Delete removes all data in the backend.
+func (r *SFTP) Delete(context.Context) error {
+	return r.c.RemoveDirectory(r.p)
+}
