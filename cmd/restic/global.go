@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/azure"
@@ -327,6 +328,10 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		debug.Log("rate limiting backend to %d KiB/s upload and %d KiB/s download", opts.LimitUploadKb, opts.LimitDownloadKb)
 		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(opts.LimitUploadKb, opts.LimitDownloadKb))
 	}
+
+	be = backend.NewRetryBackend(be, 10, func(msg string, err error, d time.Duration) {
+		Warnf("%v returned error, retrying after %v: %v\n", msg, d, err)
+	})
 
 	s := repository.New(be)
 
