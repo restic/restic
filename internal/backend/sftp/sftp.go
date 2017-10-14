@@ -500,7 +500,38 @@ func (r *SFTP) Close() error {
 	return nil
 }
 
+func (r *SFTP) deleteRecursive(name string) error {
+	entries, err := r.c.ReadDir(name)
+	if err != nil {
+		return errors.Wrap(err, "ReadDir")
+	}
+
+	for _, fi := range entries {
+		itemName := r.Join(name, fi.Name())
+		if fi.IsDir() {
+			err := r.deleteRecursive(itemName)
+			if err != nil {
+				return errors.Wrap(err, "ReadDir")
+			}
+
+			err = r.c.RemoveDirectory(itemName)
+			if err != nil {
+				return errors.Wrap(err, "RemoveDirectory")
+			}
+
+			continue
+		}
+
+		err := r.c.Remove(itemName)
+		if err != nil {
+			return errors.Wrap(err, "ReadDir")
+		}
+	}
+
+	return nil
+}
+
 // Delete removes all data in the backend.
 func (r *SFTP) Delete(context.Context) error {
-	return r.c.RemoveDirectory(r.p)
+	return r.deleteRecursive(r.p)
 }
