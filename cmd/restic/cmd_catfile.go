@@ -13,11 +13,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cmdCatFile = &cobra.Command{
-	Use:   "catfile [flags] file snapshotID",
+var cmdDump = &cobra.Command{
+	Use:   "dump [flags] snapshotID file",
 	Short: "Print a backed-up file to stdout",
 	Long: `
-The "catfile" command extracts a single file from a snapshot from the repository and
+The "dump" command extracts a single file from a snapshot from the repository and
 prints its contents to stdout.
 
 The special snapshot "latest" can be used to use the latest snapshot in the
@@ -25,26 +25,26 @@ repository.
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCatFile(catFileOptions, globalOptions, args)
+		return runDump(dumpOptions, globalOptions, args)
 	},
 }
 
-// CatFileOptions collects all options for the catfile command.
-type CatFileOptions struct {
+// DumpOptions collects all options for the dump command.
+type DumpOptions struct {
 	Host  string
 	Paths []string
 	Tags  restic.TagLists
 }
 
-var catFileOptions CatFileOptions
+var dumpOptions DumpOptions
 
 func init() {
-	cmdRoot.AddCommand(cmdCatFile)
+	cmdRoot.AddCommand(cmdDump)
 
-	flags := cmdCatFile.Flags()
-	flags.StringVarP(&catFileOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
-	flags.Var(&catFileOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
-	flags.StringArrayVar(&catFileOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
+	flags := cmdDump.Flags()
+	flags.StringVarP(&dumpOptions.Host, "host", "H", "", `only consider snapshots for this host when the snapshot ID is "latest"`)
+	flags.Var(&dumpOptions.Tags, "tag", "only consider snapshots which include this `taglist` for snapshot ID \"latest\"")
+	flags.StringArrayVar(&dumpOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path` for snapshot ID \"latest\"")
 }
 
 func splitPath(path string) []string {
@@ -56,7 +56,7 @@ func splitPath(path string) []string {
 	return append(s, f)
 }
 
-func catNode(ctx context.Context, repo restic.Repository, node *restic.Node) error {
+func dumpNode(ctx context.Context, repo restic.Repository, node *restic.Node) error {
 	var buf []byte
 	for _, id := range node.Content {
 		size, err := repo.LookupBlobSize(id, restic.DataBlob)
@@ -99,7 +99,7 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 		if node.Name == pathComponents[0] {
 			switch {
 			case l == 1 && node.Type == "file":
-				return catNode(ctx, repo, node)
+				return dumpNode(ctx, repo, node)
 			case l > 1 && node.Type == "dir":
 				subtree, err := repo.LoadTree(ctx, *node.Subtree)
 				if err != nil {
@@ -116,17 +116,17 @@ func printFromTree(ctx context.Context, tree *restic.Tree, repo restic.Repositor
 	return fmt.Errorf("path %q not found in snapshot", item)
 }
 
-func runCatFile(opts CatFileOptions, gopts GlobalOptions, args []string) error {
+func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 	ctx := gopts.ctx
 
 	if len(args) != 2 {
 		return errors.Fatal("no file and no snapshot ID specified")
 	}
 
-	pathToPrint := args[0]
-	snapshotIDString := args[1]
+	snapshotIDString := args[0]
+	pathToPrint := args[1]
 
-	debug.Log("cat file %q from %q", pathToPrint, snapshotIDString)
+	debug.Log("dump file %q from %q", pathToPrint, snapshotIDString)
 
 	splittedPath := splitPath(pathToPrint)
 
@@ -174,7 +174,7 @@ func runCatFile(opts CatFileOptions, gopts GlobalOptions, args []string) error {
 
 	err = printFromTree(ctx, tree, repo, "", splittedPath)
 	if err != nil {
-		Exitf(2, "cannot cat file: %v", err)
+		Exitf(2, "cannot dump file: %v", err)
 	}
 
 	return nil
