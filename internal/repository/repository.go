@@ -591,11 +591,7 @@ func (r *Repository) ListPack(ctx context.Context, id restic.ID) ([]restic.Blob,
 // Delete calls backend.Delete() if implemented, and returns an error
 // otherwise.
 func (r *Repository) Delete(ctx context.Context) error {
-	if b, ok := r.be.(restic.Deleter); ok {
-		return b.Delete(ctx)
-	}
-
-	return errors.New("Delete() called for backend that does not implement this method")
+	return r.be.Delete(ctx)
 }
 
 // Close closes the repository by closing the backend.

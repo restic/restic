@@ -275,7 +275,7 @@ func (b *Local) List(ctx context.Context, t restic.FileType) <-chan string {
 }
 
 // Delete removes the repository and all files.
-func (b *Local) Delete() error {
+func (b *Local) Delete(ctx context.Context) error {
 	debug.Log("Delete()")
 	return fs.RemoveAll(b.Path)
 }

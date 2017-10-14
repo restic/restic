@@ -1,0 +1,77 @@
+package backend
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"time"
+
+	"github.com/cenkalti/backoff"
+	"github.com/restic/restic/internal/restic"
+)
+
+// RetryBackend retries operations on the backend in case of an error with a
+// backoff.
+type RetryBackend struct {
+	restic.Backend
+	MaxTries int
+	Report   func(string, error, time.Duration)
+}
+
+// statically ensure that RetryBackend implements restic.Backend.
+var _ restic.Backend = &RetryBackend{}
+
+// NewRetryBackend wraps be with a backend that retries operations after a
+// backoff. report is called with a description and the error, if one occurred.
+func NewRetryBackend(be restic.Backend, maxTries int, report func(string, error, time.Duration)) *RetryBackend {
+	return &RetryBackend{
+		Backend:  be,
+		MaxTries: maxTries,
+		Report:   report,
+	}
+}
+
+func (be *RetryBackend) retry(msg string, f func() error) error {
+	return backoff.RetryNotify(f,
+		backoff.WithMaxTries(backoff.NewExponentialBackOff(), uint64(be.MaxTries)),
+		func(err error, d time.Duration) {
+			if be.Report != nil {
+				be.Report(msg, err, d)
+			}
+		},
+	)
+}
+
+// Save stores the data in the backend under the given handle.
+func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
+	return be.retry(fmt.Sprintf("Save(%v)", h), func() error {
+		return be.Backend.Save(ctx, h, rd)
+	})
+}
+
+// Load returns a reader that yields the contents of the file at h at the
+// given offset. If length is larger than zero, only a portion of the file
+// is returned. rd must be closed after use. If an error is returned, the
+// ReadCloser must be nil.
+func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (rd io.ReadCloser, err error) {
+	err = be.retry(fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
+		func() error {
+			var innerError error
+			rd, innerError = be.Backend.Load(ctx, h, length, offset)
+
+			return innerError
+		})
+	return rd, err
+}
+
+// Stat returns information about the File identified by h.
+func (be *RetryBackend) Stat(ctx context.Context, h restic.Handle) (fi restic.FileInfo, err error) {
+	err = be.retry(fmt.Sprintf("Stat(%v)", h),
+		func() error {
+			var innerError error
+			fi, innerError = be.Backend.Stat(ctx, h)
+
+			return innerError
+		})
+	return fi, err
+}

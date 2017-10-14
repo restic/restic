@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 )
@@ -35,7 +36,7 @@ func lockRepository(repo *repository.Repository, exclusive bool) (*restic.Lock, 
 
 	lock, err := lockFn(context.TODO(), repo)
 	if err != nil {
-		return nil, err
+		return nil, errors.Fatalf("unable to create lock in backend: %v", err)
 	}
 	debug.Log("create lock %p (exclusive %v)", lock, exclusive)
 

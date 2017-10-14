@@ -44,11 +44,6 @@ type Repository interface {
 	SaveTree(context.Context, *Tree) (ID, error)
 }
 
-// Deleter removes all data stored in a backend/repo.
-type Deleter interface {
-	Delete(context.Context) error
-}
-
 // Lister allows listing files in a backend.
 type Lister interface {
 	List(context.Context, FileType) <-chan string

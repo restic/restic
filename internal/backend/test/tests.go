@@ -675,29 +675,26 @@ func (s *Suite) TestBackend(t *testing.T) {
 			t.Fatalf("lists aren't equal, want:\n  %v\n  got:\n%v\n", IDs, list)
 		}
 
-		// remove content if requested
-		if test.TestCleanupTempDirs {
-			var handles []restic.Handle
-			for _, ts := range testStrings {
-				id, err := restic.ParseID(ts.id)
-				test.OK(t, err)
+		var handles []restic.Handle
+		for _, ts := range testStrings {
+			id, err := restic.ParseID(ts.id)
+			test.OK(t, err)
 
-				h := restic.Handle{Type: tpe, Name: id.String()}
+			h := restic.Handle{Type: tpe, Name: id.String()}
 
-				found, err := b.Test(context.TODO(), h)
-				test.OK(t, err)
-				test.Assert(t, found, fmt.Sprintf("id %q not found", id))
+			found, err := b.Test(context.TODO(), h)
+			test.OK(t, err)
+			test.Assert(t, found, fmt.Sprintf("id %q not found", id))
 
-				handles = append(handles, h)
-			}
-
-			test.OK(t, s.delayedRemove(t, b, handles...))
+			handles = append(handles, h)
 		}
+
+		test.OK(t, s.delayedRemove(t, b, handles...))
 	}
 }
 
-// TestDelete tests the Delete function.
-func (s *Suite) TestDelete(t *testing.T) {
+// TestZZZDelete tests the Delete function. The name ensures that this test is executed last.
+func (s *Suite) TestZZZDelete(t *testing.T) {
 	if !test.TestCleanupTempDirs {
 		t.Skipf("not removing backend, TestCleanupTempDirs is false")
 	}
@@ -705,12 +702,7 @@ func (s *Suite) TestDelete(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
-	be, ok := b.(restic.Deleter)
-	if !ok {
-		return
-	}
-
-	err := be.Delete(context.TODO())
+	err := b.Delete(context.TODO())
 	if err != nil {
 		t.Fatalf("error deleting backend: %+v", err)
 	}
