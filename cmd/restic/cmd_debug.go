@@ -24,7 +24,7 @@ var cmdDebug = &cobra.Command{
 	Short: "Debug commands",
 }
 
-var cmdDump = &cobra.Command{
+var cmdDebugDump = &cobra.Command{
 	Use:   "dump [indexes|snapshots|all|packs]",
 	Short: "Dump data structures",
 	Long: `
@@ -32,13 +32,13 @@ The "dump" command dumps data structures from the repository as JSON objects. It
 is used for debugging purposes only.`,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runDump(globalOptions, args)
+		return runDebugDump(globalOptions, args)
 	},
 }
 
 func init() {
 	cmdRoot.AddCommand(cmdDebug)
-	cmdDebug.AddCommand(cmdDump)
+	cmdDebug.AddCommand(cmdDebugDump)
 }
 
 func prettyPrintJSON(wr io.Writer, item interface{}) error {
@@ -165,7 +165,7 @@ func dumpIndexes(repo restic.Repository) error {
 	return nil
 }
 
-func runDump(gopts GlobalOptions, args []string) error {
+func runDebugDump(gopts GlobalOptions, args []string) error {
 	if len(args) != 1 {
 		return errors.Fatal("type not specified")
 	}
