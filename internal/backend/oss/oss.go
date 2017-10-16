@@ -22,7 +22,7 @@ type Backend struct {
 	cfg    Config
 	client *oss.Client
 	bucket *oss.Bucket
-	// sem *backend.Semaphore
+	sem    *backend.Semaphore
 	backend.Layout
 }
 
@@ -31,8 +31,12 @@ var _ restic.Backend = &Backend{}
 const defaultLayout = "default"
 
 func open(cfg Config) (*Backend, error) {
-	client, err := oss.New(cfg.Host, cfg.AccessID, cfg.AccessKey, ossProxyOption)
+	sem, err := backend.NewSemaphore(cfg.Connections)
+	if err != nil {
+		return nil, err
+	}
 
+	client, err := oss.New(cfg.Host, cfg.AccessID, cfg.AccessKey, ossProxyOption)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +49,7 @@ func open(cfg Config) (*Backend, error) {
 		cfg:    cfg,
 		client: client,
 		bucket: bucket,
+		sem:    sem,
 		Layout: &backend.DefaultLayout{
 			Join: path.Join,
 			Path: cfg.Prefix,
@@ -210,7 +215,10 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) erro
 		return errors.New("key already exists")
 	}
 
-	return errors.Wrap(be.bucket.PutObject(objName, rd), "bucket.PutObject")
+	be.sem.GetToken()
+	err = be.bucket.PutObject(objName, rd)
+	be.sem.ReleaseToken()
+	return errors.Wrap(err, "bucket.PutObject")
 }
 
 // Load returns a reader that yields the contents of the file at h at the
@@ -232,7 +240,9 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 	if length > 0 {
 		byteRange = fmt.Sprintf("%d-%d", offset, offset+int64(length)-1)
 	}
+	be.sem.GetToken()
 	body, err := be.bucket.GetObject(objName, oss.NormalizedRange(byteRange))
+	be.sem.ReleaseToken()
 	return body, err
 }
 
