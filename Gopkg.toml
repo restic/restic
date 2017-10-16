@@ -72,3 +72,7 @@
 [[constraint]]
   branch = "master"
   name = "golang.org/x/sys"
+
+[[constraint]]
+  name = "github.com/kurin/blazer"
+  branch = "master"

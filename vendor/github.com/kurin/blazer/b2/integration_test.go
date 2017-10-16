@@ -27,6 +27,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/kurin/blazer/x/transport"
 )
 
 const (
@@ -744,10 +746,10 @@ func (rt *rtCounter) RoundTrip(r *http.Request) (*http.Response, error) {
 }
 
 func TestAttrsNoRoundtrip(t *testing.T) {
-	rt := &rtCounter{rt: transport}
-	transport = rt
+	rt := &rtCounter{rt: defaultTransport}
+	defaultTransport = rt
 	defer func() {
-		transport = rt.rt
+		defaultTransport = rt.rt
 	}()
 
 	ctx := context.Background()
@@ -767,7 +769,7 @@ func TestAttrsNoRoundtrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(objs) != 1 {
-		t.Fatal("unexpected objects: got %d, want 1", len(objs))
+		t.Fatalf("unexpected objects: got %d, want 1", len(objs))
 	}
 
 	trips := rt.trips
@@ -842,7 +844,7 @@ func listObjects(ctx context.Context, f func(context.Context, int, *Cursor) ([]*
 	return ch
 }
 
-var transport = http.DefaultTransport
+var defaultTransport = http.DefaultTransport
 
 type eofTripper struct {
 	rt http.RoundTripper
@@ -919,9 +921,10 @@ func startLiveTest(ctx context.Context, t *testing.T) (*Bucket, func()) {
 		t.Skipf("B2_ACCOUNT_ID or B2_SECRET_KEY unset; skipping integration tests")
 		return nil, nil
 	}
-	ccport := &ccTripper{rt: transport, t: t}
+	ccport := &ccTripper{rt: defaultTransport, t: t}
 	tport := eofTripper{rt: ccport, t: t}
-	client, err := NewClient(ctx, id, key, FailSomeUploads(), ExpireSomeAuthTokens(), Transport(tport), UserAgent("b2-test"), UserAgent("integration-test"))
+	errport := transport.WithFailures(tport, transport.FailureRate(.25), transport.MatchPathSubstring("/b2_get_upload_url"), transport.Response(503))
+	client, err := NewClient(ctx, id, key, FailSomeUploads(), ExpireSomeAuthTokens(), Transport(errport), UserAgent("b2-test"), UserAgent("integration-test"))
 	if err != nil {
 		t.Fatal(err)
 		return nil, nil
