@@ -71,3 +71,12 @@ hard links from a fuse mount should be done by a program that preserves
 hard links. A program that does so is ``rsync``, used with the option
 --hard-links.
 
+Printing files to stdout
+========================
+
+Sometimes it's helpful to print files to stdout so that other programs can read
+the data directly. This can be achieved by using the `dump` command, like this:
+
+.. code-block:: console
+
+    $ restic -r /tmp/backup dump latest production.sql | mysql
