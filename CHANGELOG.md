@@ -36,6 +36,11 @@ Important Changes in 0.X.Y
  * Failed backend requests are now automatically retried.
    https://github.com/restic/restic/pull/1353
 
+ * We've added the `dump` command which prints a file from a snapshot to
+   stdout. This can e.g. be used to restore files read with `backup --stdin`.
+   https://github.com/restic/restic/issues/510
+   https://github.com/restic/restic/pull/1346
+
 Small changes
 -------------
 
