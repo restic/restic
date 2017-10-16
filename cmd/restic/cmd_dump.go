@@ -49,7 +49,7 @@ func init() {
 
 func splitPath(path string) []string {
 	d, f := filepath.Split(path)
-	if d == "" {
+	if d == "" || d == "/" {
 		return []string{f}
 	}
 	s := splitPath(filepath.Clean(d))
