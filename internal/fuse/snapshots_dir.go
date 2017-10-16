@@ -78,7 +78,9 @@ func updateTagNames(d *TagsDir) {
 		d.tags = make(map[string]bool, len(d.root.snapshots))
 		for _, snapshot := range d.root.snapshots {
 			for _, tag := range snapshot.Tags {
-				d.tags[tag] = true
+				if tag != "" {
+					d.tags[tag] = true
+				}
 			}
 		}
 	}
