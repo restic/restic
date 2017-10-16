@@ -39,7 +39,7 @@ var parsers = []parser{
 	{"azure", azure.ParseConfig},
 	{"swift", swift.ParseConfig},
 	{"rest", rest.ParseConfig},
-  {"oss", oss.ParseConfig},
+	{"oss", oss.ParseConfig},
 }
 
 func isPath(s string) bool {
