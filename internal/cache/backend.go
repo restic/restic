@@ -5,6 +5,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 )
@@ -43,52 +44,50 @@ func (b *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	return b.Cache.Remove(h)
 }
 
-type teeReader struct {
-	rd  io.Reader
-	wr  io.Writer
-	err error
-}
-
-func (t *teeReader) Read(p []byte) (n int, err error) {
-	n, err = t.rd.Read(p)
-	if t.err == nil && n > 0 {
-		_, t.err = t.wr.Write(p[:n])
-	}
-
-	return n, err
-}
-
 var autoCacheTypes = map[restic.FileType]struct{}{
 	restic.IndexFile:    struct{}{},
 	restic.SnapshotFile: struct{}{},
 }
 
-// Save stores a new file is the backend and the cache.
+// Save stores a new file in the backend and the cache.
 func (b *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	if _, ok := autoCacheTypes[h.Type]; !ok {
 		return b.Backend.Save(ctx, h, rd)
 	}
 
 	debug.Log("Save(%v): auto-store in the cache", h)
-	wr, err := b.Cache.SaveWriter(h)
-	if err != nil {
-		debug.Log("unable to save %v to cache: %v", h, err)
-		return b.Backend.Save(ctx, h, rd)
+
+	seeker, ok := rd.(io.Seeker)
+	if !ok {
+		return errors.New("reader is not a seeker")
 	}
 
-	tr := &teeReader{rd: rd, wr: wr}
-	err = b.Backend.Save(ctx, h, tr)
+	pos, err := seeker.Seek(0, io.SeekCurrent)
 	if err != nil {
-		wr.Close()
-		b.Cache.Remove(h)
+		return errors.Wrapf(err, "Seek")
+	}
+
+	if pos != 0 {
+		return errors.Errorf("reader is not rewind (pos %d)", pos)
+	}
+
+	err = b.Backend.Save(ctx, h, rd)
+	if err != nil {
 		return err
 	}
 
-	err = wr.Close()
+	_, err = seeker.Seek(pos, io.SeekStart)
 	if err != nil {
-		debug.Log("cache writer returned error: %v", err)
-		_ = b.Cache.Remove(h)
+		return errors.Wrapf(err, "Seek")
 	}
+
+	err = b.Cache.Save(h, rd)
+	if err != nil {
+		debug.Log("unable to save %v to cache: %v", h, err)
+		_ = b.Cache.Remove(h)
+		return nil
+	}
+
 	return nil
 }
 
