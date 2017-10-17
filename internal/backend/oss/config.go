@@ -31,7 +31,7 @@ func ParseConfig(s string) (interface{}, error) {
 	if len(data) != 6 {
 		return nil, errors.New("invalid URL, excepted: oss:accessid:accesskey:host:bucket:prefix")
 	}
-	schema, accessid, accesskey, host, bucket, prefix :=
+	schema, host, accessid, accesskey, bucket, prefix :=
 		data[0], data[1], data[2], data[3], data[4], data[5]
 
 	if schema != "oss" {
