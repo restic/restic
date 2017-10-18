@@ -32,6 +32,7 @@ Important Changes in 0.X.Y
    `--limit-download` flags.
    https://github.com/restic/restic/issues/1216
    https://github.com/restic/restic/pull/1336
+   https://github.com/restic/restic/pull/1358
 
  * Failed backend requests are now automatically retried.
    https://github.com/restic/restic/pull/1353

@@ -214,10 +214,37 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 
 	debug.Log("InsertObject(%v, %v)", be.bucketName, objName)
 
+	// Set chunk size to zero to disable resumable uploads.
+	//
+	// With a non-zero chunk size (the default is
+	// googleapi.DefaultUploadChunkSize, 8MB), Insert will buffer data from
+	// rd in chunks of this size so it can upload these chunks in
+	// individual requests.
+	//
+	// This chunking allows the library to automatically handle network
+	// interruptions and re-upload only the last chunk rather than the full
+	// file.
+	//
+	// Unfortunately, this buffering doesn't play nicely with
+	// --limit-upload, which applies a rate limit to rd. This rate limit
+	// ends up only limiting the read from rd into the buffer rather than
+	// the network traffic itself. This results in poor network rate limit
+	// behavior, where individual chunks are written to the network at full
+	// bandwidth for several seconds, followed by several seconds of no
+	// network traffic as the next chunk is read through the rate limiter.
+	//
+	// By disabling chunking, rd is passed further down the request stack,
+	// where there is less (but some) buffering, which ultimately results
+	// in better rate limiting behavior.
+	//
+	// restic typically writes small blobs (4MB-30MB), so the resumable
+	// uploads are not providing significant benefit anyways.
+	cs := googleapi.ChunkSize(0)
+
 	info, err := be.service.Objects.Insert(be.bucketName,
 		&storage.Object{
 			Name: objName,
-		}).Media(rd).Do()
+		}).Media(rd, cs).Do()
 
 	be.sem.ReleaseToken()
 
