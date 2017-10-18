@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"sync"
 
@@ -13,9 +14,10 @@ import (
 // ErrorBackend is used to induce errors into various function calls and test
 // the retry functions.
 type ErrorBackend struct {
-	FailSave float32
-	FailLoad float32
-	FailStat float32
+	FailSave     float32
+	FailSaveRead float32
+	FailLoad     float32
+	FailStat     float32
 	restic.Backend
 
 	r *rand.Rand
@@ -46,6 +48,15 @@ func (be *ErrorBackend) fail(p float32) bool {
 func (be *ErrorBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
 	if be.fail(be.FailSave) {
 		return errors.Errorf("Save(%v) random error induced", h)
+	}
+
+	if be.fail(be.FailSaveRead) {
+		_, err := io.CopyN(ioutil.Discard, rd, be.r.Int63n(1000))
+		if err != nil {
+			return err
+		}
+
+		return errors.Errorf("Save(%v) random error with partial read induced", h)
 	}
 
 	return be.Backend.Save(ctx, h, rd)

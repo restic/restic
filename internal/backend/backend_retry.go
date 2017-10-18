@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
 
@@ -44,7 +45,26 @@ func (be *RetryBackend) retry(msg string, f func() error) error {
 
 // Save stores the data in the backend under the given handle.
 func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
+	seeker, ok := rd.(io.Seeker)
+	if !ok {
+		return errors.Errorf("reader %T is not a seeker", rd)
+	}
+
+	pos, err := seeker.Seek(0, io.SeekCurrent)
+	if err != nil {
+		return errors.Wrap(err, "Seek")
+	}
+
+	if pos != 0 {
+		return errors.Errorf("reader is not at the beginning (pos %v)", pos)
+	}
+
 	return be.retry(fmt.Sprintf("Save(%v)", h), func() error {
+		_, err := seeker.Seek(0, io.SeekStart)
+		if err != nil {
+			return err
+		}
+
 		return be.Backend.Save(ctx, h, rd)
 	})
 }
