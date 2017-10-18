@@ -172,8 +172,9 @@ func (be *Backend) ReadDir(dir string) (list []os.FileInfo, err error) {
 		}
 
 		name := strings.TrimPrefix(obj.Key, dir)
+		// Sometimes s3 returns an entry for the dir itself. Ignore it.
 		if name == "" {
-			return nil, errors.Errorf("invalid key name %v, removing prefix %v yielded empty string", obj.Key, dir)
+			continue
 		}
 		entry := fileInfo{
 			name:    name,
