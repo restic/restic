@@ -302,8 +302,8 @@ func readLinesFromFile(filename string) ([]string, error) {
 		if line == "" {
 			continue
 		}
-	    // strip comments
-	    if strings.HasPrefix(line, "#") {
+		// strip comments
+		if strings.HasPrefix(line, "#") {
 			continue
 		}
 		lines = append(lines, line)
