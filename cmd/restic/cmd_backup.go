@@ -298,7 +298,12 @@ func readLinesFromFile(filename string) ([]string, error) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
+		// ignore empty lines
 		if line == "" {
+			continue
+		}
+	    // strip comments
+	    if strings.HasPrefix(line, "#") {
 			continue
 		}
 		lines = append(lines, line)
