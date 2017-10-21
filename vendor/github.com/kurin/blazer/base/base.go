@@ -43,7 +43,7 @@ import (
 
 const (
 	APIBase          = "https://api.backblazeb2.com"
-	DefaultUserAgent = "blazer/0.1.1"
+	DefaultUserAgent = "blazer/0.2.1"
 )
 
 type b2err struct {
@@ -131,25 +131,32 @@ const (
 
 func mkErr(resp *http.Response) error {
 	data, err := ioutil.ReadAll(resp.Body)
+	var msgBody string
 	if err != nil {
-		return err
+		msgBody = fmt.Sprintf("couldn't read message body: %v", err)
 	}
 	logResponse(resp, data)
 	msg := &b2types.ErrorMessage{}
 	if err := json.Unmarshal(data, msg); err != nil {
-		return err
+		if msgBody != "" {
+			msgBody = fmt.Sprintf("couldn't read message body: %v", err)
+		}
+	}
+	if msgBody == "" {
+		msgBody = msg.Msg
 	}
 	var retryAfter int
 	retry := resp.Header.Get("Retry-After")
 	if retry != "" {
 		r, err := strconv.ParseInt(retry, 10, 64)
 		if err != nil {
-			return err
+			r = 0
+			blog.V(1).Infof("couldn't parse retry-after header %q: %v", retry, err)
 		}
 		retryAfter = int(r)
 	}
 	return b2err{
-		msg:    msg.Msg,
+		msg:    msgBody,
 		retry:  retryAfter,
 		code:   resp.StatusCode,
 		method: resp.Request.Header.Get("X-Blazer-Method"),
@@ -222,6 +229,19 @@ type b2Options struct {
 	userAgent       string
 }
 
+func (o *b2Options) addHeaders(req *http.Request) {
+	if o.failSomeUploads {
+		req.Header.Add("X-Bz-Test-Mode", "fail_some_uploads")
+	}
+	if o.expireTokens {
+		req.Header.Add("X-Bz-Test-Mode", "expire_some_account_authorization_tokens")
+	}
+	if o.capExceeded {
+		req.Header.Add("X-Bz-Test-Mode", "force_cap_exceeded")
+	}
+	req.Header.Set("User-Agent", o.getUserAgent())
+}
+
 func (o *b2Options) getAPIBase() string {
 	if o.apiBase != "" {
 		return o.apiBase
@@ -268,14 +288,22 @@ type httpReply struct {
 	err  error
 }
 
-func makeNetRequest(req *http.Request, rt http.RoundTripper) <-chan httpReply {
-	ch := make(chan httpReply)
-	go func() {
-		resp, err := rt.RoundTrip(req)
-		ch <- httpReply{resp, err}
-		close(ch)
-	}()
-	return ch
+func makeNetRequest(ctx context.Context, req *http.Request, rt http.RoundTripper) (*http.Response, error) {
+	req = req.WithContext(ctx)
+	resp, err := rt.RoundTrip(req)
+	switch err {
+	case nil:
+		return resp, nil
+	case context.Canceled, context.DeadlineExceeded:
+		return nil, err
+	default:
+		method := req.Header.Get("X-Blazer-Method")
+		blog.V(2).Infof(">> %s uri: %v err: %v", method, req.URL, err)
+		return nil, b2err{
+			msg:   err.Error(),
+			retry: 1,
+		}
+	}
 }
 
 type requestBody struct {
@@ -351,38 +379,14 @@ func (o *b2Options) makeRequest(ctx context.Context, method, verb, uri string, b
 		}
 		req.Header.Set(k, v)
 	}
-	req.Header.Set("User-Agent", o.getUserAgent())
 	req.Header.Set("X-Blazer-Request-ID", fmt.Sprintf("%d", atomic.AddInt64(&reqID, 1)))
 	req.Header.Set("X-Blazer-Method", method)
-	if o.failSomeUploads {
-		req.Header.Add("X-Bz-Test-Mode", "fail_some_uploads")
-	}
-	if o.expireTokens {
-		req.Header.Add("X-Bz-Test-Mode", "expire_some_account_authorization_tokens")
-	}
-	if o.capExceeded {
-		req.Header.Add("X-Bz-Test-Mode", "force_cap_exceeded")
-	}
-	cancel := make(chan struct{})
-	req.Cancel = cancel
+	o.addHeaders(req)
 	logRequest(req, args)
-	ch := makeNetRequest(req, o.getTransport())
-	var reply httpReply
-	select {
-	case reply = <-ch:
-	case <-ctx.Done():
-		close(cancel)
-		return ctx.Err()
+	resp, err := makeNetRequest(ctx, req, o.getTransport())
+	if err != nil {
+		return err
 	}
-	if reply.err != nil {
-		// Connection errors are retryable.
-		blog.V(2).Infof(">> %s uri: %v err: %v", method, req.URL, reply.err)
-		return b2err{
-			msg:   reply.err.Error(),
-			retry: 1,
-		}
-	}
-	resp := reply.resp
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return mkErr(resp)
@@ -397,10 +401,11 @@ func (o *b2Options) makeRequest(ctx context.Context, method, verb, uri string, b
 		}
 		replyArgs = rbuf.Bytes()
 	} else {
-		replyArgs, err = ioutil.ReadAll(resp.Body)
+		ra, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			blog.V(1).Infof("%s: couldn't read response: %v", method, err)
 		}
+		replyArgs = ra
 	}
 	logResponse(resp, replyArgs)
 	return nil
@@ -1038,7 +1043,7 @@ func mkRange(offset, size int64) string {
 
 // DownloadFileByName wraps b2_download_file_by_name.
 func (b *Bucket) DownloadFileByName(ctx context.Context, name string, offset, size int64) (*FileReader, error) {
-	uri := fmt.Sprintf("%s/file/%s/%s", b.b2.downloadURI, b.Name, name)
+	uri := fmt.Sprintf("%s/file/%s/%s", b.b2.downloadURI, b.Name, escape(name))
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
 		return nil, err
@@ -1046,25 +1051,16 @@ func (b *Bucket) DownloadFileByName(ctx context.Context, name string, offset, si
 	req.Header.Set("Authorization", b.b2.authToken)
 	req.Header.Set("X-Blazer-Request-ID", fmt.Sprintf("%d", atomic.AddInt64(&reqID, 1)))
 	req.Header.Set("X-Blazer-Method", "b2_download_file_by_name")
+	b.b2.opts.addHeaders(req)
 	rng := mkRange(offset, size)
 	if rng != "" {
 		req.Header.Set("Range", rng)
 	}
-	cancel := make(chan struct{})
-	req.Cancel = cancel
 	logRequest(req, nil)
-	ch := makeNetRequest(req, b.b2.opts.getTransport())
-	var reply httpReply
-	select {
-	case reply = <-ch:
-	case <-ctx.Done():
-		close(cancel)
-		return nil, ctx.Err()
+	resp, err := makeNetRequest(ctx, req, b.b2.opts.getTransport())
+	if err != nil {
+		return nil, err
 	}
-	if reply.err != nil {
-		return nil, reply.err
-	}
-	resp := reply.resp
 	logResponse(resp, nil)
 	if resp.StatusCode != 200 && resp.StatusCode != 206 {
 		defer resp.Body.Close()

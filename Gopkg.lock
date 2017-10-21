@@ -88,8 +88,8 @@
 [[projects]]
   name = "github.com/kurin/blazer"
   packages = ["b2","base","internal/b2types","internal/blog"]
-  revision = "cad56a04490fe20c43548d70a5a9af2be53ff14e"
-  version = "v0.2.0"
+  revision = "e269a1a17bb6aec278c06a57cb7e8f8d0d333e04"
+  version = "v0.2.1"
 
 [[projects]]
   branch = "master"
@@ -214,6 +214,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ea711bd1a9bfc8902b973a4de3a840f42536b9091fd8558980f44d6ca1622227"
+  inputs-digest = "abc33af201086afac21e33a2a7987a473daa6a229c3699ca13761f4d4fd7f52e"
   solver-name = "gps-cdcl"
   solver-version = 1
