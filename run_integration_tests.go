@@ -94,6 +94,7 @@ func (env *TravisEnvironment) Prepare() error {
 		"golang.org/x/tools/cmd/cover",
 		"github.com/pierrre/gotestcover",
 		"github.com/NebulousLabs/glyphcheck",
+		"github.com/golang/dep/cmd/dep",
 		"github.com/restic/rest-server/cmd/rest-server",
 	}
 
@@ -247,6 +248,10 @@ func (env *TravisEnvironment) RunTests() error {
 	}
 
 	if err = runGofmt(); err != nil {
+		return err
+	}
+
+	if err = runDep(); err != nil {
 		return err
 	}
 
@@ -404,6 +409,19 @@ func runGofmt() error {
 
 	if len(buf) > 0 {
 		return fmt.Errorf("not formatted with `gofmt`:\n%s", buf)
+	}
+
+	return nil
+}
+
+func runDep() error {
+	cmd := exec.Command("dep", "ensure", "-no-vendor", "-dry-run")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("error running dep: %v\nThis probably means that Gopkg.lock is not up to date, run 'dep ensure' and commit all changes", err)
 	}
 
 	return nil
