@@ -1,0 +1,3663 @@
+<!DOCTYPE html>
+<!-- saved from url=(0032)https://golang.org/pkg/net/http/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>http - The Go Programming Language</title>
+
+<link type="text/css" rel="stylesheet" href="./http - The Go Programming Language_files/style.css">
+
+<link rel="search" type="application/opensearchdescription+xml" title="godoc" href="https://golang.org/opensearch.xml">
+
+<link rel="stylesheet" href="./http - The Go Programming Language_files/jquery.treeview.css">
+<script type="text/javascript" async="" src="./http - The Go Programming Language_files/ga.js"></script><script type="text/javascript">window.initFuncs = [];</script>
+<script type="text/javascript">
+var _gaq = _gaq || [];
+_gaq.push(["_setAccount", "UA-11222381-2"]);
+_gaq.push(["b._setAccount", "UA-49880327-6"]);
+window.trackPageview = function() {
+  _gaq.push(["_trackPageview", location.pathname+location.hash]);
+  _gaq.push(["b._trackPageview", location.pathname+location.hash]);
+};
+window.trackPageview();
+window.trackEvent = function(category, action, opt_label, opt_value, opt_noninteraction) {
+  _gaq.push(["_trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+  _gaq.push(["b._trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+};
+</script>
+</head>
+<body>
+
+<div id="lowframe" style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="https://golang.org/">The Go Programming Language</a></div>
+<div class="top-heading" id="heading-narrow"><a href="https://golang.org/">Go</a></div>
+<a href="https://golang.org/pkg/net/http/#" id="menu-button"><span id="menu-button-arrow">▽</span></a>
+<form method="GET" action="https://golang.org/search">
+<div id="menu" style="min-width: 60px;">
+<a href="https://golang.org/doc/">Documents</a>
+<a href="https://golang.org/pkg/">Packages</a>
+<a href="https://golang.org/project/">The Project</a>
+<a href="https://golang.org/help/">Help</a>
+<a href="https://golang.org/blog/">Blog</a>
+
+<a id="playgroundButton" href="http://play.golang.org/" title="Show Go Playground" style="display: inline;">Play</a>
+
+<input type="text" id="search" name="q" class="inactive" value="Search" placeholder="Search">
+</div>
+</form>
+
+</div></div>
+
+
+<div id="playground" class="play">
+	<div class="input"><textarea class="code">package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, 世界")
+}</textarea></div>
+	<div class="output"></div>
+	<div class="buttons">
+		<a class="run" title="Run this code [shift-enter]">Run</a>
+		<a class="fmt" title="Format this code">Format</a>
+		
+	</div>
+</div>
+
+
+<div id="page" class="wide" tabindex="-1" style="outline: 0px;">
+<div class="container">
+
+
+  <h1>Package http</h1>
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script type="text/javascript">
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "net/http"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="https://golang.org/pkg/net/http/#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="https://golang.org/pkg/net/http/#pkg-index" class="indexLink">Index</a></dd>
+			
+				<dd><a href="https://golang.org/pkg/net/http/#pkg-examples" class="examplesLink">Examples</a></dd>
+			
+			
+				<dd><a href="https://golang.org/pkg/net/http/#pkg-subdirectories">Subdirectories</a></dd>
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>
+Package http provides HTTP client and server implementations.
+</p>
+<p>
+Get, Head, Post, and PostForm make HTTP (or HTTPS) requests:
+</p>
+<pre>resp, err := http.Get("<a href="http://example.com/">http://example.com/</a>")
+...
+resp, err := http.Post("<a href="http://example.com/upload">http://example.com/upload</a>", "image/jpeg", &amp;buf)
+...
+resp, err := http.PostForm("<a href="http://example.com/form">http://example.com/form</a>",
+	url.Values{"key": {"Value"}, "id": {"123"}})
+</pre>
+<p>
+The client must close the response body when finished with it:
+</p>
+<pre>resp, err := http.Get("<a href="http://example.com/">http://example.com/</a>")
+if err != nil {
+	// handle error
+}
+defer resp.Body.Close()
+body, err := ioutil.ReadAll(resp.Body)
+// ...
+</pre>
+<p>
+For control over HTTP client headers, redirect policy, and other
+settings, create a Client:
+</p>
+<pre>client := &amp;http.Client{
+	CheckRedirect: redirectPolicyFunc,
+}
+
+resp, err := client.Get("<a href="http://example.com/">http://example.com</a>")
+// ...
+
+req, err := http.NewRequest("GET", "<a href="http://example.com/">http://example.com</a>", nil)
+// ...
+req.Header.Add("If-None-Match", `W/"wyzzy"`)
+resp, err := client.Do(req)
+// ...
+</pre>
+<p>
+For control over proxies, TLS configuration, keep-alives,
+compression, and other settings, create a Transport:
+</p>
+<pre>tr := &amp;http.Transport{
+	TLSClientConfig:    &amp;tls.Config{RootCAs: pool},
+	DisableCompression: true,
+}
+client := &amp;http.Client{Transport: tr}
+resp, err := client.Get("<a href="https://example.com/">https://example.com</a>")
+</pre>
+<p>
+Clients and Transports are safe for concurrent use by multiple
+goroutines and for efficiency should only be created once and re-used.
+</p>
+<p>
+ListenAndServe starts an HTTP server with a given address and handler.
+The handler is usually nil, which means to use DefaultServeMux.
+Handle and HandleFunc add handlers to DefaultServeMux:
+</p>
+<pre>http.Handle("/foo", fooHandler)
+
+http.HandleFunc("/bar", func(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
+})
+
+log.Fatal(http.ListenAndServe(":8080", nil))
+</pre>
+<p>
+More control over the server's behavior is available by creating a
+custom Server:
+</p>
+<pre>s := &amp;http.Server{
+	Addr:           ":8080",
+	Handler:        myHandler,
+	ReadTimeout:    10 * time.Second,
+	WriteTimeout:   10 * time.Second,
+	MaxHeaderBytes: 1 &lt;&lt; 20,
+}
+log.Fatal(s.ListenAndServe())
+</pre>
+
+			</div>
+		</div>
+		
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+				<dd><a href="https://golang.org/pkg/net/http/#pkg-constants">Constants</a></dd>
+			
+			
+				<dd><a href="https://golang.org/pkg/net/http/#pkg-variables">Variables</a></dd>
+			
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#CanonicalHeaderKey">func CanonicalHeaderKey(s string) string</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#DetectContentType">func DetectContentType(data []byte) string</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Error">func Error(w ResponseWriter, error string, code int)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Handle">func Handle(pattern string, handler Handler)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#HandleFunc">func HandleFunc(pattern string, handler func(ResponseWriter, *Request))</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ListenAndServe">func ListenAndServe(addr string, handler Handler) error</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ListenAndServeTLS">func ListenAndServeTLS(addr string, certFile string, keyFile string, handler Handler) error</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#MaxBytesReader">func MaxBytesReader(w ResponseWriter, r io.ReadCloser, n int64) io.ReadCloser</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#NotFound">func NotFound(w ResponseWriter, r *Request)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ParseHTTPVersion">func ParseHTTPVersion(vers string) (major, minor int, ok bool)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ParseTime">func ParseTime(text string) (t time.Time, err error)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ProxyFromEnvironment">func ProxyFromEnvironment(req *Request) (*url.URL, error)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ProxyURL">func ProxyURL(fixedURL *url.URL) func(*Request) (*url.URL, error)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Redirect">func Redirect(w ResponseWriter, r *Request, urlStr string, code int)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Serve">func Serve(l net.Listener, handler Handler) error</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ServeContent">func ServeContent(w ResponseWriter, req *Request, name string, modtime time.Time, content io.ReadSeeker)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ServeFile">func ServeFile(w ResponseWriter, r *Request, name string)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#SetCookie">func SetCookie(w ResponseWriter, cookie *Cookie)</a></dd>
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#StatusText">func StatusText(code int) string</a></dd>
+			
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Client">type Client</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Client.Do">func (c *Client) Do(req *Request) (resp *Response, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Client.Get">func (c *Client) Get(url string) (resp *Response, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Client.Head">func (c *Client) Head(url string) (resp *Response, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Client.Post">func (c *Client) Post(url string, bodyType string, body io.Reader) (resp *Response, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Client.PostForm">func (c *Client) PostForm(url string, data url.Values) (resp *Response, err error)</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#CloseNotifier">type CloseNotifier</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ConnState">type ConnState</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#ConnState.String">func (c ConnState) String() string</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Cookie">type Cookie</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Cookie.String">func (c *Cookie) String() string</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#CookieJar">type CookieJar</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Dir">type Dir</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Dir.Open">func (d Dir) Open(name string) (File, error)</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#File">type File</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#FileSystem">type FileSystem</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Flusher">type Flusher</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Handler">type Handler</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#FileServer">func FileServer(root FileSystem) Handler</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#NotFoundHandler">func NotFoundHandler() Handler</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#RedirectHandler">func RedirectHandler(url string, code int) Handler</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#StripPrefix">func StripPrefix(prefix string, h Handler) Handler</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#TimeoutHandler">func TimeoutHandler(h Handler, dt time.Duration, msg string) Handler</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#HandlerFunc">type HandlerFunc</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#HandlerFunc.ServeHTTP">func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request)</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Header">type Header</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Header.Add">func (h Header) Add(key, value string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Header.Del">func (h Header) Del(key string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Header.Get">func (h Header) Get(key string) string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Header.Set">func (h Header) Set(key, value string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Header.Write">func (h Header) Write(w io.Writer) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Header.WriteSubset">func (h Header) WriteSubset(w io.Writer, exclude map[string]bool) error</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Hijacker">type Hijacker</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ProtocolError">type ProtocolError</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#ProtocolError.Error">func (err *ProtocolError) Error() string</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Request">type Request</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#NewRequest">func NewRequest(method, urlStr string, body io.Reader) (*Request, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#ReadRequest">func ReadRequest(b *bufio.Reader) (req *Request, err error)</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.AddCookie">func (r *Request) AddCookie(c *Cookie)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.BasicAuth">func (r *Request) BasicAuth() (username, password string, ok bool)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.Cookie">func (r *Request) Cookie(name string) (*Cookie, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.Cookies">func (r *Request) Cookies() []*Cookie</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.FormFile">func (r *Request) FormFile(key string) (multipart.File, *multipart.FileHeader, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.FormValue">func (r *Request) FormValue(key string) string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.MultipartReader">func (r *Request) MultipartReader() (*multipart.Reader, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.ParseForm">func (r *Request) ParseForm() error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.ParseMultipartForm">func (r *Request) ParseMultipartForm(maxMemory int64) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.PostFormValue">func (r *Request) PostFormValue(key string) string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.ProtoAtLeast">func (r *Request) ProtoAtLeast(major, minor int) bool</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.Referer">func (r *Request) Referer() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.SetBasicAuth">func (r *Request) SetBasicAuth(username, password string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.UserAgent">func (r *Request) UserAgent() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.Write">func (r *Request) Write(w io.Writer) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Request.WriteProxy">func (r *Request) WriteProxy(w io.Writer) error</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Response">type Response</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Get">func Get(url string) (resp *Response, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Head">func Head(url string) (resp *Response, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Post">func Post(url string, bodyType string, body io.Reader) (resp *Response, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#PostForm">func PostForm(url string, data url.Values) (resp *Response, err error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#ReadResponse">func ReadResponse(r *bufio.Reader, req *Request) (*Response, error)</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Response.Cookies">func (r *Response) Cookies() []*Cookie</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Response.Location">func (r *Response) Location() (*url.URL, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Response.ProtoAtLeast">func (r *Response) ProtoAtLeast(major, minor int) bool</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Response.Write">func (r *Response) Write(w io.Writer) error</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ResponseWriter">type ResponseWriter</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#RoundTripper">type RoundTripper</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#NewFileTransport">func NewFileTransport(fs FileSystem) RoundTripper</a></dd>
+				
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#ServeMux">type ServeMux</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#NewServeMux">func NewServeMux() *ServeMux</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#ServeMux.Handle">func (mux *ServeMux) Handle(pattern string, handler Handler)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#ServeMux.HandleFunc">func (mux *ServeMux) HandleFunc(pattern string, handler func(ResponseWriter, *Request))</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#ServeMux.Handler">func (mux *ServeMux) Handler(r *Request) (h Handler, pattern string)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#ServeMux.ServeHTTP">func (mux *ServeMux) ServeHTTP(w ResponseWriter, r *Request)</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Server">type Server</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Server.ListenAndServe">func (srv *Server) ListenAndServe() error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Server.ListenAndServeTLS">func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Server.Serve">func (srv *Server) Serve(l net.Listener) error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Server.SetKeepAlivesEnabled">func (srv *Server) SetKeepAlivesEnabled(v bool)</a></dd>
+				
+			
+				
+				<dd><a href="https://golang.org/pkg/net/http/#Transport">type Transport</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Transport.CancelRequest">func (t *Transport) CancelRequest(req *Request)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Transport.CloseIdleConnections">func (t *Transport) CloseIdleConnections()</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Transport.RegisterProtocol">func (t *Transport) RegisterProtocol(scheme string, rt RoundTripper)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="https://golang.org/pkg/net/http/#Transport.RoundTrip">func (t *Transport) RoundTrip(req *Request) (resp *Response, err error)</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+		<div id="pkg-examples">
+			<h4>Examples</h4>
+			<dl>
+			
+			<dd><a class="exampleLink" href="https://golang.org/pkg/net/http/#example_FileServer">FileServer</a></dd>
+			
+			<dd><a class="exampleLink" href="https://golang.org/pkg/net/http/#example_FileServer_stripPrefix">FileServer (StripPrefix)</a></dd>
+			
+			<dd><a class="exampleLink" href="https://golang.org/pkg/net/http/#example_Get">Get</a></dd>
+			
+			<dd><a class="exampleLink" href="https://golang.org/pkg/net/http/#example_Hijacker">Hijacker</a></dd>
+			
+			<dd><a class="exampleLink" href="https://golang.org/pkg/net/http/#example_ResponseWriter_trailers">ResponseWriter (Trailers)</a></dd>
+			
+			<dd><a class="exampleLink" href="https://golang.org/pkg/net/http/#example_ServeMux_Handle">ServeMux.Handle</a></dd>
+			
+			<dd><a class="exampleLink" href="https://golang.org/pkg/net/http/#example_StripPrefix">StripPrefix</a></dd>
+			
+			</dl>
+		</div>
+		
+
+		
+			<h4>Package files</h4>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="https://golang.org/src/net/http/client.go">client.go</a>
+			
+				<a href="https://golang.org/src/net/http/cookie.go">cookie.go</a>
+			
+				<a href="https://golang.org/src/net/http/doc.go">doc.go</a>
+			
+				<a href="https://golang.org/src/net/http/filetransport.go">filetransport.go</a>
+			
+				<a href="https://golang.org/src/net/http/fs.go">fs.go</a>
+			
+				<a href="https://golang.org/src/net/http/header.go">header.go</a>
+			
+				<a href="https://golang.org/src/net/http/jar.go">jar.go</a>
+			
+				<a href="https://golang.org/src/net/http/lex.go">lex.go</a>
+			
+				<a href="https://golang.org/src/net/http/request.go">request.go</a>
+			
+				<a href="https://golang.org/src/net/http/response.go">response.go</a>
+			
+				<a href="https://golang.org/src/net/http/server.go">server.go</a>
+			
+				<a href="https://golang.org/src/net/http/sniff.go">sniff.go</a>
+			
+				<a href="https://golang.org/src/net/http/status.go">status.go</a>
+			
+				<a href="https://golang.org/src/net/http/transfer.go">transfer.go</a>
+			
+				<a href="https://golang.org/src/net/http/transport.go">transport.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		<div id="pkg-callgraph" class="toggle" style="display: none">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Internal Call Graph section">Internal call graph ▹</h2>
+		</div> <!-- .expanded -->
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Internal Call Graph section">Internal call graph ▾</h2>
+			<p>
+			  In the call graph viewer below, each node
+			  is a function belonging to this package
+			  and its children are the functions it
+			  calls—perhaps dynamically.
+			</p>
+			<p>
+			  The root nodes are the entry points of the
+			  package: functions that may be called from
+			  outside the package.
+			  There may be non-exported or anonymous
+			  functions among them if they are called
+			  dynamically from another package.
+			</p>
+			<p>
+			  Click a node to visit that function's source code.
+			  From there you can visit its callers by
+			  clicking its declaring <code>func</code>
+			  token.
+			</p>
+			<p>
+			  Functions may be omitted if they were
+			  determined to be unreachable in the
+			  particular programs or tests that were
+			  analyzed.
+			</p>
+			<!-- Zero means show all package entry points. -->
+			<ul style="margin-left: 0.5in" id="callgraph-0" class="treeview"></ul>
+		</div>
+		</div> <!-- #pkg-callgraph -->
+
+		
+			<h2 id="pkg-constants">Constants</h2>
+			
+				<pre>const (
+        <span id="StatusContinue">StatusContinue</span>           = 100
+        <span id="StatusSwitchingProtocols">StatusSwitchingProtocols</span> = 101
+
+        <span id="StatusOK">StatusOK</span>                   = 200
+        <span id="StatusCreated">StatusCreated</span>              = 201
+        <span id="StatusAccepted">StatusAccepted</span>             = 202
+        <span id="StatusNonAuthoritativeInfo">StatusNonAuthoritativeInfo</span> = 203
+        <span id="StatusNoContent">StatusNoContent</span>            = 204
+        <span id="StatusResetContent">StatusResetContent</span>         = 205
+        <span id="StatusPartialContent">StatusPartialContent</span>       = 206
+
+        <span id="StatusMultipleChoices">StatusMultipleChoices</span>   = 300
+        <span id="StatusMovedPermanently">StatusMovedPermanently</span>  = 301
+        <span id="StatusFound">StatusFound</span>             = 302
+        <span id="StatusSeeOther">StatusSeeOther</span>          = 303
+        <span id="StatusNotModified">StatusNotModified</span>       = 304
+        <span id="StatusUseProxy">StatusUseProxy</span>          = 305
+        <span id="StatusTemporaryRedirect">StatusTemporaryRedirect</span> = 307
+
+        <span id="StatusBadRequest">StatusBadRequest</span>                   = 400
+        <span id="StatusUnauthorized">StatusUnauthorized</span>                 = 401
+        <span id="StatusPaymentRequired">StatusPaymentRequired</span>              = 402
+        <span id="StatusForbidden">StatusForbidden</span>                    = 403
+        <span id="StatusNotFound">StatusNotFound</span>                     = 404
+        <span id="StatusMethodNotAllowed">StatusMethodNotAllowed</span>             = 405
+        <span id="StatusNotAcceptable">StatusNotAcceptable</span>                = 406
+        <span id="StatusProxyAuthRequired">StatusProxyAuthRequired</span>            = 407
+        <span id="StatusRequestTimeout">StatusRequestTimeout</span>               = 408
+        <span id="StatusConflict">StatusConflict</span>                     = 409
+        <span id="StatusGone">StatusGone</span>                         = 410
+        <span id="StatusLengthRequired">StatusLengthRequired</span>               = 411
+        <span id="StatusPreconditionFailed">StatusPreconditionFailed</span>           = 412
+        <span id="StatusRequestEntityTooLarge">StatusRequestEntityTooLarge</span>        = 413
+        <span id="StatusRequestURITooLong">StatusRequestURITooLong</span>            = 414
+        <span id="StatusUnsupportedMediaType">StatusUnsupportedMediaType</span>         = 415
+        <span id="StatusRequestedRangeNotSatisfiable">StatusRequestedRangeNotSatisfiable</span> = 416
+        <span id="StatusExpectationFailed">StatusExpectationFailed</span>            = 417
+        <span id="StatusTeapot">StatusTeapot</span>                       = 418
+
+        <span id="StatusInternalServerError">StatusInternalServerError</span>     = 500
+        <span id="StatusNotImplemented">StatusNotImplemented</span>          = 501
+        <span id="StatusBadGateway">StatusBadGateway</span>              = 502
+        <span id="StatusServiceUnavailable">StatusServiceUnavailable</span>      = 503
+        <span id="StatusGatewayTimeout">StatusGatewayTimeout</span>          = 504
+        <span id="StatusHTTPVersionNotSupported">StatusHTTPVersionNotSupported</span> = 505
+)</pre>
+				<p>
+HTTP status codes, defined in RFC 2616.
+</p>
+
+			
+				<pre>const <span id="DefaultMaxHeaderBytes">DefaultMaxHeaderBytes</span> = 1 &lt;&lt; 20 <span class="comment">// 1 MB</span>
+</pre>
+				<p>
+DefaultMaxHeaderBytes is the maximum permitted size of the headers
+in an HTTP request.
+This can be overridden by setting Server.MaxHeaderBytes.
+</p>
+
+			
+				<pre>const <span id="DefaultMaxIdleConnsPerHost">DefaultMaxIdleConnsPerHost</span> = 2</pre>
+				<p>
+DefaultMaxIdleConnsPerHost is the default value of Transport's
+MaxIdleConnsPerHost.
+</p>
+
+			
+				<pre>const <span id="TimeFormat">TimeFormat</span> = "Mon, 02 Jan 2006 15:04:05 GMT"</pre>
+				<p>
+TimeFormat is the time format to use with
+time.Parse and time.Time.Format when parsing
+or generating times in HTTP headers.
+It is like time.RFC1123 but hard codes GMT as the time zone.
+</p>
+
+			
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<pre>var (
+        <span id="ErrHeaderTooLong">ErrHeaderTooLong</span>        = &amp;<a href="https://golang.org/pkg/net/http/#ProtocolError">ProtocolError</a>{"header too long"}
+        <span id="ErrShortBody">ErrShortBody</span>            = &amp;<a href="https://golang.org/pkg/net/http/#ProtocolError">ProtocolError</a>{"entity body too short"}
+        <span id="ErrNotSupported">ErrNotSupported</span>         = &amp;<a href="https://golang.org/pkg/net/http/#ProtocolError">ProtocolError</a>{"feature not supported"}
+        <span id="ErrUnexpectedTrailer">ErrUnexpectedTrailer</span>    = &amp;<a href="https://golang.org/pkg/net/http/#ProtocolError">ProtocolError</a>{"trailer header without chunked transfer encoding"}
+        <span id="ErrMissingContentLength">ErrMissingContentLength</span> = &amp;<a href="https://golang.org/pkg/net/http/#ProtocolError">ProtocolError</a>{"missing ContentLength in HEAD response"}
+        <span id="ErrNotMultipart">ErrNotMultipart</span>         = &amp;<a href="https://golang.org/pkg/net/http/#ProtocolError">ProtocolError</a>{"request Content-Type isn't multipart/form-data"}
+        <span id="ErrMissingBoundary">ErrMissingBoundary</span>      = &amp;<a href="https://golang.org/pkg/net/http/#ProtocolError">ProtocolError</a>{"no multipart boundary param in Content-Type"}
+)</pre>
+				
+			
+				<pre>var (
+        <span id="ErrWriteAfterFlush">ErrWriteAfterFlush</span> = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("Conn.Write called after Flush")
+        <span id="ErrBodyNotAllowed">ErrBodyNotAllowed</span>  = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("http: request method or response status code does not allow body")
+        <span id="ErrHijacked">ErrHijacked</span>        = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("Conn has been hijacked")
+        <span id="ErrContentLength">ErrContentLength</span>   = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("Conn.Write wrote more than the declared Content-Length")
+)</pre>
+				<p>
+Errors introduced by the HTTP server.
+</p>
+
+			
+				<pre>var <span id="DefaultClient">DefaultClient</span> = &amp;<a href="https://golang.org/pkg/net/http/#Client">Client</a>{}</pre>
+				<p>
+DefaultClient is the default Client and is used by Get, Head, and Post.
+</p>
+
+			
+				<pre>var <span id="DefaultServeMux">DefaultServeMux</span> = <a href="https://golang.org/pkg/net/http/#NewServeMux">NewServeMux</a>()</pre>
+				<p>
+DefaultServeMux is the default ServeMux used by Serve.
+</p>
+
+			
+				<pre>var <span id="ErrBodyReadAfterClose">ErrBodyReadAfterClose</span> = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("http: invalid Read on closed Body")</pre>
+				<p>
+ErrBodyReadAfterClose is returned when reading a Request or Response
+Body after the body has been closed. This typically happens when the body is
+read after an HTTP Handler calls WriteHeader or Write on its
+ResponseWriter.
+</p>
+
+			
+				<pre>var <span id="ErrHandlerTimeout">ErrHandlerTimeout</span> = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("http: Handler timeout")</pre>
+				<p>
+ErrHandlerTimeout is returned on ResponseWriter Write calls
+in handlers which have timed out.
+</p>
+
+			
+				<pre>var <span id="ErrLineTooLong">ErrLineTooLong</span> = <a href="https://golang.org/pkg/net/http/internal/">internal</a>.<a href="https://golang.org/pkg/net/http/internal/#ErrLineTooLong">ErrLineTooLong</a></pre>
+				<p>
+ErrLineTooLong is returned when reading request or response bodies
+with malformed chunked encoding.
+</p>
+
+			
+				<pre>var <span id="ErrMissingFile">ErrMissingFile</span> = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("http: no such file")</pre>
+				<p>
+ErrMissingFile is returned by FormFile when the provided file field name
+is either not present in the request or not a file field.
+</p>
+
+			
+				<pre>var <span id="ErrNoCookie">ErrNoCookie</span> = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("http: named cookie not present")</pre>
+				<p>
+ErrNoCookie is returned by Request's Cookie method when a cookie is not found.
+</p>
+
+			
+				<pre>var <span id="ErrNoLocation">ErrNoLocation</span> = <a href="https://golang.org/pkg/errors/">errors</a>.<a href="https://golang.org/pkg/errors/#New">New</a>("http: no Location header in response")</pre>
+				<p>
+ErrNoLocation is returned by Response's Location method
+when no Location header is present.
+</p>
+
+			
+		
+		
+			
+			
+			<h2 id="CanonicalHeaderKey">func <a href="https://golang.org/src/net/http/header.go?s=4562:4602#L163">CanonicalHeaderKey</a></h2>
+			<pre>func CanonicalHeaderKey(s <a href="https://golang.org/pkg/builtin/#string">string</a>) <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+			<p>
+CanonicalHeaderKey returns the canonical format of the
+header key s.  The canonicalization converts the first
+letter and any letter following a hyphen to upper case;
+the rest are converted to lowercase.  For example, the
+canonical key for "accept-encoding" is "Accept-Encoding".
+If s contains a space or invalid header field bytes, it is
+returned without modifications.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="DetectContentType">func <a href="https://golang.org/src/net/http/sniff.go?s=648:690#L11">DetectContentType</a></h2>
+			<pre>func DetectContentType(data []<a href="https://golang.org/pkg/builtin/#byte">byte</a>) <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+			<p>
+DetectContentType implements the algorithm described
+at <a href="http://mimesniff.spec.whatwg.org/">http://mimesniff.spec.whatwg.org/</a> to determine the
+Content-Type of the given data.  It considers at most the
+first 512 bytes of data.  DetectContentType always returns
+a valid MIME type: if it cannot determine a more specific one, it
+returns "application/octet-stream".
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="Error">func <a href="https://golang.org/src/net/http/server.go?s=41562:41614#L1419">Error</a></h2>
+			<pre>func Error(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, error <a href="https://golang.org/pkg/builtin/#string">string</a>, code <a href="https://golang.org/pkg/builtin/#int">int</a>)</pre>
+			<p>
+Error replies to the request with the specified error message and HTTP code.
+The error message should be plain text.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="Handle">func <a href="https://golang.org/src/net/http/server.go?s=51434:51478#L1740">Handle</a></h2>
+			<pre>func Handle(pattern <a href="https://golang.org/pkg/builtin/#string">string</a>, handler <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>)</pre>
+			<p>
+Handle registers the handler for the given pattern
+in the DefaultServeMux.
+The documentation for ServeMux explains how patterns are matched.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="HandleFunc">func <a href="https://golang.org/src/net/http/server.go?s=51688:51759#L1745">HandleFunc</a></h2>
+			<pre>func HandleFunc(pattern <a href="https://golang.org/pkg/builtin/#string">string</a>, handler func(<a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, *<a href="https://golang.org/pkg/net/http/#Request">Request</a>))</pre>
+			<p>
+HandleFunc registers the handler function for the given pattern
+in the DefaultServeMux.
+The documentation for ServeMux explains how patterns are matched.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ListenAndServe">func <a href="https://golang.org/src/net/http/server.go?s=58314:58369#L1955">ListenAndServe</a></h2>
+			<pre>func ListenAndServe(addr <a href="https://golang.org/pkg/builtin/#string">string</a>, handler <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+			<p>
+ListenAndServe listens on the TCP network address addr
+and then calls Serve with handler to handle requests
+on incoming connections.  Handler is typically nil,
+in which case the DefaultServeMux is used.
+</p>
+<p>
+A trivial example server is:
+</p>
+<pre>package main
+
+import (
+	"io"
+	"net/http"
+	"log"
+)
+
+// hello world, the web server
+func HelloServer(w http.ResponseWriter, req *http.Request) {
+	io.WriteString(w, "hello, world!\n")
+}
+
+func main() {
+	http.HandleFunc("/hello", HelloServer)
+	err := http.ListenAndServe(":12345", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
+}
+</pre>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ListenAndServeTLS">func <a href="https://golang.org/src/net/http/server.go?s=59426:59517#L1988">ListenAndServeTLS</a></h2>
+			<pre>func ListenAndServeTLS(addr <a href="https://golang.org/pkg/builtin/#string">string</a>, certFile <a href="https://golang.org/pkg/builtin/#string">string</a>, keyFile <a href="https://golang.org/pkg/builtin/#string">string</a>, handler <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+			<p>
+ListenAndServeTLS acts identically to ListenAndServe, except that it
+expects HTTPS connections. Additionally, files containing a certificate and
+matching private key for the server must be provided. If the certificate
+is signed by a certificate authority, the certFile should be the concatenation
+of the server's certificate, any intermediates, and the CA's certificate.
+</p>
+<p>
+A trivial example server is:
+</p>
+<pre>import (
+	"log"
+	"net/http"
+)
+
+func handler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("This is an example server.\n"))
+}
+
+func main() {
+	http.HandleFunc("/", handler)
+	log.Printf("About to listen on 10443. Go to <a href="https://127.0.0.1:10443/">https://127.0.0.1:10443/</a>")
+	err := http.ListenAndServeTLS(":10443", "cert.pem", "key.pem", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+</pre>
+<p>
+One can use generate_cert.go in crypto/tls to generate cert.pem and key.pem.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="MaxBytesReader">func <a href="https://golang.org/src/net/http/request.go?s=22939:23016#L726">MaxBytesReader</a></h2>
+			<pre>func MaxBytesReader(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#ReadCloser">ReadCloser</a>, n <a href="https://golang.org/pkg/builtin/#int64">int64</a>) <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#ReadCloser">ReadCloser</a></pre>
+			<p>
+MaxBytesReader is similar to io.LimitReader but is intended for
+limiting the size of incoming request bodies. In contrast to
+io.LimitReader, MaxBytesReader's result is a ReadCloser, returns a
+non-EOF error for a Read beyond the limit, and closes the
+underlying reader when its Close method is called.
+</p>
+<p>
+MaxBytesReader prevents clients from accidentally or maliciously
+sending a large request and wasting server resources.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="NotFound">func <a href="https://golang.org/src/net/http/server.go?s=41848:41891#L1427">NotFound</a></h2>
+			<pre>func NotFound(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>)</pre>
+			<p>
+NotFound replies to the request with an HTTP 404 not found error.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ParseHTTPVersion">func <a href="https://golang.org/src/net/http/request.go?s=16539:16601#L498">ParseHTTPVersion</a></h2>
+			<pre>func ParseHTTPVersion(vers <a href="https://golang.org/pkg/builtin/#string">string</a>) (major, minor <a href="https://golang.org/pkg/builtin/#int">int</a>, ok <a href="https://golang.org/pkg/builtin/#bool">bool</a>)</pre>
+			<p>
+ParseHTTPVersion parses a HTTP version string.
+"HTTP/1.0" returns (1, 0, true).
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ParseTime">func <a href="https://golang.org/src/net/http/header.go?s=1908:1960#L69">ParseTime</a></h2>
+			<pre>func ParseTime(text <a href="https://golang.org/pkg/builtin/#string">string</a>) (t <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Time">Time</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+			<p>
+ParseTime parses a time header (such as the Date: header),
+trying each of the three formats allowed by HTTP/1.1:
+TimeFormat, time.RFC850, and time.ANSIC.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ProxyFromEnvironment">func <a href="https://golang.org/src/net/http/transport.go?s=4805:4862#L126">ProxyFromEnvironment</a></h2>
+			<pre>func ProxyFromEnvironment(req *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) (*<a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#URL">URL</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+			<p>
+ProxyFromEnvironment returns the URL of the proxy to use for a
+given request, as indicated by the environment variables
+HTTP_PROXY, HTTPS_PROXY and NO_PROXY (or the lowercase versions
+thereof). HTTPS_PROXY takes precedence over HTTP_PROXY for https
+requests.
+</p>
+<p>
+The environment values may be either a complete URL or a
+"host[:port]", in which case the "http" scheme is assumed.
+An error is returned if the value is a different form.
+</p>
+<p>
+A nil URL and nil error are returned if no proxy is defined in the
+environment, or a proxy should not be used for the given request,
+as defined by NO_PROXY.
+</p>
+<p>
+As a special case, if req.URL.Host is "localhost" (with or without
+a port number), then a nil URL and nil error will be returned.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ProxyURL">func <a href="https://golang.org/src/net/http/transport.go?s=5664:5729#L157">ProxyURL</a></h2>
+			<pre>func ProxyURL(fixedURL *<a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#URL">URL</a>) func(*<a href="https://golang.org/pkg/net/http/#Request">Request</a>) (*<a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#URL">URL</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+			<p>
+ProxyURL returns a proxy function (for use in a Transport)
+that always returns the same URL.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="Redirect">func <a href="https://golang.org/src/net/http/server.go?s=42815:42883#L1454">Redirect</a></h2>
+			<pre>func Redirect(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>, urlStr <a href="https://golang.org/pkg/builtin/#string">string</a>, code <a href="https://golang.org/pkg/builtin/#int">int</a>)</pre>
+			<p>
+Redirect replies to the request with a redirect to url,
+which may be a path relative to the request path.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="Serve">func <a href="https://golang.org/src/net/http/server.go?s=52072:52121#L1753">Serve</a></h2>
+			<pre>func Serve(l <a href="https://golang.org/pkg/net/">net</a>.<a href="https://golang.org/pkg/net/#Listener">Listener</a>, handler <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+			<p>
+Serve accepts incoming HTTP connections on the listener l,
+creating a new service goroutine for each.  The service goroutines
+read requests and then call handler to reply to them.
+Handler is typically nil, in which case the DefaultServeMux is used.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ServeContent">func <a href="https://golang.org/src/net/http/fs.go?s=3535:3639#L107">ServeContent</a></h2>
+			<pre>func ServeContent(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, req *<a href="https://golang.org/pkg/net/http/#Request">Request</a>, name <a href="https://golang.org/pkg/builtin/#string">string</a>, modtime <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Time">Time</a>, content <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#ReadSeeker">ReadSeeker</a>)</pre>
+			<p>
+ServeContent replies to the request using the content in the
+provided ReadSeeker.  The main benefit of ServeContent over io.Copy
+is that it handles Range requests properly, sets the MIME type, and
+handles If-Modified-Since requests.
+</p>
+<p>
+If the response's Content-Type header is not set, ServeContent
+first tries to deduce the type from name's file extension and,
+if that fails, falls back to reading the first block of the content
+and passing it to DetectContentType.
+The name is otherwise unused; in particular it can be empty and is
+never sent in the response.
+</p>
+<p>
+If modtime is not the zero time or Unix epoch, ServeContent
+includes it in a Last-Modified header in the response.  If the
+request includes an If-Modified-Since header, ServeContent uses
+modtime to decide whether the content needs to be sent at all.
+</p>
+<p>
+The content's Seek method must work: ServeContent uses
+a seek to the end of the content to determine its size.
+</p>
+<p>
+If the caller has set w's ETag header, ServeContent uses it to
+handle requests using If-Range and If-None-Match.
+</p>
+<p>
+Note that *os.File implements the io.ReadSeeker interface.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ServeFile">func <a href="https://golang.org/src/net/http/fs.go?s=13941:13998#L443">ServeFile</a></h2>
+			<pre>func ServeFile(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>, name <a href="https://golang.org/pkg/builtin/#string">string</a>)</pre>
+			<p>
+ServeFile replies to the request with the contents of the named
+file or directory.
+</p>
+<p>
+As a special case, ServeFile redirects any request where r.URL.Path
+ends in "/index.html" to the same path, without the final
+"index.html". To avoid such redirects either modify the path or
+use ServeContent.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="SetCookie">func <a href="https://golang.org/src/net/http/cookie.go?s=3059:3107#L120">SetCookie</a></h2>
+			<pre>func SetCookie(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, cookie *<a href="https://golang.org/pkg/net/http/#Cookie">Cookie</a>)</pre>
+			<p>
+SetCookie adds a Set-Cookie header to the provided ResponseWriter's headers.
+The provided cookie must have a valid Name. Invalid cookies may be
+silently dropped.
+</p>
+
+			
+			
+
+		
+			
+			
+			<h2 id="StatusText">func <a href="https://golang.org/src/net/http/status.go?s=4602:4634#L108">StatusText</a></h2>
+			<pre>func StatusText(code <a href="https://golang.org/pkg/builtin/#int">int</a>) <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+			<p>
+StatusText returns a text for the HTTP status code. It returns the empty
+string if the code is unknown.
+</p>
+
+			
+			
+
+		
+		
+			
+			
+			<h2 id="Client">type <a href="https://golang.org/src/net/http/client.go?s=897:2420#L26">Client</a></h2>
+			<pre>type Client struct {
+        <span class="comment">// Transport specifies the mechanism by which individual</span>
+        <span class="comment">// HTTP requests are made.</span>
+        <span class="comment">// If nil, DefaultTransport is used.</span>
+        Transport <a href="https://golang.org/pkg/net/http/#RoundTripper">RoundTripper</a>
+
+        <span class="comment">// CheckRedirect specifies the policy for handling redirects.</span>
+        <span class="comment">// If CheckRedirect is not nil, the client calls it before</span>
+        <span class="comment">// following an HTTP redirect. The arguments req and via are</span>
+        <span class="comment">// the upcoming request and the requests made already, oldest</span>
+        <span class="comment">// first. If CheckRedirect returns an error, the Client's Get</span>
+        <span class="comment">// method returns both the previous Response and</span>
+        <span class="comment">// CheckRedirect's error (wrapped in a url.Error) instead of</span>
+        <span class="comment">// issuing the Request req.</span>
+        <span class="comment">//</span>
+        <span class="comment">// If CheckRedirect is nil, the Client uses its default policy,</span>
+        <span class="comment">// which is to stop after 10 consecutive requests.</span>
+        CheckRedirect func(req *<a href="https://golang.org/pkg/net/http/#Request">Request</a>, via []*<a href="https://golang.org/pkg/net/http/#Request">Request</a>) <a href="https://golang.org/pkg/builtin/#error">error</a>
+
+        <span class="comment">// Jar specifies the cookie jar.</span>
+        <span class="comment">// If Jar is nil, cookies are not sent in requests and ignored</span>
+        <span class="comment">// in responses.</span>
+        Jar <a href="https://golang.org/pkg/net/http/#CookieJar">CookieJar</a>
+
+        <span class="comment">// Timeout specifies a time limit for requests made by this</span>
+        <span class="comment">// Client. The timeout includes connection time, any</span>
+        <span class="comment">// redirects, and reading the response body. The timer remains</span>
+        <span class="comment">// running after Get, Head, Post, or Do return and will</span>
+        <span class="comment">// interrupt reading of the Response.Body.</span>
+        <span class="comment">//</span>
+        <span class="comment">// A Timeout of zero means no timeout.</span>
+        <span class="comment">//</span>
+        <span class="comment">// The Client's Transport must support the CancelRequest</span>
+        <span class="comment">// method or Client will return errors when attempting to make</span>
+        <span class="comment">// a request with Get, Head, Post, or Do. Client's default</span>
+        <span class="comment">// Transport (DefaultTransport) supports CancelRequest.</span>
+        Timeout <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Duration">Duration</a>
+}</pre>
+			<p>
+A Client is an HTTP client. Its zero value (DefaultClient) is a
+usable client that uses DefaultTransport.
+</p>
+<p>
+The Client's Transport typically has internal state (cached TCP
+connections), so Clients should be reused instead of created as
+needed. Clients are safe for concurrent use by multiple goroutines.
+</p>
+<p>
+A Client is higher-level than a RoundTripper (such as Transport)
+and additionally handles HTTP details such as cookies and
+redirects.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="Client.Do">func (*Client) <a href="https://golang.org/src/net/http/client.go?s=6009:6070#L163">Do</a></h3>
+				<pre>func (c *<a href="https://golang.org/pkg/net/http/#Client">Client</a>) Do(req *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Do sends an HTTP request and returns an HTTP response, following
+policy (e.g. redirects, cookies, auth) as configured on the client.
+</p>
+<p>
+An error is returned if caused by client policy (such as
+CheckRedirect), or if there was an HTTP protocol error.
+A non-2xx response doesn't cause an error.
+</p>
+<p>
+When err is nil, resp always contains a non-nil resp.Body.
+</p>
+<p>
+Callers should close resp.Body when done reading from it. If
+resp.Body is not closed, the Client's underlying RoundTripper
+(typically Transport) may not be able to re-use a persistent TCP
+connection to the server for a subsequent "keep-alive" request.
+</p>
+<p>
+The request Body, if non-nil, will be closed by the underlying
+Transport, even on errors.
+</p>
+<p>
+Generally Get, Post, or PostForm will be used instead of Do.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Client.Get">func (*Client) <a href="https://golang.org/src/net/http/client.go?s=9928:9988#L291">Get</a></h3>
+				<pre>func (c *<a href="https://golang.org/pkg/net/http/#Client">Client</a>) Get(url <a href="https://golang.org/pkg/builtin/#string">string</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Get issues a GET to the specified URL. If the response is one of the
+following redirect codes, Get follows the redirect after calling the
+Client's CheckRedirect function:
+</p>
+<pre>301 (Moved Permanently)
+302 (Found)
+303 (See Other)
+307 (Temporary Redirect)
+</pre>
+<p>
+An error is returned if the Client's CheckRedirect function fails
+or if there was an HTTP protocol error. A non-2xx response doesn't
+cause an error.
+</p>
+<p>
+When err is nil, resp always contains a non-nil resp.Body.
+Caller should close resp.Body when done reading from it.
+</p>
+<p>
+To make a request with custom headers, use NewRequest and Client.Do.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Client.Head">func (*Client) <a href="https://golang.org/src/net/http/client.go?s=16276:16337#L512">Head</a></h3>
+				<pre>func (c *<a href="https://golang.org/pkg/net/http/#Client">Client</a>) Head(url <a href="https://golang.org/pkg/builtin/#string">string</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Head issues a HEAD to the specified URL.  If the response is one of the
+following redirect codes, Head follows the redirect after calling the
+Client's CheckRedirect function:
+</p>
+<pre>301 (Moved Permanently)
+302 (Found)
+303 (See Other)
+307 (Temporary Redirect)
+</pre>
+
+				
+				
+				
+			
+				
+				<h3 id="Client.Post">func (*Client) <a href="https://golang.org/src/net/http/client.go?s=14197:14291#L455">Post</a></h3>
+				<pre>func (c *<a href="https://golang.org/pkg/net/http/#Client">Client</a>) Post(url <a href="https://golang.org/pkg/builtin/#string">string</a>, bodyType <a href="https://golang.org/pkg/builtin/#string">string</a>, body <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Reader">Reader</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Post issues a POST to the specified URL.
+</p>
+<p>
+Caller should close resp.Body when done reading from it.
+</p>
+<p>
+If the provided body is an io.Closer, it is closed after the
+request.
+</p>
+<p>
+To set custom headers, use NewRequest and Client.Do.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Client.PostForm">func (*Client) <a href="https://golang.org/src/net/http/client.go?s=15401:15483#L486">PostForm</a></h3>
+				<pre>func (c *<a href="https://golang.org/pkg/net/http/#Client">Client</a>) PostForm(url <a href="https://golang.org/pkg/builtin/#string">string</a>, data <a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#Values">Values</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+PostForm issues a POST to the specified URL,
+with data's keys and values URL-encoded as the request body.
+</p>
+<p>
+The Content-Type header is set to application/x-www-form-urlencoded.
+To set other headers, use NewRequest and DefaultClient.Do.
+</p>
+<p>
+When err is nil, resp always contains a non-nil resp.Body.
+Caller should close resp.Body when done reading from it.
+</p>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="CloseNotifier">type <a href="https://golang.org/src/net/http/server.go?s=3931:4099#L106">CloseNotifier</a></h2>
+			<pre>type CloseNotifier interface {
+        <span class="comment">// CloseNotify returns a channel that receives a single value</span>
+        <span class="comment">// when the client connection has gone away.</span>
+        CloseNotify() &lt;-chan <a href="https://golang.org/pkg/builtin/#bool">bool</a>
+}</pre>
+			<p>
+The CloseNotifier interface is implemented by ResponseWriters which
+allow detecting when the underlying connection has gone away.
+</p>
+<p>
+This mechanism can be used to cancel long operations on the server
+if the client has disconnected before the response is ready.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ConnState">type <a href="https://golang.org/src/net/http/server.go?s=53915:53933#L1793">ConnState</a></h2>
+			<pre>type ConnState <a href="https://golang.org/pkg/builtin/#int">int</a></pre>
+			<p>
+A ConnState represents the state of a client connection to a server.
+It's used by the optional Server.ConnState hook.
+</p>
+
+
+			
+				<pre>const (
+        <span class="comment">// StateNew represents a new connection that is expected to</span>
+        <span class="comment">// send a request immediately. Connections begin at this</span>
+        <span class="comment">// state and then transition to either StateActive or</span>
+        <span class="comment">// StateClosed.</span>
+        <span id="StateNew">StateNew</span> <a href="https://golang.org/pkg/net/http/#ConnState">ConnState</a> = <a href="https://golang.org/pkg/builtin/#iota">iota</a>
+
+        <span class="comment">// StateActive represents a connection that has read 1 or more</span>
+        <span class="comment">// bytes of a request. The Server.ConnState hook for</span>
+        <span class="comment">// StateActive fires before the request has entered a handler</span>
+        <span class="comment">// and doesn't fire again until the request has been</span>
+        <span class="comment">// handled. After the request is handled, the state</span>
+        <span class="comment">// transitions to StateClosed, StateHijacked, or StateIdle.</span>
+        <span id="StateActive">StateActive</span>
+
+        <span class="comment">// StateIdle represents a connection that has finished</span>
+        <span class="comment">// handling a request and is in the keep-alive state, waiting</span>
+        <span class="comment">// for a new request. Connections transition from StateIdle</span>
+        <span class="comment">// to either StateActive or StateClosed.</span>
+        <span id="StateIdle">StateIdle</span>
+
+        <span class="comment">// StateHijacked represents a hijacked connection.</span>
+        <span class="comment">// This is a terminal state. It does not transition to StateClosed.</span>
+        <span id="StateHijacked">StateHijacked</span>
+
+        <span class="comment">// StateClosed represents a closed connection.</span>
+        <span class="comment">// This is a terminal state. Hijacked connections do not</span>
+        <span class="comment">// transition to StateClosed.</span>
+        <span id="StateClosed">StateClosed</span>
+)</pre>
+				
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="ConnState.String">func (ConnState) <a href="https://golang.org/src/net/http/server.go?s=55217:55251#L1834">String</a></h3>
+				<pre>func (c <a href="https://golang.org/pkg/net/http/#ConnState">ConnState</a>) String() <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+				
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Cookie">type <a href="https://golang.org/src/net/http/cookie.go?s=439:952#L11">Cookie</a></h2>
+			<pre>type Cookie struct {
+        Name  <a href="https://golang.org/pkg/builtin/#string">string</a>
+        Value <a href="https://golang.org/pkg/builtin/#string">string</a>
+
+        Path       <a href="https://golang.org/pkg/builtin/#string">string</a>    <span class="comment">// optional</span>
+        Domain     <a href="https://golang.org/pkg/builtin/#string">string</a>    <span class="comment">// optional</span>
+        Expires    <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Time">Time</a> <span class="comment">// optional</span>
+        RawExpires <a href="https://golang.org/pkg/builtin/#string">string</a>    <span class="comment">// for reading cookies only</span>
+
+        <span class="comment">// MaxAge=0 means no 'Max-Age' attribute specified.</span>
+        <span class="comment">// MaxAge&lt;0 means delete cookie now, equivalently 'Max-Age: 0'</span>
+        <span class="comment">// MaxAge&gt;0 means Max-Age attribute present and given in seconds</span>
+        MaxAge   <a href="https://golang.org/pkg/builtin/#int">int</a>
+        Secure   <a href="https://golang.org/pkg/builtin/#bool">bool</a>
+        HttpOnly <a href="https://golang.org/pkg/builtin/#bool">bool</a>
+        Raw      <a href="https://golang.org/pkg/builtin/#string">string</a>
+        Unparsed []<a href="https://golang.org/pkg/builtin/#string">string</a> <span class="comment">// Raw text of unparsed attribute-value pairs</span>
+}</pre>
+			<p>
+A Cookie represents an HTTP cookie as sent in the Set-Cookie header of an
+HTTP response or the Cookie header of an HTTP request.
+</p>
+<p>
+See <a href="http://tools.ietf.org/html/rfc6265">http://tools.ietf.org/html/rfc6265</a> for details.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="Cookie.String">func (*Cookie) <a href="https://golang.org/src/net/http/cookie.go?s=3428:3460#L130">String</a></h3>
+				<pre>func (c *<a href="https://golang.org/pkg/net/http/#Cookie">Cookie</a>) String() <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+				<p>
+String returns the serialization of the cookie for use in a Cookie
+header (if only Name and Value are set) or a Set-Cookie response
+header (if other fields are set).
+If c is nil or c.Name is invalid, the empty string is returned.
+</p>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="CookieJar">type <a href="https://golang.org/src/net/http/jar.go?s=433:899#L7">CookieJar</a></h2>
+			<pre>type CookieJar interface {
+        <span class="comment">// SetCookies handles the receipt of the cookies in a reply for the</span>
+        <span class="comment">// given URL.  It may or may not choose to save the cookies, depending</span>
+        <span class="comment">// on the jar's policy and implementation.</span>
+        SetCookies(u *<a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#URL">URL</a>, cookies []*<a href="https://golang.org/pkg/net/http/#Cookie">Cookie</a>)
+
+        <span class="comment">// Cookies returns the cookies to send in a request for the given URL.</span>
+        <span class="comment">// It is up to the implementation to honor the standard cookie use</span>
+        <span class="comment">// restrictions such as in RFC 6265.</span>
+        Cookies(u *<a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#URL">URL</a>) []*<a href="https://golang.org/pkg/net/http/#Cookie">Cookie</a>
+}</pre>
+			<p>
+A CookieJar manages storage and use of cookies in HTTP requests.
+</p>
+<p>
+Implementations of CookieJar must be safe for concurrent use by multiple
+goroutines.
+</p>
+<p>
+The net/http/cookiejar package provides a CookieJar implementation.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Dir">type <a href="https://golang.org/src/net/http/fs.go?s=719:734#L23">Dir</a></h2>
+			<pre>type Dir <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+			<p>
+A Dir implements FileSystem using the native file system restricted to a
+specific directory tree.
+</p>
+<p>
+While the FileSystem.Open method takes '/'-separated paths, a Dir's string
+value is a filename on the native file system, not a URL, so it is separated
+by filepath.Separator, which isn't necessarily '/'.
+</p>
+<p>
+An empty Dir is treated as ".".
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="Dir.Open">func (Dir) <a href="https://golang.org/src/net/http/fs.go?s=736:780#L25">Open</a></h3>
+				<pre>func (d <a href="https://golang.org/pkg/net/http/#Dir">Dir</a>) Open(name <a href="https://golang.org/pkg/builtin/#string">string</a>) (<a href="https://golang.org/pkg/net/http/#File">File</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="File">type <a href="https://golang.org/src/net/http/fs.go?s=1591:1755#L52">File</a></h2>
+			<pre>type File interface {
+        <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Closer">Closer</a>
+        <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Reader">Reader</a>
+        Readdir(count <a href="https://golang.org/pkg/builtin/#int">int</a>) ([]<a href="https://golang.org/pkg/os/">os</a>.<a href="https://golang.org/pkg/os/#FileInfo">FileInfo</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+        Seek(offset <a href="https://golang.org/pkg/builtin/#int64">int64</a>, whence <a href="https://golang.org/pkg/builtin/#int">int</a>) (<a href="https://golang.org/pkg/builtin/#int64">int64</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+        Stat() (<a href="https://golang.org/pkg/os/">os</a>.<a href="https://golang.org/pkg/os/#FileInfo">FileInfo</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+}</pre>
+			<p>
+A File is returned by a FileSystem's Open method and can be
+served by the FileServer implementation.
+</p>
+<p>
+The methods should behave the same as those on an *os.File.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="FileSystem">type <a href="https://golang.org/src/net/http/fs.go?s=1354:1416#L44">FileSystem</a></h2>
+			<pre>type FileSystem interface {
+        Open(name <a href="https://golang.org/pkg/builtin/#string">string</a>) (<a href="https://golang.org/pkg/net/http/#File">File</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+}</pre>
+			<p>
+A FileSystem implements access to a collection of named files.
+The elements in a file path are separated by slash ('/', U+002F)
+characters, regardless of host operating system convention.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Flusher">type <a href="https://golang.org/src/net/http/server.go?s=2921:3005#L79">Flusher</a></h2>
+			<pre>type Flusher interface {
+        <span class="comment">// Flush sends any buffered data to the client.</span>
+        Flush()
+}</pre>
+			<p>
+The Flusher interface is implemented by ResponseWriters that allow
+an HTTP handler to flush buffered data to the client.
+</p>
+<p>
+Note that even for ResponseWriters that support Flush,
+if the client is connected through an HTTP proxy,
+the buffered data may not reach the client until the response
+completes.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="Handler">type <a href="https://golang.org/src/net/http/server.go?s=1361:1424#L42">Handler</a></h2>
+			<pre>type Handler interface {
+        ServeHTTP(<a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, *<a href="https://golang.org/pkg/net/http/#Request">Request</a>)
+}</pre>
+			<p>
+Objects implementing the Handler interface can be
+registered to serve a particular path or subtree
+in the HTTP server.
+</p>
+<p>
+ServeHTTP should write reply headers and data to the ResponseWriter
+and then return.  Returning signals that the request is finished
+and that the HTTP server can move on to the next request on
+the connection.
+</p>
+<p>
+If ServeHTTP panics, the server (the caller of ServeHTTP) assumes
+that the effect of the panic was isolated to the active request.
+It recovers the panic, logs a stack trace to the server error log,
+and hangs up the connection.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="FileServer">func <a href="https://golang.org/src/net/http/fs.go?s=14534:14574#L463">FileServer</a></h3>
+				<pre>func FileServer(root <a href="https://golang.org/pkg/net/http/#FileSystem">FileSystem</a>) <a href="https://golang.org/pkg/net/http/#Handler">Handler</a></pre>
+				<p>
+FileServer returns a handler that serves HTTP requests
+with the contents of the file system rooted at root.
+</p>
+<p>
+To use the operating system's file system implementation,
+use http.Dir:
+</p>
+<pre>http.Handle("/", http.FileServer(http.Dir("/tmp")))
+</pre>
+<p>
+As a special case, the returned file server redirects any request
+ending in "/index.html" to the same path, without the final
+"index.html".
+</p>
+
+				<div id="example_FileServer" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code">package main
+
+import (
+	"log"
+	"net/http"
+)
+
+func main() {
+	// Simple static webserver:
+	log.Fatal(http.ListenAndServe(":8080", http.FileServer(http.Dir("/usr/share/doc"))))
+}
+</textarea></div>
+				<div class="output"><pre></pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					
+				</div>
+			</div>
+		
+	</div>
+</div>
+<div id="example_FileServer_stripPrefix" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example (StripPrefix)</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example (StripPrefix)</span></p>
+		
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code">package main
+
+import (
+	"net/http"
+)
+
+func main() {
+	// To serve a directory on disk (/tmp) under an alternate URL
+	// path (/tmpfiles/), use StripPrefix to modify the request
+	// URL's path before the FileServer sees it:
+	http.Handle("/tmpfiles/", http.StripPrefix("/tmpfiles/", http.FileServer(http.Dir("/tmp"))))
+}
+</textarea></div>
+				<div class="output"><pre></pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="NotFoundHandler">func <a href="https://golang.org/src/net/http/server.go?s=42065:42095#L1431">NotFoundHandler</a></h3>
+				<pre>func NotFoundHandler() <a href="https://golang.org/pkg/net/http/#Handler">Handler</a></pre>
+				<p>
+NotFoundHandler returns a simple request handler
+that replies to each request with a “404 page not found” reply.
+</p>
+
+				
+				
+			
+				
+				<h3 id="RedirectHandler">func <a href="https://golang.org/src/net/http/server.go?s=45249:45299#L1538">RedirectHandler</a></h3>
+				<pre>func RedirectHandler(url <a href="https://golang.org/pkg/builtin/#string">string</a>, code <a href="https://golang.org/pkg/builtin/#int">int</a>) <a href="https://golang.org/pkg/net/http/#Handler">Handler</a></pre>
+				<p>
+RedirectHandler returns a request handler that redirects
+each request it receives to the given url using the given
+status code.
+</p>
+
+				
+				
+			
+				
+				<h3 id="StripPrefix">func <a href="https://golang.org/src/net/http/server.go?s=42404:42454#L1438">StripPrefix</a></h3>
+				<pre>func StripPrefix(prefix <a href="https://golang.org/pkg/builtin/#string">string</a>, h <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>) <a href="https://golang.org/pkg/net/http/#Handler">Handler</a></pre>
+				<p>
+StripPrefix returns a handler that serves HTTP requests
+by removing the given prefix from the request URL's Path
+and invoking the handler h. StripPrefix handles a
+request for a path that doesn't begin with prefix by
+replying with an HTTP 404 not found error.
+</p>
+
+				<div id="example_StripPrefix" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code">package main
+
+import (
+	"net/http"
+)
+
+func main() {
+	// To serve a directory on disk (/tmp) under an alternate URL
+	// path (/tmpfiles/), use StripPrefix to modify the request
+	// URL's path before the FileServer sees it:
+	http.Handle("/tmpfiles/", http.StripPrefix("/tmpfiles/", http.FileServer(http.Dir("/tmp"))))
+}
+</textarea></div>
+				<div class="output"><pre></pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="TimeoutHandler">func <a href="https://golang.org/src/net/http/server.go?s=61275:61343#L2039">TimeoutHandler</a></h3>
+				<pre>func TimeoutHandler(h <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>, dt <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Duration">Duration</a>, msg <a href="https://golang.org/pkg/builtin/#string">string</a>) <a href="https://golang.org/pkg/net/http/#Handler">Handler</a></pre>
+				<p>
+TimeoutHandler returns a Handler that runs h with the given time limit.
+</p>
+<p>
+The new Handler calls h.ServeHTTP to handle each request, but if a
+call runs for longer than its time limit, the handler responds with
+a 503 Service Unavailable error and the given message in its body.
+(If msg is empty, a suitable default message will be sent.)
+After such a timeout, writes by h to its ResponseWriter will return
+ErrHandlerTimeout.
+</p>
+
+				
+				
+			
+
+			
+		
+			
+			
+			<h2 id="HandlerFunc">type <a href="https://golang.org/src/net/http/server.go?s=41267:41314#L1408">HandlerFunc</a></h2>
+			<pre>type HandlerFunc func(<a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, *<a href="https://golang.org/pkg/net/http/#Request">Request</a>)</pre>
+			<p>
+The HandlerFunc type is an adapter to allow the use of
+ordinary functions as HTTP handlers.  If f is a function
+with the appropriate signature, HandlerFunc(f) is a
+Handler object that calls f.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="HandlerFunc.ServeHTTP">func (HandlerFunc) <a href="https://golang.org/src/net/http/server.go?s=41344:41404#L1411">ServeHTTP</a></h3>
+				<pre>func (f <a href="https://golang.org/pkg/net/http/#HandlerFunc">HandlerFunc</a>) ServeHTTP(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>)</pre>
+				<p>
+ServeHTTP calls f(w, r).
+</p>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Header">type <a href="https://golang.org/src/net/http/header.go?s=350:381#L9">Header</a></h2>
+			<pre>type Header map[<a href="https://golang.org/pkg/builtin/#string">string</a>][]<a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+			<p>
+A Header represents the key-value pairs in an HTTP header.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="Header.Add">func (Header) <a href="https://golang.org/src/net/http/header.go?s=488:526#L13">Add</a></h3>
+				<pre>func (h <a href="https://golang.org/pkg/net/http/#Header">Header</a>) Add(key, value <a href="https://golang.org/pkg/builtin/#string">string</a>)</pre>
+				<p>
+Add adds the key, value pair to the header.
+It appends to any existing values associated with key.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Header.Del">func (Header) <a href="https://golang.org/src/net/http/header.go?s=1321:1352#L41">Del</a></h3>
+				<pre>func (h <a href="https://golang.org/pkg/net/http/#Header">Header</a>) Del(key <a href="https://golang.org/pkg/builtin/#string">string</a>)</pre>
+				<p>
+Del deletes the values associated with key.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Header.Get">func (Header) <a href="https://golang.org/src/net/http/header.go?s=1015:1053#L28">Get</a></h3>
+				<pre>func (h <a href="https://golang.org/pkg/net/http/#Header">Header</a>) Get(key <a href="https://golang.org/pkg/builtin/#string">string</a>) <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+				<p>
+Get gets the first value associated with the given key.
+If there are no values associated with the key, Get returns "".
+To access multiple values of a key, access the map directly
+with CanonicalHeaderKey.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Header.Set">func (Header) <a href="https://golang.org/src/net/http/header.go?s=713:751#L20">Set</a></h3>
+				<pre>func (h <a href="https://golang.org/pkg/net/http/#Header">Header</a>) Set(key, value <a href="https://golang.org/pkg/builtin/#string">string</a>)</pre>
+				<p>
+Set sets the header entries associated with key to
+the single element value.  It replaces any existing
+values associated with key.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Header.Write">func (Header) <a href="https://golang.org/src/net/http/header.go?s=1433:1473#L46">Write</a></h3>
+				<pre>func (h <a href="https://golang.org/pkg/net/http/#Header">Header</a>) Write(w <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Writer">Writer</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+Write writes a header in wire format.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Header.WriteSubset">func (Header) <a href="https://golang.org/src/net/http/header.go?s=3676:3747#L135">WriteSubset</a></h3>
+				<pre>func (h <a href="https://golang.org/pkg/net/http/#Header">Header</a>) WriteSubset(w <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Writer">Writer</a>, exclude map[<a href="https://golang.org/pkg/builtin/#string">string</a>]<a href="https://golang.org/pkg/builtin/#bool">bool</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+WriteSubset writes a header in wire format.
+If exclude is not nil, keys where exclude[key] == true are not written.
+</p>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Hijacker">type <a href="https://golang.org/src/net/http/server.go?s=3126:3656#L86">Hijacker</a></h2>
+			<pre>type Hijacker interface {
+        <span class="comment">// Hijack lets the caller take over the connection.</span>
+        <span class="comment">// After a call to Hijack(), the HTTP server library</span>
+        <span class="comment">// will not do anything else with the connection.</span>
+        <span class="comment">//</span>
+        <span class="comment">// It becomes the caller's responsibility to manage</span>
+        <span class="comment">// and close the connection.</span>
+        <span class="comment">//</span>
+        <span class="comment">// The returned net.Conn may have read or write deadlines</span>
+        <span class="comment">// already set, depending on the configuration of the</span>
+        <span class="comment">// Server. It is the caller's responsibility to set</span>
+        <span class="comment">// or clear those deadlines as needed.</span>
+        Hijack() (<a href="https://golang.org/pkg/net/">net</a>.<a href="https://golang.org/pkg/net/#Conn">Conn</a>, *<a href="https://golang.org/pkg/bufio/">bufio</a>.<a href="https://golang.org/pkg/bufio/#ReadWriter">ReadWriter</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+}</pre>
+			<p>
+The Hijacker interface is implemented by ResponseWriters that allow
+an HTTP handler to take over the connection.
+</p>
+
+
+			
+
+			
+
+			<div id="example_Hijacker" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code">package main
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+)
+
+func main() {
+	http.HandleFunc("/hijack", func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			http.Error(w, "webserver doesn't support hijacking", http.StatusInternalServerError)
+			return
+		}
+		conn, bufrw, err := hj.Hijack()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		// Don't forget to close the connection:
+		defer conn.Close()
+		bufrw.WriteString("Now we're speaking raw TCP. Say hi: ")
+		bufrw.Flush()
+		s, err := bufrw.ReadString('\n')
+		if err != nil {
+			log.Printf("error reading string: %v", err)
+			return
+		}
+		fmt.Fprintf(bufrw, "You said: %q\nBye.\n", s)
+		bufrw.Flush()
+	})
+}
+</textarea></div>
+				<div class="output"><pre></pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ProtocolError">type <a href="https://golang.org/src/net/http/request.go?s=668:717#L26">ProtocolError</a></h2>
+			<pre>type ProtocolError struct {
+        ErrorString <a href="https://golang.org/pkg/builtin/#string">string</a>
+}</pre>
+			<p>
+HTTP request parsing errors.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="ProtocolError.Error">func (*ProtocolError) <a href="https://golang.org/src/net/http/request.go?s=719:759#L30">Error</a></h3>
+				<pre>func (err *<a href="https://golang.org/pkg/net/http/#ProtocolError">ProtocolError</a>) Error() <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+				
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Request">type <a href="https://golang.org/src/net/http/request.go?s=2057:8270#L64">Request</a></h2>
+			<pre>type Request struct {
+        <span class="comment">// Method specifies the HTTP method (GET, POST, PUT, etc.).</span>
+        <span class="comment">// For client requests an empty string means GET.</span>
+        Method <a href="https://golang.org/pkg/builtin/#string">string</a>
+
+        <span class="comment">// URL specifies either the URI being requested (for server</span>
+        <span class="comment">// requests) or the URL to access (for client requests).</span>
+        <span class="comment">//</span>
+        <span class="comment">// For server requests the URL is parsed from the URI</span>
+        <span class="comment">// supplied on the Request-Line as stored in RequestURI.  For</span>
+        <span class="comment">// most requests, fields other than Path and RawQuery will be</span>
+        <span class="comment">// empty. (See RFC 2616, Section 5.1.2)</span>
+        <span class="comment">//</span>
+        <span class="comment">// For client requests, the URL's Host specifies the server to</span>
+        <span class="comment">// connect to, while the Request's Host field optionally</span>
+        <span class="comment">// specifies the Host header value to send in the HTTP</span>
+        <span class="comment">// request.</span>
+        URL *<a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#URL">URL</a>
+
+        <span class="comment">// The protocol version for incoming requests.</span>
+        <span class="comment">// Client requests always use HTTP/1.1.</span>
+        Proto      <a href="https://golang.org/pkg/builtin/#string">string</a> <span class="comment">// "HTTP/1.0"</span>
+        ProtoMajor <a href="https://golang.org/pkg/builtin/#int">int</a>    <span class="comment">// 1</span>
+        ProtoMinor <a href="https://golang.org/pkg/builtin/#int">int</a>    <span class="comment">// 0</span>
+
+        <span class="comment">// A header maps request lines to their values.</span>
+        <span class="comment">// If the header says</span>
+        <span class="comment">//</span>
+        <span class="comment">//	accept-encoding: gzip, deflate</span>
+        <span class="comment">//	Accept-Language: en-us</span>
+        <span class="comment">//	Connection: keep-alive</span>
+        <span class="comment">//</span>
+        <span class="comment">// then</span>
+        <span class="comment">//</span>
+        <span class="comment">//	Header = map[string][]string{</span>
+        <span class="comment">//		"Accept-Encoding": {"gzip, deflate"},</span>
+        <span class="comment">//		"Accept-Language": {"en-us"},</span>
+        <span class="comment">//		"Connection": {"keep-alive"},</span>
+        <span class="comment">//	}</span>
+        <span class="comment">//</span>
+        <span class="comment">// HTTP defines that header names are case-insensitive.</span>
+        <span class="comment">// The request parser implements this by canonicalizing the</span>
+        <span class="comment">// name, making the first character and any characters</span>
+        <span class="comment">// following a hyphen uppercase and the rest lowercase.</span>
+        <span class="comment">//</span>
+        <span class="comment">// For client requests certain headers are automatically</span>
+        <span class="comment">// added and may override values in Header.</span>
+        <span class="comment">//</span>
+        <span class="comment">// See the documentation for the Request.Write method.</span>
+        Header <a href="https://golang.org/pkg/net/http/#Header">Header</a>
+
+        <span class="comment">// Body is the request's body.</span>
+        <span class="comment">//</span>
+        <span class="comment">// For client requests a nil body means the request has no</span>
+        <span class="comment">// body, such as a GET request. The HTTP Client's Transport</span>
+        <span class="comment">// is responsible for calling the Close method.</span>
+        <span class="comment">//</span>
+        <span class="comment">// For server requests the Request Body is always non-nil</span>
+        <span class="comment">// but will return EOF immediately when no body is present.</span>
+        <span class="comment">// The Server will close the request body. The ServeHTTP</span>
+        <span class="comment">// Handler does not need to.</span>
+        Body <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#ReadCloser">ReadCloser</a>
+
+        <span class="comment">// ContentLength records the length of the associated content.</span>
+        <span class="comment">// The value -1 indicates that the length is unknown.</span>
+        <span class="comment">// Values &gt;= 0 indicate that the given number of bytes may</span>
+        <span class="comment">// be read from Body.</span>
+        <span class="comment">// For client requests, a value of 0 means unknown if Body is not nil.</span>
+        ContentLength <a href="https://golang.org/pkg/builtin/#int64">int64</a>
+
+        <span class="comment">// TransferEncoding lists the transfer encodings from outermost to</span>
+        <span class="comment">// innermost. An empty list denotes the "identity" encoding.</span>
+        <span class="comment">// TransferEncoding can usually be ignored; chunked encoding is</span>
+        <span class="comment">// automatically added and removed as necessary when sending and</span>
+        <span class="comment">// receiving requests.</span>
+        TransferEncoding []<a href="https://golang.org/pkg/builtin/#string">string</a>
+
+        <span class="comment">// Close indicates whether to close the connection after</span>
+        <span class="comment">// replying to this request (for servers) or after sending</span>
+        <span class="comment">// the request (for clients).</span>
+        Close <a href="https://golang.org/pkg/builtin/#bool">bool</a>
+
+        <span class="comment">// For server requests Host specifies the host on which the</span>
+        <span class="comment">// URL is sought. Per RFC 2616, this is either the value of</span>
+        <span class="comment">// the "Host" header or the host name given in the URL itself.</span>
+        <span class="comment">// It may be of the form "host:port".</span>
+        <span class="comment">//</span>
+        <span class="comment">// For client requests Host optionally overrides the Host</span>
+        <span class="comment">// header to send. If empty, the Request.Write method uses</span>
+        <span class="comment">// the value of URL.Host.</span>
+        Host <a href="https://golang.org/pkg/builtin/#string">string</a>
+
+        <span class="comment">// Form contains the parsed form data, including both the URL</span>
+        <span class="comment">// field's query parameters and the POST or PUT form data.</span>
+        <span class="comment">// This field is only available after ParseForm is called.</span>
+        <span class="comment">// The HTTP client ignores Form and uses Body instead.</span>
+        Form <a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#Values">Values</a>
+
+        <span class="comment">// PostForm contains the parsed form data from POST, PATCH,</span>
+        <span class="comment">// or PUT body parameters.</span>
+        <span class="comment">//</span>
+        <span class="comment">// This field is only available after ParseForm is called.</span>
+        <span class="comment">// The HTTP client ignores PostForm and uses Body instead.</span>
+        PostForm <a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#Values">Values</a>
+
+        <span class="comment">// MultipartForm is the parsed multipart form, including file uploads.</span>
+        <span class="comment">// This field is only available after ParseMultipartForm is called.</span>
+        <span class="comment">// The HTTP client ignores MultipartForm and uses Body instead.</span>
+        MultipartForm *<a href="https://golang.org/pkg/mime/multipart/">multipart</a>.<a href="https://golang.org/pkg/mime/multipart/#Form">Form</a>
+
+        <span class="comment">// Trailer specifies additional headers that are sent after the request</span>
+        <span class="comment">// body.</span>
+        <span class="comment">//</span>
+        <span class="comment">// For server requests the Trailer map initially contains only the</span>
+        <span class="comment">// trailer keys, with nil values. (The client declares which trailers it</span>
+        <span class="comment">// will later send.)  While the handler is reading from Body, it must</span>
+        <span class="comment">// not reference Trailer. After reading from Body returns EOF, Trailer</span>
+        <span class="comment">// can be read again and will contain non-nil values, if they were sent</span>
+        <span class="comment">// by the client.</span>
+        <span class="comment">//</span>
+        <span class="comment">// For client requests Trailer must be initialized to a map containing</span>
+        <span class="comment">// the trailer keys to later send. The values may be nil or their final</span>
+        <span class="comment">// values. The ContentLength must be 0 or -1, to send a chunked request.</span>
+        <span class="comment">// After the HTTP request is sent the map values can be updated while</span>
+        <span class="comment">// the request body is read. Once the body returns EOF, the caller must</span>
+        <span class="comment">// not mutate Trailer.</span>
+        <span class="comment">//</span>
+        <span class="comment">// Few HTTP clients, servers, or proxies support HTTP trailers.</span>
+        Trailer <a href="https://golang.org/pkg/net/http/#Header">Header</a>
+
+        <span class="comment">// RemoteAddr allows HTTP servers and other software to record</span>
+        <span class="comment">// the network address that sent the request, usually for</span>
+        <span class="comment">// logging. This field is not filled in by ReadRequest and</span>
+        <span class="comment">// has no defined format. The HTTP server in this package</span>
+        <span class="comment">// sets RemoteAddr to an "IP:port" address before invoking a</span>
+        <span class="comment">// handler.</span>
+        <span class="comment">// This field is ignored by the HTTP client.</span>
+        RemoteAddr <a href="https://golang.org/pkg/builtin/#string">string</a>
+
+        <span class="comment">// RequestURI is the unmodified Request-URI of the</span>
+        <span class="comment">// Request-Line (RFC 2616, Section 5.1) as sent by the client</span>
+        <span class="comment">// to a server. Usually the URL field should be used instead.</span>
+        <span class="comment">// It is an error to set this field in an HTTP client request.</span>
+        RequestURI <a href="https://golang.org/pkg/builtin/#string">string</a>
+
+        <span class="comment">// TLS allows HTTP servers and other software to record</span>
+        <span class="comment">// information about the TLS connection on which the request</span>
+        <span class="comment">// was received. This field is not filled in by ReadRequest.</span>
+        <span class="comment">// The HTTP server in this package sets the field for</span>
+        <span class="comment">// TLS-enabled connections before invoking a handler;</span>
+        <span class="comment">// otherwise it leaves the field nil.</span>
+        <span class="comment">// This field is ignored by the HTTP client.</span>
+        TLS *<a href="https://golang.org/pkg/crypto/tls/">tls</a>.<a href="https://golang.org/pkg/crypto/tls/#ConnectionState">ConnectionState</a>
+
+        <span class="comment">// Cancel is an optional channel whose closure indicates that the client</span>
+        <span class="comment">// request should be regarded as canceled. Not all implementations of</span>
+        <span class="comment">// RoundTripper may support Cancel.</span>
+        <span class="comment">//</span>
+        <span class="comment">// For server requests, this field is not applicable.</span>
+        Cancel &lt;-chan struct{}
+}</pre>
+			<p>
+A Request represents an HTTP request received by a server
+or to be sent by a client.
+</p>
+<p>
+The field semantics differ slightly between client and server
+usage. In addition to the notes on the fields below, see the
+documentation for Request.Write and RoundTripper.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewRequest">func <a href="https://golang.org/src/net/http/request.go?s=17718:17790#L536">NewRequest</a></h3>
+				<pre>func NewRequest(method, urlStr <a href="https://golang.org/pkg/builtin/#string">string</a>, body <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Reader">Reader</a>) (*<a href="https://golang.org/pkg/net/http/#Request">Request</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+NewRequest returns a new Request given a method, URL, and optional body.
+</p>
+<p>
+If the provided body is also an io.Closer, the returned
+Request.Body is set to body and will be closed by the Client
+methods Do, Post, and PostForm, and Transport.RoundTrip.
+</p>
+<p>
+NewRequest returns a Request suitable for use with Client.Do or
+Transport.RoundTrip.
+To create a request for use with testing a Server Handler use either
+ReadRequest or manually update the Request fields. See the Request
+type's documentation for the difference between inbound and outbound
+request fields.
+</p>
+
+				
+				
+			
+				
+				<h3 id="ReadRequest">func <a href="https://golang.org/src/net/http/request.go?s=20301:20360#L636">ReadRequest</a></h3>
+				<pre>func ReadRequest(b *<a href="https://golang.org/pkg/bufio/">bufio</a>.<a href="https://golang.org/pkg/bufio/#Reader">Reader</a>) (req *<a href="https://golang.org/pkg/net/http/#Request">Request</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+ReadRequest reads and parses an incoming request from b.
+</p>
+
+				
+				
+			
+
+			
+				
+				<h3 id="Request.AddCookie">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=9423:9461#L259">AddCookie</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) AddCookie(c *<a href="https://golang.org/pkg/net/http/#Cookie">Cookie</a>)</pre>
+				<p>
+AddCookie adds a cookie to the request.  Per RFC 6265 section 5.4,
+AddCookie does not attach more than one Cookie header field.  That
+means all cookies, if any, are written into the same line,
+separated by semicolon.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.BasicAuth">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=18567:18633#L572">BasicAuth</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) BasicAuth() (username, password <a href="https://golang.org/pkg/builtin/#string">string</a>, ok <a href="https://golang.org/pkg/builtin/#bool">bool</a>)</pre>
+				<p>
+BasicAuth returns the username and password provided in the request's
+Authorization header, if the request uses HTTP Basic Authentication.
+See RFC 2617, Section 2.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.Cookie">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=9041:9095#L248">Cookie</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) Cookie(name <a href="https://golang.org/pkg/builtin/#string">string</a>) (*<a href="https://golang.org/pkg/net/http/#Cookie">Cookie</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Cookie returns the named cookie provided in the request or
+ErrNoCookie if not found.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.Cookies">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=8727:8764#L239">Cookies</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) Cookies() []*<a href="https://golang.org/pkg/net/http/#Cookie">Cookie</a></pre>
+				<p>
+Cookies parses and returns the HTTP cookies sent with the request.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.FormFile">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=29076:29161#L960">FormFile</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) FormFile(key <a href="https://golang.org/pkg/builtin/#string">string</a>) (<a href="https://golang.org/pkg/mime/multipart/">multipart</a>.<a href="https://golang.org/pkg/mime/multipart/#File">File</a>, *<a href="https://golang.org/pkg/mime/multipart/">multipart</a>.<a href="https://golang.org/pkg/mime/multipart/#FileHeader">FileHeader</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+FormFile returns the first file for the provided form key.
+FormFile calls ParseMultipartForm and ParseForm if necessary.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.FormValue">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=28248:28294#L933">FormValue</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) FormValue(key <a href="https://golang.org/pkg/builtin/#string">string</a>) <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+				<p>
+FormValue returns the first value for the named component of the query.
+POST and PUT body parameters take precedence over URL query string values.
+FormValue calls ParseMultipartForm and ParseForm if necessary and ignores
+any errors returned by these functions.
+If key is not present, FormValue returns the empty string.
+To access multiple values of the same key, call ParseForm and
+then inspect Request.Form directly.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.MultipartReader">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=10760:10822#L292">MultipartReader</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) MultipartReader() (*<a href="https://golang.org/pkg/mime/multipart/">multipart</a>.<a href="https://golang.org/pkg/mime/multipart/#Reader">Reader</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+MultipartReader returns a MIME multipart reader if this is a
+multipart/form-data POST request, else returns nil and an error.
+Use this function instead of ParseMultipartForm to
+process the request body as a stream.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.ParseForm">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=26212:26247#L854">ParseForm</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) ParseForm() <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+ParseForm parses the raw query from the URL and updates r.Form.
+</p>
+<p>
+For POST or PUT requests, it also parses the request body as a form and
+put the results into both r.PostForm and r.Form.
+POST and PUT body parameters take precedence over URL query string values
+in r.Form.
+</p>
+<p>
+If the request Body's size has not already been limited by MaxBytesReader,
+the size is capped at 10MB.
+</p>
+<p>
+ParseMultipartForm calls ParseForm automatically.
+It is idempotent.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.ParseMultipartForm">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=27267:27326#L895">ParseMultipartForm</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) ParseMultipartForm(maxMemory <a href="https://golang.org/pkg/builtin/#int64">int64</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+ParseMultipartForm parses a request body as multipart/form-data.
+The whole request body is parsed and up to a total of maxMemory bytes of
+its file parts are stored in memory, with the remainder stored on
+disk in temporary files.
+ParseMultipartForm calls ParseForm if necessary.
+After one call to ParseMultipartForm, subsequent calls have no effect.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.PostFormValue">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=28755:28805#L948">PostFormValue</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) PostFormValue(key <a href="https://golang.org/pkg/builtin/#string">string</a>) <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+				<p>
+PostFormValue returns the first value for the named component of the POST
+or PUT request body. URL query parameters are ignored.
+PostFormValue calls ParseMultipartForm and ParseForm if necessary and ignores
+any errors returned by these functions.
+If key is not present, PostFormValue returns the empty string.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.ProtoAtLeast">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=8370:8423#L228">ProtoAtLeast</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) ProtoAtLeast(major, minor <a href="https://golang.org/pkg/builtin/#int">int</a>) <a href="https://golang.org/pkg/builtin/#bool">bool</a></pre>
+				<p>
+ProtoAtLeast reports whether the HTTP protocol used
+in the request is at least major.minor.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.Referer">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=10131:10165#L276">Referer</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) Referer() <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+				<p>
+Referer returns the referring URL, if sent in the request.
+</p>
+<p>
+Referer is misspelled as in the request itself, a mistake from the
+earliest days of HTTP.  This value can also be fetched from the
+Header map as Header["Referer"]; the benefit of making it available
+as a method is that the compiler can diagnose programs that use the
+alternate (correct English) spelling req.Referrer() but cannot
+diagnose programs that use Header["Referrer"].
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.SetBasicAuth">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=19455:19512#L604">SetBasicAuth</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) SetBasicAuth(username, password <a href="https://golang.org/pkg/builtin/#string">string</a>)</pre>
+				<p>
+SetBasicAuth sets the request's Authorization header to use HTTP
+Basic Authentication with the provided username and password.
+</p>
+<p>
+With HTTP Basic Authentication the provided username and password
+are not encrypted.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.UserAgent">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=8580:8616#L234">UserAgent</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) UserAgent() <a href="https://golang.org/pkg/builtin/#string">string</a></pre>
+				<p>
+UserAgent returns the client's User-Agent, if sent in the request.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.Write">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=12411:12453#L346">Write</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) Write(w <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Writer">Writer</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+Write writes an HTTP/1.1 request, which is the header and body, in wire format.
+This method consults the following fields of the request:
+</p>
+<pre>Host
+URL
+Method (defaults to "GET")
+Header
+ContentLength
+TransferEncoding
+Body
+</pre>
+<p>
+If Body is present, Content-Length is &lt;= 0 and TransferEncoding
+hasn't been set to "identity", Write adds "Transfer-Encoding:
+chunked" to the header. Body is closed after it is sent.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Request.WriteProxy">func (*Request) <a href="https://golang.org/src/net/http/request.go?s=12846:12893#L356">WriteProxy</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) WriteProxy(w <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Writer">Writer</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+WriteProxy is like Write but writes the request in the form
+expected by an HTTP proxy.  In particular, WriteProxy writes the
+initial Request-URI line of the request with an absolute URI, per
+section 5.1.2 of RFC 2616, including the scheme and host.
+In either case, WriteProxy also writes a Host header, using
+either r.Host or r.URL.Host.
+</p>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Response">type <a href="https://golang.org/src/net/http/response.go?s=512:2849#L19">Response</a></h2>
+			<pre>type Response struct {
+        Status     <a href="https://golang.org/pkg/builtin/#string">string</a> <span class="comment">// e.g. "200 OK"</span>
+        StatusCode <a href="https://golang.org/pkg/builtin/#int">int</a>    <span class="comment">// e.g. 200</span>
+        Proto      <a href="https://golang.org/pkg/builtin/#string">string</a> <span class="comment">// e.g. "HTTP/1.0"</span>
+        ProtoMajor <a href="https://golang.org/pkg/builtin/#int">int</a>    <span class="comment">// e.g. 1</span>
+        ProtoMinor <a href="https://golang.org/pkg/builtin/#int">int</a>    <span class="comment">// e.g. 0</span>
+
+        <span class="comment">// Header maps header keys to values.  If the response had multiple</span>
+        <span class="comment">// headers with the same key, they may be concatenated, with comma</span>
+        <span class="comment">// delimiters.  (Section 4.2 of RFC 2616 requires that multiple headers</span>
+        <span class="comment">// be semantically equivalent to a comma-delimited sequence.) Values</span>
+        <span class="comment">// duplicated by other fields in this struct (e.g., ContentLength) are</span>
+        <span class="comment">// omitted from Header.</span>
+        <span class="comment">//</span>
+        <span class="comment">// Keys in the map are canonicalized (see CanonicalHeaderKey).</span>
+        Header <a href="https://golang.org/pkg/net/http/#Header">Header</a>
+
+        <span class="comment">// Body represents the response body.</span>
+        <span class="comment">//</span>
+        <span class="comment">// The http Client and Transport guarantee that Body is always</span>
+        <span class="comment">// non-nil, even on responses without a body or responses with</span>
+        <span class="comment">// a zero-length body. It is the caller's responsibility to</span>
+        <span class="comment">// close Body. The default HTTP client's Transport does not</span>
+        <span class="comment">// attempt to reuse HTTP/1.0 or HTTP/1.1 TCP connections</span>
+        <span class="comment">// ("keep-alive") unless the Body is read to completion and is</span>
+        <span class="comment">// closed.</span>
+        <span class="comment">//</span>
+        <span class="comment">// The Body is automatically dechunked if the server replied</span>
+        <span class="comment">// with a "chunked" Transfer-Encoding.</span>
+        Body <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#ReadCloser">ReadCloser</a>
+
+        <span class="comment">// ContentLength records the length of the associated content.  The</span>
+        <span class="comment">// value -1 indicates that the length is unknown.  Unless Request.Method</span>
+        <span class="comment">// is "HEAD", values &gt;= 0 indicate that the given number of bytes may</span>
+        <span class="comment">// be read from Body.</span>
+        ContentLength <a href="https://golang.org/pkg/builtin/#int64">int64</a>
+
+        <span class="comment">// Contains transfer encodings from outer-most to inner-most. Value is</span>
+        <span class="comment">// nil, means that "identity" encoding is used.</span>
+        TransferEncoding []<a href="https://golang.org/pkg/builtin/#string">string</a>
+
+        <span class="comment">// Close records whether the header directed that the connection be</span>
+        <span class="comment">// closed after reading Body.  The value is advice for clients: neither</span>
+        <span class="comment">// ReadResponse nor Response.Write ever closes a connection.</span>
+        Close <a href="https://golang.org/pkg/builtin/#bool">bool</a>
+
+        <span class="comment">// Trailer maps trailer keys to values, in the same</span>
+        <span class="comment">// format as the header.</span>
+        Trailer <a href="https://golang.org/pkg/net/http/#Header">Header</a>
+
+        <span class="comment">// The Request that was sent to obtain this Response.</span>
+        <span class="comment">// Request's Body is nil (having already been consumed).</span>
+        <span class="comment">// This is only populated for Client requests.</span>
+        Request *<a href="https://golang.org/pkg/net/http/#Request">Request</a>
+
+        <span class="comment">// TLS contains information about the TLS connection on which the</span>
+        <span class="comment">// response was received. It is nil for unencrypted responses.</span>
+        <span class="comment">// The pointer is shared between responses and should not be</span>
+        <span class="comment">// modified.</span>
+        TLS *<a href="https://golang.org/pkg/crypto/tls/">tls</a>.<a href="https://golang.org/pkg/crypto/tls/#ConnectionState">ConnectionState</a>
+}</pre>
+			<p>
+Response represents the response from an HTTP request.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="Get">func <a href="https://golang.org/src/net/http/client.go?s=9198:9246#L270">Get</a></h3>
+				<pre>func Get(url <a href="https://golang.org/pkg/builtin/#string">string</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Get issues a GET to the specified URL. If the response is one of
+the following redirect codes, Get follows the redirect, up to a
+maximum of 10 redirects:
+</p>
+<pre>301 (Moved Permanently)
+302 (Found)
+303 (See Other)
+307 (Temporary Redirect)
+</pre>
+<p>
+An error is returned if there were too many redirects or if there
+was an HTTP protocol error. A non-2xx response doesn't cause an
+error.
+</p>
+<p>
+When err is nil, resp always contains a non-nil resp.Body.
+Caller should close resp.Body when done reading from it.
+</p>
+<p>
+Get is a wrapper around DefaultClient.Get.
+</p>
+<p>
+To make a request with custom headers, use NewRequest and
+DefaultClient.Do.
+</p>
+
+				<div id="example_Get" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code">package main
+
+import (
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+)
+
+func main() {
+	res, err := http.Get("http://www.google.com/robots.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	robots, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", robots)
+}
+</textarea></div>
+				<div class="output"><pre></pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="Head">func <a href="https://golang.org/src/net/http/client.go?s=15901:15950#L500">Head</a></h3>
+				<pre>func Head(url <a href="https://golang.org/pkg/builtin/#string">string</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Head issues a HEAD to the specified URL.  If the response is one of
+the following redirect codes, Head follows the redirect, up to a
+maximum of 10 redirects:
+</p>
+<pre>301 (Moved Permanently)
+302 (Found)
+303 (See Other)
+307 (Temporary Redirect)
+</pre>
+<p>
+Head is a wrapper around DefaultClient.Head
+</p>
+
+				
+				
+			
+				
+				<h3 id="Post">func <a href="https://golang.org/src/net/http/client.go?s=13816:13898#L443">Post</a></h3>
+				<pre>func Post(url <a href="https://golang.org/pkg/builtin/#string">string</a>, bodyType <a href="https://golang.org/pkg/builtin/#string">string</a>, body <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Reader">Reader</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Post issues a POST to the specified URL.
+</p>
+<p>
+Caller should close resp.Body when done reading from it.
+</p>
+<p>
+If the provided body is an io.Closer, it is closed after the
+request.
+</p>
+<p>
+Post is a wrapper around DefaultClient.Post.
+</p>
+<p>
+To set custom headers, use NewRequest and DefaultClient.Do.
+</p>
+
+				
+				
+			
+				
+				<h3 id="PostForm">func <a href="https://golang.org/src/net/http/client.go?s=14909:14979#L474">PostForm</a></h3>
+				<pre>func PostForm(url <a href="https://golang.org/pkg/builtin/#string">string</a>, data <a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#Values">Values</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+PostForm issues a POST to the specified URL, with data's keys and
+values URL-encoded as the request body.
+</p>
+<p>
+The Content-Type header is set to application/x-www-form-urlencoded.
+To set other headers, use NewRequest and DefaultClient.Do.
+</p>
+<p>
+When err is nil, resp always contains a non-nil resp.Body.
+Caller should close resp.Body when done reading from it.
+</p>
+<p>
+PostForm is a wrapper around DefaultClient.PostForm.
+</p>
+
+				
+				
+			
+				
+				<h3 id="ReadResponse">func <a href="https://golang.org/src/net/http/response.go?s=3992:4059#L111">ReadResponse</a></h3>
+				<pre>func ReadResponse(r *<a href="https://golang.org/pkg/bufio/">bufio</a>.<a href="https://golang.org/pkg/bufio/#Reader">Reader</a>, req *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) (*<a href="https://golang.org/pkg/net/http/#Response">Response</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+ReadResponse reads and returns an HTTP response from r.
+The req parameter optionally specifies the Request that corresponds
+to this Response. If nil, a GET request is assumed.
+Clients must call resp.Body.Close when finished reading resp.Body.
+After that call, clients can inspect resp.Trailer to find key/value
+pairs included in the response trailer.
+</p>
+
+				
+				
+			
+
+			
+				
+				<h3 id="Response.Cookies">func (*Response) <a href="https://golang.org/src/net/http/response.go?s=2924:2962#L82">Cookies</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Response">Response</a>) Cookies() []*<a href="https://golang.org/pkg/net/http/#Cookie">Cookie</a></pre>
+				<p>
+Cookies parses and returns the cookies set in the Set-Cookie headers.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Response.Location">func (*Response) <a href="https://golang.org/src/net/http/response.go?s=3387:3434#L94">Location</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Response">Response</a>) Location() (*<a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#URL">URL</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+Location returns the URL of the response's "Location" header,
+if present.  Relative redirects are resolved relative to
+the Response's Request.  ErrNoLocation is returned if no
+Location header is present.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Response.ProtoAtLeast">func (*Response) <a href="https://golang.org/src/net/http/response.go?s=5570:5624#L179">ProtoAtLeast</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Response">Response</a>) ProtoAtLeast(major, minor <a href="https://golang.org/pkg/builtin/#int">int</a>) <a href="https://golang.org/pkg/builtin/#bool">bool</a></pre>
+				<p>
+ProtoAtLeast reports whether the HTTP protocol used
+in the response is at least major.minor.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Response.Write">func (*Response) <a href="https://golang.org/src/net/http/response.go?s=6162:6205#L200">Write</a></h3>
+				<pre>func (r *<a href="https://golang.org/pkg/net/http/#Response">Response</a>) Write(w <a href="https://golang.org/pkg/io/">io</a>.<a href="https://golang.org/pkg/io/#Writer">Writer</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+Write writes r to w in the HTTP/1.n server response format,
+including the status line, headers, body, and optional trailer.
+</p>
+<p>
+This method consults the following fields of the response r:
+</p>
+<pre>StatusCode
+ProtoMajor
+ProtoMinor
+Request.Method
+TransferEncoding
+Trailer
+Body
+ContentLength
+Header, values for non-canonical keys will have unpredictable behavior
+</pre>
+<p>
+The Response Body is closed after it is sent.
+</p>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="ResponseWriter">type <a href="https://golang.org/src/net/http/server.go?s=1517:2599#L48">ResponseWriter</a></h2>
+			<pre>type ResponseWriter interface {
+        <span class="comment">// Header returns the header map that will be sent by</span>
+        <span class="comment">// WriteHeader. Changing the header after a call to</span>
+        <span class="comment">// WriteHeader (or Write) has no effect unless the modified</span>
+        <span class="comment">// headers were declared as trailers by setting the</span>
+        <span class="comment">// "Trailer" header before the call to WriteHeader (see example).</span>
+        <span class="comment">// To suppress implicit response headers, set their value to nil.</span>
+        Header() <a href="https://golang.org/pkg/net/http/#Header">Header</a>
+
+        <span class="comment">// Write writes the data to the connection as part of an HTTP reply.</span>
+        <span class="comment">// If WriteHeader has not yet been called, Write calls WriteHeader(http.StatusOK)</span>
+        <span class="comment">// before writing the data.  If the Header does not contain a</span>
+        <span class="comment">// Content-Type line, Write adds a Content-Type set to the result of passing</span>
+        <span class="comment">// the initial 512 bytes of written data to DetectContentType.</span>
+        Write([]<a href="https://golang.org/pkg/builtin/#byte">byte</a>) (<a href="https://golang.org/pkg/builtin/#int">int</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+
+        <span class="comment">// WriteHeader sends an HTTP response header with status code.</span>
+        <span class="comment">// If WriteHeader is not called explicitly, the first call to Write</span>
+        <span class="comment">// will trigger an implicit WriteHeader(http.StatusOK).</span>
+        <span class="comment">// Thus explicit calls to WriteHeader are mainly used to</span>
+        <span class="comment">// send error codes.</span>
+        WriteHeader(<a href="https://golang.org/pkg/builtin/#int">int</a>)
+}</pre>
+			<p>
+A ResponseWriter interface is used by an HTTP handler to
+construct an HTTP response.
+</p>
+
+
+			
+
+			
+
+			<div id="example_ResponseWriter_trailers" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example (Trailers)</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example (Trailers)</span></p>
+		<p>HTTP Trailers are a set of key/value pairs like headers that come
+after the HTTP response, instead of before.
+</p>
+		
+		
+			<div class="play">
+				<div class="input"><textarea class="code">package main
+
+import (
+	"io"
+	"net/http"
+)
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/sendstrailers", func(w http.ResponseWriter, req *http.Request) {
+		// Before any call to WriteHeader or Write, declare
+		// the trailers you will set during the HTTP
+		// response. These three headers are actually sent in
+		// the trailer.
+		w.Header().Set("Trailer", "AtEnd1, AtEnd2")
+		w.Header().Add("Trailer", "AtEnd3")
+
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8") // normal header
+		w.WriteHeader(http.StatusOK)
+
+		w.Header().Set("AtEnd1", "value 1")
+		io.WriteString(w, "This HTTP response has both headers before this text and trailers at the end.\n")
+		w.Header().Set("AtEnd2", "value 2")
+		w.Header().Set("AtEnd3", "value 3") // These will appear as trailers.
+	})
+}
+</textarea></div>
+				<div class="output"><pre></pre></div>
+				<div class="buttons">
+					<a class="run" title="Run this code [shift-enter]">Run</a>
+					<a class="fmt" title="Format this code">Format</a>
+					
+				</div>
+			</div>
+		
+	</div>
+</div>
+
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="RoundTripper">type <a href="https://golang.org/src/net/http/client.go?s=2750:3517#L73">RoundTripper</a></h2>
+			<pre>type RoundTripper interface {
+        <span class="comment">// RoundTrip executes a single HTTP transaction, returning</span>
+        <span class="comment">// the Response for the request req.  RoundTrip should not</span>
+        <span class="comment">// attempt to interpret the response.  In particular,</span>
+        <span class="comment">// RoundTrip must return err == nil if it obtained a response,</span>
+        <span class="comment">// regardless of the response's HTTP status code.  A non-nil</span>
+        <span class="comment">// err should be reserved for failure to obtain a response.</span>
+        <span class="comment">// Similarly, RoundTrip should not attempt to handle</span>
+        <span class="comment">// higher-level protocol details such as redirects,</span>
+        <span class="comment">// authentication, or cookies.</span>
+        <span class="comment">//</span>
+        <span class="comment">// RoundTrip should not modify the request, except for</span>
+        <span class="comment">// consuming and closing the Body, including on errors. The</span>
+        <span class="comment">// request's URL and Header fields are guaranteed to be</span>
+        <span class="comment">// initialized.</span>
+        RoundTrip(*<a href="https://golang.org/pkg/net/http/#Request">Request</a>) (*<a href="https://golang.org/pkg/net/http/#Response">Response</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+}</pre>
+			<p>
+RoundTripper is an interface representing the ability to execute a
+single HTTP transaction, obtaining the Response for a given Request.
+</p>
+<p>
+A RoundTripper must be safe for concurrent use by multiple
+goroutines.
+</p>
+
+
+			
+
+			
+				<pre>var <span id="DefaultTransport">DefaultTransport</span> <a href="https://golang.org/pkg/net/http/#RoundTripper">RoundTripper</a> = &amp;<a href="https://golang.org/pkg/net/http/#Transport">Transport</a>{
+        <a href="https://golang.org/pkg/net/http/#Proxy">Proxy</a>: <a href="https://golang.org/pkg/net/http/#ProxyFromEnvironment">ProxyFromEnvironment</a>,
+        <a href="https://golang.org/pkg/net/http/#Dial">Dial</a>: (&amp;<a href="https://golang.org/pkg/net/">net</a>.<a href="https://golang.org/pkg/net/#Dialer">Dialer</a>{
+                <a href="https://golang.org/pkg/net/http/#Timeout">Timeout</a>:   30 * <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Second">Second</a>,
+                <a href="https://golang.org/pkg/net/http/#KeepAlive">KeepAlive</a>: 30 * <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Second">Second</a>,
+        }).<a href="https://golang.org/pkg/net/http/#Dial">Dial</a>,
+        <a href="https://golang.org/pkg/net/http/#TLSHandshakeTimeout">TLSHandshakeTimeout</a>: 10 * <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Second">Second</a>,
+}</pre>
+				<p>
+DefaultTransport is the default implementation of Transport and is
+used by DefaultClient. It establishes network connections as needed
+and caches them for reuse by subsequent calls. It uses HTTP proxies
+as directed by the $HTTP_PROXY and $NO_PROXY (or $http_proxy and
+$no_proxy) environment variables.
+</p>
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewFileTransport">func <a href="https://golang.org/src/net/http/filetransport.go?s=827:876#L20">NewFileTransport</a></h3>
+				<pre>func NewFileTransport(fs <a href="https://golang.org/pkg/net/http/#FileSystem">FileSystem</a>) <a href="https://golang.org/pkg/net/http/#RoundTripper">RoundTripper</a></pre>
+				<p>
+NewFileTransport returns a new RoundTripper, serving the provided
+FileSystem. The returned RoundTripper ignores the URL host in its
+incoming requests, as well as most other properties of the
+request.
+</p>
+<p>
+The typical use case for NewFileTransport is to register the "file"
+protocol with a Transport, as in:
+</p>
+<pre>t := &amp;http.Transport{}
+t.RegisterProtocol("file", http.NewFileTransport(http.Dir("/")))
+c := &amp;http.Client{Transport: t}
+res, err := c.Get("file:///etc/passwd")
+...
+</pre>
+
+				
+				
+			
+
+			
+		
+			
+			
+			<h2 id="ServeMux">type <a href="https://golang.org/src/net/http/server.go?s=46684:46809#L1569">ServeMux</a></h2>
+			<pre>type ServeMux struct {
+        <span class="comment">// contains filtered or unexported fields</span>
+}</pre>
+			<p>
+ServeMux is an HTTP request multiplexer.
+It matches the URL of each incoming request against a list of registered
+patterns and calls the handler for the pattern that
+most closely matches the URL.
+</p>
+<p>
+Patterns name fixed, rooted paths, like "/favicon.ico",
+or rooted subtrees, like "/images/" (note the trailing slash).
+Longer patterns take precedence over shorter ones, so that
+if there are handlers registered for both "/images/"
+and "/images/thumbnails/", the latter handler will be
+called for paths beginning "/images/thumbnails/" and the
+former will receive requests for any other paths in the
+"/images/" subtree.
+</p>
+<p>
+Note that since a pattern ending in a slash names a rooted subtree,
+the pattern "/" matches all paths not matched by other registered
+patterns, not just the URL with Path == "/".
+</p>
+<p>
+Patterns may optionally begin with a host name, restricting matches to
+URLs on that host only.  Host-specific patterns take precedence over
+general patterns, so that a handler might register for the two patterns
+"/codesearch" and "codesearch.google.com/" without also taking over
+requests for "<a href="http://www.google.com/">http://www.google.com/</a>".
+</p>
+<p>
+ServeMux also takes care of sanitizing the URL request path,
+redirecting any request containing . or .. elements to an
+equivalent .- and ..-free URL.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="NewServeMux">func <a href="https://golang.org/src/net/http/server.go?s=46940:46968#L1582">NewServeMux</a></h3>
+				<pre>func NewServeMux() *<a href="https://golang.org/pkg/net/http/#ServeMux">ServeMux</a></pre>
+				<p>
+NewServeMux allocates and returns a new ServeMux.
+</p>
+
+				
+				
+			
+
+			
+				
+				<h3 id="ServeMux.Handle">func (*ServeMux) <a href="https://golang.org/src/net/http/server.go?s=49985:50045#L1694">Handle</a></h3>
+				<pre>func (mux *<a href="https://golang.org/pkg/net/http/#ServeMux">ServeMux</a>) Handle(pattern <a href="https://golang.org/pkg/builtin/#string">string</a>, handler <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>)</pre>
+				<p>
+Handle registers the handler for the given pattern.
+If a handler already exists for pattern, Handle panics.
+</p>
+
+				
+				<div id="example_ServeMux_Handle" class="toggle">
+	<div class="collapsed">
+		<p class="exampleHeading toggleButton">▹ <span class="text">Example</span></p>
+	</div>
+	<div class="expanded">
+		<p class="exampleHeading toggleButton">▾ <span class="text">Example</span></p>
+		
+		
+		
+			<p>Code:</p>
+			<pre class="code">    mux := http.NewServeMux()
+    mux.Handle("/api/", apiHandler{})
+    mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+            <span class="comment">// The "/" pattern matches everything, so we need to check</span>
+            <span class="comment">// that we're at the root here.</span>
+            if req.URL.Path != "/" {
+                    http.NotFound(w, req)
+                    return
+            }
+            fmt.Fprintf(w, "Welcome to the home page!")
+    })
+</pre>
+			
+		
+	</div>
+</div>
+
+				
+			
+				
+				<h3 id="ServeMux.HandleFunc">func (*ServeMux) <a href="https://golang.org/src/net/http/server.go?s=51148:51235#L1733">HandleFunc</a></h3>
+				<pre>func (mux *<a href="https://golang.org/pkg/net/http/#ServeMux">ServeMux</a>) HandleFunc(pattern <a href="https://golang.org/pkg/builtin/#string">string</a>, handler func(<a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, *<a href="https://golang.org/pkg/net/http/#Request">Request</a>))</pre>
+				<p>
+HandleFunc registers the handler function for the given pattern.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="ServeMux.Handler">func (*ServeMux) <a href="https://golang.org/src/net/http/server.go?s=48689:48757#L1646">Handler</a></h3>
+				<pre>func (mux *<a href="https://golang.org/pkg/net/http/#ServeMux">ServeMux</a>) Handler(r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) (h <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>, pattern <a href="https://golang.org/pkg/builtin/#string">string</a>)</pre>
+				<p>
+Handler returns the handler to use for the given request,
+consulting r.Method, r.Host, and r.URL.Path. It always returns
+a non-nil handler. If the path is not in its canonical form, the
+handler will be an internally-generated handler that redirects
+to the canonical path.
+</p>
+<p>
+Handler also returns the registered pattern that matches the
+request or, in the case of internally-generated redirects,
+the pattern that will match after following the redirect.
+</p>
+<p>
+If there is no registered handler that applies to the request,
+Handler returns a “page not found” handler and an empty pattern.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="ServeMux.ServeHTTP">func (*ServeMux) <a href="https://golang.org/src/net/http/server.go?s=49617:49677#L1680">ServeHTTP</a></h3>
+				<pre>func (mux *<a href="https://golang.org/pkg/net/http/#ServeMux">ServeMux</a>) ServeHTTP(w <a href="https://golang.org/pkg/net/http/#ResponseWriter">ResponseWriter</a>, r *<a href="https://golang.org/pkg/net/http/#Request">Request</a>)</pre>
+				<p>
+ServeHTTP dispatches the request to the handler whose
+pattern most closely matches the request URL.
+</p>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Server">type <a href="https://golang.org/src/net/http/server.go?s=52296:53789#L1760">Server</a></h2>
+			<pre>type Server struct {
+        Addr           <a href="https://golang.org/pkg/builtin/#string">string</a>        <span class="comment">// TCP address to listen on, ":http" if empty</span>
+        Handler        <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>       <span class="comment">// handler to invoke, http.DefaultServeMux if nil</span>
+        ReadTimeout    <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Duration">Duration</a> <span class="comment">// maximum duration before timing out read of the request</span>
+        WriteTimeout   <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Duration">Duration</a> <span class="comment">// maximum duration before timing out write of the response</span>
+        MaxHeaderBytes <a href="https://golang.org/pkg/builtin/#int">int</a>           <span class="comment">// maximum size of request headers, DefaultMaxHeaderBytes if 0</span>
+        TLSConfig      *<a href="https://golang.org/pkg/crypto/tls/">tls</a>.<a href="https://golang.org/pkg/crypto/tls/#Config">Config</a>   <span class="comment">// optional TLS config, used by ListenAndServeTLS</span>
+
+        <span class="comment">// TLSNextProto optionally specifies a function to take over</span>
+        <span class="comment">// ownership of the provided TLS connection when an NPN</span>
+        <span class="comment">// protocol upgrade has occurred.  The map key is the protocol</span>
+        <span class="comment">// name negotiated. The Handler argument should be used to</span>
+        <span class="comment">// handle HTTP requests and will initialize the Request's TLS</span>
+        <span class="comment">// and RemoteAddr if not already set.  The connection is</span>
+        <span class="comment">// automatically closed when the function returns.</span>
+        TLSNextProto map[<a href="https://golang.org/pkg/builtin/#string">string</a>]func(*<a href="https://golang.org/pkg/net/http/#Server">Server</a>, *<a href="https://golang.org/pkg/crypto/tls/">tls</a>.<a href="https://golang.org/pkg/crypto/tls/#Conn">Conn</a>, <a href="https://golang.org/pkg/net/http/#Handler">Handler</a>)
+
+        <span class="comment">// ConnState specifies an optional callback function that is</span>
+        <span class="comment">// called when a client connection changes state. See the</span>
+        <span class="comment">// ConnState type and associated constants for details.</span>
+        ConnState func(<a href="https://golang.org/pkg/net/">net</a>.<a href="https://golang.org/pkg/net/#Conn">Conn</a>, <a href="https://golang.org/pkg/net/http/#ConnState">ConnState</a>)
+
+        <span class="comment">// ErrorLog specifies an optional logger for errors accepting</span>
+        <span class="comment">// connections and unexpected behavior from handlers.</span>
+        <span class="comment">// If nil, logging goes to os.Stderr via the log package's</span>
+        <span class="comment">// standard logger.</span>
+        ErrorLog *<a href="https://golang.org/pkg/log/">log</a>.<a href="https://golang.org/pkg/log/#Logger">Logger</a>
+        <span class="comment">// contains filtered or unexported fields</span>
+}</pre>
+			<p>
+A Server defines parameters for running an HTTP server.
+The zero value for Server is a valid configuration.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="Server.ListenAndServe">func (*Server) <a href="https://golang.org/src/net/http/server.go?s=55886:55927#L1858">ListenAndServe</a></h3>
+				<pre>func (srv *<a href="https://golang.org/pkg/net/http/#Server">Server</a>) ListenAndServe() <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+ListenAndServe listens on the TCP network address srv.Addr and then
+calls Serve to handle requests on incoming connections.  If
+srv.Addr is blank, ":http" is used.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Server.ListenAndServeTLS">func (*Server) <a href="https://golang.org/src/net/http/server.go?s=60146:60214#L2003">ListenAndServeTLS</a></h3>
+				<pre>func (srv *<a href="https://golang.org/pkg/net/http/#Server">Server</a>) ListenAndServeTLS(certFile, keyFile <a href="https://golang.org/pkg/builtin/#string">string</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+ListenAndServeTLS listens on the TCP network address srv.Addr and
+then calls Serve to handle requests on incoming TLS connections.
+</p>
+<p>
+Filenames containing a certificate and matching private key for the
+server must be provided if the Server's TLSConfig.Certificates is
+not populated. If the certificate is signed by a certificate
+authority, the certFile should be the concatenation of the server's
+certificate, any intermediates, and the CA's certificate.
+</p>
+<p>
+If srv.Addr is blank, ":https" is used.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Server.Serve">func (*Server) <a href="https://golang.org/src/net/http/server.go?s=56308:56354#L1873">Serve</a></h3>
+				<pre>func (srv *<a href="https://golang.org/pkg/net/http/#Server">Server</a>) Serve(l <a href="https://golang.org/pkg/net/">net</a>.<a href="https://golang.org/pkg/net/#Listener">Listener</a>) <a href="https://golang.org/pkg/builtin/#error">error</a></pre>
+				<p>
+Serve accepts incoming connections on the Listener l, creating a
+new service goroutine for each.  The service goroutines read requests and
+then call srv.Handler to reply to them.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Server.SetKeepAlivesEnabled">func (*Server) <a href="https://golang.org/src/net/http/server.go?s=57329:57376#L1912">SetKeepAlivesEnabled</a></h3>
+				<pre>func (srv *<a href="https://golang.org/pkg/net/http/#Server">Server</a>) SetKeepAlivesEnabled(v <a href="https://golang.org/pkg/builtin/#bool">bool</a>)</pre>
+				<p>
+SetKeepAlivesEnabled controls whether HTTP keep-alives are enabled.
+By default, keep-alives are always enabled. Only very
+resource-constrained environments or servers in the process of
+shutting down should disable them.
+</p>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="Transport">type <a href="https://golang.org/src/net/http/transport.go?s=1324:4038#L39">Transport</a></h2>
+			<pre>type Transport struct {
+
+        <span class="comment">// Proxy specifies a function to return a proxy for a given</span>
+        <span class="comment">// Request. If the function returns a non-nil error, the</span>
+        <span class="comment">// request is aborted with the provided error.</span>
+        <span class="comment">// If Proxy is nil or returns a nil *URL, no proxy is used.</span>
+        Proxy func(*<a href="https://golang.org/pkg/net/http/#Request">Request</a>) (*<a href="https://golang.org/pkg/net/url/">url</a>.<a href="https://golang.org/pkg/net/url/#URL">URL</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+
+        <span class="comment">// Dial specifies the dial function for creating unencrypted</span>
+        <span class="comment">// TCP connections.</span>
+        <span class="comment">// If Dial is nil, net.Dial is used.</span>
+        Dial func(network, addr <a href="https://golang.org/pkg/builtin/#string">string</a>) (<a href="https://golang.org/pkg/net/">net</a>.<a href="https://golang.org/pkg/net/#Conn">Conn</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+
+        <span class="comment">// DialTLS specifies an optional dial function for creating</span>
+        <span class="comment">// TLS connections for non-proxied HTTPS requests.</span>
+        <span class="comment">//</span>
+        <span class="comment">// If DialTLS is nil, Dial and TLSClientConfig are used.</span>
+        <span class="comment">//</span>
+        <span class="comment">// If DialTLS is set, the Dial hook is not used for HTTPS</span>
+        <span class="comment">// requests and the TLSClientConfig and TLSHandshakeTimeout</span>
+        <span class="comment">// are ignored. The returned net.Conn is assumed to already be</span>
+        <span class="comment">// past the TLS handshake.</span>
+        DialTLS func(network, addr <a href="https://golang.org/pkg/builtin/#string">string</a>) (<a href="https://golang.org/pkg/net/">net</a>.<a href="https://golang.org/pkg/net/#Conn">Conn</a>, <a href="https://golang.org/pkg/builtin/#error">error</a>)
+
+        <span class="comment">// TLSClientConfig specifies the TLS configuration to use with</span>
+        <span class="comment">// tls.Client. If nil, the default configuration is used.</span>
+        TLSClientConfig *<a href="https://golang.org/pkg/crypto/tls/">tls</a>.<a href="https://golang.org/pkg/crypto/tls/#Config">Config</a>
+
+        <span class="comment">// TLSHandshakeTimeout specifies the maximum amount of time waiting to</span>
+        <span class="comment">// wait for a TLS handshake. Zero means no timeout.</span>
+        TLSHandshakeTimeout <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Duration">Duration</a>
+
+        <span class="comment">// DisableKeepAlives, if true, prevents re-use of TCP connections</span>
+        <span class="comment">// between different HTTP requests.</span>
+        DisableKeepAlives <a href="https://golang.org/pkg/builtin/#bool">bool</a>
+
+        <span class="comment">// DisableCompression, if true, prevents the Transport from</span>
+        <span class="comment">// requesting compression with an "Accept-Encoding: gzip"</span>
+        <span class="comment">// request header when the Request contains no existing</span>
+        <span class="comment">// Accept-Encoding value. If the Transport requests gzip on</span>
+        <span class="comment">// its own and gets a gzipped response, it's transparently</span>
+        <span class="comment">// decoded in the Response.Body. However, if the user</span>
+        <span class="comment">// explicitly requested gzip it is not automatically</span>
+        <span class="comment">// uncompressed.</span>
+        DisableCompression <a href="https://golang.org/pkg/builtin/#bool">bool</a>
+
+        <span class="comment">// MaxIdleConnsPerHost, if non-zero, controls the maximum idle</span>
+        <span class="comment">// (keep-alive) to keep per-host.  If zero,</span>
+        <span class="comment">// DefaultMaxIdleConnsPerHost is used.</span>
+        MaxIdleConnsPerHost <a href="https://golang.org/pkg/builtin/#int">int</a>
+
+        <span class="comment">// ResponseHeaderTimeout, if non-zero, specifies the amount of</span>
+        <span class="comment">// time to wait for a server's response headers after fully</span>
+        <span class="comment">// writing the request (including its body, if any). This</span>
+        <span class="comment">// time does not include the time to read the response body.</span>
+        ResponseHeaderTimeout <a href="https://golang.org/pkg/time/">time</a>.<a href="https://golang.org/pkg/time/#Duration">Duration</a>
+        <span class="comment">// contains filtered or unexported fields</span>
+}</pre>
+			<p>
+Transport is an implementation of RoundTripper that supports HTTP,
+HTTPS, and HTTP proxies (for either HTTP or HTTPS with CONNECT).
+Transport can also cache connections for future re-use.
+</p>
+
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="Transport.CancelRequest">func (*Transport) <a href="https://golang.org/src/net/http/transport.go?s=8881:8928#L269">CancelRequest</a></h3>
+				<pre>func (t *<a href="https://golang.org/pkg/net/http/#Transport">Transport</a>) CancelRequest(req *<a href="https://golang.org/pkg/net/http/#Request">Request</a>)</pre>
+				<p>
+CancelRequest cancels an in-flight request by closing its connection.
+CancelRequest should only be called after RoundTrip has returned.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Transport.CloseIdleConnections">func (*Transport) <a href="https://golang.org/src/net/http/transport.go?s=8498:8540#L253">CloseIdleConnections</a></h3>
+				<pre>func (t *<a href="https://golang.org/pkg/net/http/#Transport">Transport</a>) CloseIdleConnections()</pre>
+				<p>
+CloseIdleConnections closes any connections which were previously
+connected from previous requests but are now sitting idle in
+a "keep-alive" state. It does not interrupt any connections currently
+in use.
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Transport.RegisterProtocol">func (*Transport) <a href="https://golang.org/src/net/http/transport.go?s=7866:7934#L234">RegisterProtocol</a></h3>
+				<pre>func (t *<a href="https://golang.org/pkg/net/http/#Transport">Transport</a>) RegisterProtocol(scheme <a href="https://golang.org/pkg/builtin/#string">string</a>, rt <a href="https://golang.org/pkg/net/http/#RoundTripper">RoundTripper</a>)</pre>
+				<p>
+RegisterProtocol registers a new protocol with scheme.
+The Transport will pass requests using the given scheme to rt.
+It is rt's responsibility to simulate HTTP request semantics.
+</p>
+<p>
+RegisterProtocol can be used by other packages to provide
+implementations of protocol schemes like "ftp" or "file".
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Transport.RoundTrip">func (*Transport) <a href="https://golang.org/src/net/http/transport.go?s=6344:6415#L181">RoundTrip</a></h3>
+				<pre>func (t *<a href="https://golang.org/pkg/net/http/#Transport">Transport</a>) RoundTrip(req *<a href="https://golang.org/pkg/net/http/#Request">Request</a>) (resp *<a href="https://golang.org/pkg/net/http/#Response">Response</a>, err <a href="https://golang.org/pkg/builtin/#error">error</a>)</pre>
+				<p>
+RoundTrip implements the RoundTripper interface.
+</p>
+<p>
+For higher-level HTTP client support (such as handling of cookies
+and redirects), see Get, Post, and the Client type.
+</p>
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+	
+	
+		<h2 id="pkg-subdirectories">Subdirectories</h2>
+	
+	
+
+
+	<div class="pkg-dir">
+		<table>
+			<tbody><tr>
+				<th class="pkg-name">Name</th>
+				<th class="pkg-synopsis">Synopsis</th>
+			</tr>
+
+			
+			<tr>
+				<td colspan="2"><a href="https://golang.org/pkg/net/">..</a></td>
+			</tr>
+			
+
+			
+				
+					<tr>
+						<td class="pkg-name" style="padding-left: 0px;">
+							<a href="https://golang.org/pkg/net/http/cgi/">cgi</a>
+						</td>
+						<td class="pkg-synopsis">
+							Package cgi implements CGI (Common Gateway Interface) as specified in RFC 3875.
+						</td>
+					</tr>
+				
+			
+				
+					<tr>
+						<td class="pkg-name" style="padding-left: 0px;">
+							<a href="https://golang.org/pkg/net/http/cookiejar/">cookiejar</a>
+						</td>
+						<td class="pkg-synopsis">
+							Package cookiejar implements an in-memory RFC 6265-compliant http.CookieJar.
+						</td>
+					</tr>
+				
+			
+				
+					<tr>
+						<td class="pkg-name" style="padding-left: 0px;">
+							<a href="https://golang.org/pkg/net/http/fcgi/">fcgi</a>
+						</td>
+						<td class="pkg-synopsis">
+							Package fcgi implements the FastCGI protocol.
+						</td>
+					</tr>
+				
+			
+				
+					<tr>
+						<td class="pkg-name" style="padding-left: 0px;">
+							<a href="https://golang.org/pkg/net/http/httptest/">httptest</a>
+						</td>
+						<td class="pkg-synopsis">
+							Package httptest provides utilities for HTTP testing.
+						</td>
+					</tr>
+				
+			
+				
+					<tr>
+						<td class="pkg-name" style="padding-left: 0px;">
+							<a href="https://golang.org/pkg/net/http/httputil/">httputil</a>
+						</td>
+						<td class="pkg-synopsis">
+							Package httputil provides HTTP utility functions, complementing the more common ones in the net/http package.
+						</td>
+					</tr>
+				
+			
+				
+					<tr>
+						<td class="pkg-name" style="padding-left: 0px;">
+							<a href="https://golang.org/pkg/net/http/pprof/">pprof</a>
+						</td>
+						<td class="pkg-synopsis">
+							Package pprof serves via its HTTP server runtime profiling data in the format expected by the pprof visualization tool.
+						</td>
+					</tr>
+				
+			
+		</tbody></table>
+	</div>
+
+
+	
+
+
+
+<div id="footer">
+Build version go1.5.1.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="https://golang.org/LICENSE">BSD license</a>.<br>
+<a href="https://golang.org/doc/tos.html">Terms of Service</a> | 
+<a href="http://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+<!-- TODO(adonovan): load these from <head> using "defer" attribute? -->
+<script type="text/javascript" src="./http - The Go Programming Language_files/jquery.min.js"></script>
+<script type="text/javascript" src="./http - The Go Programming Language_files/jquery.treeview.js"></script>
+<script type="text/javascript" src="./http - The Go Programming Language_files/jquery.treeview.edit.js"></script>
+
+
+<script type="text/javascript" src="./http - The Go Programming Language_files/playground.js"></script>
+
+<script type="text/javascript" src="./http - The Go Programming Language_files/godocs.js"></script>
+
+<script type="text/javascript">
+(function() {
+  var ga = document.createElement("script"); ga.type = "text/javascript"; ga.async = true;
+  ga.src = ("https:" == document.location.protocol ? "https://ssl" : "http://www") + ".google-analytics.com/ga.js";
+  var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(ga, s);
+})();
+</script>
+
+
+
+</body></html>

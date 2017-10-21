@@ -32,6 +32,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/aliyun/aliyun-oss-go-sdk"
+  packages = [".","oss","sample"]
+  revision = "6fe16293d6b7af4f5c2450714c5b4825c8ad040c"
+  version = "1.7.0"
+
+[[projects]]
   name = "github.com/cpuguy83/go-md2man"
   packages = ["md2man"]
   revision = "1d903dcb749992f3741d744c0f8376b4bd7eb3e1"

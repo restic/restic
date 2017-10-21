@@ -17,6 +17,7 @@ import (
 	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/location"
+	"github.com/restic/restic/internal/backend/oss"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/s3"
 	"github.com/restic/restic/internal/backend/sftp"
@@ -484,6 +485,9 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 
 		debug.Log("opening rest repository at %#v", cfg)
 		return cfg, nil
+	case "oss":
+		cfg := loc.Config.(oss.Config)
+		return cfg, nil
 	}
 
 	return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -526,6 +530,8 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		be, err = b2.Open(cfg.(b2.Config), rt)
 	case "rest":
 		be, err = rest.Open(cfg.(rest.Config), rt)
+	case "oss":
+		be, err = oss.Open(cfg.(oss.Config))
 
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -583,6 +589,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return b2.Create(cfg.(b2.Config), rt)
 	case "rest":
 		return rest.Create(cfg.(rest.Config), rt)
+	case "oss":
+		return oss.Create(cfg.(oss.Config))
 	}
 
 	debug.Log("invalid repository scheme: %v", s)
