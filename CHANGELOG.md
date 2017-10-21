@@ -103,6 +103,11 @@ Small changes
    https://github.com/restic/restic/issues/1114
    https://github.com/restic/restic/pull/1276
 
+ * When the list of files/dirs to be saved is read from a file with
+   `--files-from`, comment lines (starting with `#`) are now ignored.
+   https://github.com/restic/restic/issues/1367
+   https://github.com/restic/restic/pull/1368
+
 Important Changes in 0.7.3
 ==========================
 
