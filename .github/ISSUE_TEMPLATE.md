@@ -4,8 +4,9 @@ take a lot longer to find the problem! Please take the time to help us
 debugging the problem by collecting information, even if it seems irrelevant to
 you. Thanks!
 
-If you have a question, maybe the forum at https://discourse.restic.net is a
-better place.
+If you have a question, the forum at https://discourse.restic.net is a better place.
+Please do not create issues for usage or documentation questions! We're using
+the GitHub issue tracker mainly for tracking bugs and feature requests.
 -->
 
 ## Output of `restic version`
