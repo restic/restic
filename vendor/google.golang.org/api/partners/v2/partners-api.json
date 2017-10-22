@@ -1,50 +1,61 @@
 {
+  "version": "v2",
+  "baseUrl": "https://partners.googleapis.com/",
+  "canonicalName": "Partners",
+  "description": "Searches certified companies and creates contact leads with them, and also audits the usage of clients.",
+  "kind": "discovery#restDescription",
+  "servicePath": "",
+  "rootUrl": "https://partners.googleapis.com/",
+  "basePath": "",
+  "ownerDomain": "google.com",
+  "name": "partners",
+  "batchPath": "batch",
+  "documentationLink": "https://developers.google.com/partners/",
+  "id": "partners:v2",
+  "revision": "20171011",
+  "title": "Google Partners API",
   "ownerName": "Google",
   "discoveryVersion": "v1",
   "version_module": true,
   "resources": {
-    "clientMessages": {
+    "users": {
       "methods": {
-        "log": {
-          "request": {
-            "$ref": "LogMessageRequest"
-          },
-          "description": "Logs a generic message from the client, such as\n`Failed to render component`, `Profile page is running slow`,\n`More than 500 users have accessed this result.`, etc.",
+        "deleteCompanyRelation": {
+          "path": "v2/users/{userId}/companyRelation",
+          "id": "partners.users.deleteCompanyRelation",
+          "description": "Deletes a user's company relation. Unaffiliaites the user from a company.",
+          "httpMethod": "DELETE",
           "response": {
-            "$ref": "LogMessageResponse"
+            "$ref": "Empty"
           },
-          "parameterOrder": [],
-          "httpMethod": "POST",
-          "parameters": {},
-          "flatPath": "v2/clientMessages:log",
-          "id": "partners.clientMessages.log",
-          "path": "v2/clientMessages:log"
-        }
-      }
-    },
-    "exams": {
-      "methods": {
-        "getToken": {
-          "path": "v2/exams/{examType}/token",
-          "id": "partners.exams.getToken",
-          "description": "Gets an Exam Token for a Partner's user to take an exam in the Exams System",
-          "httpMethod": "GET",
           "parameterOrder": [
-            "examType"
+            "userId"
           ],
-          "response": {
-            "$ref": "ExamToken"
-          },
           "parameters": {
+            "requestMetadata.partnersSessionId": {
+              "description": "Google Partners session ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "location": "query",
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
             "requestMetadata.locale": {
               "description": "Locale to use for the current request.",
               "type": "string",
               "location": "query"
             },
             "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
               "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string",
-              "location": "query"
+              "type": "string"
             },
             "requestMetadata.experimentIds": {
               "repeated": true,
@@ -57,489 +68,172 @@
               "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
               "type": "string"
             },
-            "examType": {
+            "userId": {
               "location": "path",
+              "description": "The ID of the user. Can be set to \u003ccode\u003eme\u003c/code\u003e to mean\nthe currently authenticated user.",
+              "type": "string",
+              "required": true
+            }
+          },
+          "flatPath": "v2/users/{userId}/companyRelation"
+        },
+        "createCompanyRelation": {
+          "response": {
+            "$ref": "CompanyRelation"
+          },
+          "parameterOrder": [
+            "userId"
+          ],
+          "httpMethod": "PUT",
+          "parameters": {
+            "requestMetadata.experimentIds": {
+              "repeated": true,
+              "location": "query",
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "userId": {
+              "description": "The ID of the user. Can be set to \u003ccode\u003eme\u003c/code\u003e to mean\nthe currently authenticated user.",
+              "type": "string",
+              "required": true,
+              "location": "path"
+            },
+            "requestMetadata.partnersSessionId": {
+              "description": "Google Partners session ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "location": "query",
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.locale": {
+              "location": "query",
+              "description": "Locale to use for the current request.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            }
+          },
+          "flatPath": "v2/users/{userId}/companyRelation",
+          "id": "partners.users.createCompanyRelation",
+          "path": "v2/users/{userId}/companyRelation",
+          "request": {
+            "$ref": "CompanyRelation"
+          },
+          "description": "Creates a user's company relation. Affiliates the user to a company."
+        },
+        "get": {
+          "description": "Gets a user.",
+          "response": {
+            "$ref": "User"
+          },
+          "parameterOrder": [
+            "userId"
+          ],
+          "httpMethod": "GET",
+          "parameters": {
+            "requestMetadata.userOverrides.userId": {
+              "location": "query",
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string"
+            },
+            "requestMetadata.partnersSessionId": {
+              "location": "query",
+              "description": "Google Partners session ID.",
+              "type": "string"
+            },
+            "userView": {
               "enum": [
-                "CERTIFICATION_EXAM_TYPE_UNSPECIFIED",
-                "CET_ADWORDS_FUNDAMENTALS",
-                "CET_ADWORDS_ADVANCED_SEARCH",
-                "CET_ADWORDS_ADVANCED_DISPLAY",
-                "CET_VIDEO_ADS",
-                "CET_DOUBLECLICK",
-                "CET_ANALYTICS",
-                "CET_SHOPPING",
-                "CET_MOBILE",
-                "CET_DIGITAL_SALES",
-                "CET_MOBILE_SITES"
+                "BASIC",
+                "PROFILE",
+                "PUBLIC_PROFILE"
               ],
-              "description": "The exam type we are requesting a token for.",
+              "description": "Specifies what parts of the user information to return.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "location": "query",
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
+            "requestMetadata.locale": {
+              "location": "query",
+              "description": "Locale to use for the current request.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            },
+            "requestMetadata.experimentIds": {
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string",
+              "repeated": true,
+              "location": "query"
+            },
+            "userId": {
+              "location": "path",
+              "description": "Identifier of the user. Can be set to \u003ccode\u003eme\u003c/code\u003e to mean the currently\nauthenticated user.",
               "type": "string",
               "required": true
             },
-            "requestMetadata.partnersSessionId": {
-              "description": "Google Partners session ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            }
-          },
-          "flatPath": "v2/exams/{examType}/token"
-        }
-      }
-    },
-    "leads": {
-      "methods": {
-        "list": {
-          "response": {
-            "$ref": "ListLeadsResponse"
-          },
-          "parameterOrder": [],
-          "httpMethod": "GET",
-          "parameters": {
-            "requestMetadata.userOverrides.userId": {
-              "location": "query",
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string"
-            },
-            "requestMetadata.partnersSessionId": {
-              "description": "Google Partners session ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "pageToken": {
-              "location": "query",
-              "description": "A token identifying a page of results that the server returns.\nTypically, this is the value of `ListLeadsResponse.next_page_token`\nreturned from the previous call to\nListLeads.",
-              "type": "string"
-            },
-            "pageSize": {
-              "location": "query",
-              "format": "int32",
-              "description": "Requested page size. Server may return fewer leads than requested.\nIf unspecified, server picks an appropriate default.",
-              "type": "integer"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.locale": {
-              "location": "query",
-              "description": "Locale to use for the current request.",
-              "type": "string"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.experimentIds": {
-              "repeated": true,
-              "location": "query",
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "location": "query",
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string"
-            },
-            "orderBy": {
-              "location": "query",
-              "description": "How to order Leads. Currently, only `create_time`\nand `create_time desc` are supported",
-              "type": "string"
-            }
-          },
-          "flatPath": "v2/leads",
-          "id": "partners.leads.list",
-          "path": "v2/leads",
-          "description": "Lists advertiser leads for a user's associated company.\nShould only be called within the context of an authorized logged in user."
-        }
-      }
-    },
-    "offers": {
-      "methods": {
-        "list": {
-          "httpMethod": "GET",
-          "parameterOrder": [],
-          "response": {
-            "$ref": "ListOffersResponse"
-          },
-          "parameters": {
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.partnersSessionId": {
-              "description": "Google Partners session ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.locale": {
-              "description": "Locale to use for the current request.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "location": "query",
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string"
-            },
-            "requestMetadata.experimentIds": {
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string",
-              "repeated": true,
-              "location": "query"
-            },
             "requestMetadata.trafficSource.trafficSubId": {
               "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
               "type": "string",
               "location": "query"
             }
           },
-          "flatPath": "v2/offers",
-          "path": "v2/offers",
-          "id": "partners.offers.list",
-          "description": "Lists the Offers available for the current user"
-        }
-      },
-      "resources": {
-        "history": {
-          "methods": {
-            "list": {
-              "description": "Lists the Historical Offers for the current user (or user's entire company)",
-              "response": {
-                "$ref": "ListOffersHistoryResponse"
-              },
-              "parameterOrder": [],
-              "httpMethod": "GET",
-              "parameters": {
-                "requestMetadata.locale": {
-                  "location": "query",
-                  "description": "Locale to use for the current request.",
-                  "type": "string"
-                },
-                "requestMetadata.userOverrides.ipAddress": {
-                  "description": "IP address to use instead of the user's geo-located IP address.",
-                  "type": "string",
-                  "location": "query"
-                },
-                "entireCompany": {
-                  "description": "if true, show history for the entire company.  Requires user to be admin.",
-                  "type": "boolean",
-                  "location": "query"
-                },
-                "requestMetadata.experimentIds": {
-                  "repeated": true,
-                  "location": "query",
-                  "description": "Experiment IDs the current request belongs to.",
-                  "type": "string"
-                },
-                "orderBy": {
-                  "location": "query",
-                  "description": "Comma-separated list of fields to order by, e.g.: \"foo,bar,baz\".\nUse \"foo desc\" to sort descending.\nList of valid field names is: name, offer_code, expiration_time, status,\n    last_modified_time, sender_name, creation_time, country_code,\n    offer_type.",
-                  "type": "string"
-                },
-                "requestMetadata.trafficSource.trafficSubId": {
-                  "location": "query",
-                  "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-                  "type": "string"
-                },
-                "requestMetadata.userOverrides.userId": {
-                  "location": "query",
-                  "description": "Logged-in user ID to impersonate instead of the user's ID.",
-                  "type": "string"
-                },
-                "requestMetadata.partnersSessionId": {
-                  "description": "Google Partners session ID.",
-                  "type": "string",
-                  "location": "query"
-                },
-                "pageToken": {
-                  "description": "Token to retrieve a specific page.",
-                  "type": "string",
-                  "location": "query"
-                },
-                "pageSize": {
-                  "format": "int32",
-                  "description": "Maximum number of rows to return per page.",
-                  "type": "integer",
-                  "location": "query"
-                },
-                "requestMetadata.trafficSource.trafficSourceId": {
-                  "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-                  "type": "string",
-                  "location": "query"
-                }
-              },
-              "flatPath": "v2/offers/history",
-              "id": "partners.offers.history.list",
-              "path": "v2/offers/history"
-            }
-          }
-        }
-      }
-    },
-    "userStates": {
-      "methods": {
-        "list": {
-          "id": "partners.userStates.list",
-          "path": "v2/userStates",
-          "description": "Lists states for current user.",
-          "response": {
-            "$ref": "ListUserStatesResponse"
-          },
-          "parameterOrder": [],
-          "httpMethod": "GET",
-          "parameters": {
-            "requestMetadata.experimentIds": {
-              "repeated": true,
-              "location": "query",
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "location": "query",
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string"
-            },
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.partnersSessionId": {
-              "location": "query",
-              "description": "Google Partners session ID.",
-              "type": "string"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.locale": {
-              "description": "Locale to use for the current request.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string",
-              "location": "query"
-            }
-          },
-          "flatPath": "v2/userStates"
-        }
-      }
-    },
-    "analytics": {
-      "methods": {
-        "list": {
-          "description": "Lists analytics data for a user's associated company.\nShould only be called within the context of an authorized logged in user.",
-          "response": {
-            "$ref": "ListAnalyticsResponse"
-          },
-          "parameterOrder": [],
-          "httpMethod": "GET",
-          "parameters": {
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.partnersSessionId": {
-              "location": "query",
-              "description": "Google Partners session ID.",
-              "type": "string"
-            },
-            "pageToken": {
-              "location": "query",
-              "description": "A token identifying a page of results that the server returns.\nTypically, this is the value of `ListAnalyticsResponse.next_page_token`\nreturned from the previous call to\nListAnalytics.\nWill be a date string in `YYYY-MM-DD` format representing the end date\nof the date range of results to return.\nIf unspecified or set to \"\", default value is the current date.",
-              "type": "string"
-            },
-            "pageSize": {
-              "format": "int32",
-              "description": "Requested page size. Server may return fewer analytics than requested.\nIf unspecified or set to 0, default value is 30.\nSpecifies the number of days in the date range when querying analytics.\nThe `page_token` represents the end date of the date range\nand the start date is calculated using the `page_size` as the number\nof days BEFORE the end date.\nMust be a non-negative integer.",
-              "type": "integer",
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.locale": {
-              "description": "Locale to use for the current request.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.experimentIds": {
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string",
-              "repeated": true,
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            }
-          },
-          "flatPath": "v2/analytics",
-          "id": "partners.analytics.list",
-          "path": "v2/analytics"
-        }
-      }
-    },
-    "v2": {
-      "methods": {
-        "updateLeads": {
-          "response": {
-            "$ref": "Lead"
-          },
-          "parameterOrder": [],
-          "httpMethod": "PATCH",
-          "parameters": {
-            "requestMetadata.partnersSessionId": {
-              "description": "Google Partners session ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.userId": {
-              "location": "query",
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "location": "query",
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string"
-            },
-            "requestMetadata.locale": {
-              "location": "query",
-              "description": "Locale to use for the current request.",
-              "type": "string"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "location": "query",
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string"
-            },
-            "updateMask": {
-              "location": "query",
-              "format": "google-fieldmask",
-              "description": "Standard field mask for the set of fields to be updated.\nRequired with at least 1 value in FieldMask's paths.\nOnly `state` and `adwords_customer_id` are currently supported.",
-              "type": "string"
-            },
-            "requestMetadata.experimentIds": {
-              "repeated": true,
-              "location": "query",
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "location": "query",
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string"
-            }
-          },
-          "flatPath": "v2/leads",
-          "id": "partners.updateLeads",
-          "path": "v2/leads",
-          "request": {
-            "$ref": "Lead"
-          },
-          "description": "Updates the specified lead."
+          "flatPath": "v2/users/{userId}",
+          "id": "partners.users.get",
+          "path": "v2/users/{userId}"
         },
-        "updateCompanies": {
-          "response": {
-            "$ref": "Company"
-          },
-          "parameterOrder": [],
-          "httpMethod": "PATCH",
-          "parameters": {
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.partnersSessionId": {
-              "description": "Google Partners session ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.locale": {
-              "description": "Locale to use for the current request.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "location": "query",
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string"
-            },
-            "updateMask": {
-              "location": "query",
-              "format": "google-fieldmask",
-              "description": "Standard field mask for the set of fields to be updated.\nRequired with at least 1 value in FieldMask's paths.",
-              "type": "string"
-            },
-            "requestMetadata.experimentIds": {
-              "repeated": true,
-              "location": "query",
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            }
-          },
-          "flatPath": "v2/companies",
-          "id": "partners.updateCompanies",
-          "path": "v2/companies",
+        "updateProfile": {
+          "description": "Updates a user's profile. A user can only update their own profile and\nshould only be called within the context of a logged in user.",
           "request": {
-            "$ref": "Company"
+            "$ref": "UserProfile"
           },
-          "description": "Update company.\nShould only be called within the context of an authorized logged in user."
-        },
-        "getPartnersstatus": {
-          "response": {
-            "$ref": "GetPartnersStatusResponse"
-          },
+          "httpMethod": "PATCH",
           "parameterOrder": [],
-          "httpMethod": "GET",
+          "response": {
+            "$ref": "UserProfile"
+          },
           "parameters": {
+            "requestMetadata.partnersSessionId": {
+              "location": "query",
+              "description": "Google Partners session ID.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "location": "query",
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "location": "query",
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
             "requestMetadata.locale": {
+              "location": "query",
               "description": "Locale to use for the current request.",
-              "type": "string",
-              "location": "query"
+              "type": "string"
             },
             "requestMetadata.userOverrides.ipAddress": {
               "description": "IP address to use instead of the user's geo-located IP address.",
@@ -553,72 +247,108 @@
               "type": "string"
             },
             "requestMetadata.trafficSource.trafficSubId": {
+              "location": "query",
               "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.partnersSessionId": {
-              "description": "Google Partners session ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
+              "type": "string"
             }
           },
-          "flatPath": "v2/partnersstatus",
-          "id": "partners.getPartnersstatus",
-          "path": "v2/partnersstatus",
-          "description": "Gets Partners Status of the logged in user's agency.\nShould only be called if the logged in user is the admin of the agency."
+          "flatPath": "v2/users/profile",
+          "path": "v2/users/profile",
+          "id": "partners.users.updateProfile"
         }
       }
     },
     "companies": {
-      "resources": {
-        "leads": {
-          "methods": {
-            "create": {
-              "response": {
-                "$ref": "CreateLeadResponse"
-              },
-              "parameterOrder": [
-                "companyId"
-              ],
-              "httpMethod": "POST",
-              "parameters": {
-                "companyId": {
-                  "description": "The ID of the company to contact.",
-                  "type": "string",
-                  "required": true,
-                  "location": "path"
-                }
-              },
-              "flatPath": "v2/companies/{companyId}/leads",
-              "id": "partners.companies.leads.create",
-              "path": "v2/companies/{companyId}/leads",
-              "request": {
-                "$ref": "CreateLeadRequest"
-              },
-              "description": "Creates an advertiser lead for the given company ID."
-            }
-          }
-        }
-      },
       "methods": {
         "list": {
+          "id": "partners.companies.list",
+          "path": "v2/companies",
+          "description": "Lists companies.",
           "response": {
             "$ref": "ListCompaniesResponse"
           },
           "parameterOrder": [],
           "httpMethod": "GET",
           "parameters": {
+            "requestMetadata.trafficSource.trafficSubId": {
+              "location": "query",
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
+            "minMonthlyBudget.nanos": {
+              "location": "query",
+              "format": "int32",
+              "description": "Number of nano (10^-9) units of the amount.\nThe value must be between -999,999,999 and +999,999,999 inclusive.\nIf `units` is positive, `nanos` must be positive or zero.\nIf `units` is zero, `nanos` can be positive, zero, or negative.\nIf `units` is negative, `nanos` must be negative or zero.\nFor example $-1.75 is represented as `units`=-1 and `nanos`=-750,000,000.",
+              "type": "integer"
+            },
+            "requestMetadata.partnersSessionId": {
+              "location": "query",
+              "description": "Google Partners session ID.",
+              "type": "string"
+            },
+            "companyName": {
+              "location": "query",
+              "description": "Company name to search for.",
+              "type": "string"
+            },
+            "pageToken": {
+              "description": "A token identifying a page of results that the server returns.\nTypically, this is the value of `ListCompaniesResponse.next_page_token`\nreturned from the previous call to\nListCompanies.",
+              "type": "string",
+              "location": "query"
+            },
+            "industries": {
+              "enum": [
+                "INDUSTRY_UNSPECIFIED",
+                "I_AUTOMOTIVE",
+                "I_BUSINESS_TO_BUSINESS",
+                "I_CONSUMER_PACKAGED_GOODS",
+                "I_EDUCATION",
+                "I_FINANCE",
+                "I_HEALTHCARE",
+                "I_MEDIA_AND_ENTERTAINMENT",
+                "I_RETAIL",
+                "I_TECHNOLOGY",
+                "I_TRAVEL"
+              ],
+              "description": "List of industries the company can help with.",
+              "type": "string",
+              "repeated": true,
+              "location": "query"
+            },
+            "websiteUrl": {
+              "location": "query",
+              "description": "Website URL that will help to find a better matched company.\n.",
+              "type": "string"
+            },
+            "gpsMotivations": {
+              "repeated": true,
+              "location": "query",
+              "enum": [
+                "GPS_MOTIVATION_UNSPECIFIED",
+                "GPSM_HELP_WITH_ADVERTISING",
+                "GPSM_HELP_WITH_WEBSITE",
+                "GPSM_NO_WEBSITE"
+              ],
+              "description": "List of reasons for using Google Partner Search to get companies.",
+              "type": "string"
+            },
+            "languageCodes": {
+              "repeated": true,
+              "location": "query",
+              "description": "List of language codes that company can support. Only primary language\nsubtags are accepted as defined by\n\u003ca href=\"https://tools.ietf.org/html/bcp47\"\u003eBCP 47\u003c/a\u003e\n(IETF BCP 47, \"Tags for Identifying Languages\").",
+              "type": "string"
+            },
+            "pageSize": {
+              "location": "query",
+              "format": "int32",
+              "description": "Requested page size. Server may return fewer companies than requested.\nIf unspecified, server picks an appropriate default.",
+              "type": "integer"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            },
             "requestMetadata.experimentIds": {
               "repeated": true,
               "location": "query",
@@ -650,47 +380,49 @@
               "type": "string"
             },
             "minMonthlyBudget.currencyCode": {
+              "location": "query",
               "description": "The 3-letter currency code defined in ISO 4217.",
-              "type": "string",
-              "location": "query"
+              "type": "string"
             },
             "requestMetadata.userOverrides.userId": {
+              "location": "query",
               "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
+              "type": "string"
             },
             "view": {
-              "location": "query",
               "enum": [
                 "COMPANY_VIEW_UNSPECIFIED",
                 "CV_GOOGLE_PARTNER_SEARCH"
               ],
               "description": "The view of the `Company` resource to be returned. This must not be\n`COMPANY_VIEW_UNSPECIFIED`.",
-              "type": "string"
+              "type": "string",
+              "location": "query"
             },
             "address": {
+              "location": "query",
               "description": "The address to use when searching for companies.\nIf not given, the geo-located address of the request is used.",
-              "type": "string",
-              "location": "query"
+              "type": "string"
             },
             "requestMetadata.locale": {
+              "location": "query",
               "description": "Locale to use for the current request.",
-              "type": "string",
-              "location": "query"
+              "type": "string"
             },
             "minMonthlyBudget.units": {
+              "location": "query",
               "format": "int64",
               "description": "The whole units of the amount.\nFor example if `currencyCode` is `\"USD\"`, then 1 unit is one US dollar.",
-              "type": "string",
-              "location": "query"
+              "type": "string"
             },
             "maxMonthlyBudget.nanos": {
+              "location": "query",
               "format": "int32",
               "description": "Number of nano (10^-9) units of the amount.\nThe value must be between -999,999,999 and +999,999,999 inclusive.\nIf `units` is positive, `nanos` must be positive or zero.\nIf `units` is zero, `nanos` can be positive, zero, or negative.\nIf `units` is negative, `nanos` must be negative or zero.\nFor example $-1.75 is represented as `units`=-1 and `nanos`=-750,000,000.",
-              "type": "integer",
-              "location": "query"
+              "type": "integer"
             },
             "services": {
+              "repeated": true,
+              "location": "query",
               "enum": [
                 "SERVICE_UNSPECIFIED",
                 "S_ADVANCED_ADWORDS_SUPPORT",
@@ -701,168 +433,32 @@
                 "S_MOBILE_WEBSITE_SERVICES"
               ],
               "description": "List of services that the returned agencies should provide. If this is\nnot empty, any returned agency must have at least one of these services,\nor one of the specializations in the \"specializations\" field.",
-              "type": "string",
-              "repeated": true,
-              "location": "query"
+              "type": "string"
+            },
+            "maxMonthlyBudget.units": {
+              "location": "query",
+              "format": "int64",
+              "description": "The whole units of the amount.\nFor example if `currencyCode` is `\"USD\"`, then 1 unit is one US dollar.",
+              "type": "string"
             },
             "requestMetadata.trafficSource.trafficSourceId": {
               "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
               "type": "string",
               "location": "query"
-            },
-            "maxMonthlyBudget.units": {
-              "format": "int64",
-              "description": "The whole units of the amount.\nFor example if `currencyCode` is `\"USD\"`, then 1 unit is one US dollar.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "minMonthlyBudget.nanos": {
-              "format": "int32",
-              "description": "Number of nano (10^-9) units of the amount.\nThe value must be between -999,999,999 and +999,999,999 inclusive.\nIf `units` is positive, `nanos` must be positive or zero.\nIf `units` is zero, `nanos` can be positive, zero, or negative.\nIf `units` is negative, `nanos` must be negative or zero.\nFor example $-1.75 is represented as `units`=-1 and `nanos`=-750,000,000.",
-              "type": "integer",
-              "location": "query"
-            },
-            "requestMetadata.partnersSessionId": {
-              "location": "query",
-              "description": "Google Partners session ID.",
-              "type": "string"
-            },
-            "pageToken": {
-              "description": "A token identifying a page of results that the server returns.\nTypically, this is the value of `ListCompaniesResponse.next_page_token`\nreturned from the previous call to\nListCompanies.",
-              "type": "string",
-              "location": "query"
-            },
-            "companyName": {
-              "description": "Company name to search for.",
-              "type": "string",
-              "location": "query"
-            },
-            "industries": {
-              "repeated": true,
-              "location": "query",
-              "enum": [
-                "INDUSTRY_UNSPECIFIED",
-                "I_AUTOMOTIVE",
-                "I_BUSINESS_TO_BUSINESS",
-                "I_CONSUMER_PACKAGED_GOODS",
-                "I_EDUCATION",
-                "I_FINANCE",
-                "I_HEALTHCARE",
-                "I_MEDIA_AND_ENTERTAINMENT",
-                "I_RETAIL",
-                "I_TECHNOLOGY",
-                "I_TRAVEL"
-              ],
-              "description": "List of industries the company can help with.",
-              "type": "string"
-            },
-            "websiteUrl": {
-              "location": "query",
-              "description": "Website URL that will help to find a better matched company.\n.",
-              "type": "string"
-            },
-            "gpsMotivations": {
-              "enum": [
-                "GPS_MOTIVATION_UNSPECIFIED",
-                "GPSM_HELP_WITH_ADVERTISING",
-                "GPSM_HELP_WITH_WEBSITE",
-                "GPSM_NO_WEBSITE"
-              ],
-              "description": "List of reasons for using Google Partner Search to get companies.",
-              "type": "string",
-              "repeated": true,
-              "location": "query"
-            },
-            "languageCodes": {
-              "repeated": true,
-              "location": "query",
-              "description": "List of language codes that company can support. Only primary language\nsubtags are accepted as defined by\n\u003ca href=\"https://tools.ietf.org/html/bcp47\"\u003eBCP 47\u003c/a\u003e\n(IETF BCP 47, \"Tags for Identifying Languages\").",
-              "type": "string"
-            },
-            "pageSize": {
-              "format": "int32",
-              "description": "Requested page size. Server may return fewer companies than requested.\nIf unspecified, server picks an appropriate default.",
-              "type": "integer",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string",
-              "location": "query"
             }
           },
-          "flatPath": "v2/companies",
-          "id": "partners.companies.list",
-          "path": "v2/companies",
-          "description": "Lists companies."
+          "flatPath": "v2/companies"
         },
         "get": {
-          "id": "partners.companies.get",
-          "path": "v2/companies/{companyId}",
           "description": "Gets a company.",
+          "response": {
+            "$ref": "GetCompanyResponse"
+          },
           "parameterOrder": [
             "companyId"
           ],
           "httpMethod": "GET",
-          "response": {
-            "$ref": "GetCompanyResponse"
-          },
           "parameters": {
-            "requestMetadata.experimentIds": {
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string",
-              "repeated": true,
-              "location": "query"
-            },
-            "currencyCode": {
-              "location": "query",
-              "description": "If the company's budget is in a different currency code than this one, then\nthe converted budget is converted to this currency code.",
-              "type": "string"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "location": "query",
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string"
-            },
-            "orderBy": {
-              "location": "query",
-              "description": "How to order addresses within the returned company. Currently, only\n`address` and `address desc` is supported which will sorted by closest to\nfarthest in distance from given address and farthest to closest distance\nfrom given address respectively.",
-              "type": "string"
-            },
-            "requestMetadata.partnersSessionId": {
-              "location": "query",
-              "description": "Google Partners session ID.",
-              "type": "string"
-            },
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "view": {
-              "enum": [
-                "COMPANY_VIEW_UNSPECIFIED",
-                "CV_GOOGLE_PARTNER_SEARCH"
-              ],
-              "description": "The view of `Company` resource to be returned. This must not be\n`COMPANY_VIEW_UNSPECIFIED`.",
-              "type": "string",
-              "location": "query"
-            },
-            "address": {
-              "description": "The address to use for sorting the company's addresses by proximity.\nIf not given, the geo-located address of the request is used.\nUsed when order_by is set.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.locale": {
-              "location": "query",
-              "description": "Locale to use for the current request.",
-              "type": "string"
-            },
             "requestMetadata.trafficSource.trafficSourceId": {
               "location": "query",
               "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
@@ -874,160 +470,31 @@
               "type": "string"
             },
             "companyId": {
+              "location": "path",
               "description": "The ID of the company to retrieve.",
               "type": "string",
-              "required": true,
-              "location": "path"
-            }
-          },
-          "flatPath": "v2/companies/{companyId}"
-        }
-      }
-    },
-    "users": {
-      "methods": {
-        "deleteCompanyRelation": {
-          "id": "partners.users.deleteCompanyRelation",
-          "path": "v2/users/{userId}/companyRelation",
-          "description": "Deletes a user's company relation. Unaffiliaites the user from a company.",
-          "parameterOrder": [
-            "userId"
-          ],
-          "httpMethod": "DELETE",
-          "response": {
-            "$ref": "Empty"
-          },
-          "parameters": {
-            "requestMetadata.userOverrides.userId": {
-              "location": "query",
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string"
-            },
-            "requestMetadata.partnersSessionId": {
-              "description": "Google Partners session ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "location": "query",
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string"
-            },
-            "requestMetadata.locale": {
-              "description": "Locale to use for the current request.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "location": "query",
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string"
-            },
-            "requestMetadata.experimentIds": {
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string",
-              "repeated": true,
-              "location": "query"
-            },
-            "userId": {
-              "description": "The ID of the user. Can be set to \u003ccode\u003eme\u003c/code\u003e to mean\nthe currently authenticated user.",
-              "type": "string",
-              "required": true,
-              "location": "path"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            }
-          },
-          "flatPath": "v2/users/{userId}/companyRelation"
-        },
-        "createCompanyRelation": {
-          "response": {
-            "$ref": "CompanyRelation"
-          },
-          "parameterOrder": [
-            "userId"
-          ],
-          "httpMethod": "PUT",
-          "parameters": {
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.partnersSessionId": {
-              "location": "query",
-              "description": "Google Partners session ID.",
-              "type": "string"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.locale": {
-              "description": "Locale to use for the current request.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.experimentIds": {
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string",
-              "repeated": true,
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string",
-              "location": "query"
-            },
-            "userId": {
-              "location": "path",
-              "description": "The ID of the user. Can be set to \u003ccode\u003eme\u003c/code\u003e to mean\nthe currently authenticated user.",
-              "type": "string",
-              "required": true
-            }
-          },
-          "flatPath": "v2/users/{userId}/companyRelation",
-          "id": "partners.users.createCompanyRelation",
-          "path": "v2/users/{userId}/companyRelation",
-          "request": {
-            "$ref": "CompanyRelation"
-          },
-          "description": "Creates a user's company relation. Affiliates the user to a company."
-        },
-        "get": {
-          "httpMethod": "GET",
-          "parameterOrder": [
-            "userId"
-          ],
-          "response": {
-            "$ref": "User"
-          },
-          "parameters": {
-            "requestMetadata.experimentIds": {
-              "repeated": true,
-              "location": "query",
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string"
-            },
-            "userId": {
-              "location": "path",
-              "description": "Identifier of the user. Can be set to \u003ccode\u003eme\u003c/code\u003e to mean the currently\nauthenticated user.",
-              "type": "string",
               "required": true
             },
+            "currencyCode": {
+              "description": "If the company's budget is in a different currency code than this one, then\nthe converted budget is converted to this currency code.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.experimentIds": {
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string",
+              "repeated": true,
+              "location": "query"
+            },
+            "orderBy": {
+              "description": "How to order addresses within the returned company. Currently, only\n`address` and `address desc` is supported which will sorted by closest to\nfarthest in distance from given address and farthest to closest distance\nfrom given address respectively.",
+              "type": "string",
+              "location": "query"
+            },
             "requestMetadata.trafficSource.trafficSubId": {
-              "location": "query",
               "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string"
+              "type": "string",
+              "location": "query"
             },
             "requestMetadata.userOverrides.userId": {
               "description": "Logged-in user ID to impersonate instead of the user's ID.",
@@ -1035,92 +502,63 @@
               "location": "query"
             },
             "requestMetadata.partnersSessionId": {
-              "location": "query",
               "description": "Google Partners session ID.",
-              "type": "string"
+              "type": "string",
+              "location": "query"
             },
-            "userView": {
+            "view": {
+              "location": "query",
               "enum": [
-                "BASIC",
-                "PROFILE",
-                "PUBLIC_PROFILE"
+                "COMPANY_VIEW_UNSPECIFIED",
+                "CV_GOOGLE_PARTNER_SEARCH"
               ],
-              "description": "Specifies what parts of the user information to return.",
-              "type": "string",
-              "location": "query"
+              "description": "The view of `Company` resource to be returned. This must not be\n`COMPANY_VIEW_UNSPECIFIED`.",
+              "type": "string"
             },
-            "requestMetadata.trafficSource.trafficSourceId": {
+            "address": {
               "location": "query",
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "description": "The address to use for sorting the company's addresses by proximity.\nIf not given, the geo-located address of the request is used.\nUsed when order_by is set.",
               "type": "string"
             },
             "requestMetadata.locale": {
-              "location": "query",
               "description": "Locale to use for the current request.",
-              "type": "string"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "location": "query",
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string"
-            }
-          },
-          "flatPath": "v2/users/{userId}",
-          "path": "v2/users/{userId}",
-          "id": "partners.users.get",
-          "description": "Gets a user."
-        },
-        "updateProfile": {
-          "path": "v2/users/profile",
-          "id": "partners.users.updateProfile",
-          "description": "Updates a user's profile. A user can only update their own profile and\nshould only be called within the context of a logged in user.",
-          "request": {
-            "$ref": "UserProfile"
-          },
-          "httpMethod": "PATCH",
-          "parameterOrder": [],
-          "response": {
-            "$ref": "UserProfile"
-          },
-          "parameters": {
-            "requestMetadata.locale": {
-              "location": "query",
-              "description": "Locale to use for the current request.",
-              "type": "string"
-            },
-            "requestMetadata.userOverrides.ipAddress": {
-              "description": "IP address to use instead of the user's geo-located IP address.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.experimentIds": {
-              "description": "Experiment IDs the current request belongs to.",
-              "type": "string",
-              "repeated": true,
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSubId": {
-              "location": "query",
-              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
-              "type": "string"
-            },
-            "requestMetadata.userOverrides.userId": {
-              "description": "Logged-in user ID to impersonate instead of the user's ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.partnersSessionId": {
-              "description": "Google Partners session ID.",
-              "type": "string",
-              "location": "query"
-            },
-            "requestMetadata.trafficSource.trafficSourceId": {
-              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
               "type": "string",
               "location": "query"
             }
           },
-          "flatPath": "v2/users/profile"
+          "flatPath": "v2/companies/{companyId}",
+          "id": "partners.companies.get",
+          "path": "v2/companies/{companyId}"
+        }
+      },
+      "resources": {
+        "leads": {
+          "methods": {
+            "create": {
+              "id": "partners.companies.leads.create",
+              "path": "v2/companies/{companyId}/leads",
+              "description": "Creates an advertiser lead for the given company ID.",
+              "request": {
+                "$ref": "CreateLeadRequest"
+              },
+              "response": {
+                "$ref": "CreateLeadResponse"
+              },
+              "parameterOrder": [
+                "companyId"
+              ],
+              "httpMethod": "POST",
+              "parameters": {
+                "companyId": {
+                  "description": "The ID of the company to contact.",
+                  "type": "string",
+                  "required": true,
+                  "location": "path"
+                }
+              },
+              "flatPath": "v2/companies/{companyId}/leads"
+            }
+          }
         }
       }
     },
@@ -1136,34 +574,616 @@
           "flatPath": "v2/userEvents:log",
           "id": "partners.userEvents.log",
           "path": "v2/userEvents:log",
+          "description": "Logs a user event.",
           "request": {
             "$ref": "LogUserEventRequest"
+          }
+        }
+      }
+    },
+    "clientMessages": {
+      "methods": {
+        "log": {
+          "response": {
+            "$ref": "LogMessageResponse"
           },
-          "description": "Logs a user event."
+          "parameterOrder": [],
+          "httpMethod": "POST",
+          "parameters": {},
+          "flatPath": "v2/clientMessages:log",
+          "id": "partners.clientMessages.log",
+          "path": "v2/clientMessages:log",
+          "request": {
+            "$ref": "LogMessageRequest"
+          },
+          "description": "Logs a generic message from the client, such as\n`Failed to render component`, `Profile page is running slow`,\n`More than 500 users have accessed this result.`, etc."
+        }
+      }
+    },
+    "exams": {
+      "methods": {
+        "getToken": {
+          "description": "Gets an Exam Token for a Partner's user to take an exam in the Exams System",
+          "httpMethod": "GET",
+          "response": {
+            "$ref": "ExamToken"
+          },
+          "parameterOrder": [
+            "examType"
+          ],
+          "parameters": {
+            "requestMetadata.experimentIds": {
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string",
+              "repeated": true,
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "location": "query",
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
+            "examType": {
+              "location": "path",
+              "enum": [
+                "CERTIFICATION_EXAM_TYPE_UNSPECIFIED",
+                "CET_ADWORDS_FUNDAMENTALS",
+                "CET_ADWORDS_ADVANCED_SEARCH",
+                "CET_ADWORDS_ADVANCED_DISPLAY",
+                "CET_VIDEO_ADS",
+                "CET_DOUBLECLICK",
+                "CET_ANALYTICS",
+                "CET_SHOPPING",
+                "CET_MOBILE",
+                "CET_DIGITAL_SALES",
+                "CET_MOBILE_SITES"
+              ],
+              "description": "The exam type we are requesting a token for.",
+              "type": "string",
+              "required": true
+            },
+            "requestMetadata.userOverrides.userId": {
+              "location": "query",
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string"
+            },
+            "requestMetadata.partnersSessionId": {
+              "location": "query",
+              "description": "Google Partners session ID.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "location": "query",
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
+            "requestMetadata.locale": {
+              "location": "query",
+              "description": "Locale to use for the current request.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string",
+              "location": "query"
+            }
+          },
+          "flatPath": "v2/exams/{examType}/token",
+          "path": "v2/exams/{examType}/token",
+          "id": "partners.exams.getToken"
+        }
+      }
+    },
+    "leads": {
+      "methods": {
+        "list": {
+          "description": "Lists advertiser leads for a user's associated company.\nShould only be called within the context of an authorized logged in user.",
+          "httpMethod": "GET",
+          "response": {
+            "$ref": "ListLeadsResponse"
+          },
+          "parameterOrder": [],
+          "parameters": {
+            "requestMetadata.partnersSessionId": {
+              "location": "query",
+              "description": "Google Partners session ID.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "location": "query",
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string"
+            },
+            "pageToken": {
+              "location": "query",
+              "description": "A token identifying a page of results that the server returns.\nTypically, this is the value of `ListLeadsResponse.next_page_token`\nreturned from the previous call to\nListLeads.",
+              "type": "string"
+            },
+            "pageSize": {
+              "location": "query",
+              "format": "int32",
+              "description": "Requested page size. Server may return fewer leads than requested.\nIf unspecified, server picks an appropriate default.",
+              "type": "integer"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.locale": {
+              "description": "Locale to use for the current request.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            },
+            "requestMetadata.experimentIds": {
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string",
+              "repeated": true,
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "orderBy": {
+              "description": "How to order Leads. Currently, only `create_time`\nand `create_time desc` are supported",
+              "type": "string",
+              "location": "query"
+            }
+          },
+          "flatPath": "v2/leads",
+          "path": "v2/leads",
+          "id": "partners.leads.list"
+        }
+      }
+    },
+    "offers": {
+      "resources": {
+        "history": {
+          "methods": {
+            "list": {
+              "response": {
+                "$ref": "ListOffersHistoryResponse"
+              },
+              "parameterOrder": [],
+              "httpMethod": "GET",
+              "parameters": {
+                "requestMetadata.partnersSessionId": {
+                  "description": "Google Partners session ID.",
+                  "type": "string",
+                  "location": "query"
+                },
+                "requestMetadata.userOverrides.userId": {
+                  "description": "Logged-in user ID to impersonate instead of the user's ID.",
+                  "type": "string",
+                  "location": "query"
+                },
+                "pageToken": {
+                  "description": "Token to retrieve a specific page.",
+                  "type": "string",
+                  "location": "query"
+                },
+                "pageSize": {
+                  "location": "query",
+                  "format": "int32",
+                  "description": "Maximum number of rows to return per page.",
+                  "type": "integer"
+                },
+                "requestMetadata.trafficSource.trafficSourceId": {
+                  "location": "query",
+                  "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+                  "type": "string"
+                },
+                "requestMetadata.locale": {
+                  "description": "Locale to use for the current request.",
+                  "type": "string",
+                  "location": "query"
+                },
+                "requestMetadata.userOverrides.ipAddress": {
+                  "location": "query",
+                  "description": "IP address to use instead of the user's geo-located IP address.",
+                  "type": "string"
+                },
+                "requestMetadata.experimentIds": {
+                  "repeated": true,
+                  "location": "query",
+                  "description": "Experiment IDs the current request belongs to.",
+                  "type": "string"
+                },
+                "entireCompany": {
+                  "location": "query",
+                  "description": "if true, show history for the entire company.  Requires user to be admin.",
+                  "type": "boolean"
+                },
+                "requestMetadata.trafficSource.trafficSubId": {
+                  "location": "query",
+                  "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+                  "type": "string"
+                },
+                "orderBy": {
+                  "description": "Comma-separated list of fields to order by, e.g.: \"foo,bar,baz\".\nUse \"foo desc\" to sort descending.\nList of valid field names is: name, offer_code, expiration_time, status,\n    last_modified_time, sender_name, creation_time, country_code,\n    offer_type.",
+                  "type": "string",
+                  "location": "query"
+                }
+              },
+              "flatPath": "v2/offers/history",
+              "id": "partners.offers.history.list",
+              "path": "v2/offers/history",
+              "description": "Lists the Historical Offers for the current user (or user's entire company)"
+            }
+          }
+        }
+      },
+      "methods": {
+        "list": {
+          "response": {
+            "$ref": "ListOffersResponse"
+          },
+          "parameterOrder": [],
+          "httpMethod": "GET",
+          "parameters": {
+            "requestMetadata.experimentIds": {
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string",
+              "repeated": true,
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.partnersSessionId": {
+              "description": "Google Partners session ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "location": "query",
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.locale": {
+              "description": "Locale to use for the current request.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            }
+          },
+          "flatPath": "v2/offers",
+          "id": "partners.offers.list",
+          "path": "v2/offers",
+          "description": "Lists the Offers available for the current user"
+        }
+      }
+    },
+    "analytics": {
+      "methods": {
+        "list": {
+          "response": {
+            "$ref": "ListAnalyticsResponse"
+          },
+          "parameterOrder": [],
+          "httpMethod": "GET",
+          "parameters": {
+            "requestMetadata.locale": {
+              "description": "Locale to use for the current request.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.experimentIds": {
+              "repeated": true,
+              "location": "query",
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "location": "query",
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
+            "requestMetadata.partnersSessionId": {
+              "description": "Google Partners session ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "pageToken": {
+              "location": "query",
+              "description": "A token identifying a page of results that the server returns.\nTypically, this is the value of `ListAnalyticsResponse.next_page_token`\nreturned from the previous call to\nListAnalytics.\nWill be a date string in `YYYY-MM-DD` format representing the end date\nof the date range of results to return.\nIf unspecified or set to \"\", default value is the current date.",
+              "type": "string"
+            },
+            "pageSize": {
+              "format": "int32",
+              "description": "Requested page size. Server may return fewer analytics than requested.\nIf unspecified or set to 0, default value is 30.\nSpecifies the number of days in the date range when querying analytics.\nThe `page_token` represents the end date of the date range\nand the start date is calculated using the `page_size` as the number\nof days BEFORE the end date.\nMust be a non-negative integer.",
+              "type": "integer",
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            }
+          },
+          "flatPath": "v2/analytics",
+          "id": "partners.analytics.list",
+          "path": "v2/analytics",
+          "description": "Lists analytics data for a user's associated company.\nShould only be called within the context of an authorized logged in user."
+        }
+      }
+    },
+    "userStates": {
+      "methods": {
+        "list": {
+          "httpMethod": "GET",
+          "response": {
+            "$ref": "ListUserStatesResponse"
+          },
+          "parameterOrder": [],
+          "parameters": {
+            "requestMetadata.experimentIds": {
+              "repeated": true,
+              "location": "query",
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.partnersSessionId": {
+              "location": "query",
+              "description": "Google Partners session ID.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "location": "query",
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "location": "query",
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
+            "requestMetadata.locale": {
+              "description": "Locale to use for the current request.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            }
+          },
+          "flatPath": "v2/userStates",
+          "path": "v2/userStates",
+          "id": "partners.userStates.list",
+          "description": "Lists states for current user."
+        }
+      }
+    },
+    "v2": {
+      "methods": {
+        "updateCompanies": {
+          "response": {
+            "$ref": "Company"
+          },
+          "parameterOrder": [],
+          "httpMethod": "PATCH",
+          "parameters": {
+            "requestMetadata.experimentIds": {
+              "repeated": true,
+              "location": "query",
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "location": "query",
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.partnersSessionId": {
+              "description": "Google Partners session ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.locale": {
+              "description": "Locale to use for the current request.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            },
+            "updateMask": {
+              "location": "query",
+              "format": "google-fieldmask",
+              "description": "Standard field mask for the set of fields to be updated.\nRequired with at least 1 value in FieldMask's paths.",
+              "type": "string"
+            }
+          },
+          "flatPath": "v2/companies",
+          "id": "partners.updateCompanies",
+          "path": "v2/companies",
+          "request": {
+            "$ref": "Company"
+          },
+          "description": "Update company.\nShould only be called within the context of an authorized logged in user."
+        },
+        "getPartnersstatus": {
+          "response": {
+            "$ref": "GetPartnersStatusResponse"
+          },
+          "parameterOrder": [],
+          "httpMethod": "GET",
+          "parameters": {
+            "requestMetadata.partnersSessionId": {
+              "location": "query",
+              "description": "Google Partners session ID.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.userId": {
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "location": "query",
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string"
+            },
+            "requestMetadata.locale": {
+              "description": "Locale to use for the current request.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            },
+            "requestMetadata.experimentIds": {
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string",
+              "repeated": true,
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            }
+          },
+          "flatPath": "v2/partnersstatus",
+          "id": "partners.getPartnersstatus",
+          "path": "v2/partnersstatus",
+          "description": "Gets Partners Status of the logged in user's agency.\nShould only be called if the logged in user is the admin of the agency."
+        },
+        "updateLeads": {
+          "description": "Updates the specified lead.",
+          "request": {
+            "$ref": "Lead"
+          },
+          "httpMethod": "PATCH",
+          "parameterOrder": [],
+          "response": {
+            "$ref": "Lead"
+          },
+          "parameters": {
+            "requestMetadata.userOverrides.userId": {
+              "description": "Logged-in user ID to impersonate instead of the user's ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.partnersSessionId": {
+              "description": "Google Partners session ID.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSourceId": {
+              "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            },
+            "requestMetadata.locale": {
+              "location": "query",
+              "description": "Locale to use for the current request.",
+              "type": "string"
+            },
+            "requestMetadata.userOverrides.ipAddress": {
+              "location": "query",
+              "description": "IP address to use instead of the user's geo-located IP address.",
+              "type": "string"
+            },
+            "updateMask": {
+              "location": "query",
+              "format": "google-fieldmask",
+              "description": "Standard field mask for the set of fields to be updated.\nRequired with at least 1 value in FieldMask's paths.\nOnly `state` and `adwords_customer_id` are currently supported.",
+              "type": "string"
+            },
+            "requestMetadata.experimentIds": {
+              "description": "Experiment IDs the current request belongs to.",
+              "type": "string",
+              "repeated": true,
+              "location": "query"
+            },
+            "requestMetadata.trafficSource.trafficSubId": {
+              "description": "Second level identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
+              "type": "string",
+              "location": "query"
+            }
+          },
+          "flatPath": "v2/leads",
+          "path": "v2/leads",
+          "id": "partners.updateLeads"
         }
       }
     }
   },
   "parameters": {
-    "bearer_token": {
-      "description": "OAuth bearer token.",
-      "type": "string",
-      "location": "query"
-    },
     "oauth_token": {
       "description": "OAuth 2.0 token for the current user.",
       "type": "string",
       "location": "query"
     },
-    "upload_protocol": {
+    "bearer_token": {
       "location": "query",
-      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "description": "OAuth bearer token.",
       "type": "string"
     },
+    "upload_protocol": {
+      "description": "Upload protocol for media (e.g. \"raw\", \"multipart\").",
+      "type": "string",
+      "location": "query"
+    },
     "prettyPrint": {
+      "location": "query",
       "description": "Returns response with indentations and line breaks.",
       "default": "true",
-      "type": "boolean",
+      "type": "boolean"
+    },
+    "uploadType": {
+      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+      "type": "string",
       "location": "query"
     },
     "fields": {
@@ -1171,30 +1191,31 @@
       "type": "string",
       "location": "query"
     },
-    "uploadType": {
-      "description": "Legacy upload protocol for media (e.g. \"media\", \"multipart\").",
+    "callback": {
+      "description": "JSONP",
       "type": "string",
       "location": "query"
     },
     "$.xgafv": {
+      "enumDescriptions": [
+        "v1 error format",
+        "v2 error format"
+      ],
+      "location": "query",
       "enum": [
         "1",
         "2"
       ],
       "description": "V1 error format.",
-      "type": "string",
-      "enumDescriptions": [
-        "v1 error format",
-        "v2 error format"
-      ],
-      "location": "query"
-    },
-    "callback": {
-      "location": "query",
-      "description": "JSONP",
       "type": "string"
     },
     "alt": {
+      "enum": [
+        "json",
+        "media",
+        "proto"
+      ],
+      "type": "string",
       "enumDescriptions": [
         "Responses with Content-Type of application/json",
         "Media download with context-dependent Content-Type",
@@ -1202,23 +1223,17 @@
       ],
       "location": "query",
       "description": "Data format for response.",
-      "default": "json",
-      "enum": [
-        "json",
-        "media",
-        "proto"
-      ],
-      "type": "string"
+      "default": "json"
     },
     "key": {
-      "location": "query",
       "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
-      "type": "string"
+      "type": "string",
+      "location": "query"
     },
     "access_token": {
-      "location": "query",
       "description": "OAuth access token.",
-      "type": "string"
+      "type": "string",
+      "location": "query"
     },
     "quotaUser": {
       "location": "query",
@@ -1233,397 +1248,21 @@
     }
   },
   "schemas": {
-    "Certification": {
-      "properties": {
-        "warning": {
-          "description": "Whether this certification is in the state of warning.",
-          "type": "boolean"
-        },
-        "expiration": {
-          "format": "google-datetime",
-          "description": "Date this certification is due to expire.",
-          "type": "string"
-        },
-        "achieved": {
-          "description": "Whether this certification has been achieved.",
-          "type": "boolean"
-        },
-        "certificationType": {
-          "enumDescriptions": [
-            "Unchosen.",
-            "AdWords certified.",
-            "YouTube certified.",
-            "VideoAds certified.",
-            "Analytics certified.",
-            "DoubleClick certified.",
-            "Shopping certified.",
-            "Mobile certified.",
-            "Digital sales certified.",
-            "AdWords Search certified.",
-            "AdWords Display certified.",
-            "Mobile Sites certified."
-          ],
-          "enum": [
-            "CERTIFICATION_TYPE_UNSPECIFIED",
-            "CT_ADWORDS",
-            "CT_YOUTUBE",
-            "CT_VIDEOADS",
-            "CT_ANALYTICS",
-            "CT_DOUBLECLICK",
-            "CT_SHOPPING",
-            "CT_MOBILE",
-            "CT_DIGITAL_SALES",
-            "CT_ADWORDS_SEARCH",
-            "CT_ADWORDS_DISPLAY",
-            "CT_MOBILE_SITES"
-          ],
-          "description": "The type of certification, the area of expertise.",
-          "type": "string"
-        },
-        "lastAchieved": {
-          "format": "google-datetime",
-          "description": "The date the user last achieved certification.",
-          "type": "string"
-        }
-      },
-      "id": "Certification",
-      "description": "A user's information on a specific certification.",
-      "type": "object"
-    },
-    "User": {
-      "properties": {
-        "profile": {
-          "description": "The profile information of a Partners user, contains all the directly\neditable user information.",
-          "$ref": "UserProfile"
-        },
-        "company": {
-          "description": "The company that the user is associated with.\nIf not present, the user is not associated with any company.",
-          "$ref": "CompanyRelation"
-        },
-        "lastAccessTime": {
-          "format": "google-datetime",
-          "description": "The most recent time the user interacted with the Partners site.\n@OutputOnly",
-          "type": "string"
-        },
-        "availableAdwordsManagerAccounts": {
-          "description": "This is the list of AdWords Manager Accounts the user has edit access to.\nIf the user has edit access to multiple accounts, the user can choose the\npreferred account and we use this when a personal account is needed. Can\nbe empty meaning the user has access to no accounts.\n@OutputOnly",
-          "items": {
-            "$ref": "AdWordsManagerAccountInfo"
-          },
-          "type": "array"
-        },
-        "primaryEmails": {
-          "description": "The list of emails the user has access to/can select as primary.\n@OutputOnly",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "internalId": {
-          "description": "The internal user ID.\nOnly available for a whitelisted set of api clients.",
-          "type": "string"
-        },
-        "examStatus": {
-          "description": "The list of exams the user ever taken. For each type of exam, only one\nentry is listed.",
-          "items": {
-            "$ref": "ExamStatus"
-          },
-          "type": "array"
-        },
-        "id": {
-          "description": "The ID of the user.",
-          "type": "string"
-        },
-        "publicProfile": {
-          "description": "Information about a user's external public profile outside Google Partners.",
-          "$ref": "PublicProfile"
-        },
-        "certificationStatus": {
-          "description": "The list of achieved certifications. These are calculated based on exam\nresults and other requirements.\n@OutputOnly",
-          "items": {
-            "$ref": "Certification"
-          },
-          "type": "array"
-        },
-        "companyVerificationEmail": {
-          "description": "The email address used by the user used for company verification.\n@OutputOnly",
-          "type": "string"
-        }
-      },
-      "id": "User",
-      "description": "A resource representing a user of the Partners platform.",
-      "type": "object"
-    },
-    "ListAnalyticsResponse": {
-      "description": "Response message for\nListAnalytics.",
-      "type": "object",
-      "properties": {
-        "analytics": {
-          "description": "The list of analytics.\nSorted in ascending order of\nAnalytics.event_date.",
-          "items": {
-            "$ref": "Analytics"
-          },
-          "type": "array"
-        },
-        "nextPageToken": {
-          "description": "A token to retrieve next page of results.\nPass this value in the `ListAnalyticsRequest.page_token` field in the\nsubsequent call to\nListAnalytics to retrieve the\nnext page of results.",
-          "type": "string"
-        },
-        "analyticsSummary": {
-          "description": "Aggregated information across the response's\nanalytics.",
-          "$ref": "AnalyticsSummary"
-        },
-        "responseMetadata": {
-          "$ref": "ResponseMetadata",
-          "description": "Current response metadata."
-        }
-      },
-      "id": "ListAnalyticsResponse"
-    },
-    "Company": {
-      "description": "A company resource in the Google Partners API. Once certified, it qualifies\nfor being searched by advertisers.",
-      "type": "object",
-      "properties": {
-        "industries": {
-          "enumDescriptions": [
-            "Unchosen.",
-            "The automotive industry.",
-            "The business-to-business industry.",
-            "The consumer packaged goods industry.",
-            "The education industry.",
-            "The finance industry.",
-            "The healthcare industry.",
-            "The media and entertainment industry.",
-            "The retail industry.",
-            "The technology industry.",
-            "The travel industry."
-          ],
-          "description": "Industries the company can help with.",
-          "items": {
-            "enum": [
-              "INDUSTRY_UNSPECIFIED",
-              "I_AUTOMOTIVE",
-              "I_BUSINESS_TO_BUSINESS",
-              "I_CONSUMER_PACKAGED_GOODS",
-              "I_EDUCATION",
-              "I_FINANCE",
-              "I_HEALTHCARE",
-              "I_MEDIA_AND_ENTERTAINMENT",
-              "I_RETAIL",
-              "I_TECHNOLOGY",
-              "I_TRAVEL"
-            ],
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "additionalWebsites": {
-          "description": "URL of the company's additional websites used to verify the dynamic badges.\nThese are stored as full URLs as entered by the user, but only the TLD will\nbe used for the actual verification.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "websiteUrl": {
-          "description": "URL of the company's website.",
-          "type": "string"
-        },
-        "primaryAdwordsManagerAccountId": {
-          "format": "int64",
-          "description": "The Primary AdWords Manager Account id.",
-          "type": "string"
-        },
-        "name": {
-          "description": "The name of the company.",
-          "type": "string"
-        },
-        "localizedInfos": {
-          "description": "The list of localized info for the company.",
-          "items": {
-            "$ref": "LocalizedCompanyInfo"
-          },
-          "type": "array"
-        },
-        "certificationStatuses": {
-          "description": "The list of Google Partners certification statuses for the company.",
-          "items": {
-            "$ref": "CertificationStatus"
-          },
-          "type": "array"
-        },
-        "id": {
-          "description": "The ID of the company.",
-          "type": "string"
-        },
-        "primaryLocation": {
-          "$ref": "Location",
-          "description": "The primary location of the company."
-        },
-        "services": {
-          "description": "Services the company can help with.",
-          "items": {
-            "enum": [
-              "SERVICE_UNSPECIFIED",
-              "S_ADVANCED_ADWORDS_SUPPORT",
-              "S_ADVERTISING_ON_GOOGLE",
-              "S_AN_ENHANCED_WEBSITE",
-              "S_AN_ONLINE_MARKETING_PLAN",
-              "S_MOBILE_AND_VIDEO_ADS",
-              "S_MOBILE_WEBSITE_SERVICES"
-            ],
-            "type": "string"
-          },
-          "type": "array",
-          "enumDescriptions": [
-            "Unchosen.",
-            "Help with advanced AdWords support.",
-            "Help with advertising on Google.",
-            "Help with an enhanced website.",
-            "Help with an online marketing plan.",
-            "Help with mobile and video ads.",
-            "Help with mobile websites."
-          ]
-        },
-        "originalMinMonthlyBudget": {
-          "$ref": "Money",
-          "description": "The unconverted minimum monthly budget that the company accepts for partner\nbusiness."
-        },
-        "publicProfile": {
-          "$ref": "PublicProfile",
-          "description": "Basic information from the company's public profile."
-        },
-        "ranks": {
-          "description": "Information related to the ranking of the company within the list of\ncompanies.",
-          "items": {
-            "$ref": "Rank"
-          },
-          "type": "array"
-        },
-        "badgeTier": {
-          "enumDescriptions": [
-            "Tier badge is not set.",
-            "Agency has regular partner badge.",
-            "Agency has premier badge."
-          ],
-          "enum": [
-            "BADGE_TIER_NONE",
-            "BADGE_TIER_REGULAR",
-            "BADGE_TIER_PREMIER"
-          ],
-          "description": "Partner badge tier",
-          "type": "string"
-        },
-        "specializationStatus": {
-          "description": "The list of Google Partners specialization statuses for the company.",
-          "items": {
-            "$ref": "SpecializationStatus"
-          },
-          "type": "array"
-        },
-        "companyTypes": {
-          "enumDescriptions": [
-            "Unchosen.",
-            "Handles all aspects of the advertising process.",
-            "Focuses solely on an advertiser's media placement.",
-            "Plans/executes advertising campaigns.",
-            "Like a\nFULL_SERVICE_AGENCY,\nbut specializing in digital.",
-            "Increases visibility in search engine result pages.",
-            "Drives promotional efforts for immediate impact.",
-            "Focuses on bid management, conversion, reporting.",
-            "Establishes favorable relationship with public through low/no-cost\ncommunications.",
-            "Does not manage other company's accounts, manages own marketing programs.",
-            "Full-service AdWords account management for local businesses."
-          ],
-          "description": "Company type labels listed on the company's profile.",
-          "items": {
-            "enum": [
-              "COMPANY_TYPE_UNSPECIFIED",
-              "FULL_SERVICE_AGENCY",
-              "MEDIA_AGENCY",
-              "CREATIVE_AGENCY",
-              "CDIGITAL_AGENCY",
-              "SEM_SEO",
-              "PERFORMANCE_MARKETING",
-              "ADVERTISING_TOOL_DEVELOPMENT",
-              "PR",
-              "SELF_MANAGED",
-              "RESELLER"
-            ],
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "autoApprovalEmailDomains": {
-          "description": "Email domains that allow users with a matching email address to get\nauto-approved for associating with this company.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "primaryLanguageCode": {
-          "description": "The primary language code of the company, as defined by\n\u003ca href=\"https://tools.ietf.org/html/bcp47\"\u003eBCP 47\u003c/a\u003e\n(IETF BCP 47, \"Tags for Identifying Languages\").",
-          "type": "string"
-        },
-        "profileStatus": {
-          "enumDescriptions": [
-            "Unchosen.",
-            "Company profile does not show up publicly.",
-            "Company profile can only be viewed by the profile's URL\nand not by Google Partner Search.",
-            "Company profile can be viewed by the profile's URL\nand by Google Partner Search."
-          ],
-          "enum": [
-            "COMPANY_PROFILE_STATUS_UNSPECIFIED",
-            "HIDDEN",
-            "PUBLISHED",
-            "SEARCHABLE"
-          ],
-          "description": "The public viewability status of the company's profile.",
-          "type": "string"
-        },
-        "locations": {
-          "description": "The list of all company locations.\nIf set, must include the\nprimary_location\nin the list.",
-          "items": {
-            "$ref": "Location"
-          },
-          "type": "array"
-        },
-        "convertedMinMonthlyBudget": {
-          "$ref": "Money",
-          "description": "The minimum monthly budget that the company accepts for partner business,\nconverted to the requested currency code."
-        }
-      },
-      "id": "Company"
-    },
-    "ListLeadsResponse": {
-      "properties": {
-        "nextPageToken": {
-          "description": "A token to retrieve next page of results.\nPass this value in the `ListLeadsRequest.page_token` field in the\nsubsequent call to\nListLeads to retrieve the\nnext page of results.",
-          "type": "string"
-        },
-        "totalSize": {
-          "format": "int32",
-          "description": "The total count of leads for the given company.",
-          "type": "integer"
-        },
-        "responseMetadata": {
-          "$ref": "ResponseMetadata",
-          "description": "Current response metadata."
-        },
-        "leads": {
-          "description": "The list of leads.",
-          "items": {
-            "$ref": "Lead"
-          },
-          "type": "array"
-        }
-      },
-      "id": "ListLeadsResponse",
-      "description": "Response message for ListLeads.",
-      "type": "object"
-    },
     "CreateLeadResponse": {
+      "description": "Response message for CreateLead.",
+      "type": "object",
       "properties": {
+        "responseMetadata": {
+          "description": "Current response metadata.",
+          "$ref": "ResponseMetadata"
+        },
         "recaptchaStatus": {
+          "enumDescriptions": [
+            "Unchosen.",
+            "No reCaptcha validation needed.",
+            "reCaptcha challenge passed.",
+            "reCaptcha challenge failed."
+          ],
           "enum": [
             "RECAPTCHA_STATUS_UNSPECIFIED",
             "RS_NOT_NEEDED",
@@ -1631,28 +1270,18 @@
             "RS_FAILED"
           ],
           "description": "The outcome of \u003ca href=\"https://www.google.com/recaptcha/\"\u003ereCaptcha\u003c/a\u003e\nvalidation.",
-          "type": "string",
-          "enumDescriptions": [
-            "Unchosen.",
-            "No reCaptcha validation needed.",
-            "reCaptcha challenge passed.",
-            "reCaptcha challenge failed."
-          ]
+          "type": "string"
         },
         "lead": {
           "$ref": "Lead",
           "description": "Lead that was created depending on the outcome of\n\u003ca href=\"https://www.google.com/recaptcha/\"\u003ereCaptcha\u003c/a\u003e validation."
-        },
-        "responseMetadata": {
-          "description": "Current response metadata.",
-          "$ref": "ResponseMetadata"
         }
       },
-      "id": "CreateLeadResponse",
-      "description": "Response message for CreateLead.",
-      "type": "object"
+      "id": "CreateLeadResponse"
     },
     "GetCompanyResponse": {
+      "description": "Response message for GetCompany.",
+      "type": "object",
       "properties": {
         "responseMetadata": {
           "$ref": "ResponseMetadata",
@@ -1663,9 +1292,7 @@
           "$ref": "Company"
         }
       },
-      "id": "GetCompanyResponse",
-      "description": "Response message for GetCompany.",
-      "type": "object"
+      "id": "GetCompanyResponse"
     },
     "Location": {
       "description": "A location with address and geographic coordinates. May optionally contain a\ndetailed (multi-field) version of the address.",
@@ -1680,19 +1307,19 @@
           "type": "string"
         },
         "latLng": {
-          "$ref": "LatLng",
-          "description": "The latitude and longitude of the location, in degrees."
+          "description": "The latitude and longitude of the location, in degrees.",
+          "$ref": "LatLng"
         },
         "dependentLocality": {
           "description": "Dependent locality or sublocality. Used for UK dependent localities, or\nneighborhoods or boroughs in other locations.",
           "type": "string"
         },
-        "address": {
-          "description": "The single string version of the address.",
-          "type": "string"
-        },
         "regionCode": {
           "description": "CLDR (Common Locale Data Repository) region code .",
+          "type": "string"
+        },
+        "address": {
+          "description": "The single string version of the address.",
           "type": "string"
         },
         "postalCode": {
@@ -1760,8 +1387,6 @@
       "type": "object"
     },
     "ExamToken": {
-      "description": "A token that allows a user to take an exam.",
-      "type": "object",
       "properties": {
         "examId": {
           "format": "int64",
@@ -1773,6 +1398,19 @@
           "type": "string"
         },
         "examType": {
+          "enumDescriptions": [
+            "Unchosen.",
+            "Adwords Fundamentals exam.",
+            "AdWords advanced search exam.",
+            "AdWords advanced display exam.",
+            "VideoAds exam.",
+            "DoubleClick exam.",
+            "Analytics exam.",
+            "Shopping exam.",
+            "Mobile exam.",
+            "Digital Sales exam.",
+            "Mobile Sites exam."
+          ],
           "enum": [
             "CERTIFICATION_EXAM_TYPE_UNSPECIFIED",
             "CET_ADWORDS_FUNDAMENTALS",
@@ -1787,32 +1425,17 @@
             "CET_MOBILE_SITES"
           ],
           "description": "The type of the exam the token belongs to.",
-          "type": "string",
-          "enumDescriptions": [
-            "Unchosen.",
-            "Adwords Fundamentals exam.",
-            "AdWords advanced search exam.",
-            "AdWords advanced display exam.",
-            "VideoAds exam.",
-            "DoubleClick exam.",
-            "Analytics exam.",
-            "Shopping exam.",
-            "Mobile exam.",
-            "Digital Sales exam.",
-            "Mobile Sites exam."
-          ]
+          "type": "string"
         }
       },
-      "id": "ExamToken"
+      "id": "ExamToken",
+      "description": "A token that allows a user to take an exam.",
+      "type": "object"
     },
     "OptIns": {
       "description": "A set of opt-ins for a user.",
       "type": "object",
       "properties": {
-        "specialOffers": {
-          "description": "An opt-in about receiving email regarding new features and products.",
-          "type": "boolean"
-        },
         "performanceSuggestions": {
           "description": "An opt-in about receiving email with customized AdWords campaign management\ntips.",
           "type": "boolean"
@@ -1828,13 +1451,15 @@
         "marketComm": {
           "description": "An opt-in about receiving email from Partners marketing teams. Includes\nmember-only events and special promotional offers for Google products.",
           "type": "boolean"
+        },
+        "specialOffers": {
+          "description": "An opt-in about receiving email regarding new features and products.",
+          "type": "boolean"
         }
       },
       "id": "OptIns"
     },
     "Rank": {
-      "description": "Information related to ranking of results.",
-      "type": "object",
       "properties": {
         "type": {
           "enum": [
@@ -1854,10 +1479,44 @@
           "type": "number"
         }
       },
-      "id": "Rank"
+      "id": "Rank",
+      "description": "Information related to ranking of results.",
+      "type": "object"
     },
     "UserProfile": {
       "properties": {
+        "migrateToAfa": {
+          "description": "Whether or not to migrate the user's exam data to Academy for Ads.",
+          "type": "boolean"
+        },
+        "adwordsManagerAccount": {
+          "format": "int64",
+          "description": "If the user has edit access to multiple accounts, the user can choose the\npreferred account and it is used when a personal account is needed. Can\nbe empty.",
+          "type": "string"
+        },
+        "phoneNumber": {
+          "description": "The user's phone number.",
+          "type": "string"
+        },
+        "primaryCountryCode": {
+          "description": "The user's primary country, an ISO 2-character code.",
+          "type": "string"
+        },
+        "emailAddress": {
+          "description": "The email address the user has selected on the Partners site as primary.",
+          "type": "string"
+        },
+        "profilePublic": {
+          "description": "Whether the user's public profile is visible to anyone with the URL.",
+          "type": "boolean"
+        },
+        "channels": {
+          "description": "A list of ids representing which channels the user selected they were in.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "jobFunctions": {
           "description": "A list of ids represnting which job categories the user selected.",
           "items": {
@@ -1901,34 +1560,6 @@
             "type": "string"
           },
           "type": "array"
-        },
-        "phoneNumber": {
-          "description": "The user's phone number.",
-          "type": "string"
-        },
-        "adwordsManagerAccount": {
-          "format": "int64",
-          "description": "If the user has edit access to multiple accounts, the user can choose the\npreferred account and it is used when a personal account is needed. Can\nbe empty.",
-          "type": "string"
-        },
-        "primaryCountryCode": {
-          "description": "The user's primary country, an ISO 2-character code.",
-          "type": "string"
-        },
-        "emailAddress": {
-          "description": "The email address the user has selected on the Partners site as primary.",
-          "type": "string"
-        },
-        "channels": {
-          "description": "A list of ids representing which channels the user selected they were in.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "profilePublic": {
-          "description": "Whether the user's public profile is visible to anyone with the URL.",
-          "type": "boolean"
         }
       },
       "id": "UserProfile",
@@ -1936,21 +1567,44 @@
       "type": "object"
     },
     "GetPartnersStatusResponse": {
-      "description": "Response message for\nGetPartnersStatus.",
-      "type": "object",
       "properties": {
         "responseMetadata": {
-          "description": "Current response metadata.",
-          "$ref": "ResponseMetadata"
+          "$ref": "ResponseMetadata",
+          "description": "Current response metadata."
         }
       },
-      "id": "GetPartnersStatusResponse"
+      "id": "GetPartnersStatusResponse",
+      "description": "Response message for\nGetPartnersStatus.",
+      "type": "object"
     },
     "HistoricalOffer": {
+      "description": "Historical information about a Google Partners Offer.",
+      "type": "object",
       "properties": {
+        "senderName": {
+          "description": "Name (First + Last) of the partners user to whom the incentive is allocated.",
+          "type": "string"
+        },
+        "offerCountryCode": {
+          "description": "Country Code for the offer country.",
+          "type": "string"
+        },
+        "expirationTime": {
+          "format": "google-datetime",
+          "description": "Time this offer expires.",
+          "type": "string"
+        },
+        "offerCode": {
+          "description": "Offer code.",
+          "type": "string"
+        },
         "creationTime": {
           "format": "google-datetime",
           "description": "Time offer was first created.",
+          "type": "string"
+        },
+        "clientEmail": {
+          "description": "Email address for client.",
           "type": "string"
         },
         "status": {
@@ -1969,10 +1623,6 @@
             "OFFER_STATUS_EXPIRED"
           ],
           "description": "Status of the offer.",
-          "type": "string"
-        },
-        "clientEmail": {
-          "description": "Email address for client.",
           "type": "string"
         },
         "clientId": {
@@ -1994,12 +1644,6 @@
           "type": "string"
         },
         "offerType": {
-          "enumDescriptions": [
-            "Unset.",
-            "AdWords spend X get Y.",
-            "Youtube video.",
-            "Spend Match up to Y."
-          ],
           "enum": [
             "OFFER_TYPE_UNSPECIFIED",
             "OFFER_TYPE_SPEND_X_GET_Y",
@@ -2007,44 +1651,16 @@
             "OFFER_TYPE_SPEND_MATCH"
           ],
           "description": "Type of offer.",
-          "type": "string"
-        },
-        "senderName": {
-          "description": "Name (First + Last) of the partners user to whom the incentive is allocated.",
-          "type": "string"
-        },
-        "offerCountryCode": {
-          "description": "Country Code for the offer country.",
-          "type": "string"
-        },
-        "expirationTime": {
-          "format": "google-datetime",
-          "description": "Time this offer expires.",
-          "type": "string"
-        },
-        "offerCode": {
-          "description": "Offer code.",
-          "type": "string"
+          "type": "string",
+          "enumDescriptions": [
+            "Unset.",
+            "AdWords spend X get Y.",
+            "Youtube video.",
+            "Spend Match up to Y."
+          ]
         }
       },
-      "id": "HistoricalOffer",
-      "description": "Historical information about a Google Partners Offer.",
-      "type": "object"
-    },
-    "UserOverrides": {
-      "description": "Values to use instead of the user's respective defaults. These are only\nhonored by whitelisted products.",
-      "type": "object",
-      "properties": {
-        "userId": {
-          "description": "Logged-in user ID to impersonate instead of the user's ID.",
-          "type": "string"
-        },
-        "ipAddress": {
-          "description": "IP address to use instead of the user's geo-located IP address.",
-          "type": "string"
-        }
-      },
-      "id": "UserOverrides"
+      "id": "HistoricalOffer"
     },
     "LogUserEventRequest": {
       "description": "Request message for\nLogUserEvent.",
@@ -2095,167 +1711,6 @@
           "description": "Advertiser lead information."
         },
         "eventAction": {
-          "enum": [
-            "EVENT_ACTION_UNSPECIFIED",
-            "SMB_CLICKED_FIND_A_PARTNER_BUTTON_BOTTOM",
-            "SMB_CLICKED_FIND_A_PARTNER_BUTTON_TOP",
-            "AGENCY_CLICKED_JOIN_NOW_BUTTON_BOTTOM",
-            "AGENCY_CLICKED_JOIN_NOW_BUTTON_TOP",
-            "SMB_CANCELED_PARTNER_CONTACT_FORM",
-            "SMB_CLICKED_CONTACT_A_PARTNER",
-            "SMB_COMPLETED_PARTNER_CONTACT_FORM",
-            "SMB_ENTERED_EMAIL_IN_CONTACT_PARTNER_FORM",
-            "SMB_ENTERED_NAME_IN_CONTACT_PARTNER_FORM",
-            "SMB_ENTERED_PHONE_IN_CONTACT_PARTNER_FORM",
-            "SMB_FAILED_RECAPTCHA_IN_CONTACT_PARTNER_FORM",
-            "PARTNER_VIEWED_BY_SMB",
-            "SMB_CANCELED_PARTNER_CONTACT_FORM_ON_GPS",
-            "SMB_CHANGED_A_SEARCH_PARAMETER_TOP",
-            "SMB_CLICKED_CONTACT_A_PARTNER_ON_GPS",
-            "SMB_CLICKED_SHOW_MORE_PARTNERS_BUTTON_BOTTOM",
-            "SMB_COMPLETED_PARTNER_CONTACT_FORM_ON_GPS",
-            "SMB_NO_PARTNERS_AVAILABLE_WITH_SEARCH_CRITERIA",
-            "SMB_PERFORMED_SEARCH_ON_GPS",
-            "SMB_VIEWED_A_PARTNER_ON_GPS",
-            "SMB_CANCELED_PARTNER_CONTACT_FORM_ON_PROFILE_PAGE",
-            "SMB_CLICKED_CONTACT_A_PARTNER_ON_PROFILE_PAGE",
-            "SMB_CLICKED_PARTNER_WEBSITE",
-            "SMB_COMPLETED_PARTNER_CONTACT_FORM_ON_PROFILE_PAGE",
-            "SMB_VIEWED_A_PARTNER_PROFILE",
-            "AGENCY_CLICKED_ACCEPT_TOS_BUTTON",
-            "AGENCY_CHANGED_TOS_COUNTRY",
-            "AGENCY_ADDED_ADDRESS_IN_MY_PROFILE_PORTAL",
-            "AGENCY_ADDED_PHONE_NUMBER_IN_MY_PROFILE_PORTAL",
-            "AGENCY_CHANGED_PRIMARY_ACCOUNT_ASSOCIATION",
-            "AGENCY_CHANGED_PRIMARY_COUNTRY_ASSOCIATION",
-            "AGENCY_CLICKED_AFFILIATE_BUTTON_IN_MY_PROFILE_IN_PORTAL",
-            "AGENCY_CLICKED_GIVE_EDIT_ACCESS_IN_MY_PROFILE_PORTAL",
-            "AGENCY_CLICKED_LOG_OUT_IN_MY_PROFILE_PORTAL",
-            "AGENCY_CLICKED_MY_PROFILE_LEFT_NAV_IN_PORTAL",
-            "AGENCY_CLICKED_SAVE_AND_CONTINUE_AT_BOT_OF_COMPLETE_PROFILE",
-            "AGENCY_CLICKED_UNAFFILIATE_IN_MY_PROFILE_PORTAL",
-            "AGENCY_FILLED_OUT_COMP_AFFILIATION_IN_MY_PROFILE_PORTAL",
-            "AGENCY_SUCCESSFULLY_CONNECTED_WITH_COMPANY_IN_MY_PROFILE",
-            "AGENCY_CLICKED_CREATE_MCC_IN_MY_PROFILE_PORTAL",
-            "AGENCY_DIDNT_HAVE_AN_MCC_ASSOCIATED_ON_COMPLETE_PROFILE",
-            "AGENCY_HAD_AN_MCC_ASSOCIATED_ON_COMPLETE_PROFILE",
-            "AGENCY_ADDED_JOB_FUNCTION_IN_MY_PROFILE_PORTAL",
-            "AGENCY_LOOKED_AT_JOB_FUNCTION_DROP_DOWN",
-            "AGENCY_SELECTED_ACCOUNT_MANAGER_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_ACCOUNT_PLANNER_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_ANALYTICS_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_CREATIVE_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_MEDIA_BUYER_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_MEDIA_PLANNER_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_OTHER_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_PRODUCTION_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_SEO_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_SALES_REP_AS_JOB_FUNCTION",
-            "AGENCY_SELECTED_SEARCH_SPECIALIST_AS_JOB_FUNCTION",
-            "AGENCY_ADDED_CHANNELS_IN_MY_PROFILE_PORTAL",
-            "AGENCY_LOOKED_AT_ADD_CHANNEL_DROP_DOWN",
-            "AGENCY_SELECTED_CROSS_CHANNEL_FROM_ADD_CHANNEL",
-            "AGENCY_SELECTED_DISPLAY_FROM_ADD_CHANNEL",
-            "AGENCY_SELECTED_MOBILE_FROM_ADD_CHANNEL",
-            "AGENCY_SELECTED_SEARCH_FROM_ADD_CHANNEL",
-            "AGENCY_SELECTED_SOCIAL_FROM_ADD_CHANNEL",
-            "AGENCY_SELECTED_TOOLS_FROM_ADD_CHANNEL",
-            "AGENCY_SELECTED_YOUTUBE_FROM_ADD_CHANNEL",
-            "AGENCY_ADDED_INDUSTRIES_IN_MY_PROFILE_PORTAL",
-            "AGENCY_CHANGED_ADD_INDUSTRIES_DROP_DOWN",
-            "AGENCY_ADDED_MARKETS_IN_MY_PROFILE_PORTAL",
-            "AGENCY_CHANGED_ADD_MARKETS_DROP_DOWN",
-            "AGENCY_CHECKED_RECIEVE_MAIL_PROMOTIONS_MYPROFILE",
-            "AGENCY_CHECKED_RECIEVE_MAIL_PROMOTIONS_SIGNUP",
-            "AGENCY_SELECTED_OPT_IN_BETA_TESTS_AND_MKT_RESEARCH",
-            "AGENCY_SELECTED_OPT_IN_BETA_TESTS_IN_MY_PROFILE_PORTAL",
-            "AGENCY_SELECTED_OPT_IN_NEWS_IN_MY_PROFILE_PORTAL",
-            "AGENCY_SELECTED_OPT_IN_NEWS_INVITATIONS_AND_PROMOS",
-            "AGENCY_SELECTED_OPT_IN_PERFORMANCE_SUG_IN_MY_PROFILE_PORTAL",
-            "AGENCY_SELECTED_OPT_IN_PERFORMANCE_SUGGESTIONS",
-            "AGENCY_SELECTED_OPT_IN_SELECT_ALL_EMAIL_NOTIFICATIONS",
-            "AGENCY_SELECTED_SELECT_ALL_OPT_INS_IN_MY_PROFILE_PORTAL",
-            "AGENCY_CLICKED_BACK_BUTTON_ON_CONNECT_WITH_COMPANY",
-            "AGENCY_CLICKED_CONTINUE_TO_OVERVIEW_ON_CONNECT_WITH_COMPANY",
-            "AGECNY_CLICKED_CREATE_MCC_CONNECT_WITH_COMPANY_NOT_FOUND",
-            "AGECNY_CLICKED_GIVE_EDIT_ACCESS_CONNECT_WITH_COMPANY_NOT_FOUND",
-            "AGECNY_CLICKED_LOG_OUT_CONNECT_WITH_COMPANY_NOT_FOUND",
-            "AGENCY_CLICKED_SKIP_FOR_NOW_ON_CONNECT_WITH_COMPANY_PAGE",
-            "AGENCY_CLOSED_CONNECTED_TO_COMPANY_X_BUTTON_WRONG_COMPANY",
-            "AGENCY_COMPLETED_FIELD_CONNECT_WITH_COMPANY",
-            "AGECNY_FOUND_COMPANY_TO_CONNECT_WITH",
-            "AGENCY_SUCCESSFULLY_CREATED_COMPANY",
-            "AGENCY_ADDED_NEW_COMPANY_LOCATION",
-            "AGENCY_CLICKED_COMMUNITY_JOIN_NOW_LINK_IN_PORTAL_NOTIFICATIONS",
-            "AGENCY_CLICKED_CONNECT_TO_COMPANY_LINK_IN_PORTAL_NOTIFICATIONS",
-            "AGENCY_CLICKED_GET_CERTIFIED_LINK_IN_PORTAL_NOTIFICATIONS",
-            "AGENCY_CLICKED_GET_VIDEO_ADS_CERTIFIED_LINK_IN_PORTAL_NOTIFICATIONS",
-            "AGENCY_CLICKED_LINK_TO_MCC_LINK_IN_PORTAL_NOTIFICATIONS",
-            "AGENCY_CLICKED_INSIGHT_CONTENT_IN_PORTAL",
-            "AGENCY_CLICKED_INSIGHTS_VIEW_NOW_PITCH_DECKS_IN_PORTAL",
-            "AGENCY_CLICKED_INSIGHTS_LEFT_NAV_IN_PORTAL",
-            "AGENCY_CLICKED_INSIGHTS_UPLOAD_CONTENT",
-            "AGENCY_CLICKED_INSIGHTS_VIEWED_DEPRECATED",
-            "AGENCY_CLICKED_COMMUNITY_LEFT_NAV_IN_PORTAL",
-            "AGENCY_CLICKED_JOIN_COMMUNITY_BUTTON_COMMUNITY_PORTAL",
-            "AGENCY_CLICKED_CERTIFICATIONS_LEFT_NAV_IN_PORTAL",
-            "AGENCY_CLICKED_CERTIFICATIONS_PRODUCT_LEFT_NAV_IN_PORTAL",
-            "AGENCY_CLICKED_PARTNER_STATUS_LEFT_NAV_IN_PORTAL",
-            "AGENCY_CLICKED_PARTNER_STATUS_PRODUCT_LEFT_NAV_IN_PORTAL",
-            "AGENCY_CLICKED_OFFERS_LEFT_NAV_IN_PORTAL",
-            "AGENCY_CLICKED_SEND_BUTTON_ON_OFFERS_PAGE",
-            "AGENCY_CLICKED_EXAM_DETAILS_ON_CERT_ADWORDS_PAGE",
-            "AGENCY_CLICKED_SEE_EXAMS_CERTIFICATION_MAIN_PAGE",
-            "AGENCY_CLICKED_TAKE_EXAM_ON_CERT_EXAM_PAGE",
-            "AGENCY_OPENED_LAST_ADMIN_DIALOG",
-            "AGENCY_OPENED_DIALOG_WITH_NO_USERS",
-            "AGENCY_PROMOTED_USER_TO_ADMIN",
-            "AGENCY_UNAFFILIATED",
-            "AGENCY_CHANGED_ROLES",
-            "SMB_CLICKED_COMPANY_NAME_LINK_TO_PROFILE",
-            "SMB_VIEWED_ADWORDS_CERTIFICATE",
-            "SMB_VIEWED_ADWORDS_SEARCH_CERTIFICATE",
-            "SMB_VIEWED_ADWORDS_DISPLAY_CERTIFICATE",
-            "SMB_CLICKED_ADWORDS_CERTIFICATE_HELP_ICON",
-            "SMB_VIEWED_ANALYTICS_CERTIFICATE",
-            "SMB_VIEWED_DOUBLECLICK_CERTIFICATE",
-            "SMB_VIEWED_MOBILE_SITES_CERTIFICATE",
-            "SMB_VIEWED_VIDEO_ADS_CERTIFICATE",
-            "SMB_VIEWED_SHOPPING_CERTIFICATE",
-            "SMB_CLICKED_VIDEO_ADS_CERTIFICATE_HELP_ICON",
-            "SMB_VIEWED_DIGITAL_SALES_CERTIFICATE",
-            "CLICKED_HELP_AT_BOTTOM",
-            "CLICKED_HELP_AT_TOP",
-            "CLIENT_ERROR",
-            "AGENCY_CLICKED_LEFT_NAV_STORIES",
-            "CLICKED",
-            "SMB_VIEWED_MOBILE_CERTIFICATE",
-            "AGENCY_FAILED_COMPANY_VERIFICATION",
-            "VISITED_LANDING",
-            "VISITED_GPS",
-            "VISITED_AGENCY_PORTAL",
-            "CANCELLED_INDIVIDUAL_SIGN_UP",
-            "CANCELLED_COMPANY_SIGN_UP",
-            "AGENCY_CLICKED_SIGN_IN_BUTTON_TOP",
-            "AGENCY_CLICKED_SAVE_AND_CONTINUE_AT_BOT_OF_INCOMPLETE_PROFILE",
-            "AGENCY_UNSELECTED_OPT_IN_NEWS_INVITATIONS_AND_PROMOS",
-            "AGENCY_UNSELECTED_OPT_IN_BETA_TESTS_AND_MKT_RESEARCH",
-            "AGENCY_UNSELECTED_OPT_IN_PERFORMANCE_SUGGESTIONS",
-            "AGENCY_SELECTED_OPT_OUT_UNSELECT_ALL_EMAIL_NOTIFICATIONS",
-            "AGENCY_LINKED_INDIVIDUAL_MCC",
-            "AGENCY_SUGGESTED_TO_USER",
-            "AGENCY_IGNORED_SUGGESTED_AGENCIES_AND_SEARCHED",
-            "AGENCY_PICKED_SUGGESTED_AGENCY",
-            "AGENCY_SEARCHED_FOR_AGENCIES",
-            "AGENCY_PICKED_SEARCHED_AGENCY",
-            "AGENCY_DISMISSED_AFFILIATION_WIDGET",
-            "AGENCY_CLICKED_INSIGHTS_DOWNLOAD_CONTENT",
-            "AGENCY_PROGRESS_INSIGHTS_VIEW_CONTENT",
-            "AGENCY_CLICKED_CANCEL_ACCEPT_TOS_BUTTON",
-            "SMB_ENTERED_WEBSITE_IN_CONTACT_PARTNER_FORM"
-          ],
-          "description": "The action that occurred.",
-          "type": "string",
           "enumDescriptions": [
             "Unchosen.",
             "Advertiser clicked `Find a partner` bottom button.",
@@ -2413,18 +1868,189 @@
             "Agency clicked on the download link for downloading content.",
             "Agency user is maklingg progress viewing a content item.",
             "Agency clicked `cancel Terms Of Service` button.",
-            "Advertiser entered website in contact form."
-          ]
+            "Advertiser entered website in contact form.",
+            "Agency opted in for migrating their exams to Academy for Ads.",
+            "Agency opted out for migrating their exams to Academy for Ads."
+          ],
+          "enum": [
+            "EVENT_ACTION_UNSPECIFIED",
+            "SMB_CLICKED_FIND_A_PARTNER_BUTTON_BOTTOM",
+            "SMB_CLICKED_FIND_A_PARTNER_BUTTON_TOP",
+            "AGENCY_CLICKED_JOIN_NOW_BUTTON_BOTTOM",
+            "AGENCY_CLICKED_JOIN_NOW_BUTTON_TOP",
+            "SMB_CANCELED_PARTNER_CONTACT_FORM",
+            "SMB_CLICKED_CONTACT_A_PARTNER",
+            "SMB_COMPLETED_PARTNER_CONTACT_FORM",
+            "SMB_ENTERED_EMAIL_IN_CONTACT_PARTNER_FORM",
+            "SMB_ENTERED_NAME_IN_CONTACT_PARTNER_FORM",
+            "SMB_ENTERED_PHONE_IN_CONTACT_PARTNER_FORM",
+            "SMB_FAILED_RECAPTCHA_IN_CONTACT_PARTNER_FORM",
+            "PARTNER_VIEWED_BY_SMB",
+            "SMB_CANCELED_PARTNER_CONTACT_FORM_ON_GPS",
+            "SMB_CHANGED_A_SEARCH_PARAMETER_TOP",
+            "SMB_CLICKED_CONTACT_A_PARTNER_ON_GPS",
+            "SMB_CLICKED_SHOW_MORE_PARTNERS_BUTTON_BOTTOM",
+            "SMB_COMPLETED_PARTNER_CONTACT_FORM_ON_GPS",
+            "SMB_NO_PARTNERS_AVAILABLE_WITH_SEARCH_CRITERIA",
+            "SMB_PERFORMED_SEARCH_ON_GPS",
+            "SMB_VIEWED_A_PARTNER_ON_GPS",
+            "SMB_CANCELED_PARTNER_CONTACT_FORM_ON_PROFILE_PAGE",
+            "SMB_CLICKED_CONTACT_A_PARTNER_ON_PROFILE_PAGE",
+            "SMB_CLICKED_PARTNER_WEBSITE",
+            "SMB_COMPLETED_PARTNER_CONTACT_FORM_ON_PROFILE_PAGE",
+            "SMB_VIEWED_A_PARTNER_PROFILE",
+            "AGENCY_CLICKED_ACCEPT_TOS_BUTTON",
+            "AGENCY_CHANGED_TOS_COUNTRY",
+            "AGENCY_ADDED_ADDRESS_IN_MY_PROFILE_PORTAL",
+            "AGENCY_ADDED_PHONE_NUMBER_IN_MY_PROFILE_PORTAL",
+            "AGENCY_CHANGED_PRIMARY_ACCOUNT_ASSOCIATION",
+            "AGENCY_CHANGED_PRIMARY_COUNTRY_ASSOCIATION",
+            "AGENCY_CLICKED_AFFILIATE_BUTTON_IN_MY_PROFILE_IN_PORTAL",
+            "AGENCY_CLICKED_GIVE_EDIT_ACCESS_IN_MY_PROFILE_PORTAL",
+            "AGENCY_CLICKED_LOG_OUT_IN_MY_PROFILE_PORTAL",
+            "AGENCY_CLICKED_MY_PROFILE_LEFT_NAV_IN_PORTAL",
+            "AGENCY_CLICKED_SAVE_AND_CONTINUE_AT_BOT_OF_COMPLETE_PROFILE",
+            "AGENCY_CLICKED_UNAFFILIATE_IN_MY_PROFILE_PORTAL",
+            "AGENCY_FILLED_OUT_COMP_AFFILIATION_IN_MY_PROFILE_PORTAL",
+            "AGENCY_SUCCESSFULLY_CONNECTED_WITH_COMPANY_IN_MY_PROFILE",
+            "AGENCY_CLICKED_CREATE_MCC_IN_MY_PROFILE_PORTAL",
+            "AGENCY_DIDNT_HAVE_AN_MCC_ASSOCIATED_ON_COMPLETE_PROFILE",
+            "AGENCY_HAD_AN_MCC_ASSOCIATED_ON_COMPLETE_PROFILE",
+            "AGENCY_ADDED_JOB_FUNCTION_IN_MY_PROFILE_PORTAL",
+            "AGENCY_LOOKED_AT_JOB_FUNCTION_DROP_DOWN",
+            "AGENCY_SELECTED_ACCOUNT_MANAGER_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_ACCOUNT_PLANNER_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_ANALYTICS_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_CREATIVE_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_MEDIA_BUYER_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_MEDIA_PLANNER_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_OTHER_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_PRODUCTION_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_SEO_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_SALES_REP_AS_JOB_FUNCTION",
+            "AGENCY_SELECTED_SEARCH_SPECIALIST_AS_JOB_FUNCTION",
+            "AGENCY_ADDED_CHANNELS_IN_MY_PROFILE_PORTAL",
+            "AGENCY_LOOKED_AT_ADD_CHANNEL_DROP_DOWN",
+            "AGENCY_SELECTED_CROSS_CHANNEL_FROM_ADD_CHANNEL",
+            "AGENCY_SELECTED_DISPLAY_FROM_ADD_CHANNEL",
+            "AGENCY_SELECTED_MOBILE_FROM_ADD_CHANNEL",
+            "AGENCY_SELECTED_SEARCH_FROM_ADD_CHANNEL",
+            "AGENCY_SELECTED_SOCIAL_FROM_ADD_CHANNEL",
+            "AGENCY_SELECTED_TOOLS_FROM_ADD_CHANNEL",
+            "AGENCY_SELECTED_YOUTUBE_FROM_ADD_CHANNEL",
+            "AGENCY_ADDED_INDUSTRIES_IN_MY_PROFILE_PORTAL",
+            "AGENCY_CHANGED_ADD_INDUSTRIES_DROP_DOWN",
+            "AGENCY_ADDED_MARKETS_IN_MY_PROFILE_PORTAL",
+            "AGENCY_CHANGED_ADD_MARKETS_DROP_DOWN",
+            "AGENCY_CHECKED_RECIEVE_MAIL_PROMOTIONS_MYPROFILE",
+            "AGENCY_CHECKED_RECIEVE_MAIL_PROMOTIONS_SIGNUP",
+            "AGENCY_SELECTED_OPT_IN_BETA_TESTS_AND_MKT_RESEARCH",
+            "AGENCY_SELECTED_OPT_IN_BETA_TESTS_IN_MY_PROFILE_PORTAL",
+            "AGENCY_SELECTED_OPT_IN_NEWS_IN_MY_PROFILE_PORTAL",
+            "AGENCY_SELECTED_OPT_IN_NEWS_INVITATIONS_AND_PROMOS",
+            "AGENCY_SELECTED_OPT_IN_PERFORMANCE_SUG_IN_MY_PROFILE_PORTAL",
+            "AGENCY_SELECTED_OPT_IN_PERFORMANCE_SUGGESTIONS",
+            "AGENCY_SELECTED_OPT_IN_SELECT_ALL_EMAIL_NOTIFICATIONS",
+            "AGENCY_SELECTED_SELECT_ALL_OPT_INS_IN_MY_PROFILE_PORTAL",
+            "AGENCY_CLICKED_BACK_BUTTON_ON_CONNECT_WITH_COMPANY",
+            "AGENCY_CLICKED_CONTINUE_TO_OVERVIEW_ON_CONNECT_WITH_COMPANY",
+            "AGECNY_CLICKED_CREATE_MCC_CONNECT_WITH_COMPANY_NOT_FOUND",
+            "AGECNY_CLICKED_GIVE_EDIT_ACCESS_CONNECT_WITH_COMPANY_NOT_FOUND",
+            "AGECNY_CLICKED_LOG_OUT_CONNECT_WITH_COMPANY_NOT_FOUND",
+            "AGENCY_CLICKED_SKIP_FOR_NOW_ON_CONNECT_WITH_COMPANY_PAGE",
+            "AGENCY_CLOSED_CONNECTED_TO_COMPANY_X_BUTTON_WRONG_COMPANY",
+            "AGENCY_COMPLETED_FIELD_CONNECT_WITH_COMPANY",
+            "AGECNY_FOUND_COMPANY_TO_CONNECT_WITH",
+            "AGENCY_SUCCESSFULLY_CREATED_COMPANY",
+            "AGENCY_ADDED_NEW_COMPANY_LOCATION",
+            "AGENCY_CLICKED_COMMUNITY_JOIN_NOW_LINK_IN_PORTAL_NOTIFICATIONS",
+            "AGENCY_CLICKED_CONNECT_TO_COMPANY_LINK_IN_PORTAL_NOTIFICATIONS",
+            "AGENCY_CLICKED_GET_CERTIFIED_LINK_IN_PORTAL_NOTIFICATIONS",
+            "AGENCY_CLICKED_GET_VIDEO_ADS_CERTIFIED_LINK_IN_PORTAL_NOTIFICATIONS",
+            "AGENCY_CLICKED_LINK_TO_MCC_LINK_IN_PORTAL_NOTIFICATIONS",
+            "AGENCY_CLICKED_INSIGHT_CONTENT_IN_PORTAL",
+            "AGENCY_CLICKED_INSIGHTS_VIEW_NOW_PITCH_DECKS_IN_PORTAL",
+            "AGENCY_CLICKED_INSIGHTS_LEFT_NAV_IN_PORTAL",
+            "AGENCY_CLICKED_INSIGHTS_UPLOAD_CONTENT",
+            "AGENCY_CLICKED_INSIGHTS_VIEWED_DEPRECATED",
+            "AGENCY_CLICKED_COMMUNITY_LEFT_NAV_IN_PORTAL",
+            "AGENCY_CLICKED_JOIN_COMMUNITY_BUTTON_COMMUNITY_PORTAL",
+            "AGENCY_CLICKED_CERTIFICATIONS_LEFT_NAV_IN_PORTAL",
+            "AGENCY_CLICKED_CERTIFICATIONS_PRODUCT_LEFT_NAV_IN_PORTAL",
+            "AGENCY_CLICKED_PARTNER_STATUS_LEFT_NAV_IN_PORTAL",
+            "AGENCY_CLICKED_PARTNER_STATUS_PRODUCT_LEFT_NAV_IN_PORTAL",
+            "AGENCY_CLICKED_OFFERS_LEFT_NAV_IN_PORTAL",
+            "AGENCY_CLICKED_SEND_BUTTON_ON_OFFERS_PAGE",
+            "AGENCY_CLICKED_EXAM_DETAILS_ON_CERT_ADWORDS_PAGE",
+            "AGENCY_CLICKED_SEE_EXAMS_CERTIFICATION_MAIN_PAGE",
+            "AGENCY_CLICKED_TAKE_EXAM_ON_CERT_EXAM_PAGE",
+            "AGENCY_OPENED_LAST_ADMIN_DIALOG",
+            "AGENCY_OPENED_DIALOG_WITH_NO_USERS",
+            "AGENCY_PROMOTED_USER_TO_ADMIN",
+            "AGENCY_UNAFFILIATED",
+            "AGENCY_CHANGED_ROLES",
+            "SMB_CLICKED_COMPANY_NAME_LINK_TO_PROFILE",
+            "SMB_VIEWED_ADWORDS_CERTIFICATE",
+            "SMB_VIEWED_ADWORDS_SEARCH_CERTIFICATE",
+            "SMB_VIEWED_ADWORDS_DISPLAY_CERTIFICATE",
+            "SMB_CLICKED_ADWORDS_CERTIFICATE_HELP_ICON",
+            "SMB_VIEWED_ANALYTICS_CERTIFICATE",
+            "SMB_VIEWED_DOUBLECLICK_CERTIFICATE",
+            "SMB_VIEWED_MOBILE_SITES_CERTIFICATE",
+            "SMB_VIEWED_VIDEO_ADS_CERTIFICATE",
+            "SMB_VIEWED_SHOPPING_CERTIFICATE",
+            "SMB_CLICKED_VIDEO_ADS_CERTIFICATE_HELP_ICON",
+            "SMB_VIEWED_DIGITAL_SALES_CERTIFICATE",
+            "CLICKED_HELP_AT_BOTTOM",
+            "CLICKED_HELP_AT_TOP",
+            "CLIENT_ERROR",
+            "AGENCY_CLICKED_LEFT_NAV_STORIES",
+            "CLICKED",
+            "SMB_VIEWED_MOBILE_CERTIFICATE",
+            "AGENCY_FAILED_COMPANY_VERIFICATION",
+            "VISITED_LANDING",
+            "VISITED_GPS",
+            "VISITED_AGENCY_PORTAL",
+            "CANCELLED_INDIVIDUAL_SIGN_UP",
+            "CANCELLED_COMPANY_SIGN_UP",
+            "AGENCY_CLICKED_SIGN_IN_BUTTON_TOP",
+            "AGENCY_CLICKED_SAVE_AND_CONTINUE_AT_BOT_OF_INCOMPLETE_PROFILE",
+            "AGENCY_UNSELECTED_OPT_IN_NEWS_INVITATIONS_AND_PROMOS",
+            "AGENCY_UNSELECTED_OPT_IN_BETA_TESTS_AND_MKT_RESEARCH",
+            "AGENCY_UNSELECTED_OPT_IN_PERFORMANCE_SUGGESTIONS",
+            "AGENCY_SELECTED_OPT_OUT_UNSELECT_ALL_EMAIL_NOTIFICATIONS",
+            "AGENCY_LINKED_INDIVIDUAL_MCC",
+            "AGENCY_SUGGESTED_TO_USER",
+            "AGENCY_IGNORED_SUGGESTED_AGENCIES_AND_SEARCHED",
+            "AGENCY_PICKED_SUGGESTED_AGENCY",
+            "AGENCY_SEARCHED_FOR_AGENCIES",
+            "AGENCY_PICKED_SEARCHED_AGENCY",
+            "AGENCY_DISMISSED_AFFILIATION_WIDGET",
+            "AGENCY_CLICKED_INSIGHTS_DOWNLOAD_CONTENT",
+            "AGENCY_PROGRESS_INSIGHTS_VIEW_CONTENT",
+            "AGENCY_CLICKED_CANCEL_ACCEPT_TOS_BUTTON",
+            "SMB_ENTERED_WEBSITE_IN_CONTACT_PARTNER_FORM",
+            "AGENCY_SELECTED_OPT_IN_AFA_MIGRATION",
+            "AGENCY_SELECTED_OPT_OUT_AFA_MIGRATION"
+          ],
+          "description": "The action that occurred.",
+          "type": "string"
         },
         "url": {
           "description": "The URL where the event occurred.",
           "type": "string"
         },
         "requestMetadata": {
-          "description": "Current request metadata.",
-          "$ref": "RequestMetadata"
+          "$ref": "RequestMetadata",
+          "description": "Current request metadata."
         },
         "eventScope": {
+          "enumDescriptions": [
+            "Unchosen.",
+            "Based on visitor.",
+            "Based on session.",
+            "Based on page visit."
+          ],
           "enum": [
             "EVENT_SCOPE_UNSPECIFIED",
             "VISITOR",
@@ -2432,13 +2058,7 @@
             "PAGE"
           ],
           "description": "The scope of the event.",
-          "type": "string",
-          "enumDescriptions": [
-            "Unchosen.",
-            "Based on visitor.",
-            "Based on session.",
-            "Based on page visit."
-          ]
+          "type": "string"
         },
         "eventDatas": {
           "description": "List of event data for the event.",
@@ -2449,6 +2069,21 @@
         }
       },
       "id": "LogUserEventRequest"
+    },
+    "UserOverrides": {
+      "properties": {
+        "ipAddress": {
+          "description": "IP address to use instead of the user's geo-located IP address.",
+          "type": "string"
+        },
+        "userId": {
+          "description": "Logged-in user ID to impersonate instead of the user's ID.",
+          "type": "string"
+        }
+      },
+      "id": "UserOverrides",
+      "description": "Values to use instead of the user's respective defaults. These are only\nhonored by whitelisted products.",
+      "type": "object"
     },
     "AnalyticsDataPoint": {
       "properties": {
@@ -2470,27 +2105,27 @@
       "type": "object"
     },
     "Analytics": {
-      "description": "Analytics data for a `Company` within a single day.",
-      "type": "object",
       "properties": {
+        "contacts": {
+          "$ref": "AnalyticsDataPoint",
+          "description": "Instances of users contacting the `Company`\non the specified date."
+        },
         "searchViews": {
           "$ref": "AnalyticsDataPoint",
           "description": "Instances of users seeing the `Company` in Google Partners Search results\non the specified date."
         },
         "profileViews": {
-          "description": "Instances of users viewing the `Company` profile\non the specified date.",
-          "$ref": "AnalyticsDataPoint"
+          "$ref": "AnalyticsDataPoint",
+          "description": "Instances of users viewing the `Company` profile\non the specified date."
         },
         "eventDate": {
-          "$ref": "Date",
-          "description": "Date on which these events occurred."
-        },
-        "contacts": {
-          "$ref": "AnalyticsDataPoint",
-          "description": "Instances of users contacting the `Company`\non the specified date."
+          "description": "Date on which these events occurred.",
+          "$ref": "Date"
         }
       },
-      "id": "Analytics"
+      "id": "Analytics",
+      "description": "Analytics data for a `Company` within a single day.",
+      "type": "object"
     },
     "PublicProfile": {
       "description": "Basic information from a public profile.",
@@ -2520,20 +2155,20 @@
       "id": "PublicProfile"
     },
     "AdWordsManagerAccountInfo": {
+      "description": "Information about a particular AdWords Manager Account.\nRead more at https://support.google.com/adwords/answer/6139186",
+      "type": "object",
       "properties": {
+        "customerName": {
+          "description": "Name of the customer this account represents.",
+          "type": "string"
+        },
         "id": {
           "format": "int64",
           "description": "The AdWords Manager Account id.",
           "type": "string"
-        },
-        "customerName": {
-          "description": "Name of the customer this account represents.",
-          "type": "string"
         }
       },
-      "id": "AdWordsManagerAccountInfo",
-      "description": "Information about a particular AdWords Manager Account.\nRead more at https://support.google.com/adwords/answer/6139186",
-      "type": "object"
+      "id": "AdWordsManagerAccountInfo"
     },
     "ResponseMetadata": {
       "properties": {
@@ -2548,12 +2183,12 @@
     },
     "RecaptchaChallenge": {
       "properties": {
-        "response": {
-          "description": "The response to the reCaptcha challenge.",
-          "type": "string"
-        },
         "id": {
           "description": "The ID of the reCaptcha challenge.",
+          "type": "string"
+        },
+        "response": {
+          "description": "The response to the reCaptcha challenge.",
           "type": "string"
         }
       },
@@ -2562,9 +2197,23 @@
       "type": "object"
     },
     "AvailableOffer": {
-      "description": "Available Offers to be distributed.",
-      "type": "object",
       "properties": {
+        "qualifiedCustomersComplete": {
+          "description": "Whether or not the list of qualified customers is definitely complete.",
+          "type": "boolean"
+        },
+        "id": {
+          "format": "int64",
+          "description": "ID of this offer.",
+          "type": "string"
+        },
+        "countryOfferInfos": {
+          "description": "Offer info by country.",
+          "items": {
+            "$ref": "CountryOfferInfo"
+          },
+          "type": "array"
+        },
         "offerType": {
           "enum": [
             "OFFER_TYPE_UNSPECIFIED",
@@ -2637,25 +2286,11 @@
         "name": {
           "description": "Name of the offer.",
           "type": "string"
-        },
-        "id": {
-          "format": "int64",
-          "description": "ID of this offer.",
-          "type": "string"
-        },
-        "qualifiedCustomersComplete": {
-          "description": "Whether or not the list of qualified customers is definitely complete.",
-          "type": "boolean"
-        },
-        "countryOfferInfos": {
-          "description": "Offer info by country.",
-          "items": {
-            "$ref": "CountryOfferInfo"
-          },
-          "type": "array"
         }
       },
-      "id": "AvailableOffer"
+      "id": "AvailableOffer",
+      "description": "Available Offers to be distributed.",
+      "type": "object"
     },
     "LatLng": {
       "properties": {
@@ -2675,8 +2310,6 @@
       "type": "object"
     },
     "Money": {
-      "description": "Represents an amount of money with its currency type.",
-      "type": "object",
       "properties": {
         "currencyCode": {
           "description": "The 3-letter currency code defined in ISO 4217.",
@@ -2693,15 +2326,14 @@
           "type": "string"
         }
       },
-      "id": "Money"
+      "id": "Money",
+      "description": "Represents an amount of money with its currency type.",
+      "type": "object"
     },
     "AnalyticsSummary": {
+      "description": "Analytics aggregated data for a `Company` for a given date range.",
+      "type": "object",
       "properties": {
-        "profileViewsCount": {
-          "format": "int32",
-          "description": "Aggregated number of profile views for the `Company` for given date range.",
-          "type": "integer"
-        },
         "searchViewsCount": {
           "format": "int32",
           "description": "Aggregated number of times users saw the `Company`\nin Google Partners Search results for given date range.",
@@ -2711,15 +2343,16 @@
           "format": "int32",
           "description": "Aggregated number of times users contacted the `Company`\nfor given date range.",
           "type": "integer"
+        },
+        "profileViewsCount": {
+          "format": "int32",
+          "description": "Aggregated number of profile views for the `Company` for given date range.",
+          "type": "integer"
         }
       },
-      "id": "AnalyticsSummary",
-      "description": "Analytics aggregated data for a `Company` for a given date range.",
-      "type": "object"
+      "id": "AnalyticsSummary"
     },
     "LogMessageRequest": {
-      "description": "Request message for\nLogClientMessage.",
-      "type": "object",
       "properties": {
         "clientInfo": {
           "additionalProperties": {
@@ -2733,13 +2366,6 @@
           "$ref": "RequestMetadata"
         },
         "level": {
-          "enumDescriptions": [
-            "Unchosen.",
-            "Message level for tracing information.",
-            "Message level for informational messages.",
-            "Message level for potential problems.",
-            "Message level for serious failures."
-          ],
           "enum": [
             "MESSAGE_LEVEL_UNSPECIFIED",
             "ML_FINE",
@@ -2748,31 +2374,26 @@
             "ML_SEVERE"
           ],
           "description": "Message level of client message.",
-          "type": "string"
+          "type": "string",
+          "enumDescriptions": [
+            "Unchosen.",
+            "Message level for tracing information.",
+            "Message level for informational messages.",
+            "Message level for potential problems.",
+            "Message level for serious failures."
+          ]
         },
         "details": {
           "description": "Details about the client message.",
           "type": "string"
         }
       },
-      "id": "LogMessageRequest"
+      "id": "LogMessageRequest",
+      "description": "Request message for\nLogClientMessage.",
+      "type": "object"
     },
     "Lead": {
       "properties": {
-        "adwordsCustomerId": {
-          "format": "int64",
-          "description": "The AdWords Customer ID of the lead.",
-          "type": "string"
-        },
-        "phoneNumber": {
-          "description": "Phone number of lead source.",
-          "type": "string"
-        },
-        "createTime": {
-          "format": "google-datetime",
-          "description": "Timestamp of when this lead was created.",
-          "type": "string"
-        },
         "marketingOptIn": {
           "description": "Whether or not the lead signed up for marketing emails",
           "type": "boolean"
@@ -2789,13 +2410,13 @@
           "description": "Type of lead.",
           "type": "string"
         },
-        "minMonthlyBudget": {
-          "$ref": "Money",
-          "description": "The minimum monthly budget lead source is willing to spend."
-        },
         "givenName": {
           "description": "First name of lead source.",
           "type": "string"
+        },
+        "minMonthlyBudget": {
+          "description": "The minimum monthly budget lead source is willing to spend.",
+          "$ref": "Money"
         },
         "websiteUrl": {
           "description": "Website URL of lead source.",
@@ -2806,12 +2427,6 @@
           "type": "string"
         },
         "gpsMotivations": {
-          "enumDescriptions": [
-            "Unchosen.",
-            "Advertiser needs help with their advertising.",
-            "Advertiser needs help with their website.",
-            "Advertiser does not have a website."
-          ],
           "description": "List of reasons for using Google Partner Search and creating a lead.",
           "items": {
             "enum": [
@@ -2822,7 +2437,13 @@
             ],
             "type": "string"
           },
-          "type": "array"
+          "type": "array",
+          "enumDescriptions": [
+            "Unchosen.",
+            "Advertiser needs help with their advertising.",
+            "Advertiser needs help with their website.",
+            "Advertiser does not have a website."
+          ]
         },
         "state": {
           "enumDescriptions": [
@@ -2857,6 +2478,20 @@
         "comments": {
           "description": "Comments lead source gave.",
           "type": "string"
+        },
+        "phoneNumber": {
+          "description": "Phone number of lead source.",
+          "type": "string"
+        },
+        "adwordsCustomerId": {
+          "format": "int64",
+          "description": "The AdWords Customer ID of the lead.",
+          "type": "string"
+        },
+        "createTime": {
+          "format": "google-datetime",
+          "description": "Timestamp of when this lead was created.",
+          "type": "string"
         }
       },
       "id": "Lead",
@@ -2864,8 +2499,6 @@
       "type": "object"
     },
     "DebugInfo": {
-      "description": "Debug information about this request.",
-      "type": "object",
       "properties": {
         "serverTraceInfo": {
           "description": "Server-side debug stack trace.",
@@ -2880,19 +2513,19 @@
           "type": "string"
         }
       },
-      "id": "DebugInfo"
+      "id": "DebugInfo",
+      "description": "Debug information about this request.",
+      "type": "object"
     },
     "ListUserStatesResponse": {
+      "description": "Response message for\nListUserStates.",
+      "type": "object",
       "properties": {
         "responseMetadata": {
           "description": "Current response metadata.",
           "$ref": "ResponseMetadata"
         },
         "userStates": {
-          "enumDescriptions": [
-            "Unchosen.",
-            "User must pass \u003ca href=\"https://www.google.com/recaptcha/\"\u003ereCaptcha\u003c/a\u003e to\ncontact a Partner via Google Partner Search."
-          ],
           "description": "User's states.",
           "items": {
             "enum": [
@@ -2901,16 +2534,16 @@
             ],
             "type": "string"
           },
-          "type": "array"
+          "type": "array",
+          "enumDescriptions": [
+            "Unchosen.",
+            "User must pass \u003ca href=\"https://www.google.com/recaptcha/\"\u003ereCaptcha\u003c/a\u003e to\ncontact a Partner via Google Partner Search."
+          ]
         }
       },
-      "id": "ListUserStatesResponse",
-      "description": "Response message for\nListUserStates.",
-      "type": "object"
+      "id": "ListUserStatesResponse"
     },
     "CompanyRelation": {
-      "description": "A CompanyRelation resource representing information about a user's\naffiliation and standing with a company in Partners.",
-      "type": "object",
       "properties": {
         "resolvedTimestamp": {
           "format": "google-datetime",
@@ -2964,6 +2597,12 @@
           "type": "string"
         },
         "segment": {
+          "enumDescriptions": [
+            "Default segment indicates an unknown.",
+            "Segment representing a selected group of Partners",
+            "Segment representing Premier SMB Partners, an AdWords partnership program.",
+            "A segment of Premier SMB Partners that have relationship with Google."
+          ],
           "description": "The segment the company is classified as.",
           "items": {
             "enum": [
@@ -2974,13 +2613,7 @@
             ],
             "type": "string"
           },
-          "type": "array",
-          "enumDescriptions": [
-            "Default segment indicates an unknown.",
-            "Segment representing a selected group of Partners",
-            "Segment representing Premier SMB Partners, an AdWords partnership program.",
-            "A segment of Premier SMB Partners that have relationship with Google."
-          ]
+          "type": "array"
         },
         "internalCompanyId": {
           "description": "The internal company ID.\nOnly available for a whitelisted set of api clients.",
@@ -3032,7 +2665,9 @@
           "type": "string"
         }
       },
-      "id": "CompanyRelation"
+      "id": "CompanyRelation",
+      "description": "A CompanyRelation resource representing information about a user's\naffiliation and standing with a company in Partners.",
+      "type": "object"
     },
     "Date": {
       "properties": {
@@ -3063,6 +2698,8 @@
       "type": "object"
     },
     "TrafficSource": {
+      "description": "Source of traffic for the current request.",
+      "type": "object",
       "properties": {
         "trafficSourceId": {
           "description": "Identifier to indicate where the traffic comes from.\nAn identifier has multiple letters created by a team which redirected the\ntraffic to us.",
@@ -3073,9 +2710,26 @@
           "type": "string"
         }
       },
-      "id": "TrafficSource",
-      "description": "Source of traffic for the current request.",
-      "type": "object"
+      "id": "TrafficSource"
+    },
+    "CreateLeadRequest": {
+      "description": "Request message for CreateLead.",
+      "type": "object",
+      "properties": {
+        "requestMetadata": {
+          "$ref": "RequestMetadata",
+          "description": "Current request metadata."
+        },
+        "recaptchaChallenge": {
+          "$ref": "RecaptchaChallenge",
+          "description": "\u003ca href=\"https://www.google.com/recaptcha/\"\u003ereCaptcha\u003c/a\u003e challenge info."
+        },
+        "lead": {
+          "description": "The lead resource. The `LeadType` must not be `LEAD_TYPE_UNSPECIFIED`\nand either `email` or `phone_number` must be provided.",
+          "$ref": "Lead"
+        }
+      },
+      "id": "CreateLeadRequest"
     },
     "RequestMetadata": {
       "properties": {
@@ -3099,36 +2753,15 @@
           "type": "string"
         },
         "userOverrides": {
-          "description": "Values to use instead of the user's respective defaults for the current\nrequest. These are only honored by whitelisted products.",
-          "$ref": "UserOverrides"
+          "$ref": "UserOverrides",
+          "description": "Values to use instead of the user's respective defaults for the current\nrequest. These are only honored by whitelisted products."
         }
       },
       "id": "RequestMetadata",
       "description": "Common data that is in each API request.",
       "type": "object"
     },
-    "CreateLeadRequest": {
-      "description": "Request message for CreateLead.",
-      "type": "object",
-      "properties": {
-        "requestMetadata": {
-          "$ref": "RequestMetadata",
-          "description": "Current request metadata."
-        },
-        "recaptchaChallenge": {
-          "description": "\u003ca href=\"https://www.google.com/recaptcha/\"\u003ereCaptcha\u003c/a\u003e challenge info.",
-          "$ref": "RecaptchaChallenge"
-        },
-        "lead": {
-          "description": "The lead resource. The `LeadType` must not be `LEAD_TYPE_UNSPECIFIED`\nand either `email` or `phone_number` must be provided.",
-          "$ref": "Lead"
-        }
-      },
-      "id": "CreateLeadRequest"
-    },
     "EventData": {
-      "description": "Key value data pair for an event.",
-      "type": "object",
       "properties": {
         "key": {
           "enumDescriptions": [
@@ -3222,12 +2855,44 @@
           "type": "array"
         }
       },
-      "id": "EventData"
+      "id": "EventData",
+      "description": "Key value data pair for an event.",
+      "type": "object"
     },
     "ExamStatus": {
       "description": "A user's information on a specific exam.",
       "type": "object",
       "properties": {
+        "examType": {
+          "enumDescriptions": [
+            "Unchosen.",
+            "Adwords Fundamentals exam.",
+            "AdWords advanced search exam.",
+            "AdWords advanced display exam.",
+            "VideoAds exam.",
+            "DoubleClick exam.",
+            "Analytics exam.",
+            "Shopping exam.",
+            "Mobile exam.",
+            "Digital Sales exam.",
+            "Mobile Sites exam."
+          ],
+          "enum": [
+            "CERTIFICATION_EXAM_TYPE_UNSPECIFIED",
+            "CET_ADWORDS_FUNDAMENTALS",
+            "CET_ADWORDS_ADVANCED_SEARCH",
+            "CET_ADWORDS_ADVANCED_DISPLAY",
+            "CET_VIDEO_ADS",
+            "CET_DOUBLECLICK",
+            "CET_ANALYTICS",
+            "CET_SHOPPING",
+            "CET_MOBILE",
+            "CET_DIGITAL_SALES",
+            "CET_MOBILE_SITES"
+          ],
+          "description": "The type of the exam.",
+          "type": "string"
+        },
         "passed": {
           "description": "Whether this exam has been passed and not expired.",
           "type": "boolean"
@@ -3250,53 +2915,19 @@
           "format": "google-datetime",
           "description": "The date the user last passed this exam.",
           "type": "string"
-        },
-        "examType": {
-          "enum": [
-            "CERTIFICATION_EXAM_TYPE_UNSPECIFIED",
-            "CET_ADWORDS_FUNDAMENTALS",
-            "CET_ADWORDS_ADVANCED_SEARCH",
-            "CET_ADWORDS_ADVANCED_DISPLAY",
-            "CET_VIDEO_ADS",
-            "CET_DOUBLECLICK",
-            "CET_ANALYTICS",
-            "CET_SHOPPING",
-            "CET_MOBILE",
-            "CET_DIGITAL_SALES",
-            "CET_MOBILE_SITES"
-          ],
-          "description": "The type of the exam.",
-          "type": "string",
-          "enumDescriptions": [
-            "Unchosen.",
-            "Adwords Fundamentals exam.",
-            "AdWords advanced search exam.",
-            "AdWords advanced display exam.",
-            "VideoAds exam.",
-            "DoubleClick exam.",
-            "Analytics exam.",
-            "Shopping exam.",
-            "Mobile exam.",
-            "Digital Sales exam.",
-            "Mobile Sites exam."
-          ]
         }
       },
       "id": "ExamStatus"
     },
     "ListOffersResponse": {
+      "description": "Response for ListOffer.",
+      "type": "object",
       "properties": {
         "responseMetadata": {
-          "$ref": "ResponseMetadata",
-          "description": "Current response metadata."
+          "description": "Current response metadata.",
+          "$ref": "ResponseMetadata"
         },
         "noOfferReason": {
-          "enumDescriptions": [
-            "Unset.",
-            "Not an MCC.",
-            "Offer limit has been reached.",
-            "Ineligible for offers."
-          ],
           "enum": [
             "NO_OFFER_REASON_UNSPECIFIED",
             "NO_OFFER_REASON_NO_MCC",
@@ -3304,7 +2935,13 @@
             "NO_OFFER_REASON_INELIGIBLE"
           ],
           "description": "Reason why no Offers are available.",
-          "type": "string"
+          "type": "string",
+          "enumDescriptions": [
+            "Unset.",
+            "Not an MCC.",
+            "Offer limit has been reached.",
+            "Ineligible for offers."
+          ]
         },
         "availableOffers": {
           "description": "Available Offers to be distributed.",
@@ -3314,9 +2951,7 @@
           "type": "array"
         }
       },
-      "id": "ListOffersResponse",
-      "description": "Response for ListOffer.",
-      "type": "object"
+      "id": "ListOffersResponse"
     },
     "CountryOfferInfo": {
       "properties": {
@@ -3329,6 +2964,12 @@
           "type": "string"
         },
         "offerType": {
+          "enumDescriptions": [
+            "Unset.",
+            "AdWords spend X get Y.",
+            "Youtube video.",
+            "Spend Match up to Y."
+          ],
           "enum": [
             "OFFER_TYPE_UNSPECIFIED",
             "OFFER_TYPE_SPEND_X_GET_Y",
@@ -3336,13 +2977,7 @@
             "OFFER_TYPE_SPEND_MATCH"
           ],
           "description": "Type of offer country is eligible for.",
-          "type": "string",
-          "enumDescriptions": [
-            "Unset.",
-            "AdWords spend X get Y.",
-            "Youtube video.",
-            "Spend Match up to Y."
-          ]
+          "type": "string"
         },
         "getYAmount": {
           "description": "(localized) Get Y amount for that country's offer.",
@@ -3354,6 +2989,8 @@
       "type": "object"
     },
     "ListCompaniesResponse": {
+      "description": "Response message for\nListCompanies.",
+      "type": "object",
       "properties": {
         "nextPageToken": {
           "description": "A token to retrieve next page of results.\nPass this value in the `ListCompaniesRequest.page_token` field in the\nsubsequent call to\nListCompanies to retrieve the\nnext page of results.",
@@ -3371,12 +3008,18 @@
           "type": "array"
         }
       },
-      "id": "ListCompaniesResponse",
-      "description": "Response message for\nListCompanies.",
-      "type": "object"
+      "id": "ListCompaniesResponse"
     },
     "OfferCustomer": {
       "properties": {
+        "name": {
+          "description": "Name of the customer.",
+          "type": "string"
+        },
+        "spendXAmount": {
+          "description": "Formatted Spend X amount with currency code.",
+          "type": "string"
+        },
         "adwordsUrl": {
           "description": "URL to the customer's AdWords page.",
           "type": "string"
@@ -3386,22 +3029,7 @@
           "description": "Days the customer is still eligible.",
           "type": "integer"
         },
-        "creationTime": {
-          "format": "google-datetime",
-          "description": "Time the customer was created.",
-          "type": "string"
-        },
-        "countryCode": {
-          "description": "Country code of the customer.",
-          "type": "string"
-        },
         "offerType": {
-          "enumDescriptions": [
-            "Unset.",
-            "AdWords spend X get Y.",
-            "Youtube video.",
-            "Spend Match up to Y."
-          ],
           "enum": [
             "OFFER_TYPE_UNSPECIFIED",
             "OFFER_TYPE_SPEND_X_GET_Y",
@@ -3409,23 +3037,30 @@
             "OFFER_TYPE_SPEND_MATCH"
           ],
           "description": "Type of the offer",
-          "type": "string"
+          "type": "string",
+          "enumDescriptions": [
+            "Unset.",
+            "AdWords spend X get Y.",
+            "Youtube video.",
+            "Spend Match up to Y."
+          ]
         },
         "externalCid": {
           "format": "int64",
           "description": "External CID for the customer.",
           "type": "string"
         },
+        "countryCode": {
+          "description": "Country code of the customer.",
+          "type": "string"
+        },
+        "creationTime": {
+          "format": "google-datetime",
+          "description": "Time the customer was created.",
+          "type": "string"
+        },
         "getYAmount": {
           "description": "Formatted Get Y amount with currency code.",
-          "type": "string"
-        },
-        "name": {
-          "description": "Name of the customer.",
-          "type": "string"
-        },
-        "spendXAmount": {
-          "description": "Formatted Spend X amount with currency code.",
           "type": "string"
         }
       },
@@ -3489,13 +3124,7 @@
       "type": "object"
     },
     "LocalizedCompanyInfo": {
-      "description": "The localized company information.",
-      "type": "object",
       "properties": {
-        "languageCode": {
-          "description": "Language code of the localized company info, as defined by\n\u003ca href=\"https://tools.ietf.org/html/bcp47\"\u003eBCP 47\u003c/a\u003e\n(IETF BCP 47, \"Tags for Identifying Languages\").",
-          "type": "string"
-        },
         "countryCodes": {
           "description": "List of country codes for the localized company info.",
           "items": {
@@ -3510,20 +3139,26 @@
         "displayName": {
           "description": "Localized display name.",
           "type": "string"
+        },
+        "languageCode": {
+          "description": "Language code of the localized company info, as defined by\n\u003ca href=\"https://tools.ietf.org/html/bcp47\"\u003eBCP 47\u003c/a\u003e\n(IETF BCP 47, \"Tags for Identifying Languages\").",
+          "type": "string"
         }
       },
-      "id": "LocalizedCompanyInfo"
+      "id": "LocalizedCompanyInfo",
+      "description": "The localized company information.",
+      "type": "object"
     },
     "LogUserEventResponse": {
-      "description": "Response message for\nLogUserEvent.",
-      "type": "object",
       "properties": {
         "responseMetadata": {
-          "description": "Current response metadata.",
-          "$ref": "ResponseMetadata"
+          "$ref": "ResponseMetadata",
+          "description": "Current response metadata."
         }
       },
-      "id": "LogUserEventResponse"
+      "id": "LogUserEventResponse",
+      "description": "Response message for\nLogUserEvent.",
+      "type": "object"
     },
     "ListOffersHistoryResponse": {
       "properties": {
@@ -3552,8 +3187,8 @@
           "type": "string"
         },
         "responseMetadata": {
-          "description": "Current response metadata.",
-          "$ref": "ResponseMetadata"
+          "$ref": "ResponseMetadata",
+          "description": "Current response metadata."
         }
       },
       "id": "ListOffersHistoryResponse",
@@ -3561,17 +3196,19 @@
       "type": "object"
     },
     "LogMessageResponse": {
-      "description": "Response message for\nLogClientMessage.",
-      "type": "object",
       "properties": {
         "responseMetadata": {
-          "$ref": "ResponseMetadata",
-          "description": "Current response metadata."
+          "description": "Current response metadata.",
+          "$ref": "ResponseMetadata"
         }
       },
-      "id": "LogMessageResponse"
+      "id": "LogMessageResponse",
+      "description": "Response message for\nLogClientMessage.",
+      "type": "object"
     },
     "SpecializationStatus": {
+      "description": "Agency specialization status",
+      "type": "object",
       "properties": {
         "badgeSpecializationState": {
           "enumDescriptions": [
@@ -3590,6 +3227,14 @@
           "type": "string"
         },
         "badgeSpecialization": {
+          "enumDescriptions": [
+            "Unknown specialization",
+            "AdWords Search specialization",
+            "AdWords Display specialization",
+            "AdWords Mobile specialization",
+            "AdWords Video specialization",
+            "AdWords Shopping specialization"
+          ],
           "enum": [
             "BADGE_SPECIALIZATION_UNKNOWN",
             "BADGE_SPECIALIZATION_ADWORDS_SEARCH",
@@ -3599,40 +3244,403 @@
             "BADGE_SPECIALIZATION_ADWORDS_SHOPPING"
           ],
           "description": "The specialization this status is for.",
-          "type": "string",
-          "enumDescriptions": [
-            "Unknown specialization",
-            "AdWords Search specialization",
-            "AdWords Display specialization",
-            "AdWords Mobile specialization",
-            "AdWords Video specialization",
-            "AdWords Shopping specialization"
-          ]
+          "type": "string"
         }
       },
-      "id": "SpecializationStatus",
-      "description": "Agency specialization status",
+      "id": "SpecializationStatus"
+    },
+    "Certification": {
+      "properties": {
+        "warning": {
+          "description": "Whether this certification is in the state of warning.",
+          "type": "boolean"
+        },
+        "expiration": {
+          "format": "google-datetime",
+          "description": "Date this certification is due to expire.",
+          "type": "string"
+        },
+        "achieved": {
+          "description": "Whether this certification has been achieved.",
+          "type": "boolean"
+        },
+        "certificationType": {
+          "enumDescriptions": [
+            "Unchosen.",
+            "AdWords certified.",
+            "YouTube certified.",
+            "VideoAds certified.",
+            "Analytics certified.",
+            "DoubleClick certified.",
+            "Shopping certified.",
+            "Mobile certified.",
+            "Digital sales certified.",
+            "AdWords Search certified.",
+            "AdWords Display certified.",
+            "Mobile Sites certified."
+          ],
+          "enum": [
+            "CERTIFICATION_TYPE_UNSPECIFIED",
+            "CT_ADWORDS",
+            "CT_YOUTUBE",
+            "CT_VIDEOADS",
+            "CT_ANALYTICS",
+            "CT_DOUBLECLICK",
+            "CT_SHOPPING",
+            "CT_MOBILE",
+            "CT_DIGITAL_SALES",
+            "CT_ADWORDS_SEARCH",
+            "CT_ADWORDS_DISPLAY",
+            "CT_MOBILE_SITES"
+          ],
+          "description": "The type of certification, the area of expertise.",
+          "type": "string"
+        },
+        "lastAchieved": {
+          "format": "google-datetime",
+          "description": "The date the user last achieved certification.",
+          "type": "string"
+        }
+      },
+      "id": "Certification",
+      "description": "A user's information on a specific certification.",
+      "type": "object"
+    },
+    "User": {
+      "description": "A resource representing a user of the Partners platform.",
+      "type": "object",
+      "properties": {
+        "lastAccessTime": {
+          "format": "google-datetime",
+          "description": "The most recent time the user interacted with the Partners site.\n@OutputOnly",
+          "type": "string"
+        },
+        "primaryEmails": {
+          "description": "The list of emails the user has access to/can select as primary.\n@OutputOnly",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "availableAdwordsManagerAccounts": {
+          "description": "This is the list of AdWords Manager Accounts the user has edit access to.\nIf the user has edit access to multiple accounts, the user can choose the\npreferred account and we use this when a personal account is needed. Can\nbe empty meaning the user has access to no accounts.\n@OutputOnly",
+          "items": {
+            "$ref": "AdWordsManagerAccountInfo"
+          },
+          "type": "array"
+        },
+        "internalId": {
+          "description": "The internal user ID.\nOnly available for a whitelisted set of api clients.",
+          "type": "string"
+        },
+        "examStatus": {
+          "description": "The list of exams the user ever taken. For each type of exam, only one\nentry is listed.",
+          "items": {
+            "$ref": "ExamStatus"
+          },
+          "type": "array"
+        },
+        "id": {
+          "description": "The ID of the user.",
+          "type": "string"
+        },
+        "publicProfile": {
+          "description": "Information about a user's external public profile outside Google Partners.",
+          "$ref": "PublicProfile"
+        },
+        "companyVerificationEmail": {
+          "description": "The email address used by the user used for company verification.\n@OutputOnly",
+          "type": "string"
+        },
+        "certificationStatus": {
+          "description": "The list of achieved certifications. These are calculated based on exam\nresults and other requirements.\n@OutputOnly",
+          "items": {
+            "$ref": "Certification"
+          },
+          "type": "array"
+        },
+        "company": {
+          "description": "The company that the user is associated with.\nIf not present, the user is not associated with any company.",
+          "$ref": "CompanyRelation"
+        },
+        "profile": {
+          "description": "The profile information of a Partners user, contains all the directly\neditable user information.",
+          "$ref": "UserProfile"
+        }
+      },
+      "id": "User"
+    },
+    "ListAnalyticsResponse": {
+      "properties": {
+        "analytics": {
+          "description": "The list of analytics.\nSorted in ascending order of\nAnalytics.event_date.",
+          "items": {
+            "$ref": "Analytics"
+          },
+          "type": "array"
+        },
+        "nextPageToken": {
+          "description": "A token to retrieve next page of results.\nPass this value in the `ListAnalyticsRequest.page_token` field in the\nsubsequent call to\nListAnalytics to retrieve the\nnext page of results.",
+          "type": "string"
+        },
+        "analyticsSummary": {
+          "description": "Aggregated information across the response's\nanalytics.",
+          "$ref": "AnalyticsSummary"
+        },
+        "responseMetadata": {
+          "description": "Current response metadata.",
+          "$ref": "ResponseMetadata"
+        }
+      },
+      "id": "ListAnalyticsResponse",
+      "description": "Response message for\nListAnalytics.",
+      "type": "object"
+    },
+    "ListLeadsResponse": {
+      "description": "Response message for ListLeads.",
+      "type": "object",
+      "properties": {
+        "nextPageToken": {
+          "description": "A token to retrieve next page of results.\nPass this value in the `ListLeadsRequest.page_token` field in the\nsubsequent call to\nListLeads to retrieve the\nnext page of results.",
+          "type": "string"
+        },
+        "totalSize": {
+          "format": "int32",
+          "description": "The total count of leads for the given company.",
+          "type": "integer"
+        },
+        "responseMetadata": {
+          "description": "Current response metadata.",
+          "$ref": "ResponseMetadata"
+        },
+        "leads": {
+          "description": "The list of leads.",
+          "items": {
+            "$ref": "Lead"
+          },
+          "type": "array"
+        }
+      },
+      "id": "ListLeadsResponse"
+    },
+    "Company": {
+      "properties": {
+        "locations": {
+          "description": "The list of all company locations.\nIf set, must include the\nprimary_location\nin the list.",
+          "items": {
+            "$ref": "Location"
+          },
+          "type": "array"
+        },
+        "convertedMinMonthlyBudget": {
+          "$ref": "Money",
+          "description": "The minimum monthly budget that the company accepts for partner business,\nconverted to the requested currency code."
+        },
+        "industries": {
+          "enumDescriptions": [
+            "Unchosen.",
+            "The automotive industry.",
+            "The business-to-business industry.",
+            "The consumer packaged goods industry.",
+            "The education industry.",
+            "The finance industry.",
+            "The healthcare industry.",
+            "The media and entertainment industry.",
+            "The retail industry.",
+            "The technology industry.",
+            "The travel industry."
+          ],
+          "description": "Industries the company can help with.",
+          "items": {
+            "enum": [
+              "INDUSTRY_UNSPECIFIED",
+              "I_AUTOMOTIVE",
+              "I_BUSINESS_TO_BUSINESS",
+              "I_CONSUMER_PACKAGED_GOODS",
+              "I_EDUCATION",
+              "I_FINANCE",
+              "I_HEALTHCARE",
+              "I_MEDIA_AND_ENTERTAINMENT",
+              "I_RETAIL",
+              "I_TECHNOLOGY",
+              "I_TRAVEL"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "additionalWebsites": {
+          "description": "URL of the company's additional websites used to verify the dynamic badges.\nThese are stored as full URLs as entered by the user, but only the TLD will\nbe used for the actual verification.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "websiteUrl": {
+          "description": "URL of the company's website.",
+          "type": "string"
+        },
+        "primaryAdwordsManagerAccountId": {
+          "format": "int64",
+          "description": "The Primary AdWords Manager Account id.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the company.",
+          "type": "string"
+        },
+        "localizedInfos": {
+          "description": "The list of localized info for the company.",
+          "items": {
+            "$ref": "LocalizedCompanyInfo"
+          },
+          "type": "array"
+        },
+        "id": {
+          "description": "The ID of the company.",
+          "type": "string"
+        },
+        "certificationStatuses": {
+          "description": "The list of Google Partners certification statuses for the company.",
+          "items": {
+            "$ref": "CertificationStatus"
+          },
+          "type": "array"
+        },
+        "originalMinMonthlyBudget": {
+          "$ref": "Money",
+          "description": "The unconverted minimum monthly budget that the company accepts for partner\nbusiness."
+        },
+        "services": {
+          "enumDescriptions": [
+            "Unchosen.",
+            "Help with advanced AdWords support.",
+            "Help with advertising on Google.",
+            "Help with an enhanced website.",
+            "Help with an online marketing plan.",
+            "Help with mobile and video ads.",
+            "Help with mobile websites."
+          ],
+          "description": "Services the company can help with.",
+          "items": {
+            "enum": [
+              "SERVICE_UNSPECIFIED",
+              "S_ADVANCED_ADWORDS_SUPPORT",
+              "S_ADVERTISING_ON_GOOGLE",
+              "S_AN_ENHANCED_WEBSITE",
+              "S_AN_ONLINE_MARKETING_PLAN",
+              "S_MOBILE_AND_VIDEO_ADS",
+              "S_MOBILE_WEBSITE_SERVICES"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "primaryLocation": {
+          "$ref": "Location",
+          "description": "The primary location of the company."
+        },
+        "publicProfile": {
+          "$ref": "PublicProfile",
+          "description": "Basic information from the company's public profile."
+        },
+        "ranks": {
+          "description": "Information related to the ranking of the company within the list of\ncompanies.",
+          "items": {
+            "$ref": "Rank"
+          },
+          "type": "array"
+        },
+        "badgeTier": {
+          "enumDescriptions": [
+            "Tier badge is not set.",
+            "Agency has regular partner badge.",
+            "Agency has premier badge."
+          ],
+          "enum": [
+            "BADGE_TIER_NONE",
+            "BADGE_TIER_REGULAR",
+            "BADGE_TIER_PREMIER"
+          ],
+          "description": "Partner badge tier",
+          "type": "string"
+        },
+        "specializationStatus": {
+          "description": "The list of Google Partners specialization statuses for the company.",
+          "items": {
+            "$ref": "SpecializationStatus"
+          },
+          "type": "array"
+        },
+        "companyTypes": {
+          "description": "Company type labels listed on the company's profile.",
+          "items": {
+            "enum": [
+              "COMPANY_TYPE_UNSPECIFIED",
+              "FULL_SERVICE_AGENCY",
+              "MEDIA_AGENCY",
+              "CREATIVE_AGENCY",
+              "CDIGITAL_AGENCY",
+              "SEM_SEO",
+              "PERFORMANCE_MARKETING",
+              "ADVERTISING_TOOL_DEVELOPMENT",
+              "PR",
+              "SELF_MANAGED",
+              "RESELLER"
+            ],
+            "type": "string"
+          },
+          "type": "array",
+          "enumDescriptions": [
+            "Unchosen.",
+            "Handles all aspects of the advertising process.",
+            "Focuses solely on an advertiser's media placement.",
+            "Plans/executes advertising campaigns.",
+            "Like a\nFULL_SERVICE_AGENCY,\nbut specializing in digital.",
+            "Increases visibility in search engine result pages.",
+            "Drives promotional efforts for immediate impact.",
+            "Focuses on bid management, conversion, reporting.",
+            "Establishes favorable relationship with public through low/no-cost\ncommunications.",
+            "Does not manage other company's accounts, manages own marketing programs.",
+            "Full-service AdWords account management for local businesses."
+          ]
+        },
+        "autoApprovalEmailDomains": {
+          "description": "Email domains that allow users with a matching email address to get\nauto-approved for associating with this company.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "profileStatus": {
+          "enumDescriptions": [
+            "Unchosen.",
+            "Company profile does not show up publicly.",
+            "Company profile can only be viewed by the profile's URL\nand not by Google Partner Search.",
+            "Company profile can be viewed by the profile's URL\nand by Google Partner Search."
+          ],
+          "enum": [
+            "COMPANY_PROFILE_STATUS_UNSPECIFIED",
+            "HIDDEN",
+            "PUBLISHED",
+            "SEARCHABLE"
+          ],
+          "description": "The public viewability status of the company's profile.",
+          "type": "string"
+        },
+        "primaryLanguageCode": {
+          "description": "The primary language code of the company, as defined by\n\u003ca href=\"https://tools.ietf.org/html/bcp47\"\u003eBCP 47\u003c/a\u003e\n(IETF BCP 47, \"Tags for Identifying Languages\").",
+          "type": "string"
+        }
+      },
+      "id": "Company",
+      "description": "A company resource in the Google Partners API. Once certified, it qualifies\nfor being searched by advertisers.",
       "type": "object"
     }
   },
-  "protocol": "rest",
   "icons": {
-    "x16": "http://www.google.com/images/icons/product/search-16.gif",
-    "x32": "http://www.google.com/images/icons/product/search-32.gif"
+    "x32": "http://www.google.com/images/icons/product/search-32.gif",
+    "x16": "http://www.google.com/images/icons/product/search-16.gif"
   },
-  "version": "v2",
-  "baseUrl": "https://partners.googleapis.com/",
-  "canonicalName": "Partners",
-  "servicePath": "",
-  "description": "Searches certified companies and creates contact leads with them, and also audits the usage of clients.",
-  "kind": "discovery#restDescription",
-  "rootUrl": "https://partners.googleapis.com/",
-  "basePath": "",
-  "ownerDomain": "google.com",
-  "name": "partners",
-  "batchPath": "batch",
-  "id": "partners:v2",
-  "revision": "20170912",
-  "documentationLink": "https://developers.google.com/partners/",
-  "title": "Google Partners API"
+  "protocol": "rest"
 }

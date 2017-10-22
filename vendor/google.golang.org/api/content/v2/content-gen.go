@@ -1386,8 +1386,8 @@ type Datafeed struct {
 	// attributes are defined in the data feed.
 	AttributeLanguage string `json:"attributeLanguage,omitempty"`
 
-	// ContentLanguage: [DEPRECATED] Please use target.language instead. The
-	// two-letter ISO 639-1 language of the items in the feed. Must be a
+	// ContentLanguage: [DEPRECATED] Please use targets[].language instead.
+	// The two-letter ISO 639-1 language of the items in the feed. Must be a
 	// valid language for targetCountry.
 	ContentLanguage string `json:"contentLanguage,omitempty"`
 
@@ -1409,8 +1409,8 @@ type Datafeed struct {
 	Id int64 `json:"id,omitempty,string"`
 
 	// IntendedDestinations: [DEPRECATED] Please use
-	// target.includedDestination instead. The list of intended destinations
-	// (corresponds to checked check boxes in Merchant Center).
+	// targets[].includedDestinations instead. The list of intended
+	// destinations (corresponds to checked check boxes in Merchant Center).
 	IntendedDestinations []string `json:"intendedDestinations,omitempty"`
 
 	// Kind: Identifies what kind of resource this is. Value: the fixed
@@ -1420,7 +1420,7 @@ type Datafeed struct {
 	// Name: A descriptive name of the data feed.
 	Name string `json:"name,omitempty"`
 
-	// TargetCountry: [DEPRECATED] Please use target.country instead. The
+	// TargetCountry: [DEPRECATED] Please use targets[].country instead. The
 	// country where the items in the feed will be included in the search
 	// index, represented as a CLDR territory code.
 	TargetCountry string `json:"targetCountry,omitempty"`
@@ -2220,18 +2220,20 @@ type Headers struct {
 	// if all other fields are not set.
 	PostalCodeGroupNames []string `json:"postalCodeGroupNames,omitempty"`
 
-	// Prices: be "infinity". For example [{"value": "10", "currency":
-	// "USD"}, {"value": "500", "currency": "USD"}, {"value": "infinity",
-	// "currency": "USD"}] represents the headers "<= $10", " $500". All
-	// prices within a service must have the same currency. Must be
-	// non-empty. Can only be set if all other fields are not set.
+	// Prices: A list of inclusive order price upper bounds. The last
+	// price's value can be "infinity". For example [{"value": "10",
+	// "currency": "USD"}, {"value": "500", "currency": "USD"}, {"value":
+	// "infinity", "currency": "USD"}] represents the headers "<= $10", "
+	// $500". All prices within a service must have the same currency. Must
+	// be non-empty. Can only be set if all other fields are not set.
 	Prices []*Price `json:"prices,omitempty"`
 
-	// Weights: be "infinity". For example [{"value": "10", "unit": "kg"},
-	// {"value": "50", "unit": "kg"}, {"value": "infinity", "unit": "kg"}]
-	// represents the headers "<= 10kg", " 50kg". All weights within a
-	// service must have the same unit. Must be non-empty. Can only be set
-	// if all other fields are not set.
+	// Weights: A list of inclusive order weight upper bounds. The last
+	// weight's value can be "infinity". For example [{"value": "10",
+	// "unit": "kg"}, {"value": "50", "unit": "kg"}, {"value": "infinity",
+	// "unit": "kg"}] represents the headers "<= 10kg", " 50kg". All weights
+	// within a service must have the same unit. Must be non-empty. Can only
+	// be set if all other fields are not set.
 	Weights []*Weight `json:"weights,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Locations") to

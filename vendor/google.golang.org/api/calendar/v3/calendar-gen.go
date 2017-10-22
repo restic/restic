@@ -2096,6 +2096,14 @@ func (r *AclService) Insert(calendarId string, aclrule *AclRule) *AclInsertCall 
 	return c
 }
 
+// SendNotifications sets the optional parameter "sendNotifications":
+// Whether to send notifications about the calendar sharing change.  The
+// default is True.
+func (c *AclInsertCall) SendNotifications(sendNotifications bool) *AclInsertCall {
+	c.urlParams_.Set("sendNotifications", fmt.Sprint(sendNotifications))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -2194,6 +2202,11 @@ func (c *AclInsertCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "sendNotifications": {
+	//       "description": "Whether to send notifications about the calendar sharing change. Optional. The default is True.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "calendars/{calendarId}/acl",
@@ -2453,6 +2466,15 @@ func (r *AclService) Patch(calendarId string, ruleId string, aclrule *AclRule) *
 	return c
 }
 
+// SendNotifications sets the optional parameter "sendNotifications":
+// Whether to send notifications about the calendar sharing change. Note
+// that there are no notifications on access removal.  The default is
+// True.
+func (c *AclPatchCall) SendNotifications(sendNotifications bool) *AclPatchCall {
+	c.urlParams_.Set("sendNotifications", fmt.Sprint(sendNotifications))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -2559,6 +2581,11 @@ func (c *AclPatchCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "sendNotifications": {
+	//       "description": "Whether to send notifications about the calendar sharing change. Note that there are no notifications on access removal. Optional. The default is True.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "calendars/{calendarId}/acl/{ruleId}",
@@ -2593,6 +2620,15 @@ func (r *AclService) Update(calendarId string, ruleId string, aclrule *AclRule) 
 	c.calendarId = calendarId
 	c.ruleId = ruleId
 	c.aclrule = aclrule
+	return c
+}
+
+// SendNotifications sets the optional parameter "sendNotifications":
+// Whether to send notifications about the calendar sharing change. Note
+// that there are no notifications on access removal.  The default is
+// True.
+func (c *AclUpdateCall) SendNotifications(sendNotifications bool) *AclUpdateCall {
+	c.urlParams_.Set("sendNotifications", fmt.Sprint(sendNotifications))
 	return c
 }
 
@@ -2702,6 +2738,11 @@ func (c *AclUpdateCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "sendNotifications": {
+	//       "description": "Whether to send notifications about the calendar sharing change. Note that there are no notifications on access removal. Optional. The default is True.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "calendars/{calendarId}/acl/{ruleId}",

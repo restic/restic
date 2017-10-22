@@ -1864,10 +1864,20 @@ type TestSetup struct {
 	// Optional
 	Account *Account `json:"account,omitempty"`
 
-	// DirectoriesToPull: The directories on the device to upload to GCS at
-	// the end of the test;
-	// they must be absolute, whitelisted paths.
-	// Refer to RegularFile for whitelisted paths.
+	// DirectoriesToPull: List of directories on the device to upload to GCS
+	// at the end of the test;
+	// they must be absolute paths under /sdcard or /data/local/tmp.
+	// Path names are restricted to characters a-z A-Z 0-9 _ - . + and
+	// /
+	//
+	// Note: The paths /sdcard and /data will be made available and treated
+	// as
+	// implicit path substitutions. E.g. if /sdcard on a particular device
+	// does
+	// not map to external storage, the system will replace it with the
+	// external
+	// storage path prefix for that device.
+	//
 	// Optional
 	DirectoriesToPull []string `json:"directoriesToPull,omitempty"`
 
@@ -1876,7 +1886,10 @@ type TestSetup struct {
 	// instrumentation tests).
 	EnvironmentVariables []*EnvironmentVariable `json:"environmentVariables,omitempty"`
 
-	// FilesToPush: Optional
+	// FilesToPush: List of files to push to the device before starting the
+	// test.
+	//
+	// Optional
 	FilesToPush []*DeviceFile `json:"filesToPush,omitempty"`
 
 	// NetworkProfile: The network traffic profile used for running the

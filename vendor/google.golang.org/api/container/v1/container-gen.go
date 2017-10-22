@@ -2179,12 +2179,19 @@ func (s *SetMaintenancePolicyRequest) MarshalJSON() ([]byte, error) {
 // SetMasterAuthRequest: SetMasterAuthRequest updates the admin password
 // of a cluster.
 type SetMasterAuthRequest struct {
-	// Action: The exact form of action to be taken on the master auth
+	// Action: The exact form of action to be taken on the master auth.
 	//
 	// Possible values:
-	//   "UNKNOWN" - Operation is unknown and will error out
+	//   "UNKNOWN" - Operation is unknown and will error out.
 	//   "SET_PASSWORD" - Set the password to a user generated value.
 	//   "GENERATE_PASSWORD" - Generate a new password and set it to that.
+	//   "SET_USERNAME" - Set the username.  If an empty username is
+	// provided, basic authentication
+	// is disabled for the cluster.  If a non-empty username is provided,
+	// basic
+	// authentication is enabled, with either a provided password or a
+	// generated
+	// one.
 	Action string `json:"action,omitempty"`
 
 	// Update: A description of the update.

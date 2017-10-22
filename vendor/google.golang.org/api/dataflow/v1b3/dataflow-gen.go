@@ -6545,10 +6545,6 @@ type WorkerShutdownNotice struct {
 	//   "UNKNOWN": shutdown reason is unknown.
 	//   "PREEMPTION": shutdown reason is preemption.
 	// Other possible reasons may be added in the future.
-	// Note that this must match the names of the enum specified
-	// in
-	// google3/cloud/dataflow/router/protos/cloud_worker_messages_service.
-	// proto.
 	Reason string `json:"reason,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Reason") to

@@ -244,9 +244,23 @@ age=a30`))
 		So(cfg.Section("").StrictMapTo(s), ShouldNotBeNil)
 	})
 
+	Convey("Map slice in strict mode", t, func() {
+		cfg, err := Load([]byte(`
+names=alice, bruce`))
+		So(err, ShouldBeNil)
+
+		type Strict struct {
+			Names []string `ini:"names"`
+		}
+		s := new(Strict)
+
+		So(cfg.Section("").StrictMapTo(s), ShouldBeNil)
+		So(fmt.Sprint(s.Names), ShouldEqual, "[alice bruce]")
+	})
+
 	Convey("Reflect from struct", t, func() {
 		type Embeded struct {
-			Dates       []time.Time `delim:"|"`
+			Dates       []time.Time `delim:"|" comment:"Time data"`
 			Places      []string
 			Years       []int
 			Numbers     []int64
@@ -258,12 +272,12 @@ age=a30`))
 		type Author struct {
 			Name      string `ini:"NAME"`
 			Male      bool
-			Age       int
+			Age       int `comment:"Author's age"`
 			Height    uint
 			GPA       float64
 			Date      time.Time
 			NeverMind string `ini:"-"`
-			*Embeded  `ini:"infos"`
+			*Embeded  `ini:"infos" comment:"Embeded section"`
 		}
 
 		t, err := time.Parse(time.RFC3339, "1993-10-07T20:17:05Z")
@@ -287,12 +301,15 @@ age=a30`))
 		So(err, ShouldBeNil)
 		So(buf.String(), ShouldEqual, `NAME   = Unknwon
 Male   = true
+; Author's age
 Age    = 21
 Height = 100
 GPA    = 2.8
 Date   = 1993-10-07T20:17:05Z
 
+; Embeded section
 [infos]
+; Time data
 Dates       = 1993-10-07T20:17:05Z|1993-10-07T20:17:05Z
 Places      = HangZhou,Boston
 Years       = 1993,1994

@@ -531,12 +531,11 @@ type ListDataSourcesResponse struct {
 	// settings.
 	DataSources []*DataSource `json:"dataSources,omitempty"`
 
-	// NextPageToken: The next-pagination token. For multiple-page list
-	// results,
+	// NextPageToken: Output only. The next-pagination token. For
+	// multiple-page list results,
 	// this token can be used as the
 	// `ListDataSourcesRequest.page_token`
 	// to request the next page of list results.
-	// Output only.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -606,17 +605,16 @@ func (s *ListLocationsResponse) MarshalJSON() ([]byte, error) {
 // ListTransferConfigsResponse: The returned list of pipelines in the
 // project.
 type ListTransferConfigsResponse struct {
-	// NextPageToken: The next-pagination token. For multiple-page list
-	// results,
+	// NextPageToken: Output only. The next-pagination token. For
+	// multiple-page list results,
 	// this token can be used as
 	// the
 	// `ListTransferConfigsRequest.page_token`
 	// to request the next page of list results.
-	// Output only.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
-	// TransferConfigs: The stored pipeline transfer configurations.
-	// Output only.
+	// TransferConfigs: Output only. The stored pipeline transfer
+	// configurations.
 	TransferConfigs []*TransferConfig `json:"transferConfigs,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -648,17 +646,15 @@ func (s *ListTransferConfigsResponse) MarshalJSON() ([]byte, error) {
 
 // ListTransferLogsResponse: The returned list transfer run messages.
 type ListTransferLogsResponse struct {
-	// NextPageToken: The next-pagination token. For multiple-page list
-	// results,
+	// NextPageToken: Output only. The next-pagination token. For
+	// multiple-page list results,
 	// this token can be used as
 	// the
 	// `GetTransferRunLogRequest.page_token`
 	// to request the next page of list results.
-	// Output only.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
-	// TransferMessages: The stored pipeline transfer messages.
-	// Output only.
+	// TransferMessages: Output only. The stored pipeline transfer messages.
 	TransferMessages []*TransferMessage `json:"transferMessages,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -691,16 +687,14 @@ func (s *ListTransferLogsResponse) MarshalJSON() ([]byte, error) {
 // ListTransferRunsResponse: The returned list of pipelines in the
 // project.
 type ListTransferRunsResponse struct {
-	// NextPageToken: The next-pagination token. For multiple-page list
-	// results,
+	// NextPageToken: Output only. The next-pagination token. For
+	// multiple-page list results,
 	// this token can be used as the
 	// `ListTransferRunsRequest.page_token`
 	// to request the next page of list results.
-	// Output only.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
-	// TransferRuns: The stored pipeline transfer runs.
-	// Output only.
+	// TransferRuns: Output only. The stored pipeline transfer runs.
 	TransferRuns []*TransferRun `json:"transferRuns,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -874,10 +868,8 @@ type TransferConfig struct {
 	// created.
 	DataSourceId string `json:"dataSourceId,omitempty"`
 
-	// DatasetRegion: Region in which BigQuery dataset is located. Currently
-	// possible values are:
-	// "US" and "EU".
-	// Output only.
+	// DatasetRegion: Output only. Region in which BigQuery dataset is
+	// located.
 	DatasetRegion string `json:"datasetRegion,omitempty"`
 
 	// DestinationDatasetId: The BigQuery target dataset id.
@@ -901,8 +893,7 @@ type TransferConfig struct {
 	// config.
 	Name string `json:"name,omitempty"`
 
-	// NextRunTime: Next time when data transfer will run.
-	// Output only.
+	// NextRunTime: Output only. Next time when data transfer will run.
 	NextRunTime string `json:"nextRunTime,omitempty"`
 
 	// Params: Data transfer specific parameters.
@@ -926,8 +917,7 @@ type TransferConfig struct {
 	// NOTE: the granularity should be at least 8 hours, or less frequent.
 	Schedule string `json:"schedule,omitempty"`
 
-	// State: State of the most recently updated transfer run.
-	// Output only.
+	// State: Output only. State of the most recently updated transfer run.
 	//
 	// Possible values:
 	//   "TRANSFER_STATE_UNSPECIFIED" - State placeholder.
@@ -941,17 +931,15 @@ type TransferConfig struct {
 	//   "CANCELLED" - Data transfer is cancelled.
 	State string `json:"state,omitempty"`
 
-	// UpdateTime: Data transfer modification time. Ignored by server on
-	// input.
-	// Output only.
+	// UpdateTime: Output only. Data transfer modification time. Ignored by
+	// server on input.
 	UpdateTime string `json:"updateTime,omitempty"`
 
-	// UserId: Unique ID of the user on whose behalf transfer is done.
-	// Applicable only
-	// to data sources that do not support service accounts. When set to
-	// 0,
-	// the data source service account credentials are used.
-	// Output only.
+	// UserId: Output only. Unique ID of the user on whose behalf transfer
+	// is done.
+	// Applicable only to data sources that do not support service
+	// accounts.
+	// When set to 0, the data source service account credentials are used.
 	UserId int64 `json:"userId,omitempty,string"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1026,23 +1014,18 @@ func (s *TransferMessage) MarshalJSON() ([]byte, error) {
 
 // TransferRun: Represents a data transfer run.
 type TransferRun struct {
-	// DataSourceId: Data source id.
-	// Output only.
+	// DataSourceId: Output only. Data source id.
 	DataSourceId string `json:"dataSourceId,omitempty"`
 
-	// DatasetRegion: Region in which BigQuery dataset is located. Currently
-	// possible values are:
-	// "US" and "EU".
-	// Output only.
+	// DatasetRegion: Output only. Region in which BigQuery dataset is
+	// located.
 	DatasetRegion string `json:"datasetRegion,omitempty"`
 
 	// DestinationDatasetId: The BigQuery target dataset id.
 	DestinationDatasetId string `json:"destinationDatasetId,omitempty"`
 
-	// EndTime: Time when transfer run ended. Parameter ignored by server
-	// for input
-	// requests.
-	// Output only.
+	// EndTime: Output only. Time when transfer run ended.
+	// Parameter ignored by server for input requests.
 	EndTime string `json:"endTime,omitempty"`
 
 	// Name: The resource name of the transfer run.
@@ -1061,28 +1044,25 @@ type TransferRun struct {
 	// data should be ingested.
 	RunTime string `json:"runTime,omitempty"`
 
-	// Schedule: Describes the schedule of this transfer run if it was
-	// created as part of
-	// a regular schedule. For batch transfer runs that are directly
-	// created,
-	// this is empty.
+	// Schedule: Output only. Describes the schedule of this transfer run if
+	// it was
+	// created as part of a regular schedule. For batch transfer runs that
+	// are
+	// scheduled manually, this is empty.
 	// NOTE: the system might choose to delay the schedule depending on
 	// the
 	// current load, so `schedule_time` doesn't always matches this.
-	// Output only.
 	Schedule string `json:"schedule,omitempty"`
 
 	// ScheduleTime: Minimum time after which a transfer run can be started.
 	ScheduleTime string `json:"scheduleTime,omitempty"`
 
-	// StartTime: Time when transfer run was started. Parameter ignored by
-	// server for input
-	// requests.
-	// Output only.
+	// StartTime: Output only. Time when transfer run was started.
+	// Parameter ignored by server for input requests.
 	StartTime string `json:"startTime,omitempty"`
 
-	// State: Data transfer run state. Ignored for input requests.
-	// Output only.
+	// State: Output only. Data transfer run state. Ignored for input
+	// requests.
 	//
 	// Possible values:
 	//   "TRANSFER_STATE_UNSPECIFIED" - State placeholder.
@@ -1096,16 +1076,15 @@ type TransferRun struct {
 	//   "CANCELLED" - Data transfer is cancelled.
 	State string `json:"state,omitempty"`
 
-	// UpdateTime: Last time the data transfer run state was updated.
-	// Output only.
+	// UpdateTime: Output only. Last time the data transfer run state was
+	// updated.
 	UpdateTime string `json:"updateTime,omitempty"`
 
-	// UserId: Unique ID of the user on whose behalf transfer is done.
-	// Applicable only
-	// to data sources that do not support service accounts. When set to
-	// 0,
-	// the data source service account credentials are used.
-	// Output only.
+	// UserId: Output only. Unique ID of the user on whose behalf transfer
+	// is done.
+	// Applicable only to data sources that do not support service
+	// accounts.
+	// When set to 0, the data source service account credentials are used.
 	UserId int64 `json:"userId,omitempty,string"`
 
 	// ServerResponse contains the HTTP response code and headers from the

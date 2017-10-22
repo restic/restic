@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/UYGCzApTAApQ5LVMe3mi28BTsws\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/qTGcqTfP2AvSFxr0hOGEezA1IHs\"",
  "discoveryVersion": "v1",
  "id": "toolresults:v1beta3",
  "name": "toolresults",
  "canonicalName": "Tool Results",
  "version": "v1beta3",
- "revision": "20170925",
+ "revision": "20171017",
  "title": "Cloud Tool Results API",
  "description": "Reads and publishes results from Firebase Test Lab.",
  "ownerDomain": "google.com",
@@ -431,6 +431,91 @@
     }
    }
   },
+  "GraphicsStats": {
+   "id": "GraphicsStats",
+   "type": "object",
+   "description": "Graphics statistics for the App. The information is collected from 'adb shell dumpsys graphicsstats'. For more info see: https://developer.android.com/training/testing/performance.html Statistics will only be present for API 23+.",
+   "properties": {
+    "buckets": {
+     "type": "array",
+     "description": "Histogram of frame render times. There should be 154 buckets ranging from [5ms, 6ms) to [4950ms, infinity)",
+     "items": {
+      "$ref": "GraphicsStatsBucket"
+     }
+    },
+    "highInputLatencyCount": {
+     "type": "string",
+     "description": "Total \"high input latency\" events.",
+     "format": "int64"
+    },
+    "jankyFrames": {
+     "type": "string",
+     "description": "Total frames with slow render time. Should be \u003c= total_frames.",
+     "format": "int64"
+    },
+    "missedVsyncCount": {
+     "type": "string",
+     "description": "Total \"missed vsync\" events.",
+     "format": "int64"
+    },
+    "p50Millis": {
+     "type": "string",
+     "description": "50th percentile frame render time in milliseconds.",
+     "format": "int64"
+    },
+    "p90Millis": {
+     "type": "string",
+     "description": "90th percentile frame render time in milliseconds.",
+     "format": "int64"
+    },
+    "p95Millis": {
+     "type": "string",
+     "description": "95th percentile frame render time in milliseconds.",
+     "format": "int64"
+    },
+    "p99Millis": {
+     "type": "string",
+     "description": "99th percentile frame render time in milliseconds.",
+     "format": "int64"
+    },
+    "slowBitmapUploadCount": {
+     "type": "string",
+     "description": "Total \"slow bitmap upload\" events.",
+     "format": "int64"
+    },
+    "slowDrawCount": {
+     "type": "string",
+     "description": "Total \"slow draw\" events.",
+     "format": "int64"
+    },
+    "slowUiThreadCount": {
+     "type": "string",
+     "description": "Total \"slow UI thread\" events.",
+     "format": "int64"
+    },
+    "totalFrames": {
+     "type": "string",
+     "description": "Total frames rendered by package.",
+     "format": "int64"
+    }
+   }
+  },
+  "GraphicsStatsBucket": {
+   "id": "GraphicsStatsBucket",
+   "type": "object",
+   "properties": {
+    "frameCount": {
+     "type": "string",
+     "description": "Number of frames in the bucket.",
+     "format": "int64"
+    },
+    "renderMillis": {
+     "type": "string",
+     "description": "Lower bound of render time in milliseconds.",
+     "format": "int64"
+    }
+   }
+  },
   "History": {
    "id": "History",
    "type": "object",
@@ -683,6 +768,10 @@
     "executionId": {
      "type": "string",
      "description": "A tool results execution ID."
+    },
+    "graphicsStats": {
+     "$ref": "GraphicsStats",
+     "description": "Graphics statistics for the entire run. Statistics are reset at the beginning of the run and collected at the end of the run."
     },
     "historyId": {
      "type": "string",
@@ -1114,11 +1203,15 @@
      "description": "Type of issue. Required.",
      "enum": [
       "anr",
+      "compatibleWithOrchestrator",
       "fatalException",
       "nativeCrash",
-      "unspecifiedType"
+      "unspecifiedType",
+      "unusedRoboDirective"
      ],
      "enumDescriptions": [
+      "",
+      "",
       "",
       "",
       "",

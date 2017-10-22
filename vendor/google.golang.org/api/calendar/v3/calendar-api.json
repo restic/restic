@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/uAzZjTyNjvCXQxJAVHPs_CfUo-M\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/IR4BQMr8Q3ird-zy2LyAA9diRwI\"",
  "discoveryVersion": "v1",
  "id": "calendar:v3",
  "name": "calendar",
  "version": "v3",
- "revision": "20170905",
+ "revision": "20171010",
  "title": "Calendar API",
  "description": "Manipulates events and other calendar data.",
  "ownerDomain": "google.com",
@@ -1253,6 +1253,11 @@
        "description": "Calendar identifier. To retrieve calendar IDs call the calendarList.list method. If you want to access the primary calendar of the currently logged in user, use the \"primary\" keyword.",
        "required": true,
        "location": "path"
+      },
+      "sendNotifications": {
+       "type": "boolean",
+       "description": "Whether to send notifications about the calendar sharing change. Optional. The default is True.",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -1331,6 +1336,11 @@
        "description": "ACL rule identifier.",
        "required": true,
        "location": "path"
+      },
+      "sendNotifications": {
+       "type": "boolean",
+       "description": "Whether to send notifications about the calendar sharing change. Note that there are no notifications on access removal. Optional. The default is True.",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -1364,6 +1374,11 @@
        "description": "ACL rule identifier.",
        "required": true,
        "location": "path"
+      },
+      "sendNotifications": {
+       "type": "boolean",
+       "description": "Whether to send notifications about the calendar sharing change. Note that there are no notifications on access removal. Optional. The default is True.",
+       "location": "query"
       }
      },
      "parameterOrder": [

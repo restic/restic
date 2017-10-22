@@ -10209,24 +10209,24 @@ type RegistrationsCreateCall struct {
 // This method may return the following error codes:
 //
 // * `PERMISSION_DENIED` if:
-//   * the authenticated user does not have permission to receive
-//     notifications from the requested field; or
-//   * the credential provided does not include the appropriate scope
+//     * the authenticated user does not have permission to receive
+//       notifications from the requested field; or
+//     * the credential provided does not include the appropriate scope
 // for the
-//     requested feed.
-//   * another access error is encountered.
+//       requested feed.
+//     * another access error is encountered.
 // * `INVALID_ARGUMENT` if:
-//   * no `destination` is specified, or the specified `destination` is
-// not
-//     valid; or
-//   * no `feed` is specified, or the specified `feed` is not valid.
+//     * no `destination` is specified, or the specified `destination`
+// is not
+//       valid; or
+//     * no `feed` is specified, or the specified `feed` is not valid.
 // * `NOT_FOUND` if:
-//   * the specified `feed` cannot be located, or the requesting user
+//     * the specified `feed` cannot be located, or the requesting user
 // does not
-//     have permission to determine whether or not it exists; or
-//   * the specified `destination` cannot be located, or Classroom has
+//       have permission to determine whether or not it exists; or
+//     * the specified `destination` cannot be located, or Classroom has
 // not
-//     been granted permission to publish to it.
+//       been granted permission to publish to it.
 func (r *RegistrationsService) Create(registration *Registration) *RegistrationsCreateCall {
 	c := &RegistrationsCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.registration = registration
@@ -10316,7 +10316,7 @@ func (c *RegistrationsCreateCall) Do(opts ...googleapi.CallOption) (*Registratio
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a `Registration`, causing Classroom to start sending notifications\nfrom the provided `feed` to the provided `destination`.\n\nReturns the created `Registration`. Currently, this will be the same as\nthe argument, but with server-assigned fields such as `expiry_time` and\n`id` filled in.\n\nNote that any value specified for the `expiry_time` or `id` fields will be\nignored.\n\nWhile Classroom may validate the `destination` and return errors on a best\neffort basis, it is the caller's responsibility to ensure that it exists\nand that Classroom has permission to publish to it.\n\nThis method may return the following error codes:\n\n* `PERMISSION_DENIED` if:\n  * the authenticated user does not have permission to receive\n    notifications from the requested field; or\n  * the credential provided does not include the appropriate scope for the\n    requested feed.\n  * another access error is encountered.\n* `INVALID_ARGUMENT` if:\n  * no `destination` is specified, or the specified `destination` is not\n    valid; or\n  * no `feed` is specified, or the specified `feed` is not valid.\n* `NOT_FOUND` if:\n  * the specified `feed` cannot be located, or the requesting user does not\n    have permission to determine whether or not it exists; or\n  * the specified `destination` cannot be located, or Classroom has not\n    been granted permission to publish to it.",
+	//   "description": "Creates a `Registration`, causing Classroom to start sending notifications\nfrom the provided `feed` to the provided `destination`.\n\nReturns the created `Registration`. Currently, this will be the same as\nthe argument, but with server-assigned fields such as `expiry_time` and\n`id` filled in.\n\nNote that any value specified for the `expiry_time` or `id` fields will be\nignored.\n\nWhile Classroom may validate the `destination` and return errors on a best\neffort basis, it is the caller's responsibility to ensure that it exists\nand that Classroom has permission to publish to it.\n\nThis method may return the following error codes:\n\n* `PERMISSION_DENIED` if:\n    * the authenticated user does not have permission to receive\n      notifications from the requested field; or\n    * the credential provided does not include the appropriate scope for the\n      requested feed.\n    * another access error is encountered.\n* `INVALID_ARGUMENT` if:\n    * no `destination` is specified, or the specified `destination` is not\n      valid; or\n    * no `feed` is specified, or the specified `feed` is not valid.\n* `NOT_FOUND` if:\n    * the specified `feed` cannot be located, or the requesting user does not\n      have permission to determine whether or not it exists; or\n    * the specified `destination` cannot be located, or Classroom has not\n      been granted permission to publish to it.",
 	//   "flatPath": "v1/registrations",
 	//   "httpMethod": "POST",
 	//   "id": "classroom.registrations.create",

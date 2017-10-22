@@ -362,6 +362,59 @@ func (s *Links) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// MessageEvent: An event describing a message sent/received between
+// Spans.
+type MessageEvent struct {
+	// CompressedSizeBytes: The number of compressed bytes sent or received.
+	// If missing assumed to
+	// be the same size as uncompressed.
+	CompressedSizeBytes int64 `json:"compressedSizeBytes,omitempty,string"`
+
+	// Id: An identifier for the MessageEvent's message that can be used to
+	// match
+	// SENT and RECEIVED MessageEvents. It is recommended to be unique
+	// within
+	// a Span.
+	Id int64 `json:"id,omitempty,string"`
+
+	// Type: Type of MessageEvent. Indicates whether the message was sent
+	// or
+	// received.
+	//
+	// Possible values:
+	//   "TYPE_UNSPECIFIED" - Unknown event type.
+	//   "SENT" - Indicates a sent message.
+	//   "RECEIVED" - Indicates a received message.
+	Type string `json:"type,omitempty"`
+
+	// UncompressedSizeBytes: The number of uncompressed bytes sent or
+	// received.
+	UncompressedSizeBytes int64 `json:"uncompressedSizeBytes,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "CompressedSizeBytes")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CompressedSizeBytes") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *MessageEvent) MarshalJSON() ([]byte, error) {
+	type noMethod MessageEvent
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Module: Binary module.
 type Module struct {
 	// BuildId: A unique identifier for the module, usually a hash of
@@ -393,63 +446,6 @@ type Module struct {
 
 func (s *Module) MarshalJSON() ([]byte, error) {
 	type noMethod Module
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// NetworkEvent: An event describing an RPC message sent or received on
-// the network.
-type NetworkEvent struct {
-	// CompressedMessageSize: The number of compressed bytes sent or
-	// received.
-	CompressedMessageSize uint64 `json:"compressedMessageSize,omitempty,string"`
-
-	// MessageId: An identifier for the message, which must be unique in
-	// this span.
-	MessageId uint64 `json:"messageId,omitempty,string"`
-
-	// Time: For sent messages, this is the time at which the first bit was
-	// sent.
-	// For received messages, this is the time at which the last bit
-	// was
-	// received.
-	Time string `json:"time,omitempty"`
-
-	// Type: Type of NetworkEvent. Indicates whether the RPC message was
-	// sent or
-	// received.
-	//
-	// Possible values:
-	//   "TYPE_UNSPECIFIED" - Unknown event type.
-	//   "SENT" - Indicates a sent RPC message.
-	//   "RECV" - Indicates a received RPC message.
-	Type string `json:"type,omitempty"`
-
-	// UncompressedMessageSize: The number of uncompressed bytes sent or
-	// received.
-	UncompressedMessageSize uint64 `json:"uncompressedMessageSize,omitempty,string"`
-
-	// ForceSendFields is a list of field names (e.g.
-	// "CompressedMessageSize") to unconditionally include in API requests.
-	// By default, fields with empty values are omitted from API requests.
-	// However, any non-pointer, non-interface field appearing in
-	// ForceSendFields will be sent to the server regardless of whether the
-	// field is empty or not. This may be used to include empty fields in
-	// Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "CompressedMessageSize") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
-	// server as null. It is an error if a field in this list has a
-	// non-empty value. This may be used to include null fields in Patch
-	// requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *NetworkEvent) MarshalJSON() ([]byte, error) {
-	type noMethod NetworkEvent
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -535,7 +531,7 @@ type Span struct {
 	Status *Status `json:"status,omitempty"`
 
 	// TimeEvents: The included time events. There can be up to 32
-	// annotations and 128 network
+	// annotations and 128 message
 	// events per span.
 	TimeEvents *TimeEvents `json:"timeEvents,omitempty"`
 
@@ -676,7 +672,7 @@ type StackTrace struct {
 	//
 	// Subsequent spans within the same request can refer
 	// to that stack trace by only setting `stackTraceHashId`.
-	StackTraceHashId uint64 `json:"stackTraceHashId,omitempty,string"`
+	StackTraceHashId int64 `json:"stackTraceHashId,omitempty,string"`
 
 	// ForceSendFields is a list of field names (e.g. "StackFrames") to
 	// unconditionally include in API requests. By default, fields with
@@ -820,14 +816,14 @@ func (s *Status) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// TimeEvent: A time-stamped annotation or network event in the Span.
+// TimeEvent: A time-stamped annotation or message event in the Span.
 type TimeEvent struct {
 	// Annotation: Text annotation with a set of attributes.
 	Annotation *Annotation `json:"annotation,omitempty"`
 
-	// NetworkEvent: An event describing an RPC message sent/received on the
-	// network.
-	NetworkEvent *NetworkEvent `json:"networkEvent,omitempty"`
+	// MessageEvent: An event describing a message sent/received between
+	// Spans.
+	MessageEvent *MessageEvent `json:"messageEvent,omitempty"`
 
 	// Time: The timestamp indicating the time the event occurred.
 	Time string `json:"time,omitempty"`
@@ -859,17 +855,17 @@ func (s *TimeEvent) MarshalJSON() ([]byte, error) {
 // time-stamped annotation
 // on the span, consisting of either user-supplied key:value pairs,
 // or
-// details of an RPC message sent/received on the network.
+// details of a message sent/received between Spans.
 type TimeEvents struct {
 	// DroppedAnnotationsCount: The number of dropped annotations in all the
 	// included time events.
 	// If the value is 0, then no annotations were dropped.
 	DroppedAnnotationsCount int64 `json:"droppedAnnotationsCount,omitempty"`
 
-	// DroppedNetworkEventsCount: The number of dropped network events in
+	// DroppedMessageEventsCount: The number of dropped message events in
 	// all the included time events.
-	// If the value is 0, then no network events were dropped.
-	DroppedNetworkEventsCount int64 `json:"droppedNetworkEventsCount,omitempty"`
+	// If the value is 0, then no message events were dropped.
+	DroppedMessageEventsCount int64 `json:"droppedMessageEventsCount,omitempty"`
 
 	// TimeEvent: A collection of `TimeEvent`s.
 	TimeEvent []*TimeEvent `json:"timeEvent,omitempty"`

@@ -1,5 +1,63 @@
 # CHANGELOG
 
+
+## v9.1.1
+
+- Fixes a bug regarding the cookie jar on `autorest.Client.Sender`.
+
+## v9.1.0
+
+### New Features
+
+- In cases where there is a non-empty error from the service, attempt to unmarshal it instead of uniformly calling it an "Unknown" error.
+- Support for loading Azure CLI Authentication files.
+- Automatically register your subscription with the Azure Resource Provider if it hadn't been previously.
+
+### Bug Fixes
+
+ - RetriableRequest can now tolerate a ReadSeekable body being read but not reset.
+ - Adding missing Apache Headers
+
+## v9.0.0
+
+> **IMPORTANT:** This release was intially labeled incorrectly as `v8.4.0`. From the time it was released, it should have been marked `v9.0.0` because it contains breaking changes to the MSI packages. We appologize for any inconvenience this causes.
+
+Adding MSI Endpoint Support and CLI token rehydration.
+
+## v8.3.1
+
+Pick up bug fix in adal for MSI support.
+
+## v8.3.0
+
+Updates to Error string formats for clarity. Also, adding a copy of the http.Response to errors for an improved debugging experience.
+
+## v8.2.0
+
+### New Features
+
+- Add support for bearer authentication callbacks
+- Support 429 response codes that include "Retry-After" header
+- Support validation constraint "Pattern" for map keys
+
+### Bug Fixes
+
+- Make RetriableRequest work with multiple versions of Go
+
+## v8.1.1
+Updates the RetriableRequest to take advantage of GetBody() added in Go 1.8.
+
+## v8.1.0
+Adds RetriableRequest type for more efficient handling of retrying HTTP requests.
+
+## v8.0.0
+
+ADAL refactored into its own package.
+Support for UNIX time.
+
+## v7.3.1
+- Version Testing now removed from production bits that are shipped with the library.
+
 ## v7.3.0
 - Exposing new `RespondDecorator`, `ByDiscardingBody`. This allows operations
   to acknowledge that they do not need either the entire or a trailing portion

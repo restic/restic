@@ -224,7 +224,8 @@ type Attributes struct {
 	// e.
 	ProductPageUrl string `json:"productPageUrl,omitempty"`
 
-	// ProductType: The category of the product. For more information,
+	// ProductType: The type or category of the product. For more
+	// information,
 	// see
 	// https://support.google.com/manufacturers/answer/6124116#producttyp
 	// e.
@@ -260,10 +261,10 @@ type Attributes struct {
 	// see https://support.google.com/manufacturers/answer/6124116#price.
 	SuggestedRetailPrice *Price `json:"suggestedRetailPrice,omitempty"`
 
-	// TargetAccountId: The target account id. Should only be used in the
+	// TargetClientId: The target client id. Should only be used in the
 	// accounts of the data
 	// partners.
-	TargetAccountId int64 `json:"targetAccountId,omitempty,string"`
+	TargetClientId string `json:"targetClientId,omitempty"`
 
 	// Theme: The theme of the product. For more information,
 	// see
@@ -440,8 +441,10 @@ type Image struct {
 	// @OutputOnly
 	//
 	// Possible values:
-	//   "STATUS_UNSPECIFIED" - Status is unspecified. Should not be used.
-	//   "PENDING_PROCESSING" - Image was uploaded and is being processed.
+	//   "STATUS_UNSPECIFIED" - The image status is unspecified. Should not
+	// be used.
+	//   "PENDING_PROCESSING" - The image was uploaded and is being
+	// processed.
 	//   "PENDING_CRAWL" - The image crawl is still pending.
 	//   "OK" - The image was processed and it meets the requirements.
 	//   "ROBOTED" - The image URL is protected by robots.txt file and
@@ -454,6 +457,9 @@ type Image struct {
 	//   "TOO_BIG" - The image is too big.
 	//   "CRAWL_SKIPPED" - The image was manually overridden and will not be
 	// crawled.
+	//   "HOSTLOADED" - The image crawl was postponed to avoid overloading
+	// the host.
+	//   "HTTP_404" - The image URL returned a "404 Not Found" error.
 	Status string `json:"status,omitempty"`
 
 	// Type: The type of the image, i.e., crawled or uploaded.

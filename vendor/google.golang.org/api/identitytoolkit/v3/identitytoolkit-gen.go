@@ -118,6 +118,9 @@ type CreateAuthUriResponse struct {
 	// verifyAssertion request.
 	SessionId string `json:"sessionId,omitempty"`
 
+	// SigninMethods: All sign-in methods this user has used.
+	SigninMethods []string `json:"signinMethods,omitempty"`
+
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`
@@ -212,6 +215,56 @@ type DownloadAccountResponse struct {
 
 func (s *DownloadAccountResponse) MarshalJSON() ([]byte, error) {
 	type noMethod DownloadAccountResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// EmailLinkSigninResponse: Response of email signIn.
+type EmailLinkSigninResponse struct {
+	// Email: The user's email.
+	Email string `json:"email,omitempty"`
+
+	// ExpiresIn: Expiration time of STS id token in seconds.
+	ExpiresIn int64 `json:"expiresIn,omitempty,string"`
+
+	// IdToken: The STS id token to login the newly signed in user.
+	IdToken string `json:"idToken,omitempty"`
+
+	// IsNewUser: Whether the user is new.
+	IsNewUser bool `json:"isNewUser,omitempty"`
+
+	// Kind: The fixed string "identitytoolkit#EmailLinkSigninResponse".
+	Kind string `json:"kind,omitempty"`
+
+	// LocalId: The RP local ID of the user.
+	LocalId string `json:"localId,omitempty"`
+
+	// RefreshToken: The refresh token for the signed in user.
+	RefreshToken string `json:"refreshToken,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Email") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Email") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *EmailLinkSigninResponse) MarshalJSON() ([]byte, error) {
+	type noMethod EmailLinkSigninResponse
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -532,6 +585,41 @@ type IdentitytoolkitRelyingpartyDownloadAccountRequest struct {
 
 func (s *IdentitytoolkitRelyingpartyDownloadAccountRequest) MarshalJSON() ([]byte, error) {
 	type noMethod IdentitytoolkitRelyingpartyDownloadAccountRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// IdentitytoolkitRelyingpartyEmailLinkSigninRequest: Request to sign in
+// with email.
+type IdentitytoolkitRelyingpartyEmailLinkSigninRequest struct {
+	// Email: The email address of the user.
+	Email string `json:"email,omitempty"`
+
+	// IdToken: Token for linking flow.
+	IdToken string `json:"idToken,omitempty"`
+
+	// OobCode: The confirmation code.
+	OobCode string `json:"oobCode,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Email") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Email") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *IdentitytoolkitRelyingpartyEmailLinkSigninRequest) MarshalJSON() ([]byte, error) {
+	type noMethod IdentitytoolkitRelyingpartyEmailLinkSigninRequest
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -2601,6 +2689,123 @@ func (c *RelyingpartyDownloadAccountCall) Pages(ctx context.Context, f func(*Dow
 		}
 		c.identitytoolkitrelyingpartydownloadaccountrequest.NextPageToken = x.NextPageToken
 	}
+}
+
+// method id "identitytoolkit.relyingparty.emailLinkSignin":
+
+type RelyingpartyEmailLinkSigninCall struct {
+	s                                                 *Service
+	identitytoolkitrelyingpartyemaillinksigninrequest *IdentitytoolkitRelyingpartyEmailLinkSigninRequest
+	urlParams_                                        gensupport.URLParams
+	ctx_                                              context.Context
+	header_                                           http.Header
+}
+
+// EmailLinkSignin: Reset password for a user.
+func (r *RelyingpartyService) EmailLinkSignin(identitytoolkitrelyingpartyemaillinksigninrequest *IdentitytoolkitRelyingpartyEmailLinkSigninRequest) *RelyingpartyEmailLinkSigninCall {
+	c := &RelyingpartyEmailLinkSigninCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.identitytoolkitrelyingpartyemaillinksigninrequest = identitytoolkitrelyingpartyemaillinksigninrequest
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *RelyingpartyEmailLinkSigninCall) Fields(s ...googleapi.Field) *RelyingpartyEmailLinkSigninCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *RelyingpartyEmailLinkSigninCall) Context(ctx context.Context) *RelyingpartyEmailLinkSigninCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *RelyingpartyEmailLinkSigninCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *RelyingpartyEmailLinkSigninCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.identitytoolkitrelyingpartyemaillinksigninrequest)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "emailLinkSignin")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("POST", urls, body)
+	req.Header = reqHeaders
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "identitytoolkit.relyingparty.emailLinkSignin" call.
+// Exactly one of *EmailLinkSigninResponse or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *EmailLinkSigninResponse.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *RelyingpartyEmailLinkSigninCall) Do(opts ...googleapi.CallOption) (*EmailLinkSigninResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &EmailLinkSigninResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Reset password for a user.",
+	//   "httpMethod": "POST",
+	//   "id": "identitytoolkit.relyingparty.emailLinkSignin",
+	//   "path": "emailLinkSignin",
+	//   "request": {
+	//     "$ref": "IdentitytoolkitRelyingpartyEmailLinkSigninRequest"
+	//   },
+	//   "response": {
+	//     "$ref": "EmailLinkSigninResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
 }
 
 // method id "identitytoolkit.relyingparty.getAccountInfo":

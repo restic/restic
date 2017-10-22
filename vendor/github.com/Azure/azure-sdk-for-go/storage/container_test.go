@@ -230,6 +230,7 @@ func (s *ContainerSuite) TestListBlobsPagination(c *chk.C) {
 	c.Assert(err, chk.IsNil)
 
 	blobs := []string{}
+	types := []BlobType{}
 	const n = 5
 	const pageSize = 2
 	for i := 0; i < n; i++ {
@@ -237,10 +238,11 @@ func (s *ContainerSuite) TestListBlobsPagination(c *chk.C) {
 		b := cnt.GetBlobReference(name)
 		c.Assert(b.putSingleBlockBlob([]byte("Hello, world!")), chk.IsNil)
 		blobs = append(blobs, name)
+		types = append(types, b.Properties.BlobType)
 	}
 	sort.Strings(blobs)
 
-	listBlobsPagination(c, cnt, pageSize, blobs)
+	listBlobsPagination(c, cnt, pageSize, blobs, types)
 
 	// Service SAS test
 	sasuriOptions := ContainerSASOptions{}
@@ -260,7 +262,7 @@ func (s *ContainerSuite) TestListBlobsPagination(c *chk.C) {
 	c.Assert(err, chk.IsNil)
 	cntServiceSAS.Client().HTTPClient = cli.client.HTTPClient
 
-	listBlobsPagination(c, cntServiceSAS, pageSize, blobs)
+	listBlobsPagination(c, cntServiceSAS, pageSize, blobs, types)
 
 	// Account SAS test
 	token, err := cli.client.GetAccountSASToken(accountSASOptions)
@@ -270,12 +272,13 @@ func (s *ContainerSuite) TestListBlobsPagination(c *chk.C) {
 	cntAccountSAS := SAScli.GetContainerReference(cnt.Name)
 	cntAccountSAS.Client().HTTPClient = cli.client.HTTPClient
 
-	listBlobsPagination(c, cntAccountSAS, pageSize, blobs)
+	listBlobsPagination(c, cntAccountSAS, pageSize, blobs, types)
 }
 
-func listBlobsPagination(c *chk.C, cnt *Container, pageSize uint, blobs []string) {
+func listBlobsPagination(c *chk.C, cnt *Container, pageSize uint, blobs []string, types []BlobType) {
 	// Paginate
 	seen := []string{}
+	seenTypes := []BlobType{}
 	marker := ""
 	for {
 		resp, err := cnt.ListBlobs(ListBlobsParameters{
@@ -285,6 +288,7 @@ func listBlobsPagination(c *chk.C, cnt *Container, pageSize uint, blobs []string
 
 		for _, b := range resp.Blobs {
 			seen = append(seen, b.Name)
+			seenTypes = append(seenTypes, b.Properties.BlobType)
 			c.Assert(b.Container, chk.Equals, cnt)
 		}
 
@@ -296,6 +300,7 @@ func listBlobsPagination(c *chk.C, cnt *Container, pageSize uint, blobs []string
 
 	// Compare
 	c.Assert(seen, chk.DeepEquals, blobs)
+	c.Assert(seenTypes, chk.DeepEquals, types)
 }
 
 // listBlobsAsFiles is a helper function to list blobs as "folders" and "files".

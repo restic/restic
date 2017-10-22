@@ -1399,6 +1399,21 @@
   },
   {
    "kind": "discovery#directoryItem",
+   "id": "firestore:v1beta1",
+   "name": "firestore",
+   "version": "v1beta1",
+   "title": "Google Cloud Firestore API",
+   "description": "",
+   "discoveryRestUrl": "https://firestore.googleapis.com/$discovery/rest?version=v1beta1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/firestore",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
    "id": "fitness:v1",
    "name": "fitness",
    "version": "v1",
@@ -1759,21 +1774,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "ml:v1beta1",
-   "name": "ml",
-   "version": "v1beta1",
-   "title": "Google Cloud Machine Learning Engine",
-   "description": "An API to enable creating and using machine learning models.",
-   "discoveryRestUrl": "https://ml.googleapis.com/$discovery/rest?version=v1beta1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/ml/",
-   "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "monitoring:v3",
    "name": "monitoring",
    "version": "v3",
@@ -2113,22 +2113,6 @@
    },
    "documentationLink": "https://cloud.google.com/pubsub/docs",
    "preferred": false
-  },
-  {
-   "kind": "discovery#directoryItem",
-   "id": "qpxExpress:v1",
-   "name": "qpxExpress",
-   "version": "v1",
-   "title": "QPX Express API",
-   "description": "Finds the least expensive flights between an origin and a destination.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/qpxExpress/v1/rest",
-   "discoveryLink": "./apis/qpxExpress/v1/rest",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "http://developers.google.com/qpx-express",
-   "preferred": true
   },
   {
    "kind": "discovery#directoryItem",
@@ -2782,8 +2766,8 @@
    "id": "videointelligence:v1beta1",
    "name": "videointelligence",
    "version": "v1beta1",
-   "title": "Google Cloud Video Intelligence API",
-   "description": "Google Cloud Video Intelligence API.",
+   "title": "Cloud Video Intelligence API",
+   "description": "Cloud Video Intelligence API.",
    "discoveryRestUrl": "https://videointelligence.googleapis.com/$discovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",

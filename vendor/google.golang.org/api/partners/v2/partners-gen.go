@@ -2419,6 +2419,10 @@ type LogUserEventRequest struct {
 	// Terms Of Service` button.
 	//   "SMB_ENTERED_WEBSITE_IN_CONTACT_PARTNER_FORM" - Advertiser entered
 	// website in contact form.
+	//   "AGENCY_SELECTED_OPT_IN_AFA_MIGRATION" - Agency opted in for
+	// migrating their exams to Academy for Ads.
+	//   "AGENCY_SELECTED_OPT_OUT_AFA_MIGRATION" - Agency opted out for
+	// migrating their exams to Academy for Ads.
 	EventAction string `json:"eventAction,omitempty"`
 
 	// EventCategory: The category the action belongs to.
@@ -3128,6 +3132,10 @@ type UserProfile struct {
 	// Markets: A list of ids representing which markets the user was
 	// interested in.
 	Markets []string `json:"markets,omitempty"`
+
+	// MigrateToAfa: Whether or not to migrate the user's exam data to
+	// Academy for Ads.
+	MigrateToAfa bool `json:"migrateToAfa,omitempty"`
 
 	// PhoneNumber: The user's phone number.
 	PhoneNumber string `json:"phoneNumber,omitempty"`

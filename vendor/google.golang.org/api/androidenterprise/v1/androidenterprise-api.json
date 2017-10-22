@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/eOnhI7vohdeU44iGbzR45SHL-EI\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/c_-peugeTpeeazYGijvbxbAUiRg\"",
  "discoveryVersion": "v1",
  "id": "androidenterprise:v1",
  "name": "androidenterprise",
  "canonicalName": "Android Enterprise",
  "version": "v1",
- "revision": "20170911",
+ "revision": "20171006",
  "title": "Google Play EMM API",
  "description": "Manages the deployment of apps to Android for Work users.",
  "ownerDomain": "google.com",
@@ -268,6 +268,10 @@
    "type": "object",
    "description": "This represents a single version of the app.",
    "properties": {
+    "track": {
+     "type": "string",
+     "description": "The track that this app was published in. For example if track is \"alpha\", this is an alpha version of the app."
+    },
     "versionCode": {
      "type": "integer",
      "description": "Unique increasing identifier for the app version.",
@@ -493,7 +497,7 @@
   "GroupLicense": {
    "id": "GroupLicense",
    "type": "object",
-   "description": "Group license objects allow you to keep track of licenses (called entitlements) for both free and paid apps. For a free app, a group license is created when an enterprise admin first approves the product in Google Play or when the first entitlement for the product is created for a user via the API. For a paid app, a group license object is only created when an enterprise admin purchases the product in Google Play for the first time.\n\nUse the API to query group licenses. A Grouplicenses resource includes the total number of licenses purchased (paid apps only) and the total number of licenses currently in use. Iyn other words, the total number of Entitlements that exist for the product.\n\nOnly one group license object is created per product and group license objects are never deleted. If a product is unapproved, its group license remains. This allows enterprise admins to keep track of any remaining entitlements for the product.",
+   "description": "Group license objects allow you to keep track of licenses (called entitlements) for both free and paid apps. For a free app, a group license is created when an enterprise admin first approves the product in Google Play or when the first entitlement for the product is created for a user via the API. For a paid app, a group license object is only created when an enterprise admin purchases the product in Google Play for the first time.\n\nUse the API to query group licenses. A Grouplicenses resource includes the total number of licenses purchased (paid apps only) and the total number of licenses currently in use. In other words, the total number of Entitlements that exist for the product.\n\nOnly one group license object is created per product and group license objects are never deleted. If a product is unapproved, its group license remains. This allows enterprise admins to keep track of any remaining entitlements for the product.",
    "properties": {
     "acquisitionKind": {
      "type": "string",
@@ -942,6 +946,13 @@
      "type": "string",
      "description": "The name of the author of the product (for example, the app developer)."
     },
+    "availableTracks": {
+     "type": "array",
+     "description": "The tracks that are visible to the enterprise.",
+     "items": {
+      "type": "string"
+     }
+    },
     "detailsUrl": {
      "type": "string",
      "description": "A link to the (consumer) Google Play details page for the product."
@@ -1077,6 +1088,13 @@
     "productSetBehavior": {
      "type": "string",
      "description": "The interpretation of this product set. \"unknown\" should never be sent and is ignored if received. \"whitelist\" means that the user is entitled to access the product set. \"includeAll\" means that all products are accessible, including products that are approved, products with revoked approval, and products that have never been approved. \"allApproved\" means that the user is entitled to access all products that are approved for the enterprise. If the value is \"allApproved\" or \"includeAll\", the productId field is ignored. If no value is provided, it is interpreted as \"whitelist\" for backwards compatibility. Further \"allApproved\" or \"includeAll\" does not enable automatic visibility of \"alpha\" or \"beta\" tracks for Android app. Use ProductVisibility to enable \"alpha\" or \"beta\" tracks per user."
+    },
+    "productVisibility": {
+     "type": "array",
+     "description": "Additional list of product IDs making up the product set. Unlike the productID array, in this list It's possible to specify which tracks (alpha, beta, production) of a product are visible to the user. See ProductVisibility and its fields for more information. Specifying the same product ID both here and in the productId array is not allowed and it will result in an error.",
+     "items": {
+      "$ref": "ProductVisibility"
+     }
     }
    }
   },
@@ -1091,6 +1109,24 @@
     "certificateHashSha256": {
      "type": "string",
      "description": "The base64 urlsafe encoded SHA2-256 hash of the certificate."
+    }
+   }
+  },
+  "ProductVisibility": {
+   "id": "ProductVisibility",
+   "type": "object",
+   "description": "A product to be made visible to a user.",
+   "properties": {
+    "productId": {
+     "type": "string",
+     "description": "The product ID to make visible to the user. Required for each item in the productVisibility list."
+    },
+    "tracks": {
+     "type": "array",
+     "description": "Grants visibility to the specified track(s) of the product to the user. The track available to the user is based on the following order of preference: alpha, beta, production. For example, if an app has a prod version, a beta version and an alpha version and the enterprise has been granted visibility to both the alpha and beta tracks, if tracks is {\"beta\", \"production\"} the user will be able to install the app and they will get the beta version of the app. If there are no app versions in the specified track adding the \"alpha\" and \"beta\" values to the list of tracks will have no effect. Note that the enterprise requires access to alpha and/or beta tracks before users can be granted visibility to apps in those tracks.\n\nThe allowed sets are: {} (considered equivalent to {\"production\"}) {\"production\"} {\"beta\", \"production\"} {\"alpha\", \"beta\", \"production\"} The order of elements is not relevant. Any other set of tracks will be rejected with an error.",
+     "items": {
+      "type": "string"
+     }
     }
    }
   },

@@ -1451,10 +1451,10 @@ type JobConfigurationLoad struct {
 	// property.
 	SchemaInlineFormat string `json:"schemaInlineFormat,omitempty"`
 
-	// SchemaUpdateOptions: [Experimental] Allows the schema of the
-	// desitination table to be updated as a side effect of the load job if
-	// a schema is autodetected or supplied in the job configuration. Schema
-	// update options are supported in two cases: when writeDisposition is
+	// SchemaUpdateOptions: Allows the schema of the desitination table to
+	// be updated as a side effect of the load job if a schema is
+	// autodetected or supplied in the job configuration. Schema update
+	// options are supported in two cases: when writeDisposition is
 	// WRITE_APPEND; when writeDisposition is WRITE_TRUNCATE and the
 	// destination table is a partition of a table, specified by partition
 	// decorators. For normal tables, WRITE_TRUNCATE will always overwrite
@@ -1487,8 +1487,8 @@ type JobConfigurationLoad struct {
 	// not allowed.
 	SourceUris []string `json:"sourceUris,omitempty"`
 
-	// TimePartitioning: [Experimental] If specified, configures time-based
-	// partitioning for the destination table.
+	// TimePartitioning: If specified, configures time-based partitioning
+	// for the destination table.
 	TimePartitioning *TimePartitioning `json:"timePartitioning,omitempty"`
 
 	// WriteDisposition: [Optional] Specifies the action that occurs if the
@@ -1602,16 +1602,15 @@ type JobConfigurationQuery struct {
 	// QueryParameters: Query parameters for standard SQL queries.
 	QueryParameters []*QueryParameter `json:"queryParameters,omitempty"`
 
-	// SchemaUpdateOptions: [Experimental] Allows the schema of the
-	// destination table to be updated as a side effect of the query job.
-	// Schema update options are supported in two cases: when
-	// writeDisposition is WRITE_APPEND; when writeDisposition is
-	// WRITE_TRUNCATE and the destination table is a partition of a table,
-	// specified by partition decorators. For normal tables, WRITE_TRUNCATE
-	// will always overwrite the schema. One or more of the following values
-	// are specified: ALLOW_FIELD_ADDITION: allow adding a nullable field to
-	// the schema. ALLOW_FIELD_RELAXATION: allow relaxing a required field
-	// in the original schema to nullable.
+	// SchemaUpdateOptions: Allows the schema of the destination table to be
+	// updated as a side effect of the query job. Schema update options are
+	// supported in two cases: when writeDisposition is WRITE_APPEND; when
+	// writeDisposition is WRITE_TRUNCATE and the destination table is a
+	// partition of a table, specified by partition decorators. For normal
+	// tables, WRITE_TRUNCATE will always overwrite the schema. One or more
+	// of the following values are specified: ALLOW_FIELD_ADDITION: allow
+	// adding a nullable field to the schema. ALLOW_FIELD_RELAXATION: allow
+	// relaxing a required field in the original schema to nullable.
 	SchemaUpdateOptions []string `json:"schemaUpdateOptions,omitempty"`
 
 	// TableDefinitions: [Optional] If querying an external data source
@@ -1620,8 +1619,8 @@ type JobConfigurationQuery struct {
 	// source can then be queried as if it were a standard BigQuery table.
 	TableDefinitions map[string]ExternalDataConfiguration `json:"tableDefinitions,omitempty"`
 
-	// TimePartitioning: [Experimental] If specified, configures time-based
-	// partitioning for the destination table.
+	// TimePartitioning: If specified, configures time-based partitioning
+	// for the destination table.
 	TimePartitioning *TimePartitioning `json:"timePartitioning,omitempty"`
 
 	// UseLegacySql: Specifies whether to use BigQuery's legacy SQL dialect
@@ -2638,8 +2637,8 @@ type Table struct {
 	// TableReference: [Required] Reference describing the ID of this table.
 	TableReference *TableReference `json:"tableReference,omitempty"`
 
-	// TimePartitioning: [Experimental] If specified, configures time-based
-	// partitioning for this table.
+	// TimePartitioning: If specified, configures time-based partitioning
+	// for this table.
 	TimePartitioning *TimePartitioning `json:"timePartitioning,omitempty"`
 
 	// Type: [Output-only] Describes the table type. The following values
@@ -2991,6 +2990,16 @@ func (s *TableList) MarshalJSON() ([]byte, error) {
 }
 
 type TableListTables struct {
+	// CreationTime: The time when this table was created, in milliseconds
+	// since the epoch.
+	CreationTime int64 `json:"creationTime,omitempty,string"`
+
+	// ExpirationTime: [Optional] The time when this table expires, in
+	// milliseconds since the epoch. If not present, the table will persist
+	// indefinitely. Expired tables will be deleted and their storage
+	// reclaimed.
+	ExpirationTime int64 `json:"expirationTime,omitempty,string"`
+
 	// FriendlyName: The user-friendly name for this table.
 	FriendlyName string `json:"friendlyName,omitempty"`
 
@@ -3007,8 +3016,7 @@ type TableListTables struct {
 	// TableReference: A reference uniquely identifying the table.
 	TableReference *TableReference `json:"tableReference,omitempty"`
 
-	// TimePartitioning: [Experimental] The time-based partitioning for this
-	// table.
+	// TimePartitioning: The time-based partitioning for this table.
 	TimePartitioning *TimePartitioning `json:"timePartitioning,omitempty"`
 
 	// Type: The type of table. Possible values are: TABLE, VIEW.
@@ -3017,7 +3025,7 @@ type TableListTables struct {
 	// View: Additional details for a view.
 	View *TableListTablesView `json:"view,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "FriendlyName") to
+	// ForceSendFields is a list of field names (e.g. "CreationTime") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -3025,7 +3033,7 @@ type TableListTables struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "FriendlyName") to include
+	// NullFields is a list of field names (e.g. "CreationTime") to include
 	// in API requests with the JSON null value. By default, fields with
 	// empty values are omitted from API requests. However, any field with
 	// an empty value appearing in NullFields will be sent to the server as

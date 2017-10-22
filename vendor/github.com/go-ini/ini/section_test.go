@@ -28,7 +28,7 @@ func Test_Section(t *testing.T) {
 		So(cfg, ShouldNotBeNil)
 
 		Convey("Get section strings", func() {
-			So(strings.Join(cfg.SectionStrings(), ","), ShouldEqual, "DEFAULT,author,package,package.sub,features,types,array,note,comments,advance")
+			So(strings.Join(cfg.SectionStrings(), ","), ShouldEqual, "DEFAULT,author,package,package.sub,features,types,array,note,comments,string escapes,advance")
 		})
 
 		Convey("Delete a section", func() {
@@ -50,7 +50,7 @@ func Test_SectionRaw(t *testing.T) {
 	Convey("Test section raw string", t, func() {
 		cfg, err := LoadSources(
 			LoadOptions{
-				Insensitive: true,
+				Insensitive:         true,
 				UnparseableSections: []string{"core_lesson", "comments"},
 			},
 			"testdata/aicc.ini")

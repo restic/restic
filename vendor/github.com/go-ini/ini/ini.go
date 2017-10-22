@@ -35,7 +35,7 @@ const (
 
 	// Maximum allowed depth when recursively substituing variable names.
 	_DEPTH_VALUES = 99
-	_VERSION      = "1.28.2"
+	_VERSION      = "1.30.0"
 )
 
 // Version returns current package version literal.
@@ -181,6 +181,8 @@ type LoadOptions struct {
 	AllowBooleanKeys bool
 	// AllowShadows indicates whether to keep track of keys with same name under same section.
 	AllowShadows bool
+	// UnescapeValueDoubleQuotes indicates whether to unescape double quotes inside value to regular format when value is surrounded by double quotes, e.g. key="a \"value\"" => key=a "value"
+	UnescapeValueDoubleQuotes bool
 	// Some INI formats allow group blocks that store a block of raw content that doesn't otherwise
 	// conform to key/value pairs. Specify the names of those blocks here.
 	UnparseableSections []string
@@ -409,6 +411,8 @@ func (f *File) writeToBuffer(indent string) (*bytes.Buffer, error) {
 		if len(sec.Comment) > 0 {
 			if sec.Comment[0] != '#' && sec.Comment[0] != ';' {
 				sec.Comment = "; " + sec.Comment
+			} else {
+				sec.Comment = sec.Comment[:1] + " " + strings.TrimSpace(sec.Comment[1:])
 			}
 			if _, err := buf.WriteString(sec.Comment + LineBreak); err != nil {
 				return nil, err
@@ -463,6 +467,8 @@ func (f *File) writeToBuffer(indent string) (*bytes.Buffer, error) {
 				}
 				if key.Comment[0] != '#' && key.Comment[0] != ';' {
 					key.Comment = "; " + key.Comment
+				} else {
+					key.Comment = key.Comment[:1] + " " + strings.TrimSpace(key.Comment[1:])
 				}
 				if _, err := buf.WriteString(key.Comment + LineBreak); err != nil {
 					return nil, err

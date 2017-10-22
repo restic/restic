@@ -1993,6 +1993,88 @@ func (s *Group) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// GroupObjectsRequest: Groups objects to create an object group. For
+// example, groups PageElements to create a Group on the same page as
+// all the children.
+type GroupObjectsRequest struct {
+	// ChildrenObjectIds: The object IDs of the objects to group.
+	//
+	// Only page elements can be grouped. There should be at least two
+	// page
+	// elements on the same page that are not already in another group. Some
+	// page
+	// elements, such as videos, tables and placeholder shapes cannot be
+	// grouped.
+	ChildrenObjectIds []string `json:"childrenObjectIds,omitempty"`
+
+	// GroupObjectId: A user-supplied object ID for the group to be
+	// created.
+	//
+	// If you specify an ID, it must be unique among all pages and page
+	// elements
+	// in the presentation. The ID must start with an alphanumeric character
+	// or an
+	// underscore (matches regex `[a-zA-Z0-9_]`); remaining characters
+	// may include those as well as a hyphen or colon (matches
+	// regex
+	// `[a-zA-Z0-9_-:]`).
+	// The length of the ID must not be less than 5 or greater than 50.
+	//
+	// If you don't specify an ID, a unique one is generated.
+	GroupObjectId string `json:"groupObjectId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ChildrenObjectIds")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ChildrenObjectIds") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GroupObjectsRequest) MarshalJSON() ([]byte, error) {
+	type noMethod GroupObjectsRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GroupObjectsResponse: The result of grouping objects.
+type GroupObjectsResponse struct {
+	// ObjectId: The object ID of the created group.
+	ObjectId string `json:"objectId,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ObjectId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ObjectId") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GroupObjectsResponse) MarshalJSON() ([]byte, error) {
+	type noMethod GroupObjectsResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Image: A PageElement kind representing an
 // image.
 type Image struct {
@@ -2052,7 +2134,7 @@ type ImageProperties struct {
 	// link.
 	Link *Link `json:"link,omitempty"`
 
-	// Outline: The outline of the image. If not set, the the image has no
+	// Outline: The outline of the image. If not set, the image has no
 	// outline.
 	Outline *Outline `json:"outline,omitempty"`
 
@@ -2739,6 +2821,46 @@ type MasterProperties struct {
 
 func (s *MasterProperties) MarshalJSON() ([]byte, error) {
 	type noMethod MasterProperties
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// MergeTableCellsRequest: Merges cells in a Table.
+type MergeTableCellsRequest struct {
+	// ObjectId: The object ID of the table.
+	ObjectId string `json:"objectId,omitempty"`
+
+	// TableRange: The table range specifying which cells of the table to
+	// merge.
+	//
+	// Any text in the cells being merged will be concatenated and stored in
+	// the
+	// upper-left ("head") cell of the range. If the range is
+	// non-rectangular
+	// (which can occur in some cases where the range covers cells that
+	// are
+	// already merged), a 400 bad request error is returned.
+	TableRange *TableRange `json:"tableRange,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ObjectId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ObjectId") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *MergeTableCellsRequest) MarshalJSON() ([]byte, error) {
+	type noMethod MergeTableCellsRequest
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -4208,6 +4330,9 @@ type Request struct {
 	// DuplicateObject: Duplicates a slide or page element.
 	DuplicateObject *DuplicateObjectRequest `json:"duplicateObject,omitempty"`
 
+	// GroupObjects: Groups objects, such as page elements.
+	GroupObjects *GroupObjectsRequest `json:"groupObjects,omitempty"`
+
 	// InsertTableColumns: Inserts columns into a table.
 	InsertTableColumns *InsertTableColumnsRequest `json:"insertTableColumns,omitempty"`
 
@@ -4216,6 +4341,9 @@ type Request struct {
 
 	// InsertText: Inserts text into a shape or table cell.
 	InsertText *InsertTextRequest `json:"insertText,omitempty"`
+
+	// MergeTableCells: Merges cells in a Table.
+	MergeTableCells *MergeTableCellsRequest `json:"mergeTableCells,omitempty"`
 
 	// RefreshSheetsChart: Refreshes a Google Sheets chart.
 	RefreshSheetsChart *RefreshSheetsChartRequest `json:"refreshSheetsChart,omitempty"`
@@ -4230,6 +4358,12 @@ type Request struct {
 
 	// ReplaceAllText: Replaces all instances of specified text.
 	ReplaceAllText *ReplaceAllTextRequest `json:"replaceAllText,omitempty"`
+
+	// UngroupObjects: Ungroups objects, such as groups.
+	UngroupObjects *UngroupObjectsRequest `json:"ungroupObjects,omitempty"`
+
+	// UnmergeTableCells: Unmerges cells in a Table.
+	UnmergeTableCells *UnmergeTableCellsRequest `json:"unmergeTableCells,omitempty"`
 
 	// UpdateImageProperties: Updates the properties of an Image.
 	UpdateImageProperties *UpdateImagePropertiesRequest `json:"updateImageProperties,omitempty"`
@@ -4254,8 +4388,20 @@ type Request struct {
 	// presentation.
 	UpdateSlidesPosition *UpdateSlidesPositionRequest `json:"updateSlidesPosition,omitempty"`
 
+	// UpdateTableBorderProperties: Updates the properties of the table
+	// borders in a Table.
+	UpdateTableBorderProperties *UpdateTableBorderPropertiesRequest `json:"updateTableBorderProperties,omitempty"`
+
 	// UpdateTableCellProperties: Updates the properties of a TableCell.
 	UpdateTableCellProperties *UpdateTableCellPropertiesRequest `json:"updateTableCellProperties,omitempty"`
+
+	// UpdateTableColumnProperties: Updates the properties of a
+	// Table
+	// column.
+	UpdateTableColumnProperties *UpdateTableColumnPropertiesRequest `json:"updateTableColumnProperties,omitempty"`
+
+	// UpdateTableRowProperties: Updates the properties of a Table row.
+	UpdateTableRowProperties *UpdateTableRowPropertiesRequest `json:"updateTableRowProperties,omitempty"`
 
 	// UpdateTextStyle: Updates the styling of text within a Shape or Table.
 	UpdateTextStyle *UpdateTextStyleRequest `json:"updateTextStyle,omitempty"`
@@ -4311,6 +4457,9 @@ type Response struct {
 
 	// DuplicateObject: The result of duplicating an object.
 	DuplicateObject *DuplicateObjectResponse `json:"duplicateObject,omitempty"`
+
+	// GroupObjects: The result of grouping objects.
+	GroupObjects *GroupObjectsResponse `json:"groupObjects,omitempty"`
 
 	// ReplaceAllShapesWithImage: The result of replacing all shapes
 	// matching some criteria with an
@@ -4904,7 +5053,7 @@ func (s *Shape) MarshalJSON() ([]byte, error) {
 type ShapeBackgroundFill struct {
 	// PropertyState: The background fill property state.
 	//
-	// Updating the the fill on a shape will implicitly update this field
+	// Updating the fill on a shape will implicitly update this field
 	// to
 	// `RENDERED`, unless another value is specified in the same request.
 	// To
@@ -5343,6 +5492,17 @@ type Table struct {
 	// Columns: Number of columns in the table.
 	Columns int64 `json:"columns,omitempty"`
 
+	// HorizontalBorderRows: Properties of horizontal cell borders.
+	//
+	// A table's horizontal cell borders are represented as a grid. The grid
+	// has
+	// one more row than the number of rows in the table and the same number
+	// of
+	// columns as the table. For example, if the table is 3 x 3, its
+	// horizontal
+	// borders will be represented as a grid with 4 rows and 3 columns.
+	HorizontalBorderRows []*TableBorderRow `json:"horizontalBorderRows,omitempty"`
+
 	// Rows: Number of rows in the table.
 	Rows int64 `json:"rows,omitempty"`
 
@@ -5356,6 +5516,17 @@ type Table struct {
 	// have a row_span greater
 	// than 1.
 	TableRows []*TableRow `json:"tableRows,omitempty"`
+
+	// VerticalBorderRows: Properties of vertical cell borders.
+	//
+	// A table's vertical cell borders are represented as a grid. The grid
+	// has the
+	// same number of rows as the table and one more column than the number
+	// of
+	// columns in the table. For example, if the table is 3 x 3, its
+	// vertical
+	// borders will be represented as a grid with 3 rows and 4 columns.
+	VerticalBorderRows []*TableBorderRow `json:"verticalBorderRows,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Columns") to
 	// unconditionally include in API requests. By default, fields with
@@ -5376,6 +5547,151 @@ type Table struct {
 
 func (s *Table) MarshalJSON() ([]byte, error) {
 	type noMethod Table
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// TableBorderCell: The properties of each border cell.
+type TableBorderCell struct {
+	// Location: The location of the border within the border table.
+	Location *TableCellLocation `json:"location,omitempty"`
+
+	// TableBorderProperties: The border properties.
+	TableBorderProperties *TableBorderProperties `json:"tableBorderProperties,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Location") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Location") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TableBorderCell) MarshalJSON() ([]byte, error) {
+	type noMethod TableBorderCell
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// TableBorderFill: The fill of the border.
+type TableBorderFill struct {
+	// SolidFill: Solid fill.
+	SolidFill *SolidFill `json:"solidFill,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "SolidFill") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "SolidFill") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TableBorderFill) MarshalJSON() ([]byte, error) {
+	type noMethod TableBorderFill
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// TableBorderProperties: The border styling properties of
+// the
+// TableBorderCell.
+type TableBorderProperties struct {
+	// DashStyle: The dash style of the border.
+	//
+	// Possible values:
+	//   "DASH_STYLE_UNSPECIFIED" - Unspecified dash style.
+	//   "SOLID" - Solid line. Corresponds to ECMA-376 ST_PresetLineDashVal
+	// value 'solid'.
+	// This is the default dash style.
+	//   "DOT" - Dotted line. Corresponds to ECMA-376 ST_PresetLineDashVal
+	// value 'dot'.
+	//   "DASH" - Dashed line. Corresponds to ECMA-376 ST_PresetLineDashVal
+	// value 'dash'.
+	//   "DASH_DOT" - Alternating dashes and dots. Corresponds to ECMA-376
+	// ST_PresetLineDashVal
+	// value 'dashDot'.
+	//   "LONG_DASH" - Line with large dashes. Corresponds to ECMA-376
+	// ST_PresetLineDashVal
+	// value 'lgDash'.
+	//   "LONG_DASH_DOT" - Alternating large dashes and dots. Corresponds to
+	// ECMA-376
+	// ST_PresetLineDashVal value 'lgDashDot'.
+	DashStyle string `json:"dashStyle,omitempty"`
+
+	// TableBorderFill: The fill of the table border.
+	TableBorderFill *TableBorderFill `json:"tableBorderFill,omitempty"`
+
+	// Weight: The thickness of the border.
+	Weight *Dimension `json:"weight,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DashStyle") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DashStyle") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TableBorderProperties) MarshalJSON() ([]byte, error) {
+	type noMethod TableBorderProperties
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// TableBorderRow: Contents of each border row in a table.
+type TableBorderRow struct {
+	// TableBorderCells: Properties of each border cell. When a border's
+	// adjacent table cells are
+	// merged, it is not included in the response.
+	TableBorderCells []*TableBorderCell `json:"tableBorderCells,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "TableBorderCells") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "TableBorderCells") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TableBorderRow) MarshalJSON() ([]byte, error) {
+	type noMethod TableBorderRow
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -5424,7 +5740,7 @@ func (s *TableCell) MarshalJSON() ([]byte, error) {
 type TableCellBackgroundFill struct {
 	// PropertyState: The background fill property state.
 	//
-	// Updating the the fill on a table cell will implicitly update this
+	// Updating the fill on a table cell will implicitly update this
 	// field
 	// to `RENDERED`, unless another value is specified in the same request.
 	// To
@@ -5644,6 +5960,9 @@ type TableRow struct {
 	// the number of columns of the entire table.
 	TableCells []*TableCell `json:"tableCells,omitempty"`
 
+	// TableRowProperties: Properties of the row.
+	TableRowProperties *TableRowProperties `json:"tableRowProperties,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "RowHeight") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -5663,6 +5982,38 @@ type TableRow struct {
 
 func (s *TableRow) MarshalJSON() ([]byte, error) {
 	type noMethod TableRow
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// TableRowProperties: Properties of each row in a table.
+type TableRowProperties struct {
+	// MinRowHeight: Minimum height of the row. The row will be rendered in
+	// the Slides editor at
+	// a height equal to or greater than this value in order to show all the
+	// text
+	// in the row's cell(s).
+	MinRowHeight *Dimension `json:"minRowHeight,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "MinRowHeight") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "MinRowHeight") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TableRowProperties) MarshalJSON() ([]byte, error) {
+	type noMethod TableRowProperties
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -6098,6 +6449,82 @@ func (s *Thumbnail) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// UngroupObjectsRequest: Ungroups objects, such as groups.
+type UngroupObjectsRequest struct {
+	// ObjectIds: The object IDs of the objects to ungroup.
+	//
+	// Only groups that are not inside other
+	// groups can be ungrouped. All the groups
+	// should be on the same page. The group itself is deleted. The visual
+	// sizes
+	// and positions of all the children are preserved.
+	ObjectIds []string `json:"objectIds,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ObjectIds") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ObjectIds") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UngroupObjectsRequest) MarshalJSON() ([]byte, error) {
+	type noMethod UngroupObjectsRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// UnmergeTableCellsRequest: Unmerges cells in a Table.
+type UnmergeTableCellsRequest struct {
+	// ObjectId: The object ID of the table.
+	ObjectId string `json:"objectId,omitempty"`
+
+	// TableRange: The table range specifying which cells of the table to
+	// unmerge.
+	//
+	// All merged cells in this range will be unmerged, and cells that are
+	// already
+	// unmerged will not be affected. If the range has no merged cells,
+	// the
+	// request will do nothing. If there is text in any of the merged cells,
+	// the
+	// text will remain in the upper-left ("head") cell of the resulting
+	// block of
+	// unmerged cells.
+	TableRange *TableRange `json:"tableRange,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ObjectId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ObjectId") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UnmergeTableCellsRequest) MarshalJSON() ([]byte, error) {
+	type noMethod UnmergeTableCellsRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // UpdateImagePropertiesRequest: Update the properties of an Image.
 type UpdateImagePropertiesRequest struct {
 	// Fields: The fields that should be updated.
@@ -6442,6 +6869,80 @@ func (s *UpdateSlidesPositionRequest) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// UpdateTableBorderPropertiesRequest: Updates the properties of the
+// table borders in a Table.
+type UpdateTableBorderPropertiesRequest struct {
+	// BorderPosition: The border position in the table range the updates
+	// should apply to. If a
+	// border position is not specified, the updates will apply to all
+	// borders in
+	// the table range.
+	//
+	// Possible values:
+	//   "ALL" - All borders in the range.
+	//   "BOTTOM" - Borders at the bottom of the range.
+	//   "INNER" - Borders on the inside of the range.
+	//   "INNER_HORIZONTAL" - Horizontal borders on the inside of the range.
+	//   "INNER_VERTICAL" - Vertical borders on the inside of the range.
+	//   "LEFT" - Borders at the left of the range.
+	//   "OUTER" - Borders along the outside of the range.
+	//   "RIGHT" - Borders at the right of the range.
+	//   "TOP" - Borders at the top of the range.
+	BorderPosition string `json:"borderPosition,omitempty"`
+
+	// Fields: The fields that should be updated.
+	//
+	// At least one field must be specified. The root
+	// `tableBorderProperties` is
+	// implied and should not be specified. A single "*" can be used
+	// as
+	// short-hand for listing every field.
+	//
+	// For example to update the table border solid fill color, set
+	// `fields` to "tableBorderFill.solidFill.color".
+	//
+	// To reset a property to its default value, include its field name in
+	// the
+	// field mask but leave the field itself unset.
+	Fields string `json:"fields,omitempty"`
+
+	// ObjectId: The object ID of the table.
+	ObjectId string `json:"objectId,omitempty"`
+
+	// TableBorderProperties: The table border properties to update.
+	TableBorderProperties *TableBorderProperties `json:"tableBorderProperties,omitempty"`
+
+	// TableRange: The table range representing the subset of the table to
+	// which the updates
+	// are applied. If a table range is not specified, the updates will
+	// apply to
+	// the entire table.
+	TableRange *TableRange `json:"tableRange,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BorderPosition") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BorderPosition") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UpdateTableBorderPropertiesRequest) MarshalJSON() ([]byte, error) {
+	type noMethod UpdateTableBorderPropertiesRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // UpdateTableCellPropertiesRequest: Update the properties of a
 // TableCell.
 type UpdateTableCellPropertiesRequest struct {
@@ -6494,6 +6995,118 @@ type UpdateTableCellPropertiesRequest struct {
 
 func (s *UpdateTableCellPropertiesRequest) MarshalJSON() ([]byte, error) {
 	type noMethod UpdateTableCellPropertiesRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// UpdateTableColumnPropertiesRequest: Updates the properties of a Table
+// column.
+type UpdateTableColumnPropertiesRequest struct {
+	// ColumnIndices: The list of zero-based indices specifying which
+	// columns to update. If no
+	// indices are provided, all columns in the table will be updated.
+	ColumnIndices []int64 `json:"columnIndices,omitempty"`
+
+	// Fields: The fields that should be updated.
+	//
+	// At least one field must be specified. The root
+	// `tableColumnProperties` is
+	// implied and should not be specified. A single "*" can be used
+	// as
+	// short-hand for listing every field.
+	//
+	// For example to update the column width, set `fields` to
+	// "column_width".
+	//
+	// If '"column_width"' is included in the field mask but the property is
+	// left
+	// unset, the column width will default to 406,400 EMU (32 points).
+	Fields string `json:"fields,omitempty"`
+
+	// ObjectId: The object ID of the table.
+	ObjectId string `json:"objectId,omitempty"`
+
+	// TableColumnProperties: The table column properties to update.
+	//
+	// If the value of `table_column_properties#column_width` in the request
+	// is
+	// less than 406,400 EMU (32 points), a 400 bad request error is
+	// returned.
+	TableColumnProperties *TableColumnProperties `json:"tableColumnProperties,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ColumnIndices") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ColumnIndices") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UpdateTableColumnPropertiesRequest) MarshalJSON() ([]byte, error) {
+	type noMethod UpdateTableColumnPropertiesRequest
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// UpdateTableRowPropertiesRequest: Updates the properties of a Table
+// row.
+type UpdateTableRowPropertiesRequest struct {
+	// Fields: The fields that should be updated.
+	//
+	// At least one field must be specified. The root `tableRowProperties`
+	// is
+	// implied and should not be specified. A single "*" can be used
+	// as
+	// short-hand for listing every field.
+	//
+	// For example to update the minimum row height, set `fields`
+	// to
+	// "min_row_height".
+	//
+	// If '"min_row_height"' is included in the field mask but the property
+	// is
+	// left unset, the minimum row height will default to 0.
+	Fields string `json:"fields,omitempty"`
+
+	// ObjectId: The object ID of the table.
+	ObjectId string `json:"objectId,omitempty"`
+
+	// RowIndices: The list of zero-based indices specifying which rows to
+	// update. If no
+	// indices are provided, all rows in the table will be updated.
+	RowIndices []int64 `json:"rowIndices,omitempty"`
+
+	// TableRowProperties: The table row properties to update.
+	TableRowProperties *TableRowProperties `json:"tableRowProperties,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Fields") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Fields") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *UpdateTableRowPropertiesRequest) MarshalJSON() ([]byte, error) {
+	type noMethod UpdateTableRowPropertiesRequest
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }

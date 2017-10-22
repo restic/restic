@@ -347,3 +347,180 @@ func TestSetHelpCommand(t *testing.T) {
 		t.Errorf("Expected to contain %q message, but got %q", correctMessage, output.String())
 	}
 }
+
+func TestTraverseWithParentFlags(t *testing.T) {
+	cmd := &Command{
+		Use:              "do",
+		TraverseChildren: true,
+	}
+	cmd.Flags().String("foo", "", "foo things")
+	cmd.Flags().BoolP("goo", "g", false, "foo things")
+
+	sub := &Command{Use: "next"}
+	sub.Flags().String("add", "", "add things")
+	cmd.AddCommand(sub)
+
+	c, args, err := cmd.Traverse([]string{"-g", "--foo", "ok", "next", "--add"})
+	if err != nil {
+		t.Fatalf("Expected no error: %s", err)
+	}
+	if len(args) != 1 && args[0] != "--add" {
+		t.Fatalf("wrong args %s", args)
+	}
+	if c.Name() != sub.Name() {
+		t.Fatalf("wrong command %q expected %q", c.Name(), sub.Name())
+	}
+}
+
+func TestTraverseNoParentFlags(t *testing.T) {
+	cmd := &Command{
+		Use:              "do",
+		TraverseChildren: true,
+	}
+	cmd.Flags().String("foo", "", "foo things")
+
+	sub := &Command{Use: "next"}
+	sub.Flags().String("add", "", "add things")
+	cmd.AddCommand(sub)
+
+	c, args, err := cmd.Traverse([]string{"next"})
+	if err != nil {
+		t.Fatalf("Expected no error: %s", err)
+	}
+	if len(args) != 0 {
+		t.Fatalf("wrong args %s", args)
+	}
+	if c.Name() != sub.Name() {
+		t.Fatalf("wrong command %q expected %q", c.Name(), sub.Name())
+	}
+}
+
+func TestTraverseWithBadParentFlags(t *testing.T) {
+	cmd := &Command{
+		Use:              "do",
+		TraverseChildren: true,
+	}
+	sub := &Command{Use: "next"}
+	sub.Flags().String("add", "", "add things")
+	cmd.AddCommand(sub)
+
+	expected := "got unknown flag: --add"
+
+	c, _, err := cmd.Traverse([]string{"--add", "ok", "next"})
+	if err == nil || strings.Contains(err.Error(), expected) {
+		t.Fatalf("Expected error %s got %s", expected, err)
+	}
+	if c != nil {
+		t.Fatalf("Expected nil command")
+	}
+}
+
+func TestTraverseWithBadChildFlag(t *testing.T) {
+	cmd := &Command{
+		Use:              "do",
+		TraverseChildren: true,
+	}
+	cmd.Flags().String("foo", "", "foo things")
+
+	sub := &Command{Use: "next"}
+	cmd.AddCommand(sub)
+
+	// Expect no error because the last commands args shouldn't be parsed in
+	// Traverse
+	c, args, err := cmd.Traverse([]string{"next", "--add"})
+	if err != nil {
+		t.Fatalf("Expected no error: %s", err)
+	}
+	if len(args) != 1 && args[0] != "--add" {
+		t.Fatalf("wrong args %s", args)
+	}
+	if c.Name() != sub.Name() {
+		t.Fatalf("wrong command %q expected %q", c.Name(), sub.Name())
+	}
+}
+
+func TestTraverseWithTwoSubcommands(t *testing.T) {
+	cmd := &Command{
+		Use:              "do",
+		TraverseChildren: true,
+	}
+
+	sub := &Command{
+		Use:              "sub",
+		TraverseChildren: true,
+	}
+	cmd.AddCommand(sub)
+
+	subsub := &Command{
+		Use: "subsub",
+	}
+	sub.AddCommand(subsub)
+
+	c, _, err := cmd.Traverse([]string{"sub", "subsub"})
+	if err != nil {
+		t.Fatalf("Expected no error: %s", err)
+	}
+	if c.Name() != subsub.Name() {
+		t.Fatalf("wrong command %q expected %q", c.Name(), subsub.Name())
+	}
+}
+
+func TestRequiredFlags(t *testing.T) {
+	c := &Command{Use: "c", Run: func(*Command, []string) {}}
+	output := new(bytes.Buffer)
+	c.SetOutput(output)
+	c.Flags().String("foo1", "", "required foo1")
+	c.MarkFlagRequired("foo1")
+	c.Flags().String("foo2", "", "required foo2")
+	c.MarkFlagRequired("foo2")
+	c.Flags().String("bar", "", "optional bar")
+
+	expected := fmt.Sprintf("Required flag(s) %q, %q have/has not been set", "foo1", "foo2")
+
+	if err := c.Execute(); err != nil {
+		if err.Error() != expected {
+			t.Errorf("expected %v, got %v", expected, err.Error())
+		}
+	}
+}
+
+func TestPersistentRequiredFlags(t *testing.T) {
+	parent := &Command{Use: "parent", Run: func(*Command, []string) {}}
+	output := new(bytes.Buffer)
+	parent.SetOutput(output)
+	parent.PersistentFlags().String("foo1", "", "required foo1")
+	parent.MarkPersistentFlagRequired("foo1")
+	parent.PersistentFlags().String("foo2", "", "required foo2")
+	parent.MarkPersistentFlagRequired("foo2")
+	parent.Flags().String("foo3", "", "optional foo3")
+
+	child := &Command{Use: "child", Run: func(*Command, []string) {}}
+	child.Flags().String("bar1", "", "required bar1")
+	child.MarkFlagRequired("bar1")
+	child.Flags().String("bar2", "", "required bar2")
+	child.MarkFlagRequired("bar2")
+	child.Flags().String("bar3", "", "optional bar3")
+
+	parent.AddCommand(child)
+	parent.SetArgs([]string{"child"})
+
+	expected := fmt.Sprintf("Required flag(s) %q, %q, %q, %q have/has not been set", "bar1", "bar2", "foo1", "foo2")
+
+	if err := parent.Execute(); err != nil {
+		if err.Error() != expected {
+			t.Errorf("expected %v, got %v", expected, err.Error())
+		}
+	}
+}
+
+// TestUpdateName checks if c.Name() updates on changed c.Use.
+// Related to https://github.com/spf13/cobra/pull/422#discussion_r143918343.
+func TestUpdateName(t *testing.T) {
+	c := &Command{Use: "name xyz"}
+	originalName := c.Name()
+
+	c.Use = "changedName abc"
+	if originalName == c.Name() || c.Name() != "changedName" {
+		t.Error("c.Name() should be updated on changed c.Use")
+	}
+}

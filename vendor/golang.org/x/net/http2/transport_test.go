@@ -3678,6 +3678,34 @@ func benchSimpleRoundTrip(b *testing.B, nHeaders int) {
 	}
 }
 
+type infiniteReader struct{}
+
+func (r infiniteReader) Read(b []byte) (int, error) {
+	return len(b), nil
+}
+
+// Issue 20521: it is not an error to receive a response and end stream
+// from the server without the body being consumed.
+func TestTransportResponseAndResetWithoutConsumingBodyRace(t *testing.T) {
+	st := newServerTester(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}, optOnlyServer)
+	defer st.Close()
+
+	tr := &Transport{TLSClientConfig: tlsConfigInsecure}
+	defer tr.CloseIdleConnections()
+
+	// The request body needs to be big enough to trigger flow control.
+	req, _ := http.NewRequest("PUT", st.ts.URL, infiniteReader{})
+	res, err := tr.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("Response code = %v; want %v", res.StatusCode, http.StatusOK)
+	}
+}
+
 func BenchmarkClientRequestHeaders(b *testing.B) {
 	b.Run("   0 Headers", func(b *testing.B) { benchSimpleRoundTrip(b, 0) })
 	b.Run("  10 Headers", func(b *testing.B) { benchSimpleRoundTrip(b, 10) })

@@ -104,7 +104,7 @@ type BlobProperties struct {
 	CacheControl          string      `xml:"Cache-Control" header:"x-ms-blob-cache-control"`
 	ContentLanguage       string      `xml:"Cache-Language" header:"x-ms-blob-content-language"`
 	ContentDisposition    string      `xml:"Content-Disposition" header:"x-ms-blob-content-disposition"`
-	BlobType              BlobType    `xml:"x-ms-blob-blob-type"`
+	BlobType              BlobType    `xml:"BlobType"`
 	SequenceNumber        int64       `xml:"x-ms-blob-sequence-number"`
 	CopyID                string      `xml:"CopyId"`
 	CopyStatus            string      `xml:"CopyStatus"`

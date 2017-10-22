@@ -258,6 +258,35 @@ func (s *CreateShortDynamicLinkResponse) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// DesktopInfo: Desktop related attributes to the Dynamic Link.
+type DesktopInfo struct {
+	// DesktopFallbackLink: Link to open on desktop.
+	DesktopFallbackLink string `json:"desktopFallbackLink,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "DesktopFallbackLink")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "DesktopFallbackLink") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *DesktopInfo) MarshalJSON() ([]byte, error) {
+	type noMethod DesktopInfo
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // DeviceInfo: Signals associated with the device making the request.
 type DeviceInfo struct {
 	// DeviceModelName: Device model name.
@@ -373,6 +402,13 @@ type DynamicLinkInfo struct {
 	// [documentation](https://firebase.google.com/docs/dynamic-links/cre
 	// ate-manually).
 	AndroidInfo *AndroidInfo `json:"androidInfo,omitempty"`
+
+	// DesktopInfo: Desktop related information. See desktop related
+	// parameters in
+	// the
+	// [documentation](https://firebase.google.com/docs/dynamic-links/cre
+	// ate-manually).
+	DesktopInfo *DesktopInfo `json:"desktopInfo,omitempty"`
 
 	// DynamicLinkDomain: Dynamic Links domain that the project owns, e.g.
 	// abcd.app.goo.gl

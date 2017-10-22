@@ -1795,7 +1795,11 @@ func (s *Property) MarshalJSON() ([]byte, error) {
 // medical,
 // violence).
 type SafeSearchAnnotation struct {
-	// Adult: Represents the adult content likelihood for the image.
+	// Adult: Represents the adult content likelihood for the image. Adult
+	// content may
+	// contain elements such as nudity, pornographic images or cartoons,
+	// or
+	// sexual activities.
 	//
 	// Possible values:
 	//   "UNKNOWN" - Unknown likelihood.
@@ -1845,7 +1849,7 @@ type SafeSearchAnnotation struct {
 	// specified vertical.
 	Spoof string `json:"spoof,omitempty"`
 
-	// Violence: Violence likelihood.
+	// Violence: Likelihood that this image contains violent content.
 	//
 	// Possible values:
 	//   "UNKNOWN" - Unknown likelihood.

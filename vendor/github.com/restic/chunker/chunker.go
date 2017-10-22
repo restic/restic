@@ -13,15 +13,10 @@ const (
 	// WindowSize is the size of the sliding window.
 	windowSize = 64
 
-	// aim to create chunks of 20 bits or about 1MiB on average.
-	averageBits = 20
-
 	// MinSize is the default minimal size of a chunk.
 	MinSize = 512 * kiB
 	// MaxSize is the default maximal size of a chunk.
 	MaxSize = 8 * miB
-
-	splitmask = (1 << averageBits) - 1
 
 	chunkerBufSize = 512 * kiB
 )
@@ -74,6 +69,7 @@ type chunkerConfig struct {
 	polShift          uint
 	tables            tables
 	tablesInitialized bool
+	splitmask         uint64
 
 	rd     io.Reader
 	closed bool
@@ -85,17 +81,31 @@ type Chunker struct {
 	chunkerState
 }
 
+// SetAverageBits allows to control the frequency of chunk discovery:
+// the lower averageBits, the higher amount of chunks will be identified.
+// The default value is 20 bits, so chunks will be of 1MiB size on average.
+func (c *Chunker) SetAverageBits(averageBits int) {
+	c.splitmask = (1 << uint64(averageBits)) - 1
+}
+
 // New returns a new Chunker based on polynomial p that reads from rd.
 func New(rd io.Reader, pol Pol) *Chunker {
+	return NewWithBoundaries(rd, pol, MinSize, MaxSize)
+}
+
+// NewWithBoundaries returns a new Chunker based on polynomial p that reads from
+// rd and custom min and max size boundaries.
+func NewWithBoundaries(rd io.Reader, pol Pol, min, max uint) *Chunker {
 	c := &Chunker{
 		chunkerState: chunkerState{
 			buf: make([]byte, chunkerBufSize),
 		},
 		chunkerConfig: chunkerConfig{
-			pol:     pol,
-			rd:      rd,
-			MinSize: MinSize,
-			MaxSize: MaxSize,
+			pol:       pol,
+			rd:        rd,
+			MinSize:   min,
+			MaxSize:   max,
+			splitmask: (1 << 20) - 1, // aim to create chunks of 20 bits or about 1MiB on average.
 		},
 	}
 
@@ -106,15 +116,22 @@ func New(rd io.Reader, pol Pol) *Chunker {
 
 // Reset reinitializes the chunker with a new reader and polynomial.
 func (c *Chunker) Reset(rd io.Reader, pol Pol) {
+	c.ResetWithBoundaries(rd, pol, MinSize, MaxSize)
+}
+
+// ResetWithBoundaries reinitializes the chunker with a new reader, polynomial
+// and custom min and max size boundaries.
+func (c *Chunker) ResetWithBoundaries(rd io.Reader, pol Pol, min, max uint) {
 	*c = Chunker{
 		chunkerState: chunkerState{
 			buf: c.buf,
 		},
 		chunkerConfig: chunkerConfig{
-			pol:     pol,
-			rd:      rd,
-			MinSize: MinSize,
-			MaxSize: MaxSize,
+			pol:       pol,
+			rd:        rd,
+			MinSize:   min,
+			MaxSize:   max,
+			splitmask: (1 << 20) - 1,
 		},
 	}
 
@@ -292,7 +309,7 @@ func (c *Chunker) Next(data []byte) (Chunk, error) {
 				continue
 			}
 
-			if (digest&splitmask) == 0 || add >= maxSize {
+			if (digest&c.splitmask) == 0 || add >= maxSize {
 				i := add - c.count - 1
 				data = append(data, c.buf[c.bpos:c.bpos+uint(i)+1]...)
 				c.count = add

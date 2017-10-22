@@ -87,6 +87,14 @@ key  = "value"
 key2 = "value2" ; This is a comment for key2
 key3 = "one", "two", "three"
 
+[string escapes]
+key1 = value1, value2, value3
+key2 = value1\, value2
+key3 = val\ue1, value2
+key4 = value1\\, value\\\\2
+key5 = value1\,, value2
+key6 = aaa bbb\ and\ space ccc
+
 [advance]
 value with quotes = "some value"
 value quote2 again = 'some value'
@@ -241,7 +249,7 @@ key5`))
 		// there is always a trailing \n at the end of the section
 		So(buf.String(), ShouldEqual, `key1 = hello
 key2
-#key3
+# key3
 key4
 key5
 `)
@@ -292,6 +300,17 @@ func Test_LooseLoad(t *testing.T) {
 		})
 	})
 
+}
+
+func Test_LoadOptions_UnescapeValueDoubleQuotes(t *testing.T) {
+	Convey("Load with option UnescapeValueDoubleQuotes enabled", t, func() {
+		cfg, err := LoadSources(LoadOptions{UnescapeValueDoubleQuotes: true},
+			[]byte(`create_repo="创建了仓库 <a href=\"%s\">%s</a>"`))
+		So(err, ShouldBeNil)
+		So(cfg, ShouldNotBeNil)
+
+		So(cfg.Section("").Key("create_repo").String(), ShouldEqual, `创建了仓库 <a href="%s">%s</a>`)
+	})
 }
 
 func Test_File_Append(t *testing.T) {
@@ -396,6 +415,14 @@ Good man.
 	; This is a comment for key2
 	key2 = value2
 	key3 = "one", "two", "three"
+
+[string escapes]
+	key1 = value1, value2, value3
+	key2 = value1\, value2
+	key3 = val\ue1, value2
+	key4 = value1\\, value\\\\2
+	key5 = value1\,, value2
+	key6 = aaa bbb\ and\ space ccc
 
 [advance]
 	value with quotes      = some value

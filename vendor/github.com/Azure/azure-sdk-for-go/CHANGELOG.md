@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## `v11.1.0-beta`
+
+### ARM
+
+- trafficmanager and containerregistry SDKs now reflect the services faithfully
+- trafficmanager also has a new operation group: user metrics.
+
+### Generated code notes
+- [Azure REST API specs](https://github.com/Azure/azure-rest-api-specs) commit: c97a18ed775029207715b09c80761334724740b9
+- [AutoRest Go Generator](https://github.com/Azure/autorest.go) commit: 5d984152f2e9cff6878ea5060bed7e8d8a2ae1cc
+
 ## `v11.0.0-beta`
 
 ### ARM

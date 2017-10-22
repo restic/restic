@@ -33,20 +33,24 @@ const (
 // ProjID returns the project ID to use in integration tests, or the empty
 // string if none is configured.
 func ProjID() string {
-	projID := os.Getenv(envProjID)
-	if projID == "" {
-		return ""
-	}
-	return projID
+	return os.Getenv(envProjID)
 }
 
 // TokenSource returns the OAuth2 token source to use in integration tests,
-// or nil if none is configured. If the environment variable is unset,
-// TokenSource will try to find 'Application Default Credentials'. Else,
-// TokenSource will return nil.
-// TokenSource will log.Fatal if the token source is specified but missing or invalid.
+// or nil if none is configured. It uses the standard environment variable
+// for tests in this repo.
 func TokenSource(ctx context.Context, scopes ...string) oauth2.TokenSource {
-	key := os.Getenv(envPrivateKey)
+	return TokenSourceEnv(ctx, envPrivateKey, scopes...)
+}
+
+// TokenSourceEnv returns the OAuth2 token source to use in integration tests. or nil
+// if none is configured. It tries to get credentials from the filename in the
+// environment variable envVar. If the environment variable is unset, TokenSourceEnv
+// will try to find 'Application Default Credentials'. Else, TokenSourceEnv will
+// return nil. TokenSourceEnv will log.Fatal if the token source is specified but
+// missing or invalid.
+func TokenSourceEnv(ctx context.Context, envVar string, scopes ...string) oauth2.TokenSource {
+	key := os.Getenv(envVar)
 	if key == "" { // Try for application default credentials.
 		ts, err := google.DefaultTokenSource(ctx, scopes...)
 		if err != nil {

@@ -73,7 +73,7 @@ func Test_Key(t *testing.T) {
 
 		Convey("Get sections", func() {
 			sections := cfg.Sections()
-			for i, name := range []string{DEFAULT_SECTION, "author", "package", "package.sub", "features", "types", "array", "note", "comments", "advance"} {
+			for i, name := range []string{DEFAULT_SECTION, "author", "package", "package.sub", "features", "types", "array", "note", "comments", "string escapes", "advance"} {
 				So(sections[i].Name(), ShouldEqual, name)
 			}
 		})
@@ -241,6 +241,16 @@ func Test_Key(t *testing.T) {
 			So(err, ShouldBeNil)
 			vals6 := sec.Key("TIMES").Times(",")
 			timesEqual(vals6, t, t, t)
+		})
+
+		Convey("Test string slice escapes", func() {
+			sec := cfg.Section("string escapes")
+			So(sec.Key("key1").Strings(","), ShouldResemble, []string{"value1", "value2", "value3"})
+			So(sec.Key("key2").Strings(","), ShouldResemble, []string{"value1, value2"})
+			So(sec.Key("key3").Strings(","), ShouldResemble, []string{`val\ue1`, "value2"})
+			So(sec.Key("key4").Strings(","), ShouldResemble, []string{`value1\`, `value\\2`})
+			So(sec.Key("key5").Strings(",,"), ShouldResemble, []string{"value1,, value2"})
+			So(sec.Key("key6").Strings(" "), ShouldResemble, []string{"aaa", "bbb and space", "ccc"})
 		})
 
 		Convey("Get valid values into slice", func() {

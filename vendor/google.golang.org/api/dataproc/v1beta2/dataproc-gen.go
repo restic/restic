@@ -433,13 +433,13 @@ func (s *ClusterMetrics) MarshalJSON() ([]byte, error) {
 }
 
 type ClusterOperation struct {
-	// Done: Output-only Indicates the operation is done.
+	// Done: Output only. Indicates the operation is done.
 	Done bool `json:"done,omitempty"`
 
-	// Error: Output-only Error, if operation failed.
+	// Error: Output only. Error, if operation failed.
 	Error string `json:"error,omitempty"`
 
-	// OperationId: Output-only The id of the cluster operation.
+	// OperationId: Output only. The id of the cluster operation.
 	OperationId string `json:"operationId,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Done") to
@@ -562,11 +562,14 @@ func (s *ClusterOperationStatus) MarshalJSON() ([]byte, error) {
 // ClusterSelector: A selector that chooses target cluster for jobs
 // based on metadata.
 type ClusterSelector struct {
-	// ClusterLabels: Required The cluster labels. Cluster must have all
+	// ClusterLabels: Required. The cluster labels. Cluster must have all
 	// labels to match.
 	ClusterLabels map[string]string `json:"clusterLabels,omitempty"`
 
-	// Zone: Required The cluster target zone.
+	// Zone: Optional. The zone where workflow process executes. This
+	// parameter does not affect the selection of the cluster.If
+	// unspecified, the zone of the first cluster matching the selector is
+	// used.
 	Zone string `json:"zone,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ClusterLabels") to
@@ -1051,17 +1054,17 @@ func (s *InstanceGroupConfig) MarshalJSON() ([]byte, error) {
 // InstantiateWorkflowTemplateRequest: A request to instantiate a
 // workflow template.
 type InstantiateWorkflowTemplateRequest struct {
-	// InstanceId: Optional A tag that prevents multiple concurrent workflow
-	// instances with the same tag from running. This mitigates risk of
-	// concurrent instances started due to retries.It is recommended to
-	// always set this value to a UUID
+	// InstanceId: Optional. A tag that prevents multiple concurrent
+	// workflow instances with the same tag from running. This mitigates
+	// risk of concurrent instances started due to retries.It is recommended
+	// to always set this value to a UUID
 	// (https://en.wikipedia.org/wiki/Universally_unique_identifier).The tag
 	// must contain only letters (a-z, A-Z), numbers (0-9), underscores (_),
 	// and hyphens (-). The maximum length is 40 characters.
 	InstanceId string `json:"instanceId,omitempty"`
 
-	// Version: Optional The version of workflow template to instantiate. If
-	// specified, the workflow will be instantiated only if the current
+	// Version: Optional. The version of workflow template to instantiate.
+	// If specified, the workflow will be instantiated only if the current
 	// version of the workflow template has the supplied version.This option
 	// cannot be used to instantiate a previous version of workflow
 	// template.
@@ -1513,13 +1516,13 @@ func (s *ListOperationsResponse) MarshalJSON() ([]byte, error) {
 // ListWorkflowTemplatesResponse: A response to a request to list
 // workflow templates in a project.
 type ListWorkflowTemplatesResponse struct {
-	// NextPageToken: Output-only This token is included in the response if
+	// NextPageToken: Output only. This token is included in the response if
 	// there are more results to fetch. To fetch additional results, provide
 	// this value as the page_token in a subsequent
 	// <code>ListWorkflowTemplatesRequest</code>.
 	NextPageToken string `json:"nextPageToken,omitempty"`
 
-	// Templates: Output-only WorkflowTemplates list.
+	// Templates: Output only. WorkflowTemplates list.
 	Templates []*WorkflowTemplate `json:"templates,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -1582,16 +1585,16 @@ func (s *LoggingConfig) MarshalJSON() ([]byte, error) {
 
 // ManagedCluster: Cluster that is managed by the workflow.
 type ManagedCluster struct {
-	// ClusterName: Required The cluster name. Cluster names within a
+	// ClusterName: Required. The cluster name. Cluster names within a
 	// project must be unique. Names from deleted clusters can be reused.
 	ClusterName string `json:"clusterName,omitempty"`
 
-	// Config: Required The cluster configuration.
+	// Config: Required. The cluster configuration.
 	Config *ClusterConfig `json:"config,omitempty"`
 
-	// Labels: Optional The labels to associate with this cluster.Label keys
-	// must be between 1 and 63 characters long, and must conform to the
-	// following PCRE regular expression: \p{Ll}\p{Lo}{0,62}Label values
+	// Labels: Optional. The labels to associate with this cluster.Label
+	// keys must be between 1 and 63 characters long, and must conform to
+	// the following PCRE regular expression: \p{Ll}\p{Lo}{0,62}Label values
 	// must be between 1 and 63 characters long, and must conform to the
 	// following PCRE regular expression: \p{Ll}\p{Lo}\p{N}_-{0,63}No more
 	// than 64 labels can be associated with a given cluster.
@@ -1762,7 +1765,7 @@ type OrderedJob struct {
 	// HiveJob: Job is a Hive job.
 	HiveJob *HiveJob `json:"hiveJob,omitempty"`
 
-	// Labels: Optional The labels to associate with this job.Label keys
+	// Labels: Optional. The labels to associate with this job.Label keys
 	// must be between 1 and 63 characters long, and must conform to the
 	// following regular expression: \p{Ll}\p{Lo}{0,62}Label values must be
 	// between 1 and 63 characters long, and must conform to the following
@@ -1773,7 +1776,7 @@ type OrderedJob struct {
 	// PigJob: Job is a Pig job.
 	PigJob *PigJob `json:"pigJob,omitempty"`
 
-	// PrerequisiteStepIds: Optional The optional list of prerequisite job
+	// PrerequisiteStepIds: Optional. The optional list of prerequisite job
 	// step_ids. If not specified, the job will start at the beginning of
 	// workflow.
 	PrerequisiteStepIds []string `json:"prerequisiteStepIds,omitempty"`
@@ -1781,7 +1784,7 @@ type OrderedJob struct {
 	// PysparkJob: Job is a Pyspark job.
 	PysparkJob *PySparkJob `json:"pysparkJob,omitempty"`
 
-	// Scheduling: Optional Job scheduling configuration.
+	// Scheduling: Optional. Job scheduling configuration.
 	Scheduling *JobScheduling `json:"scheduling,omitempty"`
 
 	// SparkJob: Job is a Spark job.
@@ -1790,7 +1793,7 @@ type OrderedJob struct {
 	// SparkSqlJob: Job is a SparkSql job.
 	SparkSqlJob *SparkSqlJob `json:"sparkSqlJob,omitempty"`
 
-	// StepId: Required The step id. The id must be unique among all jobs
+	// StepId: Required. The step id. The id must be unique among all jobs
 	// within the template.The step id is used as prefix for job id, as job
 	// workflow-step-id label, and in prerequisite_step_ids field from other
 	// steps.
@@ -2412,7 +2415,7 @@ func (s *TestIamPermissionsResponse) MarshalJSON() ([]byte, error) {
 
 // WorkflowGraph: The workflow graph.
 type WorkflowGraph struct {
-	// Nodes: Output-only The workflow nodes.
+	// Nodes: Output only. The workflow nodes.
 	Nodes []*WorkflowNode `json:"nodes,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Nodes") to
@@ -2440,19 +2443,19 @@ func (s *WorkflowGraph) MarshalJSON() ([]byte, error) {
 
 // WorkflowMetadata: A Cloud Dataproc workflow template resource.
 type WorkflowMetadata struct {
-	// ClusterName: Output-only The name of the managed cluster.
+	// ClusterName: Output only. The name of the managed cluster.
 	ClusterName string `json:"clusterName,omitempty"`
 
-	// CreateCluster: Output-only The create cluster operation metadata.
+	// CreateCluster: Output only. The create cluster operation metadata.
 	CreateCluster *ClusterOperation `json:"createCluster,omitempty"`
 
-	// DeleteCluster: Output-only The delete cluster operation metadata.
+	// DeleteCluster: Output only. The delete cluster operation metadata.
 	DeleteCluster *ClusterOperation `json:"deleteCluster,omitempty"`
 
-	// Graph: Output-only The workflow graph.
+	// Graph: Output only. The workflow graph.
 	Graph *WorkflowGraph `json:"graph,omitempty"`
 
-	// State: Output-only The workflow state.
+	// State: Output only. The workflow state.
 	//
 	// Possible values:
 	//   "UNKNOWN" - Unused.
@@ -2461,10 +2464,10 @@ type WorkflowMetadata struct {
 	//   "DONE" - The operation is done; either cancelled or completed.
 	State string `json:"state,omitempty"`
 
-	// Template: Output-only The "resource name" of the template.
+	// Template: Output only. The "resource name" of the template.
 	Template string `json:"template,omitempty"`
 
-	// Version: Output-only The version of template at the time of workflow
+	// Version: Output only. The version of template at the time of workflow
 	// instantiation.
 	Version int64 `json:"version,omitempty"`
 
@@ -2493,17 +2496,17 @@ func (s *WorkflowMetadata) MarshalJSON() ([]byte, error) {
 
 // WorkflowNode: The workflow node.
 type WorkflowNode struct {
-	// Error: Output-only The error detail.
+	// Error: Output only. The error detail.
 	Error string `json:"error,omitempty"`
 
-	// JobId: Output-only The job id; populated after the node enters
+	// JobId: Output only. The job id; populated after the node enters
 	// RUNNING state.
 	JobId string `json:"jobId,omitempty"`
 
-	// PrerequisiteStepIds: Output-only Node's prerequisite nodes.
+	// PrerequisiteStepIds: Output only. Node's prerequisite nodes.
 	PrerequisiteStepIds []string `json:"prerequisiteStepIds,omitempty"`
 
-	// State: Output-only The node state.
+	// State: Output only. The node state.
 	//
 	// Possible values:
 	//   "NODE_STATUS_UNSPECIFIED"
@@ -2515,7 +2518,7 @@ type WorkflowNode struct {
 	// ancestor or peer failed.
 	State string `json:"state,omitempty"`
 
-	// StepId: Output-only The name of the node.
+	// StepId: Output only. The name of the node.
 	StepId string `json:"stepId,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Error") to
@@ -2543,16 +2546,16 @@ func (s *WorkflowNode) MarshalJSON() ([]byte, error) {
 
 // WorkflowTemplate: A Cloud Dataproc workflow template resource.
 type WorkflowTemplate struct {
-	// CreateTime: Output-only The time template was created.
+	// CreateTime: Output only. The time template was created.
 	CreateTime string `json:"createTime,omitempty"`
 
-	// Id: Required The template id.
+	// Id: Required. The template id.
 	Id string `json:"id,omitempty"`
 
-	// Jobs: Required The Directed Acyclic Graph of Jobs to submit.
+	// Jobs: Required. The Directed Acyclic Graph of Jobs to submit.
 	Jobs []*OrderedJob `json:"jobs,omitempty"`
 
-	// Labels: Optional The labels to associate with this template. These
+	// Labels: Optional. The labels to associate with this template. These
 	// labels will be propagated to all jobs and clusters created by the
 	// workflow instance.Label keys must contain 1 to 63 characters, and
 	// must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt).Label
@@ -2562,26 +2565,26 @@ type WorkflowTemplate struct {
 	// associated with a template.
 	Labels map[string]string `json:"labels,omitempty"`
 
-	// Name: Output-only The "resource name" of the template, as described
+	// Name: Output only. The "resource name" of the template, as described
 	// in https://cloud.google.com/apis/design/resource_names of the form
 	// projects/{project_id}/regions/{region}/workflowTemplates/{template_id}
 	Name string `json:"name,omitempty"`
 
-	// Placement: Required WorkflowTemplate scheduling information.
+	// Placement: Required. WorkflowTemplate scheduling information.
 	Placement *WorkflowTemplatePlacement `json:"placement,omitempty"`
 
-	// UpdateTime: Output-only The time template was last updated.
+	// UpdateTime: Output only. The time template was last updated.
 	UpdateTime string `json:"updateTime,omitempty"`
 
-	// Version: Optional Used to perform a consistent read-modify-write.This
-	// field should be left blank for a CreateWorkflowTemplate request. It
-	// is required for an UpdateWorkflowTemplate request, and must match the
-	// current server version. A typical update template flow would fetch
-	// the current template with a GetWorkflowTemplate request, which will
-	// return the current template with the version field filled in with the
-	// current server version. The user updates other fields in the
-	// template, then returns it as part of the UpdateWorkflowTemplate
-	// request.
+	// Version: Optional. Used to perform a consistent
+	// read-modify-write.This field should be left blank for a
+	// CreateWorkflowTemplate request. It is required for an
+	// UpdateWorkflowTemplate request, and must match the current server
+	// version. A typical update template flow would fetch the current
+	// template with a GetWorkflowTemplate request, which will return the
+	// current template with the version field filled in with the current
+	// server version. The user updates other fields in the template, then
+	// returns it as part of the UpdateWorkflowTemplate request.
 	Version int64 `json:"version,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
@@ -2614,12 +2617,12 @@ func (s *WorkflowTemplate) MarshalJSON() ([]byte, error) {
 // WorkflowTemplatePlacement: Specifies workflow execution target.Either
 // managed_cluster or cluster_selector is required.
 type WorkflowTemplatePlacement struct {
-	// ClusterSelector: Optional A selector that chooses target cluster for
+	// ClusterSelector: Optional. A selector that chooses target cluster for
 	// jobs based on metadata.The selector is evaluated at the time each job
 	// is submitted.
 	ClusterSelector *ClusterSelector `json:"clusterSelector,omitempty"`
 
-	// ManagedCluster: Optional A cluster that is managed by the workflow.
+	// ManagedCluster: Optional. A cluster that is managed by the workflow.
 	ManagedCluster *ManagedCluster `json:"managedCluster,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ClusterSelector") to
@@ -2830,7 +2833,7 @@ func (c *ProjectsLocationsWorkflowTemplatesCreateCall) Do(opts ...googleapi.Call
 	//   ],
 	//   "parameters": {
 	//     "parent": {
-	//       "description": "Required The \"resource name\" of the region, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}",
+	//       "description": "Required. The \"resource name\" of the region, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
 	//       "required": true,
@@ -2869,8 +2872,8 @@ func (r *ProjectsLocationsWorkflowTemplatesService) Delete(name string) *Project
 	return c
 }
 
-// Version sets the optional parameter "version": Optional The version
-// of workflow template to delete. If specified, will only delete the
+// Version sets the optional parameter "version": The version of
+// workflow template to delete. If specified, will only delete the
 // template if the current server version matches specified version.
 func (c *ProjectsLocationsWorkflowTemplatesDeleteCall) Version(version int64) *ProjectsLocationsWorkflowTemplatesDeleteCall {
 	c.urlParams_.Set("version", fmt.Sprint(version))
@@ -2967,14 +2970,14 @@ func (c *ProjectsLocationsWorkflowTemplatesDeleteCall) Do(opts ...googleapi.Call
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
+	//       "description": "Required. The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/workflowTemplates/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "version": {
-	//       "description": "Optional The version of workflow template to delete. If specified, will only delete the template if the current server version matches specified version.",
+	//       "description": "Optional. The version of workflow template to delete. If specified, will only delete the template if the current server version matches specified version.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
@@ -3010,10 +3013,9 @@ func (r *ProjectsLocationsWorkflowTemplatesService) Get(name string) *ProjectsLo
 	return c
 }
 
-// Version sets the optional parameter "version": Optional The version
-// of workflow template to retrieve. Only previously instatiated
-// versions can be retrieved.If unspecified, retrieves the current
-// version.
+// Version sets the optional parameter "version": The version of
+// workflow template to retrieve. Only previously instatiated versions
+// can be retrieved.If unspecified, retrieves the current version.
 func (c *ProjectsLocationsWorkflowTemplatesGetCall) Version(version int64) *ProjectsLocationsWorkflowTemplatesGetCall {
 	c.urlParams_.Set("version", fmt.Sprint(version))
 	return c
@@ -3122,14 +3124,14 @@ func (c *ProjectsLocationsWorkflowTemplatesGetCall) Do(opts ...googleapi.CallOpt
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
+	//       "description": "Required. The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/workflowTemplates/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "version": {
-	//       "description": "Optional The version of workflow template to retrieve. Only previously instatiated versions can be retrieved.If unspecified, retrieves the current version.",
+	//       "description": "Optional. The version of workflow template to retrieve. Only previously instatiated versions can be retrieved.If unspecified, retrieves the current version.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
@@ -3269,7 +3271,7 @@ func (c *ProjectsLocationsWorkflowTemplatesInstantiateCall) Do(opts ...googleapi
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
+	//       "description": "Required. The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/workflowTemplates/[^/]+$",
 	//       "required": true,
@@ -3308,16 +3310,15 @@ func (r *ProjectsLocationsWorkflowTemplatesService) List(parent string) *Project
 	return c
 }
 
-// PageSize sets the optional parameter "pageSize": Optional The maximum
-// number of results to return in each response.
+// PageSize sets the optional parameter "pageSize": The maximum number
+// of results to return in each response.
 func (c *ProjectsLocationsWorkflowTemplatesListCall) PageSize(pageSize int64) *ProjectsLocationsWorkflowTemplatesListCall {
 	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
 	return c
 }
 
-// PageToken sets the optional parameter "pageToken": Optional The page
-// token, returned by a previous call, to request the next page of
-// results.
+// PageToken sets the optional parameter "pageToken": The page token,
+// returned by a previous call, to request the next page of results.
 func (c *ProjectsLocationsWorkflowTemplatesListCall) PageToken(pageToken string) *ProjectsLocationsWorkflowTemplatesListCall {
 	c.urlParams_.Set("pageToken", pageToken)
 	return c
@@ -3426,18 +3427,18 @@ func (c *ProjectsLocationsWorkflowTemplatesListCall) Do(opts ...googleapi.CallOp
 	//   ],
 	//   "parameters": {
 	//     "pageSize": {
-	//       "description": "Optional The maximum number of results to return in each response.",
+	//       "description": "Optional. The maximum number of results to return in each response.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
 	//     },
 	//     "pageToken": {
-	//       "description": "Optional The page token, returned by a previous call, to request the next page of results.",
+	//       "description": "Optional. The page token, returned by a previous call, to request the next page of results.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "parent": {
-	//       "description": "Required The \"resource name\" of the region, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}",
+	//       "description": "Required. The \"resource name\" of the region, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+$",
 	//       "required": true,
@@ -3591,7 +3592,7 @@ func (c *ProjectsLocationsWorkflowTemplatesUpdateCall) Do(opts ...googleapi.Call
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Output-only The \"resource name\" of the template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
+	//       "description": "Output only. The \"resource name\" of the template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/locations/[^/]+/workflowTemplates/[^/]+$",
 	//       "required": true,
@@ -3777,6 +3778,14 @@ func (r *ProjectsRegionsClustersService) Delete(projectId string, region string,
 	return c
 }
 
+// ClusterUuid sets the optional parameter "clusterUuid": Specifying the
+// cluster_uuid means the RPC should fail (with error NOT_FOUND) if
+// cluster with specified UUID does not exist.
+func (c *ProjectsRegionsClustersDeleteCall) ClusterUuid(clusterUuid string) *ProjectsRegionsClustersDeleteCall {
+	c.urlParams_.Set("clusterUuid", clusterUuid)
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -3874,6 +3883,11 @@ func (c *ProjectsRegionsClustersDeleteCall) Do(opts ...googleapi.CallOption) (*O
 	//       "description": "Required. The cluster name.",
 	//       "location": "path",
 	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "clusterUuid": {
+	//       "description": "Optional. Specifying the cluster_uuid means the RPC should fail (with error NOT_FOUND) if cluster with specified UUID does not exist.",
+	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "projectId": {
@@ -6807,7 +6821,7 @@ func (c *ProjectsRegionsWorkflowTemplatesCreateCall) Do(opts ...googleapi.CallOp
 	//   ],
 	//   "parameters": {
 	//     "parent": {
-	//       "description": "Required The \"resource name\" of the region, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}",
+	//       "description": "Required. The \"resource name\" of the region, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/regions/[^/]+$",
 	//       "required": true,
@@ -6846,8 +6860,8 @@ func (r *ProjectsRegionsWorkflowTemplatesService) Delete(name string) *ProjectsR
 	return c
 }
 
-// Version sets the optional parameter "version": Optional The version
-// of workflow template to delete. If specified, will only delete the
+// Version sets the optional parameter "version": The version of
+// workflow template to delete. If specified, will only delete the
 // template if the current server version matches specified version.
 func (c *ProjectsRegionsWorkflowTemplatesDeleteCall) Version(version int64) *ProjectsRegionsWorkflowTemplatesDeleteCall {
 	c.urlParams_.Set("version", fmt.Sprint(version))
@@ -6944,14 +6958,14 @@ func (c *ProjectsRegionsWorkflowTemplatesDeleteCall) Do(opts ...googleapi.CallOp
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
+	//       "description": "Required. The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/regions/[^/]+/workflowTemplates/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "version": {
-	//       "description": "Optional The version of workflow template to delete. If specified, will only delete the template if the current server version matches specified version.",
+	//       "description": "Optional. The version of workflow template to delete. If specified, will only delete the template if the current server version matches specified version.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
@@ -6987,10 +7001,9 @@ func (r *ProjectsRegionsWorkflowTemplatesService) Get(name string) *ProjectsRegi
 	return c
 }
 
-// Version sets the optional parameter "version": Optional The version
-// of workflow template to retrieve. Only previously instatiated
-// versions can be retrieved.If unspecified, retrieves the current
-// version.
+// Version sets the optional parameter "version": The version of
+// workflow template to retrieve. Only previously instatiated versions
+// can be retrieved.If unspecified, retrieves the current version.
 func (c *ProjectsRegionsWorkflowTemplatesGetCall) Version(version int64) *ProjectsRegionsWorkflowTemplatesGetCall {
 	c.urlParams_.Set("version", fmt.Sprint(version))
 	return c
@@ -7099,14 +7112,14 @@ func (c *ProjectsRegionsWorkflowTemplatesGetCall) Do(opts ...googleapi.CallOptio
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
+	//       "description": "Required. The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/regions/[^/]+/workflowTemplates/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
 	//     },
 	//     "version": {
-	//       "description": "Optional The version of workflow template to retrieve. Only previously instatiated versions can be retrieved.If unspecified, retrieves the current version.",
+	//       "description": "Optional. The version of workflow template to retrieve. Only previously instatiated versions can be retrieved.If unspecified, retrieves the current version.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
@@ -7246,7 +7259,7 @@ func (c *ProjectsRegionsWorkflowTemplatesInstantiateCall) Do(opts ...googleapi.C
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
+	//       "description": "Required. The \"resource name\" of the workflow template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/regions/[^/]+/workflowTemplates/[^/]+$",
 	//       "required": true,
@@ -7285,16 +7298,15 @@ func (r *ProjectsRegionsWorkflowTemplatesService) List(parent string) *ProjectsR
 	return c
 }
 
-// PageSize sets the optional parameter "pageSize": Optional The maximum
-// number of results to return in each response.
+// PageSize sets the optional parameter "pageSize": The maximum number
+// of results to return in each response.
 func (c *ProjectsRegionsWorkflowTemplatesListCall) PageSize(pageSize int64) *ProjectsRegionsWorkflowTemplatesListCall {
 	c.urlParams_.Set("pageSize", fmt.Sprint(pageSize))
 	return c
 }
 
-// PageToken sets the optional parameter "pageToken": Optional The page
-// token, returned by a previous call, to request the next page of
-// results.
+// PageToken sets the optional parameter "pageToken": The page token,
+// returned by a previous call, to request the next page of results.
 func (c *ProjectsRegionsWorkflowTemplatesListCall) PageToken(pageToken string) *ProjectsRegionsWorkflowTemplatesListCall {
 	c.urlParams_.Set("pageToken", pageToken)
 	return c
@@ -7403,18 +7415,18 @@ func (c *ProjectsRegionsWorkflowTemplatesListCall) Do(opts ...googleapi.CallOpti
 	//   ],
 	//   "parameters": {
 	//     "pageSize": {
-	//       "description": "Optional The maximum number of results to return in each response.",
+	//       "description": "Optional. The maximum number of results to return in each response.",
 	//       "format": "int32",
 	//       "location": "query",
 	//       "type": "integer"
 	//     },
 	//     "pageToken": {
-	//       "description": "Optional The page token, returned by a previous call, to request the next page of results.",
+	//       "description": "Optional. The page token, returned by a previous call, to request the next page of results.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
 	//     "parent": {
-	//       "description": "Required The \"resource name\" of the region, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}",
+	//       "description": "Required. The \"resource name\" of the region, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/regions/[^/]+$",
 	//       "required": true,
@@ -7568,7 +7580,7 @@ func (c *ProjectsRegionsWorkflowTemplatesUpdateCall) Do(opts ...googleapi.CallOp
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Output-only The \"resource name\" of the template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
+	//       "description": "Output only. The \"resource name\" of the template, as described in https://cloud.google.com/apis/design/resource_names of the form projects/{project_id}/regions/{region}/workflowTemplates/{template_id}",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/regions/[^/]+/workflowTemplates/[^/]+$",
 	//       "required": true,

@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/JB19efQGH5f-JRT49yZz7BTyNQU\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/QstgUNJM9z5P2QKTjvsIeuLGaOE\"",
  "discoveryVersion": "v1",
  "id": "admin:directory_v1",
  "name": "admin",
  "canonicalName": "directory",
  "version": "directory_v1",
- "revision": "20170830",
+ "revision": "20171006",
  "title": "Admin Directory API",
  "description": "The Admin SDK Directory API lets you view and manage enterprise resources such as users and groups, administrative notifications, security features, and more.",
  "ownerDomain": "google.com",
@@ -204,6 +204,50 @@
      "type": "string",
      "description": "Kind of resource this is.",
      "default": "admin#directory#aliases"
+    }
+   }
+  },
+  "AppAccessCollections": {
+   "id": "AppAccessCollections",
+   "type": "object",
+   "description": "JSON template for App Access Collections Resource object in Directory API.",
+   "properties": {
+    "blockedApiAccessBuckets": {
+     "type": "array",
+     "description": "List of blocked api access buckets.",
+     "items": {
+      "type": "string"
+     }
+    },
+    "enforceSettingsForAndroidDrive": {
+     "type": "boolean",
+     "description": "Boolean to indicate whether to enforce app access settings on Android Drive or not."
+    },
+    "errorMessage": {
+     "type": "string",
+     "description": "Error message provided by the Admin that will be shown to the user when an app is blocked."
+    },
+    "etag": {
+     "type": "string",
+     "description": "ETag of the resource."
+    },
+    "kind": {
+     "type": "string",
+     "description": "Identifies the resource as an app access collection. Value: admin#directory#appaccesscollection",
+     "default": "admin#directory#appaccesscollection"
+    },
+    "resourceId": {
+     "type": "string",
+     "description": "Unique ID of app access collection. (Readonly)",
+     "format": "int64"
+    },
+    "resourceName": {
+     "type": "string",
+     "description": "Resource name given by the customer while creating/updating. Should be unique under given customer."
+    },
+    "trustDomainOwnedApps": {
+     "type": "boolean",
+     "description": "Boolean that indicates whether to trust domain owned apps."
     }
    }
   },
@@ -1775,6 +1819,59 @@
      "type": "string",
      "description": "The type of the API resource. This is always admin#directory#tokenList.",
      "default": "admin#directory#tokenList"
+    }
+   }
+  },
+  "TrustedAppId": {
+   "id": "TrustedAppId",
+   "type": "object",
+   "description": "JSON template for Trusted App Ids Resource object in Directory API.",
+   "properties": {
+    "androidPackageName": {
+     "type": "string",
+     "description": "Android package name."
+    },
+    "certificateHashSHA1": {
+     "type": "string",
+     "description": "SHA1 signature of the app certificate."
+    },
+    "certificateHashSHA256": {
+     "type": "string",
+     "description": "SHA256 signature of the app certificate."
+    },
+    "etag": {
+     "type": "string"
+    },
+    "kind": {
+     "type": "string",
+     "description": "Identifies the resource as a trusted AppId.",
+     "default": "admin#directory#trustedappid"
+    }
+   }
+  },
+  "TrustedApps": {
+   "id": "TrustedApps",
+   "type": "object",
+   "description": "JSON template for Trusted Apps response object of a user in Directory API.",
+   "properties": {
+    "etag": {
+     "type": "string",
+     "description": "ETag of the resource."
+    },
+    "kind": {
+     "type": "string",
+     "description": "Identifies the resource as trusted apps response.",
+     "default": "admin#directory#trustedapplist"
+    },
+    "nextPageToken": {
+     "type": "string"
+    },
+    "trustedApps": {
+     "type": "array",
+     "description": "Trusted Apps list.",
+     "items": {
+      "$ref": "TrustedAppId"
+     }
     }
    }
   },
@@ -4344,6 +4441,28 @@
     }
    }
   },
+  "resolvedAppAccessSettings": {
+   "methods": {
+    "GetSettings": {
+     "id": "directory.resolvedAppAccessSettings.GetSettings",
+     "path": "resolvedappaccesssettings",
+     "httpMethod": "GET",
+     "description": "Retrieves resolved app access settings of the logged in user.",
+     "response": {
+      "$ref": "AppAccessCollections"
+     }
+    },
+    "ListTrustedApps": {
+     "id": "directory.resolvedAppAccessSettings.ListTrustedApps",
+     "path": "trustedapps",
+     "httpMethod": "GET",
+     "description": "Retrieves the list of apps trusted by the admin of the logged in user.",
+     "response": {
+      "$ref": "TrustedApps"
+     }
+    }
+   }
+  },
   "resources": {
    "resources": {
     "calendars": {
@@ -4473,7 +4592,7 @@
        "id": "directory.resources.calendars.patch",
        "path": "customer/{customer}/resources/calendars/{calendarResourceId}",
        "httpMethod": "PATCH",
-       "description": "Updates a calendar resource. This method supports patch semantics.",
+       "description": "Updates a calendar resource.\n\nThis method supports patch semantics, meaning you only need to include the fields you wish to update. Fields that are not present in the request will be preserved. This method supports patch semantics.",
        "parameters": {
         "calendarResourceId": {
          "type": "string",
@@ -4506,7 +4625,7 @@
        "id": "directory.resources.calendars.update",
        "path": "customer/{customer}/resources/calendars/{calendarResourceId}",
        "httpMethod": "PUT",
-       "description": "Updates a calendar resource.",
+       "description": "Updates a calendar resource.\n\nThis method supports patch semantics, meaning you only need to include the fields you wish to update. Fields that are not present in the request will be preserved.",
        "parameters": {
         "calendarResourceId": {
          "type": "string",

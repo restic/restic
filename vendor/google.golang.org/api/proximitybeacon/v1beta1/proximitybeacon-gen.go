@@ -411,6 +411,33 @@ type BeaconAttachment struct {
 	// Required.
 	Data string `json:"data,omitempty"`
 
+	// MaxDistanceMeters: The distance away from the beacon at which this
+	// attachment should be
+	// delivered to a mobile app.
+	//
+	// Setting this to a value greater than zero indicates that the app
+	// should
+	// behave as if the beacon is "seen" when the mobile device is less than
+	// this
+	// distance away from the beacon.
+	//
+	// Different attachments on the same beacon can have different max
+	// distances.
+	//
+	// Note that even though this value is expressed with fractional
+	// meter
+	// precision, real-world behavior is likley to be much less precise than
+	// one
+	// meter, due to the nature of current Bluetooth radio
+	// technology.
+	//
+	// Optional. When not set or zero, the attachment should be delivered at
+	// the
+	// beacon's outer limit of detection.
+	//
+	// Negative values are invalid and return an error.
+	MaxDistanceMeters float64 `json:"maxDistanceMeters,omitempty"`
+
 	// NamespacedType: Specifies what kind of attachment this is. Tells a
 	// client how to
 	// interpret the `data` field. Format is <var>namespace/type</var>.
@@ -448,6 +475,20 @@ func (s *BeaconAttachment) MarshalJSON() ([]byte, error) {
 	type noMethod BeaconAttachment
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+func (s *BeaconAttachment) UnmarshalJSON(data []byte) error {
+	type noMethod BeaconAttachment
+	var s1 struct {
+		MaxDistanceMeters gensupport.JSONFloat64 `json:"maxDistanceMeters"`
+		*noMethod
+	}
+	s1.noMethod = (*noMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.MaxDistanceMeters = float64(s1.MaxDistanceMeters)
+	return nil
 }
 
 // BeaconInfo: A subset of beacon information served via the
@@ -576,18 +617,27 @@ type Diagnostics struct {
 	//
 	// Possible values:
 	//   "ALERT_UNSPECIFIED" - Invalid value. Should never appear.
-	//   "WRONG_LOCATION" - The beacon has been reported in a location
-	// different than its registered
-	// location. This may indicate that the beacon has been moved. This
-	// signal
-	// is not 100% accurate, but indicates that further investigation is
-	// worth
-	// while.
+	//   "WRONG_LOCATION" - The beacon has been reported far from its
+	// expected location (the beacon's
+	// lat_lng field if populated, otherwise, if the beacon's place_id field
+	// is
+	// present, the center of that place). This may indicate that the beacon
+	// has
+	// been moved. This signal is not 100% accurate, but indicates that
+	// further
+	// investigation is worthwhile.
 	//   "LOW_BATTERY" - The battery level for the beacon is low enough
 	// that, given the beacon's
 	// current use, its battery will run out with in the next 60 days.
 	// This
 	// indicates that the battery should be replaced soon.
+	//   "LOW_ACTIVITY" - The beacon has been reported at a very low rate or
+	// not at all. This may
+	// indicate that the beacon is broken or just that no one has gone near
+	// the
+	// beacon in recent days. If this status appears unexpectedly, the
+	// beacon
+	// owner should investigate further.
 	Alerts []string `json:"alerts,omitempty"`
 
 	// BeaconName: Resource name of the beacon. For Eddystone-EID beacons,
@@ -3477,6 +3527,7 @@ func (r *BeaconsDiagnosticsService) List(beaconName string) *BeaconsDiagnosticsL
 //   "ALERT_UNSPECIFIED"
 //   "WRONG_LOCATION"
 //   "LOW_BATTERY"
+//   "LOW_ACTIVITY"
 func (c *BeaconsDiagnosticsListCall) AlertFilter(alertFilter string) *BeaconsDiagnosticsListCall {
 	c.urlParams_.Set("alertFilter", alertFilter)
 	return c
@@ -3615,7 +3666,8 @@ func (c *BeaconsDiagnosticsListCall) Do(opts ...googleapi.CallOption) (*ListDiag
 	//       "enum": [
 	//         "ALERT_UNSPECIFIED",
 	//         "WRONG_LOCATION",
-	//         "LOW_BATTERY"
+	//         "LOW_BATTERY",
+	//         "LOW_ACTIVITY"
 	//       ],
 	//       "location": "query",
 	//       "type": "string"

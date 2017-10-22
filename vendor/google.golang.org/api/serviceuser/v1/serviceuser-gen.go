@@ -619,6 +619,7 @@ func (s *BackendRule) UnmarshalJSON(data []byte) error {
 // The following example shows how to configure monitored resources and
 // metrics
 // for billing:
+//
 //     monitored_resources:
 //     - type: library.googleapis.com/branch
 //       labels:
@@ -1191,8 +1192,8 @@ type Endpoint struct {
 	// Aliases: DEPRECATED: This field is no longer supported. Instead of
 	// using aliases,
 	// please specify multiple google.api.Endpoint for each of the
-	// intented
-	// alias.
+	// intended
+	// aliases.
 	//
 	// Additional names that this endpoint will be hosted on.
 	Aliases []string `json:"aliases,omitempty"`
@@ -2305,6 +2306,9 @@ type MetricDescriptor struct {
 	// user interfaces.
 	// Use sentence case without an ending period, for example "Request
 	// count".
+	// This field is optional but it is recommended to be set for any
+	// metrics
+	// associated with user-visible concepts, such as Quota.
 	DisplayName string `json:"displayName,omitempty"`
 
 	// Labels: The set of labels that can be used to describe a
@@ -2334,21 +2338,7 @@ type MetricDescriptor struct {
 	// points.
 	MetricKind string `json:"metricKind,omitempty"`
 
-	// Name: The resource name of the metric descriptor. Depending on
-	// the
-	// implementation, the name typically includes: (1) the parent resource
-	// name
-	// that defines the scope of the metric type or of its data; and (2)
-	// the
-	// metric's URL-encoded type, which also appears in the `type` field of
-	// this
-	// descriptor. For example, following is the resource name of a
-	// custom
-	// metric within the GCP project `my-project-id`:
-	//
-	//
-	// "projects/my-project-id/metricDescriptors/custom.googleapis.com%2Finvo
-	// ice%2Fpaid%2Famount"
+	// Name: The resource name of the metric descriptor.
 	Name string `json:"name,omitempty"`
 
 	// Type: The metric type, including its DNS name prefix. The type is
@@ -3326,31 +3316,15 @@ type QuotaLimit struct {
 	// the same metric will be checked together during runtime. The metric
 	// must be
 	// defined within the service config.
-	//
-	// Used by metric-based quotas only.
 	Metric string `json:"metric,omitempty"`
 
-	// Name: Name of the quota limit. The name is used to refer to the limit
-	// when
-	// overriding the default limit on per-consumer basis.
+	// Name: Name of the quota limit.
 	//
-	// For metric-based quota limits, the name must be provided, and it must
-	// be
-	// unique within the service. The name can only include
-	// alphanumeric
-	// characters as well as '-'.
+	// The name must be provided, and it must be unique within the service.
+	// The
+	// name can only include alphanumeric characters as well as '-'.
 	//
 	// The maximum length of the limit name is 64 characters.
-	//
-	// The name of a limit is used as a unique identifier for this
-	// limit.
-	// Therefore, once a limit has been put into use, its name should
-	// be
-	// immutable. You can use the display_name field to provide a
-	// user-friendly
-	// name for the limit. The display name can be evolved over time
-	// without
-	// affecting the identity of the limit.
 	Name string `json:"name,omitempty"`
 
 	// Unit: Specify the unit of the quota limit. It uses the same syntax
@@ -3359,28 +3333,19 @@ type QuotaLimit struct {
 	// quota
 	// backend system.
 	//
-	// The [Google Service
-	// Control](https://cloud.google.com/service-control)
-	// supports the following unit components:
-	// * One of the time intevals:
-	//   * "/min"  for quota every minute.
-	//   * "/d"  for quota every 24 hours, starting 00:00 US Pacific Time.
-	//   * Otherwise the quota won't be reset by time, such as storage
-	// limit.
-	// * One and only one of the granted containers:
-	//   * "/{project}" quota for a project
-	//
 	// Here are some examples:
 	// * "1/min/{project}" for quota per minute per project.
 	//
 	// Note: the order of unit components is insignificant.
 	// The "1" at the beginning is required to follow the metric unit
 	// syntax.
-	//
-	// Used by metric-based quotas only.
 	Unit string `json:"unit,omitempty"`
 
-	// Values: Tiered limit values, currently only STANDARD is supported.
+	// Values: Tiered limit values. You must specify this as a key:value
+	// pair, with an
+	// integer value that is the maximum number of requests allowed for
+	// the
+	// specified unit. Currently only STANDARD is supported.
 	Values map[string]string `json:"values,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "DefaultLimit") to
@@ -4162,6 +4127,9 @@ type UsageRule struct {
 	// SkipServiceControl: True, if the method should skip service control.
 	// If so, no control plane
 	// feature (like quota and billing) will be enabled.
+	// This flag is used by ESP to allow some Endpoints customers to
+	// bypass
+	// Google internal checks.
 	SkipServiceControl bool `json:"skipServiceControl,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.

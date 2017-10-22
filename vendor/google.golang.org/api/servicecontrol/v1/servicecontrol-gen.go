@@ -175,27 +175,15 @@ type AllocateQuotaResponse struct {
 	// Depending on the
 	// request, one or more of the following metrics will be included:
 	//
-	// 1. For rate quota, per quota group or per quota metric incremental
-	// usage
-	// will be specified using the following delta metric:
+	// 1. Per quota group or per quota metric incremental usage will be
+	// specified
+	// using the following delta metric :
 	//   "serviceruntime.googleapis.com/api/consumer/quota_used_count"
 	//
-	// 2. For allocation quota, per quota metric total usage will be
-	// specified
-	// using the following gauge metric:
-	//
-	// "serviceruntime.googleapis.com/allocation/consumer/quota_used_count"
-	//
-	//
-	// 3. For both rate quota and allocation quota, the quota limit
-	// reached
-	// condition will be specified using the following boolean metric:
+	// 2. The quota limit reached condition will be specified using the
+	// following
+	// boolean metric :
 	//   "serviceruntime.googleapis.com/quota/exceeded"
-	//
-	// 4. For allocation quota, value for each quota limit associated
-	// with
-	// the metrics will be specified using the following gauge metric:
-	//   "serviceruntime.googleapis.com/quota/limit"
 	QuotaMetrics []*MetricValueSet `json:"quotaMetrics,omitempty"`
 
 	// ServiceConfigId: ID of the actual config used to process the request.
@@ -246,7 +234,7 @@ type AuditLog struct {
 	// Metadata: Other service-specific data about the request, response,
 	// and other
 	// information associated with the current audited event.
-	Metadata []googleapi.RawMessage `json:"metadata,omitempty"`
+	Metadata googleapi.RawMessage `json:"metadata,omitempty"`
 
 	// MethodName: The name of the service method or operation.
 	// For API calls, this should be the name of the API method.
@@ -1626,10 +1614,12 @@ type QuotaOperation struct {
 	// quota operation is
 	// requested. This name is used for matching quota rules or metric rules
 	// and
-	// billing status rules defined in service configuration. This field is
-	// not
-	// required if the quota operation is performed on non-API
-	// resources.
+	// billing status rules defined in service configuration.
+	//
+	// This field should not be set if any of the following is true:
+	// (1) the quota operation is performed on non-API resources.
+	// (2) quota_metrics is set because the caller is doing quota
+	// override.
 	//
 	// Example of an RPC method name:
 	//     google.example.library.v1.LibraryService.CreateShelf
@@ -1664,6 +1654,8 @@ type QuotaOperation struct {
 	// MetricValue
 	// instances, the entire request is rejected with
 	// an invalid argument error.
+	//
+	// This field is mutually exclusive with method_name.
 	QuotaMetrics []*MetricValueSet `json:"quotaMetrics,omitempty"`
 
 	// QuotaMode: Quota mode for this operation.
@@ -1677,41 +1669,18 @@ type QuotaOperation struct {
 	// amount is higher than the available quota, allocation error will
 	// be
 	// returned and no quota will be allocated.
-	// For ReleaseQuota request, this mode is supported only for precise
-	// quota
-	// limits. In this case, this operation releases quota for the
-	// amount
-	// specified in the service configuration or specified using the
-	// quota
-	// metrics. If the release can make used quota negative, release
-	// error
-	// will be returned and no quota will be released.
-	//   "BEST_EFFORT" - For AllocateQuota request, this mode is supported
-	// only for imprecise
-	// quota limits. In this case, the operation allocates quota for the
-	// amount
-	// specified in the service configuration or specified using the
-	// quota
-	// metrics. If the amount is higher than the available quota, request
-	// does
-	// not fail but all available quota will be allocated.
-	// For ReleaseQuota request, this mode is supported for both precise
-	// quota
-	// limits and imprecise quota limits. In this case, this operation
-	// releases
-	// quota for the amount specified in the service configuration or
-	// specified
-	// using the quota metrics. If the release can make used quota
-	// negative, request does not fail but only the used quota will
-	// be
-	// released. After the ReleaseQuota request completes, the used
-	// quota
-	// will be 0, and never goes to negative.
+	//   "BEST_EFFORT" - The operation allocates quota for the amount
+	// specified in the service
+	// configuration or specified using the quota metrics. If the amount
+	// is
+	// higher than the available quota, request does not fail but all
+	// available
+	// quota will be allocated.
 	//   "CHECK_ONLY" - For AllocateQuota request, only checks if there is
 	// enough quota
 	// available and does not change the available quota. No lock is placed
 	// on
-	// the available quota either. Not supported for ReleaseQuota request.
+	// the available quota either.
 	QuotaMode string `json:"quotaMode,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ConsumerId") to

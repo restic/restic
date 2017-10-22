@@ -276,8 +276,7 @@ type AppEngineHttpRequest struct {
 	// handle
 	// HTTP requests with this http_method, otherwise the task attempt will
 	// fail
-	// with error code 405 "Method Not Allowed" because "the method
-	// specified in
+	// with error code 405 (Method Not Allowed). See
 	// the Request-Line is not allowed for the resource identified by
 	// the
 	// Request-URI". See
@@ -312,7 +311,7 @@ type AppEngineHttpRequest struct {
 	//
 	// The relative URL must begin with "/" and must be a valid HTTP
 	// relative URL.
-	// It can contain a path, query string arguments, and `#` fragments.
+	// It can contain a path and query string arguments.
 	// If the relative URL is empty, then the root path "/" will be used.
 	// No spaces are allowed, and the maximum length allowed is 2083
 	// characters.
@@ -395,10 +394,10 @@ func (s *AppEngineHttpTarget) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// AppEngineQueueConfig: Deprecated. Use AppEngineTarget.
+// AppEngineQueueConfig: Deprecated. Use AppEngineHttpTarget.
 type AppEngineQueueConfig struct {
 	// AppEngineRoutingOverride: Deprecated. Use
-	// AppEngineTarget.app_engine_routing_override.
+	// AppEngineHttpTarget.app_engine_routing_override.
 	AppEngineRoutingOverride *AppEngineRouting `json:"appEngineRoutingOverride,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
@@ -891,27 +890,34 @@ type CreateTaskRequest struct {
 	// the
 	// response's Task.name.
 	//
-	// Explicitly specifying a Task.name enables task
-	// de-duplication. If a task's name is identical to the name of
-	// an
-	// existing task or a task that was deleted or completed within the
-	// last ~10 days then the call to CloudTasks.CreateTask will
-	// fail with google.rpc.Code.ALREADY_EXISTS. Because there is an
-	// extra lookup cost to identify duplicate task names,
-	// these
-	// CloudTasks.CreateTask calls have significantly increased
-	// latency. Using hashed strings for the task id or for the prefix
-	// of the task id is recommended. Choosing task ids that are
-	// sequential or have sequential prefixes, for example using
+	// If Task.schedule_time is not set or is in the past then Cloud
+	// Tasks will set it to the current time.
+	//
+	// Task De-duplication:
+	//
+	// Explicitly specifying a task ID enables task de-duplication.  If
+	// a task's ID is identical to that of an existing task or a task
+	// that was deleted or completed recently then the call will fail
+	// with google.rpc.Code.ALREADY_EXISTS. If the task's queue was
+	// created using Cloud Tasks, then another task with the same name
+	// can't be created for ~1hour after the original task was deleted
+	// or completed. If the task's queue was created using queue.yaml
+	// or
+	// queue.xml, then another task with the same name can't be created
+	// for ~9days after the original task was deleted or completed.
+	//
+	// Because there is an extra lookup cost to identify duplicate
+	// task
+	// names, these CloudTasks.CreateTask calls have significantly
+	// increased latency. Using hashed strings for the task id or for
+	// the prefix of the task id is recommended. Choosing task ids that
+	// are sequential or have sequential prefixes, for example using
 	// a
 	// timestamp, causes an increase in latency and error rates in all
 	// task commands. The infrastructure relies on an approximately
 	// uniform distribution of task ids to store and serve
 	// tasks
 	// efficiently.
-	//
-	// If Task.schedule_time is not set or is in the past then Cloud
-	// Tasks will set it to the current time.
 	Task *Task `json:"task,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "ResponseView") to
@@ -1317,32 +1323,22 @@ type PullTasksRequest struct {
 	//
 	// When `filter` is set to `tag=<my-tag>` then the
 	// PullTasksResponse will contain only tasks whose
-	// PullMessage.tag is equal to `<my-tag>`. `<my-tag>` can be
-	// a bytes encoded as a string and must be less than 500 bytes.
-	// If `<my-tag>` includes whitespace or special characters (characters
-	// which
-	// aren't letters, numbers, or underscores), then it must be
-	// double-quoted.
-	// Double quotes and backslashes in quoted strings must be escaped
-	// by
-	// preceding it with a backslash (`\`).
+	// PullMessage.tag is equal to `<my-tag>`. `<my-tag>` must be less
+	// than
+	// 500 bytes.
 	//
-	// When `filter` is set to `tag=oldest_tag()`, only tasks which have the
-	// same
-	// tag as the task with the oldest schedule_time will be
+	// When `filter` is set to `tag_function=oldest_tag()`, only tasks which
+	// have
+	// the same tag as the task with the oldest schedule_time will be
 	// returned.
 	//
 	// Grammar Syntax:
 	//
-	// * `filter = "tag=" comparable`
-	//
-	// *  `comparable = tag | function`
+	// * `filter = "tag=" tag | "tag_function=" function`
 	//
 	// * `tag = string | bytes`
 	//
 	// * `function = "oldest_tag()"
-	//
-	//
 	//
 	// The `oldest_tag()` function returns tasks which have the same tag as
 	// the
@@ -1572,6 +1568,25 @@ type Queue struct {
 	// CloudTasks.DeleteQueue.
 	QueueState string `json:"queueState,omitempty"`
 
+	// RateLimits: Rate limits for task dispatches.
+	//
+	// Queue.rate_limits and Queue.retry_config are related because
+	// they
+	// both control task attempts however they control how tasks are
+	// attempted in
+	// different ways:
+	//
+	// * Queue.rate_limits controls the total rate of dispatches from a
+	// queue
+	//   (i.e. all traffic dispatched from the queue, regardless of whether
+	// the
+	//   dispatch is from a first attempt or a retry).
+	// * Queue.retry_config controls what happens to particular a task
+	// after
+	//   its first attempt fails. That is, Queue.retry_config controls task
+	//   retries (the second attempt, third attempt, etc).
+	RateLimits *RateLimits `json:"rateLimits,omitempty"`
+
 	// RetryConfig: Settings that determine the retry behavior.
 	//
 	// * For tasks created using Cloud Tasks: the queue-level retry
@@ -1588,9 +1603,6 @@ type Queue struct {
 	// documentation](/appengine/docs/standard/python/taskqueue/push/retrying
 	// -tasks).
 	RetryConfig *RetryConfig `json:"retryConfig,omitempty"`
-
-	// ThrottleConfig: Config for throttling task dispatches.
-	ThrottleConfig *ThrottleConfig `json:"throttleConfig,omitempty"`
 
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
@@ -1618,6 +1630,113 @@ func (s *Queue) MarshalJSON() ([]byte, error) {
 	type noMethod Queue
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// RateLimits: Rate limits.
+//
+// This message determines the maximum rate that tasks can be dispatched
+// by a
+// queue, regardless of whether the dispatch is a first task attempt or
+// a retry.
+type RateLimits struct {
+	// MaxBurstSize: Output only.
+	//
+	// The max burst size limits how fast the queue is processed when
+	// many tasks are in the queue and the rate is high. This field
+	// allows the queue to have a high rate so processing starts
+	// shortly
+	// after a task is enqueued, but still limits resource usage when
+	// many tasks are enqueued in a short period of time.
+	//
+	// * For App Engine queues, if
+	//   RateLimits.max_tasks_dispatched_per_second is 1, this
+	//   field is 10; otherwise this field is
+	//   RateLimits.max_tasks_dispatched_per_second / 5.
+	// * For pull queues, this field is output only and always
+	// 10,000.
+	//
+	// Note: For App Engine queues that were created
+	// through
+	// `queue.yaml/xml`, `max_burst_size` might not have the same
+	// settings as specified above; CloudTasks.UpdateQueue can be
+	// used to set `max_burst_size` only to the values specified
+	// above.
+	//
+	// This field has the same meaning as
+	// [bucket_size in
+	// queue.yaml](/appengine/docs/standard/python/config/queueref#bucket_siz
+	// e).
+	MaxBurstSize int64 `json:"maxBurstSize,omitempty"`
+
+	// MaxConcurrentTasks: The maximum number of concurrent tasks that Cloud
+	// Tasks allows
+	// to be dispatched for this queue. After this threshold has
+	// been
+	// reached, Cloud Tasks stops dispatching tasks until the number
+	// of
+	// concurrent requests decreases.
+	//
+	// The maximum allowed value is 5,000.
+	//
+	// * For App Engine queues, this field is 10 by default.
+	// * For pull queues, this field is output only and always -1, which
+	//   indicates no limit.
+	//
+	// This field has the same meaning as
+	// [max_concurrent_requests in
+	// queue.yaml](/appengine/docs/standard/python/config/queueref#max_concur
+	// rent_requests).
+	MaxConcurrentTasks int64 `json:"maxConcurrentTasks,omitempty"`
+
+	// MaxTasksDispatchedPerSecond: The maximum rate at which tasks are
+	// dispatched from this
+	// queue.
+	//
+	// The maximum allowed value is 500.
+	//
+	// * For App Engine queues, this field is 1 by default.
+	// * For pull queues, this field is output only and always 10,000.
+	//
+	// This field has the same meaning as
+	// [rate in
+	// queue.yaml](/appengine/docs/standard/python/config/queueref#rate).
+	MaxTasksDispatchedPerSecond float64 `json:"maxTasksDispatchedPerSecond,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "MaxBurstSize") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "MaxBurstSize") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *RateLimits) MarshalJSON() ([]byte, error) {
+	type noMethod RateLimits
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+func (s *RateLimits) UnmarshalJSON(data []byte) error {
+	type noMethod RateLimits
+	var s1 struct {
+		MaxTasksDispatchedPerSecond gensupport.JSONFloat64 `json:"maxTasksDispatchedPerSecond"`
+		*noMethod
+	}
+	s1.noMethod = (*noMethod)(s)
+	if err := json.Unmarshal(data, &s1); err != nil {
+		return err
+	}
+	s.MaxTasksDispatchedPerSecond = float64(s1.MaxTasksDispatchedPerSecond)
+	return nil
 }
 
 // RenewLeaseRequest: Request message for renewing a lease using
@@ -1707,17 +1826,7 @@ type ResumeQueueRequest struct {
 
 // RetryConfig: Retry config.
 //
-// These settings determine retry behavior.
-//
-// If a task does not complete successfully, meaning that
-// an
-// acknowledgement is not received from the handler before
-// the
-// [deadline](/appengine/docs/python/taskqueue/push/#the_task_deadlin
-// e),
-// then it will be retried with exponential backoff according to
-// the
-// settings in RetryConfig.
+// These settings determine how a failed task attempt is retried.
 type RetryConfig struct {
 	// MaxAttempts: The maximum number of attempts for a task.
 	//
@@ -1738,14 +1847,22 @@ type RetryConfig struct {
 	//   is output only and always 0.
 	//
 	// `max_backoff` will be truncated to the nearest second.
+	//
+	// This field has the same meaning as
+	// [max_backoff_seconds in
+	// queue.yaml](/appengine/docs/standard/python/config/queueref#retry_para
+	// meters).
 	MaxBackoff string `json:"maxBackoff,omitempty"`
 
-	// MaxDoublings: The maximum number of times that the interval between
-	// failed task
-	// retries will be doubled before the increase becomes constant.
-	// The
-	// constant is: 2**(max_doublings - 1) *
-	// RetryConfig.min_backoff.
+	// MaxDoublings: The time between retries increases exponentially
+	// `max_doublings` times.
+	// `max_doublings` is maximum number of times that the interval between
+	// failed
+	// task retries will be doubled before the interval increases
+	// linearly.
+	// After max_doublings intervals, the retry interval will
+	// be
+	// 2^(max_doublings - 1) * RetryConfig.min_backoff.
 	//
 	// * For [App Engine
 	// queues](google.cloud.tasks.v2beta2.AppEngineHttpTarget),
@@ -1753,7 +1870,38 @@ type RetryConfig struct {
 	// * For [pull queues](google.cloud.tasks.v2beta2.PullTarget), this
 	// field
 	//   is output only and always 0.
+	//
+	// This field has the same meaning as
+	// [max_doublings in
+	// queue.yaml](/appengine/docs/standard/python/config/queueref#retry_para
+	// meters).
 	MaxDoublings int64 `json:"maxDoublings,omitempty"`
+
+	// MaxRetryDuration: If positive, `max_retry_duration` specifies the
+	// time limit for retrying a
+	// failed task, measured from when the task was first attempted.
+	// Once
+	// `max_retry_duration` time has passed *and* the task has been
+	// attempted
+	// RetryConfig.max_attempts times, no further attempts will be made
+	// and
+	// the task will be deleted.
+	//
+	// If zero, then the task age is unlimited.
+	//
+	// * For [App Engine
+	// queues](google.cloud.tasks.v2beta2.AppEngineHttpTarget),
+	//   this field is 0 seconds by default.
+	// * For [pull queues](google.cloud.tasks.v2beta2.PullTarget), this
+	//   field is output only and always 0.
+	//
+	// `max_retry_duration` will be truncated to the nearest second.
+	//
+	// This field has the same meaning as
+	// [task_age_limit in
+	// queue.yaml](/appengine/docs/standard/python/config/queueref#retry_para
+	// meters).
+	MaxRetryDuration string `json:"maxRetryDuration,omitempty"`
 
 	// MinBackoff: The minimum amount of time to wait before retrying a task
 	// after
@@ -1766,20 +1914,12 @@ type RetryConfig struct {
 	//   field is output only and always 0.
 	//
 	// `min_backoff` will be truncated to the nearest second.
+	//
+	// This field has the same meaning as
+	// [min_backoff_seconds in
+	// queue.yaml](/appengine/docs/standard/python/config/queueref#retry_para
+	// meters).
 	MinBackoff string `json:"minBackoff,omitempty"`
-
-	// TaskAgeLimit: If positive, task_age_limit specifies the time limit
-	// for retrying a failed
-	// task, measured from when the task was first run. If specified
-	// with
-	// RetryConfig.max_attempts, the task will be retried until both
-	// limits are reached.
-	//
-	// If zero, then the task age is unlimited. This field is zero by
-	// default.
-	//
-	// `task_age_limit` will be truncated to the nearest second.
-	TaskAgeLimit string `json:"taskAgeLimit,omitempty"`
 
 	// UnlimitedAttempts: If true, then the number of attempts is unlimited.
 	UnlimitedAttempts bool `json:"unlimitedAttempts,omitempty"`
@@ -2277,110 +2417,6 @@ func (s *TestIamPermissionsResponse) MarshalJSON() ([]byte, error) {
 	type noMethod TestIamPermissionsResponse
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-// ThrottleConfig: Throttle config.
-//
-// These settings determine the throttling behavior.
-type ThrottleConfig struct {
-	// MaxBurstSize: Output only.
-	//
-	// The max burst size limits how fast the queue is processed when
-	// many tasks are in the queue and the rate is high. This field
-	// allows the queue to have a high rate so processing starts
-	// shortly
-	// after a task is enqueued, but still limits resource usage when
-	// many tasks are enqueued in a short period of time.
-	//
-	// * For App Engine queues, if
-	//   ThrottleConfig.max_tasks_dispatched_per_second is 1, this
-	//   field is 10; otherwise this field is
-	//   ThrottleConfig.max_tasks_dispatched_per_second / 5.
-	// * For pull queues, this field is output only and always
-	// 10,000.
-	//
-	// Note: For App Engine queues that were created
-	// through
-	// `queue.yaml/xml`, `max_burst_size` might not have the same
-	// settings as specified above; CloudTasks.UpdateQueue can be
-	// used to set `max_burst_size` only to the values specified
-	// above.
-	//
-	// This field has the same meaning as
-	// [bucket_size in
-	// queue.yaml](/appengine/docs/standard/python/config/queueref#bucket_siz
-	// e).
-	MaxBurstSize int64 `json:"maxBurstSize,omitempty"`
-
-	// MaxOutstandingTasks: The maximum number of outstanding tasks that
-	// Cloud Tasks allows
-	// to be dispatched for this queue. After this threshold has
-	// been
-	// reached, Cloud Tasks stops dispatching tasks until the number
-	// of
-	// outstanding requests decreases.
-	//
-	// The maximum allowed value is 5,000.
-	//
-	// * For App Engine queues, this field is 10 by default.
-	// * For pull queues, this field is output only and always -1, which
-	//   indicates no limit.
-	//
-	// This field has the same meaning as
-	// [max_concurrent_requests in
-	// queue.yaml](/appengine/docs/standard/python/config/queueref#max_concur
-	// rent_requests).
-	MaxOutstandingTasks int64 `json:"maxOutstandingTasks,omitempty"`
-
-	// MaxTasksDispatchedPerSecond: The maximum rate at which tasks are
-	// dispatched from this
-	// queue.
-	//
-	// The maximum allowed value is 500.
-	//
-	// * For App Engine queues, this field is 1 by default.
-	// * For pull queues, this field is output only and always 10,000.
-	//
-	// This field has the same meaning as
-	// [rate in
-	// queue.yaml](/appengine/docs/standard/python/config/queueref#rate).
-	MaxTasksDispatchedPerSecond float64 `json:"maxTasksDispatchedPerSecond,omitempty"`
-
-	// ForceSendFields is a list of field names (e.g. "MaxBurstSize") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
-	ForceSendFields []string `json:"-"`
-
-	// NullFields is a list of field names (e.g. "MaxBurstSize") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
-	NullFields []string `json:"-"`
-}
-
-func (s *ThrottleConfig) MarshalJSON() ([]byte, error) {
-	type noMethod ThrottleConfig
-	raw := noMethod(*s)
-	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
-}
-
-func (s *ThrottleConfig) UnmarshalJSON(data []byte) error {
-	type noMethod ThrottleConfig
-	var s1 struct {
-		MaxTasksDispatchedPerSecond gensupport.JSONFloat64 `json:"maxTasksDispatchedPerSecond"`
-		*noMethod
-	}
-	s1.noMethod = (*noMethod)(s)
-	if err := json.Unmarshal(data, &s1); err != nil {
-		return err
-	}
-	s.MaxTasksDispatchedPerSecond = float64(s1.MaxTasksDispatchedPerSecond)
-	return nil
 }
 
 // method id "cloudtasks.projects.locations.get":
@@ -3467,7 +3503,6 @@ func (c *ProjectsLocationsQueuesListCall) Do(opts ...googleapi.CallOption) (*Lis
 	//     },
 	//     "pageToken": {
 	//       "description": "A token identifying the page of results to return.\n\nTo request the first page results, page_token must be empty. To\nrequest the next page of results, page_token must be the value of\nListQueuesResponse.next_page_token returned from the previous\ncall to CloudTasks.ListQueues method. It is an error to\nswitch the value of ListQueuesRequest.filter while iterating\nthrough pages.",
-	//       "format": "byte",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -4720,6 +4755,12 @@ type ProjectsLocationsQueuesTasksCreateCall struct {
 //
 // Tasks cannot be updated after creation; there is no UpdateTask
 // command.
+//
+// * For [App Engine
+// queues](google.cloud.tasks.v2beta2.AppEngineHttpTarget),
+//   the maximum task size is 100KB.
+// * For [pull queues](google.cloud.tasks.v2beta2.PullTarget), this
+//   the maximum task size is 1MB.
 func (r *ProjectsLocationsQueuesTasksService) Create(parent string, createtaskrequest *CreateTaskRequest) *ProjectsLocationsQueuesTasksCreateCall {
 	c := &ProjectsLocationsQueuesTasksCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -4813,7 +4854,7 @@ func (c *ProjectsLocationsQueuesTasksCreateCall) Do(opts ...googleapi.CallOption
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a task and adds it to a queue.\n\nTo add multiple tasks at the same time, use\n[HTTP batching](/storage/docs/json_api/v1/how-tos/batch)\nor the batching documentation for your client library, for example\nhttps://developers.google.com/api-client-library/python/guide/batch.\n\nTasks cannot be updated after creation; there is no UpdateTask command.",
+	//   "description": "Creates a task and adds it to a queue.\n\nTo add multiple tasks at the same time, use\n[HTTP batching](/storage/docs/json_api/v1/how-tos/batch)\nor the batching documentation for your client library, for example\nhttps://developers.google.com/api-client-library/python/guide/batch.\n\nTasks cannot be updated after creation; there is no UpdateTask command.\n\n* For [App Engine queues](google.cloud.tasks.v2beta2.AppEngineHttpTarget),\n  the maximum task size is 100KB.\n* For [pull queues](google.cloud.tasks.v2beta2.PullTarget), this\n  the maximum task size is 1MB.",
 	//   "flatPath": "v2beta2/projects/{projectsId}/locations/{locationsId}/queues/{queuesId}/tasks",
 	//   "httpMethod": "POST",
 	//   "id": "cloudtasks.projects.locations.queues.tasks.create",
@@ -5177,7 +5218,7 @@ func (r *ProjectsLocationsQueuesTasksService) List(parent string) *ProjectsLocat
 // the query. The fields supported for sorting
 // are Task.schedule_time and PullMessage.tag. All results will
 // be
-// returned in ascending order. The default ordering is
+// returned in approximately ascending order. The default ordering is
 // by
 // Task.schedule_time.
 func (c *ProjectsLocationsQueuesTasksListCall) OrderBy(orderBy string) *ProjectsLocationsQueuesTasksListCall {
@@ -5344,7 +5385,7 @@ func (c *ProjectsLocationsQueuesTasksListCall) Do(opts ...googleapi.CallOption) 
 	//   ],
 	//   "parameters": {
 	//     "orderBy": {
-	//       "description": "\nSort order used for the query. The fields supported for sorting\nare Task.schedule_time and PullMessage.tag. All results will be\nreturned in ascending order. The default ordering is by\nTask.schedule_time.",
+	//       "description": "\nSort order used for the query. The fields supported for sorting\nare Task.schedule_time and PullMessage.tag. All results will be\nreturned in approximately ascending order. The default ordering is by\nTask.schedule_time.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -5356,7 +5397,6 @@ func (c *ProjectsLocationsQueuesTasksListCall) Do(opts ...googleapi.CallOption) 
 	//     },
 	//     "pageToken": {
 	//       "description": "A token identifying the page of results to return.\n\nTo request the first page results, page_token must be empty. To\nrequest the next page of results, page_token must be the value of\nListTasksResponse.next_page_token returned from the previous\ncall to CloudTasks.ListTasks method.\n\nThe page token is valid for only 2 hours.",
-	//       "format": "byte",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -5436,6 +5476,14 @@ type ProjectsLocationsQueuesTasksPullCall struct {
 // to perform the work associated with the task. To return the
 // payloads in the PullTasksResponse, set
 // PullTasksRequest.response_view to Task.View.FULL.
+//
+// A maximum of 10 qps of CloudTasks.PullTasks requests are allowed
+// per
+// queue. google.rpc.Code.RESOURCE_EXHAUSTED is returned when this
+// limit
+// is exceeded. google.rpc.Code.RESOURCE_EXHAUSTED is also returned
+// when
+// RateLimits.max_tasks_dispatched_per_second is exceeded.
 func (r *ProjectsLocationsQueuesTasksService) Pull(name string, pulltasksrequest *PullTasksRequest) *ProjectsLocationsQueuesTasksPullCall {
 	c := &ProjectsLocationsQueuesTasksPullCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -5529,7 +5577,7 @@ func (c *ProjectsLocationsQueuesTasksPullCall) Do(opts ...googleapi.CallOption) 
 	}
 	return ret, nil
 	// {
-	//   "description": "Pulls tasks from a pull queue and acquires a lease on them for a\nspecified PullTasksRequest.lease_duration.\n\nThis method is invoked by the lease holder to obtain the\nlease. The lease holder must acknowledge the task via\nCloudTasks.AcknowledgeTask after they have performed the work\nassociated with the task.\n\nThe payload is intended to store data that the lease holder needs\nto perform the work associated with the task. To return the\npayloads in the PullTasksResponse, set\nPullTasksRequest.response_view to Task.View.FULL.",
+	//   "description": "Pulls tasks from a pull queue and acquires a lease on them for a\nspecified PullTasksRequest.lease_duration.\n\nThis method is invoked by the lease holder to obtain the\nlease. The lease holder must acknowledge the task via\nCloudTasks.AcknowledgeTask after they have performed the work\nassociated with the task.\n\nThe payload is intended to store data that the lease holder needs\nto perform the work associated with the task. To return the\npayloads in the PullTasksResponse, set\nPullTasksRequest.response_view to Task.View.FULL.\n\nA maximum of 10 qps of CloudTasks.PullTasks requests are allowed per\nqueue. google.rpc.Code.RESOURCE_EXHAUSTED is returned when this limit\nis exceeded. google.rpc.Code.RESOURCE_EXHAUSTED is also returned when\nRateLimits.max_tasks_dispatched_per_second is exceeded.",
 	//   "flatPath": "v2beta2/projects/{projectsId}/locations/{locationsId}/queues/{queuesId}/tasks:pull",
 	//   "httpMethod": "POST",
 	//   "id": "cloudtasks.projects.locations.queues.tasks.pull",

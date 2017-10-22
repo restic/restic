@@ -1,3 +1,38 @@
+_July 31, 2017_
+
+*v0.11.0*
+
+- Clients for spanner, pubsub and video are now in beta.
+
+- New client for DLP.
+
+- spanner: performance and testing improvements.
+
+- storage: requester-pays buckets are supported.
+
+- storage, profiler, bigtable, bigquery: bug fixes and other minor improvements.
+
+- pubsub: bug fixes and other minor improvements
+
+_June 17, 2017_
+
+
+*v0.10.0*
+
+- pubsub: Subscription.ModifyPushConfig replaced with Subscription.Update.
+
+- pubsub: Subscription.Receive now runs concurrently for higher throughput.
+
+- vision: cloud.google.com/go/vision is deprecated. Use
+cloud.google.com/go/vision/apiv1 instead.
+
+- translation: now stable.
+
+- trace: several changes to the surface. See the link below.
+
+[Code changes required from v0.9.0.](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/master/MIGRATION.md)
+
+
 _March 17, 2017_
 
 Breaking Pubsub changes.

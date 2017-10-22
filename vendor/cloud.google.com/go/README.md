@@ -33,6 +33,18 @@ make backwards-incompatible changes.
 
 ## News
 
+*v0.15.0*
+
+_October 3, 2017_
+
+- firestore: beta release. See the
+  [announcement](https://firebase.googleblog.com/2017/10/introducing-cloud-firestore.html).
+
+- errorreporting: The existing package has been redesigned.
+
+- errors: This package has been removed. Use errorreporting.
+
+
 _September 28, 2017_
 
 *v0.14.0*
@@ -104,41 +116,6 @@ _August 22, 2017_
 - storage: support bucket lifecycle configurations.
 
 
-_July 31, 2017_
-
-*v0.11.0*
-
-- Clients for spanner, pubsub and video are now in beta.
-
-- New client for DLP.
-
-- spanner: performance and testing improvements.
-
-- storage: requester-pays buckets are supported.
-
-- storage, profiler, bigtable, bigquery: bug fixes and other minor improvements.
-
-- pubsub: bug fixes and other minor improvements
-
-_June 17, 2017_
-
-
-*v0.10.0*
-
-- pubsub: Subscription.ModifyPushConfig replaced with Subscription.Update.
-
-- pubsub: Subscription.Receive now runs concurrently for higher throughput.
-
-- vision: cloud.google.com/go/vision is deprecated. Use
-cloud.google.com/go/vision/apiv1 instead.
-
-- translation: now stable.
-
-- trace: several changes to the surface. See the link below.
-
-[Code changes required from v0.9.0.](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/master/MIGRATION.md)
-
-
 [Older news](https://github.com/GoogleCloudPlatform/google-cloud-go/blob/master/old-news.md)
 
 ## Supported APIs
@@ -146,6 +123,7 @@ cloud.google.com/go/vision/apiv1 instead.
 Google API                       | Status       | Package
 ---------------------------------|--------------|-----------------------------------------------------------
 [Datastore][cloud-datastore]     | stable       | [`cloud.google.com/go/datastore`][cloud-datastore-ref]
+[Firestore][cloud-firestore]     | beta         | [`cloud.google.com/go/firestore`][cloud-firestore-ref]
 [Storage][cloud-storage]         | stable       | [`cloud.google.com/go/storage`][cloud-storage-ref]
 [Bigtable][cloud-bigtable]       | beta         | [`cloud.google.com/go/bigtable`][cloud-bigtable-ref]
 [BigQuery][cloud-bigquery]       | beta         | [`cloud.google.com/go/bigquery`][cloud-bigquery-ref]
@@ -479,6 +457,11 @@ for more information.
 [cloud-datastore-ref]: https://godoc.org/cloud.google.com/go/datastore
 [cloud-datastore-docs]: https://cloud.google.com/datastore/docs
 [cloud-datastore-activation]: https://cloud.google.com/datastore/docs/activate
+
+[cloud-firestore]: https://cloud.google.com/firestore/
+[cloud-firestore-ref]: https://godoc.org/cloud.google.com/go/firestore
+[cloud-firestore-docs]: https://cloud.google.com/firestore/docs
+[cloud-firestore-activation]: https://cloud.google.com/firestore/docs/activate
 
 [cloud-pubsub]: https://cloud.google.com/pubsub/
 [cloud-pubsub-ref]: https://godoc.org/cloud.google.com/go/pubsub

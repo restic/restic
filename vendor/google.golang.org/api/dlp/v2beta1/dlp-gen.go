@@ -1224,6 +1224,42 @@ func (s *GooglePrivacyDlpV2beta1CryptoReplaceFfxFpeConfig) MarshalJSON() ([]byte
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// GooglePrivacyDlpV2beta1CustomInfoType: Custom information type
+// provided by the user. Used to find domain-specific
+// sensitive information configurable to the data in question.
+type GooglePrivacyDlpV2beta1CustomInfoType struct {
+	// Dictionary: Dictionary-based custom info type.
+	Dictionary *GooglePrivacyDlpV2beta1Dictionary `json:"dictionary,omitempty"`
+
+	// InfoType: Info type configuration. All custom info types must have
+	// configurations
+	// that do not conflict with built-in info types or other custom info
+	// types.
+	InfoType *GooglePrivacyDlpV2beta1InfoType `json:"infoType,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Dictionary") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Dictionary") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1CustomInfoType) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1CustomInfoType
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // GooglePrivacyDlpV2beta1DatastoreKey: Record key for a finding in
 // Cloud Datastore.
 type GooglePrivacyDlpV2beta1DatastoreKey struct {
@@ -1437,6 +1473,66 @@ type GooglePrivacyDlpV2beta1DeidentifyContentResponse struct {
 
 func (s *GooglePrivacyDlpV2beta1DeidentifyContentResponse) MarshalJSON() ([]byte, error) {
 	type noMethod GooglePrivacyDlpV2beta1DeidentifyContentResponse
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1Dictionary: Custom information type based on a
+// dictionary of words or phrases. This can
+// be used to match sensitive information specific to the data, such as
+// a list
+// of employee IDs or job titles.
+//
+// Dictionary words are case-insensitive and all characters other than
+// letters
+// and digits in the unicode [Basic
+// Multilingual
+// Plane](https://en.wikipedia.org/wiki/Plane_(Unicode)#Basi
+// c_Multilingual_Plane)
+// will be replaced with whitespace when scanning for matches, so
+// the
+// dictionary phrase "Sam Johnson" will match all three phrases "sam
+// johnson",
+// "Sam, Johnson", and "Sam (Johnson)". Additionally, the
+// characters
+// surrounding any match must be of a different type than the
+// adjacent
+// characters within the word, so letters must be next to non-letters
+// and
+// digits next to non-digits. For example, the dictionary word "jen"
+// will
+// match the first three letters of the text "jen123" but will return
+// no
+// matches for "jennifer".
+//
+// Dictionary words containing a large number of characters that are
+// not
+// letters or digits may result in unexpected findings because such
+// characters
+// are treated as whitespace.
+type GooglePrivacyDlpV2beta1Dictionary struct {
+	// WordList: List of words or phrases to search for.
+	WordList *GooglePrivacyDlpV2beta1WordList `json:"wordList,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "WordList") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "WordList") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1Dictionary) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1Dictionary
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -1794,7 +1890,7 @@ func (s *GooglePrivacyDlpV2beta1ImageLocation) MarshalJSON() ([]byte, error) {
 }
 
 // GooglePrivacyDlpV2beta1ImageRedactionConfig: Configuration for
-// determing how redaction of images should occur.
+// determining how redaction of images should occur.
 type GooglePrivacyDlpV2beta1ImageRedactionConfig struct {
 	// InfoType: Only one per info_type should be provided per request. If
 	// not
@@ -2052,6 +2148,9 @@ func (s *GooglePrivacyDlpV2beta1InfoTypeTransformations) MarshalJSON() ([]byte, 
 // currently
 // used.
 type GooglePrivacyDlpV2beta1InspectConfig struct {
+	// CustomInfoTypes: Custom info types provided by the user.
+	CustomInfoTypes []*GooglePrivacyDlpV2beta1CustomInfoType `json:"customInfoTypes,omitempty"`
+
 	// ExcludeTypes: When true, excludes type information of the findings.
 	ExcludeTypes bool `json:"excludeTypes,omitempty"`
 
@@ -2087,7 +2186,7 @@ type GooglePrivacyDlpV2beta1InspectConfig struct {
 	//   "VERY_LIKELY" - Many matching elements.
 	MinLikelihood string `json:"minLikelihood,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "ExcludeTypes") to
+	// ForceSendFields is a list of field names (e.g. "CustomInfoTypes") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -2095,12 +2194,13 @@ type GooglePrivacyDlpV2beta1InspectConfig struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "ExcludeTypes") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "CustomInfoTypes") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
@@ -3317,7 +3417,7 @@ func (s *GooglePrivacyDlpV2beta1Range) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// GooglePrivacyDlpV2beta1RecordCondition: A condition for determing
+// GooglePrivacyDlpV2beta1RecordCondition: A condition for determining
 // whether a transformation should be applied to
 // a field.
 type GooglePrivacyDlpV2beta1RecordCondition struct {
@@ -4074,6 +4174,39 @@ type GooglePrivacyDlpV2beta1ValueFrequency struct {
 
 func (s *GooglePrivacyDlpV2beta1ValueFrequency) MarshalJSON() ([]byte, error) {
 	type noMethod GooglePrivacyDlpV2beta1ValueFrequency
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1WordList: Message defining a list of words or
+// phrases to search for in the data.
+type GooglePrivacyDlpV2beta1WordList struct {
+	// Words: Words or phrases defining the dictionary. The dictionary must
+	// contain
+	// at least one phrase and every phrase must contain at least 2
+	// characters
+	// that are letters or digits. [required]
+	Words []string `json:"words,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Words") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Words") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1WordList) MarshalJSON() ([]byte, error) {
+	type noMethod GooglePrivacyDlpV2beta1WordList
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }

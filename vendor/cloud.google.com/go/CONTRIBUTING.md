@@ -42,6 +42,12 @@ run the against the actual APIs.
 - **GCLOUD_TESTS_GOLANG_KEY**: The path to the JSON key file.
 - **GCLOUD_TESTS_API_KEY**: Your API key.
 
+Firestore requires a different project and key:
+
+- **GCLOUD_TESTS_GOLANG_FIRESTORE_PROJECT_ID**: Developers Console project's ID
+  supporting Firestore
+- **GCLOUD_TESTS_GOLANG_FIRESTORE_KEY**: The path to the JSON key file.
+
 Install the [gcloud command-line tool][gcloudcli] to your machine and use it
 to create some resources used in integration tests.
 

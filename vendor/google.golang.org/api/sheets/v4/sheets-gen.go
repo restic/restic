@@ -873,6 +873,9 @@ type BasicChartAxis struct {
 	// from headers of the data.
 	Title string `json:"title,omitempty"`
 
+	// TitleTextPosition: The axis title text position.
+	TitleTextPosition *TextPosition `json:"titleTextPosition,omitempty"`
+
 	// ForceSendFields is a list of field names (e.g. "Format") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
@@ -1044,6 +1047,19 @@ type BasicChartSpec struct {
 	// href="/chart/interactive/docs/gallery/steppedareachart">stepped area
 	// chart</a>.
 	ChartType string `json:"chartType,omitempty"`
+
+	// CompareMode: The behavior of tooltips and data highlighting when
+	// hovering on data and
+	// chart area.
+	//
+	// Possible values:
+	//   "BASIC_CHART_COMPARE_MODE_UNSPECIFIED" - Default value, do not use.
+	//   "DATUM" - Only the focused data element is highlighted and shown in
+	// the tooltip.
+	//   "CATEGORY" - All data elements with the same category (e.g., domain
+	// value) are
+	// highlighted and shown in the tooltip.
+	CompareMode string `json:"compareMode,omitempty"`
 
 	// Domains: The domain of data this is charting.
 	// Only a single domain is supported.
@@ -1590,7 +1606,7 @@ type BatchUpdateValuesByDataFilterRequest struct {
 	// range is
 	// matched by the specified DataFilter the specified values will
 	// be
-	// applied to all of of those ranges.
+	// applied to all of those ranges.
 	Data []*DataFilterValueRange `json:"data,omitempty"`
 
 	// IncludeValuesInResponse: Determines if the update response should
@@ -2849,12 +2865,27 @@ type ChartSpec struct {
 	// PieChart: A pie chart specification.
 	PieChart *PieChartSpec `json:"pieChart,omitempty"`
 
+	// Subtitle: The subtitle of the chart.
+	Subtitle string `json:"subtitle,omitempty"`
+
+	// SubtitleTextFormat: The subtitle text format.
+	// Strikethrough and underline are not supported.
+	SubtitleTextFormat *TextFormat `json:"subtitleTextFormat,omitempty"`
+
+	// SubtitleTextPosition: The subtitle text position.
+	// This field is optional.
+	SubtitleTextPosition *TextPosition `json:"subtitleTextPosition,omitempty"`
+
 	// Title: The title of the chart.
 	Title string `json:"title,omitempty"`
 
 	// TitleTextFormat: The title text format.
 	// Strikethrough and underline are not supported.
 	TitleTextFormat *TextFormat `json:"titleTextFormat,omitempty"`
+
+	// TitleTextPosition: The title text position.
+	// This field is optional.
+	TitleTextPosition *TextPosition `json:"titleTextPosition,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "AltText") to
 	// unconditionally include in API requests. By default, fields with
@@ -4063,17 +4094,17 @@ func (s *DeveloperMetadataLocation) MarshalJSON() ([]byte, error) {
 
 // DeveloperMetadataLookup: Selects DeveloperMetadata that matches all
 // of the specified fields.  For
-// example, if only a metadata ID is specified this will consider
+// example, if only a metadata ID is specified this considers
 // the
 // DeveloperMetadata with that particular unique ID. If a metadata key
 // is
-// specified, all developer metadata with that key will be considered.
-// If a
-// key, visibility, and location type are all specified, then
-// all
-// developer metadata with that key, visibility, and associated with
+// specified, this considers all developer metadata with that key.  If
 // a
-// location of that type will be considered.  In general, this
+// key, visibility, and location type are all specified, this considers
+// all
+// developer metadata with that key and visibility that are associated
+// with a
+// location of that type.  In general, this
 // selects all DeveloperMetadata that matches the intersection of all
 // the
 // specified fields; any field or combination of fields may be
@@ -4083,11 +4114,11 @@ type DeveloperMetadataLookup struct {
 	// location.  If this field is
 	// specified as EXACT, only developer metadata associated on the
 	// exact
-	// location specified will be matched.  If this field is specified to
+	// location specified is matched.  If this field is specified to
 	// INTERSECTING,
-	// developer metadata associated on intersecting locations will also
-	// be
-	// matched.  If left unspecified, this field will assume a default value
+	// developer metadata associated on intersecting locations is
+	// also
+	// matched.  If left unspecified, this field assumes a default value
 	// of
 	// INTERSECTING.
 	// If this field is specified, a metadataLocation
@@ -4120,23 +4151,23 @@ type DeveloperMetadataLookup struct {
 
 	// LocationType: Limits the selected developer metadata to those entries
 	// which are
-	// associated with locations of the specified type.  For example,
-	// specifying
-	// this as ROW will only consider
-	// developer metadata associated on rows.  If left unspecified, all
-	// location
-	// types will be considered.  This field cannot be specified
-	// as
-	// SPREADSHEET when the
-	// locationMatchingStrategy is
-	// specified as INTERSECTING or when the
+	// associated with locations of the specified type.  For example, when
+	// this
+	// field is specified as ROW this lookup
+	// only considers developer metadata associated on rows.  If the field
+	// is left
+	// unspecified, all location types are considered.  This field cannot
+	// be
+	// specified as SPREADSHEET when
+	// the locationMatchingStrategy
+	// is specified as INTERSECTING or when the
 	// metadataLocation is specified as a
 	// non-spreadsheet location: spreadsheet metadata cannot intersect any
 	// other
 	// developer metadata location.  This field also must be left
-	// unspecified when the
-	// locationMatchingStrategy is
-	// specified as EXACT.
+	// unspecified when
+	// the locationMatchingStrategy
+	// is specified as EXACT.
 	//
 	// Possible values:
 	//   "DEVELOPER_METADATA_LOCATION_TYPE_UNSPECIFIED" - Default value.
@@ -4176,7 +4207,7 @@ type DeveloperMetadataLookup struct {
 	// a matching
 	// DeveloperMetadata.visibility.  If left unspecified, all
 	// developer
-	// metadata visibile to the requesting project will be considered.
+	// metadata visibile to the requesting project is considered.
 	//
 	// Possible values:
 	//   "DEVELOPER_METADATA_VISIBILITY_UNSPECIFIED" - Default value.
@@ -6218,9 +6249,7 @@ type PivotValue struct {
 	// with an `=` character.
 	Formula string `json:"formula,omitempty"`
 
-	// Name: A name to use for the value. This is only used if formula was
-	// set.
-	// Otherwise, the column name is used.
+	// Name: A name to use for the value.
 	Name string `json:"name,omitempty"`
 
 	// SourceColumnOffset: The column offset of the source range that this
@@ -7343,6 +7372,44 @@ type TextFormatRun struct {
 
 func (s *TextFormatRun) MarshalJSON() ([]byte, error) {
 	type noMethod TextFormatRun
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// TextPosition: Position settings for text.
+type TextPosition struct {
+	// HorizontalAlignment: Horizontal alignment setting for the piece of
+	// text.
+	//
+	// Possible values:
+	//   "HORIZONTAL_ALIGN_UNSPECIFIED" - The horizontal alignment is not
+	// specified. Do not use this.
+	//   "LEFT" - The text is explicitly aligned to the left of the cell.
+	//   "CENTER" - The text is explicitly aligned to the center of the
+	// cell.
+	//   "RIGHT" - The text is explicitly aligned to the right of the cell.
+	HorizontalAlignment string `json:"horizontalAlignment,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "HorizontalAlignment")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "HorizontalAlignment") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *TextPosition) MarshalJSON() ([]byte, error) {
+	type noMethod TextPosition
 	raw := noMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -8942,7 +9009,7 @@ type SpreadsheetsDeveloperMetadataGetCall struct {
 	header_       http.Header
 }
 
-// Get: Returns the developer metadata with the specified id.
+// Get: Returns the developer metadata with the specified ID.
 // The caller must specify the spreadsheet ID and the developer
 // metadata's
 // unique metadataId.
@@ -9048,7 +9115,7 @@ func (c *SpreadsheetsDeveloperMetadataGetCall) Do(opts ...googleapi.CallOption) 
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns the developer metadata with the specified id.\nThe caller must specify the spreadsheet ID and the developer metadata's\nunique metadataId.",
+	//   "description": "Returns the developer metadata with the specified ID.\nThe caller must specify the spreadsheet ID and the developer metadata's\nunique metadataId.",
 	//   "flatPath": "v4/spreadsheets/{spreadsheetId}/developerMetadata/{metadataId}",
 	//   "httpMethod": "GET",
 	//   "id": "sheets.spreadsheets.developerMetadata.get",
@@ -10183,12 +10250,12 @@ type SpreadsheetsValuesBatchGetByDataFilterCall struct {
 	header_                           http.Header
 }
 
-// BatchGetByDataFilter: Returns one or more ranges of values from a
-// spreadsheet that match the
-// specified data filters.  The caller must specify the spreadsheet ID
-// and
-// one or more DataFilters.  Ranges that match any of the data
-// filters in the request will be returned.
+// BatchGetByDataFilter: Returns one or more ranges of values that match
+// the specified data filters.
+// The caller must specify the spreadsheet ID and one or
+// more
+// DataFilters.  Ranges that match any of the data filters in
+// the request will be returned.
 func (r *SpreadsheetsValuesService) BatchGetByDataFilter(spreadsheetId string, batchgetvaluesbydatafilterrequest *BatchGetValuesByDataFilterRequest) *SpreadsheetsValuesBatchGetByDataFilterCall {
 	c := &SpreadsheetsValuesBatchGetByDataFilterCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.spreadsheetId = spreadsheetId
@@ -10283,7 +10350,7 @@ func (c *SpreadsheetsValuesBatchGetByDataFilterCall) Do(opts ...googleapi.CallOp
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns one or more ranges of values from a spreadsheet that match the\nspecified data filters.  The caller must specify the spreadsheet ID and\none or more DataFilters.  Ranges that match any of the data\nfilters in the request will be returned.",
+	//   "description": "Returns one or more ranges of values that match the specified data filters.\nThe caller must specify the spreadsheet ID and one or more\nDataFilters.  Ranges that match any of the data filters in\nthe request will be returned.",
 	//   "flatPath": "v4/spreadsheets/{spreadsheetId}/values:batchGetByDataFilter",
 	//   "httpMethod": "POST",
 	//   "id": "sheets.spreadsheets.values.batchGetByDataFilter",
