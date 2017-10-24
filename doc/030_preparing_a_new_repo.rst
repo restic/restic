@@ -248,8 +248,8 @@ the naming convention of those variables follows official python swift client:
    $ export OS_AUTH_TOKEN=<MY_AUTH_TOKEN>
 
 
-Restic should be compatible with [OpenStack RC
-file](https://docs.openstack.org/user-guide/common/cli-set-environment-variables-using-openstack-rc.html)
+Restic should be compatible with `OpenStack RC file
+<https://docs.openstack.org/user-guide/common/cli-set-environment-variables-using-openstack-rc.html>`__
 in most cases.
 
 Once environment variables are set up, a new repository can be created. The
