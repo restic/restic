@@ -218,7 +218,7 @@ func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offs
 }
 
 // Save stores data in the backend at the handle.
-func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
+func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -233,7 +233,7 @@ func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (e
 	debug.Log("Save %v, name %v", h, name)
 	obj := be.bucket.Object(name)
 
-	_, err = obj.Attrs(ctx)
+	_, err := obj.Attrs(ctx)
 	if err == nil {
 		debug.Log("  %v already exists", h)
 		return errors.New("key already exists")

@@ -51,7 +51,7 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayBeSelected)
 
 		if selectedForRestore {
-			err := res.restoreNodeTo(ctx, node, dir, dst, idx)
+			err = res.restoreNodeTo(ctx, node, dir, dst, idx)
 			if err != nil {
 				return err
 			}
@@ -74,7 +74,8 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 			if selectedForRestore {
 				// Restore directory timestamp at the end. If we would do it earlier, restoring files within
 				// the directory would overwrite the timestamp of the directory they are in.
-				if err := node.RestoreTimestamps(filepath.Join(dst, dir, node.Name)); err != nil {
+				err = node.RestoreTimestamps(filepath.Join(dst, dir, node.Name))
+				if err != nil {
 					return err
 				}
 			}

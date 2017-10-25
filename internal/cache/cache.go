@@ -70,7 +70,7 @@ func writeCachedirTag(dir string) error {
 
 	debug.Log("Create CACHEDIR.TAG at %v", dir)
 	if _, err := f.Write([]byte(cachedirTagSignature)); err != nil {
-		f.Close()
+		_ = f.Close()
 		return errors.Wrap(err, "Write")
 	}
 

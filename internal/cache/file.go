@@ -65,7 +65,7 @@ func (c *Cache) Load(h restic.Handle, length int, offset int64) (io.ReadCloser, 
 
 	if offset > 0 {
 		if _, err = f.Seek(offset, io.SeekStart); err != nil {
-			f.Close()
+			_ = f.Close()
 			return nil, err
 		}
 	}

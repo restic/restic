@@ -118,7 +118,7 @@ func (b *Local) IsNotExist(err error) bool {
 }
 
 // Save stores data in the backend at the handle.
-func (b *Local) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
+func (b *Local) Save(ctx context.Context, h restic.Handle, rd io.Reader) (error) {
 	debug.Log("Save %v", h)
 	if err := h.Valid(); err != nil {
 		return err
