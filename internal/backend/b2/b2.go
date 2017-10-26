@@ -71,7 +71,7 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 			Path: cfg.Prefix,
 		},
 		listMaxItems: defaultListMaxItems,
-		sem: sem,
+		sem:          sem,
 	}
 
 	return be, nil
@@ -112,7 +112,7 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 			Path: cfg.Prefix,
 		},
 		listMaxItems: defaultListMaxItems,
-		sem: sem,
+		sem:          sem,
 	}
 
 	present, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
