@@ -70,6 +70,7 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 			Join: path.Join,
 			Path: cfg.Prefix,
 		},
+		listMaxItems: defaultListMaxItems,
 		sem: sem,
 	}
 
@@ -110,6 +111,7 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 			Join: path.Join,
 			Path: cfg.Prefix,
 		},
+		listMaxItems: defaultListMaxItems,
 		sem: sem,
 	}
 
