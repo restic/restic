@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 
 	"github.com/restic/restic/internal/restic"
 	"github.com/spf13/cobra"
@@ -29,6 +30,7 @@ type SnapshotOptions struct {
 	Tags    restic.TagLists
 	Paths   []string
 	Compact bool
+	Last    bool
 }
 
 var snapshotOptions SnapshotOptions
@@ -41,6 +43,7 @@ func init() {
 	f.Var(&snapshotOptions.Tags, "tag", "only consider snapshots which include this `taglist` (can be specified multiple times)")
 	f.StringArrayVar(&snapshotOptions.Paths, "path", nil, "only consider snapshots for this `path` (can be specified multiple times)")
 	f.BoolVarP(&snapshotOptions.Compact, "compact", "c", false, "use compact format")
+	f.BoolVar(&snapshotOptions.Last, "last", false, "only show the last snapshot for each host and path")
 }
 
 func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) error {
@@ -64,6 +67,11 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
 		list = append(list, sn)
 	}
+
+	if opts.Last {
+		list = FilterLastSnapshots(list)
+	}
+
 	sort.Sort(sort.Reverse(list))
 
 	if gopts.JSON {
@@ -76,6 +84,42 @@ func runSnapshots(opts SnapshotOptions, gopts GlobalOptions, args []string) erro
 	PrintSnapshots(gopts.stdout, list, opts.Compact)
 
 	return nil
+}
+
+// filterLastSnapshotsKey is used by FilterLastSnapshots.
+type filterLastSnapshotsKey struct {
+	Hostname    string
+	JoinedPaths string
+}
+
+// newFilterLastSnapshotsKey initializes a filterLastSnapshotsKey from a Snapshot
+func newFilterLastSnapshotsKey(sn *restic.Snapshot) filterLastSnapshotsKey {
+	// Shallow slice copy
+	var paths = make([]string, len(sn.Paths))
+	copy(paths, sn.Paths)
+	sort.Strings(paths)
+	return filterLastSnapshotsKey{sn.Hostname, strings.Join(paths, "|")}
+}
+
+// FilterLastSnapshots filters a list of snapshots to only return the last
+// entry for each hostname and path. If the snapshot contains multiple paths,
+// they will be joined and treated as one item.
+func FilterLastSnapshots(list restic.Snapshots) restic.Snapshots {
+	// Sort the snapshots so that the newer ones are listed first
+	sort.SliceStable(list, func(i, j int) bool {
+		return list[i].Time.After(list[j].Time)
+	})
+
+	var results restic.Snapshots
+	seen := make(map[filterLastSnapshotsKey]bool)
+	for _, sn := range list {
+		key := newFilterLastSnapshotsKey(sn)
+		if !seen[key] {
+			seen[key] = true
+			results = append(results, sn)
+		}
+	}
+	return results
 }
 
 // PrintSnapshots prints a text table of the snapshots in list to stdout.
