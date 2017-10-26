@@ -218,7 +218,7 @@ func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offs
 }
 
 // Save stores data in the backend at the handle.
-func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (error) {
+func (be *b2Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 

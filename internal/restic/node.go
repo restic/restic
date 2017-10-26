@@ -272,7 +272,7 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository,
 	return nil
 }
 
-func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.File) (error) {
+func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.File) error {
 	var buf []byte
 	for _, id := range node.Content {
 		size, err := repo.LookupBlobSize(id, DataBlob)
