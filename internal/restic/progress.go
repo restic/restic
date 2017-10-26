@@ -3,16 +3,30 @@ package restic
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
 
-const minTickerTime = time.Second / 60
+// minTickerTime limits how often the progress ticker is updated. It can be
+// overridden using the RESTIC_PROGRESS_FPS (frames per second) environment
+// variable.
+var minTickerTime = time.Second / 60
 
 var isTerminal = terminal.IsTerminal(int(os.Stdout.Fd()))
 var forceUpdateProgress = make(chan bool)
+
+func init() {
+	fps, err := strconv.ParseInt(os.Getenv("RESTIC_PROGRESS_FPS"), 10, 64)
+	if err == nil && fps >= 1 {
+		if fps > 60 {
+			fps = 60
+		}
+		minTickerTime = time.Second / time.Duration(fps)
+	}
+}
 
 // Progress reports progress on an operation.
 type Progress struct {
