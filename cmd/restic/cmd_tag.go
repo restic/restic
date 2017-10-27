@@ -113,7 +113,7 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		Verbosef("Create exclusive lock for repository\n")
+		Verbosef("create exclusive lock for repository\n")
 		lock, err := lockRepoExclusive(repo)
 		defer unlockRepo(lock)
 		if err != nil {
@@ -135,9 +135,9 @@ func runTag(opts TagOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 	if changeCnt == 0 {
-		Verbosef("No snapshots were modified\n")
+		Verbosef("no snapshots were modified\n")
 	} else {
-		Verbosef("Modified tags on %v snapshots\n", changeCnt)
+		Verbosef("modified tags on %v snapshots\n", changeCnt)
 	}
 	return nil
 }

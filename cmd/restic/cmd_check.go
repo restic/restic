@@ -93,7 +93,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if !gopts.NoLock {
-		Verbosef("Create exclusive lock for repository\n")
+		Verbosef("create exclusive lock for repository\n")
 		lock, err := lockRepoExclusive(repo)
 		defer unlockRepo(lock)
 		if err != nil {
@@ -103,7 +103,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	chkr := checker.New(repo)
 
-	Verbosef("Load indexes\n")
+	Verbosef("load indexes\n")
 	hints, errs := chkr.LoadIndex(context.TODO())
 
 	dupFound := false
@@ -128,7 +128,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	errorsFound := false
 	errChan := make(chan error)
 
-	Verbosef("Check all packs\n")
+	Verbosef("check all packs\n")
 	go chkr.Packs(context.TODO(), errChan)
 
 	for err := range errChan {
@@ -136,7 +136,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 	}
 
-	Verbosef("Check snapshots, trees and blobs\n")
+	Verbosef("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
 	go chkr.Structure(context.TODO(), errChan)
 
@@ -160,7 +160,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	}
 
 	if opts.ReadData {
-		Verbosef("Read all data\n")
+		Verbosef("read all data\n")
 
 		p := newReadProgress(gopts, restic.Stat{Blobs: chkr.CountPacks()})
 		errChan := make(chan error)
@@ -177,7 +177,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		return errors.Fatal("repository contains errors")
 	}
 
-	Verbosef("No errors were found\n")
+	Verbosef("no errors were found\n")
 
 	return nil
 }

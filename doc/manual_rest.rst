@@ -104,8 +104,8 @@ command does that:
 .. code-block:: console
 
     $ restic -r /tmp/backup tag --set NL --set CH 590c8fc8
-    Create exclusive lock for repository
-    Modified tags on 1 snapshots
+    create exclusive lock for repository
+    modified tags on 1 snapshots
 
 Note the snapshot ID has changed, so between each change we need to look
 up the new ID of the snapshot. But there is an even better way, the
@@ -117,19 +117,19 @@ So we can add and remove tags incrementally like this:
 .. code-block:: console
 
     $ restic -r /tmp/backup tag --tag NL --remove CH
-    Create exclusive lock for repository
-    Modified tags on 1 snapshots
+    create exclusive lock for repository
+    modified tags on 1 snapshots
 
     $ restic -r /tmp/backup tag --tag NL --add UK
-    Create exclusive lock for repository
-    Modified tags on 1 snapshots
+    create exclusive lock for repository
+    modified tags on 1 snapshots
 
     $ restic -r /tmp/backup tag --tag NL --remove NL
-    Create exclusive lock for repository
-    Modified tags on 1 snapshots
+    create exclusive lock for repository
+    modified tags on 1 snapshots
 
     $ restic -r /tmp/backup tag --tag NL --add SOMETHING
-    No snapshots were modified
+    no snapshots were modified
 
 Under the hood
 --------------
