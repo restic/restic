@@ -109,7 +109,7 @@ func newLock(ctx context.Context, repo Repository, excl bool) (*Lock, error) {
 	time.Sleep(waitBeforeLockCheck)
 
 	if err = lock.checkForOtherLocks(ctx); err != nil {
-		lock.Unlock()
+		_ = lock.Unlock()
 		return nil, err
 	}
 

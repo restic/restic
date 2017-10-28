@@ -674,8 +674,8 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 	}
 
 	defer func() {
-		packfile.Close()
-		os.Remove(packfile.Name())
+		_ = packfile.Close()
+		_ = os.Remove(packfile.Name())
 	}()
 
 	hrd := hashing.NewReader(rd, sha256.New())

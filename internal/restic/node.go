@@ -253,8 +253,26 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository,
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
 	}
-	defer f.Close()
 
+	err = node.writeNodeContent(ctx, repo, f)
+	closeErr := f.Close()
+
+	if err != nil {
+		return err
+	}
+
+	if closeErr != nil {
+		return errors.Wrap(closeErr, "Close")
+	}
+
+	if node.Links > 1 {
+		idx.Add(node.Inode, node.DeviceID, path)
+	}
+
+	return nil
+}
+
+func (node Node) writeNodeContent(ctx context.Context, repo Repository, f *os.File) error {
 	var buf []byte
 	for _, id := range node.Content {
 		size, err := repo.LookupBlobSize(id, DataBlob)
@@ -277,10 +295,6 @@ func (node Node) createFileAt(ctx context.Context, path string, repo Repository,
 		if err != nil {
 			return errors.Wrap(err, "Write")
 		}
-	}
-
-	if node.Links > 1 {
-		idx.Add(node.Inode, node.DeviceID, path)
 	}
 
 	return nil
