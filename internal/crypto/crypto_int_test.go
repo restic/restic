@@ -114,10 +114,10 @@ func TestCrypto(t *testing.T) {
 		}
 
 		nonce := NewRandomNonce()
-		ciphertext := k.Seal(msg, nonce, tv.plaintext, nil)
+		ciphertext := k.Seal(msg[0:], nonce, tv.plaintext, nil)
 
 		// decrypt message
-		buf := make([]byte, len(tv.plaintext))
+		buf := make([]byte, 0, len(tv.plaintext))
 		buf, err := k.Open(buf, nonce, ciphertext, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -130,7 +130,7 @@ func TestCrypto(t *testing.T) {
 		// change mac, this must fail
 		ciphertext[len(ciphertext)-8] ^= 0x23
 
-		if _, err = k.Open(buf, nonce, ciphertext, nil); err != ErrUnauthenticated {
+		if _, err = k.Open(buf[:0], nonce, ciphertext, nil); err != ErrUnauthenticated {
 			t.Fatal("wrong MAC value not detected")
 		}
 		// reset mac
@@ -138,7 +138,7 @@ func TestCrypto(t *testing.T) {
 
 		// tamper with nonce, this must fail
 		nonce[2] ^= 0x88
-		if _, err = k.Open(buf, nonce, ciphertext, nil); err != ErrUnauthenticated {
+		if _, err = k.Open(buf[:0], nonce, ciphertext, nil); err != ErrUnauthenticated {
 			t.Fatal("tampered nonce not detected")
 		}
 		// reset nonce
@@ -146,14 +146,14 @@ func TestCrypto(t *testing.T) {
 
 		// tamper with message, this must fail
 		ciphertext[16+5] ^= 0x85
-		if _, err = k.Open(buf, nonce, ciphertext, nil); err != ErrUnauthenticated {
+		if _, err = k.Open(buf[:0], nonce, ciphertext, nil); err != ErrUnauthenticated {
 			t.Fatal("tampered message not detected")
 		}
 
 		// test decryption
 		p := make([]byte, len(tv.ciphertext))
 		nonce, ciphertext = tv.ciphertext[:16], tv.ciphertext[16:]
-		p, err = k.Open(p, nonce, ciphertext, nil)
+		p, err = k.Open(p[:0], nonce, ciphertext, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
