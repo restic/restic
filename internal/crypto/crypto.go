@@ -147,7 +147,9 @@ func NewRandomKey() *Key {
 	return k
 }
 
-func newIV() []byte {
+// NewRandomNonce returns a new random nonce. It panics on error so that the
+// program is safely terminated.
+func NewRandomNonce() []byte {
 	iv := make([]byte, ivSize)
 	n, err := rand.Read(iv)
 	if n != ivSize || err != nil {
@@ -233,6 +235,144 @@ func (k *EncryptionKey) Valid() bool {
 // holds the plaintext.
 var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for plaintext")
 
+// validNonce checks that nonce is not all zero.
+func validNonce(nonce []byte) bool {
+	sum := 0
+	for b := range nonce {
+		sum += b
+	}
+	return sum > 0
+}
+
+// statically ensure that *Key implements crypto/cipher.AEAD
+var _ cipher.AEAD = &Key{}
+
+// NonceSize returns the size of the nonce that must be passed to Seal
+// and Open.
+func (k *Key) NonceSize() int {
+	return ivSize
+}
+
+// Overhead returns the maximum difference between the lengths of a
+// plaintext and its ciphertext.
+func (k *Key) Overhead() int {
+	return macSize
+}
+
+// Seal encrypts and authenticates plaintext, authenticates the
+// additional data and appends the result to dst, returning the updated
+// slice. The nonce must be NonceSize() bytes long and unique for all
+// time, for a given key.
+//
+// The plaintext and dst may alias exactly or not at all. To reuse
+// plaintext's storage for the encrypted output, use plaintext[:0] as dst.
+func (k *Key) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
+	if !k.Valid() {
+		panic("key is invalid")
+	}
+
+	if len(additionalData) > 0 {
+		panic("additional data is not supported")
+	}
+
+	if len(nonce) != ivSize {
+		panic("incorrect nonce length")
+	}
+
+	if !validNonce(nonce) {
+		panic("nonce is invalid")
+	}
+
+	// extend dst so that the ciphertext fits
+	ciphertextLength := len(plaintext) + k.Overhead()
+	pos := len(dst)
+
+	capacity := cap(dst) - len(dst)
+	if capacity < ciphertextLength {
+		dst = dst[:cap(dst)]
+		dst = append(dst, make([]byte, ciphertextLength-capacity)...)
+	} else {
+		dst = dst[:pos+ciphertextLength]
+	}
+
+	c, err := aes.NewCipher(k.EncryptionKey[:])
+	if err != nil {
+		panic(fmt.Sprintf("unable to create cipher: %v", err))
+	}
+	e := cipher.NewCTR(c, nonce)
+	e.XORKeyStream(dst[pos:pos+len(plaintext)], plaintext)
+
+	// truncate to only cover the ciphertext
+	dst = dst[:pos+len(plaintext)]
+
+	mac := poly1305MAC(dst[pos:], nonce, &k.MACKey)
+	dst = append(dst, mac...)
+
+	return dst
+}
+
+// Open decrypts and authenticates ciphertext, authenticates the
+// additional data and, if successful, appends the resulting plaintext
+// to dst, returning the updated slice. The nonce must be NonceSize()
+// bytes long and both it and the additional data must match the
+// value passed to Seal.
+//
+// The ciphertext and dst may alias exactly or not at all. To reuse
+// ciphertext's storage for the decrypted output, use ciphertext[:0] as dst.
+//
+// Even if the function fails, the contents of dst, up to its capacity,
+// may be overwritten.
+func (k *Key) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
+	if !k.Valid() {
+		return nil, errors.New("invalid key")
+	}
+
+	// check parameters
+	if len(nonce) != ivSize {
+		panic("incorrect nonce length")
+	}
+
+	if !validNonce(nonce) {
+		return nil, errors.New("nonce is invalid")
+	}
+
+	// check for plausible length
+	if len(ciphertext) < k.Overhead() {
+		return nil, errors.Errorf("trying to decrypt invalid data: ciphertext too small")
+	}
+
+	// extract mac
+	l := len(ciphertext) - macSize
+	ct, mac := ciphertext[:l], ciphertext[l:]
+
+	// verify mac
+	if !poly1305Verify(ct, nonce, &k.MACKey, mac) {
+		return nil, ErrUnauthenticated
+	}
+
+	// extend dst so that the plaintext fits
+	plaintextLength := len(ct)
+	pos := len(dst)
+
+	capacity := cap(dst) - len(dst)
+	if capacity < plaintextLength {
+		dst = dst[:cap(dst)]
+		dst = append(dst, make([]byte, plaintextLength-capacity)...)
+	} else {
+		dst = dst[:pos+plaintextLength]
+	}
+
+	// decrypt data
+	c, err := aes.NewCipher(k.EncryptionKey[:])
+	if err != nil {
+		panic(fmt.Sprintf("unable to create cipher: %v", err))
+	}
+	e := cipher.NewCTR(c, nonce)
+	e.XORKeyStream(dst[pos:], ct)
+
+	return dst, nil
+}
+
 // Encrypt encrypts and authenticates data. Stored in ciphertext is IV || Ciphertext ||
 // MAC. Encrypt returns the new ciphertext slice, which is extended when
 // necessary. ciphertext and plaintext may not point to (exactly) the same
@@ -255,7 +395,7 @@ func (k *Key) Encrypt(ciphertext []byte, plaintext []byte) ([]byte, error) {
 		ciphertext = append(ciphertext, make([]byte, ext)...)
 	}
 
-	iv := newIV()
+	iv := NewRandomNonce()
 	copy(ciphertext, iv[:])
 
 	c, err := aes.NewCipher(k.EncryptionKey[:])
