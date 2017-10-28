@@ -146,7 +146,7 @@ func (r *SFTP) checkDataSubdirs() error {
 	datadir := r.Dirname(restic.Handle{Type: restic.DataFile})
 
 	// check if all paths for data/ exist
-	entries, err := r.c.ReadDir(datadir)
+	entries, err := r.ReadDir(datadir)
 	if r.IsNotExist(err) {
 		return nil
 	}
@@ -193,7 +193,12 @@ func (r *SFTP) Join(p ...string) string {
 
 // ReadDir returns the entries for a directory.
 func (r *SFTP) ReadDir(dir string) ([]os.FileInfo, error) {
-	return r.c.ReadDir(dir)
+	fi, err := r.c.ReadDir(dir)
+
+	// sftp client does not specify dir name on error, so add it here
+	err = errors.Wrapf(err, "(%v)", dir)
+
+	return fi, err
 }
 
 // IsNotExist returns true if the error is caused by a not existing file.
@@ -476,7 +481,7 @@ var closeTimeout = 2 * time.Second
 
 // Close closes the sftp connection and terminates the underlying command.
 func (r *SFTP) Close() error {
-	debug.Log("")
+	debug.Log("Close")
 	if r == nil {
 		return nil
 	}
@@ -501,7 +506,7 @@ func (r *SFTP) Close() error {
 }
 
 func (r *SFTP) deleteRecursive(name string) error {
-	entries, err := r.c.ReadDir(name)
+	entries, err := r.ReadDir(name)
 	if err != nil {
 		return errors.Wrap(err, "ReadDir")
 	}
