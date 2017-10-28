@@ -12,22 +12,22 @@ import (
 
 const saltLength = 64
 
-// KDFParams are the default parameters used for the key derivation function KDF().
-type KDFParams struct {
+// Params are the default parameters used for the key derivation function KDF().
+type Params struct {
 	N int
 	R int
 	P int
 }
 
 // DefaultKDFParams are the default parameters used for Calibrate and KDF().
-var DefaultKDFParams = KDFParams{
+var DefaultKDFParams = Params{
 	N: sscrypt.DefaultParams.N,
 	R: sscrypt.DefaultParams.R,
 	P: sscrypt.DefaultParams.P,
 }
 
 // Calibrate determines new KDF parameters for the current hardware.
-func Calibrate(timeout time.Duration, memory int) (KDFParams, error) {
+func Calibrate(timeout time.Duration, memory int) (Params, error) {
 	defaultParams := sscrypt.Params{
 		N:       DefaultKDFParams.N,
 		R:       DefaultKDFParams.R,
@@ -41,7 +41,7 @@ func Calibrate(timeout time.Duration, memory int) (KDFParams, error) {
 		return DefaultKDFParams, errors.Wrap(err, "scrypt.Calibrate")
 	}
 
-	return KDFParams{
+	return Params{
 		N: params.N,
 		R: params.R,
 		P: params.P,
@@ -50,7 +50,7 @@ func Calibrate(timeout time.Duration, memory int) (KDFParams, error) {
 
 // KDF derives encryption and message authentication keys from the password
 // using the supplied parameters N, R and P and the Salt.
-func KDF(p KDFParams, salt []byte, password string) (*Key, error) {
+func KDF(p Params, salt []byte, password string) (*Key, error) {
 	if len(salt) != saltLength {
 		return nil, errors.Errorf("scrypt() called with invalid salt bytes (len %d)", len(salt))
 	}

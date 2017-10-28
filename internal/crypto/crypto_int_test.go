@@ -67,21 +67,40 @@ var testValues = []struct {
 	plaintext  []byte
 }{
 	{
-		ekey: EncryptionKey([...]byte{
-			0x30, 0x3e, 0x86, 0x87, 0xb1, 0xd7, 0xdb, 0x18, 0x42, 0x1b, 0xdc, 0x6b, 0xb8, 0x58, 0x8c, 0xca,
-			0xda, 0xc4, 0xd5, 0x9e, 0xe8, 0x7b, 0x8f, 0xf7, 0x0c, 0x44, 0xe6, 0x35, 0x79, 0x0c, 0xaf, 0xef,
-		}),
+		ekey: decodeArray32("303e8687b1d7db18421bdc6bb8588ccadac4d59ee87b8ff70c44e635790cafef"),
 		skey: MACKey{
-			K: [...]byte{0xef, 0x4d, 0x88, 0x24, 0xcb, 0x80, 0xb2, 0xbc, 0xc5, 0xfb, 0xff, 0x8a, 0x9b, 0x12, 0xa4, 0x2c},
-			R: [...]byte{0xcc, 0x8d, 0x4b, 0x94, 0x8e, 0xe0, 0xeb, 0xfe, 0x1d, 0x41, 0x5d, 0xe9, 0x21, 0xd1, 0x03, 0x53},
+			K: decodeArray16("ef4d8824cb80b2bcc5fbff8a9b12a42c"),
+			R: decodeArray16("cc8d4b948ee0ebfe1d415de921d10353"),
 		},
 		ciphertext: decodeHex("69fb41c62d12def4593bd71757138606338f621aeaeb39da0fe4f99233f8037a54ea63338a813bcf3f75d8c3cc75dddf8750"),
 		plaintext:  []byte("Dies ist ein Test!"),
 	},
 }
 
+func decodeArray16(s string) (dst [16]byte) {
+	data := decodeHex(s)
+	if len(data) != 16 {
+		panic("data has wrong length")
+	}
+	copy(dst[:], data)
+	return
+}
+
+func decodeArray32(s string) (dst [32]byte) {
+	data := decodeHex(s)
+	if len(data) != 32 {
+		panic("data has wrong length")
+	}
+	copy(dst[:], data)
+	return
+}
+
+// decodeHex decodes the string s and panics on error.
 func decodeHex(s string) []byte {
-	d, _ := hex.DecodeString(s)
+	d, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
 	return d
 }
 
