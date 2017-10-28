@@ -252,23 +252,27 @@ func (b *Local) List(ctx context.Context, t restic.FileType) <-chan string {
 	go func() {
 		defer close(ch)
 
-		fs.Walk(b.Basedir(t), func(path string, fi os.FileInfo, err error) error {
+		err := fs.Walk(b.Basedir(t), func(path string, fi os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
 
 			if !isFile(fi) {
-				return err
+				return nil
 			}
 
 			select {
 			case ch <- filepath.Base(path):
 			case <-ctx.Done():
-				return err
+				return nil
 			}
 
-			return err
+			return nil
 		})
+
+		if err != nil {
+			debug.Log("Walk %v", err)
+		}
 	}()
 
 	return ch
