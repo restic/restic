@@ -44,9 +44,9 @@ type Key struct {
 	name string
 }
 
-// KDFParams tracks the parameters used for the KDF. If not set, it will be
+// Params tracks the parameters used for the KDF. If not set, it will be
 // calibrated on the first run of AddKey().
-var KDFParams *crypto.KDFParams
+var Params *crypto.Params
 
 var (
 	// KDFTimeout specifies the maximum runtime for the KDF.
@@ -76,7 +76,7 @@ func OpenKey(ctx context.Context, s *Repository, name string, password string) (
 	}
 
 	// derive user key
-	params := crypto.KDFParams{
+	params := crypto.Params{
 		N: k.N,
 		R: k.R,
 		P: k.P,
@@ -166,13 +166,13 @@ func LoadKey(ctx context.Context, s *Repository, name string) (k *Key, err error
 // AddKey adds a new key to an already existing repository.
 func AddKey(ctx context.Context, s *Repository, password string, template *crypto.Key) (*Key, error) {
 	// make sure we have valid KDF parameters
-	if KDFParams == nil {
+	if Params == nil {
 		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
 		if err != nil {
 			return nil, errors.Wrap(err, "Calibrate")
 		}
 
-		KDFParams = &p
+		Params = &p
 		debug.Log("calibrated KDF parameters are %v", p)
 	}
 
@@ -180,9 +180,9 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 	newkey := &Key{
 		Created: time.Now(),
 		KDF:     "scrypt",
-		N:       KDFParams.N,
-		R:       KDFParams.R,
-		P:       KDFParams.P,
+		N:       Params.N,
+		R:       Params.R,
+		P:       Params.P,
 	}
 
 	hn, err := os.Hostname()
@@ -202,7 +202,7 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 	}
 
 	// call KDF to derive user key
-	newkey.user, err = crypto.KDF(*KDFParams, newkey.Salt, password)
+	newkey.user, err = crypto.KDF(*Params, newkey.Salt, password)
 	if err != nil {
 		return nil, err
 	}
