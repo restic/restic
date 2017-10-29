@@ -307,18 +307,17 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType) <-chan string 
 
 	ctx, cancel := context.WithCancel(ctx)
 
-	be.sem.GetToken()
-
 	go func() {
 		defer close(ch)
 		defer cancel()
-		defer be.sem.ReleaseToken()
 
 		prefix := be.Dirname(restic.Handle{Type: t})
 		cur := &b2.Cursor{Prefix: prefix}
 
 		for {
+			be.sem.GetToken()
 			objs, c, err := be.bucket.ListCurrentObjects(ctx, be.listMaxItems, cur)
+			be.sem.ReleaseToken()
 			if err != nil && err != io.EOF {
 				return
 			}
