@@ -71,7 +71,17 @@ func sameModTime(fi1, fi2 os.FileInfo) bool {
 		}
 	}
 
-	return fi1.ModTime().Equal(fi2.ModTime())
+	same := fi1.ModTime().Equal(fi2.ModTime())
+	if !same && runtime.GOOS == "darwin" {
+		// Allow up to 1μs difference, because macOS <10.13 cannot restore
+		// with nanosecond precision and the current version of Go (1.9.2)
+		// does not yet support the new syscall. (#1087)
+		mt1 := fi1.ModTime()
+		mt2 := fi2.ModTime()
+		usecDiff := (mt1.Nanosecond()-mt2.Nanosecond())/1000 + (mt1.Second()-mt2.Second())*1000000
+		same = usecDiff <= 1 && usecDiff >= -1
+	}
+	return same
 }
 
 // directoriesEqualContents checks if both directories contain exactly the same
