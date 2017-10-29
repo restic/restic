@@ -319,6 +319,8 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType) <-chan string 
 			objs, c, err := be.bucket.ListCurrentObjects(ctx, be.listMaxItems, cur)
 			be.sem.ReleaseToken()
 			if err != nil && err != io.EOF {
+				// TODO: return err to caller once err handling in List() is improved
+				debug.Log("List: %v", err)
 				return
 			}
 			debug.Log("returned %v items", len(objs))
