@@ -79,13 +79,13 @@ func (r *Repository) LoadAndDecrypt(ctx context.Context, t restic.FileType, id r
 		return nil, errors.Errorf("load %v: invalid data returned", h)
 	}
 
-	// decrypt
-	n, err := r.decryptTo(buf, buf)
+	nonce, ciphertext := buf[:r.key.NonceSize()], buf[r.key.NonceSize():]
+	plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return buf[:n], nil
+	return plaintext, nil
 }
 
 // sortCachedPacks moves all cached pack files to the front of blobs.
@@ -156,20 +156,22 @@ func (r *Repository) loadBlob(ctx context.Context, id restic.ID, t restic.BlobTy
 		}
 
 		// decrypt
-		n, err = r.decryptTo(plaintextBuf, plaintextBuf)
+		nonce, ciphertext := plaintextBuf[:r.key.NonceSize()], plaintextBuf[r.key.NonceSize():]
+		plaintext, err := r.key.Open(ciphertext[:0], nonce, ciphertext, nil)
 		if err != nil {
 			lastError = errors.Errorf("decrypting blob %v failed: %v", id, err)
 			continue
 		}
-		plaintextBuf = plaintextBuf[:n]
 
 		// check hash
-		if !restic.Hash(plaintextBuf).Equal(id) {
+		if !restic.Hash(plaintext).Equal(id) {
 			lastError = errors.Errorf("blob %v returned invalid hash", id)
 			continue
 		}
 
-		return len(plaintextBuf), nil
+		// move decrypted data to the start of the provided buffer
+		copy(plaintextBuf[0:], plaintext)
+		return len(plaintext), nil
 	}
 
 	if lastError != nil {
@@ -210,11 +212,12 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	ciphertext := getBuf()
 	defer freeBuf(ciphertext)
 
+	ciphertext = ciphertext[:0]
+	nonce := crypto.NewRandomNonce()
+	ciphertext = append(ciphertext, nonce...)
+
 	// encrypt blob
-	ciphertext, err := r.Encrypt(ciphertext, data)
-	if err != nil {
-		return restic.ID{}, err
-	}
+	ciphertext = r.key.Seal(ciphertext, nonce, data, nil)
 
 	// find suitable packer and add blob
 	var pm *packerManager
@@ -266,10 +269,11 @@ func (r *Repository) SaveJSONUnpacked(ctx context.Context, t restic.FileType, it
 // storage hash.
 func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []byte) (id restic.ID, err error) {
 	ciphertext := restic.NewBlobBuffer(len(p))
-	ciphertext, err = r.Encrypt(ciphertext, p)
-	if err != nil {
-		return restic.ID{}, err
-	}
+	ciphertext = ciphertext[:0]
+	nonce := crypto.NewRandomNonce()
+	ciphertext = append(ciphertext, nonce...)
+
+	ciphertext = r.key.Seal(ciphertext, nonce, p, nil)
 
 	id = restic.Hash(ciphertext)
 	h := restic.Handle{Type: t, Name: id.String()}
@@ -520,26 +524,6 @@ func (r *Repository) init(ctx context.Context, password string, cfg restic.Confi
 	r.cfg = cfg
 	_, err = r.SaveJSONUnpacked(ctx, restic.ConfigFile, cfg)
 	return err
-}
-
-// decrypt authenticates and decrypts ciphertext and stores the result in
-// plaintext.
-func (r *Repository) decryptTo(plaintext, ciphertext []byte) (int, error) {
-	if r.key == nil {
-		return 0, errors.New("key for repository not set")
-	}
-
-	return r.key.Decrypt(plaintext, ciphertext)
-}
-
-// Encrypt encrypts and authenticates the plaintext and saves the result in
-// ciphertext.
-func (r *Repository) Encrypt(ciphertext, plaintext []byte) ([]byte, error) {
-	if r.key == nil {
-		return nil, errors.New("key for repository not set")
-	}
-
-	return r.key.Encrypt(ciphertext, plaintext)
 }
 
 // Key returns the current master key.

@@ -90,14 +90,13 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 					h, tempfile.Name(), len(buf), n)
 			}
 
-			n, err = repo.Key().Decrypt(buf, buf)
+			nonce, ciphertext := buf[:repo.Key().NonceSize()], buf[repo.Key().NonceSize():]
+			plaintext, err := repo.Key().Open(ciphertext[:0], nonce, ciphertext, nil)
 			if err != nil {
 				return nil, err
 			}
 
-			buf = buf[:n]
-
-			id := restic.Hash(buf)
+			id := restic.Hash(plaintext)
 			if !id.Equal(entry.ID) {
 				debug.Log("read blob %v/%v from %v: wrong data returned, hash is %v",
 					h.Type, h.ID, tempfile.Name(), id)
@@ -105,7 +104,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 					h, tempfile.Name(), id)
 			}
 
-			_, err = repo.SaveBlob(ctx, entry.Type, buf, entry.ID)
+			_, err = repo.SaveBlob(ctx, entry.Type, plaintext, entry.ID)
 			if err != nil {
 				return nil, err
 			}

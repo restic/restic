@@ -724,15 +724,15 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 			continue
 		}
 
-		n, err := r.Key().Decrypt(buf, buf)
+		nonce, ciphertext := buf[:r.Key().NonceSize()], buf[r.Key().NonceSize():]
+		plaintext, err := r.Key().Open(ciphertext[:0], nonce, ciphertext, nil)
 		if err != nil {
 			debug.Log("  error decrypting blob %v: %v", blob.ID.Str(), err)
 			errs = append(errs, errors.Errorf("blob %v: %v", i, err))
 			continue
 		}
-		buf = buf[:n]
 
-		hash := restic.Hash(buf)
+		hash := restic.Hash(plaintext)
 		if !hash.Equal(blob.ID) {
 			debug.Log("  Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str())
 			errs = append(errs, errors.Errorf("Blob ID does not match, want %v, got %v", blob.ID.Str(), hash.Str()))

@@ -32,6 +32,7 @@ type Rdr interface {
 func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.Key) {
 	rd.Seek(0, 0)
 	ch := chunker.New(rd, testPol)
+	nonce := crypto.NewRandomNonce()
 
 	for {
 		chunk, err := ch.Next(buf)
@@ -42,12 +43,10 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 
 		rtest.OK(b, err)
 
-		// reduce length of buf
 		rtest.Assert(b, uint(len(chunk.Data)) == chunk.Length,
 			"invalid length: got %d, expected %d", len(chunk.Data), chunk.Length)
 
-		_, err = key.Encrypt(buf2, chunk.Data)
-		rtest.OK(b, err)
+		_ = key.Seal(buf2[:0], nonce, chunk.Data, nil)
 	}
 }
 
@@ -71,6 +70,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 
 func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) {
 	ch := chunker.New(rd, testPol)
+	nonce := crypto.NewRandomNonce()
 
 	for {
 		chunk, err := ch.Next(buf)
@@ -78,8 +78,7 @@ func benchmarkChunkEncryptP(b *testing.PB, buf []byte, rd Rdr, key *crypto.Key) 
 			break
 		}
 
-		// reduce length of chunkBuf
-		key.Encrypt(chunk.Data, chunk.Data)
+		_ = key.Seal(chunk.Data[:0], nonce, chunk.Data, nil)
 	}
 }
 

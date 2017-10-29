@@ -87,12 +87,12 @@ func OpenKey(ctx context.Context, s *Repository, name string, password string) (
 	}
 
 	// decrypt master keys
-	buf := make([]byte, len(k.Data))
-	n, err := k.user.Decrypt(buf, k.Data)
+	nonce, ciphertext := k.Data[:k.user.NonceSize()], k.Data[k.user.NonceSize():]
+	buf := make([]byte, 0, len(ciphertext))
+	buf, err = k.user.Open(buf, nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err
 	}
-	buf = buf[:n]
 
 	// restore json
 	k.master = &crypto.Key{}
@@ -221,7 +221,11 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 		return nil, errors.Wrap(err, "Marshal")
 	}
 
-	newkey.Data, err = newkey.user.Encrypt(nil, buf)
+	nonce := crypto.NewRandomNonce()
+	ciphertext := make([]byte, 0, len(buf)+newkey.user.Overhead()+newkey.user.NonceSize())
+	ciphertext = append(ciphertext, nonce...)
+	ciphertext = newkey.user.Seal(ciphertext, nonce, buf, nil)
+	newkey.Data = ciphertext
 
 	// dump as json
 	buf, err = json.Marshal(newkey)
