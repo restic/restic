@@ -43,7 +43,7 @@ type (
 // Templates for outputting current status
 const (
 	ScanProgressUpdateTemplate      = `[{{duration .Duration}}] {{.Directories}} directories, {{.Files}} files, {{bytes .TotalBytes}}`
-	ScanProgressDoneTemplate        = `scanned {{.Directories}} directories, {{.Files}} files in {{duration .Duration}}\n`
+	ScanProgressDoneTemplate        = `scanned {{.Directories}} directories, {{.Files}} files in {{duration .Duration}}`
 	ArchiveProgressUpdateTemplate   = `[{{duration .Duration}}] {{percent .Completed .Total}}  {{bytes .Bps}}/s  {{bytes .CompletedBytes}} / {{bytes .TotalBytes}}  {{.ItemsDone}} / {{.ItemsTotal}} items  {{.Errors}} errors  `
 	ArchiveProgressEstimateTemplate = `ETA {{seconds .ETA}}`
 	ArchiveProgressDoneTemplate     = `duration {{duration .Duration}}, {{rate .TotalBytes .Duration}}`
@@ -64,11 +64,11 @@ func init() {
 		"rate":     formatRate,
 	}
 
-	scanProgressUpdateTemplate, _ = template.New("scanProgressUpdateTemplate").Funcs(templateFunctions).Parse(ScanProgressUpdateTemplate)
-	scanProgressDoneTemplate, _ = template.New("scanProgressDoneTemplate").Funcs(templateFunctions).Parse(ScanProgressDoneTemplate)
-	archiveProgressTemplate, _ = template.New("archiveProgressTemplate").Funcs(templateFunctions).Parse(ArchiveProgressUpdateTemplate)
-	archiveProgresEstimateTemplate, _ = template.New("archiveProgressEstimateTemplate").Funcs(templateFunctions).Parse(ArchiveProgressEstimateTemplate)
-	archiveProgressDoneTemplate, _ = template.New("archiveProgressTemplate").Funcs(templateFunctions).Parse(ArchiveProgressDoneTemplate)
+	scanProgressUpdateTemplate = template.Must(template.New("scanProgressUpdateTemplate").Funcs(templateFunctions).Parse(ScanProgressUpdateTemplate))
+	scanProgressDoneTemplate = template.Must(template.New("scanProgressDoneTemplate").Funcs(templateFunctions).Parse(ScanProgressDoneTemplate))
+	archiveProgressTemplate = template.Must(template.New("archiveProgressTemplate").Funcs(templateFunctions).Parse(ArchiveProgressUpdateTemplate))
+	archiveProgresEstimateTemplate = template.Must(template.New("archiveProgressEstimateTemplate").Funcs(templateFunctions).Parse(ArchiveProgressEstimateTemplate))
+	archiveProgressDoneTemplate = template.Must(template.New("archiveProgressTemplate").Funcs(templateFunctions).Parse(ArchiveProgressDoneTemplate))
 }
 
 // NewProgressStatus return ProgressStatus struct from scanner functions
@@ -130,14 +130,20 @@ func (ps *ProgressStatus) PrintJSON() {
 // PrintScannerProgress print the scanner content
 func (ps *ProgressStatus) PrintScannerProgress() {
 	var result bytes.Buffer
-	_ = scanProgressUpdateTemplate.Execute(&result, ps)
+	err := scanProgressUpdateTemplate.Execute(&result, ps)
+	if err != nil {
+		panic(err)
+	}
 	PrintProgress(result.String())
 }
 
 // PrintScannerDone will print the scanner done content
 func (ps *ProgressStatus) PrintScannerDone() {
 	var result bytes.Buffer
-	_ = scanProgressDoneTemplate.Execute(&result, ps)
+	err := scanProgressDoneTemplate.Execute(&result, ps)
+	if err != nil {
+		panic(err)
+	}
 	fmt.Printf("\n%s\n", result.String())
 }
 
@@ -146,8 +152,17 @@ func (ps *ProgressStatus) PrintArchiveProgress() {
 	var progressString bytes.Buffer
 	var etaString bytes.Buffer
 
-	_ = archiveProgressTemplate.Execute(&progressString, ps)
-	_ = archiveProgresEstimateTemplate.Execute(&etaString, ps)
+	err := archiveProgressTemplate.Execute(&progressString, ps)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = archiveProgresEstimateTemplate.Execute(&etaString, ps)
+
+	if err != nil {
+		panic(err)
+	}
 
 	PrintProgress("%s%s", sliceForTerminalWidth(progressString.String()), etaString.String())
 }
@@ -170,7 +185,9 @@ func sliceForTerminalWidth(status1 string) string {
 // PrintArchiveDoneProgress will print current archive progress
 func (ps *ProgressStatus) PrintArchiveDoneProgress() {
 	var result bytes.Buffer
-	_ = archiveProgressDoneTemplate.Execute(&result, ps)
-	// PrintProgress(result.String())
+	err := archiveProgressDoneTemplate.Execute(&result, ps)
+	if err != nil {
+		panic(err)
+	}
 	fmt.Printf("\n%s\n", result.String())
 }
