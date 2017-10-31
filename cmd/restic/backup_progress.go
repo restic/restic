@@ -185,15 +185,9 @@ func sliceForTerminalWidth(status1 string) string {
 // PrintArchiveDoneProgress will print current archive progress
 func (ps *ProgressStatus) PrintArchiveDoneProgress() {
 	var result bytes.Buffer
-<<<<<<< HEAD
 	err := archiveProgressDoneTemplate.Execute(&result, ps)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("\n%s\n", result.String())
-=======
-	_ = archiveProgressDoneTemplate.Execute(&result, ps)
-	// PrintProgress(result.String())
-	fmt.Printf("\n%s", result.String())
->>>>>>> f32c7f4bf2adafaec2a36275568dc8f67bcbd914
 }
