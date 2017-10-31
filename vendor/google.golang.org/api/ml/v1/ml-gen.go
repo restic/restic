@@ -373,7 +373,9 @@ func (s *GoogleCloudMlV1__GetConfigResponse) MarshalJSON() ([]byte, error) {
 // list
 // of HyperparameterOutput objects, one for each successful trial.
 type GoogleCloudMlV1__HyperparameterOutput struct {
-	// AllMetrics: All recorded object metrics for this trial.
+	// AllMetrics: All recorded object metrics for this trial. This field is
+	// not currently
+	// populated.
 	AllMetrics []*GoogleCloudMlV1HyperparameterOutputHyperparameterMetric `json:"allMetrics,omitempty"`
 
 	// FinalMetric: The final objective metric seen for this trial.
@@ -1491,6 +1493,7 @@ type GoogleCloudMlV1__TrainingInput struct {
 	//   "BASIC_GPU" - A single worker instance [with
 	// a
 	// GPU](/ml-engine/docs/how-tos/using-gpus).
+	//   "BASIC_TPU" - A single worker instance with a [Cloud TPU](/tpu)
 	//   "CUSTOM" - The CUSTOM tier is not a set tier, but rather enables
 	// you to use your
 	// own cluster specification. When you use this tier, set values
@@ -1641,7 +1644,7 @@ func (s *GoogleCloudMlV1__TrainingOutput) UnmarshalJSON(data []byte) error {
 // [projects.models.versions.list](/ml-engine/reference/rest/v1/p
 // rojects.models.versions/list).
 //
-// Next ID: 18
+// Next ID: 19
 // LINT.IfChange
 type GoogleCloudMlV1__Version struct {
 	// AutoScaling: Automatically scale the number of nodes used to serve

@@ -24,7 +24,7 @@ import (
 
 func defaultExtractJob() *bq.Job {
 	return &bq.Job{
-		JobReference: &bq.JobReference{ProjectId: "client-project-id"},
+		JobReference: &bq.JobReference{JobId: "RANDOM", ProjectId: "client-project-id"},
 		Configuration: &bq.JobConfiguration{
 			Extract: &bq.JobConfigurationExtract{
 				SourceTable: &bq.TableReference{
@@ -39,6 +39,7 @@ func defaultExtractJob() *bq.Job {
 }
 
 func TestExtract(t *testing.T) {
+	defer fixRandomJobID("RANDOM")()
 	s := &testService{}
 	c := &Client{
 		service:   s,

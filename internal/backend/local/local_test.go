@@ -9,14 +9,14 @@ import (
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func newTestSuite(t testing.TB) *test.Suite {
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			dir, err := ioutil.TempDir(TestTempDir, "restic-test-local-")
+			dir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-local-")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -44,11 +44,11 @@ func newTestSuite(t testing.TB) *test.Suite {
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(local.Config)
-			if !TestCleanupTempDirs {
+			if !rtest.TestCleanupTempDirs {
 				t.Logf("leaving test backend dir at %v", cfg.Path)
 			}
 
-			RemoveAll(t, cfg.Path)
+			rtest.RemoveAll(t, cfg.Path)
 			return nil
 		},
 	}
@@ -119,7 +119,7 @@ func removeAll(t testing.TB, dir string) {
 }
 
 func TestOpenNotExistingDirectory(t *testing.T) {
-	dir, cleanup := TempDir(t)
+	dir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	// local.Open must not create any files dirs in the repo

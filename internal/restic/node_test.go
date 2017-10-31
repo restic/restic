@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func BenchmarkNodeFillUser(t *testing.B) {
@@ -32,8 +32,8 @@ func BenchmarkNodeFillUser(t *testing.B) {
 		restic.NodeFromFileInfo(path, fi)
 	}
 
-	OK(t, tempfile.Close())
-	RemoveAll(t, tempfile.Name())
+	rtest.OK(t, tempfile.Close())
+	rtest.RemoveAll(t, tempfile.Name())
 }
 
 func BenchmarkNodeFromFileInfo(t *testing.B) {
@@ -58,8 +58,8 @@ func BenchmarkNodeFromFileInfo(t *testing.B) {
 		}
 	}
 
-	OK(t, tempfile.Close())
-	RemoveAll(t, tempfile.Name())
+	rtest.OK(t, tempfile.Close())
+	rtest.RemoveAll(t, tempfile.Name())
 }
 
 func parseTime(s string) time.Time {
@@ -166,12 +166,12 @@ var nodeTests = []restic.Node{
 }
 
 func TestNodeRestoreAt(t *testing.T) {
-	tempdir, err := ioutil.TempDir(TestTempDir, "restic-test-")
-	OK(t, err)
+	tempdir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-")
+	rtest.OK(t, err)
 
 	defer func() {
-		if TestCleanupTempDirs {
-			RemoveAll(t, tempdir)
+		if rtest.TestCleanupTempDirs {
+			rtest.RemoveAll(t, tempdir)
 		} else {
 			t.Logf("leaving tempdir at %v", tempdir)
 		}
@@ -181,35 +181,35 @@ func TestNodeRestoreAt(t *testing.T) {
 
 	for _, test := range nodeTests {
 		nodePath := filepath.Join(tempdir, test.Name)
-		OK(t, test.CreateAt(context.TODO(), nodePath, nil, idx))
+		rtest.OK(t, test.CreateAt(context.TODO(), nodePath, nil, idx))
 
 		if test.Type == "symlink" && runtime.GOOS == "windows" {
 			continue
 		}
 		if test.Type == "dir" {
-			OK(t, test.RestoreTimestamps(nodePath))
+			rtest.OK(t, test.RestoreTimestamps(nodePath))
 		}
 
 		fi, err := os.Lstat(nodePath)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		n2, err := restic.NodeFromFileInfo(nodePath, fi)
-		OK(t, err)
+		rtest.OK(t, err)
 
-		Assert(t, test.Name == n2.Name,
+		rtest.Assert(t, test.Name == n2.Name,
 			"%v: name doesn't match (%v != %v)", test.Type, test.Name, n2.Name)
-		Assert(t, test.Type == n2.Type,
+		rtest.Assert(t, test.Type == n2.Type,
 			"%v: type doesn't match (%v != %v)", test.Type, test.Type, n2.Type)
-		Assert(t, test.Size == n2.Size,
+		rtest.Assert(t, test.Size == n2.Size,
 			"%v: size doesn't match (%v != %v)", test.Size, test.Size, n2.Size)
 
 		if runtime.GOOS != "windows" {
-			Assert(t, test.UID == n2.UID,
+			rtest.Assert(t, test.UID == n2.UID,
 				"%v: UID doesn't match (%v != %v)", test.Type, test.UID, n2.UID)
-			Assert(t, test.GID == n2.GID,
+			rtest.Assert(t, test.GID == n2.GID,
 				"%v: GID doesn't match (%v != %v)", test.Type, test.GID, n2.GID)
 			if test.Type != "symlink" {
-				Assert(t, test.Mode == n2.Mode,
+				rtest.Assert(t, test.Mode == n2.Mode,
 					"%v: mode doesn't match (0%o != 0%o)", test.Type, test.Mode, n2.Mode)
 			}
 		}
@@ -240,5 +240,5 @@ func AssertFsTimeEqual(t *testing.T, label string, nodeType string, t1 time.Time
 		equal = t1.Equal(t2)
 	}
 
-	Assert(t, equal, "%s: %s doesn't match (%v != %v)", label, nodeType, t1, t2)
+	rtest.Assert(t, equal, "%s: %s doesn't match (%v != %v)", label, nodeType, t1, t2)
 }

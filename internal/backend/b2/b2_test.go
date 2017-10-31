@@ -7,14 +7,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/b2"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/restic"
 
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func newB2TestSuite(t testing.TB) *test.Suite {
+	tr, err := backend.Transport(nil)
+	if err != nil {
+		t.Fatalf("cannot create transport for tests: %v", err)
+	}
+
 	return &test.Suite{
 		// do not use excessive data
 		MinimalData: true,
@@ -39,19 +45,19 @@ func newB2TestSuite(t testing.TB) *test.Suite {
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(b2.Config)
-			return b2.Create(cfg)
+			return b2.Create(cfg, tr)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(b2.Config)
-			return b2.Open(cfg)
+			return b2.Open(cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(b2.Config)
-			be, err := b2.Open(cfg)
+			be, err := b2.Open(cfg, tr)
 			if err != nil {
 				return err
 			}
@@ -83,7 +89,7 @@ func testVars(t testing.TB) {
 func TestBackendB2(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/b2.TestBackendB2")
+			rtest.SkipDisallowed(t, "restic/backend/b2.TestBackendB2")
 		}
 	}()
 

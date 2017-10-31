@@ -124,6 +124,16 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err er
 		return err
 	}
 
+	if h.Type == restic.LockFile {
+		lockDir := b.Dirname(h)
+		if !dirExists(lockDir) {
+			debug.Log("locks/ does not exist yet, creating now.")
+			if err := fs.MkdirAll(lockDir, backend.Modes.Dir); err != nil {
+				return errors.Wrap(err, "MkdirAll")
+			}
+		}
+	}
+
 	filename := b.Filename(h)
 
 	// create new file

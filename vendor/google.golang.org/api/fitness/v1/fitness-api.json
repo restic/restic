@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/Iezg2N-GRRgP6nxERqABDosZ2Tk\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/K1BxZmhfi_H1WlvW1SDsecgXAnE\"",
  "discoveryVersion": "v1",
  "id": "fitness:v1",
  "name": "fitness",
  "version": "v1",
- "revision": "20170830",
+ "revision": "20170922",
  "title": "Fitness",
  "description": "Stores and accesses user data in the fitness store from apps on any platform.",
  "ownerDomain": "google.com",
@@ -773,14 +773,14 @@
     },
     "deletedDataPoint": {
      "type": "array",
-     "description": "Data points that have been removed and will not be included in any other request for dataset contents.",
+     "description": "Deleted data points for the user. Note, for modifications this should be parsed before handling insertions.",
      "items": {
       "$ref": "DataPoint"
      }
     },
     "insertedDataPoint": {
      "type": "array",
-     "description": "Data points listed.",
+     "description": "Inserted data points for the user.",
      "items": {
       "$ref": "DataPoint"
      }
@@ -1223,7 +1223,7 @@
          "id": "fitness.users.dataSources.dataPointChanges.list",
          "path": "{userId}/dataSources/{dataSourceId}/dataPointChanges",
          "httpMethod": "GET",
-         "description": "results ordered by descending end_time",
+         "description": "Queries for user's data point changes for a particular data source.",
          "parameters": {
           "dataSourceId": {
            "type": "string",
@@ -1233,7 +1233,7 @@
           },
           "limit": {
            "type": "integer",
-           "description": "If specified, no more than this many data point changes will be included in the response. The default is 500 data point changes.",
+           "description": "If specified, no more than this many data point changes will be included in the response.",
            "format": "int32",
            "location": "query"
           },
@@ -1244,7 +1244,7 @@
           },
           "userId": {
            "type": "string",
-           "description": "List data points for the person identified. Use \"me\" to indicate the authenticated user. Only \"me\" is supported at this time.",
+           "description": "List data points for the person identified. Use me to indicate the authenticated user. Only me is supported at this time.",
            "required": true,
            "location": "path"
           }

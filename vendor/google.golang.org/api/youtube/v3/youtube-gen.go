@@ -4757,6 +4757,17 @@ type LiveBroadcastContentDetails struct {
 	// enabled.
 	EnableLowLatency bool `json:"enableLowLatency,omitempty"`
 
+	// LatencyPreference: If both this and enable_low_latency are set, they
+	// must match. LATENCY_NORMAL should match enable_low_latency=false
+	// LATENCY_LOW should match enable_low_latency=true LATENCY_ULTRA_LOW
+	// should have enable_low_latency omitted.
+	//
+	// Possible values:
+	//   "low"
+	//   "normal"
+	//   "ultraLow"
+	LatencyPreference string `json:"latencyPreference,omitempty"`
+
 	Mesh string `json:"mesh,omitempty"`
 
 	// MonitorStream: The monitorStream object contains information about

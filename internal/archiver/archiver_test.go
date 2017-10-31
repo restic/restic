@@ -15,7 +15,7 @@ import (
 	"github.com/restic/restic/internal/crypto"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 
 	"github.com/restic/restic/internal/errors"
 
@@ -40,14 +40,14 @@ func benchmarkChunkEncrypt(b testing.TB, buf, buf2 []byte, rd Rdr, key *crypto.K
 			break
 		}
 
-		OK(b, err)
+		rtest.OK(b, err)
 
 		// reduce length of buf
-		Assert(b, uint(len(chunk.Data)) == chunk.Length,
+		rtest.Assert(b, uint(len(chunk.Data)) == chunk.Length,
 			"invalid length: got %d, expected %d", len(chunk.Data), chunk.Length)
 
 		_, err = key.Encrypt(buf2, chunk.Data)
-		OK(b, err)
+		rtest.OK(b, err)
 	}
 }
 
@@ -55,7 +55,7 @@ func BenchmarkChunkEncrypt(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
-	data := Random(23, 10<<20) // 10MiB
+	data := rtest.Random(23, 10<<20) // 10MiB
 	rd := bytes.NewReader(data)
 
 	buf := make([]byte, chunker.MaxSize)
@@ -87,7 +87,7 @@ func BenchmarkChunkEncryptParallel(b *testing.B) {
 	repo, cleanup := repository.TestRepository(b)
 	defer cleanup()
 
-	data := Random(23, 10<<20) // 10MiB
+	data := rtest.Random(23, 10<<20) // 10MiB
 
 	buf := make([]byte, chunker.MaxSize)
 
@@ -108,14 +108,14 @@ func archiveDirectory(b testing.TB) {
 
 	arch := archiver.New(repo)
 
-	_, id, err := arch.Snapshot(context.TODO(), nil, []string{BenchArchiveDirectory}, nil, "localhost", nil, time.Now())
-	OK(b, err)
+	_, id, err := arch.Snapshot(context.TODO(), nil, []string{rtest.BenchArchiveDirectory}, nil, "localhost", nil, time.Now())
+	rtest.OK(b, err)
 
 	b.Logf("snapshot archived as %v", id)
 }
 
 func TestArchiveDirectory(t *testing.T) {
-	if BenchArchiveDirectory == "" {
+	if rtest.BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiveDirectory")
 	}
 
@@ -123,7 +123,7 @@ func TestArchiveDirectory(t *testing.T) {
 }
 
 func BenchmarkArchiveDirectory(b *testing.B) {
-	if BenchArchiveDirectory == "" {
+	if rtest.BenchArchiveDirectory == "" {
 		b.Skip("benchdir not set, skipping BenchmarkArchiveDirectory")
 	}
 
@@ -144,7 +144,7 @@ func archiveWithDedup(t testing.TB) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	if BenchArchiveDirectory == "" {
+	if rtest.BenchArchiveDirectory == "" {
 		t.Skip("benchdir not set, skipping TestArchiverDedup")
 	}
 
@@ -155,7 +155,7 @@ func archiveWithDedup(t testing.TB) {
 	}
 
 	// archive a few files
-	sn := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
+	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn.ID().Str())
 
 	// get archive stats
@@ -166,7 +166,7 @@ func archiveWithDedup(t testing.TB) {
 		cnt.before.packs, cnt.before.dataBlobs, cnt.before.treeBlobs)
 
 	// archive the same files again, without parent snapshot
-	sn2 := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, nil)
+	sn2 := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
 	t.Logf("archived snapshot %v", sn2.ID().Str())
 
 	// get archive stats again
@@ -183,7 +183,7 @@ func archiveWithDedup(t testing.TB) {
 	}
 
 	// archive the same files again, with a parent snapshot
-	sn3 := archiver.TestSnapshot(t, repo, BenchArchiveDirectory, sn2.ID())
+	sn3 := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, sn2.ID())
 	t.Logf("archived snapshot %v, parent %v", sn3.ID().Str(), sn2.ID().Str())
 
 	// get archive stats again
@@ -246,18 +246,18 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 	}
 
 	for _, errChan := range errChannels {
-		OK(t, <-errChan)
+		rtest.OK(t, <-errChan)
 	}
 
-	OK(t, repo.Flush())
-	OK(t, repo.SaveIndex(context.TODO()))
+	rtest.OK(t, repo.Flush())
+	rtest.OK(t, repo.SaveIndex(context.TODO()))
 
 	chkr := createAndInitChecker(t, repo)
 	assertNoUnreferencedPacks(t, chkr)
 }
 
 func getRandomData(seed int, size int) []chunker.Chunk {
-	buf := Random(seed, size)
+	buf := rtest.Random(seed, size)
 	var chunks []chunker.Chunk
 	chunker := chunker.New(bytes.NewReader(buf), testPol)
 
@@ -292,7 +292,7 @@ func assertNoUnreferencedPacks(t *testing.T, chkr *checker.Checker) {
 	go chkr.Packs(context.TODO(), errChan)
 
 	for err := range errChan {
-		OK(t, err)
+		rtest.OK(t, err)
 	}
 }
 
@@ -341,26 +341,26 @@ func TestArchiveNameCollision(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
 
-	dir, cleanup := TempDir(t)
+	dir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	root := filepath.Join(dir, "root")
-	OK(t, os.MkdirAll(root, 0755))
+	rtest.OK(t, os.MkdirAll(root, 0755))
 
-	OK(t, ioutil.WriteFile(filepath.Join(dir, "testfile"), []byte("testfile1"), 0644))
-	OK(t, ioutil.WriteFile(filepath.Join(dir, "root", "testfile"), []byte("testfile2"), 0644))
+	rtest.OK(t, ioutil.WriteFile(filepath.Join(dir, "testfile"), []byte("testfile1"), 0644))
+	rtest.OK(t, ioutil.WriteFile(filepath.Join(dir, "root", "testfile"), []byte("testfile2"), 0644))
 
 	defer chdir(t, root)()
 
 	arch := archiver.New(repo)
 
 	sn, id, err := arch.Snapshot(context.TODO(), nil, []string{"testfile", filepath.Join("..", "testfile")}, nil, "localhost", nil, time.Now())
-	OK(t, err)
+	rtest.OK(t, err)
 
 	t.Logf("snapshot archived as %v", id)
 
 	tree, err := repo.LoadTree(context.TODO(), *sn.Tree)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	if len(tree.Nodes) != 2 {
 		t.Fatalf("tree has %d nodes, wanted 2: %v", len(tree.Nodes), tree.Nodes)

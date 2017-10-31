@@ -378,7 +378,8 @@ func (r *Repository) LoadIndex(ctx context.Context) error {
 	worker := func(ctx context.Context, id restic.ID) error {
 		idx, err := LoadIndex(ctx, r, id)
 		if err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "%v, ignoring\n", err)
+			return nil
 		}
 
 		select {

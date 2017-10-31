@@ -30,7 +30,7 @@ const defaultListMaxItems = 5000
 // make sure that *Backend implements backend.Backend
 var _ restic.Backend = &Backend{}
 
-func open(cfg Config) (*Backend, error) {
+func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
 	client, err := storage.NewBasicClient(cfg.AccountName, cfg.AccountKey)
@@ -38,7 +38,7 @@ func open(cfg Config) (*Backend, error) {
 		return nil, errors.Wrap(err, "NewBasicClient")
 	}
 
-	client.HTTPClient = &http.Client{Transport: backend.Transport()}
+	client.HTTPClient = &http.Client{Transport: rt}
 
 	service := client.GetBlobService()
 
@@ -63,14 +63,14 @@ func open(cfg Config) (*Backend, error) {
 }
 
 // Open opens the Azure backend at specified container.
-func Open(cfg Config) (restic.Backend, error) {
-	return open(cfg)
+func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	return open(cfg, rt)
 }
 
 // Create opens the Azure backend at specified container and creates the container if
 // it does not exist yet.
-func Create(cfg Config) (restic.Backend, error) {
-	be, err := open(cfg)
+func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	be, err := open(cfg, rt)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "open")

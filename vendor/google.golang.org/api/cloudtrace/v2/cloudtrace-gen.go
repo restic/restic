@@ -500,7 +500,7 @@ type Span struct {
 
 	// Name: The resource name of the span in the following format:
 	//
-	//     projects/[PROJECT_ID]traces/[TRACE_ID]/spans/SPAN_ID is a unique
+	//     projects/[PROJECT_ID]/traces/[TRACE_ID]/spans/SPAN_ID is a unique
 	// identifier for a trace within a project.
 	// [SPAN_ID] is a unique identifier for a span within a trace,
 	// assigned when the span is created.
@@ -822,7 +822,7 @@ func (s *Status) MarshalJSON() ([]byte, error) {
 
 // TimeEvent: A time-stamped annotation or network event in the Span.
 type TimeEvent struct {
-	// Annotation: One or more key:value pairs.
+	// Annotation: Text annotation with a set of attributes.
 	Annotation *Annotation `json:"annotation,omitempty"`
 
 	// NetworkEvent: An event describing an RPC message sent/received on the
@@ -1201,7 +1201,7 @@ func (c *ProjectsTracesSpansCreateCall) Do(opts ...googleapi.CallOption) (*Span,
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The resource name of the span in the following format:\n\n    projects/[PROJECT_ID]traces/[TRACE_ID]/spans/SPAN_ID is a unique identifier for a trace within a project.\n[SPAN_ID] is a unique identifier for a span within a trace,\nassigned when the span is created.",
+	//       "description": "The resource name of the span in the following format:\n\n    projects/[PROJECT_ID]/traces/[TRACE_ID]/spans/SPAN_ID is a unique identifier for a trace within a project.\n[SPAN_ID] is a unique identifier for a span within a trace,\nassigned when the span is created.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/traces/[^/]+/spans/[^/]+$",
 	//       "required": true,

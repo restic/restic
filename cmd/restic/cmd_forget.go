@@ -116,6 +116,8 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
+	removeSnapshots := 0
+
 	ctx, cancel := context.WithCancel(gopts.ctx)
 	defer cancel()
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
@@ -127,11 +129,12 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 					return err
 				}
 				Verbosef("removed snapshot %v\n", sn.ID().Str())
+				removeSnapshots++
 			} else {
 				Verbosef("would have removed snapshot %v\n", sn.ID().Str())
 			}
 		} else {
-			// Determing grouping-keys
+			// Determining grouping-keys
 			var tags []string
 			var hostname string
 			var paths []string
@@ -178,7 +181,6 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		return nil
 	}
 
-	removeSnapshots := 0
 	for k, snapshotGroup := range snapshotGroups {
 		var key key
 		if json.Unmarshal([]byte(k), &key) != nil {

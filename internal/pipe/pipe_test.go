@@ -12,7 +12,7 @@ import (
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/pipe"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 type stats struct {
@@ -27,7 +27,7 @@ func statPath(path string) (stats, error) {
 	var s stats
 
 	// count files and directories with filepath.Walk()
-	err := filepath.Walk(TestWalkerPath, func(p string, fi os.FileInfo, err error) error {
+	err := filepath.Walk(rtest.TestWalkerPath, func(p string, fi os.FileInfo, err error) error {
 		if fi == nil {
 			return err
 		}
@@ -47,20 +47,20 @@ func statPath(path string) (stats, error) {
 const maxWorkers = 100
 
 func TestPipelineWalkerWithSplit(t *testing.T) {
-	if TestWalkerPath == "" {
+	if rtest.TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
 	var err error
-	if !filepath.IsAbs(TestWalkerPath) {
-		TestWalkerPath, err = filepath.Abs(TestWalkerPath)
-		OK(t, err)
+	if !filepath.IsAbs(rtest.TestWalkerPath) {
+		rtest.TestWalkerPath, err = filepath.Abs(rtest.TestWalkerPath)
+		rtest.OK(t, err)
 	}
 
-	before, err := statPath(TestWalkerPath)
-	OK(t, err)
+	before, err := statPath(rtest.TestWalkerPath)
+	rtest.OK(t, err)
 
-	t.Logf("walking path %s with %d dirs, %d files", TestWalkerPath,
+	t.Logf("walking path %s with %d dirs, %d files", rtest.TestWalkerPath,
 		before.dirs, before.files)
 
 	// account for top level dir
@@ -128,7 +128,7 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	}()
 
 	resCh := make(chan pipe.Result, 1)
-	pipe.Walk(context.TODO(), []string{TestWalkerPath}, acceptAll, jobs, resCh)
+	pipe.Walk(context.TODO(), []string{rtest.TestWalkerPath}, acceptAll, jobs, resCh)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -136,14 +136,14 @@ func TestPipelineWalkerWithSplit(t *testing.T) {
 	// wait for top-level blob
 	<-resCh
 
-	t.Logf("walked path %s with %d dirs, %d files", TestWalkerPath,
+	t.Logf("walked path %s with %d dirs, %d files", rtest.TestWalkerPath,
 		after.dirs, after.files)
 
-	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+	rtest.Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }
 
 func TestPipelineWalker(t *testing.T) {
-	if TestWalkerPath == "" {
+	if rtest.TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
@@ -151,15 +151,15 @@ func TestPipelineWalker(t *testing.T) {
 	defer cancel()
 
 	var err error
-	if !filepath.IsAbs(TestWalkerPath) {
-		TestWalkerPath, err = filepath.Abs(TestWalkerPath)
-		OK(t, err)
+	if !filepath.IsAbs(rtest.TestWalkerPath) {
+		rtest.TestWalkerPath, err = filepath.Abs(rtest.TestWalkerPath)
+		rtest.OK(t, err)
 	}
 
-	before, err := statPath(TestWalkerPath)
-	OK(t, err)
+	before, err := statPath(rtest.TestWalkerPath)
+	rtest.OK(t, err)
 
-	t.Logf("walking path %s with %d dirs, %d files", TestWalkerPath,
+	t.Logf("walking path %s with %d dirs, %d files", rtest.TestWalkerPath,
 		before.dirs, before.files)
 
 	// account for top level dir
@@ -177,7 +177,7 @@ func TestPipelineWalker(t *testing.T) {
 					// channel is closed
 					return
 				}
-				Assert(t, job != nil, "job is nil")
+				rtest.Assert(t, job != nil, "job is nil")
 
 				switch j := job.(type) {
 				case pipe.Dir:
@@ -215,7 +215,7 @@ func TestPipelineWalker(t *testing.T) {
 	}
 
 	resCh := make(chan pipe.Result, 1)
-	pipe.Walk(ctx, []string{TestWalkerPath}, acceptAll, jobs, resCh)
+	pipe.Walk(ctx, []string{rtest.TestWalkerPath}, acceptAll, jobs, resCh)
 
 	// wait for all workers to terminate
 	wg.Wait()
@@ -223,10 +223,10 @@ func TestPipelineWalker(t *testing.T) {
 	// wait for top-level blob
 	<-resCh
 
-	t.Logf("walked path %s with %d dirs, %d files", TestWalkerPath,
+	t.Logf("walked path %s with %d dirs, %d files", rtest.TestWalkerPath,
 		after.dirs, after.files)
 
-	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+	rtest.Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }
 
 func createFile(filename, data string) error {
@@ -247,7 +247,7 @@ func createFile(filename, data string) error {
 
 func TestPipeWalkerError(t *testing.T) {
 	dir, err := ioutil.TempDir("", "restic-test-")
-	OK(t, err)
+	rtest.OK(t, err)
 
 	base := filepath.Base(dir)
 
@@ -264,13 +264,13 @@ func TestPipeWalkerError(t *testing.T) {
 		{[]string{}, false},
 	}
 
-	OK(t, os.Mkdir(filepath.Join(dir, "a"), 0755))
-	OK(t, os.Mkdir(filepath.Join(dir, "b"), 0755))
-	OK(t, os.Mkdir(filepath.Join(dir, "c"), 0755))
+	rtest.OK(t, os.Mkdir(filepath.Join(dir, "a"), 0755))
+	rtest.OK(t, os.Mkdir(filepath.Join(dir, "b"), 0755))
+	rtest.OK(t, os.Mkdir(filepath.Join(dir, "c"), 0755))
 
-	OK(t, createFile(filepath.Join(dir, "a", "file_a"), "file a"))
-	OK(t, createFile(filepath.Join(dir, "b", "file_b"), "file b"))
-	OK(t, createFile(filepath.Join(dir, "c", "file_c"), "file c"))
+	rtest.OK(t, createFile(filepath.Join(dir, "a", "file_a"), "file a"))
+	rtest.OK(t, createFile(filepath.Join(dir, "b", "file_b"), "file b"))
+	rtest.OK(t, createFile(filepath.Join(dir, "c", "file_c"), "file c"))
 
 	ranHook := false
 	testdir := filepath.Join(dir, "b")
@@ -286,7 +286,7 @@ func TestPipeWalkerError(t *testing.T) {
 		t.Logf("in hook, removing test file %v", testdir)
 		ranHook = true
 
-		OK(t, os.RemoveAll(testdir))
+		rtest.OK(t, os.RemoveAll(testdir))
 	})
 
 	ctx, cancel := context.WithCancel(context.TODO())
@@ -327,12 +327,12 @@ func TestPipeWalkerError(t *testing.T) {
 
 	cancel()
 
-	Assert(t, ranHook, "hook did not run")
-	OK(t, os.RemoveAll(dir))
+	rtest.Assert(t, ranHook, "hook did not run")
+	rtest.OK(t, os.RemoveAll(dir))
 }
 
 func BenchmarkPipelineWalker(b *testing.B) {
-	if TestWalkerPath == "" {
+	if rtest.TestWalkerPath == "" {
 		b.Skipf("walkerpath not set, skipping BenchPipelineWalker")
 	}
 
@@ -418,7 +418,7 @@ func BenchmarkPipelineWalker(b *testing.B) {
 		}()
 
 		resCh := make(chan pipe.Result, 1)
-		pipe.Walk(ctx, []string{TestWalkerPath}, acceptAll, jobs, resCh)
+		pipe.Walk(ctx, []string{rtest.TestWalkerPath}, acceptAll, jobs, resCh)
 
 		// wait for all workers to terminate
 		wg.Wait()
@@ -431,18 +431,18 @@ func BenchmarkPipelineWalker(b *testing.B) {
 }
 
 func TestPipelineWalkerMultiple(t *testing.T) {
-	if TestWalkerPath == "" {
+	if rtest.TestWalkerPath == "" {
 		t.Skipf("walkerpath not set, skipping TestPipelineWalker")
 	}
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
-	paths, err := filepath.Glob(filepath.Join(TestWalkerPath, "*"))
-	OK(t, err)
+	paths, err := filepath.Glob(filepath.Join(rtest.TestWalkerPath, "*"))
+	rtest.OK(t, err)
 
-	before, err := statPath(TestWalkerPath)
-	OK(t, err)
+	before, err := statPath(rtest.TestWalkerPath)
+	rtest.OK(t, err)
 
 	t.Logf("walking paths %v with %d dirs, %d files", paths,
 		before.dirs, before.files)
@@ -459,7 +459,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 					// channel is closed
 					return
 				}
-				Assert(t, job != nil, "job is nil")
+				rtest.Assert(t, job != nil, "job is nil")
 
 				switch j := job.(type) {
 				case pipe.Dir:
@@ -507,7 +507,7 @@ func TestPipelineWalkerMultiple(t *testing.T) {
 
 	t.Logf("walked %d paths with %d dirs, %d files", len(paths), after.dirs, after.files)
 
-	Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
+	rtest.Assert(t, before == after, "stats do not match, expected %v, got %v", before, after)
 }
 
 func dirsInPath(path string) int {
@@ -530,7 +530,7 @@ func TestPipeWalkerRoot(t *testing.T) {
 	}
 
 	cwd, err := os.Getwd()
-	OK(t, err)
+	rtest.OK(t, err)
 
 	testPaths := []string{
 		string(filepath.Separator),
@@ -546,11 +546,11 @@ func TestPipeWalkerRoot(t *testing.T) {
 func testPipeWalkerRootWithPath(path string, t *testing.T) {
 	pattern := filepath.Join(path, "*")
 	rootPaths, err := filepath.Glob(pattern)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	for i, p := range rootPaths {
 		rootPaths[i], err = filepath.Rel(path, p)
-		OK(t, err)
+		rtest.OK(t, err)
 	}
 
 	t.Logf("paths in %v (pattern %q) expanded to %v items", path, pattern, len(rootPaths))
@@ -571,7 +571,7 @@ func testPipeWalkerRootWithPath(path string, t *testing.T) {
 
 	filter := func(p string, fi os.FileInfo) bool {
 		p, err := filepath.Rel(path, p)
-		OK(t, err)
+		rtest.OK(t, err)
 		return dirsInPath(p) <= 1
 	}
 

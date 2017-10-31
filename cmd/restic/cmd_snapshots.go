@@ -163,6 +163,8 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, compact bool) {
 		}
 	}
 
+	tab.Footer = fmt.Sprintf("%d snapshots", len(list))
+
 	tab.Write(stdout)
 }
 
@@ -170,7 +172,8 @@ func PrintSnapshots(stdout io.Writer, list restic.Snapshots, compact bool) {
 type Snapshot struct {
 	*restic.Snapshot
 
-	ID *restic.ID `json:"id"`
+	ID      *restic.ID `json:"id"`
+	ShortID string     `json:"short_id"`
 }
 
 // printSnapshotsJSON writes the JSON representation of list to stdout.
@@ -183,6 +186,7 @@ func printSnapshotsJSON(stdout io.Writer, list restic.Snapshots) error {
 		k := Snapshot{
 			Snapshot: sn,
 			ID:       sn.ID(),
+			ShortID:  sn.ID().Str(),
 		}
 		snapshots = append(snapshots, k)
 	}

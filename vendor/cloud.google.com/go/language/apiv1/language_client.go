@@ -31,10 +31,11 @@ import (
 
 // CallOptions contains the retry settings for each method of Client.
 type CallOptions struct {
-	AnalyzeSentiment []gax.CallOption
-	AnalyzeEntities  []gax.CallOption
-	AnalyzeSyntax    []gax.CallOption
-	AnnotateText     []gax.CallOption
+	AnalyzeSentiment       []gax.CallOption
+	AnalyzeEntities        []gax.CallOption
+	AnalyzeEntitySentiment []gax.CallOption
+	AnalyzeSyntax          []gax.CallOption
+	AnnotateText           []gax.CallOption
 }
 
 func defaultClientOptions() []option.ClientOption {
@@ -60,10 +61,11 @@ func defaultCallOptions() *CallOptions {
 		},
 	}
 	return &CallOptions{
-		AnalyzeSentiment: retry[[2]string{"default", "idempotent"}],
-		AnalyzeEntities:  retry[[2]string{"default", "idempotent"}],
-		AnalyzeSyntax:    retry[[2]string{"default", "idempotent"}],
-		AnnotateText:     retry[[2]string{"default", "idempotent"}],
+		AnalyzeSentiment:       retry[[2]string{"default", "idempotent"}],
+		AnalyzeEntities:        retry[[2]string{"default", "idempotent"}],
+		AnalyzeEntitySentiment: retry[[2]string{"default", "idempotent"}],
+		AnalyzeSyntax:          retry[[2]string{"default", "idempotent"}],
+		AnnotateText:           retry[[2]string{"default", "idempotent"}],
 	}
 }
 
@@ -147,6 +149,23 @@ func (c *Client) AnalyzeEntities(ctx context.Context, req *languagepb.AnalyzeEnt
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error
 		resp, err = c.client.AnalyzeEntities(ctx, req, settings.GRPC...)
+		return err
+	}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// AnalyzeEntitySentiment finds entities, similar to [AnalyzeEntities][google.cloud.language.v1.LanguageService.AnalyzeEntities] in the text and analyzes
+// sentiment associated with each entity and its mentions.
+func (c *Client) AnalyzeEntitySentiment(ctx context.Context, req *languagepb.AnalyzeEntitySentimentRequest, opts ...gax.CallOption) (*languagepb.AnalyzeEntitySentimentResponse, error) {
+	ctx = insertXGoog(ctx, c.xGoogHeader)
+	opts = append(c.CallOptions.AnalyzeEntitySentiment[0:len(c.CallOptions.AnalyzeEntitySentiment):len(c.CallOptions.AnalyzeEntitySentiment)], opts...)
+	var resp *languagepb.AnalyzeEntitySentimentResponse
+	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		var err error
+		resp, err = c.client.AnalyzeEntitySentiment(ctx, req, settings.GRPC...)
 		return err
 	}, opts...)
 	if err != nil {

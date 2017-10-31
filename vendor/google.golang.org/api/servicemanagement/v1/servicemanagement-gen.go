@@ -830,6 +830,100 @@ func (s *BackendRule) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// Billing: Billing related configuration of the service.
+//
+// The following example shows how to configure monitored resources and
+// metrics
+// for billing:
+//     monitored_resources:
+//     - type: library.googleapis.com/branch
+//       labels:
+//       - key: /city
+//         description: The city where the library branch is located
+// in.
+//       - key: /name
+//         description: The name of the branch.
+//     metrics:
+//     - name: library.googleapis.com/book/borrowed_count
+//       metric_kind: DELTA
+//       value_type: INT64
+//     billing:
+//       consumer_destinations:
+//       - monitored_resource: library.googleapis.com/branch
+//         metrics:
+//         - library.googleapis.com/book/borrowed_count
+type Billing struct {
+	// ConsumerDestinations: Billing configurations for sending metrics to
+	// the consumer project.
+	// There can be multiple consumer destinations per service, each one
+	// must have
+	// a different monitored resource type. A metric can be used in at
+	// most
+	// one consumer destination.
+	ConsumerDestinations []*BillingDestination `json:"consumerDestinations,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "ConsumerDestinations") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ConsumerDestinations") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Billing) MarshalJSON() ([]byte, error) {
+	type noMethod Billing
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// BillingDestination: Configuration of a specific billing destination
+// (Currently only support
+// bill against consumer project).
+type BillingDestination struct {
+	// Metrics: Names of the metrics to report to this billing
+	// destination.
+	// Each name must be defined in Service.metrics section.
+	Metrics []string `json:"metrics,omitempty"`
+
+	// MonitoredResource: The monitored resource type. The type must be
+	// defined in
+	// Service.monitored_resources section.
+	MonitoredResource string `json:"monitoredResource,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Metrics") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Metrics") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BillingDestination) MarshalJSON() ([]byte, error) {
+	type noMethod BillingDestination
+	raw := noMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // Binding: Associates `members` with a `role`.
 type Binding struct {
 	// Condition: The condition that is associated with this binding.
@@ -2107,12 +2201,27 @@ type FlowOperationMetadata struct {
 	// Must be equal to the "name" field for a FlowName enum.
 	FlowName string `json:"flowName,omitempty"`
 
+	// OperationType: Operation type which is a flow type and subtype info
+	// as that is missing in
+	// our datastore otherwise. This maps to the ordinal value of the
+	// enum:
+	// jcg/api/tenant/operations/OperationNamespace.java
+	OperationType int64 `json:"operationType,omitempty"`
+
 	// ResourceNames: The full name of the resources that this flow is
 	// directly associated with.
 	ResourceNames []string `json:"resourceNames,omitempty"`
 
 	// StartTime: The start time of the operation.
 	StartTime string `json:"startTime,omitempty"`
+
+	// Possible values:
+	//   "UNSPECIFIED_OP_SERVICE"
+	//   "SERVICE_MANAGEMENT"
+	//   "SERVICE_USAGE"
+	//   "SERVICE_CONSUMER_MANAGEMENT" - TenancyUnit, ServiceNetworking fall
+	// under this
+	Surface string `json:"surface,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "CancelState") to
 	// unconditionally include in API requests. By default, fields with
@@ -4530,6 +4639,9 @@ type Service struct {
 
 	// Backend: API backend configuration.
 	Backend *Backend `json:"backend,omitempty"`
+
+	// Billing: Billing configuration.
+	Billing *Billing `json:"billing,omitempty"`
 
 	// ConfigVersion: The semantic version of the service configuration. The
 	// config version

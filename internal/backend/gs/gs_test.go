@@ -11,7 +11,7 @@ import (
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func newGSTestSuite(t testing.TB) *test.Suite {
@@ -81,7 +81,7 @@ func newGSTestSuite(t testing.TB) *test.Suite {
 func TestBackendGS(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/gs.TestBackendGS")
+			rtest.SkipDisallowed(t, "restic/backend/gs.TestBackendGS")
 		}
 	}()
 

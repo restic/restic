@@ -1033,7 +1033,7 @@ func (s *AccessConfig) MarshalJSON() ([]byte, error) {
 
 // Address: A reserved address resource.
 type Address struct {
-	// Address: The static external IP address represented by this resource.
+	// Address: The static IP address represented by this resource.
 	Address string `json:"address,omitempty"`
 
 	// CreationTimestamp: [Output Only] Creation timestamp in RFC3339 text
@@ -5049,8 +5049,7 @@ type GuestOsFeature struct {
 	// Type: The type of supported feature. Currently only
 	// VIRTIO_SCSI_MULTIQUEUE is supported. For newer Windows images, the
 	// server might also populate this property with the value WINDOWS to
-	// indicate that this is a Windows image. This value is purely
-	// informational and does not enable or disable any features.
+	// indicate that this is a Windows image.
 	//
 	// Possible values:
 	//   "FEATURE_TYPE_UNSPECIFIED"
@@ -5758,10 +5757,9 @@ type Image struct {
 	// higher. Linux images with kernel versions 3.17 and higher will
 	// support VIRTIO_SCSI_MULTIQUEUE.
 	//
-	// For new Windows images, the server might also populate this field
-	// with the value WINDOWS, to indicate that this is a Windows image.
-	// This value is purely informational and does not enable or disable any
-	// features.
+	// For newer Windows images, the server might also populate this
+	// property with the value WINDOWS to indicate that this is a Windows
+	// image.
 	GuestOsFeatures []*GuestOsFeature `json:"guestOsFeatures,omitempty"`
 
 	// Id: [Output Only] The unique identifier for the resource. This
@@ -5839,6 +5837,24 @@ type Image struct {
 	// This value may be used to determine whether the image was taken from
 	// the current or a previous instance of a given disk name.
 	SourceDiskId string `json:"sourceDiskId,omitempty"`
+
+	// SourceImage: URL of the source image used to create this image. This
+	// can be a full or valid partial URL. You must provide exactly one of:
+	//
+	// - this property, or
+	// - the rawDisk.source property, or
+	// - the sourceDisk property   in order to create an image.
+	SourceImage string `json:"sourceImage,omitempty"`
+
+	// SourceImageEncryptionKey: The customer-supplied encryption key of the
+	// source image. Required if the source image is protected by a
+	// customer-supplied encryption key.
+	SourceImageEncryptionKey *CustomerEncryptionKey `json:"sourceImageEncryptionKey,omitempty"`
+
+	// SourceImageId: [Output Only] The ID value of the image used to create
+	// this image. This value may be used to determine whether the image was
+	// taken from the current or a previous instance of a given image name.
+	SourceImageId string `json:"sourceImageId,omitempty"`
 
 	// SourceType: The type of the image used to create this disk. The
 	// default and only value is RAW
@@ -11638,7 +11654,7 @@ type Snapshot struct {
 	//   "UPLOADING"
 	Status string `json:"status,omitempty"`
 
-	// StorageBytes: [Output Only] A size of the the storage used by the
+	// StorageBytes: [Output Only] A size of the storage used by the
 	// snapshot. As snapshots share storage, this number is expected to
 	// change with snapshot creation/deletion.
 	StorageBytes int64 `json:"storageBytes,omitempty,string"`

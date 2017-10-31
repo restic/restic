@@ -120,18 +120,15 @@ func (mi *MasterIndex) Remove(index *Index) {
 
 // Store remembers the id and pack in the index.
 func (mi *MasterIndex) Store(pb restic.PackedBlob) {
-	mi.idxMutex.RLock()
+	mi.idxMutex.Lock()
+	defer mi.idxMutex.Unlock()
+
 	for _, idx := range mi.idx {
 		if !idx.Final() {
-			mi.idxMutex.RUnlock()
 			idx.Store(pb)
 			return
 		}
 	}
-
-	mi.idxMutex.RUnlock()
-	mi.idxMutex.Lock()
-	defer mi.idxMutex.Unlock()
 
 	newIdx := NewIndex()
 	newIdx.Store(pb)

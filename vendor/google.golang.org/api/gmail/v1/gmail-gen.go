@@ -66,7 +66,7 @@ const (
 	// View and modify but not delete your email
 	GmailModifyScope = "https://www.googleapis.com/auth/gmail.modify"
 
-	// View your emails messages and settings
+	// View your email messages and settings
 	GmailReadonlyScope = "https://www.googleapis.com/auth/gmail.readonly"
 
 	// Send email on your behalf

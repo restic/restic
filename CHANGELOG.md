@@ -7,14 +7,15 @@ Important Changes in 0.X.Y
  * We've added a local cache for metadata so that restic doesn't need to load
    all metadata (snapshots, indexes, ...) from the repo each time it starts. By
    default the cache is active, but there's a new global option `--no-cache`
-   that can be used to disable the cache. The cache location is
-   `~/.cache/restic` by default, which can be overridden with `--cache-dir` or
-   the environment variable `XDG_CACHE_HOME`. The cache will automatically
-   populate, indexes and snapshots are saved as they are loaded.
+   that can be used to disable the cache. By deafult, the cache a standard
+   cache folder for the OS, which can be overridden with `--cache-dir`.  The
+   cache will automatically populate, indexes and snapshots are saved as they
+   are loaded.
    https://github.com/restic/restic/pull/1040
    https://github.com/restic/restic/issues/29
    https://github.com/restic/restic/issues/738
    https://github.com/restic/restic/issues/282
+   https://github.com/restic/restic/pull/1287
 
  * A related change was to by default create pack files in the repo that
    contain either data or metadata, not both mixed together. This allows easy
@@ -26,6 +27,11 @@ Important Changes in 0.X.Y
    have the `storage.buckets.get` permission ("Storage Admin" role) in `restic
    init` if the bucket already exists.
    https://github.com/restic/restic/pull/1281
+
+ * Added support for rate limiting through `--limit-upload` and
+   `--limit-download` flags.
+   https://github.com/restic/restic/issues/1216
+   https://github.com/restic/restic/pull/1336
 
 Small changes
 -------------
@@ -54,6 +60,39 @@ Small changes
    zsh in `doc/bash-completion.sh` and `doc/zsh-completion.zsh`
    https://github.com/restic/restic/issues/1274
    https://github.com/restic/restic/pull/1282
+
+ * A bug was discovered in the library we're using to access Backblaze, it now
+   reuses already established TCP connections which should be a lot faster and
+   not cause network failures any more.
+   https://github.com/restic/restic/issues/1291
+   https://github.com/restic/restic/pull/1301
+
+ * Another bug in the `forget` command caused `prune` not to be run when
+   `--prune` was specified without a policy, e.g. when only snapshot IDs that
+   should be forgotten are listed manually. This is corrected now.
+   https://github.com/restic/restic/pull/1317
+
+ * The `check` command now explicetly prints `No errors were found` when no
+   errors could be found.
+   https://github.com/restic/restic/pull/1319
+   https://github.com/restic/restic/issues/1303
+
+ * The fuse mount now has an `ids` subdirectory which contains the snapshots
+   below their (short) IDs.
+   https://github.com/restic/restic/issues/1102
+   https://github.com/restic/restic/pull/1299
+   https://github.com/restic/restic/pull/1320
+
+ * The `backup` command was improved, it now caches the result of excludes for
+   a directory.
+   https://github.com/restic/restic/issues/1271
+   https://github.com/restic/restic/pull/1326
+
+ * We've added the `--cacert` option which can be used to pass one (or more) CA
+   certificates to restic. These are used in addition to the system CA
+   certificates to verify HTTPS certificates (e.g. for the REST backend).
+   https://github.com/restic/restic/issues/1114
+   https://github.com/restic/restic/pull/1276
 
 Important Changes in 0.7.3
 ==========================

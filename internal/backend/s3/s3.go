@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -32,31 +33,38 @@ var _ restic.Backend = &Backend{}
 
 const defaultLayout = "default"
 
-func open(cfg Config) (*Backend, error) {
+func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
 	if cfg.MaxRetries > 0 {
 		minio.MaxRetry = int(cfg.MaxRetries)
 	}
 
-	var client *minio.Client
-	var err error
-
-	if cfg.KeyID == "" || cfg.Secret == "" {
-		debug.Log("key/secret not found, trying to get them from IAM")
-		creds := credentials.NewIAM("")
-		client, err = minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
-
-		if err != nil {
-			return nil, errors.Wrap(err, "minio.NewWithCredentials")
-		}
-	} else {
-		debug.Log("key/secret found")
-		client, err = minio.New(cfg.Endpoint, cfg.KeyID, cfg.Secret, !cfg.UseHTTP)
-
-		if err != nil {
-			return nil, errors.Wrap(err, "minio.New")
-		}
+	// Chains all credential types, starting with
+	// Static credentials provided by user.
+	// IAM profile based credentials. (performs an HTTP
+	// call to a pre-defined endpoint, only valid inside
+	// configured ec2 instances)
+	// AWS env variables such as AWS_ACCESS_KEY_ID
+	// Minio env variables such as MINIO_ACCESS_KEY
+	creds := credentials.NewChainCredentials([]credentials.Provider{
+		&credentials.Static{
+			Value: credentials.Value{
+				AccessKeyID:     cfg.KeyID,
+				SecretAccessKey: cfg.Secret,
+			},
+		},
+		&credentials.IAM{
+			Client: &http.Client{
+				Transport: http.DefaultTransport,
+			},
+		},
+		&credentials.EnvAWS{},
+		&credentials.EnvMinio{},
+	})
+	client, err := minio.NewWithCredentials(cfg.Endpoint, creds, !cfg.UseHTTP, "")
+	if err != nil {
+		return nil, errors.Wrap(err, "minio.NewWithCredentials")
 	}
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
@@ -70,7 +78,7 @@ func open(cfg Config) (*Backend, error) {
 		cfg:    cfg,
 	}
 
-	client.SetCustomTransport(backend.Transport())
+	client.SetCustomTransport(rt)
 
 	l, err := backend.ParseLayout(be, cfg.Layout, defaultLayout, cfg.Prefix)
 	if err != nil {
@@ -84,14 +92,14 @@ func open(cfg Config) (*Backend, error) {
 
 // Open opens the S3 backend at bucket and region. The bucket is created if it
 // does not exist yet.
-func Open(cfg Config) (restic.Backend, error) {
-	return open(cfg)
+func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	return open(cfg, rt)
 }
 
 // Create opens the S3 backend at bucket and region and creates the bucket if
 // it does not exist yet.
-func Create(cfg Config) (restic.Backend, error) {
-	be, err := open(cfg)
+func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+	be, err := open(cfg, rt)
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}

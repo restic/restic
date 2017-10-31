@@ -381,8 +381,9 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
 	}
 
+	rc := &rejectionCache{}
 	for _, spec := range opts.ExcludeIfPresent {
-		f, err := rejectIfPresent(spec)
+		f, err := rejectIfPresent(spec, rc)
 		if err != nil {
 			return err
 		}
@@ -430,7 +431,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentSnapshotID == nil {
-		id, err := restic.FindLatestSnapshot(context.TODO(), repo, target, []restic.TagList{opts.Tags}, opts.Hostname)
+		id, err := restic.FindLatestSnapshot(context.TODO(), repo, target, []restic.TagList{}, opts.Hostname)
 		if err == nil {
 			parentSnapshotID = &id
 		} else if err != restic.ErrNoSnapshotFound {

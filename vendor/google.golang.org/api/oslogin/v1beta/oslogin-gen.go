@@ -52,6 +52,12 @@ const (
 
 	// View your data across Google Cloud Platform services
 	CloudPlatformReadOnlyScope = "https://www.googleapis.com/auth/cloud-platform.read-only"
+
+	// View and manage your Google Compute Engine resources
+	ComputeScope = "https://www.googleapis.com/auth/compute"
+
+	// View your Google Compute Engine resources
+	ComputeReadonlyScope = "https://www.googleapis.com/auth/compute.readonly"
 )
 
 func New(client *http.Client) (*Service, error) {
@@ -428,7 +434,9 @@ func (c *UsersGetLoginProfileCall) Do(opts ...googleapi.CallOption) (*LoginProfi
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/cloud-platform",
-	//     "https://www.googleapis.com/auth/cloud-platform.read-only"
+	//     "https://www.googleapis.com/auth/cloud-platform.read-only",
+	//     "https://www.googleapis.com/auth/compute",
+	//     "https://www.googleapis.com/auth/compute.readonly"
 	//   ]
 	// }
 
@@ -567,7 +575,8 @@ func (c *UsersImportSshPublicKeyCall) Do(opts ...googleapi.CallOption) (*ImportS
 	//     "$ref": "ImportSshPublicKeyResponse"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
 	//   ]
 	// }
 
@@ -692,7 +701,8 @@ func (c *UsersSshPublicKeysDeleteCall) Do(opts ...googleapi.CallOption) (*Empty,
 	//     "$ref": "Empty"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
 	//   ]
 	// }
 
@@ -831,7 +841,8 @@ func (c *UsersSshPublicKeysGetCall) Do(opts ...googleapi.CallOption) (*SshPublic
 	//     "$ref": "SshPublicKey"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
 	//   ]
 	// }
 
@@ -981,7 +992,8 @@ func (c *UsersSshPublicKeysPatchCall) Do(opts ...googleapi.CallOption) (*SshPubl
 	//     "$ref": "SshPublicKey"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/compute"
 	//   ]
 	// }
 

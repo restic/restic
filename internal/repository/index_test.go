@@ -6,7 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func TestIndexSerialize(t *testing.T) {
@@ -52,43 +52,43 @@ func TestIndexSerialize(t *testing.T) {
 
 	wr := bytes.NewBuffer(nil)
 	err := idx.Encode(wr)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	idx2, err := repository.DecodeIndex(wr.Bytes())
-	OK(t, err)
-	Assert(t, idx2 != nil,
+	rtest.OK(t, err)
+	rtest.Assert(t, idx2 != nil,
 		"nil returned for decoded index")
 
 	wr2 := bytes.NewBuffer(nil)
 	err = idx2.Encode(wr2)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	for _, testBlob := range tests {
 		list, err := idx.Lookup(testBlob.id, testBlob.tpe)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list), list)
 		}
 		result := list[0]
 
-		Equals(t, testBlob.pack, result.PackID)
-		Equals(t, testBlob.tpe, result.Type)
-		Equals(t, testBlob.offset, result.Offset)
-		Equals(t, testBlob.length, result.Length)
+		rtest.Equals(t, testBlob.pack, result.PackID)
+		rtest.Equals(t, testBlob.tpe, result.Type)
+		rtest.Equals(t, testBlob.offset, result.Offset)
+		rtest.Equals(t, testBlob.length, result.Length)
 
 		list2, err := idx2.Lookup(testBlob.id, testBlob.tpe)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if len(list2) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list2), list2)
 		}
 		result2 := list2[0]
 
-		Equals(t, testBlob.pack, result2.PackID)
-		Equals(t, testBlob.tpe, result2.Type)
-		Equals(t, testBlob.offset, result2.Offset)
-		Equals(t, testBlob.length, result2.Length)
+		rtest.Equals(t, testBlob.pack, result2.PackID)
+		rtest.Equals(t, testBlob.tpe, result2.Type)
+		rtest.Equals(t, testBlob.offset, result2.Offset)
+		rtest.Equals(t, testBlob.length, result2.Length)
 	}
 
 	// add more blobs to idx
@@ -125,28 +125,28 @@ func TestIndexSerialize(t *testing.T) {
 	// serialize idx, unserialize to idx3
 	wr3 := bytes.NewBuffer(nil)
 	err = idx.Finalize(wr3)
-	OK(t, err)
+	rtest.OK(t, err)
 
-	Assert(t, idx.Final(),
+	rtest.Assert(t, idx.Final(),
 		"index not final after encoding")
 
 	id := restic.NewRandomID()
-	OK(t, idx.SetID(id))
+	rtest.OK(t, idx.SetID(id))
 	id2, err := idx.ID()
-	Assert(t, id2.Equal(id),
+	rtest.Assert(t, id2.Equal(id),
 		"wrong ID returned: want %v, got %v", id, id2)
 
 	idx3, err := repository.DecodeIndex(wr3.Bytes())
-	OK(t, err)
-	Assert(t, idx3 != nil,
+	rtest.OK(t, err)
+	rtest.Assert(t, idx3 != nil,
 		"nil returned for decoded index")
-	Assert(t, idx3.Final(),
+	rtest.Assert(t, idx3.Final(),
 		"decoded index is not final")
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
 		list, err := idx3.Lookup(testBlob.id, testBlob.tpe)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list), list)
@@ -154,10 +154,10 @@ func TestIndexSerialize(t *testing.T) {
 
 		blob := list[0]
 
-		Equals(t, testBlob.pack, blob.PackID)
-		Equals(t, testBlob.tpe, blob.Type)
-		Equals(t, testBlob.offset, blob.Offset)
-		Equals(t, testBlob.length, blob.Length)
+		rtest.Equals(t, testBlob.pack, blob.PackID)
+		rtest.Equals(t, testBlob.tpe, blob.Type)
+		rtest.Equals(t, testBlob.offset, blob.Offset)
+		rtest.Equals(t, testBlob.length, blob.Length)
 	}
 }
 
@@ -190,7 +190,7 @@ func TestIndexSize(t *testing.T) {
 	wr := bytes.NewBuffer(nil)
 
 	err := idx.Encode(wr)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	t.Logf("Index file size for %d blobs in %d packs is %d", blobs*packs, packs, wr.Len())
 }
@@ -289,11 +289,11 @@ func TestIndexUnserialize(t *testing.T) {
 	oldIdx := restic.IDs{restic.TestParseID("ed54ae36197f4745ebc4b54d10e0f623eaaaedd03013eb7ae90df881b7781452")}
 
 	idx, err := repository.DecodeIndex(docExample)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	for _, test := range exampleTests {
 		list, err := idx.Lookup(test.id, test.tpe)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
@@ -302,13 +302,13 @@ func TestIndexUnserialize(t *testing.T) {
 
 		t.Logf("looking for blob %v/%v, got %v", test.tpe, test.id.Str(), blob)
 
-		Equals(t, test.packID, blob.PackID)
-		Equals(t, test.tpe, blob.Type)
-		Equals(t, test.offset, blob.Offset)
-		Equals(t, test.length, blob.Length)
+		rtest.Equals(t, test.packID, blob.PackID)
+		rtest.Equals(t, test.tpe, blob.Type)
+		rtest.Equals(t, test.offset, blob.Offset)
+		rtest.Equals(t, test.length, blob.Length)
 	}
 
-	Equals(t, oldIdx, idx.Supersedes())
+	rtest.Equals(t, oldIdx, idx.Supersedes())
 
 	blobs := idx.ListPack(exampleLookupTest.packID)
 	if len(blobs) != len(exampleLookupTest.blobs) {
@@ -331,30 +331,30 @@ func BenchmarkDecodeIndex(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, err := repository.DecodeIndex(docExample)
-		OK(b, err)
+		rtest.OK(b, err)
 	}
 }
 
 func TestIndexUnserializeOld(t *testing.T) {
 	idx, err := repository.DecodeOldIndex(docOldExample)
-	OK(t, err)
+	rtest.OK(t, err)
 
 	for _, test := range exampleTests {
 		list, err := idx.Lookup(test.id, test.tpe)
-		OK(t, err)
+		rtest.OK(t, err)
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
 		}
 		blob := list[0]
 
-		Equals(t, test.packID, blob.PackID)
-		Equals(t, test.tpe, blob.Type)
-		Equals(t, test.offset, blob.Offset)
-		Equals(t, test.length, blob.Length)
+		rtest.Equals(t, test.packID, blob.PackID)
+		rtest.Equals(t, test.tpe, blob.Type)
+		rtest.Equals(t, test.offset, blob.Offset)
+		rtest.Equals(t, test.length, blob.Length)
 	}
 
-	Equals(t, 0, len(idx.Supersedes()))
+	rtest.Equals(t, 0, len(idx.Supersedes()))
 }
 
 func TestIndexPacks(t *testing.T) {
@@ -377,5 +377,5 @@ func TestIndexPacks(t *testing.T) {
 	}
 
 	idxPacks := idx.Packs()
-	Assert(t, packs.Equals(idxPacks), "packs in index do not match packs added to index")
+	rtest.Assert(t, packs.Equals(idxPacks), "packs in index do not match packs added to index")
 }

@@ -1148,7 +1148,7 @@
           "type": "string"
         },
         "installationFailureReason": {
-          "description": "If package_name is set and the non-compliance reason is APP_NOT_INSTALLED, the detailed reason the app cannot be installed.",
+          "description": "If package_name is set and the non-compliance reason is APP_NOT_INSTALLED or APP_NOT_UPDATED, the detailed reason the app cannot be installed or updated.",
           "enum": [
             "INSTALLATION_FAILURE_REASON_UNSPECIFIED",
             "INSTALLATION_FAILURE_REASON_UNKNOWN",
@@ -1476,14 +1476,16 @@
           "enumDescriptions": [
             "This value is ignored.",
             "Don't allow other admins to change the password again until the user has entered it.",
-            "Don't ask for user credentials on device boot."
+            "Don't ask for user credentials on device boot.",
+            "Lock the device after password reset."
           ],
           "type": "array",
           "items": {
             "enum": [
               "RESET_PASSWORD_FLAG_UNSPECIFIED",
               "REQUIRE_ENTRY",
-              "DO_NOT_ASK_CREDENTIALS_ON_BOOT"
+              "DO_NOT_ASK_CREDENTIALS_ON_BOOT",
+              "LOCK_NOW"
             ],
             "type": "string"
           }
@@ -2250,7 +2252,7 @@
       "id": "HardwareStatus"
     }
   },
-  "revision": "20170911",
+  "revision": "20170918",
   "basePath": "",
   "icons": {
     "x32": "http://www.google.com/images/icons/product/search-32.gif",

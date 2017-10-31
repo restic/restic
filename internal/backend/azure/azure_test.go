@@ -7,14 +7,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func newAzureTestSuite(t testing.TB) *test.Suite {
+	tr, err := backend.Transport(nil)
+	if err != nil {
+		t.Fatalf("cannot create transport for tests: %v", err)
+	}
+
 	return &test.Suite{
 		// do not use excessive data
 		MinimalData: true,
@@ -37,7 +43,7 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(azure.Config)
 
-			be, err := azure.Create(cfg)
+			be, err := azure.Create(cfg, tr)
 			if err != nil {
 				return nil, err
 			}
@@ -57,14 +63,15 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(azure.Config)
-			return azure.Open(cfg)
+
+			return azure.Open(cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(azure.Config)
 
-			be, err := azure.Open(cfg)
+			be, err := azure.Open(cfg, tr)
 			if err != nil {
 				return err
 			}
@@ -81,7 +88,7 @@ func newAzureTestSuite(t testing.TB) *test.Suite {
 func TestBackendAzure(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/azure.TestBackendAzure")
+			rtest.SkipDisallowed(t, "restic/backend/azure.TestBackendAzure")
 		}
 	}()
 

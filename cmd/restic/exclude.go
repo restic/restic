@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
@@ -14,6 +15,50 @@ import (
 	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 )
+
+type rejectionCache struct {
+	m   map[string]bool
+	mtx sync.Mutex
+}
+
+// Lock locks the mutex in rc.
+func (rc *rejectionCache) Lock() {
+	if rc != nil {
+		rc.mtx.Lock()
+	}
+}
+
+// Unlock unlocks the mutex in rc.
+func (rc *rejectionCache) Unlock() {
+	if rc != nil {
+		rc.mtx.Unlock()
+	}
+}
+
+// Get returns the last stored value for dir and a second boolean that
+// indicates whether that value was actually written to the cache. It is the
+// callers responsibility to call rc.Lock and rc.Unlock before using this
+// method, otherwise data races may occur.
+func (rc *rejectionCache) Get(dir string) (bool, bool) {
+	if rc == nil || rc.m == nil {
+		return false, false
+	}
+	v, ok := rc.m[dir]
+	return v, ok
+}
+
+// Store stores a new value for dir.  It is the callers responsibility to call
+// rc.Lock and rc.Unlock before using this method, otherwise data races may
+// occur.
+func (rc *rejectionCache) Store(dir string, rejected bool) {
+	if rc == nil {
+		return
+	}
+	if rc.m == nil {
+		rc.m = make(map[string]bool)
+	}
+	rc.m[dir] = rejected
+}
 
 // RejectFunc is a function that takes a filename and os.FileInfo of a
 // file that would be included in the backup. The function returns true if it
@@ -42,8 +87,10 @@ func rejectByPattern(patterns []string) RejectFunc {
 // should be excluded. The RejectFunc considers a file to be excluded when
 // it resides in a directory with an exclusion file, that is specified by
 // excludeFileSpec in the form "filename[:content]". The returned error is
-// non-nil if the filename component of excludeFileSpec is empty.
-func rejectIfPresent(excludeFileSpec string) (RejectFunc, error) {
+// non-nil if the filename component of excludeFileSpec is empty. If rc is
+// non-nil, it is going to be used in the RejectFunc to expedite the evaluation
+// of a directory based on previous visits.
+func rejectIfPresent(excludeFileSpec string, rc *rejectionCache) (RejectFunc, error) {
 	if excludeFileSpec == "" {
 		return nil, errors.New("name for exclusion tagfile is empty")
 	}
@@ -60,15 +107,17 @@ func rejectIfPresent(excludeFileSpec string) (RejectFunc, error) {
 	}
 	debug.Log("using %q as exclusion tagfile", tf)
 	fn := func(filename string, _ os.FileInfo) bool {
-		return isExcludedByFile(filename, tf, tc)
+		return isExcludedByFile(filename, tf, tc, rc)
 	}
 	return fn, nil
 }
 
 // isExcludedByFile interprets filename as a path and returns true if that file
 // is in a excluded directory. A directory is identified as excluded if it contains a
-// tagfile which bears the name specified in tagFilename and starts with header.
-func isExcludedByFile(filename, tagFilename, header string) bool {
+// tagfile which bears the name specified in tagFilename and starts with
+// header. If rc is non-nil, it is used to expedite the evaluation of a
+// directory based on previous visits.
+func isExcludedByFile(filename, tagFilename, header string, rc *rejectionCache) bool {
 	if tagFilename == "" {
 		return false
 	}
@@ -76,6 +125,19 @@ func isExcludedByFile(filename, tagFilename, header string) bool {
 	if base == tagFilename {
 		return false // do not exclude the tagfile itself
 	}
+	rc.Lock()
+	defer rc.Unlock()
+
+	rejected, visited := rc.Get(dir)
+	if visited {
+		return rejected
+	}
+	rejected = isDirExcludedByFile(dir, tagFilename, header)
+	rc.Store(dir, rejected)
+	return rejected
+}
+
+func isDirExcludedByFile(dir, tagFilename, header string) bool {
 	tf := filepath.Join(dir, tagFilename)
 	_, err := fs.Lstat(tf)
 	if os.IsNotExist(err) {

@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/rest"
 	"github.com/restic/restic/internal/backend/test"
 	"github.com/restic/restic/internal/restic"
-	. "github.com/restic/restic/internal/test"
+	rtest "github.com/restic/restic/internal/test"
 )
 
 func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
@@ -61,10 +62,15 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 }
 
 func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
+	tr, err := backend.Transport(nil)
+	if err != nil {
+		t.Fatalf("cannot create transport for tests: %v", err)
+	}
+
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			dir, err := ioutil.TempDir(TestTempDir, "restic-test-rest-")
+			dir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-rest-")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -84,13 +90,13 @@ func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(rest.Config)
-			return rest.Create(cfg)
+			return rest.Create(cfg, tr)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(rest.Config)
-			return rest.Open(cfg)
+			return rest.Open(cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
@@ -103,14 +109,14 @@ func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 func TestBackendREST(t *testing.T) {
 	defer func() {
 		if t.Skipped() {
-			SkipDisallowed(t, "restic/backend/rest.TestBackendREST")
+			rtest.SkipDisallowed(t, "restic/backend/rest.TestBackendREST")
 		}
 	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	dir, cleanup := TempDir(t)
+	dir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	cleanup = runRESTServer(ctx, t, dir)
@@ -123,7 +129,7 @@ func BenchmarkBackendREST(t *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	dir, cleanup := TempDir(t)
+	dir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
 	cleanup = runRESTServer(ctx, t, dir)

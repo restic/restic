@@ -703,6 +703,9 @@ func (s *Credential) MarshalJSON() ([]byte, error) {
 }
 
 type Deployment struct {
+	// Credential: User provided default credential for the deployment.
+	Credential *Credential `json:"credential,omitempty"`
+
 	// Description: An optional user-provided description of the deployment.
 	Description string `json:"description,omitempty"`
 
@@ -771,7 +774,7 @@ type Deployment struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "Description") to
+	// ForceSendFields is a list of field names (e.g. "Credential") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -779,10 +782,10 @@ type Deployment struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Description") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
+	// NullFields is a list of field names (e.g. "Credential") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
 	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
@@ -851,6 +854,10 @@ func (s *DeploymentOutputsEntry) MarshalJSON() ([]byte, error) {
 }
 
 type DeploymentUpdate struct {
+	// Credential: Output only. The user-provided default credential to use
+	// when deploying this preview.
+	Credential *Credential `json:"credential,omitempty"`
+
 	// Description: Output only. An optional user-provided description of
 	// the deployment after the current update has been applied.
 	Description string `json:"description,omitempty"`
@@ -867,7 +874,7 @@ type DeploymentUpdate struct {
 	// configuration of this deployment.
 	Manifest string `json:"manifest,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "Description") to
+	// ForceSendFields is a list of field names (e.g. "Credential") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -875,10 +882,10 @@ type DeploymentUpdate struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Description") to include
-	// in API requests with the JSON null value. By default, fields with
-	// empty values are omitted from API requests. However, any field with
-	// an empty value appearing in NullFields will be sent to the server as
+	// NullFields is a list of field names (e.g. "Credential") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
 	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`
@@ -1836,6 +1843,10 @@ type Resource struct {
 	// acquired, in RFC3339 text format .
 	InsertTime string `json:"insertTime,omitempty"`
 
+	// LastUsedCredential: Output only. The last used credential that
+	// successfully created/updated the resource.
+	LastUsedCredential *Credential `json:"lastUsedCredential,omitempty"`
+
 	// Manifest: Output only. URL of the manifest representing the current
 	// configuration of this resource.
 	Manifest string `json:"manifest,omitempty"`
@@ -2003,6 +2014,10 @@ type ResourceUpdate struct {
 	// AccessControl: The Access Control Policy to set on this resource
 	// after updating the resource itself.
 	AccessControl *ResourceAccessControl `json:"accessControl,omitempty"`
+
+	// Credential: Output only. The credential that will be used
+	// creating/updating this resource.
+	Credential *Credential `json:"credential,omitempty"`
 
 	// Error: Output only. If errors are generated during update of the
 	// resource, this field will be populated.
@@ -2236,7 +2251,8 @@ type Rule struct {
 	// Action: Required
 	Action string `json:"action,omitempty"`
 
-	// Conditions: Additional restrictions that must be met
+	// Conditions: Additional restrictions that must be met. All conditions
+	// must pass for the rule to match.
 	Conditions []*Condition `json:"conditions,omitempty"`
 
 	// Description: Human-readable description of the rule.

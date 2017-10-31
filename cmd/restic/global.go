@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/b2"
 	"github.com/restic/restic/internal/backend/gs"
@@ -21,6 +22,7 @@ import (
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/limiter"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
@@ -41,6 +43,10 @@ type GlobalOptions struct {
 	JSON         bool
 	CacheDir     string
 	NoCache      bool
+	CACerts      []string
+
+	LimitUploadKb   int
+	LimitDownloadKb int
 
 	ctx      context.Context
 	password string
@@ -73,6 +79,9 @@ func init() {
 	f.BoolVarP(&globalOptions.JSON, "json", "", false, "set output mode to JSON for commands that support it")
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
+	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "path to load root certificates from (default: use system certificates)")
+	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
+	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
 
 	restoreTerminal()
@@ -314,6 +323,11 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, err
 	}
 
+	if opts.LimitUploadKb > 0 || opts.LimitDownloadKb > 0 {
+		debug.Log("rate limiting backend to %d KiB/s upload and %d KiB/s download", opts.LimitUploadKb, opts.LimitDownloadKb)
+		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(opts.LimitUploadKb, opts.LimitDownloadKb))
+	}
+
 	s := repository.New(be)
 
 	opts.password, err = ReadPassword(opts, "enter password for repository: ")
@@ -324,6 +338,10 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	err = s.SearchKey(context.TODO(), opts.password, maxKeys)
 	if err != nil {
 		return nil, err
+	}
+
+	if stdoutIsTerminal() {
+		Verbosef("password is correct\n")
 	}
 
 	if opts.NoCache {
@@ -481,23 +499,28 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		return nil, err
 	}
 
+	rt, err := backend.Transport(globalOptions.CACerts)
+	if err != nil {
+		return nil, err
+	}
+
 	switch loc.Scheme {
 	case "local":
 		be, err = local.Open(cfg.(local.Config))
 	case "sftp":
 		be, err = sftp.Open(cfg.(sftp.Config), SuspendSignalHandler, InstallSignalHandler)
 	case "s3":
-		be, err = s3.Open(cfg.(s3.Config))
+		be, err = s3.Open(cfg.(s3.Config), rt)
 	case "gs":
 		be, err = gs.Open(cfg.(gs.Config))
 	case "azure":
-		be, err = azure.Open(cfg.(azure.Config))
+		be, err = azure.Open(cfg.(azure.Config), rt)
 	case "swift":
-		be, err = swift.Open(cfg.(swift.Config))
+		be, err = swift.Open(cfg.(swift.Config), rt)
 	case "b2":
-		be, err = b2.Open(cfg.(b2.Config))
+		be, err = b2.Open(cfg.(b2.Config), rt)
 	case "rest":
-		be, err = rest.Open(cfg.(rest.Config))
+		be, err = rest.Open(cfg.(rest.Config), rt)
 
 	default:
 		return nil, errors.Fatalf("invalid backend: %q", loc.Scheme)
@@ -533,23 +556,28 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return nil, err
 	}
 
+	rt, err := backend.Transport(globalOptions.CACerts)
+	if err != nil {
+		return nil, err
+	}
+
 	switch loc.Scheme {
 	case "local":
 		return local.Create(cfg.(local.Config))
 	case "sftp":
 		return sftp.Create(cfg.(sftp.Config), SuspendSignalHandler, InstallSignalHandler)
 	case "s3":
-		return s3.Create(cfg.(s3.Config))
+		return s3.Create(cfg.(s3.Config), rt)
 	case "gs":
 		return gs.Create(cfg.(gs.Config))
 	case "azure":
-		return azure.Create(cfg.(azure.Config))
+		return azure.Create(cfg.(azure.Config), rt)
 	case "swift":
-		return swift.Open(cfg.(swift.Config))
+		return swift.Open(cfg.(swift.Config), rt)
 	case "b2":
-		return b2.Create(cfg.(b2.Config))
+		return b2.Create(cfg.(b2.Config), rt)
 	case "rest":
-		return rest.Create(cfg.(rest.Config))
+		return rest.Create(cfg.(rest.Config), rt)
 	}
 
 	debug.Log("invalid repository scheme: %v", s)

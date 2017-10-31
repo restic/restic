@@ -16,6 +16,7 @@ package b2
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha1"
 	"fmt"
 	"io"
@@ -26,8 +27,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 )
 
 const (
@@ -350,6 +349,82 @@ func (zReader) Read(p []byte) (int, error) {
 		copy(p[i:], pattern)
 	}
 	return len(p), nil
+}
+
+type zReadSeeker struct {
+	size int64
+	pos  int64
+}
+
+func (rs *zReadSeeker) Read(p []byte) (int, error) {
+	for i := rs.pos; ; i++ {
+		j := int(i - rs.pos)
+		if j >= len(p) || i >= rs.size {
+			var rtn error
+			if i >= rs.size {
+				rtn = io.EOF
+			}
+			rs.pos = i
+			return j, rtn
+		}
+		f := int(i) % len(pattern)
+		p[j] = pattern[f]
+	}
+}
+
+func (rs *zReadSeeker) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+		rs.pos = offset
+	case io.SeekEnd:
+		rs.pos = rs.size + offset
+	}
+	return rs.pos, nil
+}
+
+func TestReaderFrom(t *testing.T) {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	table := []struct {
+		size, pos int64
+	}{
+		{
+			size: 10,
+		},
+	}
+
+	for _, e := range table {
+		client := &Client{
+			backend: &beRoot{
+				b2i: &testRoot{
+					bucketMap: make(map[string]map[string]string),
+					errs:      &errCont{},
+				},
+			},
+		}
+
+		bucket, err := client.NewBucket(ctx, bucketName, &BucketAttrs{Type: Private})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			if err := bucket.Delete(ctx); err != nil {
+				t.Error(err)
+			}
+		}()
+
+		r := &zReadSeeker{pos: e.pos, size: e.size}
+		w := bucket.Object("writer").NewWriter(ctx)
+		n, err := w.ReadFrom(r)
+		if err != nil {
+			t.Errorf("ReadFrom(): %v", err)
+		}
+		if n != e.size {
+			t.Errorf("ReadFrom(): got %d bytes, wanted %d bytes", n, e.size)
+		}
+	}
 }
 
 func TestReauth(t *testing.T) {
@@ -696,6 +771,52 @@ func TestFileBuffer(t *testing.T) {
 	}
 }
 
+func TestNonBuffer(t *testing.T) {
+	table := []struct {
+		str  string
+		off  int64
+		len  int64
+		want string
+	}{
+		{
+			str:  "a string",
+			off:  0,
+			len:  3,
+			want: "a s",
+		},
+		{
+			str:  "a string",
+			off:  3,
+			len:  1,
+			want: "t",
+		},
+		{
+			str:  "a string",
+			off:  3,
+			len:  5,
+			want: "tring",
+		},
+	}
+
+	for _, e := range table {
+		nb := newNonBuffer(strings.NewReader(e.str), e.off, e.len)
+		want := fmt.Sprintf("%s%x", e.want, sha1.Sum([]byte(e.str[int(e.off):int(e.off+e.len)])))
+		r, err := nb.Reader()
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		got, err := ioutil.ReadAll(r)
+		if err != nil {
+			t.Errorf("ioutil.ReadAll(%#v): %v", e, err)
+			continue
+		}
+		if want != string(got) {
+			t.Errorf("ioutil.ReadAll(%#v): got %q, want %q", e, string(got), want)
+		}
+	}
+}
+
 func writeFile(ctx context.Context, bucket *Bucket, name string, size int64, csize int) (*Object, string, error) {
 	r := io.LimitReader(zReader{}, size)
 	o := bucket.Object(name)
@@ -704,8 +825,12 @@ func writeFile(ctx context.Context, bucket *Bucket, name string, size int64, csi
 	w := io.MultiWriter(f, h)
 	f.ConcurrentUploads = 5
 	f.ChunkSize = csize
-	if _, err := io.Copy(w, r); err != nil {
+	n, err := io.Copy(w, r)
+	if err != nil {
 		return nil, "", err
+	}
+	if n != size {
+		return nil, "", fmt.Errorf("io.Copy(): wrote %d bytes; wanted %d bytes", n, size)
 	}
 	if err := f.Close(); err != nil {
 		return nil, "", err
