@@ -259,6 +259,23 @@ func (k *Key) Overhead() int {
 	return macSize
 }
 
+// sliceForAppend takes a slice and a requested number of bytes. It returns a
+// slice with the contents of the given slice followed by that many bytes and a
+// second slice that aliases into it and contains only the extra bytes. If the
+// original slice has sufficient capacity then no allocation is performed.
+//
+// taken from the stdlib, crypto/aes/aes_gcm.go
+func sliceForAppend(in []byte, n int) (head, tail []byte) {
+	if total := len(in) + n; cap(in) >= total {
+		head = in[:total]
+	} else {
+		head = make([]byte, total)
+		copy(head, in)
+	}
+	tail = head[len(in):]
+	return
+}
+
 // Seal encrypts and authenticates plaintext, authenticates the
 // additional data and appends the result to dst, returning the updated
 // slice. The nonce must be NonceSize() bytes long and unique for all
@@ -283,32 +300,19 @@ func (k *Key) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 		panic("nonce is invalid")
 	}
 
-	// extend dst so that the ciphertext fits
-	ciphertextLength := len(plaintext) + k.Overhead()
-	pos := len(dst)
-
-	capacity := cap(dst) - len(dst)
-	if capacity < ciphertextLength {
-		dst = dst[:cap(dst)]
-		dst = append(dst, make([]byte, ciphertextLength-capacity)...)
-	} else {
-		dst = dst[:pos+ciphertextLength]
-	}
+	ret, out := sliceForAppend(dst, len(plaintext)+k.Overhead())
 
 	c, err := aes.NewCipher(k.EncryptionKey[:])
 	if err != nil {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
 	e := cipher.NewCTR(c, nonce)
-	e.XORKeyStream(dst[pos:pos+len(plaintext)], plaintext)
+	e.XORKeyStream(out, plaintext)
 
-	// truncate to only cover the ciphertext
-	dst = dst[:pos+len(plaintext)]
+	mac := poly1305MAC(out[:len(plaintext)], nonce, &k.MACKey)
+	copy(out[len(plaintext):], mac)
 
-	mac := poly1305MAC(dst[pos:], nonce, &k.MACKey)
-	dst = append(dst, mac...)
-
-	return dst
+	return ret
 }
 
 // Open decrypts and authenticates ciphertext, authenticates the
@@ -341,7 +345,6 @@ func (k *Key) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error
 		return nil, errors.Errorf("trying to decrypt invalid data: ciphertext too small")
 	}
 
-	// extract mac
 	l := len(ciphertext) - macSize
 	ct, mac := ciphertext[:l], ciphertext[l:]
 
@@ -350,27 +353,16 @@ func (k *Key) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error
 		return nil, ErrUnauthenticated
 	}
 
-	// extend dst so that the plaintext fits
-	plaintextLength := len(ct)
-	pos := len(dst)
+	ret, out := sliceForAppend(dst, len(ct))
 
-	capacity := cap(dst) - len(dst)
-	if capacity < plaintextLength {
-		dst = dst[:cap(dst)]
-		dst = append(dst, make([]byte, plaintextLength-capacity)...)
-	} else {
-		dst = dst[:pos+plaintextLength]
-	}
-
-	// decrypt data
 	c, err := aes.NewCipher(k.EncryptionKey[:])
 	if err != nil {
 		panic(fmt.Sprintf("unable to create cipher: %v", err))
 	}
 	e := cipher.NewCTR(c, nonce)
-	e.XORKeyStream(dst[pos:], ct)
+	e.XORKeyStream(out, ct)
 
-	return dst, nil
+	return ret, nil
 }
 
 // Valid tests if the key is valid.
