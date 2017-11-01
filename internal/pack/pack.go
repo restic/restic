@@ -75,10 +75,10 @@ func (p *Packer) Finalize() (uint, error) {
 		return 0, err
 	}
 
-	encryptedHeader, err := p.k.Encrypt(nil, hdrBuf.Bytes())
-	if err != nil {
-		return 0, err
-	}
+	encryptedHeader := make([]byte, 0, hdrBuf.Len()+p.k.Overhead()+p.k.NonceSize())
+	nonce := crypto.NewRandomNonce()
+	encryptedHeader = append(encryptedHeader, nonce...)
+	encryptedHeader = p.k.Seal(encryptedHeader, nonce, hdrBuf.Bytes(), nil)
 
 	// append the header
 	n, err := p.wr.Write(encryptedHeader)
@@ -268,15 +268,19 @@ func List(k *crypto.Key, rd io.ReaderAt, size int64) (entries []restic.Blob, err
 		return nil, err
 	}
 
-	n, err := k.Decrypt(buf, buf)
+	if len(buf) < k.NonceSize()+k.Overhead() {
+		return nil, errors.New("invalid header, too small")
+	}
+
+	nonce, buf := buf[:k.NonceSize()], buf[k.NonceSize():]
+	buf, err = k.Open(buf[:0], nonce, buf, nil)
 	if err != nil {
 		return nil, err
 	}
-	buf = buf[:n]
 
 	hdrRd := bytes.NewReader(buf)
 
-	entries = make([]restic.Blob, 0, uint(n)/entrySize)
+	entries = make([]restic.Blob, 0, uint(len(buf))/entrySize)
 
 	pos := uint(0)
 	for {
