@@ -263,6 +263,9 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 
 	objName := be.Filename(h)
 
+	be.sem.GetToken()
+	defer be.sem.ReleaseToken()
+
 	// Check key does not already exist
 	_, err = be.client.StatObject(be.cfg.Bucket, objName)
 	if err == nil {
@@ -282,10 +285,8 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 		debug.Log("reader is %#T, no specific workaround enabled", rd)
 	}
 
-	be.sem.GetToken()
 	debug.Log("PutObject(%v, %v)", be.cfg.Bucket, objName)
 	n, err := be.client.PutObject(be.cfg.Bucket, objName, rd, "application/octet-stream")
-	be.sem.ReleaseToken()
 
 	debug.Log("%v -> %v bytes, err %#v: %v", objName, n, err, err)
 
@@ -358,15 +359,18 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	objName := be.Filename(h)
 	var obj *minio.Object
 
+	be.sem.GetToken()
 	obj, err = be.client.GetObject(be.cfg.Bucket, objName)
 	if err != nil {
 		debug.Log("GetObject() err %v", err)
+		be.sem.ReleaseToken()
 		return restic.FileInfo{}, errors.Wrap(err, "client.GetObject")
 	}
 
 	// make sure that the object is closed properly.
 	defer func() {
 		e := obj.Close()
+		be.sem.ReleaseToken()
 		if err == nil {
 			err = errors.Wrap(e, "Close")
 		}
@@ -385,7 +389,11 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	found := false
 	objName := be.Filename(h)
+
+	be.sem.GetToken()
 	_, err := be.client.StatObject(be.cfg.Bucket, objName)
+	be.sem.ReleaseToken()
+
 	if err == nil {
 		found = true
 	}
@@ -397,7 +405,11 @@ func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
+
+	be.sem.GetToken()
 	err := be.client.RemoveObject(be.cfg.Bucket, objName)
+	be.sem.ReleaseToken()
+
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 
 	if be.IsNotExist(err) {
