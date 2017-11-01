@@ -125,7 +125,7 @@ func decryptAndCompare(t testing.TB, k *crypto.Key, data, ciphertext, nonce, dst
 	}
 }
 
-func TestAppendSeal(t *testing.T) {
+func TestAppendOpen(t *testing.T) {
 	k := crypto.NewRandomKey()
 	nonce := crypto.NewRandomNonce()
 
@@ -174,7 +174,7 @@ func TestAppendSeal(t *testing.T) {
 	})
 }
 
-func TestAppendOpen(t *testing.T) {
+func TestAppendSeal(t *testing.T) {
 	k := crypto.NewRandomKey()
 
 	data := make([]byte, 600)
