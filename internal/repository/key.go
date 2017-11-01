@@ -88,8 +88,7 @@ func OpenKey(ctx context.Context, s *Repository, name string, password string) (
 
 	// decrypt master keys
 	nonce, ciphertext := k.Data[:k.user.NonceSize()], k.Data[k.user.NonceSize():]
-	buf := make([]byte, 0, len(ciphertext))
-	buf, err = k.user.Open(buf, nonce, ciphertext, nil)
+	buf, err := k.user.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err
 	}
