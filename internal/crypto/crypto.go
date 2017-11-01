@@ -237,9 +237,9 @@ var ErrInvalidCiphertext = errors.New("invalid ciphertext, same slice used for p
 
 // validNonce checks that nonce is not all zero.
 func validNonce(nonce []byte) bool {
-	sum := 0
-	for b := range nonce {
-		sum += b
+	var sum byte
+	for _, b := range nonce {
+		sum |= b
 	}
 	return sum > 0
 }

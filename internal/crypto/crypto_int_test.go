@@ -163,3 +163,30 @@ func TestCrypto(t *testing.T) {
 		}
 	}
 }
+
+func TestNonceVadlid(t *testing.T) {
+	nonce := make([]byte, ivSize)
+
+	if validNonce(nonce) {
+		t.Error("null nonce detected as valid")
+	}
+
+	for i := 0; i < 100; i++ {
+		nonce = NewRandomNonce()
+		if !validNonce(nonce) {
+			t.Errorf("random nonce not detected as valid: %02x", nonce)
+		}
+	}
+}
+
+func BenchmarkNonceValid(b *testing.B) {
+	nonce := NewRandomNonce()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if !validNonce(nonce) {
+			b.Fatal("nonce is invalid")
+		}
+	}
+}
