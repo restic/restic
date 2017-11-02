@@ -1,4 +1,4 @@
-|Documentation| |Build Status| |Build status| |Report Card| |Say Thanks|
+|Documentation| |Build Status| |Build status| |Report Card| |Say Thanks| |TestCoverage|
 
 Introduction
 ------------
@@ -107,7 +107,7 @@ the `development blog <https://restic.github.io/blog/>`__.
 License
 -------
 
-Restic is licensed under "BSD 2-Clause License". You can find the
+Restic is licensed under `BSD 2-Clause License <https://opensource.org/licenses/BSD-2-Clause>`__. You can find the
 complete text in ``LICENSE``.
 
 .. |Documentation| image:: https://readthedocs.org/projects/restic/badge/?version=latest
@@ -120,3 +120,5 @@ complete text in ``LICENSE``.
    :target: https://goreportcard.com/report/github.com/restic/restic
 .. |Say Thanks| image:: https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg
    :target: https://saythanks.io/to/restic
+.. |TestCoverage| image:: https://codecov.io/gh/restic/restic/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/restic/restic
