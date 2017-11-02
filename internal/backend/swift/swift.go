@@ -129,11 +129,6 @@ func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset
 
 	objName := be.Filename(h)
 
-	be.sem.GetToken()
-	defer func() {
-		be.sem.ReleaseToken()
-	}()
-
 	headers := swift.Headers{}
 	if offset > 0 {
 		headers["Range"] = fmt.Sprintf("bytes=%d-", offset)
@@ -147,13 +142,15 @@ func (be *beSwift) Load(ctx context.Context, h restic.Handle, length int, offset
 		debug.Log("Load(%v) send range %v", h, headers["Range"])
 	}
 
+	be.sem.GetToken()
 	obj, _, err := be.conn.ObjectOpen(be.container, objName, false, headers)
 	if err != nil {
 		debug.Log("  err %v", err)
+		be.sem.ReleaseToken()
 		return nil, errors.Wrap(err, "conn.ObjectOpen")
 	}
 
-	return obj, nil
+	return be.sem.ReleaseTokenOnClose(obj, nil), nil
 }
 
 // Save stores data in the backend at the handle.
@@ -243,6 +240,9 @@ func (be *beSwift) List(ctx context.Context, t restic.FileType) <-chan string {
 	go func() {
 		defer close(ch)
 
+		// NB: unfortunately we can't protect this with be.sem.GetToken() here.
+		// Doing so would enable a deadlock situation (PR: gh-1399), as ObjectsWalk()
+		// starts its own goroutine and returns results via a channel.
 		err := be.conn.ObjectsWalk(be.container, &swift.ObjectsOpts{Prefix: prefix},
 			func(opts *swift.ObjectsOpts) (interface{}, error) {
 				newObjects, err := be.conn.ObjectNames(be.container, opts)
