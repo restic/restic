@@ -36,6 +36,7 @@ type FindOptions struct {
 	Host            string
 	Paths           []string
 	Tags            restic.TagLists
+	Subtree         string
 }
 
 var findOptions FindOptions
@@ -53,6 +54,7 @@ func init() {
 	f.StringVarP(&findOptions.Host, "host", "H", "", "only consider snapshots for this `host`, when no snapshot ID is given")
 	f.Var(&findOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
 	f.StringArrayVar(&findOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
+	f.StringVar(&findOptions.Subtree, "subtree", string(filepath.Separator), "limit find to subtree")
 }
 
 type findPattern struct {
@@ -178,6 +180,26 @@ type Finder struct {
 	pat      findPattern
 	out      statefulOutput
 	notfound restic.IDSet
+	subtree  string
+}
+
+func (f *Finder) findSubtree(treeID *restic.ID, prefix string) (*restic.ID, error) {
+	if prefix == f.subtree {
+		return treeID, nil
+	}
+	tree, err := f.repo.LoadTree(context.TODO(), *treeID)
+	if err != nil {
+		return nil, err
+	}
+	for _, node := range tree.Nodes {
+		if node.Type == "dir" {
+			var next_prefix string = filepath.Join(prefix, node.Name)
+			if strings.HasPrefix(f.subtree, next_prefix) {
+				return f.findSubtree(node.Subtree, next_prefix)
+			}
+		}
+	}
+	return nil, errors.Fatal("Did not find subtree")
 }
 
 func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
@@ -241,7 +263,11 @@ func (f *Finder) findInSnapshot(sn *restic.Snapshot) error {
 	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
 
 	f.out.newsn = sn
-	if err := f.findInTree(*sn.Tree, string(filepath.Separator)); err != nil {
+	subtree, err := f.findSubtree(sn.Tree, string(filepath.Separator))
+	if err != nil {
+		return err
+	}
+	if err := f.findInTree(*subtree, f.subtree); err != nil {
 		return err
 	}
 	return nil
@@ -296,6 +322,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		pat:      pat,
 		out:      statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
 		notfound: restic.NewIDSet(),
+		subtree:  opts.Subtree,
 	}
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
 		if err = f.findInSnapshot(sn); err != nil {
