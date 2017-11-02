@@ -158,6 +158,7 @@ func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern strin
 	}()
 
 	opts := FindOptions{}
+	opts.Subtree = string(filepath.Separator)
 
 	rtest.OK(t, runFind(opts, gopts, []string{pattern}))
 
