@@ -193,9 +193,9 @@ func (f *Finder) findSubtree(treeID *restic.ID, prefix string) (*restic.ID, erro
 	}
 	for _, node := range tree.Nodes {
 		if node.Type == "dir" {
-			var next_prefix string = filepath.Join(prefix, node.Name)
-			if strings.HasPrefix(f.subtree, next_prefix) {
-				return f.findSubtree(node.Subtree, next_prefix)
+			nextPrefix := filepath.Join(prefix, node.Name)
+			if strings.HasPrefix(f.subtree, nextPrefix) {
+				return f.findSubtree(node.Subtree, nextPrefix)
 			}
 		}
 	}
