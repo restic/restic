@@ -433,6 +433,9 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 		prefix += "/"
 	}
 
+	// NB: unfortunately we can't protect this with be.sem.GetToken() here.
+	// Doing so would enable a deadlock situation (gh-1399), as ListObjects()
+	// starts its own goroutine and returns results via a channel.
 	listresp := be.client.ListObjects(be.cfg.Bucket, prefix, true, ctx.Done())
 
 	go func() {
