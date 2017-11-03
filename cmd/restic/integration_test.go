@@ -165,6 +165,21 @@ func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern strin
 	return buf.Bytes()
 }
 
+func testRunFindSubtree(t testing.TB, gopts GlobalOptions, subtree string) ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+	globalOptions.stdout = buf
+	globalOptions.JSON = false
+	defer func() {
+		globalOptions.stdout = os.Stdout
+		globalOptions.JSON = false
+	}()
+
+	opts := FindOptions{}
+	opts.Subtree = subtree
+	err := runFind(opts, gopts, []string{"*"})
+	return buf.Bytes(), err
+}
+
 func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
 	buf := bytes.NewBuffer(nil)
 	globalOptions.stdout = buf
@@ -1068,6 +1083,14 @@ func TestFind(t *testing.T) {
 	results = testRunFind(t, false, env.gopts, "testfile*")
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 4, "expected three files found in repo (%v)", datafile)
+
+	_, err := testRunFindSubtree(t, env.gopts, "/non/existantant/path")
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: Did not find subtree", string(results)+"expected to get an error message that the subtree was not found")
+
+	results, err = testRunFindSubtree(t, env.gopts, "/testdata/0/0/7")
+	lines = strings.Split(string(results), "\n")
+	rtest.Assert(t, err == nil, "expected no errors")
+	rtest.Assert(t, len(lines) == 129, "expected 128 files found in repo (%v)" + datafile)
 }
 
 type testMatch struct {
