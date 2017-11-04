@@ -1077,11 +1077,11 @@ func TestFind(t *testing.T) {
 	results := testRunFind(t, false, false, env.gopts, "unexistingfile")
 	rtest.Assert(t, len(results) == 0, "unexisting file found in repo (%v)", datafile)
 
-	results = testRunFind(t, false, false,  env.gopts, "testfile")
+	results = testRunFind(t, false, false, env.gopts, "testfile")
 	lines := strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 2, "expected one file found in repo (%v)", datafile)
 
-	results = testRunFind(t, false, true,  env.gopts, "TeSTFiLe")
+	results = testRunFind(t, false, true, env.gopts, "TeSTFiLe")
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 2, "expected one file found in repo (%v)", datafile)
 
@@ -1095,7 +1095,7 @@ func TestFind(t *testing.T) {
 	results, err = testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), "testdata", "0", "0", "7"))
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, err == nil, "expected no errors")
-	rtest.Assert(t, len(lines) == 129, "expected 128 files found in repo (%v)" + datafile)
+	rtest.Assert(t, len(lines) == 129, "expected 128 files found in repo (%v)", datafile)
 
 	err = runFind(FindOptions{}, GlobalOptions{}, []string{"*", "too many"})
 	rtest.Assert(t, err != nil, "expected error")
