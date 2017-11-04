@@ -1085,12 +1085,16 @@ func TestFind(t *testing.T) {
 	rtest.Assert(t, len(lines) == 4, "expected three files found in repo (%v)", datafile)
 
 	_, err := testRunFindSubtree(t, env.gopts, "/non/existantant/path")
-	rtest.Assert(t, err != nil && err.Error() == "Fatal: Did not find subtree", string(results)+"expected to get an error message that the subtree was not found")
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: Did not find subtree", "expected to get an error message that the subtree was not found")
 
 	results, err = testRunFindSubtree(t, env.gopts, "/testdata/0/0/7")
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, err == nil, "expected no errors")
 	rtest.Assert(t, len(lines) == 129, "expected 128 files found in repo (%v)" + datafile)
+
+	err = runFind(FindOptions{}, GlobalOptions{}, []string{"*", "too many"})
+	rtest.Assert(t, err != nil, "expected error")
+	rtest.Assert(t, err.Error() == "Fatal: wrong number of arguments", "expected error when providing wrong number of arguments")
 }
 
 type testMatch struct {
