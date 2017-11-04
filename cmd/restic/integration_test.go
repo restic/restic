@@ -1089,10 +1089,10 @@ func TestFind(t *testing.T) {
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 4, "expected three files found in repo (%v)", datafile)
 
-	_, err := testRunFindSubtree(t, env.gopts, "/non/existantant/path")
+	_, err := testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), env.testdata, "non", "existant", "directory"))
 	rtest.Assert(t, err != nil && err.Error() == "Fatal: Did not find subtree", "expected to get an error message that the subtree was not found")
 
-	results, err = testRunFindSubtree(t, env.gopts, "/testdata/0/0/7")
+	results, err = testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), "testdata", "0", "0", "7"))
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, err == nil, "expected no errors")
 	rtest.Assert(t, len(lines) == 129, "expected 128 files found in repo (%v)" + datafile)
