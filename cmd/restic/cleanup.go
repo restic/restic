@@ -12,27 +12,29 @@ import (
 
 var cleanupHandlers struct {
 	sync.Mutex
-	list     []func() error
-	done     bool
-	sigintCh chan os.Signal
+	list []func() error
+	done bool
+	ch   chan os.Signal
 }
 
 var stderr = os.Stderr
 
 func init() {
-	cleanupHandlers.sigintCh = make(chan os.Signal)
-	go CleanupHandler(cleanupHandlers.sigintCh)
+	cleanupHandlers.ch = make(chan os.Signal)
+	go CleanupHandler(cleanupHandlers.ch)
 	InstallSignalHandler()
 }
 
-// InstallSignalHandler listens for SIGINT and triggers the cleanup handlers.
+// InstallSignalHandler listens for SIGINT and SIGPIPE, and triggers the cleanup handlers.
 func InstallSignalHandler() {
-	signal.Notify(cleanupHandlers.sigintCh, syscall.SIGINT)
+	signal.Notify(cleanupHandlers.ch, syscall.SIGINT)
+	signal.Notify(cleanupHandlers.ch, syscall.SIGPIPE)
 }
 
-// SuspendSignalHandler removes the signal handler for SIGINT.
+// SuspendSignalHandler removes the signal handler for SIGINT and SIGPIPE.
 func SuspendSignalHandler() {
 	signal.Reset(syscall.SIGINT)
+	signal.Reset(syscall.SIGPIPE)
 }
 
 // AddCleanupHandler adds the function f to the list of cleanup handlers so
@@ -67,7 +69,7 @@ func RunCleanupHandlers() {
 	cleanupHandlers.list = nil
 }
 
-// CleanupHandler handles the SIGINT signal.
+// CleanupHandler handles the SIGINT and SIGPIPE signals.
 func CleanupHandler(c <-chan os.Signal) {
 	for s := range c {
 		debug.Log("signal %v received, cleaning up", s)
