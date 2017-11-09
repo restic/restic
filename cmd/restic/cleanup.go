@@ -73,8 +73,14 @@ func RunCleanupHandlers() {
 func CleanupHandler(c <-chan os.Signal) {
 	for s := range c {
 		debug.Log("signal %v received, cleaning up", s)
-		fmt.Printf("%sInterrupt received, cleaning up\n", ClearLine())
-		Exit(0)
+		fmt.Fprintf(stderr, "%ssignal %v received, cleaning up\n", ClearLine(), s)
+
+		code := 0
+		if s != syscall.SIGINT {
+			code = 1
+		}
+
+		Exit(code)
 	}
 }
 
