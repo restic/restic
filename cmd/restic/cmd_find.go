@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"math"
 	"path/filepath"
 	"strings"
 	"time"
@@ -37,6 +38,7 @@ type FindOptions struct {
 	Paths           []string
 	Tags            restic.TagLists
 	Subtree         string
+	MaxDepth        uint16
 }
 
 var findOptions FindOptions
@@ -55,6 +57,7 @@ func init() {
 	f.Var(&findOptions.Tags, "tag", "only consider snapshots which include this `taglist`, when no snapshot-ID is given")
 	f.StringArrayVar(&findOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot-ID is given")
 	f.StringVar(&findOptions.Subtree, "subtree", string(filepath.Separator), "limit find to subtree")
+	f.Uint16Var(&findOptions.MaxDepth, "maxdepth", math.MaxUint16, "descend at most levels of directories below the starting-point")
 }
 
 type findPattern struct {
@@ -182,6 +185,7 @@ type Finder struct {
 	notfound     restic.IDSet
 	subtree      string
 	subtreeparts []string
+	maxdepth     uint16
 }
 
 func (f *Finder) findSubtree(treeID *restic.ID, matched int) (*restic.ID, error) {
@@ -202,7 +206,7 @@ func (f *Finder) findSubtree(treeID *restic.ID, matched int) (*restic.ID, error)
 	return nil, errors.Fatal("Did not find subtree")
 }
 
-func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
+func (f *Finder) findInTree(treeID restic.ID, prefix string, depth uint16) error {
 	if f.notfound.Has(treeID) {
 		debug.Log("%v skipping tree %v, has already been checked", prefix, treeID.Str())
 		return nil
@@ -245,8 +249,8 @@ func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
 			f.out.Print(prefix, node)
 		}
 
-		if node.Type == "dir" {
-			if err := f.findInTree(*node.Subtree, filepath.Join(prefix, node.Name)); err != nil {
+		if node.Type == "dir" && depth > 0 {
+			if err := f.findInTree(*node.Subtree, filepath.Join(prefix, node.Name), f.maxdepth); err != nil {
 				return err
 			}
 		}
@@ -271,7 +275,7 @@ func (f *Finder) findInSnapshot(sn *restic.Snapshot) error {
 	if err != nil {
 		return err
 	}
-	if err := f.findInTree(*subtree, f.subtree); err != nil {
+	if err := f.findInTree(*subtree, f.subtree, f.maxdepth); err != nil {
 		return err
 	}
 	return nil
@@ -327,6 +331,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		out:      statefulOutput{ListLong: opts.ListLong, JSON: globalOptions.JSON},
 		notfound: restic.NewIDSet(),
 		subtree:  opts.Subtree,
+		maxdepth: opts.MaxDepth,
 	}
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
 		if err = f.findInSnapshot(sn); err != nil {

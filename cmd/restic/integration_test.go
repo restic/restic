@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	mrand "math/rand"
 	"os"
 	"path/filepath"
@@ -160,13 +161,14 @@ func testRunFind(t testing.TB, wantJSON bool, caseInsensitive bool, gopts Global
 	opts := FindOptions{}
 	opts.Subtree = string(filepath.Separator)
 	opts.CaseInsensitive = caseInsensitive
+	opts.MaxDepth = math.MaxUint16
 
 	rtest.OK(t, runFind(opts, gopts, []string{pattern}))
 
 	return buf.Bytes()
 }
 
-func testRunFindSubtree(t testing.TB, gopts GlobalOptions, subtree string) ([]byte, error) {
+func testRunFindSubtree(t testing.TB, gopts GlobalOptions, subtree string, maxdepth uint16) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	globalOptions.stdout = buf
 	globalOptions.JSON = false
@@ -177,6 +179,7 @@ func testRunFindSubtree(t testing.TB, gopts GlobalOptions, subtree string) ([]by
 
 	opts := FindOptions{}
 	opts.Subtree = subtree
+	opts.MaxDepth = maxdepth
 	err := runFind(opts, gopts, []string{"*"})
 	return buf.Bytes(), err
 }
@@ -1089,10 +1092,10 @@ func TestFind(t *testing.T) {
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 4, "expected three files found in repo (%v)", datafile)
 
-	_, err := testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), env.testdata, "non", "existant", "directory"))
+	_, err := testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), env.testdata, "non", "existant", "directory"), math.MaxUint16)
 	rtest.Assert(t, err != nil && err.Error() == "Fatal: Did not find subtree", "expected to get an error message that the subtree was not found")
 
-	results, err = testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), "testdata", "0", "0", "7"))
+	results, err = testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), "testdata", "0", "0", "7"), math.MaxUint16)
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, err == nil, "expected no errors")
 	rtest.Assert(t, len(lines) == 129, "expected 128 files found in repo (%v)", datafile)
@@ -1100,6 +1103,12 @@ func TestFind(t *testing.T) {
 	err = runFind(FindOptions{}, GlobalOptions{}, []string{"*", "too many"})
 	rtest.Assert(t, err != nil, "expected error")
 	rtest.Assert(t, err.Error() == "Fatal: wrong number of arguments", "expected error when providing wrong number of arguments")
+
+	subtree := filepath.Join(string(filepath.Separator), "testdata", "0")
+	results, err = testRunFindSubtree(t, env.gopts, subtree, 0)
+	lines = strings.Split(strings.TrimSpace(string(results)), "\n")
+	rtest.Assert(t, err == nil, "expected no errors")
+	rtest.Assert(t, len(lines) == 2, "expected 2 entries, '0' and 'tests' found %i in subtree %s in the repo (%v)", len(lines), subtree, datafile)
 }
 
 type testMatch struct {
