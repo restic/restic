@@ -176,15 +176,16 @@ func (s *statefulOutput) Finish() {
 
 // Finder bundles information needed to find a file or directory.
 type Finder struct {
-	repo     restic.Repository
-	pat      findPattern
-	out      statefulOutput
-	notfound restic.IDSet
-	subtree  string
+	repo         restic.Repository
+	pat          findPattern
+	out          statefulOutput
+	notfound     restic.IDSet
+	subtree      string
+	subtreeparts []string
 }
 
-func (f *Finder) findSubtree(treeID *restic.ID, prefix string) (*restic.ID, error) {
-	if prefix == f.subtree {
+func (f *Finder) findSubtree(treeID *restic.ID, matched int) (*restic.ID, error) {
+	if matched == len(f.subtreeparts) {
 		return treeID, nil
 	}
 	tree, err := f.repo.LoadTree(context.TODO(), *treeID)
@@ -193,9 +194,8 @@ func (f *Finder) findSubtree(treeID *restic.ID, prefix string) (*restic.ID, erro
 	}
 	for _, node := range tree.Nodes {
 		if node.Type == "dir" {
-			nextPrefix := filepath.Join(prefix, node.Name)
-			if strings.HasPrefix(f.subtree, nextPrefix) {
-				return f.findSubtree(node.Subtree, nextPrefix)
+			if node.Name == f.subtreeparts[matched] {
+				return f.findSubtree(node.Subtree, matched+1)
 			}
 		}
 	}
@@ -263,7 +263,11 @@ func (f *Finder) findInSnapshot(sn *restic.Snapshot) error {
 	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
 
 	f.out.newsn = sn
-	subtree, err := f.findSubtree(sn.Tree, string(filepath.Separator))
+	f.subtree = filepath.Clean(string(filepath.Separator) + f.subtree)
+	if f.subtree != string(filepath.Separator) {
+		f.subtreeparts = strings.Split(f.subtree, string(filepath.Separator))[1:]
+	}
+	subtree, err := f.findSubtree(sn.Tree, 0)
 	if err != nil {
 		return err
 	}
