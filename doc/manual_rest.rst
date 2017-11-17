@@ -86,7 +86,7 @@ Subcommand that support showing progress information such as ``backup``,
 reporting will be limited to once every 10 seconds to not fill your
 logs.
 
-Additionally on Unix systems if ``restic`` receives a SIGUSR signal the
+Additionally on Unix systems if ``restic`` receives a SIGUSR1 signal the
 current progress will written to the standard output so you can check up
 on the status at will.
 
