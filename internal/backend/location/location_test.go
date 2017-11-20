@@ -169,7 +169,7 @@ var parseTests = []struct {
 			Config: s3.Config{
 				Endpoint:    "eu-central-1",
 				Bucket:      "bucketname",
-				Prefix:      "restic",
+				Prefix:      "",
 				Connections: 5,
 			},
 		},
@@ -180,7 +180,7 @@ var parseTests = []struct {
 			Config: s3.Config{
 				Endpoint:    "hostname.foo",
 				Bucket:      "bucketname",
-				Prefix:      "restic",
+				Prefix:      "",
 				Connections: 5,
 			},
 		},
@@ -202,7 +202,7 @@ var parseTests = []struct {
 			Config: s3.Config{
 				Endpoint:    "eu-central-1",
 				Bucket:      "repo",
-				Prefix:      "restic",
+				Prefix:      "",
 				Connections: 5,
 			},
 		},
@@ -224,7 +224,7 @@ var parseTests = []struct {
 			Config: s3.Config{
 				Endpoint:    "hostname.foo",
 				Bucket:      "repo",
-				Prefix:      "restic",
+				Prefix:      "",
 				Connections: 5,
 			},
 		},
@@ -246,7 +246,7 @@ var parseTests = []struct {
 			Config: s3.Config{
 				Endpoint:    "hostname.foo",
 				Bucket:      "repo",
-				Prefix:      "restic",
+				Prefix:      "",
 				UseHTTP:     true,
 				Connections: 5,
 			},
