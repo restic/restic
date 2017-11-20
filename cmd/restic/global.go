@@ -353,13 +353,21 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return s, nil
 	}
 
-	cache, err := cache.New(s.Config().ID, opts.CacheDir)
+	c, err := cache.New(s.Config().ID, opts.CacheDir)
 	if err != nil {
 		Warnf("unable to open cache: %v\n", err)
-	} else {
-		s.UseCache(cache)
+		return s, nil
 	}
 
+	oldCacheDirs, err := cache.Old(c.Base)
+	if err != nil {
+		Warnf("unable to find old cache directories: %v", err)
+	} else {
+		Verbosef("found %d old cache directories in %v remove them with 'restic cache --cleanup'\n",
+			len(oldCacheDirs), c.Base)
+	}
+
+	s.UseCache(c)
 	return s, nil
 }
 
