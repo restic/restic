@@ -85,10 +85,12 @@ func writeCachedirTag(dir string) error {
 // performReadahead returns true.
 func New(id string, basedir string) (c *Cache, err error) {
 	if basedir == "" {
-		basedir, err = defaultCacheDir()
-		if err != nil {
-			return nil, err
-		}
+		basedir, err = DefaultDir()
+	}
+
+	err = mkdirCacheDir(basedir)
+	if err != nil {
+		return nil, err
 	}
 
 	// create base dir and tag it as a cache directory
@@ -108,13 +110,14 @@ func New(id string, basedir string) (c *Cache, err error) {
 		return nil, errors.New("cache version is newer")
 	}
 
-	err = updateTimestamp(cachedir)
-	if err != nil {
+	// create the repo cache dir if it does not exist yet
+	if err = fs.MkdirAll(cachedir, dirMode); err != nil {
 		return nil, err
 	}
 
-	// create the repo cache dir if it does not exist yet
-	if err = fs.MkdirAll(cachedir, dirMode); err != nil {
+	// update the timestamp so that we can detect old cache dirs
+	err = updateTimestamp(cachedir)
+	if err != nil {
 		return nil, err
 	}
 
