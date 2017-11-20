@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"syscall"
@@ -23,6 +24,7 @@ import (
 	"github.com/restic/restic/internal/backend/swift"
 	"github.com/restic/restic/internal/cache"
 	"github.com/restic/restic/internal/debug"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/limiter"
 	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
@@ -45,6 +47,7 @@ type GlobalOptions struct {
 	CacheDir     string
 	NoCache      bool
 	CACerts      []string
+	CleanupCache bool
 
 	LimitUploadKb   int
 	LimitDownloadKb int
@@ -81,6 +84,7 @@ func init() {
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "path to load root certificates from (default: use system certificates)")
+	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
 	f.StringSliceVarP(&globalOptions.Options, "option", "o", []string{}, "set extended option (`key=value`, can be specified multiple times)")
@@ -362,8 +366,26 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	oldCacheDirs, err := cache.Old(c.Base)
 	if err != nil {
 		Warnf("unable to find old cache directories: %v", err)
+	}
+
+	// nothing more to do if no old cache dirs could be found
+	if len(oldCacheDirs) == 0 {
+		return s, nil
+	}
+
+	// cleanup old cache dirs if instructed to do so
+	if opts.CleanupCache {
+		Printf("removing %d old cache dirs from %v\n", len(oldCacheDirs), c.Base)
+
+		for _, item := range oldCacheDirs {
+			dir := filepath.Join(c.Base, item)
+			err = fs.RemoveAll(dir)
+			if err != nil {
+				Warnf("unable to remove %v: %v\n", dir, err)
+			}
+		}
 	} else {
-		Verbosef("found %d old cache directories in %v remove them with 'restic cache --cleanup'\n",
+		Verbosef("found %d old cache directories in %v, pass --cleanup-cache to remove them\n",
 			len(oldCacheDirs), c.Base)
 	}
 
