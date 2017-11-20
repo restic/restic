@@ -56,10 +56,16 @@ func DefaultDir() (cachedir string, err error) {
 		cachedir, err = darwinCacheDir()
 	case "windows":
 		cachedir, err = windowsCacheDir()
+	default:
+		// Default to XDG for Linux and any other OSes.
+		cachedir, err = xdgCacheDir()
 	}
 
-	// Default to XDG for Linux and any other OSes.
-	return xdgCacheDir()
+	if err != nil {
+		return "", err
+	}
+
+	return cachedir, nil
 }
 
 func mkdirCacheDir(cachedir string) error {
