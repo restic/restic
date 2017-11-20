@@ -86,6 +86,9 @@ func writeCachedirTag(dir string) error {
 func New(id string, basedir string) (c *Cache, err error) {
 	if basedir == "" {
 		basedir, err = DefaultDir()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = mkdirCacheDir(basedir)
