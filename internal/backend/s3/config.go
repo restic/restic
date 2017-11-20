@@ -38,7 +38,7 @@ const defaultPrefix = "restic"
 
 // ParseConfig parses the string s and extracts the s3 config. The two
 // supported configuration formats are s3://host/bucketname/prefix and
-// s3:host:bucketname/prefix. The host can also be a valid s3 region
+// s3:host/bucketname/prefix. The host can also be a valid s3 region
 // name. If no prefix is given the prefix "restic" will be used.
 func ParseConfig(s string) (interface{}, error) {
 	switch {
