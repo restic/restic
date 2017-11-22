@@ -553,7 +553,7 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 	case "swift":
 		be, err = swift.Open(cfg.(swift.Config), rt)
 	case "b2":
-		be, err = b2.Open(cfg.(b2.Config), rt)
+		be, err = b2.Open(globalOptions.ctx, cfg.(b2.Config), rt)
 	case "rest":
 		be, err = rest.Open(cfg.(rest.Config), rt)
 
@@ -566,7 +566,7 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 	}
 
 	// check if config is there
-	fi, err := be.Stat(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+	fi, err := be.Stat(globalOptions.ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return nil, errors.Fatalf("unable to open config file: %v\nIs there a repository at the following location?\n%v", err, s)
 	}
@@ -610,7 +610,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	case "swift":
 		return swift.Open(cfg.(swift.Config), rt)
 	case "b2":
-		return b2.Create(cfg.(b2.Config), rt)
+		return b2.Create(globalOptions.ctx, cfg.(b2.Config), rt)
 	case "rest":
 		return rest.Create(cfg.(rest.Config), rt)
 	}

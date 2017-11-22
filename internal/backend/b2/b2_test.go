@@ -45,19 +45,19 @@ func newB2TestSuite(t testing.TB) *test.Suite {
 		// CreateFn is a function that creates a temporary repository for the tests.
 		Create: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(b2.Config)
-			return b2.Create(cfg, tr)
+			return b2.Create(context.Background(), cfg, tr)
 		},
 
 		// OpenFn is a function that opens a previously created temporary repository.
 		Open: func(config interface{}) (restic.Backend, error) {
 			cfg := config.(b2.Config)
-			return b2.Open(cfg, tr)
+			return b2.Open(context.Background(), cfg, tr)
 		},
 
 		// CleanupFn removes data created during the tests.
 		Cleanup: func(config interface{}) error {
 			cfg := config.(b2.Config)
-			be, err := b2.Open(cfg, tr)
+			be, err := b2.Open(context.Background(), cfg, tr)
 			if err != nil {
 				return err
 			}

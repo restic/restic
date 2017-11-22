@@ -103,7 +103,7 @@ func (r *Reader) Archive(ctx context.Context, name string, rd io.Reader, p *rest
 
 	debug.Log("snapshot saved as %v", id.Str())
 
-	err = repo.Flush()
+	err = repo.Flush(ctx)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

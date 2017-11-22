@@ -77,14 +77,14 @@ func changeTags(repo *repository.Repository, sn *restic.Snapshot, setTags, addTa
 		}
 
 		// Save the new snapshot.
-		id, err := repo.SaveJSONUnpacked(context.TODO(), restic.SnapshotFile, sn)
+		id, err := repo.SaveJSONUnpacked(globalOptions.ctx, restic.SnapshotFile, sn)
 		if err != nil {
 			return false, err
 		}
 
 		debug.Log("new snapshot saved as %v", id.Str())
 
-		if err = repo.Flush(); err != nil {
+		if err = repo.Flush(globalOptions.ctx); err != nil {
 			return false, err
 		}
 

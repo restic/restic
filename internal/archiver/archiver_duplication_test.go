@@ -144,7 +144,7 @@ func testArchiverDuplication(t *testing.T) {
 
 	wg.Wait()
 
-	err = repo.Flush()
+	err = repo.Flush(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
