@@ -20,6 +20,12 @@ matrix:
     - os: linux
       go: 1.9.x
   include:
+    - language: generic
+      os: osx
+      env: HOMEBREW
+      after_success:
+      install: brew update && brew install --HEAD restic
+      script: brew test restic
     - os: linux
       go: 1.9.x
       sudo: true
