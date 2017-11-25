@@ -10,12 +10,14 @@ Important Changes in 0.X.Y
    that can be used to disable the cache. By deafult, the cache a standard
    cache folder for the OS, which can be overridden with `--cache-dir`.  The
    cache will automatically populate, indexes and snapshots are saved as they
-   are loaded.
+   are loaded. Cache directories for repos that haven't been used recently can
+   automatically be removed by restic with the `--cleanup-cache` option.
    https://github.com/restic/restic/pull/1040
    https://github.com/restic/restic/issues/29
    https://github.com/restic/restic/issues/738
    https://github.com/restic/restic/issues/282
    https://github.com/restic/restic/pull/1287
+   https://github.com/restic/restic/pull/1436
 
  * A related change was to by default create pack files in the repo that
    contain either data or metadata, not both mixed together. This allows easy
