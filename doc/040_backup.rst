@@ -130,7 +130,7 @@ args:
 Backing up special items
 ************************
 
-**Symlinks** are archieved as symlinks, ``restic`` does not follow them.
+**Symlinks** are archived as symlinks, ``restic`` does not follow them.
 When you restore, you get the same symlink again, with the same link target
 and the same timestamps.
 
