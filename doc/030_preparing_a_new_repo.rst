@@ -176,6 +176,15 @@ different location, so you need to create it using a different program.
 Afterwards, the S3 server (``s3.amazonaws.com``) will redirect restic to
 the correct endpoint.
 
+Until version 0.8.0, restic used a default prefix of ``restic``, so the files
+in the bucket were placed in a directory named ``restic``. If you want to
+access a repository created with an older version of restic, specify the path
+after the bucket name like this:
+
+.. code-block:: console
+
+    $ restic -r s3:s3.amazonaws.com/bucket_name/restic [...]
+
 For an S3-compatible server that is not Amazon (like Minio, see below),
 or is only available via HTTP, you can specify the URL to the server
 like this: ``s3:http://server:port/bucket_name``.

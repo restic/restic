@@ -4,6 +4,14 @@ released version of restic from the perspective of the user.
 Important Changes in 0.X.Y
 ==========================
 
+ * The s3 backend used the subdir `restic` within a bucket if no explicit path
+   after the bucket name was specified. Since this version, restic does not use
+   this default path any more. If you created a repo on s3 in a bucket without
+   specifying a path within the bucket, you need to add `/restic` at the end of
+   the repository specification to access your repo: `s3:s3.amazonaws.com/bucket/restic`
+   https://github.com/restic/restic/issues/1292
+   https://github.com/restic/restic/pull/1437
+
  * We've added a local cache for metadata so that restic doesn't need to load
    all metadata (snapshots, indexes, ...) from the repo each time it starts. By
    default the cache is active, but there's a new global option `--no-cache`
