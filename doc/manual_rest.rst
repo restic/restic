@@ -280,3 +280,10 @@ entirely. In this case, all data is loaded from the repo.
 
 The cache is ephemeral: When a file cannot be read from the cache, it is loaded
 from the repository.
+
+Within the cache directory, there's a sub directory for each repository the
+cache was used with. Restic updates the timestamps of a repo directory each
+time it is used, so by looking at the timestamps of the sub directories of the
+cache directory it can decide which sub directories are old and probably not
+needed any more. You can either remove these directories manually, or run a
+restic command with the ``--cleanup-cache`` flag.
