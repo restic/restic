@@ -31,7 +31,7 @@ type restBackend struct {
 }
 
 // Open opens the REST backend with the given config.
-func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Open(cfg Config, rt http.RoundTripper) (*restBackend, error) {
 	client := &http.Client{Transport: rt}
 
 	sem, err := backend.NewSemaphore(cfg.Connections)
@@ -72,7 +72,7 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	values.Set("create", "true")
 	url.RawQuery = values.Encode()
 
-	resp, err := http.Post(url.String(), "binary/octet-stream", strings.NewReader(""))
+	resp, err := be.client.Post(url.String(), "binary/octet-stream", strings.NewReader(""))
 	if err != nil {
 		return nil, err
 	}
