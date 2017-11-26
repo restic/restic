@@ -67,6 +67,7 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 		nodeLocation := filepath.Join(location, nodeName)
 
 		if target == nodeTarget || !fs.HasPathPrefix(target, nodeTarget) {
+			debug.Log("target: %v %v", target, nodeTarget)
 			debug.Log("node %q has invalid target path %q", node.Name, nodeTarget)
 			err := res.Error(nodeLocation, node, errors.New("node has invalid path"))
 			if err != nil {
@@ -145,6 +146,14 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *Node, target, loca
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
+	var err error
+	if !filepath.IsAbs(dst) {
+		dst, err = filepath.Abs(dst)
+		if err != nil {
+			return errors.Wrap(err, "Abs")
+		}
+	}
+
 	idx := NewHardlinkIndex()
 	return res.restoreTo(ctx, dst, string(filepath.Separator), *res.sn.Tree, idx)
 }

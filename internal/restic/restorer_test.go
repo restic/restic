@@ -310,3 +310,101 @@ func TestRestorer(t *testing.T) {
 		})
 	}
 }
+
+func chdir(t testing.TB, target string) func() {
+	prev, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("chdir to %v", target)
+	err = os.Chdir(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return func() {
+		t.Logf("chdir back to %v", prev)
+		err = os.Chdir(prev)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestRestorerRelative(t *testing.T) {
+	var tests = []struct {
+		Snapshot
+		Files map[string]string
+	}{
+		{
+			Snapshot: Snapshot{
+				Nodes: map[string]Node{
+					"foo": File{"content: foo\n"},
+					"dirtest": Dir{
+						Nodes: map[string]Node{
+							"file": File{"content: file\n"},
+						},
+					},
+				},
+			},
+			Files: map[string]string{
+				"foo":          "content: foo\n",
+				"dirtest/file": "content: file\n",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run("", func(t *testing.T) {
+			repo, cleanup := repository.TestRepository(t)
+			defer cleanup()
+
+			_, id := saveSnapshot(t, repo, test.Snapshot)
+			t.Logf("snapshot saved as %v", id.Str())
+
+			res, err := restic.NewRestorer(repo, id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tempdir, cleanup := rtest.TempDir(t)
+			defer cleanup()
+
+			cleanup = chdir(t, tempdir)
+			defer cleanup()
+
+			errors := make(map[string]string)
+			res.Error = func(dir string, node *restic.Node, err error) error {
+				t.Logf("restore returned error for %q in dir %v: %v", node.Name, dir, err)
+				dir = toSlash(dir)
+				errors[dir+"#"+node.Name] = err.Error()
+				return nil
+			}
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			err = res.RestoreTo(ctx, "restore")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for filename, err := range errors {
+				t.Errorf("unexpected error for %v found: %v", filename, err)
+			}
+
+			for filename, content := range test.Files {
+				data, err := ioutil.ReadFile(filepath.Join(tempdir, "restore", filepath.FromSlash(filename)))
+				if err != nil {
+					t.Errorf("unable to read file %v: %v", filename, err)
+					continue
+				}
+
+				if !bytes.Equal(data, []byte(content)) {
+					t.Errorf("file %v has wrong content: want %q, got %q", filename, content, data)
+				}
+			}
+		})
+	}
+}
