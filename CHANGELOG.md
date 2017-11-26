@@ -4,6 +4,23 @@ released version of restic from the perspective of the user.
 Important Changes in 0.X.Y
 ==========================
 
+ * A vulnerability was found in the restic restorer, which allowed attackers in
+   special circumstances to restore files to a location outside of the target
+   directory. Due to the circumstances we estimate this to be a low-risk
+   vulnerability, but urge all users to upgrade to the latest version of restic.
+
+   Exploiting the vulnerability requires a Linux/Unix system which saves
+   backups via restic and a Windows systems which restores files from the repo.
+   In addition, the attackers need to be able to create create files with
+   arbitrary names which are then saved to the restic repo. For example, by
+   creating a file named "..\test.txt" (which is a perfectly legal filename on
+   Linux) and restoring a snapshot containing this file on Windows, it would be
+   written to the parent of the target directory.
+
+   We'd like to thank Tyler Spivey for reporting this responsibly!
+
+   https://github.com/restic/restic/pull/1445
+
  * The s3 backend used the subdir `restic` within a bucket if no explicit path
    after the bucket name was specified. Since this version, restic does not use
    this default path any more. If you created a repo on s3 in a bucket without
