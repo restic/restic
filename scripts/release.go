@@ -117,7 +117,7 @@ func preCheckBranchMaster() {
 		die("error running 'git': %v", err)
 	}
 
-	if string(branch) != "master" {
+	if strings.TrimSpace(string(branch)) != "master" {
 		die("wrong branch: %s", branch)
 	}
 }
