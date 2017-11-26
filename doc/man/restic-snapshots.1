@@ -32,6 +32,10 @@ The "snapshots" command lists all snapshots stored in the repository.
     only consider snapshots for this \fB\fChost\fR
 
 .PP
+\fB\-\-last\fP[=false]
+    only show the last snapshot for each host and path
+
+.PP
 \fB\-\-path\fP=[]
     only consider snapshots for this \fB\fCpath\fR (can be specified multiple times)
 
@@ -42,12 +46,24 @@ The "snapshots" command lists all snapshots stored in the repository.
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
 .PP
+\fB\-\-cacert\fP=[]
+    path to load root certificates from (default: use system certificates)
+
+.PP
 \fB\-\-cache\-dir\fP=""
     set the cache directory
 
 .PP
 \fB\-\-json\fP[=false]
     set output mode to JSON for commands that support it
+
+.PP
+\fB\-\-limit\-download\fP=0
+    limits downloads to a maximum rate in KiB/s. (default: unlimited)
+
+.PP
+\fB\-\-limit\-upload\fP=0
+    limits uploads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
 \fB\-\-no\-cache\fP[=false]

@@ -5,18 +5,22 @@
 
 .SH NAME
 .PP
-restic\-dump \- Dump data structures
+restic\-dump \- Print a backed\-up file to stdout
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic dump [indexes|snapshots|all|packs] [flags]\fP
+\fBrestic dump [flags] snapshotID file\fP
 
 
 .SH DESCRIPTION
 .PP
-The "dump" command dumps data structures from the repository as JSON objects. It
-is used for debugging purposes only.
+The "dump" command extracts a single file from a snapshot from the repository and
+prints its contents to stdout.
+
+.PP
+The special snapshot "latest" can be used to use the latest snapshot in the
+repository.
 
 
 .SH OPTIONS
@@ -24,8 +28,24 @@ is used for debugging purposes only.
 \fB\-h\fP, \fB\-\-help\fP[=false]
     help for dump
 
+.PP
+\fB\-H\fP, \fB\-\-host\fP=""
+    only consider snapshots for this host when the snapshot ID is "latest"
+
+.PP
+\fB\-\-path\fP=[]
+    only consider snapshots which include this (absolute) \fB\fCpath\fR for snapshot ID "latest"
+
+.PP
+\fB\-\-tag\fP=[]
+    only consider snapshots which include this \fB\fCtaglist\fR for snapshot ID "latest"
+
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
+.PP
+\fB\-\-cacert\fP=[]
+    path to load root certificates from (default: use system certificates)
+
 .PP
 \fB\-\-cache\-dir\fP=""
     set the cache directory
@@ -33,6 +53,14 @@ is used for debugging purposes only.
 .PP
 \fB\-\-json\fP[=false]
     set output mode to JSON for commands that support it
+
+.PP
+\fB\-\-limit\-download\fP=0
+    limits downloads to a maximum rate in KiB/s. (default: unlimited)
+
+.PP
+\fB\-\-limit\-upload\fP=0
+    limits uploads to a maximum rate in KiB/s. (default: unlimited)
 
 .PP
 \fB\-\-no\-cache\fP[=false]
