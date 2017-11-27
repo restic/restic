@@ -1,6 +1,20 @@
 This file describes changes relevant to all users that are made in each
 released version of restic from the perspective of the user.
 
+Important Changes in 0.X.Y
+==========================
+
+
+Small changes
+-------------
+
+ * We've added code to detect old cache directories of repositories that
+   haven't been used in a long time, restic now prints a note when it detects
+   that such dirs exist. Also, the option `--cleanup-cache` was added to
+   automatically remove such directories. That's not a problem because the
+   cache will be rebuild once a repo is accessed again.
+   https://github.com/restic/restic/pull/1436
+
 Important Changes in 0.8.0
 ==========================
 
