@@ -111,9 +111,8 @@ func TestMultipleIsExcludedByFile(t *testing.T) {
 		errs = append(errs, ioutil.WriteFile(p, []byte(f.path), 0600))
 	}
 	test.OKs(t, errs)
-	rc := &rejectionCache{}
-	fooExclude, _ := rejectIfPresent("NOFOO", rc)
-	barExclude, _ := rejectIfPresent("NOBAR", rc)
+	fooExclude, _ := rejectIfPresent("NOFOO")
+	barExclude, _ := rejectIfPresent("NOBAR")
 	m := make(map[string]bool)
 	walk := func(p string, fi os.FileInfo, err error) error {
 		if err != nil {

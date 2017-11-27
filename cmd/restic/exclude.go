@@ -90,7 +90,7 @@ func rejectByPattern(patterns []string) RejectFunc {
 // non-nil if the filename component of excludeFileSpec is empty. If rc is
 // non-nil, it is going to be used in the RejectFunc to expedite the evaluation
 // of a directory based on previous visits.
-func rejectIfPresent(excludeFileSpec string, rc *rejectionCache) (RejectFunc, error) {
+func rejectIfPresent(excludeFileSpec string) (RejectFunc, error) {
 	if excludeFileSpec == "" {
 		return nil, errors.New("name for exclusion tagfile is empty")
 	}
@@ -106,6 +106,7 @@ func rejectIfPresent(excludeFileSpec string, rc *rejectionCache) (RejectFunc, er
 		tf = excludeFileSpec
 	}
 	debug.Log("using %q as exclusion tagfile", tf)
+	rc := &rejectionCache{}
 	fn := func(filename string, _ os.FileInfo) bool {
 		return isExcludedByFile(filename, tf, tc, rc)
 	}
