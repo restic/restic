@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // File is an open file on a file system.
@@ -119,4 +120,13 @@ func RemoveIfExists(filename string) error {
 		err = nil
 	}
 	return err
+}
+
+// Chtimes changes the access and modification times of the named file,
+// similar to the Unix utime() or utimes() functions.
+//
+// The underlying filesystem may truncate or round the values to a less
+// precise time unit. If there is an error, it will be of type *PathError.
+func Chtimes(name string, atime time.Time, mtime time.Time) error {
+	return os.Chtimes(fixpath(name), atime, mtime)
 }

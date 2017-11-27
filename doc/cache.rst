@@ -19,8 +19,18 @@ a lower version number is found the cache is recreated with the current
 version. If a higher version number is found the cache is ignored and left as
 is.
 
-Snapshots and Indexes
----------------------
+Snapshots, Data and Indexes
+---------------------------
 
 Snapshot, Data and Index files are cached in the sub-directories ``snapshots``,
 ``data`` and  ``index``, as read from the repository.
+
+Expiry
+------
+
+Whenever a cache directory for a repo is used, that directory's modification
+timestamp is updated to the current time. By looking at the modification
+timestamps of the repo cache directories it is easy to decide which directories
+are old and haven't been used in a long time. Those are probably stale and can
+be removed.
+
