@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -80,5 +81,59 @@ func TestIsExcludedByFile(t *testing.T) {
 				t.Fatalf("expected %v, got %v", tc.want, got)
 			}
 		})
+	}
+}
+
+func TestMultipleIsExcludedByFile(t *testing.T) {
+	tempDir, cleanup := test.TempDir(t)
+	defer cleanup()
+	files := []struct {
+		path string
+		incl bool
+	}{
+		{"42", true},
+
+		{"foodir/NOFOO", true},
+		{"foodir/foo", false},
+		{"foodir/foosub/underfoo", false},
+
+		{"bardir/NOBAR", true},
+		{"bardir/bar", false},
+		{"bardir/barsub/underbar", false},
+
+		{"bazdir/baz", true},
+		{"bazdir/bazsub/underbaz", true},
+	}
+	var errs []error
+	for _, f := range files {
+		p := filepath.Join(tempDir, filepath.FromSlash(f.path))
+		errs = append(errs, os.MkdirAll(filepath.Dir(p), 0700))
+		errs = append(errs, ioutil.WriteFile(p, []byte(f.path), 0600))
+	}
+	test.OKs(t, errs)
+	rc := &rejectionCache{}
+	fooExclude, _ := rejectIfPresent("NOFOO", rc)
+	barExclude, _ := rejectIfPresent("NOBAR", rc)
+	m := make(map[string]bool)
+	walk := func(p string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		excludedByFoo := fooExclude(p, fi)
+		excludedByBar := barExclude(p, fi)
+		excluded := excludedByFoo || excludedByBar
+		t.Logf("%q: %v || %v = %v", p, excludedByFoo, excludedByBar, excluded)
+		m[p] = !excluded
+		if excluded {
+			return filepath.SkipDir
+		}
+		return nil
+	}
+	test.OK(t, filepath.Walk(tempDir, walk))
+	for _, f := range files {
+		p := filepath.Join(tempDir, filepath.FromSlash(f.path))
+		if m[p] != f.incl {
+			t.Errorf("inclusion status of %s is wrong: want %v, got %v", f.path, f.incl, m[p])
+		}
 	}
 }
