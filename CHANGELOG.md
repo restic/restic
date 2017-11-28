@@ -15,6 +15,13 @@ Small changes
    cache will be rebuild once a repo is accessed again.
    https://github.com/restic/restic/pull/1436
 
+ * By default, the access time for files and dirs is not saved any more. It is
+   not possible to reliably disable updating the access time during a backup,
+   so for the next backup the access time is different again. This means a lot
+   of metadata is saved. If you want to save the access time anyway, pass
+   `--with-atime` to the `backup` command.
+   https://github.com/restic/restic/pull/1452
+
 Important Changes in 0.8.0
 ==========================
 
