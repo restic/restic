@@ -45,6 +45,8 @@ type Archiver struct {
 	Warn         func(dir string, fi os.FileInfo, err error)
 	SelectFilter pipe.SelectFunc
 	Excludes     []string
+
+	WithAccessTime bool
 }
 
 // New returns a new archiver.
@@ -129,6 +131,10 @@ func (arch *Archiver) SaveTreeJSON(ctx context.Context, tree *restic.Tree) (rest
 }
 
 func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*restic.Node, error) {
+	if !arch.WithAccessTime {
+		node.AccessTime = node.ModTime
+	}
+
 	fi, err := file.Stat()
 	if err != nil {
 		return nil, errors.Wrap(err, "restic.Stat")
@@ -144,6 +150,10 @@ func (arch *Archiver) reloadFileIfChanged(node *restic.Node, file fs.File) (*res
 	if err != nil {
 		debug.Log("restic.NodeFromFileInfo returned error for %v: %v", node.Path, err)
 		arch.Warn(node.Path, fi, err)
+	}
+
+	if !arch.WithAccessTime {
+		node.AccessTime = node.ModTime
 	}
 
 	return node, nil
@@ -282,6 +292,10 @@ func (arch *Archiver) fileWorker(ctx context.Context, wg *sync.WaitGroup, p *res
 				arch.Warn(e.Fullpath(), e.Info(), err)
 			}
 
+			if !arch.WithAccessTime {
+				node.AccessTime = node.ModTime
+			}
+
 			// try to use old node, if present
 			if e.Node != nil {
 				debug.Log("   %v use old data", e.Path())
@@ -410,6 +424,10 @@ func (arch *Archiver) dirWorker(ctx context.Context, wg *sync.WaitGroup, p *rest
 					arch.Warn(dir.Path(), dir.Info(), err)
 				}
 				node = n
+
+				if !arch.WithAccessTime {
+					node.AccessTime = node.ModTime
+				}
 			}
 
 			if err := dir.Error(); err != nil {
