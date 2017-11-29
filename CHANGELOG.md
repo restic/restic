@@ -15,6 +15,10 @@ Small changes
    cache will be rebuild once a repo is accessed again.
    https://github.com/restic/restic/pull/1436
 
+ * The cache directory on Windows and Darwin was not correct, instead the
+   directory `.cache` was used.
+   https://github.com/restic/restic/pull/1454
+
  * By default, the access time for files and dirs is not saved any more. It is
    not possible to reliably disable updating the access time during a backup,
    so for the next backup the access time is different again. This means a lot
