@@ -65,6 +65,7 @@ type BackupOptions struct {
 	Hostname         string
 	FilesFrom        string
 	TimeStamp        string
+	WithAtime        bool
 }
 
 var backupOptions BackupOptions
@@ -86,6 +87,7 @@ func init() {
 	f.StringVar(&backupOptions.Hostname, "hostname", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
+	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 }
 
 func newScanProgress(gopts GlobalOptions) *restic.Progress {
@@ -452,6 +454,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	arch := archiver.New(repo)
 	arch.Excludes = opts.Excludes
 	arch.SelectFilter = selectFilter
+	arch.WithAccessTime = opts.WithAtime
 
 	arch.Warn = func(dir string, fi os.FileInfo, err error) {
 		// TODO: make ignoring errors configurable
