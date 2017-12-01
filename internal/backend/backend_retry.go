@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 )
@@ -65,7 +66,19 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader)
 			return err
 		}
 
-		return be.Backend.Save(ctx, h, rd)
+		err = be.Backend.Save(ctx, h, rd)
+		if err == nil {
+			return nil
+		}
+
+		debug.Log("Save(%v) failed with error, removing file: %v", h, err)
+		rerr := be.Remove(ctx, h)
+		if rerr != nil {
+			debug.Log("Remove(%v) returned error: %v", h, err)
+		}
+
+		// return original error
+		return err
 	})
 }
 

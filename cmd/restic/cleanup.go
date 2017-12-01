@@ -25,16 +25,14 @@ func init() {
 	InstallSignalHandler()
 }
 
-// InstallSignalHandler listens for SIGINT and SIGPIPE, and triggers the cleanup handlers.
+// InstallSignalHandler listens for SIGINT, and triggers the cleanup handlers.
 func InstallSignalHandler() {
 	signal.Notify(cleanupHandlers.ch, syscall.SIGINT)
-	signal.Notify(cleanupHandlers.ch, syscall.SIGPIPE)
 }
 
-// SuspendSignalHandler removes the signal handler for SIGINT and SIGPIPE.
+// SuspendSignalHandler removes the signal handler for SIGINT.
 func SuspendSignalHandler() {
 	signal.Reset(syscall.SIGINT)
-	signal.Reset(syscall.SIGPIPE)
 }
 
 // AddCleanupHandler adds the function f to the list of cleanup handlers so
@@ -69,7 +67,7 @@ func RunCleanupHandlers() {
 	cleanupHandlers.list = nil
 }
 
-// CleanupHandler handles the SIGINT and SIGPIPE signals.
+// CleanupHandler handles the SIGINT signals.
 func CleanupHandler(c <-chan os.Signal) {
 	for s := range c {
 		debug.Log("signal %v received, cleaning up", s)
