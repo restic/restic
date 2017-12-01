@@ -26,6 +26,11 @@ Small changes
    `--with-atime` to the `backup` command.
    https://github.com/restic/restic/pull/1452
 
+ * We've improved the s3 backend to work with DigitalOcean Spaces. In addition,
+   handling of SIGPIPE was removed.
+   https://github.com/restic/restic/pull/1459
+   https://github.com/restic/restic/issues/1457
+
 Important Changes in 0.8.0
 ==========================
 
