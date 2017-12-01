@@ -33,15 +33,21 @@ func NewRetryBackend(be restic.Backend, maxTries int, report func(string, error,
 	}
 }
 
-func (be *RetryBackend) retry(msg string, f func() error) error {
-	return backoff.RetryNotify(f,
-		backoff.WithMaxTries(backoff.NewExponentialBackOff(), uint64(be.MaxTries)),
+func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) error {
+	err := backoff.RetryNotify(f,
+		backoff.WithContext(backoff.WithMaxTries(backoff.NewExponentialBackOff(), uint64(be.MaxTries)), ctx),
 		func(err error, d time.Duration) {
 			if be.Report != nil {
 				be.Report(msg, err, d)
 			}
 		},
 	)
+
+	if errors.Cause(err) == context.Canceled {
+		return nil
+	}
+
+	return err
 }
 
 // Save stores the data in the backend under the given handle.
@@ -60,7 +66,7 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader)
 		return errors.Errorf("reader is not at the beginning (pos %v)", pos)
 	}
 
-	return be.retry(fmt.Sprintf("Save(%v)", h), func() error {
+	return be.retry(ctx, fmt.Sprintf("Save(%v)", h), func() error {
 		_, err := seeker.Seek(0, io.SeekStart)
 		if err != nil {
 			return err
@@ -87,7 +93,7 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader)
 // is returned. rd must be closed after use. If an error is returned, the
 // ReadCloser must be nil.
 func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (rd io.ReadCloser, err error) {
-	err = be.retry(fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
+	err = be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
 		func() error {
 			var innerError error
 			rd, innerError = be.Backend.Load(ctx, h, length, offset)
@@ -99,7 +105,7 @@ func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, o
 
 // Stat returns information about the File identified by h.
 func (be *RetryBackend) Stat(ctx context.Context, h restic.Handle) (fi restic.FileInfo, err error) {
-	err = be.retry(fmt.Sprintf("Stat(%v)", h),
+	err = be.retry(ctx, fmt.Sprintf("Stat(%v)", h),
 		func() error {
 			var innerError error
 			fi, innerError = be.Backend.Stat(ctx, h)
