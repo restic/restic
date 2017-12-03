@@ -363,6 +363,9 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return s, nil
 	}
 
+	// start using the cache
+	s.UseCache(c)
+
 	oldCacheDirs, err := cache.Old(c.Base)
 	if err != nil {
 		Warnf("unable to find old cache directories: %v", err)
@@ -389,7 +392,6 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 			len(oldCacheDirs), c.Base)
 	}
 
-	s.UseCache(c)
 	return s, nil
 }
 
