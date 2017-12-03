@@ -105,7 +105,9 @@ func (client ManagementClient) GetLocationPreparer(locationName string) (*http.R
 // GetLocationSender sends the GetLocation request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagementClient) GetLocationSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // GetLocationResponder handles the response to the GetLocation request. The method always
@@ -164,7 +166,9 @@ func (client ManagementClient) ListLocationsPreparer() (*http.Request, error) {
 // ListLocationsSender sends the ListLocations request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagementClient) ListLocationsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListLocationsResponder handles the response to the ListLocations request. The method always
@@ -222,7 +226,9 @@ func (client ManagementClient) ListSupportedOperationsPreparer() (*http.Request,
 // ListSupportedOperationsSender sends the ListSupportedOperations request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagementClient) ListSupportedOperationsSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // ListSupportedOperationsResponder handles the response to the ListSupportedOperations request. The method always

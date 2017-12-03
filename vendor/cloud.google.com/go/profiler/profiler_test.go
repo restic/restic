@@ -23,7 +23,9 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -71,6 +73,7 @@ func createTestAgent(psc pb.ProfilerServiceClient) *agent {
 		client:        psc,
 		deployment:    createTestDeployment(),
 		profileLabels: map[string]string{instanceLabel: testInstance},
+		profileTypes:  []pb.ProfileType{pb.ProfileType_CPU, pb.ProfileType_HEAP, pb.ProfileType_THREADS},
 	}
 }
 
@@ -92,7 +95,7 @@ func TestCreateProfile(t *testing.T) {
 	p := &pb.Profile{Name: "test_profile"}
 	wantRequest := pb.CreateProfileRequest{
 		Deployment:  a.deployment,
-		ProfileType: []pb.ProfileType{pb.ProfileType_CPU, pb.ProfileType_HEAP},
+		ProfileType: a.profileTypes,
 	}
 
 	mpc.EXPECT().CreateProfile(ctx, gomock.Eq(&wantRequest), gomock.Any()).Times(1).Return(p, nil)
@@ -334,13 +337,14 @@ func TestWithXGoogHeader(t *testing.T) {
 }
 
 func TestInitializeAgent(t *testing.T) {
-	oldConfig := config
+	oldConfig, oldMutexEnabled := config, mutexEnabled
 	defer func() {
-		config = oldConfig
+		config, mutexEnabled = oldConfig, oldMutexEnabled
 	}()
 
 	for _, tt := range []struct {
 		config               Config
+		enableMutex          bool
 		wantDeploymentLabels map[string]string
 		wantProfileLabels    map[string]string
 	}{
@@ -364,11 +368,18 @@ func TestInitializeAgent(t *testing.T) {
 			wantDeploymentLabels: map[string]string{},
 			wantProfileLabels:    map[string]string{instanceLabel: testInstance},
 		},
+		{
+			config:               Config{instance: testInstance},
+			enableMutex:          true,
+			wantDeploymentLabels: map[string]string{},
+			wantProfileLabels:    map[string]string{instanceLabel: testInstance},
+		},
 	} {
 
 		config = tt.config
 		config.ProjectID = testProjectID
 		config.Target = testTarget
+		mutexEnabled = tt.enableMutex
 		a := initializeAgent(nil)
 
 		wantDeployment := &pb.Deployment{
@@ -377,12 +388,21 @@ func TestInitializeAgent(t *testing.T) {
 			Labels:    tt.wantDeploymentLabels,
 		}
 		if !testutil.Equal(a.deployment, wantDeployment) {
-			t.Errorf("initializeResources() got deployment: %v, want %v", a.deployment, wantDeployment)
+			t.Errorf("initializeAgent() got deployment: %v, want %v", a.deployment, wantDeployment)
 		}
 
 		if !testutil.Equal(a.profileLabels, tt.wantProfileLabels) {
-			t.Errorf("initializeResources() got profile labels: %v, want %v", a.profileLabels, tt.wantProfileLabels)
+			t.Errorf("initializeAgent() got profile labels: %v, want %v", a.profileLabels, tt.wantProfileLabels)
 		}
+
+		wantProfileTypes := []pb.ProfileType{pb.ProfileType_CPU, pb.ProfileType_HEAP, pb.ProfileType_THREADS}
+		if tt.enableMutex {
+			wantProfileTypes = append(wantProfileTypes, pb.ProfileType_CONTENTION)
+		}
+		if !testutil.Equal(a.profileTypes, wantProfileTypes) {
+			t.Errorf("initializeAgent() got profile types: %v, want %v", a.profileTypes, wantProfileTypes)
+		}
+
 	}
 }
 
@@ -651,6 +671,99 @@ func validateProfile(rawData []byte, wantFunctionName string) error {
 		}
 	}
 	return fmt.Errorf("wanted function name %s not found in the profile", wantFunctionName)
+}
+
+func TestDeltaMutexProfile(t *testing.T) {
+	oldMutexEnabled, oldMaxProcs := mutexEnabled, runtime.GOMAXPROCS(10)
+	defer func() {
+		mutexEnabled = oldMutexEnabled
+		runtime.GOMAXPROCS(oldMaxProcs)
+	}()
+	if mutexEnabled = enableMutexProfiling(); !mutexEnabled {
+		t.Skip("Go too old - mutex profiling not supported.")
+	}
+
+	hog(time.Second, mutexHog)
+	go func() {
+		hog(2*time.Second, backgroundHog)
+	}()
+
+	var prof bytes.Buffer
+	if err := deltaMutexProfile(context.Background(), time.Second, &prof); err != nil {
+		t.Fatalf("deltaMutexProfile() got error: %v", err)
+	}
+	p, err := profile.Parse(&prof)
+	if err != nil {
+		t.Fatalf("profile.Parse() got error: %v", err)
+	}
+
+	if s := sum(p, "mutexHog"); s != 0 {
+		t.Errorf("mutexHog found in the delta mutex profile (sum=%d):\n%s", s, p)
+	}
+	if s := sum(p, "backgroundHog"); s <= 0 {
+		t.Errorf("backgroundHog not in the delta mutex profile (sum=%d):\n%s", s, p)
+	}
+}
+
+// sum returns the sum of all mutex counts from the samples whose
+// stacks include the specified function name.
+func sum(p *profile.Profile, fname string) int64 {
+	locIDs := map[*profile.Location]bool{}
+	for _, loc := range p.Location {
+		for _, l := range loc.Line {
+			if strings.Contains(l.Function.Name, fname) {
+				locIDs[loc] = true
+				break
+			}
+		}
+	}
+	var s int64
+	for _, sample := range p.Sample {
+		for _, loc := range sample.Location {
+			if locIDs[loc] {
+				s += sample.Value[0]
+				break
+			}
+		}
+	}
+	return s
+}
+
+func mutexHog(mu1, mu2 *sync.Mutex, start time.Time, dt time.Duration) {
+	for time.Since(start) < dt {
+		mu1.Lock()
+		runtime.Gosched()
+		mu2.Lock()
+		mu1.Unlock()
+		mu2.Unlock()
+	}
+}
+
+// backgroundHog is identical to mutexHog. We keep them separate
+// in order to distinguish them with function names in the stack trace.
+func backgroundHog(mu1, mu2 *sync.Mutex, start time.Time, dt time.Duration) {
+	for time.Since(start) < dt {
+		mu1.Lock()
+		runtime.Gosched()
+		mu2.Lock()
+		mu1.Unlock()
+		mu2.Unlock()
+	}
+}
+
+func hog(dt time.Duration, hogger func(mu1, mu2 *sync.Mutex, start time.Time, dt time.Duration)) {
+	start := time.Now()
+	mu1 := new(sync.Mutex)
+	mu2 := new(sync.Mutex)
+	var wg sync.WaitGroup
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go func() {
+			defer wg.Done()
+			hogger(mu1, mu2, start, dt)
+		}()
+	}
+	wg.Wait()
 }
 
 func TestAgentWithServer(t *testing.T) {

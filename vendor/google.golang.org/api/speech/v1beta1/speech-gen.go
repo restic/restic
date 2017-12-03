@@ -49,6 +49,9 @@ const basePath = "https://speech.googleapis.com/"
 const (
 	// View and manage your data across Google Cloud Platform services
 	CloudPlatformScope = "https://www.googleapis.com/auth/cloud-platform"
+
+	// Convert speech to text using Google speech recognition technology
+	CloudSpeechScope = "https://www.googleapis.com/auth/cloud-speech"
 )
 
 func New(client *http.Client) (*Service, error) {
@@ -125,8 +128,8 @@ type AsyncRecognizeRequest struct {
 }
 
 func (s *AsyncRecognizeRequest) MarshalJSON() ([]byte, error) {
-	type noMethod AsyncRecognizeRequest
-	raw := noMethod(*s)
+	type NoMethod AsyncRecognizeRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -180,8 +183,8 @@ type ListOperationsResponse struct {
 }
 
 func (s *ListOperationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListOperationsResponse
-	raw := noMethod(*s)
+	type NoMethod ListOperationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -255,8 +258,8 @@ type Operation struct {
 }
 
 func (s *Operation) MarshalJSON() ([]byte, error) {
-	type noMethod Operation
-	raw := noMethod(*s)
+	type NoMethod Operation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -304,8 +307,8 @@ type RecognitionAudio struct {
 }
 
 func (s *RecognitionAudio) MarshalJSON() ([]byte, error) {
-	type noMethod RecognitionAudio
-	raw := noMethod(*s)
+	type NoMethod RecognitionAudio
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -402,8 +405,8 @@ type RecognitionConfig struct {
 }
 
 func (s *RecognitionConfig) MarshalJSON() ([]byte, error) {
-	type noMethod RecognitionConfig
-	raw := noMethod(*s)
+	type NoMethod RecognitionConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -442,8 +445,8 @@ type SpeechContext struct {
 }
 
 func (s *SpeechContext) MarshalJSON() ([]byte, error) {
-	type noMethod SpeechContext
-	raw := noMethod(*s)
+	type NoMethod SpeechContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -487,18 +490,18 @@ type SpeechRecognitionAlternative struct {
 }
 
 func (s *SpeechRecognitionAlternative) MarshalJSON() ([]byte, error) {
-	type noMethod SpeechRecognitionAlternative
-	raw := noMethod(*s)
+	type NoMethod SpeechRecognitionAlternative
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *SpeechRecognitionAlternative) UnmarshalJSON(data []byte) error {
-	type noMethod SpeechRecognitionAlternative
+	type NoMethod SpeechRecognitionAlternative
 	var s1 struct {
 		Confidence gensupport.JSONFloat64 `json:"confidence"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -532,8 +535,8 @@ type SpeechRecognitionResult struct {
 }
 
 func (s *SpeechRecognitionResult) MarshalJSON() ([]byte, error) {
-	type noMethod SpeechRecognitionResult
-	raw := noMethod(*s)
+	type NoMethod SpeechRecognitionResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -651,8 +654,8 @@ type Status struct {
 }
 
 func (s *Status) MarshalJSON() ([]byte, error) {
-	type noMethod Status
-	raw := noMethod(*s)
+	type NoMethod Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -685,8 +688,8 @@ type SyncRecognizeRequest struct {
 }
 
 func (s *SyncRecognizeRequest) MarshalJSON() ([]byte, error) {
-	type noMethod SyncRecognizeRequest
-	raw := noMethod(*s)
+	type NoMethod SyncRecognizeRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -723,8 +726,8 @@ type SyncRecognizeResponse struct {
 }
 
 func (s *SyncRecognizeResponse) MarshalJSON() ([]byte, error) {
-	type noMethod SyncRecognizeResponse
-	raw := noMethod(*s)
+	type NoMethod SyncRecognizeResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -838,7 +841,7 @@ func (c *OperationsCancelCall) Do(opts ...googleapi.CallOption) (*Empty, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -864,7 +867,8 @@ func (c *OperationsCancelCall) Do(opts ...googleapi.CallOption) (*Empty, error) 
 	//     "$ref": "Empty"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-speech"
 	//   ]
 	// }
 
@@ -969,7 +973,7 @@ func (c *OperationsDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -995,7 +999,8 @@ func (c *OperationsDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error) 
 	//     "$ref": "Empty"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-speech"
 	//   ]
 	// }
 
@@ -1112,7 +1117,7 @@ func (c *OperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1138,7 +1143,8 @@ func (c *OperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 	//     "$ref": "Operation"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-speech"
 	//   ]
 	// }
 
@@ -1290,7 +1296,7 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1328,7 +1334,8 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 	//     "$ref": "ListOperationsResponse"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-speech"
 	//   ]
 	// }
 
@@ -1458,7 +1465,7 @@ func (c *SpeechAsyncrecognizeCall) Do(opts ...googleapi.CallOption) (*Operation,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1477,7 +1484,8 @@ func (c *SpeechAsyncrecognizeCall) Do(opts ...googleapi.CallOption) (*Operation,
 	//     "$ref": "Operation"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-speech"
 	//   ]
 	// }
 
@@ -1580,7 +1588,7 @@ func (c *SpeechSyncrecognizeCall) Do(opts ...googleapi.CallOption) (*SyncRecogni
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1599,7 +1607,8 @@ func (c *SpeechSyncrecognizeCall) Do(opts ...googleapi.CallOption) (*SyncRecogni
 	//     "$ref": "SyncRecognizeResponse"
 	//   },
 	//   "scopes": [
-	//     "https://www.googleapis.com/auth/cloud-platform"
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/cloud-speech"
 	//   ]
 	// }
 

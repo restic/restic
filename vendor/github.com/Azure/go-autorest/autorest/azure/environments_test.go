@@ -17,8 +17,62 @@ package azure
 
 import (
 	"encoding/json"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
+
+// This correlates to the expected contents of ./testdata/test_environment_1.json
+var testEnvironment1 = Environment{
+	Name:                         "--unit-test--",
+	ManagementPortalURL:          "--management-portal-url",
+	PublishSettingsURL:           "--publish-settings-url--",
+	ServiceManagementEndpoint:    "--service-management-endpoint--",
+	ResourceManagerEndpoint:      "--resource-management-endpoint--",
+	ActiveDirectoryEndpoint:      "--active-directory-endpoint--",
+	GalleryEndpoint:              "--gallery-endpoint--",
+	KeyVaultEndpoint:             "--key-vault--endpoint--",
+	GraphEndpoint:                "--graph-endpoint--",
+	StorageEndpointSuffix:        "--storage-endpoint-suffix--",
+	SQLDatabaseDNSSuffix:         "--sql-database-dns-suffix--",
+	TrafficManagerDNSSuffix:      "--traffic-manager-dns-suffix--",
+	KeyVaultDNSSuffix:            "--key-vault-dns-suffix--",
+	ServiceBusEndpointSuffix:     "--service-bus-endpoint-suffix--",
+	ServiceManagementVMDNSSuffix: "--asm-vm-dns-suffix--",
+	ResourceManagerVMDNSSuffix:   "--arm-vm-dns-suffix--",
+	ContainerRegistryDNSSuffix:   "--container-registry-dns-suffix--",
+}
+
+func TestEnvironment_EnvironmentFromFile(t *testing.T) {
+	got, err := EnvironmentFromFile(filepath.Join("testdata", "test_environment_1.json"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if got != testEnvironment1 {
+		t.Logf("got: %v want: %v", got, testEnvironment1)
+		t.Fail()
+	}
+}
+
+func TestEnvironment_EnvironmentFromName_Stack(t *testing.T) {
+	_, currentFile, _, _ := runtime.Caller(0)
+	prevEnvFilepathValue := os.Getenv(EnvironmentFilepathName)
+	os.Setenv(EnvironmentFilepathName, filepath.Join(path.Dir(currentFile), "testdata", "test_environment_1.json"))
+	defer os.Setenv(EnvironmentFilepathName, prevEnvFilepathValue)
+
+	got, err := EnvironmentFromName("AZURESTACKCLOUD")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if got != testEnvironment1 {
+		t.Logf("got: %v want: %v", got, testEnvironment1)
+		t.Fail()
+	}
+}
 
 func TestEnvironmentFromName(t *testing.T) {
 	name := "azurechinacloud"

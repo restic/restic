@@ -33,40 +33,6 @@ func ExampleNewClient() {
 	_ = c
 }
 
-func ExampleClient_PatchTraces() {
-	ctx := context.Background()
-	c, err := trace.NewClient(ctx)
-	if err != nil {
-		// TODO: Handle error.
-	}
-
-	req := &cloudtracepb.PatchTracesRequest{
-	// TODO: Fill request struct fields.
-	}
-	err = c.PatchTraces(ctx, req)
-	if err != nil {
-		// TODO: Handle error.
-	}
-}
-
-func ExampleClient_GetTrace() {
-	ctx := context.Background()
-	c, err := trace.NewClient(ctx)
-	if err != nil {
-		// TODO: Handle error.
-	}
-
-	req := &cloudtracepb.GetTraceRequest{
-	// TODO: Fill request struct fields.
-	}
-	resp, err := c.GetTrace(ctx, req)
-	if err != nil {
-		// TODO: Handle error.
-	}
-	// TODO: Use resp.
-	_ = resp
-}
-
 func ExampleClient_ListTraces() {
 	ctx := context.Background()
 	c, err := trace.NewClient(ctx)
@@ -88,5 +54,39 @@ func ExampleClient_ListTraces() {
 		}
 		// TODO: Use resp.
 		_ = resp
+	}
+}
+
+func ExampleClient_GetTrace() {
+	ctx := context.Background()
+	c, err := trace.NewClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	req := &cloudtracepb.GetTraceRequest{
+	// TODO: Fill request struct fields.
+	}
+	resp, err := c.GetTrace(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	// TODO: Use resp.
+	_ = resp
+}
+
+func ExampleClient_PatchTraces() {
+	ctx := context.Background()
+	c, err := trace.NewClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	req := &cloudtracepb.PatchTracesRequest{
+	// TODO: Fill request struct fields.
+	}
+	err = c.PatchTraces(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
 	}
 }

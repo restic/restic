@@ -64,6 +64,7 @@ func New(client *http.Client) (*Service, error) {
 	s.Installs = NewInstallsService(s)
 	s.Managedconfigurationsfordevice = NewManagedconfigurationsfordeviceService(s)
 	s.Managedconfigurationsforuser = NewManagedconfigurationsforuserService(s)
+	s.Managedconfigurationssettings = NewManagedconfigurationssettingsService(s)
 	s.Permissions = NewPermissionsService(s)
 	s.Products = NewProductsService(s)
 	s.Serviceaccountkeys = NewServiceaccountkeysService(s)
@@ -93,6 +94,8 @@ type Service struct {
 	Managedconfigurationsfordevice *ManagedconfigurationsfordeviceService
 
 	Managedconfigurationsforuser *ManagedconfigurationsforuserService
+
+	Managedconfigurationssettings *ManagedconfigurationssettingsService
 
 	Permissions *PermissionsService
 
@@ -186,6 +189,15 @@ type ManagedconfigurationsforuserService struct {
 	s *Service
 }
 
+func NewManagedconfigurationssettingsService(s *Service) *ManagedconfigurationssettingsService {
+	rs := &ManagedconfigurationssettingsService{s: s}
+	return rs
+}
+
+type ManagedconfigurationssettingsService struct {
+	s *Service
+}
+
 func NewPermissionsService(s *Service) *PermissionsService {
 	rs := &PermissionsService{s: s}
 	return rs
@@ -264,8 +276,8 @@ type Administrator struct {
 }
 
 func (s *Administrator) MarshalJSON() ([]byte, error) {
-	type noMethod Administrator
-	raw := noMethod(*s)
+	type NoMethod Administrator
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -302,8 +314,8 @@ type AdministratorWebToken struct {
 }
 
 func (s *AdministratorWebToken) MarshalJSON() ([]byte, error) {
-	type noMethod AdministratorWebToken
-	raw := noMethod(*s)
+	type NoMethod AdministratorWebToken
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -345,8 +357,8 @@ type AdministratorWebTokenSpec struct {
 }
 
 func (s *AdministratorWebTokenSpec) MarshalJSON() ([]byte, error) {
-	type noMethod AdministratorWebTokenSpec
-	raw := noMethod(*s)
+	type NoMethod AdministratorWebTokenSpec
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -385,8 +397,8 @@ type AndroidDevicePolicyConfig struct {
 }
 
 func (s *AndroidDevicePolicyConfig) MarshalJSON() ([]byte, error) {
-	type noMethod AndroidDevicePolicyConfig
-	raw := noMethod(*s)
+	type NoMethod AndroidDevicePolicyConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -422,8 +434,8 @@ type AppRestrictionsSchema struct {
 }
 
 func (s *AppRestrictionsSchema) MarshalJSON() ([]byte, error) {
-	type noMethod AppRestrictionsSchema
-	raw := noMethod(*s)
+	type NoMethod AppRestrictionsSchema
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -455,8 +467,8 @@ type AppRestrictionsSchemaChangeEvent struct {
 }
 
 func (s *AppRestrictionsSchemaChangeEvent) MarshalJSON() ([]byte, error) {
-	type noMethod AppRestrictionsSchemaChangeEvent
-	raw := noMethod(*s)
+	type NoMethod AppRestrictionsSchemaChangeEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -516,8 +528,8 @@ type AppRestrictionsSchemaRestriction struct {
 }
 
 func (s *AppRestrictionsSchemaRestriction) MarshalJSON() ([]byte, error) {
-	type noMethod AppRestrictionsSchemaRestriction
-	raw := noMethod(*s)
+	type NoMethod AppRestrictionsSchemaRestriction
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -561,8 +573,8 @@ type AppRestrictionsSchemaRestrictionRestrictionValue struct {
 }
 
 func (s *AppRestrictionsSchemaRestrictionRestrictionValue) MarshalJSON() ([]byte, error) {
-	type noMethod AppRestrictionsSchemaRestrictionRestrictionValue
-	raw := noMethod(*s)
+	type NoMethod AppRestrictionsSchemaRestrictionRestrictionValue
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -594,8 +606,8 @@ type AppUpdateEvent struct {
 }
 
 func (s *AppUpdateEvent) MarshalJSON() ([]byte, error) {
-	type noMethod AppUpdateEvent
-	raw := noMethod(*s)
+	type NoMethod AppUpdateEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -631,8 +643,8 @@ type AppVersion struct {
 }
 
 func (s *AppVersion) MarshalJSON() ([]byte, error) {
-	type noMethod AppVersion
-	raw := noMethod(*s)
+	type NoMethod AppVersion
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -664,8 +676,8 @@ type ApprovalUrlInfo struct {
 }
 
 func (s *ApprovalUrlInfo) MarshalJSON() ([]byte, error) {
-	type noMethod ApprovalUrlInfo
-	raw := noMethod(*s)
+	type NoMethod ApprovalUrlInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -704,16 +716,52 @@ type AuthenticationToken struct {
 }
 
 func (s *AuthenticationToken) MarshalJSON() ([]byte, error) {
-	type noMethod AuthenticationToken
-	raw := noMethod(*s)
+	type NoMethod AuthenticationToken
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ConfigurationVariables: A configuration variables resource contains
+// the managed configuration settings ID to be applied to a single user,
+// as well as the variable set that is attributed to the user. The
+// variable set will be used to replace placeholders in the managed
+// configuration settings.
+type ConfigurationVariables struct {
+	// Kind: Identifies what kind of resource this is. Value: the fixed
+	// string "androidenterprise#configurationVariables".
+	Kind string `json:"kind,omitempty"`
+
+	// McmId: The ID of the managed configurations settings.
+	McmId string `json:"mcmId,omitempty"`
+
+	// VariableSet: The variable set that is attributed to the user.
+	VariableSet []*VariableSet `json:"variableSet,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Kind") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ConfigurationVariables) MarshalJSON() ([]byte, error) {
+	type NoMethod ConfigurationVariables
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // Device: A Devices resource represents a mobile device managed by the
 // EMM and belonging to a specific enterprise user.
-//
-// This collection cannot be modified via the API. It is automatically
-// populated as devices are set up to be managed.
 type Device struct {
 	// AndroidId: The Google Play Services Android ID for the device encoded
 	// as a lowercase hex string. For example, "123456789abcdef0".
@@ -739,6 +787,9 @@ type Device struct {
 	// managed Google Play, but the profile is itself not owned by a DPC.
 	ManagementType string `json:"managementType,omitempty"`
 
+	// Policy: The policy enforced on the device.
+	Policy *Policy `json:"policy,omitempty"`
+
 	// ServerResponse contains the HTTP response code and headers from the
 	// server.
 	googleapi.ServerResponse `json:"-"`
@@ -761,8 +812,8 @@ type Device struct {
 }
 
 func (s *Device) MarshalJSON() ([]byte, error) {
-	type noMethod Device
-	raw := noMethod(*s)
+	type NoMethod Device
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -802,8 +853,8 @@ type DeviceState struct {
 }
 
 func (s *DeviceState) MarshalJSON() ([]byte, error) {
-	type noMethod DeviceState
-	raw := noMethod(*s)
+	type NoMethod DeviceState
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -838,8 +889,8 @@ type DevicesListResponse struct {
 }
 
 func (s *DevicesListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod DevicesListResponse
-	raw := noMethod(*s)
+	type NoMethod DevicesListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -897,8 +948,8 @@ type Enterprise struct {
 }
 
 func (s *Enterprise) MarshalJSON() ([]byte, error) {
-	type noMethod Enterprise
-	raw := noMethod(*s)
+	type NoMethod Enterprise
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -934,8 +985,8 @@ type EnterpriseAccount struct {
 }
 
 func (s *EnterpriseAccount) MarshalJSON() ([]byte, error) {
-	type noMethod EnterpriseAccount
-	raw := noMethod(*s)
+	type NoMethod EnterpriseAccount
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -970,8 +1021,8 @@ type EnterprisesListResponse struct {
 }
 
 func (s *EnterprisesListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod EnterprisesListResponse
-	raw := noMethod(*s)
+	type NoMethod EnterprisesListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1006,8 +1057,8 @@ type EnterprisesSendTestPushNotificationResponse struct {
 }
 
 func (s *EnterprisesSendTestPushNotificationResponse) MarshalJSON() ([]byte, error) {
-	type noMethod EnterprisesSendTestPushNotificationResponse
-	raw := noMethod(*s)
+	type NoMethod EnterprisesSendTestPushNotificationResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1074,8 +1125,8 @@ type Entitlement struct {
 }
 
 func (s *Entitlement) MarshalJSON() ([]byte, error) {
-	type noMethod Entitlement
-	raw := noMethod(*s)
+	type NoMethod Entitlement
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1112,8 +1163,8 @@ type EntitlementsListResponse struct {
 }
 
 func (s *EntitlementsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod EntitlementsListResponse
-	raw := noMethod(*s)
+	type NoMethod EntitlementsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1205,8 +1256,8 @@ type GroupLicense struct {
 }
 
 func (s *GroupLicense) MarshalJSON() ([]byte, error) {
-	type noMethod GroupLicense
-	raw := noMethod(*s)
+	type NoMethod GroupLicense
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1242,8 +1293,8 @@ type GroupLicenseUsersListResponse struct {
 }
 
 func (s *GroupLicenseUsersListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GroupLicenseUsersListResponse
-	raw := noMethod(*s)
+	type NoMethod GroupLicenseUsersListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1280,8 +1331,8 @@ type GroupLicensesListResponse struct {
 }
 
 func (s *GroupLicensesListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GroupLicensesListResponse
-	raw := noMethod(*s)
+	type NoMethod GroupLicensesListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1354,8 +1405,8 @@ type Install struct {
 }
 
 func (s *Install) MarshalJSON() ([]byte, error) {
-	type noMethod Install
-	raw := noMethod(*s)
+	type NoMethod Install
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1399,8 +1450,8 @@ type InstallFailureEvent struct {
 }
 
 func (s *InstallFailureEvent) MarshalJSON() ([]byte, error) {
-	type noMethod InstallFailureEvent
-	raw := noMethod(*s)
+	type NoMethod InstallFailureEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1437,8 +1488,8 @@ type InstallsListResponse struct {
 }
 
 func (s *InstallsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod InstallsListResponse
-	raw := noMethod(*s)
+	type NoMethod InstallsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1468,16 +1519,21 @@ type LocalizedText struct {
 }
 
 func (s *LocalizedText) MarshalJSON() ([]byte, error) {
-	type noMethod LocalizedText
-	raw := noMethod(*s)
+	type NoMethod LocalizedText
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // ManagedConfiguration: A managed configuration resource contains the
-// set of managed properties that have been configured for an Android
-// app. The app's developer would have defined configurable properties
-// in the managed configurations schema.
+// set of managed properties defined by the app developer in the app's
+// managed configurations schema, as well as any configuration variables
+// defined for the user.
 type ManagedConfiguration struct {
+	// ConfigurationVariables: Contains the ID of the managed configuration
+	// profile and the set of configuration variables (if any) defined for
+	// the user.
+	ConfigurationVariables *ConfigurationVariables `json:"configurationVariables,omitempty"`
+
 	// Kind: Identifies what kind of resource this is. Value: the fixed
 	// string "androidenterprise#managedConfiguration".
 	Kind string `json:"kind,omitempty"`
@@ -1494,26 +1550,28 @@ type ManagedConfiguration struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "Kind") to
-	// unconditionally include in API requests. By default, fields with
-	// empty values are omitted from API requests. However, any non-pointer,
-	// non-interface field appearing in ForceSendFields will be sent to the
-	// server regardless of whether the field is empty or not. This may be
-	// used to include empty fields in Patch requests.
+	// ForceSendFields is a list of field names (e.g.
+	// "ConfigurationVariables") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "Kind") to include in API
-	// requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
-	// null. It is an error if a field in this list has a non-empty value.
-	// This may be used to include null fields in Patch requests.
+	// NullFields is a list of field names (e.g. "ConfigurationVariables")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
 	NullFields []string `json:"-"`
 }
 
 func (s *ManagedConfiguration) MarshalJSON() ([]byte, error) {
-	type noMethod ManagedConfiguration
-	raw := noMethod(*s)
+	type NoMethod ManagedConfiguration
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1551,8 +1609,8 @@ type ManagedConfigurationsForDeviceListResponse struct {
 }
 
 func (s *ManagedConfigurationsForDeviceListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ManagedConfigurationsForDeviceListResponse
-	raw := noMethod(*s)
+	type NoMethod ManagedConfigurationsForDeviceListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1589,8 +1647,89 @@ type ManagedConfigurationsForUserListResponse struct {
 }
 
 func (s *ManagedConfigurationsForUserListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ManagedConfigurationsForUserListResponse
-	raw := noMethod(*s)
+	type NoMethod ManagedConfigurationsForUserListResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ManagedConfigurationsSettings: A managed configurations settings
+// resource contains the set of managed properties that have been
+// configured for an Android app to be applied to a set of users. The
+// app's developer would have defined configurable properties in the
+// managed configurations schema.
+type ManagedConfigurationsSettings struct {
+	// Kind: Identifies what kind of resource this is. Value: the fixed
+	// string "androidenterprise#managedConfigurationsSettings".
+	Kind string `json:"kind,omitempty"`
+
+	// ManagedProperty: The set of managed properties for this
+	// configuration.
+	ManagedProperty []*ManagedProperty `json:"managedProperty,omitempty"`
+
+	// McmId: The ID of the managed configurations settings.
+	McmId string `json:"mcmId,omitempty"`
+
+	// Name: The name of the managed configurations settings.
+	Name string `json:"name,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Kind") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ManagedConfigurationsSettings) MarshalJSON() ([]byte, error) {
+	type NoMethod ManagedConfigurationsSettings
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ManagedConfigurationsSettingsListResponse: The managed configurations
+// settings for a product.
+type ManagedConfigurationsSettingsListResponse struct {
+	// Kind: Identifies what kind of resource this is. Value: the fixed
+	// string "androidenterprise#managedConfigurationsSettingsListResponse".
+	Kind string `json:"kind,omitempty"`
+
+	// ManagedConfigurationsSettings: A managed configurations settings for
+	// an app that may be assigned to a group of users in an enterprise.
+	ManagedConfigurationsSettings []*ManagedConfigurationsSettings `json:"managedConfigurationsSettings,omitempty"`
+
+	// ServerResponse contains the HTTP response code and headers from the
+	// server.
+	googleapi.ServerResponse `json:"-"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Kind") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ManagedConfigurationsSettingsListResponse) MarshalJSON() ([]byte, error) {
+	type NoMethod ManagedConfigurationsSettingsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1645,8 +1784,8 @@ type ManagedProperty struct {
 }
 
 func (s *ManagedProperty) MarshalJSON() ([]byte, error) {
-	type noMethod ManagedProperty
-	raw := noMethod(*s)
+	type NoMethod ManagedProperty
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1674,8 +1813,8 @@ type ManagedPropertyBundle struct {
 }
 
 func (s *ManagedPropertyBundle) MarshalJSON() ([]byte, error) {
-	type noMethod ManagedPropertyBundle
-	raw := noMethod(*s)
+	type NoMethod ManagedPropertyBundle
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1716,8 +1855,8 @@ type NewDeviceEvent struct {
 }
 
 func (s *NewDeviceEvent) MarshalJSON() ([]byte, error) {
-	type noMethod NewDeviceEvent
-	raw := noMethod(*s)
+	type NoMethod NewDeviceEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1758,8 +1897,8 @@ type NewPermissionsEvent struct {
 }
 
 func (s *NewPermissionsEvent) MarshalJSON() ([]byte, error) {
-	type noMethod NewPermissionsEvent
-	raw := noMethod(*s)
+	type NoMethod NewPermissionsEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1820,8 +1959,8 @@ type Notification struct {
 }
 
 func (s *Notification) MarshalJSON() ([]byte, error) {
-	type noMethod Notification
-	raw := noMethod(*s)
+	type NoMethod Notification
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1864,8 +2003,8 @@ type NotificationSet struct {
 }
 
 func (s *NotificationSet) MarshalJSON() ([]byte, error) {
-	type noMethod NotificationSet
-	raw := noMethod(*s)
+	type NoMethod NotificationSet
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1894,8 +2033,8 @@ type PageInfo struct {
 }
 
 func (s *PageInfo) MarshalJSON() ([]byte, error) {
-	type noMethod PageInfo
-	raw := noMethod(*s)
+	type NoMethod PageInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1945,8 +2084,51 @@ type Permission struct {
 }
 
 func (s *Permission) MarshalJSON() ([]byte, error) {
-	type noMethod Permission
-	raw := noMethod(*s)
+	type NoMethod Permission
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// Policy: The device policy for a given managed device.
+type Policy struct {
+	// ProductAvailabilityPolicy: The availability granted to the device for
+	// the specified products. "all" gives the device access to all
+	// products, regardless of approval status. "allApproved" entitles the
+	// device to access all products that are approved for the enterprise.
+	// "allApproved" and "all" do not enable automatic visibility of "alpha"
+	// or "beta" tracks. "whitelist" grants the device access the products
+	// specified in productPolicy[]. Only products that are approved or
+	// products that were previously approved (products with revoked
+	// approval) by the enterprise can be whitelisted. If no value is
+	// provided, the availability set at the user level is applied by
+	// default.
+	ProductAvailabilityPolicy string `json:"productAvailabilityPolicy,omitempty"`
+
+	// ProductPolicy: The list of product policies.
+	ProductPolicy []*ProductPolicy `json:"productPolicy,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "ProductAvailabilityPolicy") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g.
+	// "ProductAvailabilityPolicy") to include in API requests with the JSON
+	// null value. By default, fields with empty values are omitted from API
+	// requests. However, any field with an empty value appearing in
+	// NullFields will be sent to the server as null. It is an error if a
+	// field in this list has a non-empty value. This may be used to include
+	// null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *Policy) MarshalJSON() ([]byte, error) {
+	type NoMethod Policy
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2040,8 +2222,8 @@ type Product struct {
 }
 
 func (s *Product) MarshalJSON() ([]byte, error) {
-	type noMethod Product
-	raw := noMethod(*s)
+	type NoMethod Product
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2075,8 +2257,8 @@ type ProductApprovalEvent struct {
 }
 
 func (s *ProductApprovalEvent) MarshalJSON() ([]byte, error) {
-	type noMethod ProductApprovalEvent
-	raw := noMethod(*s)
+	type NoMethod ProductApprovalEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2111,8 +2293,8 @@ type ProductAvailabilityChangeEvent struct {
 }
 
 func (s *ProductAvailabilityChangeEvent) MarshalJSON() ([]byte, error) {
-	type noMethod ProductAvailabilityChangeEvent
-	raw := noMethod(*s)
+	type NoMethod ProductAvailabilityChangeEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2147,8 +2329,8 @@ type ProductPermission struct {
 }
 
 func (s *ProductPermission) MarshalJSON() ([]byte, error) {
-	type noMethod ProductPermission
-	raw := noMethod(*s)
+	type NoMethod ProductPermission
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2188,8 +2370,55 @@ type ProductPermissions struct {
 }
 
 func (s *ProductPermissions) MarshalJSON() ([]byte, error) {
-	type noMethod ProductPermissions
-	raw := noMethod(*s)
+	type NoMethod ProductPermissions
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// ProductPolicy: The policy for a product.
+type ProductPolicy struct {
+	// ProductId: The ID of the product. For example,
+	// "app:com.google.android.gm".
+	ProductId string `json:"productId,omitempty"`
+
+	// Tracks: Grants visibility to the specified track(s) of the product to
+	// the device. The track available to the device is based on the
+	// following order of preference: alpha, beta, production. For example,
+	// if an app has a prod version, a beta version and an alpha version and
+	// the enterprise has been granted visibility to both the alpha and beta
+	// tracks, if tracks is {"beta", "production"} then the beta version of
+	// the app is made available to the device. If there are no app versions
+	// in the specified track adding the "alpha" and "beta" values to the
+	// list of tracks will have no effect. Note that the enterprise requires
+	// access to alpha and/or beta tracks before users can be granted
+	// visibility to apps in those tracks.
+	//
+	// The allowed sets are: {} (considered equivalent to {"production"})
+	// {"production"} {"beta", "production"} {"alpha", "beta", "production"}
+	// The order of elements is not relevant. Any other set of tracks will
+	// be rejected with an error.
+	Tracks []string `json:"tracks,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "ProductId") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ProductId") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *ProductPolicy) MarshalJSON() ([]byte, error) {
+	type NoMethod ProductPolicy
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2247,8 +2476,8 @@ type ProductSet struct {
 }
 
 func (s *ProductSet) MarshalJSON() ([]byte, error) {
-	type noMethod ProductSet
-	raw := noMethod(*s)
+	type NoMethod ProductSet
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2281,8 +2510,8 @@ type ProductSigningCertificate struct {
 }
 
 func (s *ProductSigningCertificate) MarshalJSON() ([]byte, error) {
-	type noMethod ProductSigningCertificate
-	raw := noMethod(*s)
+	type NoMethod ProductSigningCertificate
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2328,8 +2557,8 @@ type ProductVisibility struct {
 }
 
 func (s *ProductVisibility) MarshalJSON() ([]byte, error) {
-	type noMethod ProductVisibility
-	raw := noMethod(*s)
+	type NoMethod ProductVisibility
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2369,8 +2598,8 @@ type ProductsApproveRequest struct {
 }
 
 func (s *ProductsApproveRequest) MarshalJSON() ([]byte, error) {
-	type noMethod ProductsApproveRequest
-	raw := noMethod(*s)
+	type NoMethod ProductsApproveRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2408,8 +2637,8 @@ type ProductsGenerateApprovalUrlResponse struct {
 }
 
 func (s *ProductsGenerateApprovalUrlResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ProductsGenerateApprovalUrlResponse
-	raw := noMethod(*s)
+	type NoMethod ProductsGenerateApprovalUrlResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2451,8 +2680,8 @@ type ProductsListResponse struct {
 }
 
 func (s *ProductsListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ProductsListResponse
-	raw := noMethod(*s)
+	type NoMethod ProductsListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2493,8 +2722,8 @@ type ServiceAccount struct {
 }
 
 func (s *ServiceAccount) MarshalJSON() ([]byte, error) {
-	type noMethod ServiceAccount
-	raw := noMethod(*s)
+	type NoMethod ServiceAccount
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2545,8 +2774,8 @@ type ServiceAccountKey struct {
 }
 
 func (s *ServiceAccountKey) MarshalJSON() ([]byte, error) {
-	type noMethod ServiceAccountKey
-	raw := noMethod(*s)
+	type NoMethod ServiceAccountKey
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2577,8 +2806,8 @@ type ServiceAccountKeysListResponse struct {
 }
 
 func (s *ServiceAccountKeysListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ServiceAccountKeysListResponse
-	raw := noMethod(*s)
+	type NoMethod ServiceAccountKeysListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2621,8 +2850,8 @@ type SignupInfo struct {
 }
 
 func (s *SignupInfo) MarshalJSON() ([]byte, error) {
-	type noMethod SignupInfo
-	raw := noMethod(*s)
+	type NoMethod SignupInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2679,8 +2908,8 @@ type StoreCluster struct {
 }
 
 func (s *StoreCluster) MarshalJSON() ([]byte, error) {
-	type noMethod StoreCluster
-	raw := noMethod(*s)
+	type NoMethod StoreCluster
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2728,8 +2957,8 @@ type StoreLayout struct {
 }
 
 func (s *StoreLayout) MarshalJSON() ([]byte, error) {
-	type noMethod StoreLayout
-	raw := noMethod(*s)
+	type NoMethod StoreLayout
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2765,8 +2994,8 @@ type StoreLayoutClustersListResponse struct {
 }
 
 func (s *StoreLayoutClustersListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod StoreLayoutClustersListResponse
-	raw := noMethod(*s)
+	type NoMethod StoreLayoutClustersListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2802,8 +3031,8 @@ type StoreLayoutPagesListResponse struct {
 }
 
 func (s *StoreLayoutPagesListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod StoreLayoutPagesListResponse
-	raw := noMethod(*s)
+	type NoMethod StoreLayoutPagesListResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2857,8 +3086,8 @@ type StorePage struct {
 }
 
 func (s *StorePage) MarshalJSON() ([]byte, error) {
-	type noMethod StorePage
-	raw := noMethod(*s)
+	type NoMethod StorePage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2885,8 +3114,8 @@ type TokenPagination struct {
 }
 
 func (s *TokenPagination) MarshalJSON() ([]byte, error) {
-	type noMethod TokenPagination
-	raw := noMethod(*s)
+	type NoMethod TokenPagination
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2962,8 +3191,8 @@ type User struct {
 }
 
 func (s *User) MarshalJSON() ([]byte, error) {
-	type noMethod User
-	raw := noMethod(*s)
+	type NoMethod User
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3006,8 +3235,8 @@ type UserToken struct {
 }
 
 func (s *UserToken) MarshalJSON() ([]byte, error) {
-	type noMethod UserToken
-	raw := noMethod(*s)
+	type NoMethod UserToken
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3042,8 +3271,47 @@ type UsersListResponse struct {
 }
 
 func (s *UsersListResponse) MarshalJSON() ([]byte, error) {
-	type noMethod UsersListResponse
-	raw := noMethod(*s)
+	type NoMethod UsersListResponse
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// VariableSet: A variable set is a key-value pair of EMM-provided
+// placeholders and its corresponding value, which is attributed to a
+// user. For example, $FIRSTNAME could be a placeholder, and its value
+// could be Alice. Placeholders should start with a '$' sign and should
+// be alphanumeric only.
+type VariableSet struct {
+	// Kind: Identifies what kind of resource this is. Value: the fixed
+	// string "androidenterprise#variableSet".
+	Kind string `json:"kind,omitempty"`
+
+	// Placeholder: The placeholder string; defined by EMM.
+	Placeholder string `json:"placeholder,omitempty"`
+
+	// UserValue: The value of the placeholder, specific to the user.
+	UserValue string `json:"userValue,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Kind") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Kind") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *VariableSet) MarshalJSON() ([]byte, error) {
+	type NoMethod VariableSet
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3160,7 +3428,7 @@ func (c *DevicesGetCall) Do(opts ...googleapi.CallOption) (*Device, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3322,7 +3590,7 @@ func (c *DevicesGetStateCall) Do(opts ...googleapi.CallOption) (*DeviceState, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3476,7 +3744,7 @@ func (c *DevicesListCall) Do(opts ...googleapi.CallOption) (*DevicesListResponse
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3505,6 +3773,176 @@ func (c *DevicesListCall) Do(opts ...googleapi.CallOption) (*DevicesListResponse
 	//   "path": "enterprises/{enterpriseId}/users/{userId}/devices",
 	//   "response": {
 	//     "$ref": "DevicesListResponse"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidenterprise"
+	//   ]
+	// }
+
+}
+
+// method id "androidenterprise.devices.patch":
+
+type DevicesPatchCall struct {
+	s            *Service
+	enterpriseId string
+	userId       string
+	deviceId     string
+	device       *Device
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Patch: Updates the device policy. This method supports patch
+// semantics.
+func (r *DevicesService) Patch(enterpriseId string, userId string, deviceId string, device *Device) *DevicesPatchCall {
+	c := &DevicesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.enterpriseId = enterpriseId
+	c.userId = userId
+	c.deviceId = deviceId
+	c.device = device
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": Mask that
+// identifies which fields to update. If not set, all modifiable fields
+// will be modified.
+//
+// When set in a query parameter, this field should be specified as
+// updateMask=<field1>,<field2>,...
+func (c *DevicesPatchCall) UpdateMask(updateMask string) *DevicesPatchCall {
+	c.urlParams_.Set("updateMask", updateMask)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *DevicesPatchCall) Fields(s ...googleapi.Field) *DevicesPatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DevicesPatchCall) Context(ctx context.Context) *DevicesPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *DevicesPatchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *DevicesPatchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.device)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/devices/{deviceId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PATCH", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"enterpriseId": c.enterpriseId,
+		"userId":       c.userId,
+		"deviceId":     c.deviceId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androidenterprise.devices.patch" call.
+// Exactly one of *Device or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Device.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *DevicesPatchCall) Do(opts ...googleapi.CallOption) (*Device, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Device{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates the device policy. This method supports patch semantics.",
+	//   "httpMethod": "PATCH",
+	//   "id": "androidenterprise.devices.patch",
+	//   "parameterOrder": [
+	//     "enterpriseId",
+	//     "userId",
+	//     "deviceId"
+	//   ],
+	//   "parameters": {
+	//     "deviceId": {
+	//       "description": "The ID of the device.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "enterpriseId": {
+	//       "description": "The ID of the enterprise.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "updateMask": {
+	//       "description": "Mask that identifies which fields to update. If not set, all modifiable fields will be modified.\n\nWhen set in a query parameter, this field should be specified as updateMask=\u003cfield1\u003e,\u003cfield2\u003e,...",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "userId": {
+	//       "description": "The ID of the user.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "enterprises/{enterpriseId}/users/{userId}/devices/{deviceId}",
+	//   "request": {
+	//     "$ref": "Device"
+	//   },
+	//   "response": {
+	//     "$ref": "Device"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/androidenterprise"
@@ -3624,7 +4062,7 @@ func (c *DevicesSetStateCall) Do(opts ...googleapi.CallOption) (*DeviceState, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3663,6 +4101,175 @@ func (c *DevicesSetStateCall) Do(opts ...googleapi.CallOption) (*DeviceState, er
 	//   },
 	//   "response": {
 	//     "$ref": "DeviceState"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidenterprise"
+	//   ]
+	// }
+
+}
+
+// method id "androidenterprise.devices.update":
+
+type DevicesUpdateCall struct {
+	s            *Service
+	enterpriseId string
+	userId       string
+	deviceId     string
+	device       *Device
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// Update: Updates the device policy
+func (r *DevicesService) Update(enterpriseId string, userId string, deviceId string, device *Device) *DevicesUpdateCall {
+	c := &DevicesUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.enterpriseId = enterpriseId
+	c.userId = userId
+	c.deviceId = deviceId
+	c.device = device
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": Mask that
+// identifies which fields to update. If not set, all modifiable fields
+// will be modified.
+//
+// When set in a query parameter, this field should be specified as
+// updateMask=<field1>,<field2>,...
+func (c *DevicesUpdateCall) UpdateMask(updateMask string) *DevicesUpdateCall {
+	c.urlParams_.Set("updateMask", updateMask)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *DevicesUpdateCall) Fields(s ...googleapi.Field) *DevicesUpdateCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *DevicesUpdateCall) Context(ctx context.Context) *DevicesUpdateCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *DevicesUpdateCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *DevicesUpdateCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.device)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/devices/{deviceId}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PUT", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"enterpriseId": c.enterpriseId,
+		"userId":       c.userId,
+		"deviceId":     c.deviceId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androidenterprise.devices.update" call.
+// Exactly one of *Device or error will be non-nil. Any non-2xx status
+// code is an error. Response headers are in either
+// *Device.ServerResponse.Header or (if a response was returned at all)
+// in error.(*googleapi.Error).Header. Use googleapi.IsNotModified to
+// check whether the returned error was because http.StatusNotModified
+// was returned.
+func (c *DevicesUpdateCall) Do(opts ...googleapi.CallOption) (*Device, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &Device{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates the device policy",
+	//   "httpMethod": "PUT",
+	//   "id": "androidenterprise.devices.update",
+	//   "parameterOrder": [
+	//     "enterpriseId",
+	//     "userId",
+	//     "deviceId"
+	//   ],
+	//   "parameters": {
+	//     "deviceId": {
+	//       "description": "The ID of the device.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "enterpriseId": {
+	//       "description": "The ID of the enterprise.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "updateMask": {
+	//       "description": "Mask that identifies which fields to update. If not set, all modifiable fields will be modified.\n\nWhen set in a query parameter, this field should be specified as updateMask=\u003cfield1\u003e,\u003cfield2\u003e,...",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "userId": {
+	//       "description": "The ID of the user.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "enterprises/{enterpriseId}/users/{userId}/devices/{deviceId}",
+	//   "request": {
+	//     "$ref": "Device"
+	//   },
+	//   "response": {
+	//     "$ref": "Device"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/androidenterprise"
@@ -3871,7 +4478,7 @@ func (c *EnterprisesCompleteSignupCall) Do(opts ...googleapi.CallOption) (*Enter
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4006,7 +4613,7 @@ func (c *EnterprisesCreateWebTokenCall) Do(opts ...googleapi.CallOption) (*Admin
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4233,7 +4840,7 @@ func (c *EnterprisesEnrollCall) Do(opts ...googleapi.CallOption) (*Enterprise, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4369,7 +4976,7 @@ func (c *EnterprisesGenerateSignupUrlCall) Do(opts ...googleapi.CallOption) (*Si
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4502,7 +5109,7 @@ func (c *EnterprisesGetCall) Do(opts ...googleapi.CallOption) (*Enterprise, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4640,7 +5247,7 @@ func (c *EnterprisesGetAndroidDevicePolicyConfigCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4803,7 +5410,7 @@ func (c *EnterprisesGetServiceAccountCall) Do(opts ...googleapi.CallOption) (*Se
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4955,7 +5562,7 @@ func (c *EnterprisesGetStoreLayoutCall) Do(opts ...googleapi.CallOption) (*Store
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5082,7 +5689,7 @@ func (c *EnterprisesInsertCall) Do(opts ...googleapi.CallOption) (*Enterprise, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5222,7 +5829,7 @@ func (c *EnterprisesListCall) Do(opts ...googleapi.CallOption) (*EnterprisesList
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5376,7 +5983,7 @@ func (c *EnterprisesPullNotificationSetCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5507,7 +6114,7 @@ func (c *EnterprisesSendTestPushNotificationCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5638,7 +6245,7 @@ func (c *EnterprisesSetAccountCall) Do(opts ...googleapi.CallOption) (*Enterpris
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5775,7 +6382,7 @@ func (c *EnterprisesSetAndroidDevicePolicyConfigCall) Do(opts ...googleapi.CallO
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5915,7 +6522,7 @@ func (c *EnterprisesSetStoreLayoutCall) Do(opts ...googleapi.CallOption) (*Store
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6271,7 +6878,7 @@ func (c *EntitlementsGetCall) Do(opts ...googleapi.CallOption) (*Entitlement, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6426,7 +7033,7 @@ func (c *EntitlementsListCall) Do(opts ...googleapi.CallOption) (*EntitlementsLi
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6580,7 +7187,7 @@ func (c *EntitlementsPatchCall) Do(opts ...googleapi.CallOption) (*Entitlement, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6748,7 +7355,7 @@ func (c *EntitlementsUpdateCall) Do(opts ...googleapi.CallOption) (*Entitlement,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6911,7 +7518,7 @@ func (c *GrouplicensesGetCall) Do(opts ...googleapi.CallOption) (*GroupLicense, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7056,7 +7663,7 @@ func (c *GrouplicensesListCall) Do(opts ...googleapi.CallOption) (*GroupLicenses
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7197,7 +7804,7 @@ func (c *GrouplicenseusersListCall) Do(opts ...googleapi.CallOption) (*GroupLice
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7477,7 +8084,7 @@ func (c *InstallsGetCall) Do(opts ...googleapi.CallOption) (*Install, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7642,7 +8249,7 @@ func (c *InstallsListCall) Do(opts ...googleapi.CallOption) (*InstallsListRespon
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7797,7 +8404,7 @@ func (c *InstallsPatchCall) Do(opts ...googleapi.CallOption) (*Install, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7962,7 +8569,7 @@ func (c *InstallsUpdateCall) Do(opts ...googleapi.CallOption) (*Install, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8258,7 +8865,7 @@ func (c *ManagedconfigurationsfordeviceGetCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8425,7 +9032,7 @@ func (c *ManagedconfigurationsfordeviceListCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8579,7 +9186,7 @@ func (c *ManagedconfigurationsfordevicePatchCall) Do(opts ...googleapi.CallOptio
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8743,7 +9350,7 @@ func (c *ManagedconfigurationsfordeviceUpdateCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9027,7 +9634,7 @@ func (c *ManagedconfigurationsforuserGetCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9184,7 +9791,7 @@ func (c *ManagedconfigurationsforuserListCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9234,8 +9841,13 @@ type ManagedconfigurationsforuserPatchCall struct {
 	header_                       http.Header
 }
 
-// Patch: Adds or updates a per-user managed configuration for an app
-// for the specified user. This method supports patch semantics.
+// Patch: Adds or updates the managed configuration settings for an app
+// for the specified user. If you support the Managed configurations
+// iframe, you can apply managed configurations to a user by specifying
+// an mcmId and its associated configuration variables (if any) in the
+// request. Alternatively, all EMMs can apply managed configurations by
+// passing a list of managed properties. This method supports patch
+// semantics.
 func (r *ManagedconfigurationsforuserService) Patch(enterpriseId string, userId string, managedConfigurationForUserId string, managedconfiguration *ManagedConfiguration) *ManagedconfigurationsforuserPatchCall {
 	c := &ManagedconfigurationsforuserPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.enterpriseId = enterpriseId
@@ -9328,12 +9940,12 @@ func (c *ManagedconfigurationsforuserPatchCall) Do(opts ...googleapi.CallOption)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Adds or updates a per-user managed configuration for an app for the specified user. This method supports patch semantics.",
+	//   "description": "Adds or updates the managed configuration settings for an app for the specified user. If you support the Managed configurations iframe, you can apply managed configurations to a user by specifying an mcmId and its associated configuration variables (if any) in the request. Alternatively, all EMMs can apply managed configurations by passing a list of managed properties. This method supports patch semantics.",
 	//   "httpMethod": "PATCH",
 	//   "id": "androidenterprise.managedconfigurationsforuser.patch",
 	//   "parameterOrder": [
@@ -9388,8 +10000,12 @@ type ManagedconfigurationsforuserUpdateCall struct {
 	header_                       http.Header
 }
 
-// Update: Adds or updates a per-user managed configuration for an app
-// for the specified user.
+// Update: Adds or updates the managed configuration settings for an app
+// for the specified user. If you support the Managed configurations
+// iframe, you can apply managed configurations to a user by specifying
+// an mcmId and its associated configuration variables (if any) in the
+// request. Alternatively, all EMMs can apply managed configurations by
+// passing a list of managed properties.
 func (r *ManagedconfigurationsforuserService) Update(enterpriseId string, userId string, managedConfigurationForUserId string, managedconfiguration *ManagedConfiguration) *ManagedconfigurationsforuserUpdateCall {
 	c := &ManagedconfigurationsforuserUpdateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.enterpriseId = enterpriseId
@@ -9482,12 +10098,12 @@ func (c *ManagedconfigurationsforuserUpdateCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Adds or updates a per-user managed configuration for an app for the specified user.",
+	//   "description": "Adds or updates the managed configuration settings for an app for the specified user. If you support the Managed configurations iframe, you can apply managed configurations to a user by specifying an mcmId and its associated configuration variables (if any) in the request. Alternatively, all EMMs can apply managed configurations by passing a list of managed properties.",
 	//   "httpMethod": "PUT",
 	//   "id": "androidenterprise.managedconfigurationsforuser.update",
 	//   "parameterOrder": [
@@ -9521,6 +10137,156 @@ func (c *ManagedconfigurationsforuserUpdateCall) Do(opts ...googleapi.CallOption
 	//   },
 	//   "response": {
 	//     "$ref": "ManagedConfiguration"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidenterprise"
+	//   ]
+	// }
+
+}
+
+// method id "androidenterprise.managedconfigurationssettings.list":
+
+type ManagedconfigurationssettingsListCall struct {
+	s            *Service
+	enterpriseId string
+	productId    string
+	urlParams_   gensupport.URLParams
+	ifNoneMatch_ string
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// List: Lists all the managed configurations settings for the specified
+// app. Only the ID and the name is set.
+func (r *ManagedconfigurationssettingsService) List(enterpriseId string, productId string) *ManagedconfigurationssettingsListCall {
+	c := &ManagedconfigurationssettingsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.enterpriseId = enterpriseId
+	c.productId = productId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ManagedconfigurationssettingsListCall) Fields(s ...googleapi.Field) *ManagedconfigurationssettingsListCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// IfNoneMatch sets the optional parameter which makes the operation
+// fail if the object's ETag matches the given value. This is useful for
+// getting updates only after the object has changed since the last
+// request. Use googleapi.IsNotModified to check whether the response
+// error from Do is the result of In-None-Match.
+func (c *ManagedconfigurationssettingsListCall) IfNoneMatch(entityTag string) *ManagedconfigurationssettingsListCall {
+	c.ifNoneMatch_ = entityTag
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ManagedconfigurationssettingsListCall) Context(ctx context.Context) *ManagedconfigurationssettingsListCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ManagedconfigurationssettingsListCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ManagedconfigurationssettingsListCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	if c.ifNoneMatch_ != "" {
+		reqHeaders.Set("If-None-Match", c.ifNoneMatch_)
+	}
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/products/{productId}/managedConfigurationsSettings")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("GET", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"enterpriseId": c.enterpriseId,
+		"productId":    c.productId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androidenterprise.managedconfigurationssettings.list" call.
+// Exactly one of *ManagedConfigurationsSettingsListResponse or error
+// will be non-nil. Any non-2xx status code is an error. Response
+// headers are in either
+// *ManagedConfigurationsSettingsListResponse.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ManagedconfigurationssettingsListCall) Do(opts ...googleapi.CallOption) (*ManagedConfigurationsSettingsListResponse, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &ManagedConfigurationsSettingsListResponse{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Lists all the managed configurations settings for the specified app. Only the ID and the name is set.",
+	//   "httpMethod": "GET",
+	//   "id": "androidenterprise.managedconfigurationssettings.list",
+	//   "parameterOrder": [
+	//     "enterpriseId",
+	//     "productId"
+	//   ],
+	//   "parameters": {
+	//     "enterpriseId": {
+	//       "description": "The ID of the enterprise.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "productId": {
+	//       "description": "The ID of the product for which the managed configurations settings applies to.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "enterprises/{enterpriseId}/products/{productId}/managedConfigurationsSettings",
+	//   "response": {
+	//     "$ref": "ManagedConfigurationsSettingsListResponse"
 	//   },
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/androidenterprise"
@@ -9644,7 +10410,7 @@ func (c *PermissionsGetCall) Do(opts ...googleapi.CallOption) (*Permission, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -9915,7 +10681,7 @@ func (c *ProductsGenerateApprovalUrlCall) Do(opts ...googleapi.CallOption) (*Pro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10075,7 +10841,7 @@ func (c *ProductsGetCall) Do(opts ...googleapi.CallOption) (*Product, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10240,7 +11006,7 @@ func (c *ProductsGetAppRestrictionsSchemaCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10393,7 +11159,7 @@ func (c *ProductsGetPermissionsCall) Do(opts ...googleapi.CallOption) (*ProductP
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10582,7 +11348,7 @@ func (c *ProductsListCall) Do(opts ...googleapi.CallOption) (*ProductsListRespon
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -10960,7 +11726,7 @@ func (c *ServiceaccountkeysInsertCall) Do(opts ...googleapi.CallOption) (*Servic
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11104,7 +11870,7 @@ func (c *ServiceaccountkeysListCall) Do(opts ...googleapi.CallOption) (*ServiceA
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11362,7 +12128,7 @@ func (c *StorelayoutclustersGetCall) Do(opts ...googleapi.CallOption) (*StoreClu
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11509,7 +12275,7 @@ func (c *StorelayoutclustersInsertCall) Do(opts ...googleapi.CallOption) (*Store
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11659,7 +12425,7 @@ func (c *StorelayoutclustersListCall) Do(opts ...googleapi.CallOption) (*StoreLa
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11802,7 +12568,7 @@ func (c *StorelayoutclustersPatchCall) Do(opts ...googleapi.CallOption) (*StoreC
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -11955,7 +12721,7 @@ func (c *StorelayoutclustersUpdateCall) Do(opts ...googleapi.CallOption) (*Store
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -12217,7 +12983,7 @@ func (c *StorelayoutpagesGetCall) Do(opts ...googleapi.CallOption) (*StorePage, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -12354,7 +13120,7 @@ func (c *StorelayoutpagesInsertCall) Do(opts ...googleapi.CallOption) (*StorePag
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -12494,7 +13260,7 @@ func (c *StorelayoutpagesListCall) Do(opts ...googleapi.CallOption) (*StoreLayou
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -12628,7 +13394,7 @@ func (c *StorelayoutpagesPatchCall) Do(opts ...googleapi.CallOption) (*StorePage
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -12771,7 +13537,7 @@ func (c *StorelayoutpagesUpdateCall) Do(opts ...googleapi.CallOption) (*StorePag
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -13017,7 +13783,7 @@ func (c *UsersGenerateAuthenticationTokenCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -13154,7 +13920,7 @@ func (c *UsersGenerateTokenCall) Do(opts ...googleapi.CallOption) (*UserToken, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -13301,7 +14067,7 @@ func (c *UsersGetCall) Do(opts ...googleapi.CallOption) (*User, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -13449,7 +14215,7 @@ func (c *UsersGetAvailableProductSetCall) Do(opts ...googleapi.CallOption) (*Pro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -13592,7 +14358,7 @@ func (c *UsersInsertCall) Do(opts ...googleapi.CallOption) (*User, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -13736,7 +14502,7 @@ func (c *UsersListCall) Do(opts ...googleapi.CallOption) (*UsersListResponse, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -13882,7 +14648,7 @@ func (c *UsersPatchCall) Do(opts ...googleapi.CallOption) (*User, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -13915,6 +14681,115 @@ func (c *UsersPatchCall) Do(opts ...googleapi.CallOption) (*User, error) {
 	//   "response": {
 	//     "$ref": "User"
 	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/androidenterprise"
+	//   ]
+	// }
+
+}
+
+// method id "androidenterprise.users.revokeDeviceAccess":
+
+type UsersRevokeDeviceAccessCall struct {
+	s            *Service
+	enterpriseId string
+	userId       string
+	urlParams_   gensupport.URLParams
+	ctx_         context.Context
+	header_      http.Header
+}
+
+// RevokeDeviceAccess: Revokes access to all devices currently
+// provisioned to the user. The user will no longer be able to use the
+// managed Play store on any of their managed devices.
+//
+// This call only works with EMM-managed accounts.
+func (r *UsersService) RevokeDeviceAccess(enterpriseId string, userId string) *UsersRevokeDeviceAccessCall {
+	c := &UsersRevokeDeviceAccessCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.enterpriseId = enterpriseId
+	c.userId = userId
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *UsersRevokeDeviceAccessCall) Fields(s ...googleapi.Field) *UsersRevokeDeviceAccessCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *UsersRevokeDeviceAccessCall) Context(ctx context.Context) *UsersRevokeDeviceAccessCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *UsersRevokeDeviceAccessCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *UsersRevokeDeviceAccessCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "enterprises/{enterpriseId}/users/{userId}/deviceAccess")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("DELETE", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"enterpriseId": c.enterpriseId,
+		"userId":       c.userId,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "androidenterprise.users.revokeDeviceAccess" call.
+func (c *UsersRevokeDeviceAccessCall) Do(opts ...googleapi.CallOption) error {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if err != nil {
+		return err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return err
+	}
+	return nil
+	// {
+	//   "description": "Revokes access to all devices currently provisioned to the user. The user will no longer be able to use the managed Play store on any of their managed devices.\n\nThis call only works with EMM-managed accounts.",
+	//   "httpMethod": "DELETE",
+	//   "id": "androidenterprise.users.revokeDeviceAccess",
+	//   "parameterOrder": [
+	//     "enterpriseId",
+	//     "userId"
+	//   ],
+	//   "parameters": {
+	//     "enterpriseId": {
+	//       "description": "The ID of the enterprise.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "userId": {
+	//       "description": "The ID of the user.",
+	//       "location": "path",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "enterprises/{enterpriseId}/users/{userId}/deviceAccess",
 	//   "scopes": [
 	//     "https://www.googleapis.com/auth/androidenterprise"
 	//   ]
@@ -14134,7 +15009,7 @@ func (c *UsersSetAvailableProductSetCall) Do(opts ...googleapi.CallOption) (*Pro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -14282,7 +15157,7 @@ func (c *UsersUpdateCall) Do(opts ...googleapi.CallOption) (*User, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

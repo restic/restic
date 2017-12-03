@@ -140,8 +140,8 @@ type Arg struct {
 }
 
 func (s *Arg) MarshalJSON() ([]byte, error) {
-	type noMethod Arg
-	raw := noMethod(*s)
+	type NoMethod Arg
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -193,8 +193,8 @@ type File struct {
 }
 
 func (s *File) MarshalJSON() ([]byte, error) {
-	type noMethod File
-	raw := noMethod(*s)
+	type NoMethod File
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -226,8 +226,8 @@ type FunctionCall struct {
 }
 
 func (s *FunctionCall) MarshalJSON() ([]byte, error) {
-	type noMethod FunctionCall
-	raw := noMethod(*s)
+	type NoMethod FunctionCall
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -280,8 +280,8 @@ type FunctionMock struct {
 }
 
 func (s *FunctionMock) MarshalJSON() ([]byte, error) {
-	type noMethod FunctionMock
-	raw := noMethod(*s)
+	type NoMethod FunctionMock
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -342,8 +342,8 @@ type GetReleaseExecutableResponse struct {
 }
 
 func (s *GetReleaseExecutableResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GetReleaseExecutableResponse
-	raw := noMethod(*s)
+	type NoMethod GetReleaseExecutableResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -385,8 +385,8 @@ type Issue struct {
 }
 
 func (s *Issue) MarshalJSON() ([]byte, error) {
-	type noMethod Issue
-	raw := noMethod(*s)
+	type NoMethod Issue
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -423,8 +423,8 @@ type ListReleasesResponse struct {
 }
 
 func (s *ListReleasesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListReleasesResponse
-	raw := noMethod(*s)
+	type NoMethod ListReleasesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -461,8 +461,8 @@ type ListRulesetsResponse struct {
 }
 
 func (s *ListRulesetsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListRulesetsResponse
-	raw := noMethod(*s)
+	type NoMethod ListRulesetsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -543,8 +543,8 @@ type Release struct {
 }
 
 func (s *Release) MarshalJSON() ([]byte, error) {
-	type noMethod Release
-	raw := noMethod(*s)
+	type NoMethod Release
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -577,8 +577,8 @@ type Result struct {
 }
 
 func (s *Result) MarshalJSON() ([]byte, error) {
-	type noMethod Result
-	raw := noMethod(*s)
+	type NoMethod Result
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -621,8 +621,8 @@ type Ruleset struct {
 }
 
 func (s *Ruleset) MarshalJSON() ([]byte, error) {
-	type noMethod Ruleset
-	raw := noMethod(*s)
+	type NoMethod Ruleset
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -650,8 +650,8 @@ type Source struct {
 }
 
 func (s *Source) MarshalJSON() ([]byte, error) {
-	type noMethod Source
-	raw := noMethod(*s)
+	type NoMethod Source
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -687,8 +687,8 @@ type SourcePosition struct {
 }
 
 func (s *SourcePosition) MarshalJSON() ([]byte, error) {
-	type noMethod SourcePosition
-	raw := noMethod(*s)
+	type NoMethod SourcePosition
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -771,8 +771,8 @@ type TestCase struct {
 }
 
 func (s *TestCase) MarshalJSON() ([]byte, error) {
-	type noMethod TestCase
-	raw := noMethod(*s)
+	type NoMethod TestCase
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -842,8 +842,8 @@ type TestResult struct {
 }
 
 func (s *TestResult) MarshalJSON() ([]byte, error) {
-	type noMethod TestResult
-	raw := noMethod(*s)
+	type NoMethod TestResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -876,8 +876,8 @@ type TestRulesetRequest struct {
 }
 
 func (s *TestRulesetRequest) MarshalJSON() ([]byte, error) {
-	type noMethod TestRulesetRequest
-	raw := noMethod(*s)
+	type NoMethod TestRulesetRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -918,8 +918,8 @@ type TestRulesetResponse struct {
 }
 
 func (s *TestRulesetResponse) MarshalJSON() ([]byte, error) {
-	type noMethod TestRulesetResponse
-	raw := noMethod(*s)
+	type NoMethod TestRulesetResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -952,8 +952,8 @@ type TestSuite struct {
 }
 
 func (s *TestSuite) MarshalJSON() ([]byte, error) {
-	type noMethod TestSuite
-	raw := noMethod(*s)
+	type NoMethod TestSuite
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -984,8 +984,8 @@ type UpdateReleaseRequest struct {
 }
 
 func (s *UpdateReleaseRequest) MarshalJSON() ([]byte, error) {
-	type noMethod UpdateReleaseRequest
-	raw := noMethod(*s)
+	type NoMethod UpdateReleaseRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1116,7 +1116,7 @@ func (c *ProjectsTestCall) Do(opts ...googleapi.CallOption) (*TestRulesetRespons
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1287,7 +1287,7 @@ func (c *ProjectsReleasesCreateCall) Do(opts ...googleapi.CallOption) (*Release,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1416,7 +1416,7 @@ func (c *ProjectsReleasesDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1556,7 +1556,7 @@ func (c *ProjectsReleasesGetCall) Do(opts ...googleapi.CallOption) (*Release, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1711,7 +1711,7 @@ func (c *ProjectsReleasesGetExecutableCall) Do(opts ...googleapi.CallOption) (*G
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1930,7 +1930,7 @@ func (c *ProjectsReleasesListCall) Do(opts ...googleapi.CallOption) (*ListReleas
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2107,7 +2107,7 @@ func (c *ProjectsReleasesPatchCall) Do(opts ...googleapi.CallOption) (*Release, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2249,7 +2249,7 @@ func (c *ProjectsReleasesUpdateCall) Do(opts ...googleapi.CallOption) (*Release,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2393,7 +2393,7 @@ func (c *ProjectsRulesetsCreateCall) Do(opts ...googleapi.CallOption) (*Ruleset,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2525,7 +2525,7 @@ func (c *ProjectsRulesetsDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2665,7 +2665,7 @@ func (c *ProjectsRulesetsGetCall) Do(opts ...googleapi.CallOption) (*Ruleset, er
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2847,7 +2847,7 @@ func (c *ProjectsRulesetsListCall) Do(opts ...googleapi.CallOption) (*ListRulese
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

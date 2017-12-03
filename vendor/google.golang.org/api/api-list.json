@@ -743,22 +743,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "cloudmonitoring:v2beta2",
-   "name": "cloudmonitoring",
-   "version": "v2beta2",
-   "title": "Cloud Monitoring API",
-   "description": "Accesses Google Cloud Monitoring data.",
-   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/cloudmonitoring/v2beta2/rest",
-   "discoveryLink": "./apis/cloudmonitoring/v2beta2/rest",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://cloud.google.com/monitoring/v2beta2/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "cloudresourcemanager:v1",
    "name": "cloudresourcemanager",
    "version": "v1",
@@ -823,7 +807,7 @@
    "name": "cloudtrace",
    "version": "v1",
    "title": "Stackdriver Trace API",
-   "description": "Send and retrieve trace data from Stackdriver Trace. Data is generated and available by default for all App Engine applications. Data from other applications can be written to Stackdriver Trace for display, reporting, and analysis.",
+   "description": "Sends application trace data to Stackdriver Trace for viewing. Trace data is collected for all App Engine applications by default. Trace data from other applications can be provided using this API.",
    "discoveryRestUrl": "https://cloudtrace.googleapis.com/$discovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
@@ -838,7 +822,7 @@
    "name": "cloudtrace",
    "version": "v2",
    "title": "Stackdriver Trace API",
-   "description": "Send and retrieve trace data from Stackdriver Trace. Data is generated and available by default for all App Engine applications. Data from other applications can be written to Stackdriver Trace for display, reporting, and analysis.",
+   "description": "Sends application trace data to Stackdriver Trace for viewing. Trace data is collected for all App Engine applications by default. Trace data from other applications can be provided using this API.",
    "discoveryRestUrl": "https://cloudtrace.googleapis.com/$discovery/rest?version=v2",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
@@ -980,7 +964,7 @@
    "name": "container",
    "version": "v1",
    "title": "Google Container Engine API",
-   "description": "The Google Container Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
+   "description": "The Google Kubernetes Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
    "discoveryRestUrl": "https://container.googleapis.com/$discovery/rest?version=v1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
@@ -995,7 +979,7 @@
    "name": "container",
    "version": "v1beta1",
    "title": "Google Container Engine API",
-   "description": "The Google Container Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
+   "description": "The Google Kubernetes Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.",
    "discoveryRestUrl": "https://container.googleapis.com/$discovery/rest?version=v1beta1",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
@@ -1220,6 +1204,37 @@
     "x32": "https://www.google.com/images/icons/product/doubleclick-32.gif"
    },
    "documentationLink": "https://developers.google.com/doubleclick-advertisers/",
+   "preferred": false
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "dfareporting:v3.0",
+   "name": "dfareporting",
+   "version": "v3.0",
+   "title": "DCM/DFA Reporting And Trafficking API",
+   "description": "Manages your DoubleClick Campaign Manager ad campaigns and reports.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/dfareporting/v3.0/rest",
+   "discoveryLink": "./apis/dfareporting/v3.0/rest",
+   "icons": {
+    "x16": "https://www.google.com/images/icons/product/doubleclick-16.gif",
+    "x32": "https://www.google.com/images/icons/product/doubleclick-32.gif"
+   },
+   "documentationLink": "https://developers.google.com/doubleclick-advertisers/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "dialogflow:v2beta1",
+   "name": "dialogflow",
+   "version": "v2beta1",
+   "title": "Dialogflow API",
+   "description": "An end-to-end development suite for conversational interfaces (e.g., chatbots, voice-powered apps and devices).",
+   "discoveryRestUrl": "https://dialogflow.googleapis.com/$discovery/rest?version=v2beta1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/dialogflow-enterprise/",
    "preferred": true
   },
   {
@@ -1268,6 +1283,22 @@
    },
    "documentationLink": "https://developers.google.com/cloud-dns",
    "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "dns:v1beta2",
+   "name": "dns",
+   "version": "v1beta2",
+   "title": "Google Cloud DNS API",
+   "description": "Configures and serves authoritative DNS records.",
+   "discoveryRestUrl": "https://www.googleapis.com/discovery/v1/apis/dns/v1beta2/rest",
+   "discoveryLink": "./apis/dns/v1beta2/rest",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://developers.google.com/cloud-dns",
+   "preferred": false
   },
   {
    "kind": "discovery#directoryItem",
@@ -1825,14 +1856,14 @@
    "name": "oslogin",
    "version": "v1alpha",
    "title": "Google Cloud OS Login API",
-   "description": "Manages OS login configuration for Directory API users.",
+   "description": "Manages OS login configuration for Google account users.",
    "discoveryRestUrl": "https://oslogin.googleapis.com/$discovery/rest?version=v1alpha",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
    "documentationLink": "https://cloud.google.com/compute/docs/oslogin/rest/",
-   "preferred": true
+   "preferred": false
   },
   {
    "kind": "discovery#directoryItem",
@@ -1840,7 +1871,7 @@
    "name": "oslogin",
    "version": "v1beta",
    "title": "Google Cloud OS Login API",
-   "description": "Manages OS login configuration for Directory API users.",
+   "description": "Manages OS login configuration for Google account users.",
    "discoveryRestUrl": "https://oslogin.googleapis.com/$discovery/rest?version=v1beta",
    "icons": {
     "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
@@ -1848,6 +1879,21 @@
    },
    "documentationLink": "https://cloud.google.com/compute/docs/oslogin/rest/",
    "preferred": false
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "oslogin:v1",
+   "name": "oslogin",
+   "version": "v1",
+   "title": "Google Cloud OS Login API",
+   "description": "Manages OS login configuration for Google account users.",
+   "discoveryRestUrl": "https://oslogin.googleapis.com/$discovery/rest?version=v1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/compute/docs/oslogin/rest/",
+   "preferred": true
   },
   {
    "kind": "discovery#directoryItem",
@@ -1929,21 +1975,6 @@
   },
   {
    "kind": "discovery#directoryItem",
-   "id": "playmoviespartner:v1",
-   "name": "playmoviespartner",
-   "version": "v1",
-   "title": "Google Play Movies Partner API",
-   "description": "Gets the delivery status of titles for Google Play Movies Partners.",
-   "discoveryRestUrl": "https://playmoviespartner.googleapis.com/$discovery/rest?version=v1",
-   "icons": {
-    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
-    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
-   },
-   "documentationLink": "https://developers.google.com/playmoviespartner/",
-   "preferred": true
-  },
-  {
-   "kind": "discovery#directoryItem",
    "id": "plus:v1",
    "name": "plus",
    "version": "v1",
@@ -1972,6 +2003,21 @@
     "x32": "http://www.google.com/images/icons/product/gplus-32.png"
    },
    "documentationLink": "https://developers.google.com/+/domains/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "poly:v1",
+   "name": "poly",
+   "version": "v1",
+   "title": "Poly API",
+   "description": "The Poly API provides read-only access to assets hosted on poly.google.com.",
+   "discoveryRestUrl": "https://poly.googleapis.com/$discovery/rest?version=v1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://developers.google.com/poly/",
    "preferred": true
   },
   {
@@ -2301,6 +2347,21 @@
     "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
    },
    "documentationLink": "https://developers.google.com/webmaster-tools/search-console-api/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "serviceconsumermanagement:v1",
+   "name": "serviceconsumermanagement",
+   "version": "v1",
+   "title": "Service Consumer Management API",
+   "description": "Provides management methods for configuring service producer resources on Google Cloud.",
+   "discoveryRestUrl": "https://serviceconsumermanagement.googleapis.com/$discovery/rest?version=v1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/service-consumer-management/docs/overview",
    "preferred": true
   },
   {
@@ -2717,6 +2778,21 @@
   },
   {
    "kind": "discovery#directoryItem",
+   "id": "tpu:v1alpha1",
+   "name": "tpu",
+   "version": "v1alpha1",
+   "title": "Cloud TPU API",
+   "description": "TPU API provides customers with access to Google TPU technology.",
+   "discoveryRestUrl": "https://tpu.googleapis.com/$discovery/rest?version=v1alpha1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/tpu/",
+   "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
    "id": "translate:v2",
    "name": "translate",
    "version": "v2",
@@ -2775,6 +2851,21 @@
    },
    "documentationLink": "https://cloud.google.com/video-intelligence/docs/",
    "preferred": true
+  },
+  {
+   "kind": "discovery#directoryItem",
+   "id": "vision:v1p1beta1",
+   "name": "vision",
+   "version": "v1p1beta1",
+   "title": "Google Cloud Vision API",
+   "description": "Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications.",
+   "discoveryRestUrl": "https://vision.googleapis.com/$discovery/rest?version=v1p1beta1",
+   "icons": {
+    "x16": "https://www.gstatic.com/images/branding/product/1x/googleg_16dp.png",
+    "x32": "https://www.gstatic.com/images/branding/product/1x/googleg_32dp.png"
+   },
+   "documentationLink": "https://cloud.google.com/vision/",
+   "preferred": false
   },
   {
    "kind": "discovery#directoryItem",

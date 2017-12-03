@@ -344,7 +344,7 @@ func checkRate(c *gc.C, rate float64) {
 	}
 }
 
-func (rateLimitSuite) TestNewWithRate(c *gc.C) {
+func (rateLimitSuite) NewBucketWithRate(c *gc.C) {
 	for rate := float64(1); rate < 1e6; rate += 7 {
 		checkRate(c, rate)
 	}
@@ -357,6 +357,7 @@ func (rateLimitSuite) TestNewWithRate(c *gc.C) {
 		0.9e8,
 		3e12,
 		4e18,
+		float64(1<<63 - 1),
 	} {
 		checkRate(c, rate)
 		checkRate(c, rate/3)
@@ -385,5 +386,11 @@ func BenchmarkWait(b *testing.B) {
 	tb := NewBucket(1, 16*1024)
 	for i := b.N - 1; i >= 0; i-- {
 		tb.Wait(1)
+	}
+}
+
+func BenchmarkNewBucket(b *testing.B) {
+	for i := b.N - 1; i >= 0; i-- {
+		NewBucketWithRate(4e18, 1<<62)
 	}
 }

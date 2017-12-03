@@ -24,10 +24,13 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/iam"
 	"cloud.google.com/go/internal/testutil"
 
 	"golang.org/x/net/context"
@@ -767,6 +770,83 @@ func TestBucketAttrs(t *testing.T) {
 			t.Errorf("toRawBucket: got %v, want %v", *got, c.raw)
 		}
 	}
+}
+
+func TestUserProject(t *testing.T) {
+	// Verify that the userProject query param is sent.
+	t.Parallel()
+	ctx := context.Background()
+	gotURL := make(chan *url.URL, 1)
+	hClient, close := newTestServer(func(w http.ResponseWriter, r *http.Request) {
+		io.Copy(ioutil.Discard, r.Body)
+		gotURL <- r.URL
+		if strings.Contains(r.URL.String(), "/rewriteTo/") {
+			res := &raw.RewriteResponse{Done: true}
+			bytes, err := res.MarshalJSON()
+			if err != nil {
+				t.Fatal(err)
+			}
+			w.Write(bytes)
+		} else {
+			fmt.Fprintf(w, "{}")
+		}
+	})
+	defer close()
+	client, err := NewClient(ctx, option.WithHTTPClient(hClient))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	re := regexp.MustCompile(`\buserProject=p\b`)
+	b := client.Bucket("b").UserProject("p")
+	o := b.Object("o")
+
+	check := func(msg string, f func()) {
+		f()
+		select {
+		case u := <-gotURL:
+			if !re.MatchString(u.RawQuery) {
+				t.Errorf("%s: query string %q does not contain userProject", msg, u.RawQuery)
+			}
+		case <-time.After(2 * time.Second):
+			t.Errorf("%s: timed out", msg)
+		}
+	}
+
+	check("buckets.delete", func() { b.Delete(ctx) })
+	check("buckets.get", func() { b.Attrs(ctx) })
+	check("buckets.patch", func() { b.Update(ctx, BucketAttrsToUpdate{}) })
+	check("storage.objects.compose", func() { o.ComposerFrom(b.Object("x")).Run(ctx) })
+	check("storage.objects.delete", func() { o.Delete(ctx) })
+	check("storage.objects.get", func() { o.Attrs(ctx) })
+	check("storage.objects.insert", func() { o.NewWriter(ctx).Close() })
+	check("storage.objects.list", func() { b.Objects(ctx, nil).Next() })
+	check("storage.objects.patch", func() { o.Update(ctx, ObjectAttrsToUpdate{}) })
+	check("storage.objects.rewrite", func() { o.CopierFrom(b.Object("x")).Run(ctx) })
+	check("storage.objectAccessControls.list", func() { o.ACL().List(ctx) })
+	check("storage.objectAccessControls.update", func() { o.ACL().Set(ctx, "", "") })
+	check("storage.objectAccessControls.delete", func() { o.ACL().Delete(ctx, "") })
+	check("storage.bucketAccessControls.list", func() { b.ACL().List(ctx) })
+	check("storage.bucketAccessControls.update", func() { b.ACL().Set(ctx, "", "") })
+	check("storage.bucketAccessControls.delete", func() { b.ACL().Delete(ctx, "") })
+	check("storage.defaultObjectAccessControls.list",
+		func() { b.DefaultObjectACL().List(ctx) })
+	check("storage.defaultObjectAccessControls.update",
+		func() { b.DefaultObjectACL().Set(ctx, "", "") })
+	check("storage.defaultObjectAccessControls.delete",
+		func() { b.DefaultObjectACL().Delete(ctx, "") })
+	check("buckets.getIamPolicy", func() { b.IAM().Policy(ctx) })
+	check("buckets.setIamPolicy", func() {
+		p := &iam.Policy{}
+		p.Add("m", iam.Owner)
+		b.IAM().SetPolicy(ctx, p)
+	})
+	check("buckets.testIamPermissions", func() { b.IAM().TestPermissions(ctx, nil) })
+	check("storage.notifications.insert", func() {
+		b.AddNotification(ctx, &Notification{TopicProjectID: "p", TopicID: "t"})
+	})
+	check("storage.notifications.delete", func() { b.DeleteNotification(ctx, "n") })
+	check("storage.notifications.list", func() { b.Notifications(ctx) })
 }
 
 func newTestServer(handler func(w http.ResponseWriter, r *http.Request)) (*http.Client, func()) {

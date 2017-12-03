@@ -156,19 +156,26 @@ func toProtoDocument(x interface{}) (*pb.Document, []FieldPath, error) {
 		return nil, nil, errors.New("firestore: nil document contents")
 	}
 	v := reflect.ValueOf(x)
-	pv, err := toProtoValue(v)
+	pv, sawTransform, err := toProtoValue(v)
 	if err != nil {
 		return nil, nil, err
 	}
-	fieldPaths, err := extractTransformPaths(v, nil)
-	if err != nil {
-		return nil, nil, err
+	var fieldPaths []FieldPath
+	if sawTransform {
+		fieldPaths, err = extractTransformPaths(v, nil)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
-	m := pv.GetMapValue()
-	if m == nil {
-		return nil, nil, fmt.Errorf("firestore: cannot covert value of type %T into a map", x)
+	var fields map[string]*pb.Value
+	if pv != nil {
+		m := pv.GetMapValue()
+		if m == nil {
+			return nil, nil, fmt.Errorf("firestore: cannot covert value of type %T into a map", x)
+		}
+		fields = m.Fields
 	}
-	return &pb.Document{Fields: m.Fields}, fieldPaths, nil
+	return &pb.Document{Fields: fields}, fieldPaths, nil
 }
 
 func extractTransformPaths(v reflect.Value, prefix FieldPath) ([]FieldPath, error) {

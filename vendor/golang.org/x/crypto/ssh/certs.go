@@ -343,7 +343,7 @@ func (c *CertChecker) CheckCert(principal string, cert *Certificate) error {
 		return fmt.Errorf("ssh: certicate serial %d revoked", cert.Serial)
 	}
 
-	for opt, _ := range cert.CriticalOptions {
+	for opt := range cert.CriticalOptions {
 		// sourceAddressCriticalOption will be enforced by
 		// serverAuthenticate
 		if opt == sourceAddressCriticalOption {

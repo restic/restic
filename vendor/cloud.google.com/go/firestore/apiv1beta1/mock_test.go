@@ -17,9 +17,8 @@
 package firestore
 
 import (
-	firestorepb "google.golang.org/genproto/googleapis/firestore/v1beta1"
-
 	emptypb "github.com/golang/protobuf/ptypes/empty"
+	firestorepb "google.golang.org/genproto/googleapis/firestore/v1beta1"
 )
 
 import (

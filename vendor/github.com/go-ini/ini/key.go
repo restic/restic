@@ -26,6 +26,7 @@ import (
 // Key represents a key under a section.
 type Key struct {
 	s               *Section
+	Comment         string
 	name            string
 	value           string
 	isAutoIncrement bool
@@ -34,7 +35,7 @@ type Key struct {
 	isShadow bool
 	shadows  []*Key
 
-	Comment string
+	nestedValues []string
 }
 
 // newKey simply return a key object with given values.
@@ -67,6 +68,22 @@ func (k *Key) AddShadow(val string) error {
 	return k.addShadow(val)
 }
 
+func (k *Key) addNestedValue(val string) error {
+	if k.isAutoIncrement || k.isBooleanType {
+		return errors.New("cannot add nested value to auto-increment or boolean key")
+	}
+
+	k.nestedValues = append(k.nestedValues, val)
+	return nil
+}
+
+func (k *Key) AddNestedValue(val string) error {
+	if !k.s.f.options.AllowNestedValues {
+		return errors.New("nested value is not allowed")
+	}
+	return k.addNestedValue(val)
+}
+
 // ValueMapper represents a mapping function for values, e.g. os.ExpandEnv
 type ValueMapper func(string) string
 
@@ -93,6 +110,12 @@ func (k *Key) ValueWithShadows() []string {
 	return vals
 }
 
+// NestedValues returns nested values stored in the key.
+// It is possible returned value is nil if no nested values stored in the key.
+func (k *Key) NestedValues() []string {
+	return k.nestedValues
+}
+
 // transformValue takes a raw value and transforms to its final string.
 func (k *Key) transformValue(val string) string {
 	if k.s.f.ValueMapper != nil {
@@ -115,7 +138,7 @@ func (k *Key) transformValue(val string) string {
 
 		// Search in the same section.
 		nk, err := k.s.GetKey(noption)
-		if err != nil {
+		if err != nil || k == nk {
 			// Search again in default section.
 			nk, _ = k.s.f.Section("").GetKey(noption)
 		}

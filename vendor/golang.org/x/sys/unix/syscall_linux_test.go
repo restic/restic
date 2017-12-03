@@ -56,34 +56,6 @@ func TestIoctlGetInt(t *testing.T) {
 	t.Logf("%d bits of entropy available", v)
 }
 
-func TestPoll(t *testing.T) {
-	f, cleanup := mktmpfifo(t)
-	defer cleanup()
-
-	const timeout = 100
-
-	ok := make(chan bool, 1)
-	go func() {
-		select {
-		case <-time.After(10 * timeout * time.Millisecond):
-			t.Errorf("Poll: failed to timeout after %d milliseconds", 10*timeout)
-		case <-ok:
-		}
-	}()
-
-	fds := []unix.PollFd{{Fd: int32(f.Fd()), Events: unix.POLLIN}}
-	n, err := unix.Poll(fds, timeout)
-	ok <- true
-	if err != nil {
-		t.Errorf("Poll: unexpected error: %v", err)
-		return
-	}
-	if n != 0 {
-		t.Errorf("Poll: wrong number of events: got %v, expected %v", n, 0)
-		return
-	}
-}
-
 func TestPpoll(t *testing.T) {
 	f, cleanup := mktmpfifo(t)
 	defer cleanup()
@@ -110,25 +82,6 @@ func TestPpoll(t *testing.T) {
 	if n != 0 {
 		t.Errorf("Ppoll: wrong number of events: got %v, expected %v", n, 0)
 		return
-	}
-}
-
-// mktmpfifo creates a temporary FIFO and provides a cleanup function.
-func mktmpfifo(t *testing.T) (*os.File, func()) {
-	err := unix.Mkfifo("fifo", 0666)
-	if err != nil {
-		t.Fatalf("mktmpfifo: failed to create FIFO: %v", err)
-	}
-
-	f, err := os.OpenFile("fifo", os.O_RDWR, 0666)
-	if err != nil {
-		os.Remove("fifo")
-		t.Fatalf("mktmpfifo: failed to open FIFO: %v", err)
-	}
-
-	return f, func() {
-		f.Close()
-		os.Remove("fifo")
 	}
 }
 
@@ -184,6 +137,38 @@ func TestUtime(t *testing.T) {
 	}
 }
 
+func TestUtimesNanoAt(t *testing.T) {
+	defer chtmpdir(t)()
+
+	symlink := "symlink1"
+	os.Remove(symlink)
+	err := os.Symlink("nonexisting", symlink)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ts := []unix.Timespec{
+		{Sec: 1111, Nsec: 2222},
+		{Sec: 3333, Nsec: 4444},
+	}
+	err = unix.UtimesNanoAt(unix.AT_FDCWD, symlink, ts, unix.AT_SYMLINK_NOFOLLOW)
+	if err != nil {
+		t.Fatalf("UtimesNanoAt: %v", err)
+	}
+
+	var st unix.Stat_t
+	err = unix.Lstat(symlink, &st)
+	if err != nil {
+		t.Fatalf("Lstat: %v", err)
+	}
+	if st.Atim != ts[0] {
+		t.Errorf("UtimesNanoAt: wrong atime: %v", st.Atim)
+	}
+	if st.Mtim != ts[1] {
+		t.Errorf("UtimesNanoAt: wrong mtime: %v", st.Mtim)
+	}
+}
+
 func TestGetrlimit(t *testing.T) {
 	var rlim unix.Rlimit
 	err := unix.Getrlimit(unix.RLIMIT_AS, &rlim)
@@ -193,9 +178,57 @@ func TestGetrlimit(t *testing.T) {
 }
 
 func TestSelect(t *testing.T) {
-	_, err := unix.Select(0, nil, nil, nil, &unix.Timeval{0, 0})
+	_, err := unix.Select(0, nil, nil, nil, &unix.Timeval{Sec: 0, Usec: 0})
 	if err != nil {
 		t.Fatalf("Select: %v", err)
+	}
+}
+
+func TestUname(t *testing.T) {
+	var utsname unix.Utsname
+	err := unix.Uname(&utsname)
+	if err != nil {
+		t.Fatalf("Uname: %v", err)
+	}
+
+	t.Logf("OS: %s/%s %s", utsname.Sysname[:], utsname.Machine[:], utsname.Release[:])
+}
+
+func TestFstatat(t *testing.T) {
+	defer chtmpdir(t)()
+
+	touch(t, "file1")
+
+	var st1 unix.Stat_t
+	err := unix.Stat("file1", &st1)
+	if err != nil {
+		t.Fatalf("Stat: %v", err)
+	}
+
+	var st2 unix.Stat_t
+	err = unix.Fstatat(unix.AT_FDCWD, "file1", &st2, 0)
+	if err != nil {
+		t.Fatalf("Fstatat: %v", err)
+	}
+
+	if st1 != st2 {
+		t.Errorf("Fstatat: returned stat does not match Stat")
+	}
+
+	os.Symlink("file1", "symlink1")
+
+	err = unix.Lstat("symlink1", &st1)
+	if err != nil {
+		t.Fatalf("Lstat: %v", err)
+	}
+
+	err = unix.Fstatat(unix.AT_FDCWD, "symlink1", &st2, unix.AT_SYMLINK_NOFOLLOW)
+	if err != nil {
+		t.Fatalf("Fstatat: %v", err)
+	}
+
+	if st1 != st2 {
+		t.Errorf("Fstatat: returned stat does not match Lstat")
 	}
 }
 

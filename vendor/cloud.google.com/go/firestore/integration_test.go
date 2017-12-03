@@ -217,6 +217,9 @@ func TestIntegration_Create(t *testing.T) {
 	checkTimeBetween(t, wr.UpdateTime, start, end)
 	_, err := doc.Create(ctx, integrationTestMap)
 	codeEq(t, "Create on a present doc", codes.AlreadyExists, err)
+	// OK to create an empty document.
+	_, err = integrationColl(t).NewDoc().Create(ctx, map[string]interface{}{})
+	codeEq(t, "Create empty doc", codes.OK, err)
 }
 
 func TestIntegration_Get(t *testing.T) {
@@ -234,8 +237,6 @@ func TestIntegration_Get(t *testing.T) {
 	if want := wantIntegrationTestMap; !testEqual(got, want) {
 		t.Errorf("got\n%v\nwant\n%v", pretty.Value(got), pretty.Value(want))
 	}
-
-	//
 	_, err = integrationColl(t).NewDoc().Get(ctx)
 	codeEq(t, "Get on a missing doc", codes.NotFound, err)
 }
@@ -425,6 +426,8 @@ func TestIntegration_UpdateMap(t *testing.T) {
 		er(doc.UpdateMap(ctx, um, LastUpdateTime(wr.UpdateTime.Add(-time.Millisecond)))))
 	codeEq(t, "UpdateMap with right LastUpdateTime", codes.OK,
 		er(doc.UpdateMap(ctx, um, LastUpdateTime(wr.UpdateTime))))
+	codeEq(t, "just server transform", codes.OK,
+		er(doc.UpdateMap(ctx, map[string]interface{}{"a": ServerTimestamp})))
 }
 
 func TestIntegration_UpdateStruct(t *testing.T) {
@@ -945,7 +948,7 @@ func copyMap(m map[string]interface{}) map[string]interface{} {
 
 func checkTimeBetween(t *testing.T, got, low, high time.Time) {
 	// Allow slack for clock skew.
-	const slack = 1 * time.Second
+	const slack = 2 * time.Second
 	low = low.Add(-slack)
 	high = high.Add(slack)
 	if got.Before(low) || got.After(high) {

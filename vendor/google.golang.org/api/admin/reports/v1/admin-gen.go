@@ -159,8 +159,8 @@ type Activities struct {
 }
 
 func (s *Activities) MarshalJSON() ([]byte, error) {
-	type noMethod Activities
-	raw := noMethod(*s)
+	type NoMethod Activities
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -205,8 +205,8 @@ type Activity struct {
 }
 
 func (s *Activity) MarshalJSON() ([]byte, error) {
-	type noMethod Activity
-	raw := noMethod(*s)
+	type NoMethod Activity
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -242,8 +242,8 @@ type ActivityActor struct {
 }
 
 func (s *ActivityActor) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityActor
-	raw := noMethod(*s)
+	type NoMethod ActivityActor
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -275,8 +275,8 @@ type ActivityEvents struct {
 }
 
 func (s *ActivityEvents) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityEvents
-	raw := noMethod(*s)
+	type NoMethod ActivityEvents
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -317,8 +317,8 @@ type ActivityEventsParameters struct {
 }
 
 func (s *ActivityEventsParameters) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityEventsParameters
-	raw := noMethod(*s)
+	type NoMethod ActivityEventsParameters
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -356,8 +356,8 @@ type ActivityId struct {
 }
 
 func (s *ActivityId) MarshalJSON() ([]byte, error) {
-	type noMethod ActivityId
-	raw := noMethod(*s)
+	type NoMethod ActivityId
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -422,8 +422,8 @@ type Channel struct {
 }
 
 func (s *Channel) MarshalJSON() ([]byte, error) {
-	type noMethod Channel
-	raw := noMethod(*s)
+	type NoMethod Channel
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -462,8 +462,8 @@ type UsageReport struct {
 }
 
 func (s *UsageReport) MarshalJSON() ([]byte, error) {
-	type noMethod UsageReport
-	raw := noMethod(*s)
+	type NoMethod UsageReport
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -499,8 +499,8 @@ type UsageReportEntity struct {
 }
 
 func (s *UsageReportEntity) MarshalJSON() ([]byte, error) {
-	type noMethod UsageReportEntity
-	raw := noMethod(*s)
+	type NoMethod UsageReportEntity
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -541,8 +541,8 @@ type UsageReportParameters struct {
 }
 
 func (s *UsageReportParameters) MarshalJSON() ([]byte, error) {
-	type noMethod UsageReportParameters
-	raw := noMethod(*s)
+	type NoMethod UsageReportParameters
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -585,8 +585,8 @@ type UsageReports struct {
 }
 
 func (s *UsageReports) MarshalJSON() ([]byte, error) {
-	type noMethod UsageReports
-	raw := noMethod(*s)
+	type NoMethod UsageReports
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -618,8 +618,8 @@ type UsageReportsWarnings struct {
 }
 
 func (s *UsageReportsWarnings) MarshalJSON() ([]byte, error) {
-	type noMethod UsageReportsWarnings
-	raw := noMethod(*s)
+	type NoMethod UsageReportsWarnings
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -650,8 +650,8 @@ type UsageReportsWarningsData struct {
 }
 
 func (s *UsageReportsWarningsData) MarshalJSON() ([]byte, error) {
-	type noMethod UsageReportsWarningsData
-	raw := noMethod(*s)
+	type NoMethod UsageReportsWarningsData
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -824,7 +824,7 @@ func (c *ActivitiesListCall) Do(opts ...googleapi.CallOption) (*Activities, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1092,7 +1092,7 @@ func (c *ActivitiesWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1402,7 +1402,7 @@ func (c *CustomerUsageReportsGetCall) Do(opts ...googleapi.CallOption) (*UsageRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1618,7 +1618,7 @@ func (c *UserUsageReportGetCall) Do(opts ...googleapi.CallOption) (*UsageReports
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

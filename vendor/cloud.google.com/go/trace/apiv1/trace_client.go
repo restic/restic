@@ -29,13 +29,14 @@ import (
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 )
 
 // CallOptions contains the retry settings for each method of Client.
 type CallOptions struct {
-	PatchTraces []gax.CallOption
-	GetTrace    []gax.CallOption
 	ListTraces  []gax.CallOption
+	GetTrace    []gax.CallOption
+	PatchTraces []gax.CallOption
 }
 
 func defaultClientOptions() []option.ClientOption {
@@ -61,9 +62,9 @@ func defaultCallOptions() *CallOptions {
 		},
 	}
 	return &CallOptions{
-		PatchTraces: retry[[2]string{"default", "idempotent"}],
-		GetTrace:    retry[[2]string{"default", "idempotent"}],
 		ListTraces:  retry[[2]string{"default", "idempotent"}],
+		GetTrace:    retry[[2]string{"default", "idempotent"}],
+		PatchTraces: retry[[2]string{"write_sink", "non_idempotent"}],
 	}
 }
 
@@ -79,7 +80,7 @@ type Client struct {
 	CallOptions *CallOptions
 
 	// The metadata to be sent with each request.
-	xGoogHeader []string
+	Metadata metadata.MD
 }
 
 // NewClient creates a new trace service client.
@@ -100,7 +101,7 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*Client, error
 
 		client: cloudtracepb.NewTraceServiceClient(conn),
 	}
-	c.SetGoogleClientInfo()
+	c.setGoogleClientInfo()
 	return c, nil
 }
 
@@ -115,50 +116,18 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-// SetGoogleClientInfo sets the name and version of the application in
+// setGoogleClientInfo sets the name and version of the application in
 // the `x-goog-api-client` header passed on each request. Intended for
 // use by Google-written clients.
-func (c *Client) SetGoogleClientInfo(keyval ...string) {
+func (c *Client) setGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", version.Go()}, keyval...)
 	kv = append(kv, "gapic", version.Repo, "gax", gax.Version, "grpc", grpc.Version)
-	c.xGoogHeader = []string{gax.XGoogHeader(kv...)}
-}
-
-// PatchTraces sends new traces to Stackdriver Trace or updates existing traces. If the ID
-// of a trace that you send matches that of an existing trace, any fields
-// in the existing trace and its spans are overwritten by the provided values,
-// and any new fields provided are merged with the existing trace data. If the
-// ID does not match, a new trace is created.
-func (c *Client) PatchTraces(ctx context.Context, req *cloudtracepb.PatchTracesRequest, opts ...gax.CallOption) error {
-	ctx = insertXGoog(ctx, c.xGoogHeader)
-	opts = append(c.CallOptions.PatchTraces[0:len(c.CallOptions.PatchTraces):len(c.CallOptions.PatchTraces)], opts...)
-	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
-		var err error
-		_, err = c.client.PatchTraces(ctx, req, settings.GRPC...)
-		return err
-	}, opts...)
-	return err
-}
-
-// GetTrace gets a single trace by its ID.
-func (c *Client) GetTrace(ctx context.Context, req *cloudtracepb.GetTraceRequest, opts ...gax.CallOption) (*cloudtracepb.Trace, error) {
-	ctx = insertXGoog(ctx, c.xGoogHeader)
-	opts = append(c.CallOptions.GetTrace[0:len(c.CallOptions.GetTrace):len(c.CallOptions.GetTrace)], opts...)
-	var resp *cloudtracepb.Trace
-	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
-		var err error
-		resp, err = c.client.GetTrace(ctx, req, settings.GRPC...)
-		return err
-	}, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	c.Metadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))
 }
 
 // ListTraces returns of a list of traces that match the specified filter conditions.
 func (c *Client) ListTraces(ctx context.Context, req *cloudtracepb.ListTracesRequest, opts ...gax.CallOption) *TraceIterator {
-	ctx = insertXGoog(ctx, c.xGoogHeader)
+	ctx = insertMetadata(ctx, c.Metadata)
 	opts = append(c.CallOptions.ListTraces[0:len(c.CallOptions.ListTraces):len(c.CallOptions.ListTraces)], opts...)
 	it := &TraceIterator{}
 	it.InternalFetch = func(pageSize int, pageToken string) ([]*cloudtracepb.Trace, string, error) {
@@ -189,6 +158,38 @@ func (c *Client) ListTraces(ctx context.Context, req *cloudtracepb.ListTracesReq
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	return it
+}
+
+// GetTrace gets a single trace by its ID.
+func (c *Client) GetTrace(ctx context.Context, req *cloudtracepb.GetTraceRequest, opts ...gax.CallOption) (*cloudtracepb.Trace, error) {
+	ctx = insertMetadata(ctx, c.Metadata)
+	opts = append(c.CallOptions.GetTrace[0:len(c.CallOptions.GetTrace):len(c.CallOptions.GetTrace)], opts...)
+	var resp *cloudtracepb.Trace
+	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		var err error
+		resp, err = c.client.GetTrace(ctx, req, settings.GRPC...)
+		return err
+	}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// PatchTraces sends new traces to Stackdriver Trace or updates existing traces. If the ID
+// of a trace that you send matches that of an existing trace, any fields
+// in the existing trace and its spans are overwritten by the provided values,
+// and any new fields provided are merged with the existing trace data. If the
+// ID does not match, a new trace is created.
+func (c *Client) PatchTraces(ctx context.Context, req *cloudtracepb.PatchTracesRequest, opts ...gax.CallOption) error {
+	ctx = insertMetadata(ctx, c.Metadata)
+	opts = append(c.CallOptions.PatchTraces[0:len(c.CallOptions.PatchTraces):len(c.CallOptions.PatchTraces)], opts...)
+	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		var err error
+		_, err = c.client.PatchTraces(ctx, req, settings.GRPC...)
+		return err
+	}, opts...)
+	return err
 }
 
 // TraceIterator manages a stream of *cloudtracepb.Trace.

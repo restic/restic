@@ -143,8 +143,8 @@ type CallFunctionRequest struct {
 }
 
 func (s *CallFunctionRequest) MarshalJSON() ([]byte, error) {
-	type noMethod CallFunctionRequest
-	raw := noMethod(*s)
+	type NoMethod CallFunctionRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -186,8 +186,8 @@ type CallFunctionResponse struct {
 }
 
 func (s *CallFunctionResponse) MarshalJSON() ([]byte, error) {
-	type noMethod CallFunctionResponse
-	raw := noMethod(*s)
+	type NoMethod CallFunctionResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -306,8 +306,8 @@ type CloudFunction struct {
 }
 
 func (s *CloudFunction) MarshalJSON() ([]byte, error) {
-	type noMethod CloudFunction
-	raw := noMethod(*s)
+	type NoMethod CloudFunction
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -376,7 +376,7 @@ type EventTrigger struct {
 	// will
 	// be used. For example, `storage.googleapis.com` is the default for
 	// all
-	// event types in the 'google.storage` namespace.
+	// event types in the `google.storage` namespace.
 	Service string `json:"service,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "EventType") to
@@ -397,8 +397,8 @@ type EventTrigger struct {
 }
 
 func (s *EventTrigger) MarshalJSON() ([]byte, error) {
-	type noMethod EventTrigger
-	raw := noMethod(*s)
+	type NoMethod EventTrigger
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -429,8 +429,8 @@ type FailurePolicy struct {
 }
 
 func (s *FailurePolicy) MarshalJSON() ([]byte, error) {
-	type noMethod FailurePolicy
-	raw := noMethod(*s)
+	type NoMethod FailurePolicy
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -459,8 +459,8 @@ type GenerateDownloadUrlRequest struct {
 }
 
 func (s *GenerateDownloadUrlRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GenerateDownloadUrlRequest
-	raw := noMethod(*s)
+	type NoMethod GenerateDownloadUrlRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -494,8 +494,8 @@ type GenerateDownloadUrlResponse struct {
 }
 
 func (s *GenerateDownloadUrlResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GenerateDownloadUrlResponse
-	raw := noMethod(*s)
+	type NoMethod GenerateDownloadUrlResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -536,8 +536,8 @@ type GenerateUploadUrlResponse struct {
 }
 
 func (s *GenerateUploadUrlResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GenerateUploadUrlResponse
-	raw := noMethod(*s)
+	type NoMethod GenerateUploadUrlResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -565,8 +565,8 @@ type HttpsTrigger struct {
 }
 
 func (s *HttpsTrigger) MarshalJSON() ([]byte, error) {
-	type noMethod HttpsTrigger
-	raw := noMethod(*s)
+	type NoMethod HttpsTrigger
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -605,8 +605,8 @@ type ListFunctionsResponse struct {
 }
 
 func (s *ListFunctionsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListFunctionsResponse
-	raw := noMethod(*s)
+	type NoMethod ListFunctionsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -642,8 +642,8 @@ type ListLocationsResponse struct {
 }
 
 func (s *ListLocationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListLocationsResponse
-	raw := noMethod(*s)
+	type NoMethod ListLocationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -679,8 +679,8 @@ type ListOperationsResponse struct {
 }
 
 func (s *ListOperationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListOperationsResponse
-	raw := noMethod(*s)
+	type NoMethod ListOperationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -723,8 +723,8 @@ type Location struct {
 }
 
 func (s *Location) MarshalJSON() ([]byte, error) {
-	type noMethod Location
-	raw := noMethod(*s)
+	type NoMethod Location
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -798,8 +798,8 @@ type Operation struct {
 }
 
 func (s *Operation) MarshalJSON() ([]byte, error) {
-	type noMethod Operation
-	raw := noMethod(*s)
+	type NoMethod Operation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -821,6 +821,9 @@ type OperationMetadataV1 struct {
 	//   "UPDATE_FUNCTION" - Triggered by UpdateFunction call
 	//   "DELETE_FUNCTION" - Triggered by DeleteFunction call.
 	Type string `json:"type,omitempty"`
+
+	// UpdateTime: The last update timestamp of the operation.
+	UpdateTime string `json:"updateTime,omitempty"`
 
 	// VersionId: Version id of the function created or updated by an API
 	// call.
@@ -845,8 +848,8 @@ type OperationMetadataV1 struct {
 }
 
 func (s *OperationMetadataV1) MarshalJSON() ([]byte, error) {
-	type noMethod OperationMetadataV1
-	raw := noMethod(*s)
+	type NoMethod OperationMetadataV1
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -868,6 +871,9 @@ type OperationMetadataV1Beta2 struct {
 	//   "UPDATE_FUNCTION" - Triggered by UpdateFunction call
 	//   "DELETE_FUNCTION" - Triggered by DeleteFunction call.
 	Type string `json:"type,omitempty"`
+
+	// UpdateTime: The last update timestamp of the operation.
+	UpdateTime string `json:"updateTime,omitempty"`
 
 	// VersionId: Version id of the function created or updated by an API
 	// call.
@@ -892,8 +898,8 @@ type OperationMetadataV1Beta2 struct {
 }
 
 func (s *OperationMetadataV1Beta2) MarshalJSON() ([]byte, error) {
-	type noMethod OperationMetadataV1Beta2
-	raw := noMethod(*s)
+	type NoMethod OperationMetadataV1Beta2
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -959,8 +965,8 @@ type SourceRepository struct {
 }
 
 func (s *SourceRepository) MarshalJSON() ([]byte, error) {
-	type noMethod SourceRepository
-	raw := noMethod(*s)
+	type NoMethod SourceRepository
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1078,8 +1084,8 @@ type Status struct {
 }
 
 func (s *Status) MarshalJSON() ([]byte, error) {
-	type noMethod Status
-	raw := noMethod(*s)
+	type NoMethod Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1194,7 +1200,7 @@ func (c *OperationsGetCall) Do(opts ...googleapi.CallOption) (*Operation, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1372,7 +1378,7 @@ func (c *OperationsListCall) Do(opts ...googleapi.CallOption) (*ListOperationsRe
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1566,7 +1572,7 @@ func (c *ProjectsLocationsListCall) Do(opts ...googleapi.CallOption) (*ListLocat
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1737,7 +1743,7 @@ func (c *ProjectsLocationsFunctionsCallCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1876,7 +1882,7 @@ func (c *ProjectsLocationsFunctionsCreateCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2008,7 +2014,7 @@ func (c *ProjectsLocationsFunctionsDeleteCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2147,7 +2153,7 @@ func (c *ProjectsLocationsFunctionsGenerateDownloadUrlCall) Do(opts ...googleapi
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2290,7 +2296,7 @@ func (c *ProjectsLocationsFunctionsGenerateUploadUrlCall) Do(opts ...googleapi.C
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2433,7 +2439,7 @@ func (c *ProjectsLocationsFunctionsGetCall) Do(opts ...googleapi.CallOption) (*C
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2591,7 +2597,7 @@ func (c *ProjectsLocationsFunctionsListCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2762,7 +2768,7 @@ func (c *ProjectsLocationsFunctionsPatchCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

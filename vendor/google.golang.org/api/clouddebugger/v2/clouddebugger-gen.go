@@ -183,8 +183,8 @@ type AliasContext struct {
 }
 
 func (s *AliasContext) MarshalJSON() ([]byte, error) {
-	type noMethod AliasContext
-	raw := noMethod(*s)
+	type NoMethod AliasContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -344,8 +344,8 @@ type Breakpoint struct {
 }
 
 func (s *Breakpoint) MarshalJSON() ([]byte, error) {
-	type noMethod Breakpoint
-	raw := noMethod(*s)
+	type NoMethod Breakpoint
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -383,8 +383,8 @@ type CloudRepoSourceContext struct {
 }
 
 func (s *CloudRepoSourceContext) MarshalJSON() ([]byte, error) {
-	type noMethod CloudRepoSourceContext
-	raw := noMethod(*s)
+	type NoMethod CloudRepoSourceContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -420,8 +420,8 @@ type CloudWorkspaceId struct {
 }
 
 func (s *CloudWorkspaceId) MarshalJSON() ([]byte, error) {
-	type noMethod CloudWorkspaceId
-	raw := noMethod(*s)
+	type NoMethod CloudWorkspaceId
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -453,8 +453,8 @@ type CloudWorkspaceSourceContext struct {
 }
 
 func (s *CloudWorkspaceSourceContext) MarshalJSON() ([]byte, error) {
-	type noMethod CloudWorkspaceSourceContext
-	raw := noMethod(*s)
+	type NoMethod CloudWorkspaceSourceContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -554,8 +554,8 @@ type Debuggee struct {
 }
 
 func (s *Debuggee) MarshalJSON() ([]byte, error) {
-	type noMethod Debuggee
-	raw := noMethod(*s)
+	type NoMethod Debuggee
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -605,8 +605,8 @@ type ExtendedSourceContext struct {
 }
 
 func (s *ExtendedSourceContext) MarshalJSON() ([]byte, error) {
-	type noMethod ExtendedSourceContext
-	raw := noMethod(*s)
+	type NoMethod ExtendedSourceContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -646,8 +646,8 @@ type FormatMessage struct {
 }
 
 func (s *FormatMessage) MarshalJSON() ([]byte, error) {
-	type noMethod FormatMessage
-	raw := noMethod(*s)
+	type NoMethod FormatMessage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -689,8 +689,8 @@ type GerritSourceContext struct {
 }
 
 func (s *GerritSourceContext) MarshalJSON() ([]byte, error) {
-	type noMethod GerritSourceContext
-	raw := noMethod(*s)
+	type NoMethod GerritSourceContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -722,8 +722,8 @@ type GetBreakpointResponse struct {
 }
 
 func (s *GetBreakpointResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GetBreakpointResponse
-	raw := noMethod(*s)
+	type NoMethod GetBreakpointResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -756,8 +756,8 @@ type GitSourceContext struct {
 }
 
 func (s *GitSourceContext) MarshalJSON() ([]byte, error) {
-	type noMethod GitSourceContext
-	raw := noMethod(*s)
+	type NoMethod GitSourceContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -803,8 +803,8 @@ type ListActiveBreakpointsResponse struct {
 }
 
 func (s *ListActiveBreakpointsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListActiveBreakpointsResponse
-	raw := noMethod(*s)
+	type NoMethod ListActiveBreakpointsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -846,8 +846,8 @@ type ListBreakpointsResponse struct {
 }
 
 func (s *ListBreakpointsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListBreakpointsResponse
-	raw := noMethod(*s)
+	type NoMethod ListBreakpointsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -883,8 +883,8 @@ type ListDebuggeesResponse struct {
 }
 
 func (s *ListDebuggeesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListDebuggeesResponse
-	raw := noMethod(*s)
+	type NoMethod ListDebuggeesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -916,8 +916,8 @@ type ProjectRepoId struct {
 }
 
 func (s *ProjectRepoId) MarshalJSON() ([]byte, error) {
-	type noMethod ProjectRepoId
-	raw := noMethod(*s)
+	type NoMethod ProjectRepoId
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -947,8 +947,8 @@ type RegisterDebuggeeRequest struct {
 }
 
 func (s *RegisterDebuggeeRequest) MarshalJSON() ([]byte, error) {
-	type noMethod RegisterDebuggeeRequest
-	raw := noMethod(*s)
+	type NoMethod RegisterDebuggeeRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -987,8 +987,8 @@ type RegisterDebuggeeResponse struct {
 }
 
 func (s *RegisterDebuggeeResponse) MarshalJSON() ([]byte, error) {
-	type noMethod RegisterDebuggeeResponse
-	raw := noMethod(*s)
+	type NoMethod RegisterDebuggeeResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1018,8 +1018,8 @@ type RepoId struct {
 }
 
 func (s *RepoId) MarshalJSON() ([]byte, error) {
-	type noMethod RepoId
-	raw := noMethod(*s)
+	type NoMethod RepoId
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1052,8 +1052,8 @@ type SetBreakpointResponse struct {
 }
 
 func (s *SetBreakpointResponse) MarshalJSON() ([]byte, error) {
-	type noMethod SetBreakpointResponse
-	raw := noMethod(*s)
+	type NoMethod SetBreakpointResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1093,8 +1093,8 @@ type SourceContext struct {
 }
 
 func (s *SourceContext) MarshalJSON() ([]byte, error) {
-	type noMethod SourceContext
-	raw := noMethod(*s)
+	type NoMethod SourceContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1126,8 +1126,8 @@ type SourceLocation struct {
 }
 
 func (s *SourceLocation) MarshalJSON() ([]byte, error) {
-	type noMethod SourceLocation
-	raw := noMethod(*s)
+	type NoMethod SourceLocation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1165,8 +1165,8 @@ type StackFrame struct {
 }
 
 func (s *StackFrame) MarshalJSON() ([]byte, error) {
-	type noMethod StackFrame
-	raw := noMethod(*s)
+	type NoMethod StackFrame
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1220,8 +1220,8 @@ type StatusMessage struct {
 }
 
 func (s *StatusMessage) MarshalJSON() ([]byte, error) {
-	type noMethod StatusMessage
-	raw := noMethod(*s)
+	type NoMethod StatusMessage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1252,8 +1252,8 @@ type UpdateActiveBreakpointRequest struct {
 }
 
 func (s *UpdateActiveBreakpointRequest) MarshalJSON() ([]byte, error) {
-	type noMethod UpdateActiveBreakpointRequest
-	raw := noMethod(*s)
+	type NoMethod UpdateActiveBreakpointRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1462,8 +1462,8 @@ type Variable struct {
 }
 
 func (s *Variable) MarshalJSON() ([]byte, error) {
-	type noMethod Variable
-	raw := noMethod(*s)
+	type NoMethod Variable
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1576,7 +1576,7 @@ func (c *ControllerDebuggeesRegisterCall) Do(opts ...googleapi.CallOption) (*Reg
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1756,7 +1756,7 @@ func (c *ControllerDebuggeesBreakpointsListCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1913,7 +1913,7 @@ func (c *ControllerDebuggeesBreakpointsUpdateCall) Do(opts ...googleapi.CallOpti
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2081,7 +2081,7 @@ func (c *DebuggerDebuggeesListCall) Do(opts ...googleapi.CallOption) (*ListDebug
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2224,7 +2224,7 @@ func (c *DebuggerDebuggeesBreakpointsDeleteCall) Do(opts ...googleapi.CallOption
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2386,7 +2386,7 @@ func (c *DebuggerDebuggeesBreakpointsGetCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2596,7 +2596,7 @@ func (c *DebuggerDebuggeesBreakpointsListCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2770,7 +2770,7 @@ func (c *DebuggerDebuggeesBreakpointsSetCall) Do(opts ...googleapi.CallOption) (
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

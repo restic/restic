@@ -139,8 +139,8 @@ type Result struct {
 }
 
 func (s *Result) MarshalJSON() ([]byte, error) {
-	type noMethod Result
-	raw := noMethod(*s)
+	type NoMethod Result
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -173,8 +173,8 @@ type ResultFormattedResults struct {
 }
 
 func (s *ResultFormattedResults) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResults
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResults
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -220,18 +220,18 @@ type ResultFormattedResultsRuleResults struct {
 }
 
 func (s *ResultFormattedResultsRuleResults) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResults
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResults
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *ResultFormattedResultsRuleResults) UnmarshalJSON(data []byte) error {
-	type noMethod ResultFormattedResultsRuleResults
+	type NoMethod ResultFormattedResultsRuleResults
 	var s1 struct {
 		RuleImpact gensupport.JSONFloat64 `json:"ruleImpact"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -265,8 +265,8 @@ type ResultFormattedResultsRuleResultsUrlBlocks struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocks) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocks
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocks
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -299,8 +299,8 @@ type ResultFormattedResultsRuleResultsUrlBlocksHeader struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocksHeader) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocksHeader
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocksHeader
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -330,8 +330,8 @@ type ResultFormattedResultsRuleResultsUrlBlocksHeaderArgs struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocksHeaderArgs) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocksHeaderArgs
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocksHeaderArgs
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -362,8 +362,8 @@ type ResultFormattedResultsRuleResultsUrlBlocksUrls struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocksUrls) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocksUrls
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocksUrls
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -394,8 +394,8 @@ type ResultFormattedResultsRuleResultsUrlBlocksUrlsDetails struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocksUrlsDetails) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocksUrlsDetails
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocksUrlsDetails
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -425,8 +425,8 @@ type ResultFormattedResultsRuleResultsUrlBlocksUrlsDetailsArgs struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocksUrlsDetailsArgs) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocksUrlsDetailsArgs
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocksUrlsDetailsArgs
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -460,8 +460,8 @@ type ResultFormattedResultsRuleResultsUrlBlocksUrlsResult struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocksUrlsResult) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocksUrlsResult
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocksUrlsResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -491,8 +491,8 @@ type ResultFormattedResultsRuleResultsUrlBlocksUrlsResultArgs struct {
 }
 
 func (s *ResultFormattedResultsRuleResultsUrlBlocksUrlsResultArgs) MarshalJSON() ([]byte, error) {
-	type noMethod ResultFormattedResultsRuleResultsUrlBlocksUrlsResultArgs
-	raw := noMethod(*s)
+	type NoMethod ResultFormattedResultsRuleResultsUrlBlocksUrlsResultArgs
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -567,8 +567,8 @@ type ResultPageStats struct {
 }
 
 func (s *ResultPageStats) MarshalJSON() ([]byte, error) {
-	type noMethod ResultPageStats
-	raw := noMethod(*s)
+	type NoMethod ResultPageStats
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -605,8 +605,8 @@ type ResultScreenshot struct {
 }
 
 func (s *ResultScreenshot) MarshalJSON() ([]byte, error) {
-	type noMethod ResultScreenshot
-	raw := noMethod(*s)
+	type NoMethod ResultScreenshot
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -639,8 +639,8 @@ type ResultVersion struct {
 }
 
 func (s *ResultVersion) MarshalJSON() ([]byte, error) {
-	type noMethod ResultVersion
-	raw := noMethod(*s)
+	type NoMethod ResultVersion
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -789,7 +789,7 @@ func (c *PagespeedapiRunpagespeedCall) Do(opts ...googleapi.CallOption) (*Result
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
