@@ -90,7 +90,7 @@ func saveSnapshot(t testing.TB, repo restic.Repository, snapshot Snapshot) (rest
 
 	treeID := saveDir(t, repo, snapshot.Nodes)
 
-	err := repo.Flush()
+	err := repo.Flush(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
