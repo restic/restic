@@ -127,6 +127,31 @@ args:
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 
+Comparing Snapshots
+*******************
+
+Restic has a `diff` command which shows the difference between two snapshots
+and displays a small statistic, just pass the command two snapshot IDs:
+
+.. code-block:: console
+
+    $ restic -r /tmp/backup diff 5845b002 2ab627a6
+    password is correct
+    comparing snapshot ea657ce5 to 2ab627a6:
+
+     C   /restic/cmd_diff.go
+    +    /restic/foo
+     C   /restic/restic
+
+    Files:           0 new,     0 removed,     2 changed
+    Dirs:            1 new,     0 removed
+    Others:          0 new,     0 removed
+    Data Blobs:     14 new,    15 removed
+    Tree Blobs:      2 new,     1 removed
+      Added:   16.403 MiB
+      Removed: 16.402 MiB
+
+
 Backing up special items and metadata
 *************************************
 
