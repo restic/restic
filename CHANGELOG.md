@@ -4,6 +4,13 @@ released version of restic from the perspective of the user.
 Important Changes in 0.X.Y
 ==========================
 
+ * We've disabled handling SIGPIPE again. Turns out, writing to broken TCP
+   connections also raised SIGPIPE, so restic exits on the first write to a
+   broken connection. Instead, restic should retry the request.
+   https://github.com/restic/restic/pull/1459
+   https://github.com/restic/restic/issues/1457
+   https://github.com/restic/restic/issues/1466
+
 
 Small changes
 -------------
@@ -26,8 +33,7 @@ Small changes
    `--with-atime` to the `backup` command.
    https://github.com/restic/restic/pull/1452
 
- * We've improved the s3 backend to work with DigitalOcean Spaces. In addition,
-   handling of SIGPIPE was removed.
+ * We've improved the s3 backend to work with DigitalOcean Spaces.
    https://github.com/restic/restic/pull/1459
    https://github.com/restic/restic/issues/1457
 
