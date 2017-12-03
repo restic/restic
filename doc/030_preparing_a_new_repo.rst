@@ -333,7 +333,7 @@ root path like this:
     created restic backend a934bac191 at azure:foo:/
     [...]
 
-The number of concurrent connections to the B2 service can be set with the
+The number of concurrent connections to the Azure Blob Storage service can be set with the
 `-o azure.connections=10`. By default, at most five parallel connections are
 established.
 
