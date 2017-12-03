@@ -185,6 +185,8 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 		return newFile(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	case "symlink":
 		return newLink(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
+	case "dev", "chardev", "fifo", "socket":
+		return newOther(ctx, d.root, fs.GenerateDynamicInode(d.inode, name), node)
 	default:
 		debug.Log("  node %v has unknown type %v", name, node.Type)
 		return nil, fuse.ENOENT

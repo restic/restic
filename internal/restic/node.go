@@ -61,16 +61,26 @@ func (n Nodes) Less(i, j int) bool { return n[i].Name < n[j].Name }
 func (n Nodes) Swap(i, j int)      { n[i], n[j] = n[j], n[i] }
 
 func (node Node) String() string {
+	var mode os.FileMode
 	switch node.Type {
 	case "file":
-		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			node.Mode, node.UID, node.GID, node.Size, node.ModTime, node.Name)
+		mode = 0
 	case "dir":
-		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			node.Mode|os.ModeDir, node.UID, node.GID, node.Size, node.ModTime, node.Name)
+		mode = os.ModeDir
+	case "symlink":
+		mode = os.ModeSymlink
+	case "dev":
+		mode = os.ModeDevice
+	case "chardev":
+		mode = os.ModeDevice | os.ModeCharDevice
+	case "fifo":
+		mode = os.ModeNamedPipe
+	case "socket":
+		mode = os.ModeSocket
 	}
 
-	return fmt.Sprintf("<Node(%s) %s>", node.Type, node.Name)
+	return fmt.Sprintf("%s %5d %5d %6d %s %s",
+		mode|node.Mode, node.UID, node.GID, node.Size, node.ModTime, node.Name)
 }
 
 // NodeFromFileInfo returns a new node from the given path and FileInfo. It
