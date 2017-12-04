@@ -11,6 +11,12 @@ Important Changes in 0.X.Y
    https://github.com/restic/restic/issues/1457
    https://github.com/restic/restic/issues/1466
 
+ * The command `diff` was added, it allows comparing two snapshots and listing
+   all differences.
+   https://github.com/restic/restic/issues/11
+   https://github.com/restic/restic/issues/1460
+   https://github.com/restic/restic/pull/1462
+
 
 Small changes
 -------------

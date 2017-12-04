@@ -385,13 +385,13 @@ func (node Node) Equals(other Node) bool {
 	if node.Mode != other.Mode {
 		return false
 	}
-	if node.ModTime != other.ModTime {
+	if !node.ModTime.Equal(other.ModTime) {
 		return false
 	}
-	if node.AccessTime != other.AccessTime {
+	if !node.AccessTime.Equal(other.AccessTime) {
 		return false
 	}
-	if node.ChangeTime != other.ChangeTime {
+	if !node.ChangeTime.Equal(other.ChangeTime) {
 		return false
 	}
 	if node.UID != other.UID {
