@@ -117,8 +117,47 @@ func TestToProtoValue(t *testing.T) {
 			},
 			refval("projects/P/databases/D/documents/c/d"),
 		},
+		// ServerTimestamps are removed, possibly leaving nil.
+		{map[string]interface{}{"a": ServerTimestamp}, nil},
+		{
+			map[string]interface{}{
+				"a": map[string]interface{}{
+					"b": map[string]interface{}{
+						"c": ServerTimestamp,
+					},
+				},
+			},
+			nil,
+		},
+		{
+			map[string]interface{}{
+				"a": map[string]interface{}{
+					"b": map[string]interface{}{
+						"c": ServerTimestamp,
+						"d": ServerTimestamp,
+					},
+				},
+			},
+			nil,
+		},
+		{
+			map[string]interface{}{
+				"a": map[string]interface{}{
+					"b": map[string]interface{}{
+						"c": ServerTimestamp,
+						"d": ServerTimestamp,
+						"e": 1,
+					},
+				},
+			},
+			mapval(map[string]*pb.Value{
+				"a": mapval(map[string]*pb.Value{
+					"b": mapval(map[string]*pb.Value{"e": intval(1)}),
+				}),
+			}),
+		},
 	} {
-		got, err := toProtoValue(reflect.ValueOf(test.in))
+		got, _, err := toProtoValue(reflect.ValueOf(test.in))
 		if err != nil {
 			t.Errorf("%v (%T): %v", test.in, test.in, err)
 			continue
@@ -139,8 +178,18 @@ func TestToProtoValueErrors(t *testing.T) {
 		map[int]bool{},                          // map key type is not string
 		make(chan int),                          // can't handle type
 		map[string]fmt.Stringer{"a": stringy{}}, // only empty interfaces
+		ServerTimestamp,                         // ServerTimestamp can only be a field value
+		[]interface{}{ServerTimestamp},
+		map[string]interface{}{"a": []interface{}{ServerTimestamp}},
+		map[string]interface{}{"a": []interface{}{
+			map[string]interface{}{"b": ServerTimestamp},
+		}},
+		Delete, // Delete should never appear
+		[]interface{}{Delete},
+		map[string]interface{}{"a": Delete},
+		map[string]interface{}{"a": []interface{}{Delete}},
 	} {
-		_, err := toProtoValue(reflect.ValueOf(in))
+		_, _, err := toProtoValue(reflect.ValueOf(in))
 		if err == nil {
 			t.Errorf("%v: got nil, want error", in)
 		}
@@ -161,7 +210,7 @@ func TestToProtoValueTags(t *testing.T) {
 		OmitEmpty:     3,
 		OmitEmptyTime: aTime,
 	}
-	got, err := toProtoValue(reflect.ValueOf(in))
+	got, _, err := toProtoValue(reflect.ValueOf(in))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +223,7 @@ func TestToProtoValueTags(t *testing.T) {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
 
-	got, err = toProtoValue(reflect.ValueOf(testStruct2{}))
+	got, _, err = toProtoValue(reflect.ValueOf(testStruct2{}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +240,7 @@ func TestToProtoValueEmbedded(t *testing.T) {
 		*latlng.LatLng
 	}
 
-	got, err := toProtoValue(reflect.ValueOf(embed{tm, ll}))
+	got, _, err := toProtoValue(reflect.ValueOf(embed{tm, ll}))
 	if err != nil {
 		t.Fatal(err)
 	}

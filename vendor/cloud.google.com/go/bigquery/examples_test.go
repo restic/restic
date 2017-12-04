@@ -86,7 +86,18 @@ func ExampleClient_JobFromID() {
 	if err != nil {
 		// TODO: Handle error.
 	}
-	fmt.Println(job)
+	fmt.Println(job.LastStatus()) // Display the job's status.
+}
+
+func ExampleClient_Jobs() {
+	ctx := context.Background()
+	client, err := bigquery.NewClient(ctx, "project-id")
+	if err != nil {
+		// TODO: Handle error.
+	}
+	it := client.Jobs(ctx)
+	it.State = bigquery.Running // list only running jobs.
+	_ = it                      // TODO: iterate using Next or iterator.Pager.
 }
 
 func ExampleNewGCSReference() {
@@ -226,6 +237,25 @@ func ExampleJob_Wait() {
 	if status.Err() != nil {
 		// TODO: Handle error.
 	}
+}
+
+func ExampleJob_Config() {
+	ctx := context.Background()
+	client, err := bigquery.NewClient(ctx, "project-id")
+	if err != nil {
+		// TODO: Handle error.
+	}
+	ds := client.Dataset("my_dataset")
+	job, err := ds.Table("t1").CopierFrom(ds.Table("t2")).Run(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	jc, err := job.Config()
+	if err != nil {
+		// TODO: Handle error.
+	}
+	copyConfig := jc.(*bigquery.CopyConfig)
+	fmt.Println(copyConfig.Dst, copyConfig.CreateDisposition)
 }
 
 func ExampleDataset_Create() {

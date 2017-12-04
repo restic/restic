@@ -105,7 +105,9 @@ func (client ManagementClient) DetectLanguagePreparer(input BatchInput, numberOf
 // DetectLanguageSender sends the DetectLanguage request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagementClient) DetectLanguageSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // DetectLanguageResponder handles the response to the DetectLanguage request. The method always
@@ -168,7 +170,9 @@ func (client ManagementClient) KeyPhrasesPreparer(input MultiLanguageBatchInput)
 // KeyPhrasesSender sends the KeyPhrases request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagementClient) KeyPhrasesSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // KeyPhrasesResponder handles the response to the KeyPhrases request. The method always
@@ -232,7 +236,9 @@ func (client ManagementClient) SentimentPreparer(input MultiLanguageBatchInput) 
 // SentimentSender sends the Sentiment request. The method will close the
 // http.Response Body if it receives an error.
 func (client ManagementClient) SentimentSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		autorest.DoRetryForStatusCodes(client.RetryAttempts, client.RetryDuration, autorest.StatusCodesForRetry...))
 }
 
 // SentimentResponder handles the response to the Sentiment request. The method always

@@ -41,40 +41,44 @@ var (
 // toProtoValue converts a Go value to a Firestore Value protobuf.
 // Some corner cases:
 // - All nils (nil interface, nil slice, nil map, nil pointer) are converted to
-//   a NullValue (not a nil *pb.Value). toProtoValue never returns (nil, nil).
+//   a NullValue (not a nil *pb.Value). toProtoValue never returns (nil, false, nil).
+//   It returns (nil, true, nil) if everything in the value is ServerTimestamp.
 // - An error is returned for uintptr, uint and uint64, because Firestore uses
 //   an int64 to represent integral values, and those types can't be properly
 //   represented in an int64.
 // - An error is returned for the special Delete value.
-func toProtoValue(v reflect.Value) (*pb.Value, error) {
+func toProtoValue(v reflect.Value) (pbv *pb.Value, sawServerTimestamp bool, err error) {
 	if !v.IsValid() {
-		return nullValue, nil
+		return nullValue, false, nil
 	}
 	vi := v.Interface()
 	if vi == Delete {
-		return nil, errors.New("firestore: cannot use Delete in value")
+		return nil, false, errors.New("firestore: cannot use Delete in value")
+	}
+	if vi == ServerTimestamp {
+		return nil, false, errors.New("firestore: must use ServerTimestamp as a map value")
 	}
 	switch x := vi.(type) {
 	case []byte:
-		return &pb.Value{&pb.Value_BytesValue{x}}, nil
+		return &pb.Value{&pb.Value_BytesValue{x}}, false, nil
 	case time.Time:
 		ts, err := ptypes.TimestampProto(x)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		return &pb.Value{&pb.Value_TimestampValue{ts}}, nil
+		return &pb.Value{&pb.Value_TimestampValue{ts}}, false, nil
 	case *latlng.LatLng:
 		if x == nil {
 			// gRPC doesn't like nil oneofs. Use NullValue.
-			return nullValue, nil
+			return nullValue, false, nil
 		}
-		return &pb.Value{&pb.Value_GeoPointValue{x}}, nil
+		return &pb.Value{&pb.Value_GeoPointValue{x}}, false, nil
 	case *DocumentRef:
 		if x == nil {
 			// gRPC doesn't like nil oneofs. Use NullValue.
-			return nullValue, nil
+			return nullValue, false, nil
 		}
-		return &pb.Value{&pb.Value_ReferenceValue{x.Path}}, nil
+		return &pb.Value{&pb.Value_ReferenceValue{x.Path}}, false, nil
 		// Do not add bool, string, int, etc. to this switch; leave them in the
 		// reflect-based switch below. Moving them here would drop support for
 		// types whose underlying types are those primitives.
@@ -83,15 +87,15 @@ func toProtoValue(v reflect.Value) (*pb.Value, error) {
 	}
 	switch v.Kind() {
 	case reflect.Bool:
-		return &pb.Value{&pb.Value_BooleanValue{v.Bool()}}, nil
+		return &pb.Value{&pb.Value_BooleanValue{v.Bool()}}, false, nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return &pb.Value{&pb.Value_IntegerValue{v.Int()}}, nil
+		return &pb.Value{&pb.Value_IntegerValue{v.Int()}}, false, nil
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32:
-		return &pb.Value{&pb.Value_IntegerValue{int64(v.Uint())}}, nil
+		return &pb.Value{&pb.Value_IntegerValue{int64(v.Uint())}}, false, nil
 	case reflect.Float32, reflect.Float64:
-		return &pb.Value{&pb.Value_DoubleValue{v.Float()}}, nil
+		return &pb.Value{&pb.Value_DoubleValue{v.Float()}}, false, nil
 	case reflect.String:
-		return &pb.Value{&pb.Value_StringValue{v.String()}}, nil
+		return &pb.Value{&pb.Value_StringValue{v.String()}}, false, nil
 	case reflect.Slice:
 		return sliceToProtoValue(v)
 	case reflect.Map:
@@ -100,7 +104,7 @@ func toProtoValue(v reflect.Value) (*pb.Value, error) {
 		return structToProtoValue(v)
 	case reflect.Ptr:
 		if v.IsNil() {
-			return nullValue, nil
+			return nullValue, false, nil
 		}
 		return toProtoValue(v.Elem())
 	case reflect.Interface:
@@ -110,71 +114,105 @@ func toProtoValue(v reflect.Value) (*pb.Value, error) {
 		fallthrough // any other interface value is an error
 
 	default:
-		return nil, fmt.Errorf("firestore: cannot convert type %s to value", v.Type())
+		return nil, false, fmt.Errorf("firestore: cannot convert type %s to value", v.Type())
 	}
 }
 
-func sliceToProtoValue(v reflect.Value) (*pb.Value, error) {
+func sliceToProtoValue(v reflect.Value) (*pb.Value, bool, error) {
 	// A nil slice is converted to a null value.
 	if v.IsNil() {
-		return nullValue, nil
+		return nullValue, false, nil
 	}
 	vals := make([]*pb.Value, v.Len())
 	for i := 0; i < v.Len(); i++ {
-		val, err := toProtoValue(v.Index(i))
+		val, sawServerTimestamp, err := toProtoValue(v.Index(i))
 		if err != nil {
-			return nil, err
+			return nil, false, err
+		}
+		if sawServerTimestamp {
+			return nil, false, errors.New("firestore: ServerTimestamp cannot occur in an array")
 		}
 		vals[i] = val
 	}
-	return &pb.Value{&pb.Value_ArrayValue{&pb.ArrayValue{vals}}}, nil
+	return &pb.Value{&pb.Value_ArrayValue{&pb.ArrayValue{vals}}}, false, nil
 }
 
-func mapToProtoValue(v reflect.Value) (*pb.Value, error) {
+func mapToProtoValue(v reflect.Value) (*pb.Value, bool, error) {
 	if v.Type().Key().Kind() != reflect.String {
-		return nil, errors.New("firestore: map key type must be string")
+		return nil, false, errors.New("firestore: map key type must be string")
 	}
 	// A nil map is converted to a null value.
 	if v.IsNil() {
-		return nullValue, nil
+		return nullValue, false, nil
 	}
 	m := map[string]*pb.Value{}
+	sawServerTimestamp := false
 	for _, k := range v.MapKeys() {
 		mi := v.MapIndex(k)
 		if mi.Interface() == ServerTimestamp {
+			sawServerTimestamp = true
 			continue
 		}
-		val, err := toProtoValue(mi)
+		val, sst, err := toProtoValue(mi)
 		if err != nil {
-			return nil, err
+			return nil, false, err
+		}
+		if sst {
+			sawServerTimestamp = true
+		}
+		if val == nil { // value was a map with all ServerTimestamp values
+			continue
 		}
 		m[k.String()] = val
 	}
-	return &pb.Value{&pb.Value_MapValue{&pb.MapValue{m}}}, nil
+	var pv *pb.Value
+	if len(m) == 0 && sawServerTimestamp {
+		// The entire map consisted of ServerTimestamp values.
+		pv = nil
+	} else {
+		pv = &pb.Value{&pb.Value_MapValue{&pb.MapValue{m}}}
+	}
+	return pv, sawServerTimestamp, nil
 }
 
-func structToProtoValue(v reflect.Value) (*pb.Value, error) {
+func structToProtoValue(v reflect.Value) (*pb.Value, bool, error) {
 	m := map[string]*pb.Value{}
 	fields, err := fieldCache.Fields(v.Type())
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
+	sawServerTimestamp := false
 	for _, f := range fields {
 		fv := v.FieldByIndex(f.Index)
 		opts := f.ParsedTag.(tagOptions)
 		if opts.serverTimestamp {
+			// TODO(jba): should we return a non-zero time?
+			sawServerTimestamp = true
 			continue
 		}
 		if opts.omitEmpty && isEmptyValue(fv) {
 			continue
 		}
-		val, err := toProtoValue(fv)
+		val, sst, err := toProtoValue(fv)
 		if err != nil {
-			return nil, err
+			return nil, false, err
+		}
+		if sst {
+			sawServerTimestamp = true
+		}
+		if val == nil { // value was a map with all ServerTimestamp values
+			continue
 		}
 		m[f.Name] = val
 	}
-	return &pb.Value{&pb.Value_MapValue{&pb.MapValue{m}}}, nil
+	var pv *pb.Value
+	if len(m) == 0 && sawServerTimestamp {
+		// The entire struct consisted of ServerTimestamp or omitempty values.
+		pv = nil
+	} else {
+		pv = &pb.Value{&pb.Value_MapValue{&pb.MapValue{m}}}
+	}
+	return pv, sawServerTimestamp, nil
 }
 
 type tagOptions struct {

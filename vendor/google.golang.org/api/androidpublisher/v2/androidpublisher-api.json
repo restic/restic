@@ -1,12 +1,12 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/QjVvqrUMRW1tTVdJHVqdnKd9gLQ\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/6dRjzWCszNTQjv1EQoJBlq-Xgrs\"",
  "discoveryVersion": "v1",
  "id": "androidpublisher:v2",
  "name": "androidpublisher",
  "canonicalName": "Android Publisher",
  "version": "v2",
- "revision": "20170913",
+ "revision": "20171030",
  "title": "Google Play Developer API",
  "description": "Lets Android application developers access their Google Play accounts.",
  "ownerDomain": "google.com",
@@ -601,88 +601,6 @@
     }
    }
   },
-  "InappproductsBatchRequest": {
-   "id": "InappproductsBatchRequest",
-   "type": "object",
-   "properties": {
-    "entrys": {
-     "type": "array",
-     "items": {
-      "$ref": "InappproductsBatchRequestEntry"
-     }
-    }
-   }
-  },
-  "InappproductsBatchRequestEntry": {
-   "id": "InappproductsBatchRequestEntry",
-   "type": "object",
-   "properties": {
-    "batchId": {
-     "type": "integer",
-     "format": "uint32"
-    },
-    "inappproductsinsertrequest": {
-     "$ref": "InappproductsInsertRequest"
-    },
-    "inappproductsupdaterequest": {
-     "$ref": "InappproductsUpdateRequest"
-    },
-    "methodName": {
-     "type": "string"
-    }
-   }
-  },
-  "InappproductsBatchResponse": {
-   "id": "InappproductsBatchResponse",
-   "type": "object",
-   "properties": {
-    "entrys": {
-     "type": "array",
-     "items": {
-      "$ref": "InappproductsBatchResponseEntry"
-     }
-    },
-    "kind": {
-     "type": "string",
-     "description": "Identifies what kind of resource this is. Value: the fixed string \"androidpublisher#inappproductsBatchResponse\".",
-     "default": "androidpublisher#inappproductsBatchResponse"
-    }
-   }
-  },
-  "InappproductsBatchResponseEntry": {
-   "id": "InappproductsBatchResponseEntry",
-   "type": "object",
-   "properties": {
-    "batchId": {
-     "type": "integer",
-     "format": "uint32"
-    },
-    "inappproductsinsertresponse": {
-     "$ref": "InappproductsInsertResponse"
-    },
-    "inappproductsupdateresponse": {
-     "$ref": "InappproductsUpdateResponse"
-    }
-   }
-  },
-  "InappproductsInsertRequest": {
-   "id": "InappproductsInsertRequest",
-   "type": "object",
-   "properties": {
-    "inappproduct": {
-     "$ref": "InAppProduct"
-    }
-   }
-  },
-  "InappproductsInsertResponse": {
-   "id": "InappproductsInsertResponse",
-   "type": "object",
-   "properties": {
-    "inappproduct": {
-     "$ref": "InAppProduct"
-    }
-   }
-  },
   "InappproductsListResponse": {
    "id": "InappproductsListResponse",
    "type": "object",
@@ -703,24 +621,6 @@
     },
     "tokenPagination": {
      "$ref": "TokenPagination"
-    }
-   }
-  },
-  "InappproductsUpdateRequest": {
-   "id": "InappproductsUpdateRequest",
-   "type": "object",
-   "properties": {
-    "inappproduct": {
-     "$ref": "InAppProduct"
-    }
-   }
-  },
-  "InappproductsUpdateResponse": {
-   "id": "InappproductsUpdateResponse",
-   "type": "object",
-   "properties": {
-    "inappproduct": {
-     "$ref": "InAppProduct"
     }
    }
   },
@@ -3051,20 +2951,6 @@
   },
   "inappproducts": {
    "methods": {
-    "batch": {
-     "id": "androidpublisher.inappproducts.batch",
-     "path": "inappproducts/batch",
-     "httpMethod": "POST",
-     "request": {
-      "$ref": "InappproductsBatchRequest"
-     },
-     "response": {
-      "$ref": "InappproductsBatchResponse"
-     },
-     "scopes": [
-      "https://www.googleapis.com/auth/androidpublisher"
-     ]
-    },
     "delete": {
      "id": "androidpublisher.inappproducts.delete",
      "path": "{packageName}/inappproducts/{sku}",

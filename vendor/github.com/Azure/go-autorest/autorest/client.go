@@ -35,6 +35,9 @@ const (
 
 	// DefaultRetryAttempts is number of attempts for retry status codes (5xx).
 	DefaultRetryAttempts = 3
+
+	// DefaultRetryDuration is the duration to wait between retries.
+	DefaultRetryDuration = 30 * time.Second
 )
 
 var (
@@ -172,7 +175,7 @@ func NewClientWithUserAgent(ua string) Client {
 		PollingDelay:    DefaultPollingDelay,
 		PollingDuration: DefaultPollingDuration,
 		RetryAttempts:   DefaultRetryAttempts,
-		RetryDuration:   30 * time.Second,
+		RetryDuration:   DefaultRetryDuration,
 		UserAgent:       defaultUserAgent,
 	}
 	c.Sender = c.sender()

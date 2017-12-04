@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/DCrAVU-W3UzljIhuRMkT-kOc_P8\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/F_mfOUQDIw554XoZ_OkZ0oFLQA8\"",
  "discoveryVersion": "v1",
  "id": "drive:v2",
  "name": "drive",
  "version": "v2",
- "revision": "20170825",
+ "revision": "20171020",
  "title": "Drive API",
  "description": "Manages files in Drive including uploading, downloading, searching, detecting changes, and updating sharing permissions.",
  "ownerDomain": "google.com",
@@ -2049,6 +2049,11 @@
      "type": "string",
      "description": "The color of this Team Drive as an RGB hex string. It can only be set on a drive.teamdrives.update request that does not set themeId."
     },
+    "createdDate": {
+     "type": "string",
+     "description": "The time at which the Team Drive was created (RFC 3339 date-time).",
+     "format": "date-time"
+    },
     "id": {
      "type": "string",
      "description": "The ID of this Team Drive which is also the ID of the top level folder for this Team Drive."
@@ -3913,6 +3918,12 @@
        "description": "Whether the requesting application supports Team Drives.",
        "default": "false",
        "location": "query"
+      },
+      "useDomainAdminAccess": {
+       "type": "boolean",
+       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
+       "default": "false",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -3945,6 +3956,12 @@
       "supportsTeamDrives": {
        "type": "boolean",
        "description": "Whether the requesting application supports Team Drives.",
+       "default": "false",
+       "location": "query"
+      },
+      "useDomainAdminAccess": {
+       "type": "boolean",
+       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
        "default": "false",
        "location": "query"
       }
@@ -4023,6 +4040,12 @@
        "description": "Whether the requesting application supports Team Drives.",
        "default": "false",
        "location": "query"
+      },
+      "useDomainAdminAccess": {
+       "type": "boolean",
+       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
+       "default": "false",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -4067,6 +4090,12 @@
       "supportsTeamDrives": {
        "type": "boolean",
        "description": "Whether the requesting application supports Team Drives.",
+       "default": "false",
+       "location": "query"
+      },
+      "useDomainAdminAccess": {
+       "type": "boolean",
+       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
        "default": "false",
        "location": "query"
       }
@@ -4121,6 +4150,12 @@
        "description": "Whether changing a role to 'owner' downgrades the current owners to writers. Does nothing if the specified role is not 'owner'.",
        "default": "false",
        "location": "query"
+      },
+      "useDomainAdminAccess": {
+       "type": "boolean",
+       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
+       "default": "false",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -4171,6 +4206,12 @@
       "transferOwnership": {
        "type": "boolean",
        "description": "Whether changing a role to 'owner' downgrades the current owners to writers. Does nothing if the specified role is not 'owner'.",
+       "default": "false",
+       "location": "query"
+      },
+      "useDomainAdminAccess": {
+       "type": "boolean",
+       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
        "default": "false",
        "location": "query"
       }
@@ -4960,6 +5001,12 @@
        "description": "The ID of the Team Drive",
        "required": true,
        "location": "path"
+      },
+      "useDomainAdminAccess": {
+       "type": "boolean",
+       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the Team Drive belongs.",
+       "default": "false",
+       "location": "query"
       }
      },
      "parameterOrder": [
@@ -5017,6 +5064,17 @@
       "pageToken": {
        "type": "string",
        "description": "Page token for Team Drives.",
+       "location": "query"
+      },
+      "q": {
+       "type": "string",
+       "description": "Query string for searching Team Drives.",
+       "location": "query"
+      },
+      "useDomainAdminAccess": {
+       "type": "boolean",
+       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then all Team Drives of the domain in which the requester is an administrator are returned.",
+       "default": "false",
        "location": "query"
       }
      },

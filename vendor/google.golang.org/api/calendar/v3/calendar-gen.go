@@ -214,8 +214,8 @@ type Acl struct {
 }
 
 func (s *Acl) MarshalJSON() ([]byte, error) {
-	type noMethod Acl
-	raw := noMethod(*s)
+	type NoMethod Acl
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -269,8 +269,8 @@ type AclRule struct {
 }
 
 func (s *AclRule) MarshalJSON() ([]byte, error) {
-	type noMethod AclRule
-	raw := noMethod(*s)
+	type NoMethod AclRule
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -307,8 +307,8 @@ type AclRuleScope struct {
 }
 
 func (s *AclRuleScope) MarshalJSON() ([]byte, error) {
-	type noMethod AclRuleScope
-	raw := noMethod(*s)
+	type NoMethod AclRuleScope
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -359,8 +359,8 @@ type Calendar struct {
 }
 
 func (s *Calendar) MarshalJSON() ([]byte, error) {
-	type noMethod Calendar
-	raw := noMethod(*s)
+	type NoMethod Calendar
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -407,8 +407,8 @@ type CalendarList struct {
 }
 
 func (s *CalendarList) MarshalJSON() ([]byte, error) {
-	type noMethod CalendarList
-	raw := noMethod(*s)
+	type NoMethod CalendarList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -521,8 +521,8 @@ type CalendarListEntry struct {
 }
 
 func (s *CalendarListEntry) MarshalJSON() ([]byte, error) {
-	type noMethod CalendarListEntry
-	raw := noMethod(*s)
+	type NoMethod CalendarListEntry
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -550,8 +550,8 @@ type CalendarListEntryNotificationSettings struct {
 }
 
 func (s *CalendarListEntryNotificationSettings) MarshalJSON() ([]byte, error) {
-	type noMethod CalendarListEntryNotificationSettings
-	raw := noMethod(*s)
+	type NoMethod CalendarListEntryNotificationSettings
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -593,8 +593,8 @@ type CalendarNotification struct {
 }
 
 func (s *CalendarNotification) MarshalJSON() ([]byte, error) {
-	type noMethod CalendarNotification
-	raw := noMethod(*s)
+	type NoMethod CalendarNotification
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -658,8 +658,8 @@ type Channel struct {
 }
 
 func (s *Channel) MarshalJSON() ([]byte, error) {
-	type noMethod Channel
-	raw := noMethod(*s)
+	type NoMethod Channel
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -690,8 +690,8 @@ type ColorDefinition struct {
 }
 
 func (s *ColorDefinition) MarshalJSON() ([]byte, error) {
-	type noMethod ColorDefinition
-	raw := noMethod(*s)
+	type NoMethod ColorDefinition
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -735,8 +735,8 @@ type Colors struct {
 }
 
 func (s *Colors) MarshalJSON() ([]byte, error) {
-	type noMethod Colors
-	raw := noMethod(*s)
+	type NoMethod Colors
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -775,8 +775,8 @@ type Error struct {
 }
 
 func (s *Error) MarshalJSON() ([]byte, error) {
-	type noMethod Error
-	raw := noMethod(*s)
+	type NoMethod Error
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1005,8 +1005,8 @@ type Event struct {
 }
 
 func (s *Event) MarshalJSON() ([]byte, error) {
-	type noMethod Event
-	raw := noMethod(*s)
+	type NoMethod Event
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1044,8 +1044,8 @@ type EventCreator struct {
 }
 
 func (s *EventCreator) MarshalJSON() ([]byte, error) {
-	type noMethod EventCreator
-	raw := noMethod(*s)
+	type NoMethod EventCreator
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1077,8 +1077,8 @@ type EventExtendedProperties struct {
 }
 
 func (s *EventExtendedProperties) MarshalJSON() ([]byte, error) {
-	type noMethod EventExtendedProperties
-	raw := noMethod(*s)
+	type NoMethod EventExtendedProperties
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1132,8 +1132,8 @@ type EventGadget struct {
 }
 
 func (s *EventGadget) MarshalJSON() ([]byte, error) {
-	type noMethod EventGadget
-	raw := noMethod(*s)
+	type NoMethod EventGadget
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1175,8 +1175,8 @@ type EventOrganizer struct {
 }
 
 func (s *EventOrganizer) MarshalJSON() ([]byte, error) {
-	type noMethod EventOrganizer
-	raw := noMethod(*s)
+	type NoMethod EventOrganizer
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1211,8 +1211,8 @@ type EventReminders struct {
 }
 
 func (s *EventReminders) MarshalJSON() ([]byte, error) {
-	type noMethod EventReminders
-	raw := noMethod(*s)
+	type NoMethod EventReminders
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1247,8 +1247,8 @@ type EventSource struct {
 }
 
 func (s *EventSource) MarshalJSON() ([]byte, error) {
-	type noMethod EventSource
-	raw := noMethod(*s)
+	type NoMethod EventSource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1290,8 +1290,8 @@ type EventAttachment struct {
 }
 
 func (s *EventAttachment) MarshalJSON() ([]byte, error) {
-	type noMethod EventAttachment
-	raw := noMethod(*s)
+	type NoMethod EventAttachment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1360,8 +1360,8 @@ type EventAttendee struct {
 }
 
 func (s *EventAttendee) MarshalJSON() ([]byte, error) {
-	type noMethod EventAttendee
-	raw := noMethod(*s)
+	type NoMethod EventAttendee
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1400,8 +1400,8 @@ type EventDateTime struct {
 }
 
 func (s *EventDateTime) MarshalJSON() ([]byte, error) {
-	type noMethod EventDateTime
-	raw := noMethod(*s)
+	type NoMethod EventDateTime
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1437,8 +1437,8 @@ type EventReminder struct {
 }
 
 func (s *EventReminder) MarshalJSON() ([]byte, error) {
-	type noMethod EventReminder
-	raw := noMethod(*s)
+	type NoMethod EventReminder
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1520,8 +1520,8 @@ type Events struct {
 }
 
 func (s *Events) MarshalJSON() ([]byte, error) {
-	type noMethod Events
-	raw := noMethod(*s)
+	type NoMethod Events
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1551,8 +1551,8 @@ type FreeBusyCalendar struct {
 }
 
 func (s *FreeBusyCalendar) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyCalendar
-	raw := noMethod(*s)
+	type NoMethod FreeBusyCalendar
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1581,8 +1581,8 @@ type FreeBusyGroup struct {
 }
 
 func (s *FreeBusyGroup) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyGroup
-	raw := noMethod(*s)
+	type NoMethod FreeBusyGroup
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1629,8 +1629,8 @@ type FreeBusyRequest struct {
 }
 
 func (s *FreeBusyRequest) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyRequest
-	raw := noMethod(*s)
+	type NoMethod FreeBusyRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1656,8 +1656,8 @@ type FreeBusyRequestItem struct {
 }
 
 func (s *FreeBusyRequestItem) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyRequestItem
-	raw := noMethod(*s)
+	type NoMethod FreeBusyRequestItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1699,8 +1699,8 @@ type FreeBusyResponse struct {
 }
 
 func (s *FreeBusyResponse) MarshalJSON() ([]byte, error) {
-	type noMethod FreeBusyResponse
-	raw := noMethod(*s)
+	type NoMethod FreeBusyResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1741,8 +1741,8 @@ type Setting struct {
 }
 
 func (s *Setting) MarshalJSON() ([]byte, error) {
-	type noMethod Setting
-	raw := noMethod(*s)
+	type NoMethod Setting
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1789,8 +1789,8 @@ type Settings struct {
 }
 
 func (s *Settings) MarshalJSON() ([]byte, error) {
-	type noMethod Settings
-	raw := noMethod(*s)
+	type NoMethod Settings
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1819,8 +1819,8 @@ type TimePeriod struct {
 }
 
 func (s *TimePeriod) MarshalJSON() ([]byte, error) {
-	type noMethod TimePeriod
-	raw := noMethod(*s)
+	type NoMethod TimePeriod
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2039,7 +2039,7 @@ func (c *AclGetCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2185,7 +2185,7 @@ func (c *AclInsertCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2370,7 +2370,7 @@ func (c *AclListCall) Do(opts ...googleapi.CallOption) (*Acl, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2557,7 +2557,7 @@ func (c *AclPatchCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2714,7 +2714,7 @@ func (c *AclUpdateCall) Do(opts ...googleapi.CallOption) (*AclRule, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2899,7 +2899,7 @@ func (c *AclWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3158,7 +3158,7 @@ func (c *CalendarListGetCall) Do(opts ...googleapi.CallOption) (*CalendarListEnt
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3294,7 +3294,7 @@ func (c *CalendarListInsertCall) Do(opts ...googleapi.CallOption) (*CalendarList
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3490,7 +3490,7 @@ func (c *CalendarListListCall) Do(opts ...googleapi.CallOption) (*CalendarList, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3689,7 +3689,7 @@ func (c *CalendarListPatchCall) Do(opts ...googleapi.CallOption) (*CalendarListE
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3837,7 +3837,7 @@ func (c *CalendarListUpdateCall) Do(opts ...googleapi.CallOption) (*CalendarList
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4035,7 +4035,7 @@ func (c *CalendarListWatchCall) Do(opts ...googleapi.CallOption) (*Channel, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4405,7 +4405,7 @@ func (c *CalendarsGetCall) Do(opts ...googleapi.CallOption) (*Calendar, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4531,7 +4531,7 @@ func (c *CalendarsInsertCall) Do(opts ...googleapi.CallOption) (*Calendar, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4654,7 +4654,7 @@ func (c *CalendarsPatchCall) Do(opts ...googleapi.CallOption) (*Calendar, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4787,7 +4787,7 @@ func (c *CalendarsUpdateCall) Do(opts ...googleapi.CallOption) (*Calendar, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5013,7 +5013,7 @@ func (c *ColorsGetCall) Do(opts ...googleapi.CallOption) (*Colors, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5289,7 +5289,7 @@ func (c *EventsGetCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5453,7 +5453,7 @@ func (c *EventsImportCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5616,7 +5616,7 @@ func (c *EventsInsertCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5853,7 +5853,7 @@ func (c *EventsInstancesCall) Do(opts ...googleapi.CallOption) (*Events, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6255,7 +6255,7 @@ func (c *EventsListCall) Do(opts ...googleapi.CallOption) (*Events, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6517,7 +6517,7 @@ func (c *EventsMoveCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6706,7 +6706,7 @@ func (c *EventsPatchCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6870,7 +6870,7 @@ func (c *EventsQuickAddCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7052,7 +7052,7 @@ func (c *EventsUpdateCall) Do(opts ...googleapi.CallOption) (*Event, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7398,7 +7398,7 @@ func (c *EventsWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7632,7 +7632,7 @@ func (c *FreebusyQueryCall) Do(opts ...googleapi.CallOption) (*FreeBusyResponse,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7762,7 +7762,7 @@ func (c *SettingsGetCall) Do(opts ...googleapi.CallOption) (*Setting, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7924,7 +7924,7 @@ func (c *SettingsListCall) Do(opts ...googleapi.CallOption) (*Settings, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8109,7 +8109,7 @@ func (c *SettingsWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

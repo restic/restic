@@ -123,8 +123,8 @@ type AnalyticsInfo struct {
 }
 
 func (s *AnalyticsInfo) MarshalJSON() ([]byte, error) {
-	type noMethod AnalyticsInfo
-	raw := noMethod(*s)
+	type NoMethod AnalyticsInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -165,8 +165,8 @@ type AndroidInfo struct {
 }
 
 func (s *AndroidInfo) MarshalJSON() ([]byte, error) {
-	type noMethod AndroidInfo
-	raw := noMethod(*s)
+	type NoMethod AndroidInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -213,8 +213,8 @@ type CreateShortDynamicLinkRequest struct {
 }
 
 func (s *CreateShortDynamicLinkRequest) MarshalJSON() ([]byte, error) {
-	type noMethod CreateShortDynamicLinkRequest
-	raw := noMethod(*s)
+	type NoMethod CreateShortDynamicLinkRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -253,8 +253,8 @@ type CreateShortDynamicLinkResponse struct {
 }
 
 func (s *CreateShortDynamicLinkResponse) MarshalJSON() ([]byte, error) {
-	type noMethod CreateShortDynamicLinkResponse
-	raw := noMethod(*s)
+	type NoMethod CreateShortDynamicLinkResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -282,8 +282,8 @@ type DesktopInfo struct {
 }
 
 func (s *DesktopInfo) MarshalJSON() ([]byte, error) {
-	type noMethod DesktopInfo
-	raw := noMethod(*s)
+	type NoMethod DesktopInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -294,6 +294,13 @@ type DeviceInfo struct {
 
 	// LanguageCode: Device language code setting.
 	LanguageCode string `json:"languageCode,omitempty"`
+
+	// LanguageCodeRaw: Device language code raw setting.
+	// iOS does returns language code in different format than iOS
+	// WebView.
+	// For example WebView returns en_US, but iOS returns en-US.
+	// Field below will return raw value returned by iOS.
+	LanguageCodeRaw string `json:"languageCodeRaw,omitempty"`
 
 	// ScreenResolutionHeight: Device display resolution height.
 	ScreenResolutionHeight int64 `json:"screenResolutionHeight,omitempty,string"`
@@ -323,8 +330,8 @@ type DeviceInfo struct {
 }
 
 func (s *DeviceInfo) MarshalJSON() ([]byte, error) {
-	type noMethod DeviceInfo
-	raw := noMethod(*s)
+	type NoMethod DeviceInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -382,8 +389,8 @@ type DynamicLinkEventStat struct {
 }
 
 func (s *DynamicLinkEventStat) MarshalJSON() ([]byte, error) {
-	type noMethod DynamicLinkEventStat
-	raw := noMethod(*s)
+	type NoMethod DynamicLinkEventStat
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -465,8 +472,8 @@ type DynamicLinkInfo struct {
 }
 
 func (s *DynamicLinkInfo) MarshalJSON() ([]byte, error) {
-	type noMethod DynamicLinkInfo
-	raw := noMethod(*s)
+	type NoMethod DynamicLinkInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -499,8 +506,8 @@ type DynamicLinkStats struct {
 }
 
 func (s *DynamicLinkStats) MarshalJSON() ([]byte, error) {
-	type noMethod DynamicLinkStats
-	raw := noMethod(*s)
+	type NoMethod DynamicLinkStats
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -585,8 +592,8 @@ type DynamicLinkWarning struct {
 }
 
 func (s *DynamicLinkWarning) MarshalJSON() ([]byte, error) {
-	type noMethod DynamicLinkWarning
-	raw := noMethod(*s)
+	type NoMethod DynamicLinkWarning
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -669,8 +676,8 @@ type GetIosPostInstallAttributionRequest struct {
 }
 
 func (s *GetIosPostInstallAttributionRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GetIosPostInstallAttributionRequest
-	raw := noMethod(*s)
+	type NoMethod GetIosPostInstallAttributionRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -787,8 +794,8 @@ type GetIosPostInstallAttributionResponse struct {
 }
 
 func (s *GetIosPostInstallAttributionResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GetIosPostInstallAttributionResponse
-	raw := noMethod(*s)
+	type NoMethod GetIosPostInstallAttributionResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -847,8 +854,8 @@ type GooglePlayAnalytics struct {
 }
 
 func (s *GooglePlayAnalytics) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePlayAnalytics
-	raw := noMethod(*s)
+	type NoMethod GooglePlayAnalytics
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -889,8 +896,8 @@ type ITunesConnectAnalytics struct {
 }
 
 func (s *ITunesConnectAnalytics) MarshalJSON() ([]byte, error) {
-	type noMethod ITunesConnectAnalytics
-	raw := noMethod(*s)
+	type NoMethod ITunesConnectAnalytics
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -937,8 +944,8 @@ type IosInfo struct {
 }
 
 func (s *IosInfo) MarshalJSON() ([]byte, error) {
-	type noMethod IosInfo
-	raw := noMethod(*s)
+	type NoMethod IosInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -969,8 +976,8 @@ type NavigationInfo struct {
 }
 
 func (s *NavigationInfo) MarshalJSON() ([]byte, error) {
-	type noMethod NavigationInfo
-	raw := noMethod(*s)
+	type NoMethod NavigationInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1005,8 +1012,8 @@ type SocialMetaTagInfo struct {
 }
 
 func (s *SocialMetaTagInfo) MarshalJSON() ([]byte, error) {
-	type noMethod SocialMetaTagInfo
-	raw := noMethod(*s)
+	type NoMethod SocialMetaTagInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1050,8 +1057,8 @@ type Suffix struct {
 }
 
 func (s *Suffix) MarshalJSON() ([]byte, error) {
-	type noMethod Suffix
-	raw := noMethod(*s)
+	type NoMethod Suffix
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1162,7 +1169,7 @@ func (c *ShortLinksCreateCall) Do(opts ...googleapi.CallOption) (*CreateShortDyn
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1304,7 +1311,7 @@ func (c *V1GetLinkStatsCall) Do(opts ...googleapi.CallOption) (*DynamicLinkStats
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1438,7 +1445,7 @@ func (c *V1InstallAttributionCall) Do(opts ...googleapi.CallOption) (*GetIosPost
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

@@ -228,6 +228,8 @@ func fref1(s string) *pb.StructuredQuery_FieldReference {
 }
 
 func TestQueryToProtoErrors(t *testing.T) {
+	st := map[string]interface{}{"a": ServerTimestamp}
+	del := map[string]interface{}{"a": Delete}
 	q := (&Client{}).Collection("C").Query
 	for _, query := range []Query{
 		Query{},                                // no collection ID
@@ -240,6 +242,12 @@ func TestQueryToProtoErrors(t *testing.T) {
 		q.SelectPaths([]string{"/", "", "~"}),             // invalid path
 		q.OrderBy("[", Asc),                               // invalid path
 		q.OrderByPath([]string{""}, Desc),                 // invalid path
+		q.Where("x", "==", st),                            // ServerTimestamp in filter
+		q.OrderBy("a", Asc).StartAt(st),                   // ServerTimestamp in Start
+		q.OrderBy("a", Asc).EndAt(st),                     // ServerTimestamp in End
+		q.Where("x", "==", del),                           // Delete in filter
+		q.OrderBy("a", Asc).StartAt(del),                  // Delete in Start
+		q.OrderBy("a", Asc).EndAt(del),                    // Delete in End
 	} {
 		_, err := query.toProto()
 		if err == nil {

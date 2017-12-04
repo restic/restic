@@ -33,9 +33,36 @@ make backwards-incompatible changes.
 
 ## News
 
-*v0.15.0*
+_October 30, 2017_
+
+*v0.16.0*
+
+- Other bigquery changes:
+  - `JobIterator.Next` returns `*Job`; removed `JobInfo` (BREAKING CHANGE).
+  - UseStandardSQL is deprecated; set UseLegacySQL to true if you need
+    Legacy SQL.
+  - Uploader.Put will generate a random insert ID if you do not provide one.
+  - Support time partitioning for load jobs.
+  - Support dry-run queries.
+  - A `Job` remembers its last retrieved status.
+  - Support retrieving job configuration.
+  - Support labels for jobs and tables.
+  - Support dataset access lists.
+  - Improve support for external data sources, including data from Bigtable and
+    Google Sheets, and tables with external data.
+  - Support updating a table's view configuration.
+  - Fix uploading civil times with nanoseconds.
+
+- storage: 
+  - Support PubSub notifications.
+  - Support Requester Pays buckets.
+
+- profiler: Support goroutine and mutex profile types.
+
 
 _October 3, 2017_
+
+*v0.15.0*
 
 - firestore: beta release. See the
   [announcement](https://firebase.googleblog.com/2017/10/introducing-cloud-firestore.html).

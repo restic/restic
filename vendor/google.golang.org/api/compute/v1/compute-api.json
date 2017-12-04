@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/ccMQJOTqWSBs7vqsZTir487_SNI\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/HqQuvNGps38O7DKua7SJgoho9d8\"",
  "discoveryVersion": "v1",
  "id": "compute:v1",
  "name": "compute",
  "version": "v1",
- "revision": "20171010",
+ "revision": "20171107",
  "title": "Compute Engine API",
  "description": "Creates and runs virtual machines on Google Cloud Platform.",
  "ownerDomain": "google.com",
@@ -514,7 +514,7 @@
     },
     "addressType": {
      "type": "string",
-     "description": "The type of address to reserve. If unspecified, defaults to EXTERNAL.",
+     "description": "The type of address to reserve, either INTERNAL or EXTERNAL. If unspecified, defaults to EXTERNAL.",
      "enum": [
       "EXTERNAL",
       "INTERNAL",
@@ -1038,7 +1038,7 @@
     },
     "sourceImage": {
      "type": "string",
-     "description": "The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required except for local SSD.\n\nTo create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:\n\nprojects/debian-cloud/global/images/family/debian-8 \n\nAlternatively, use a specific version of a public operating system image:\n\nprojects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD \n\nTo create a disk with a private image that you created, specify the image name in the following format:\n\nglobal/images/my-private-image \n\nYou can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:\n\nglobal/images/family/my-private-family \n\nIf the source image is deleted later, this field will not be set."
+     "description": "The source image to create this disk. When creating a new instance, one of initializeParams.sourceImage or disks.source is required except for local SSD.\n\nTo create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:\n\nprojects/debian-cloud/global/images/family/debian-8 \n\nAlternatively, use a specific version of a public operating system image:\n\nprojects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD \n\nTo create a disk with a custom image that you created, specify the image name in the following format:\n\nglobal/images/my-custom-image \n\nYou can also specify a custom image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:\n\nglobal/images/family/my-image-family \n\nIf the source image is deleted later, this field will not be set."
     },
     "sourceImageEncryptionKey": {
      "$ref": "CustomerEncryptionKey",
@@ -2909,7 +2909,7 @@
     },
     "sourceImage": {
      "type": "string",
-     "description": "The source image used to create this disk. If the source image is deleted, this field will not be set.\n\nTo create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:\n\nprojects/debian-cloud/global/images/family/debian-8 \n\nAlternatively, use a specific version of a public operating system image:\n\nprojects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD \n\nTo create a disk with a private image that you created, specify the image name in the following format:\n\nglobal/images/my-private-image \n\nYou can also specify a private image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:\n\nglobal/images/family/my-private-family"
+     "description": "The source image used to create this disk. If the source image is deleted, this field will not be set.\n\nTo create a disk with one of the public operating system images, specify the image by its family name. For example, specify family/debian-8 to use the latest Debian 8 image:\n\nprojects/debian-cloud/global/images/family/debian-8 \n\nAlternatively, use a specific version of a public operating system image:\n\nprojects/debian-cloud/global/images/debian-8-jessie-vYYYYMMDD \n\nTo create a disk with a custom image that you created, specify the image name in the following format:\n\nglobal/images/my-custom-image \n\nYou can also specify a custom image by its image family, which returns the latest version of the image in that family. Replace the image name with family/family-name:\n\nglobal/images/family/my-image-family"
     },
     "sourceImageEncryptionKey": {
      "$ref": "CustomerEncryptionKey",
@@ -7324,11 +7324,11 @@
   "Interconnect": {
    "id": "Interconnect",
    "type": "object",
-   "description": "Protocol definitions for Mixer API to support Interconnect. Next available tag: 25",
+   "description": "Represents an Interconnects resource. The Interconnects resource is a dedicated connection between Google's network and your on-premises network. For more information, see the  Dedicated overview page.",
    "properties": {
     "adminEnabled": {
      "type": "boolean",
-     "description": "Administrative status of the interconnect. When this is set to ?true?, the Interconnect is functional and may carry traffic (assuming there are functional InterconnectAttachments and other requirements are satisfied). When set to ?false?, no packets will be carried over this Interconnect and no BGP routes will be exchanged over it. By default, it is set to ?true?."
+     "description": "Administrative status of the interconnect. When this is set to true, the Interconnect is functional and can carry traffic. When set to false, no packets can be carried over the interconnect and no BGP routes are exchanged over it. By default, the status is set to true."
     },
     "circuitInfos": {
      "type": "array",
@@ -7378,6 +7378,7 @@
     },
     "interconnectType": {
      "type": "string",
+     "description": "Type of interconnect. Note that \"IT_PRIVATE\" has been deprecated in favor of \"DEDICATED\"",
      "enum": [
       "DEDICATED",
       "IT_PRIVATE"
@@ -7394,6 +7395,7 @@
     },
     "linkType": {
      "type": "string",
+     "description": "Type of link requested. This field indicates speed of each of the links in the bundle, not the entire bundle. Only 10G per link is allowed for a dedicated interconnect. Options: Ethernet_10G_LR",
      "enum": [
       "LINK_TYPE_ETHERNET_10G_LR"
      ],
@@ -7423,14 +7425,10 @@
      "type": "string",
      "description": "[Output Only] The current status of whether or not this Interconnect is functional.",
      "enum": [
-      "ACTIVE",
       "OS_ACTIVE",
-      "OS_UNPROVISIONED",
-      "UNPROVISIONED"
+      "OS_UNPROVISIONED"
      ],
      "enumDescriptions": [
-      "",
-      "",
       "",
       ""
      ]
@@ -7458,7 +7456,7 @@
   "InterconnectAttachment": {
    "id": "InterconnectAttachment",
    "type": "object",
-   "description": "Protocol definitions for Mixer API to support InterconnectAttachment. Next available tag: 23",
+   "description": "Represents an InterconnectAttachment (VLAN attachment) resource. For more information, see  Creating VLAN Attachments.",
    "properties": {
     "cloudRouterIpAddress": {
      "type": "string",
@@ -7474,7 +7472,7 @@
     },
     "description": {
      "type": "string",
-     "description": "An optional description of this resource. Provide this property when you create the resource."
+     "description": "An optional description of this resource."
     },
     "googleReferenceId": {
      "type": "string",
@@ -7503,21 +7501,17 @@
      "type": "string",
      "description": "[Output Only] The current status of whether or not this interconnect attachment is functional.",
      "enum": [
-      "ACTIVE",
       "OS_ACTIVE",
-      "OS_UNPROVISIONED",
-      "UNPROVISIONED"
+      "OS_UNPROVISIONED"
      ],
      "enumDescriptions": [
-      "",
-      "",
       "",
       ""
      ]
     },
     "privateInterconnectInfo": {
      "$ref": "InterconnectAttachmentPrivateInfo",
-     "description": "[Output Only] Information specific to a Private InterconnectAttachment. Only populated if the interconnect that this is attached is of type IT_PRIVATE."
+     "description": "[Output Only] Information specific to an InterconnectAttachment. This property is populated if the interconnect that this is attached to is of type DEDICATED."
     },
     "region": {
      "type": "string",
@@ -7760,7 +7754,7 @@
   "InterconnectAttachmentPrivateInfo": {
    "id": "InterconnectAttachmentPrivateInfo",
    "type": "object",
-   "description": "Private information for an interconnect attachment when this belongs to an interconnect of type IT_PRIVATE.",
+   "description": "Information for an interconnect attachment when this belongs to an interconnect of type DEDICATED.",
    "properties": {
     "tag8021q": {
      "type": "integer",
@@ -7870,7 +7864,7 @@
    "properties": {
     "customerDemarcId": {
      "type": "string",
-     "description": "Customer-side demarc ID for this circuit. This will only be set if it was provided by the Customer to Google during circuit turn-up."
+     "description": "Customer-side demarc ID for this circuit."
     },
     "googleCircuitId": {
      "type": "string",
@@ -7997,7 +7991,7 @@
   "InterconnectLocation": {
    "id": "InterconnectLocation",
    "type": "object",
-   "description": "Protocol definitions for Mixer API to support InterconnectLocation.",
+   "description": "Represents an InterconnectLocations resource. The InterconnectLocations resource describes the locations where you can connect to Google's networks. For more information, see  Colocation Facilities.",
    "properties": {
     "address": {
      "type": "string",
@@ -8005,15 +7999,15 @@
     },
     "availabilityZone": {
      "type": "string",
-     "description": "Availability zone for this location. Within a city, maintenance will not be simultaneously scheduled in more than one availability zone. Example: \"zone1\" or \"zone2\"."
+     "description": "[Output Only] Availability zone for this location. Within a metropolitan area (metro), maintenance will not be simultaneously scheduled in more than one availability zone. Example: \"zone1\" or \"zone2\"."
     },
     "city": {
      "type": "string",
-     "description": "City designator used by the Interconnect UI to locate this InterconnectLocation within the Continent. For example: \"Chicago, IL\", \"Amsterdam, Netherlands\"."
+     "description": "[Output Only] Metropolitan area designator that indicates which city an interconnect is located. For example: \"Chicago, IL\", \"Amsterdam, Netherlands\"."
     },
     "continent": {
      "type": "string",
-     "description": "Continent for this location. Used by the location picker in the Interconnect UI.",
+     "description": "[Output Only] Continent for this location.",
      "enum": [
       "AFRICA",
       "ASIA_PAC",
@@ -8244,14 +8238,16 @@
     },
     "description": {
      "type": "string",
-     "description": "Short user-visible description of the purpose of the outage."
+     "description": "A description about the purpose of the outage."
     },
     "endTime": {
      "type": "string",
+     "description": "Scheduled end time for the outage (milliseconds since Unix epoch).",
      "format": "int64"
     },
     "issueType": {
      "type": "string",
+     "description": "Form this outage is expected to take. Note that the \"IT_\" versions of this enum have been deprecated in favor of the unprefixed values.",
      "enum": [
       "IT_OUTAGE",
       "IT_PARTIAL_OUTAGE",
@@ -8271,6 +8267,7 @@
     },
     "source": {
      "type": "string",
+     "description": "The party that generated this notification. Note that \"NSRC_GOOGLE\" has been deprecated in favor of \"GOOGLE\"",
      "enum": [
       "GOOGLE",
       "NSRC_GOOGLE"
@@ -8282,11 +8279,12 @@
     },
     "startTime": {
      "type": "string",
-     "description": "Scheduled start and end times for the outage (milliseconds since Unix epoch).",
+     "description": "Scheduled start time for the outage (milliseconds since Unix epoch).",
      "format": "int64"
     },
     "state": {
      "type": "string",
+     "description": "State of this notification. Note that the \"NS_\" versions of this enum have been deprecated in favor of the unprefixed values.",
      "enum": [
       "ACTIVE",
       "CANCELLED",
@@ -9936,6 +9934,8 @@
       "INSTANCE_GROUPS",
       "INSTANCE_GROUP_MANAGERS",
       "INSTANCE_TEMPLATES",
+      "INTERCONNECTS",
+      "INTERNAL_ADDRESSES",
       "IN_USE_ADDRESSES",
       "LOCAL_SSD_TOTAL_GB",
       "NETWORKS",
@@ -9943,6 +9943,8 @@
       "NVIDIA_P100_GPUS",
       "PREEMPTIBLE_CPUS",
       "PREEMPTIBLE_LOCAL_SSD_GB",
+      "PREEMPTIBLE_NVIDIA_K80_GPUS",
+      "PREEMPTIBLE_NVIDIA_P100_GPUS",
       "REGIONAL_AUTOSCALERS",
       "REGIONAL_INSTANCE_GROUP_MANAGERS",
       "ROUTERS",
@@ -9965,6 +9967,10 @@
       "VPN_TUNNELS"
      ],
      "enumDescriptions": [
+      "",
+      "",
+      "",
+      "",
       "",
       "",
       "",
@@ -19434,7 +19440,7 @@
      "id": "compute.images.list",
      "path": "{project}/global/images",
      "httpMethod": "GET",
-     "description": "Retrieves the list of private images available to the specified project. Private images are images you create that belong to your project. This method does not get any images that belong to other projects, including publicly-available images, like Debian 8. If you want to get a list of publicly-available images, use this method to make a request to the respective image project, such as debian-cloud or windows-cloud.",
+     "description": "Retrieves the list of custom images available to the specified project. Custom images are images you create that belong to your project. This method does not get any images that belong to other projects, including publicly-available images, like Debian 8. If you want to get a list of publicly-available images, use this method to make a request to the respective image project, such as debian-cloud or windows-cloud.",
      "parameters": {
       "filter": {
        "type": "string",

@@ -118,12 +118,7 @@ func TestVideoIntelligenceServiceAnnotateVideo(t *testing.T) {
 		Result: &longrunningpb.Operation_Response{Response: any},
 	})
 
-	var inputUri string = "inputUri1707300727"
-	var features []videointelligencepb.Feature = nil
-	var request = &videointelligencepb.AnnotateVideoRequest{
-		InputUri: inputUri,
-		Features: features,
-	}
+	var request *videointelligencepb.AnnotateVideoRequest = &videointelligencepb.AnnotateVideoRequest{}
 
 	c, err := NewClient(context.Background(), clientOpt)
 	if err != nil {
@@ -163,12 +158,7 @@ func TestVideoIntelligenceServiceAnnotateVideoError(t *testing.T) {
 		},
 	})
 
-	var inputUri string = "inputUri1707300727"
-	var features []videointelligencepb.Feature = nil
-	var request = &videointelligencepb.AnnotateVideoRequest{
-		InputUri: inputUri,
-		Features: features,
-	}
+	var request *videointelligencepb.AnnotateVideoRequest = &videointelligencepb.AnnotateVideoRequest{}
 
 	c, err := NewClient(context.Background(), clientOpt)
 	if err != nil {

@@ -229,8 +229,8 @@ type GoogleLongrunningListOperationsResponse struct {
 }
 
 func (s *GoogleLongrunningListOperationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleLongrunningListOperationsResponse
-	raw := noMethod(*s)
+	type NoMethod GoogleLongrunningListOperationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -286,8 +286,8 @@ type GoogleLongrunningOperation struct {
 }
 
 func (s *GoogleLongrunningOperation) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleLongrunningOperation
-	raw := noMethod(*s)
+	type NoMethod GoogleLongrunningOperation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -318,8 +318,57 @@ type GooglePrivacyDlpV2beta1AnalyzeDataSourceRiskRequest struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1AnalyzeDataSourceRiskRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1AnalyzeDataSourceRiskRequest
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1AnalyzeDataSourceRiskRequest
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1AuxiliaryTable: An auxiliary table contains
+// statistical information on the relative
+// frequency of different quasi-identifiers values. It has one or
+// several
+// quasi-identifiers columns, and one column that indicates the
+// relative
+// frequency of each quasi-identifier tuple.
+// If a tuple is present in the data but not in the auxiliary table,
+// the
+// corresponding relative frequency is assumed to be zero (and thus,
+// the
+// tuple is highly reidentifiable).
+type GooglePrivacyDlpV2beta1AuxiliaryTable struct {
+	// QuasiIds: Quasi-identifier columns. [required]
+	QuasiIds []*GooglePrivacyDlpV2beta1QuasiIdField `json:"quasiIds,omitempty"`
+
+	// RelativeFrequency: The relative frequency column must contain a
+	// floating-point number
+	// between 0 and 1 (inclusive). Null values are assumed to be
+	// zero.
+	// [required]
+	RelativeFrequency *GooglePrivacyDlpV2beta1FieldId `json:"relativeFrequency,omitempty"`
+
+	// Table: Auxiliary table location. [required]
+	Table *GooglePrivacyDlpV2beta1BigQueryTable `json:"table,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "QuasiIds") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "QuasiIds") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1AuxiliaryTable) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2beta1AuxiliaryTable
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -354,8 +403,8 @@ type GooglePrivacyDlpV2beta1BigQueryOptions struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1BigQueryOptions) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1BigQueryOptions
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1BigQueryOptions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -398,8 +447,8 @@ type GooglePrivacyDlpV2beta1BigQueryTable struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1BigQueryTable) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1BigQueryTable
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1BigQueryTable
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -438,8 +487,8 @@ type GooglePrivacyDlpV2beta1Bucket struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Bucket) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Bucket
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Bucket
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -476,8 +525,8 @@ type GooglePrivacyDlpV2beta1BucketingConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1BucketingConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1BucketingConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1BucketingConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -512,8 +561,8 @@ type GooglePrivacyDlpV2beta1CategoricalStatsConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CategoricalStatsConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CategoricalStatsConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CategoricalStatsConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -554,8 +603,8 @@ type GooglePrivacyDlpV2beta1CategoricalStatsHistogramBucket struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CategoricalStatsHistogramBucket) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CategoricalStatsHistogramBucket
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CategoricalStatsHistogramBucket
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -586,8 +635,8 @@ type GooglePrivacyDlpV2beta1CategoricalStatsResult struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CategoricalStatsResult) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CategoricalStatsResult
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CategoricalStatsResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -618,8 +667,8 @@ type GooglePrivacyDlpV2beta1CategoryDescription struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CategoryDescription) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CategoryDescription
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CategoryDescription
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -685,8 +734,8 @@ type GooglePrivacyDlpV2beta1CharacterMaskConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CharacterMaskConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CharacterMaskConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CharacterMaskConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -725,8 +774,8 @@ type GooglePrivacyDlpV2beta1CharsToIgnore struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CharsToIgnore) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CharsToIgnore
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CharsToIgnore
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -757,8 +806,8 @@ type GooglePrivacyDlpV2beta1CloudStorageKey struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CloudStorageKey) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CloudStorageKey
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CloudStorageKey
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -786,8 +835,8 @@ type GooglePrivacyDlpV2beta1CloudStorageOptions struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CloudStorageOptions) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CloudStorageOptions
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CloudStorageOptions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -814,8 +863,8 @@ type GooglePrivacyDlpV2beta1CloudStoragePath struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CloudStoragePath) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CloudStoragePath
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CloudStoragePath
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -852,20 +901,20 @@ type GooglePrivacyDlpV2beta1Color struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Color) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Color
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Color
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *GooglePrivacyDlpV2beta1Color) UnmarshalJSON(data []byte) error {
-	type noMethod GooglePrivacyDlpV2beta1Color
+	type NoMethod GooglePrivacyDlpV2beta1Color
 	var s1 struct {
 		Blue  gensupport.JSONFloat64 `json:"blue"`
 		Green gensupport.JSONFloat64 `json:"green"`
 		Red   gensupport.JSONFloat64 `json:"red"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -940,8 +989,8 @@ type GooglePrivacyDlpV2beta1Condition struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Condition) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Condition
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Condition
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -966,8 +1015,8 @@ type GooglePrivacyDlpV2beta1Conditions struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Conditions) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Conditions
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Conditions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1008,8 +1057,8 @@ type GooglePrivacyDlpV2beta1ContentItem struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ContentItem) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ContentItem
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ContentItem
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1049,8 +1098,8 @@ type GooglePrivacyDlpV2beta1CreateInspectOperationRequest struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CreateInspectOperationRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CreateInspectOperationRequest
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CreateInspectOperationRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1082,8 +1131,8 @@ type GooglePrivacyDlpV2beta1CryptoHashConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CryptoHashConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CryptoHashConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CryptoHashConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1119,22 +1168,22 @@ type GooglePrivacyDlpV2beta1CryptoKey struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CryptoKey) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CryptoKey
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CryptoKey
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // GooglePrivacyDlpV2beta1CryptoReplaceFfxFpeConfig: Replaces an
-// identifier with an surrogate using FPE with the FFX
+// identifier with a surrogate using FPE with the FFX
 // mode of operation.
 // The identifier must be representable by the US-ASCII character
 // set.
 // For a given crypto key and context, the same identifier will
 // be
 // replaced with the same surrogate.
-// Note that a given identifier must be either the empty string or be
-// at
-// least two characters long.
+// Identifiers must be at least two characters long.
+// In the case that the identifier is the empty string, it will be
+// skipped.
 type GooglePrivacyDlpV2beta1CryptoReplaceFfxFpeConfig struct {
 	// Possible values:
 	//   "FFX_COMMON_NATIVE_ALPHABET_UNSPECIFIED"
@@ -1219,8 +1268,8 @@ type GooglePrivacyDlpV2beta1CryptoReplaceFfxFpeConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CryptoReplaceFfxFpeConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CryptoReplaceFfxFpeConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CryptoReplaceFfxFpeConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1255,8 +1304,8 @@ type GooglePrivacyDlpV2beta1CustomInfoType struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1CustomInfoType) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1CustomInfoType
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1CustomInfoType
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1284,8 +1333,8 @@ type GooglePrivacyDlpV2beta1DatastoreKey struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1DatastoreKey) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1DatastoreKey
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1DatastoreKey
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1323,8 +1372,8 @@ type GooglePrivacyDlpV2beta1DatastoreOptions struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1DatastoreOptions) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1DatastoreOptions
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1DatastoreOptions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1358,8 +1407,8 @@ type GooglePrivacyDlpV2beta1DeidentificationSummary struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1DeidentificationSummary) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1DeidentificationSummary
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1DeidentificationSummary
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1397,8 +1446,8 @@ type GooglePrivacyDlpV2beta1DeidentifyConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1DeidentifyConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1DeidentifyConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1DeidentifyConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1436,8 +1485,8 @@ type GooglePrivacyDlpV2beta1DeidentifyContentRequest struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1DeidentifyContentRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1DeidentifyContentRequest
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1DeidentifyContentRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1472,8 +1521,8 @@ type GooglePrivacyDlpV2beta1DeidentifyContentResponse struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1DeidentifyContentResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1DeidentifyContentResponse
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1DeidentifyContentResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1487,8 +1536,8 @@ func (s *GooglePrivacyDlpV2beta1DeidentifyContentResponse) MarshalJSON() ([]byte
 // letters
 // and digits in the unicode [Basic
 // Multilingual
-// Plane](https://en.wikipedia.org/wiki/Plane_(Unicode)#Basi
-// c_Multilingual_Plane)
+// Plane](https://en.wikipedia.org/wiki/Plane_%28Unicode%29#
+// Basic_Multilingual_Plane)
 // will be replaced with whitespace when scanning for matches, so
 // the
 // dictionary phrase "Sam Johnson" will match all three phrases "sam
@@ -1532,8 +1581,8 @@ type GooglePrivacyDlpV2beta1Dictionary struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Dictionary) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Dictionary
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Dictionary
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1569,8 +1618,8 @@ type GooglePrivacyDlpV2beta1EntityId struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1EntityId) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1EntityId
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1EntityId
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1605,8 +1654,8 @@ type GooglePrivacyDlpV2beta1Expressions struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Expressions) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Expressions
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Expressions
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1634,8 +1683,8 @@ type GooglePrivacyDlpV2beta1FieldId struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1FieldId) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1FieldId
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1FieldId
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1686,8 +1735,8 @@ type GooglePrivacyDlpV2beta1FieldTransformation struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1FieldTransformation) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1FieldTransformation
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1FieldTransformation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1716,8 +1765,8 @@ type GooglePrivacyDlpV2beta1FileSet struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1FileSet) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1FileSet
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1FileSet
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1767,8 +1816,8 @@ type GooglePrivacyDlpV2beta1Finding struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Finding) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Finding
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Finding
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1832,18 +1881,18 @@ type GooglePrivacyDlpV2beta1FixedSizeBucketingConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1FixedSizeBucketingConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1FixedSizeBucketingConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1FixedSizeBucketingConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *GooglePrivacyDlpV2beta1FixedSizeBucketingConfig) UnmarshalJSON(data []byte) error {
-	type noMethod GooglePrivacyDlpV2beta1FixedSizeBucketingConfig
+	type NoMethod GooglePrivacyDlpV2beta1FixedSizeBucketingConfig
 	var s1 struct {
 		BucketSize gensupport.JSONFloat64 `json:"bucketSize"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1884,8 +1933,8 @@ type GooglePrivacyDlpV2beta1ImageLocation struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ImageLocation) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ImageLocation
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ImageLocation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1929,8 +1978,8 @@ type GooglePrivacyDlpV2beta1ImageRedactionConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ImageRedactionConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ImageRedactionConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ImageRedactionConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1958,8 +2007,8 @@ type GooglePrivacyDlpV2beta1InfoType struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InfoType) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InfoType
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InfoType
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1993,8 +2042,8 @@ type GooglePrivacyDlpV2beta1InfoTypeDescription struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InfoTypeDescription) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InfoTypeDescription
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InfoTypeDescription
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2032,8 +2081,8 @@ type GooglePrivacyDlpV2beta1InfoTypeLimit struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InfoTypeLimit) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InfoTypeLimit
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InfoTypeLimit
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2064,8 +2113,8 @@ type GooglePrivacyDlpV2beta1InfoTypeStatistics struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InfoTypeStatistics) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InfoTypeStatistics
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InfoTypeStatistics
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2100,8 +2149,8 @@ type GooglePrivacyDlpV2beta1InfoTypeTransformation struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InfoTypeTransformation) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InfoTypeTransformation
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InfoTypeTransformation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2137,8 +2186,8 @@ type GooglePrivacyDlpV2beta1InfoTypeTransformations struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InfoTypeTransformations) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InfoTypeTransformations
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InfoTypeTransformations
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2205,8 +2254,8 @@ type GooglePrivacyDlpV2beta1InspectConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InspectConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InspectConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InspectConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2241,8 +2290,8 @@ type GooglePrivacyDlpV2beta1InspectContentRequest struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InspectContentRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InspectContentRequest
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InspectContentRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2276,8 +2325,8 @@ type GooglePrivacyDlpV2beta1InspectContentResponse struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InspectContentResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InspectContentResponse
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InspectContentResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2324,8 +2373,8 @@ type GooglePrivacyDlpV2beta1InspectOperationMetadata struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InspectOperationMetadata) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InspectOperationMetadata
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InspectOperationMetadata
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2356,8 +2405,8 @@ type GooglePrivacyDlpV2beta1InspectOperationResult struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InspectOperationResult) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InspectOperationResult
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InspectOperationResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2398,18 +2447,33 @@ type GooglePrivacyDlpV2beta1InspectResult struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1InspectResult) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1InspectResult
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1InspectResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // GooglePrivacyDlpV2beta1KAnonymityConfig: k-anonymity metric, used for
 // analysis of reidentification risk.
 type GooglePrivacyDlpV2beta1KAnonymityConfig struct {
-	// EntityId: Optional message indicating that each distinct `EntityId`
+	// EntityId: Optional message indicating that each distinct entity_id
 	// should not
 	// contribute to the k-anonymity count more than once per equivalence
 	// class.
+	// If an entity_id appears on several rows with different
+	// quasi-identifier
+	// tuples, it will contribute to each count exactly once.
+	//
+	// This can lead to unexpected results. Consider a table where ID 1
+	// is
+	// associated to quasi-identifier "foo", ID 2 to "bar", and ID 3 to
+	// *both*
+	// quasi-identifiers "foo" and "bar" (on separate rows), and where this
+	// ID
+	// is used as entity_id. Then, the anonymity value associated to ID 3
+	// will
+	// be 2, even if it is the only ID to be associated to both values "foo"
+	// and
+	// "bar".
 	EntityId *GooglePrivacyDlpV2beta1EntityId `json:"entityId,omitempty"`
 
 	// QuasiIds: Set of fields to compute k-anonymity over. When multiple
@@ -2441,8 +2505,8 @@ type GooglePrivacyDlpV2beta1KAnonymityConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1KAnonymityConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1KAnonymityConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1KAnonymityConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2481,8 +2545,8 @@ type GooglePrivacyDlpV2beta1KAnonymityEquivalenceClass struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1KAnonymityEquivalenceClass) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1KAnonymityEquivalenceClass
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1KAnonymityEquivalenceClass
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2523,8 +2587,8 @@ type GooglePrivacyDlpV2beta1KAnonymityHistogramBucket struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1KAnonymityHistogramBucket) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1KAnonymityHistogramBucket
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1KAnonymityHistogramBucket
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2555,8 +2619,190 @@ type GooglePrivacyDlpV2beta1KAnonymityResult struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1KAnonymityResult) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1KAnonymityResult
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1KAnonymityResult
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1KMapEstimationConfig: Reidentifiability
+// metric. This corresponds to a risk model similar to what
+// is called "journalist risk" in the literature, except the attack
+// dataset is
+// statistically modeled instead of being perfectly known. This can be
+// done
+// using publicly available data (like the US Census), or using a
+// custom
+// statistical model (indicated as one or several BigQuery tables), or
+// by
+// extrapolating from the distribution of values in the input dataset.
+type GooglePrivacyDlpV2beta1KMapEstimationConfig struct {
+	// AuxiliaryTables: Several auxiliary tables can be used in the
+	// analysis. Each custom_tag
+	// used to tag a quasi-identifiers column must appear in exactly one
+	// column
+	// of one auxiliary table.
+	AuxiliaryTables []*GooglePrivacyDlpV2beta1AuxiliaryTable `json:"auxiliaryTables,omitempty"`
+
+	// QuasiIds: Fields considered to be quasi-identifiers. No two columns
+	// can have the
+	// same tag. [required]
+	QuasiIds []*GooglePrivacyDlpV2beta1TaggedField `json:"quasiIds,omitempty"`
+
+	// RegionCode: ISO 3166-1 alpha-2 region code to use in the statistical
+	// modeling.
+	// Required if no column is tagged with a region-specific InfoType
+	// (like
+	// US_ZIP_5) or a region code.
+	RegionCode string `json:"regionCode,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "AuxiliaryTables") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "AuxiliaryTables") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1KMapEstimationConfig) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2beta1KMapEstimationConfig
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1KMapEstimationHistogramBucket: A
+// KMapEstimationHistogramBucket message with the following values:
+//   min_anonymity: 3
+//   max_anonymity: 5
+//   frequency: 42
+// means that there are 42 records whose quasi-identifier values
+// correspond
+// to 3, 4 or 5 people in the overlying population. An important
+// particular
+// case is when min_anonymity = max_anonymity = 1: the frequency field
+// then
+// corresponds to the number of uniquely identifiable records.
+type GooglePrivacyDlpV2beta1KMapEstimationHistogramBucket struct {
+	// BucketSize: Number of records within these anonymity bounds.
+	BucketSize int64 `json:"bucketSize,omitempty,string"`
+
+	// BucketValues: Sample of quasi-identifier tuple values in this bucket.
+	// The total
+	// number of classes returned per bucket is capped at 20.
+	BucketValues []*GooglePrivacyDlpV2beta1KMapEstimationQuasiIdValues `json:"bucketValues,omitempty"`
+
+	// MaxAnonymity: Always greater than or equal to min_anonymity.
+	MaxAnonymity int64 `json:"maxAnonymity,omitempty,string"`
+
+	// MinAnonymity: Always positive.
+	MinAnonymity int64 `json:"minAnonymity,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "BucketSize") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BucketSize") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1KMapEstimationHistogramBucket) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2beta1KMapEstimationHistogramBucket
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1KMapEstimationQuasiIdValues: A tuple of values
+// for the quasi-identifier columns.
+type GooglePrivacyDlpV2beta1KMapEstimationQuasiIdValues struct {
+	// EstimatedAnonymity: The estimated anonymity for these
+	// quasi-identifier values.
+	EstimatedAnonymity int64 `json:"estimatedAnonymity,omitempty,string"`
+
+	// QuasiIdsValues: The quasi-identifier values.
+	QuasiIdsValues []*GooglePrivacyDlpV2beta1Value `json:"quasiIdsValues,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "EstimatedAnonymity")
+	// to unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "EstimatedAnonymity") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1KMapEstimationQuasiIdValues) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2beta1KMapEstimationQuasiIdValues
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1KMapEstimationResult: Result of the
+// reidentifiability analysis. Note that these results are
+// an
+// estimation, not exact values.
+type GooglePrivacyDlpV2beta1KMapEstimationResult struct {
+	// KMapEstimationHistogram: The intervals [min_anonymity, max_anonymity]
+	// do not overlap. If a value
+	// doesn't correspond to any such interval, the associated frequency
+	// is
+	// zero. For example, the following records:
+	//   {min_anonymity: 1, max_anonymity: 1, frequency: 17}
+	//   {min_anonymity: 2, max_anonymity: 3, frequency: 42}
+	//   {min_anonymity: 5, max_anonymity: 10, frequency: 99}
+	// mean that there are no record with an estimated anonymity of 4, 5,
+	// or
+	// larger than 10.
+	KMapEstimationHistogram []*GooglePrivacyDlpV2beta1KMapEstimationHistogramBucket `json:"kMapEstimationHistogram,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "KMapEstimationHistogram") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "KMapEstimationHistogram")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1KMapEstimationResult) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2beta1KMapEstimationResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2606,8 +2852,8 @@ type GooglePrivacyDlpV2beta1Key struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Key) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Key
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Key
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2635,8 +2881,8 @@ type GooglePrivacyDlpV2beta1KindExpression struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1KindExpression) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1KindExpression
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1KindExpression
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2673,8 +2919,8 @@ type GooglePrivacyDlpV2beta1KmsWrappedCryptoKey struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1KmsWrappedCryptoKey) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1KmsWrappedCryptoKey
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1KmsWrappedCryptoKey
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2709,8 +2955,8 @@ type GooglePrivacyDlpV2beta1LDiversityConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1LDiversityConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1LDiversityConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1LDiversityConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2752,8 +2998,8 @@ type GooglePrivacyDlpV2beta1LDiversityEquivalenceClass struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1LDiversityEquivalenceClass) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1LDiversityEquivalenceClass
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1LDiversityEquivalenceClass
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2796,8 +3042,8 @@ type GooglePrivacyDlpV2beta1LDiversityHistogramBucket struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1LDiversityHistogramBucket) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1LDiversityHistogramBucket
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1LDiversityHistogramBucket
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2828,8 +3074,8 @@ type GooglePrivacyDlpV2beta1LDiversityResult struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1LDiversityResult) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1LDiversityResult
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1LDiversityResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2861,8 +3107,8 @@ type GooglePrivacyDlpV2beta1ListInfoTypesResponse struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ListInfoTypesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ListInfoTypesResponse
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ListInfoTypesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2900,8 +3146,8 @@ type GooglePrivacyDlpV2beta1ListInspectFindingsResponse struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ListInspectFindingsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ListInspectFindingsResponse
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ListInspectFindingsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2933,8 +3179,8 @@ type GooglePrivacyDlpV2beta1ListRootCategoriesResponse struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ListRootCategoriesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ListRootCategoriesResponse
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ListRootCategoriesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2979,8 +3225,8 @@ type GooglePrivacyDlpV2beta1Location struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Location) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Location
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Location
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3011,8 +3257,8 @@ type GooglePrivacyDlpV2beta1NumericalStatsConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1NumericalStatsConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1NumericalStatsConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1NumericalStatsConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3048,8 +3294,8 @@ type GooglePrivacyDlpV2beta1NumericalStatsResult struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1NumericalStatsResult) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1NumericalStatsResult
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1NumericalStatsResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3079,8 +3325,8 @@ type GooglePrivacyDlpV2beta1OperationConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1OperationConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1OperationConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1OperationConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3155,8 +3401,8 @@ type GooglePrivacyDlpV2beta1OutputStorageConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1OutputStorageConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1OutputStorageConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1OutputStorageConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3193,8 +3439,8 @@ type GooglePrivacyDlpV2beta1PartitionId struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1PartitionId) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1PartitionId
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1PartitionId
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3241,8 +3487,8 @@ type GooglePrivacyDlpV2beta1PathElement struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1PathElement) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1PathElement
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1PathElement
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3286,8 +3532,8 @@ type GooglePrivacyDlpV2beta1PrimitiveTransformation struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1PrimitiveTransformation) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1PrimitiveTransformation
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1PrimitiveTransformation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3297,6 +3543,8 @@ type GooglePrivacyDlpV2beta1PrivacyMetric struct {
 	CategoricalStatsConfig *GooglePrivacyDlpV2beta1CategoricalStatsConfig `json:"categoricalStatsConfig,omitempty"`
 
 	KAnonymityConfig *GooglePrivacyDlpV2beta1KAnonymityConfig `json:"kAnonymityConfig,omitempty"`
+
+	KMapEstimationConfig *GooglePrivacyDlpV2beta1KMapEstimationConfig `json:"kMapEstimationConfig,omitempty"`
 
 	LDiversityConfig *GooglePrivacyDlpV2beta1LDiversityConfig `json:"lDiversityConfig,omitempty"`
 
@@ -3322,8 +3570,8 @@ type GooglePrivacyDlpV2beta1PrivacyMetric struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1PrivacyMetric) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1PrivacyMetric
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1PrivacyMetric
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3351,8 +3599,8 @@ type GooglePrivacyDlpV2beta1Projection struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Projection) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Projection
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Projection
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3381,8 +3629,39 @@ type GooglePrivacyDlpV2beta1PropertyReference struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1PropertyReference) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1PropertyReference
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1PropertyReference
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1QuasiIdField: A quasi-identifier column has a
+// custom_tag, used to know which column
+// in the data corresponds to which column in the statistical model.
+type GooglePrivacyDlpV2beta1QuasiIdField struct {
+	CustomTag string `json:"customTag,omitempty"`
+
+	Field *GooglePrivacyDlpV2beta1FieldId `json:"field,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CustomTag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CustomTag") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1QuasiIdField) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2beta1QuasiIdField
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3412,8 +3691,8 @@ type GooglePrivacyDlpV2beta1Range struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Range) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Range
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Range
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3441,8 +3720,8 @@ type GooglePrivacyDlpV2beta1RecordCondition struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1RecordCondition) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1RecordCondition
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1RecordCondition
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3472,8 +3751,8 @@ type GooglePrivacyDlpV2beta1RecordKey struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1RecordKey) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1RecordKey
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1RecordKey
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3501,8 +3780,8 @@ type GooglePrivacyDlpV2beta1RecordSuppression struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1RecordSuppression) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1RecordSuppression
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1RecordSuppression
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3539,8 +3818,8 @@ type GooglePrivacyDlpV2beta1RecordTransformations struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1RecordTransformations) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1RecordTransformations
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1RecordTransformations
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3592,8 +3871,8 @@ type GooglePrivacyDlpV2beta1RedactContentRequest struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1RedactContentRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1RedactContentRequest
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1RedactContentRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3625,8 +3904,8 @@ type GooglePrivacyDlpV2beta1RedactContentResponse struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1RedactContentResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1RedactContentResponse
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1RedactContentResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3662,8 +3941,8 @@ type GooglePrivacyDlpV2beta1ReplaceConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ReplaceConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ReplaceConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ReplaceConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3691,8 +3970,8 @@ type GooglePrivacyDlpV2beta1ReplaceValueConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ReplaceValueConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ReplaceValueConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ReplaceValueConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3735,8 +4014,8 @@ type GooglePrivacyDlpV2beta1RiskAnalysisOperationMetadata struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1RiskAnalysisOperationMetadata) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1RiskAnalysisOperationMetadata
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1RiskAnalysisOperationMetadata
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3749,6 +4028,8 @@ type GooglePrivacyDlpV2beta1RiskAnalysisOperationResult struct {
 	CategoricalStatsResult *GooglePrivacyDlpV2beta1CategoricalStatsResult `json:"categoricalStatsResult,omitempty"`
 
 	KAnonymityResult *GooglePrivacyDlpV2beta1KAnonymityResult `json:"kAnonymityResult,omitempty"`
+
+	KMapEstimationResult *GooglePrivacyDlpV2beta1KMapEstimationResult `json:"kMapEstimationResult,omitempty"`
 
 	LDiversityResult *GooglePrivacyDlpV2beta1LDiversityResult `json:"lDiversityResult,omitempty"`
 
@@ -3774,8 +4055,8 @@ type GooglePrivacyDlpV2beta1RiskAnalysisOperationResult struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1RiskAnalysisOperationResult) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1RiskAnalysisOperationResult
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1RiskAnalysisOperationResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3800,8 +4081,8 @@ type GooglePrivacyDlpV2beta1Row struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Row) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Row
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Row
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3836,8 +4117,8 @@ type GooglePrivacyDlpV2beta1StorageConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1StorageConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1StorageConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1StorageConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3876,8 +4157,8 @@ type GooglePrivacyDlpV2beta1SummaryResult struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1SummaryResult) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1SummaryResult
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1SummaryResult
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3906,8 +4187,8 @@ type GooglePrivacyDlpV2beta1Table struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Table) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Table
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Table
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3936,8 +4217,56 @@ type GooglePrivacyDlpV2beta1TableLocation struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1TableLocation) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1TableLocation
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1TableLocation
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// GooglePrivacyDlpV2beta1TaggedField: A column with a semantic tag
+// attached.
+type GooglePrivacyDlpV2beta1TaggedField struct {
+	// CustomTag: A column can be tagged with a custom tag. In this case,
+	// the user must
+	// indicate an auxiliary table that contains statistical information
+	// on
+	// the possible values of this column (below).
+	CustomTag string `json:"customTag,omitempty"`
+
+	// Field: Identifies the column. [required]
+	Field *GooglePrivacyDlpV2beta1FieldId `json:"field,omitempty"`
+
+	// Inferred: If no semantic tag is indicated, we infer the statistical
+	// model from
+	// the distribution of values in the input data
+	Inferred *GoogleProtobufEmpty `json:"inferred,omitempty"`
+
+	// InfoType: A column can be tagged with a InfoType to use the relevant
+	// public
+	// dataset as a statistical model of population, if available.
+	// We
+	// currently support US ZIP codes, region codes, ages and genders.
+	InfoType *GooglePrivacyDlpV2beta1InfoType `json:"infoType,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "CustomTag") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "CustomTag") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2beta1TaggedField) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2beta1TaggedField
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -3973,8 +4302,8 @@ type GooglePrivacyDlpV2beta1TimePartConfig struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1TimePartConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1TimePartConfig
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1TimePartConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4019,8 +4348,8 @@ type GooglePrivacyDlpV2beta1TransformationSummary struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1TransformationSummary) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1TransformationSummary
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1TransformationSummary
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4057,8 +4386,8 @@ type GooglePrivacyDlpV2beta1TransientCryptoKey struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1TransientCryptoKey) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1TransientCryptoKey
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1TransientCryptoKey
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4087,8 +4416,8 @@ type GooglePrivacyDlpV2beta1UnwrappedCryptoKey struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1UnwrappedCryptoKey) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1UnwrappedCryptoKey
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1UnwrappedCryptoKey
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4127,18 +4456,18 @@ type GooglePrivacyDlpV2beta1Value struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1Value) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1Value
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1Value
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *GooglePrivacyDlpV2beta1Value) UnmarshalJSON(data []byte) error {
-	type noMethod GooglePrivacyDlpV2beta1Value
+	type NoMethod GooglePrivacyDlpV2beta1Value
 	var s1 struct {
 		FloatValue gensupport.JSONFloat64 `json:"floatValue"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -4173,8 +4502,8 @@ type GooglePrivacyDlpV2beta1ValueFrequency struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1ValueFrequency) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1ValueFrequency
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1ValueFrequency
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4206,8 +4535,8 @@ type GooglePrivacyDlpV2beta1WordList struct {
 }
 
 func (s *GooglePrivacyDlpV2beta1WordList) MarshalJSON() ([]byte, error) {
-	type noMethod GooglePrivacyDlpV2beta1WordList
-	raw := noMethod(*s)
+	type NoMethod GooglePrivacyDlpV2beta1WordList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4343,8 +4672,8 @@ type GoogleRpcStatus struct {
 }
 
 func (s *GoogleRpcStatus) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleRpcStatus
-	raw := noMethod(*s)
+	type NoMethod GoogleRpcStatus
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4393,8 +4722,8 @@ type GoogleTypeDate struct {
 }
 
 func (s *GoogleTypeDate) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleTypeDate
-	raw := noMethod(*s)
+	type NoMethod GoogleTypeDate
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4440,8 +4769,8 @@ type GoogleTypeTimeOfDay struct {
 }
 
 func (s *GoogleTypeTimeOfDay) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleTypeTimeOfDay
-	raw := noMethod(*s)
+	type NoMethod GoogleTypeTimeOfDay
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -4544,7 +4873,7 @@ func (c *ContentDeidentifyCall) Do(opts ...googleapi.CallOption) (*GooglePrivacy
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4668,7 +4997,7 @@ func (c *ContentInspectCall) Do(opts ...googleapi.CallOption) (*GooglePrivacyDlp
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4793,7 +5122,7 @@ func (c *ContentRedactCall) Do(opts ...googleapi.CallOption) (*GooglePrivacyDlpV
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4915,7 +5244,7 @@ func (c *DataSourceAnalyzeCall) Do(opts ...googleapi.CallOption) (*GoogleLongrun
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5042,7 +5371,7 @@ func (c *InspectOperationsCancelCall) Do(opts ...googleapi.CallOption) (*GoogleP
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5174,7 +5503,7 @@ func (c *InspectOperationsCreateCall) Do(opts ...googleapi.CallOption) (*GoogleL
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5293,7 +5622,7 @@ func (c *InspectOperationsDeleteCall) Do(opts ...googleapi.CallOption) (*GoogleP
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5436,7 +5765,7 @@ func (c *InspectOperationsGetCall) Do(opts ...googleapi.CallOption) (*GoogleLong
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5597,7 +5926,7 @@ func (c *InspectOperationsListCall) Do(opts ...googleapi.CallOption) (*GoogleLon
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5809,7 +6138,7 @@ func (c *InspectResultsFindingsListCall) Do(opts ...googleapi.CallOption) (*Goog
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5980,7 +6309,7 @@ func (c *RiskAnalysisOperationsCancelCall) Do(opts ...googleapi.CallOption) (*Go
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6109,7 +6438,7 @@ func (c *RiskAnalysisOperationsDeleteCall) Do(opts ...googleapi.CallOption) (*Go
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6252,7 +6581,7 @@ func (c *RiskAnalysisOperationsGetCall) Do(opts ...googleapi.CallOption) (*Googl
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6413,7 +6742,7 @@ func (c *RiskAnalysisOperationsListCall) Do(opts ...googleapi.CallOption) (*Goog
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6595,7 +6924,7 @@ func (c *RootCategoriesListCall) Do(opts ...googleapi.CallOption) (*GooglePrivac
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6741,7 +7070,7 @@ func (c *RootCategoriesInfoTypesListCall) Do(opts ...googleapi.CallOption) (*Goo
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

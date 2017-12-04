@@ -148,10 +148,10 @@ func (d *DocumentRef) newReplaceWrites(data interface{}, opts []SetOption, p Pre
 		return nil, errNilDocRef
 	}
 	origFieldPaths, allPaths, err := processSetOptions(opts)
-	isMerge := len(origFieldPaths) > 0 || allPaths // was some Merge option specified?
 	if err != nil {
 		return nil, err
 	}
+	isMerge := len(origFieldPaths) > 0 || allPaths // was some Merge option specified?
 	doc, serverTimestampPaths, err := toProtoDocument(data)
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func (d *DocumentRef) newReplaceWrites(data interface{}, opts []SetOption, p Pre
 		// There were field paths, but they all got removed.
 		// The write does nothing but enforce the precondition.
 		w = &pb.Write{CurrentDocument: pc}
-	case !isMerge:
+	case !isMerge && (pc != nil || doc.Fields != nil):
 		// Set without merge, so no update mask.
 		w = &pb.Write{
 			Operation:       &pb.Write_Update{doc},
@@ -411,18 +411,29 @@ func (d *DocumentRef) newTransform(serverTimestampFieldPaths []FieldPath) *pb.Wr
 	}
 }
 
-var (
+type sentinel int
+
+const (
 	// Delete is used as a value in a call to UpdateMap to indicate that the
 	// corresponding key should be deleted.
-	Delete = new(int)
-	// Not new(struct{}), because addresses of zero-sized values
-	// may not be unique.
+	Delete sentinel = iota
 
 	// ServerTimestamp is used as a value in a call to UpdateMap to indicate that the
 	// key's value should be set to the time at which the server processed
 	// the request.
-	ServerTimestamp = new(int)
+	ServerTimestamp
 )
+
+func (s sentinel) String() string {
+	switch s {
+	case Delete:
+		return "Delete"
+	case ServerTimestamp:
+		return "ServerTimestamp"
+	default:
+		return "<?sentinel?>"
+	}
+}
 
 // UpdateMap updates the document using the given data. Map keys replace the stored
 // values, but other fields of the stored document are untouched.

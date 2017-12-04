@@ -163,13 +163,25 @@ func TestDocSet(t *testing.T) {
 			transform: []string{"b"},
 		},
 		{
+			desc:      "a ServerTimestamp alone",
+			data:      map[string]interface{}{"b": ServerTimestamp},
+			write:     nil,
+			transform: []string{"b"},
+		},
+		{
+			desc:      "a ServerTimestamp alone with a path",
+			data:      map[string]interface{}{"b": ServerTimestamp},
+			opt:       MergePaths([]string{"b"}),
+			write:     nil,
+			transform: []string{"b"},
+		},
+		{
 			desc: "nested ServerTimestamp field",
 			data: map[string]interface{}{
 				"a": 1,
 				"b": map[string]interface{}{"c": ServerTimestamp},
 			},
-			// TODO(jba): make this be map[string]*pb.Value{"a": intval(1)},
-			write:     map[string]*pb.Value{"a": intval(1), "b": mapval(map[string]*pb.Value{})},
+			write:     map[string]*pb.Value{"a": intval(1)},
 			transform: []string{"b.c"},
 		},
 		{
@@ -179,9 +191,7 @@ func TestDocSet(t *testing.T) {
 				"b": ServerTimestamp,
 				"c": map[string]interface{}{"d": ServerTimestamp},
 			},
-			// TODO(jba): make this be map[string]*pb.Value{"a": intval(1)},
-			write: map[string]*pb.Value{"a": intval(1),
-				"c": mapval(map[string]*pb.Value{})},
+			write:     map[string]*pb.Value{"a": intval(1)},
 			transform: []string{"b", "c.d"},
 		},
 		{

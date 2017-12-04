@@ -221,7 +221,8 @@ func DoRetryForStatusCodes(attempts int, backoff time.Duration, codes ...int) Se
 					return resp, err
 				}
 				resp, err = s.Do(rr.Request())
-				if err != nil || !ResponseHasStatusCode(resp, codes...) {
+				// we want to retry if err is not nil (e.g. transient network failure)
+				if err == nil && !ResponseHasStatusCode(resp, codes...) {
 					return resp, err
 				}
 				delayed := DelayWithRetryAfter(resp, r.Cancel)
@@ -237,6 +238,9 @@ func DoRetryForStatusCodes(attempts int, backoff time.Duration, codes ...int) Se
 // DelayWithRetryAfter invokes time.After for the duration specified in the "Retry-After" header in
 // responses with status code 429
 func DelayWithRetryAfter(resp *http.Response, cancel <-chan struct{}) bool {
+	if resp == nil {
+		return false
+	}
 	retryAfter, _ := strconv.Atoi(resp.Header.Get("Retry-After"))
 	if resp.StatusCode == http.StatusTooManyRequests && retryAfter > 0 {
 		select {

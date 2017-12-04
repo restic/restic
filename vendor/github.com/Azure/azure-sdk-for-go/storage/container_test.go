@@ -55,6 +55,11 @@ func (s *ContainerSuite) TestListContainersPagination(c *chk.C) {
 		cnt := cli.GetContainerReference(cntNames[i])
 		c.Assert(cnt.Create(nil), chk.IsNil)
 		created = append(created, cnt)
+		cnt.Metadata = map[string]string{
+			"hello": "world",
+			"name":  cnt.Name,
+		}
+		c.Assert(cnt.SetMetadata(nil), chk.IsNil)
 		defer cnt.Delete(nil)
 	}
 
@@ -64,7 +69,9 @@ func (s *ContainerSuite) TestListContainersPagination(c *chk.C) {
 	for {
 		resp, err := cli.ListContainers(ListContainersParameters{
 			MaxResults: pageSize,
-			Marker:     marker})
+			Marker:     marker,
+			Include:    "metadata",
+		})
 
 		c.Assert(err, chk.IsNil)
 
@@ -84,6 +91,7 @@ func (s *ContainerSuite) TestListContainersPagination(c *chk.C) {
 
 	for i := range created {
 		c.Assert(seen[i].Name, chk.DeepEquals, created[i].Name)
+		c.Assert(seen[i].Metadata, chk.DeepEquals, created[i].Metadata)
 	}
 }
 
@@ -636,6 +644,39 @@ func (s *ContainerSuite) TestSetThenGetContainerPermissionsOnlySuccessfully(c *c
 
 	// fixedTime check there are NO policies set
 	c.Assert(newPerms.AccessPolicies, chk.HasLen, 0)
+}
+
+func (s *ContainerSuite) TestGetAndSetContainerMetadata(c *chk.C) {
+	cli := getBlobClient(c)
+	rec := cli.client.appendRecorder(c)
+	defer rec.Stop()
+
+	// Get empty metadata
+	cnt1 := cli.GetContainerReference(containerName(c, "1"))
+	c.Assert(cnt1.Create(nil), chk.IsNil)
+	defer cnt1.Delete(nil)
+
+	err := cnt1.GetMetadata(nil)
+	c.Assert(err, chk.IsNil)
+	c.Assert(cnt1.Metadata, chk.HasLen, 0)
+
+	// Get and set the metadata
+	cnt2 := cli.GetContainerReference(containerName(c, "2"))
+	c.Assert(cnt2.Create(nil), chk.IsNil)
+	defer cnt2.Delete(nil)
+
+	metaPut := map[string]string{
+		"lol":      "rofl",
+		"rofl_baz": "waz qux",
+	}
+	cnt2.Metadata = metaPut
+
+	err = cnt2.SetMetadata(nil)
+	c.Assert(err, chk.IsNil)
+
+	err = cnt2.GetMetadata(nil)
+	c.Assert(err, chk.IsNil)
+	c.Check(cnt2.Metadata, chk.DeepEquals, metaPut)
 }
 
 func (cli *BlobStorageClient) deleteTestContainers(c *chk.C) error {
