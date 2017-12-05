@@ -23,8 +23,8 @@ directory:
 
  +  The item was added
  -  The item was removed
- M  The metadata (access mode, timestamps, ...) for the item was changed
- C  The contents of a file has changed
+ U  The metadata (access mode, timestamps, ...) for the item was updated
+ M  The file's content was modified
  T  The type was changed, e.g. a file was made a symlink
 `,
 	DisableAutoGenTag: true,
@@ -232,18 +232,14 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 			if node1.Type == "file" &&
 				node2.Type == "file" &&
 				!reflect.DeepEqual(node1.Content, node2.Content) {
-				mod += "C"
-				stats.ChangedFiles++
-
-				if c.opts.ShowMetadata && !node1.Equals(*node2) {
-					mod += "M"
-				}
-			} else if c.opts.ShowMetadata && !node1.Equals(*node2) {
 				mod += "M"
+				stats.ChangedFiles++
+			} else if c.opts.ShowMetadata && !node1.Equals(*node2) {
+				mod += "U"
 			}
 
 			if mod != "" {
-				Printf(" % -3v %v\n", mod, name)
+				Printf("%-5s%v\n", mod, name)
 			}
 
 			if node1.Type == "dir" && node2.Type == "dir" {
@@ -257,7 +253,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 			if node1.Type == "dir" {
 				prefix += "/"
 			}
-			Printf("-    %v\n", prefix)
+			Printf("%-5s%v\n", "-", prefix)
 			stats.Removed.Add(node1)
 
 			if node1.Type == "dir" {
@@ -271,7 +267,7 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 			if node2.Type == "dir" {
 				prefix += "/"
 			}
-			Printf("+    %v\n", prefix)
+			Printf("%-5s%v\n", "+", prefix)
 			stats.Added.Add(node2)
 
 			if node2.Type == "dir" {
