@@ -115,7 +115,7 @@ func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backe
 		sem:          sem,
 	}
 
-	present, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+	present, err := be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return nil, err
 	}

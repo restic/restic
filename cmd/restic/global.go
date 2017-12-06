@@ -344,7 +344,7 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, err
 	}
 
-	err = s.SearchKey(context.TODO(), opts.password, maxKeys)
+	err = s.SearchKey(opts.ctx, opts.password, maxKeys)
 	if err != nil {
 		return nil, err
 	}

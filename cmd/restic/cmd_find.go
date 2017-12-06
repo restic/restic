@@ -180,7 +180,7 @@ type Finder struct {
 	notfound restic.IDSet
 }
 
-func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
+func (f *Finder) findInTree(ctx context.Context, treeID restic.ID, prefix string) error {
 	if f.notfound.Has(treeID) {
 		debug.Log("%v skipping tree %v, has already been checked", prefix, treeID.Str())
 		return nil
@@ -188,7 +188,7 @@ func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
 
 	debug.Log("%v checking tree %v\n", prefix, treeID.Str())
 
-	tree, err := f.repo.LoadTree(context.TODO(), treeID)
+	tree, err := f.repo.LoadTree(ctx, treeID)
 	if err != nil {
 		return err
 	}
@@ -224,7 +224,7 @@ func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
 		}
 
 		if node.Type == "dir" {
-			if err := f.findInTree(*node.Subtree, filepath.Join(prefix, node.Name)); err != nil {
+			if err := f.findInTree(ctx, *node.Subtree, filepath.Join(prefix, node.Name)); err != nil {
 				return err
 			}
 		}
@@ -237,11 +237,11 @@ func (f *Finder) findInTree(treeID restic.ID, prefix string) error {
 	return nil
 }
 
-func (f *Finder) findInSnapshot(sn *restic.Snapshot) error {
+func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error {
 	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
 
 	f.out.newsn = sn
-	if err := f.findInTree(*sn.Tree, string(filepath.Separator)); err != nil {
+	if err := f.findInTree(ctx, *sn.Tree, string(filepath.Separator)); err != nil {
 		return err
 	}
 	return nil
@@ -284,7 +284,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	if err = repo.LoadIndex(context.TODO()); err != nil {
+	if err = repo.LoadIndex(gopts.ctx); err != nil {
 		return err
 	}
 
@@ -298,7 +298,7 @@ func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
 		notfound: restic.NewIDSet(),
 	}
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, opts.Snapshots) {
-		if err = f.findInSnapshot(sn); err != nil {
+		if err = f.findInSnapshot(ctx, sn); err != nil {
 			return err
 		}
 	}

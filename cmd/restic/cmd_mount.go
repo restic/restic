@@ -4,7 +4,6 @@
 package main
 
 import (
-	"context"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -73,7 +72,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		return err
 	}
 
-	err = repo.LoadIndex(context.TODO())
+	err = repo.LoadIndex(gopts.ctx)
 	if err != nil {
 		return err
 	}
@@ -114,7 +113,7 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 		Tags:        opts.Tags,
 		Paths:       opts.Paths,
 	}
-	root, err := fuse.NewRoot(context.TODO(), repo, cfg)
+	root, err := fuse.NewRoot(gopts.ctx, repo, cfg)
 	if err != nil {
 		return err
 	}
