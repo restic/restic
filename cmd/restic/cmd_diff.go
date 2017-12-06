@@ -23,8 +23,8 @@ directory:
 
  +  The item was added
  -  The item was removed
- M  The metadata (access mode, timestamps, ...) for the item was changed
- C  The contents of a file has changed
+ U  The metadata (access mode, timestamps, ...) for the item was updated
+ M  The file's content was modified
  T  The type was changed, e.g. a file was made a symlink
 `,
 	DisableAutoGenTag: true,
@@ -62,83 +62,77 @@ type Comparer struct {
 	opts DiffOptions
 }
 
+// DiffStat collects stats for all types of items.
+type DiffStat struct {
+	Files, Dirs, Others  int
+	DataBlobs, TreeBlobs int
+	Bytes                int
+}
+
+// Add adds stats information for node to s.
+func (s *DiffStat) Add(node *restic.Node) {
+	if node == nil {
+		return
+	}
+
+	switch node.Type {
+	case "file":
+		s.Files++
+	case "dir":
+		s.Dirs++
+	default:
+		s.Others++
+	}
+}
+
+// addBlobs adds the blobs of node to s.
+func addBlobs(bs restic.BlobSet, node *restic.Node) {
+	if node == nil {
+		return
+	}
+
+	switch node.Type {
+	case "file":
+		for _, blob := range node.Content {
+			h := restic.BlobHandle{
+				ID:   blob,
+				Type: restic.DataBlob,
+			}
+			bs.Insert(h)
+		}
+	case "dir":
+		h := restic.BlobHandle{
+			ID:   *node.Subtree,
+			Type: restic.TreeBlob,
+		}
+		bs.Insert(h)
+	}
+}
+
 // DiffStats collects the differences between two snapshots.
 type DiffStats struct {
-	FilesAdded, FilesRemoved, FilesChanged int
-	DirsAdded, DirsRemoved                 int
-	OthersAdded, OthersRemoved             int
-	DataBlobsAdded, DataBlobsRemoved       int
-	TreeBlobsAdded, TreeBlobsRemoved       int
-	BytesAdded, BytesRemoved               int
-
-	blobsBefore, blobsAfter restic.BlobSet
+	ChangedFiles            int
+	Added                   DiffStat
+	Removed                 DiffStat
+	BlobsBefore, BlobsAfter restic.BlobSet
 }
 
 // NewDiffStats creates new stats for a diff run.
 func NewDiffStats() *DiffStats {
 	return &DiffStats{
-		blobsBefore: restic.NewBlobSet(),
-		blobsAfter:  restic.NewBlobSet(),
+		BlobsBefore: restic.NewBlobSet(),
+		BlobsAfter:  restic.NewBlobSet(),
 	}
 }
 
-// AddNodeBefore records all blobs of node to the stats of the first snapshot.
-func (stats *DiffStats) AddNodeBefore(node *restic.Node) {
-	if node == nil {
-		return
-	}
-
-	switch node.Type {
-	case "file":
-		for _, blob := range node.Content {
-			h := restic.BlobHandle{
-				ID:   blob,
-				Type: restic.DataBlob,
-			}
-			stats.blobsBefore.Insert(h)
-		}
-	case "dir":
-		h := restic.BlobHandle{
-			ID:   *node.Subtree,
-			Type: restic.TreeBlob,
-		}
-		stats.blobsBefore.Insert(h)
-	}
-}
-
-// AddNodeAfter records all blobs of node to the stats of the second snapshot.
-func (stats *DiffStats) AddNodeAfter(node *restic.Node) {
-	if node == nil {
-		return
-	}
-
-	switch node.Type {
-	case "file":
-		for _, blob := range node.Content {
-			h := restic.BlobHandle{
-				ID:   blob,
-				Type: restic.DataBlob,
-			}
-			stats.blobsAfter.Insert(h)
-		}
-	case "dir":
-		h := restic.BlobHandle{
-			ID:   *node.Subtree,
-			Type: restic.TreeBlob,
-		}
-		stats.blobsAfter.Insert(h)
-	}
-}
-
-// UpdateBlobs updates the blob counters in the stats struct.
-func (stats *DiffStats) UpdateBlobs(repo restic.Repository) {
-	both := stats.blobsBefore.Intersect(stats.blobsAfter)
-	for h := range stats.blobsBefore.Sub(both) {
+// updateBlobs updates the blob counters in the stats struct.
+func updateBlobs(repo restic.Repository, blobs restic.BlobSet, stats *DiffStat) {
+	for h := range blobs {
 		switch h.Type {
 		case restic.DataBlob:
-			stats.DataBlobsRemoved++
+			stats.DataBlobs++
 		case restic.TreeBlob:
-			stats.TreeBlobsRemoved++
+			stats.TreeBlobs++
 		}
 
 		size, err := repo.LookupBlobSize(h.ID, h.Type)
@@ -147,25 +141,58 @@ func (stats *DiffStats) UpdateBlobs(repo restic.Repository) {
 			continue
 		}
 
-		stats.BytesRemoved += int(size)
+		stats.Bytes += int(size)
+	}
+}
+
+func (c *Comparer) printDir(ctx context.Context, mode string, stats *DiffStat, blobs restic.BlobSet, prefix string, id restic.ID) error {
+	debug.Log("print %v tree %v", mode, id)
+	tree, err := c.repo.LoadTree(ctx, id)
+	if err != nil {
+		return err
 	}
 
-	for h := range stats.blobsAfter.Sub(both) {
-		switch h.Type {
-		case restic.DataBlob:
-			stats.DataBlobsAdded++
-		case restic.TreeBlob:
-			stats.TreeBlobsAdded++
+	for _, node := range tree.Nodes {
+		name := path.Join(prefix, node.Name)
+		if node.Type == "dir" {
+			name += "/"
 		}
+		Printf("%-5s%v\n", mode, name)
+		stats.Add(node)
+		addBlobs(blobs, node)
 
-		size, err := repo.LookupBlobSize(h.ID, h.Type)
-		if err != nil {
-			Warnf("unable to find blob size for %v: %v\n", h, err)
-			continue
+		if node.Type == "dir" {
+			err := c.printDir(ctx, mode, stats, blobs, name, *node.Subtree)
+			if err != nil {
+				Warnf("error: %v\n", err)
+			}
 		}
-
-		stats.BytesAdded += int(size)
 	}
+
+	return nil
+}
+
+func uniqueNodeNames(tree1, tree2 *restic.Tree) (tree1Nodes, tree2Nodes map[string]*restic.Node, uniqueNames []string) {
+	names := make(map[string]struct{})
+	tree1Nodes = make(map[string]*restic.Node)
+	for _, node := range tree1.Nodes {
+		tree1Nodes[node.Name] = node
+		names[node.Name] = struct{}{}
+	}
+
+	tree2Nodes = make(map[string]*restic.Node)
+	for _, node := range tree2.Nodes {
+		tree2Nodes[node.Name] = node
+		names[node.Name] = struct{}{}
+	}
+
+	uniqueNames = make([]string, 0, len(names))
+	for name := range names {
+		uniqueNames = append(uniqueNames, name)
+	}
+
+	sort.Sort(sort.StringSlice(uniqueNames))
+	return tree1Nodes, tree2Nodes, uniqueNames
 }
 
 func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string, id1, id2 restic.ID) error {
@@ -180,31 +207,14 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 		return err
 	}
 
-	uniqueNames := make(map[string]struct{})
-	tree1Nodes := make(map[string]*restic.Node)
-	for _, node := range tree1.Nodes {
-		tree1Nodes[node.Name] = node
-		uniqueNames[node.Name] = struct{}{}
-	}
-	tree2Nodes := make(map[string]*restic.Node)
-	for _, node := range tree2.Nodes {
-		tree2Nodes[node.Name] = node
-		uniqueNames[node.Name] = struct{}{}
-	}
-
-	names := make([]string, 0, len(uniqueNames))
-	for name := range uniqueNames {
-		names = append(names, name)
-	}
-
-	sort.Sort(sort.StringSlice(names))
+	tree1Nodes, tree2Nodes, names := uniqueNodeNames(tree1, tree2)
 
 	for _, name := range names {
 		node1, t1 := tree1Nodes[name]
 		node2, t2 := tree2Nodes[name]
 
-		stats.AddNodeBefore(node1)
-		stats.AddNodeAfter(node2)
+		addBlobs(stats.BlobsBefore, node1)
+		addBlobs(stats.BlobsAfter, node2)
 
 		switch {
 		case t1 && t2:
@@ -222,18 +232,14 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 			if node1.Type == "file" &&
 				node2.Type == "file" &&
 				!reflect.DeepEqual(node1.Content, node2.Content) {
-				mod += "C"
-				stats.FilesChanged++
-
-				if c.opts.ShowMetadata && !node1.Equals(*node2) {
-					mod += "M"
-				}
-			} else if c.opts.ShowMetadata && !node1.Equals(*node2) {
 				mod += "M"
+				stats.ChangedFiles++
+			} else if c.opts.ShowMetadata && !node1.Equals(*node2) {
+				mod += "U"
 			}
 
 			if mod != "" {
-				Printf(" % -3v %v\n", mod, name)
+				Printf("%-5s%v\n", mod, name)
 			}
 
 			if node1.Type == "dir" && node2.Type == "dir" {
@@ -243,24 +249,32 @@ func (c *Comparer) diffTree(ctx context.Context, stats *DiffStats, prefix string
 				}
 			}
 		case t1 && !t2:
-			Printf("-    %v\n", path.Join(prefix, name))
-			switch node1.Type {
-			case "file":
-				stats.FilesRemoved++
-			case "dir":
-				stats.DirsRemoved++
-			default:
-				stats.OthersRemoved++
+			prefix := path.Join(prefix, name)
+			if node1.Type == "dir" {
+				prefix += "/"
+			}
+			Printf("%-5s%v\n", "-", prefix)
+			stats.Removed.Add(node1)
+
+			if node1.Type == "dir" {
+				err := c.printDir(ctx, "-", &stats.Removed, stats.BlobsBefore, prefix, *node1.Subtree)
+				if err != nil {
+					Warnf("error: %v\n", err)
+				}
 			}
 		case !t1 && t2:
-			Printf("+    %v\n", path.Join(prefix, name))
-			switch node2.Type {
-			case "file":
-				stats.FilesAdded++
-			case "dir":
-				stats.DirsAdded++
-			default:
-				stats.OthersAdded++
+			prefix := path.Join(prefix, name)
+			if node2.Type == "dir" {
+				prefix += "/"
+			}
+			Printf("%-5s%v\n", "+", prefix)
+			stats.Added.Add(node2)
+
+			if node2.Type == "dir" {
+				err := c.printDir(ctx, "+", &stats.Added, stats.BlobsAfter, prefix, *node2.Subtree)
+				if err != nil {
+					Warnf("error: %v\n", err)
+				}
 			}
 		}
 	}
@@ -325,16 +339,18 @@ func runDiff(opts DiffOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	stats.UpdateBlobs(repo)
+	both := stats.BlobsBefore.Intersect(stats.BlobsAfter)
+	updateBlobs(repo, stats.BlobsBefore.Sub(both), &stats.Removed)
+	updateBlobs(repo, stats.BlobsAfter.Sub(both), &stats.Added)
 
 	Printf("\n")
-	Printf("Files:       %5d new, %5d removed, %5d changed\n", stats.FilesAdded, stats.FilesRemoved, stats.FilesChanged)
-	Printf("Dirs:        %5d new, %5d removed\n", stats.DirsAdded, stats.DirsRemoved)
-	Printf("Others:      %5d new, %5d removed\n", stats.OthersAdded, stats.OthersRemoved)
-	Printf("Data Blobs:  %5d new, %5d removed\n", stats.DataBlobsAdded, stats.DataBlobsRemoved)
-	Printf("Tree Blobs:  %5d new, %5d removed\n", stats.TreeBlobsAdded, stats.TreeBlobsRemoved)
-	Printf("  Added:   %-5s\n", formatBytes(uint64(stats.BytesAdded)))
-	Printf("  Removed: %-5s\n", formatBytes(uint64(stats.BytesRemoved)))
+	Printf("Files:       %5d new, %5d removed, %5d changed\n", stats.Added.Files, stats.Removed.Files, stats.ChangedFiles)
+	Printf("Dirs:        %5d new, %5d removed\n", stats.Added.Dirs, stats.Removed.Dirs)
+	Printf("Others:      %5d new, %5d removed\n", stats.Added.Others, stats.Removed.Others)
+	Printf("Data Blobs:  %5d new, %5d removed\n", stats.Added.DataBlobs, stats.Removed.DataBlobs)
+	Printf("Tree Blobs:  %5d new, %5d removed\n", stats.Added.TreeBlobs, stats.Removed.TreeBlobs)
+	Printf("  Added:   %-5s\n", formatBytes(uint64(stats.Added.Bytes)))
+	Printf("  Removed: %-5s\n", formatBytes(uint64(stats.Removed.Bytes)))
 
 	return nil
 }
