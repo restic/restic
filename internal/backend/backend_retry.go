@@ -43,10 +43,6 @@ func (be *RetryBackend) retry(ctx context.Context, msg string, f func() error) e
 		},
 	)
 
-	if errors.Cause(err) == context.Canceled {
-		return nil
-	}
-
 	return err
 }
 
