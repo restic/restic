@@ -183,7 +183,7 @@ func runDebugDump(gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	err = repo.LoadIndex(context.TODO())
+	err = repo.LoadIndex(gopts.ctx)
 	if err != nil {
 		return err
 	}

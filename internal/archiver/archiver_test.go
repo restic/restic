@@ -248,7 +248,7 @@ func testParallelSaveWithDuplication(t *testing.T, seed int) {
 		rtest.OK(t, <-errChan)
 	}
 
-	rtest.OK(t, repo.Flush())
+	rtest.OK(t, repo.Flush(context.Background()))
 	rtest.OK(t, repo.SaveIndex(context.TODO()))
 
 	chkr := createAndInitChecker(t, repo)

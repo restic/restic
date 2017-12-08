@@ -37,7 +37,7 @@ func TestSave(t *testing.T) {
 
 		rtest.Equals(t, id, sid)
 
-		rtest.OK(t, repo.Flush())
+		rtest.OK(t, repo.Flush(context.Background()))
 		// rtest.OK(t, repo.SaveIndex())
 
 		// read back
@@ -72,7 +72,7 @@ func TestSaveFrom(t *testing.T) {
 		rtest.OK(t, err)
 		rtest.Equals(t, id, id2)
 
-		rtest.OK(t, repo.Flush())
+		rtest.OK(t, repo.Flush(context.Background()))
 
 		// read back
 		buf := restic.NewBlobBuffer(size)
@@ -122,7 +122,7 @@ func TestLoadTree(t *testing.T) {
 
 	// archive a few files
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
-	rtest.OK(t, repo.Flush())
+	rtest.OK(t, repo.Flush(context.Background()))
 
 	_, err := repo.LoadTree(context.TODO(), *sn.Tree)
 	rtest.OK(t, err)
@@ -138,7 +138,7 @@ func BenchmarkLoadTree(t *testing.B) {
 
 	// archive a few files
 	sn := archiver.TestSnapshot(t, repo, rtest.BenchArchiveDirectory, nil)
-	rtest.OK(t, repo.Flush())
+	rtest.OK(t, repo.Flush(context.Background()))
 
 	t.ResetTimer()
 
@@ -159,7 +159,7 @@ func TestLoadBlob(t *testing.T) {
 
 	id, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{})
 	rtest.OK(t, err)
-	rtest.OK(t, repo.Flush())
+	rtest.OK(t, repo.Flush(context.Background()))
 
 	// first, test with buffers that are too small
 	for _, testlength := range []int{length - 20, length, restic.CiphertextLength(length) - 1} {
@@ -204,7 +204,7 @@ func BenchmarkLoadBlob(b *testing.B) {
 
 	id, err := repo.SaveBlob(context.TODO(), restic.DataBlob, buf, restic.ID{})
 	rtest.OK(b, err)
-	rtest.OK(b, repo.Flush())
+	rtest.OK(b, repo.Flush(context.Background()))
 
 	b.ResetTimer()
 	b.SetBytes(int64(length))
@@ -352,7 +352,7 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 		// add 3 packs, write intermediate index
 		for i := 0; i < 3; i++ {
 			saveRandomDataBlobs(t, repo, 5, 1<<15)
-			rtest.OK(t, repo.Flush())
+			rtest.OK(t, repo.Flush(context.Background()))
 		}
 
 		rtest.OK(t, repo.SaveFullIndex(context.TODO()))
@@ -361,7 +361,7 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 	// add another 5 packs
 	for i := 0; i < 5; i++ {
 		saveRandomDataBlobs(t, repo, 5, 1<<15)
-		rtest.OK(t, repo.Flush())
+		rtest.OK(t, repo.Flush(context.Background()))
 	}
 
 	// save final index

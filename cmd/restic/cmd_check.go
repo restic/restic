@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -104,7 +103,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	chkr := checker.New(repo)
 
 	Verbosef("load indexes\n")
-	hints, errs := chkr.LoadIndex(context.TODO())
+	hints, errs := chkr.LoadIndex(gopts.ctx)
 
 	dupFound := false
 	for _, hint := range hints {
@@ -129,7 +128,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 	errChan := make(chan error)
 
 	Verbosef("check all packs\n")
-	go chkr.Packs(context.TODO(), errChan)
+	go chkr.Packs(gopts.ctx, errChan)
 
 	for err := range errChan {
 		errorsFound = true
@@ -138,7 +137,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 
 	Verbosef("check snapshots, trees and blobs\n")
 	errChan = make(chan error)
-	go chkr.Structure(context.TODO(), errChan)
+	go chkr.Structure(gopts.ctx, errChan)
 
 	for err := range errChan {
 		errorsFound = true
@@ -165,7 +164,7 @@ func runCheck(opts CheckOptions, gopts GlobalOptions, args []string) error {
 		p := newReadProgress(gopts, restic.Stat{Blobs: chkr.CountPacks()})
 		errChan := make(chan error)
 
-		go chkr.ReadData(context.TODO(), p, errChan)
+		go chkr.ReadData(gopts.ctx, p, errChan)
 
 		for err := range errChan {
 			errorsFound = true

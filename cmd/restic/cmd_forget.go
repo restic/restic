@@ -125,7 +125,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			// When explicit snapshots args are given, remove them immediately.
 			if !opts.DryRun {
 				h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-				if err = repo.Backend().Remove(context.TODO(), h); err != nil {
+				if err = repo.Backend().Remove(gopts.ctx, h); err != nil {
 					return err
 				}
 				Verbosef("removed snapshot %v\n", sn.ID().Str())
@@ -223,7 +223,7 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		if !opts.DryRun {
 			for _, sn := range remove {
 				h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-				err = repo.Backend().Remove(context.TODO(), h)
+				err = repo.Backend().Remove(gopts.ctx, h)
 				if err != nil {
 					return err
 				}

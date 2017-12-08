@@ -41,10 +41,10 @@ func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Clien
 }
 
 // Open opens a connection to the B2 service.
-func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("cfg %#v", cfg)
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	client, err := newClient(ctx, cfg, rt)
@@ -79,10 +79,10 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 
 // Create opens a connection to the B2 service. If the bucket does not exist yet,
 // it is created.
-func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("cfg %#v", cfg)
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	client, err := newClient(ctx, cfg, rt)
@@ -115,7 +115,7 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 		sem:          sem,
 	}
 
-	present, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+	present, err := be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return nil, err
 	}

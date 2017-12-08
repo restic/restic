@@ -126,7 +126,7 @@ func Repack(ctx context.Context, repo restic.Repository, packs restic.IDSet, kee
 		}
 	}
 
-	if err := repo.Flush(); err != nil {
+	if err := repo.Flush(ctx); err != nil {
 		return nil, err
 	}
 

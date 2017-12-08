@@ -29,7 +29,7 @@ type Repository interface {
 	List(context.Context, FileType) <-chan ID
 	ListPack(context.Context, ID) ([]Blob, int64, error)
 
-	Flush() error
+	Flush(context.Context) error
 
 	SaveUnpacked(context.Context, FileType, []byte) (ID, error)
 	SaveJSONUnpacked(context.Context, FileType, interface{}) (ID, error)

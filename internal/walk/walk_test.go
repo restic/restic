@@ -29,7 +29,7 @@ func TestWalkTree(t *testing.T) {
 	rtest.OK(t, err)
 
 	// flush repo, write all packs
-	rtest.OK(t, repo.Flush())
+	rtest.OK(t, repo.Flush(context.Background()))
 
 	// start tree walker
 	treeJobs := make(chan walk.TreeJob)

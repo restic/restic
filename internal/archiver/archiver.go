@@ -764,7 +764,7 @@ func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, t
 	debug.Log("workers terminated")
 
 	// flush repository
-	err = arch.repo.Flush()
+	err = arch.repo.Flush(ctx)
 	if err != nil {
 		return nil, restic.ID{}, err
 	}

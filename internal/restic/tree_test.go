@@ -103,7 +103,7 @@ func TestLoadTree(t *testing.T) {
 	rtest.OK(t, err)
 
 	// save packs
-	rtest.OK(t, repo.Flush())
+	rtest.OK(t, repo.Flush(context.Background()))
 
 	// load tree again
 	tree2, err := repo.LoadTree(context.TODO(), id)

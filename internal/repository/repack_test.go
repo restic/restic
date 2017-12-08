@@ -55,13 +55,13 @@ func createRandomBlobs(t testing.TB, repo restic.Repository, blobs int, pData fl
 		}
 
 		if rand.Float32() < 0.2 {
-			if err = repo.Flush(); err != nil {
+			if err = repo.Flush(context.Background()); err != nil {
 				t.Fatalf("repo.Flush() returned error %v", err)
 			}
 		}
 	}
 
-	if err := repo.Flush(); err != nil {
+	if err := repo.Flush(context.Background()); err != nil {
 		t.Fatalf("repo.Flush() returned error %v", err)
 	}
 }
