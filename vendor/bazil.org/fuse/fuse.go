@@ -1,3 +1,4 @@
+// +build !windows
 // See the file LICENSE for copyright and licensing information.
 
 // Adapted from Plan 9 from User Space's src/cmd/9pfuse/fuse.c,
@@ -112,25 +113,6 @@ import (
 	"time"
 	"unsafe"
 )
-
-// A Conn represents a connection to a mounted FUSE file system.
-type Conn struct {
-	// Ready is closed when the mount is complete or has failed.
-	Ready <-chan struct{}
-
-	// MountError stores any error from the mount process. Only valid
-	// after Ready is closed.
-	MountError error
-
-	// File handle for kernel communication. Only safe to access if
-	// rio or wio is held.
-	dev *os.File
-	wio sync.RWMutex
-	rio sync.RWMutex
-
-	// Protocol version negotiated with InitRequest/InitResponse.
-	proto Protocol
-}
 
 // MountpointDoesNotExistError is an error returned when the
 // mountpoint does not exist.
@@ -255,45 +237,19 @@ type Request interface {
 	String() string
 }
 
-// A RequestID identifies an active FUSE request.
-type RequestID uint64
-
 func (r RequestID) String() string {
 	return fmt.Sprintf("%#x", uint64(r))
 }
 
-// A NodeID is a number identifying a directory or file.
-// It must be unique among IDs returned in LookupResponses
-// that have not yet been forgotten by ForgetRequests.
-type NodeID uint64
-
 func (n NodeID) String() string {
 	return fmt.Sprintf("%#x", uint64(n))
 }
-
-// A HandleID is a number identifying an open directory or file.
-// It only needs to be unique while the directory or file is open.
-type HandleID uint64
-
 func (h HandleID) String() string {
 	return fmt.Sprintf("%#x", uint64(h))
 }
 
 // The RootID identifies the root directory of a FUSE file system.
 const RootID NodeID = rootID
-
-// A Header describes the basic information sent in every request.
-type Header struct {
-	Conn *Conn     `json:"-"` // connection this request was received on
-	ID   RequestID // unique ID for request
-	Node NodeID    // file or directory the request is about
-	Uid  uint32    // user ID of process making request
-	Gid  uint32    // group ID of process making request
-	Pid  uint32    // process ID of process making request
-
-	// for returning to reqPool
-	msg *message
-}
 
 func (h *Header) String() string {
 	return fmt.Sprintf("ID=%v Node=%v Uid=%d Gid=%d Pid=%d", h.ID, h.Node, h.Uid, h.Gid, h.Pid)
@@ -314,35 +270,6 @@ func (h *Header) respond(msg []byte) {
 	putMessage(h.msg)
 }
 
-// An ErrorNumber is an error with a specific error number.
-//
-// Operations may return an error value that implements ErrorNumber to
-// control what specific error number (errno) to return.
-type ErrorNumber interface {
-	// Errno returns the the error number (errno) for this error.
-	Errno() Errno
-}
-
-const (
-	// ENOSYS indicates that the call is not supported.
-	ENOSYS = Errno(syscall.ENOSYS)
-
-	// ESTALE is used by Serve to respond to violations of the FUSE protocol.
-	ESTALE = Errno(syscall.ESTALE)
-
-	ENOENT = Errno(syscall.ENOENT)
-	EIO    = Errno(syscall.EIO)
-	EPERM  = Errno(syscall.EPERM)
-
-	// EINTR indicates request was interrupted by an InterruptRequest.
-	// See also fs.Intr.
-	EINTR = Errno(syscall.EINTR)
-
-	ERANGE  = Errno(syscall.ERANGE)
-	ENOTSUP = Errno(syscall.ENOTSUP)
-	EEXIST  = Errno(syscall.EEXIST)
-)
-
 // DefaultErrno is the errno used when error returned does not
 // implement ErrorNumber.
 const DefaultErrno = EIO
@@ -356,22 +283,10 @@ var errnoNames = map[Errno]string{
 	EINTR:  "EINTR",
 	EEXIST: "EEXIST",
 }
-
-// Errno implements Error and ErrorNumber using a syscall.Errno.
-type Errno syscall.Errno
-
 var _ = ErrorNumber(Errno(0))
 var _ = error(Errno(0))
 
-func (e Errno) Errno() Errno {
-	return e
-}
-
 func (e Errno) String() string {
-	return syscall.Errno(e).Error()
-}
-
-func (e Errno) Error() string {
 	return syscall.Errno(e).Error()
 }
 
@@ -437,14 +352,6 @@ func putMessage(m *message) {
 	m.conn = nil
 	m.off = 0
 	reqPool.Put(m)
-}
-
-// a message represents the bytes of a single FUSE message
-type message struct {
-	conn *Conn
-	buf  []byte    // all bytes
-	hdr  *inHeader // header
-	off  int       // offset for reading additional fields
 }
 
 func (m *message) len() uintptr {
@@ -1311,26 +1218,6 @@ func (r *AccessRequest) Respond() {
 	r.respond(buf)
 }
 
-// An Attr is the metadata for a single file or directory.
-type Attr struct {
-	Valid time.Duration // how long Attr can be cached
-
-	Inode     uint64      // inode number
-	Size      uint64      // size in bytes
-	Blocks    uint64      // size in 512-byte units
-	Atime     time.Time   // time of last access
-	Mtime     time.Time   // time of last modification
-	Ctime     time.Time   // time of last inode change
-	Crtime    time.Time   // time of creation (OS X only)
-	Mode      os.FileMode // file mode
-	Nlink     uint32      // number of links (usually 1)
-	Uid       uint32      // owner uid
-	Gid       uint32      // group gid
-	Rdev      uint32      // device numbers
-	Flags     uint32      // chflags(2) flags (OS X only)
-	BlockSize uint32      // preferred blocksize for filesystem I/O
-}
-
 func (a Attr) String() string {
 	return fmt.Sprintf("valid=%v ino=%v size=%d mode=%v", a.Valid, a.Inode, a.Size, a.Mode)
 }
@@ -1420,23 +1307,6 @@ func (r *GetattrResponse) String() string {
 	return fmt.Sprintf("Getattr %v", r.Attr)
 }
 
-// A GetxattrRequest asks for the extended attributes associated with r.Node.
-type GetxattrRequest struct {
-	Header `json:"-"`
-
-	// Maximum size to return.
-	Size uint32
-
-	// Name of the attribute requested.
-	Name string
-
-	// Offset within extended attributes.
-	//
-	// Only valid for OS X, and then only with the resource fork
-	// attribute.
-	Position uint32
-}
-
 var _ = Request(&GetxattrRequest{})
 
 func (r *GetxattrRequest) String() string {
@@ -1456,21 +1326,8 @@ func (r *GetxattrRequest) Respond(resp *GetxattrResponse) {
 		r.respond(buf)
 	}
 }
-
-// A GetxattrResponse is the response to a GetxattrRequest.
-type GetxattrResponse struct {
-	Xattr []byte
-}
-
 func (r *GetxattrResponse) String() string {
 	return fmt.Sprintf("Getxattr %x", r.Xattr)
-}
-
-// A ListxattrRequest asks to list the extended attributes associated with r.Node.
-type ListxattrRequest struct {
-	Header   `json:"-"`
-	Size     uint32 // maximum size to return
-	Position uint32 // offset within attribute list
 }
 
 var _ = Request(&ListxattrRequest{})
@@ -1492,22 +1349,8 @@ func (r *ListxattrRequest) Respond(resp *ListxattrResponse) {
 		r.respond(buf)
 	}
 }
-
-// A ListxattrResponse is the response to a ListxattrRequest.
-type ListxattrResponse struct {
-	Xattr []byte
-}
-
 func (r *ListxattrResponse) String() string {
 	return fmt.Sprintf("Listxattr %x", r.Xattr)
-}
-
-// Append adds an extended attribute name to the response.
-func (r *ListxattrResponse) Append(names ...string) {
-	for _, name := range names {
-		r.Xattr = append(r.Xattr, name...)
-		r.Xattr = append(r.Xattr, '\x00')
-	}
 }
 
 // A RemovexattrRequest asks to remove an extended attribute associated with r.Node.
@@ -1739,18 +1582,6 @@ func (r *MkdirResponse) String() string {
 	return fmt.Sprintf("Mkdir %v", r.LookupResponse.string())
 }
 
-// A ReadRequest asks to read from an open file.
-type ReadRequest struct {
-	Header    `json:"-"`
-	Dir       bool // is this Readdir?
-	Handle    HandleID
-	Offset    int64
-	Size      int
-	Flags     ReadFlags
-	LockOwner uint64
-	FileFlags OpenFlags
-}
-
 var _ = Request(&ReadRequest{})
 
 func (r *ReadRequest) String() string {
@@ -1763,12 +1594,6 @@ func (r *ReadRequest) Respond(resp *ReadResponse) {
 	buf = append(buf, resp.Data...)
 	r.respond(buf)
 }
-
-// A ReadResponse is the response to a ReadRequest.
-type ReadResponse struct {
-	Data []byte
-}
-
 func (r *ReadResponse) String() string {
 	return fmt.Sprintf("Read %d", len(r.Data))
 }
@@ -1782,16 +1607,6 @@ func (r *ReadResponse) MarshalJSON() ([]byte, error) {
 		Len: uint64(len(r.Data)),
 	}
 	return json.Marshal(j)
-}
-
-// A ReleaseRequest asks to release (close) an open file handle.
-type ReleaseRequest struct {
-	Header       `json:"-"`
-	Dir          bool // is this Releasedir?
-	Handle       HandleID
-	Flags        OpenFlags // flags from OpenRequest
-	ReleaseFlags ReleaseFlags
-	LockOwner    uint32
 }
 
 var _ = Request(&ReleaseRequest{})
@@ -1843,47 +1658,6 @@ func (r *ForgetRequest) Respond() {
 	// Don't reply to forget messages.
 	r.noResponse()
 }
-
-// A Dirent represents a single directory entry.
-type Dirent struct {
-	// Inode this entry names.
-	Inode uint64
-
-	// Type of the entry, for example DT_File.
-	//
-	// Setting this is optional. The zero value (DT_Unknown) means
-	// callers will just need to do a Getattr when the type is
-	// needed. Providing a type can speed up operations
-	// significantly.
-	Type DirentType
-
-	// Name of the entry
-	Name string
-}
-
-// Type of an entry in a directory listing.
-type DirentType uint32
-
-const (
-	// These don't quite match os.FileMode; especially there's an
-	// explicit unknown, instead of zero value meaning file. They
-	// are also not quite syscall.DT_*; nothing says the FUSE
-	// protocol follows those, and even if they were, we don't
-	// want each fs to fiddle with syscall.
-
-	// The shift by 12 is hardcoded in the FUSE userspace
-	// low-level C library, so it's safe here.
-
-	DT_Unknown DirentType = 0
-	DT_Socket  DirentType = syscall.S_IFSOCK >> 12
-	DT_Link    DirentType = syscall.S_IFLNK >> 12
-	DT_File    DirentType = syscall.S_IFREG >> 12
-	DT_Block   DirentType = syscall.S_IFBLK >> 12
-	DT_Dir     DirentType = syscall.S_IFDIR >> 12
-	DT_Char    DirentType = syscall.S_IFCHR >> 12
-	DT_FIFO    DirentType = syscall.S_IFIFO >> 12
-)
-
 func (t DirentType) String() string {
 	switch t {
 	case DT_Unknown:
@@ -2145,11 +1919,6 @@ type SymlinkResponse struct {
 
 func (r *SymlinkResponse) String() string {
 	return fmt.Sprintf("Symlink %v", r.LookupResponse.string())
-}
-
-// A ReadlinkRequest is a request to read a symlink's target.
-type ReadlinkRequest struct {
-	Header `json:"-"`
 }
 
 var _ = Request(&ReadlinkRequest{})

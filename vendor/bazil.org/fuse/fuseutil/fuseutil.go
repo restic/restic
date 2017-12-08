@@ -1,3 +1,5 @@
+// +build !windows
+
 package fuseutil // import "bazil.org/fuse/fuseutil"
 
 import (

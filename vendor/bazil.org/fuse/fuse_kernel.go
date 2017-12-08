@@ -1,3 +1,4 @@
+// +build !windows
 // See the file LICENSE for copyright and licensing information.
 
 // Derived from FUSE's fuse_kernel.h, which carries this notice:
@@ -174,10 +175,6 @@ const (
 // from the other flags in OpenFlags.
 const OpenAccessModeMask OpenFlags = syscall.O_ACCMODE
 
-// OpenFlags are the O_FOO flags passed to open/create/etc calls. For
-// example, os.O_WRONLY | os.O_APPEND.
-type OpenFlags uint32
-
 func (fl OpenFlags) String() string {
 	// O_RDONLY, O_RWONLY, O_RDWR are not flags
 	s := accModeName(fl & OpenAccessModeMask)
@@ -331,9 +328,6 @@ func flagString(f uint32, names []flagName) string {
 	}
 	return s[1:]
 }
-
-// The ReleaseFlags are used in the Release exchange.
-type ReleaseFlags uint32
 
 const (
 	ReleaseFlush ReleaseFlags = 1 << 0
@@ -575,9 +569,6 @@ func readInSize(p Protocol) uintptr {
 	}
 }
 
-// The ReadFlags are passed in ReadRequest.
-type ReadFlags uint32
-
 const (
 	// LockOwner field is valid.
 	ReadLockOwner ReadFlags = 1 << 1
@@ -724,17 +715,6 @@ type bmapIn struct {
 
 type bmapOut struct {
 	Block uint64
-}
-
-type inHeader struct {
-	Len    uint32
-	Opcode uint32
-	Unique uint64
-	Nodeid uint64
-	Uid    uint32
-	Gid    uint32
-	Pid    uint32
-	_      uint32
 }
 
 const inHeaderSize = int(unsafe.Sizeof(inHeader{}))
