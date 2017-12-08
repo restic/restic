@@ -1,8 +1,6 @@
-// +build go1.5,!go1.6,!go1.7,!go1.8
-
 /*
  * Minio Go Library for Amazon S3 Compatible Cloud Storage
- * (C) 2017 Minio, Inc.
+ * Copyright 2017 Minio, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +17,10 @@
 
 package minio
 
-import (
-	"net/http"
-	"time"
-)
+import "context"
 
-// This default transport is similar to http.DefaultTransport
-// but with additional DisableCompression:
-var defaultMinioTransport http.RoundTripper = &http.Transport{
-	Proxy:               http.ProxyFromEnvironment,
-	TLSHandshakeTimeout: 10 * time.Second,
-	// Set this value so that the underlying transport round-tripper
-	// doesn't try to auto decode the body of objects with
-	// content-encoding set to `gzip`.
-	//
-	// Refer:
-	//    https://golang.org/src/net/http/transport.go?h=roundTrip#L1843
-	DisableCompression: true,
+// GetObjectWithContext - returns an seekable, readable object.
+// The options can be used to specify the GET request further.
+func (c Client) GetObjectWithContext(ctx context.Context, bucketName, objectName string, opts GetObjectOptions) (*Object, error) {
+	return c.getObjectWithContext(ctx, bucketName, objectName, opts)
 }
