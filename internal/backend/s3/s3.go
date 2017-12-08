@@ -304,7 +304,7 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	opts.ContentType = "application/octet-stream"
 
 	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, size)
-	n, err := be.client.PutObject(be.cfg.Bucket, objName, ioutil.NopCloser(rd), size, opts)
+	n, err := be.client.PutObjectWithContext(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), size, opts)
 
 	debug.Log("%v -> %v bytes, err %#v: %v", objName, n, err, err)
 
@@ -358,7 +358,7 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 
 	be.sem.GetToken()
 	coreClient := minio.Core{Client: be.client}
-	rd, _, err := coreClient.GetObject(be.cfg.Bucket, objName, opts)
+	rd, err := coreClient.GetObjectWithContext(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
 		be.sem.ReleaseToken()
 		return nil, err
@@ -385,7 +385,7 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	opts := minio.GetObjectOptions{}
 
 	be.sem.GetToken()
-	obj, err = be.client.GetObject(be.cfg.Bucket, objName, opts)
+	obj, err = be.client.GetObjectWithContext(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
 		debug.Log("GetObject() err %v", err)
 		be.sem.ReleaseToken()
