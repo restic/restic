@@ -103,13 +103,11 @@ func (f *file) getBlobAt(ctx context.Context, i int) (blob []byte, err error) {
 	return buf[:n], nil
 }
 
-func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
-	debug.Log("Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
-	offset := req.Offset
+func (f *file) read(ctx context.Context, size int, offset int64, resp *fuse.ReadResponse) error {
 
 	if uint64(offset) > f.node.Size {
 		debug.Log("Read(%v): offset is greater than file size: %v > %v",
-			f.node.Name, req.Offset, f.node.Size)
+			f.node.Name, offset, f.node.Size)
 		return errors.New("offset greater than files size")
 	}
 
@@ -126,9 +124,9 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 		startContent++
 	}
 
-	dst := resp.Data[0:req.Size]
+	dst := resp.Data[0:size]
 	readBytes := 0
-	remainingBytes := req.Size
+	remainingBytes := size
 	for i := startContent; remainingBytes > 0 && i < len(f.sizes); i++ {
 		blob, err := f.getBlobAt(ctx, i)
 		if err != nil {
@@ -151,10 +149,20 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	return nil
 }
 
-func (f *file) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadResponse) error {
+	debug.Log("Read(%v, %v, %v), file size %v", f.node.Name, req.Size, req.Offset, f.node.Size)
+
+	return f.read(ctx, req.Size, req.Offset, resp)
+}
+
+func (f *file) release() {
 	for i := range f.blobs {
 		f.blobs[i] = nil
 	}
+}
+
+func (f *file) Release(ctx context.Context, req *fuse.ReleaseRequest) error {
+	f.release()
 	return nil
 }
 
