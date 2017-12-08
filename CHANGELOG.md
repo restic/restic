@@ -43,6 +43,10 @@ Small changes
    https://github.com/restic/restic/pull/1459
    https://github.com/restic/restic/issues/1457
 
+ * The cancellation logic was improved, restic can now shut down cleanly when
+   requested to do so (e.g. via ctrl+c).
+   https://github.com/restic/restic/pull/1439
+
 Important Changes in 0.8.0
 ==========================
 
