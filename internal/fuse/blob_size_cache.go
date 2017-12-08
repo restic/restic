@@ -1,6 +1,4 @@
 // +build !openbsd
-// +build !windows
-
 package fuse
 
 import (
