@@ -19,7 +19,3 @@
 # [[override]]
 #  name = "github.com/x/y"
 #  version = "2.4.0"
-
-[[constraint]]
-  name = "github.com/minio/minio-go"
-  version = "3.0.0"

@@ -100,8 +100,8 @@
 [[projects]]
   name = "github.com/minio/minio-go"
   packages = [".","pkg/credentials","pkg/encrypt","pkg/policy","pkg/s3signer","pkg/s3utils","pkg/set"]
-  revision = "4e0f567303d4cc90ceb055a451959fb9fc391fb9"
-  version = "3.0.3"
+  revision = "57a8ae886b49af6eb0d2c27c2d007ed2f71e1da5"
+  version = "4.0.3"
 
 [[projects]]
   branch = "master"
@@ -214,6 +214,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c6e2522d1b0c6832101ba15fc062074ad790648e26f481e3419a171d3579bfc4"
+  inputs-digest = "f0a207197cb502238ac87ca8e07b2640c02ec380a50b036e09ef87e40e31ca2d"
   solver-name = "gps-cdcl"
   solver-version = 1

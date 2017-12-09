@@ -2,8 +2,8 @@ package s3
 
 import (
 	"context"
-	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -248,51 +248,20 @@ func (be *Backend) Path() string {
 	return be.cfg.Prefix
 }
 
-// nopCloserFile wraps *os.File and overwrites the Close() method with method
-// that does nothing. In addition, the method Len() is implemented, which
-// returns the size of the file (filesize - current offset).
-type nopCloserFile struct {
-	*os.File
-}
-
-func (f nopCloserFile) Close() error {
-	debug.Log("prevented Close()")
-	return nil
-}
-
-// Len returns the remaining length of the file (filesize - current offset).
-func (f nopCloserFile) Len() int {
-	debug.Log("Len() called")
+// lenForFile returns the length of the file.
+func lenForFile(f *os.File) (int64, error) {
 	fi, err := f.Stat()
 	if err != nil {
-		panic(err)
+		return 0, errors.Wrap(err, "Stat")
 	}
 
 	pos, err := f.Seek(0, io.SeekCurrent)
 	if err != nil {
-		panic(err)
+		return 0, errors.Wrap(err, "Seek")
 	}
 
 	size := fi.Size() - pos
-	debug.Log("returning file size %v", size)
-	return int(size)
-}
-
-type lenner interface {
-	Len() int
-	io.Reader
-}
-
-// nopCloserLenner wraps a lenner and overwrites the Close() method with method
-// that does nothing. In addition, the method Size() is implemented, which
-// returns the size of the file (filesize - current offset).
-type nopCloserLenner struct {
-	lenner
-}
-
-func (f *nopCloserLenner) Close() error {
-	debug.Log("prevented Close()")
-	return nil
+	return size, nil
 }
 
 // Save stores data in the backend at the handle.
@@ -309,26 +278,33 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 	defer be.sem.ReleaseToken()
 
 	// Check key does not already exist
-	_, err = be.client.StatObject(be.cfg.Bucket, objName)
+	_, err = be.client.StatObject(be.cfg.Bucket, objName, minio.StatObjectOptions{})
 	if err == nil {
 		debug.Log("%v already exists", h)
 		return errors.New("key already exists")
 	}
 
-	// FIXME: This is a workaround once we move to minio-go 4.0.x this can be
-	// removed and size can be directly provided.
-	if f, ok := rd.(*os.File); ok {
-		debug.Log("reader is %#T, using nopCloserFile{}", rd)
-		rd = nopCloserFile{f}
-	} else if l, ok := rd.(lenner); ok {
-		debug.Log("reader is %#T, using nopCloserLenner{}", rd)
-		rd = nopCloserLenner{l}
-	} else {
-		debug.Log("reader is %#T, no specific workaround enabled", rd)
+	var size int64 = -1
+
+	type lenner interface {
+		Len() int
 	}
 
-	debug.Log("PutObject(%v, %v)", be.cfg.Bucket, objName)
-	n, err := be.client.PutObject(be.cfg.Bucket, objName, rd, "application/octet-stream")
+	// find size for reader
+	if f, ok := rd.(*os.File); ok {
+		size, err = lenForFile(f)
+		if err != nil {
+			return err
+		}
+	} else if l, ok := rd.(lenner); ok {
+		size = int64(l.Len())
+	}
+
+	opts := minio.PutObjectOptions{}
+	opts.ContentType = "application/octet-stream"
+
+	debug.Log("PutObject(%v, %v, %v)", be.cfg.Bucket, objName, size)
+	n, err := be.client.PutObjectWithContext(ctx, be.cfg.Bucket, objName, ioutil.NopCloser(rd), size, opts)
 
 	debug.Log("%v -> %v bytes, err %#v: %v", objName, n, err, err)
 
@@ -365,19 +341,24 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 	}
 
 	objName := be.Filename(h)
+	opts := minio.GetObjectOptions{}
 
-	byteRange := fmt.Sprintf("bytes=%d-", offset)
+	var err error
 	if length > 0 {
-		byteRange = fmt.Sprintf("bytes=%d-%d", offset, offset+int64(length)-1)
+		debug.Log("range: %v-%v", offset, offset+int64(length)-1)
+		err = opts.SetRange(offset, offset+int64(length)-1)
+	} else if offset > 0 {
+		debug.Log("range: %v-", offset)
+		err = opts.SetRange(offset, 0)
 	}
-	headers := minio.NewGetReqHeaders()
-	headers.Add("Range", byteRange)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "SetRange")
+	}
 
 	be.sem.GetToken()
-	debug.Log("Load(%v) send range %v", h, byteRange)
-
 	coreClient := minio.Core{Client: be.client}
-	rd, _, err := coreClient.GetObject(be.cfg.Bucket, objName, headers)
+	rd, err := coreClient.GetObjectWithContext(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
 		be.sem.ReleaseToken()
 		return nil, err
@@ -401,8 +382,10 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 	objName := be.Filename(h)
 	var obj *minio.Object
 
+	opts := minio.GetObjectOptions{}
+
 	be.sem.GetToken()
-	obj, err = be.client.GetObject(be.cfg.Bucket, objName)
+	obj, err = be.client.GetObjectWithContext(ctx, be.cfg.Bucket, objName, opts)
 	if err != nil {
 		debug.Log("GetObject() err %v", err)
 		be.sem.ReleaseToken()
@@ -433,7 +416,7 @@ func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	objName := be.Filename(h)
 
 	be.sem.GetToken()
-	_, err := be.client.StatObject(be.cfg.Bucket, objName)
+	_, err := be.client.StatObject(be.cfg.Bucket, objName, minio.StatObjectOptions{})
 	be.sem.ReleaseToken()
 
 	if err == nil {
