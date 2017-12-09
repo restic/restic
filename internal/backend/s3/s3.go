@@ -33,48 +33,6 @@ var _ restic.Backend = &Backend{}
 
 const defaultLayout = "default"
 
-type chain struct {
-	Providers []credentials.Provider
-	curr      credentials.Provider
-}
-
-// FIXME: Remove this code once restic migrates to minio-go 4.0.x
-func newChainCredentials(providers []credentials.Provider) *credentials.Credentials {
-	return credentials.New(&chain{
-		Providers: append([]credentials.Provider{}, providers...),
-	})
-}
-
-// Retrieve returns the credentials value or error if no provider returned
-// without error.
-//
-// If a provider is found it will be cached and any calls to IsExpired()
-// will return the expired state of the cached provider.
-func (c *chain) Retrieve() (credentials.Value, error) {
-	for _, p := range c.Providers {
-		creds, _ := p.Retrieve()
-		// If anonymous proceed to the next provider if any.
-		if creds.SignerType.IsAnonymous() {
-			continue
-		}
-		c.curr = p
-		return creds, nil
-	}
-	return credentials.Value{
-		SignerType: credentials.SignatureAnonymous,
-	}, nil
-}
-
-// IsExpired will returned the expired state of the currently cached provider
-// if there is one.  If there is no current provider, true will be returned.
-func (c *chain) IsExpired() bool {
-	if c.curr != nil {
-		return c.curr.IsExpired()
-	}
-
-	return true
-}
-
 func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	debug.Log("open, config %#v", cfg)
 
@@ -89,7 +47,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 	// configured ec2 instances)
 	// AWS env variables such as AWS_ACCESS_KEY_ID
 	// Minio env variables such as MINIO_ACCESS_KEY
-	creds := newChainCredentials([]credentials.Provider{
+	creds := credentials.NewChainCredentials([]credentials.Provider{
 		&credentials.Static{
 			Value: credentials.Value{
 				AccessKeyID:     cfg.KeyID,
