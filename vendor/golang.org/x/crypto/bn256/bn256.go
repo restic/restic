@@ -49,8 +49,8 @@ func RandomG1(r io.Reader) (*big.Int, *G1, error) {
 	return k, new(G1).ScalarBaseMult(k), nil
 }
 
-func (g *G1) String() string {
-	return "bn256.G1" + g.p.String()
+func (e *G1) String() string {
+	return "bn256.G1" + e.p.String()
 }
 
 // ScalarBaseMult sets e to g*k where g is the generator of the group and
@@ -92,11 +92,11 @@ func (e *G1) Neg(a *G1) *G1 {
 }
 
 // Marshal converts n to a byte slice.
-func (n *G1) Marshal() []byte {
-	n.p.MakeAffine(nil)
+func (e *G1) Marshal() []byte {
+	e.p.MakeAffine(nil)
 
-	xBytes := new(big.Int).Mod(n.p.x, p).Bytes()
-	yBytes := new(big.Int).Mod(n.p.y, p).Bytes()
+	xBytes := new(big.Int).Mod(e.p.x, p).Bytes()
+	yBytes := new(big.Int).Mod(e.p.y, p).Bytes()
 
 	// Each value is a 256-bit number.
 	const numBytes = 256 / 8
@@ -166,8 +166,8 @@ func RandomG2(r io.Reader) (*big.Int, *G2, error) {
 	return k, new(G2).ScalarBaseMult(k), nil
 }
 
-func (g *G2) String() string {
-	return "bn256.G2" + g.p.String()
+func (e *G2) String() string {
+	return "bn256.G2" + e.p.String()
 }
 
 // ScalarBaseMult sets e to g*k where g is the generator of the group and

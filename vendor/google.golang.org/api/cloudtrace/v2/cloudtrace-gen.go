@@ -113,8 +113,8 @@ type ProjectsTracesSpansService struct {
 
 // Annotation: Text annotation with a set of attributes.
 type Annotation struct {
-	// Attributes: A set of attributes on the annotation. There is a limit
-	// of 4 attributes
+	// Attributes: A set of attributes on the annotation. You can have up to
+	// 4 attributes
 	// per Annotation.
 	Attributes *Attributes `json:"attributes,omitempty"`
 
@@ -141,8 +141,8 @@ type Annotation struct {
 }
 
 func (s *Annotation) MarshalJSON() ([]byte, error) {
-	type noMethod Annotation
-	raw := noMethod(*s)
+	type NoMethod Annotation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -176,8 +176,8 @@ type AttributeValue struct {
 }
 
 func (s *AttributeValue) MarshalJSON() ([]byte, error) {
-	type noMethod AttributeValue
-	raw := noMethod(*s)
+	type NoMethod AttributeValue
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -220,15 +220,17 @@ type Attributes struct {
 }
 
 func (s *Attributes) MarshalJSON() ([]byte, error) {
-	type noMethod Attributes
-	raw := noMethod(*s)
+	type NoMethod Attributes
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // BatchWriteSpansRequest: The request message for the `BatchWriteSpans`
 // method.
 type BatchWriteSpansRequest struct {
-	// Spans: A collection of spans.
+	// Spans: A list of new spans. The span names must not match
+	// existing
+	// spans, or the results are undefined.
 	Spans []*Span `json:"spans,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Spans") to
@@ -249,8 +251,8 @@ type BatchWriteSpansRequest struct {
 }
 
 func (s *BatchWriteSpansRequest) MarshalJSON() ([]byte, error) {
-	type noMethod BatchWriteSpansRequest
-	raw := noMethod(*s)
+	type NoMethod BatchWriteSpansRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -281,15 +283,15 @@ type Empty struct {
 // traces or when the handler receives a request from a different
 // project.
 type Link struct {
-	// Attributes: A set of attributes on the link. There is a limit of 32
+	// Attributes: A set of attributes on the link. You have have up to  32
 	// attributes per
 	// link.
 	Attributes *Attributes `json:"attributes,omitempty"`
 
-	// SpanId: `SPAN_ID` identifies a span within a trace.
+	// SpanId: The [SPAN_ID] for a span within a trace.
 	SpanId string `json:"spanId,omitempty"`
 
-	// TraceId: `TRACE_ID` identifies a trace within a project.
+	// TraceId: The [TRACE_ID] for a trace within a project.
 	TraceId string `json:"traceId,omitempty"`
 
 	// Type: The relationship of the current span relative to the linked
@@ -321,8 +323,8 @@ type Link struct {
 }
 
 func (s *Link) MarshalJSON() ([]byte, error) {
-	type noMethod Link
-	raw := noMethod(*s)
+	type NoMethod Link
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -357,8 +359,8 @@ type Links struct {
 }
 
 func (s *Links) MarshalJSON() ([]byte, error) {
-	type noMethod Links
-	raw := noMethod(*s)
+	type NoMethod Links
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -410,8 +412,8 @@ type MessageEvent struct {
 }
 
 func (s *MessageEvent) MarshalJSON() ([]byte, error) {
-	type noMethod MessageEvent
-	raw := noMethod(*s)
+	type NoMethod MessageEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -445,8 +447,8 @@ type Module struct {
 }
 
 func (s *Module) MarshalJSON() ([]byte, error) {
-	type noMethod Module
-	raw := noMethod(*s)
+	type NoMethod Module
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -460,7 +462,7 @@ func (s *Module) MarshalJSON() ([]byte, error) {
 // be
 // gaps or overlaps between spans in a trace.
 type Span struct {
-	// Attributes: A set of attributes on the span. There is a limit of 32
+	// Attributes: A set of attributes on the span. You can have up to 32
 	// attributes per
 	// span.
 	Attributes *Attributes `json:"attributes,omitempty"`
@@ -491,15 +493,19 @@ type Span struct {
 	// is the time when the server application handler stops running.
 	EndTime string `json:"endTime,omitempty"`
 
-	// Links: A maximum of 128 links are allowed per Span.
+	// Links: Links associated with the span. You can have up to 128 links
+	// per Span.
 	Links *Links `json:"links,omitempty"`
 
 	// Name: The resource name of the span in the following format:
 	//
 	//     projects/[PROJECT_ID]/traces/[TRACE_ID]/spans/SPAN_ID is a unique
-	// identifier for a trace within a project.
-	// [SPAN_ID] is a unique identifier for a span within a trace,
-	// assigned when the span is created.
+	// identifier for a trace within a project;
+	// it is a 32-character hexadecimal encoding of a 16-byte
+	// array.
+	//
+	// [SPAN_ID] is a unique identifier for a span within a trace; it
+	// is a 16-character hexadecimal encoding of an 8-byte array.
 	Name string `json:"name,omitempty"`
 
 	// ParentSpanId: The [SPAN_ID] of this span's parent span. If this is a
@@ -507,11 +513,13 @@ type Span struct {
 	// then this field must be empty.
 	ParentSpanId string `json:"parentSpanId,omitempty"`
 
-	// SameProcessAsParentSpan: A highly recommended but not required flag
-	// that identifies when a trace
-	// crosses a process boundary. True when the parent_span belongs to
-	// the
-	// same process as the current span.
+	// SameProcessAsParentSpan: (Optional) Set this parameter to indicate
+	// whether this span is in
+	// the same process as its parent. If you do not set this
+	// parameter,
+	// Stackdriver Trace is unable to take advantage of this
+	// helpful
+	// information.
 	SameProcessAsParentSpan bool `json:"sameProcessAsParentSpan,omitempty"`
 
 	// SpanId: The [SPAN_ID] portion of the span's resource name.
@@ -530,8 +538,8 @@ type Span struct {
 	// Status: An optional final status for this span.
 	Status *Status `json:"status,omitempty"`
 
-	// TimeEvents: The included time events. There can be up to 32
-	// annotations and 128 message
+	// TimeEvents: A set of time events. You can have up to 32 annotations
+	// and 128 message
 	// events per span.
 	TimeEvents *TimeEvents `json:"timeEvents,omitempty"`
 
@@ -557,8 +565,8 @@ type Span struct {
 }
 
 func (s *Span) MarshalJSON() ([]byte, error) {
-	type noMethod Span
-	raw := noMethod(*s)
+	type NoMethod Span
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -615,8 +623,8 @@ type StackFrame struct {
 }
 
 func (s *StackFrame) MarshalJSON() ([]byte, error) {
-	type noMethod StackFrame
-	raw := noMethod(*s)
+	type NoMethod StackFrame
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -650,8 +658,8 @@ type StackFrames struct {
 }
 
 func (s *StackFrames) MarshalJSON() ([]byte, error) {
-	type noMethod StackFrames
-	raw := noMethod(*s)
+	type NoMethod StackFrames
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -692,8 +700,8 @@ type StackTrace struct {
 }
 
 func (s *StackTrace) MarshalJSON() ([]byte, error) {
-	type noMethod StackTrace
-	raw := noMethod(*s)
+	type NoMethod StackTrace
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -811,8 +819,8 @@ type Status struct {
 }
 
 func (s *Status) MarshalJSON() ([]byte, error) {
-	type noMethod Status
-	raw := noMethod(*s)
+	type NoMethod Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -846,8 +854,8 @@ type TimeEvent struct {
 }
 
 func (s *TimeEvent) MarshalJSON() ([]byte, error) {
-	type noMethod TimeEvent
-	raw := noMethod(*s)
+	type NoMethod TimeEvent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -890,8 +898,8 @@ type TimeEvents struct {
 }
 
 func (s *TimeEvents) MarshalJSON() ([]byte, error) {
-	type noMethod TimeEvents
-	raw := noMethod(*s)
+	type NoMethod TimeEvents
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -903,16 +911,16 @@ type TruncatableString struct {
 	// value is 0, then the string was not shortened.
 	TruncatedByteCount int64 `json:"truncatedByteCount,omitempty"`
 
-	// Value: The shortened string. For example, if the original string was
+	// Value: The shortened string. For example, if the original string is
 	// 500
-	// bytes long and the limit of the string was 128 bytes, then this
-	// value contains the first 128 bytes of the 500-byte string. Note
-	// that
-	// truncation always happens on the character boundary, to ensure
-	// that
-	// truncated string is still valid UTF8. In case of multi-byte
-	// characters,
-	// size of truncated string can be less than truncation limit.
+	// bytes long and the limit of the string is 128 bytes, then
+	// `value` contains the first 128 bytes of the 500-byte
+	// string.
+	//
+	// Truncation always happens on a UTF8 character boundary. If there
+	// are multi-byte characters in the string, then the length of
+	// the
+	// shortened string might be less than the size limit.
 	Value string `json:"value,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "TruncatedByteCount")
@@ -934,8 +942,8 @@ type TruncatableString struct {
 }
 
 func (s *TruncatableString) MarshalJSON() ([]byte, error) {
-	type noMethod TruncatableString
-	raw := noMethod(*s)
+	type NoMethod TruncatableString
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -950,15 +958,9 @@ type ProjectsTracesBatchWriteCall struct {
 	header_                http.Header
 }
 
-// BatchWrite: Sends new spans to Stackdriver Trace or updates existing
-// traces. If the
-// name of a trace that you send matches that of an existing trace, new
-// spans
-// are added to the existing trace. Attempt to update existing spans
-// results
-// undefined behavior. If the name does not match, a new trace is
-// created
-// with given set of spans.
+// BatchWrite: Sends new spans to new or existing traces. You cannot
+// update
+// existing spans.
 func (r *ProjectsTracesService) BatchWrite(name string, batchwritespansrequest *BatchWriteSpansRequest) *ProjectsTracesBatchWriteCall {
 	c := &ProjectsTracesBatchWriteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -1047,12 +1049,12 @@ func (c *ProjectsTracesBatchWriteCall) Do(opts ...googleapi.CallOption) (*Empty,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Sends new spans to Stackdriver Trace or updates existing traces. If the\nname of a trace that you send matches that of an existing trace, new spans\nare added to the existing trace. Attempt to update existing spans results\nundefined behavior. If the name does not match, a new trace is created\nwith given set of spans.",
+	//   "description": "Sends new spans to new or existing traces. You cannot update\nexisting spans.",
 	//   "flatPath": "v2/projects/{projectsId}/traces:batchWrite",
 	//   "httpMethod": "POST",
 	//   "id": "cloudtrace.projects.traces.batchWrite",
@@ -1061,7 +1063,7 @@ func (c *ProjectsTracesBatchWriteCall) Do(opts ...googleapi.CallOption) (*Empty,
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "Required. Name of the project where the spans belong. The format is\n`projects/PROJECT_ID`.",
+	//       "description": "Required. The name of the project where the spans belong. The format is\n`projects/[PROJECT_ID]`.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+$",
 	//       "required": true,
@@ -1094,7 +1096,7 @@ type ProjectsTracesSpansCreateCall struct {
 	header_    http.Header
 }
 
-// Create: Creates a new Span.
+// Create: Creates a new span.
 func (r *ProjectsTracesSpansService) Create(nameid string, span *Span) *ProjectsTracesSpansCreateCall {
 	c := &ProjectsTracesSpansCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.nameid = nameid
@@ -1140,9 +1142,9 @@ func (c *ProjectsTracesSpansCreateCall) doRequest(alt string) (*http.Response, e
 	}
 	reqHeaders.Set("Content-Type", "application/json")
 	c.urlParams_.Set("alt", alt)
-	urls := googleapi.ResolveRelative(c.s.BasePath, "v2/{+name}")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2/{+name}/spans")
 	urls += "?" + c.urlParams_.Encode()
-	req, _ := http.NewRequest("PUT", urls, body)
+	req, _ := http.NewRequest("POST", urls, body)
 	req.Header = reqHeaders
 	googleapi.Expand(req.URL, map[string]string{
 		"name": c.nameid,
@@ -1183,28 +1185,28 @@ func (c *ProjectsTracesSpansCreateCall) Do(opts ...googleapi.CallOption) (*Span,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new Span.",
-	//   "flatPath": "v2/projects/{projectsId}/traces/{tracesId}/spans/{spansId}",
-	//   "httpMethod": "PUT",
+	//   "description": "Creates a new span.",
+	//   "flatPath": "v2/projects/{projectsId}/traces/{tracesId}/spans",
+	//   "httpMethod": "POST",
 	//   "id": "cloudtrace.projects.traces.spans.create",
 	//   "parameterOrder": [
 	//     "name"
 	//   ],
 	//   "parameters": {
 	//     "name": {
-	//       "description": "The resource name of the span in the following format:\n\n    projects/[PROJECT_ID]/traces/[TRACE_ID]/spans/SPAN_ID is a unique identifier for a trace within a project.\n[SPAN_ID] is a unique identifier for a span within a trace,\nassigned when the span is created.",
+	//       "description": "The resource name of the span in the following format:\n\n    projects/[PROJECT_ID]/traces/[TRACE_ID]/spans/SPAN_ID is a unique identifier for a trace within a project;\nit is a 32-character hexadecimal encoding of a 16-byte array.\n\n[SPAN_ID] is a unique identifier for a span within a trace; it\nis a 16-character hexadecimal encoding of an 8-byte array.",
 	//       "location": "path",
-	//       "pattern": "^projects/[^/]+/traces/[^/]+/spans/[^/]+$",
+	//       "pattern": "^projects/[^/]+/traces/[^/]+$",
 	//       "required": true,
 	//       "type": "string"
 	//     }
 	//   },
-	//   "path": "v2/{+name}",
+	//   "path": "v2/{+name}/spans",
 	//   "request": {
 	//     "$ref": "Span"
 	//   },

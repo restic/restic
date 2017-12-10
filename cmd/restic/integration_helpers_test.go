@@ -72,7 +72,7 @@ func sameModTime(fi1, fi2 os.FileInfo) bool {
 	}
 
 	same := fi1.ModTime().Equal(fi2.ModTime())
-	if !same && runtime.GOOS == "darwin" {
+	if !same && (runtime.GOOS == "darwin" || runtime.GOOS == "openbsd") {
 		// Allow up to 1μs difference, because macOS <10.13 cannot restore
 		// with nanosecond precision and the current version of Go (1.9.2)
 		// does not yet support the new syscall. (#1087)

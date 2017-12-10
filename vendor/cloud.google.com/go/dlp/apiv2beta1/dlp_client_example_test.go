@@ -32,6 +32,47 @@ func ExampleNewClient() {
 	_ = c
 }
 
+func ExampleClient_DeidentifyContent() {
+	ctx := context.Background()
+	c, err := dlp.NewClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	req := &dlppb.DeidentifyContentRequest{
+	// TODO: Fill request struct fields.
+	}
+	resp, err := c.DeidentifyContent(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	// TODO: Use resp.
+	_ = resp
+}
+
+func ExampleClient_AnalyzeDataSourceRisk() {
+	ctx := context.Background()
+	c, err := dlp.NewClient(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	req := &dlppb.AnalyzeDataSourceRiskRequest{
+	// TODO: Fill request struct fields.
+	}
+	op, err := c.AnalyzeDataSourceRisk(ctx, req)
+	if err != nil {
+		// TODO: Handle error.
+	}
+
+	resp, err := op.Wait(ctx)
+	if err != nil {
+		// TODO: Handle error.
+	}
+	// TODO: Use resp.
+	_ = resp
+}
+
 func ExampleClient_InspectContent() {
 	ctx := context.Background()
 	c, err := dlp.NewClient(ctx)

@@ -296,6 +296,20 @@ func (s *StorageClientSuite) TestNewEmulatorClient(c *chk.C) {
 	c.Assert(cli.accountKey, chk.DeepEquals, expectedKey)
 }
 
+func (s *StorageClientSuite) TestNewFromConnectionString(c *chk.C) {
+	cli, err := NewClientFromConnectionString(
+		"DefaultEndpointsProtocol=https;" +
+			"AccountName=myaccountname;" +
+			"AccountKey=" + StorageEmulatorAccountKey + ";" +
+			"EndpointSuffix=example.com")
+
+	c.Assert(err, chk.IsNil)
+	c.Assert(cli.accountName, chk.Equals, "myaccountname")
+	expectedKey, err := base64.StdEncoding.DecodeString(StorageEmulatorAccountKey)
+	c.Assert(err, chk.IsNil)
+	c.Assert(cli.accountKey, chk.DeepEquals, expectedKey)
+}
+
 func (s *StorageClientSuite) TestIsValidStorageAccount(c *chk.C) {
 	type test struct {
 		account  string

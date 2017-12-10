@@ -911,6 +911,21 @@
       },
       "id": "Status"
     },
+    "AlwaysOnVpnPackage": {
+      "description": "Configuration for an always-on VPN connection.",
+      "type": "object",
+      "properties": {
+        "packageName": {
+          "description": "The package name of the VPN app.",
+          "type": "string"
+        },
+        "lockdownEnabled": {
+          "description": "Disallows networking when the VPN is not connected.",
+          "type": "boolean"
+        }
+      },
+      "id": "AlwaysOnVpnPackage"
+    },
     "ApplicationPolicy": {
       "description": "Policy for an individual app.",
       "type": "object",
@@ -989,6 +1004,33 @@
         }
       },
       "id": "ApplicationPermission"
+    },
+    "ProxyInfo": {
+      "description": "Configuration info for an HTTP proxy. For a direct proxy, set the host, port, and excluded_hosts fields. For a PAC script proxy, set the pac_uri field.",
+      "type": "object",
+      "properties": {
+        "host": {
+          "description": "The host of the direct proxy.",
+          "type": "string"
+        },
+        "port": {
+          "description": "The port of the direct proxy.",
+          "type": "integer",
+          "format": "int32"
+        },
+        "excludedHosts": {
+          "description": "For a direct proxy, the hosts for which the proxy is bypassed. The host names may contain wildcards such as *.example.com.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pacUri": {
+          "description": "The URI of the PAC script used to configure the proxy.",
+          "type": "string"
+        }
+      },
+      "id": "ProxyInfo"
     },
     "ManagedProperty": {
       "description": "Managed property.",
@@ -1214,6 +1256,20 @@
       },
       "id": "NonComplianceDetail"
     },
+    "PackageNameList": {
+      "description": "A list of package names.",
+      "type": "object",
+      "properties": {
+        "packageNames": {
+          "description": "A list of package names.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "id": "PackageNameList"
+    },
     "ListDevicesResponse": {
       "description": "Response to a request to list devices for a given enterprise.",
       "type": "object",
@@ -1261,82 +1317,32 @@
       "description": "A policy, which governs behavior for a device.",
       "type": "object",
       "properties": {
-        "openNetworkConfiguration": {
-          "description": "Network configuration for the device. See configure networks for more information.",
-          "additionalProperties": {
-            "description": "Properties of the object.",
-            "type": "any"
-          },
-          "type": "object"
-        },
-        "adjustVolumeDisabled": {
-          "description": "Whether adjusting the master volume is disabled.",
+        "outgoingCallsDisabled": {
+          "description": "Whether outgoing calls are disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
           "type": "boolean"
         },
-        "passwordRequirements": {
-          "description": "Password requirements.",
-          "$ref": "PasswordRequirements"
-        },
-        "modifyAccountsDisabled": {
-          "description": "Whether adding or removing accounts is disabled.",
+        "screenCaptureDisabled": {
+          "description": "Whether screen capture is disabled.",
           "type": "boolean"
         },
-        "statusReportingSettings": {
-          "description": "Status reporting settings",
-          "$ref": "StatusReportingSettings"
+        "bluetoothDisabled": {
+          "description": "Whether bluetooth is disabled. Prefer this setting over bluetooth_config_disabled because bluetooth_config_disabled can be bypassed by the user. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "installAppsDisabled": {
+          "description": "Whether user installation of apps is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
         },
         "factoryResetDisabled": {
           "description": "Whether factory resetting from settings is disabled.",
           "type": "boolean"
         },
-        "funDisabled": {
-          "description": "Whether the user is allowed to have fun. Controls whether the Easter egg game in Settings is disabled.",
-          "type": "boolean"
-        },
-        "applications": {
-          "description": "Policy applied to apps.",
-          "type": "array",
-          "items": {
-            "$ref": "ApplicationPolicy"
-          }
-        },
-        "safeBootDisabled": {
-          "description": "Whether rebooting the device into safe boot is disabled.",
-          "type": "boolean"
-        },
-        "wifiConfigsLockdownEnabled": {
-          "description": "Whether WiFi networks defined in Open Network Configuration are locked so they cannot be edited by the user.",
-          "type": "boolean"
-        },
-        "complianceRules": {
-          "description": "Rules declaring which mitigating actions to take when a device is not compliant with its policy. When the conditions for multiple rules are satisfied, all of the mitigating actions for the rules are taken. There is a maximum limit of 100 rules.",
-          "type": "array",
-          "items": {
-            "$ref": "ComplianceRule"
-          }
-        },
-        "wifiConfigDisabled": {
-          "description": "Whether configuring WiFi access points is disabled.",
-          "type": "boolean"
-        },
-        "unmuteMicrophoneDisabled": {
-          "description": "Whether the microphone is muted and adjusting microphone volume is disabled.",
+        "modifyAccountsDisabled": {
+          "description": "Whether adding or removing accounts is disabled.",
           "type": "boolean"
         },
         "installUnknownSourcesAllowed": {
           "description": "Whether the user is allowed to enable the \"Unknown Sources\" setting, which allows installation of apps from unknown sources.",
-          "type": "boolean"
-        },
-        "autoTimeRequired": {
-          "description": "Whether auto time is required, which prevents the user from manually setting the date and time.",
-          "type": "boolean"
-        },
-        "removeUserDisabled": {
-          "description": "Whether removing other users is disabled.",
-          "type": "boolean"
-        },
-        "statusBarDisabled": {
-          "description": "Whether the status bar is disabled. This disables notifications, quick settings and other screen overlays that allow escape from full-screen mode.",
           "type": "boolean"
         },
         "stayOnPluggedModes": {
@@ -1358,26 +1364,48 @@
             "type": "string"
           }
         },
-        "cameraDisabled": {
-          "description": "Whether all cameras on the device are disabled.",
+        "networkResetDisabled": {
+          "description": "Whether resetting network settings is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
           "type": "boolean"
         },
-        "blockApplicationsEnabled": {
-          "description": "Whether applications other than the ones configured in applications are blocked from being installed. When set, applications that were installed under a previous policy but no longer appear in the policy are automatically uninstalled.",
+        "shortSupportMessage": {
+          "description": "A message displayed to the user in the settings screen wherever functionality has been disabled by the admin. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "$ref": "UserFacingMessage"
+        },
+        "wifiConfigDisabled": {
+          "description": "Whether configuring WiFi access points is disabled.",
           "type": "boolean"
         },
-        "debuggingFeaturesAllowed": {
-          "description": "Whether the user is allowed to enable debugging features.",
+        "networkEscapeHatchEnabled": {
+          "description": "Whether the network escape hatch is enabled. If a network connection can't be made at boot time, the escape hatch prompts the user to temporarily connect to a network in order to refresh the device policy. After applying policy, the temporary network will be forgotten and the device will continue booting. This prevents being unable to connect to a network if there is no suitable network in the last policy and the device boots into an app in lock task mode, or the user is otherwise unable to reach device settings.",
           "type": "boolean"
         },
-        "maximumTimeToLock": {
-          "description": "Maximum time in milliseconds for user activity until the device will lock. A value of 0 means there is no restriction.",
-          "type": "string",
-          "format": "int64"
-        },
-        "name": {
-          "description": "The name of the policy in the form enterprises/{enterpriseId}/policies/{policyId}",
-          "type": "string"
+        "keyguardDisabledFeatures": {
+          "description": "Disabled keyguard customizations, such as widgets. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "enumDescriptions": [
+            "This value is ignored.",
+            "Disable the camera on secure keyguard screens (e.g. PIN).",
+            "Disable showing all notifications on secure keyguard screens.",
+            "Disable unredacted notifications on secure keyguard screens.",
+            "Ignore trust agent state on secure keyguard screens.",
+            "Disable fingerprint sensor on keyguard secure screens.",
+            "Disable text entry into notifications on secure keyguard screens.",
+            "Disable all current and future keyguard customizations."
+          ],
+          "type": "array",
+          "items": {
+            "enum": [
+              "KEYGUARD_DISABLED_FEATURE_UNSPECIFIED",
+              "CAMERA",
+              "NOTIFICATIONS",
+              "UNREDACTED_NOTIFICATIONS",
+              "TRUST_AGENTS",
+              "DISABLE_FINGERPRINT",
+              "DISABLE_REMOTE_INPUT",
+              "ALL_FEATURES"
+            ],
+            "type": "string"
+          }
         },
         "defaultPermissionPolicy": {
           "description": "The default permission policy for requests for runtime permissions.",
@@ -1395,20 +1423,64 @@
           ],
           "type": "string"
         },
-        "persistentPreferredActivities": {
-          "description": "Default intent handler activities.",
-          "type": "array",
-          "items": {
-            "$ref": "PersistentPreferredActivity"
-          }
+        "maximumTimeToLock": {
+          "description": "Maximum time in milliseconds for user activity until the device will lock. A value of 0 means there is no restriction.",
+          "type": "string",
+          "format": "int64"
         },
-        "networkEscapeHatchEnabled": {
-          "description": "Whether the network escape hatch is enabled. If a network connection can't be made at boot time, the escape hatch prompts the user to temporarily connect to a network in order to refresh the device policy. After applying policy, the temporary network will be forgotten and the device will continue booting. This prevents being unable to connect to a network if there is no suitable network in the last policy and the device boots into an app in lock task mode, or the user is otherwise unable to reach device settings.",
+        "safeBootDisabled": {
+          "description": "Whether rebooting the device into safe boot is disabled.",
           "type": "boolean"
         },
-        "systemUpdate": {
-          "description": "The system update policy, which controls how OS updates are applied. If the update type is WINDOWED, the update window will automatically apply to Play app updates as well.",
-          "$ref": "SystemUpdate"
+        "setUserIconDisabled": {
+          "description": "Whether changing the user icon is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "recommendedGlobalProxy": {
+          "description": "The network-independent global HTTP proxy. Typically proxies should be configured per-network in open_network_configuration. However for unusual configurations like general internal filtering a global HTTP proxy may be useful. If the proxy is not accessible, network access may break. The global proxy is only a recommendation and some apps may ignore it. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "$ref": "ProxyInfo"
+        },
+        "applications": {
+          "description": "Policy applied to apps.",
+          "type": "array",
+          "items": {
+            "$ref": "ApplicationPolicy"
+          }
+        },
+        "outgoingBeamDisabled": {
+          "description": "Whether using NFC to beam out data from apps is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "credentialsConfigDisabled": {
+          "description": "Whether configuring user credentials is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "autoTimeRequired": {
+          "description": "Whether auto time is required, which prevents the user from manually setting the date and time.",
+          "type": "boolean"
+        },
+        "smsDisabled": {
+          "description": "Whether sending or receiving SMS messages is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "permittedInputMethods": {
+          "description": "If present, only input methods provided by packages in this list are permitted. If this field is present, but the list is empty, then only system input methods are permitted. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "$ref": "PackageNameList"
+        },
+        "adjustVolumeDisabled": {
+          "description": "Whether adjusting the master volume is disabled.",
+          "type": "boolean"
+        },
+        "accountTypesWithManagementDisabled": {
+          "description": "Account types that cannot be managed by the user. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vpnConfigDisabled": {
+          "description": "Whether configuring VPN is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
         },
         "frpAdminEmails": {
           "description": "Email addresses of device administrators for factory reset protection. When the device is factory reset, it will require one of these admins to log in with the Google account email and password to unlock the device. If no admins are specified, the device will not provide factory reset protection.",
@@ -1417,21 +1489,143 @@
             "type": "string"
           }
         },
-        "version": {
-          "description": "The version of the policy. This is a read-only field. The version is incremented each time the policy is updated.",
-          "type": "string",
-          "format": "int64"
+        "alwaysOnVpnPackage": {
+          "description": "Configuration for an always-on VPN connection. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "$ref": "AlwaysOnVpnPackage"
         },
-        "screenCaptureDisabled": {
-          "description": "Whether screen capture is disabled.",
+        "tetheringConfigDisabled": {
+          "description": "Whether configuring tethering and portable hotspots is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
           "type": "boolean"
+        },
+        "name": {
+          "description": "The name of the policy in the form enterprises/{enterpriseId}/policies/{policyId}",
+          "type": "string"
+        },
+        "uninstallAppsDisabled": {
+          "description": "Whether user uninstallation of applications is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "funDisabled": {
+          "description": "Whether the user is allowed to have fun. Controls whether the Easter egg game in Settings is disabled.",
+          "type": "boolean"
+        },
+        "openNetworkConfiguration": {
+          "description": "Network configuration for the device. See configure networks for more information.",
+          "additionalProperties": {
+            "description": "Properties of the object.",
+            "type": "any"
+          },
+          "type": "object"
+        },
+        "unmuteMicrophoneDisabled": {
+          "description": "Whether the microphone is muted and adjusting microphone volume is disabled.",
+          "type": "boolean"
+        },
+        "systemUpdate": {
+          "description": "The system update policy, which controls how OS updates are applied. If the update type is WINDOWED, the update window will automatically apply to Play app updates as well.",
+          "$ref": "SystemUpdate"
         },
         "keyguardDisabled": {
           "description": "Whether the keyguard is disabled.",
           "type": "boolean"
         },
+        "mountPhysicalMediaDisabled": {
+          "description": "Whether the user mounting physical external media is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "ensureVerifyAppsEnabled": {
+          "description": "Whether application verification is forced to be enabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "mobileNetworksConfigDisabled": {
+          "description": "Whether configuring mobile networks is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "dataRoamingDisabled": {
+          "description": "Whether roaming data services are disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "statusBarDisabled": {
+          "description": "Whether the status bar is disabled. This disables notifications, quick settings and other screen overlays that allow escape from full-screen mode.",
+          "type": "boolean"
+        },
+        "longSupportMessage": {
+          "description": "A message displayed to the user in the device administators settings screen. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "$ref": "UserFacingMessage"
+        },
+        "cameraDisabled": {
+          "description": "Whether all cameras on the device are disabled.",
+          "type": "boolean"
+        },
+        "passwordRequirements": {
+          "description": "Password requirements.",
+          "$ref": "PasswordRequirements"
+        },
+        "setWallpaperDisabled": {
+          "description": "Whether changing the wallpaper is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "version": {
+          "description": "The version of the policy. This is a read-only field. The version is incremented each time the policy is updated.",
+          "type": "string",
+          "format": "int64"
+        },
+        "complianceRules": {
+          "description": "Rules declaring which mitigating actions to take when a device is not compliant with its policy. When the conditions for multiple rules are satisfied, all of the mitigating actions for the rules are taken. There is a maximum limit of 100 rules.",
+          "type": "array",
+          "items": {
+            "$ref": "ComplianceRule"
+          }
+        },
+        "statusReportingSettings": {
+          "description": "Status reporting settings",
+          "$ref": "StatusReportingSettings"
+        },
         "addUserDisabled": {
           "description": "Whether adding new users and profiles is disabled.",
+          "type": "boolean"
+        },
+        "bluetoothContactSharingDisabled": {
+          "description": "Whether bluetooth contact sharing is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "bluetoothConfigDisabled": {
+          "description": "Whether configuring bluetooth is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "cellBroadcastsConfigDisabled": {
+          "description": "Whether configuring cell broadcast is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "usbFileTransferDisabled": {
+          "description": "Whether transferring files over USB is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "removeUserDisabled": {
+          "description": "Whether removing other users is disabled.",
+          "type": "boolean"
+        },
+        "wifiConfigsLockdownEnabled": {
+          "description": "Whether WiFi networks defined in Open Network Configuration are locked so they cannot be edited by the user.",
+          "type": "boolean"
+        },
+        "createWindowsDisabled": {
+          "description": "Whether creating windows besides app windows is disabled. \u003ci\u003eRequires the beta version of Android Cloud Policy.\u003c/i\u003e",
+          "type": "boolean"
+        },
+        "persistentPreferredActivities": {
+          "description": "Default intent handler activities.",
+          "type": "array",
+          "items": {
+            "$ref": "PersistentPreferredActivity"
+          }
+        },
+        "blockApplicationsEnabled": {
+          "description": "Whether applications other than the ones configured in applications are blocked from being installed. When set, applications that were installed under a previous policy but no longer appear in the policy are automatically uninstalled.",
+          "type": "boolean"
+        },
+        "debuggingFeaturesAllowed": {
+          "description": "Whether the user is allowed to enable debugging features.",
           "type": "boolean"
         }
       },
@@ -1963,6 +2157,7 @@
           "description": "The required password quality.",
           "enum": [
             "PASSWORD_QUALITY_UNSPECIFIED",
+            "BIOMETRIC_WEAK",
             "SOMETHING",
             "NUMERIC",
             "NUMERIC_COMPLEX",
@@ -1972,6 +2167,7 @@
           ],
           "enumDescriptions": [
             "There are no requirements for the password.",
+            "There must be at least low-security biometric recognition technology to secure the device. This includes technologies that can recognize the identity of an individual to about a 3 digit PIN (false detection is less than 1 in 1,000).",
             "There must be a password, but there are no restrictions on its characters.",
             "The password must contain numeric characters.",
             "The password must contain numeric characters with no repeating (4444) or ordered (1234, 4321, 2468) sequences.",
@@ -2252,7 +2448,7 @@
       "id": "HardwareStatus"
     }
   },
-  "revision": "20171009",
+  "revision": "20171127",
   "basePath": "",
   "icons": {
     "x32": "http://www.google.com/images/icons/product/search-32.gif",

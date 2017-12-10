@@ -62,6 +62,9 @@ type MockCloudSpannerClient struct {
 	nice bool
 	// Client will stall on any requests.
 	freezed chan struct{}
+
+	// embed nil interface so updating proto with new methods don't fail the build
+	sppb.SpannerClient
 }
 
 // NewMockCloudSpannerClient creates new MockCloudSpannerClient instance.

@@ -34,11 +34,9 @@ func init() {
 	options.Register("s3", Config{})
 }
 
-const defaultPrefix = "restic"
-
 // ParseConfig parses the string s and extracts the s3 config. The two
 // supported configuration formats are s3://host/bucketname/prefix and
-// s3:host:bucketname/prefix. The host can also be a valid s3 region
+// s3:host/bucketname/prefix. The host can also be a valid s3 region
 // name. If no prefix is given the prefix "restic" will be used.
 func ParseConfig(s string) (interface{}, error) {
 	switch {
@@ -71,15 +69,15 @@ func ParseConfig(s string) (interface{}, error) {
 }
 
 func createConfig(endpoint string, p []string, useHTTP bool) (interface{}, error) {
-	var prefix string
-	switch {
-	case len(p) < 1:
+	if len(p) < 1 {
 		return nil, errors.New("s3: invalid format, host/region or bucket name not found")
-	case len(p) == 1 || p[1] == "":
-		prefix = defaultPrefix
-	default:
+	}
+
+	var prefix string
+	if len(p) > 1 && p[1] != "" {
 		prefix = path.Clean(p[1])
 	}
+
 	cfg := NewConfig()
 	cfg.Endpoint = endpoint
 	cfg.UseHTTP = useHTTP

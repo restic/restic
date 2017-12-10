@@ -440,9 +440,24 @@ var unmarshalTests = []struct {
 		map[string]*string{"foo": new(string)},
 	}, {
 		"foo: null",
+		map[string]*string{"foo": nil},
+	}, {
+		"foo: null",
 		map[string]string{"foo": ""},
 	}, {
 		"foo: null",
+		map[string]interface{}{"foo": nil},
+	},
+
+	// Support for ~
+	{
+		"foo: ~",
+		map[string]*string{"foo": nil},
+	}, {
+		"foo: ~",
+		map[string]string{"foo": ""},
+	}, {
+		"foo: ~",
 		map[string]interface{}{"foo": nil},
 	},
 

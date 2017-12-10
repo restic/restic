@@ -262,8 +262,8 @@ type About struct {
 }
 
 func (s *About) MarshalJSON() ([]byte, error) {
-	type noMethod About
-	raw := noMethod(*s)
+	type NoMethod About
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -301,8 +301,8 @@ type AboutStorageQuota struct {
 }
 
 func (s *AboutStorageQuota) MarshalJSON() ([]byte, error) {
-	type noMethod AboutStorageQuota
-	raw := noMethod(*s)
+	type NoMethod AboutStorageQuota
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -336,8 +336,8 @@ type AboutTeamDriveThemes struct {
 }
 
 func (s *AboutTeamDriveThemes) MarshalJSON() ([]byte, error) {
-	type noMethod AboutTeamDriveThemes
-	raw := noMethod(*s)
+	type NoMethod AboutTeamDriveThemes
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -390,8 +390,8 @@ type Change struct {
 }
 
 func (s *Change) MarshalJSON() ([]byte, error) {
-	type noMethod Change
-	raw := noMethod(*s)
+	type NoMethod Change
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -439,8 +439,8 @@ type ChangeList struct {
 }
 
 func (s *ChangeList) MarshalJSON() ([]byte, error) {
-	type noMethod ChangeList
-	raw := noMethod(*s)
+	type NoMethod ChangeList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -505,8 +505,8 @@ type Channel struct {
 }
 
 func (s *Channel) MarshalJSON() ([]byte, error) {
-	type noMethod Channel
-	raw := noMethod(*s)
+	type NoMethod Channel
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -581,8 +581,8 @@ type Comment struct {
 }
 
 func (s *Comment) MarshalJSON() ([]byte, error) {
-	type noMethod Comment
-	raw := noMethod(*s)
+	type NoMethod Comment
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -615,8 +615,8 @@ type CommentQuotedFileContent struct {
 }
 
 func (s *CommentQuotedFileContent) MarshalJSON() ([]byte, error) {
-	type noMethod CommentQuotedFileContent
-	raw := noMethod(*s)
+	type NoMethod CommentQuotedFileContent
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -659,8 +659,8 @@ type CommentList struct {
 }
 
 func (s *CommentList) MarshalJSON() ([]byte, error) {
-	type noMethod CommentList
-	raw := noMethod(*s)
+	type NoMethod CommentList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -918,8 +918,8 @@ type File struct {
 }
 
 func (s *File) MarshalJSON() ([]byte, error) {
-	type noMethod File
-	raw := noMethod(*s)
+	type NoMethod File
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1014,8 +1014,8 @@ type FileCapabilities struct {
 }
 
 func (s *FileCapabilities) MarshalJSON() ([]byte, error) {
-	type noMethod FileCapabilities
-	raw := noMethod(*s)
+	type NoMethod FileCapabilities
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1049,8 +1049,8 @@ type FileContentHints struct {
 }
 
 func (s *FileContentHints) MarshalJSON() ([]byte, error) {
-	type noMethod FileContentHints
-	raw := noMethod(*s)
+	type NoMethod FileContentHints
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1082,8 +1082,8 @@ type FileContentHintsThumbnail struct {
 }
 
 func (s *FileContentHintsThumbnail) MarshalJSON() ([]byte, error) {
-	type noMethod FileContentHintsThumbnail
-	raw := noMethod(*s)
+	type NoMethod FileContentHintsThumbnail
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1174,22 +1174,22 @@ type FileImageMediaMetadata struct {
 }
 
 func (s *FileImageMediaMetadata) MarshalJSON() ([]byte, error) {
-	type noMethod FileImageMediaMetadata
-	raw := noMethod(*s)
+	type NoMethod FileImageMediaMetadata
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *FileImageMediaMetadata) UnmarshalJSON(data []byte) error {
-	type noMethod FileImageMediaMetadata
+	type NoMethod FileImageMediaMetadata
 	var s1 struct {
 		Aperture         gensupport.JSONFloat64 `json:"aperture"`
 		ExposureBias     gensupport.JSONFloat64 `json:"exposureBias"`
 		ExposureTime     gensupport.JSONFloat64 `json:"exposureTime"`
 		FocalLength      gensupport.JSONFloat64 `json:"focalLength"`
 		MaxApertureValue gensupport.JSONFloat64 `json:"maxApertureValue"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1231,20 +1231,20 @@ type FileImageMediaMetadataLocation struct {
 }
 
 func (s *FileImageMediaMetadataLocation) MarshalJSON() ([]byte, error) {
-	type noMethod FileImageMediaMetadataLocation
-	raw := noMethod(*s)
+	type NoMethod FileImageMediaMetadataLocation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *FileImageMediaMetadataLocation) UnmarshalJSON(data []byte) error {
-	type noMethod FileImageMediaMetadataLocation
+	type NoMethod FileImageMediaMetadataLocation
 	var s1 struct {
 		Altitude  gensupport.JSONFloat64 `json:"altitude"`
 		Latitude  gensupport.JSONFloat64 `json:"latitude"`
 		Longitude gensupport.JSONFloat64 `json:"longitude"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1285,8 +1285,8 @@ type FileVideoMediaMetadata struct {
 }
 
 func (s *FileVideoMediaMetadata) MarshalJSON() ([]byte, error) {
-	type noMethod FileVideoMediaMetadata
-	raw := noMethod(*s)
+	type NoMethod FileVideoMediaMetadata
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1337,8 +1337,8 @@ type FileList struct {
 }
 
 func (s *FileList) MarshalJSON() ([]byte, error) {
-	type noMethod FileList
-	raw := noMethod(*s)
+	type NoMethod FileList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1378,8 +1378,8 @@ type GeneratedIds struct {
 }
 
 func (s *GeneratedIds) MarshalJSON() ([]byte, error) {
-	type noMethod GeneratedIds
-	raw := noMethod(*s)
+	type NoMethod GeneratedIds
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1468,8 +1468,8 @@ type Permission struct {
 }
 
 func (s *Permission) MarshalJSON() ([]byte, error) {
-	type noMethod Permission
-	raw := noMethod(*s)
+	type NoMethod Permission
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1516,8 +1516,8 @@ type PermissionTeamDrivePermissionDetails struct {
 }
 
 func (s *PermissionTeamDrivePermissionDetails) MarshalJSON() ([]byte, error) {
-	type noMethod PermissionTeamDrivePermissionDetails
-	raw := noMethod(*s)
+	type NoMethod PermissionTeamDrivePermissionDetails
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1561,8 +1561,8 @@ type PermissionList struct {
 }
 
 func (s *PermissionList) MarshalJSON() ([]byte, error) {
-	type noMethod PermissionList
-	raw := noMethod(*s)
+	type NoMethod PermissionList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1626,8 +1626,8 @@ type Reply struct {
 }
 
 func (s *Reply) MarshalJSON() ([]byte, error) {
-	type noMethod Reply
-	raw := noMethod(*s)
+	type NoMethod Reply
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1670,8 +1670,8 @@ type ReplyList struct {
 }
 
 func (s *ReplyList) MarshalJSON() ([]byte, error) {
-	type noMethod ReplyList
-	raw := noMethod(*s)
+	type NoMethod ReplyList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1747,8 +1747,8 @@ type Revision struct {
 }
 
 func (s *Revision) MarshalJSON() ([]byte, error) {
-	type noMethod Revision
-	raw := noMethod(*s)
+	type NoMethod Revision
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1791,8 +1791,8 @@ type RevisionList struct {
 }
 
 func (s *RevisionList) MarshalJSON() ([]byte, error) {
-	type noMethod RevisionList
-	raw := noMethod(*s)
+	type NoMethod RevisionList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1826,8 +1826,8 @@ type StartPageToken struct {
 }
 
 func (s *StartPageToken) MarshalJSON() ([]byte, error) {
-	type noMethod StartPageToken
-	raw := noMethod(*s)
+	type NoMethod StartPageToken
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1851,6 +1851,10 @@ type TeamDrive struct {
 	// only be set on a drive.teamdrives.update request that does not set
 	// themeId.
 	ColorRgb string `json:"colorRgb,omitempty"`
+
+	// CreatedTime: The time at which the Team Drive was created (RFC 3339
+	// date-time).
+	CreatedTime string `json:"createdTime,omitempty"`
 
 	// Id: The ID of this Team Drive which is also the ID of the top level
 	// folder for this Team Drive.
@@ -1895,8 +1899,8 @@ type TeamDrive struct {
 }
 
 func (s *TeamDrive) MarshalJSON() ([]byte, error) {
-	type noMethod TeamDrive
-	raw := noMethod(*s)
+	type NoMethod TeamDrive
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1948,20 +1952,20 @@ type TeamDriveBackgroundImageFile struct {
 }
 
 func (s *TeamDriveBackgroundImageFile) MarshalJSON() ([]byte, error) {
-	type noMethod TeamDriveBackgroundImageFile
-	raw := noMethod(*s)
+	type NoMethod TeamDriveBackgroundImageFile
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *TeamDriveBackgroundImageFile) UnmarshalJSON(data []byte) error {
-	type noMethod TeamDriveBackgroundImageFile
+	type NoMethod TeamDriveBackgroundImageFile
 	var s1 struct {
 		Width       gensupport.JSONFloat64 `json:"width"`
 		XCoordinate gensupport.JSONFloat64 `json:"xCoordinate"`
 		YCoordinate gensupport.JSONFloat64 `json:"yCoordinate"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -2048,8 +2052,8 @@ type TeamDriveCapabilities struct {
 }
 
 func (s *TeamDriveCapabilities) MarshalJSON() ([]byte, error) {
-	type noMethod TeamDriveCapabilities
-	raw := noMethod(*s)
+	type NoMethod TeamDriveCapabilities
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2092,8 +2096,8 @@ type TeamDriveList struct {
 }
 
 func (s *TeamDriveList) MarshalJSON() ([]byte, error) {
-	type noMethod TeamDriveList
-	raw := noMethod(*s)
+	type NoMethod TeamDriveList
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2138,8 +2142,8 @@ type User struct {
 }
 
 func (s *User) MarshalJSON() ([]byte, error) {
-	type noMethod User
-	raw := noMethod(*s)
+	type NoMethod User
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2246,7 +2250,7 @@ func (c *AboutGetCall) Do(opts ...googleapi.CallOption) (*About, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2389,7 +2393,7 @@ func (c *ChangesGetStartPageTokenCall) Do(opts ...googleapi.CallOption) (*StartP
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2597,7 +2601,7 @@ func (c *ChangesListCall) Do(opts ...googleapi.CallOption) (*ChangeList, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2847,7 +2851,7 @@ func (c *ChangesWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3134,7 +3138,7 @@ func (c *CommentsCreateCall) Do(opts ...googleapi.CallOption) (*Comment, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3392,7 +3396,7 @@ func (c *CommentsGetCall) Do(opts ...googleapi.CallOption) (*Comment, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3575,7 +3579,7 @@ func (c *CommentsListCall) Do(opts ...googleapi.CallOption) (*CommentList, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3756,7 +3760,7 @@ func (c *CommentsUpdateCall) Do(opts ...googleapi.CallOption) (*Comment, error) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3932,7 +3936,7 @@ func (c *FilesCopyCall) Do(opts ...googleapi.CallOption) (*File, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4195,7 +4199,7 @@ func (c *FilesCreateCall) Do(opts ...googleapi.CallOption) (*File, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4716,7 +4720,7 @@ func (c *FilesGenerateIdsCall) Do(opts ...googleapi.CallOption) (*GeneratedIds, 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4893,7 +4897,7 @@ func (c *FilesGetCall) Do(opts ...googleapi.CallOption) (*File, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5135,7 +5139,7 @@ func (c *FilesListCall) Do(opts ...googleapi.CallOption) (*FileList, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5461,7 +5465,7 @@ func (c *FilesUpdateCall) Do(opts ...googleapi.CallOption) (*File, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5680,7 +5684,7 @@ func (c *FilesWatchCall) Do(opts ...googleapi.CallOption) (*Channel, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5787,6 +5791,16 @@ func (c *PermissionsCreateCall) TransferOwnership(transferOwnership bool) *Permi
 	return c
 }
 
+// UseDomainAdminAccess sets the optional parameter
+// "useDomainAdminAccess": Whether the request should be treated as if
+// it was issued by a domain administrator; if set to true, then the
+// requester will be granted access if they are an administrator of the
+// domain to which the item belongs.
+func (c *PermissionsCreateCall) UseDomainAdminAccess(useDomainAdminAccess bool) *PermissionsCreateCall {
+	c.urlParams_.Set("useDomainAdminAccess", fmt.Sprint(useDomainAdminAccess))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -5868,7 +5882,7 @@ func (c *PermissionsCreateCall) Do(opts ...googleapi.CallOption) (*Permission, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5905,6 +5919,12 @@ func (c *PermissionsCreateCall) Do(opts ...googleapi.CallOption) (*Permission, e
 	//     "transferOwnership": {
 	//       "default": "false",
 	//       "description": "Whether to transfer ownership to the specified user and downgrade the current owner to a writer. This parameter is required as an acknowledgement of the side effect.",
+	//       "location": "query",
+	//       "type": "boolean"
+	//     },
+	//     "useDomainAdminAccess": {
+	//       "default": "false",
+	//       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -5947,6 +5967,16 @@ func (r *PermissionsService) Delete(fileId string, permissionId string) *Permiss
 // Whether the requesting application supports Team Drives.
 func (c *PermissionsDeleteCall) SupportsTeamDrives(supportsTeamDrives bool) *PermissionsDeleteCall {
 	c.urlParams_.Set("supportsTeamDrives", fmt.Sprint(supportsTeamDrives))
+	return c
+}
+
+// UseDomainAdminAccess sets the optional parameter
+// "useDomainAdminAccess": Whether the request should be treated as if
+// it was issued by a domain administrator; if set to true, then the
+// requester will be granted access if they are an administrator of the
+// domain to which the item belongs.
+func (c *PermissionsDeleteCall) UseDomainAdminAccess(useDomainAdminAccess bool) *PermissionsDeleteCall {
+	c.urlParams_.Set("useDomainAdminAccess", fmt.Sprint(useDomainAdminAccess))
 	return c
 }
 
@@ -6032,6 +6062,12 @@ func (c *PermissionsDeleteCall) Do(opts ...googleapi.CallOption) error {
 	//       "description": "Whether the requesting application supports Team Drives.",
 	//       "location": "query",
 	//       "type": "boolean"
+	//     },
+	//     "useDomainAdminAccess": {
+	//       "default": "false",
+	//       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "files/{fileId}/permissions/{permissionId}",
@@ -6067,6 +6103,16 @@ func (r *PermissionsService) Get(fileId string, permissionId string) *Permission
 // Whether the requesting application supports Team Drives.
 func (c *PermissionsGetCall) SupportsTeamDrives(supportsTeamDrives bool) *PermissionsGetCall {
 	c.urlParams_.Set("supportsTeamDrives", fmt.Sprint(supportsTeamDrives))
+	return c
+}
+
+// UseDomainAdminAccess sets the optional parameter
+// "useDomainAdminAccess": Whether the request should be treated as if
+// it was issued by a domain administrator; if set to true, then the
+// requester will be granted access if they are an administrator of the
+// domain to which the item belongs.
+func (c *PermissionsGetCall) UseDomainAdminAccess(useDomainAdminAccess bool) *PermissionsGetCall {
+	c.urlParams_.Set("useDomainAdminAccess", fmt.Sprint(useDomainAdminAccess))
 	return c
 }
 
@@ -6160,7 +6206,7 @@ func (c *PermissionsGetCall) Do(opts ...googleapi.CallOption) (*Permission, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6188,6 +6234,12 @@ func (c *PermissionsGetCall) Do(opts ...googleapi.CallOption) (*Permission, erro
 	//     "supportsTeamDrives": {
 	//       "default": "false",
 	//       "description": "Whether the requesting application supports Team Drives.",
+	//       "location": "query",
+	//       "type": "boolean"
+	//     },
+	//     "useDomainAdminAccess": {
+	//       "default": "false",
+	//       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -6247,6 +6299,16 @@ func (c *PermissionsListCall) PageToken(pageToken string) *PermissionsListCall {
 // Whether the requesting application supports Team Drives.
 func (c *PermissionsListCall) SupportsTeamDrives(supportsTeamDrives bool) *PermissionsListCall {
 	c.urlParams_.Set("supportsTeamDrives", fmt.Sprint(supportsTeamDrives))
+	return c
+}
+
+// UseDomainAdminAccess sets the optional parameter
+// "useDomainAdminAccess": Whether the request should be treated as if
+// it was issued by a domain administrator; if set to true, then the
+// requester will be granted access if they are an administrator of the
+// domain to which the item belongs.
+func (c *PermissionsListCall) UseDomainAdminAccess(useDomainAdminAccess bool) *PermissionsListCall {
+	c.urlParams_.Set("useDomainAdminAccess", fmt.Sprint(useDomainAdminAccess))
 	return c
 }
 
@@ -6339,7 +6401,7 @@ func (c *PermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionList,
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6373,6 +6435,12 @@ func (c *PermissionsListCall) Do(opts ...googleapi.CallOption) (*PermissionList,
 	//     "supportsTeamDrives": {
 	//       "default": "false",
 	//       "description": "Whether the requesting application supports Team Drives.",
+	//       "location": "query",
+	//       "type": "boolean"
+	//     },
+	//     "useDomainAdminAccess": {
+	//       "default": "false",
+	//       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -6458,6 +6526,16 @@ func (c *PermissionsUpdateCall) TransferOwnership(transferOwnership bool) *Permi
 	return c
 }
 
+// UseDomainAdminAccess sets the optional parameter
+// "useDomainAdminAccess": Whether the request should be treated as if
+// it was issued by a domain administrator; if set to true, then the
+// requester will be granted access if they are an administrator of the
+// domain to which the item belongs.
+func (c *PermissionsUpdateCall) UseDomainAdminAccess(useDomainAdminAccess bool) *PermissionsUpdateCall {
+	c.urlParams_.Set("useDomainAdminAccess", fmt.Sprint(useDomainAdminAccess))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -6540,7 +6618,7 @@ func (c *PermissionsUpdateCall) Do(opts ...googleapi.CallOption) (*Permission, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6580,6 +6658,12 @@ func (c *PermissionsUpdateCall) Do(opts ...googleapi.CallOption) (*Permission, e
 	//     "transferOwnership": {
 	//       "default": "false",
 	//       "description": "Whether to transfer ownership to the specified user and downgrade the current owner to a writer. This parameter is required as an acknowledgement of the side effect.",
+	//       "location": "query",
+	//       "type": "boolean"
+	//     },
+	//     "useDomainAdminAccess": {
+	//       "default": "false",
+	//       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the item belongs.",
 	//       "location": "query",
 	//       "type": "boolean"
 	//     }
@@ -6702,7 +6786,7 @@ func (c *RepliesCreateCall) Do(opts ...googleapi.CallOption) (*Reply, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6980,7 +7064,7 @@ func (c *RepliesGetCall) Do(opts ...googleapi.CallOption) (*Reply, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7165,7 +7249,7 @@ func (c *RepliesListCall) Do(opts ...googleapi.CallOption) (*ReplyList, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7351,7 +7435,7 @@ func (c *RepliesUpdateCall) Do(opts ...googleapi.CallOption) (*Reply, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7642,7 +7726,7 @@ func (c *RevisionsGetCall) Do(opts ...googleapi.CallOption) (*Revision, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7815,7 +7899,7 @@ func (c *RevisionsListCall) Do(opts ...googleapi.CallOption) (*RevisionList, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -7989,7 +8073,7 @@ func (c *RevisionsUpdateCall) Do(opts ...googleapi.CallOption) (*Revision, error
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8127,7 +8211,7 @@ func (c *TeamdrivesCreateCall) Do(opts ...googleapi.CallOption) (*TeamDrive, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8274,6 +8358,16 @@ func (r *TeamdrivesService) Get(teamDriveId string) *TeamdrivesGetCall {
 	return c
 }
 
+// UseDomainAdminAccess sets the optional parameter
+// "useDomainAdminAccess": Whether the request should be treated as if
+// it was issued by a domain administrator; if set to true, then the
+// requester will be granted access if they are an administrator of the
+// domain to which the Team Drive belongs.
+func (c *TeamdrivesGetCall) UseDomainAdminAccess(useDomainAdminAccess bool) *TeamdrivesGetCall {
+	c.urlParams_.Set("useDomainAdminAccess", fmt.Sprint(useDomainAdminAccess))
+	return c
+}
+
 // Fields allows partial responses to be retrieved. See
 // https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
 // for more information.
@@ -8363,7 +8457,7 @@ func (c *TeamdrivesGetCall) Do(opts ...googleapi.CallOption) (*TeamDrive, error)
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8380,6 +8474,12 @@ func (c *TeamdrivesGetCall) Do(opts ...googleapi.CallOption) (*TeamDrive, error)
 	//       "location": "path",
 	//       "required": true,
 	//       "type": "string"
+	//     },
+	//     "useDomainAdminAccess": {
+	//       "default": "false",
+	//       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then the requester will be granted access if they are an administrator of the domain to which the Team Drive belongs.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "teamdrives/{teamDriveId}",
@@ -8421,6 +8521,23 @@ func (c *TeamdrivesListCall) PageSize(pageSize int64) *TeamdrivesListCall {
 // Team Drives.
 func (c *TeamdrivesListCall) PageToken(pageToken string) *TeamdrivesListCall {
 	c.urlParams_.Set("pageToken", pageToken)
+	return c
+}
+
+// Q sets the optional parameter "q": Query string for searching Team
+// Drives.
+func (c *TeamdrivesListCall) Q(q string) *TeamdrivesListCall {
+	c.urlParams_.Set("q", q)
+	return c
+}
+
+// UseDomainAdminAccess sets the optional parameter
+// "useDomainAdminAccess": Whether the request should be treated as if
+// it was issued by a domain administrator; if set to true, then all
+// Team Drives of the domain in which the requester is an administrator
+// are returned.
+func (c *TeamdrivesListCall) UseDomainAdminAccess(useDomainAdminAccess bool) *TeamdrivesListCall {
+	c.urlParams_.Set("useDomainAdminAccess", fmt.Sprint(useDomainAdminAccess))
 	return c
 }
 
@@ -8510,7 +8627,7 @@ func (c *TeamdrivesListCall) Do(opts ...googleapi.CallOption) (*TeamDriveList, e
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -8532,6 +8649,17 @@ func (c *TeamdrivesListCall) Do(opts ...googleapi.CallOption) (*TeamDriveList, e
 	//       "description": "Page token for Team Drives.",
 	//       "location": "query",
 	//       "type": "string"
+	//     },
+	//     "q": {
+	//       "description": "Query string for searching Team Drives.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
+	//     "useDomainAdminAccess": {
+	//       "default": "false",
+	//       "description": "Whether the request should be treated as if it was issued by a domain administrator; if set to true, then all Team Drives of the domain in which the requester is an administrator are returned.",
+	//       "location": "query",
+	//       "type": "boolean"
 	//     }
 	//   },
 	//   "path": "teamdrives",
@@ -8667,7 +8795,7 @@ func (c *TeamdrivesUpdateCall) Do(opts ...googleapi.CallOption) (*TeamDrive, err
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

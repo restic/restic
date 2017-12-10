@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/index"
 	"github.com/restic/restic/internal/restic"
 
@@ -66,7 +67,7 @@ func rebuildIndex(ctx context.Context, repo restic.Repository, ignorePacks resti
 
 	id, err := idx.Save(ctx, repo, supersedes)
 	if err != nil {
-		return err
+		return errors.Fatalf("unable to save index, last error was: %v", err)
 	}
 
 	Verbosef("saved new index as %v\n", id.Str())

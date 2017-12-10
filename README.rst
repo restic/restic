@@ -1,4 +1,4 @@
-|Documentation| |Build Status| |Build status| |Report Card| |Say Thanks|
+|Documentation| |Build Status| |Build status| |Report Card| |Say Thanks| |TestCoverage|
 
 Introduction
 ------------
@@ -51,7 +51,7 @@ Therefore, restic supports the following backends for storing backups natively:
 
 - `Local directory <https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#local>`__
 - `sftp server (via SSH) <https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#sftp>`__
-- `HTTP REST server <https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#rest-server>`__ (`protocol <doc/rest_backend.rst>`__ `rest-server <https://github.com/restic/rest-server>`__)
+- `HTTP REST server <https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#rest-server>`__ (`protocol <doc/100_references.rst#rest-backend>`__ `rest-server <https://github.com/restic/rest-server>`__)
 - `AWS S3 <https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#amazon-s3>`__ (either from Amazon or using the `Minio <https://minio.io>`__ server)
 - `OpenStack Swift <https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#openstack-swift>`__
 - `BackBlaze B2 <https://restic.readthedocs.io/en/latest/030_preparing_a_new_repo.html#backblaze-b2>`__
@@ -107,7 +107,7 @@ the `development blog <https://restic.github.io/blog/>`__.
 License
 -------
 
-Restic is licensed under "BSD 2-Clause License". You can find the
+Restic is licensed under `BSD 2-Clause License <https://opensource.org/licenses/BSD-2-Clause>`__. You can find the
 complete text in ``LICENSE``.
 
 .. |Documentation| image:: https://readthedocs.org/projects/restic/badge/?version=latest
@@ -120,3 +120,5 @@ complete text in ``LICENSE``.
    :target: https://goreportcard.com/report/github.com/restic/restic
 .. |Say Thanks| image:: https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg
    :target: https://saythanks.io/to/restic
+.. |TestCoverage| image:: https://codecov.io/gh/restic/restic/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/restic/restic

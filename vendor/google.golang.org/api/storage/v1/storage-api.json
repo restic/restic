@@ -1,11 +1,11 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/wG6rmEvDnTlddzJg86OD2al2nik\"",
+ "etag": "\"YWOzh2SDasdU84ArJnpYek-OMdg/INmkTh2mO0thq3Agrhx1mHd0DoE\"",
  "discoveryVersion": "v1",
  "id": "storage:v1",
  "name": "storage",
  "version": "v1",
- "revision": "20171004",
+ "revision": "20171018",
  "title": "Cloud Storage JSON API",
  "description": "Stores and retrieves potentially large, immutable data objects.",
  "ownerDomain": "google.com",
@@ -1477,7 +1477,7 @@
       },
       "userProject": {
        "type": "string",
-       "description": "The project to be billed for this request",
+       "description": "The project to be billed for this request.",
        "location": "query"
       }
      },
@@ -2583,9 +2583,7 @@
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/devstorage.full_control",
       "https://www.googleapis.com/auth/devstorage.read_write"
-     ],
-     "supportsMediaDownload": true,
-     "useMediaDownloadService": true
+     ]
     },
     "copy": {
      "id": "storage.objects.copy",
@@ -2727,9 +2725,7 @@
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/devstorage.full_control",
       "https://www.googleapis.com/auth/devstorage.read_write"
-     ],
-     "supportsMediaDownload": true,
-     "useMediaDownloadService": true
+     ]
     },
     "delete": {
      "id": "storage.objects.delete",
@@ -3029,8 +3025,6 @@
       "https://www.googleapis.com/auth/devstorage.full_control",
       "https://www.googleapis.com/auth/devstorage.read_write"
      ],
-     "supportsMediaDownload": true,
-     "useMediaDownloadService": true,
      "supportsMediaUpload": true,
      "mediaUpload": {
       "accept": [
@@ -3126,7 +3120,7 @@
      "id": "storage.objects.patch",
      "path": "b/{bucket}/o/{object}",
      "httpMethod": "PATCH",
-     "description": "Updates an object's metadata. This method supports patch semantics.",
+     "description": "Patches an object's metadata.",
      "parameters": {
       "bucket": {
        "type": "string",
@@ -3206,7 +3200,7 @@
       },
       "userProject": {
        "type": "string",
-       "description": "The project to be billed for this request. Required for Requester Pays buckets.",
+       "description": "The project to be billed for this request, for Requester Pays buckets.",
        "location": "query"
       }
      },
@@ -3583,9 +3577,7 @@
      "scopes": [
       "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/devstorage.full_control"
-     ],
-     "supportsMediaDownload": true,
-     "useMediaDownloadService": true
+     ]
     },
     "watchAll": {
      "id": "storage.objects.watchAll",

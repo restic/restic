@@ -39,19 +39,48 @@ func NewRestorer(repo Repository, id ID) (*Restorer, error) {
 	return r, nil
 }
 
-func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, treeID ID, idx *HardlinkIndex) error {
+// restoreTo restores a tree from the repo to a destination. target is the path in
+// the file system, location within the snapshot.
+func (res *Restorer) restoreTo(ctx context.Context, target, location string, treeID ID, idx *HardlinkIndex) error {
+	debug.Log("%v %v %v", target, location, treeID.Str())
 	tree, err := res.repo.LoadTree(ctx, treeID)
 	if err != nil {
-		return res.Error(dir, nil, err)
+		debug.Log("error loading tree %v: %v", treeID.Str(), err)
+		return res.Error(location, nil, err)
 	}
 
 	for _, node := range tree.Nodes {
-		selectedForRestore, childMayBeSelected := res.SelectFilter(filepath.Join(dir, node.Name),
-			filepath.Join(dst, dir, node.Name), node)
+
+		// ensure that the node name does not contain anything that refers to a
+		// top-level directory.
+		nodeName := filepath.Base(filepath.Join(string(filepath.Separator), node.Name))
+		if nodeName != node.Name {
+			debug.Log("node %q has invalid name %q", node.Name, nodeName)
+			err := res.Error(location, node, errors.New("node has invalid name"))
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		nodeTarget := filepath.Join(target, nodeName)
+		nodeLocation := filepath.Join(location, nodeName)
+
+		if target == nodeTarget || !fs.HasPathPrefix(target, nodeTarget) {
+			debug.Log("target: %v %v", target, nodeTarget)
+			debug.Log("node %q has invalid target path %q", node.Name, nodeTarget)
+			err := res.Error(nodeLocation, node, errors.New("node has invalid path"))
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
+		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, nodeTarget, node)
 		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayBeSelected)
 
 		if selectedForRestore {
-			err = res.restoreNodeTo(ctx, node, dir, dst, idx)
+			err = res.restoreNodeTo(ctx, node, nodeTarget, nodeLocation, idx)
 			if err != nil {
 				return err
 			}
@@ -62,10 +91,9 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
 			}
 
-			subp := filepath.Join(dir, node.Name)
-			err = res.restoreTo(ctx, dst, subp, *node.Subtree, idx)
+			err = res.restoreTo(ctx, nodeTarget, nodeLocation, *node.Subtree, idx)
 			if err != nil {
-				err = res.Error(subp, node, err)
+				err = res.Error(nodeLocation, node, err)
 				if err != nil {
 					return err
 				}
@@ -74,7 +102,7 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 			if selectedForRestore {
 				// Restore directory timestamp at the end. If we would do it earlier, restoring files within
 				// the directory would overwrite the timestamp of the directory they are in.
-				err = node.RestoreTimestamps(filepath.Join(dst, dir, node.Name))
+				err = node.RestoreTimestamps(nodeTarget)
 				if err != nil {
 					return err
 				}
@@ -85,13 +113,12 @@ func (res *Restorer) restoreTo(ctx context.Context, dst string, dir string, tree
 	return nil
 }
 
-func (res *Restorer) restoreNodeTo(ctx context.Context, node *Node, dir string, dst string, idx *HardlinkIndex) error {
-	debug.Log("node %v, dir %v, dst %v", node.Name, dir, dst)
-	dstPath := filepath.Join(dst, dir, node.Name)
+func (res *Restorer) restoreNodeTo(ctx context.Context, node *Node, target, location string, idx *HardlinkIndex) error {
+	debug.Log("%v %v %v", node.Name, target, location)
 
-	err := node.CreateAt(ctx, dstPath, res.repo, idx)
+	err := node.CreateAt(ctx, target, res.repo, idx)
 	if err != nil {
-		debug.Log("node.CreateAt(%s) error %v", dstPath, err)
+		debug.Log("node.CreateAt(%s) error %v", target, err)
 	}
 
 	// Did it fail because of ENOENT?
@@ -99,21 +126,19 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *Node, dir string, 
 		debug.Log("create intermediate paths")
 
 		// Create parent directories and retry
-		err = fs.MkdirAll(filepath.Dir(dstPath), 0700)
+		err = fs.MkdirAll(filepath.Dir(target), 0700)
 		if err == nil || os.IsExist(errors.Cause(err)) {
-			err = node.CreateAt(ctx, dstPath, res.repo, idx)
+			err = node.CreateAt(ctx, target, res.repo, idx)
 		}
 	}
 
 	if err != nil {
 		debug.Log("error %v", err)
-		err = res.Error(dstPath, node, err)
+		err = res.Error(location, node, err)
 		if err != nil {
 			return err
 		}
 	}
-
-	debug.Log("successfully restored %v", node.Name)
 
 	return nil
 }
@@ -121,6 +146,14 @@ func (res *Restorer) restoreNodeTo(ctx context.Context, node *Node, dir string, 
 // RestoreTo creates the directories and files in the snapshot below dst.
 // Before an item is created, res.Filter is called.
 func (res *Restorer) RestoreTo(ctx context.Context, dst string) error {
+	var err error
+	if !filepath.IsAbs(dst) {
+		dst, err = filepath.Abs(dst)
+		if err != nil {
+			return errors.Wrap(err, "Abs")
+		}
+	}
+
 	idx := NewHardlinkIndex()
 	return res.restoreTo(ctx, dst, string(filepath.Separator), *res.sn.Tree, idx)
 }

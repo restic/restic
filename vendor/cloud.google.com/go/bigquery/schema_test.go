@@ -192,12 +192,12 @@ func TestSchemaConversion(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		bqSchema := tc.schema.asTableSchema()
+		bqSchema := tc.schema.toBQ()
 		if !testutil.Equal(bqSchema, tc.bqSchema) {
 			t.Errorf("converting to TableSchema: got:\n%v\nwant:\n%v",
 				pretty.Value(bqSchema), pretty.Value(tc.bqSchema))
 		}
-		schema := convertTableSchema(tc.bqSchema)
+		schema := bqToSchema(tc.bqSchema)
 		if !testutil.Equal(schema, tc.schema) {
 			t.Errorf("converting to Schema: got:\n%v\nwant:\n%v", schema, tc.schema)
 		}

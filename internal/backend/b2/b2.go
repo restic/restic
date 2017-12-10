@@ -41,10 +41,10 @@ func newClient(ctx context.Context, cfg Config, rt http.RoundTripper) (*b2.Clien
 }
 
 // Open opens a connection to the B2 service.
-func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Open(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("cfg %#v", cfg)
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	client, err := newClient(ctx, cfg, rt)
@@ -79,10 +79,10 @@ func Open(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 
 // Create opens a connection to the B2 service. If the bucket does not exist yet,
 // it is created.
-func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
+func Create(ctx context.Context, cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	debug.Log("cfg %#v", cfg)
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	client, err := newClient(ctx, cfg, rt)
@@ -115,7 +115,7 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 		sem:          sem,
 	}
 
-	present, err := be.Test(context.TODO(), restic.Handle{Type: restic.ConfigFile})
+	present, err := be.Test(ctx, restic.Handle{Type: restic.ConfigFile})
 	if err != nil {
 		return nil, err
 	}
@@ -135,31 +135,6 @@ func (be *b2Backend) SetListMaxItems(i int) {
 // Location returns the location for the backend.
 func (be *b2Backend) Location() string {
 	return be.cfg.Bucket
-}
-
-// wrapReader wraps an io.ReadCloser to run an additional function on Close.
-type wrapReader struct {
-	io.ReadCloser
-	eofSeen bool
-	f       func()
-}
-
-func (wr *wrapReader) Read(p []byte) (int, error) {
-	if wr.eofSeen {
-		return 0, io.EOF
-	}
-
-	n, err := wr.ReadCloser.Read(p)
-	if err == io.EOF {
-		wr.eofSeen = true
-	}
-	return n, err
-}
-
-func (wr *wrapReader) Close() error {
-	err := wr.ReadCloser.Close()
-	wr.f()
-	return err
 }
 
 // IsNotExist returns true if the error is caused by a non-existing file.
@@ -192,14 +167,7 @@ func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offs
 
 	if offset == 0 && length == 0 {
 		rd := obj.NewReader(ctx)
-		wrapper := &wrapReader{
-			ReadCloser: rd,
-			f: func() {
-				cancel()
-				be.sem.ReleaseToken()
-			},
-		}
-		return wrapper, nil
+		return be.sem.ReleaseTokenOnClose(rd, cancel), nil
 	}
 
 	// pass a negative length to NewRangeReader so that the remainder of the
@@ -209,14 +177,7 @@ func (be *b2Backend) Load(ctx context.Context, h restic.Handle, length int, offs
 	}
 
 	rd := obj.NewRangeReader(ctx, offset, int64(length))
-	wrapper := &wrapReader{
-		ReadCloser: rd,
-		f: func() {
-			cancel()
-			be.sem.ReleaseToken()
-		},
-	}
-	return wrapper, nil
+	return be.sem.ReleaseTokenOnClose(rd, cancel), nil
 }
 
 // Save stores data in the backend at the handle.

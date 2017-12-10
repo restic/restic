@@ -46,8 +46,8 @@ func init() {
 	flags.StringArrayVar(&lsOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`, when no snapshot ID is given")
 }
 
-func printTree(repo *repository.Repository, id *restic.ID, prefix string) error {
-	tree, err := repo.LoadTree(context.TODO(), *id)
+func printTree(ctx context.Context, repo *repository.Repository, id *restic.ID, prefix string) error {
+	tree, err := repo.LoadTree(ctx, *id)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func printTree(repo *repository.Repository, id *restic.ID, prefix string) error 
 		Printf("%s\n", formatNode(prefix, entry, lsOptions.ListLong))
 
 		if entry.Type == "dir" && entry.Subtree != nil {
-			if err = printTree(repo, entry.Subtree, filepath.Join(prefix, entry.Name)); err != nil {
+			if err = printTree(ctx, repo, entry.Subtree, filepath.Join(prefix, entry.Name)); err != nil {
 				return err
 			}
 		}
@@ -75,7 +75,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 		return err
 	}
 
-	if err = repo.LoadIndex(context.TODO()); err != nil {
+	if err = repo.LoadIndex(gopts.ctx); err != nil {
 		return err
 	}
 
@@ -84,7 +84,7 @@ func runLs(opts LsOptions, gopts GlobalOptions, args []string) error {
 	for sn := range FindFilteredSnapshots(ctx, repo, opts.Host, opts.Tags, opts.Paths, args) {
 		Verbosef("snapshot %s of %v at %s):\n", sn.ID().Str(), sn.Paths, sn.Time)
 
-		if err = printTree(repo, sn.Tree, string(filepath.Separator)); err != nil {
+		if err = printTree(gopts.ctx, repo, sn.Tree, string(filepath.Separator)); err != nil {
 			return err
 		}
 	}

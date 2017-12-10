@@ -68,17 +68,29 @@ func formatNode(prefix string, n *restic.Node, long bool) string {
 		return filepath.Join(prefix, n.Name)
 	}
 
+	var mode os.FileMode
+	var target string
+
 	switch n.Type {
 	case "file":
-		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			n.Mode, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name))
+		mode = 0
 	case "dir":
-		return fmt.Sprintf("%s %5d %5d %6d %s %s",
-			n.Mode|os.ModeDir, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name))
+		mode = os.ModeDir
 	case "symlink":
-		return fmt.Sprintf("%s %5d %5d %6d %s %s -> %s",
-			n.Mode|os.ModeSymlink, n.UID, n.GID, n.Size, n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name), n.LinkTarget)
-	default:
-		return fmt.Sprintf("<Node(%s) %s>", n.Type, n.Name)
+		mode = os.ModeSymlink
+		target = fmt.Sprintf(" -> %v", n.LinkTarget)
+	case "dev":
+		mode = os.ModeDevice
+	case "chardev":
+		mode = os.ModeDevice | os.ModeCharDevice
+	case "fifo":
+		mode = os.ModeNamedPipe
+	case "socket":
+		mode = os.ModeSocket
 	}
+
+	return fmt.Sprintf("%s %5d %5d %6d %s %s%s",
+		mode|n.Mode, n.UID, n.GID, n.Size,
+		n.ModTime.Format(TimeFormat), filepath.Join(prefix, n.Name),
+		target)
 }

@@ -76,7 +76,7 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(context.TODO(), repo, pw, repo.Key())
+	id, err := repository.AddKey(gopts.ctx, repo, pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -86,13 +86,13 @@ func addKey(gopts GlobalOptions, repo *repository.Repository) error {
 	return nil
 }
 
-func deleteKey(repo *repository.Repository, name string) error {
+func deleteKey(ctx context.Context, repo *repository.Repository, name string) error {
 	if name == repo.KeyName() {
 		return errors.Fatal("refusing to remove key currently used to access repository")
 	}
 
 	h := restic.Handle{Type: restic.KeyFile, Name: name}
-	err := repo.Backend().Remove(context.TODO(), h)
+	err := repo.Backend().Remove(ctx, h)
 	if err != nil {
 		return err
 	}
@@ -107,13 +107,13 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 		return err
 	}
 
-	id, err := repository.AddKey(context.TODO(), repo, pw, repo.Key())
+	id, err := repository.AddKey(gopts.ctx, repo, pw, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
 
 	h := restic.Handle{Type: restic.KeyFile, Name: repo.KeyName()}
-	err = repo.Backend().Remove(context.TODO(), h)
+	err = repo.Backend().Remove(gopts.ctx, h)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return deleteKey(repo, id)
+		return deleteKey(gopts.ctx, repo, id)
 	case "passwd":
 		lock, err := lockRepoExclusive(repo)
 		defer unlockRepo(lock)

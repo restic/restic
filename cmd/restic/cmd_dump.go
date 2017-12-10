@@ -162,7 +162,7 @@ func runDump(opts DumpOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	sn, err := restic.LoadSnapshot(context.TODO(), repo, id)
+	sn, err := restic.LoadSnapshot(gopts.ctx, repo, id)
 	if err != nil {
 		Exitf(2, "loading snapshot %q failed: %v", snapshotIDString, err)
 	}

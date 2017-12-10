@@ -29,10 +29,7 @@ mkdir -p $GOCLOUD_HOME
 
 # Move code into $GOPATH and get dependencies
 cp -R ./* $GOCLOUD_HOME
-cd $GOCLOUD_HOME
-go get -v ./...
-
-cd internal/kokoro
+cd $GOCLOUD_HOME/internal/kokoro
 # Don't print out encryption keys, etc
 set +x
 key=$(cat "$KOKORO_ARTIFACTS_DIR/keystore/72523_encrypted_ba2d6f7723ed_key")

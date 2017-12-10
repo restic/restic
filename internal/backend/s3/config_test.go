@@ -9,13 +9,13 @@ var configTests = []struct {
 	{"s3://eu-central-1/bucketname", Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "bucketname",
-		Prefix:      "restic",
+		Prefix:      "",
 		Connections: 5,
 	}},
 	{"s3://eu-central-1/bucketname/", Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "bucketname",
-		Prefix:      "restic",
+		Prefix:      "",
 		Connections: 5,
 	}},
 	{"s3://eu-central-1/bucketname/prefix/directory", Config{
@@ -33,13 +33,13 @@ var configTests = []struct {
 	{"s3:eu-central-1/foobar", Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "foobar",
-		Prefix:      "restic",
+		Prefix:      "",
 		Connections: 5,
 	}},
 	{"s3:eu-central-1/foobar/", Config{
 		Endpoint:    "eu-central-1",
 		Bucket:      "foobar",
-		Prefix:      "restic",
+		Prefix:      "",
 		Connections: 5,
 	}},
 	{"s3:eu-central-1/foobar/prefix/directory", Config{
@@ -57,26 +57,26 @@ var configTests = []struct {
 	{"s3:https://hostname:9999/foobar", Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "foobar",
-		Prefix:      "restic",
+		Prefix:      "",
 		Connections: 5,
 	}},
 	{"s3:https://hostname:9999/foobar/", Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "foobar",
-		Prefix:      "restic",
+		Prefix:      "",
 		Connections: 5,
 	}},
 	{"s3:http://hostname:9999/foobar", Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "foobar",
-		Prefix:      "restic",
+		Prefix:      "",
 		UseHTTP:     true,
 		Connections: 5,
 	}},
 	{"s3:http://hostname:9999/foobar/", Config{
 		Endpoint:    "hostname:9999",
 		Bucket:      "foobar",
-		Prefix:      "restic",
+		Prefix:      "",
 		UseHTTP:     true,
 		Connections: 5,
 	}},

@@ -49,11 +49,8 @@ func darwinCacheDir() (string, error) {
 	return filepath.Join(home, "Library", "Caches", "restic"), nil
 }
 
-// defaultCacheDir determines and creates the default cache directory for this
-// system.
-func defaultCacheDir() (string, error) {
-	var cachedir string
-	var err error
+// DefaultDir returns the default cache directory for the current OS.
+func DefaultDir() (cachedir string, err error) {
 	switch runtime.GOOS {
 	case "darwin":
 		cachedir, err = darwinCacheDir()
@@ -63,15 +60,20 @@ func defaultCacheDir() (string, error) {
 		// Default to XDG for Linux and any other OSes.
 		cachedir, err = xdgCacheDir()
 	}
+
 	if err != nil {
 		return "", err
 	}
 
+	return cachedir, nil
+}
+
+func mkdirCacheDir(cachedir string) error {
 	fi, err := fs.Stat(cachedir)
 	if os.IsNotExist(errors.Cause(err)) {
 		err = fs.MkdirAll(cachedir, 0700)
 		if err != nil {
-			return "", errors.Wrap(err, "MkdirAll")
+			return errors.Wrap(err, "MkdirAll")
 		}
 
 		fi, err = fs.Stat(cachedir)
@@ -79,12 +81,12 @@ func defaultCacheDir() (string, error) {
 	}
 
 	if err != nil {
-		return "", errors.Wrap(err, "Stat")
+		return errors.Wrap(err, "Stat")
 	}
 
 	if !fi.IsDir() {
-		return "", errors.Errorf("cache dir %v is not a directory", cachedir)
+		return errors.Errorf("cache dir %v is not a directory", cachedir)
 	}
 
-	return cachedir, nil
+	return nil
 }

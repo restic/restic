@@ -25,7 +25,6 @@ If you are using Mac OS X, you can install restic using the
 
 .. code-block:: console
 
-    $ brew tap restic/restic
     $ brew install restic
 
 Arch Linux

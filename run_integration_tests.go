@@ -484,16 +484,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	foundError := false
-	for _, f := range []func() error{env.Prepare, env.RunTests, env.Teardown} {
-		err := f()
-		if err != nil {
-			foundError = true
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		}
+	err := env.Prepare()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error preparing: %v\n", err)
+		os.Exit(1)
 	}
 
-	if foundError {
-		os.Exit(1)
+	err = env.RunTests()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error running tests: %v\n", err)
+		os.Exit(2)
+	}
+
+	err = env.Teardown()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error during teardown: %v\n", err)
+		os.Exit(3)
 	}
 }

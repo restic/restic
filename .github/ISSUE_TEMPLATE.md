@@ -25,7 +25,7 @@ This section should include at least:
 -->
 
 
-## What backend/server/service did you use?
+## What backend/server/service did you use to store the repository?
 
 
 ## Expected behavior

@@ -83,7 +83,9 @@ func (client UserMetricsKeysClient) CreateOrUpdatePreparer() (*http.Request, err
 // CreateOrUpdateSender sends the CreateOrUpdate request. The method will close the
 // http.Response Body if it receives an error.
 func (client UserMetricsKeysClient) CreateOrUpdateSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		azure.DoRetryWithRegistration(client.Client))
 }
 
 // CreateOrUpdateResponder handles the response to the CreateOrUpdate request. The method always
@@ -144,7 +146,9 @@ func (client UserMetricsKeysClient) DeletePreparer() (*http.Request, error) {
 // DeleteSender sends the Delete request. The method will close the
 // http.Response Body if it receives an error.
 func (client UserMetricsKeysClient) DeleteSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		azure.DoRetryWithRegistration(client.Client))
 }
 
 // DeleteResponder handles the response to the Delete request. The method always
@@ -205,7 +209,9 @@ func (client UserMetricsKeysClient) GetDefaultPreparer() (*http.Request, error) 
 // GetDefaultSender sends the GetDefault request. The method will close the
 // http.Response Body if it receives an error.
 func (client UserMetricsKeysClient) GetDefaultSender(req *http.Request) (*http.Response, error) {
-	return autorest.SendWithSender(client, req)
+	return autorest.SendWithSender(client,
+		req,
+		azure.DoRetryWithRegistration(client.Client))
 }
 
 // GetDefaultResponder handles the response to the GetDefault request. The method always

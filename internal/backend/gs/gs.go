@@ -204,13 +204,14 @@ func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err
 
 	debug.Log("Save %v at %v", h, objName)
 
+	be.sem.GetToken()
+
 	// Check key does not already exist
 	if _, err := be.service.Objects.Get(be.bucketName, objName).Do(); err == nil {
 		debug.Log("%v already exists", h)
+		be.sem.ReleaseToken()
 		return errors.New("key already exists")
 	}
-
-	be.sem.GetToken()
 
 	debug.Log("InsertObject(%v, %v)", be.bucketName, objName)
 
@@ -323,7 +324,10 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 
 	objName := be.Filename(h)
 
+	be.sem.GetToken()
 	obj, err := be.service.Objects.Get(be.bucketName, objName).Do()
+	be.sem.ReleaseToken()
+
 	if err != nil {
 		debug.Log("GetObject() err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "service.Objects.Get")
@@ -336,7 +340,11 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	found := false
 	objName := be.Filename(h)
+
+	be.sem.GetToken()
 	_, err := be.service.Objects.Get(be.bucketName, objName).Do()
+	be.sem.ReleaseToken()
+
 	if err == nil {
 		found = true
 	}
@@ -348,7 +356,10 @@ func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
 
+	be.sem.GetToken()
 	err := be.service.Objects.Delete(be.bucketName, objName).Do()
+	be.sem.ReleaseToken()
+
 	if er, ok := err.(*googleapi.Error); ok {
 		if er.Code == 404 {
 			err = nil
@@ -378,7 +389,10 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 
 		listReq := be.service.Objects.List(be.bucketName).Prefix(prefix).MaxResults(int64(be.listMaxItems))
 		for {
+			be.sem.GetToken()
 			obj, err := listReq.Do()
+			be.sem.ReleaseToken()
+
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error listing %v: %v\n", prefix, err)
 				return

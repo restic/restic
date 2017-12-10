@@ -227,13 +227,17 @@ func (be *Backend) Load(ctx context.Context, h restic.Handle, length int, offset
 }
 
 // Stat returns information about a blob.
-func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInfo, err error) {
+func (be *Backend) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, error) {
 	debug.Log("%v", h)
 
 	objName := be.Filename(h)
 	blob := be.container.GetBlobReference(objName)
 
-	if err := blob.GetProperties(nil); err != nil {
+	be.sem.GetToken()
+	err := blob.GetProperties(nil)
+	be.sem.ReleaseToken()
+
+	if err != nil {
 		debug.Log("blob.GetProperties err %v", err)
 		return restic.FileInfo{}, errors.Wrap(err, "blob.GetProperties")
 	}
@@ -244,7 +248,11 @@ func (be *Backend) Stat(ctx context.Context, h restic.Handle) (bi restic.FileInf
 // Test returns true if a blob of the given type and name exists in the backend.
 func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 	objName := be.Filename(h)
+
+	be.sem.GetToken()
 	found, err := be.container.GetBlobReference(objName).Exists()
+	be.sem.ReleaseToken()
+
 	if err != nil {
 		return false, err
 	}
@@ -254,7 +262,11 @@ func (be *Backend) Test(ctx context.Context, h restic.Handle) (bool, error) {
 // Remove removes the blob with the given name and type.
 func (be *Backend) Remove(ctx context.Context, h restic.Handle) error {
 	objName := be.Filename(h)
+
+	be.sem.GetToken()
 	_, err := be.container.GetBlobReference(objName).DeleteIfExists(nil)
+	be.sem.ReleaseToken()
+
 	debug.Log("Remove(%v) at %v -> err %v", h, objName, err)
 	return errors.Wrap(err, "client.RemoveObject")
 }
@@ -282,7 +294,10 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 		defer close(ch)
 
 		for {
+			be.sem.GetToken()
 			obj, err := be.container.ListBlobs(params)
+			be.sem.ReleaseToken()
+
 			if err != nil {
 				return
 			}

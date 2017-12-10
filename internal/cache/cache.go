@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/restic/restic/internal/debug"
@@ -84,10 +85,15 @@ func writeCachedirTag(dir string) error {
 // performReadahead returns true.
 func New(id string, basedir string) (c *Cache, err error) {
 	if basedir == "" {
-		basedir, err = defaultCacheDir()
+		basedir, err = DefaultDir()
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	err = mkdirCacheDir(basedir)
+	if err != nil {
+		return nil, err
 	}
 
 	// create base dir and tag it as a cache directory
@@ -109,6 +115,12 @@ func New(id string, basedir string) (c *Cache, err error) {
 
 	// create the repo cache dir if it does not exist yet
 	if err = fs.MkdirAll(cachedir, dirMode); err != nil {
+		return nil, err
+	}
+
+	// update the timestamp so that we can detect old cache dirs
+	err = updateTimestamp(cachedir)
+	if err != nil {
 		return nil, err
 	}
 
@@ -135,6 +147,53 @@ func New(id string, basedir string) (c *Cache, err error) {
 	}
 
 	return c, nil
+}
+
+// updateTimestamp sets the modification timestamp (mtime and atime) for the
+// directory d to the current time.
+func updateTimestamp(d string) error {
+	t := time.Now()
+	return fs.Chtimes(d, t, t)
+}
+
+const maxCacheAge = 30 * 24 * time.Hour
+
+// Old returns a list of cache directories with a modification time of more
+// than 30 days ago.
+func Old(basedir string) ([]string, error) {
+	var oldCacheDirs []string
+
+	f, err := fs.Open(basedir)
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := f.Readdir(-1)
+	if err != nil {
+		return nil, err
+	}
+
+	oldest := time.Now().Add(-maxCacheAge)
+	for _, fi := range entries {
+		if !fi.IsDir() {
+			continue
+		}
+
+		if !fi.ModTime().Before(oldest) {
+			continue
+		}
+
+		oldCacheDirs = append(oldCacheDirs, fi.Name())
+	}
+
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	debug.Log("%d old cache dirs found", len(oldCacheDirs))
+
+	return oldCacheDirs, nil
 }
 
 // errNoSuchFile is returned when a file is not cached.

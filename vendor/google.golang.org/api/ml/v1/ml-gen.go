@@ -213,8 +213,8 @@ type GoogleApi__HttpBody struct {
 }
 
 func (s *GoogleApi__HttpBody) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleApi__HttpBody
-	raw := noMethod(*s)
+	type NoMethod GoogleApi__HttpBody
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -246,18 +246,18 @@ type GoogleCloudMlV1HyperparameterOutputHyperparameterMetric struct {
 }
 
 func (s *GoogleCloudMlV1HyperparameterOutputHyperparameterMetric) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1HyperparameterOutputHyperparameterMetric
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1HyperparameterOutputHyperparameterMetric
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *GoogleCloudMlV1HyperparameterOutputHyperparameterMetric) UnmarshalJSON(data []byte) error {
-	type noMethod GoogleCloudMlV1HyperparameterOutputHyperparameterMetric
+	type NoMethod GoogleCloudMlV1HyperparameterOutputHyperparameterMetric
 	var s1 struct {
 		ObjectiveValue gensupport.JSONFloat64 `json:"objectiveValue"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -317,8 +317,8 @@ type GoogleCloudMlV1__AutoScaling struct {
 }
 
 func (s *GoogleCloudMlV1__AutoScaling) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__AutoScaling
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__AutoScaling
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -360,8 +360,8 @@ type GoogleCloudMlV1__GetConfigResponse struct {
 }
 
 func (s *GoogleCloudMlV1__GetConfigResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__GetConfigResponse
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__GetConfigResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -405,8 +405,8 @@ type GoogleCloudMlV1__HyperparameterOutput struct {
 }
 
 func (s *GoogleCloudMlV1__HyperparameterOutput) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__HyperparameterOutput
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__HyperparameterOutput
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -480,14 +480,12 @@ type GoogleCloudMlV1__HyperparameterSpec struct {
 }
 
 func (s *GoogleCloudMlV1__HyperparameterSpec) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__HyperparameterSpec
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__HyperparameterSpec
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // GoogleCloudMlV1__Job: Represents a training or prediction job.
-//
-// Next ID: 16
 type GoogleCloudMlV1__Job struct {
 	// CreateTime: Output only. When the job was created.
 	CreateTime string `json:"createTime,omitempty"`
@@ -499,8 +497,32 @@ type GoogleCloudMlV1__Job struct {
 	// cancellation.
 	ErrorMessage string `json:"errorMessage,omitempty"`
 
+	// Etag: `etag` is used for optimistic concurrency control as a way to
+	// help
+	// prevent simultaneous updates of a job from overwriting each other.
+	// It is strongly suggested that systems make use of the `etag` in
+	// the
+	// read-modify-write cycle to perform job updates in order to avoid
+	// race
+	// conditions: An `etag` is returned in the response to `GetJob`,
+	// and
+	// systems are expected to put that etag in the request to `UpdateJob`
+	// to
+	// ensure that their change will be applied to the same version of the
+	// job.
+	Etag string `json:"etag,omitempty"`
+
 	// JobId: Required. The user-specified id of the job.
 	JobId string `json:"jobId,omitempty"`
+
+	// Labels: Optional. One or more labels that you can add, to organize
+	// your jobs.
+	// Each label is a key-value pair, where both the key and the value
+	// are
+	// arbitrary strings that you supply.
+	// For more information, see the documentation on
+	// <a href="/ml-engine/docs/how-tos/resource-labels">using labels</a>.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// PredictionInput: Input parameters to create a prediction job.
 	PredictionInput *GoogleCloudMlV1__PredictionInput `json:"predictionInput,omitempty"`
@@ -556,8 +578,8 @@ type GoogleCloudMlV1__Job struct {
 }
 
 func (s *GoogleCloudMlV1__Job) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__Job
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__Job
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -594,8 +616,8 @@ type GoogleCloudMlV1__ListJobsResponse struct {
 }
 
 func (s *GoogleCloudMlV1__ListJobsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__ListJobsResponse
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__ListJobsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -632,8 +654,8 @@ type GoogleCloudMlV1__ListModelsResponse struct {
 }
 
 func (s *GoogleCloudMlV1__ListModelsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__ListModelsResponse
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__ListModelsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -670,8 +692,8 @@ type GoogleCloudMlV1__ListVersionsResponse struct {
 }
 
 func (s *GoogleCloudMlV1__ListVersionsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__ListVersionsResponse
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__ListVersionsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -704,8 +726,8 @@ type GoogleCloudMlV1__ManualScaling struct {
 }
 
 func (s *GoogleCloudMlV1__ManualScaling) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__ManualScaling
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__ManualScaling
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -716,8 +738,6 @@ func (s *GoogleCloudMlV1__ManualScaling) MarshalJSON() ([]byte, error) {
 // model ready to receive prediction requests. The model itself is just
 // a
 // container.
-//
-// Next ID: 8
 type GoogleCloudMlV1__Model struct {
 	// DefaultVersion: Output only. The default version of the model. This
 	// version will be used to
@@ -732,6 +752,30 @@ type GoogleCloudMlV1__Model struct {
 	// Description: Optional. The description specified for the model when
 	// it was created.
 	Description string `json:"description,omitempty"`
+
+	// Etag: `etag` is used for optimistic concurrency control as a way to
+	// help
+	// prevent simultaneous updates of a model from overwriting each
+	// other.
+	// It is strongly suggested that systems make use of the `etag` in
+	// the
+	// read-modify-write cycle to perform model updates in order to avoid
+	// race
+	// conditions: An `etag` is returned in the response to `GetModel`,
+	// and
+	// systems are expected to put that etag in the request to `UpdateModel`
+	// to
+	// ensure that their change will be applied to the model as intended.
+	Etag string `json:"etag,omitempty"`
+
+	// Labels: Optional. One or more labels that you can add, to organize
+	// your models.
+	// Each label is a key-value pair, where both the key and the value
+	// are
+	// arbitrary strings that you supply.
+	// For more information, see the documentation on
+	// <a href="/ml-engine/docs/how-tos/resource-labels">using labels</a>.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// Name: Required. The name specified for the model when it was
 	// created.
@@ -782,15 +826,13 @@ type GoogleCloudMlV1__Model struct {
 }
 
 func (s *GoogleCloudMlV1__Model) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__Model
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__Model
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 // GoogleCloudMlV1__OperationMetadata: Represents the metadata of the
 // long-running operation.
-//
-// Next ID: 9
 type GoogleCloudMlV1__OperationMetadata struct {
 	// CreateTime: The time the operation was submitted.
 	CreateTime string `json:"createTime,omitempty"`
@@ -801,6 +843,11 @@ type GoogleCloudMlV1__OperationMetadata struct {
 	// IsCancellationRequested: Indicates whether a request to cancel this
 	// operation has been made.
 	IsCancellationRequested bool `json:"isCancellationRequested,omitempty"`
+
+	// Labels: The user labels, inherited from the model or the model
+	// version being
+	// operated on.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// ModelName: Contains the name of the model associated with the
 	// operation.
@@ -815,7 +862,12 @@ type GoogleCloudMlV1__OperationMetadata struct {
 	//   "DELETE_MODEL" - An operation to delete an existing model.
 	//   "UPDATE_MODEL" - An operation to update an existing model.
 	//   "UPDATE_VERSION" - An operation to update an existing version.
+	//   "UPDATE_CONFIG" - An operation to update project configuration.
 	OperationType string `json:"operationType,omitempty"`
+
+	// ProjectNumber: Contains the project number associated with the
+	// operation.
+	ProjectNumber int64 `json:"projectNumber,omitempty,string"`
 
 	// StartTime: The time operation processing started.
 	StartTime string `json:"startTime,omitempty"`
@@ -841,8 +893,8 @@ type GoogleCloudMlV1__OperationMetadata struct {
 }
 
 func (s *GoogleCloudMlV1__OperationMetadata) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__OperationMetadata
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__OperationMetadata
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -938,19 +990,19 @@ type GoogleCloudMlV1__ParameterSpec struct {
 }
 
 func (s *GoogleCloudMlV1__ParameterSpec) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__ParameterSpec
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__ParameterSpec
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *GoogleCloudMlV1__ParameterSpec) UnmarshalJSON(data []byte) error {
-	type noMethod GoogleCloudMlV1__ParameterSpec
+	type NoMethod GoogleCloudMlV1__ParameterSpec
 	var s1 struct {
 		MaxValue gensupport.JSONFloat64 `json:"maxValue"`
 		MinValue gensupport.JSONFloat64 `json:"minValue"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -961,216 +1013,6 @@ func (s *GoogleCloudMlV1__ParameterSpec) UnmarshalJSON(data []byte) error {
 
 // GoogleCloudMlV1__PredictRequest: Request for predictions to be issued
 // against a trained model.
-//
-// The body of the request is a single JSON object with a single
-// top-level
-// field:
-//
-// <dl>
-//   <dt>instances</dt>
-//   <dd>A JSON array containing values representing the instances to
-// use for
-//       prediction.</dd>
-// </dl>
-//
-// The structure of each element of the instances list is determined by
-// your
-// model's input definition. Instances can include named inputs or can
-// contain
-// only unlabeled values.
-//
-// Not all data includes named inputs. Some instances will be
-// simple
-// JSON values (boolean, number, or string). However, instances are
-// often lists
-// of simple values, or complex nested lists. Here are some examples of
-// request
-// bodies:
-//
-// CSV data with each row encoded as a string value:
-// <pre>
-// {"instances": ["1.0,true,\\"x\\"",
-// "-2.0,false,\\"y\\""]}
-// </pre>
-// Plain text:
-// <pre>
-// {"instances": ["the quick brown fox", "la bruja le
-// dio"]}
-// </pre>
-// Sentences encoded as lists of words (vectors of strings):
-// <pre>
-// {
-//   "instances": [
-//     ["the","quick","brown"],
-//     ["la","bruja","le"],
-//     ...
-//   ]
-// }
-// </pre>
-// Floating point scalar values:
-// <pre>
-// {"instances": [0.0, 1.1, 2.2]}
-// </pre>
-// Vectors of integers:
-// <pre>
-// {
-//   "instances": [
-//     [0, 1, 2],
-//     [3, 4, 5],
-//     ...
-//   ]
-// }
-// </pre>
-// Tensors (in this case, two-dimensional tensors):
-// <pre>
-// {
-//   "instances": [
-//     [
-//       [0, 1, 2],
-//       [3, 4, 5]
-//     ],
-//     ...
-//   ]
-// }
-// </pre>
-// Images can be represented different ways. In this encoding scheme the
-// first
-// two dimensions represent the rows and columns of the image, and the
-// third
-// contains lists (vectors) of the R, G, and B values for each
-// pixel.
-// <pre>
-// {
-//   "instances": [
-//     [
-//       [
-//         [138, 30, 66],
-//         [130, 20, 56],
-//         ...
-//       ],
-//       [
-//         [126, 38, 61],
-//         [122, 24, 57],
-//         ...
-//       ],
-//       ...
-//     ],
-//     ...
-//   ]
-// }
-// </pre>
-// JSON strings must be encoded as UTF-8. To send binary data, you
-// must
-// base64-encode the data and mark it as binary. To mark a JSON
-// string
-// as binary, replace it with a JSON object with a single attribute
-// named `b64`:
-// <pre>{"b64": "..."} </pre>
-// For example:
-//
-// Two Serialized tf.Examples (fake data, for illustrative purposes
-// only):
-// <pre>
-// {"instances": [{"b64": "X5ad6u"}, {"b64": "IA9j4nx"}]}
-// </pre>
-// Two JPEG image byte strings (fake data, for illustrative purposes
-// only):
-// <pre>
-// {"instances": [{"b64": "ASa8asdf"}, {"b64": "JLK7ljk3"}]}
-// </pre>
-// If your data includes named references, format each instance as a
-// JSON object
-// with the named references as the keys:
-//
-// JSON input data to be preprocessed:
-// <pre>
-// {
-//   "instances": [
-//     {
-//       "a": 1.0,
-//       "b": true,
-//       "c": "x"
-//     },
-//     {
-//       "a": -2.0,
-//       "b": false,
-//       "c": "y"
-//     }
-//   ]
-// }
-// </pre>
-// Some models have an underlying TensorFlow graph that accepts multiple
-// input
-// tensors. In this case, you should use the names of JSON name/value
-// pairs to
-// identify the input tensors, as shown in the following exmaples:
-//
-// For a graph with input tensor aliases "tag" (string) and
-// "image"
-// (base64-encoded string):
-// <pre>
-// {
-//   "instances": [
-//     {
-//       "tag": "beach",
-//       "image": {"b64": "ASa8asdf"}
-//     },
-//     {
-//       "tag": "car",
-//       "image": {"b64": "JLK7ljk3"}
-//     }
-//   ]
-// }
-// </pre>
-// For a graph with input tensor aliases "tag" (string) and
-// "image"
-// (3-dimensional array of 8-bit ints):
-// <pre>
-// {
-//   "instances": [
-//     {
-//       "tag": "beach",
-//       "image": [
-//         [
-//           [138, 30, 66],
-//           [130, 20, 56],
-//           ...
-//         ],
-//         [
-//           [126, 38, 61],
-//           [122, 24, 57],
-//           ...
-//         ],
-//         ...
-//       ]
-//     },
-//     {
-//       "tag": "car",
-//       "image": [
-//         [
-//           [255, 0, 102],
-//           [255, 0, 97],
-//           ...
-//         ],
-//         [
-//           [254, 1, 101],
-//           [254, 2, 93],
-//           ...
-//         ],
-//         ...
-//       ]
-//     },
-//     ...
-//   ]
-// }
-// </pre>
-// If the call is successful, the response body will contain one
-// prediction
-// entry per instance in the request body. If prediction fails for
-// any
-// instance, the response body will contain no predictions and will
-// contian
-// a single error entry instead.
 type GoogleCloudMlV1__PredictRequest struct {
 	// HttpBody:
 	// Required. The prediction request body.
@@ -1194,8 +1036,8 @@ type GoogleCloudMlV1__PredictRequest struct {
 }
 
 func (s *GoogleCloudMlV1__PredictRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__PredictRequest
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__PredictRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1260,6 +1102,21 @@ type GoogleCloudMlV1__PredictionInput struct {
 	// such as when the model is specified by uri.
 	RuntimeVersion string `json:"runtimeVersion,omitempty"`
 
+	// SignatureName: Optional. The name of the signature defined in the
+	// SavedModel to use for
+	// this job. Please refer
+	// to
+	// [SavedModel](https://tensorflow.github.io/serving/serving_basic.htm
+	// l)
+	// for information about how to use signatures.
+	//
+	// Defaults
+	// to
+	// [DEFAULT_SERVING_SIGNATURE_DEF_KEY](https://www.tensorflow.org/api_
+	// docs/python/tf/saved_model/signature_constants)
+	// , which is "serving_default".
+	SignatureName string `json:"signatureName,omitempty"`
+
 	// Uri: Use this field if you want to specify a Google Cloud Storage
 	// path for
 	// the model to use.
@@ -1294,8 +1151,8 @@ type GoogleCloudMlV1__PredictionInput struct {
 }
 
 func (s *GoogleCloudMlV1__PredictionInput) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__PredictionInput
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__PredictionInput
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1333,18 +1190,18 @@ type GoogleCloudMlV1__PredictionOutput struct {
 }
 
 func (s *GoogleCloudMlV1__PredictionOutput) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__PredictionOutput
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__PredictionOutput
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *GoogleCloudMlV1__PredictionOutput) UnmarshalJSON(data []byte) error {
-	type noMethod GoogleCloudMlV1__PredictionOutput
+	type NoMethod GoogleCloudMlV1__PredictionOutput
 	var s1 struct {
 		NodeHours gensupport.JSONFloat64 `json:"nodeHours"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1420,16 +1277,39 @@ type GoogleCloudMlV1__TrainingInput struct {
 	//   <dd>
 	//   A machine equivalent to <code
 	// suppresswarning="true">standard</code> that
-	//   also includes a
+	//   also includes a single NVIDIA Tesla K80 GPU. See more about
 	//   <a href="/ml-engine/docs/how-tos/using-gpus">
-	//   GPU that you can use in your trainer</a>.
+	//   using GPUs for training your model</a>.
 	//   </dd>
 	//   <dt>complex_model_m_gpu</dt>
 	//   <dd>
 	//   A machine equivalent to
 	//   <code suppresswarning="true">complex_model_m</code> that also
 	// includes
-	//   four GPUs.
+	//   four NVIDIA Tesla K80 GPUs.
+	//   </dd>
+	//   <dt>complex_model_l_gpu</dt>
+	//   <dd>
+	//   A machine equivalent to
+	//   <code suppresswarning="true">complex_model_l</code> that also
+	// includes
+	//   eight NVIDIA Tesla K80 GPUs.
+	//   </dd>
+	//   <dt>standard_p100</dt>
+	//   <dd>
+	//   A machine equivalent to <code
+	// suppresswarning="true">standard</code> that
+	//   also includes a single NVIDIA Tesla P100 GPU. The availability of
+	// these
+	//   GPUs is in the Alpha launch stage.
+	//   </dd>
+	//   <dt>complex_model_m_p100</dt>
+	//   <dd>
+	//   A machine equivalent to
+	//   <code suppresswarning="true">complex_model_m</code> that also
+	// includes
+	//   four NVIDIA Tesla P100 GPUs. The availability of these GPUs is in
+	//   the Alpha launch stage.
 	//   </dd>
 	// </dl>
 	//
@@ -1469,6 +1349,11 @@ type GoogleCloudMlV1__TrainingInput struct {
 	// PythonModule: Required. The Python module name to run after
 	// installing the packages.
 	PythonModule string `json:"pythonModule,omitempty"`
+
+	// PythonVersion: Optional. The version of Python used in training. If
+	// not set, the default
+	// version is '2.7'.
+	PythonVersion string `json:"pythonVersion,omitempty"`
 
 	// Region: Required. The Google Compute Engine region to run the
 	// training job in.
@@ -1571,8 +1456,8 @@ type GoogleCloudMlV1__TrainingInput struct {
 }
 
 func (s *GoogleCloudMlV1__TrainingInput) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__TrainingInput
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__TrainingInput
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1614,18 +1499,18 @@ type GoogleCloudMlV1__TrainingOutput struct {
 }
 
 func (s *GoogleCloudMlV1__TrainingOutput) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__TrainingOutput
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__TrainingOutput
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *GoogleCloudMlV1__TrainingOutput) UnmarshalJSON(data []byte) error {
-	type noMethod GoogleCloudMlV1__TrainingOutput
+	type NoMethod GoogleCloudMlV1__TrainingOutput
 	var s1 struct {
 		ConsumedMLUnits gensupport.JSONFloat64 `json:"consumedMLUnits"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1644,7 +1529,6 @@ func (s *GoogleCloudMlV1__TrainingOutput) UnmarshalJSON(data []byte) error {
 // [projects.models.versions.list](/ml-engine/reference/rest/v1/p
 // rojects.models.versions/list).
 //
-// Next ID: 19
 // LINT.IfChange
 type GoogleCloudMlV1__Version struct {
 	// AutoScaling: Automatically scale the number of nodes used to serve
@@ -1686,6 +1570,21 @@ type GoogleCloudMlV1__Version struct {
 	// cancellation.
 	ErrorMessage string `json:"errorMessage,omitempty"`
 
+	// Etag: `etag` is used for optimistic concurrency control as a way to
+	// help
+	// prevent simultaneous updates of a model from overwriting each
+	// other.
+	// It is strongly suggested that systems make use of the `etag` in
+	// the
+	// read-modify-write cycle to perform model updates in order to avoid
+	// race
+	// conditions: An `etag` is returned in the response to `GetVersion`,
+	// and
+	// systems are expected to put that etag in the request to
+	// `UpdateVersion` to
+	// ensure that their change will be applied to the model as intended.
+	Etag string `json:"etag,omitempty"`
+
 	// IsDefault: Output only. If true, this version will be used to handle
 	// prediction
 	// requests that do not specify a version.
@@ -1695,6 +1594,15 @@ type GoogleCloudMlV1__Version struct {
 	// [projects.methods.versions.setDefault](/ml-engine/reference/re
 	// st/v1/projects.models.versions/setDefault).
 	IsDefault bool `json:"isDefault,omitempty"`
+
+	// Labels: Optional. One or more labels that you can add, to organize
+	// your model
+	// versions. Each label is a key-value pair, where both the key and the
+	// value
+	// are arbitrary strings that you supply.
+	// For more information, see the documentation on
+	// <a href="/ml-engine/docs/how-tos/resource-labels">using labels</a>.
+	Labels map[string]string `json:"labels,omitempty"`
 
 	// LastUseTime: Output only. The time the version was last used for
 	// prediction.
@@ -1758,8 +1666,8 @@ type GoogleCloudMlV1__Version struct {
 }
 
 func (s *GoogleCloudMlV1__Version) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleCloudMlV1__Version
-	raw := noMethod(*s)
+	type NoMethod GoogleCloudMlV1__Version
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1855,8 +1763,8 @@ type GoogleIamV1__AuditConfig struct {
 }
 
 func (s *GoogleIamV1__AuditConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleIamV1__AuditConfig
-	raw := noMethod(*s)
+	type NoMethod GoogleIamV1__AuditConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1916,8 +1824,8 @@ type GoogleIamV1__AuditLogConfig struct {
 }
 
 func (s *GoogleIamV1__AuditLogConfig) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleIamV1__AuditLogConfig
-	raw := noMethod(*s)
+	type NoMethod GoogleIamV1__AuditLogConfig
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1991,8 +1899,8 @@ type GoogleIamV1__Binding struct {
 }
 
 func (s *GoogleIamV1__Binding) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleIamV1__Binding
-	raw := noMethod(*s)
+	type NoMethod GoogleIamV1__Binding
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2088,8 +1996,8 @@ type GoogleIamV1__Policy struct {
 }
 
 func (s *GoogleIamV1__Policy) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleIamV1__Policy
-	raw := noMethod(*s)
+	type NoMethod GoogleIamV1__Policy
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2131,8 +2039,8 @@ type GoogleIamV1__SetIamPolicyRequest struct {
 }
 
 func (s *GoogleIamV1__SetIamPolicyRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleIamV1__SetIamPolicyRequest
-	raw := noMethod(*s)
+	type NoMethod GoogleIamV1__SetIamPolicyRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2166,8 +2074,8 @@ type GoogleIamV1__TestIamPermissionsRequest struct {
 }
 
 func (s *GoogleIamV1__TestIamPermissionsRequest) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleIamV1__TestIamPermissionsRequest
-	raw := noMethod(*s)
+	type NoMethod GoogleIamV1__TestIamPermissionsRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2201,8 +2109,8 @@ type GoogleIamV1__TestIamPermissionsResponse struct {
 }
 
 func (s *GoogleIamV1__TestIamPermissionsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleIamV1__TestIamPermissionsResponse
-	raw := noMethod(*s)
+	type NoMethod GoogleIamV1__TestIamPermissionsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2238,8 +2146,8 @@ type GoogleLongrunning__ListOperationsResponse struct {
 }
 
 func (s *GoogleLongrunning__ListOperationsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleLongrunning__ListOperationsResponse
-	raw := noMethod(*s)
+	type NoMethod GoogleLongrunning__ListOperationsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2313,8 +2221,8 @@ type GoogleLongrunning__Operation struct {
 }
 
 func (s *GoogleLongrunning__Operation) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleLongrunning__Operation
-	raw := noMethod(*s)
+	type NoMethod GoogleLongrunning__Operation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2450,8 +2358,8 @@ type GoogleRpc__Status struct {
 }
 
 func (s *GoogleRpc__Status) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleRpc__Status
-	raw := noMethod(*s)
+	type NoMethod GoogleRpc__Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2504,8 +2412,8 @@ type GoogleType__Expr struct {
 }
 
 func (s *GoogleType__Expr) MarshalJSON() ([]byte, error) {
-	type noMethod GoogleType__Expr
-	raw := noMethod(*s)
+	type NoMethod GoogleType__Expr
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2623,7 +2531,7 @@ func (c *ProjectsGetConfigCall) Do(opts ...googleapi.CallOption) (*GoogleCloudMl
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -2667,8 +2575,10 @@ type ProjectsPredictCall struct {
 }
 
 // Predict: Performs prediction on the data in the request.
-//
-// **** REMOVE FROM GENERATED DOCUMENTATION
+// Cloud ML Engine implements a custom `predict` verb on top of an HTTP
+// POST
+// method. For details of the format, see the **guide to the
+// [predict request format](/ml-engine/docs/v1/predict-request)**.
 func (r *ProjectsService) Predict(name string, googlecloudmlv1__predictrequest *GoogleCloudMlV1__PredictRequest) *ProjectsPredictCall {
 	c := &ProjectsPredictCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -2757,12 +2667,12 @@ func (c *ProjectsPredictCall) Do(opts ...googleapi.CallOption) (*GoogleApi__Http
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
 	// {
-	//   "description": "Performs prediction on the data in the request.\n\n**** REMOVE FROM GENERATED DOCUMENTATION",
+	//   "description": "Performs prediction on the data in the request.\nCloud ML Engine implements a custom `predict` verb on top of an HTTP POST\nmethod. For details of the format, see the **guide to the\n[predict request format](/ml-engine/docs/v1/predict-request)**.",
 	//   "flatPath": "v1/projects/{projectsId}:predict",
 	//   "httpMethod": "POST",
 	//   "id": "ml.projects.predict",
@@ -2892,7 +2802,7 @@ func (c *ProjectsJobsCancelCall) Do(opts ...googleapi.CallOption) (*GoogleProtob
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3027,7 +2937,7 @@ func (c *ProjectsJobsCreateCall) Do(opts ...googleapi.CallOption) (*GoogleCloudM
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3169,7 +3079,7 @@ func (c *ProjectsJobsGetCall) Do(opts ...googleapi.CallOption) (*GoogleCloudMlV1
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3311,7 +3221,7 @@ func (c *ProjectsJobsGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Google
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3481,7 +3391,7 @@ func (c *ProjectsJobsListCall) Do(opts ...googleapi.CallOption) (*GoogleCloudMlV
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3548,6 +3458,178 @@ func (c *ProjectsJobsListCall) Pages(ctx context.Context, f func(*GoogleCloudMlV
 		}
 		c.PageToken(x.NextPageToken)
 	}
+}
+
+// method id "ml.projects.jobs.patch":
+
+type ProjectsJobsPatchCall struct {
+	s                    *Service
+	name                 string
+	googlecloudmlv1__job *GoogleCloudMlV1__Job
+	urlParams_           gensupport.URLParams
+	ctx_                 context.Context
+	header_              http.Header
+}
+
+// Patch: Updates a specific job resource.
+//
+// Currently the only supported fields to update are `labels`.
+func (r *ProjectsJobsService) Patch(name string, googlecloudmlv1__job *GoogleCloudMlV1__Job) *ProjectsJobsPatchCall {
+	c := &ProjectsJobsPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.name = name
+	c.googlecloudmlv1__job = googlecloudmlv1__job
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": Required.
+// Specifies the path, relative to `Job`, of the field to update.
+// To adopt etag mechanism, include `etag` field in the mask, and
+// include the
+// `etag` value in your job resource.
+//
+// For example, to change the labels of a job, the `update_mask`
+// parameter
+// would be specified as `labels`, `etag`, and the
+// `PATCH` request body would specify the new value, as follows:
+//     {
+//       "labels": {
+//          "owner": "Google",
+//          "color": "Blue"
+//       }
+//       "etag": "33a64df551425fcc55e4d42a148795d9f25f89d4"
+//     }
+// If `etag` matches the one on the server, the labels of the job will
+// be
+// replaced with the given ones, and the server end `etag` will
+// be
+// recalculated.
+//
+// Currently the only supported update masks are `labels` and `etag`.
+func (c *ProjectsJobsPatchCall) UpdateMask(updateMask string) *ProjectsJobsPatchCall {
+	c.urlParams_.Set("updateMask", updateMask)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsJobsPatchCall) Fields(s ...googleapi.Field) *ProjectsJobsPatchCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsJobsPatchCall) Context(ctx context.Context) *ProjectsJobsPatchCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsJobsPatchCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsJobsPatchCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googlecloudmlv1__job)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v1/{+name}")
+	urls += "?" + c.urlParams_.Encode()
+	req, _ := http.NewRequest("PATCH", urls, body)
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"name": c.name,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "ml.projects.jobs.patch" call.
+// Exactly one of *GoogleCloudMlV1__Job or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *GoogleCloudMlV1__Job.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsJobsPatchCall) Do(opts ...googleapi.CallOption) (*GoogleCloudMlV1__Job, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &GoogleCloudMlV1__Job{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Updates a specific job resource.\n\nCurrently the only supported fields to update are `labels`.",
+	//   "flatPath": "v1/projects/{projectsId}/jobs/{jobsId}",
+	//   "httpMethod": "PATCH",
+	//   "id": "ml.projects.jobs.patch",
+	//   "parameterOrder": [
+	//     "name"
+	//   ],
+	//   "parameters": {
+	//     "name": {
+	//       "description": "Required. The job name.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+/jobs/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "updateMask": {
+	//       "description": "Required. Specifies the path, relative to `Job`, of the field to update.\nTo adopt etag mechanism, include `etag` field in the mask, and include the\n`etag` value in your job resource.\n\nFor example, to change the labels of a job, the `update_mask` parameter\nwould be specified as `labels`, `etag`, and the\n`PATCH` request body would specify the new value, as follows:\n    {\n      \"labels\": {\n         \"owner\": \"Google\",\n         \"color\": \"Blue\"\n      }\n      \"etag\": \"33a64df551425fcc55e4d42a148795d9f25f89d4\"\n    }\nIf `etag` matches the one on the server, the labels of the job will be\nreplaced with the given ones, and the server end `etag` will be\nrecalculated.\n\nCurrently the only supported update masks are `labels` and `etag`.",
+	//       "format": "google-fieldmask",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v1/{+name}",
+	//   "request": {
+	//     "$ref": "GoogleCloudMlV1__Job"
+	//   },
+	//   "response": {
+	//     "$ref": "GoogleCloudMlV1__Job"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform"
+	//   ]
+	// }
+
 }
 
 // method id "ml.projects.jobs.setIamPolicy":
@@ -3652,7 +3734,7 @@ func (c *ProjectsJobsSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Google
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3798,7 +3880,7 @@ func (c *ProjectsJobsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) (*
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -3941,7 +4023,7 @@ func (c *ProjectsModelsCreateCall) Do(opts ...googleapi.CallOption) (*GoogleClou
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4076,7 +4158,7 @@ func (c *ProjectsModelsDeleteCall) Do(opts ...googleapi.CallOption) (*GoogleLong
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4219,7 +4301,7 @@ func (c *ProjectsModelsGetCall) Do(opts ...googleapi.CallOption) (*GoogleCloudMl
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4361,7 +4443,7 @@ func (c *ProjectsModelsGetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Goog
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4412,6 +4494,13 @@ type ProjectsModelsListCall struct {
 func (r *ProjectsModelsService) List(parent string) *ProjectsModelsListCall {
 	c := &ProjectsModelsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
+	return c
+}
+
+// Filter sets the optional parameter "filter": Specifies the subset of
+// models to retrieve.
+func (c *ProjectsModelsListCall) Filter(filter string) *ProjectsModelsListCall {
+	c.urlParams_.Set("filter", filter)
 	return c
 }
 
@@ -4528,7 +4617,7 @@ func (c *ProjectsModelsListCall) Do(opts ...googleapi.CallOption) (*GoogleCloudM
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4541,6 +4630,11 @@ func (c *ProjectsModelsListCall) Do(opts ...googleapi.CallOption) (*GoogleCloudM
 	//     "parent"
 	//   ],
 	//   "parameters": {
+	//     "filter": {
+	//       "description": "Optional. Specifies the subset of models to retrieve.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "pageSize": {
 	//       "description": "Optional. The number of models to retrieve per \"page\" of results. If there\nare more remaining results than this number, the response message will\ncontain a valid value in the `next_page_token` field.\n\nThe default value is 20, and the maximum page size is 100.",
 	//       "format": "int32",
@@ -4727,7 +4821,7 @@ func (c *ProjectsModelsPatchCall) Do(opts ...googleapi.CallOption) (*GoogleLongr
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -4870,7 +4964,7 @@ func (c *ProjectsModelsSetIamPolicyCall) Do(opts ...googleapi.CallOption) (*Goog
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5016,7 +5110,7 @@ func (c *ProjectsModelsTestIamPermissionsCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5165,7 +5259,7 @@ func (c *ProjectsModelsVersionsCreateCall) Do(opts ...googleapi.CallOption) (*Go
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5301,7 +5395,7 @@ func (c *ProjectsModelsVersionsDeleteCall) Do(opts ...googleapi.CallOption) (*Go
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5448,7 +5542,7 @@ func (c *ProjectsModelsVersionsGetCall) Do(opts ...googleapi.CallOption) (*Googl
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5501,6 +5595,13 @@ type ProjectsModelsVersionsListCall struct {
 func (r *ProjectsModelsVersionsService) List(parent string) *ProjectsModelsVersionsListCall {
 	c := &ProjectsModelsVersionsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
+	return c
+}
+
+// Filter sets the optional parameter "filter": Specifies the subset of
+// versions to retrieve.
+func (c *ProjectsModelsVersionsListCall) Filter(filter string) *ProjectsModelsVersionsListCall {
+	c.urlParams_.Set("filter", filter)
 	return c
 }
 
@@ -5617,7 +5718,7 @@ func (c *ProjectsModelsVersionsListCall) Do(opts ...googleapi.CallOption) (*Goog
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5630,6 +5731,11 @@ func (c *ProjectsModelsVersionsListCall) Do(opts ...googleapi.CallOption) (*Goog
 	//     "parent"
 	//   ],
 	//   "parameters": {
+	//     "filter": {
+	//       "description": "Optional. Specifies the subset of versions to retrieve.",
+	//       "location": "query",
+	//       "type": "string"
+	//     },
 	//     "pageSize": {
 	//       "description": "Optional. The number of versions to retrieve per \"page\" of results. If\nthere are more remaining results than this number, the response message\nwill contain a valid value in the `next_page_token` field.\n\nThe default value is 20, and the maximum page size is 100.",
 	//       "format": "int32",
@@ -5810,7 +5916,7 @@ func (c *ProjectsModelsVersionsPatchCall) Do(opts ...googleapi.CallOption) (*Goo
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -5962,7 +6068,7 @@ func (c *ProjectsModelsVersionsSetDefaultCall) Do(opts ...googleapi.CallOption) 
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6107,7 +6213,7 @@ func (c *ProjectsOperationsCancelCall) Do(opts ...googleapi.CallOption) (*Google
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6238,7 +6344,7 @@ func (c *ProjectsOperationsDeleteCall) Do(opts ...googleapi.CallOption) (*Google
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6381,7 +6487,7 @@ func (c *ProjectsOperationsGetCall) Do(opts ...googleapi.CallOption) (*GoogleLon
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -6559,7 +6665,7 @@ func (c *ProjectsOperationsListCall) Do(opts ...googleapi.CallOption) (*GoogleLo
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

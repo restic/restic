@@ -618,12 +618,12 @@ type Sysinfo_t struct {
 }
 
 type Utsname struct {
-	Sysname    [65]int8
-	Nodename   [65]int8
-	Release    [65]int8
-	Version    [65]int8
-	Machine    [65]int8
-	Domainname [65]int8
+	Sysname    [65]byte
+	Nodename   [65]byte
+	Release    [65]byte
+	Version    [65]byte
+	Machine    [65]byte
+	Domainname [65]byte
 }
 
 type Ustat_t struct {
@@ -643,6 +643,7 @@ type EpollEvent struct {
 
 const (
 	AT_FDCWD            = -0x64
+	AT_NO_AUTOMOUNT     = 0x800
 	AT_REMOVEDIR        = 0x200
 	AT_SYMLINK_FOLLOW   = 0x400
 	AT_SYMLINK_NOFOLLOW = 0x100

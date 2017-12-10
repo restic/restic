@@ -4,18 +4,91 @@ released version of restic from the perspective of the user.
 Important Changes in 0.X.Y
 ==========================
 
+ * We've disabled handling SIGPIPE again. Turns out, writing to broken TCP
+   connections also raised SIGPIPE, so restic exits on the first write to a
+   broken connection. Instead, restic should retry the request.
+   https://github.com/restic/restic/pull/1459
+   https://github.com/restic/restic/issues/1457
+   https://github.com/restic/restic/issues/1466
+
+ * The command `diff` was added, it allows comparing two snapshots and listing
+   all differences.
+   https://github.com/restic/restic/issues/11
+   https://github.com/restic/restic/issues/1460
+   https://github.com/restic/restic/pull/1462
+
+
+Small changes
+-------------
+
+ * We've added code to detect old cache directories of repositories that
+   haven't been used in a long time, restic now prints a note when it detects
+   that such dirs exist. Also, the option `--cleanup-cache` was added to
+   automatically remove such directories. That's not a problem because the
+   cache will be rebuild once a repo is accessed again.
+   https://github.com/restic/restic/pull/1436
+
+ * The cache directory on Windows and Darwin was not correct, instead the
+   directory `.cache` was used.
+   https://github.com/restic/restic/pull/1454
+
+ * By default, the access time for files and dirs is not saved any more. It is
+   not possible to reliably disable updating the access time during a backup,
+   so for the next backup the access time is different again. This means a lot
+   of metadata is saved. If you want to save the access time anyway, pass
+   `--with-atime` to the `backup` command.
+   https://github.com/restic/restic/pull/1452
+
+ * We've improved the s3 backend to work with DigitalOcean Spaces.
+   https://github.com/restic/restic/pull/1459
+   https://github.com/restic/restic/issues/1457
+
+ * The cancellation logic was improved, restic can now shut down cleanly when
+   requested to do so (e.g. via ctrl+c).
+   https://github.com/restic/restic/pull/1439
+
+Important Changes in 0.8.0
+==========================
+
+ * A vulnerability was found in the restic restorer, which allowed attackers in
+   special circumstances to restore files to a location outside of the target
+   directory. Due to the circumstances we estimate this to be a low-risk
+   vulnerability, but urge all users to upgrade to the latest version of restic.
+
+   Exploiting the vulnerability requires a Linux/Unix system which saves
+   backups via restic and a Windows systems which restores files from the repo.
+   In addition, the attackers need to be able to create create files with
+   arbitrary names which are then saved to the restic repo. For example, by
+   creating a file named "..\test.txt" (which is a perfectly legal filename on
+   Linux) and restoring a snapshot containing this file on Windows, it would be
+   written to the parent of the target directory.
+
+   We'd like to thank Tyler Spivey for reporting this responsibly!
+
+   https://github.com/restic/restic/pull/1445
+
+ * The s3 backend used the subdir `restic` within a bucket if no explicit path
+   after the bucket name was specified. Since this version, restic does not use
+   this default path any more. If you created a repo on s3 in a bucket without
+   specifying a path within the bucket, you need to add `/restic` at the end of
+   the repository specification to access your repo: `s3:s3.amazonaws.com/bucket/restic`
+   https://github.com/restic/restic/issues/1292
+   https://github.com/restic/restic/pull/1437
+
  * We've added a local cache for metadata so that restic doesn't need to load
    all metadata (snapshots, indexes, ...) from the repo each time it starts. By
    default the cache is active, but there's a new global option `--no-cache`
    that can be used to disable the cache. By deafult, the cache a standard
    cache folder for the OS, which can be overridden with `--cache-dir`.  The
    cache will automatically populate, indexes and snapshots are saved as they
-   are loaded.
+   are loaded. Cache directories for repos that haven't been used recently can
+   automatically be removed by restic with the `--cleanup-cache` option.
    https://github.com/restic/restic/pull/1040
    https://github.com/restic/restic/issues/29
    https://github.com/restic/restic/issues/738
    https://github.com/restic/restic/issues/282
    https://github.com/restic/restic/pull/1287
+   https://github.com/restic/restic/pull/1436
 
  * A related change was to by default create pack files in the repo that
    contain either data or metadata, not both mixed together. This allows easy

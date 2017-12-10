@@ -49,7 +49,7 @@ type FieldSchema struct {
 	Schema Schema
 }
 
-func (fs *FieldSchema) asTableFieldSchema() *bq.TableFieldSchema {
+func (fs *FieldSchema) toBQ() *bq.TableFieldSchema {
 	tfs := &bq.TableFieldSchema{
 		Description: fs.Description,
 		Name:        fs.Name,
@@ -63,21 +63,21 @@ func (fs *FieldSchema) asTableFieldSchema() *bq.TableFieldSchema {
 	} // else leave as default, which is interpreted as NULLABLE.
 
 	for _, f := range fs.Schema {
-		tfs.Fields = append(tfs.Fields, f.asTableFieldSchema())
+		tfs.Fields = append(tfs.Fields, f.toBQ())
 	}
 
 	return tfs
 }
 
-func (s Schema) asTableSchema() *bq.TableSchema {
+func (s Schema) toBQ() *bq.TableSchema {
 	var fields []*bq.TableFieldSchema
 	for _, f := range s {
-		fields = append(fields, f.asTableFieldSchema())
+		fields = append(fields, f.toBQ())
 	}
 	return &bq.TableSchema{Fields: fields}
 }
 
-func convertTableFieldSchema(tfs *bq.TableFieldSchema) *FieldSchema {
+func bqToFieldSchema(tfs *bq.TableFieldSchema) *FieldSchema {
 	fs := &FieldSchema{
 		Description: tfs.Description,
 		Name:        tfs.Name,
@@ -87,18 +87,18 @@ func convertTableFieldSchema(tfs *bq.TableFieldSchema) *FieldSchema {
 	}
 
 	for _, f := range tfs.Fields {
-		fs.Schema = append(fs.Schema, convertTableFieldSchema(f))
+		fs.Schema = append(fs.Schema, bqToFieldSchema(f))
 	}
 	return fs
 }
 
-func convertTableSchema(ts *bq.TableSchema) Schema {
+func bqToSchema(ts *bq.TableSchema) Schema {
 	if ts == nil {
 		return nil
 	}
 	var s Schema
 	for _, f := range ts.Fields {
-		s = append(s, convertTableFieldSchema(f))
+		s = append(s, bqToFieldSchema(f))
 	}
 	return s
 }

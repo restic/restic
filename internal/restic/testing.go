@@ -189,7 +189,7 @@ func TestCreateSnapshot(t testing.TB, repo Repository, at time.Time, depth int, 
 
 	t.Logf("saved snapshot %v", id.Str())
 
-	err = repo.Flush()
+	err = repo.Flush(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}

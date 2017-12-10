@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -65,6 +64,7 @@ type BackupOptions struct {
 	Hostname         string
 	FilesFrom        string
 	TimeStamp        string
+	WithAtime        bool
 }
 
 var backupOptions BackupOptions
@@ -86,6 +86,7 @@ func init() {
 	f.StringVar(&backupOptions.Hostname, "hostname", "", "set the `hostname` for the snapshot manually. To prevent an expensive rescan use the \"parent\" flag")
 	f.StringVar(&backupOptions.FilesFrom, "files-from", "", "read the files to backup from file (can be combined with file args)")
 	f.StringVar(&backupOptions.TimeStamp, "time", "", "time of the backup (ex. '2012-11-01 22:08:41') (default: now)")
+	f.BoolVar(&backupOptions.WithAtime, "with-atime", false, "store the atime for all files and directories")
 }
 
 func newScanProgress(gopts GlobalOptions) *restic.Progress {
@@ -254,7 +255,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return err
 	}
 
-	err = repo.LoadIndex(context.TODO())
+	err = repo.LoadIndex(gopts.ctx)
 	if err != nil {
 		return err
 	}
@@ -265,7 +266,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		Hostname:   opts.Hostname,
 	}
 
-	_, id, err := r.Archive(context.TODO(), opts.StdinFilename, os.Stdin, newArchiveStdinProgress(gopts))
+	_, id, err := r.Archive(gopts.ctx, opts.StdinFilename, os.Stdin, newArchiveStdinProgress(gopts))
 	if err != nil {
 		return err
 	}
@@ -372,9 +373,8 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		opts.ExcludeIfPresent = append(opts.ExcludeIfPresent, "CACHEDIR.TAG:Signature: 8a477f597d28d172789f06886806bc55")
 	}
 
-	rc := &rejectionCache{}
 	for _, spec := range opts.ExcludeIfPresent {
-		f, err := rejectIfPresent(spec, rc)
+		f, err := rejectIfPresent(spec)
 		if err != nil {
 			return err
 		}
@@ -403,7 +403,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		rejectFuncs = append(rejectFuncs, f)
 	}
 
-	err = repo.LoadIndex(context.TODO())
+	err = repo.LoadIndex(gopts.ctx)
 	if err != nil {
 		return err
 	}
@@ -422,7 +422,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 
 	// Find last snapshot to set it as parent, if not already set
 	if !opts.Force && parentSnapshotID == nil {
-		id, err := restic.FindLatestSnapshot(context.TODO(), repo, target, []restic.TagList{}, opts.Hostname)
+		id, err := restic.FindLatestSnapshot(gopts.ctx, repo, target, []restic.TagList{}, opts.Hostname)
 		if err == nil {
 			parentSnapshotID = &id
 		} else if err != restic.ErrNoSnapshotFound {
@@ -453,6 +453,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 	arch := archiver.New(repo)
 	arch.Excludes = opts.Excludes
 	arch.SelectFilter = selectFilter
+	arch.WithAccessTime = opts.WithAtime
 
 	arch.Warn = func(dir string, fi os.FileInfo, err error) {
 		// TODO: make ignoring errors configurable
@@ -467,7 +468,7 @@ func runBackup(opts BackupOptions, gopts GlobalOptions, args []string) error {
 		}
 	}
 
-	_, id, err := arch.Snapshot(context.TODO(), newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID, timeStamp)
+	_, id, err := arch.Snapshot(gopts.ctx, newArchiveProgress(gopts, stat), target, opts.Tags, opts.Hostname, parentSnapshotID, timeStamp)
 	if err != nil {
 		return err
 	}

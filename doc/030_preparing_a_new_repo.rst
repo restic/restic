@@ -135,10 +135,11 @@ are some more examples:
     $ restic -r rest:https://user:pass@host:8000/
     $ restic -r rest:https://user:pass@host:8000/my_backup_repo/
 
-If you use TLS, make sure your certificates are signed, 'cause restic
-client will refuse to communicate otherwise. It's easy to obtain such
-certificates today, thanks to free certificate authorities like `Let’s
-Encrypt <https://letsencrypt.org/>`__.
+If you use TLS, restic will use the system's CA certificates to verify the
+server certificate. When the verification fails, restic refuses to proceed and
+exits with an error. If you have your own self-signed certificate, or a custom
+CA certificate should be used for verification, you can pass restic the
+certificate filename via the `--cacert` option.
 
 REST server uses exactly the same directory structure as local backend,
 so you should be able to access it both locally and via HTTP, even
@@ -175,6 +176,15 @@ It is not possible at the moment to have restic create a new bucket in a
 different location, so you need to create it using a different program.
 Afterwards, the S3 server (``s3.amazonaws.com``) will redirect restic to
 the correct endpoint.
+
+Until version 0.8.0, restic used a default prefix of ``restic``, so the files
+in the bucket were placed in a directory named ``restic``. If you want to
+access a repository created with an older version of restic, specify the path
+after the bucket name like this:
+
+.. code-block:: console
+
+    $ restic -r s3:s3.amazonaws.com/bucket_name/restic [...]
 
 For an S3-compatible server that is not Amazon (like Minio, see below),
 or is only available via HTTP, you can specify the URL to the server
@@ -323,7 +333,7 @@ root path like this:
     created restic backend a934bac191 at azure:foo:/
     [...]
 
-The number of concurrent connections to the B2 service can be set with the
+The number of concurrent connections to the Azure Blob Storage service can be set with the
 `-o azure.connections=10`. By default, at most five parallel connections are
 established.
 

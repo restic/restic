@@ -16,18 +16,19 @@ Usage help is available:
       restic [command]
 
     Available Commands:
-      autocomplete  Generate shell autocompletion script
       backup        Create a new backup of files and/or directories
       cat           Print internal objects to stdout
       check         Check the repository for errors
-      dump          Dump data structures
+      dump          Print a backed-up file to stdout
       find          Find a file or directory
       forget        Remove snapshots from the repository
+      generate      Generate manual pages and auto-completion files (bash, zsh)
       help          Help about any command
       init          Initialize a new repository
       key           Manage keys (passwords)
-      list          List items in the repository
+      list          List objects in the repository
       ls            List files in a snapshot
+      migrate       Apply migrations
       mount         Mount the repository
       prune         Remove unneeded data from the repository
       rebuild-index Build a new index file
@@ -38,13 +39,21 @@ Usage help is available:
       version       Print version information
 
     Flags:
+          --cacert stringSlice     path to load root certificates from (default: use system certificates)
+          --cache-dir string       set the cache directory
+      -h, --help                   help for restic
           --json                   set output mode to JSON for commands that support it
+          --limit-download int     limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload int       limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache               do not use a local cache
           --no-lock                do not lock the repo, this allows some operations on read-only repos
-      -p, --password-file string   read the repository password from a file
+      -o, --option key=value       set extended option (key=value, can be specified multiple times)
+      -p, --password-file string   read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                  do not output comprehensive progress report
       -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
 
     Use "restic [command] --help" for more information about a command.
+
 
 Similar to programs such as ``git``, restic has a number of
 sub-commands. You can see these commands in the listing above. Each
@@ -62,21 +71,31 @@ command:
       restic backup [flags] FILE/DIR [FILE/DIR] ...
 
     Flags:
-      -e, --exclude pattern         exclude a pattern (can be specified multiple times)
-          --exclude-file string     read exclude patterns from a file
-          --files-from string       read the files to backup from file (can be combined with file args)
-      -f, --force                   force re-reading the target files/directories. Overrides the "parent" flag
-      -x, --one-file-system         Exclude other file systems
-          --parent string           use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
-          --stdin                   read backup from stdin
-          --stdin-filename string   file name to use when reading from stdin
-          --tag tag                 add a tag for the new snapshot (can be specified multiple times)
-          --time string             time of the backup (ex. '2012-11-01 22:08:41') (default: now)
+      -e, --exclude pattern                  exclude a pattern (can be specified multiple times)
+          --exclude-caches                   excludes cache directories that are marked with a CACHEDIR.TAG file
+          --exclude-file file                read exclude patterns from a file (can be specified multiple times)
+          --exclude-if-present stringArray   takes filename[:header], exclude contents of directories containing filename (except filename itself) if header of that file is as provided (can be specified multiple times)
+          --files-from string                read the files to backup from file (can be combined with file args)
+      -f, --force                            force re-reading the target files/directories (overrides the "parent" flag)
+      -h, --help                             help for backup
+          --hostname hostname                set the hostname for the snapshot manually. To prevent an expensive rescan use the "parent" flag
+      -x, --one-file-system                  exclude other file systems
+          --parent string                    use this parent snapshot (default: last snapshot in the repo that has the same target files/directories)
+          --stdin                            read backup from stdin
+          --stdin-filename string            file name to use when reading from stdin (default "stdin")
+          --tag tag                          add a tag for the new snapshot (can be specified multiple times)
+          --time string                      time of the backup (ex. '2012-11-01 22:08:41') (default: now)
 
     Global Flags:
+          --cacert stringSlice     path to load root certificates from (default: use system certificates)
+          --cache-dir string       set the cache directory
           --json                   set output mode to JSON for commands that support it
+          --limit-download int     limits downloads to a maximum rate in KiB/s. (default: unlimited)
+          --limit-upload int       limits uploads to a maximum rate in KiB/s. (default: unlimited)
+          --no-cache               do not use a local cache
           --no-lock                do not lock the repo, this allows some operations on read-only repos
-      -p, --password-file string   read the repository password from a file
+      -o, --option key=value       set extended option (key=value, can be specified multiple times)
+      -p, --password-file string   read the repository password from a file (default: $RESTIC_PASSWORD_FILE)
       -q, --quiet                  do not output comprehensive progress report
       -r, --repo string            repository to backup to or restore from (default: $RESTIC_REPOSITORY)
 
@@ -86,7 +105,7 @@ Subcommand that support showing progress information such as ``backup``,
 reporting will be limited to once every 10 seconds to not fill your
 logs.
 
-Additionally on Unix systems if ``restic`` receives a SIGUSR signal the
+Additionally on Unix systems if ``restic`` receives a SIGUSR1 signal the
 current progress will written to the standard output so you can check up
 on the status at will.
 
@@ -280,3 +299,10 @@ entirely. In this case, all data is loaded from the repo.
 
 The cache is ephemeral: When a file cannot be read from the cache, it is loaded
 from the repository.
+
+Within the cache directory, there's a sub directory for each repository the
+cache was used with. Restic updates the timestamps of a repo directory each
+time it is used, so by looking at the timestamps of the sub directories of the
+cache directory it can decide which sub directories are old and probably not
+needed any more. You can either remove these directories manually, or run a
+restic command with the ``--cleanup-cache`` flag.

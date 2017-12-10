@@ -250,7 +250,7 @@ func (r *Repository) SaveAndEncrypt(ctx context.Context, t restic.BlobType, data
 	}
 
 	// else write the pack to the backend
-	return *id, r.savePacker(t, packer)
+	return *id, r.savePacker(ctx, t, packer)
 }
 
 // SaveJSONUnpacked serialises item as JSON and encrypts and saves it in the
@@ -289,7 +289,7 @@ func (r *Repository) SaveUnpacked(ctx context.Context, t restic.FileType, p []by
 }
 
 // Flush saves all remaining packs.
-func (r *Repository) Flush() error {
+func (r *Repository) Flush(ctx context.Context) error {
 	pms := []struct {
 		t  restic.BlobType
 		pm *packerManager
@@ -303,7 +303,7 @@ func (r *Repository) Flush() error {
 
 		debug.Log("manually flushing %d packs", len(p.pm.packers))
 		for _, packer := range p.pm.packers {
-			err := r.savePacker(p.t, packer)
+			err := r.savePacker(ctx, p.t, packer)
 			if err != nil {
 				p.pm.pm.Unlock()
 				return err

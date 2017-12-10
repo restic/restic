@@ -190,8 +190,8 @@ type Job struct {
 }
 
 func (s *Job) MarshalJSON() ([]byte, error) {
-	type noMethod Job
-	raw := noMethod(*s)
+	type NoMethod Job
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -230,8 +230,8 @@ type ListJobsResponse struct {
 }
 
 func (s *ListJobsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListJobsResponse
-	raw := noMethod(*s)
+	type NoMethod ListJobsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -271,8 +271,8 @@ type ListReportTypesResponse struct {
 }
 
 func (s *ListReportTypesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListReportTypesResponse
-	raw := noMethod(*s)
+	type NoMethod ListReportTypesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -312,8 +312,8 @@ type ListReportsResponse struct {
 }
 
 func (s *ListReportsResponse) MarshalJSON() ([]byte, error) {
-	type noMethod ListReportsResponse
-	raw := noMethod(*s)
+	type NoMethod ListReportsResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -344,8 +344,8 @@ type Media struct {
 }
 
 func (s *Media) MarshalJSON() ([]byte, error) {
-	type noMethod Media
-	raw := noMethod(*s)
+	type NoMethod Media
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -402,8 +402,8 @@ type Report struct {
 }
 
 func (s *Report) MarshalJSON() ([]byte, error) {
-	type noMethod Report
-	raw := noMethod(*s)
+	type NoMethod Report
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -444,8 +444,8 @@ type ReportType struct {
 }
 
 func (s *ReportType) MarshalJSON() ([]byte, error) {
-	type noMethod ReportType
-	raw := noMethod(*s)
+	type NoMethod ReportType
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -553,7 +553,7 @@ func (c *JobsCreateCall) Do(opts ...googleapi.CallOption) (*Job, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -687,7 +687,7 @@ func (c *JobsDeleteCall) Do(opts ...googleapi.CallOption) (*Empty, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -840,7 +840,7 @@ func (c *JobsGetCall) Do(opts ...googleapi.CallOption) (*Job, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1018,7 +1018,7 @@ func (c *JobsListCall) Do(opts ...googleapi.CallOption) (*ListJobsResponse, erro
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1203,7 +1203,7 @@ func (c *JobsReportsGetCall) Do(opts ...googleapi.CallOption) (*Report, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1409,7 +1409,7 @@ func (c *JobsReportsListCall) Do(opts ...googleapi.CallOption) (*ListReportsResp
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1620,7 +1620,7 @@ func (c *MediaDownloadCall) Do(opts ...googleapi.CallOption) (*Media, error) {
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil
@@ -1796,7 +1796,7 @@ func (c *ReportTypesListCall) Do(opts ...googleapi.CallOption) (*ListReportTypes
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

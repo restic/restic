@@ -60,3 +60,11 @@ func TestSysctlRaw(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSysctlUint32(t *testing.T) {
+	maxproc, err := unix.SysctlUint32("kern.maxproc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("kern.maxproc: %v", maxproc)
+}

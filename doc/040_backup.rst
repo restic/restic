@@ -127,10 +127,35 @@ args:
 
     $ restic -r /tmp/backup backup --files-from /tmp/files_to_backup /tmp/some_additional_file
 
-Backing up special items
-************************
+Comparing Snapshots
+*******************
 
-**Symlinks** are archieved as symlinks, ``restic`` does not follow them.
+Restic has a `diff` command which shows the difference between two snapshots
+and displays a small statistic, just pass the command two snapshot IDs:
+
+.. code-block:: console
+
+    $ restic -r /tmp/backup diff 5845b002 2ab627a6
+    password is correct
+    comparing snapshot ea657ce5 to 2ab627a6:
+
+     C   /restic/cmd_diff.go
+    +    /restic/foo
+     C   /restic/restic
+
+    Files:           0 new,     0 removed,     2 changed
+    Dirs:            1 new,     0 removed
+    Others:          0 new,     0 removed
+    Data Blobs:     14 new,    15 removed
+    Tree Blobs:      2 new,     1 removed
+      Added:   16.403 MiB
+      Removed: 16.402 MiB
+
+
+Backing up special items and metadata
+*************************************
+
+**Symlinks** are archived as symlinks, ``restic`` does not follow them.
 When you restore, you get the same symlink again, with the same link target
 and the same timestamps.
 
@@ -140,6 +165,12 @@ If there is a **bind-mount** below a directory that is to be saved, restic desce
 archived as a block device file and restored as such. This also means that the content of the
 corresponding disk is not read, at least not from the device file.
 
+By default, restic does not save the access time (atime) for any files or other
+items, since it is not possible to reliably disable updating the access time by
+restic itself. This means that for each new backup a lot of metadata is
+written, and the next backup needs to write new metadata again. If you really
+want to save the access time for files and directories, you can pass the
+``--with-atime`` option to the ``backup`` command.
 
 Reading data from stdin
 ***********************

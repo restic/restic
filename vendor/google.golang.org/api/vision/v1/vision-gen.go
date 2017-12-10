@@ -118,8 +118,8 @@ type AnnotateImageRequest struct {
 }
 
 func (s *AnnotateImageRequest) MarshalJSON() ([]byte, error) {
-	type noMethod AnnotateImageRequest
-	raw := noMethod(*s)
+	type NoMethod AnnotateImageRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -192,8 +192,8 @@ type AnnotateImageResponse struct {
 }
 
 func (s *AnnotateImageResponse) MarshalJSON() ([]byte, error) {
-	type noMethod AnnotateImageResponse
-	raw := noMethod(*s)
+	type NoMethod AnnotateImageResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -221,8 +221,8 @@ type BatchAnnotateImagesRequest struct {
 }
 
 func (s *BatchAnnotateImagesRequest) MarshalJSON() ([]byte, error) {
-	type noMethod BatchAnnotateImagesRequest
-	raw := noMethod(*s)
+	type NoMethod BatchAnnotateImagesRequest
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -255,8 +255,8 @@ type BatchAnnotateImagesResponse struct {
 }
 
 func (s *BatchAnnotateImagesResponse) MarshalJSON() ([]byte, error) {
-	type noMethod BatchAnnotateImagesResponse
-	raw := noMethod(*s)
+	type NoMethod BatchAnnotateImagesResponse
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -319,8 +319,8 @@ type Block struct {
 }
 
 func (s *Block) MarshalJSON() ([]byte, error) {
-	type noMethod Block
-	raw := noMethod(*s)
+	type NoMethod Block
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -347,8 +347,8 @@ type BoundingPoly struct {
 }
 
 func (s *BoundingPoly) MarshalJSON() ([]byte, error) {
-	type noMethod BoundingPoly
-	raw := noMethod(*s)
+	type NoMethod BoundingPoly
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -526,21 +526,21 @@ type Color struct {
 }
 
 func (s *Color) MarshalJSON() ([]byte, error) {
-	type noMethod Color
-	raw := noMethod(*s)
+	type NoMethod Color
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *Color) UnmarshalJSON(data []byte) error {
-	type noMethod Color
+	type NoMethod Color
 	var s1 struct {
 		Alpha gensupport.JSONFloat64 `json:"alpha"`
 		Blue  gensupport.JSONFloat64 `json:"blue"`
 		Green gensupport.JSONFloat64 `json:"green"`
 		Red   gensupport.JSONFloat64 `json:"red"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -584,19 +584,19 @@ type ColorInfo struct {
 }
 
 func (s *ColorInfo) MarshalJSON() ([]byte, error) {
-	type noMethod ColorInfo
-	raw := noMethod(*s)
+	type NoMethod ColorInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *ColorInfo) UnmarshalJSON(data []byte) error {
-	type noMethod ColorInfo
+	type NoMethod ColorInfo
 	var s1 struct {
 		PixelFraction gensupport.JSONFloat64 `json:"pixelFraction"`
 		Score         gensupport.JSONFloat64 `json:"score"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -639,19 +639,19 @@ type CropHint struct {
 }
 
 func (s *CropHint) MarshalJSON() ([]byte, error) {
-	type noMethod CropHint
-	raw := noMethod(*s)
+	type NoMethod CropHint
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *CropHint) UnmarshalJSON(data []byte) error {
-	type noMethod CropHint
+	type NoMethod CropHint
 	var s1 struct {
 		Confidence         gensupport.JSONFloat64 `json:"confidence"`
 		ImportanceFraction gensupport.JSONFloat64 `json:"importanceFraction"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -684,8 +684,8 @@ type CropHintsAnnotation struct {
 }
 
 func (s *CropHintsAnnotation) MarshalJSON() ([]byte, error) {
-	type noMethod CropHintsAnnotation
-	raw := noMethod(*s)
+	type NoMethod CropHintsAnnotation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -722,8 +722,8 @@ type CropHintsParams struct {
 }
 
 func (s *CropHintsParams) MarshalJSON() ([]byte, error) {
-	type noMethod CropHintsParams
-	raw := noMethod(*s)
+	type NoMethod CropHintsParams
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -763,8 +763,8 @@ type DetectedBreak struct {
 }
 
 func (s *DetectedBreak) MarshalJSON() ([]byte, error) {
-	type noMethod DetectedBreak
-	raw := noMethod(*s)
+	type NoMethod DetectedBreak
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -798,18 +798,18 @@ type DetectedLanguage struct {
 }
 
 func (s *DetectedLanguage) MarshalJSON() ([]byte, error) {
-	type noMethod DetectedLanguage
-	raw := noMethod(*s)
+	type NoMethod DetectedLanguage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *DetectedLanguage) UnmarshalJSON(data []byte) error {
-	type noMethod DetectedLanguage
+	type NoMethod DetectedLanguage
 	var s1 struct {
 		Confidence gensupport.JSONFloat64 `json:"confidence"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -841,8 +841,8 @@ type DominantColorsAnnotation struct {
 }
 
 func (s *DominantColorsAnnotation) MarshalJSON() ([]byte, error) {
-	type noMethod DominantColorsAnnotation
-	raw := noMethod(*s)
+	type NoMethod DominantColorsAnnotation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -882,7 +882,8 @@ type EntityAnnotation struct {
 	Locations []*LocationInfo `json:"locations,omitempty"`
 
 	// Mid: Opaque entity ID. Some IDs may be available in
-	// [Google Knowledge Graph Search
+	// [Google Knowledge Graph
+	// Search
 	// API](https://developers.google.com/knowledge-graph/).
 	Mid string `json:"mid,omitempty"`
 
@@ -923,20 +924,20 @@ type EntityAnnotation struct {
 }
 
 func (s *EntityAnnotation) MarshalJSON() ([]byte, error) {
-	type noMethod EntityAnnotation
-	raw := noMethod(*s)
+	type NoMethod EntityAnnotation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *EntityAnnotation) UnmarshalJSON(data []byte) error {
-	type noMethod EntityAnnotation
+	type NoMethod EntityAnnotation
 	var s1 struct {
 		Confidence gensupport.JSONFloat64 `json:"confidence"`
 		Score      gensupport.JSONFloat64 `json:"score"`
 		Topicality gensupport.JSONFloat64 `json:"topicality"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1133,22 +1134,22 @@ type FaceAnnotation struct {
 }
 
 func (s *FaceAnnotation) MarshalJSON() ([]byte, error) {
-	type noMethod FaceAnnotation
-	raw := noMethod(*s)
+	type NoMethod FaceAnnotation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *FaceAnnotation) UnmarshalJSON(data []byte) error {
-	type noMethod FaceAnnotation
+	type NoMethod FaceAnnotation
 	var s1 struct {
 		DetectionConfidence   gensupport.JSONFloat64 `json:"detectionConfidence"`
 		LandmarkingConfidence gensupport.JSONFloat64 `json:"landmarkingConfidence"`
 		PanAngle              gensupport.JSONFloat64 `json:"panAngle"`
 		RollAngle             gensupport.JSONFloat64 `json:"rollAngle"`
 		TiltAngle             gensupport.JSONFloat64 `json:"tiltAngle"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1210,8 +1211,8 @@ type Feature struct {
 }
 
 func (s *Feature) MarshalJSON() ([]byte, error) {
-	type noMethod Feature
-	raw := noMethod(*s)
+	type NoMethod Feature
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1247,8 +1248,8 @@ type Image struct {
 }
 
 func (s *Image) MarshalJSON() ([]byte, error) {
-	type noMethod Image
-	raw := noMethod(*s)
+	type NoMethod Image
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1297,8 +1298,8 @@ type ImageContext struct {
 }
 
 func (s *ImageContext) MarshalJSON() ([]byte, error) {
-	type noMethod ImageContext
-	raw := noMethod(*s)
+	type NoMethod ImageContext
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1326,8 +1327,8 @@ type ImageProperties struct {
 }
 
 func (s *ImageProperties) MarshalJSON() ([]byte, error) {
-	type noMethod ImageProperties
-	raw := noMethod(*s)
+	type NoMethod ImageProperties
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1381,17 +1382,12 @@ type ImageSource struct {
 }
 
 func (s *ImageSource) MarshalJSON() ([]byte, error) {
-	type noMethod ImageSource
-	raw := noMethod(*s)
+	type NoMethod ImageSource
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// Landmark: A face-specific landmark (for example, a face
-// feature).
-// Landmark positions may fall outside the bounds of the image
-// if the face is near one or more edges of the image.
-// Therefore it is NOT guaranteed that `0 <= x < width` or
-// `0 <= y < height`.
+// Landmark: A face-specific landmark (for example, a face feature).
 type Landmark struct {
 	// Position: Face landmark position.
 	Position *Position `json:"position,omitempty"`
@@ -1455,8 +1451,8 @@ type Landmark struct {
 }
 
 func (s *Landmark) MarshalJSON() ([]byte, error) {
-	type noMethod Landmark
-	raw := noMethod(*s)
+	type NoMethod Landmark
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1469,40 +1465,6 @@ func (s *Landmark) MarshalJSON() ([]byte, error) {
 // href="http://www.unoosa.org/pdf/icg/2012/template/WGS_84.pdf">WGS84
 // st
 // andard</a>. Values must be within normalized ranges.
-//
-// Example of normalization code in Python:
-//
-//     def NormalizeLongitude(longitude):
-//       """Wraps decimal degrees longitude to [-180.0, 180.0]."""
-//       q, r = divmod(longitude, 360.0)
-//       if r > 180.0 or (r == 180.0 and q <= -1.0):
-//         return r - 360.0
-//       return r
-//
-//     def NormalizeLatLng(latitude, longitude):
-//       """Wraps decimal degrees latitude and longitude to
-//       [-90.0, 90.0] and [-180.0, 180.0], respectively."""
-//       r = latitude % 360.0
-//       if r <= 90.0:
-//         return r, NormalizeLongitude(longitude)
-//       elif r >= 270.0:
-//         return r - 360, NormalizeLongitude(longitude)
-//       else:
-//         return 180 - r, NormalizeLongitude(longitude + 180.0)
-//
-//     assert 180.0 == NormalizeLongitude(180.0)
-//     assert -180.0 == NormalizeLongitude(-180.0)
-//     assert -179.0 == NormalizeLongitude(181.0)
-//     assert (0.0, 0.0) == NormalizeLatLng(360.0, 0.0)
-//     assert (0.0, 0.0) == NormalizeLatLng(-360.0, 0.0)
-//     assert (85.0, 180.0) == NormalizeLatLng(95.0, 0.0)
-//     assert (-85.0, -170.0) == NormalizeLatLng(-95.0, 10.0)
-//     assert (90.0, 10.0) == NormalizeLatLng(90.0, 10.0)
-//     assert (-90.0, -10.0) == NormalizeLatLng(-90.0, -10.0)
-//     assert (0.0, -170.0) == NormalizeLatLng(-180.0, 10.0)
-//     assert (0.0, -170.0) == NormalizeLatLng(180.0, 10.0)
-//     assert (-90.0, 10.0) == NormalizeLatLng(270.0, 10.0)
-//     assert (90.0, 10.0) == NormalizeLatLng(-270.0, 10.0)
 type LatLng struct {
 	// Latitude: The latitude in degrees. It must be in the range [-90.0,
 	// +90.0].
@@ -1530,19 +1492,19 @@ type LatLng struct {
 }
 
 func (s *LatLng) MarshalJSON() ([]byte, error) {
-	type noMethod LatLng
-	raw := noMethod(*s)
+	type NoMethod LatLng
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *LatLng) UnmarshalJSON(data []byte) error {
-	type noMethod LatLng
+	type NoMethod LatLng
 	var s1 struct {
 		Latitude  gensupport.JSONFloat64 `json:"latitude"`
 		Longitude gensupport.JSONFloat64 `json:"longitude"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1577,8 +1539,8 @@ type LatLongRect struct {
 }
 
 func (s *LatLongRect) MarshalJSON() ([]byte, error) {
-	type noMethod LatLongRect
-	raw := noMethod(*s)
+	type NoMethod LatLongRect
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1605,8 +1567,8 @@ type LocationInfo struct {
 }
 
 func (s *LocationInfo) MarshalJSON() ([]byte, error) {
-	type noMethod LocationInfo
-	raw := noMethod(*s)
+	type NoMethod LocationInfo
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1642,8 +1604,8 @@ type Page struct {
 }
 
 func (s *Page) MarshalJSON() ([]byte, error) {
-	type noMethod Page
-	raw := noMethod(*s)
+	type NoMethod Page
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1695,8 +1657,8 @@ type Paragraph struct {
 }
 
 func (s *Paragraph) MarshalJSON() ([]byte, error) {
-	type noMethod Paragraph
-	raw := noMethod(*s)
+	type NoMethod Paragraph
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1732,20 +1694,20 @@ type Position struct {
 }
 
 func (s *Position) MarshalJSON() ([]byte, error) {
-	type noMethod Position
-	raw := noMethod(*s)
+	type NoMethod Position
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *Position) UnmarshalJSON(data []byte) error {
-	type noMethod Position
+	type NoMethod Position
 	var s1 struct {
 		X gensupport.JSONFloat64 `json:"x"`
 		Y gensupport.JSONFloat64 `json:"y"`
 		Z gensupport.JSONFloat64 `json:"z"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -1784,8 +1746,8 @@ type Property struct {
 }
 
 func (s *Property) MarshalJSON() ([]byte, error) {
-	type noMethod Property
-	raw := noMethod(*s)
+	type NoMethod Property
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -1883,8 +1845,8 @@ type SafeSearchAnnotation struct {
 }
 
 func (s *SafeSearchAnnotation) MarshalJSON() ([]byte, error) {
-	type noMethod SafeSearchAnnotation
-	raw := noMethod(*s)
+	type NoMethod SafeSearchAnnotation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2002,8 +1964,8 @@ type Status struct {
 }
 
 func (s *Status) MarshalJSON() ([]byte, error) {
-	type noMethod Status
-	raw := noMethod(*s)
+	type NoMethod Status
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2054,8 +2016,8 @@ type Symbol struct {
 }
 
 func (s *Symbol) MarshalJSON() ([]byte, error) {
-	type noMethod Symbol
-	raw := noMethod(*s)
+	type NoMethod Symbol
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2067,10 +2029,10 @@ func (s *Symbol) MarshalJSON() ([]byte, error) {
 // Each structural component, starting from Page, may further have their
 // own
 // properties. Properties describe detected languages, breaks etc..
-// Please
-// refer to the google.cloud.vision.v1.TextAnnotation.TextProperty
-// message
-// definition below for more detail.
+// Please refer
+// to the TextAnnotation.TextProperty message definition below for
+// more
+// detail.
 type TextAnnotation struct {
 	// Pages: List of pages detected by OCR.
 	Pages []*Page `json:"pages,omitempty"`
@@ -2096,8 +2058,8 @@ type TextAnnotation struct {
 }
 
 func (s *TextAnnotation) MarshalJSON() ([]byte, error) {
-	type noMethod TextAnnotation
-	raw := noMethod(*s)
+	type NoMethod TextAnnotation
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2129,8 +2091,8 @@ type TextProperty struct {
 }
 
 func (s *TextProperty) MarshalJSON() ([]byte, error) {
-	type noMethod TextProperty
-	raw := noMethod(*s)
+	type NoMethod TextProperty
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2162,8 +2124,8 @@ type Vertex struct {
 }
 
 func (s *Vertex) MarshalJSON() ([]byte, error) {
-	type noMethod Vertex
-	raw := noMethod(*s)
+	type NoMethod Vertex
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2210,8 +2172,8 @@ type WebDetection struct {
 }
 
 func (s *WebDetection) MarshalJSON() ([]byte, error) {
-	type noMethod WebDetection
-	raw := noMethod(*s)
+	type NoMethod WebDetection
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2245,18 +2207,18 @@ type WebEntity struct {
 }
 
 func (s *WebEntity) MarshalJSON() ([]byte, error) {
-	type noMethod WebEntity
-	raw := noMethod(*s)
+	type NoMethod WebEntity
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *WebEntity) UnmarshalJSON(data []byte) error {
-	type noMethod WebEntity
+	type NoMethod WebEntity
 	var s1 struct {
 		Score gensupport.JSONFloat64 `json:"score"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -2290,18 +2252,18 @@ type WebImage struct {
 }
 
 func (s *WebImage) MarshalJSON() ([]byte, error) {
-	type noMethod WebImage
-	raw := noMethod(*s)
+	type NoMethod WebImage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *WebImage) UnmarshalJSON(data []byte) error {
-	type noMethod WebImage
+	type NoMethod WebImage
 	var s1 struct {
 		Score gensupport.JSONFloat64 `json:"score"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -2335,18 +2297,18 @@ type WebPage struct {
 }
 
 func (s *WebPage) MarshalJSON() ([]byte, error) {
-	type noMethod WebPage
-	raw := noMethod(*s)
+	type NoMethod WebPage
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
 func (s *WebPage) UnmarshalJSON(data []byte) error {
-	type noMethod WebPage
+	type NoMethod WebPage
 	var s1 struct {
 		Score gensupport.JSONFloat64 `json:"score"`
-		*noMethod
+		*NoMethod
 	}
-	s1.noMethod = (*noMethod)(s)
+	s1.NoMethod = (*NoMethod)(s)
 	if err := json.Unmarshal(data, &s1); err != nil {
 		return err
 	}
@@ -2402,8 +2364,8 @@ type Word struct {
 }
 
 func (s *Word) MarshalJSON() ([]byte, error) {
-	type noMethod Word
-	raw := noMethod(*s)
+	type NoMethod Word
+	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
@@ -2502,7 +2464,7 @@ func (c *ImagesAnnotateCall) Do(opts ...googleapi.CallOption) (*BatchAnnotateIma
 		},
 	}
 	target := &ret
-	if err := json.NewDecoder(res.Body).Decode(target); err != nil {
+	if err := gensupport.DecodeResponse(target, res); err != nil {
 		return nil, err
 	}
 	return ret, nil

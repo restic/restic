@@ -17,25 +17,6 @@
 // This package is still experimental and subject to change.
 //
 // See https://cloud.google.com/error-reporting/ for more information.
-//
-// To initialize a client, use the NewClient function.
-//
-//   import er "cloud.google.com/go/errorreporting"
-//   ...
-//   errorsClient, err = er.NewClient(ctx, projectID, er.Config{
-//      ServiceName:    "myservice",
-//      ServiceVersion: "v1.0",
-//   })
-//
-// With a client, you can then report errors:
-//
-//   if err != nil {
-//     errorsClient.Report(ctx, er.Entry{Error: err})
-//   }
-//
-// If you try to write an error report with a nil client, or if the client
-// fails to write the report to the server, the error report is logged using
-// log.Println.
 package errorreporting // import "cloud.google.com/go/errorreporting"
 
 import (

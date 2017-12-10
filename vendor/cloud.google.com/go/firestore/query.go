@@ -277,9 +277,13 @@ func (q *Query) toPositionValues(fieldValues []interface{}) ([]*pb.Value, error)
 			}
 			vals[i] = &pb.Value{&pb.Value_ReferenceValue{q.parentPath + "/documents/" + q.collectionID + "/" + docID}}
 		} else {
-			vals[i], err = toProtoValue(reflect.ValueOf(fval))
+			var sawTransform bool
+			vals[i], sawTransform, err = toProtoValue(reflect.ValueOf(fval))
 			if err != nil {
 				return nil, err
+			}
+			if sawTransform {
+				return nil, errors.New("firestore: ServerTimestamp disallowed in query value")
 			}
 		}
 	}
@@ -311,9 +315,12 @@ func (f filter) toProto() (*pb.StructuredQuery_Filter, error) {
 	default:
 		return nil, fmt.Errorf("firestore: invalid operator %q", f.op)
 	}
-	val, err := toProtoValue(reflect.ValueOf(f.value))
+	val, sawTransform, err := toProtoValue(reflect.ValueOf(f.value))
 	if err != nil {
 		return nil, err
+	}
+	if sawTransform {
+		return nil, errors.New("firestore: ServerTimestamp disallowed in query value")
 	}
 	return &pb.StructuredQuery_Filter{
 		FilterType: &pb.StructuredQuery_Filter_FieldFilter{
