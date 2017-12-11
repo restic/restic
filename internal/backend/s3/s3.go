@@ -104,6 +104,11 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "open")
 	}
+
+	if cfg.NeverCreateBucket {
+		return be, nil
+	}
+
 	found, err := be.client.BucketExists(cfg.Bucket)
 	if err != nil {
 		debug.Log("BucketExists(%v) returned err %v", cfg.Bucket, err)
@@ -421,7 +426,6 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 	// Doing so would enable a deadlock situation (gh-1399), as ListObjects()
 	// starts its own goroutine and returns results via a channel.
 	listresp := be.client.ListObjects(be.cfg.Bucket, prefix, true, ctx.Done())
-
 	go func() {
 		defer close(ch)
 		for obj := range listresp {

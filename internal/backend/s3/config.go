@@ -19,8 +19,9 @@ type Config struct {
 	Prefix               string
 	Layout               string `option:"layout" help:"use this backend layout (default: auto-detect)"`
 
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
-	MaxRetries  uint `option:"retries" help:"set the number of retries attempted"`
+	Connections       uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	MaxRetries        uint `option:"retries" help:"set the number of retries attempted"`
+	NeverCreateBucket bool `option:"never-create-bucket" help:"prevent the backend from lazily creating buckets (default: false)"`
 }
 
 // NewConfig returns a new Config with the default values filled in.
