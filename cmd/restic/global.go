@@ -428,6 +428,10 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.Secret = os.Getenv("AWS_SECRET_ACCESS_KEY")
 		}
 
+		if cfg.Token == "" {
+			cfg.Token = os.Getenv("AWS_SESSION_TOKEN")
+		}
+
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}
