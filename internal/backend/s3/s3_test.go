@@ -387,7 +387,7 @@ func TestUnprivilegedS3Credentials(t *testing.T) {
 	cfg.KeyID = os.Getenv("RESTIC_TEST_S3_UNPRIV_KEY")
 	cfg.Secret = os.Getenv("RESTIC_TEST_S3_UNPRIV_SECRET")
 	cfg.Token = os.Getenv("RESTIC_TEST_S3_UNPRIV_TOKEN")
-	cfg.NeverCreateBucket = true
+	cfg.NeverCreateBucket = 1
 
 	newS3TestSuite(t, cfg).RunTests(t)
 }

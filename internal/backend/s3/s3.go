@@ -105,7 +105,7 @@ func Create(cfg Config, rt http.RoundTripper) (restic.Backend, error) {
 		return nil, errors.Wrap(err, "open")
 	}
 
-	if cfg.NeverCreateBucket {
+	if cfg.NeverCreateBucket > 0 {
 		return be, nil
 	}
 
