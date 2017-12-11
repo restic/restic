@@ -240,6 +240,7 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 			cfg := s3cfg.(s3.Config)
 			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
 			cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
+			cfg.Token = os.Getenv("RESTIC_TEST_S3_TOKEN")
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
@@ -325,4 +326,33 @@ func BenchmarkBackendS3(t *testing.B) {
 
 	t.Logf("run tests")
 	newS3TestSuite(t).RunBenchmarks(t)
+}
+
+//Test the s3 backend with temporary credentials, that are more tightly scoped
+//to a minimum set of permissions on a subdirectory
+// step 1: create a user with the limited role you would like to test
+// step 2: set envs and run `aws sts get-session-token --duration-seconds 129600`
+func TestUnprivilegedS3Credentials(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			rtest.SkipDisallowed(t, "restic/backend/s3.TestBackendS3")
+		}
+	}()
+
+	vars := []string{
+		"RESTIC_TEST_S3_KEY",
+		"RESTIC_TEST_S3_SECRET",
+		"RESTIC_TEST_S3_TOKEN", //a.k.a AWS_SESSION_TOKEN
+		"RESTIC_TEST_S3_REPOSITORY",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			t.Skipf("environment variable %v not set", v)
+			return
+		}
+	}
+
+	t.Logf("run tests")
+	newS3TestSuite(t).RunTests(t)
 }

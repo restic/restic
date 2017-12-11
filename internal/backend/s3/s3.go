@@ -52,6 +52,7 @@ func open(cfg Config, rt http.RoundTripper) (*Backend, error) {
 			Value: credentials.Value{
 				AccessKeyID:     cfg.KeyID,
 				SecretAccessKey: cfg.Secret,
+				SessionToken:    cfg.Token,
 			},
 		},
 		&credentials.IAM{
@@ -226,7 +227,7 @@ func lenForFile(f *os.File) (int64, error) {
 func (be *Backend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err error) {
 	debug.Log("Save %v", h)
 
-	if err := h.Valid(); err != nil {
+	if err = h.Valid(); err != nil {
 		return err
 	}
 
