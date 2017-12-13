@@ -5,6 +5,7 @@ package fuse
 
 import (
 	"os"
+	"path/filepath"
 
 	"bazil.org/fuse"
 	"bazil.org/fuse/fs"
@@ -28,6 +29,10 @@ type dir struct {
 	blobsize *BlobSizeCache
 }
 
+func cleanupNodeName(name string) string {
+	return filepath.Base(name)
+}
+
 func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *restic.Node) (*dir, error) {
 	debug.Log("new dir for %v (%v)", node.Name, node.Subtree.Str())
 	tree, err := root.repo.LoadTree(ctx, *node.Subtree)
@@ -37,7 +42,7 @@ func newDir(ctx context.Context, root *Root, inode, parentInode uint64, node *re
 	}
 	items := make(map[string]*restic.Node)
 	for _, node := range tree.Nodes {
-		items[node.Name] = node
+		items[cleanupNodeName(node.Name)] = node
 	}
 
 	return &dir{
@@ -84,7 +89,7 @@ func newDirFromSnapshot(ctx context.Context, root *Root, inode uint64, snapshot 
 		}
 
 		for _, node := range nodes {
-			items[node.Name] = node
+			items[cleanupNodeName(node.Name)] = node
 		}
 	}
 
@@ -151,6 +156,7 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 	})
 
 	for _, node := range d.items {
+		name := cleanupNodeName(node.Name)
 		var typ fuse.DirentType
 		switch node.Type {
 		case "dir":
@@ -162,9 +168,9 @@ func (d *dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
 		}
 
 		ret = append(ret, fuse.Dirent{
-			Inode: fs.GenerateDynamicInode(d.inode, node.Name),
+			Inode: fs.GenerateDynamicInode(d.inode, name),
 			Type:  typ,
-			Name:  node.Name,
+			Name:  name,
 		})
 	}
 
@@ -176,6 +182,7 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	node, ok := d.items[name]
 	if !ok {
 		debug.Log("  Lookup(%v) -> not found", name)
+		debug.Log("     items: %v\n", d.items)
 		return nil, fuse.ENOENT
 	}
 	switch node.Type {
