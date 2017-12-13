@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -236,8 +237,14 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		return errors.Fatal("when reading from stdin, no additional files can be specified")
 	}
 
-	if opts.StdinFilename == "" {
+	fn := opts.StdinFilename
+
+	if fn == "" {
 		return errors.Fatal("filename for backup from stdin must not be empty")
+	}
+
+	if filepath.Base(fn) != fn || path.Base(fn) != fn {
+		return errors.Fatal("filename is invalid (may not contain a directory, slash or backslash)")
 	}
 
 	if gopts.password == "" {
@@ -266,7 +273,7 @@ func readBackupFromStdin(opts BackupOptions, gopts GlobalOptions, args []string)
 		Hostname:   opts.Hostname,
 	}
 
-	_, id, err := r.Archive(gopts.ctx, opts.StdinFilename, os.Stdin, newArchiveStdinProgress(gopts))
+	_, id, err := r.Archive(gopts.ctx, fn, os.Stdin, newArchiveStdinProgress(gopts))
 	if err != nil {
 		return err
 	}
