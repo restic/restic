@@ -388,8 +388,10 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 			}
 		}
 	} else {
-		Verbosef("found %d old cache directories in %v, pass --cleanup-cache to remove them\n",
-			len(oldCacheDirs), c.Base)
+		if stdoutIsTerminal() {
+			Verbosef("found %d old cache directories in %v, pass --cleanup-cache to remove them\n",
+				len(oldCacheDirs), c.Base)
+		}
 	}
 
 	return s, nil
