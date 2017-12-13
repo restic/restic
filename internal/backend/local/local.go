@@ -257,6 +257,12 @@ func (b *Local) List(ctx context.Context, t restic.FileType) <-chan string {
 				return err
 			}
 
+			// Skip subdirs in keys directory
+			if ((t == restic.KeyFile) && b.Basedir(t) != path) && fi.IsDir() {
+				debug.Log("Skipping dir %s", path)
+				return filepath.SkipDir
+			}
+
 			if !isFile(fi) {
 				return nil
 			}
