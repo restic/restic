@@ -12,15 +12,16 @@ import (
 // Config contains all configuration necessary to connect to an s3 compatible
 // server.
 type Config struct {
-	Endpoint      string
-	UseHTTP       bool
-	KeyID, Secret string
-	Bucket        string
-	Prefix        string
-	Layout        string `option:"layout" help:"use this backend layout (default: auto-detect)"`
+	Endpoint             string
+	UseHTTP              bool
+	KeyID, Secret, Token string
+	Bucket               string
+	Prefix               string
+	Layout               string `option:"layout" help:"use this backend layout (default: auto-detect)"`
 
-	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
-	MaxRetries  uint `option:"retries" help:"set the number of retries attempted"`
+	Connections       uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 5)"`
+	MaxRetries        uint `option:"retries" help:"set the number of retries attempted"`
+	NeverCreateBucket uint `option:"never-create-bucket" help:"prevent the backend from lazily creating buckets (default: false)"`
 }
 
 // NewConfig returns a new Config with the default values filled in.

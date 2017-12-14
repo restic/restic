@@ -220,7 +220,23 @@ func BenchmarkBackendMinio(t *testing.B) {
 	newMinioTestSuite(ctx, t).RunBenchmarks(t)
 }
 
-func newS3TestSuite(t testing.TB) *test.Suite {
+func testCfg(tb testing.TB) s3.Config {
+	s3cfg, err := s3.ParseConfig(os.Getenv("RESTIC_TEST_S3_REPOSITORY"))
+	if err != nil {
+		tb.Fatal(err)
+	}
+
+	cfg := s3cfg.(s3.Config)
+	if cfg.Prefix != "" {
+		cfg.Prefix = fmt.Sprintf("%s/test-%d", cfg.Prefix, time.Now().UnixNano())
+	} else {
+		cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+	}
+
+	return cfg
+}
+
+func newS3TestSuite(t testing.TB, ncfg s3.Config) *test.Suite {
 	tr, err := backend.Transport(nil)
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
@@ -232,16 +248,25 @@ func newS3TestSuite(t testing.TB) *test.Suite {
 
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			s3cfg, err := s3.ParseConfig(os.Getenv("RESTIC_TEST_S3_REPOSITORY"))
-			if err != nil {
-				return nil, err
-			}
 
-			cfg := s3cfg.(s3.Config)
-			cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
-			cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
-			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
-			return cfg, nil
+			// s3cfg, err := s3.ParseConfig(os.Getenv("RESTIC_TEST_S3_REPOSITORY"))
+			// if err != nil {
+			// 	return nil, err
+			// }
+			//
+			// cfg := s3cfg.(s3.Config)
+			// cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
+			// cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
+			// cfg.Token = os.Getenv("RESTIC_TEST_S3_TOKEN")
+			// if cfg.Prefix != "" {
+			// 	cfg.Prefix = fmt.Sprintf("%s/test-%d", cfg.Prefix, time.Now().UnixNano())
+			// } else {
+			// 	cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
+			// }
+			//
+			// cfg.NeverCreateBucket = neverCreateBucket
+
+			return ncfg, nil
 		},
 
 		// CreateFn is a function that creates a temporary repository for the tests.
@@ -306,7 +331,11 @@ func TestBackendS3(t *testing.T) {
 	}
 
 	t.Logf("run tests")
-	newS3TestSuite(t).RunTests(t)
+
+	cfg := testCfg(t)
+	cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
+	cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
+	newS3TestSuite(t, cfg).RunTests(t)
 }
 
 func BenchmarkBackendS3(t *testing.B) {
@@ -324,5 +353,41 @@ func BenchmarkBackendS3(t *testing.B) {
 	}
 
 	t.Logf("run tests")
-	newS3TestSuite(t).RunBenchmarks(t)
+
+	cfg := testCfg(t)
+	cfg.KeyID = os.Getenv("RESTIC_TEST_S3_KEY")
+	cfg.Secret = os.Getenv("RESTIC_TEST_S3_SECRET")
+	newS3TestSuite(t, cfg).RunBenchmarks(t)
+}
+
+func TestUnprivilegedS3Credentials(t *testing.T) {
+	defer func() {
+		if t.Skipped() {
+			rtest.SkipDisallowed(t, "restic/backend/s3.TestBackendS3")
+		}
+	}()
+
+	vars := []string{
+		"RESTIC_TEST_S3_UNPRIV_KEY",
+		"RESTIC_TEST_S3_UNPRIV_SECRET",
+		"RESTIC_TEST_S3_UNPRIV_TOKEN", //a.k.a AWS_SESSION_TOKEN
+		"RESTIC_TEST_S3_REPOSITORY",
+	}
+
+	for _, v := range vars {
+		if os.Getenv(v) == "" {
+			t.Skipf("environment variable %v not set", v)
+			return
+		}
+	}
+
+	t.Logf("run tests")
+
+	cfg := testCfg(t)
+	cfg.KeyID = os.Getenv("RESTIC_TEST_S3_UNPRIV_KEY")
+	cfg.Secret = os.Getenv("RESTIC_TEST_S3_UNPRIV_SECRET")
+	cfg.Token = os.Getenv("RESTIC_TEST_S3_UNPRIV_TOKEN")
+	cfg.NeverCreateBucket = 1
+
+	newS3TestSuite(t, cfg).RunTests(t)
 }
