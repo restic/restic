@@ -49,6 +49,6 @@ func (l *RESTLayout) Paths() (dirs []string) {
 }
 
 // Basedir returns the base dir name for files of type t.
-func (l *RESTLayout) Basedir(t restic.FileType) string {
-	return l.URL + l.Join(l.Path, restLayoutPaths[t])
+func (l *RESTLayout) Basedir(t restic.FileType) (dirname string, subdirs bool) {
+	return l.URL + l.Join(l.Path, restLayoutPaths[t]), false
 }

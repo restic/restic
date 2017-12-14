@@ -244,7 +244,8 @@ func (be *beSwift) List(ctx context.Context, t restic.FileType) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
-	prefix := be.Filename(restic.Handle{Type: t}) + "/"
+	prefix, _ := be.Basedir(t)
+	prefix += "/"
 
 	go func() {
 		defer close(ch)
