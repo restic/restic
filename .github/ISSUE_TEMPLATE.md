@@ -53,3 +53,11 @@ this is possible), the easier it is for the project developers to fix it!
 
 
 ## Do you have an idea how to solve the issue?
+
+## Did restic help you or made you happy in any way?
+
+<!--
+Answering this question is not required, but if you have anything positive to share, please do so here!
+Sometimes we get tired of reading bug reports all day and a little positive end note does wonders.
+Idea by Joey Hess, https://joeyh.name/blog/entry/two_holiday_stories/
+-->
