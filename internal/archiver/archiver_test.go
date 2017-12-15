@@ -12,6 +12,7 @@ import (
 
 	"github.com/restic/restic/internal/archiver"
 	"github.com/restic/restic/internal/crypto"
+	"github.com/restic/restic/internal/fs"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	rtest "github.com/restic/restic/internal/test"
@@ -226,27 +227,6 @@ func TestArchiveEmptySnapshot(t *testing.T) {
 	}
 }
 
-func chdir(t testing.TB, target string) (cleanup func()) {
-	curdir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Logf("chdir to %v", target)
-	err = os.Chdir(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return func() {
-		t.Logf("chdir back to %v", curdir)
-		err := os.Chdir(curdir)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
 func TestArchiveNameCollision(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
@@ -260,7 +240,7 @@ func TestArchiveNameCollision(t *testing.T) {
 	rtest.OK(t, ioutil.WriteFile(filepath.Join(dir, "testfile"), []byte("testfile1"), 0644))
 	rtest.OK(t, ioutil.WriteFile(filepath.Join(dir, "root", "testfile"), []byte("testfile2"), 0644))
 
-	defer chdir(t, root)()
+	defer fs.TestChdir(t, root)()
 
 	arch := archiver.New(repo)
 

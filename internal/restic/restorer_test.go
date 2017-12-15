@@ -346,27 +346,6 @@ func TestRestorer(t *testing.T) {
 	}
 }
 
-func chdir(t testing.TB, target string) func() {
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Logf("chdir to %v", target)
-	err = os.Chdir(target)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return func() {
-		t.Logf("chdir back to %v", prev)
-		err = os.Chdir(prev)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
 func TestRestorerRelative(t *testing.T) {
 	var tests = []struct {
 		Snapshot
@@ -406,7 +385,7 @@ func TestRestorerRelative(t *testing.T) {
 			tempdir, cleanup := rtest.TempDir(t)
 			defer cleanup()
 
-			cleanup = chdir(t, tempdir)
+			cleanup = fs.TestChdir(t, tempdir)
 			defer cleanup()
 
 			errors := make(map[string]string)
