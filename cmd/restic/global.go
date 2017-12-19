@@ -500,8 +500,16 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.AccountID = os.Getenv("B2_ACCOUNT_ID")
 		}
 
+		if cfg.AccountID == "" {
+			return nil, errors.Fatalf("unable to open B2 backend: Account ID ($B2_ACCOUNT_ID) is empty")
+		}
+
 		if cfg.Key == "" {
 			cfg.Key = os.Getenv("B2_ACCOUNT_KEY")
+		}
+
+		if cfg.Key == "" {
+			return nil, errors.Fatalf("unable to open B2 backend: Key ($B2_ACCOUNT_KEY) is empty")
 		}
 
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
