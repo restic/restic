@@ -377,7 +377,7 @@ func (be *Backend) List(ctx context.Context, t restic.FileType) <-chan string {
 	debug.Log("listing %v", t)
 	ch := make(chan string)
 
-	prefix := be.Dirname(restic.Handle{Type: t})
+	prefix, _ := be.Basedir(t)
 
 	// make sure prefix ends with a slash
 	if prefix[len(prefix)-1] != '/' {

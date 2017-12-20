@@ -16,7 +16,7 @@ import (
 type Layout interface {
 	Filename(restic.Handle) string
 	Dirname(restic.Handle) string
-	Basedir(restic.FileType) string
+	Basedir(restic.FileType) (dir string, subdirs bool)
 	Paths() []string
 	Name() string
 }

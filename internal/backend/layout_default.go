@@ -69,6 +69,11 @@ func (l *DefaultLayout) Paths() (dirs []string) {
 }
 
 // Basedir returns the base dir name for type t.
-func (l *DefaultLayout) Basedir(t restic.FileType) string {
-	return l.Join(l.Path, defaultLayoutPaths[t])
+func (l *DefaultLayout) Basedir(t restic.FileType) (dirname string, subdirs bool) {
+	if t == restic.DataFile {
+		subdirs = true
+	}
+
+	dirname = l.Join(l.Path, defaultLayoutPaths[t])
+	return
 }

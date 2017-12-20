@@ -455,9 +455,19 @@ func (r *SFTP) List(ctx context.Context, t restic.FileType) <-chan string {
 	go func() {
 		defer close(ch)
 
-		walker := r.c.Walk(r.Basedir(t))
+		basedir, subdirs := r.Basedir(t)
+		walker := r.c.Walk(basedir)
 		for walker.Step() {
 			if walker.Err() != nil {
+				continue
+			}
+
+			if walker.Path() == basedir {
+				continue
+			}
+
+			if walker.Stat().IsDir() && !subdirs {
+				walker.SkipDir()
 				continue
 			}
 

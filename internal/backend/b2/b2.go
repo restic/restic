@@ -272,7 +272,7 @@ func (be *b2Backend) List(ctx context.Context, t restic.FileType) <-chan string 
 		defer close(ch)
 		defer cancel()
 
-		prefix := be.Dirname(restic.Handle{Type: t})
+		prefix, _ := be.Basedir(t)
 		cur := &b2.Cursor{Prefix: prefix}
 
 		for {

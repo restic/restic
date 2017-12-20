@@ -122,6 +122,12 @@ func SearchKey(ctx context.Context, s *Repository, password string, maxKeys int)
 			return nil, ErrMaxKeysReached
 		}
 
+		_, err := restic.ParseID(name)
+		if err != nil {
+			debug.Log("rejecting key with invalid name: %v", name)
+			continue
+		}
+
 		debug.Log("trying key %q", name)
 		key, err := OpenKey(ctx, s, name, password)
 		if err != nil {
