@@ -14,7 +14,7 @@ type Backend interface {
 	// Test a boolean value whether a File with the name and type exists.
 	Test(ctx context.Context, h Handle) (bool, error)
 
-	// Remove removes a File with type t and name.
+	// Remove removes a File described  by h.
 	Remove(ctx context.Context, h Handle) error
 
 	// Close the backend

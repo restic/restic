@@ -74,7 +74,7 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader)
 		}
 
 		debug.Log("Save(%v) failed with error, removing file: %v", h, err)
-		rerr := be.Remove(ctx, h)
+		rerr := be.Backend.Remove(ctx, h)
 		if rerr != nil {
 			debug.Log("Remove(%v) returned error: %v", h, err)
 		}
@@ -109,4 +109,11 @@ func (be *RetryBackend) Stat(ctx context.Context, h restic.Handle) (fi restic.Fi
 			return innerError
 		})
 	return fi, err
+}
+
+// Remove removes a File with type t and name.
+func (be *RetryBackend) Remove(ctx context.Context, h restic.Handle) (err error) {
+	return be.retry(ctx, fmt.Sprintf("Remove(%v)", h), func() error {
+		return be.Backend.Remove(ctx, h)
+	})
 }
