@@ -50,7 +50,7 @@ data of several different types, which can later be requested based on
 an ID. This so-called "storage ID" is the SHA-256 hash of the content of
 a file. All files in a repository are only written once and never
 modified afterwards. This allows accessing and even writing to the
-repository with multiple clients in parallel. Only the delete operation
+repository with multiple clients in parallel. Only the ``prune`` operation
 removes data from the repository.
 
 Repositories consist of several directories and a top-level file called
