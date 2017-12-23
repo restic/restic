@@ -692,6 +692,13 @@ func (arch *Archiver) Snapshot(ctx context.Context, p *restic.Progress, paths, t
 	}
 	sn.Excludes = arch.Excludes
 
+	// make paths absolute
+	for i, path := range paths {
+		if p, err := filepath.Abs(path); err == nil {
+			paths[i] = p
+		}
+	}
+
 	jobs := archivePipe{}
 
 	// use parent snapshot (if some was given)

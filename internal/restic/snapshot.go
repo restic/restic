@@ -31,7 +31,7 @@ type Snapshot struct {
 // time.
 func NewSnapshot(paths []string, tags []string, hostname string, time time.Time) (*Snapshot, error) {
 	for i, path := range paths {
-		if p, err := filepath.Abs(path); err != nil {
+		if p, err := filepath.Abs(path); err == nil {
 			paths[i] = p
 		}
 	}
