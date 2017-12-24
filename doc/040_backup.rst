@@ -89,7 +89,16 @@ specify them with multiple ``--exclude``'s or one ``--exclude-file``
 
 Patterns use `filepath.Glob <https://golang.org/pkg/path/filepath/#Glob>`__ internally,
 see `filepath.Match <https://golang.org/pkg/path/filepath/#Match>`__ for syntax.
-Additionally ``**`` excludes arbitrary subdirectories.
+Patterns are tested against the full path of a file/dir to be saved, not only
+against the relative path below the argument given to restic backup.
+Patterns need to match on complete path components. (``foo`` matches
+``/dir1/foo/dir2/file`` and ``/dir/foo`` but does not match ``/dir/foobar`` or
+``barfoo``.) A trailing ``/`` is ignored. A leading ``/`` anchors the
+pattern at the root directory. (``/bin`` matches ``/bin/bash`` but does not
+match ``/usr/bin/restic``.) Regular wildcards cannot be used to match over the
+directory separator ``/``. (``b*ash`` matches ``/bin/bash`` but does not match
+``/bin/ash``.) However ``**`` matches arbitrary subdirectories. (``foo/**/bar``
+matches ``/dir1/foo/dir2/bar/file``, ``/foo/bar/file`` and ``/tmp/foo/bar``.)
 Environment-variables in exclude-files are expanded with
 `os.ExpandEnv <https://golang.org/pkg/os/#ExpandEnv>`__.
 
