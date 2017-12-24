@@ -129,7 +129,7 @@ func preCheckUncommittedChanges() {
 
 	changes := uncommittedChanges()
 	if len(changes) > 0 {
-		die("uncommited changes found:\n%s\n", changes)
+		die("uncommitted changes found:\n%s\n", changes)
 	}
 }
 
@@ -191,7 +191,7 @@ func generateFiles() {
 
 	changes := uncommittedChanges("doc")
 	if len(changes) > 0 {
-		msg("comitting manpages and auto-completion")
+		msg("committing manpages and auto-completion")
 		run("git", "commit", "-m", "Update manpages and auto-completion", "doc")
 	}
 }
@@ -203,7 +203,7 @@ func updateVersion() {
 	}
 
 	if len(uncommittedChanges("VERSION")) > 0 {
-		msg("comitting file VERSION")
+		msg("committing file VERSION")
 		run("git", "commit", "-m", fmt.Sprintf("Add VERSION for %v", opts.Version), "VERSION")
 	}
 }
