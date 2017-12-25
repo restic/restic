@@ -23,6 +23,7 @@ var opts = struct {
 	IgnoreBranchName         bool
 	IgnoreUncommittedChanges bool
 	IgnoreChangelogVersion   bool
+	IgnoreChangelogCurrent   bool
 
 	tarFilename string
 	buildDir    string
@@ -33,7 +34,8 @@ var versionRegex = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 func init() {
 	pflag.BoolVar(&opts.IgnoreBranchName, "ignore-branch-name", false, "allow releasing from other branches as 'master'")
 	pflag.BoolVar(&opts.IgnoreUncommittedChanges, "ignore-uncommitted-changes", false, "allow uncommitted changes")
-	pflag.BoolVar(&opts.IgnoreChangelogVersion, "ignore-changelgo-version", false, "ignore missing entry in CHANGELOG.md")
+	pflag.BoolVar(&opts.IgnoreChangelogVersion, "ignore-changelog-version", false, "ignore missing entry in CHANGELOG.md")
+	pflag.BoolVar(&opts.IgnoreChangelogCurrent, "ignore-changelog-current", false, "ignore check if CHANGELOG.md is up to date")
 	pflag.Parse()
 }
 
@@ -151,7 +153,22 @@ func preCheckVersionExists() {
 	}
 }
 
-func preCheckChangelog() {
+func preCheckChangelogCurrent() {
+	if opts.IgnoreChangelogCurrent {
+		return
+	}
+
+	// regenerate changelog
+	run("calens", "--output", "CHANGELOG.md")
+
+	// check for uncommitted changes in changelog
+	if len(uncommittedChanges("CHANGELOG.md")) > 0 {
+		msg("committing file CHANGELOG.md")
+		run("git", "commit", "-m", fmt.Sprintf("Generate CHANGELOG.md for %v", opts.Version), "CHANGELOG.md")
+	}
+}
+
+func preCheckChangelogVersion() {
 	if opts.IgnoreChangelogVersion {
 		return
 	}
@@ -168,7 +185,7 @@ func preCheckChangelog() {
 			die("error scanning: %v", sc.Err())
 		}
 
-		if strings.TrimSpace(sc.Text()) == fmt.Sprintf("Important Changes in %v", opts.Version) {
+		if strings.Contains(strings.TrimSpace(sc.Text()), fmt.Sprintf("Changelog for restic %v", opts.Version)) {
 			return
 		}
 	}
@@ -189,6 +206,7 @@ func generateFiles() {
 		"--bash-completion", "doc/bash-completion.sh")
 	rm("restic-generate.temp")
 
+	run("git", "add", "doc")
 	changes := uncommittedChanges("doc")
 	if len(changes) > 0 {
 		msg("committing manpages and auto-completion")
@@ -287,7 +305,8 @@ func main() {
 	preCheckBranchMaster()
 	preCheckUncommittedChanges()
 	preCheckVersionExists()
-	preCheckChangelog()
+	preCheckChangelogCurrent()
+	preCheckChangelogVersion()
 
 	generateFiles()
 	updateVersion()
