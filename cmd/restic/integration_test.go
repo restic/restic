@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	mrand "math/rand"
 	"os"
 	"path/filepath"
@@ -148,7 +149,7 @@ func testRunLs(t testing.TB, gopts GlobalOptions, snapshotID string) []string {
 	return strings.Split(string(buf.Bytes()), "\n")
 }
 
-func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern string) []byte {
+func testRunFind(t testing.TB, wantJSON bool, caseInsensitive bool, gopts GlobalOptions, pattern string) []byte {
 	buf := bytes.NewBuffer(nil)
 	globalOptions.stdout = buf
 	globalOptions.JSON = wantJSON
@@ -158,10 +159,29 @@ func testRunFind(t testing.TB, wantJSON bool, gopts GlobalOptions, pattern strin
 	}()
 
 	opts := FindOptions{}
+	opts.Subtree = string(filepath.Separator)
+	opts.CaseInsensitive = caseInsensitive
+	opts.MaxDepth = math.MaxUint16
 
 	rtest.OK(t, runFind(opts, gopts, []string{pattern}))
 
 	return buf.Bytes()
+}
+
+func testRunFindSubtree(t testing.TB, gopts GlobalOptions, subtree string, maxdepth uint16) ([]byte, error) {
+	buf := bytes.NewBuffer(nil)
+	globalOptions.stdout = buf
+	globalOptions.JSON = false
+	defer func() {
+		globalOptions.stdout = os.Stdout
+		globalOptions.JSON = false
+	}()
+
+	opts := FindOptions{}
+	opts.Subtree = subtree
+	opts.MaxDepth = maxdepth
+	err := runFind(opts, gopts, []string{"*"})
+	return buf.Bytes(), err
 }
 
 func testRunSnapshots(t testing.TB, gopts GlobalOptions) (newest *Snapshot, snapmap map[restic.ID]Snapshot) {
@@ -1057,16 +1077,38 @@ func TestFind(t *testing.T) {
 	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
-	results := testRunFind(t, false, env.gopts, "unexistingfile")
+	results := testRunFind(t, false, false, env.gopts, "unexistingfile")
 	rtest.Assert(t, len(results) == 0, "unexisting file found in repo (%v)", datafile)
 
-	results = testRunFind(t, false, env.gopts, "testfile")
+	results = testRunFind(t, false, false, env.gopts, "testfile")
 	lines := strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 2, "expected one file found in repo (%v)", datafile)
 
-	results = testRunFind(t, false, env.gopts, "testfile*")
+	results = testRunFind(t, false, true, env.gopts, "TeSTFiLe")
+	lines = strings.Split(string(results), "\n")
+	rtest.Assert(t, len(lines) == 2, "expected one file found in repo (%v)", datafile)
+
+	results = testRunFind(t, false, false, env.gopts, "testfile*")
 	lines = strings.Split(string(results), "\n")
 	rtest.Assert(t, len(lines) == 4, "expected three files found in repo (%v)", datafile)
+
+	_, err := testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), env.testdata, "non", "existant", "directory"), math.MaxUint16)
+	rtest.Assert(t, err != nil && err.Error() == "Fatal: Did not find subtree", "expected to get an error message that the subtree was not found")
+
+	results, err = testRunFindSubtree(t, env.gopts, filepath.Join(string(filepath.Separator), "testdata", "0", "0", "7"), math.MaxUint16)
+	lines = strings.Split(string(results), "\n")
+	rtest.Assert(t, err == nil, "expected no errors")
+	rtest.Assert(t, len(lines) == 129, "expected 128 files found in repo (%v)", datafile)
+
+	err = runFind(FindOptions{}, GlobalOptions{}, []string{"*", "too many"})
+	rtest.Assert(t, err != nil, "expected error")
+	rtest.Assert(t, err.Error() == "Fatal: wrong number of arguments", "expected error when providing wrong number of arguments")
+
+	subtree := filepath.Join(string(filepath.Separator), "testdata", "0")
+	results, err = testRunFindSubtree(t, env.gopts, subtree, 0)
+	lines = strings.Split(strings.TrimSpace(string(results)), "\n")
+	rtest.Assert(t, err == nil, "expected no errors")
+	rtest.Assert(t, len(lines) == 2, "expected 2 entries, '0' and 'tests' found %i in subtree %s in the repo (%v)", len(lines), subtree, datafile)
 }
 
 type testMatch struct {
@@ -1097,18 +1139,18 @@ func TestFindJSON(t *testing.T) {
 	testRunBackup(t, []string{env.testdata}, opts, env.gopts)
 	testRunCheck(t, env.gopts)
 
-	results := testRunFind(t, true, env.gopts, "unexistingfile")
+	results := testRunFind(t, true, false, env.gopts, "unexistingfile")
 	matches := []testMatches{}
 	rtest.OK(t, json.Unmarshal(results, &matches))
 	rtest.Assert(t, len(matches) == 0, "expected no match in repo (%v)", datafile)
 
-	results = testRunFind(t, true, env.gopts, "testfile")
+	results = testRunFind(t, true, false, env.gopts, "testfile")
 	rtest.OK(t, json.Unmarshal(results, &matches))
 	rtest.Assert(t, len(matches) == 1, "expected a single snapshot in repo (%v)", datafile)
 	rtest.Assert(t, len(matches[0].Matches) == 1, "expected a single file to match (%v)", datafile)
 	rtest.Assert(t, matches[0].Hits == 1, "expected hits to show 1 match (%v)", datafile)
 
-	results = testRunFind(t, true, env.gopts, "testfile*")
+	results = testRunFind(t, true, false, env.gopts, "testfile*")
 	rtest.OK(t, json.Unmarshal(results, &matches))
 	rtest.Assert(t, len(matches) == 1, "expected a single snapshot in repo (%v)", datafile)
 	rtest.Assert(t, len(matches[0].Matches) == 3, "expected 3 files to match (%v)", datafile)
