@@ -1,0 +1,8 @@
+Enhancement: Improve performance of the `find` command
+
+Improved performance for the `find` command: Restic recognizes paths it has
+already checked for the files in question, so the number of backend requests
+is reduced a lot.
+
+https://github.com/restic/restic/issues/989
+https://github.com/restic/restic/pull/993

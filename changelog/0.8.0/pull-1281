@@ -1,0 +1,7 @@
+Enhancement: Google Cloud Storage backend needs less permissions
+
+The Google Cloud Storage backend no longer requires the service account to
+have the `storage.buckets.get` permission ("Storage Admin" role) in `restic
+init` if the bucket already exists.
+
+https://github.com/restic/restic/pull/1281

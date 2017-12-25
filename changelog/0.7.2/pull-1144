@@ -1,0 +1,3 @@
+Enhancement: Properly report errors when reading files with exclude patterns.
+
+https://github.com/restic/restic/pull/1144

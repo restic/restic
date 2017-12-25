@@ -1,0 +1,8 @@
+Enhancement: Add support for storing backups on Microsoft Azure Blob Storage
+
+The library we're using to access the service requires Go 1.8, so restic now
+needs at least Go 1.8.
+
+https://github.com/restic/restic/pull/1149
+https://github.com/restic/restic/pull/1059
+https://github.com/restic/restic/issues/609

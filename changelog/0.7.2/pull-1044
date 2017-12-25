@@ -1,0 +1,3 @@
+Enhancement: Improve `restore`, do not traverse/load excluded directories
+
+https://github.com/restic/restic/pull/1044

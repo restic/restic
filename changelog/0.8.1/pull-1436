@@ -1,0 +1,9 @@
+Enhancement: Add code to detect old cache directories
+
+We've added code to detect old cache directories of repositories that
+haven't been used in a long time, restic now prints a note when it detects
+that such dirs exist. Also, the option `--cleanup-cache` was added to
+automatically remove such directories. That's not a problem because the
+cache will be rebuild once a repo is accessed again.
+
+https://github.com/restic/restic/pull/1436

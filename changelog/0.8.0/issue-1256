@@ -1,0 +1,7 @@
+Bugfix: Re-enable workaround for S3 backend
+
+We've re-enabled a workaround for `minio-go` (the library we're using to
+access s3 backends), this reduces memory usage.
+
+https://github.com/restic/restic/issues/1256
+https://github.com/restic/restic/pull/1267

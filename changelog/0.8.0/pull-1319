@@ -1,0 +1,8 @@
+Enhancement: Make `check` print `no errors found` explicitly
+
+The `check` command now explicetly prints `No errors were found` when no errors
+could be found.
+
+https://github.com/restic/restic/pull/1319
+https://github.com/restic/restic/issues/1303
+

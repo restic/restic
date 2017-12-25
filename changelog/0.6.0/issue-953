@@ -1,0 +1,8 @@
+Enhancement: Make `forget` consistent
+
+The `forget` command was corrected to be more consistent in which snapshots are
+to be forgotten. It is possible that the new code removes more snapshots than
+before, so please review what would be deleted by using the `--dry-run` option.
+
+https://github.com/restic/restic/pull/957
+https://github.com/restic/restic/issues/953

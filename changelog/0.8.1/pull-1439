@@ -1,0 +1,6 @@
+Enhancement: Improve cancellation logic
+
+The cancellation logic was improved, restic can now shut down cleanly when
+requested to do so (e.g. via ctrl+c).
+
+https://github.com/restic/restic/pull/1439

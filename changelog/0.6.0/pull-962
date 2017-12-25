@@ -1,0 +1,15 @@
+Enhancement: Improve memory and runtime for the s3 backend
+
+We've updated the library used for accessing s3, switched to using a lower
+level API and added caching for some requests. This lead to a decrease in
+memory usage and a great speedup. In addition, we added benchmark functions for
+all backends, so we can track improvements over time. The Continuous
+Integration test service we're using (Travis) now runs the s3 backend tests not
+only against a Minio server, but also against the Amazon s3 live service, so we
+should be notified of any regressions much sooner.
+
+https://github.com/restic/restic/pull/962
+https://github.com/restic/restic/pull/960
+https://github.com/restic/restic/pull/946
+https://github.com/restic/restic/pull/938
+https://github.com/restic/restic/pull/883

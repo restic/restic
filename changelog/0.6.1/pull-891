@@ -1,0 +1,6 @@
+Enhancement: Remove temporary path from binary in `build.go`
+
+The `build.go` now strips the temporary directory used for compilation from
+the binary. This is the first step in enabling reproducible builds.
+
+https://github.com/restic/restic/pull/981

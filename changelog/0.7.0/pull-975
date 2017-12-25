@@ -1,0 +1,4 @@
+Enhancement: Add new backend for OpenStack Swift
+
+https://github.com/restic/restic/pull/975
+https://github.com/restic/restic/pull/648

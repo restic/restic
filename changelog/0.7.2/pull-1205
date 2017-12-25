@@ -1,0 +1,3 @@
+Enhancement: Allow specifying time/date for a backup with `--time`
+
+https://github.com/restic/restic/pull/1205

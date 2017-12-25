@@ -1,0 +1,5 @@
+Enhancement: Improve performance of the fuse mount
+
+Listing directories which contain large files now is significantly faster.
+
+https://github.com/restic/restic/pull/998

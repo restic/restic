@@ -1,0 +1,6 @@
+Enhancement: Add `latest` symlink in fuse mount
+
+The directory structure in the fuse mount now exposes a symlink `latest`
+which points to the latest snapshot in that particular directory.
+
+https://github.com/restic/restic/pull/1249

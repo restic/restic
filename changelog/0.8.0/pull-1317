@@ -1,0 +1,7 @@
+Bugfix: Run prune when `forget --prune` is called with just snapshot IDs
+
+A bug in the `forget` command caused `prune` not to be run when `--prune` was
+specified without a policy, e.g. when only snapshot IDs that should be
+forgotten are listed manually.
+
+https://github.com/restic/restic/pull/1317

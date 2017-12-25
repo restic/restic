@@ -1,0 +1,9 @@
+Enhancement: sftp backend prompts for password
+
+The sftp backend now prompts for the password if a password is necessary for
+login.
+
+https://github.com/restic/restic/issues/448
+https://github.com/restic/restic/pull/1270
+
+
