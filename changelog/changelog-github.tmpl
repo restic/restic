@@ -19,7 +19,7 @@ Details
    {{ $par }}
 {{ end }}
    {{ range $id := .Issues -}}
-[{{ $id }}](https://github.com/restic/restic/issues/{{ $id -}})
+{{ ` ` }}[#{{ $id }}](https://github.com/restic/restic/issues/{{ $id -}})
 {{- end -}}
 {{ range $id := .PRs -}}
 {{ ` ` }}[#{{ $id }}](https://github.com/restic/restic/pull/{{ $id -}})
