@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 )
@@ -23,6 +24,7 @@ var opts = struct {
 	IgnoreBranchName         bool
 	IgnoreUncommittedChanges bool
 	IgnoreChangelogVersion   bool
+	IgnoreChangelogRelease   bool
 	IgnoreChangelogCurrent   bool
 
 	tarFilename string
@@ -35,6 +37,7 @@ func init() {
 	pflag.BoolVar(&opts.IgnoreBranchName, "ignore-branch-name", false, "allow releasing from other branches as 'master'")
 	pflag.BoolVar(&opts.IgnoreUncommittedChanges, "ignore-uncommitted-changes", false, "allow uncommitted changes")
 	pflag.BoolVar(&opts.IgnoreChangelogVersion, "ignore-changelog-version", false, "ignore missing entry in CHANGELOG.md")
+	pflag.BoolVar(&opts.IgnoreChangelogRelease, "ignore-changelog-releases", false, "ignore missing entry changelog/releases")
 	pflag.BoolVar(&opts.IgnoreChangelogCurrent, "ignore-changelog-current", false, "ignore check if CHANGELOG.md is up to date")
 	pflag.Parse()
 }
@@ -166,6 +169,35 @@ func preCheckChangelogCurrent() {
 		msg("committing file CHANGELOG.md")
 		run("git", "commit", "-m", fmt.Sprintf("Generate CHANGELOG.md for %v", opts.Version), "CHANGELOG.md")
 	}
+}
+
+func preCheckChangelogRelease() {
+	if opts.IgnoreChangelogRelease {
+		return
+	}
+
+	f, err := os.Open(filepath.FromSlash("changelog/releases"))
+	if err != nil {
+		die("unable to open releases file in changelog/: %v", err)
+	}
+
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		if sc.Err() != nil {
+			die("error reading releases file in changelog: %v", err)
+		}
+
+		if sc.Text() == fmt.Sprintf("%v %v", opts.Version, time.Now().Format("2006-01-02")) {
+			return
+		}
+	}
+
+	err = f.Close()
+	if err != nil {
+		die("close releases error: %v", err)
+	}
+
+	die("unable to find correct line for version %v (released today) in changelog/releases", opts.Version)
 }
 
 func preCheckChangelogVersion() {
@@ -306,6 +338,7 @@ func main() {
 	preCheckUncommittedChanges()
 	preCheckVersionExists()
 	preCheckChangelogCurrent()
+	preCheckChangelogRelease()
 	preCheckChangelogVersion()
 
 	generateFiles()
