@@ -1,0 +1,10 @@
+Bugfix: Remove implicit path `/restic` for the s3 backend
+
+The s3 backend used the subdir `restic` within a bucket if no explicit path
+after the bucket name was specified. Since this version, restic does not use
+this default path any more. If you created a repo on s3 in a bucket without
+specifying a path within the bucket, you need to add `/restic` at the end of
+the repository specification to access your repo: `s3:s3.amazonaws.com/bucket/restic`
+
+https://github.com/restic/restic/pull/1437
+https://github.com/restic/restic/issues/1292

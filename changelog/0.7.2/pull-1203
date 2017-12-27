@@ -1,0 +1,5 @@
+Enhancement: Print stats on all BSD systems when SIGINFO (ctrl+t) is received
+
+https://github.com/restic/restic/pull/1203
+https://github.com/restic/restic/pull/1082#issuecomment-326279920
+

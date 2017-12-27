@@ -1,0 +1,7 @@
+Enhancement: Detect invalid backend name and print error
+
+restic now tries to detect when an invalid/unknown backend is used and
+returns an error message.
+
+https://github.com/restic/restic/issues/1021
+https://github.com/restic/restic/pull/1070

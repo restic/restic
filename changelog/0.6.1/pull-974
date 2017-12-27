@@ -1,0 +1,7 @@
+Enhancement: Remove regular status reports
+
+Regular status report: We've removed the status report that was printed
+every 10 seconds when restic is run non-interactively. You can still force
+reporting the current status by sending a `USR1` signal to the process.
+
+https://github.com/restic/restic/pull/974

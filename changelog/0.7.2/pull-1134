@@ -1,0 +1,5 @@
+Enhancement: Add support for storing backups on Google Cloud Storage
+
+https://github.com/restic/restic/pull/1134
+https://github.com/restic/restic/pull/1052
+https://github.com/restic/restic/issues/211

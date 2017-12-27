@@ -1,0 +1,3 @@
+Enhancement: Retry failed backend requests
+
+https://github.com/restic/restic/pull/1353

@@ -1,0 +1,8 @@
+Enhancement: Make `key` command always prompt for a password
+
+The `key` command now prompts for a password even if the original password
+to access a repo has been specified via the `RESTIC_PASSWORD` environment
+variable or a password file.
+
+https://github.com/restic/restic/issues/1132
+https://github.com/restic/restic/pull/1133

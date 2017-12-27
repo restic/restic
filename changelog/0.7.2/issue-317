@@ -1,0 +1,10 @@
+Enhancement: Add `--exclude-caches` and `--exclude-if-present`
+
+A new option `--exclude-caches` was added that allows excluding cache
+directories (that are tagged as such). This is a special case of a more generic
+option `--exclude-if-present` which excludes a directory if a file with a
+specific name (and contents) is present.
+
+https://github.com/restic/restic/issues/317
+https://github.com/restic/restic/pull/1170
+https://github.com/restic/restic/pull/1224

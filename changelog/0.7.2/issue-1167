@@ -1,0 +1,8 @@
+Bugfix: Do not create a local repo unless `init` is used
+
+When a restic command other than `init` is used with a local repository and the
+repository directory does not exist, restic creates the directory structure.
+That's an error, only the `init` command should create the dir.
+
+https://github.com/restic/restic/issues/1167
+https://github.com/restic/restic/pull/1182

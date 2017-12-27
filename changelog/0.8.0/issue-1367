@@ -1,0 +1,7 @@
+Enhancement: Allow comments in files read from via `--file-from`
+
+When the list of files/dirs to be saved is read from a file with
+`--files-from`, comment lines (starting with `#`) are now ignored.
+
+https://github.com/restic/restic/issues/1367
+https://github.com/restic/restic/pull/1368

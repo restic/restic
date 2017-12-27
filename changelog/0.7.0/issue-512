@@ -1,0 +1,4 @@
+Enhancement: Add Backblaze B2 backend
+
+https://github.com/restic/restic/issues/512
+https://github.com/restic/restic/pull/978

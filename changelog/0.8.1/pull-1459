@@ -1,0 +1,9 @@
+Bugfix: Disable handling SIGPIPE
+
+We've disabled handling SIGPIPE again. Turns out, writing to broken TCP
+connections also raised SIGPIPE, so restic exits on the first write to a
+broken connection. Instead, restic should retry the request.
+
+https://github.com/restic/restic/pull/1459
+https://github.com/restic/restic/issues/1457
+https://github.com/restic/restic/issues/1466

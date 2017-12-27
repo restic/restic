@@ -1,0 +1,9 @@
+Bugfix: Fix `prune`, only include existing files in indexes
+
+A bug was found (and corrected) in the index rebuilding after prune, which led
+to indexes which include blobs that were not present in the repo any more.
+There were already checks in place which detected this situation and aborted
+with an error message. A new run of either `prune` or `rebuild-index` corrected
+the index files. This is now fixed and a test has been added to detect this.
+
+https://github.com/restic/restic/pull/1115

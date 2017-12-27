@@ -1,0 +1,5 @@
+Enhancement: Ignore chmod() errors on filesystems which do not support it
+
+https://github.com/restic/restic/pull/1080
+https://github.com/restic/restic/pull/1112
+

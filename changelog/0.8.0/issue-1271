@@ -1,0 +1,6 @@
+Enhancement: Cache results for excludes for `backup`
+
+The `backup` command now caches the result of excludes for a directory.
+
+https://github.com/restic/restic/issues/1271
+https://github.com/restic/restic/pull/1326

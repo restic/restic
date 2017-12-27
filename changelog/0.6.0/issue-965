@@ -1,0 +1,11 @@
+Enhancement: Unify repository layout for all backends
+
+Up to now the s3 backend used a special repository layout. We've decided to
+unify the repository layout and implemented the default layout also for the s3
+backend. For creating a new repository on s3 with the default layout, use
+`restic -o s3.layout=default init`. For further commands the option is not
+necessary any more, restic will automatically detect the correct layout to use.
+A future version will switch to the default layout for new repositories.
+
+https://github.com/restic/restic/pull/966
+https://github.com/restic/restic/issues/965

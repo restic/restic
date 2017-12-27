@@ -1,0 +1,6 @@
+Enhancement: Add `--compact` to `forget` command
+
+The option `--compact` was added to the `forget` command to provide the same
+compact view as the `snapshots` command.
+
+https://github.com/restic/restic/pull/1269

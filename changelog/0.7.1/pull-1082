@@ -1,0 +1,3 @@
+Enhancement: Print stats on SIGINFO on Darwin and FreeBSD (ctrl+t)
+
+https://github.com/restic/restic/pull/1082
