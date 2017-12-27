@@ -9,7 +9,7 @@ Summary
 
  * Fix #1457: Improve s3 backend with DigitalOcean Spaces
  * Fix #1454: Correct cache dir location for Windows and Darwin
- * Fix #1457: Disable handling SIGPIPE
+ * Fix #1459: Disable handling SIGPIPE
  * Chg #1452: Do not save atime by default
  * Enh #1436: Add code to detect old cache directories
  * Enh #1439: Improve cancellation logic
@@ -30,7 +30,7 @@ Details
 
    https://github.com/restic/restic/pull/1454
 
- * Bugfix #1457: Disable handling SIGPIPE
+ * Bugfix #1459: Disable handling SIGPIPE
 
    We've disabled handling SIGPIPE again. Turns out, writing to broken TCP connections also
    raised SIGPIPE, so restic exits on the first write to a broken connection. Instead, restic
@@ -87,7 +87,7 @@ Summary
  * Fix #1256: Re-enable workaround for S3 backend
  * Fix #1291: Reuse backend TCP connections to BackBlaze B2
  * Fix #1317: Run prune when `forget --prune` is called with just snapshot IDs
- * Fix #1292: Remove implicit path `/restic` for the s3 backend
+ * Fix #1437: Remove implicit path `/restic` for the s3 backend
  * Enh #1102: Add subdirectory `ids` to fuse mount
  * Enh #1114: Add `--cacert` to specify TLS certificates to check against
  * Enh #1216: Add upload/download limiting
@@ -96,11 +96,11 @@ Summary
  * Enh #1367: Allow comments in files read from via `--file-from`
  * Enh #448: Sftp backend prompts for password
  * Enh #510: Add `dump` command
- * Enh #29: Add local metadata cache
+ * Enh #1040: Add local metadata cache
  * Enh #1249: Add `latest` symlink in fuse mount
  * Enh #1269: Add `--compact` to `forget` command
  * Enh #1281: Google Cloud Storage backend needs less permissions
- * Enh #1303: Make `check` print `no errors found` explicitly
+ * Enh #1319: Make `check` print `no errors found` explicitly
  * Enh #1353: Retry failed backend requests
 
 Details
@@ -148,7 +148,7 @@ Details
 
    https://github.com/restic/restic/pull/1317
 
- * Bugfix #1292: Remove implicit path `/restic` for the s3 backend
+ * Bugfix #1437: Remove implicit path `/restic` for the s3 backend
 
    The s3 backend used the subdir `restic` within a bucket if no explicit path after the bucket name
    was specified. Since this version, restic does not use this default path any more. If you
@@ -226,7 +226,7 @@ Details
    https://github.com/restic/restic/issues/510
    https://github.com/restic/restic/pull/1346
 
- * Enhancement #29: Add local metadata cache
+ * Enhancement #1040: Add local metadata cache
 
    We've added a local cache for metadata so that restic doesn't need to load all metadata
    (snapshots, indexes, ...) from the repo each time it starts. By default the cache is active, but
@@ -270,7 +270,7 @@ Details
 
    https://github.com/restic/restic/pull/1281
 
- * Enhancement #1303: Make `check` print `no errors found` explicitly
+ * Enhancement #1319: Make `check` print `no errors found` explicitly
 
    The `check` command now explicetly prints `No errors were found` when no errors could be found.
 
@@ -326,9 +326,9 @@ Summary
  * Enh #1044: Improve `restore`, do not traverse/load excluded directories
  * Enh #1061: Add Dockerfile and official Docker image
  * Enh #1126: Use the standard Go git repository layout, use `dep` for vendoring
- * Enh #211: Add support for storing backups on Google Cloud Storage
+ * Enh #1134: Add support for storing backups on Google Cloud Storage
  * Enh #1144: Properly report errors when reading files with exclude patterns.
- * Enh #609: Add support for storing backups on Microsoft Azure Blob Storage
+ * Enh #1149: Add support for storing backups on Microsoft Azure Blob Storage
  * Enh #1196: Add `--group-by` to `forget` command for flexible grouping
  * Enh #1203: Print stats on all BSD systems when SIGINFO (ctrl+t) is received
  * Enh #1205: Allow specifying time/date for a backup with `--time`
@@ -409,7 +409,7 @@ Details
 
    https://github.com/restic/restic/pull/1126
 
- * Enhancement #211: Add support for storing backups on Google Cloud Storage
+ * Enhancement #1134: Add support for storing backups on Google Cloud Storage
 
    https://github.com/restic/restic/issues/211
    https://github.com/restic/restic/pull/1134
@@ -419,7 +419,7 @@ Details
 
    https://github.com/restic/restic/pull/1144
 
- * Enhancement #609: Add support for storing backups on Microsoft Azure Blob Storage
+ * Enhancement #1149: Add support for storing backups on Microsoft Azure Blob Storage
 
    The library we're using to access the service requires Go 1.8, so restic now needs at least Go
    1.8.
@@ -655,14 +655,14 @@ restic users. The changes are ordered by importance.
 Summary
 -------
 
- * Enh #953: Make `forget` consistent
- * Enh #965: Unify repository layout for all backends
+ * Enh #957: Make `forget` consistent
+ * Enh #966: Unify repository layout for all backends
  * Enh #962: Improve memory and runtime for the s3 backend
 
 Details
 -------
 
- * Enhancement #953: Make `forget` consistent
+ * Enhancement #957: Make `forget` consistent
 
    The `forget` command was corrected to be more consistent in which snapshots are to be
    forgotten. It is possible that the new code removes more snapshots than before, so please
@@ -671,7 +671,7 @@ Details
    https://github.com/restic/restic/issues/953
    https://github.com/restic/restic/pull/957
 
- * Enhancement #965: Unify repository layout for all backends
+ * Enhancement #966: Unify repository layout for all backends
 
    Up to now the s3 backend used a special repository layout. We've decided to unify the repository
    layout and implemented the default layout also for the s3 backend. For creating a new

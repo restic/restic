@@ -1,4 +1,4 @@
 Bugfix: Improve s3 backend with DigitalOcean Spaces
 
-https://github.com/restic/restic/pull/1459
 https://github.com/restic/restic/issues/1457
+https://github.com/restic/restic/pull/1459
