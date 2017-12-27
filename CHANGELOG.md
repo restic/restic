@@ -1,4 +1,4 @@
-Changelog for restic 0.8.1 (UNRELEASED)
+Changelog for restic 0.8.1 (2017-12-27)
 =======================================
 
 The following sections list the changes in restic 0.8.1 relevant to
