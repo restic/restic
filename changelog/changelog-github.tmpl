@@ -8,7 +8,7 @@ restic users. The changes are ordered by importance.
 Summary
 -------
 {{ range $entry := .Entries }}{{ with $entry }}
- * {{ .TypeShort }} #{{ .PrimaryID }}: {{ .Title }}
+ * {{ .TypeShort }} [#{{ .PrimaryID }}]({{ .PrimaryURL }}): {{ .Title }}
 {{- end }}{{ end }}
 
 Details
@@ -22,7 +22,7 @@ Details
 [{{ $id }}](https://github.com/restic/restic/issues/{{ $id -}})
 {{- end -}}
 {{ range $id := .PRs -}}
-{{ ` ` }}[{{ $id }}](https://github.com/restic/restic/pull/{{ $id -}})
+{{ ` ` }}[#{{ $id }}](https://github.com/restic/restic/pull/{{ $id -}})
 {{- end -}}
 {{ ` ` }}{{ range $url := .OtherURLs -}}
 {{ $url -}}
