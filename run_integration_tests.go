@@ -96,6 +96,7 @@ func (env *TravisEnvironment) Prepare() error {
 		"github.com/NebulousLabs/glyphcheck",
 		"github.com/golang/dep/cmd/dep",
 		"github.com/restic/rest-server/cmd/rest-server",
+		"github.com/restic/calens",
 	}
 
 	for _, pkg := range pkgs {
@@ -283,6 +284,11 @@ func (env *TravisEnvironment) RunTests() error {
 	manpath := filepath.Join("doc", "new-man")
 	if err := os.MkdirAll(manpath, 0755); err != nil {
 		return err
+	}
+
+	// check that the entries in changelog/ are valid
+	if err := run("calens"); err != nil {
+		fmt.Fprintf(os.Stderr, "calens failed, files in changelog/ are not valid\n")
 	}
 
 	return nil
