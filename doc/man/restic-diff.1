@@ -5,24 +5,36 @@
 
 .SH NAME
 .PP
-restic\-rebuild\-index \- Build a new index file
+restic\-diff \- Show differences between two snapshots
 
 
 .SH SYNOPSIS
 .PP
-\fBrestic rebuild\-index [flags]\fP
+\fBrestic diff snapshot\-ID snapshot\-ID [flags]\fP
 
 
 .SH DESCRIPTION
 .PP
-The "rebuild\-index" command creates a new index based on the pack files in the
-repository.
+The "diff" command shows differences from the first to the second snapshot. The
+first characters in each line display what has happened to a particular file or
+directory:
+.IP \(bu 2
+The item was added
+.IP \(bu 2
+The item was removed
+U  The metadata (access mode, timestamps, ...) for the item was updated
+M  The file's content was modified
+T  The type was changed, e.g. a file was made a symlink
 
 
 .SH OPTIONS
 .PP
 \fB\-h\fP, \fB\-\-help\fP[=false]
-    help for rebuild\-index
+    help for diff
+
+.PP
+\fB\-\-metadata\fP[=false]
+    print changes in metadata
 
 
 .SH OPTIONS INHERITED FROM PARENT COMMANDS
