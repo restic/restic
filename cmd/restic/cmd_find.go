@@ -241,10 +241,7 @@ func (f *Finder) findInSnapshot(ctx context.Context, sn *restic.Snapshot) error 
 	debug.Log("searching in snapshot %s\n  for entries within [%s %s]", sn.ID(), f.pat.oldest, f.pat.newest)
 
 	f.out.newsn = sn
-	if err := f.findInTree(ctx, *sn.Tree, string(filepath.Separator)); err != nil {
-		return err
-	}
-	return nil
+	return f.findInTree(ctx, *sn.Tree, string(filepath.Separator))
 }
 
 func runFind(opts FindOptions, gopts GlobalOptions, args []string) error {
