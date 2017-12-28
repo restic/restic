@@ -221,14 +221,21 @@ func isElem(e string, list []string) bool {
 	return false
 }
 
+const minSnapshotsReloadTime = 60 * time.Second
+
 // update snapshots if repository has changed
 func updateSnapshots(ctx context.Context, root *Root) {
+	if time.Since(root.lastCheck) < minSnapshotsReloadTime {
+		return
+	}
+
 	snapshots := restic.FindFilteredSnapshots(ctx, root.repo, root.cfg.Host, root.cfg.Tags, root.cfg.Paths)
 	if root.snCount != len(snapshots) {
 		root.snCount = len(snapshots)
 		root.repo.LoadIndex(ctx)
 		root.snapshots = snapshots
 	}
+	root.lastCheck = time.Now()
 }
 
 // read snapshot timestamps from the current repository-state.
