@@ -4,6 +4,8 @@
 package fuse
 
 import (
+	"time"
+
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
 
@@ -27,7 +29,9 @@ type Root struct {
 	inode         uint64
 	snapshots     restic.Snapshots
 	blobSizeCache *BlobSizeCache
-	snCount       int
+
+	snCount   int
+	lastCheck time.Time
 
 	*MetaDir
 }

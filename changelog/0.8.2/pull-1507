@@ -1,0 +1,3 @@
+Enhancement: Only reload snapshots once per minute for fuse mount
+
+https://github.com/restic/restic/pull/1507
