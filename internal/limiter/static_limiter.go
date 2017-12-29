@@ -2,6 +2,7 @@ package limiter
 
 import (
 	"io"
+	"net/http"
 
 	"github.com/juju/ratelimit"
 )
@@ -39,6 +40,39 @@ func (l staticLimiter) Upstream(r io.Reader) io.Reader {
 
 func (l staticLimiter) Downstream(r io.Reader) io.Reader {
 	return l.limit(r, l.downstream)
+}
+
+type roundTripper func(*http.Request) (*http.Response, error)
+
+func (rt roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return rt(req)
+}
+
+func (l staticLimiter) roundTripper(rt http.RoundTripper, req *http.Request) (*http.Response, error) {
+	if req.Body != nil {
+		req.Body = limitedReadCloser{
+			limited:  l.Upstream(req.Body),
+			original: req.Body,
+		}
+	}
+
+	res, err := rt.RoundTrip(req)
+
+	if res != nil && res.Body != nil {
+		res.Body = limitedReadCloser{
+			limited:  l.Downstream(res.Body),
+			original: res.Body,
+		}
+	}
+
+	return res, err
+}
+
+// Transport returns an HTTP transport limited with the limiter l.
+func (l staticLimiter) Transport(rt http.RoundTripper) http.RoundTripper {
+	return roundTripper(func(req *http.Request) (*http.Response, error) {
+		return l.roundTripper(rt, req)
+	})
 }
 
 func (l staticLimiter) limit(r io.Reader, b *ratelimit.Bucket) io.Reader {

@@ -323,14 +323,9 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 		return nil, errors.Fatal("Please specify repository location (-r)")
 	}
 
-	be, err := open(opts.Repo, opts.extended)
+	be, err := open(opts.Repo, opts, opts.extended)
 	if err != nil {
 		return nil, err
-	}
-
-	if opts.LimitUploadKb > 0 || opts.LimitDownloadKb > 0 {
-		debug.Log("rate limiting backend to %d KiB/s upload and %d KiB/s download", opts.LimitUploadKb, opts.LimitDownloadKb)
-		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(opts.LimitUploadKb, opts.LimitDownloadKb))
 	}
 
 	be = backend.NewRetryBackend(be, 10, func(msg string, err error, d time.Duration) {
@@ -532,7 +527,7 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 }
 
 // Open the backend specified by a location config.
-func open(s string, opts options.Options) (restic.Backend, error) {
+func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, error) {
 	debug.Log("parsing location %v", s)
 	loc, err := location.Parse(s)
 	if err != nil {
@@ -551,11 +546,18 @@ func open(s string, opts options.Options) (restic.Backend, error) {
 		return nil, err
 	}
 
+	// wrap the transport so that the throughput via HTTP is limited
+	rt = limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb).Transport(rt)
+
 	switch loc.Scheme {
 	case "local":
 		be, err = local.Open(cfg.(local.Config))
+		// wrap the backend in a LimitBackend so that the throughput is limited
+		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb))
 	case "sftp":
 		be, err = sftp.Open(cfg.(sftp.Config), SuspendSignalHandler, InstallSignalHandler)
+		// wrap the backend in a LimitBackend so that the throughput is limited
+		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb))
 	case "s3":
 		be, err = s3.Open(cfg.(s3.Config), rt)
 	case "gs":
