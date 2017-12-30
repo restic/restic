@@ -247,7 +247,7 @@ func generateFiles() {
 }
 
 func updateVersion() {
-	err := ioutil.WriteFile("VERSION", []byte(opts.Version), 0644)
+	err := ioutil.WriteFile("VERSION", []byte(opts.Version+"\n"), 0644)
 	if err != nil {
 		die("unable to write version to file: %v", err)
 	}
