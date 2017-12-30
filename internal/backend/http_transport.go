@@ -15,7 +15,7 @@ import (
 // Transport returns a new http.RoundTripper with default settings applied. If
 // a custom rootCertFilename is non-empty, it must point to a valid PEM file,
 // otherwise the function will return an error.
-func Transport(rootCertFilenames []string) (http.RoundTripper, error) {
+func Transport(rootCertFilenames []string, tlsClientCert string, tlsClientKey string) (http.RoundTripper, error) {
 	// copied from net/http
 	tr := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -29,6 +29,15 @@ func Transport(rootCertFilenames []string) (http.RoundTripper, error) {
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+		TLSClientConfig:       &tls.Config{},
+	}
+
+	if tlsClientCert != "" && tlsClientKey != "" {
+		c, err := tls.LoadX509KeyPair(tlsClientCert, tlsClientKey)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read client certificate/key pair: %v", err)
+		}
+		tr.TLSClientConfig.Certificates = []tls.Certificate{c}
 	}
 
 	if rootCertFilenames == nil {
@@ -49,9 +58,7 @@ func Transport(rootCertFilenames []string) (http.RoundTripper, error) {
 		}
 	}
 
-	tr.TLSClientConfig = &tls.Config{
-		RootCAs: p,
-	}
+	tr.TLSClientConfig.RootCAs = p
 
 	// wrap in the debug round tripper
 	return debug.RoundTripper(tr), nil

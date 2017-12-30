@@ -16,7 +16,7 @@ import (
 )
 
 func newSwiftTestSuite(t testing.TB) *test.Suite {
-	tr, err := backend.Transport(nil)
+	tr, err := backend.Transport(nil, "", "")
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}

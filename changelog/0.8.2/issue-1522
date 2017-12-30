@@ -1,0 +1,9 @@
+Enhancement: Add support for TLS client certificate authentication.
+
+Support has been added to the http backend for providing a TLS client
+certificate/key pair using `--tls-client-cert` and `--tls-client-key` when
+connecting to https resources that perform TLS client certificate
+authentication.
+
+https://github.com/restic/restic/issues/1522
+https://github.com/restic/restic/pull/1524

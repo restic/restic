@@ -121,7 +121,7 @@ func createS3(t testing.TB, cfg MinioTestConfig, tr http.RoundTripper) (be resti
 }
 
 func newMinioTestSuite(ctx context.Context, t testing.TB) *test.Suite {
-	tr, err := backend.Transport(nil)
+	tr, err := backend.Transport(nil, "", "")
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
@@ -221,7 +221,7 @@ func BenchmarkBackendMinio(t *testing.B) {
 }
 
 func newS3TestSuite(t testing.TB) *test.Suite {
-	tr, err := backend.Transport(nil)
+	tr, err := backend.Transport(nil, "", "")
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}

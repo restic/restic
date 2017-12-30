@@ -39,15 +39,17 @@ var version = "compiled manually"
 
 // GlobalOptions hold all global options for restic.
 type GlobalOptions struct {
-	Repo         string
-	PasswordFile string
-	Quiet        bool
-	NoLock       bool
-	JSON         bool
-	CacheDir     string
-	NoCache      bool
-	CACerts      []string
-	CleanupCache bool
+	Repo          string
+	PasswordFile  string
+	Quiet         bool
+	NoLock        bool
+	JSON          bool
+	CacheDir      string
+	NoCache       bool
+	CACerts       []string
+	TLSClientCert string
+	TLSClientKey  string
+	CleanupCache  bool
 
 	LimitUploadKb   int
 	LimitDownloadKb int
@@ -84,6 +86,8 @@ func init() {
 	f.StringVar(&globalOptions.CacheDir, "cache-dir", "", "set the cache directory")
 	f.BoolVar(&globalOptions.NoCache, "no-cache", false, "do not use a local cache")
 	f.StringSliceVar(&globalOptions.CACerts, "cacert", nil, "path to load root certificates from (default: use system certificates)")
+	f.StringVar(&globalOptions.TLSClientCert, "tls-client-cert", "", "path to a TLS client certificate")
+	f.StringVar(&globalOptions.TLSClientKey, "tls-client-key", "", "path to a TLS client certificate key")
 	f.BoolVar(&globalOptions.CleanupCache, "cleanup-cache", false, "auto remove old cache directories")
 	f.IntVar(&globalOptions.LimitUploadKb, "limit-upload", 0, "limits uploads to a maximum rate in KiB/s. (default: unlimited)")
 	f.IntVar(&globalOptions.LimitDownloadKb, "limit-download", 0, "limits downloads to a maximum rate in KiB/s. (default: unlimited)")
@@ -541,7 +545,7 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 		return nil, err
 	}
 
-	rt, err := backend.Transport(globalOptions.CACerts)
+	rt, err := backend.Transport(globalOptions.CACerts, globalOptions.TLSClientCert, globalOptions.TLSClientKey)
 	if err != nil {
 		return nil, err
 	}
@@ -605,7 +609,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return nil, err
 	}
 
-	rt, err := backend.Transport(globalOptions.CACerts)
+	rt, err := backend.Transport(globalOptions.CACerts, globalOptions.TLSClientCert, globalOptions.TLSClientKey)
 	if err != nil {
 		return nil, err
 	}
