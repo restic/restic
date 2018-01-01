@@ -102,7 +102,7 @@ News
 ----
 
 You can follow the restic project on Twitter `@resticbackup <https://twitter.com/resticbackup>`__ or by subscribing to
-the `development blog <https://restic.github.io/blog/>`__.
+the `development blog <https://restic.net/blog/>`__.
 
 License
 -------
