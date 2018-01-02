@@ -147,7 +147,7 @@ saved. Now a second statement is created:
 
    Effect: Allow
    Service: Amazon S3
-   Actions: ListBucket
+   Actions: ListObjects
    Resource: arn:aws:s3:::restic-demo
 
 Again, substitute ``restic-demo`` with the actual name of your bucket. Note that,
