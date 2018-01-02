@@ -622,6 +622,11 @@ func (c *Checker) CountPacks() uint64 {
 	return uint64(len(c.packs))
 }
 
+// GetPacks returns IDSet of packs in the repository
+func (c *Checker) GetPacks() restic.IDSet {
+	return c.packs
+}
+
 // checkPack reads a pack and checks the integrity of all blobs.
 func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 	debug.Log("checking pack %v", id)
@@ -697,6 +702,11 @@ func checkPack(ctx context.Context, r restic.Repository, id restic.ID) error {
 
 // ReadData loads all data from the repository and checks the integrity.
 func (c *Checker) ReadData(ctx context.Context, p *restic.Progress, errChan chan<- error) {
+	c.ReadPacks(ctx, c.packs, p, errChan)
+}
+
+// ReadPacks loads data from specified packs and checks the integrity.
+func (c *Checker) ReadPacks(ctx context.Context, packs restic.IDSet, p *restic.Progress, errChan chan<- error) {
 	defer close(errChan)
 
 	p.Start()
@@ -704,18 +714,6 @@ func (c *Checker) ReadData(ctx context.Context, p *restic.Progress, errChan chan
 
 	g, ctx := errgroup.WithContext(ctx)
 	ch := make(chan restic.ID)
-
-	// start producer for channel ch
-	g.Go(func() error {
-		defer close(ch)
-		return c.repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
-			select {
-			case <-ctx.Done():
-			case ch <- id:
-			}
-			return nil
-		})
-	})
 
 	// run workers
 	for i := 0; i < defaultParallelism; i++ {
@@ -747,6 +745,15 @@ func (c *Checker) ReadData(ctx context.Context, p *restic.Progress, errChan chan
 			}
 		})
 	}
+
+	// push packs to ch
+	for pack := range packs {
+		select {
+		case ch <- pack:
+		case <-ctx.Done():
+		}
+	}
+	close(ch)
 
 	err := g.Wait()
 	if err != nil {

@@ -1,0 +1,7 @@
+Enhancement: Add --read-data-subset flag to check command
+
+This change introduces ability to check integrity of a subset of repository 
+data packs. This can be used to spread integrity check of larger repositories
+over period of time.
+
+https://github.com/restic/restic/issues/1497
