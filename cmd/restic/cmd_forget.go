@@ -162,9 +162,6 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 			snapshotGroups[string(k)] = append(snapshotGroups[string(k)], sn)
 		}
 	}
-	if len(args) > 0 {
-		return nil
-	}
 
 	policy := restic.ExpirePolicy{
 		Last:    opts.Last,
@@ -176,56 +173,57 @@ func runForget(opts ForgetOptions, gopts GlobalOptions, args []string) error {
 		Tags:    opts.KeepTags,
 	}
 
-	if policy.Empty() {
+	if policy.Empty() && len(args) == 0 {
 		Verbosef("no policy was specified, no snapshots will be removed\n")
-		return nil
 	}
 
-	for k, snapshotGroup := range snapshotGroups {
-		var key key
-		if json.Unmarshal([]byte(k), &key) != nil {
-			return err
-		}
+	if !policy.Empty() {
+		for k, snapshotGroup := range snapshotGroups {
+			var key key
+			if json.Unmarshal([]byte(k), &key) != nil {
+				return err
+			}
 
-		// Info
-		Verbosef("snapshots")
-		var infoStrings []string
-		if GroupByTag {
-			infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
-		}
-		if GroupByHost {
-			infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
-		}
-		if GroupByPath {
-			infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
-		}
-		if infoStrings != nil {
-			Verbosef(" for (" + strings.Join(infoStrings, ", ") + ")")
-		}
-		Verbosef(":\n\n")
+			// Info
+			Verbosef("snapshots")
+			var infoStrings []string
+			if GroupByTag {
+				infoStrings = append(infoStrings, "tags ["+strings.Join(key.Tags, ", ")+"]")
+			}
+			if GroupByHost {
+				infoStrings = append(infoStrings, "host ["+key.Hostname+"]")
+			}
+			if GroupByPath {
+				infoStrings = append(infoStrings, "paths ["+strings.Join(key.Paths, ", ")+"]")
+			}
+			if infoStrings != nil {
+				Verbosef(" for (" + strings.Join(infoStrings, ", ") + ")")
+			}
+			Verbosef(":\n\n")
 
-		keep, remove := restic.ApplyPolicy(snapshotGroup, policy)
+			keep, remove := restic.ApplyPolicy(snapshotGroup, policy)
 
-		if len(keep) != 0 && !gopts.Quiet {
-			Printf("keep %d snapshots:\n", len(keep))
-			PrintSnapshots(globalOptions.stdout, keep, opts.Compact)
-			Printf("\n")
-		}
+			if len(keep) != 0 && !gopts.Quiet {
+				Printf("keep %d snapshots:\n", len(keep))
+				PrintSnapshots(globalOptions.stdout, keep, opts.Compact)
+				Printf("\n")
+			}
 
-		if len(remove) != 0 && !gopts.Quiet {
-			Printf("remove %d snapshots:\n", len(remove))
-			PrintSnapshots(globalOptions.stdout, remove, opts.Compact)
-			Printf("\n")
-		}
+			if len(remove) != 0 && !gopts.Quiet {
+				Printf("remove %d snapshots:\n", len(remove))
+				PrintSnapshots(globalOptions.stdout, remove, opts.Compact)
+				Printf("\n")
+			}
 
-		removeSnapshots += len(remove)
+			removeSnapshots += len(remove)
 
-		if !opts.DryRun {
-			for _, sn := range remove {
-				h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
-				err = repo.Backend().Remove(gopts.ctx, h)
-				if err != nil {
-					return err
+			if !opts.DryRun {
+				for _, sn := range remove {
+					h := restic.Handle{Type: restic.SnapshotFile, Name: sn.ID().String()}
+					err = repo.Backend().Remove(gopts.ctx, h)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
