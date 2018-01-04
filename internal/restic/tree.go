@@ -21,12 +21,12 @@ func NewTree() *Tree {
 	}
 }
 
-func (t Tree) String() string {
+func (t *Tree) String() string {
 	return fmt.Sprintf("Tree<%d nodes>", len(t.Nodes))
 }
 
 // Equals returns true if t and other have exactly the same nodes.
-func (t Tree) Equals(other *Tree) bool {
+func (t *Tree) Equals(other *Tree) bool {
 	if len(t.Nodes) != len(other.Nodes) {
 		debug.Log("tree.Equals(): trees have different number of nodes")
 		return false
@@ -46,8 +46,8 @@ func (t Tree) Equals(other *Tree) bool {
 
 // Insert adds a new node at the correct place in the tree.
 func (t *Tree) Insert(node *Node) error {
-	pos, _, err := t.binarySearch(node.Name)
-	if err == nil {
+	pos, found := t.find(node.Name)
+	if found != nil {
 		return errors.Errorf("node %q already present", node.Name)
 	}
 
@@ -59,16 +59,26 @@ func (t *Tree) Insert(node *Node) error {
 	return nil
 }
 
-func (t Tree) binarySearch(name string) (int, *Node, error) {
+func (t *Tree) find(name string) (int, *Node) {
 	pos := sort.Search(len(t.Nodes), func(i int) bool {
 		return t.Nodes[i].Name >= name
 	})
 
 	if pos < len(t.Nodes) && t.Nodes[pos].Name == name {
-		return pos, t.Nodes[pos], nil
+		return pos, t.Nodes[pos]
 	}
 
-	return pos, nil, errors.New("named node not found")
+	return pos, nil
+}
+
+// Find returns a node with the given name, or nil if none could be found.
+func (t *Tree) Find(name string) *Node {
+	if t == nil {
+		return nil
+	}
+
+	_, node := t.find(name)
+	return node
 }
 
 // Sort sorts the nodes by name.
@@ -79,7 +89,7 @@ func (t *Tree) Sort() {
 }
 
 // Subtrees returns a slice of all subtree IDs of the tree.
-func (t Tree) Subtrees() (trees IDs) {
+func (t *Tree) Subtrees() (trees IDs) {
 	for _, node := range t.Nodes {
 		if node.Type == "dir" && node.Subtree != nil {
 			trees = append(trees, *node.Subtree)
