@@ -5,14 +5,15 @@ import (
 )
 
 // HasPathPrefix returns true if p is a subdir of (or a file within) base. It
-// assumes a file system which is case sensitive. For relative paths, false is
-// returned.
+// assumes a file system which is case sensitive. If the paths are not of the
+// same type (one is relative, the other is absolute), false is returned.
 func HasPathPrefix(base, p string) bool {
 	if filepath.VolumeName(base) != filepath.VolumeName(p) {
 		return false
 	}
 
-	if !filepath.IsAbs(base) || !filepath.IsAbs(p) {
+	// handle case when base and p are not of the same type
+	if filepath.IsAbs(base) != filepath.IsAbs(p) {
 		return false
 	}
 
