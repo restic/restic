@@ -52,27 +52,7 @@ func Open(cfg Config) (*Local, error) {
 		return nil, err
 	}
 
-	be := &Local{Config: cfg, Layout: l}
-
-	// if data dir exists, make sure that all subdirs also exist
-	datadir := be.Dirname(restic.Handle{Type: restic.DataFile})
-	if dirExists(datadir) {
-		debug.Log("datadir %v exists", datadir)
-		for _, d := range be.Paths() {
-			if !fs.HasPathPrefix(datadir, d) {
-				debug.Log("%v is not subdir of datadir %v", d, datadir)
-				continue
-			}
-
-			debug.Log("MkdirAll %v", d)
-			err := fs.MkdirAll(d, backend.Modes.Dir)
-			if err != nil {
-				return nil, errors.Wrap(err, "MkdirAll")
-			}
-		}
-	}
-
-	return be, nil
+	return &Local{Config: cfg, Layout: l}, nil
 }
 
 // Create creates all the necessary files and directories for a new local
@@ -124,20 +104,24 @@ func (b *Local) Save(ctx context.Context, h restic.Handle, rd io.Reader) error {
 		return err
 	}
 
-	if h.Type == restic.LockFile {
-		lockDir := b.Dirname(h)
-		if !dirExists(lockDir) {
-			debug.Log("locks/ does not exist yet, creating now.")
-			if err := fs.MkdirAll(lockDir, backend.Modes.Dir); err != nil {
-				return errors.Wrap(err, "MkdirAll")
-			}
-		}
-	}
-
 	filename := b.Filename(h)
 
 	// create new file
 	f, err := fs.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
+
+	if b.IsNotExist(err) {
+		debug.Log("error %v: creating dir", err)
+
+		// error is caused by a missing directory, try to create it
+		mkdirErr := os.MkdirAll(filepath.Dir(filename), backend.Modes.Dir)
+		if mkdirErr != nil {
+			debug.Log("error creating dir %v: %v", filepath.Dir(filename), mkdirErr)
+		} else {
+			// try again
+			f, err = fs.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY, backend.Modes.File)
+		}
+	}
+
 	if err != nil {
 		return errors.Wrap(err, "OpenFile")
 	}
@@ -254,7 +238,7 @@ func (b *Local) List(ctx context.Context, t restic.FileType) <-chan string {
 
 		basedir, subdirs := b.Basedir(t)
 		err := fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
-			debug.Log("walk on %v, %v\n", path, fi.IsDir())
+			debug.Log("walk on %v\n", path)
 			if err != nil {
 				return err
 			}

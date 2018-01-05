@@ -21,7 +21,10 @@ func TestHasPathPrefix(t *testing.T) {
 		base, p string
 		result  bool
 	}{
-		{"", "", false},
+		{"", "", true},
+		{".", ".", true},
+		{".", "foo", true},
+		{"foo", ".", false},
 		{"/", "", false},
 		{"/", "x", false},
 		{"x", "/", false},
@@ -36,6 +39,10 @@ func TestHasPathPrefix(t *testing.T) {
 		{"/home/user/foo", "/home/user/foobar", false},
 		{"/home/user/Foo", "/home/user/foo/bar/baz", false},
 		{"/home/user/foo", "/home/user/Foo/bar/baz", false},
+		{"user/foo", "user/foo/bar/baz", true},
+		{"user/foo", "./user/foo", true},
+		{"user/foo", "./user/foo/", true},
+		{"/home/user/foo", "./user/foo/", false},
 	}
 
 	for _, test := range tests {
