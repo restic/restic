@@ -114,4 +114,5 @@ via other protocols.
 The following may work:
 
 ::
+
     $ restic init -r sftp:user@nas:/restic-repo init
