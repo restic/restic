@@ -132,46 +132,9 @@ func Open(cfg Config, preExec, postExec func()) (*SFTP, error) {
 
 	debug.Log("layout: %v\n", sftp.Layout)
 
-	if err := sftp.checkDataSubdirs(); err != nil {
-		debug.Log("checkDataSubdirs returned %v", err)
-		return nil, err
-	}
-
 	sftp.Config = cfg
 	sftp.p = cfg.Path
 	return sftp, nil
-}
-
-func (r *SFTP) checkDataSubdirs() error {
-	datadir := r.Dirname(restic.Handle{Type: restic.DataFile})
-
-	// check if all paths for data/ exist
-	entries, err := r.ReadDir(datadir)
-	if r.IsNotExist(err) {
-		return nil
-	}
-
-	if err != nil {
-		return err
-	}
-
-	subdirs := make(map[string]struct{}, len(entries))
-	for _, entry := range entries {
-		subdirs[entry.Name()] = struct{}{}
-	}
-
-	for i := 0; i < 256; i++ {
-		subdir := fmt.Sprintf("%02x", i)
-		if _, ok := subdirs[subdir]; !ok {
-			debug.Log("subdir %v is missing, creating", subdir)
-			err := r.mkdirAll(path.Join(datadir, subdir), backend.Modes.Dir)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 func (r *SFTP) mkdirAllDataSubdirs() error {
@@ -203,6 +166,8 @@ func (r *SFTP) ReadDir(dir string) ([]os.FileInfo, error) {
 
 // IsNotExist returns true if the error is caused by a not existing file.
 func (r *SFTP) IsNotExist(err error) bool {
+	err = errors.Cause(err)
+
 	if os.IsNotExist(err) {
 		return true
 	}
@@ -334,14 +299,16 @@ func (r *SFTP) Save(ctx context.Context, h restic.Handle, rd io.Reader) (err err
 
 	// create new file
 	f, err := r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
-	if r.IsNotExist(errors.Cause(err)) {
-		// create the locks dir, then try again
-		err = r.mkdirAll(r.Dirname(h), backend.Modes.Dir)
-		if err != nil {
-			return errors.Wrap(err, "MkdirAll")
-		}
 
-		return r.Save(ctx, h, rd)
+	if r.IsNotExist(err) {
+		// error is caused by a missing directory, try to create it
+		mkdirErr := r.mkdirAll(r.Dirname(h), backend.Modes.Dir)
+		if mkdirErr != nil {
+			debug.Log("error creating dir %v: %v", r.Dirname(h), mkdirErr)
+		} else {
+			// try again
+			f, err = r.c.OpenFile(filename, os.O_CREATE|os.O_EXCL|os.O_WRONLY)
+		}
 	}
 
 	if err != nil {
