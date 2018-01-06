@@ -34,5 +34,5 @@ func Fatal(s string) error {
 
 // Fatalf returns an error which implements the Fataler interface.
 func Fatalf(s string, data ...interface{}) error {
-	return fatalError(fmt.Sprintf(s, data...))
+	return Wrap(fatalError(fmt.Sprintf(s, data...)), "Fatal")
 }
