@@ -1,0 +1,9 @@
+Bugfix: Restore directory permissions as the last step
+
+This change allows restoring into directories that were not writable during
+backup. Before, restic created the directory, set the read-only mode and then
+failed to create files in the directory. This change now restores the directory
+(with its permissions) as the very last step.
+
+https://github.com/restic/restic/issues/1512
+https://github.com/restic/restic/pull/1536

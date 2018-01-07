@@ -29,6 +29,7 @@ type File struct {
 
 type Dir struct {
 	Nodes map[string]Node
+	Mode  os.FileMode
 }
 
 func saveFile(t testing.TB, repo restic.Repository, node File) restic.ID {
@@ -63,9 +64,15 @@ func saveDir(t testing.TB, repo restic.Repository, nodes map[string]Node) restic
 			})
 		case Dir:
 			id = saveDir(t, repo, node.Nodes)
+
+			mode := node.Mode
+			if mode == 0 {
+				mode = 0755
+			}
+
 			tree.Insert(&restic.Node{
 				Type:    "dir",
-				Mode:    0755,
+				Mode:    mode,
 				Name:    name,
 				UID:     uint32(os.Getuid()),
 				GID:     uint32(os.Getgid()),
@@ -164,6 +171,34 @@ func TestRestorer(t *testing.T) {
 				"top":             "toplevel file",
 				"dir/file":        "file in dir",
 				"dir/subdir/file": "file in subdir",
+			},
+		},
+		{
+			Snapshot: Snapshot{
+				Nodes: map[string]Node{
+					"dir": Dir{
+						Mode: 0444,
+					},
+					"file": File{"top-level file"},
+				},
+			},
+			Files: map[string]string{
+				"file": "top-level file",
+			},
+		},
+		{
+			Snapshot: Snapshot{
+				Nodes: map[string]Node{
+					"dir": Dir{
+						Mode: 0555,
+						Nodes: map[string]Node{
+							"file": File{"file in dir"},
+						},
+					},
+				},
+			},
+			Files: map[string]string{
+				"dir/file": "file in dir",
 			},
 		},
 
