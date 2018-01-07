@@ -1,0 +1,4 @@
+Enhancement: Add support for storing backups on Google Drive
+
+https://github.com/restic/restic/pull/1505
+https://github.com/restic/restic/issues/527

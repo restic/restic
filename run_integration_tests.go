@@ -221,6 +221,13 @@ func (env *TravisEnvironment) RunTests() error {
 		msg("GS repository not available\n")
 	}
 
+	// if gdrive test repository prefix is available, make sure that the test is not skipped
+	if os.Getenv("RESTIC_TEST_GDRIVE_PREFIX") != "" {
+		ensureTests = append(ensureTests, "restic/backend/gdrive.TestBackendGDrive")
+	} else {
+		msg("GDrive repository prefix not available\n")
+	}
+
 	env.env["RESTIC_TEST_DISALLOW_SKIP"] = strings.Join(ensureTests, ",")
 
 	if *runCrossCompile {

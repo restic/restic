@@ -381,6 +381,49 @@ established.
 .. _service account: https://cloud.google.com/storage/docs/authentication#service_accounts
 .. _create a service account key: https://cloud.google.com/storage/docs/authentication#generating-a-private-key
 
+Google Drive
+************
+
+Restic supports Google Drive as a backend.
+
+Restic connects to Google Drive via a `service account`_.
+
+To use the Google Cloud Storage backend, first `create a service account key`_
+and download the JSON credentials file. Export the path to the JSON key file as follows:
+
+.. code-block:: console
+
+    $ export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gs-secret-restic-key.json
+
+Second, create a backup folder in your Google Drive and share the folder with the service 
+account (use Service account ID as the email).
+
+Then you can use the ``gdrive:`` backend type to create a new repository under the folder
+you create in the Google Drive:
+
+.. code-block:: console
+
+    $ restic -r gdrive:restic-test/repo init
+    enter password for new backend:
+    enter password again:
+
+    created restic backend 9d34e4eec5 at gdrive:restic-test/repo
+    [...]
+
+The number of concurrent connections to the GCS service can be set with the
+`-o gs.connections=10`. By default, at most five parallel connections are
+established.
+
+Nota the Google enforces rather low default "1000 requests per user per 100 seconds" 
+quota on Drive requests. While this should not affect restic operations, 
+you can see messages like below when restic retries requests rejected by Google:
+
+.. code-block:: console
+
+    ...
+    Test(<data/ee8b4e790a>) returned error, retrying after 5.291924879s: googleapi: Error 403: User Rate Limit Exceeded, userRateLimitExceeded
+    ...
+
 Password prompt on Windows
 **************************
 

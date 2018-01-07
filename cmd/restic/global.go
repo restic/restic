@@ -15,6 +15,7 @@ import (
 	"github.com/restic/restic/internal/backend"
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/b2"
+	"github.com/restic/restic/internal/backend/gdrive"
 	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/location"
@@ -392,6 +393,17 @@ func OpenRepository(opts GlobalOptions) (*repository.Repository, error) {
 	return s, nil
 }
 
+func googleApplicationCredentialsFromEnvironment() (string, error) {
+	if path := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); path != "" {
+		// Check read access
+		if _, err := ioutil.ReadFile(path); err != nil {
+			return "", errors.Fatalf("Failed to read google credential from file %v: %v", path, err)
+		}
+		return path, nil
+	}
+	return "", errors.Fatal("Environment variable $GOOGLE_APPLICATION_CREDENTIALS is not set")
+}
+
 func parseConfig(loc location.Location, opts options.Options) (interface{}, error) {
 	// only apply options for a particular backend here
 	opts = opts.Extract(loc.Scheme)
@@ -438,16 +450,10 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.ProjectID = os.Getenv("GOOGLE_PROJECT_ID")
 		}
 
-		if cfg.JSONKeyPath == "" {
-			if path := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); path != "" {
-				// Check read access
-				if _, err := ioutil.ReadFile(path); err != nil {
-					return nil, errors.Fatalf("Failed to read google credential from file %v: %v", path, err)
-				}
-				cfg.JSONKeyPath = path
-			} else {
-				return nil, errors.Fatal("No credential file path is set")
-			}
+		if path, err := googleApplicationCredentialsFromEnvironment(); err == nil {
+			cfg.JSONKeyPath = path
+		} else {
+			return nil, err
 		}
 
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
@@ -455,6 +461,22 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 		}
 
 		debug.Log("opening gs repository at %#v", cfg)
+		return cfg, nil
+
+	case "gdrive":
+		cfg := loc.Config.(gdrive.Config)
+
+		if path, err := googleApplicationCredentialsFromEnvironment(); err == nil {
+			cfg.JSONKeyPath = path
+		} else {
+			return nil, err
+		}
+
+		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
+			return nil, err
+		}
+
+		debug.Log("opening gdrive repository at %#v", cfg)
 		return cfg, nil
 
 	case "azure":
@@ -562,6 +584,8 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 		be, err = s3.Open(cfg.(s3.Config), rt)
 	case "gs":
 		be, err = gs.Open(cfg.(gs.Config))
+	case "gdrive":
+		be, err = gdrive.Open(globalOptions.ctx, cfg.(gdrive.Config), rt)
 	case "azure":
 		be, err = azure.Open(cfg.(azure.Config), rt)
 	case "swift":
@@ -619,6 +643,8 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 		return s3.Create(cfg.(s3.Config), rt)
 	case "gs":
 		return gs.Create(cfg.(gs.Config))
+	case "gdrive":
+		return gdrive.Create(globalOptions.ctx, cfg.(gdrive.Config), rt)
 	case "azure":
 		return azure.Create(cfg.(azure.Config), rt)
 	case "swift":

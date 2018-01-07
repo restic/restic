@@ -6,6 +6,7 @@ import (
 
 	"github.com/restic/restic/internal/backend/azure"
 	"github.com/restic/restic/internal/backend/b2"
+	"github.com/restic/restic/internal/backend/gdrive"
 	"github.com/restic/restic/internal/backend/gs"
 	"github.com/restic/restic/internal/backend/local"
 	"github.com/restic/restic/internal/backend/rest"
@@ -35,6 +36,7 @@ var parsers = []parser{
 	{"sftp", sftp.ParseConfig},
 	{"s3", s3.ParseConfig},
 	{"gs", gs.ParseConfig},
+	{"gdrive", gdrive.ParseConfig},
 	{"azure", azure.ParseConfig},
 	{"swift", swift.ParseConfig},
 	{"rest", rest.ParseConfig},
