@@ -65,11 +65,11 @@ var invalidOptsTests = []struct {
 }{
 	{
 		[]string{"=bar", "bar=baz", "k="},
-		"empty key is not a valid option",
+		"Fatal: empty key is not a valid option",
 	},
 	{
 		[]string{"x=1", "foo=bar", "y=2", "foo=baz"},
-		`key "foo" present more than once`,
+		`Fatal: key "foo" present more than once`,
 	},
 }
 
@@ -185,7 +185,7 @@ var invalidSetTests = []struct {
 			"first_name": "foobar",
 		},
 		"ns",
-		"option ns.first_name is not known",
+		"Fatal: option ns.first_name is not known",
 	},
 	{
 		Options{
