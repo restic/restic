@@ -1,3 +1,5 @@
+// +build !windows
+
 package fuse
 
 // Unmount tries to unmount the filesystem mounted at dir.
