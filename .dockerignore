@@ -1,0 +1,5 @@
+*
+!cmd
+!internal
+!vendor
+!*.go

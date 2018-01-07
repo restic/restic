@@ -2,10 +2,9 @@
 
 set -e
 
-echo "Build binary using golang docker image"
-docker run --rm -ti \
-    -v `pwd`:/go/src/github.com/restic/restic \
-    -w /go/src/github.com/restic/restic golang:1.8.3-alpine go run build.go
+# figure out the directory this script sits in
+dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
 
 echo "Build docker image restic/restic:latest"
-docker build --rm -t restic/restic:latest -f docker/Dockerfile .
+docker build --rm -t restic/restic:latest -f "$dir/Dockerfile" "$dir/.."

@@ -2,10 +2,8 @@
 
 ## Build
 
-From the root of this repository run:
-
 ```
-./docker/build.sh
+./build.sh
 ```
 
 image name will be `restic/restic:latest`
