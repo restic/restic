@@ -178,6 +178,19 @@ func TestRestorer(t *testing.T) {
 				Nodes: map[string]Node{
 					"dir": Dir{
 						Mode: 0444,
+					},
+					"file": File{"top-level file"},
+				},
+			},
+			Files: map[string]string{
+				"file": "top-level file",
+			},
+		},
+		{
+			Snapshot: Snapshot{
+				Nodes: map[string]Node{
+					"dir": Dir{
+						Mode: 0555,
 						Nodes: map[string]Node{
 							"file": File{"file in dir"},
 						},

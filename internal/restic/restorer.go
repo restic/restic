@@ -79,13 +79,6 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 		selectedForRestore, childMayBeSelected := res.SelectFilter(nodeLocation, nodeTarget, node)
 		debug.Log("SelectFilter returned %v %v", selectedForRestore, childMayBeSelected)
 
-		if selectedForRestore {
-			err = res.restoreNodeTo(ctx, node, nodeTarget, nodeLocation, idx)
-			if err != nil {
-				return err
-			}
-		}
-
 		if node.Type == "dir" && childMayBeSelected {
 			if node.Subtree == nil {
 				return errors.Errorf("Dir without subtree in tree %v", treeID.Str())
@@ -98,14 +91,19 @@ func (res *Restorer) restoreTo(ctx context.Context, target, location string, tre
 					return err
 				}
 			}
+		}
 
-			if selectedForRestore {
-				// Restore directory timestamp at the end. If we would do it earlier, restoring files within
-				// the directory would overwrite the timestamp of the directory they are in.
-				err = node.RestoreTimestamps(nodeTarget)
-				if err != nil {
-					return err
-				}
+		if selectedForRestore {
+			err = res.restoreNodeTo(ctx, node, nodeTarget, nodeLocation, idx)
+			if err != nil {
+				return err
+			}
+
+			// Restore directory timestamp at the end. If we would do it earlier, restoring files within
+			// the directory would overwrite the timestamp of the directory they are in.
+			err = node.RestoreTimestamps(nodeTarget)
+			if err != nil {
+				return err
 			}
 		}
 	}
