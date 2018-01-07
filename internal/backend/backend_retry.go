@@ -117,3 +117,14 @@ func (be *RetryBackend) Remove(ctx context.Context, h restic.Handle) (err error)
 		return be.Backend.Remove(ctx, h)
 	})
 }
+
+// Test a boolean value whether a File with the name and type exists.
+func (be *RetryBackend) Test(ctx context.Context, h restic.Handle) (exists bool, err error) {
+	err = be.retry(ctx, fmt.Sprintf("Test(%v)", h), func() error {
+		var innerError error
+		exists, innerError = be.Backend.Test(ctx, h)
+
+		return innerError
+	})
+	return exists, err
+}
