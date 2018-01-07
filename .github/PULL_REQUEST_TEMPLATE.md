@@ -25,7 +25,7 @@ Link issues and relevant forum posts here.
 - [ ] I have read the [Contribution Guidelines](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#providing-patches)
 - [ ] I have added tests for all changes in this PR
 - [ ] I have added documentation for the changes (in the manual)
-- [ ] There's an entry in the `CHANGELOG.md` file that describe the changes for our users
+- [ ] There's a new file in a subdir of `changelog/x.y.z` that describe the changes for our users (template [here](https://github.com/restic/restic/blob/master/changelog/changelog-entry.tmpl))
 - [ ] I have run `gofmt` on the code in all commits
 - [ ] All commit messages are formatted in the same style as [the other commits in the repo](https://github.com/restic/restic/blob/master/CONTRIBUTING.md#git-commits)
 - [ ] I'm done, this Pull Request is ready for review
