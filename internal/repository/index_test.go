@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"bytes"
+	"math/rand"
 	"testing"
 
 	"github.com/restic/restic/internal/repository"
@@ -378,4 +379,58 @@ func TestIndexPacks(t *testing.T) {
 
 	idxPacks := idx.Packs()
 	rtest.Assert(t, packs.Equals(idxPacks), "packs in index do not match packs added to index")
+}
+
+const maxPackSize = 16 * 1024 * 1024
+
+func createRandomIndex() (idx *repository.Index, lookupID restic.ID) {
+	idx = repository.NewIndex()
+
+	// create index with 200k pack files
+	for i := 0; i < 200000; i++ {
+		packID := restic.NewRandomID()
+		offset := 0
+		for offset < maxPackSize {
+			size := 2000 + rand.Intn(4*1024*1024)
+			id := restic.NewRandomID()
+			idx.Store(restic.PackedBlob{
+				PackID: packID,
+				Blob: restic.Blob{
+					Type:   restic.DataBlob,
+					ID:     id,
+					Length: uint(size),
+					Offset: uint(offset),
+				},
+			})
+
+			offset += size
+
+			if rand.Float32() < 0.001 && lookupID.IsNull() {
+				lookupID = id
+			}
+		}
+	}
+
+	return idx, lookupID
+}
+
+func BenchmarkIndexHasUnknown(b *testing.B) {
+	idx, _ := createRandomIndex()
+	lookupID := restic.NewRandomID()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		idx.Has(lookupID, restic.DataBlob)
+	}
+}
+
+func BenchmarkIndexHasKnown(b *testing.B) {
+	idx, lookupID := createRandomIndex()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		idx.Has(lookupID, restic.DataBlob)
+	}
 }
