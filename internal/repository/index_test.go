@@ -434,3 +434,52 @@ func BenchmarkIndexHasKnown(b *testing.B) {
 		idx.Has(lookupID, restic.DataBlob)
 	}
 }
+
+func TestIndexHas(t *testing.T) {
+	type testEntry struct {
+		id             restic.ID
+		pack           restic.ID
+		tpe            restic.BlobType
+		offset, length uint
+	}
+	tests := []testEntry{}
+
+	idx := repository.NewIndex()
+
+	// create 50 packs with 20 blobs each
+	for i := 0; i < 50; i++ {
+		packID := restic.NewRandomID()
+
+		pos := uint(0)
+		for j := 0; j < 20; j++ {
+			id := restic.NewRandomID()
+			length := uint(i*100 + j)
+			idx.Store(restic.PackedBlob{
+				Blob: restic.Blob{
+					Type:   restic.DataBlob,
+					ID:     id,
+					Offset: pos,
+					Length: length,
+				},
+				PackID: packID,
+			})
+
+			tests = append(tests, testEntry{
+				id:     id,
+				pack:   packID,
+				tpe:    restic.DataBlob,
+				offset: pos,
+				length: length,
+			})
+
+			pos += length
+		}
+	}
+
+	for _, testBlob := range tests {
+		rtest.Assert(t, idx.Has(testBlob.id, testBlob.tpe), "Index reports not having data blob added to it")
+	}
+
+	rtest.Assert(t, !idx.Has(restic.NewRandomID(), restic.DataBlob), "Index reports having a data blob not added to it")
+	rtest.Assert(t, !idx.Has(tests[0].id, restic.TreeBlob), "Index reports having a tree blob added to it with the same id as a data blob")
+}
