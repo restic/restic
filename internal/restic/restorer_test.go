@@ -264,7 +264,7 @@ func TestRestorer(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := restic.NewRestorer(repo, id)
+			res, err := restic.NewRestorer(repo, id, 1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -398,7 +398,7 @@ func TestRestorerRelative(t *testing.T) {
 			_, id := saveSnapshot(t, repo, test.Snapshot)
 			t.Logf("snapshot saved as %v", id.Str())
 
-			res, err := restic.NewRestorer(repo, id)
+			res, err := restic.NewRestorer(repo, id, 1)
 			if err != nil {
 				t.Fatal(err)
 			}
