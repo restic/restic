@@ -1,0 +1,7 @@
+Enhancement: Reduce memory allocations for querying the index
+
+This change reduces the internal memory allocations when the index data
+structures in memory are queried if a blob (part of a file) already exists in
+the repo. It should speed up backup a bit, and maybe even reduce RAM usage.
+
+https://github.com/restic/restic/pull/1538
