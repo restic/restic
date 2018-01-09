@@ -169,12 +169,13 @@ func (idx *Index) ListPack(id restic.ID) (list []restic.PackedBlob) {
 
 // Has returns true iff the id is listed in the index.
 func (idx *Index) Has(id restic.ID, tpe restic.BlobType) bool {
-	_, err := idx.Lookup(id, tpe)
-	if err == nil {
-		return true
-	}
+	idx.m.Lock()
+	defer idx.m.Unlock()
 
-	return false
+	h := restic.BlobHandle{ID: id, Type: tpe}
+
+	_, ok := idx.pack[h]
+	return ok
 }
 
 // LookupSize returns the length of the plaintext content of the blob with the

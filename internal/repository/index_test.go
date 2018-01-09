@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"bytes"
+	"math/rand"
 	"testing"
 
 	"github.com/restic/restic/internal/repository"
@@ -378,4 +379,107 @@ func TestIndexPacks(t *testing.T) {
 
 	idxPacks := idx.Packs()
 	rtest.Assert(t, packs.Equals(idxPacks), "packs in index do not match packs added to index")
+}
+
+const maxPackSize = 16 * 1024 * 1024
+
+func createRandomIndex() (idx *repository.Index, lookupID restic.ID) {
+	idx = repository.NewIndex()
+
+	// create index with 200k pack files
+	for i := 0; i < 200000; i++ {
+		packID := restic.NewRandomID()
+		offset := 0
+		for offset < maxPackSize {
+			size := 2000 + rand.Intn(4*1024*1024)
+			id := restic.NewRandomID()
+			idx.Store(restic.PackedBlob{
+				PackID: packID,
+				Blob: restic.Blob{
+					Type:   restic.DataBlob,
+					ID:     id,
+					Length: uint(size),
+					Offset: uint(offset),
+				},
+			})
+
+			offset += size
+
+			if rand.Float32() < 0.001 && lookupID.IsNull() {
+				lookupID = id
+			}
+		}
+	}
+
+	return idx, lookupID
+}
+
+func BenchmarkIndexHasUnknown(b *testing.B) {
+	idx, _ := createRandomIndex()
+	lookupID := restic.NewRandomID()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		idx.Has(lookupID, restic.DataBlob)
+	}
+}
+
+func BenchmarkIndexHasKnown(b *testing.B) {
+	idx, lookupID := createRandomIndex()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		idx.Has(lookupID, restic.DataBlob)
+	}
+}
+
+func TestIndexHas(t *testing.T) {
+	type testEntry struct {
+		id             restic.ID
+		pack           restic.ID
+		tpe            restic.BlobType
+		offset, length uint
+	}
+	tests := []testEntry{}
+
+	idx := repository.NewIndex()
+
+	// create 50 packs with 20 blobs each
+	for i := 0; i < 50; i++ {
+		packID := restic.NewRandomID()
+
+		pos := uint(0)
+		for j := 0; j < 20; j++ {
+			id := restic.NewRandomID()
+			length := uint(i*100 + j)
+			idx.Store(restic.PackedBlob{
+				Blob: restic.Blob{
+					Type:   restic.DataBlob,
+					ID:     id,
+					Offset: pos,
+					Length: length,
+				},
+				PackID: packID,
+			})
+
+			tests = append(tests, testEntry{
+				id:     id,
+				pack:   packID,
+				tpe:    restic.DataBlob,
+				offset: pos,
+				length: length,
+			})
+
+			pos += length
+		}
+	}
+
+	for _, testBlob := range tests {
+		rtest.Assert(t, idx.Has(testBlob.id, testBlob.tpe), "Index reports not having data blob added to it")
+	}
+
+	rtest.Assert(t, !idx.Has(restic.NewRandomID(), restic.DataBlob), "Index reports having a data blob not added to it")
+	rtest.Assert(t, !idx.Has(tests[0].id, restic.TreeBlob), "Index reports having a tree blob added to it with the same id as a data blob")
 }
