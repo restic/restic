@@ -58,7 +58,7 @@ var (
 // createMasterKey creates a new master key in the given backend and encrypts
 // it with the password.
 func createMasterKey(s *Repository, password string) (*Key, error) {
-	return AddKey(context.TODO(), s, password, nil)
+	return AddKey(context.TODO(), s, password, nil, nil, nil)
 }
 
 // OpenKey tries do decrypt the key specified by name with the given password.
@@ -199,7 +199,9 @@ func LoadKey(ctx context.Context, s *Repository, name string) (k *Key, err error
 }
 
 // AddKey adds a new key to an already existing repository.
-func AddKey(ctx context.Context, s *Repository, password string, template *crypto.Key) (*Key, error) {
+func AddKey(ctx context.Context, s *Repository, password string, hostname *string, username *string, template *crypto.Key) (*Key, error) {
+	var err error = nil
+
 	// make sure we have valid KDF parameters
 	if Params == nil {
 		p, err := crypto.Calibrate(KDFTimeout, KDFMemory)
@@ -220,14 +222,21 @@ func AddKey(ctx context.Context, s *Repository, password string, template *crypt
 		P:       Params.P,
 	}
 
-	hn, err := os.Hostname()
-	if err == nil {
-		newkey.Hostname = hn
+	if hostname == nil {
+		hn, err := os.Hostname()
+		if err == nil {
+			newkey.Hostname = hn
+		}
+	} else {
+		newkey.Hostname = *hostname
 	}
-
-	usr, err := user.Current()
-	if err == nil {
-		newkey.Username = usr.Username
+	if username == nil {
+		usr, err := user.Current()
+		if err == nil {
+			newkey.Username = usr.Username
+		}
+	} else {
+		newkey.Username = *username
 	}
 
 	// generate random salt

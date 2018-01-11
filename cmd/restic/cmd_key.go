@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/restic/restic/internal/errors"
+	"github.com/restic/restic/internal/options"
 	"github.com/restic/restic/internal/repository"
 	"github.com/restic/restic/internal/restic"
 	"github.com/restic/restic/internal/ui/table"
@@ -16,10 +17,13 @@ import (
 )
 
 var cmdKey = &cobra.Command{
-	Use:   "key [list|add|remove|passwd] [ID]",
+	Use:   "key [list|add|remove|passwd] [ID] [key-username=<username>] [key-hostname=<hostname>]",
 	Short: "Manage keys (passwords)",
 	Long: `
 The "key" command manages keys (passwords) for accessing the repository.
+
+By default keys are added for the current user and hostname, this can be
+overridden by with the optional "key-username" and "key-hostname" parameters
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -109,13 +113,40 @@ func getNewPassword(gopts GlobalOptions) (string, error) {
 		"enter password again: ")
 }
 
-func addKey(gopts GlobalOptions, repo *repository.Repository) error {
-	pw, err := getNewPassword(gopts)
+func getKeyDetails(gopts GlobalOptions, args []string) (string, *string, *string, error) {
+	var pw = ""
+	var hostname = (*string)(nil)
+	var username = (*string)(nil)
+
+	opts, err := options.Parse(args)
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	pw, err = getNewPassword(gopts)
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	if host, set := opts["key-hostname"]; set {
+		hostname = &host
+	}
+
+	if user, set := opts["key-username"]; set {
+		username = &user
+	}
+
+	return pw, hostname, username, nil
+}
+
+func addKey(gopts GlobalOptions, repo *repository.Repository, args []string) error {
+
+	pw, hostname, username, err := getKeyDetails(gopts, args)
 	if err != nil {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, repo.Key())
+	id, err := repository.AddKey(gopts.ctx, repo, pw, hostname, username, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -140,13 +171,14 @@ func deleteKey(ctx context.Context, repo *repository.Repository, name string) er
 	return nil
 }
 
-func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
+func changePassword(gopts GlobalOptions, repo *repository.Repository, args []string) error {
+
 	pw, err := getNewPassword(gopts)
 	if err != nil {
 		return err
 	}
 
-	id, err := repository.AddKey(gopts.ctx, repo, pw, repo.Key())
+	id, err := repository.AddKey(gopts.ctx, repo, pw, nil, nil, repo.Key())
 	if err != nil {
 		return errors.Fatalf("creating new key failed: %v\n", err)
 	}
@@ -163,7 +195,9 @@ func changePassword(gopts GlobalOptions, repo *repository.Repository) error {
 }
 
 func runKey(gopts GlobalOptions, args []string) error {
-	if len(args) < 1 || (args[0] == "remove" && len(args) != 2) || (args[0] != "remove" && len(args) != 1) {
+	if len(args) < 1 || (args[0] == "remove" && len(args) != 2) ||
+		(args[0] != "remove" && args[0] != "add" && len(args) != 1) ||
+		(args[0] == "add" && len(args) > 4) {
 		return errors.Fatal("wrong number of arguments")
 	}
 
@@ -191,7 +225,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return addKey(gopts, repo)
+		return addKey(gopts, repo, args[1:])
 	case "remove":
 		lock, err := lockRepoExclusive(repo)
 		defer unlockRepo(lock)
@@ -212,7 +246,7 @@ func runKey(gopts GlobalOptions, args []string) error {
 			return err
 		}
 
-		return changePassword(gopts, repo)
+		return changePassword(gopts, repo, args[1:])
 	}
 
 	return nil
