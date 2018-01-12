@@ -59,9 +59,9 @@ func splitPath(path string) []string {
 func dumpNode(ctx context.Context, repo restic.Repository, node *restic.Node) error {
 	var buf []byte
 	for _, id := range node.Content {
-		size, err := repo.LookupBlobSize(id, restic.DataBlob)
-		if err != nil {
-			return err
+		size, found := repo.LookupBlobSize(id, restic.DataBlob)
+		if !found {
+			return errors.Errorf("id %v not found in repository", id)
 		}
 
 		buf = buf[:cap(buf)]

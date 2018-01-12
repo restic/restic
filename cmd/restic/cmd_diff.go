@@ -135,9 +135,9 @@ func updateBlobs(repo restic.Repository, blobs restic.BlobSet, stats *DiffStat) 
 			stats.TreeBlobs++
 		}
 
-		size, err := repo.LookupBlobSize(h.ID, h.Type)
-		if err != nil {
-			Warnf("unable to find blob size for %v: %v\n", h, err)
+		size, found := repo.LookupBlobSize(h.ID, h.Type)
+		if !found {
+			Warnf("unable to find blob size for %v\n", h)
 			continue
 		}
 

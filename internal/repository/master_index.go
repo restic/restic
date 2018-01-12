@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -22,36 +21,36 @@ func NewMasterIndex() *MasterIndex {
 }
 
 // Lookup queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, err error) {
+func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.PackedBlob, found bool) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	debug.Log("looking up id %v, tpe %v", id.Str(), tpe)
 
 	for _, idx := range mi.idx {
-		blobs, err = idx.Lookup(id, tpe)
-		if err == nil {
+		blobs, found = idx.Lookup(id, tpe)
+		if found {
 			debug.Log("found id %v: %v", id.Str(), blobs)
 			return
 		}
 	}
 
 	debug.Log("id %v not found in any index", id.Str())
-	return nil, errors.Errorf("id %v not found in any index", id)
+	return nil, false
 }
 
 // LookupSize queries all known Indexes for the ID and returns the first match.
-func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, error) {
+func (mi *MasterIndex) LookupSize(id restic.ID, tpe restic.BlobType) (uint, bool) {
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
 	for _, idx := range mi.idx {
-		if idx.Has(id, tpe) {
-			return idx.LookupSize(id, tpe)
+		if size, found := idx.LookupSize(id, tpe); found {
+			return size, found
 		}
 	}
 
-	return 0, errors.Errorf("id %v not found in any index", id)
+	return 0, false
 }
 
 // ListPack returns the list of blobs in a pack. The first matching index is

@@ -81,8 +81,8 @@ func TestFuseFile(t *testing.T) {
 		memfile  []byte
 	)
 	for _, id := range content {
-		size, err := repo.LookupBlobSize(id, restic.DataBlob)
-		rtest.OK(t, err)
+		size, found := repo.LookupBlobSize(id, restic.DataBlob)
+		rtest.Assert(t, found, "Expected to find blob id %v", id)
 		filesize += uint64(size)
 
 		buf := restic.NewBlobBuffer(int(size))

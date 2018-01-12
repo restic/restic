@@ -65,8 +65,8 @@ func TestIndexSerialize(t *testing.T) {
 	rtest.OK(t, err)
 
 	for _, testBlob := range tests {
-		list, err := idx.Lookup(testBlob.id, testBlob.tpe)
-		rtest.OK(t, err)
+		list, found := idx.Lookup(testBlob.id, testBlob.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", testBlob.id.Str())
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list), list)
@@ -78,8 +78,8 @@ func TestIndexSerialize(t *testing.T) {
 		rtest.Equals(t, testBlob.offset, result.Offset)
 		rtest.Equals(t, testBlob.length, result.Length)
 
-		list2, err := idx2.Lookup(testBlob.id, testBlob.tpe)
-		rtest.OK(t, err)
+		list2, found := idx2.Lookup(testBlob.id, testBlob.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", testBlob.id)
 
 		if len(list2) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list2), list2)
@@ -146,8 +146,8 @@ func TestIndexSerialize(t *testing.T) {
 
 	// all new blobs must be in the index
 	for _, testBlob := range newtests {
-		list, err := idx3.Lookup(testBlob.id, testBlob.tpe)
-		rtest.OK(t, err)
+		list, found := idx3.Lookup(testBlob.id, testBlob.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", testBlob.id.Str())
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", testBlob.id.Str(), len(list), list)
@@ -293,8 +293,8 @@ func TestIndexUnserialize(t *testing.T) {
 	rtest.OK(t, err)
 
 	for _, test := range exampleTests {
-		list, err := idx.Lookup(test.id, test.tpe)
-		rtest.OK(t, err)
+		list, found := idx.Lookup(test.id, test.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", test.id.Str())
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)
@@ -341,8 +341,8 @@ func TestIndexUnserializeOld(t *testing.T) {
 	rtest.OK(t, err)
 
 	for _, test := range exampleTests {
-		list, err := idx.Lookup(test.id, test.tpe)
-		rtest.OK(t, err)
+		list, found := idx.Lookup(test.id, test.tpe)
+		rtest.Assert(t, found, "Expected to find blob id %v", test.id.Str())
 
 		if len(list) != 1 {
 			t.Errorf("expected one result for blob %v, got %v: %v", test.id.Str(), len(list), list)

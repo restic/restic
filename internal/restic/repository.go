@@ -24,7 +24,7 @@ type Repository interface {
 
 	Config() Config
 
-	LookupBlobSize(ID, BlobType) (uint, error)
+	LookupBlobSize(ID, BlobType) (uint, bool)
 
 	List(context.Context, FileType) <-chan ID
 	ListPack(context.Context, ID) ([]Blob, int64, error)
@@ -52,7 +52,7 @@ type Lister interface {
 // Index keeps track of the blobs are stored within files.
 type Index interface {
 	Has(ID, BlobType) bool
-	Lookup(ID, BlobType) ([]PackedBlob, error)
+	Lookup(ID, BlobType) ([]PackedBlob, bool)
 	Count(BlobType) uint
 
 	// Each returns a channel that yields all blobs known to the index. When

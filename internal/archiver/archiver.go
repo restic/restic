@@ -86,8 +86,8 @@ func (arch *Archiver) isKnownBlob(id restic.ID, t restic.BlobType) bool {
 
 	arch.knownBlobs.Insert(id)
 
-	_, err := arch.repo.Index().Lookup(id, t)
-	if err == nil {
+	_, found := arch.repo.Index().Lookup(id, t)
+	if found {
 		return true
 	}
 
