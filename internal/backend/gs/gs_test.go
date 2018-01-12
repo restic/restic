@@ -34,7 +34,6 @@ func newGSTestSuite(t testing.TB) *test.Suite {
 
 			cfg := gscfg.(gs.Config)
 			cfg.ProjectID = os.Getenv("RESTIC_TEST_GS_PROJECT_ID")
-			cfg.JSONKeyPath = os.Getenv("RESTIC_TEST_GS_APPLICATION_CREDENTIALS")
 			cfg.Prefix = fmt.Sprintf("test-%d", time.Now().UnixNano())
 			return cfg, nil
 		},
@@ -88,8 +87,8 @@ func TestBackendGS(t *testing.T) {
 	}()
 
 	vars := []string{
+		"GOOGLE_APPLICATION_CREDENTIALS",
 		"RESTIC_TEST_GS_PROJECT_ID",
-		"RESTIC_TEST_GS_APPLICATION_CREDENTIALS",
 		"RESTIC_TEST_GS_REPOSITORY",
 	}
 
@@ -106,8 +105,8 @@ func TestBackendGS(t *testing.T) {
 
 func BenchmarkBackendGS(t *testing.B) {
 	vars := []string{
+		"GOOGLE_APPLICATION_CREDENTIALS",
 		"RESTIC_TEST_GS_PROJECT_ID",
-		"RESTIC_TEST_GS_APPLICATION_CREDENTIALS",
 		"RESTIC_TEST_GS_REPOSITORY",
 	}
 

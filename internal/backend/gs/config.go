@@ -8,13 +8,13 @@ import (
 	"github.com/restic/restic/internal/options"
 )
 
-// Config contains all configuration necessary to connect to a Google Cloud
-// Storage bucket.
+// Config contains all configuration necessary to connect to a Google Cloud Storage
+// bucket. We use Google's default application credentials to acquire an access token, so
+// we don't require that calling code supply any authentication material here.
 type Config struct {
-	ProjectID   string
-	JSONKeyPath string
-	Bucket      string
-	Prefix      string
+	ProjectID string
+	Bucket    string
+	Prefix    string
 
 	Connections uint `option:"connections" help:"set a limit for the number of concurrent connections (default: 20)"`
 }

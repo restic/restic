@@ -440,18 +440,6 @@ func parseConfig(loc location.Location, opts options.Options) (interface{}, erro
 			cfg.ProjectID = os.Getenv("GOOGLE_PROJECT_ID")
 		}
 
-		if cfg.JSONKeyPath == "" {
-			if path := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); path != "" {
-				// Check read access
-				if _, err := ioutil.ReadFile(path); err != nil {
-					return nil, errors.Fatalf("Failed to read google credential from file %v: %v", path, err)
-				}
-				cfg.JSONKeyPath = path
-			} else {
-				return nil, errors.Fatal("No credential file path is set")
-			}
-		}
-
 		if err := opts.Apply(loc.Scheme, &cfg); err != nil {
 			return nil, err
 		}
