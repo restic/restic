@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -22,10 +23,11 @@ var (
 )
 
 var config = struct {
-	Name      string
-	Namespace string
-	Main      string
-	Tests     []string
+	Name       string
+	Namespace  string
+	Main       string
+	Tests      []string
+	MinVersion GoVersion
 }{
 	Name:      "restic",                              // name of the program executable and directory
 	Namespace: "github.com/restic/restic",            // subdir of GOPATH, e.g. "github.com/foo/bar"
@@ -33,6 +35,7 @@ var config = struct {
 	Tests: []string{ // tests to run
 		"github.com/restic/restic/internal/...",
 		"github.com/restic/restic/cmd/..."},
+	MinVersion: GoVersion{Major: 1, Minor: 8, Patch: 0}, // minimum Go version supported
 }
 
 // specialDir returns true if the file begins with a special character ('.' or '_').
@@ -137,7 +140,6 @@ func copyFile(dst, src string) error {
 	if err != nil {
 		return err
 	}
-	defer fsrc.Close()
 
 	if err = os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 		fmt.Printf("MkdirAll(%v)\n", filepath.Dir(dst))
@@ -148,17 +150,28 @@ func copyFile(dst, src string) error {
 	if err != nil {
 		return err
 	}
-	defer fdst.Close()
 
-	_, err = io.Copy(fdst, fsrc)
+	if _, err = io.Copy(fdst, fsrc); err != nil {
+		return err
+	}
+
+	if err == nil {
+		err = fsrc.Close()
+	}
+
+	if err == nil {
+		err = fdst.Close()
+	}
+
 	if err == nil {
 		err = os.Chmod(dst, fi.Mode())
 	}
+
 	if err == nil {
 		err = os.Chtimes(dst, fi.ModTime(), fi.ModTime())
 	}
 
-	return err
+	return nil
 }
 
 // die prints the message with fmt.Fprintf() to stderr and exits with an error
@@ -300,10 +313,80 @@ func (cs Constants) LDFlags() string {
 	return strings.Join(l, " ")
 }
 
+// GoVersion is the version of Go used to compile the project.
+type GoVersion struct {
+	Major int
+	Minor int
+	Patch int
+}
+
+// ParseGoVersion parses the Go version s. If s cannot be parsed, the returned GoVersion is null.
+func ParseGoVersion(s string) (v GoVersion) {
+	if !strings.HasPrefix(s, "go") {
+		return
+	}
+
+	s = s[2:]
+	data := strings.Split(s, ".")
+	if len(data) != 3 {
+		return
+	}
+
+	major, err := strconv.Atoi(data[0])
+	if err != nil {
+		return
+	}
+
+	minor, err := strconv.Atoi(data[1])
+	if err != nil {
+		return
+	}
+
+	patch, err := strconv.Atoi(data[2])
+	if err != nil {
+		return
+	}
+
+	v = GoVersion{
+		Major: major,
+		Minor: minor,
+		Patch: patch,
+	}
+	return
+}
+
+// AtLeast returns true if v is at least as new as other. If v is empty, true is returned.
+func (v GoVersion) AtLeast(other GoVersion) bool {
+	var empty GoVersion
+
+	// the empty version satisfies all versions
+	if v == empty {
+		return true
+	}
+
+	if v.Major < other.Major {
+		return false
+	}
+
+	if v.Minor < other.Minor {
+		return false
+	}
+
+	if v.Patch < other.Patch {
+		return false
+	}
+
+	return true
+}
+
+func (v GoVersion) String() string {
+	return fmt.Sprintf("Go %d.%d.%d", v.Major, v.Minor, v.Patch)
+}
+
 func main() {
-	ver := runtime.Version()
-	if strings.HasPrefix(ver, "go1") && ver < "go1.8" {
-		fmt.Fprintf(os.Stderr, "Go version %s detected, restic requires at least Go 1.8\n", ver)
+	ver := ParseGoVersion(runtime.Version())
+	if !ver.AtLeast(config.MinVersion) {
+		fmt.Fprintf(os.Stderr, "%s detected, this program requires at least %s\n", ver, config.MinVersion)
 		os.Exit(1)
 	}
 
