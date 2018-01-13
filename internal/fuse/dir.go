@@ -182,7 +182,6 @@ func (d *dir) Lookup(ctx context.Context, name string) (fs.Node, error) {
 	node, ok := d.items[name]
 	if !ok {
 		debug.Log("  Lookup(%v) -> not found", name)
-		debug.Log("     items: %v\n", d.items)
 		return nil, fuse.ENOENT
 	}
 	switch node.Type {
