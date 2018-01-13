@@ -4,7 +4,6 @@
 package fuse
 
 import (
-	"github.com/restic/restic/internal/errors"
 	"github.com/restic/restic/internal/restic"
 
 	"github.com/restic/restic/internal/debug"
@@ -111,7 +110,10 @@ func (f *file) Read(ctx context.Context, req *fuse.ReadRequest, resp *fuse.ReadR
 	if uint64(offset) > f.node.Size {
 		debug.Log("Read(%v): offset is greater than file size: %v > %v",
 			f.node.Name, req.Offset, f.node.Size)
-		return errors.New("offset greater than files size")
+
+		// return no data
+		resp.Data = resp.Data[:0]
+		return nil
 	}
 
 	// handle special case: file is empty
