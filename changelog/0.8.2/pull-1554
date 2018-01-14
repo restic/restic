@@ -1,0 +1,7 @@
+Enhancement: fuse/mount: Correctly handle EOF, add template option
+
+We've added the `--snapshot-template` string, which can be used to specify a
+template for a snapshot directory. In addition, accessing data after the end of
+a file via the fuse mount is now handled correctly.
+
+https://github.com/restic/restic/pull/1554
