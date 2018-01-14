@@ -383,16 +383,23 @@ func TestIndexPacks(t *testing.T) {
 
 const maxPackSize = 16 * 1024 * 1024
 
-func createRandomIndex() (idx *repository.Index, lookupID restic.ID) {
+// This function generates a (insecure) random ID, similar to NewRandomID
+func NewRandomTestID(rng *rand.Rand) restic.ID {
+	id := restic.ID{}
+	rng.Read(id[:])
+	return id
+}
+
+func createRandomIndex(rng *rand.Rand) (idx *repository.Index, lookupID restic.ID) {
 	idx = repository.NewIndex()
 
 	// create index with 200k pack files
 	for i := 0; i < 200000; i++ {
-		packID := restic.NewRandomID()
+		packID := NewRandomTestID(rng)
 		offset := 0
 		for offset < maxPackSize {
 			size := 2000 + rand.Intn(4*1024*1024)
-			id := restic.NewRandomID()
+			id := NewRandomTestID(rng)
 			idx.Store(restic.PackedBlob{
 				PackID: packID,
 				Blob: restic.Blob{
@@ -415,7 +422,7 @@ func createRandomIndex() (idx *repository.Index, lookupID restic.ID) {
 }
 
 func BenchmarkIndexHasUnknown(b *testing.B) {
-	idx, _ := createRandomIndex()
+	idx, _ := createRandomIndex(rand.New(rand.NewSource(0)))
 	lookupID := restic.NewRandomID()
 
 	b.ResetTimer()
@@ -426,7 +433,7 @@ func BenchmarkIndexHasUnknown(b *testing.B) {
 }
 
 func BenchmarkIndexHasKnown(b *testing.B) {
-	idx, lookupID := createRandomIndex()
+	idx, lookupID := createRandomIndex(rand.New(rand.NewSource(0)))
 
 	b.ResetTimer()
 
