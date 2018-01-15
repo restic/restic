@@ -178,7 +178,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp"]
+  packages = ["context","context/ctxhttp","webdav","webdav/internal/xml"]
   revision = "a8b9294777976932365dabb6640cf1468d95c70f"
 
 [[projects]]
@@ -214,6 +214,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f0a207197cb502238ac87ca8e07b2640c02ec380a50b036e09ef87e40e31ca2d"
+  inputs-digest = "b01eeeb2be041c7cd11f9ee50324ef456ac1e1cd0720408c6d72f88f92f09320"
   solver-name = "gps-cdcl"
   solver-version = 1
