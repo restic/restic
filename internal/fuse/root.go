@@ -16,10 +16,11 @@ import (
 
 // Config holds settings for the fuse mount.
 type Config struct {
-	OwnerIsRoot bool
-	Host        string
-	Tags        []restic.TagList
-	Paths       []string
+	OwnerIsRoot      bool
+	Host             string
+	Tags             []restic.TagList
+	Paths            []string
+	SnapshotTemplate string
 }
 
 // Root is the root node of the fuse mount of a repository.

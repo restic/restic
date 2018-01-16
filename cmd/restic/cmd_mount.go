@@ -5,6 +5,8 @@ package main
 
 import (
 	"os"
+	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -25,6 +27,21 @@ var cmdMount = &cobra.Command{
 	Long: `
 The "mount" command mounts the repository via fuse to a directory. This is a
 read-only mount.
+
+Snapshot Directories
+====================
+
+If you need a different template for all directories that contain snapshots,
+you can pass a template via --snapshot-template. Example without colons:
+
+    --snapshot-template "2006-01-02_15-04-05"
+
+You need to specify a sample format for exactly the following timestamp:
+
+    Mon Jan 2 15:04:05 -0700 MST 2006
+
+For details please see the documentation for time.Format() at:
+  https://godoc.org/time#Time.Format
 `,
 	DisableAutoGenTag: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -34,12 +51,13 @@ read-only mount.
 
 // MountOptions collects all options for the mount command.
 type MountOptions struct {
-	OwnerRoot  bool
-	AllowRoot  bool
-	AllowOther bool
-	Host       string
-	Tags       restic.TagLists
-	Paths      []string
+	OwnerRoot        bool
+	AllowRoot        bool
+	AllowOther       bool
+	Host             string
+	Tags             restic.TagLists
+	Paths            []string
+	SnapshotTemplate string
 }
 
 var mountOptions MountOptions
@@ -55,6 +73,8 @@ func init() {
 	mountFlags.StringVarP(&mountOptions.Host, "host", "H", "", `only consider snapshots for this host`)
 	mountFlags.Var(&mountOptions.Tags, "tag", "only consider snapshots which include this `taglist`")
 	mountFlags.StringArrayVar(&mountOptions.Paths, "path", nil, "only consider snapshots which include this (absolute) `path`")
+
+	mountFlags.StringVar(&mountOptions.SnapshotTemplate, "snapshot-template", time.RFC3339, "set `template` to use for snapshot dirs")
 }
 
 func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
@@ -108,10 +128,11 @@ func mount(opts MountOptions, gopts GlobalOptions, mountpoint string) error {
 	}
 
 	cfg := fuse.Config{
-		OwnerIsRoot: opts.OwnerRoot,
-		Host:        opts.Host,
-		Tags:        opts.Tags,
-		Paths:       opts.Paths,
+		OwnerIsRoot:      opts.OwnerRoot,
+		Host:             opts.Host,
+		Tags:             opts.Tags,
+		Paths:            opts.Paths,
+		SnapshotTemplate: opts.SnapshotTemplate,
 	}
 	root, err := fuse.NewRoot(gopts.ctx, repo, cfg)
 	if err != nil {
@@ -136,6 +157,14 @@ func umount(mountpoint string) error {
 }
 
 func runMount(opts MountOptions, gopts GlobalOptions, args []string) error {
+	if opts.SnapshotTemplate == "" {
+		return errors.Fatal("snapshot template string cannot be empty")
+	}
+
+	if strings.ContainsAny(opts.SnapshotTemplate, `\/`) {
+		return errors.Fatal("snapshot template string contains a slash (/) or backslash (\\) character")
+	}
+
 	if len(args) == 0 {
 		return errors.Fatal("wrong number of parameters")
 	}
