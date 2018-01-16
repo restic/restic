@@ -270,3 +270,81 @@ restored:
 
 The snapshot was successfully restored. This concludes the tutorial.
 
+
+*****************************************************
+Backing up your system without running restic as root
+*****************************************************
+
+Motivation
+==========
+
+Creating a complete backup of a machine requires a privileged process
+that is able to read all files. On UNIX-like systems this is
+traditionally the ``root`` user. Processes running as root have
+superpower. They cannot only read all files but do also have the power
+to modify the system in any possible way.
+
+With great power comes great responsibility. If a process running as
+root malfunctions, is exploited, or simply configured in a wrong way it
+can cause any possible damage to the system. This means you only want
+to run programs as root that you trust completely. And even if you
+trust a program, it is good and common practice to run it with the
+least possible privileges.
+
+Capabilities on Linux
+=====================
+
+Fortunately, Linux has functionality to divide root's power into
+single separate *capabilities*. You can remove these from a process
+running as root to restrict it. And you can add capabilities to a
+process running as a normal user, which is what we are going to do.
+
+Full backup without root
+========================
+
+To be able to completely backup a system, restic has to read all the
+files. Luckily Linux knows a capability that allows precisely this. We
+can assign this single capability to restic and then run it as an
+unprivileged user.
+
+First we create a new user called ``restic`` that is going to create
+the backups:
+
+.. code-block:: console
+
+   root@a3e580b6369d:/# useradd -m restic
+
+Then we download and install the restic binary into the user's home
+directory.
+
+.. code-block:: console
+
+   root@a3e580b6369d:/# mkdir ~restic/bin
+   root@a3e580b6369d:/# curl -L https://github.com/restic/restic/releases/download/v0.8.0/restic_0.8.0_linux_amd64.bz2 | bunzip2 > ~restic/bin/restic
+
+Before we assign any special capability to the restic binary we
+restrict its permissions so that only root and the newly created
+restic user can execute it. Otherwise another - possibly untrusted -
+user could misuse the privileged restic binary to circumvent file
+access controls.
+
+.. code-block:: console
+
+   root@a3e580b6369d:/# chown root:restic ~restic/bin/restic
+   root@a3e580b6369d:/# chmod 750 ~restic/bin/restic
+
+Finally we can use ``setcap`` to add an extended attribute to the
+restic binary. On every execution the system will read the extended
+attribute, interpret it and assign capabilities accordingly.
+
+.. code-block:: console
+
+   root@a3e580b6369d:/# setcap cap_dac_read_search=+ep ~restic/bin/restic
+
+From now on the user ``restic`` can run restic to backup the whole
+system.
+
+.. code-block:: console
+
+   root@a3e580b6369d:/# sudo -u restic /opt/restic/bin/restic --exclude={/dev,/media,/mnt,/proc,/run,/sys,/tmp,/var/tmp} -r /tmp backup /
+
