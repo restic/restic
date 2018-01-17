@@ -69,8 +69,8 @@ func startClient(preExec, postExec func(), program string, args ...string) (*SFT
 		preExec()
 	}
 
-	// start the process
-	if err := cmd.Start(); err != nil {
+	bg, err := startForeground(cmd)
+	if err != nil {
 		return nil, errors.Wrap(err, "cmd.Start")
 	}
 
@@ -90,6 +90,11 @@ func startClient(preExec, postExec func(), program string, args ...string) (*SFT
 	client, err := sftp.NewClientPipe(rd, wr)
 	if err != nil {
 		return nil, errors.Errorf("unable to start the sftp session, error: %v", err)
+	}
+
+	err = bg()
+	if err != nil {
+		return nil, errors.Wrap(err, "bg")
 	}
 
 	return &SFTP{c: client, cmd: cmd, result: ch}, nil
