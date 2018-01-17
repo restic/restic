@@ -66,12 +66,12 @@ func (be *ErrorBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader)
 // given offset. If length is larger than zero, only a portion of the file
 // is returned. rd must be closed after use. If an error is returned, the
 // ReadCloser must be nil.
-func (be *ErrorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (be *ErrorBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	if be.fail(be.FailLoad) {
-		return nil, errors.Errorf("Load(%v, %v, %v) random error induced", h, length, offset)
+		return errors.Errorf("Load(%v, %v, %v) random error induced", h, length, offset)
 	}
 
-	return be.Backend.Load(ctx, h, length, offset)
+	return be.Backend.Load(ctx, h, length, offset, consumer)
 }
 
 // Stat returns information about the File identified by h.

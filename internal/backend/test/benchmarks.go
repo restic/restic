@@ -42,18 +42,13 @@ func (s *Suite) BenchmarkLoadFile(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		rd, err := be.Load(context.TODO(), handle, 0, 0)
+		var n int
+		err := be.Load(context.TODO(), handle, 0, 0, func(rd io.Reader) (ierr error) {
+			n, ierr = io.ReadFull(rd, buf)
+			return ierr
+		})
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		n, err := io.ReadFull(rd, buf)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err = rd.Close(); err != nil {
-			t.Fatalf("Close() returned error: %v", err)
 		}
 
 		if n != length {
@@ -84,18 +79,13 @@ func (s *Suite) BenchmarkLoadPartialFile(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		rd, err := be.Load(context.TODO(), handle, testLength, 0)
+		var n int
+		err := be.Load(context.TODO(), handle, testLength, 0, func(rd io.Reader) (ierr error) {
+			n, ierr = io.ReadFull(rd, buf)
+			return ierr
+		})
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		n, err := io.ReadFull(rd, buf)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err = rd.Close(); err != nil {
-			t.Fatalf("Close() returned error: %v", err)
 		}
 
 		if n != testLength {
@@ -128,18 +118,13 @@ func (s *Suite) BenchmarkLoadPartialFileOffset(t *testing.B) {
 	t.ResetTimer()
 
 	for i := 0; i < t.N; i++ {
-		rd, err := be.Load(context.TODO(), handle, testLength, int64(testOffset))
+		var n int
+		err := be.Load(context.TODO(), handle, testLength, int64(testOffset), func(rd io.Reader) (ierr error) {
+			n, ierr = io.ReadFull(rd, buf)
+			return ierr
+		})
 		if err != nil {
 			t.Fatal(err)
-		}
-
-		n, err := io.ReadFull(rd, buf)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if err = rd.Close(); err != nil {
-			t.Fatalf("Close() returned error: %v", err)
 		}
 
 		if n != testLength {

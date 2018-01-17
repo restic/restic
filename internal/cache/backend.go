@@ -121,17 +121,10 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 		return nil
 	}
 
-	rd, err := b.Backend.Load(ctx, h, 0, 0)
+	err := b.Backend.Load(ctx, h, 0, 0, func(rd io.Reader) error {
+		return b.Cache.Save(h, rd)
+	})
 	if err != nil {
-		return err
-	}
-
-	if err = b.Cache.Save(h, rd); err != nil {
-		_ = rd.Close()
-		return err
-	}
-
-	if err = rd.Close(); err != nil {
 		// try to remove from the cache, ignore errors
 		_ = b.Cache.Remove(h)
 		return err
@@ -142,17 +135,22 @@ func (b *Backend) cacheFile(ctx context.Context, h restic.Handle) error {
 
 // loadFromCacheOrDelegate will try to load the file from the cache, and fall
 // back to the backend if that fails.
-func (b *Backend) loadFromCacheOrDelegate(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (b *Backend) loadFromCacheOrDelegate(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	rd, err := b.Cache.Load(h, length, offset)
-	if err == nil {
-		return rd, nil
+	if err != nil {
+		return b.Backend.Load(ctx, h, length, offset, consumer)
 	}
 
-	return b.Backend.Load(ctx, h, length, offset)
+	err = consumer(rd)
+	if err != nil {
+		rd.Close() // ignore secondary errors
+		return err
+	}
+	return rd.Close()
 }
 
 // Load loads a file from the cache or the backend.
-func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) error {
 	b.inProgressMutex.Lock()
 	waitForFinish, inProgress := b.inProgress[h]
 	b.inProgressMutex.Unlock()
@@ -167,7 +165,12 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 		debug.Log("Load(%v, %v, %v) from cache", h, length, offset)
 		rd, err := b.Cache.Load(h, length, offset)
 		if err == nil {
-			return rd, nil
+			err = consumer(rd)
+			if err != nil {
+				rd.Close() // ignore secondary errors
+				return err
+			}
+			return rd.Close()
 		}
 		debug.Log("error loading %v from cache: %v", h, err)
 	}
@@ -179,20 +182,20 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 
 			err := b.cacheFile(ctx, h)
 			if err == nil {
-				return b.loadFromCacheOrDelegate(ctx, h, length, offset)
+				return b.loadFromCacheOrDelegate(ctx, h, length, offset, consumer)
 			}
 
 			debug.Log("error caching %v: %v", h, err)
 		}
 
 		debug.Log("Load(%v, %v, %v): partial file requested, delegating to backend", h, length, offset)
-		return b.Backend.Load(ctx, h, length, offset)
+		return b.Backend.Load(ctx, h, length, offset, consumer)
 	}
 
 	// if we don't automatically cache this file type, fall back to the backend
 	if _, ok := autoCacheFiles[h.Type]; !ok {
 		debug.Log("Load(%v, %v, %v): delegating to backend", h, length, offset)
-		return b.Backend.Load(ctx, h, length, offset)
+		return b.Backend.Load(ctx, h, length, offset, consumer)
 	}
 
 	debug.Log("auto-store %v in the cache", h)
@@ -200,11 +203,20 @@ func (b *Backend) Load(ctx context.Context, h restic.Handle, length int, offset 
 
 	if err == nil {
 		// load the cached version
-		return b.Cache.Load(h, 0, 0)
+		rd, err := b.Cache.Load(h, 0, 0)
+		if err != nil {
+			return err
+		}
+		err = consumer(rd)
+		if err != nil {
+			rd.Close() // ignore secondary errors
+			return err
+		}
+		return rd.Close()
 	}
 
 	debug.Log("error caching %v: %v, falling back to backend", h, err)
-	return b.Backend.Load(ctx, h, length, offset)
+	return b.Backend.Load(ctx, h, length, offset, consumer)
 }
 
 // Stat tests whether the backend has a file. If it does not exist but still

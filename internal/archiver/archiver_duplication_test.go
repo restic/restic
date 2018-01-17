@@ -38,13 +38,13 @@ func randomID() restic.ID {
 
 // forgetfulBackend returns a backend that forgets everything.
 func forgetfulBackend() restic.Backend {
-	be := &mock.Backend{}
+	be := mock.NewBackend()
 
 	be.TestFn = func(ctx context.Context, h restic.Handle) (bool, error) {
 		return false, nil
 	}
 
-	be.LoadFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
+	be.OpenReaderFn = func(ctx context.Context, h restic.Handle, length int, offset int64) (io.ReadCloser, error) {
 		return nil, errors.New("not found")
 	}
 

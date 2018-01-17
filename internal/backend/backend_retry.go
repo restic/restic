@@ -88,15 +88,11 @@ func (be *RetryBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader)
 // given offset. If length is larger than zero, only a portion of the file
 // is returned. rd must be closed after use. If an error is returned, the
 // ReadCloser must be nil.
-func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64) (rd io.ReadCloser, err error) {
-	err = be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
+func (be *RetryBackend) Load(ctx context.Context, h restic.Handle, length int, offset int64, consumer func(rd io.Reader) error) (err error) {
+	return be.retry(ctx, fmt.Sprintf("Load(%v, %v, %v)", h, length, offset),
 		func() error {
-			var innerError error
-			rd, innerError = be.Backend.Load(ctx, h, length, offset)
-
-			return innerError
+			return be.Backend.Load(ctx, h, length, offset, consumer)
 		})
-	return rd, err
 }
 
 // Stat returns information about the File identified by h.
