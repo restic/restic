@@ -101,7 +101,7 @@ func TestNodeFromFileInfo(t *testing.T) {
 		t.Run("", func(t *testing.T) {
 			fi, found := stat(t, test.filename)
 			if !found && test.canSkip {
-				t.Skipf("%v not found in filesystem")
+				t.Skipf("%v not found in filesystem", test.filename)
 				return
 			}
 
