@@ -69,6 +69,13 @@ Pre-compiled Binary
 You can download the latest pre-compiled binary from the `restic release
 page <https://github.com/restic/restic/releases/latest>`__.
 
+Windows
+=======
+
+On Windows, put the `restic.exe` into `%SystemRoot%\System32` to use restic
+in scripts without the need for absolute paths to the binary. This requires
+Admin rights.
+
 Docker Container
 ****************
 
