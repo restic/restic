@@ -120,7 +120,8 @@ down to the following steps:
 
  6. You will receive comments on your code and the feature or bug that they
     address. Maybe you need to rework some minor things, in this case push new
-    commits to the branch you created for the pull request, they will be
+    commits to the branch you created for the pull request (or amend the
+    existing commit, use common sense to decide which is better), they will be
     automatically added to the pull request.
 
  7. If your pull request changes anything that users should be aware of (a
