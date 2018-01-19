@@ -1,0 +1,6 @@
+Enhancement: Reduce number of remote requests during repository check
+
+This change eliminates redundant remote repository calls and significantly
+improves repository check time.
+
+https://github.com/restic/restic/issues/1541
