@@ -4,3 +4,4 @@ This change eliminates redundant remote repository calls and significantly
 improves repository check time.
 
 https://github.com/restic/restic/issues/1541
+https://github.com/restic/restic/pull/1548
