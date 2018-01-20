@@ -1,0 +1,9 @@
+Enhancement: Don't terminate ssh on SIGINT
+
+We've reworked the code which runs the `ssh` login for the sftp backend so that
+it can prompt for a password (if needed) but does not exit when the user
+presses CTRL+C (SIGINT) e.g. during backup. This allows restic to properly shut
+down when it receives SIGINT and remove the lock file from the repo, afterwards
+exiting the `ssh` process.
+
+https://github.com/restic/restic/pull/1564
