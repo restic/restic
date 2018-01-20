@@ -46,7 +46,7 @@ func TestLayout(t *testing.T) {
 				Command: fmt.Sprintf("%q -e", sftpServer),
 				Path:    repo,
 				Layout:  test.layout,
-			}, nil, nil)
+			})
 			if err != nil {
 				t.Fatal(err)
 			}

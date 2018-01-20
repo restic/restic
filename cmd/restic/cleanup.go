@@ -22,17 +22,7 @@ var stderr = os.Stderr
 func init() {
 	cleanupHandlers.ch = make(chan os.Signal)
 	go CleanupHandler(cleanupHandlers.ch)
-	InstallSignalHandler()
-}
-
-// InstallSignalHandler listens for SIGINT, and triggers the cleanup handlers.
-func InstallSignalHandler() {
 	signal.Notify(cleanupHandlers.ch, syscall.SIGINT)
-}
-
-// SuspendSignalHandler removes the signal handler for SIGINT.
-func SuspendSignalHandler() {
-	signal.Reset(syscall.SIGINT)
 }
 
 // AddCleanupHandler adds the function f to the list of cleanup handlers so

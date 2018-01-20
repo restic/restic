@@ -555,7 +555,7 @@ func open(s string, gopts GlobalOptions, opts options.Options) (restic.Backend, 
 		// wrap the backend in a LimitBackend so that the throughput is limited
 		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb))
 	case "sftp":
-		be, err = sftp.Open(cfg.(sftp.Config), SuspendSignalHandler, InstallSignalHandler)
+		be, err = sftp.Open(cfg.(sftp.Config))
 		// wrap the backend in a LimitBackend so that the throughput is limited
 		be = limiter.LimitBackend(be, limiter.NewStaticLimiter(gopts.LimitUploadKb, gopts.LimitDownloadKb))
 	case "s3":
@@ -614,7 +614,7 @@ func create(s string, opts options.Options) (restic.Backend, error) {
 	case "local":
 		return local.Create(cfg.(local.Config))
 	case "sftp":
-		return sftp.Create(cfg.(sftp.Config), SuspendSignalHandler, InstallSignalHandler)
+		return sftp.Create(cfg.(sftp.Config))
 	case "s3":
 		return s3.Create(cfg.(s3.Config), rt)
 	case "gs":
