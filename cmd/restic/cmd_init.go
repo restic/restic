@@ -30,11 +30,11 @@ func runInit(gopts GlobalOptions, args []string) error {
 
 	be, err := create(gopts.Repo, gopts.extended)
 	if err != nil {
-		return errors.Fatalf("create backend at %s failed: %v\n", gopts.Repo, err)
+		return errors.Fatalf("create repository at %s failed: %v\n", gopts.Repo, err)
 	}
 
 	gopts.password, err = ReadPasswordTwice(gopts,
-		"enter password for new backend: ",
+		"enter password for new repository: ",
 		"enter password again: ")
 	if err != nil {
 		return err
@@ -44,10 +44,10 @@ func runInit(gopts GlobalOptions, args []string) error {
 
 	err = s.Init(gopts.ctx, gopts.password)
 	if err != nil {
-		return errors.Fatalf("create key in backend at %s failed: %v\n", gopts.Repo, err)
+		return errors.Fatalf("create key in repository at %s failed: %v\n", gopts.Repo, err)
 	}
 
-	Verbosef("created restic backend %v at %s\n", s.Config().ID[:10], gopts.Repo)
+	Verbosef("created restic repository %v at %s\n", s.Config().ID[:10], gopts.Repo)
 	Verbosef("\n")
 	Verbosef("Please note that knowledge of your password is required to access\n")
 	Verbosef("the repository. Losing your password means that your data is\n")
