@@ -191,7 +191,7 @@ func (b *Local) Stat(ctx context.Context, h restic.Handle) (restic.FileInfo, err
 		return restic.FileInfo{}, errors.Wrap(err, "Stat")
 	}
 
-	return restic.FileInfo{Size: fi.Size()}, nil
+	return restic.FileInfo{Size: fi.Size(), Name: h.Name}, nil
 }
 
 // Test returns true if a blob of the given type and name exists in the backend.
@@ -226,13 +226,13 @@ func isFile(fi os.FileInfo) bool {
 	return fi.Mode()&(os.ModeType|os.ModeCharDevice) == 0
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this.
+// List runs fn for each file in the backend which has the type t. When an
+// error occurs (or fn returns an error), List stops and returns it.
 func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("List %v", t)
 
 	basedir, subdirs := b.Basedir(t)
-	err := fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
+	return fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
 		debug.Log("walk on %v\n", path)
 		if err != nil {
 			return err
@@ -257,24 +257,17 @@ func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.File
 			Size: fi.Size(),
 		}
 
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
 		err = fn(rfi)
 		if err != nil {
 			return err
 		}
 
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-
-		return nil
+		return ctx.Err()
 	})
-
-	if err != nil {
-		debug.Log("Walk %v", err)
-		return err
-	}
-
-	return ctx.Err()
 }
 
 // Delete removes the repository and all files.

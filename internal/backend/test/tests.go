@@ -249,17 +249,17 @@ func (s *Suite) TestList(t *testing.T) {
 	b := s.open(t)
 	defer s.close(t, b)
 
-	list1 := restic.NewIDSet()
+	list1 := make(map[restic.ID]int64)
 
 	for i := 0; i < numTestFiles; i++ {
-		data := []byte(fmt.Sprintf("random test blob %v", i))
+		data := test.Random(rand.Int(), rand.Intn(100)+55)
 		id := restic.Hash(data)
 		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
 		err := b.Save(context.TODO(), h, bytes.NewReader(data))
 		if err != nil {
 			t.Fatal(err)
 		}
-		list1.Insert(id)
+		list1[id] = int64(len(data))
 	}
 
 	t.Logf("wrote %v files", len(list1))
@@ -272,7 +272,7 @@ func (s *Suite) TestList(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("max-%v", test.maxItems), func(t *testing.T) {
-			list2 := restic.NewIDSet()
+			list2 := make(map[restic.ID]int64)
 
 			type setter interface {
 				SetListMaxItems(int)
@@ -288,7 +288,7 @@ func (s *Suite) TestList(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				list2.Insert(id)
+				list2[id] = fi.Size
 				return nil
 			})
 
@@ -298,9 +298,22 @@ func (s *Suite) TestList(t *testing.T) {
 
 			t.Logf("loaded %v IDs from backend", len(list2))
 
-			if !list1.Equals(list2) {
-				t.Errorf("lists are not equal, list1 %d entries, list2 %d entries",
-					len(list1), len(list2))
+			for id, size := range list1 {
+				size2, ok := list2[id]
+				if !ok {
+					t.Errorf("id %v not returned by List()", id.Str())
+				}
+
+				if size != size2 {
+					t.Errorf("wrong size for id %v returned: want %v, got %v", id.Str(), size, size2)
+				}
+			}
+
+			for id := range list2 {
+				_, ok := list1[id]
+				if !ok {
+					t.Errorf("extra id %v returned by List()", id.Str())
+				}
 			}
 		})
 	}
@@ -349,8 +362,8 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			return nil
 		})
 
-		if err != context.Canceled {
-			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
+		if errors.Cause(err) != context.Canceled {
+			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, errors.Cause(err))
 		}
 	})
 
@@ -404,7 +417,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
-		timeout := 500 * time.Millisecond
+		timeout := 200 * time.Millisecond
 
 		ctxTimeout, _ := context.WithTimeout(ctx, timeout)
 
@@ -414,7 +427,7 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			i++
 
 			// wait until the context is cancelled
-			time.Sleep(timeout)
+			time.Sleep(timeout + 200*time.Millisecond)
 			return nil
 		})
 
@@ -487,8 +500,12 @@ func (s *Suite) TestSave(t *testing.T) {
 		fi, err := b.Stat(context.TODO(), h)
 		test.OK(t, err)
 
+		if fi.Name != h.Name {
+			t.Errorf("Stat() returned wrong name, want %q, got %q", h.Name, fi.Name)
+		}
+
 		if fi.Size != int64(len(data)) {
-			t.Fatalf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
+			t.Errorf("Stat() returned different size, want %q, got %d", len(data), fi.Size)
 		}
 
 		err = b.Remove(context.TODO(), h)

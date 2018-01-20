@@ -143,7 +143,7 @@ func (be *MemoryBackend) Stat(ctx context.Context, h restic.Handle) (restic.File
 		return restic.FileInfo{}, errNotFound
 	}
 
-	return restic.FileInfo{Size: int64(len(e))}, nil
+	return restic.FileInfo{Size: int64(len(e)), Name: h.Name}, nil
 }
 
 // Remove deletes a file from the backend.
@@ -175,6 +175,10 @@ func (be *MemoryBackend) List(ctx context.Context, t restic.FileType, fn func(re
 		fi := restic.FileInfo{
 			Name: entry.Name,
 			Size: int64(len(buf)),
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
 		}
 
 		err := fn(fi)

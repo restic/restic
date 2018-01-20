@@ -241,6 +241,7 @@ func (b *restBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInf
 
 	bi := restic.FileInfo{
 		Size: resp.ContentLength,
+		Name: h.Name,
 	}
 
 	return bi, nil
@@ -291,12 +292,9 @@ func (b *restBackend) Remove(ctx context.Context, h restic.Handle) error {
 	return errors.Wrap(resp.Body.Close(), "Close")
 }
 
-// List returns a channel that yields all names of blobs of type t. A
-// goroutine is started for this. If the channel done is closed, sending
-// stops.
-func (b *restBackend) List(ctx context.Context, t restic.FileType) <-chan string {
-	ch := make(chan string)
-
+// List runs fn for each file in the backend which has the type t. When an
+// error occurs (or fn returns an error), List stops and returns it.
+func (b *restBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	url := b.Dirname(restic.Handle{Type: t})
 	if !strings.HasSuffix(url, "/") {
 		url += "/"
@@ -306,41 +304,38 @@ func (b *restBackend) List(ctx context.Context, t restic.FileType) <-chan string
 	resp, err := ctxhttp.Get(ctx, b.client, url)
 	b.sem.ReleaseToken()
 
-	if resp != nil {
-		defer func() {
-			_, _ = io.Copy(ioutil.Discard, resp.Body)
-			e := resp.Body.Close()
-
-			if err == nil {
-				err = errors.Wrap(e, "Close")
-			}
-		}()
-	}
-
 	if err != nil {
-		close(ch)
-		return ch
+		return errors.Wrap(err, "Get")
 	}
 
 	dec := json.NewDecoder(resp.Body)
 	var list []string
 	if err = dec.Decode(&list); err != nil {
-		close(ch)
-		return ch
+		return errors.Wrap(err, "Decode")
 	}
 
-	go func() {
-		defer close(ch)
-		for _, m := range list {
-			select {
-			case ch <- m:
-			case <-ctx.Done():
-				return
-			}
+	for _, m := range list {
+		fi, err := b.Stat(ctx, restic.Handle{Name: m, Type: t})
+		if err != nil {
+			return err
 		}
-	}()
 
-	return ch
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		fi.Name = m
+		err = fn(fi)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+	}
+
+	return ctx.Err()
 }
 
 // Close closes all open files.
@@ -352,14 +347,9 @@ func (b *restBackend) Close() error {
 
 // Remove keys for a specified backend type.
 func (b *restBackend) removeKeys(ctx context.Context, t restic.FileType) error {
-	for key := range b.List(ctx, restic.DataFile) {
-		err := b.Remove(ctx, restic.Handle{Type: restic.DataFile, Name: key})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return b.List(ctx, t, func(fi restic.FileInfo) error {
+		return b.Remove(ctx, restic.Handle{Type: t, Name: fi.Name})
+	})
 }
 
 // Delete removes all data in the backend.
