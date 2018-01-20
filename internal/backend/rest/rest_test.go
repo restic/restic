@@ -2,7 +2,6 @@ package rest_test
 
 import (
 	"context"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -70,13 +69,6 @@ func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
 	return &test.Suite{
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			dir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-rest-")
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			t.Logf("create new backend at %v", dir)
-
 			url, err := url.Parse("http://localhost:8000/restic-test")
 			if err != nil {
 				t.Fatal(err)
