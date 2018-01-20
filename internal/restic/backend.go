@@ -32,10 +32,9 @@ type Backend interface {
 	// Stat returns information about the File identified by h.
 	Stat(ctx context.Context, h Handle) (FileInfo, error)
 
-	// List returns a channel that yields all names of files of type t in an
-	// arbitrary order. A goroutine is started for this, which is stopped when
-	// ctx is cancelled.
-	List(ctx context.Context, t FileType) <-chan string
+	// List runs fn for each file in the backend which has the type t. When an
+	// error occurs (or fn returns an error), List stops and returns it.
+	List(ctx context.Context, t FileType, fn func(FileInfo) error) error
 
 	// IsNotExist returns true if the error was caused by a non-existing file
 	// in the backend.
@@ -45,6 +44,8 @@ type Backend interface {
 	Delete(ctx context.Context) error
 }
 
-// FileInfo is returned by Stat() and contains information about a file in the
-// backend.
-type FileInfo struct{ Size int64 }
+// FileInfo is contains information about a file in the backend.
+type FileInfo struct {
+	Size int64
+	Name string
+}

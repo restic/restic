@@ -6,11 +6,11 @@ import (
 )
 
 type mockBackend struct {
-	list func(context.Context, FileType) <-chan string
+	list func(context.Context, FileType, func(FileInfo) error) error
 }
 
-func (m mockBackend) List(ctx context.Context, t FileType) <-chan string {
-	return m.list(ctx, t)
+func (m mockBackend) List(ctx context.Context, t FileType, fn func(FileInfo) error) error {
+	return m.list(ctx, t, fn)
 }
 
 var samples = IDs{
@@ -28,19 +28,14 @@ func TestPrefixLength(t *testing.T) {
 	list := samples
 
 	m := mockBackend{}
-	m.list = func(ctx context.Context, t FileType) <-chan string {
-		ch := make(chan string)
-		go func() {
-			defer close(ch)
-			for _, id := range list {
-				select {
-				case ch <- id.String():
-				case <-ctx.Done():
-					return
-				}
+	m.list = func(ctx context.Context, t FileType, fn func(FileInfo) error) error {
+		for _, id := range list {
+			err := fn(FileInfo{Name: id.String()})
+			if err != nil {
+				return err
 			}
-		}()
-		return ch
+		}
+		return nil
 	}
 
 	l, err := PrefixLength(m, SnapshotFile)

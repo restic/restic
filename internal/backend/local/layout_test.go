@@ -49,8 +49,13 @@ func TestLayout(t *testing.T) {
 			}
 
 			datafiles := make(map[string]bool)
-			for id := range be.List(context.TODO(), restic.DataFile) {
-				datafiles[id] = false
+			err = be.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+				datafiles[fi.Name] = false
+				return nil
+			})
+
+			if err != nil {
+				t.Fatalf("List() returned error %v", err)
 			}
 
 			if len(datafiles) == 0 {

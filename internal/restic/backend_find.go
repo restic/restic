@@ -20,15 +20,23 @@ var ErrMultipleIDMatches = errors.New("multiple IDs with prefix found")
 func Find(be Lister, t FileType, prefix string) (string, error) {
 	match := ""
 
-	// TODO: optimize by sorting list etc.
-	for name := range be.List(context.TODO(), t) {
-		if prefix == name[:len(prefix)] {
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	err := be.List(ctx, t, func(fi FileInfo) error {
+		if prefix == fi.Name[:len(prefix)] {
 			if match == "" {
-				match = name
+				match = fi.Name
 			} else {
-				return "", ErrMultipleIDMatches
+				return ErrMultipleIDMatches
 			}
 		}
+
+		return nil
+	})
+
+	if err != nil {
+		return "", err
 	}
 
 	if match != "" {
@@ -45,8 +53,17 @@ const minPrefixLength = 8
 func PrefixLength(be Lister, t FileType) (int, error) {
 	// load all IDs of the given type
 	list := make([]string, 0, 100)
-	for name := range be.List(context.TODO(), t) {
-		list = append(list, name)
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	err := be.List(ctx, t, func(fi FileInfo) error {
+		list = append(list, fi.Name)
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
 	}
 
 	// select prefixes of length l, test if the last one is the same as the current one

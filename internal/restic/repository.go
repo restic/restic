@@ -46,7 +46,7 @@ type Repository interface {
 
 // Lister allows listing files in a backend.
 type Lister interface {
-	List(context.Context, FileType) <-chan string
+	List(context.Context, FileType, func(FileInfo) error) error
 }
 
 // Index keeps track of the blobs are stored within files.

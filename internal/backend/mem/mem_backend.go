@@ -163,34 +163,31 @@ func (be *MemoryBackend) Remove(ctx context.Context, h restic.Handle) error {
 }
 
 // List returns a channel which yields entries from the backend.
-func (be *MemoryBackend) List(ctx context.Context, t restic.FileType) <-chan string {
+func (be *MemoryBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	be.m.Lock()
 	defer be.m.Unlock()
 
-	ch := make(chan string)
-
-	var ids []string
-	for entry := range be.data {
+	for entry, buf := range be.data {
 		if entry.Type != t {
 			continue
 		}
-		ids = append(ids, entry.Name)
+
+		fi := restic.FileInfo{
+			Name: entry.Name,
+			Size: int64(len(buf)),
+		}
+
+		err := fn(fi)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 	}
 
-	debug.Log("list %v: %v", t, ids)
-
-	go func() {
-		defer close(ch)
-		for _, id := range ids {
-			select {
-			case ch <- id:
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
-
-	return ch
+	return ctx.Err()
 }
 
 // Location returns the location of the backend (RAM).

@@ -228,50 +228,53 @@ func isFile(fi os.FileInfo) bool {
 
 // List returns a channel that yields all names of blobs of type t. A
 // goroutine is started for this.
-func (b *Local) List(ctx context.Context, t restic.FileType) <-chan string {
+func (b *Local) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
 	debug.Log("List %v", t)
 
-	ch := make(chan string)
-
-	go func() {
-		defer close(ch)
-
-		basedir, subdirs := b.Basedir(t)
-		err := fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
-			debug.Log("walk on %v\n", path)
-			if err != nil {
-				return err
-			}
-
-			if path == basedir {
-				return nil
-			}
-
-			if !isFile(fi) {
-				return nil
-			}
-
-			if fi.IsDir() && !subdirs {
-				return filepath.SkipDir
-			}
-
-			debug.Log("send %v\n", filepath.Base(path))
-
-			select {
-			case ch <- filepath.Base(path):
-			case <-ctx.Done():
-				return nil
-			}
-
-			return nil
-		})
-
+	basedir, subdirs := b.Basedir(t)
+	err := fs.Walk(basedir, func(path string, fi os.FileInfo, err error) error {
+		debug.Log("walk on %v\n", path)
 		if err != nil {
-			debug.Log("Walk %v", err)
+			return err
 		}
-	}()
 
-	return ch
+		if path == basedir {
+			return nil
+		}
+
+		if !isFile(fi) {
+			return nil
+		}
+
+		if fi.IsDir() && !subdirs {
+			return filepath.SkipDir
+		}
+
+		debug.Log("send %v\n", filepath.Base(path))
+
+		rfi := restic.FileInfo{
+			Name: filepath.Base(path),
+			Size: fi.Size(),
+		}
+
+		err = fn(rfi)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		debug.Log("Walk %v", err)
+		return err
+	}
+
+	return ctx.Err()
 }
 
 // Delete removes the repository and all files.

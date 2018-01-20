@@ -283,12 +283,17 @@ func (s *Suite) TestList(t *testing.T) {
 				s.SetListMaxItems(test.maxItems)
 			}
 
-			for name := range b.List(context.TODO(), restic.DataFile) {
-				id, err := restic.ParseID(name)
+			err := b.List(context.TODO(), restic.DataFile, func(fi restic.FileInfo) error {
+				id, err := restic.ParseID(fi.Name)
 				if err != nil {
 					t.Fatal(err)
 				}
 				list2.Insert(id)
+				return nil
+			})
+
+			if err != nil {
+				t.Fatalf("List returned error %v", err)
 			}
 
 			t.Logf("loaded %v IDs from backend", len(list2))
@@ -556,10 +561,16 @@ func delayedList(t testing.TB, b restic.Backend, tpe restic.FileType, max int, m
 	list := restic.NewIDSet()
 	start := time.Now()
 	for i := 0; i < max; i++ {
-		for s := range b.List(context.TODO(), tpe) {
-			id := restic.TestParseID(s)
+		err := b.List(context.TODO(), tpe, func(fi restic.FileInfo) error {
+			id := restic.TestParseID(fi.Name)
 			list.Insert(id)
+			return nil
+		})
+
+		if err != nil {
+			t.Fatal(err)
 		}
+
 		if len(list) < max && time.Since(start) < maxwait {
 			time.Sleep(500 * time.Millisecond)
 		}
