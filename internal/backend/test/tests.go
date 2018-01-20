@@ -317,6 +317,122 @@ func (s *Suite) TestList(t *testing.T) {
 	}
 }
 
+// TestListCancel tests that the context is respected and the error is returned by List.
+func (s *Suite) TestListCancel(t *testing.T) {
+	seedRand(t)
+
+	numTestFiles := 5
+
+	b := s.open(t)
+	defer s.close(t, b)
+
+	testFiles := make([]restic.Handle, 0, numTestFiles)
+
+	for i := 0; i < numTestFiles; i++ {
+		data := []byte(fmt.Sprintf("random test blob %v", i))
+		id := restic.Hash(data)
+		h := restic.Handle{Type: restic.DataFile, Name: id.String()}
+		err := b.Save(context.TODO(), h, bytes.NewReader(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+		testFiles = append(testFiles, h)
+	}
+
+	t.Run("Cancelled", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.TODO())
+		cancel()
+
+		// pass in a cancelled context
+		err := b.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
+			t.Errorf("got FileInfo %v for cancelled context", fi)
+			return nil
+		})
+
+		if err != context.Canceled {
+			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
+		}
+	})
+
+	t.Run("First", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		i := 0
+		err := b.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
+			i++
+			// cancel the context on the first file
+			if i == 1 {
+				cancel()
+			}
+			return nil
+		})
+
+		if err != context.Canceled {
+			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
+		}
+
+		if i != 1 {
+			t.Fatalf("wrong number of files returned by List, want %v, got %v", 1, i)
+		}
+	})
+
+	t.Run("Last", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		i := 0
+		err := b.List(ctx, restic.DataFile, func(fi restic.FileInfo) error {
+			// cancel the context at the last file
+			i++
+			if i == numTestFiles {
+				cancel()
+			}
+			return nil
+		})
+
+		if err != context.Canceled {
+			t.Fatalf("expected error not found, want %v, got %v", context.Canceled, err)
+		}
+
+		if i != numTestFiles {
+			t.Fatalf("wrong number of files returned by List, want %v, got %v", numTestFiles, i)
+		}
+	})
+
+	t.Run("Timeout", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		timeout := 500 * time.Millisecond
+
+		ctxTimeout, _ := context.WithTimeout(ctx, timeout)
+
+		i := 0
+		// pass in a context with a small timeout
+		err := b.List(ctxTimeout, restic.DataFile, func(fi restic.FileInfo) error {
+			i++
+
+			// wait until the context is cancelled
+			time.Sleep(timeout)
+			return nil
+		})
+
+		if err != context.DeadlineExceeded {
+			t.Fatalf("expected error not found, want %#v, got %#v", context.DeadlineExceeded, err)
+		}
+
+		if i != 1 {
+			t.Fatalf("wrong number of files returned by List, want %v, got %v", 1, i)
+		}
+	})
+
+	err := s.delayedRemove(t, b, testFiles...)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 type errorCloser struct {
 	io.Reader
 	l int
