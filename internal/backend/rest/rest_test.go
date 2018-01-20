@@ -121,6 +121,25 @@ func TestBackendREST(t *testing.T) {
 	newTestSuite(ctx, t, serverURL, false).RunTests(t)
 }
 
+func TestBackendRESTExternalServer(t *testing.T) {
+	repostr := os.Getenv("RESTIC_TEST_REST_REPOSITORY")
+	if repostr == "" {
+		t.Skipf("environment variable %v not set", "RESTIC_TEST_REST_REPOSITORY")
+	}
+
+	cfg, err := rest.ParseConfig(repostr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c := cfg.(rest.Config)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	newTestSuite(ctx, t, c.URL, true).RunTests(t)
+}
+
 func BenchmarkBackendREST(t *testing.B) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
