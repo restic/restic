@@ -320,6 +320,7 @@ func updateDocker() {
 	run("sh", "-c", cmd)
 	run("chmod", "+x", "restic")
 	run("docker", "build", "--rm", "--tag", "restic/restic:latest", "-f", "docker/Dockerfile", ".")
+	run("docker", "tag", "restic/restic:latest", "restic/restic:"+opts.Version)
 }
 
 func main() {
