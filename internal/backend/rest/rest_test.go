@@ -2,7 +2,6 @@ package rest_test
 
 import (
 	"context"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -17,7 +16,7 @@ import (
 	rtest "github.com/restic/restic/internal/test"
 )
 
-func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
+func runRESTServer(ctx context.Context, t testing.TB, dir string) (*url.URL, func()) {
 	srv, err := exec.LookPath("rest-server")
 	if err != nil {
 		t.Skip(err)
@@ -48,10 +47,15 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 
 	if !success {
 		t.Fatal("unable to connect to rest server")
-		return nil
+		return nil, nil
 	}
 
-	return func() {
+	url, err := url.Parse("http://localhost:8000/restic-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cleanup := func() {
 		if err := cmd.Process.Kill(); err != nil {
 			t.Fatal(err)
 		}
@@ -59,29 +63,21 @@ func runRESTServer(ctx context.Context, t testing.TB, dir string) func() {
 		// ignore errors, we've killed the process
 		_ = cmd.Wait()
 	}
+
+	return url, cleanup
 }
 
-func newTestSuite(ctx context.Context, t testing.TB) *test.Suite {
+func newTestSuite(ctx context.Context, t testing.TB, url *url.URL, minimalData bool) *test.Suite {
 	tr, err := backend.Transport(nil)
 	if err != nil {
 		t.Fatalf("cannot create transport for tests: %v", err)
 	}
 
 	return &test.Suite{
+		MinimalData: minimalData,
+
 		// NewConfig returns a config for a new temporary backend that will be used in tests.
 		NewConfig: func() (interface{}, error) {
-			dir, err := ioutil.TempDir(rtest.TestTempDir, "restic-test-rest-")
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			t.Logf("create new backend at %v", dir)
-
-			url, err := url.Parse("http://localhost:8000/restic-test")
-			if err != nil {
-				t.Fatal(err)
-			}
-
 			cfg := rest.NewConfig()
 			cfg.URL = url
 			return cfg, nil
@@ -119,10 +115,29 @@ func TestBackendREST(t *testing.T) {
 	dir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
-	cleanup = runRESTServer(ctx, t, dir)
+	serverURL, cleanup := runRESTServer(ctx, t, dir)
 	defer cleanup()
 
-	newTestSuite(ctx, t).RunTests(t)
+	newTestSuite(ctx, t, serverURL, false).RunTests(t)
+}
+
+func TestBackendRESTExternalServer(t *testing.T) {
+	repostr := os.Getenv("RESTIC_TEST_REST_REPOSITORY")
+	if repostr == "" {
+		t.Skipf("environment variable %v not set", "RESTIC_TEST_REST_REPOSITORY")
+	}
+
+	cfg, err := rest.ParseConfig(repostr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	c := cfg.(rest.Config)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	newTestSuite(ctx, t, c.URL, true).RunTests(t)
 }
 
 func BenchmarkBackendREST(t *testing.B) {
@@ -132,8 +147,8 @@ func BenchmarkBackendREST(t *testing.B) {
 	dir, cleanup := rtest.TempDir(t)
 	defer cleanup()
 
-	cleanup = runRESTServer(ctx, t, dir)
+	serverURL, cleanup := runRESTServer(ctx, t, dir)
 	defer cleanup()
 
-	newTestSuite(ctx, t).RunBenchmarks(t)
+	newTestSuite(ctx, t, serverURL, false).RunBenchmarks(t)
 }
