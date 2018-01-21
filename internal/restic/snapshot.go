@@ -64,15 +64,21 @@ func LoadSnapshot(ctx context.Context, repo Repository, id ID) (*Snapshot, error
 
 // LoadAllSnapshots returns a list of all snapshots in the repo.
 func LoadAllSnapshots(ctx context.Context, repo Repository) (snapshots []*Snapshot, err error) {
-	for id := range repo.List(ctx, SnapshotFile) {
+	err = repo.List(ctx, SnapshotFile, func(id ID, size int64) error {
 		sn, err := LoadSnapshot(ctx, repo, id)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		snapshots = append(snapshots, sn)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
-	return
+
+	return snapshots, nil
 }
 
 func (sn Snapshot) String() string {

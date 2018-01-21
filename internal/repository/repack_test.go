@@ -74,7 +74,7 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 
 	blobs := restic.NewBlobSet()
 
-	for id := range repo.List(context.TODO(), restic.DataFile) {
+	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
 		entries, _, err := repo.ListPack(context.TODO(), id)
 		if err != nil {
 			t.Fatalf("error listing pack %v: %v", id, err)
@@ -84,7 +84,7 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 			h := restic.BlobHandle{ID: entry.ID, Type: entry.Type}
 			if blobs.Has(h) {
 				t.Errorf("ignoring duplicate blob %v", h)
-				continue
+				return nil
 			}
 			blobs.Insert(h)
 
@@ -93,8 +93,11 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 			} else {
 				list2.Insert(restic.BlobHandle{ID: entry.ID, Type: entry.Type})
 			}
-
 		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	return list1, list2
@@ -102,8 +105,13 @@ func selectBlobs(t *testing.T, repo restic.Repository, p float32) (list1, list2 
 
 func listPacks(t *testing.T, repo restic.Repository) restic.IDSet {
 	list := restic.NewIDSet()
-	for id := range repo.List(context.TODO(), restic.DataFile) {
+	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
 		list.Insert(id)
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	return list
@@ -153,15 +161,15 @@ func rebuildIndex(t *testing.T, repo restic.Repository) {
 		t.Fatal(err)
 	}
 
-	for id := range repo.List(context.TODO(), restic.IndexFile) {
+	err = repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
 		h := restic.Handle{
 			Type: restic.IndexFile,
 			Name: id.String(),
 		}
-		err = repo.Backend().Remove(context.TODO(), h)
-		if err != nil {
-			t.Fatal(err)
-		}
+		return repo.Backend().Remove(context.TODO(), h)
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	_, err = idx.Save(context.TODO(), repo, nil)

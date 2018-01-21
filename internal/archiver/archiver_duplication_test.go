@@ -60,10 +60,8 @@ func forgetfulBackend() restic.Backend {
 		return nil
 	}
 
-	be.ListFn = func(ctx context.Context, t restic.FileType) <-chan string {
-		ch := make(chan string)
-		close(ch)
-		return ch
+	be.ListFn = func(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
+		return nil
 	}
 
 	be.DeleteFn = func(ctx context.Context) error {

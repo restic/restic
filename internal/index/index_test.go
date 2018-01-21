@@ -28,7 +28,7 @@ func createFilledRepo(t testing.TB, snapshots int, dup float32) (restic.Reposito
 }
 
 func validateIndex(t testing.TB, repo restic.Repository, idx *Index) {
-	for id := range repo.List(context.TODO(), restic.DataFile) {
+	err := repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
 		p, ok := idx.Packs[id]
 		if !ok {
 			t.Errorf("pack %v missing from index", id.Str())
@@ -37,6 +37,11 @@ func validateIndex(t testing.TB, repo restic.Repository, idx *Index) {
 		if !p.ID.Equal(id) {
 			t.Errorf("pack %v has invalid ID: want %v, got %v", id.Str(), id, p.ID)
 		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -308,7 +313,14 @@ func TestIndexAddRemovePack(t *testing.T) {
 		t.Fatalf("Load() returned error %v", err)
 	}
 
-	packID := <-repo.List(context.TODO(), restic.DataFile)
+	var packID restic.ID
+	err = repo.List(context.TODO(), restic.DataFile, func(id restic.ID, size int64) error {
+		packID = id
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Logf("selected pack %v", packID.Str())
 

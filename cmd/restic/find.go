@@ -58,7 +58,13 @@ func FindFilteredSnapshots(ctx context.Context, repo *repository.Repository, hos
 			return
 		}
 
-		for _, sn := range restic.FindFilteredSnapshots(ctx, repo, host, tags, paths) {
+		snapshots, err := restic.FindFilteredSnapshots(ctx, repo, host, tags, paths)
+		if err != nil {
+			Warnf("could not load snapshots: %v\n", err)
+			return
+		}
+
+		for _, sn := range snapshots {
 			select {
 			case <-ctx.Done():
 				return

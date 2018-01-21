@@ -164,17 +164,22 @@ func (be *MemoryBackend) Remove(ctx context.Context, h restic.Handle) error {
 
 // List returns a channel which yields entries from the backend.
 func (be *MemoryBackend) List(ctx context.Context, t restic.FileType, fn func(restic.FileInfo) error) error {
-	be.m.Lock()
-	defer be.m.Unlock()
+	entries := make(map[string]int64)
 
+	be.m.Lock()
 	for entry, buf := range be.data {
 		if entry.Type != t {
 			continue
 		}
 
+		entries[entry.Name] = int64(len(buf))
+	}
+	be.m.Unlock()
+
+	for name, size := range entries {
 		fi := restic.FileInfo{
-			Name: entry.Name,
-			Size: int64(len(buf)),
+			Name: name,
+			Size: size,
 		}
 
 		if ctx.Err() != nil {

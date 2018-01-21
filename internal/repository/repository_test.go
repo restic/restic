@@ -369,7 +369,7 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 
 	packEntries := make(map[restic.ID]map[restic.ID]struct{})
 
-	for id := range repo.List(context.TODO(), restic.IndexFile) {
+	err := repo.List(context.TODO(), restic.IndexFile, func(id restic.ID, size int64) error {
 		idx, err := repository.LoadIndex(context.TODO(), repo, id)
 		rtest.OK(t, err)
 
@@ -380,6 +380,10 @@ func TestRepositoryIncrementalIndex(t *testing.T) {
 
 			packEntries[pb.PackID][id] = struct{}{}
 		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	for packID, ids := range packEntries {

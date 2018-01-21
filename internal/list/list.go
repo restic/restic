@@ -11,7 +11,7 @@ const listPackWorkers = 10
 
 // Lister combines lists packs in a repo and blobs in a pack.
 type Lister interface {
-	List(context.Context, restic.FileType) <-chan restic.ID
+	List(context.Context, restic.FileType, func(restic.ID, int64) error) error
 	ListPack(context.Context, restic.ID) ([]restic.Blob, int64, error)
 }
 
@@ -55,17 +55,19 @@ func AllPacks(ctx context.Context, repo Lister, ignorePacks restic.IDSet, ch cha
 
 	go func() {
 		defer close(jobCh)
-		for id := range repo.List(ctx, restic.DataFile) {
+
+		_ = repo.List(ctx, restic.DataFile, func(id restic.ID, size int64) error {
 			if ignorePacks.Has(id) {
-				continue
+				return nil
 			}
 
 			select {
 			case jobCh <- worker.Job{Data: id}:
 			case <-ctx.Done():
-				return
+				return ctx.Err()
 			}
-		}
+			return nil
+		})
 	}()
 
 	wp.Wait()

@@ -2,10 +2,10 @@ package repository
 
 import (
 	"context"
-	"sync"
 
 	"github.com/restic/restic/internal/debug"
 	"github.com/restic/restic/internal/restic"
+	"golang.org/x/sync/errgroup"
 )
 
 // ParallelWorkFunc gets one file ID to work on. If an error is returned,
@@ -17,47 +17,36 @@ type ParallelWorkFunc func(ctx context.Context, id string) error
 type ParallelIDWorkFunc func(ctx context.Context, id restic.ID) error
 
 // FilesInParallel runs n workers of f in parallel, on the IDs that
-// repo.List(t) yield. If f returns an error, the process is aborted and the
+// repo.List(t) yields. If f returns an error, the process is aborted and the
 // first error is returned.
-func FilesInParallel(ctx context.Context, repo restic.Lister, t restic.FileType, n uint, f ParallelWorkFunc) error {
-	wg := &sync.WaitGroup{}
-	ch := repo.List(ctx, t)
-	errors := make(chan error, n)
+func FilesInParallel(ctx context.Context, repo restic.Lister, t restic.FileType, n int, f ParallelWorkFunc) error {
+	g, ctx := errgroup.WithContext(ctx)
 
-	for i := 0; uint(i) < n; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	ch := make(chan string, n)
+	g.Go(func() error {
+		defer close(ch)
+		return repo.List(ctx, t, func(fi restic.FileInfo) error {
+			select {
+			case <-ctx.Done():
+			case ch <- fi.Name:
+			}
+			return nil
+		})
+	})
 
-			for {
-				select {
-				case id, ok := <-ch:
-					if !ok {
-						return
-					}
-
-					err := f(ctx, id)
-					if err != nil {
-						errors <- err
-						return
-					}
-				case <-ctx.Done():
-					return
+	for i := 0; i < n; i++ {
+		g.Go(func() error {
+			for name := range ch {
+				err := f(ctx, name)
+				if err != nil {
+					return err
 				}
 			}
-		}()
+			return nil
+		})
 	}
 
-	wg.Wait()
-
-	select {
-	case err := <-errors:
-		return err
-	default:
-		break
-	}
-
-	return nil
+	return g.Wait()
 }
 
 // ParallelWorkFuncParseID converts a function that takes a restic.ID to a

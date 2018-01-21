@@ -26,7 +26,7 @@ type Repository interface {
 
 	LookupBlobSize(ID, BlobType) (uint, error)
 
-	List(context.Context, FileType) <-chan ID
+	List(context.Context, FileType, func(ID, int64) error) error
 	ListPack(context.Context, ID) ([]Blob, int64, error)
 
 	Flush(context.Context) error

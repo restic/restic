@@ -120,8 +120,12 @@ func pruneRepository(gopts GlobalOptions, repo restic.Repository) error {
 	}
 
 	Verbosef("counting files in repo\n")
-	for range repo.List(ctx, restic.DataFile) {
+	err = repo.List(ctx, restic.DataFile, func(restic.ID, int64) error {
 		stats.packs++
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	Verbosef("building new index for repo\n")
