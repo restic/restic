@@ -658,10 +658,30 @@ REST Backend
 ************
 
 Restic can interact with HTTP Backend that respects the following REST
-API. The following values are valid for ``{type}``: ``data``, ``keys``,
-``locks``, ``snapshots``, ``index``, ``config``. ``{path}`` is a path to
-the repository, so that multiple different repositories can be accessed.
-The default path is ``/``.
+API.
+
+The following values are valid for ``{type}``:
+
+ * ``data``
+ * ``keys``
+ * ``locks``
+ * ``snapshots``
+ * ``index``
+ * ``config``
+
+The API version is selected via the ``Accept`` HTTP header in the request. The
+following values are defined:
+
+ * ``application/vnd.x.restic.rest.v1+json`` or empty: Select API version 1
+ * ``application/vnd.x.restic.rest.v2+json``: Select API version 2
+
+The server will respond with the value of the highest version it supports in
+the ``Content-Type`` HTTP response header for the HTTP requests which should
+return JSON. Any different value for this header means API version 1.
+
+The placeholder ``{path}`` in this document is a path to the repository, so
+that multiple different repositories can be accessed. The default path is
+``/``.
 
 POST {path}?create=true
 =======================
@@ -701,10 +721,48 @@ saved, an HTTP error otherwise.
 GET {path}/{type}/
 ==================
 
-Returns a JSON array containing the names of all the blobs stored for a
-given type.
+API version 1
+-------------
 
-Response format: JSON
+Returns a JSON array containing the names of all the blobs stored for a given
+type, example:
+
+.. code:: json
+
+    [
+      "245bc4c430d393f74fbe7b13325e30dbde9fb0745e50caad57c446c93d20096b",
+      "85b420239efa1132c41cea0065452a40ebc20c6f8e0b132a5b2f5848360973ec",
+      "8e2006bb5931a520f3c7009fe278d1ebb87eb72c3ff92a50c30e90f1b8cf3e60",
+      "e75c8c407ea31ba399ab4109f28dd18c4c68303d8d86cc275432820c42ce3649"
+    ]
+
+API version 2
+-------------
+
+Returns a JSON array containing an object for each file of the given type. The
+objects have two keys: ``name`` for the file name, and ``size`` for the size in
+bytes.
+
+.. code:: json
+
+    [
+      {
+        "name": "245bc4c430d393f74fbe7b13325e30dbde9fb0745e50caad57c446c93d20096b",
+        "size": 2341058
+      },
+      {
+        "name": "85b420239efa1132c41cea0065452a40ebc20c6f8e0b132a5b2f5848360973ec",
+        "size": 2908900
+      },
+      {
+        "name": "8e2006bb5931a520f3c7009fe278d1ebb87eb72c3ff92a50c30e90f1b8cf3e60",
+        "size": 3030712
+      },
+      {
+        "name": "e75c8c407ea31ba399ab4109f28dd18c4c68303d8d86cc275432820c42ce3649",
+        "size": 2804
+      }
+    ]
 
 HEAD {path}/{type}/{name}
 =========================
