@@ -120,9 +120,6 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 		blobs = make([]restic.PackedBlob, 0, len(packs))
 
 		for _, p := range packs {
-			debug.Log("id %v found in pack %v at %d, length %d",
-				id.Str(), p.packID.Str(), p.offset, p.length)
-
 			blob := restic.PackedBlob{
 				Blob: restic.Blob{
 					Type:   tpe,
@@ -139,7 +136,6 @@ func (idx *Index) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic.Pack
 		return blobs, true
 	}
 
-	debug.Log("id %v not found", id.Str())
 	return nil, false
 }
 

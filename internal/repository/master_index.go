@@ -25,17 +25,13 @@ func (mi *MasterIndex) Lookup(id restic.ID, tpe restic.BlobType) (blobs []restic
 	mi.idxMutex.RLock()
 	defer mi.idxMutex.RUnlock()
 
-	debug.Log("looking up id %v, tpe %v", id.Str(), tpe)
-
 	for _, idx := range mi.idx {
 		blobs, found = idx.Lookup(id, tpe)
 		if found {
-			debug.Log("found id %v: %v", id.Str(), blobs)
 			return
 		}
 	}
 
-	debug.Log("id %v not found in any index", id.Str())
 	return nil, false
 }
 
