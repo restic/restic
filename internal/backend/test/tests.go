@@ -417,17 +417,18 @@ func (s *Suite) TestListCancel(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.TODO())
 		defer cancel()
 
-		timeout := 200 * time.Millisecond
+		// rather large timeout, let's try to get at least one item
+		timeout := time.Second
 
 		ctxTimeout, _ := context.WithTimeout(ctx, timeout)
 
 		i := 0
-		// pass in a context with a small timeout
+		// pass in a context with a timeout
 		err := b.List(ctxTimeout, restic.DataFile, func(fi restic.FileInfo) error {
 			i++
 
 			// wait until the context is cancelled
-			time.Sleep(timeout + 200*time.Millisecond)
+			<-ctxTimeout.Done()
 			return nil
 		})
 
@@ -435,8 +436,8 @@ func (s *Suite) TestListCancel(t *testing.T) {
 			t.Fatalf("expected error not found, want %#v, got %#v", context.DeadlineExceeded, err)
 		}
 
-		if i != 1 {
-			t.Fatalf("wrong number of files returned by List, want %v, got %v", 1, i)
+		if i > 1 {
+			t.Fatalf("wrong number of files returned by List, want <= 1, got %v", i)
 		}
 	})
 
