@@ -26,7 +26,12 @@ type Repository interface {
 
 	LookupBlobSize(ID, BlobType) (uint, error)
 
-	List(context.Context, FileType, func(ID, int64) error) error
+	// List calls the function fn for each file of type t in the repository.
+	// When an error is returned by fn, processing stops and List() returns the
+	// error.
+	//
+	// The function fn is called in the same Goroutine List() was called from.
+	List(ctx context.Context, t FileType, fn func(ID, int64) error) error
 	ListPack(context.Context, ID) ([]Blob, int64, error)
 
 	Flush(context.Context) error

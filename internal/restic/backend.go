@@ -34,6 +34,9 @@ type Backend interface {
 
 	// List runs fn for each file in the backend which has the type t. When an
 	// error occurs (or fn returns an error), List stops and returns it.
+	//
+	// The function fn is called in the same Goroutine that List() is called
+	// from.
 	List(ctx context.Context, t FileType, fn func(FileInfo) error) error
 
 	// IsNotExist returns true if the error was caused by a non-existing file
