@@ -30,6 +30,11 @@ type restBackend struct {
 	backend.Layout
 }
 
+const (
+	contentTypeV1 = "application/vnd.x.restic.rest.v1"
+	contentTypeV2 = "application/vnd.x.restic.rest.v2"
+)
+
 // Open opens the REST backend with the given config.
 func Open(cfg Config, rt http.RoundTripper) (*restBackend, error) {
 	client := &http.Client{Transport: rt}
@@ -111,8 +116,15 @@ func (b *restBackend) Save(ctx context.Context, h restic.Handle, rd io.Reader) (
 	// make sure that client.Post() cannot close the reader by wrapping it
 	rd = ioutil.NopCloser(rd)
 
+	req, err := http.NewRequest(http.MethodPost, b.Filename(h), rd)
+	if err != nil {
+		return errors.Wrap(err, "NewRequest")
+	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("Accept", contentTypeV2)
+
 	b.sem.GetToken()
-	resp, err := ctxhttp.Post(ctx, b.client, b.Filename(h), "binary/octet-stream", rd)
+	resp, err := ctxhttp.Do(ctx, b.client, req)
 	b.sem.ReleaseToken()
 
 	if resp != nil {
@@ -180,7 +192,8 @@ func (b *restBackend) Load(ctx context.Context, h restic.Handle, length int, off
 	if length > 0 {
 		byteRange = fmt.Sprintf("bytes=%d-%d", offset, offset+int64(length)-1)
 	}
-	req.Header.Add("Range", byteRange)
+	req.Header.Set("Range", byteRange)
+	req.Header.Set("Accept", contentTypeV2)
 	debug.Log("Load(%v) send range %v", h, byteRange)
 
 	b.sem.GetToken()
@@ -214,8 +227,14 @@ func (b *restBackend) Stat(ctx context.Context, h restic.Handle) (restic.FileInf
 		return restic.FileInfo{}, err
 	}
 
+	req, err := http.NewRequest(http.MethodHead, b.Filename(h), nil)
+	if err != nil {
+		return restic.FileInfo{}, errors.Wrap(err, "NewRequest")
+	}
+	req.Header.Set("Accept", contentTypeV2)
+
 	b.sem.GetToken()
-	resp, err := ctxhttp.Head(ctx, b.client, b.Filename(h))
+	resp, err := ctxhttp.Do(ctx, b.client, req)
 	b.sem.ReleaseToken()
 	if err != nil {
 		return restic.FileInfo{}, errors.Wrap(err, "client.Head")
@@ -267,6 +286,8 @@ func (b *restBackend) Remove(ctx context.Context, h restic.Handle) error {
 	if err != nil {
 		return errors.Wrap(err, "http.NewRequest")
 	}
+	req.Header.Set("Accept", contentTypeV2)
+
 	b.sem.GetToken()
 	resp, err := ctxhttp.Do(ctx, b.client, req)
 	b.sem.ReleaseToken()
@@ -300,17 +321,35 @@ func (b *restBackend) List(ctx context.Context, t restic.FileType, fn func(resti
 		url += "/"
 	}
 
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return errors.Wrap(err, "NewRequest")
+	}
+	req.Header.Set("Accept", contentTypeV2)
+
 	b.sem.GetToken()
-	resp, err := ctxhttp.Get(ctx, b.client, url)
+	resp, err := ctxhttp.Do(ctx, b.client, req)
 	b.sem.ReleaseToken()
 
 	if err != nil {
 		return errors.Wrap(err, "Get")
 	}
 
+	if resp.Header.Get("Content-Type") == contentTypeV2 {
+		return b.listv2(ctx, t, resp, fn)
+	}
+
+	return b.listv1(ctx, t, resp, fn)
+}
+
+// listv1 uses the REST protocol v1, where a list HTTP request (e.g. `GET
+// /data/`) only returns the names of the files, so we need to issue an HTTP
+// HEAD request for each file.
+func (b *restBackend) listv1(ctx context.Context, t restic.FileType, resp *http.Response, fn func(restic.FileInfo) error) error {
+	debug.Log("parsing API v1 response")
 	dec := json.NewDecoder(resp.Body)
 	var list []string
-	if err = dec.Decode(&list); err != nil {
+	if err := dec.Decode(&list); err != nil {
 		return errors.Wrap(err, "Decode")
 	}
 
@@ -326,6 +365,43 @@ func (b *restBackend) List(ctx context.Context, t restic.FileType, fn func(resti
 
 		fi.Name = m
 		err = fn(fi)
+		if err != nil {
+			return err
+		}
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+	}
+
+	return ctx.Err()
+}
+
+// listv2 uses the REST protocol v2, where a list HTTP request (e.g. `GET
+// /data/`) returns the names and sizes of all files.
+func (b *restBackend) listv2(ctx context.Context, t restic.FileType, resp *http.Response, fn func(restic.FileInfo) error) error {
+	debug.Log("parsing API v2 response")
+	dec := json.NewDecoder(resp.Body)
+
+	var list []struct {
+		Name string `json:"name"`
+		Size int64  `json:"size"`
+	}
+	if err := dec.Decode(&list); err != nil {
+		return errors.Wrap(err, "Decode")
+	}
+
+	for _, item := range list {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		fi := restic.FileInfo{
+			Name: item.Name,
+			Size: item.Size,
+		}
+
+		err := fn(fi)
 		if err != nil {
 			return err
 		}
