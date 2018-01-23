@@ -16,7 +16,7 @@ func randomSize(min, max int) int {
 }
 
 func random(t testing.TB, length int) []byte {
-	rd := restic.NewRandReader(rand.New(rand.NewSource(int64(length))))
+	rd := restic.NewRandReader(rand.New(rand.NewSource(rand.Int63())))
 	buf := make([]byte, length)
 	_, err := io.ReadFull(rd, buf)
 	if err != nil {
@@ -188,6 +188,10 @@ func reloadIndex(t *testing.T, repo restic.Repository) {
 func TestRepack(t *testing.T) {
 	repo, cleanup := repository.TestRepository(t)
 	defer cleanup()
+
+	seed := rand.Int63()
+	rand.Seed(seed)
+	t.Logf("rand seed is %v", seed)
 
 	createRandomBlobs(t, repo, 100, 0.7)
 
